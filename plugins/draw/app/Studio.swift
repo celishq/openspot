@@ -104,7 +104,7 @@ final class Studio: ObservableObject {
         if let title = try? Board.load(from: file).title, title != knownTitle { board.title = title }
         try? board.save(to: file)
         knownTitle = board.title
-        if let picture = Painting(board: board).picture(width: 360, height: 240) {
+        if let picture = Painting(board: board, assets: assets).picture(width: 360, height: 240) {
             try? picture.write(to: file.deletingPathExtension().appendingPathExtension("png"), options: .atomic)
         }
     }
@@ -124,6 +124,67 @@ final class Studio: ObservableObject {
         guard !title.isEmpty, title != board.title else { return }
         board.title = title
         save()
+    }
+
+    /// The folder of this board's images, beside its file.
+    var assets: URL {
+        file.deletingPathExtension().appendingPathExtension("assets")
+    }
+
+    /// Copies an image file into the board's folder of images and adds it.
+    func insert(picture: URL, at center: CGPoint) {
+        guard let data = try? Data(contentsOf: picture) else { return }
+        insert(data, ending: picture.pathExtension.isEmpty ? "png" : picture.pathExtension.lowercased(), at: center)
+    }
+
+    func insert(png: Data, at center: CGPoint) {
+        insert(png, ending: "png", at: center)
+    }
+
+    /// Writes an image into the board's folder of images and adds it, at most 640 points on its long side.
+    private func insert(_ data: Data, ending: String, at center: CGPoint) {
+        guard let image = NSImage(data: data), image.size.width > 0, image.size.height > 0 else { return }
+        let name = "\(UUID().uuidString.lowercased()).\(ending)"
+        do {
+            try FileManager.default.createDirectory(at: assets, withIntermediateDirectories: true)
+            try data.write(to: assets.appendingPathComponent(name), options: .atomic)
+        } catch {
+            return
+        }
+        let scale = min(1, 640 / max(image.size.width, image.size.height))
+        let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+        var figure = Figure(kind: .image, points: [center - CGPoint(x: size.width / 2, y: size.height / 2), center + CGPoint(x: size.width / 2, y: size.height / 2)])
+        figure.source = name
+        change { $0.add(figure) }
+        selection = [figure.id]
+        tool = .select
+    }
+
+    /// Sets where the words of the selected shapes and texts sit across their box.
+    func align(_ align: Figure.Align) {
+        change { board in
+            for id in selection where board[id]?.kind == .shape || board[id]?.kind == .text {
+                board.update(id) { $0.align = align }
+            }
+        }
+    }
+
+    /// Sets where the words of the selected shapes and texts sit up and down their box.
+    func place(_ place: Figure.Place) {
+        change { board in
+            for id in selection where board[id]?.kind == .shape || board[id]?.kind == .text {
+                board.update(id) { $0.place = place }
+            }
+        }
+    }
+
+    func arrange(_ arrangement: Board.Arrangement) {
+        change { $0.arrange(selection, arrangement) }
+    }
+
+    /// The first selected figure that holds words.
+    var wording: Figure? {
+        selection.compactMap { board[$0] }.first { $0.kind == .shape || $0.kind == .text }
     }
 
     /// Picks the form of the shape tool, and gives it to the selected shapes.

@@ -43,28 +43,49 @@ extension View {
     }
 }
 
-/// One square button of the board's bars: a symbol that shows when it is on.
+/// One square button of the board's bars: a symbol, or the outline of a form. A loud knob, as in the toolbar, fills with
+/// the accent when on, and a quiet one, as in the style panel, takes a light tint.
 struct Knob: View {
-    let symbol: String
+    var symbol = ""
+    var form: Figure.Form?
     let help: String
     var on = false
     var enabled = true
     var below = false
+    var quiet = false
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: 15, weight: .medium))
-                .frame(width: 34, height: 34)
-                .foregroundStyle(on ? Color.white : Color.primary)
-                .background(on ? Color.accentColor : Color.clear, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                .contentShape(Rectangle())
+            Group {
+                if let form {
+                    Outline(form: form)
+                        .stroke(style: StrokeStyle(lineWidth: 1.6, lineJoin: .round))
+                        .frame(width: 17, height: 17)
+                } else {
+                    Image(systemName: symbol).font(.system(size: 15, weight: .medium))
+                }
+            }
+            .frame(width: 34, height: 34)
+            .foregroundStyle(on ? (quiet ? Color.accentColor : .white) : .primary)
+            .background(on ? (quiet ? Color.accentColor.opacity(0.14) : Color.accentColor) : .clear, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .disabled(!enabled)
         .opacity(enabled ? 1 : 0.35)
         .tip(help, below: below)
+    }
+}
+
+/// The outline of a form as the board draws it, with its marks, for an icon.
+struct Outline: Shape {
+    let form: Figure.Form
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path(form.path(in: rect))
+        if let marks = form.marks(in: rect) { path.addPath(Path(marks)) }
+        return path
     }
 }
 
@@ -87,10 +108,10 @@ struct Sample: View {
                     line.addLine(to: CGPoint(x: tip, y: 17))
                     line.addLine(to: CGPoint(x: back, y: 22))
                 }
-                context.stroke(line, with: .color(on ? .white : .primary), style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round, dash: dashed ? [3, 4.5] : []))
+                context.stroke(line, with: .color(on ? .accentColor : .primary), style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round, dash: dashed ? [3, 4.5] : []))
             }
             .frame(width: 34, height: 34)
-            .background(on ? Color.accentColor : Color.clear, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .background(on ? Color.accentColor.opacity(0.14) : Color.clear, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -98,18 +119,21 @@ struct Sample: View {
     }
 }
 
-/// The tools at the bottom of the board, with the picker of shapes behind the ^ beside the shape tool.
+/// The tools at the bottom of the board, with the picker of shapes behind the ^ beside the shape tool, and images.
 struct Toolbar: View {
     @ObservedObject var studio: Studio
+    let picture: () -> Void
     @State private var picking = false
 
     var body: some View {
         HStack(spacing: 2) {
             ForEach(Tool.allCases) { tool in
-                if tool == .bundle { Divider().frame(height: 22).padding(.horizontal, 4) }
-                let symbol = tool == .shape ? studio.form.symbol : tool.symbol
+                if tool == .bundle {
+                    Knob(symbol: "photo", help: "Image  ⇧⌘I", action: picture)
+                    Divider().frame(height: 22).padding(.horizontal, 4)
+                }
                 let title = tool == .shape ? studio.form.title : tool.title
-                Knob(symbol: symbol, help: "\(title)  \(String(tool.key).uppercased())", on: studio.tool == tool) {
+                Knob(symbol: tool.symbol, form: tool == .shape ? studio.form : nil, help: "\(title)  \(String(tool.key).uppercased())", on: studio.tool == tool) {
                     studio.tool = tool
                     if tool != .select { studio.selection = [] }
                 }
@@ -134,7 +158,7 @@ struct Forms: View {
     var body: some View {
         LazyVGrid(columns: Array(repeating: GridItem(.fixed(38), spacing: 4), count: 4), spacing: 4) {
             ForEach(Figure.Form.allCases, id: \.self) { form in
-                Knob(symbol: form.symbol, help: form.title, on: studio.form == form) {
+                Knob(form: form, help: form.title, on: studio.form == form, below: true, quiet: true) {
                     studio.pick(form)
                     done()
                 }
@@ -171,7 +195,8 @@ struct Corner: View {
     }
 }
 
-/// The colours, the weight, the dash, the fill and the ends of new and selected figures, at the top right of the board.
+/// The colours, the fill, the dash, the weight and the ends of new and selected figures, then the alignment of words and
+/// the lining up of selected figures, at the top right of the board. Each part shows only when it can act.
 struct StylePanel: View {
     @ObservedObject var studio: Studio
 
@@ -179,9 +204,11 @@ struct StylePanel: View {
         studio.tool == .arrow || studio.selection.contains { studio.board[$0]?.kind == .arrow }
     }
 
+    private let columns = Array(repeating: GridItem(.fixed(34), spacing: 2), count: 4)
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(28), spacing: 6), count: 4), spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
+            LazyVGrid(columns: columns, spacing: 2) {
                 ForEach(Figure.Ink.allCases, id: \.self) { ink in
                     Button {
                         studio.restyle { $0.ink = ink }
@@ -189,31 +216,29 @@ struct StylePanel: View {
                         Circle()
                             .fill(Color(nsColor: ink.color))
                             .frame(width: 18, height: 18)
-                            .padding(4)
-                            .overlay(Circle().strokeBorder(studio.style.ink == ink ? Color.accentColor : .clear, lineWidth: 2))
-                            .contentShape(Circle())
+                            .frame(width: 34, height: 34)
+                            .background(studio.style.ink == ink ? Color.accentColor.opacity(0.14) : .clear, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .tip(ink.rawValue.capitalized)
                 }
             }
             Divider()
-            HStack(spacing: 2) {
-                Knob(symbol: "square", help: "No fill", on: !studio.style.filled) { studio.restyle { $0.filled = false } }
-                Knob(symbol: "square.fill", help: "Fill", on: studio.style.filled) { studio.restyle { $0.filled = true } }
+            LazyVGrid(columns: columns, spacing: 2) {
+                Knob(symbol: "square", help: "No fill", on: !studio.style.filled, quiet: true) { studio.restyle { $0.filled = false } }
+                Knob(symbol: "square.fill", help: "Fill", on: studio.style.filled, quiet: true) { studio.restyle { $0.filled = true } }
                 Sample(help: "Solid", on: !studio.style.dashed) { studio.restyle { $0.dashed = false } }
                 Sample(dashed: true, help: "Dashed", on: studio.style.dashed) { studio.restyle { $0.dashed = true } }
-            }
-            HStack(spacing: 2) {
                 ForEach(Figure.Weight.allCases, id: \.self) { weight in
                     Button {
                         studio.restyle { $0.weight = weight }
                     } label: {
                         Text(weight.rawValue.uppercased())
                             .font(.system(size: 12, weight: .semibold))
-                            .frame(width: 34, height: 30)
-                            .foregroundStyle(studio.style.weight == weight ? Color.white : Color.primary)
-                            .background(studio.style.weight == weight ? Color.accentColor : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .frame(width: 34, height: 34)
+                            .foregroundStyle(studio.style.weight == weight ? Color.accentColor : Color.primary)
+                            .background(studio.style.weight == weight ? Color.accentColor.opacity(0.14) : Color.clear, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -222,14 +247,39 @@ struct StylePanel: View {
             }
             if showsEnds {
                 Divider()
-                HStack(spacing: 2) {
+                LazyVGrid(columns: columns, spacing: 2) {
                     Sample(heads: .none, help: "Line", on: studio.style.heads == .none) { studio.restyle { $0.heads = .none } }
                     Sample(heads: .end, help: "Arrow", on: studio.style.heads == .end) { studio.restyle { $0.heads = .end } }
                     Sample(heads: .both, help: "Arrow both ways", on: studio.style.heads == .both) { studio.restyle { $0.heads = .both } }
                 }
             }
+            if let words = studio.wording {
+                Divider()
+                LazyVGrid(columns: columns, spacing: 2) {
+                    Knob(symbol: "text.alignleft", help: "Align text left", on: words.align == .left, quiet: true) { studio.align(.left) }
+                    Knob(symbol: "text.aligncenter", help: "Centre text", on: words.align == .center, quiet: true) { studio.align(.center) }
+                    Knob(symbol: "text.alignright", help: "Align text right", on: words.align == .right, quiet: true) { studio.align(.right) }
+                    Color.clear.frame(width: 34, height: 34)
+                    Knob(symbol: "arrow.up.to.line.compact", help: "Text at the top", on: words.place == .top, quiet: true) { studio.place(.top) }
+                    Knob(symbol: "arrow.up.and.down", help: "Text in the middle", on: words.place == .middle, quiet: true) { studio.place(.middle) }
+                    Knob(symbol: "arrow.down.to.line.compact", help: "Text at the bottom", on: words.place == .bottom, quiet: true) { studio.place(.bottom) }
+                }
+            }
+            if studio.selection.count > 1 {
+                Divider()
+                LazyVGrid(columns: columns, spacing: 2) {
+                    Knob(symbol: "align.horizontal.left", help: "Align left edges", quiet: true) { studio.arrange(.left) }
+                    Knob(symbol: "align.horizontal.center", help: "Align centres", quiet: true) { studio.arrange(.center) }
+                    Knob(symbol: "align.horizontal.right", help: "Align right edges", quiet: true) { studio.arrange(.right) }
+                    Knob(symbol: "distribute.horizontal.center", help: "Spread across", quiet: true) { studio.arrange(.spreadAcross) }
+                    Knob(symbol: "align.vertical.top", help: "Align top edges", quiet: true) { studio.arrange(.top) }
+                    Knob(symbol: "align.vertical.center", help: "Align middles", quiet: true) { studio.arrange(.middle) }
+                    Knob(symbol: "align.vertical.bottom", help: "Align bottom edges", quiet: true) { studio.arrange(.bottom) }
+                    Knob(symbol: "distribute.vertical.center", help: "Spread down", quiet: true) { studio.arrange(.spreadDown) }
+                }
+            }
         }
-        .padding(10)
+        .padding(8)
         .modifier(Raised())
     }
 }
@@ -245,106 +295,112 @@ struct StyleSlot: View {
     }
 }
 
-/// The top left of the board: the list of boards, and the title, which a click renames.
-struct Header: View {
+/// Whether the list of boards shows, shared by each board that the window shows in turn.
+@MainActor
+final class Drawer: ObservableObject {
+    @Published var open = false
+}
+
+/// The list of boards that slides in from the left: each board, newest first, opens on a click and takes a new name on a
+/// double-click, and the + makes a new board.
+struct Sidebar: View {
+    @ObservedObject var drawer: Drawer
     @ObservedObject var studio: Studio
     let shelf: Shelf
     let open: (URL) -> Void
     let make: () -> Void
-    let done: () -> Void
-    @State private var listing = false
-    @State private var title = ""
-    @FocusState private var naming: Bool
+    @State private var entries: [Shelf.Entry] = []
+    @State private var naming: URL?
+    @State private var name = ""
+    @FocusState private var typing: Bool
 
     var body: some View {
-        HStack(spacing: 4) {
-            Knob(symbol: "sidebar.left", help: "Boards", on: listing, below: true) { listing.toggle() }
-                .popover(isPresented: $listing, arrowEdge: .bottom) {
-                    Boards(shelf: shelf, current: studio.file, open: { file in
-                        listing = false
-                        open(file)
-                    }, make: {
-                        listing = false
-                        make()
-                    })
-                }
-            TextField("Untitled board", text: $title)
-                .textFieldStyle(.plain)
-                .font(.system(size: 13, weight: .semibold))
-                .frame(minWidth: 60, maxWidth: 280)
-                .fixedSize()
-                .focused($naming)
-                .onSubmit { naming = false }
-                .onChange(of: naming) { _, now in
-                    if !now {
-                        studio.rename(title)
-                        title = studio.board.title
-                        done()
-                    }
-                }
-                .tip("Rename", below: true)
-        }
-        .padding(.leading, 5)
-        .padding(.trailing, 10)
-        .padding(.vertical, 5)
-        .modifier(Raised())
-        .onAppear { title = studio.board.title }
-        .onReceive(studio.$board.map(\.title).removeDuplicates()) { if !naming { title = $0 } }
-    }
-}
-
-/// The boards beside this one, newest first, and a new board.
-struct Boards: View {
-    let shelf: Shelf
-    let current: URL
-    let open: (URL) -> Void
-    let make: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Button(action: make) {
-                Label("New board", systemImage: "plus.square.dashed")
-                    .font(.system(size: 13, weight: .medium))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(8)
-                    .contentShape(Rectangle())
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("Boards").font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
+                Spacer()
+                Knob(symbol: "plus", help: "New board  ⌘N", below: true, action: make)
             }
-            .buttonStyle(.plain)
-            Divider()
+            .padding(.leading, 8)
             ScrollView {
                 VStack(spacing: 2) {
-                    ForEach(shelf.entries) { entry in
-                        Button { open(entry.file) } label: {
-                            HStack(spacing: 10) {
-                                Group {
-                                    if let picture = NSImage(contentsOf: entry.picture) {
-                                        Image(nsImage: picture).resizable().aspectRatio(contentMode: .fill)
-                                    } else {
-                                        Color.white
-                                    }
-                                }
-                                .frame(width: 66, height: 44)
-                                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                                .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(Color.primary.opacity(0.12)))
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(entry.title).font(.system(size: 13, weight: .medium)).lineLimit(1)
-                                    Text("Edited \(entry.edited.formatted(.relative(presentation: .named)))")
-                                        .font(.system(size: 11)).foregroundStyle(.secondary)
-                                }
-                                Spacer(minLength: 0)
-                            }
-                            .padding(6)
-                            .background(entry.file.standardizedFileURL == current.standardizedFileURL ? Color.accentColor.opacity(0.14) : .clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
+                    ForEach(entries) { entry in
+                        row(entry)
                     }
                 }
             }
-            .frame(maxHeight: 380)
         }
-        .padding(8)
-        .frame(width: 300)
+        .padding(.horizontal, 10)
+        .padding(.top, 46)
+        .padding(.bottom, 10)
+        .frame(width: 270)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .modifier(Raised())
+        .offset(x: drawer.open ? 0 : -300)
+        .onAppear(perform: reload)
+        .onChange(of: drawer.open) { _, open in if open { reload() } }
+        .onReceive(studio.$board.map(\.title).removeDuplicates()) { _ in reload() }
+    }
+
+    private func reload() {
+        entries = shelf.entries
+    }
+
+    private func row(_ entry: Shelf.Entry) -> some View {
+        let current = entry.file.standardizedFileURL == studio.file.standardizedFileURL
+        return HStack(spacing: 10) {
+            Group {
+                if let picture = NSImage(contentsOf: entry.picture) {
+                    Image(nsImage: picture).resizable().aspectRatio(contentMode: .fill)
+                } else {
+                    Color.white
+                }
+            }
+            .frame(width: 48, height: 32)
+            .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 5, style: .continuous).strokeBorder(Color.primary.opacity(0.12)))
+            VStack(alignment: .leading, spacing: 1) {
+                if naming == entry.file {
+                    TextField("Name", text: $name)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 13, weight: .medium))
+                        .focused($typing)
+                        .onSubmit { finish(entry) }
+                        .onChange(of: typing) { _, now in if !now { finish(entry) } }
+                } else {
+                    Text(entry.title).font(.system(size: 13, weight: .medium)).lineLimit(1)
+                }
+                Text(entry.edited.formatted(.relative(presentation: .named)).capitalized(with: nil))
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(6)
+        .background(current ? Color.accentColor.opacity(0.14) : .clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .contentShape(Rectangle())
+        .onTapGesture(count: 2) { startNaming(entry) }
+        .onTapGesture { if naming != entry.file { open(entry.file) } }
+        .contextMenu {
+            Button("Rename") { startNaming(entry) }
+            Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([entry.file]) }
+        }
+    }
+
+    private func startNaming(_ entry: Shelf.Entry) {
+        name = entry.title
+        naming = entry.file
+        typing = true
+    }
+
+    private func finish(_ entry: Shelf.Entry) {
+        guard naming == entry.file else { return }
+        naming = nil
+        if entry.file.standardizedFileURL == studio.file.standardizedFileURL {
+            studio.rename(name)
+        } else {
+            try? shelf.rename(entry.file, to: name)
+        }
+        reload()
     }
 }
 

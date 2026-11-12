@@ -7,6 +7,7 @@ import SwiftUI
 final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private(set) var studio: Studio
     private var lock: Lock
+    private let drawer = Drawer()
     var window: NSWindow!
     var canvas: Canvas!
 
@@ -42,16 +43,17 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         root.addSubview(canvas)
         let canvas = canvas!
         let shelf = Shelf(folder: studio.file.deletingLastPathComponent())
-        let header = bar(Header(studio: studio, shelf: shelf, open: { [weak self] in self?.show($0) }, make: { [weak self] in self?.make() }, done: { [weak self] in
-            self?.window.makeFirstResponder(self?.canvas)
-        }), in: root)
-        let tools = bar(Toolbar(studio: studio), in: root)
+        let tools = bar(Toolbar(studio: studio, picture: { canvas.insertPicture(nil) }), in: root)
         let corner = bar(Corner(studio: studio, zoom: { canvas.zoom(to: $0) }, fit: { canvas.fit() }), in: root)
         let style = bar(StyleSlot(studio: studio), in: root)
+        let side = bar(Sidebar(drawer: drawer, studio: studio, shelf: shelf, open: { [weak self] in self?.show($0) }, make: { [weak self] in self?.make() }), in: root)
+        let toggle = bar(Knob(symbol: "sidebar.left", help: "Boards  ⌃⌘S", below: true) { [weak self] in self?.toggleBoards(nil) }, in: root)
         NSLayoutConstraint.activate([
             canvas.leadingAnchor.constraint(equalTo: root.leadingAnchor), canvas.trailingAnchor.constraint(equalTo: root.trailingAnchor),
             canvas.topAnchor.constraint(equalTo: root.topAnchor), canvas.bottomAnchor.constraint(equalTo: root.bottomAnchor),
-            header.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 84), header.topAnchor.constraint(equalTo: root.topAnchor, constant: 8),
+            side.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 8), side.topAnchor.constraint(equalTo: root.topAnchor, constant: 8),
+            side.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -8),
+            toggle.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 80), toggle.topAnchor.constraint(equalTo: root.topAnchor, constant: 4),
             tools.centerXAnchor.constraint(equalTo: root.centerXAnchor), tools.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -14),
             corner.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 14), corner.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -14),
             style.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -14), style.topAnchor.constraint(equalTo: root.topAnchor, constant: 52)
@@ -86,9 +88,17 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         show(file)
     }
 
-    /// Floats a SwiftUI bar over the canvas at its own size.
+    @objc func toggleBoards(_ sender: Any?) {
+        withAnimation(.spring(duration: 0.35, bounce: 0.1)) { drawer.open.toggle() }
+    }
+
+    @objc func newBoard(_ sender: Any?) {
+        make()
+    }
+
+    /// Floats a SwiftUI bar over the canvas at its own size. A press where the bar draws nothing reaches the canvas.
     private func bar(_ content: some View, in root: NSView) -> NSView {
-        let host = NSHostingView(rootView: content)
+        let host = ClearHost(rootView: content)
         host.translatesAutoresizingMaskIntoConstraints = false
         root.addSubview(host)
         return host
@@ -151,6 +161,10 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
             .separator(),
             item("Quit Draw", #selector(NSApplication.terminate(_:)), "q")
         ])
+        add("File", [
+            item("New Board", #selector(Desk.newBoard(_:)), "n"),
+            item("Insert Image…", #selector(Canvas.insertPicture(_:)), "i", [.command, .shift])
+        ])
         add("Edit", [
             item("Undo", #selector(Canvas.undo(_:)), "z"),
             item("Redo", #selector(Canvas.redo(_:)), "z", [.command, .shift]),
@@ -166,12 +180,21 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
             item("Zoom In", #selector(Canvas.zoomIn(_:)), "="),
             item("Zoom Out", #selector(Canvas.zoomOut(_:)), "-"),
             item("Actual Size", #selector(Canvas.actualSize(_:)), "0"),
-            item("Show the Whole Board", #selector(Canvas.zoomToFit(_:)), "1", .shift)
+            item("Show the Whole Board", #selector(Canvas.zoomToFit(_:)), "1", .shift),
+            item("Show Boards", #selector(Desk.toggleBoards(_:)), "s", [.command, .control])
         ])
         add("Window", [
             item("Minimize", #selector(NSWindow.miniaturize(_:)), "m"),
             item("Close", #selector(NSWindow.performClose(_:)), "w")
         ])
         return main
+    }
+}
+
+/// A hosting view that lets a press through where its SwiftUI content draws nothing.
+final class ClearHost<Content: View>: NSHostingView<Content> {
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        let hit = super.hitTest(point)
+        return hit === self ? nil : hit
     }
 }

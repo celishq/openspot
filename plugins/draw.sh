@@ -99,6 +99,7 @@ case "$1" in
     board "$2"
     title=$(title_of "$file")
     trash="$HOME/.Trash/$(printf %s "$title" | tr '/:' '--')-$(date +%s)"
+    [ -d "$boards/$2.assets" ] && mv "$boards/$2.assets" "$trash.assets"
     mv "$file" "$trash.json" || fail "Openspot cannot move $title to the Trash, so it stays."
     [ -f "$boards/$2.png" ] && mv "$boards/$2.png" "$trash.png"
     rm -f "$file.lock"

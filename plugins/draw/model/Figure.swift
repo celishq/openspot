@@ -1,12 +1,22 @@
 import CoreGraphics
 import Foundation
 
-/// One thing drawn on a board: a shape, an arrow, a stroke of the pen, a text, or a tie that holds arrows together.
-/// A shape and a text keep two corners in `points`, an arrow its two ends, a pen each point it passed, and a tie its
-/// centre. An arrow end can hold a shape, and then it follows that shape.
+/// One thing drawn on a board: a shape, an arrow, a stroke of the pen, a text, an image, or a tie that holds arrows
+/// together. A shape, a text and an image keep two corners in `points`, an arrow its two ends, a pen each point it passed,
+/// and a tie its centre. An arrow end can hold a shape, and then it follows that shape.
 struct Figure: Codable, Equatable, Identifiable {
     enum Kind: String, Codable {
-        case shape, arrow, pen, text, tie
+        case shape, arrow, pen, text, image, tie
+    }
+
+    /// Where the lines of words sit across their box.
+    enum Align: String, Codable, CaseIterable {
+        case left, center, right
+    }
+
+    /// Where the words sit up and down their box.
+    enum Place: String, Codable, CaseIterable {
+        case top, middle, bottom
     }
 
     /// The outline of a shape, in the order of the shape picker.
@@ -47,6 +57,10 @@ struct Figure: Codable, Equatable, Identifiable {
     var dashed = false
     var filled = false
     var text = ""
+    var align = Align.center
+    var place = Place.middle
+    /// The file name of an image, in the folder of the board's images.
+    var source = ""
     /// How far the middle of an arrow leaves the straight line, to its left when positive.
     var bend: CGFloat = 0
     /// The shape that holds the start of an arrow.
@@ -61,10 +75,14 @@ struct Figure: Codable, Equatable, Identifiable {
     init(kind: Kind, points: [CGPoint]) {
         self.kind = kind
         self.points = points
+        if kind == .text {
+            align = .left
+            place = .top
+        }
     }
 
     var isBox: Bool {
-        kind == .shape || kind == .text
+        kind == .shape || kind == .text || kind == .image
     }
 
     /// The rectangle between the two corners of a shape.
@@ -77,7 +95,7 @@ struct Figure: Codable, Equatable, Identifiable {
     func holds(_ point: CGPoint, pad: CGFloat = 0) -> Bool {
         let box = frame.insetBy(dx: -pad, dy: -pad)
         switch kind {
-        case .text: return box.contains(point)
+        case .text, .image: return box.contains(point)
         case .shape: return box.width > 0 && box.height > 0 && form.path(in: box).contains(point)
         default: return false
         }
@@ -86,7 +104,7 @@ struct Figure: Codable, Equatable, Identifiable {
     // MARK: File
 
     private enum Key: String, CodingKey {
-        case id, kind, points, form, heads, ink, weight, dashed, filled, text, bend, start, end, ties, members
+        case id, kind, points, form, heads, ink, weight, dashed, filled, text, align, place, source, bend, start, end, ties, members
     }
 
     /// Reads a figure, also one of an older board: a rectangle or an ellipse is a shape, a line is an arrow with no head,
@@ -118,6 +136,9 @@ struct Figure: Codable, Equatable, Identifiable {
         dashed = try values.decodeIfPresent(Bool.self, forKey: .dashed) ?? false
         filled = try values.decodeIfPresent(Bool.self, forKey: .filled) ?? false
         text = try values.decodeIfPresent(String.self, forKey: .text) ?? ""
+        align = try values.decodeIfPresent(Align.self, forKey: .align) ?? (kind == .text ? .left : .center)
+        place = try values.decodeIfPresent(Place.self, forKey: .place) ?? (kind == .text ? .top : .middle)
+        source = try values.decodeIfPresent(String.self, forKey: .source) ?? ""
         bend = try values.decodeIfPresent(CGFloat.self, forKey: .bend) ?? 0
         start = try values.decodeIfPresent(UUID.self, forKey: .start)
         end = try values.decodeIfPresent(UUID.self, forKey: .end)
@@ -137,6 +158,11 @@ struct Figure: Codable, Equatable, Identifiable {
         if dashed { try values.encode(dashed, forKey: .dashed) }
         if filled { try values.encode(filled, forKey: .filled) }
         if !text.isEmpty { try values.encode(text, forKey: .text) }
+        if kind == .text || kind == .shape {
+            try values.encode(align, forKey: .align)
+            try values.encode(place, forKey: .place)
+        }
+        if !source.isEmpty { try values.encode(source, forKey: .source) }
         if bend != 0 { try values.encode(bend, forKey: .bend) }
         try values.encodeIfPresent(start, forKey: .start)
         try values.encodeIfPresent(end, forKey: .end)

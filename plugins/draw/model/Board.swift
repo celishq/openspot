@@ -206,7 +206,7 @@ struct Board: Codable, Equatable {
             switch figure.kind {
             case .tie:
                 return false
-            case .shape, .text:
+            case .shape, .text, .image:
                 return figure.holds(point, pad: tolerance)
             case .arrow, .pen:
                 let line = path(of: figure)

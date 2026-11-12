@@ -27,6 +27,19 @@ final class DrawShelfTests: XCTestCase {
         XCTAssertEqual(entries[0].picture.lastPathComponent, "new.png")
     }
 
+    func testARenameOnTheShelfKeepsTheFiguresOfTheBoard() throws {
+        var board = Board(title: "Old")
+        board.add(Figure(kind: .shape, points: [.zero, CGPoint(x: 10, y: 10)]))
+        let file = folder.appendingPathComponent("a.json")
+        try board.save(to: file)
+
+        try Shelf(folder: folder).rename(file, to: "  Launch flow ")
+
+        let renamed = try Board.load(from: file)
+        XCTAssertEqual(renamed.title, "Launch flow")
+        XCTAssertEqual(renamed.figures, board.figures)
+    }
+
     func testANewBoardIsAnEmptyUntitledBoardOnTheShelf() throws {
         let shelf = Shelf(folder: folder)
 

@@ -37,7 +37,11 @@ extension Figure {
     /// The words of a figure as they are drawn.
     var words: NSAttributedString {
         let style = NSMutableParagraphStyle()
-        style.alignment = kind == .text ? .left : .center
+        style.alignment = switch align {
+        case .left: .left
+        case .center: .center
+        case .right: .right
+        }
         return NSAttributedString(string: text, attributes: [.font: font, .foregroundColor: ink.color, .paragraphStyle: style])
     }
 }

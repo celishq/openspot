@@ -147,12 +147,60 @@ final class DrawBoardTests: XCTestCase {
         }
     }
 
+    func testFiguresLineUpByTheirLeftEdgeAndByTheirMiddle() throws {
+        let a = box(0, 0)
+        let b = box(40, 100)
+        var board = Board(figures: [a, b])
+
+        board.arrange([a.id, b.id], .left)
+        XCTAssertEqual(board[b.id]?.frame.minX, 0)
+
+        board.arrange([a.id, b.id], .middle)
+        XCTAssertEqual(board[a.id]?.frame.midY, board[b.id]?.frame.midY)
+        XCTAssertEqual(try XCTUnwrap(board[a.id]).frame.midY, 80, accuracy: 0.001)
+    }
+
+    func testThreeFiguresSpreadWithEqualGaps() throws {
+        let a = box(0, 0)
+        let b = box(130, 0)
+        let c = box(500, 0)
+        var board = Board(figures: [a, b, c])
+
+        board.arrange([a.id, b.id, c.id], .spreadAcross)
+
+        XCTAssertEqual(try XCTUnwrap(board[b.id]).frame.minX, 250, accuracy: 0.001)
+        XCTAssertEqual(board[c.id]?.frame.minX, 500)
+    }
+
+    func testAnImageGrowsInItsOwnProportions() throws {
+        var image = Figure(kind: .image, points: [.zero, CGPoint(x: 200, y: 100)])
+        image.source = "a.png"
+        var board = Board(figures: [image])
+
+        board.resize(image.id, to: CGRect(x: 0, y: 0, width: 400, height: 120))
+
+        XCTAssertEqual(board[image.id]?.frame, CGRect(x: 0, y: 0, width: 400, height: 200))
+    }
+
+    func testOldTextLoadsAlignedLeftAndALabelInTheMiddle() throws {
+        let old = #"{"figures":[{"id":"00000000-0000-0000-0000-000000000001","kind":"text","points":[[0,0],[10,10]]},{"id":"00000000-0000-0000-0000-000000000002","kind":"rectangle","points":[[0,0],[10,10]]}]}"#
+        let board = try JSONDecoder().decode(Board.self, from: Data(old.utf8))
+
+        XCTAssertEqual(board.figures.map(\.align), [.left, .center])
+        XCTAssertEqual(board.figures.map(\.place), [.top, .middle])
+    }
+
     func testABoardSavesAndLoadsTheSame() throws {
         var (board, _, _) = fan()
         board.title = "Flows"
         board.bundle(along: cut)
         board.figures[0].form = .star
         board.figures[3].heads = .both
+        board.figures[1].align = .right
+        board.figures[1].place = .bottom
+        var image = Figure(kind: .image, points: [.zero, CGPoint(x: 40, y: 30)])
+        image.source = "picture.png"
+        board.add(image)
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-draw-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }

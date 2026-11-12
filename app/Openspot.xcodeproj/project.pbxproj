@@ -131,6 +131,7 @@
 		4A7BBA4F5598B4F3ECD028C7 /* Capability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 712611AA6131BCF6BEF84A88 /* Capability.swift */; };
 		4B7C93C33BDED640FF7F5819 /* CommandKeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2D62D8B5553AF2E9EF9AFF3 /* CommandKeyTests.swift */; };
 		4D442A12BEF72CED68DE6C5C /* SpotSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68AA6BF3A666E5ADAB73A078 /* SpotSize.swift */; };
+		4DB5550E64EA786AD61DDF71 /* Board+Arrange.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46A6B74E3980B1300B0E1CFB /* Board+Arrange.swift */; };
 		4E1955C194A8F2DAF8B71A1D /* SamplePluginsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5939868A8BC2E7F5717AD6 /* SamplePluginsTests.swift */; };
 		4EBFA3E28CB0E771B19C07E2 /* TerminalRunTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DA18669F2527198666078FB /* TerminalRunTests.swift */; };
 		4F44335BD47E9F85D28F7BB2 /* CommandGuideTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A92F35F663684550CBBEDF4 /* CommandGuideTests.swift */; };
@@ -572,6 +573,7 @@
 		458EC05F801F997F96F3BC73 /* ScriptLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptLink.swift; sourceTree = "<group>"; };
 		45CAF1E356EB763F6FDA572B /* ShelfExampleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfExampleTests.swift; sourceTree = "<group>"; };
 		4684CFCCFEE5A86E21A2323A /* SheetLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetLayout.swift; sourceTree = "<group>"; };
+		46A6B74E3980B1300B0E1CFB /* Board+Arrange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Board+Arrange.swift"; sourceTree = "<group>"; };
 		473ABE23A29349EDAFCF3A9D /* ActionMenuTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionMenuTests.swift; sourceTree = "<group>"; };
 		482CD66D5226EEDF8FFD75EA /* SheetSandbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetSandbox.swift; sourceTree = "<group>"; };
 		48341C1F654BB89F7DF8B4BE /* HotKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotKey.swift; sourceTree = "<group>"; };
@@ -972,6 +974,7 @@
 			isa = PBXGroup;
 			children = (
 				65D0EE328D2EA7C047C662B4 /* Board.swift */,
+				46A6B74E3980B1300B0E1CFB /* Board+Arrange.swift */,
 				119D7245A25299AEE218D1C7 /* Board+Bundle.swift */,
 				D0E234C452D756D5F987C3FD /* CGPoint+Vector.swift */,
 				D9200A955E4880356354300F /* Figure.swift */,
@@ -2316,6 +2319,7 @@
 				F0D8034BB2F943967DD56AB3 /* AgentNoteTests.swift in Sources */,
 				66D81DBDE4D214FE8E2E4D7C /* AppsPluginTests.swift in Sources */,
 				F35D6B0382CED10EFB06974F /* BigPasteTests.swift in Sources */,
+				4DB5550E64EA786AD61DDF71 /* Board+Arrange.swift in Sources */,
 				1F17F206B156E8A4D81D4E3B /* Board+Bundle.swift in Sources */,
 				58C9C448309F592A2F484A47 /* Board.swift in Sources */,
 				5DBF0FDF1BB1407847F7350C /* CGPoint+Vector.swift in Sources */,

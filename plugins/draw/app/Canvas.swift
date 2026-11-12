@@ -47,12 +47,15 @@ final class Canvas: NSView, NSTextViewDelegate {
             DispatchQueue.main.async {
                 guard let self else { return }
                 self.needsDisplay = true
-                if self.drag.isIdle, let window = self.window, self.bounds.contains(self.convert(window.mouseLocationOutsideOfEventStream, from: nil)) {
+                self.window?.invalidateCursorRects(for: self)
+                if self.drag.isIdle, self.editing == nil, let window = self.window,
+                   self.hitTest(self.superview?.convert(window.mouseLocationOutsideOfEventStream, from: nil) ?? .zero) === self {
                     self.pointer.set()
                 }
             }
         }
         addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseMoved, .activeInKeyWindow, .inVisibleRect, .cursorUpdate], owner: self))
+        registerForDraggedTypes([.fileURL])
     }
 
     required init?(coder: NSCoder) { fatalError() }
@@ -131,7 +134,7 @@ final class Canvas: NSView, NSTextViewDelegate {
         context.saveGState()
         context.translateBy(x: offset.x, y: offset.y)
         context.scaleBy(x: zoom, y: zoom)
-        var painting = Painting(board: studio.board)
+        var painting = Painting(board: studio.board, assets: studio.assets)
         if case .erase(let hits) = drag { painting.faint = hits }
         if let editing { painting.wordless = [editing.id] }
         painting.draw(in: context)
@@ -210,7 +213,7 @@ final class Canvas: NSView, NSTextViewDelegate {
     private func grips() -> [(Grip, CGPoint)] {
         guard studio.selection.count == 1, let id = studio.selection.first, let figure = studio.board[id] else { return [] }
         switch figure.kind {
-        case .shape, .text:
+        case .shape, .text, .image:
             let box = view(figure.frame).insetBy(dx: -4, dy: -4)
             var grips: [(Grip, CGPoint)] = [
                 (.side(left: true, right: false, top: true, bottom: false), CGPoint(x: box.minX, y: box.minY)),
@@ -218,7 +221,7 @@ final class Canvas: NSView, NSTextViewDelegate {
                 (.side(left: false, right: true, top: false, bottom: true), CGPoint(x: box.maxX, y: box.maxY)),
                 (.side(left: true, right: false, top: false, bottom: true), CGPoint(x: box.minX, y: box.maxY))
             ]
-            if figure.kind != .text {
+            if figure.kind == .shape {
                 grips += [
                     (.side(left: false, right: false, top: true, bottom: false), CGPoint(x: box.midX, y: box.minY)),
                     (.side(left: false, right: true, top: false, bottom: false), CGPoint(x: box.maxX, y: box.midY)),
@@ -434,8 +437,7 @@ final class Canvas: NSView, NSTextViewDelegate {
             if right { box.size.width += delta.x }
             if top { box.origin.y += delta.y; box.size.height -= delta.y }
             if bottom { box.size.height += delta.y }
-            box = box.standardized
-            board.update(id) { $0.points = [box.origin, CGPoint(x: box.maxX, y: box.maxY)] }
+            board.resize(id, to: box)
         case .start, .end:
             let held = board.target(at: at, except: [id])
             board.update(id) { figure in
@@ -466,7 +468,7 @@ final class Canvas: NSView, NSTextViewDelegate {
     }
 
     private func doubleClick(_ at: CGPoint) {
-        if let figure = studio.board.figure(at: at, tolerance: 6 / zoom), figure.isBox {
+        if let figure = studio.board.figure(at: at, tolerance: 6 / zoom), figure.kind == .shape || figure.kind == .text {
             studio.selection = [figure.id]
             beginEditing(figure.id, before: studio.board)
             return
@@ -510,7 +512,7 @@ final class Canvas: NSView, NSTextViewDelegate {
         let font = NSFont(descriptor: figure.font.fontDescriptor, size: figure.font.pointSize * zoom) ?? figure.font
         editing.field.font = font
         editing.field.textColor = figure.ink.color
-        editing.field.alignment = figure.kind == .text ? .left : .center
+        editing.field.alignment = figure.align == .left ? .left : figure.align == .right ? .right : .center
     }
 
     /// Lays the field over its figure, and grows a text figure to fit its words.
@@ -580,7 +582,7 @@ final class Canvas: NSView, NSTextViewDelegate {
                 needsDisplay = true
                 return
             case 36:
-                if studio.selection.count == 1, let id = studio.selection.first, let figure = studio.board[id], figure.isBox {
+                if studio.selection.count == 1, let id = studio.selection.first, let figure = studio.board[id], figure.kind == .shape || figure.kind == .text {
                     beginEditing(id, before: studio.board)
                 }
                 return
@@ -623,14 +625,54 @@ final class Canvas: NSView, NSTextViewDelegate {
         pointer.set()
     }
 
-    /// The cursor of the tool: a hand to pan, an arrow to select, and a crosshair to draw, write or erase. A text field
-    /// shows its own caret.
+    override func resetCursorRects() {
+        addCursorRect(visibleRect, cursor: pointer)
+    }
+
+    /// The cursor of the tool, the one cursor over the whole canvas: a caret for the Text tool, a hand to pan, an arrow to
+    /// select, and a crosshair for each other tool.
     var pointer: NSCursor {
         if spaceHeld { return .openHand }
         switch studio.tool {
         case .hand: return .openHand
         case .select: return .arrow
+        case .text: return .iBeam
         default: return .crosshair
+        }
+    }
+
+    // MARK: Images
+
+    /// The image files among the files of a drag or a paste.
+    private func pictures(_ pasteboard: NSPasteboard) -> [URL] {
+        let files = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
+        return files.filter { NSImage(contentsOf: $0) != nil }
+    }
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        pictures(sender.draggingPasteboard).isEmpty ? [] : .copy
+    }
+
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        let files = pictures(sender.draggingPasteboard)
+        guard !files.isEmpty else { return false }
+        let at = board(convert(sender.draggingLocation, from: nil))
+        for (index, file) in files.enumerated() {
+            studio.insert(picture: file, at: at + CGPoint(x: CGFloat(index) * 24, y: CGFloat(index) * 24))
+        }
+        window?.makeFirstResponder(self)
+        return true
+    }
+
+    /// Asks for image files and adds them in the middle of the view.
+    @objc func insertPicture(_ sender: Any?) {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.image]
+        panel.allowsMultipleSelection = true
+        guard panel.runModal() == .OK else { return }
+        let middle = board(CGPoint(x: bounds.midX, y: bounds.midY))
+        for (index, file) in panel.urls.enumerated() {
+            studio.insert(picture: file, at: middle + CGPoint(x: CGFloat(index) * 24, y: CGFloat(index) * 24))
         }
     }
 
@@ -668,8 +710,14 @@ final class Canvas: NSView, NSTextViewDelegate {
     }
 
     @objc func paste(_ sender: Any?) {
+        let middle = board(CGPoint(x: bounds.midX, y: bounds.midY))
         if let data = NSPasteboard.general.data(forType: Canvas.figuresType), let figures = try? JSONDecoder().decode([Figure].self, from: data) {
             place(figures, by: CGPoint(x: 24, y: 24))
+        } else if let file = pictures(NSPasteboard.general).first {
+            studio.insert(picture: file, at: middle)
+        } else if let image = NSImage(pasteboard: NSPasteboard.general), let tiff = image.tiffRepresentation,
+                  let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) {
+            studio.insert(png: png, at: middle)
         } else if let text = NSPasteboard.general.string(forType: .string), !text.isEmpty {
             var figure = Figure(kind: .text, points: [board(CGPoint(x: bounds.midX, y: bounds.midY))])
             studio.style.dress(&figure)

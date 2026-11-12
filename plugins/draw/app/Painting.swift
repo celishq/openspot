@@ -1,8 +1,11 @@
 import AppKit
 
 /// Draws the figures of a board into the current graphics context, which is flipped so that y goes down.
+@MainActor
 struct Painting {
     let board: Board
+    /// The folder of the board's images.
+    var assets: URL?
     /// Figures drawn faint, such as those the eraser has passed over.
     var faint: Set<UUID> = []
     /// Figures whose words are not drawn, because a field edits them.
@@ -41,7 +44,14 @@ struct Painting {
             }
             if !wordless.contains(figure.id) { label(figure) }
         case .text:
-            if !wordless.contains(figure.id) { figure.words.draw(in: figure.frame) }
+            if !wordless.contains(figure.id) { label(figure) }
+        case .image:
+            if let assets, let image = Painting.image(assets.appendingPathComponent(figure.source)) {
+                image.draw(in: figure.frame, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
+            } else {
+                context.setFillColor(NSColor(white: 0.94, alpha: 1).cgColor)
+                context.fill(figure.frame)
+            }
         case .pen:
             context.addPath(Painting.smooth(figure.points))
             context.strokePath()
@@ -62,13 +72,28 @@ struct Painting {
         }
     }
 
-    /// The words inside a shape, wrapped and centred.
+    /// The words of a shape or a text, wrapped, and placed as the figure aligns them.
     private func label(_ figure: Figure) {
         guard !figure.text.isEmpty else { return }
-        let box = figure.frame.insetBy(dx: 10, dy: 8)
+        let box = figure.kind == .text ? figure.frame : figure.frame.insetBy(dx: 10, dy: 8)
         let words = figure.words
         let size = words.boundingRect(with: CGSize(width: box.width, height: .greatestFiniteMagnitude), options: [.usesLineFragmentOrigin]).size
-        words.draw(with: CGRect(x: box.minX, y: box.midY - size.height / 2, width: box.width, height: size.height), options: [.usesLineFragmentOrigin])
+        let top: CGFloat = switch figure.place {
+        case .top: box.minY
+        case .middle: box.midY - size.height / 2
+        case .bottom: box.maxY - size.height
+        }
+        words.draw(with: CGRect(x: box.minX, y: top, width: box.width, height: size.height), options: [.usesLineFragmentOrigin])
+    }
+
+    /// The images read so far, by file.
+    private static var images: [URL: NSImage] = [:]
+
+    static func image(_ file: URL) -> NSImage? {
+        if let image = images[file] { return image }
+        guard let image = NSImage(contentsOf: file) else { return nil }
+        images[file] = image
+        return image
     }
 
     private func head(at tip: CGPoint, from back: CGPoint, width: CGFloat, in context: CGContext) {

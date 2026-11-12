@@ -24,6 +24,15 @@ struct Shelf {
         }.sorted { $0.edited > $1.edited }
     }
 
+    /// Gives a board a new title. A title of only spaces changes nothing.
+    func rename(_ file: URL, to title: String) throws {
+        let title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else { return }
+        var board = try Board.load(from: file)
+        board.title = title
+        try board.save(to: file)
+    }
+
     /// Writes a new empty board and returns its file.
     func make() throws -> URL {
         let file = folder.appendingPathComponent(UUID().uuidString.lowercased()).appendingPathExtension("json")
