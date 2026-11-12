@@ -214,7 +214,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testTheCPUTimeOfItsThreadCountsInItsUsage() async throws {
-        try inline(header: "on=sheet.open", "function main() { const end = Date.now() + 300; while (Date.now() < end) {} return 'row=a\\n' }")
+        try inline(header: "on=sheet.open", "function main() { let x = 0; for (let i = 0; i < 1e7; i++) { x = (x * 31 + i) % 1000003 } return 'row=a\\n' }")
         let sheet = try sheet()
         sheet.open {}
 
