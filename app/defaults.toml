@@ -61,3 +61,7 @@ grid = false
 [[spots]]
 id = "settings"
 grid = false
+
+[[spots]]
+id = "openspot/playground"
+grid = false
