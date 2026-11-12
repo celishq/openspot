@@ -36,6 +36,8 @@ public struct Spot: Equatable, Sendable {
     public let growsFromField: Bool
     /// How its script runs.
     public let mode: SpotMode
+    /// Whether Enter and a click on its card call `open` though it has a sheet, which ⌘ opens (`press=open`).
+    public let pressRuns: Bool
     /// The file extensions that its card takes, with `folder` and `*`.
     public let drop: [String]
     /// Whether its header offers it as a float, which the person can give a key or a shake (protocol: Places).
@@ -95,6 +97,7 @@ public struct Spot: Equatable, Sendable {
         host: HostSheet? = nil,
         growsFromField: Bool = false,
         mode: SpotMode = .once,
+        pressRuns: Bool = false,
         drop: [String] = [],
         offersFloat: Bool = false,
         dataName: String? = nil,
@@ -136,6 +139,7 @@ public struct Spot: Equatable, Sendable {
         self.host = host
         self.growsFromField = growsFromField
         self.mode = mode
+        self.pressRuns = pressRuns
         self.drop = drop
         self.offersFloat = offersFloat
         self.dataName = dataName
@@ -294,7 +298,7 @@ public struct Spot: Equatable, Sendable {
         switch kind {
         case .launch: return "Run"
         case .toggle: return "Toggle"
-        case .list: return "Open"
+        case .list: return pressRuns ? "Run" : "Open"
         case .slider: return nil
         case .widget: return opens == nil ? nil : "Open"
         }

@@ -32,6 +32,7 @@ Code and tests name a rule by its ID.
 | A28 | The actions menu and the right-click menu of a card list only acts on the selected card or row. An act of the whole app is a spot of its own, such as Spots or Settings. |
 | A22 | New spot has a small card on the grid after Settings. `⌘N` on the grid or in Edit Spots opens it, unless an action of the selected card takes the key. |
 | A23 | New spot is a list that the search field fills. Its first row, Copy prompt for AI, copies a prompt that asks an agent to build what the person typed as a new file in the plugins folder, and its toast says so. Openspot starts no agent and writes no file for it. A row for each starter writes a working spot called Untitled and opens its file in the text editor. `⌘K` opens the guide and the plugins folder. |
+| A29 | The arrows move the focus among the parts of a sheet that a person can use, in the order they are drawn: up and down between lines, to the part closest across, and left and right along a line. Return uses the focused part as a click does, and opens a menu as the system menu. A slider takes left and right, and a field keeps its text keys until its caret reaches its first or last line. Below rows, down on the last row moves to the parts, and up comes back. |
 | M2 | A `panel` or `sheet` moment takes an answer younger than 5 seconds. A change, a number and a wake always read. |
 | M3 | Reads run at the same time. The panel never waits for one script. A spot shows its header until its answer arrives. |
 | C4 | Openspot waits for a pause before it sends a change of text or of a slider. Text that the person types stays as typed until they press something. |
@@ -171,6 +172,7 @@ The verbs and the row keys of each `openspot` noun, such as `screen` or `calenda
 | The app's events are default ids, and `read` is the only reserved call.                                     | A verb for each kind of call.                |
 | A call is the id, its row and its values; what the person typed is on stdin.                                | The search text and its forms as arguments of `read`. |
 | A press of a card with no sheet is `open` with no row.                                                      | A `run` id beside `open`.                    |
+| `press=open` lets a spot run at a press and keep its sheet for settings, behind `⌘` (protocol: The main block and the card). | A run button in its sheet, which costs a second press. |
 | The first key names the kind of a block.                                                                    | A kind found from any key.                   |
 | The header is a frame in comments, and its blocks are kinds of the output: `button` and `field`.            | `command` and `setting` blocks of the header alone. |
 | Each kind keeps its data in `value`.                                                                        | `point`, `on`, `level` and `text` by kind.   |

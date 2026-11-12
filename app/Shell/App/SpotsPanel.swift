@@ -195,7 +195,7 @@ final class SpotsPanel: NSPanel {
                 }
                 return
             }
-            if let key = Self.actionKey(of: event), model?.handleKey(key) == true { return }
+            if let key = Self.actionKey(of: event), !textKeepsArrow(key), model?.handleKey(key) == true { return }
             if model?.handleChain(code: UInt32(event.keyCode), modifiers: Self.modifiers(of: event.modifierFlags)) == true { return }
         }
         super.sendEvent(event)
@@ -217,6 +217,18 @@ final class SpotsPanel: NSPanel {
     /// Where the pointer of this event lies in the panel, from its top left corner.
     private func panelPoint(of event: NSEvent) -> CGPoint {
         CGPoint(x: event.locationInWindow.x, y: (contentView?.bounds.height ?? 0) - event.locationInWindow.y)
+    }
+
+    /// Whether the text view that has the focus keeps an up or down arrow: up while its caret lies below its first line, and
+    /// down while it lies above its last. At an edge, the arrow moves the focus to the next part of the sheet.
+    private func textKeepsArrow(_ key: ActionKey) -> Bool {
+        guard key == ActionKey(name: "up") || key == ActionKey(name: "down"),
+              let text = firstResponder as? NSTextView, text.isEditable, !text.isFieldEditor
+        else { return false }
+        let line = { (location: Int) in text.firstRect(forCharacterRange: NSRange(location: location, length: 0), actualRange: nil).midY }
+        let caret = line(text.selectedRange().location)
+        let edge = line(key.name == "up" ? 0 : (text.string as NSString).length)
+        return abs(caret - edge) > 1
     }
 
     private static func modifiers(of flags: NSEvent.ModifierFlags) -> Shortcut.Modifiers {

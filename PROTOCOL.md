@@ -74,6 +74,7 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `preview`     | `sample`: when `OPENSPOT_REASON` is `spot.preview`, the spot prints sample data for the store.                                   |
 | `view`        | A SwiftUI file next to the spot, such as `view=cups.swift`. See [Views](#views).                                                 |
 | `mode`        | `once` (the default), `stay` or `always`. See [Modes](#modes).                                                                   |
+| `press`       | `open`: a press of the card sends `<spot> open` though the spot has a sheet, which `⌘` opens. `sheet` is the default.            |
 | `uses`        | What the spot uses, split by commas: `app`, `spots`, `screen`, `clipboard`, `calendar`, `network`, `files`. See [Trust](#trust). |
 | `grid.<size>` | A card made of other spots. Each word is a spot id. See [Cards of other spots](#cards-of-other-spots).                           |
 | `to`          | The spot that opens when the user presses a card of other spots. See [Cards of other spots](#cards-of-other-spots).              |
@@ -312,7 +313,8 @@ The main block stands for the spot on its card and in the menu bar.
   sheet.
 - When a frame holds only one `switch` or one slider, the card draws it, and a press of the card changes it. A card
   that is a switch is active while the switch is on.
-- A press on the card outside a control opens the sheet, or sends `<spot> open` when there's no sheet.
+- A press on the card outside a control opens the sheet, or sends `<spot> open` when there's no sheet or the header has
+  `press=open`. With `press=open`, a press with `⌘` opens the sheet.
 
 ## Events
 
@@ -361,14 +363,14 @@ An event makes Openspot ask a spot what to show. The header lists the events whe
 A call asks a spot to do one thing. It works like a CGI call: arguments, variables and stdin go in, and a frame comes
 out.
 
-| Call                               | When                                                  |
-| ---------------------------------- | ----------------------------------------------------- |
-| `<spot> read`                      | An event that its header lists.                       |
-| `<spot> open [row id]`             | A pick of a row, or a press of a card with no sheet.  |
-| `<spot> <id> [row id] [value]`     | A change or a press of a block.                       |
-| `<spot> drop <path> [path]...`     | A drop of files on its card.                          |
-| `<spot> drag <row id> [row id]...` | A drag of rows that stand for files out of its sheet. |
-| `<spot> <command>`                 | A press of the hotkey the user gave a command.        |
+| Call                               | When                                                                      |
+| ---------------------------------- | ------------------------------------------------------------------------- |
+| `<spot> read`                      | An event that its header lists.                                           |
+| `<spot> open [row id]`             | A pick of a row, or a press of a card with no sheet or with `press=open`. |
+| `<spot> <id> [row id] [value]`     | A change or a press of a block.                                           |
+| `<spot> drop <path> [path]...`     | A drop of files on its card.                                              |
+| `<spot> drag <row id> [row id]...` | A drag of rows that stand for files out of its sheet.                     |
+| `<spot> <command>`                 | A press of the hotkey the user gave a command.                            |
 
 - `read` is the only reserved call. `open`, `drop` and `drag` are default ids. A block can't use them, but a button can
   use `open`.

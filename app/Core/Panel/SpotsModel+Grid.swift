@@ -36,11 +36,12 @@ extension SpotsModel {
         return index == selected ? .focused : .faded
     }
 
-    /// Runs the card, unless the open menu owns the pointer, as after a force press whose click ends on the card.
-    public func tap(_ id: String) {
+    /// Runs the card, unless the open menu owns the pointer, as after a force press whose click ends on the card. A click
+    /// with ⌘ opens the sheet of a spot whose press runs it (`press=open`).
+    public func tap(_ id: String, opening: Bool = false) {
         guard !menuOwnsPointer, let position = visible.firstIndex(where: { $0.id == id }) else { return }
         selected = position
-        runSelected()
+        if !opening || !openSelected() { runSelected() }
     }
 
     public func setLevel(_ id: String, to value: Double) {
@@ -69,6 +70,15 @@ extension SpotsModel {
         run(entry)
     }
 
+    /// Takes ⌘ with Enter. On the grid, it opens the sheet of the selected spot whose Enter runs it (`press=open`). Returns
+    /// false for any other spot, or away from the grid, so that the key goes on to the actions and the forms.
+    @discardableResult
+    public func openSelected() -> Bool {
+        guard isOnGrid, let entry = selectedEntry, entry.item == nil, entry.spot.pressRuns, entry.kind.opensSheet else { return false }
+        open(entry.id, moving: true)
+        return true
+    }
+
     /// Runs a command by its key, with the panel open only when its spot needs it.
     public func press(_ id: String) {
         guard let entry = entries.first(where: { $0.id == id }) else { return }
@@ -76,7 +86,7 @@ extension SpotsModel {
             sheet.afterAnswer { [weak self] in self?.press(id) }
             return
         }
-        guard entry.kind.opensSheet else {
+        guard entry.kind.opensSheet, !entry.spot.pressRuns else {
             run(entry)
             return
         }
@@ -141,6 +151,9 @@ extension SpotsModel {
             sheets[entry.id]?.pressCard()
         case .launch:
             if isShown, sheets[entry.id]?.isCardRunning != true, !entry.spot.takesDrops { host.dismiss() }
+            sheets[entry.id]?.pressCard()
+        case .list where entry.spot.pressRuns:
+            if isShown, sheets[entry.id]?.isCardRunning != true { host.dismiss() }
             sheets[entry.id]?.pressCard()
         case .list:
             if openList == entry.id {

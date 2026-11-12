@@ -77,6 +77,8 @@ public struct SpotFile: Equatable, Sendable {
             }
             return offer
         }
+        let press = header.value("press") ?? "sheet"
+        guard ["sheet", "open"].contains(press) else { throw SpotError.fault("\(name) has an unknown press: \(press). Use open or sheet") }
         let view = header.value("view")
         if let view, URL(fileURLWithPath: view).pathExtension != SwiftProgram.sourceExtension {
             throw SpotError.fault("\(name) needs a Swift file for its view, such as view=\(url.deletingPathExtension().lastPathComponent).swift")
@@ -101,6 +103,7 @@ public struct SpotFile: Equatable, Sendable {
             isFound: !answersOnly,
             answers: answers,
             mode: mode,
+            pressRuns: press == "open",
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
             offersFloat: kind == .list,
             dataName: id.split(separator: "/").first.map(String.init),

@@ -700,6 +700,126 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.visible.map(\.id), ["other"])
     }
 
+    /// Opens a sheet that a script prints on each read. The script writes each other call to the returned file.
+    private func openParts(_ sheet: String) async throws -> URL {
+        let calls = folder.appendingPathComponent("calls")
+        try script("parts", header: "on=sheet.open", "if [ \"$1\" = read ]; then printf '\(sheet)'; else echo \"$@\" >> '\(calls.path)'; fi")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.open("parts", moving: true)
+        try await wait("the open sheet") { model.openList == "parts" && model.openPanel != nil }
+        return calls
+    }
+
+    private func calls(in file: URL) -> [String] {
+        ((try? String(contentsOf: file, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init)
+    }
+
+    func testReturnOpensAFocusedMenuAndPressesAFocusedButton() async throws {
+        let calls = try await openParts(
+            "grid=look look\\ngrid=key key\\ngrid=make play\\n\\nchoice=look\\nvalue=a\\n\\noption=a\\ntitle=A\\n\\noption=b\\ntitle=B\\n\\n"
+                + "field=key\\ntype=hotkey\\nvalue=option+c\\n\\nbutton=make\\ntitle=Make\\n\\nbutton=play\\ntitle=Play\\n\\nbutton=paste\\ntitle=Paste\\n"
+        )
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+        XCTAssertEqual(model.sheets["parts"]?.menuOpening?.part, "look")
+        for name in ["down", "down", "right"] { XCTAssertTrue(model.handleKey(ActionKey(name: name))) }
+        XCTAssertEqual(model.openPanel?.selectedPart?.id, "play")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+
+        try await wait("the press of play") { self.calls(in: calls) == ["play"] }
+    }
+
+    func testAKeyPressedWhileTheShortcutRowOnlyHasTheFocusIsNotRecorded() async throws {
+        let calls = try await openParts("grid=key\\n\\nfield=key\\ntype=hotkey\\nvalue=option+c\\n")
+
+        XCTAssertEqual(model.openPanel?.selectedPart?.id, "key")
+        XCTAssertFalse(model.handleKey(ActionKey(name: "c", isCommand: true)))
+        XCTAssertNil(model.recording)
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+        XCTAssertEqual(model.recording, "key")
+        model.stopRecording()
+        XCTAssertEqual(self.calls(in: calls), [])
+    }
+
+    func testTheSideArrowsStepAFocusedSliderAndLeaveAFieldItsText() async throws {
+        _ = try await openParts("grid=level\\ngrid=note\\n\\nfield=level\\ntype=slider\\nvalue=50\\n\\nfield=note\\nvalue=Hi\\n")
+
+        XCTAssertFalse(model.handleKey(ActionKey(name: "right")))
+        XCTAssertFalse(model.handleKey(ActionKey(name: "return")))
+        XCTAssertFalse(model.handleKey(ActionKey(name: "down")))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "up")))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "right")))
+        XCTAssertEqual(model.openPanel?.parts.first?.value, "55")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "left")))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "left")))
+        XCTAssertEqual(model.openPanel?.parts.first?.value, "45")
+    }
+
+    func testDownOnTheLastRowReachesTheButtonBelowAndUpComesBack() async throws {
+        let calls = try await openParts(
+            "grid=list\\ngrid=add\\n\\nrepeat=list\\n\\nbutton=add\\ntitle=Add\\n\\nrow=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n"
+        )
+        try await wait("the rows") { model.openItems?.shown.count == 2 }
+
+        XCTAssertFalse(model.handleKey(ActionKey(name: "down")))
+        model.moveItemLine(by: 1)
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+        XCTAssertEqual(model.openPanel?.selectedPart?.id, "add")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+        try await wait("the press of add") { self.calls(in: calls) == ["add"] }
+        XCTAssertTrue(model.handleKey(ActionKey(name: "up")))
+        XCTAssertNil(model.openPanel?.selectedPart)
+        XCTAssertEqual(model.openItems?.selected, 1)
+    }
+
+    func testEnterRunsASpotWithPressOpenAndCommandEnterOpensItsSheet() async throws {
+        let log = folder.appendingPathComponent("calls")
+        try script("conf", header: "on=sheet.open\npress=open", "if [ \"$1\" = read ]; then printf 'row=a\\ntitle=A\\n'; else echo \"$@\" >> '\(log.path)'; fi")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        let calls = { ((try? String(contentsOf: log, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init) }
+
+        XCTAssertEqual(model.hint, "⏎ Run   ⌘⏎ Settings   ⌘K Actions")
+        model.pressHint("⏎")
+        try await wait("the run") { calls() == ["open"] }
+        XCTAssertNil(model.openList)
+        XCTAssertEqual(host.dismissals, 1)
+
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
+        try await wait("the sheet") { model.openList == "conf" }
+        XCTAssertFalse(model.openSelected())
+        XCTAssertEqual(calls(), ["open"])
+    }
+
+    func testAClickWithCommandOpensTheSheetOfASpotWithPressOpen() async throws {
+        let log = folder.appendingPathComponent("calls")
+        try script("conf", header: "on=sheet.open\npress=open", "if [ \"$1\" = read ]; then printf 'row=a\\ntitle=A\\n'; else echo \"$@\" >> '\(log.path)'; fi")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+
+        model.tap("conf", opening: true)
+
+        try await wait("the sheet") { model.openList == "conf" }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: log.path))
+    }
+
+    func testCommandEnterLeavesASpotWithNoPressOpenToItsActions() async throws {
+        try script("list", header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+
+        XCTAssertFalse(model.hint.contains("Settings"))
+        XCTAssertFalse(model.handleKey(ActionKey(name: "return", isCommand: true)))
+        XCTAssertNil(model.openList)
+    }
+
     func testTheGridSearchFindsAGlobalSpotWithNoKeyBesideARowOfTheSameName() async throws {
         try script("apps", header: "title=Apps\non=panel.open\noffers=search", "printf 'row=shortcuts\\ntitle=Shortcuts\\n'")
         try script("shortcuts", header: "title=Shortcuts\non=panel.open\noffers=search", "printf 'row=daily\\ntitle=Daily\\n'")
