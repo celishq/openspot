@@ -30,6 +30,12 @@ extension SpotsModel {
         sheets[entry.id]?.setLevel((entry.state.level ?? 0) + delta)
     }
 
+    /// How the card at this index shows: forward while its menu is open on the grid, faded while another card's is.
+    public func focus(ofCard index: Int) -> CardFocus {
+        guard menu != nil, openList == nil else { return .none }
+        return index == selected ? .focused : .faded
+    }
+
     /// Selects the card that the pointer moved onto. An open menu and Edit Spots keep their selection.
     public func pointCard(_ id: String) {
         guard menu == nil, !isEditing, let position = visible.firstIndex(where: { $0.id == id }) else { return }

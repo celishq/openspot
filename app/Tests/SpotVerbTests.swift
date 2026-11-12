@@ -180,6 +180,22 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertEqual(model.selectedEntry?.id, "clock")
     }
 
+    func testTheCardOfTheOpenMenuIsFocusedAndTheOthersFaded() throws {
+        try script("weather", header: "title=Weather")
+        try script("clock", header: "title=Clock")
+        _ = try select("weather")
+        let weather = try XCTUnwrap(model.visible.firstIndex { $0.id == "weather" })
+        let clock = try XCTUnwrap(model.visible.firstIndex { $0.id == "clock" })
+        XCTAssertEqual(model.focus(ofCard: weather), .none)
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+
+        XCTAssertEqual(model.focus(ofCard: weather), .focused)
+        XCTAssertEqual(model.focus(ofCard: clock), .faded)
+        model.closeMenu()
+        XCTAssertEqual(model.focus(ofCard: clock), .none)
+    }
+
     func testEditOpensTheFileInTheTextEditor() async throws {
         try script("weather")
         _ = try select("weather")
