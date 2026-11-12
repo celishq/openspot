@@ -273,4 +273,17 @@ final class SpotOutputTests: XCTestCase {
         XCTAssertEqual(output.parts.map(\.look), [nil, nil, nil, .tick, nil])
         XCTAssertEqual(output.errors, ["gauge=old"])
     }
+
+    func testEachOldOutputWordNamesTheWordThatTookItsPlace() {
+        let output = SpotOutput(text: "gauge=g\nvalue=1\n\nslider=s\nvalue=4\n\nhotkey=k\nvalue=ctrl+k\n\nswitch=t\nlook=tick\n")
+
+        XCTAssertEqual(output.retired, [
+            "gauge=g is now a graph. Write graph=g with one value from 0 to 1.",
+            "slider=s is now a field. Write field=s with type=slider.",
+            "hotkey=k is now a field. Write field=k with type=hotkey.",
+            "The switch t has look=tick, which Openspot no longer reads. Write type=tick."
+        ])
+        XCTAssertEqual(output.sheetFaults.filter { $0.contains("cannot read the block") }, [])
+        XCTAssertTrue(output.sheetFaults.contains("slider=s is now a field. Write field=s with type=slider."))
+    }
 }

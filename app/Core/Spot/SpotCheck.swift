@@ -78,7 +78,8 @@ public struct SpotCheck: Sendable {
                 let output = SpotOutput(text: text)
                 _ = try script.state(of: output)
                 if script.read?.seconds != nil, MetricValue(output: output) == nil { throw SpotError.badMetric }
-                findings += output.errors.map { found("cannot read the item \($0)") }
+                findings += output.retired.map(found)
+                findings += output.unreadable.map { found("cannot read the item \($0)") }
                 findings += Self.brokenBlocks(in: text).map(found)
                 findings += output.partFaults.map(found)
             } catch {

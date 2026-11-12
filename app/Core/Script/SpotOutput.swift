@@ -17,6 +17,8 @@ public struct SpotOutput: Equatable, Sendable {
     public private(set) var pickForm: CommandAction?
     public private(set) var parts: [SpotPart] = []
     public private(set) var errors: [String] = []
+    /// Each word of an older protocol that the output prints, with the word that took its place.
+    public private(set) var retired: [String] = []
     public private(set) var layout: SheetLayout?
     /// The block of the component that stands for the spot (protocol: The main block and the card): the one that `main=<id>` in the head names, or else the
     /// only `text`, `gauge`, `graph`, `switch` or `slider`.
@@ -95,7 +97,25 @@ public struct SpotOutput: Equatable, Sendable {
     }
 
     public init(text: String) {
-        self.init(blocks: TextBlock.blocks(in: text).map(Self.drawn), checks: false)
+        let blocks = TextBlock.blocks(in: text)
+        self.init(blocks: blocks.map(Self.drawn), checks: false)
+        retired = blocks.compactMap(Self.retiredWord)
+    }
+
+    /// The fault of a block that prints a word of an older protocol, which names the word that took its place.
+    private static func retiredWord(of block: TextBlock) -> String? {
+        guard let first = block.fields.first else { return nil }
+        switch first.key {
+        case "gauge": return "gauge=\(first.value) is now a graph. Write graph=\(first.value) with one value from 0 to 1."
+        case "slider", "hotkey": return "\(first.key)=\(first.value) is now a field. Write field=\(first.value) with type=\(first.key)."
+        case "switch" where block.value("look") == "tick": return "The switch \(first.value) has look=tick, which Openspot no longer reads. Write type=tick."
+        default: return nil
+        }
+    }
+
+    /// The errors of blocks that are no word of an older protocol, which `retired` names apart.
+    var unreadable: [String] {
+        errors.filter { line in !Self.foldedKinds.contains(String(line.prefix { $0 != "=" })) }
     }
 
     /// Reads a frame on another thread, so that a panel or a sheet in motion keeps its frames.
@@ -280,7 +300,7 @@ public struct SpotOutput: Equatable, Sendable {
 
     /// All that is wrong with this output as one sheet of parts.
     public var sheetFaults: [String] {
-        (parts.isEmpty && perLine == nil ? ["the sheet has no parts"] : []) + errors.map { "cannot read the block that starts: \($0)" } + partFaults
+        (parts.isEmpty && perLine == nil ? ["the sheet has no parts"] : []) + retired + unreadable.map { "cannot read the block that starts: \($0)" } + partFaults
     }
 
     /// The kind of spot that this output makes.
