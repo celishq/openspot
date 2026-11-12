@@ -17,13 +17,11 @@ final class SpotOutputTests: XCTestCase {
         XCTAssertEqual(kept.toast, "Hi")
     }
 
-    func testAScriptPrintsWhoSearchesItsRowsAndWhetherRecentPicksMoveUp() {
+    func testAScriptPrintsWhetherRecentPicksMoveUp() {
         let plain = SpotOutput(text: "row=a\ntitle=A\n")
-        let printed = SpotOutput(text: "search=script\nrecents=false\n\nrow=a\ntitle=A\n")
+        let printed = SpotOutput(text: "recents=false\n\nrow=a\ntitle=A\n")
 
-        XCTAssertEqual(plain.search, .local)
         XCTAssertTrue(plain.keepsRecent)
-        XCTAssertEqual(printed.search, .script)
         XCTAssertFalse(printed.keepsRecent)
         XCTAssertEqual(printed.errors, [])
     }

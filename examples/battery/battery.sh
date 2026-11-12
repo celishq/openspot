@@ -2,7 +2,7 @@
 # title=Liquid battery
 # icon=battery.100
 # detail=The battery as a liquid, drawn by a Metal shader
-# read=panel
+# on=panel.open
 # size=strip
 # view=battery.swift
 [ "$1" = read ] || exit 0

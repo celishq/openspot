@@ -58,7 +58,7 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testAnInlineSpotShowsItsTextAndRunsOnlyWhenItIsUsed() throws {
-        let review = try ReviewSpot(spot: spot([("sum.js", "// title=Sum\n// mode=inline\n// read=panel\nfunction main() { return '' }\n", false)]), folder: folder)
+        let review = try ReviewSpot(spot: spot([("sum.js", "// title=Sum\n// mode=inline\n// on=panel.open\nfunction main() { return '' }\n", false)]), folder: folder)
 
         let text = try shown(review)
 
@@ -114,7 +114,7 @@ final class ReviewSpotTests: XCTestCase {
 
     func testAWidgetNamesItselfBeforeTheMetricsItPlaces() throws {
         let widget = "[[widgets]]\ntitle = \"Desk\"\ngrid = [\"cpu\"]\nsize = \"square\"\n"
-        let review = try ReviewSpot(spot: spot([("board.toml", widget, false), ("cpu.sh", "#!/bin/sh\n# title=CPU\n# every=5\n", true)]), folder: folder)
+        let review = try ReviewSpot(spot: spot([("board.toml", widget, false), ("cpu.sh", "#!/bin/sh\n# title=CPU\n# on=clock.5\n", true)]), folder: folder)
 
         XCTAssertEqual(review.name, "Desk")
     }
@@ -159,7 +159,7 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testAPlainScriptRunsOnlyWhenItIsUsed() throws {
-        let review = try review("title=Weather\nread=sheet")
+        let review = try review("title=Weather\non=sheet.open")
 
         XCTAssertEqual(review.subtitle, "Runs only when you use it")
         let text = try shown(review)
@@ -168,7 +168,7 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testItSaysWhatRunsByItself() throws {
-        let review = try review("title=Weather\nread=panel\nevery=30")
+        let review = try review("title=Weather\non=panel.open\non=clock.30")
 
         XCTAssertEqual(review.subtitle, "Runs by itself")
         let text = try shown(review)
@@ -253,7 +253,7 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testAStayingScriptSaysSo() throws {
-        let review = try review("title=Weather\nmode=stay\nread=sheet")
+        let review = try review("title=Weather\nmode=stay\non=sheet.open")
 
         let text = try shown(review)
         XCTAssertTrue(text.contains("Weather: keeps running while it is in use"), text)
@@ -269,7 +269,7 @@ final class ReviewSpotTests: XCTestCase {
     func testAMetricThatAWidgetPlacesRunsWhenThePanelOpens() throws {
         let widget = "[[widgets]]\ntitle = \"Desk\"\ngrid = [\"cpu\"]\nsize = \"square\"\n"
         let review = try ReviewSpot(
-            spot: spot([("board.toml", widget, false), ("cpu.sh", "#!/bin/sh\n# title=CPU\n# read=sheet\n", true)]),
+            spot: spot([("board.toml", widget, false), ("cpu.sh", "#!/bin/sh\n# title=CPU\n# on=sheet.open\n", true)]),
             folder: folder
         )
 
@@ -306,7 +306,7 @@ final class ReviewSpotTests: XCTestCase {
         )
 
         let text = try shown(review)
-        XCTAssertTrue(text.contains("Will not load\nbad: Bad has an unknown read: never."), text)
+        XCTAssertTrue(text.contains("Will not load\nbad: Bad has read=never, which Openspot no longer reads."), text)
     }
 
     func testAClashWithAFolderIsRefusedBeforeTheReviewShows() throws {
@@ -325,7 +325,7 @@ final class ReviewSpotTests: XCTestCase {
 
     func testNoScriptRunsForAReviewOrForAdd() async throws {
         let mark = folder.appendingPathComponent("ran")
-        let review = try filed("read=panel", body: "touch \"\(mark.path)\"\n")
+        let review = try filed("on=panel.open", body: "touch \"\(mark.path)\"\n")
         _ = try review.answer(["read"])
 
         _ = try await review.add()

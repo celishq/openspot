@@ -206,9 +206,9 @@ final class SpotFolderTests: XCTestCase {
     }
 
     func testReadSaysWhatKindOfSpotItIsBeforeAnyRun() throws {
-        try write("a.sh", header: "read=sheet")
-        try write("b.sh", header: "read=panel")
-        try write("c.sh", header: "read=panel\noffers=search")
+        try write("a.sh", header: "on=sheet.open")
+        try write("b.sh", header: "on=panel.open")
+        try write("c.sh", header: "on=panel.open\noffers=search")
 
         let commands = try scan.spots
 
@@ -218,7 +218,7 @@ final class SpotFolderTests: XCTestCase {
     }
 
     func testReadIsAListOfPlacesBesideItsSeconds() throws {
-        try write("a.sh", header: "read=panel, sheet\nevery=30")
+        try write("a.sh", header: "on=panel.open\non=sheet.open\non=clock.30")
 
         let read = try XCTUnwrap(try scan.spots.first?.read)
 
@@ -226,14 +226,18 @@ final class SpotFolderTests: XCTestCase {
         XCTAssertEqual(read.seconds, 30)
     }
 
-    func testRefusesTheLaunchAndWakeMoments() throws {
+    func testRefusesTheOldReadKeysAndNamesTheEvents() throws {
         try write("a.sh", header: "read=launch")
-        try write("b.sh", header: "read=panel,wake")
+        try write("b.sh", header: "read=panel,sheet")
+        try write("c.sh", header: "every=30")
+        try write("d.sh", header: "answers=^[0-9]")
 
         XCTAssertEqual(try scan.files, [])
         XCTAssertEqual(try scan.refused, [
-            ScanResult.Refusal(file: "a", reason: "A has an unknown read: launch. Use sheet or panel"),
-            ScanResult.Refusal(file: "b", reason: "B has an unknown read: wake. Use sheet or panel")
+            ScanResult.Refusal(file: "a", reason: "A has read=launch, which Openspot no longer reads. Write an event, such as on=sheet.open"),
+            ScanResult.Refusal(file: "b", reason: "B has read=panel,sheet, which Openspot no longer reads. Write on=panel.open and on=sheet.open"),
+            ScanResult.Refusal(file: "c", reason: "C has every=30, which Openspot no longer reads. Write on=clock.30"),
+            ScanResult.Refusal(file: "d", reason: "D has answers=^[0-9], which Openspot no longer reads. Write on=search.text ^[0-9]")
         ])
     }
 
@@ -279,7 +283,7 @@ final class SpotFolderTests: XCTestCase {
     }
 
     func testANumberInAListOfMomentsStartsTheSpotOffTheGrid() throws {
-        try write("a.sh", header: "read=panel\nevery=30")
+        try write("a.sh", header: "on=panel.open\non=clock.30")
 
         let scan = try scan
 
@@ -302,15 +306,15 @@ final class SpotFolderTests: XCTestCase {
     }
 
     func testASpotThatOffersSearchHasACardAndOneThatOffersRowsHasNone() throws {
-        try write("a.sh", header: "read=panel\noffers=search")
-        try write("b.sh", header: "read=panel\noffers=rows")
+        try write("a.sh", header: "on=panel.open\noffers=search")
+        try write("b.sh", header: "on=panel.open\noffers=rows")
 
         XCTAssertEqual(try scan.spots.map(\.headerState.isOnGrid), [true, false])
     }
 
     func testTheMainSearchNeedsAMomentOutsideTheSheet() throws {
-        try write("a.sh", header: "read=panel\noffers=search")
-        try write("c.sh", header: "every=30\noffers=search")
+        try write("a.sh", header: "on=panel.open\noffers=search")
+        try write("c.sh", header: "on=clock.30\noffers=search")
 
         XCTAssertEqual(try scan.refused, [])
         XCTAssertEqual(try scan.spots.map(\.isGlobal), [true, true])
@@ -318,7 +322,7 @@ final class SpotFolderTests: XCTestCase {
     }
 
     func testANumberAsTheReadIsAMetricWhoseCardStartsOffTheGrid() throws {
-        try write("cups.sh", header: "title=Cups\nicon=cup.and.saucer\nevery=30")
+        try write("cups.sh", header: "title=Cups\nicon=cup.and.saucer\non=clock.30")
 
         let scan = try scan
         let metric = try XCTUnwrap(scan.metrics.first)
@@ -332,7 +336,7 @@ final class SpotFolderTests: XCTestCase {
     }
 
     func testAMetricIsAlsoAList() throws {
-        try write("pulls.sh", header: "every=120")
+        try write("pulls.sh", header: "on=clock.120")
 
         let scan = try scan
 
@@ -352,9 +356,9 @@ final class SpotFolderTests: XCTestCase {
     }
 
     func testAScriptThatAWidgetOpensHasNoCardOnTheGrid() throws {
-        try write("details.sh", header: "read=panel")
-        try write("other.sh", header: "read=panel")
-        try write("cpu.sh", header: "every=60")
+        try write("details.sh", header: "on=panel.open")
+        try write("other.sh", header: "on=panel.open")
+        try write("cpu.sh", header: "on=clock.60")
         try "[[widgets]]\ntitle = \"Box\"\ngrid = [\"cpu\"]\nsize = \"square\"\nopens = \"details\"\n".write(to: folder.appendingPathComponent("box.toml"), atomically: true, encoding: .utf8)
 
         let commands = try scan.spots
@@ -368,38 +372,38 @@ final class SpotFolderTests: XCTestCase {
         try write("b.sh", header: "size=huge")
         try write("c.sh", header: "shortcut=ctrl+d")
         try write("f.sh", header: "offers=search")
-        try write("h.sh", header: "read=sheet\noffers=search")
+        try write("h.sh", header: "on=sheet.open\noffers=search")
         try write("j.sh", header: "read=open")
         try write("k.sh", header: "read=click")
         try write("l.sh", header: "read=panel,later")
 
         XCTAssertEqual(try scan.files, [])
         XCTAssertEqual(try scan.refused, [
-            ScanResult.Refusal(file: "a", reason: "A has an unknown read: sometimes. Use sheet or panel"),
+            ScanResult.Refusal(file: "a", reason: "A has read=sometimes, which Openspot no longer reads. Write an event, such as on=sheet.open"),
             ScanResult.Refusal(file: "b", reason: "B has an unknown size: huge"),
             ScanResult.Refusal(file: "c", reason: "C has shortcut, which Openspot no longer reads. The person gives each spot its letter in Edit Spots"),
-            ScanResult.Refusal(file: "f", reason: "F needs read=panel or an every to join the main search"),
-            ScanResult.Refusal(file: "h", reason: "H needs read=panel or an every to join the main search"),
-            ScanResult.Refusal(file: "j", reason: "J has an unknown read: open. Use sheet or panel"),
-            ScanResult.Refusal(file: "k", reason: "K has an unknown read: click. Use sheet or panel"),
-            ScanResult.Refusal(file: "l", reason: "L has an unknown read: later. Use sheet or panel")
+            ScanResult.Refusal(file: "f", reason: "F needs on=panel.open or a clock, such as on=clock.60, to join the main search"),
+            ScanResult.Refusal(file: "h", reason: "H needs on=panel.open or a clock, such as on=clock.60, to join the main search"),
+            ScanResult.Refusal(file: "j", reason: "J has read=open, which Openspot no longer reads. Write an event, such as on=sheet.open"),
+            ScanResult.Refusal(file: "k", reason: "K has read=click, which Openspot no longer reads. Write an event, such as on=sheet.open"),
+            ScanResult.Refusal(file: "l", reason: "L has read=panel,later, which Openspot no longer reads. Write on=panel.open")
         ])
     }
 
     func testRefusesAnAnswersPatternThatIsNoneAndTakesOneThatStays() throws {
-        try write("m.sh", header: "answers=[0-9")
-        try write("n.sh", header: "answers=^[0-9]\nmode=stay")
-        try write("o.sh", header: "answers=^[0-9]\nmode=always")
+        try write("m.sh", header: "on=search.text [0-9")
+        try write("n.sh", header: "on=search.text ^[0-9]\nmode=stay")
+        try write("o.sh", header: "on=search.text ^[0-9]\nmode=always")
 
         XCTAssertEqual(try scan.spots.map(\.id), ["n", "o"])
         XCTAssertEqual(try scan.refused, [
-            ScanResult.Refusal(file: "m", reason: "M has an unknown answers pattern: [0-9. Write a regular expression, such as answers=^[0-9]"),
+            ScanResult.Refusal(file: "m", reason: "M has an unknown filter in on=search.text [0-9. Write a regular expression after the event, such as on=search.text ^[0-9]"),
         ])
     }
 
     func testASpotThatOnlyAnswersTheSearchHasNoCardAndIsNotFound() throws {
-        try write("calc.sh", header: "answers=^[0-9]")
-        try write("dict.sh", header: "read=sheet\nanswers=^define ")
+        try write("calc.sh", header: "on=search.text ^[0-9]")
+        try write("dict.sh", header: "on=sheet.open\non=search.text ^define ")
 
         let commands = try scan.spots
         let calc = commands.first { $0.id == "calc" }
@@ -416,7 +420,7 @@ final class SpotFolderTests: XCTestCase {
 
     func testAScanDoesNotRunAScript() throws {
         let marker = folder.appendingPathComponent("marker")
-        try write("one.sh", header: "read=panel", body: "touch '\(marker.path)'")
+        try write("one.sh", header: "on=panel.open", body: "touch '\(marker.path)'")
         try write("two.sh", body: "touch '\(marker.path)'")
 
         _ = try scan

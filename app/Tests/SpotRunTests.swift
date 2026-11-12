@@ -18,12 +18,12 @@ final class SpotRunTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func make(name: String = "script", _ body: String, mode: SpotMode = .once, read: SpotRead? = nil) throws -> SpotRun {
+    private func make(name: String = "script", searches: Bool = false, _ body: String, mode: SpotMode = .once, read: SpotRead? = nil) throws -> SpotRun {
         let url = folder.appendingPathComponent("\(name).sh")
         try "#!/bin/sh\n\(body)\n".writeScript(to: url)
         let made = SpotRuns()
         runs.append(made)
-        return made.sheet(for: Spot(id: name, name: name, url: url, kind: .list, read: read ?? (mode.stays ? nil : .sheet), mode: mode))
+        return made.sheet(for: Spot(id: name, name: name, url: url, kind: .list, read: read ?? (mode.stays ? nil : SpotRead(moments: [.sheet], searchesSheet: searches)), mode: mode))
     }
 
     private func path(_ name: String) -> String {
@@ -416,7 +416,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAScriptThatSearchesGetsReadWithTheText() async throws {
-        let sheet = try make("printf 'search=script\\n\\nrow=a\\ntitle=%s:%s\\n' \"$1\" \"$2\"")
+        let sheet = try make(searches: true, "printf 'row=a\\ntitle=%s:%s\\n' \"$1\" \"$2\"")
         sheet.open {}
         try await wait("the first answer") { sheet.list.shown.map(\.title) == ["read:"] }
 
@@ -426,9 +426,9 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAReadWithNoTextGivesAScriptThatSearchesANewValue() async throws {
-        let sheet = try make("""
+        let sheet = try make(searches: true, """
         echo x >> '\(path("reads"))'
-        printf 'search=script\\n\\nnumber=next\\nvalue=%s\\ntitle=Next\\n\\nrow=a\\ntitle=A\\n' "$(wc -l < '\(path("reads"))' | tr -d ' ')"
+        printf 'number=next\\nvalue=%s\\ntitle=Next\\n\\nrow=a\\ntitle=A\\n' "$(wc -l < '\(path("reads"))' | tr -d ' ')"
         """)
         sheet.read(need: .change)
         try await wait("the first value") { !sheet.isReading && sheet.reading.value?.title == "1" }
@@ -439,9 +439,9 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAReadWithTextLeftInTheSearchGivesAScriptThatSearchesANewValueAndTheRowsOfTheText() async throws {
-        let sheet = try make("""
+        let sheet = try make(searches: true, """
         echo "read $2" >> '\(path("reads"))'
-        printf 'search=script\\n\\nnumber=next\\nvalue=%s\\ntitle=Next\\n\\nrow=a\\ntitle=A%s\\n' "$(wc -l < '\(path("reads"))' | tr -d ' ')" "$2"
+        printf 'number=next\\nvalue=%s\\ntitle=Next\\n\\nrow=a\\ntitle=A%s\\n' "$(wc -l < '\(path("reads"))' | tr -d ' ')" "$2"
         """)
         let reads = { ((try? String(contentsOfFile: self.path("reads"), encoding: .utf8)) ?? "").split(separator: "\n").map(String.init) }
         sheet.open {}
@@ -450,7 +450,7 @@ final class SpotRunTests: XCTestCase {
         try await wait("the rows of the text") { sheet.list.shown.map(\.title) == ["Ax"] && !sheet.isReading }
         sheet.close()
 
-        sheet.read(need: .clock, reason: .timer)
+        sheet.read(need: .clock, reason: .clock(60))
 
         try await wait("a new value") { sheet.reading.value?.title == "3" && !sheet.isReading }
         XCTAssertEqual(sheet.list.shown.map(\.title), ["Ax"])
@@ -458,7 +458,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAScriptThatSearchesGetsEachFormOfTheText() async throws {
-        let sheet = try make("printf 'search=script\\n\\nrow=a\\ntitle=%s:%s\\n' \"$2\" \"$3\"")
+        let sheet = try make(searches: true, "printf 'row=a\\ntitle=%s:%s\\n' \"$2\" \"$3\"")
         sheet.open {}
         try await wait("the first answer") { sheet.list.shown.map(\.title) == [":"] }
 
@@ -468,9 +468,9 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testTextTypedBeforeTheFirstAnswerGoesToAScriptThatSearches() async throws {
-        let sheet = try make("""
+        let sheet = try make(searches: true, """
         [ -n "$2" ] || sleep 0.2
-        printf 'search=script\\n\\nrow=a\\ntitle=%s\\n' "${2:-none}"
+        printf 'row=a\\ntitle=%s\\n' "${2:-none}"
         """)
 
         sheet.open {}
@@ -480,7 +480,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAKeptSearchGoesToAScriptThatSearchesOnOpen() async throws {
-        let sheet = try make("printf 'search=script\\n\\nrow=a\\ntitle=%s\\n' \"${2:-none}\"")
+        let sheet = try make(searches: true, "printf 'row=a\\ntitle=%s\\n' \"${2:-none}\"")
         sheet.open {}
         try await wait("the first answer") { sheet.list.shown.map(\.title) == ["none"] }
         sheet.search("rep")
@@ -495,9 +495,9 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAPickInAScriptThatSearchesGetsTheTextOnStdinBeforeTheTextIsRead() async throws {
-        let sheet = try make("""
+        let sheet = try make(searches: true, """
         case "$1" in
-          read) printf 'search=script\\n\\nrow=a\\ntitle=A\\n' ;;
+          read) printf 'row=a\\ntitle=A\\n' ;;
           open) cat > '\(path("stdin"))' ;;
         esac
         """)
@@ -512,9 +512,9 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAStoppedSearchChangesNothing() async throws {
-        let sheet = try make("""
+        let sheet = try make(searches: true, """
         [ "$2" = slow ] && sleep 0.2 && exit 0
-        printf 'search=script\\n\\nrow=a\\ntitle=A\\n'
+        printf 'row=a\\ntitle=A\\n'
         """)
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }

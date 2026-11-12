@@ -2,7 +2,7 @@
 # icon=translate
 # detail=Between languages
 # size=small
-# read=sheet
+# on=sheet.open
 # uses=clipboard
 . "$OPENSPOT_SH"
 export LC_ALL=en_US.UTF-8

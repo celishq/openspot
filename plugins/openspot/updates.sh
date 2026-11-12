@@ -1,7 +1,7 @@
 #!/bin/sh
 # title=Updates
 # icon=arrow.triangle.2.circlepath
-# read=panel
+# on=panel.open
 # on=app.update
 # uses=update
 warned="$OPENSPOT_DATA/updates-warned"

@@ -2,7 +2,7 @@
 # icon=text.quote
 # detail=Copy text
 # size=small
-# read=panel
+# on=panel.open
 # offers=search
 # uses=clipboard
 export LC_ALL=en_US.UTF-8

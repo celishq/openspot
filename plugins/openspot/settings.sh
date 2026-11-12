@@ -3,7 +3,8 @@
 # icon=gearshape
 # detail=Choose your key
 # size=small
-# read=panel,sheet
+# on=panel.open
+# on=sheet.open
 # offers=search
 # uses=app,settings
 

@@ -61,7 +61,7 @@ final class KeyListTests: XCTestCase {
     }
 
     func testAScriptWithAReadDrawsItsOwnSheet() throws {
-        try "#!/bin/sh\n# title=Move\n# read=sheet\n#\n# command=left\n# title=Left side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
+        try "#!/bin/sh\n# title=Move\n# on=sheet.open\n#\n# command=left\n# title=Left side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
 
         let move = try XCTUnwrap(try scan().spots.first { $0.id == "move" })
 

@@ -56,7 +56,7 @@ public struct SpotCheck: Sendable {
             return [Finding(spot: nil, file: folder.url.path, fault: "Cannot read \(folder.url.path).")]
         }
         var findings = scan.refused.map { Finding(spot: $0.file, file: folder.file(of: $0.file)?.path, fault: $0.reason) }
-        let known = Set([SpotEvent.frontApp, SpotEvent.clipboard, SpotEvent.screenWake, SpotEvent.appUpdate] + scan.scripts.flatMap(\.emits))
+        let known = Set(SpotEvent.known + scan.scripts.flatMap(\.emits))
         for script in scan.scripts {
             for event in script.read?.events ?? [] where !known.contains(event) {
                 let fault = "\(script.name) reads on \(event), which Openspot does not raise and no spot names in its emits. Add emits=\(event) to the spot that raises it, or fix the name"

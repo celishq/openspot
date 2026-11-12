@@ -254,7 +254,7 @@ final class SpotDropTests: XCTestCase {
 
     /// An open sheet whose running `work` action goes on until the file `release` appears.
     private func busySheet() async throws -> SpotRun {
-        let sheet = try sheet(header: "read=sheet\ndrop=mov", """
+        let sheet = try sheet(header: "on=sheet.open\ndrop=mov", """
         case "$1" in
           read) printf 'button=work\\ntitle=Work\\nscope=command\\n\\nrow=a\\ntitle=A\\n' ;;
           work) \(untilRelease); touch '\(path("worked"))' ;;
@@ -310,7 +310,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testAWaitingDropRunsAfterTheRunningCallFails() async throws {
-        let sheet = try sheet(header: "read=sheet\ndrop=mov", """
+        let sheet = try sheet(header: "on=sheet.open\ndrop=mov", """
         case "$1" in
           read) printf 'button=work\\ntitle=Work\\nscope=command\\n\\nrow=a\\ntitle=A\\n' ;;
           work) sleep 0.2; echo gone >&2; exit 3 ;;
@@ -359,7 +359,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testARunningReadDoesNotHoldADrop() async throws {
-        let sheet = try sheet(header: "read=panel\ndrop=mov", """
+        let sheet = try sheet(header: "on=panel.open\ndrop=mov", """
         [ "$1" = read ] && { printf 'switch=power\\nvalue=false\\n---\\n'; sleep 30; }
         exit 0
         """)
@@ -514,7 +514,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testAToggleWithDropKeepsItsClick() async throws {
-        let sheet = try sheet(header: "read=panel\ndrop=mov", "[ \"$1\" = read ] && printf 'switch=power\\nvalue=false\\n'\nexit 0")
+        let sheet = try sheet(header: "on=panel.open\ndrop=mov", "[ \"$1\" = read ] && printf 'switch=power\\nvalue=false\\n'\nexit 0")
         let choices = choiceCount(of: sheet)
         runs.panelOpened()
         try await wait("the kind") { sheet.spot.kind == .toggle }
@@ -570,7 +570,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testAStoppedDropChangesNothingAndItsSilenceIsNoAnswer() async throws {
-        let sheet = try sheet(header: "read=sheet\ndrop=mov", """
+        let sheet = try sheet(header: "on=sheet.open\ndrop=mov", """
         case "$1" in
           read) printf 'row=a\\ntitle=A\\n' ;;
           drop) sleep 5; touch '\(path("went-on"))' ;;
@@ -590,7 +590,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testADropWithNoFrameReadsOnce() async throws {
-        let sheet = try sheet(header: "read=sheet\ndrop=mov", "[ \"$1\" = read ] && printf 'row=a\\ntitle=A\\n'\nexit 0")
+        let sheet = try sheet(header: "on=sheet.open\ndrop=mov", "[ \"$1\" = read ] && printf 'row=a\\ntitle=A\\n'\nexit 0")
         let file = file("a.mov")
 
         XCTAssertTrue(sheet.drop([file]))
@@ -602,7 +602,7 @@ final class SpotDropTests: XCTestCase {
 
     func testADropThatSelectsARowReadsAgainWithThatRowSelected() async throws {
         let rows = "printf 'row=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'"
-        let sheet = try sheet(header: "read=sheet\ndrop=mov", "case \"$1\" in\n  read) \(rows) ;;\n  drop) printf 'toast=Added\\nselect=b\\n' ;;\nesac")
+        let sheet = try sheet(header: "on=sheet.open\ndrop=mov", "case \"$1\" in\n  read) \(rows) ;;\n  drop) printf 'toast=Added\\nselect=b\\n' ;;\nesac")
         sheet.open {}
         try await wait("the rows") { sheet.list.shown.count == 2 }
         XCTAssertEqual(sheet.list.selectedItem?.run, "a")

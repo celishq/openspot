@@ -2,7 +2,7 @@
 # icon=arrow.triangle.branch
 # detail=Open a git repo
 # size=small
-# read=sheet
+# on=sheet.open
 # uses=clipboard
 #
 # setting=folder

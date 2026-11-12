@@ -36,7 +36,7 @@ final class CarefulModeTests: SpotRunsCase {
 
     /// A spot that tries each use and shows what worked as the title of its read.
     private func trying(uses: String = "") throws -> SpotRun {
-        try script(header: "read=sheet\(uses.isEmpty ? "" : "\nuses=\(uses)")", """
+        try script(header: "on=sheet.open\(uses.isEmpty ? "" : "\nuses=\(uses)")", """
         r=
         echo a > "$OPENSPOT_DATA/kept" 2>/dev/null && r="${r}data "
         echo a > "${TMPDIR:-/tmp}/careful-$$" 2>/dev/null && r="${r}temp " && rm -f "${TMPDIR:-/tmp}/careful-$$"
@@ -90,7 +90,7 @@ final class CarefulModeTests: SpotRunsCase {
 
     func testOnAStayingSpotIsCarefulToo() async throws {
         runs.isCareful = true
-        try script(header: "mode=stay\nread=sheet", """
+        try script(header: "mode=stay\non=sheet.open", """
         echo a > '\(outside.path)/written' 2>/dev/null && r=files || r=kept
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
@@ -104,7 +104,7 @@ final class CarefulModeTests: SpotRunsCase {
     }
 
     func testAStayingSpotStartsAgainInTheNewModeWhenTheModeChanges() async throws {
-        try script(header: "mode=stay\nread=sheet", """
+        try script(header: "mode=stay\non=sheet.open", """
         echo a > '\(outside.path)/written-$$' 2>/dev/null && r=files || r=kept
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
@@ -133,7 +133,7 @@ final class CarefulModeTests: SpotRunsCase {
         let path = ProcessInfo.processInfo.environment["PATH"] ?? ""
         setenv("PATH", "\(bin.path):\(path)", 1)
         defer { setenv("PATH", path, 1) }
-        try "// mode=inline\n// read=sheet\nfunction main() { return `text=t\\ntitle=${openspot.call([\"color\", \"pick\"]).stdout.trim()}\\n` }\n"
+        try "// mode=inline\n// on=sheet.open\nfunction main() { return `text=t\\ntitle=${openspot.call([\"color\", \"pick\"]).stdout.trim()}\\n` }\n"
             .write(to: folder.appendingPathComponent("script.js"), atomically: true, encoding: .utf8)
         let sheet = try sheet()
         let before = try await result(of: sheet)

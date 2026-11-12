@@ -35,9 +35,9 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     func testTheSheetListsAMenuBarRowForEachSpotThatCanShowThereAndEnterTurnsItOnAndOff() async throws {
-        try script("cups.sh", "title=Cups\nevery=60")
+        try script("cups.sh", "title=Cups\non=clock.60")
         try script("relay.sh", "title=Relay\nmode=stay")
-        try script("notes.sh", "title=Notes\nread=panel")
+        try script("notes.sh", "title=Notes\non=panel.open")
 
         let before = try await items()
         XCTAssertEqual(before.filter { $0.run.hasPrefix("menubar:") }.map(\.run), ["menubar:cups", "menubar:relay"])
@@ -57,7 +57,7 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     func testAReadStartsOneOpenspotAndNoJq() async throws {
-        try script("cups.sh", "title=Cups\nevery=60\n\nsetting=size")
+        try script("cups.sh", "title=Cups\non=clock.60\n\nsetting=size")
         let programs = try countPrograms()
 
         _ = try await items()

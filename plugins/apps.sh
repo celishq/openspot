@@ -1,7 +1,7 @@
 #!/bin/sh
 # icon=/System/Applications/Apps.app
 # detail=Open app
-# read=panel
+# on=panel.open
 # offers=search
 data=${OPENSPOT_DATA:-${TMPDIR:-/tmp}}
 pending="$data/uninstall"
@@ -108,7 +108,7 @@ trash_files() {
 
 case "$1" in
   read)
-    if [ "$OPENSPOT_REASON" = change ] && [ -s "$pending" ] && [ -d "$(cat "$pending")" ]; then
+    if [ "$OPENSPOT_REASON" = spot.change ] && [ -s "$pending" ] && [ -d "$(cat "$pending")" ]; then
       uninstall_sheet "$(cat "$pending")"
     else
       rm -f "$pending" "$kept"

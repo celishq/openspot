@@ -112,7 +112,7 @@ extension SpotRun {
     /// rows that answer a text of the main search leave all else as it is (A2).
     func takeAnswer(_ lines: SpotOutput, frame: String, to ask: Ask, keeping: String? = nil, answers: Bool = true) async {
         if case .answer(let query) = ask { return takeAnswers(lines.answers, to: query) }
-        let next: ItemList.Rows? = if case .read = ask { await newRows(lines.items, search: lines.search) } else { nil }
+        let next: ItemList.Rows? = if case .read = ask { await newRows(lines.items, search: spot.read?.searchesSheet == true ? .script : .local) } else { nil }
         lastAnswer = lines.withoutBlocks()
         report(toastOf: lines)
         spot = spot.taking(lines)
@@ -124,7 +124,7 @@ extension SpotRun {
             let kept = selecting
             selecting = nil
             changeList {
-                $0.take(search: lines.search)
+                $0.take(search: spot.read?.searchesSheet == true ? .script : .local)
                 $0.take(drawing: lines.drawing)
                 if let next { $0.replace(next) }
                 if let kept { $0.select(run: kept) }
@@ -137,7 +137,7 @@ extension SpotRun {
             await prepare(firstScreen(of: lines.items), [])
             guard query == list.query else { return }
             changeList {
-                $0.take(search: lines.search)
+                $0.take(search: spot.read?.searchesSheet == true ? .script : .local)
                 $0.take(drawing: lines.drawing)
                 $0.answer(lines.items, to: query)
             }

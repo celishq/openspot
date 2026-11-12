@@ -28,7 +28,7 @@ final class WidgetContractTests: XCTestCase {
     }
 
     private func power(_ body: String = "printf 'gauge=power\\ntitle=84%%\\nvalue=0.84\\ntone=good\\n'") throws {
-        try script("power.sh", "#!/bin/sh\n# every=5\n\(body)\n")
+        try script("power.sh", "#!/bin/sh\n# on=clock.5\n\(body)\n")
     }
 
     private var scan: ScanResult {
@@ -42,8 +42,8 @@ final class WidgetContractTests: XCTestCase {
 
     func testAWidgetInAFolderNamesItsOwnToolsByFileNameAndOthersByID() throws {
         try FileManager.default.createDirectory(at: folder.appendingPathComponent("morning"), withIntermediateDirectories: true)
-        try script("morning/power.sh", "#!/bin/sh\n# every=5\nprintf 'title=1\\n'\n")
-        try script("morning/notes.sh", "#!/bin/sh\n# read=sheet\n")
+        try script("morning/power.sh", "#!/bin/sh\n# on=clock.5\nprintf 'title=1\\n'\n")
+        try script("morning/notes.sh", "#!/bin/sh\n# on=sheet.open\n")
         try power()
         try "[[widgets]]\ntitle = \"Now\"\ngrid = [\"power power morning/power morning/power\"]\nopens = \"notes\"\n"
             .write(to: folder.appendingPathComponent("morning/widgets.toml"), atomically: true, encoding: .utf8)
@@ -94,7 +94,7 @@ final class WidgetContractTests: XCTestCase {
 
     func testAWidgetDrawingPlacesTheMetricThatEachWordNames() throws {
         try power()
-        try script("heat.sh", "#!/bin/sh\n# every=5\nprintf 'title=1\\n'\n")
+        try script("heat.sh", "#!/bin/sh\n# on=clock.5\nprintf 'title=1\\n'\n")
         try widgets("""
         [[widgets]]
         title = "Mine"
@@ -174,9 +174,9 @@ final class WidgetContractTests: XCTestCase {
 
     func testOnlyAMetricOrAStayingScriptCanShowInTheMenuBar() throws {
         try script("one.sh", "#!/bin/sh\n")
-        try script("two.sh", "#!/bin/sh\n# read=panel\n")
+        try script("two.sh", "#!/bin/sh\n# on=panel.open\n")
         try script("three.sh", "#!/bin/sh\n# mode=stay\n")
-        try script("four.sh", "#!/bin/sh\n# every=5\n")
+        try script("four.sh", "#!/bin/sh\n# on=clock.5\n")
 
         XCTAssertEqual(try scan.refused, [])
         XCTAssertEqual(try scan.scripts.filter(\.canShowInMenuBar).map(\.id), ["four", "three"])
@@ -324,7 +324,7 @@ final class WidgetContractTests: XCTestCase {
     }
 
     func testTheCheckReportsAListThatFails() async throws {
-        try script("tools.sh", "#!/bin/sh\n# read=sheet\necho gone >&2\nexit 1\n")
+        try script("tools.sh", "#!/bin/sh\n# on=sheet.open\necho gone >&2\nexit 1\n")
 
         let faults = await SpotCheck(folder: SpotFolder(url: folder)).faults()
 
@@ -332,7 +332,7 @@ final class WidgetContractTests: XCTestCase {
     }
 
     func testTheCheckFaultsAPartOrAnActionCalledRead() async throws {
-        try script("tools.sh", "#!/bin/sh\n# read=sheet\nprintf 'button=read\\ntitle=A\\n\\nrow=a\\ntitle=A\\n\\ntext=read\\ntitle=B\\n'\n")
+        try script("tools.sh", "#!/bin/sh\n# on=sheet.open\nprintf 'button=read\\ntitle=A\\n\\nrow=a\\ntitle=A\\n\\ntext=read\\ntitle=B\\n'\n")
 
         let faults = await SpotCheck(folder: SpotFolder(url: folder)).faults()
 

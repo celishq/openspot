@@ -35,7 +35,7 @@ final class BigPasteTests: XCTestCase {
         let url = folder.appendingPathComponent("script.sh")
         try """
         #!/bin/sh
-        # read=sheet
+        # on=sheet.open
         case "$1" in
           read) printf 'field=input\\nvalue=\\n\\nfield=output\\nvalue=\\nreadonly=true\\n' ;;
           input) \(answer) ;;

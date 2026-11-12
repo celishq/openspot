@@ -3,8 +3,9 @@
 # icon=calendar
 # detail=Today and tomorrow, with your reminders
 # size=large
-# read=panel
-# every=60
+# on=panel.open
+# on=sheet.text
+# on=clock.60
 # uses=calendar
 #
 # setting=calendars
@@ -103,7 +104,7 @@ card() {
   fi
   strip=next
   [ -z "$join" ] || strip='next next next join-now'
-  printf 'main=next\nsearch=script\nrecents=false\ngrid=items\ngrid.small=at\ngrid.wide=next\ngrid.strip=%s\n' "$strip"
+  printf 'main=next\nrecents=false\ngrid=items\ngrid.small=at\ngrid.wide=next\ngrid.strip=%s\n' "$strip"
   printf 'grid.square=next next\ngrid.square=next next\ngrid.large=next next next next\ngrid.large=next next next next\n'
   if [ "$late" -gt 0 ]; then
     printf 'grid.square=todo late\n'

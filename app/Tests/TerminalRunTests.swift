@@ -43,14 +43,14 @@ final class TerminalRunTests: XCTestCase {
     }
 
     func testARunWithNoCallReadsASpotThatReadsAndOpensOneThatDoesNot() async throws {
-        let reads = try spot("reads", header: "read=sheet", "echo \"$1 $OPENSPOT_REASON\"")
+        let reads = try spot("reads", header: "on=sheet.open", "echo \"$1 $OPENSPOT_REASON\"")
         let opens = try spot("opens", "echo \"$1\"")
         var said: [String] = []
 
         _ = await TerminalRun(spot: reads, arguments: [], input: nil).start { said.append($0) }
         _ = await TerminalRun(spot: opens, arguments: [], input: nil).start { said.append($0) }
 
-        XCTAssertEqual(said, ["read sheet\n", "open\n"])
+        XCTAssertEqual(said, ["read sheet.open\n", "open\n"])
     }
 
     func testARunOfAStayingScriptEndsWithTheFrameThatEndsItsCall() async throws {

@@ -3,7 +3,7 @@
 # icon=antenna.radiowaves.left.and.right
 # detail=Send a line to another process, and see each line it sends back
 # mode=always
-# read=panel
+# on=panel.open
 # uses=network
 . "$OPENSPOT_SH"
 port=${RELAY_PORT:-47800}

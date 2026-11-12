@@ -26,18 +26,19 @@ public struct SpotFile: Equatable, Sendable {
         }
     }
 
-    /// A script with a number in its `read` starts off the grid until the person shows it (F7).
+    /// A script with a clock starts off the grid until the person shows it (F7).
     public init(script url: URL, header: TextBlock, id: String) throws {
         let name = header.value("title") ?? Self.name(of: url)
         let icon = Icon(text: header.value("icon"))
         let symbol = icon?.symbol
-        let read = try SpotRead(read: header.value("read"), every: header.value("every"), on: header.value("on"), of: name)
+        try Self.refuseOldKeys(header, of: name)
+        let on = try SpotRead(on: header.values("on"), of: name)
+        let read = on?.moments.isEmpty == false ? on : nil
         let emits = SpotRead.words(header.value("emits"))
         if let word = emits.first(where: { !SpotEvent.isName($0) }) {
             throw SpotError.fault("\(name) has an unknown event in its emits: \(word). Write a word with a dot, such as emits=music.track")
         }
         let uses = try SpotUse.set(header.value("uses"), of: name)
-        try Self.refuseOldKeys(header, of: name)
         let modeName = header.value("mode") ?? SpotMode.once.rawValue
         guard let mode = SpotMode(rawValue: modeName) else {
             throw SpotError.fault("\(name) has an unknown mode: \(modeName). Use once, stay, always or inline")
@@ -52,16 +53,10 @@ public struct SpotFile: Equatable, Sendable {
         let isGlobal = isRowsOnly || places.contains("search")
         if isGlobal {
             guard read?.has(.panel) == true || read?.seconds != nil else {
-                throw SpotError.fault("\(name) needs read=panel or an every to join the main search")
+                throw SpotError.fault("\(name) needs on=panel.open or a clock, such as on=clock.60, to join the main search")
             }
         }
-        var answers: AnswerPattern?
-        if let text = header.value("answers") {
-            guard let pattern = AnswerPattern(text) else {
-                throw SpotError.fault("\(name) has an unknown answers pattern: \(text). Write a regular expression, such as answers=^[0-9]")
-            }
-            answers = pattern
-        }
+        let answers = on?.answers
         let answersOnly = answers != nil && read == nil
         let offers = try header.children.filter { $0.fields.first?.key == "command" }.map { block in
             guard let offer = CommandOffer(block: block) else {
@@ -78,7 +73,7 @@ public struct SpotFile: Equatable, Sendable {
         }
         let preview = header.value("preview")
         guard preview == nil || preview == "sample" else {
-            throw SpotError.fault("\(name) has an unknown preview: \(preview!). Use preview=sample, and print fake data while OPENSPOT_PREVIEW is 1")
+            throw SpotError.fault("\(name) has an unknown preview: \(preview!). Use preview=sample, and print fake data while OPENSPOT_REASON is spot.preview")
         }
         let command = Spot(
             id: id,
@@ -133,6 +128,17 @@ public struct SpotFile: Equatable, Sendable {
 
     /// Refuses a header that still has `global`, `float`, `tray`, `data`, `stay` or `shortcut`, and names the new way.
     private static func refuseOldKeys(_ header: TextBlock, of name: String) throws {
+        if let read = header.value("read") {
+            let events = SpotRead.words(read).compactMap { ["panel": "on=panel.open", "sheet": "on=sheet.open"][$0] }
+            let fix = events.isEmpty ? "an event, such as on=sheet.open" : events.joined(separator: " and ")
+            throw SpotError.fault("\(name) has read=\(read), which Openspot no longer reads. Write \(fix)")
+        }
+        if let every = header.value("every") {
+            throw SpotError.fault("\(name) has every=\(every), which Openspot no longer reads. Write on=clock.\(every)")
+        }
+        if let answers = header.value("answers") {
+            throw SpotError.fault("\(name) has answers=\(answers), which Openspot no longer reads. Write on=search.text \(answers)")
+        }
         if header.value("stay") != nil {
             throw SpotError.fault("\(name) has stay, which Openspot no longer reads. Use mode=stay or mode=always")
         }

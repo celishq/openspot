@@ -43,7 +43,7 @@ final class NewSpotTests: BuiltInCase {
     func testTheSheetIsAListThatSearchesByScriptWithCopyPromptForAIFirstThenEachStarter() async throws {
         let output = try await newSpot().items(timeout: 5)
 
-        XCTAssertEqual(output.search, .script)
+        XCTAssertEqual(try newSpot().read?.searchesSheet, true)
         XCTAssertEqual(output.items.map(\.title), ["Copy prompt for AI", "Button", "List", "Live value", "Form"])
         XCTAssertEqual(output.items.dropFirst().map(\.run), SpotStarter.allCases.map(\.rawValue))
         XCTAssertFalse(output.keepsRecent)

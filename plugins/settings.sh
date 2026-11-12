@@ -2,7 +2,7 @@
 # title=System Settings
 # icon=gearshape
 # detail=Open a setting
-# read=panel
+# on=panel.open
 # offers=rows
 export LC_ALL=en_US.UTF-8
 panes="${SETTINGS_PANES:-/System/Library/ExtensionKit/Extensions}"

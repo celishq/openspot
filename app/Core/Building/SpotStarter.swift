@@ -63,7 +63,7 @@ public enum SpotStarter: String, CaseIterable, Sendable {
             #!/bin/sh
             # title=\(title)
             # icon=\(symbol)
-            # read=sheet
+            # on=sheet.open
             case "$1" in
               read)
                 printf 'row=first\\ntitle=First row\\ndetail=Press Enter to pick it\\n\\n'
@@ -80,7 +80,7 @@ public enum SpotStarter: String, CaseIterable, Sendable {
             #!/bin/sh
             # title=\(title)
             # icon=\(symbol)
-            # read=panel
+            # on=panel.open
             printf 'title=%s\\ndetail=Reads each time the panel opens\\n' "$(date +%H:%M)"
 
             """
@@ -89,7 +89,7 @@ public enum SpotStarter: String, CaseIterable, Sendable {
             #!/bin/sh
             # title=\(title)
             # icon=\(symbol)
-            # read=sheet
+            # on=sheet.open
             . "$OPENSPOT_SH"
             case "$1" in
               read)

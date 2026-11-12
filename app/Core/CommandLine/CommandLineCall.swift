@@ -331,7 +331,7 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("clipboard", "read") where rest.count == 1: self = .clipboardRead
         case ("event", "emit") where rest.count == 2 || rest.count == 3:
             if !SpotEvent.isName(rest[1]) {
-                self = .refused("`\(rest[1])` is not an event. Name one with a dot, such as `music.track`, or `clipboard`.")
+                self = .refused("`\(rest[1])` is not an event. Name one with a dot, such as `music.track`.")
             } else if environment["OPENSPOT_REASON"] == rest[1] {
                 self = .refused("`openspot event emit \(rest[1])` runs in a read of `\(rest[1])`, so it would read that spot again without end, and Openspot did not raise it. Raise it from an action, or raise another event.")
             } else {

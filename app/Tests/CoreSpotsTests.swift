@@ -44,7 +44,7 @@ final class CoreSpotsTests: XCTestCase {
     }
 
     func testASpotThatIsOnLoadsThePartsItPlaces() throws {
-        try write("cpu.sh", in: core, header: "every=5")
+        try write("cpu.sh", in: core, header: "on=clock.5")
         try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
 
         let off = try SpotFolder(url: folder, core: core, enabled: []).scan()
@@ -57,7 +57,7 @@ final class CoreSpotsTests: XCTestCase {
     }
 
     func testAWidgetInThePluginsFolderCanPlaceACorePart() throws {
-        try write("cpu.sh", in: core, header: "every=5")
+        try write("cpu.sh", in: core, header: "on=clock.5")
         try "[[widgets]]\ntitle = \"Mine\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: folder.appendingPathComponent("mine.toml"), atomically: true, encoding: .utf8)
 
         let scan = try SpotFolder(url: folder, core: core, enabled: []).scan()
@@ -110,7 +110,7 @@ final class CoreSpotsTests: XCTestCase {
     }
 
     func testTheChoicesLeaveOutPartsWithNoCard() throws {
-        try write("cpu.sh", in: core, header: "every=5")
+        try write("cpu.sh", in: core, header: "on=clock.5")
         try write("apps.sh", in: core)
         try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
 
@@ -135,7 +135,7 @@ final class CoreSpotsTests: XCTestCase {
     }
 
     func testACoreWidgetSharesWithItsPartsFromTheCoreFolder() throws {
-        try write("cpu.sh", in: core, header: "every=5")
+        try write("cpu.sh", in: core, header: "on=clock.5")
         try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
         let scan = try SpotFolder(url: folder, core: core, enabled: ["overview"]).scan()
 

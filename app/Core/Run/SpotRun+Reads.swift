@@ -57,8 +57,8 @@ extension SpotRun {
             action: .items(query: query, forms: SearchQuery(text: query).forms),
             key: Self.searchKey,
             limit: runs.readLimit,
-            reason: .search,
-            variables: ReadReason.search.variables,
+            reason: .text(query, inSheet: true),
+            variables: ReadReason.text(query, inSheet: true).variables,
             purpose: .ask(.search(query))
         ))
     }
@@ -79,8 +79,8 @@ extension SpotRun {
             action: .items(query: text, forms: SearchQuery(text: text).forms),
             key: Self.answerKey,
             limit: runs.readLimit,
-            reason: .search,
-            variables: ReadReason.search.variables,
+            reason: .text(text, inSheet: false),
+            variables: ReadReason.text(text, inSheet: false).variables,
             purpose: .ask(.answer(text))
         ))
     }

@@ -3,7 +3,7 @@
 # icon=face.smiling
 # detail=Copy an emoji or a symbol
 # size=small
-# read=sheet
+# on=sheet.open
 # uses=clipboard
 export LC_ALL=en_US.UTF-8
 saved="$OPENSPOT_DATA/tone"

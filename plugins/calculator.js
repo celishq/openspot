@@ -2,7 +2,7 @@
 // icon=equal.square
 // detail=Sums, units, currencies and dates
 // mode=inline
-// answers=^\s*([-+(.$€£¥₴₿₹₩₺₪π0-9]|(?i:the|today|tomorrow|yesterday|now|time|next|last|in|days|weeks|months|years|hours|minutes|sqrt|sin|cos|tan|ln|log|abs|round|pi|noon|midnight)\b)
+// on=search.text ^\s*([-+(.$€£¥₴₿₹₩₺₪π0-9]|(?i:the|today|tomorrow|yesterday|now|time|next|last|in|days|weeks|months|years|hours|minutes|sqrt|sin|cos|tan|ln|log|abs|round|pi|noon|midnight)\b)
 // uses=clipboard
 
 /** The row that says why a currency has no rates, by the status that `openspot calc solve` prints. */

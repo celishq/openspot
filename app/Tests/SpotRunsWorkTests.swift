@@ -18,7 +18,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAReadTellsNoReaderOfTheWorkOfItsCard() async throws {
-        try script(header: "read=panel", "printf 'title=Same\\n'")
+        try script(header: "on=panel.open", "printf 'title=Same\\n'")
         let sheet = try sheet()
         sheet.read(need: .change)
         try await wait("the first read") { self.log().count == 1 && sheet.calls.isEmpty }
@@ -80,7 +80,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAReadNeverShowsAsWork() async throws {
-        try script(header: "read=sheet", "sleep 30")
+        try script(header: "on=sheet.open", "sleep 30")
         let sheet = try sheet()
 
         sheet.read()
@@ -224,7 +224,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testTheSpotShowsItsOldestCall() async throws {
-        try script(header: "read=sheet", """
+        try script(header: "on=sheet.open", """
         case "$1" in
           read) printf 'grid=a b\\n\\nbutton=a\\ntitle=A\\n\\nbutton=b\\ntitle=B\\n' ;;
           a) printf 'title=A\\n---\\n'; sleep 30 ;;
@@ -248,7 +248,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testARunningPartShowsOnThatPartOnly() async throws {
-        try script(header: "read=sheet", """
+        try script(header: "on=sheet.open", """
         case "$1" in
           read) printf 'grid=go other\\n\\nbutton=go\\ntitle=Go\\n\\ntext=other\\ntitle=Other\\n' ;;
           go) sleep 30 ;;
@@ -271,7 +271,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testARunningActionOrPickShowsOnItsRowOfTheMenu() async throws {
-        try script(header: "read=sheet", """
+        try script(header: "on=sheet.open", """
         case "$1" in
           read) printf 'button=go\\ntitle=Go\\nscope=command\\n\\nbutton=copy\\ntitle=Copy\\n\\nrow=a\\ntitle=A\\n' ;;
           go) sleep 30 ;;
@@ -323,7 +323,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     // MARK: L11
 
     func testAPressOfAPartWithinOneSecondOfItsStartDoesNothing() async throws {
-        try script(header: "read=sheet", """
+        try script(header: "on=sheet.open", """
         case "$1" in
           read) printf 'grid=go\\n\\nbutton=go\\ntitle=Go\\n' ;;
           go) sleep 0.2; touch '\(path("done"))' ;;
@@ -344,7 +344,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAPickOrAnActionWithinOneSecondOfItsStartDoesNothing() async throws {
-        try script(header: "read=sheet", """
+        try script(header: "on=sheet.open", """
         case "$1" in
           read) printf 'button=go\\ntitle=Go\\nscope=command\\n\\nrow=a\\ntitle=A\\n' ;;
           go) sleep 0.2; touch '\(path("action"))' ;;
@@ -367,7 +367,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAPressOfACardWithinOneSecondOfItsStartDoesNothing() async throws {
-        try script(header: "read=panel", "[ \"$1\" = read ] && { printf 'switch=power\\nvalue=false\\n'; exit 0; }\nsleep 0.3\ntouch '\(path("done"))'\nprintf 'switch=power\\nvalue=true\\n'")
+        try script(header: "on=panel.open", "[ \"$1\" = read ] && { printf 'switch=power\\nvalue=false\\n'; exit 0; }\nsleep 0.3\ntouch '\(path("done"))'\nprintf 'switch=power\\nvalue=true\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the kind") { sheet.spot.kind == .toggle }
@@ -382,7 +382,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testASecondAskForAFormWithinOneSecondLeavesTheFirstRunning() async throws {
-        try script(header: "read=sheet", """
+        try script(header: "on=sheet.open", """
         case "$1" in
           read) printf 'button=new\\ntitle=New\\nscope=command\\nform=true\\n\\nrow=a\\ntitle=A\\n' ;;
           new) \(untilRelease); printf 'title=New\\n\\nfield=a\\ntitle=A\\n' ;;
@@ -404,7 +404,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAPickAsksWithAFormAndASubmitCanAnswerWithTheFormAgain() async throws {
-        try script(header: "read=sheet", """
+        try script(header: "on=sheet.open", """
         case "$1" in
           read) printf 'button=open\\ntitle=Open\\nform=true\\n\\nrow=a\\ntitle=A\\n' ;;
           open) case "$(cat)" in *name=x*) ;; *) printf 'title=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
@@ -430,7 +430,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAChangeAnswersWithTheFormOfItsScriptOrIsDone() async throws {
-        try script(header: "read=sheet", """
+        try script(header: "on=sheet.open", """
         case "$1" in
           read) printf 'row=a\\ntitle=A\\n' ;;
           editor) printf 'title=Editor\\n\\nchoice=editor\\ntitle=Editor\\n\\noption=zed\\ntitle=Zed\\n' ;;
@@ -449,7 +449,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testQuittingStopsEachCall() async throws {
-        try script(header: "read=sheet", """
+        try script(header: "on=sheet.open", """
         trap 'touch "\(path("stopped"))"; exit 0' TERM
         printf 'text=a\\ntitle=A\\n---\\n'
         \(String.longLoop)
@@ -511,7 +511,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAQuitStopsAToggleAndItGoesBack() async throws {
-        try script(header: "read=panel", "[ \"$1\" = read ] && printf 'switch=power\\nvalue=false\\n'\n[ \"$1\" = power ] && sleep 30\nexit 0")
+        try script(header: "on=panel.open", "[ \"$1\" = read ] && printf 'switch=power\\nvalue=false\\n'\n[ \"$1\" = power ] && sleep 30\nexit 0")
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the kind") { sheet.spot.kind == .toggle && sheet.calls.isEmpty }
@@ -527,7 +527,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAReadThatWaitsToRunAgainDoesNotRunAfterAQuit() async throws {
-        try script(header: "read=sheet", "printf 'row=a\\ntitle=A\\n---\\n'\nsleep 30")
+        try script(header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n---\\n'\nsleep 30")
         let sheet = try sheet()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }

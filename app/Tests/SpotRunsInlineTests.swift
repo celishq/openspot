@@ -21,7 +21,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
 
     /// A spot that answers each text with one row of it, and works for 300 ms first on the text `slow`.
     private func answering() throws {
-        try inline(header: "mode=inline\nanswers=^[0-9]", """
+        try inline(header: "mode=inline\non=search.text ^[0-9]", """
         function main([id, text], env) {
           if (text === "12") { const end = Date.now() + 300; while (Date.now() < end) {} }
           return `row=${text}\\ntitle=Is ${text}\\ndetail=${env.OPENSPOT_REASON}\\n`
@@ -38,7 +38,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
         sheet.answer("7")
 
         XCTAssertEqual(sheet.answers.map(\.run), ["7"])
-        XCTAssertEqual(sheet.answers.first?.subtitle, "search")
+        XCTAssertEqual(sheet.answers.first?.subtitle, "search.text")
         XCTAssertFalse(sheet.isAnswering)
     }
 
@@ -69,7 +69,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
 
     func testOpenspotCallAsksTheAPIInTheApp() async throws {
         runs.api = CommandAPI(mac: Host())
-        try inline(header: "mode=inline\nanswers=^[0-9]", """
+        try inline(header: "mode=inline\non=search.text ^[0-9]", """
         function main([id, text]) {
           const answer = openspot.call(["calc", "solve", text])
           return answer.stdout.replace(/detail=.*/, `detail=${answer.code}`)
@@ -84,7 +84,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testAPickRunsItsOpenFunctionWithTheRow() async throws {
-        try inline(header: "mode=inline\nanswers=^[0-9]", """
+        try inline(header: "mode=inline\non=search.text ^[0-9]", """
         function main([id, text]) {
           if (id === "open") return `toast=Picked ${text}\\n`
           return `row=${text}\\ntitle=${text}\\n`
@@ -100,7 +100,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testAThrownErrorIsTheFailureOfTheCall() async throws {
-        try inline(header: "mode=inline\nread=sheet", "function main() { throw new Error('No sky today') }")
+        try inline(header: "mode=inline\non=sheet.open", "function main() { throw new Error('No sky today') }")
         let (sheet, told) = try toldSheet()
 
         sheet.open {}
@@ -163,9 +163,9 @@ final class SpotRunsInlineTests: SpotRunsCase {
 
     func testAnEndlessLoopFailsAsTooSlowAndTheSpotAnswersItsNextCall() async throws {
         runs(limit: 0.5)
-        try inline(header: "mode=inline\nread=sheet", """
+        try inline(header: "mode=inline\non=sheet.open", """
         function main(args, env) {
-          if (env.OPENSPOT_REASON === "sheet") while (true) {}
+          if (env.OPENSPOT_REASON === "sheet.open") while (true) {}
           return "row=a\\ntitle=A\\n"
         }
         """)
@@ -197,7 +197,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     func testEachCallGoesInTheCallLogWithItsArgumentsStdinAndFailure() async throws {
         let log = CallLog(folder: folder.appendingPathComponent("logs"))
         runs(log: log)
-        try inline(header: "mode=inline\nread=sheet", "function main(args) { if (args[0] === 'save') throw new Error('No sky today'); return 'row=a\\n' }")
+        try inline(header: "mode=inline\non=sheet.open", "function main(args) { if (args[0] === 'save') throw new Error('No sky today'); return 'row=a\\n' }")
         let (sheet, told) = try toldSheet()
         sheet.open {}
         try await wait("the rows") { sheet.list.shown.count == 1 }
@@ -211,7 +211,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testTheCPUTimeOfItsThreadCountsInItsUsage() async throws {
-        try inline(header: "mode=inline\nread=sheet", "function main() { const end = Date.now() + 300; while (Date.now() < end) {} return 'row=a\\n' }")
+        try inline(header: "mode=inline\non=sheet.open", "function main() { const end = Date.now() + 300; while (Date.now() < end) {} return 'row=a\\n' }")
         let sheet = try sheet()
         sheet.open {}
 
@@ -220,7 +220,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testARunWithALimitStopsWaitingForAFunctionThatRunsTooLong() async throws {
-        try inline(header: "mode=inline\nread=sheet", "function main() { const end = Date.now() + 2000; while (Date.now() < end) {} }")
+        try inline(header: "mode=inline\non=sheet.open", "function main() { const end = Date.now() + 2000; while (Date.now() < end) {} }")
         let spot = try XCTUnwrap(try scanned().scripts.first)
 
         do {

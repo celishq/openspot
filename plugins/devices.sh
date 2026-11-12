@@ -1,7 +1,7 @@
 #!/bin/sh
 # title=Devices
 # icon=airpods
-# every=60
+# on=clock.60
 . "$OPENSPOT_SH"
 
 # Prints one line for each battery of each connected device: its name, the part, then the level.

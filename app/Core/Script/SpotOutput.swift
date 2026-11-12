@@ -246,11 +246,6 @@ public struct SpotOutput: Equatable, Sendable {
         value.flatMap { block in parts.first { $0.id == block.fields.first?.value } }
     }
 
-    /// Who searches its rows: the script when it prints `search=script`.
-    public var search: ItemSearch {
-        summary?.value("search") == ItemSearch.script.rawValue ? .script : .local
-    }
-
     /// How many rows go on one line, when the script prints a repeat.
     public var perLine: Int? {
         layout?.repeated?.perLine

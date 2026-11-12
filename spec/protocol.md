@@ -123,7 +123,8 @@ runs `<script> open` and Openspot never reads it.
 ```
 
 Each read gets the event as `OPENSPOT_REASON` and its value as `OPENSPOT_VALUE` (B4). Openspot also reads a script with
-`OPENSPOT_REASON=spot.change` after a call that printed no picture (M4), and with `spot.preview` for the store.
+`OPENSPOT_REASON=spot.change` after a call that printed no picture (M4), with `spot.want` when something starts to want a
+spot that no event has read yet (B5), and with `spot.preview` for the store.
 
 `openspot event emit <event> [value]` raises any event in the running app, from a script or from a terminal, and each spot
 that lists it reads (B3). With the app closed, the command starts it first (S12). A spot that raises its own event names it
@@ -954,7 +955,7 @@ An old script never sees a word that it did not ask for, and an old app skips a 
 | `app`, `spots`, `screen`, `clipboard`, `calendar`, `network`, `files`                                    | Use                  |
 | `search`                                                                                                 | Offer                |
 | `sheet.open`, `panel.open`, `clock.<seconds>`, `search.text`, `sheet.text`, `clipboard.change`, `app.front`, `app.update`, `screen.wake` | Event |
-| `spot.change`, `spot.preview`                                                                            | Reason with no event |
+| `spot.change`, `spot.want`, `spot.preview`                                                               | Reason with no event |
 | `read`                                                                                                   | Reserved call        |
 | `open`, `drop`, `drag`                                                                                   | Default id           |
 | `OPENSPOT_ID`, `OPENSPOT_REASON`, `OPENSPOT_VALUE`, `OPENSPOT_DATA`, `OPENSPOT_SH`                       | Environment variable |
@@ -976,7 +977,6 @@ Each line goes when its phase lands.
 
 | Part        | The code today                                                                                         |
 | ----------- | ------------------------------------------------------------------------------------------------------ |
-| Events      | Reads `read`, `every`, `answers`, the old event names and the head key `search=script`. Gives the reasons `panel`, `sheet`, `timer`, `search` and `change`, and `OPENSPOT_PREVIEW`. |
 | Calls       | Gives the search text and its forms as arguments of `read`.                                            |
 | Header      | Reads `command` and `setting` blocks, `offers=rows` and `offers=float`, and `mode=inline`.             |
 | Blocks      | Reads `gauge`, `slider` and `hotkey` as kinds, and `look=tick`.                                        |

@@ -12,7 +12,7 @@ public struct SheetSandbox: Equatable, Sendable {
 
     public init() {}
 
-    /// The command that the sandbox calls for a file: it reads a file with a `read`, and clicks any other.
+    /// The command that the sandbox calls for a file: it reads a file with an `on`, and clicks any other.
     public static func command(file: URL) -> Spot {
         let header = SpotHeader(url: file).block
         return Spot(
@@ -20,7 +20,7 @@ public struct SheetSandbox: Equatable, Sendable {
             name: file.lastPathComponent,
             url: file,
             kind: .list,
-            read: (try? SpotRead(read: header.value("read"), every: header.value("every"), on: header.value("on"), of: file.lastPathComponent)) ?? nil,
+            read: (try? SpotRead(on: header.values("on"), of: file.lastPathComponent)) ?? nil,
             mode: header.value("mode").flatMap(SpotMode.init(rawValue:)).map { $0.stays ? .stay : .once } ?? .once
         )
     }

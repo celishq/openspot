@@ -164,13 +164,13 @@ final class SpotFaultTests: XCTestCase {
     }
 
     func testAChangedScriptReadsAgainWhileTheOpenPanelShowsIt() async throws {
-        try script("cups", header: "read=panel", "printf 'title=One cup\\n'")
+        try script("cups", header: "on=panel.open", "printf 'title=One cup\\n'")
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
         try await wait("the first read") { entry("cups")?.state.title == "One cup" }
 
-        try script("cups", header: "read=panel", "printf 'title=Two cups\\n'")
+        try script("cups", header: "on=panel.open", "printf 'title=Two cups\\n'")
         model.folderChanged()
 
         try await wait("the read of the changed script") { entry("cups")?.state.title == "Two cups" }

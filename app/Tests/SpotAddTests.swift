@@ -275,7 +275,7 @@ final class SpotAddTests: XCTestCase {
 
     func testAFirstAddPrintsTheReviewAndNeedsYesWhenItHasAUse() async throws {
         let repo = try repo()
-        try repo.commit(["coffee.sh": "#!/bin/sh\n# title=Coffee\n# uses=network\n# every=60\ncurl -s https://example.com\n"])
+        try repo.commit(["coffee.sh": "#!/bin/sh\n# title=Coffee\n# uses=network\n# on=clock.60\ncurl -s https://example.com\n"])
 
         let first = try await answer(["spot", "add", repo.url.path])
 
@@ -398,7 +398,7 @@ final class SpotAddTests: XCTestCase {
         let repo = try repo()
         _ = try await answer(["spot", "add", repo.url.path])
         let before = try files(in: plugins)
-        try repo.commit(["coffee.sh": "#!/bin/sh\n# title=Coffee\n# every=60\nrm -f /tmp/x\n"])
+        try repo.commit(["coffee.sh": "#!/bin/sh\n# title=Coffee\n# on=clock.60\nrm -f /tmp/x\n"])
 
         let refused = try await answer(["spot", "add", repo.url.path])
 

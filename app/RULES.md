@@ -71,7 +71,7 @@ spot's file.
 | P7 | A `.spot` file has no signature. Openspot warns the sender about secrets, and does not look for them. |
 | P9 | A core spot needs no review, because it is signed with the app. |
 | P10 | A drag of a spot of the plugins folder onto the store publishes it as a package folder `<id>.spot` in `store/` of the config folder: its files, `listing.toml`, `readme.md` and `preview.txt`. A spot with no readme opens its listing and is not published. A spot whose files did not change writes nothing. |
-| P11 | A preview is the text that a spot prints with `OPENSPOT_PREVIEW=1`, on the author's Mac at publish. Drawing a preview runs no code. |
+| P11 | A preview is the text that a spot prints with `OPENSPOT_REASON=spot.preview`, on the author's Mac at publish. Drawing a preview runs no code. |
 
 ## Floats
 

@@ -116,7 +116,7 @@ final class GlobalKeyTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: folder) }
         try "#!/bin/sh\n# offers=float\n".writeScript(to: folder.appendingPathComponent("shelf.sh"))
         try "#!/bin/sh\n".writeScript(to: folder.appendingPathComponent("notes.sh"))
-        try "#!/bin/sh\n# every=60\n# offers=float\necho text=cups\n".writeScript(to: folder.appendingPathComponent("cups.sh"))
+        try "#!/bin/sh\n# on=clock.60\n# offers=float\necho text=cups\n".writeScript(to: folder.appendingPathComponent("cups.sh"))
         let shortcut = try XCTUnwrap(Shortcut(text: "ctrl+up"))
         let shelf = GlobalKey(spot: "shelf", act: .float, trigger: .key(shortcut))
         let cups = GlobalKey(spot: "cups", act: .float, trigger: .key(shortcut))

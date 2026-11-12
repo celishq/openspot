@@ -19,9 +19,9 @@ final class SpotHeaderTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: folder) }
         let searchOnly = folder.appendingPathComponent("search.sh")
         let rowsOnly = folder.appendingPathComponent("rows.sh"), floating = folder.appendingPathComponent("float.sh")
-        try "#!/bin/sh\n# read=panel\n# offers=search\n".writeScript(to: searchOnly)
-        try "#!/bin/sh\n# read=panel\n# offers=rows\n".writeScript(to: rowsOnly)
-        try "#!/bin/sh\n# read=sheet\n# offers=float\n".writeScript(to: floating)
+        try "#!/bin/sh\n# on=panel.open\n# offers=search\n".writeScript(to: searchOnly)
+        try "#!/bin/sh\n# on=panel.open\n# offers=rows\n".writeScript(to: rowsOnly)
+        try "#!/bin/sh\n# on=sheet.open\n# offers=float\n".writeScript(to: floating)
 
         let search = try XCTUnwrap(try SpotFile(file: searchOnly, id: "search")?.spots.first)
         let rows = try XCTUnwrap(try SpotFile(file: rowsOnly, id: "rows")?.spots.first)
@@ -39,7 +39,7 @@ final class SpotHeaderTests: XCTestCase {
 
     func testAnUnknownPlaceRefusesThePlugin() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-place-\(UUID().uuidString)")
-        try "#!/bin/sh\n# read=panel\n# offers=dock\n".writeScript(to: url)
+        try "#!/bin/sh\n# on=panel.open\n# offers=dock\n".writeScript(to: url)
         defer { try? FileManager.default.removeItem(at: url) }
 
         XCTAssertThrowsError(try SpotFile(file: url, id: "script")) { error in
@@ -49,10 +49,10 @@ final class SpotHeaderTests: XCTestCase {
 
     func testGlobalFloatAndTrayRefuseThePluginAndNameTheirNewWay() throws {
         let cases = [
-            ("read=panel\n# global=true", "offers=search"),
-            ("read=panel\n# global=rows", "offers=rows"),
-            ("read=sheet\n# float=true", "offers=float"),
-            ("every=60\n# tray=true", "menu bar")
+            ("on=panel.open\n# global=true", "offers=search"),
+            ("on=panel.open\n# global=rows", "offers=rows"),
+            ("on=sheet.open\n# float=true", "offers=float"),
+            ("on=clock.60\n# tray=true", "menu bar")
         ]
         for (header, hint) in cases {
             let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-old-\(UUID().uuidString)")
@@ -84,8 +84,8 @@ final class SpotHeaderTests: XCTestCase {
     }
 
     func testReadsTheCommentsOfOtherLanguages() {
-        XCTAssertEqual(SpotHeader(text: "#!/usr/bin/env lua\n-- every=5\nprint(1)").block.value("every"), "5")
-        XCTAssertEqual(SpotHeader(text: "#!/usr/bin/env bun\n// every=5\nconsole.log(1)").block.value("every"), "5")
+        XCTAssertEqual(SpotHeader(text: "#!/usr/bin/env lua\n-- on=clock.5\nprint(1)").block.value("on"), "clock.5")
+        XCTAssertEqual(SpotHeader(text: "#!/usr/bin/env bun\n// on=clock.5\nconsole.log(1)").block.value("on"), "clock.5")
     }
 
     func testAProgramHasNoHeader() {
@@ -106,7 +106,7 @@ final class SpotHeaderTests: XCTestCase {
     }
 
     func testAnAnswersPatternIsTheWholeRestOfItsLine() throws {
-        let header = SpotHeader(text: "#!/bin/sh\n# answers=^\\s*([0-9,.]|(?i:today|now)\\b)\n").block
+        let header = SpotHeader(text: "#!/bin/sh\n# on=search.text ^\\s*([0-9,.]|(?i:today|now)\\b)\n").block
 
         let spot = try XCTUnwrap(try SpotFile(script: URL(fileURLWithPath: "/plugins/calc.sh"), header: header, id: "calc").spots.first)
 

@@ -3,7 +3,7 @@
 # icon=tray.full
 # detail=Keeps files at hand
 # drop=*
-# read=sheet
+# on=sheet.open
 # offers=float
 list="$OPENSPOT_DATA/files"
 . "$OPENSPOT_SH"

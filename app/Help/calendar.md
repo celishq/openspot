@@ -7,7 +7,7 @@ rules it names by their IDs.
 #!/bin/sh
 # title=Today
 # icon=calendar
-# read=panel
+# on=panel.open
 case "$1" in
   read) openspot calendar events ;;
   open) openspot calendar show "$2" ;;

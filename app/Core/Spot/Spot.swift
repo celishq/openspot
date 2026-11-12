@@ -70,7 +70,7 @@ public struct Spot: Equatable, Sendable {
     public private(set) var isBuiltIn = false
     /// More words that find it in the main search, beside its name and the words under it.
     public let keywords: [String]
-    /// Whether its read prints fake data while `OPENSPOT_PREVIEW` is 1, for the preview of its listing.
+    /// Whether its read prints fake data while `OPENSPOT_REASON` is `spot.preview`, for the preview of its listing.
     public let previewsSample: Bool
 
     public init(

@@ -2,7 +2,7 @@
 # icon=/System/Applications/Shortcuts.app
 # detail=Run a shortcut
 # size=small
-# read=panel
+# on=panel.open
 # offers=search
 # drop=*
 # uses=clipboard
@@ -79,7 +79,7 @@ run() {
 
 case "$1" in
   read)
-    [ "$OPENSPOT_REASON" = panel ] && rm -f "$input"
+    [ "$OPENSPOT_REASON" = panel.open ] && rm -f "$input"
     head_of_list
     if [ -s "$kept" ]; then
       cat "$kept"

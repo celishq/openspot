@@ -8,7 +8,7 @@ final class SpotUsageTests: SpotRunsCase {
     private static let busyLoop = "i=0; while [ $i -lt 50000 ]; do i=$((i + 1)); done"
 
     func testABusyScriptCountsItsCPUTime() async throws {
-        try script(header: "read=sheet", "\(Self.busyLoop)\nprintf 'row=a\\ntitle=A\\n'")
+        try script(header: "on=sheet.open", "\(Self.busyLoop)\nprintf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
         runs.panelOpened()
@@ -21,7 +21,7 @@ final class SpotUsageTests: SpotRunsCase {
     }
 
     func testAStayingScriptCountsItsCPUTimeWhileItRuns() async throws {
-        try script(header: "mode=stay\nread=sheet", """
+        try script(header: "mode=stay\non=sheet.open", """
         \(Self.busyLoop)
         touch '\(path("busy"))'
         while IFS= read -r line; do
@@ -44,7 +44,7 @@ final class SpotUsageTests: SpotRunsCase {
     func testAStayingProcessPutsItsCPUTimeOnTheDayItWasSpent() async throws {
         runs.quit()
         runs = SpotRuns(now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50), stats: folder.appendingPathComponent("stats"))
-        try script(header: "mode=stay\nread=sheet", """
+        try script(header: "mode=stay\non=sheet.open", """
         \(Self.busyLoop)
         touch '\(path("busy"))'
         \(untilRelease)
@@ -73,7 +73,7 @@ final class SpotUsageTests: SpotRunsCase {
     }
 
     func testAFailedCallIsTheLastFaultAndAFailure() async throws {
-        try script(header: "read=sheet", "echo 'No network.' >&2\nexit 3")
+        try script(header: "on=sheet.open", "echo 'No network.' >&2\nexit 3")
         let sheet = try sheet()
 
         runs.panelOpened()

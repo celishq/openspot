@@ -256,7 +256,7 @@ final class SamplePluginsTests: SamplePluginsCase {
 
         let lines = try await files.items(query: "a", timeout: 5)
 
-        XCTAssertEqual(lines.search, .script)
+        XCTAssertEqual(files.read?.searchesSheet, true)
         XCTAssertEqual(lines.items, [])
     }
 

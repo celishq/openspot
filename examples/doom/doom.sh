@@ -2,7 +2,7 @@
 # title=Doom
 # icon=gamecontroller
 # detail=Play the first episode of Doom
-# read=panel
+# on=panel.open
 # size=square
 # view=screen.swift
 # uses=network

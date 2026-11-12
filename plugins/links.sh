@@ -1,7 +1,7 @@
 #!/bin/sh
 # icon=link
 # detail=Open a link
-# read=panel
+# on=panel.open
 # offers=search
 # uses=network,clipboard
 export LC_ALL=en_US.UTF-8

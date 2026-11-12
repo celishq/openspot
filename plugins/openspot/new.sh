@@ -3,7 +3,8 @@
 # icon=plus
 # detail=Make your own
 # size=small
-# read=sheet
+# on=sheet.open
+# on=sheet.text
 # uses=spots,clipboard
 folder="${OPENSPOT_PLUGINS:-$OPENSPOT_CONFIG/plugins}"
 
@@ -29,7 +30,7 @@ starter() {
 
 case "$1" in
   read)
-    printf 'search=script\nrecents=false\n'
+    printf 'recents=false\n'
     printf '\nbutton=open\ntitle=Choose\n'
     printf '\nbutton=guide\ntitle=Read the guide\nscope=command\nclose=true\n'
     printf '\nbutton=folder\ntitle=Open plugins folder\nscope=command\nclose=true\n'

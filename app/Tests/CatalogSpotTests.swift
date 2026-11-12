@@ -8,7 +8,7 @@ final class CatalogSpotTests: BuiltInCase {
         try await super.setUp()
         try "#!/bin/sh\n# detail=Open app\n# icon=star\n".writeScript(to: core.appendingPathComponent("zebra.sh"))
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.sh"))
-        try "#!/bin/sh\n# every=5\n".writeScript(to: core.appendingPathComponent("cpu.sh"))
+        try "#!/bin/sh\n# on=clock.5\n".writeScript(to: core.appendingPathComponent("cpu.sh"))
     }
 
     private var catalog: Spot {

@@ -211,8 +211,8 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testAnEveryLineIsAnUnknownKeyThatASheetSkips() throws {
-        XCTAssertEqual(SpotOutput(text: "every=5\n\ntext=a\ntitle=A\n").sheetFaults, [])
-        XCTAssertEqual(try panel("every=5\n\ntext=a\ntitle=A\n").parts.map(\.id), ["a"])
+        XCTAssertEqual(SpotOutput(text: "on=clock.5\n\ntext=a\ntitle=A\n").sheetFaults, [])
+        XCTAssertEqual(try panel("on=clock.5\n\ntext=a\ntitle=A\n").parts.map(\.id), ["a"])
     }
 
     func testTheHintSaysThatAPressStopsARunningPart() throws {
