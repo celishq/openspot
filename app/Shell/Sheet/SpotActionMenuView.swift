@@ -7,7 +7,7 @@ struct SpotActionMenuView: View {
     /// Whether the field is the last line, as in a menu that grows up from its item, whose bottom stays still.
     var fieldIsLast = false
     /// Whether the menu has stopped moving. Until then its field is a drawn copy, since a text field of AppKit lies at its
-    /// layout place and does not follow the menu's scale.
+    /// layout place and does not follow the menu's scale, and draws its words lower without the focus. The swap never fades.
     var isSettled = true
     var work: (ActionMenu.Row) -> ScriptCall? = { _ in nil }
     let onPress: (Int) -> Void
@@ -66,9 +66,9 @@ struct SpotActionMenuView: View {
     private var field: some View {
         ZStack {
             SpotSearchField(prompt: Self.prompt, text: menu.query, onSearch: onSearch, isFocused: $isSearching)
-                .opacity(isSettled ? 1 : 0.001)
+                .animation(nil) { $0.opacity(isSettled ? 1 : 0.001) }
             fieldCopy
-                .opacity(isSettled ? 0 : 1)
+                .animation(nil) { $0.opacity(isSettled ? 0 : 1) }
         }
         .onAppear {
             DispatchQueue.main.async { isSearching = true }

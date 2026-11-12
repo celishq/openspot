@@ -209,9 +209,11 @@ final class SpotMotionProbe: NSObject {
         save(to: "\(folder)/long-moving.png")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             self.save(to: "\(folder)/long.png")
+            self.saveSharp(to: "\(folder)/field-focused.png")
             self.panel.makeFirstResponder(nil)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 self.save(to: "\(folder)/long-unfocused.png")
+                self.saveSharp(to: "\(folder)/field-unfocused.png")
                 self.model.searchMenu("co")
             }
         }
@@ -627,6 +629,17 @@ final class SpotMotionProbe: NSObject {
     }
 
     /// Writes the panel's content as a PNG over the colour of a window, since the blur draws nothing off screen.
+    /// Saves the panel at twice its size in points, as a Retina screen draws it, so that half a point shows.
+    private func saveSharp(to path: String) {
+        guard let view = panel.contentView, let bitmap = NSBitmapImageRep(
+            bitmapDataPlanes: nil, pixelsWide: Int(view.bounds.width) * 2, pixelsHigh: Int(view.bounds.height) * 2, bitsPerSample: 8,
+            samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0
+        ) else { return }
+        bitmap.size = view.bounds.size
+        view.cacheDisplay(in: view.bounds, to: bitmap)
+        FileManager.default.createFile(atPath: path, contents: bitmap.representation(using: .png, properties: [:]))
+    }
+
     private func save(to path: String) {
         guard let view = panel.contentView, let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
         view.cacheDisplay(in: view.bounds, to: bitmap)
