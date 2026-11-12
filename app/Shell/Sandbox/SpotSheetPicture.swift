@@ -6,7 +6,7 @@ import SwiftUI
 @MainActor
 enum SpotSheetPicture {
     private static let settle = 0.5
-    private static let margin: CGFloat = 16
+    private static let margin = SpotPictureStage<Color>.margin
 
     static func list(of output: SpotOutput) -> ItemList {
         var list = ItemList(items: output.items)
@@ -34,7 +34,6 @@ enum SpotSheetPicture {
         })
         let view = NSHostingView(rootView: preview
             .padding(margin)
-            .background(SpotTheme.window)
             .preferredColorScheme(.dark))
         let frame = NSRect(x: -9000, y: -9000, width: size.width + 2 * margin, height: size.height + 2 * margin)
         let window = NSWindow(contentRect: frame, styleMask: .borderless, backing: .buffered, defer: false)

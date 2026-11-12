@@ -1,7 +1,7 @@
 import OpenspotCore
 import SwiftUI
 
-/// A sheet on its own, of parts or of rows, with the header and size it has in the panel, for a picture.
+/// A sheet on its own, of parts or of rows, with the header and size it has in the panel, on the glass of a picture.
 struct SpotSheetPreview: View {
     let panel: SheetParts?
     var title = "Sheet"
@@ -14,7 +14,6 @@ struct SpotSheetPreview: View {
 
     var body: some View {
         let frame = panel.map { SpotTokens.panelRect($0).size } ?? SpotTokens.floatSize(rows: list.shown.count)
-        let shape = RoundedRectangle(cornerRadius: SpotTokens.radius, style: .continuous)
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             HStack(spacing: SpotTokens.padding - 5) {
                 Image(systemName: symbol)
@@ -38,7 +37,6 @@ struct SpotSheetPreview: View {
         }
         .padding(SpotTokens.padding)
         .frame(width: frame.width, height: frame.height, alignment: .topLeading)
-        .background(SpotTheme.preview, in: shape)
-        .overlay { shape.strokeBorder(SpotTheme.ink.opacity(SpotTheme.chip), lineWidth: 1) }
+        .background { SpotPictureStage(size: frame, radius: SpotTokens.radius) { Color.clear }.padding(-SpotPictureStage<Color>.margin) }
     }
 }
