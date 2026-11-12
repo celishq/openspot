@@ -19,23 +19,16 @@ extension Board {
     }
 
     /// Ties the arrows that a stroke crosses, where it crossed them, side by side in the order the stroke met them across
-    /// their way. Returns the tie, or nil when the stroke crossed fewer than two arrows.
+    /// the tie by where each comes from, so each wire keeps its side and none crosses another. Returns the tie, or nil when the
+    /// stroke crossed fewer than two arrows.
     @discardableResult
     mutating func bundle(along stroke: [CGPoint]) -> UUID? {
         let crossed = arrows(crossedBy: stroke)
         guard crossed.count > 1 else { return nil }
         let center = crossed.map(\.at).reduce(CGPoint.zero, +) * (1 / CGFloat(crossed.count))
-        var way = CGPoint.zero
-        for hit in crossed {
-            let line = path(of: hit.arrow)
-            var own = (line[min(hit.step + 1, line.count - 1)] - line[hit.step]).unit
-            if way != .zero, own.x * way.x + own.y * way.y < 0 { own = own * -1 }
-            way = way == .zero ? own : way + own
-        }
-        let across = way.unit.normal
-        let order = crossed.sorted { ($0.at - center).x * across.x + ($0.at - center).y * across.y < ($1.at - center).x * across.x + ($1.at - center).y * across.y }
         var tie = Figure(kind: .tie, points: [center])
-        tie.members = order.map(\.arrow.id)
+        tie.ink = .blue
+        tie.members = crossed.map(\.arrow.id)
         for hit in crossed {
             let line = path(of: hit.arrow)
             let before = hit.arrow.ties.filter { id in
@@ -46,6 +39,36 @@ extension Board {
             update(hit.arrow.id) { $0.ties.insert(tie.id, at: before) }
         }
         add(tie)
+        sortLanes()
         return tie.id
+    }
+
+    /// Puts the arrows of each tie side by side by where each comes from, the ties nearest the starts of their arrows first,
+    /// so each wire keeps its side through every tie and none crosses another.
+    mutating func sortLanes() {
+        let board = self
+        let rank = { (tie: Figure) in tie.members.compactMap { board[$0]?.ties.firstIndex(of: tie.id) }.min() ?? 0 }
+        let ties = figures.filter { $0.kind == .tie }.sorted { rank($0) < rank($1) }
+        for tie in ties {
+            guard let current = self[tie.id] else { continue }
+            let way = direction(of: current)
+            let across = way.normal
+            let center = current.points[0]
+            let side = Dictionary(uniqueKeysWithValues: current.members.map { id -> (UUID, CGFloat) in
+                let from = source(of: id, into: tie.id, along: way)
+                return (id, (from - center).x * across.x + (from - center).y * across.y)
+            })
+            update(tie.id) { $0.members.sort { side[$0, default: 0] < side[$1, default: 0] } }
+        }
+    }
+
+    /// Where an arrow comes from on its way into a tie: its own lane in the tie before, or its start. An arrow that runs
+    /// the other way comes from its end, or from the tie after.
+    private func source(of arrowID: UUID, into tieID: UUID, along way: CGPoint) -> CGPoint {
+        guard let arrow = self[arrowID], let place = arrow.ties.firstIndex(of: tieID) else { return .zero }
+        let before = place == 0 ? anchor(arrow, start: true) : self[arrow.ties[place - 1]].map { lane(of: arrow, in: $0) } ?? anchor(arrow, start: true)
+        let after = place == arrow.ties.count - 1 ? anchor(arrow, start: false) : self[arrow.ties[place + 1]].map { lane(of: arrow, in: $0) } ?? anchor(arrow, start: false)
+        let travel = after - before
+        return travel.x * way.x + travel.y * way.y >= 0 ? before : after
     }
 }

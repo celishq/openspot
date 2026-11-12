@@ -4,7 +4,7 @@ import SwiftUI
 /// The app of the board window: its canvas, its floating bars and its menu. It shows one board at a time, and a pick in
 /// the list of boards shows another in the same window.
 @MainActor
-final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
+final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate, NSToolbarDelegate {
     private(set) var studio: Studio
     private var lock: Lock
     private let drawer = Drawer()
@@ -25,6 +25,11 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         window = NSWindow(contentRect: CGRect(origin: .zero, size: size), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
+        let toolbar = NSToolbar(identifier: "Draw")
+        toolbar.delegate = self
+        toolbar.displayMode = .iconOnly
+        window.toolbar = toolbar
+        window.toolbarStyle = .unified
         window.appearance = NSAppearance(named: .aqua)
         window.backgroundColor = .white
         window.delegate = self
@@ -50,16 +55,14 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let side = bar(Sidebar(drawer: drawer, studio: studio, shelf: shelf, open: { [weak self] in self?.show($0) }, make: { [weak self] in self?.make() }), in: root)
         side.isHidden = !drawer.open
         self.side = side
-        let toggle = bar(Knob(symbol: "sidebar.left", help: "Boards  ⌃⌘S", below: true) { [weak self] in self?.toggleBoards(nil) }, in: root)
         NSLayoutConstraint.activate([
             canvas.leadingAnchor.constraint(equalTo: root.leadingAnchor), canvas.trailingAnchor.constraint(equalTo: root.trailingAnchor),
             canvas.topAnchor.constraint(equalTo: root.topAnchor), canvas.bottomAnchor.constraint(equalTo: root.bottomAnchor),
             side.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 8), side.topAnchor.constraint(equalTo: root.topAnchor, constant: 8),
-            side.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -66),
-            toggle.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 76), toggle.topAnchor.constraint(equalTo: root.topAnchor, constant: -3),
+            side.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -8),
             tools.centerXAnchor.constraint(equalTo: root.centerXAnchor), tools.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -14),
-            corner.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 14), corner.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -14),
-            style.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -14), style.topAnchor.constraint(equalTo: root.topAnchor, constant: 52)
+            corner.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -14), corner.topAnchor.constraint(equalTo: root.topAnchor, constant: 10),
+            style.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -14), style.topAnchor.constraint(equalTo: corner.bottomAnchor, constant: 8)
         ])
         window.contentView = root
         window.title = studio.board.title
@@ -109,6 +112,32 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     @objc func newBoard(_ sender: Any?) {
         make()
+    }
+
+    /// Shows the list of boards with the name of this board ready to change.
+    @objc func renameBoard(_ sender: Any?) {
+        if !drawer.open { toggleBoards(nil) }
+        drawer.naming = nil
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [self] in drawer.naming = studio.file }
+    }
+
+    // MARK: Window toolbar
+
+    private static let boardsItem = NSToolbarItem.Identifier("boards")
+
+    func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] { [Self.boardsItem] }
+
+    func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] { [Self.boardsItem] }
+
+    func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier identifier: NSToolbarItem.Identifier, willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
+        let item = NSToolbarItem(itemIdentifier: identifier)
+        item.image = NSImage(systemSymbolName: "sidebar.left", accessibilityDescription: "Boards")
+        item.label = "Boards"
+        item.toolTip = "Boards  ⌃⌘S"
+        item.isBordered = true
+        item.target = self
+        item.action = #selector(toggleBoards(_:))
+        return item
     }
 
     /// Floats a SwiftUI bar over the canvas at its own size.
@@ -179,6 +208,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         ])
         add("File", [
             item("New Board", #selector(Desk.newBoard(_:)), "n"),
+            item("Rename Board…", #selector(Desk.renameBoard(_:)), "r"),
             item("Insert Image…", #selector(Canvas.insertPicture(_:)), "i", [.command, .shift])
         ])
         add("Edit", [

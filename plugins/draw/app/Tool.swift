@@ -2,7 +2,7 @@ import Foundation
 
 /// What a press on the canvas does, in the order of the toolbar.
 enum Tool: String, CaseIterable, Identifiable {
-    case select, hand, pen, eraser, arrow, text, shape, bundle
+    case select, hand, pen, eraser, arrow, bundle, text, shape
 
     var id: String { rawValue }
 

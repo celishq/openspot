@@ -65,15 +65,17 @@ final class Studio: ObservableObject {
         guard !selection.isEmpty else { return }
         let style = style
         self.change { board in
-            for id in selection where board[id]?.kind != .tie {
-                board.update(id) { style.dress(&$0) }
+            for id in selection {
+                board.update(id) { figure in
+                    if figure.kind == .tie { figure.ink = style.ink } else { style.dress(&figure) }
+                }
             }
         }
     }
 
     /// Shows the style of the selection in the style panel.
     func pickUpStyle() {
-        if let first = selection.lazy.compactMap({ self.board[$0] }).first(where: { $0.kind != .tie }) {
+        if let first = selection.lazy.compactMap({ self.board[$0] }).first {
             style = Style(of: first)
         }
     }

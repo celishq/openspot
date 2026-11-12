@@ -128,9 +128,8 @@ struct Toolbar: View {
     var body: some View {
         HStack(spacing: 2) {
             ForEach(Tool.allCases) { tool in
-                if tool == .bundle {
+                if tool == .shape {
                     Knob(symbol: "photo", help: "Image  ⇧⌘I", action: picture)
-                    Divider().frame(height: 22).padding(.horizontal, 4)
                 }
                 let title = tool == .shape ? studio.form.title : tool.title
                 Knob(symbol: tool.symbol, form: tool == .shape ? studio.form : nil, help: "\(title)  \(String(tool.key).uppercased())", on: studio.tool == tool) {
@@ -295,10 +294,11 @@ struct StyleSlot: View {
     }
 }
 
-/// Whether the list of boards shows, shared by each board that the window shows in turn.
+/// Whether the list of boards shows, and the board whose name it edits, shared by each board that the window shows in turn.
 @MainActor
 final class Drawer: ObservableObject {
     @Published var open = false
+    @Published var naming: URL?
 }
 
 /// The list of boards that slides in from the left: each board, newest first, opens on a click and takes a new name on a
@@ -310,7 +310,6 @@ struct Sidebar: View {
     let open: (URL) -> Void
     let make: () -> Void
     @State private var entries: [Shelf.Entry] = []
-    @State private var naming: URL?
     @State private var name = ""
     @FocusState private var typing: Bool
 
@@ -331,7 +330,7 @@ struct Sidebar: View {
             }
         }
         .padding(.horizontal, 10)
-        .padding(.top, 46)
+        .padding(.top, 58)
         .padding(.bottom, 10)
         .frame(width: 270)
         .frame(maxHeight: .infinity, alignment: .top)
@@ -340,6 +339,9 @@ struct Sidebar: View {
         .onAppear(perform: reload)
         .onChange(of: drawer.open) { _, open in if open { reload() } }
         .onReceive(studio.$board.map(\.title).removeDuplicates()) { _ in reload() }
+        .onChange(of: drawer.naming) { _, file in
+            if let file, let entry = entries.first(where: { $0.file == file }) { startNaming(entry) }
+        }
     }
 
     private func reload() {
@@ -360,7 +362,7 @@ struct Sidebar: View {
             .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 5, style: .continuous).strokeBorder(Color.primary.opacity(0.12)))
             VStack(alignment: .leading, spacing: 1) {
-                if naming == entry.file {
+                if drawer.naming == entry.file {
                     TextField("Name", text: $name)
                         .textFieldStyle(.plain)
                         .font(.system(size: 13, weight: .medium))
@@ -379,7 +381,7 @@ struct Sidebar: View {
         .background(current ? Color.accentColor.opacity(0.14) : .clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .contentShape(Rectangle())
         .onTapGesture(count: 2) { startNaming(entry) }
-        .onTapGesture { if naming != entry.file { open(entry.file) } }
+        .onTapGesture { if drawer.naming != entry.file { open(entry.file) } }
         .contextMenu {
             Button("Rename") { startNaming(entry) }
             Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([entry.file]) }
@@ -388,13 +390,13 @@ struct Sidebar: View {
 
     private func startNaming(_ entry: Shelf.Entry) {
         name = entry.title
-        naming = entry.file
+        drawer.naming = entry.file
         typing = true
     }
 
     private func finish(_ entry: Shelf.Entry) {
-        guard naming == entry.file else { return }
-        naming = nil
+        guard drawer.naming == entry.file else { return }
+        drawer.naming = nil
         if entry.file.standardizedFileURL == studio.file.standardizedFileURL {
             studio.rename(name)
         } else {

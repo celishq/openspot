@@ -131,7 +131,7 @@ struct Figure: Codable, Equatable, Identifiable {
         }
         form = try values.decodeIfPresent(Form.self, forKey: .form) ?? form
         heads = try values.decodeIfPresent(Heads.self, forKey: .heads) ?? heads
-        ink = try values.decodeIfPresent(Ink.self, forKey: .ink) ?? .black
+        ink = try values.decodeIfPresent(Ink.self, forKey: .ink) ?? (kind == .tie ? .blue : .black)
         weight = try values.decodeIfPresent(Weight.self, forKey: .weight) ?? .m
         dashed = try values.decodeIfPresent(Bool.self, forKey: .dashed) ?? false
         filled = try values.decodeIfPresent(Bool.self, forKey: .filled) ?? false

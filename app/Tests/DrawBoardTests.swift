@@ -57,6 +57,52 @@ final class DrawBoardTests: XCTestCase {
         XCTAssertGreaterThan(near.max()!, 1)
     }
 
+    func testTiedArrowsReachTheirShapeSideBySide() throws {
+        var (board, _, arrows) = fan()
+        board.bundle(along: cut)
+
+        let ends = try arrows.map { try XCTUnwrap(board.path(of: board[$0.id]!).last) }
+
+        XCTAssertGreaterThan(ends[0].distance(to: ends[1]), 4)
+    }
+
+    func testWiresFromManySidesRunOneWayThroughTheirTiesInOneOrder() throws {
+        let wide = { (x: CGFloat, y: CGFloat) in Figure(kind: .shape, points: [CGPoint(x: x, y: y), CGPoint(x: x + 150, y: y + 100)]) }
+        let target = wide(0, 250)
+        var board = Board(figures: [target, wide(300, 0), wide(560, 280), wide(320, 560)])
+        for source in board.figures.dropFirst() {
+            var arrow = Figure(kind: .arrow, points: [.zero, .zero])
+            arrow.start = source.id
+            arrow.end = target.id
+            board.add(arrow)
+        }
+        let first = try XCTUnwrap(board.bundle(along: [CGPoint(x: 300, y: 90), CGPoint(x: 300, y: 570)]))
+        let second = try XCTUnwrap(board.bundle(along: [CGPoint(x: 200, y: 150), CGPoint(x: 200, y: 460)]))
+
+        XCTAssertEqual(board[first]?.members.count, 3)
+        XCTAssertEqual(board[second]?.members, board[first]?.members)
+        XCTAssertLessThan(try XCTUnwrap(board[first].map { board.direction(of: $0) }).x, -0.9, "wires from above, the right and below run left together")
+    }
+
+    func testATieIsBlueAndTakesAnotherInk() throws {
+        var (board, _, _) = fan()
+        let tie = try XCTUnwrap(board.bundle(along: cut))
+        XCTAssertEqual(board[tie]?.ink, .blue)
+
+        let old = #"{"id":"00000000-0000-0000-0000-000000000001","kind":"tie","points":[[0,0]]}"#
+        XCTAssertEqual(try JSONDecoder().decode(Figure.self, from: Data(old.utf8)).ink, .blue)
+    }
+
+    func testTheCrossOfACrossedBoxStaysInsideItsRoundCorners() throws {
+        let frame = CGRect(x: 0, y: 0, width: 17, height: 17)
+        let outline = Figure.Form.xBox.path(in: frame)
+        let cross = try XCTUnwrap(Figure.Form.xBox.marks(in: frame))
+
+        XCTAssertTrue(outline.contains(CGPoint(x: 8.5, y: 1)))
+        XCTAssertTrue(outline.contains(CGPoint(x: 2, y: 2)), "the corners are round, not a circle")
+        XCTAssertTrue(outline.contains(cross.boundingBoxOfPath.origin + CGPoint(x: 0.1, y: 0.1)))
+    }
+
     func testArrowsToDifferentShapesTieToo() throws {
         let a = box(0, 0)
         let b = box(0, 200)

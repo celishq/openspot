@@ -7,7 +7,7 @@ extension Figure.Form {
         let h = frame.height
         switch self {
         case .rectangle, .xBox, .checkBox:
-            let corner = min(10, w / 2, h / 2)
+            let corner = Self.corner(of: frame)
             return CGPath(roundedRect: frame, cornerWidth: corner, cornerHeight: corner, transform: nil)
         case .ellipse:
             return CGPath(ellipseIn: frame, transform: nil)
@@ -66,10 +66,12 @@ extension Figure.Form {
         let at = { (u: CGFloat, v: CGFloat) in CGPoint(x: frame.minX + u * frame.width, y: frame.minY + v * frame.height) }
         switch self {
         case .xBox:
-            path.move(to: at(0, 0))
-            path.addLine(to: at(1, 1))
-            path.move(to: at(1, 0))
-            path.addLine(to: at(0, 1))
+            let inset = Self.corner(of: frame) * (1 - 1 / 2.squareRoot())
+            let box = frame.insetBy(dx: inset, dy: inset)
+            path.move(to: CGPoint(x: box.minX, y: box.minY))
+            path.addLine(to: CGPoint(x: box.maxX, y: box.maxY))
+            path.move(to: CGPoint(x: box.maxX, y: box.minY))
+            path.addLine(to: CGPoint(x: box.minX, y: box.maxY))
         case .checkBox:
             path.move(to: at(0.25, 0.52))
             path.addLine(to: at(0.43, 0.7))
@@ -78,6 +80,11 @@ extension Figure.Form {
             return nil
         }
         return path
+    }
+
+    /// The radius of the corners of a box: small beside its size, and at most 10.
+    private static func corner(of frame: CGRect) -> CGFloat {
+        min(10, min(frame.width, frame.height) * 0.15)
     }
 
     private func polygon(_ corners: [(CGFloat, CGFloat)], in frame: CGRect) -> CGPath {

@@ -78,18 +78,20 @@ struct Board: Codable, Equatable {
         return start ? figure.points[0] : figure.points[figure.points.count - 1]
     }
 
-    /// The way the arrows run through a tie, as a unit vector.
+    /// The way the arrows run through a tie, as a unit vector: the sum of the ways they run, where an arrow that runs
+    /// against the others counts turned round. Wires that meet from many sides still give their common way.
     func direction(of tie: Figure) -> CGPoint {
-        var sum = CGPoint.zero
-        var first: CGPoint?
-        for id in tie.members {
-            guard let arrow = self[id], let place = arrow.ties.firstIndex(of: tie.id) else { continue }
+        let ways = tie.members.compactMap { id -> CGPoint? in
+            guard let arrow = self[id], let place = arrow.ties.firstIndex(of: tie.id) else { return nil }
             let before = place == 0 ? anchor(arrow, start: true) : self[arrow.ties[place - 1]]?.points[0] ?? anchor(arrow, start: true)
             let after = place == arrow.ties.count - 1 ? anchor(arrow, start: false) : self[arrow.ties[place + 1]]?.points[0] ?? anchor(arrow, start: false)
-            var way = (after - before).unit
-            if let first, way.x * first.x + way.y * first.y < 0 { way = way * -1 }
-            if first == nil { first = way }
-            sum = sum + way
+            return (after - before).unit
+        }
+        guard let first = ways.first else { return CGPoint(x: 1, y: 0) }
+        var common = ways.reduce(CGPoint.zero, +)
+        if common.length < 0.5 { common = first }
+        let sum = ways.reduce(CGPoint.zero) { total, way in
+            total + (way.x * common.x + way.y * common.y < 0 ? way * -1 : way)
         }
         return sum.unit == .zero ? CGPoint(x: 1, y: 0) : sum.unit
     }
@@ -117,9 +119,11 @@ struct Board: Codable, Equatable {
             let box = figure.frame
             return [box.origin, CGPoint(x: box.maxX, y: box.minY), CGPoint(x: box.maxX, y: box.maxY), CGPoint(x: box.minX, y: box.maxY), box.origin]
         }
-        let a = anchor(figure, start: true)
-        let b = anchor(figure, start: false)
+        var a = anchor(figure, start: true)
+        var b = anchor(figure, start: false)
         let ties = figure.ties.compactMap { self[$0] }
+        if let first = ties.first, figure.start != nil { a = a + (lane(of: figure, in: first) - first.points[0]) }
+        if let last = ties.last, figure.end != nil { b = b + (lane(of: figure, in: last) - last.points[0]) }
         var curve: [CGPoint]
         if ties.isEmpty {
             let middle = (a + b) * 0.5 + (b - a).unit.normal * (figure.bend * 2)
@@ -246,6 +250,7 @@ struct Board: Codable, Equatable {
             }
             figures[index].points = figures[index].points.map { $0 + delta }
         }
+        sortLanes()
     }
 
     /// Removes figures. Removing a tie unties its arrows, a tie left with one arrow goes too, and an arrow that held a

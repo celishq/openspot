@@ -62,10 +62,10 @@ struct Painting {
             guard line.count > 1 else { return }
             context.setLineDash(phase: 0, lengths: [])
             if figure.heads != .none {
-                head(at: line[line.count - 1], from: line[max(0, line.count - 4)], width: width, in: context)
+                head(at: line[line.count - 1], from: Painting.back(line.reversed(), by: 10 + width * 2.2), width: width, in: context)
             }
             if figure.heads == .both {
-                head(at: line[0], from: line[min(line.count - 1, 3)], width: width, in: context)
+                head(at: line[0], from: Painting.back(line, by: 10 + width * 2.2), width: width, in: context)
             }
         case .tie:
             tie(figure, in: context)
@@ -108,7 +108,13 @@ struct Painting {
         context.strokePath()
     }
 
-    /// The pill of a tie, laid across the arrows that it holds.
+    /// The first point of a line that lies this far from its first point, so a head points along the end of a curve.
+    static func back(_ line: some Collection<CGPoint>, by reach: CGFloat) -> CGPoint {
+        guard let tip = line.first else { return .zero }
+        return line.first { $0.distance(to: tip) >= reach } ?? line.reversed().first ?? tip
+    }
+
+    /// The pill of a tie, laid across the arrows that it holds, in the tie's ink.
     private func tie(_ figure: Figure, in context: CGContext) {
         let center = figure.points[0]
         let way = board.direction(of: figure)
@@ -118,10 +124,10 @@ struct Painting {
         context.translateBy(x: center.x, y: center.y)
         context.rotate(by: atan2(way.y, way.x))
         let pill = CGPath(roundedRect: CGRect(x: -5, y: -reach, width: 10, height: reach * 2), cornerWidth: 5, cornerHeight: 5, transform: nil)
-        context.setFillColor(NSColor.controlAccentColor.blended(withFraction: 0.65, of: .white)?.cgColor ?? NSColor.white.cgColor)
+        context.setFillColor(figure.ink.color.blended(withFraction: 0.65, of: .white)?.cgColor ?? NSColor.white.cgColor)
         context.addPath(pill)
         context.fillPath()
-        context.setStrokeColor(NSColor.controlAccentColor.cgColor)
+        context.setStrokeColor(figure.ink.color.cgColor)
         context.setLineWidth(2)
         context.addPath(pill)
         context.strokePath()
