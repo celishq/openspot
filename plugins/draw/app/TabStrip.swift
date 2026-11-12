@@ -7,12 +7,13 @@ struct TabStrip: View {
     let show: (Studio) -> Void
     let close: (Studio) -> Void
     let make: () -> Void
+    let trash: (URL) -> Void
     @State private var adding = false
 
     var body: some View {
         HStack(spacing: 4) {
             ForEach(tabs.studios, id: \.file) { studio in
-                TabChip(studio: studio, current: studio === tabs.current, show: { show(studio) }, close: { close(studio) })
+                TabChip(studio: studio, current: studio === tabs.current, show: { show(studio) }, close: { close(studio) }, trash: { trash(studio.file) })
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.4, anchor: .leading).combined(with: .opacity),
                         removal: .scale(scale: 0.2, anchor: .leading).combined(with: .opacity)
@@ -39,6 +40,7 @@ struct TabChip: View {
     let current: Bool
     let show: () -> Void
     let close: () -> Void
+    let trash: () -> Void
     @State private var hovering = false
     @State private var naming = false
     @State private var name = ""
@@ -88,11 +90,16 @@ struct TabChip: View {
         }
         .contentShape(Rectangle())
         .onHover { inside in withAnimation(.easeOut(duration: 0.12)) { hovering = inside } }
-        .onTapGesture(count: 2) {
-            name = studio.board.title
-            naming = true
-            typing = true
-        }
+        .onTapGesture(count: 2, perform: startNaming)
         .onTapGesture(perform: show)
+        .contextMenu {
+            BoardMenu(rename: startNaming, reveal: { NSWorkspace.shared.activateFileViewerSelecting([studio.file]) }, trash: trash)
+        }
+    }
+
+    private func startNaming() {
+        name = studio.board.title
+        naming = true
+        typing = true
     }
 }

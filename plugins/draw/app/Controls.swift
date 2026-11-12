@@ -299,6 +299,25 @@ struct StyleSlot: View {
 final class Drawer: ObservableObject {
     @Published var open = false
     @Published var naming: URL?
+    /// Counts the changes to the boards on disk, such as one moved to the Trash, so the list reads them again.
+    @Published var changes = 0
+}
+
+/// The acts on one board in its menu: rename, show in Finder, and move to the Trash, each with its icon and its key.
+struct BoardMenu: View {
+    let rename: () -> Void
+    let reveal: () -> Void
+    let trash: () -> Void
+
+    var body: some View {
+        Button(action: rename) { Label("Rename", systemImage: "pencil") }
+            .keyboardShortcut("r", modifiers: .command)
+        Button(action: reveal) { Label("Show in Finder", systemImage: "folder") }
+            .keyboardShortcut("r", modifiers: [.command, .option])
+        Divider()
+        Button(action: trash) { Label("Move to Trash", systemImage: "trash") }
+            .keyboardShortcut(.delete, modifiers: .command)
+    }
 }
 
 /// The button beside the window buttons that shows the list of boards, on a small rounded back.
@@ -327,6 +346,7 @@ struct Sidebar: View {
     let shelf: Shelf
     let open: (URL) -> Void
     let make: () -> Void
+    let trash: (URL) -> Void
     @State private var entries: [Shelf.Entry] = []
     @State private var name = ""
     @FocusState private var typing: Bool
@@ -357,6 +377,7 @@ struct Sidebar: View {
         .onAppear(perform: reload)
         .onChange(of: drawer.open) { _, open in if open { reload() } }
         .onReceive(tabs.$current) { _ in reload() }
+        .onChange(of: drawer.changes) { _, _ in reload() }
         .onChange(of: drawer.naming) { _, file in
             if let file, let entry = entries.first(where: { $0.file == file }) { startNaming(entry) }
         }
@@ -401,8 +422,7 @@ struct Sidebar: View {
         .onTapGesture(count: 2) { startNaming(entry) }
         .onTapGesture { if drawer.naming != entry.file { open(entry.file) } }
         .contextMenu {
-            Button("Rename") { startNaming(entry) }
-            Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([entry.file]) }
+            BoardMenu(rename: { startNaming(entry) }, reveal: { NSWorkspace.shared.activateFileViewerSelecting([entry.file]) }, trash: { trash(entry.file) })
         }
     }
 

@@ -33,6 +33,14 @@ struct Shelf {
         try board.save(to: file)
     }
 
+    /// Hands a board, its picture and its folder of images to `trash`, such as the Trash of the Mac.
+    func discard(_ file: URL, trash: (URL) throws -> Void) throws {
+        let base = file.deletingPathExtension()
+        for part in [file, base.appendingPathExtension("png"), base.appendingPathExtension("assets")] where FileManager.default.fileExists(atPath: part.path) {
+            try trash(part)
+        }
+    }
+
     /// Writes a new empty board and returns its file.
     func make() throws -> URL {
         let file = folder.appendingPathComponent(UUID().uuidString.lowercased()).appendingPathExtension("json")

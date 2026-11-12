@@ -40,6 +40,19 @@ final class DrawShelfTests: XCTestCase {
         XCTAssertEqual(renamed.figures, board.figures)
     }
 
+    func testTrashTakesTheBoardWithItsPictureAndImages() throws {
+        let file = folder.appendingPathComponent("a.json")
+        try Board(title: "A").save(to: file)
+        try Data().write(to: folder.appendingPathComponent("a.png"))
+        try FileManager.default.createDirectory(at: folder.appendingPathComponent("a.assets"), withIntermediateDirectories: true)
+        try Board(title: "B").save(to: folder.appendingPathComponent("b.json"))
+        var trashed: [String] = []
+
+        try Shelf(folder: folder).discard(file) { trashed.append($0.lastPathComponent) }
+
+        XCTAssertEqual(trashed.sorted(), ["a.assets", "a.json", "a.png"])
+    }
+
     func testANewBoardIsAnEmptyUntitledBoardOnTheShelf() throws {
         let shelf = Shelf(folder: folder)
 

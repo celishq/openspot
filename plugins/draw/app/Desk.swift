@@ -51,11 +51,11 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         stage.translatesAutoresizingMaskIntoConstraints = false
         root.addSubview(stage)
         let shelf = Shelf(folder: studio.file.deletingLastPathComponent())
-        let side = bar(Sidebar(drawer: drawer, tabs: tabs, shelf: shelf, open: { [weak self] in self?.show($0) }, make: { [weak self] in self?.make() }), in: root)
+        let side = bar(Sidebar(drawer: drawer, tabs: tabs, shelf: shelf, open: { [weak self] in self?.show($0) }, make: { [weak self] in self?.make() }, trash: { [weak self] in self?.trash($0) }), in: root)
         side.isHidden = !drawer.open
         self.side = side
         let latch = bar(Latch(drawer: drawer) { [weak self] in self?.toggleBoards(nil) }, in: root)
-        let strip = bar(TabStrip(tabs: tabs, show: { [weak self] in self?.show($0.file) }, close: { [weak self] in self?.close($0) }, make: { [weak self] in self?.make() }), in: root)
+        let strip = bar(TabStrip(tabs: tabs, show: { [weak self] in self?.show($0.file) }, close: { [weak self] in self?.close($0) }, make: { [weak self] in self?.make() }, trash: { [weak self] in self?.trash($0) }), in: root)
         let lights = window.standardWindowButton(.zoomButton).map { $0.convert($0.bounds, to: nil) } ?? CGRect(x: 60, y: window.frame.height - 26, width: 14, height: 14)
         let middle = window.frame.height - lights.midY
         latchLeading = lights.maxX + 16
@@ -153,6 +153,29 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
+    /// Moves a board, its picture and its images to the Trash, and closes its tab. With no other tab open, another board
+    /// shows first, or a new one.
+    func trash(_ file: URL) {
+        let shelf = Shelf(folder: studio.file.deletingLastPathComponent())
+        if let open = tabs.studio(for: file) {
+            if tabs.studios.count == 1 {
+                guard let next = shelf.entries.first(where: { $0.file.standardizedFileURL != file.standardizedFileURL })?.file ?? (try? shelf.make()) else { return }
+                show(next)
+            }
+            close(open)
+        }
+        try? shelf.discard(file) { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }
+        drawer.changes += 1
+    }
+
+    @objc func trashBoard(_ sender: Any?) {
+        trash(studio.file)
+    }
+
+    @objc func revealBoard(_ sender: Any?) {
+        NSWorkspace.shared.activateFileViewerSelecting([studio.file])
+    }
+
     @objc func newBoard(_ sender: Any?) {
         make()
     }
@@ -239,6 +262,10 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         add("File", [
             item("New Board", #selector(Desk.newBoard(_:)), "n"),
             item("Rename Board…", #selector(Desk.renameBoard(_:)), "r"),
+            item("Show in Finder", #selector(Desk.revealBoard(_:)), "r", [.command, .option]),
+            .separator(),
+            item("Move to Trash", #selector(Desk.trashBoard(_:)), "\u{8}"),
+            .separator(),
             item("Insert Image…", #selector(Canvas.insertPicture(_:)), "i", [.command, .shift])
         ])
         add("Edit", [
