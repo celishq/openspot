@@ -21,7 +21,7 @@ public struct SpotOutput: Equatable, Sendable {
     public private(set) var retired: [String] = []
     public private(set) var layout: SheetLayout?
     /// The block of the component that stands for the spot (protocol: The main block and the card): the one that `main=<id>` in the head names, or else the
-    /// only `text`, `gauge`, `graph`, `switch` or `slider`.
+    /// only `text`, `gauge`, `graph` or `slider`.
     public private(set) var value: TextBlock?
     /// The block of the first `view`, whose keys the plugin's view reads (protocol: Views).
     public private(set) var view: TextBlock?
@@ -70,7 +70,7 @@ public struct SpotOutput: Equatable, Sendable {
     private static let rowsArea = "rows"
     private static let formKinds: Set<String> = ["field", "choice", "switch", "slider"]
     /// The kinds of component that can stand for the spot.
-    private static let valueKinds: Set<String> = ["text", "number", "gauge", "graph", "switch", "slider"]
+    private static let valueKinds: Set<String> = ["text", "number", "gauge", "graph", "slider"]
 
     /// Whether a first key names a row or a part, so that the block is not the head.
     private static func isKind(_ key: String) -> Bool {
@@ -203,7 +203,7 @@ public struct SpotOutput: Equatable, Sendable {
         let values = blocks.filter { Self.valueKinds.contains($0.fields.first?.key ?? "") }
         if let id = head?.value("main") {
             value = values.first { $0.fields.first?.value == id }
-            if value == nil, checks { checkedFaults.append("the head names \(id) as main, which no text, number, gauge, graph, switch or slider has") }
+            if value == nil, checks { checkedFaults.append("the head names \(id) as main, which no text, number, gauge, graph or slider has") }
         } else if values.count == 1 {
             value = values.first
         }

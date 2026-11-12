@@ -301,17 +301,17 @@ effects of the frame.
 
 The main block stands for the spot on its card and in the menu bar.
 
-- `main=<id>` in the head names it. Without `main=`, the main block is the only `text`, `number`, `graph`, `switch` or
-  slider in the frame.
+- `main=<id>` in the head names it. Without `main=`, the main block is the only `text`, `number`, `graph` or slider in
+  the frame.
 - The menu bar and a card of other spots show a main `text`, `number` or `graph`.
-- `active=true` in the head shows on the card that the spot's thing is on, and `active=false` that it is off. Without it,
-  a main `switch` shows it.
+- `active=true` in the head shows on the card that the spot's thing is on, and `active=false` that it is off.
 - A spot has a sheet when its header has `on=sheet.open`, `on=sheet.text`, a `clock`, `offers=search`, or `mode=stay` or
   `always`. Without any of these, such as with only `on=panel.open` or `on=app.front`, it has no sheet, and its rows
   never show.
 - Without `grid.<size>=` lines, a spot shows the default card: its icon, title and detail, and an arrow when it has a
   sheet.
-- When a frame holds only one `switch` or one slider, the card draws it, and a press of the card changes it.
+- When a frame holds only one `switch` or one slider, the card draws it, and a press of the card changes it. A card
+  that is a switch is active while the switch is on.
 - A press on the card outside a control opens the sheet, or sends `<spot> open` when there's no sheet.
 
 ## Events

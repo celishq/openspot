@@ -282,7 +282,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try script(header: "on=panel.open", """
         case "$1" in
           read) printf 'detail=Idle\\n\\nrow=a\\ntitle=A\\n\\ntext=bar\\ntitle=idle\\n' ;;
-          open) printf 'toast=Saved\\ntitle=Other\\nmain=power\\n\\nswitch=power\\nvalue=true\\n\\ntext=bar\\ntitle=work\\n' ;;
+          open) printf 'toast=Saved\\ntitle=Other\\nactive=true\\n\\ntext=bar\\ntitle=work\\n' ;;
         esac
         """)
         let sheet = try sheet()

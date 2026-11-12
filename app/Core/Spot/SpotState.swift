@@ -40,14 +40,14 @@ public struct SpotState: Equatable, Sendable {
         self.face = face
     }
 
-    /// Reads how a spot looks from what its script printed: the words of its head, and `active` in its head or the value of its
-    /// main block, which says whether its card is on or at what level. A spot whose output is one switch or one slider takes that control's words for its card (protocol: The main block and the card).
+    /// Reads how a spot looks from what its script printed: the words of its head, and `active` in its head or the switch that is its
+    /// whole card, which says whether its card is on, and its main slider, which says at what level. A spot whose output is one switch or one slider takes that control's words for its card (protocol: The main block and the card).
     /// What the output leaves out comes from the header.
     public init(output: SpotOutput, header: SpotState) {
         let block = output.summary
         let control = output.control
         var on: Bool?
-        if case .toggle(let value)? = output.valuePart?.control { on = value }
+        if case .toggle(let value)? = control?.control { on = value }
         if let value = block?.flag("active") { on = value }
         var level: (Double, Double, Double)?
         if case .slider(let value, let low, let high)? = output.valuePart?.control { level = (value, low, high) }
