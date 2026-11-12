@@ -7,9 +7,13 @@ packages:
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
     from: 2.10.1
+  secp256k1:
+    url: https://github.com/21-DOT-DEV/swift-secp256k1
+    exactVersion: 0.24.0
 settings:
   base:
     SWIFT_VERSION: "6.0"
+    OTHER_SWIFT_FLAGS: $(inherited) -Xcc -fmodule-map-file=$(GENERATED_MODULEMAP_DIR)/libsecp256k1.modulemap
     CODE_SIGN_STYLE: Manual
     CODE_SIGN_IDENTITY: "-"
     ENABLE_HARDENED_RUNTIME: YES
@@ -26,6 +30,9 @@ targets:
       - path: Core
       - path: Client/CommandKind.swift
       - path: Client/SocketPath.swift
+    dependencies:
+      - package: secp256k1
+        product: P256K
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.openspot.core
@@ -37,6 +44,8 @@ targets:
       - path: Shell
     dependencies:
       - target: OpenspotCore
+      - package: secp256k1
+        product: P256K
       - package: Sparkle
       - target: OpenspotClient
         link: false
@@ -147,6 +156,8 @@ targets:
       - path: StandIn
     dependencies:
       - target: OpenspotCore
+      - package: secp256k1
+        product: P256K
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.openspot.standin
@@ -157,6 +168,8 @@ targets:
       - path: Tests
     dependencies:
       - target: OpenspotCore
+      - package: secp256k1
+        product: P256K
       - target: OpenspotStandIn
         link: false
         embed: false
