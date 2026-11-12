@@ -6,6 +6,7 @@ import Observation
 final class Toast {
     var message = ""
     var symbol: String?
-    var open: (() -> Void)?
+    var isWorking = false
+    var open: (@MainActor @Sendable () -> Void)?
     var isShown = false
 }

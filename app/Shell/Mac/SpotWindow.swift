@@ -70,14 +70,14 @@ struct SpotWindow {
         return AXUIElementCopyAttributeValue(element, name as CFString, &value) == .success ? value : nil
     }
 
-    private func value<T>(_ name: String, _ type: AXValueType, _ empty: T) -> T {
+    private func value<T: BitwiseCopyable>(_ name: String, _ type: AXValueType, _ empty: T) -> T {
         var result = empty
         guard let raw = Self.attribute(element, name), CFGetTypeID(raw) == AXValueGetTypeID() else { return empty }
         AXValueGetValue(raw as! AXValue, type, &result)
         return result
     }
 
-    private func set<T>(_ name: String, _ type: AXValueType, _ value: T) throws {
+    private func set<T: BitwiseCopyable>(_ name: String, _ type: AXValueType, _ value: T) throws {
         var value = value
         guard let raw = AXValueCreate(type, &value), AXUIElementSetAttributeValue(element, name as CFString, raw) == .success else {
             throw SpotError.fault("Openspot cannot move this window.")

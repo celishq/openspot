@@ -6,7 +6,7 @@ import SwiftUI
 struct SpotSearchField: View {
     let prompt: String
     let text: String
-    let onSearch: (String) -> Void
+    let onSearch: @MainActor @Sendable (String) -> Void
     var isFocused: FocusState<Bool>.Binding
 
     var body: some View {

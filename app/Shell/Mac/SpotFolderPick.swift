@@ -15,7 +15,7 @@ enum SpotFolderPick {
         window.level = .modalPanel
         let previous = NSWorkspace.shared.frontmostApplication.flatMap { $0.processIdentifier == ProcessInfo.processInfo.processIdentifier ? nil : $0 }
         NSApp.activate()
-        nonisolated(unsafe) let shown = window
+        let shown = window
         let response = await withTaskCancellationHandler {
             await withCheckedContinuation { answer in window.begin { answer.resume(returning: $0) } }
         } onCancel: {

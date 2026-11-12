@@ -345,7 +345,7 @@ final class SpotMotionProbe: NSObject {
     }
 
     /// Runs the work a second after the open sheet holds its rows.
-    private func whenRowsArrive(_ work: @escaping () -> Void) {
+    private func whenRowsArrive(_ work: @escaping @MainActor @Sendable () -> Void) {
         guard let list = model.openItems, list.holdsItems, !list.isLoading else {
             return DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { self.whenRowsArrive(work) }
         }

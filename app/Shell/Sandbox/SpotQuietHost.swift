@@ -16,6 +16,7 @@ final class SpotQuietHost: SpotsHost {
     func notify(_ text: String) {}
     func notify(_ text: String, fix: URL) {}
     func confirm(_ text: String) {}
+    func work(_ text: String) {}
     func applyConfig(_ config: Config) {}
     func setEntryKey(on isOn: Bool) {}
     func hold(_ keys: [GlobalKey]) {}
