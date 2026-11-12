@@ -72,7 +72,8 @@ struct SpotsView: View {
                 isInSheet: fieldIsInSheet,
                 isInstall: isInstall,
                 showsField: showsSearchField,
-                surfaceIsOut: surfaceIsOut
+                surfaceIsOut: surfaceIsOut,
+                sheetShape: sheetShape(on: card, at: frame)
             )
             if model.menu != nil {
                 Color.clear
@@ -115,6 +116,15 @@ struct SpotsView: View {
             .frame(height: height)
             .transaction { $0.animation = nil }
             .animation(SpotMotion.blurFade(isSheetOpen: sheetOpen)) { $0.opacity(isShown ? 1 : 0) }
+    }
+
+    /// The shape of the sheet that is built, as the sheet layer draws it: on its card until it opens. Nil with no sheet with
+    /// a card, and for the install screen.
+    private func sheetShape(on card: SpotSheetCard?, at frame: CGRect?) -> SpotSurfaceShape? {
+        guard let card, let frame, !isInstall else { return nil }
+        return sheetOpen
+            ? SpotSurfaceShape(rect: sheetRect, radius: SpotTokens.radius)
+            : SpotSurfaceShape(rect: frame, radius: SpotTokens.corner(for: card.placement.size))
     }
 
     /// How the open sheet pushes the cards of the grid, with the sheet's rect taken into the grid. Its window starts at the

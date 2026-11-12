@@ -60,4 +60,11 @@ final class SheetMorphTests: XCTestCase {
         }
         XCTAssertEqual(morph.growth(of: button, at: 1), 1)
     }
+
+    func testTheWordsThatCrossTheHeaderAreGoneWhileTheyPassIt() {
+        XCTAssertEqual(SheetMorph.crossing(at: 0), 1)
+        XCTAssertEqual(SheetMorph.crossing(at: 0.25), 0)
+        XCTAssertEqual(SheetMorph.crossing(at: 0.5), 0)
+        XCTAssertEqual(SheetMorph.crossing(at: 1), 1)
+    }
 }

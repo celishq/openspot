@@ -35,6 +35,12 @@ public struct SheetMorph: Equatable, Sendable {
         ease((progress - cardShare) / (1 - cardShare))
     }
 
+    /// How strongly the words of a part that travels past the sheet's header show, such as the search field's: they leave
+    /// in the first quarter of the motion and come back in its second half, so that they never lie on the header's words.
+    public static func crossing(at progress: Double) -> Double {
+        max(1 - ease(progress / 0.25), ease((progress - 0.5) / 0.5))
+    }
+
     /// A place between a part's place on the card and its place in the sheet, as offsets from its place in the sheet.
     public static func place(onCard: CGSize, at progress: Double) -> CGSize {
         let left = CGFloat(1 - progress)

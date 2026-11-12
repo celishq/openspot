@@ -20,6 +20,9 @@ struct SpotFieldView: View {
     let showsField: Bool
     /// Whether a sheet is out or a drop is taken, which sets the time of each fade.
     let surfaceIsOut: Bool
+    /// The shape of the sheet that is built, which holds the field's row while the field lies in it. Nil with no sheet, or
+    /// for the install screen, which grows out of the field.
+    var sheetShape: SpotSurfaceShape?
     @FocusState private var isFocused: Bool
 
     var body: some View {
@@ -56,7 +59,11 @@ struct SpotFieldView: View {
         let top = SpotTokens.halo + (isInSheet ? SpotTokens.sheetFieldDrop - (SpotTokens.rowHeight - SpotTokens.listRowHeight) / 2 : 0)
         let glyphLeft = SpotTokens.halo + SpotTokens.padding + (isInSheet ? SpotTokens.padding + (SpotTokens.listIconSize - SpotTokens.glyphSize) / 2 : 0)
         return ZStack(alignment: .topLeading) {
-            SpotSurface(rect: place, radius: fieldRadius, glass: isInSheet || isInstall ? 0 : 1, fill: isInSheet ? 1 : 0)
+            SpotSurface(rect: place, radius: fieldRadius, glass: isInSheet || isInstall ? 0 : 1)
+                .mask { outsideSheet }
+            SpotSurfaceShape(rect: place, radius: fieldRadius)
+                .fill(SpotTheme.ink.opacity(SpotTheme.fill * (isInSheet ? 1 : 0)))
+                .mask { insideSheet }
             ZStack(alignment: .topLeading) {
                 Image(systemName: "magnifyingglass")
                     .modifier(SpotSecondaryText())
@@ -66,7 +73,7 @@ struct SpotFieldView: View {
                     .frame(width: Self.fieldTextWidth, height: SpotTokens.rowHeight, alignment: .leading)
                     .offset(x: fieldTextLeft, y: top)
             }
-            .modifier(SpotFieldCrossing(isOpen: isOpen, crosses: !isInstall))
+            .morph(progress, opacity: crossing)
             .opacity(model.showsFieldDrop || model.isEditing ? 0 : 1)
             .opacity(model.isShown ? 1 : 0)
             .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
@@ -203,15 +210,15 @@ struct SpotFieldView: View {
             Text("\(SearchPrompt.verb) ")
             ZStack(alignment: .leading) {
                 Text(SearchPrompt.grid)
-                    .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: !isOpen)) { $0.opacity(isOpen ? 0 : 1) }
+                    .morph(progress, opacity: SheetMorph.cardLook(at:))
                 Text(sheetWord)
-                    .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(isOpen ? 1 : 0) }
+                    .morph(progress, opacity: SheetMorph.sheetLook(at:))
             }
         }
         .font(SpotType.input)
         .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
         .lineLimit(1)
-        .modifier(SpotFieldCrossing(isOpen: isOpen, crosses: !isInstall))
+        .morph(progress, opacity: crossing)
         .modifier(SpotEmptyField(model: model, isHidden: model.showsFieldDrop))
     }
 
@@ -220,6 +227,37 @@ struct SpotFieldView: View {
     private var sheetWord: String {
         let id = model.transition.id
         return SearchPrompt.word(for: model.entries.first { $0.id == id }?.state.title ?? "")
+    }
+
+    /// How far the sheet is open, which the sheet's motion carries from 0 to 1.
+    private var progress: Double {
+        isOpen ? 1 : 0
+    }
+
+    /// How strongly the field's words show as they pass the sheet's header. The install screen has no header to pass.
+    private var crossing: (Double) -> Double {
+        if isInstall { return { _ in 1 } }
+        return { SheetMorph.crossing(at: $0) }
+    }
+
+    /// The panel but the sheet, where the field's glass shows, so that one glass lies under the field where it meets the sheet.
+    @ViewBuilder
+    private var outsideSheet: some View {
+        if let sheetShape {
+            SpotOutsideShape(inner: sheetShape).fill(style: FillStyle(eoFill: true))
+        } else {
+            Color.black
+        }
+    }
+
+    /// The sheet, where the field's row shows, so that the row never lies outside the sheet's edge.
+    @ViewBuilder
+    private var insideSheet: some View {
+        if let sheetShape {
+            sheetShape.fill(Color.black)
+        } else {
+            Color.black
+        }
     }
 
     private var fieldRadius: CGFloat {
