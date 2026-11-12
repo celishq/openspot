@@ -44,9 +44,11 @@ final class SpotUsesTests: SpotRunsCase {
 
     private func press() async throws {
         let count = log("done").count
-        try XCTUnwrap(runs.sheets["script"]).pressCard()
+        let sheet = try XCTUnwrap(runs.sheets["script"])
+        sheet.pressCard()
         try await wait("the call") { self.log("done").count == count + 1 }
         try await allEnded()
+        try await wait("the end of the call in the sheet") { sheet.calls.isEmpty }
     }
 
     func testAnUndeclaredUseRunsAndShowsOneToastADay() async throws {
