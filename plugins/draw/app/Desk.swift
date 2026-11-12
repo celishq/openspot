@@ -8,6 +8,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private(set) var studio: Studio
     private var lock: Lock
     private let drawer = Drawer()
+    private var side: NSView?
     var window: NSWindow!
     var canvas: Canvas!
 
@@ -47,13 +48,15 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let corner = bar(Corner(studio: studio, zoom: { canvas.zoom(to: $0) }, fit: { canvas.fit() }), in: root)
         let style = bar(StyleSlot(studio: studio), in: root)
         let side = bar(Sidebar(drawer: drawer, studio: studio, shelf: shelf, open: { [weak self] in self?.show($0) }, make: { [weak self] in self?.make() }), in: root)
+        side.isHidden = !drawer.open
+        self.side = side
         let toggle = bar(Knob(symbol: "sidebar.left", help: "Boards  ⌃⌘S", below: true) { [weak self] in self?.toggleBoards(nil) }, in: root)
         NSLayoutConstraint.activate([
             canvas.leadingAnchor.constraint(equalTo: root.leadingAnchor), canvas.trailingAnchor.constraint(equalTo: root.trailingAnchor),
             canvas.topAnchor.constraint(equalTo: root.topAnchor), canvas.bottomAnchor.constraint(equalTo: root.bottomAnchor),
             side.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 8), side.topAnchor.constraint(equalTo: root.topAnchor, constant: 8),
-            side.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -8),
-            toggle.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 80), toggle.topAnchor.constraint(equalTo: root.topAnchor, constant: 4),
+            side.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -66),
+            toggle.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 76), toggle.topAnchor.constraint(equalTo: root.topAnchor, constant: -3),
             tools.centerXAnchor.constraint(equalTo: root.centerXAnchor), tools.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -14),
             corner.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 14), corner.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -14),
             style.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -14), style.topAnchor.constraint(equalTo: root.topAnchor, constant: 52)
@@ -88,17 +91,30 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         show(file)
     }
 
+    /// Slides the list of boards in or out. The list leaves the window when it is out, so the canvas takes each press there.
     @objc func toggleBoards(_ sender: Any?) {
-        withAnimation(.spring(duration: 0.35, bounce: 0.1)) { drawer.open.toggle() }
+        let opening = !drawer.open
+        if opening {
+            side?.isHidden = false
+            DispatchQueue.main.async { [self] in
+                withAnimation(.spring(duration: 0.35, bounce: 0.1)) { drawer.open = true }
+            }
+        } else {
+            withAnimation(.spring(duration: 0.3, bounce: 0)) { drawer.open = false }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) { [self] in
+                if !drawer.open { side?.isHidden = true }
+            }
+        }
     }
 
     @objc func newBoard(_ sender: Any?) {
         make()
     }
 
-    /// Floats a SwiftUI bar over the canvas at its own size. A press where the bar draws nothing reaches the canvas.
+    /// Floats a SwiftUI bar over the canvas at its own size.
     private func bar(_ content: some View, in root: NSView) -> NSView {
-        let host = ClearHost(rootView: content)
+        let host = NSHostingView(rootView: content)
+        host.safeAreaRegions = []
         host.translatesAutoresizingMaskIntoConstraints = false
         root.addSubview(host)
         return host
@@ -191,10 +207,3 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 }
 
-/// A hosting view that lets a press through where its SwiftUI content draws nothing.
-final class ClearHost<Content: View>: NSHostingView<Content> {
-    override func hitTest(_ point: NSPoint) -> NSView? {
-        let hit = super.hitTest(point)
-        return hit === self ? nil : hit
-    }
-}
