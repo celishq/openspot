@@ -252,6 +252,7 @@ extension SpotsModel {
     private func openMenu(on target: Target) {
         menu = actionMenu(on: target)
         menuTarget = target
+        closingMenu = nil
         menuIsGrown = false
         menuIsSettled = false
         DispatchQueue.main.async { [weak self] in
@@ -310,12 +311,18 @@ extension SpotsModel {
         return entry.state.title
     }
 
+    /// Closes the menu at once for keys and the focus, and leaves its look to fade back into its item, then lets it go.
     public func closeMenu() {
+        guard let open = menu else { return }
+        closingMenu = open
         menu = nil
         menuTarget = nil
-        menuIsGrown = false
         menuIsSettled = false
-        menuPlace = nil
+        change(.sheet(isOpen: false), { menuIsGrown = false }, completion: { [weak self] in
+            guard let self, menu == nil else { return }
+            closingMenu = nil
+            menuPlace = nil
+        })
     }
 
     public func pressMenu(row: Int) {

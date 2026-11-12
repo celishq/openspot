@@ -211,13 +211,16 @@ struct SpotsView: View {
         return CGRect(x: rect.minX + (rect.width - size.width) * corner.x, y: rect.minY + (rect.height - size.height) * corner.y, width: size.width, height: size.height)
     }
 
-    /// The open menu at the selected card or row. With no selected item it opens under the field.
+    /// The open menu at the selected card or row, or the closing one at its last place. With no selected item it opens under
+    /// the field.
     private func menuLayer(at item: SpotMenuAnchor.Item?) -> some View {
         GeometryReader { proxy in
-            if let menu = model.menu {
+            if let menu = model.menu ?? model.closingMenu {
                 let bounds = menuBounds
                 let rect = item.map { proxy[$0.bounds] } ?? SpotFieldView.rect
-                let place = ActionMenuPlace(item: rect, height: SpotTokens.menuHeight(rows: menu.fullLines), bounds: bounds)
+                let isClosing = model.menu == nil
+                let fresh = ActionMenuPlace(item: rect, height: SpotTokens.menuHeight(rows: menu.fullLines), bounds: bounds)
+                let place = isClosing ? model.menuPlace ?? fresh : fresh
                 let shown = place.rect(height: SpotTokens.menuHeight(rows: menu.lines))
                 let isGrown = model.menuIsGrown
                 let scale = isGrown ? 1 : SpotMotion.menuStartScale
@@ -229,8 +232,9 @@ struct SpotsView: View {
                         .opacity(isGrown ? 1 : 0)
                         .offset(x: shown.minX, y: shown.minY)
                 }
+                .allowsHitTesting(!isClosing)
                 .transition(.opacity)
-                .onChange(of: place, initial: true) { model.menuPlace = place }
+                .onChange(of: place, initial: true) { if !isClosing { model.menuPlace = place } }
             }
         }
     }

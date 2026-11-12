@@ -110,6 +110,8 @@ public final class SpotsModel {
     public var menuTarget: Target?
     /// Whether the open menu has grown from its item to its full size. It opens small and grows on the next turn.
     public internal(set) var menuIsGrown = false
+    /// The menu that fades away after its close, drawn while its motion runs. Keys and the focus already treat it as closed.
+    public internal(set) var closingMenu: ActionMenu?
     /// Whether the open menu's growth has ended, so that a text field of its own can show where the motion left it.
     public internal(set) var menuIsSettled = false
     /// Where the open menu lies in the panel: a drag of a force click reads it to find its rows, and the backdrop and the

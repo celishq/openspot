@@ -177,6 +177,8 @@ final class SpotMotionProbe: NSObject {
     /// search in it, and of the menu on a row of `OPENSPOT_SPOT`'s list.
     private func shootMenus(into folder: String) {
         try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
+        NSApp.activate(ignoringOtherApps: true)
+        panel.makeKeyAndOrderFront(nil)
         let cards: [(String, (SpotPlacement) -> Bool)] = [
             ("left", { $0.size == .small && $0.column == 0 }),
             ("right", { $0.size == .small && $0.column == SpotTokens.columns - 1 }),
@@ -207,7 +209,11 @@ final class SpotMotionProbe: NSObject {
         save(to: "\(folder)/long-moving.png")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             self.save(to: "\(folder)/long.png")
-            self.model.searchMenu("co")
+            self.panel.makeFirstResponder(nil)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                self.save(to: "\(folder)/long-unfocused.png")
+                self.model.searchMenu("co")
+            }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
             self.save(to: "\(folder)/search.png")
