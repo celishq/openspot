@@ -180,7 +180,7 @@ case "$1" in
     card
     printf 'repeat=items\n\n'
     printf 'button=open\ntitle=Open\n\nbutton=join\ntitle=Join call\nshortcut=cmd+j\nclose=true\n\n'
-    printf 'button=tick\ntitle=Mark as done\nshortcut=cmd+shift+c\n\nbutton=calendars\ntitle=Choose calendars\nform=true\nscope=command\n\n'
+    printf 'button=tick\ntitle=Mark as done\nshortcut=cmd+shift+c\n\nbutton=calendars\ntitle=Choose calendars\nform=true\nscope=spot\n\n'
     typed=$(value search)
     if [ -n "$typed" ]; then
       adding reminders "$typed" reminder 'Add reminder'

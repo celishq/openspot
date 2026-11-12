@@ -223,7 +223,7 @@ extension SpotsModel {
     /// The action that makes a new item from what the search did not find.
     public var createAction: CommandAction? {
         guard let list = openItems, !list.query.isEmpty, list.shown.isEmpty, list.search == .local else { return nil }
-        return openEntry?.spot.actions.first { $0.scope == .command && $0.isForm }
+        return openEntry?.spot.actions.first { $0.scope == .spot && $0.isForm }
     }
 
     public func createFromSearch() {

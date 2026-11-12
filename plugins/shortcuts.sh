@@ -37,7 +37,7 @@ head_of_list() {
       printf 'title=Run with %s files\n' "$count"
     fi
     printf 'detail=Pick a shortcut\n\n'
-    printf 'button=cancel\ntitle=Cancel\nshortcut=escape\nscope=command\n\n'
+    printf 'button=cancel\ntitle=Cancel\nshortcut=escape\nscope=spot\n\n'
   fi
   printf 'button=open\ntitle=Run\n\n'
   printf 'button=clipboard\ntitle=Run with clipboard\nshortcut=cmd+return\nclose=true\n\n'

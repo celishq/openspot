@@ -95,7 +95,7 @@ final class SpotOutputTests: XCTestCase {
         button=new
         title=New
         shortcut=cmd+n
-        scope=command
+        scope=spot
         form=true
 
         button=delete
@@ -105,13 +105,19 @@ final class SpotOutputTests: XCTestCase {
         """)
 
         XCTAssertEqual(output.actions, [
-            CommandAction(id: "new", title: "New", key: ActionKey(text: "cmd+n"), scope: .command, isForm: true),
+            CommandAction(id: "new", title: "New", key: ActionKey(text: "cmd+n"), scope: .spot, isForm: true),
             CommandAction(id: "delete", title: "Delete", after: .close, confirm: "Delete this?")
         ])
     }
 
-    func testAnActionItCannotReadIsReportedByItsFirstLine() {
-        XCTAssertEqual(SpotOutput(text: "button=c\ntitle=C\nscope=world\n").errors, ["button=c"])
+    func testAnActionWithAnUnknownScopeIsAFaultThatNamesTheScopes() {
+        let old = SpotOutput(text: "button=b\ntitle=B\nscope=command\n")
+        let unknown = SpotOutput(text: "button=c\ntitle=C\nscope=world\n")
+
+        XCTAssertEqual(old.actions, [])
+        XCTAssertEqual(old.partFaults, ["the button b has scope=command, which Openspot no longer reads. Write scope=spot"])
+        XCTAssertEqual(unknown.partFaults, ["the button c has an unknown scope: world. Use item or spot"])
+        XCTAssertEqual(unknown.errors, [])
     }
 
     func testTheOpenActionSetsTheWordForEnterAndThePick() {

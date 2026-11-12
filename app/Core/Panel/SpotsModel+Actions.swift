@@ -364,7 +364,7 @@ extension SpotsModel {
     /// with opens on the sheet of that spot, and the panel closes when it is done. Returns false when no spot has the ID.
     public func changeSetting(_ key: String, of id: String) -> Bool {
         guard let entry = entries.first(where: { $0.id == id }), let sheet = sheets[id] else { return false }
-        let action = CommandAction(id: key, title: "Change \(key)", scope: .command, after: .close)
+        let action = CommandAction(id: key, title: "Change \(key)", scope: .spot, after: .close)
         let ask = UUID()
         formAsk = ask
         Task {

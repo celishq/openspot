@@ -83,7 +83,7 @@ final class AppsPluginTests: SamplePluginsCase {
             XCTAssertEqual(sheet.parts.map(\.id), [])
             XCTAssertEqual(sheet.actions.map(\.id), ["cancel", "remove"])
             XCTAssertEqual(sheet.actions.map(\.key), [ActionKey(name: "escape"), ActionKey(name: "return", isCommand: true)])
-            XCTAssertEqual(sheet.actions.map(\.scope), [.command, .command])
+            XCTAssertEqual(sheet.actions.map(\.scope), [.spot, .spot])
             XCTAssertEqual(Set(sheet.items.map(\.run)), [
                 app.path, support.deletingLastPathComponent().path, cache.deletingLastPathComponent().path, preferences.path
             ])

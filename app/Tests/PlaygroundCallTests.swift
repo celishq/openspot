@@ -32,7 +32,7 @@ final class PlaygroundCallTests: SpotRunsCase {
               case "$name" in
                 stop) ;;
                 go) ( while [ ! -f '\(path("done"))' ]; do sleep 0.05; done; printf 'end=%s\\n---\\n' "$id" ) & ;;
-                *) printf 'button=go\\ntitle=Go\\nscope=command\\n\\nrow=a\\ntitle=A\\n\\nend=%s\\n---\\n' "$id" ;;
+                *) printf 'button=go\\ntitle=Go\\nscope=spot\\n\\nrow=a\\ntitle=A\\n\\nend=%s\\n---\\n' "$id" ;;
               esac
               name= ;;
           esac

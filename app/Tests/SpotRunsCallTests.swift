@@ -396,7 +396,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testASecondPressOfARunningActionStopsIt() async throws {
         try script(header: "on=sheet.open", """
         case "$1" in
-          read) printf 'button=go\\ntitle=Go\\nscope=command\\n\\nrow=a\\ntitle=A\\n' ;;
+          read) printf 'button=go\\ntitle=Go\\nscope=spot\\n\\nrow=a\\ntitle=A\\n' ;;
           go) sleep 5; touch '\(path("went-on"))' ;;
         esac
         """)

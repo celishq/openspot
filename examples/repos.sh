@@ -196,8 +196,8 @@ case "$1" in
     printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\nclose=true\n\n'
     printf 'button=terminal\ntitle=Open in Terminal\nshortcut=cmd+t\nclose=true\n\n'
     printf 'button=copy\ntitle=Copy path\nshortcut=cmd+shift+c\nclose=true\n\n'
-    printf 'button=editor\ntitle=Change default app\nscope=command\nform=true\n\n'
-    printf 'button=folder\ntitle=Change folder\nscope=command\nclose=true\n\n'
+    printf 'button=editor\ntitle=Change default app\nscope=spot\nform=true\n\n'
+    printf 'button=folder\ntitle=Change folder\nscope=spot\nclose=true\n\n'
     printf '%s' "$repos" | while IFS="$tab" read -r repo url; do
       openspot_row "$repo" "${repo##*/}" "$(branch "$repo")" "$repo"
       own=$( [ -z "$url" ] || host "$url")

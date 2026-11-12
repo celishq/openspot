@@ -4,7 +4,7 @@ import XCTest
 final class ActionMenuTests: XCTestCase {
     private let paste = CommandAction(id: "paste", title: "Paste", key: ActionKey(text: "cmd+return"))
     private let delete = CommandAction(id: "delete", title: "Delete", confirm: "Delete this?")
-    private let new = CommandAction(id: "new", title: "New", scope: .command, isForm: true)
+    private let new = CommandAction(id: "new", title: "New", scope: .spot, isForm: true)
     private let item = SpotItem(title: "One", run: "1")
 
     private func command(kind: SpotKind = .list, primary: String? = "Copy") -> Spot {
@@ -91,7 +91,7 @@ final class ActionMenuTests: XCTestCase {
     }
 
     /// An action of a script that asks for a second press, such as a forget of a network.
-    private let forget = CommandAction(id: "forget", title: "Forget", scope: .command, confirm: "Press again to forget")
+    private let forget = CommandAction(id: "forget", title: "Forget", scope: .spot, confirm: "Press again to forget")
 
     func testAnActionWithAConfirmAsksForASecondPress() throws {
         var menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, extras: [forget]))
@@ -130,8 +130,8 @@ final class ActionMenuTests: XCTestCase {
     }
 
     func testTheHintAlsoNamesAnActionThatHoldsEscape() throws {
-        let cancel = CommandAction(id: "cancel", title: "Cancel", key: ActionKey(text: "escape"), scope: .command)
-        let trash = CommandAction(id: "remove", title: "Move to Trash", key: ActionKey(text: "cmd+return"), scope: .command)
+        let cancel = CommandAction(id: "cancel", title: "Cancel", key: ActionKey(text: "escape"), scope: .spot)
+        let trash = CommandAction(id: "remove", title: "Move to Trash", key: ActionKey(text: "cmd+return"), scope: .spot)
         let sheet = Spot(id: "apps", name: "Apps", url: URL(fileURLWithPath: "/bin/true"), kind: .list, actions: [cancel, trash])
 
         XCTAssertEqual(ActionMenu(spot: sheet, item: item)?.hint, "⏎ Open   ⌘⏎ Move to Trash   Esc Cancel   ⌘K Actions")
@@ -203,7 +203,7 @@ final class ActionMenuTests: XCTestCase {
 
     func testARunningRowSaysThatItsPressStopsTheCall() throws {
         let keyed = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .launch, actions: [
-            CommandAction(id: "copy", title: "Copy", key: ActionKey(text: "cmd+c"), scope: .command)
+            CommandAction(id: "copy", title: "Copy", key: ActionKey(text: "cmd+c"), scope: .spot)
         ])
         let menu = try XCTUnwrap(ActionMenu(spot: keyed, item: nil))
         let primary = menu.rows[0]
@@ -219,7 +219,7 @@ final class ActionMenuTests: XCTestCase {
 
     func testAPressOfARunningRowStopsWithNoQuestion() throws {
         let asking = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .launch, actions: [
-            CommandAction(id: "wipe", title: "Wipe", scope: .command, confirm: "Wipe all?")
+            CommandAction(id: "wipe", title: "Wipe", scope: .spot, confirm: "Wipe all?")
         ])
         var menu = try XCTUnwrap(ActionMenu(spot: asking, item: nil, showsPrimary: false))
 

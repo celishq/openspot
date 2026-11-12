@@ -52,9 +52,17 @@ public enum PartCatalog {
         return faults
     }
 
-    /// What keeps a button that no drawing places from being an action: no title, or a shortcut that a button cannot take.
+    /// What keeps a button that no drawing places from being an action: no title, a shortcut that a button cannot take, or
+    /// an unknown scope.
     public static func actionFaults(in block: TextBlock) -> [String] {
-        (block.value("title") == nil ? ["the button \(block.value("button") ?? "") needs a title"] : []) + shortcutFaults(in: block)
+        let id = block.value("button") ?? ""
+        var faults = (block.value("title") == nil ? ["the button \(id) needs a title"] : []) + shortcutFaults(in: block)
+        switch block.value("scope") {
+        case nil, CommandAction.Scope.item.rawValue, CommandAction.Scope.spot.rawValue: break
+        case "command": faults.append("the button \(id) has scope=command, which Openspot no longer reads. Write scope=spot")
+        case let scope?: faults.append("the button \(id) has an unknown scope: \(scope). Use item or spot")
+        }
+        return faults
     }
 
     private static func shortcutFaults(in block: TextBlock) -> [String] {

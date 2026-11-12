@@ -17,7 +17,7 @@ final class SpotRunsStayTests: SpotRunsCase {
           if [ "$name" = new ] && [ -z "$filled" ]; then
             printf 'title=New\\nend=%%s\\n\\nfield=a\\ntitle=A\\n---\\n' "$call"
           else
-            printf 'end=%%s\\n\\nbutton=new\\ntitle=New\\nscope=command\\nform=true\\n\\nrow=a\\ntitle=A\\n---\\n' "$call"
+            printf 'end=%%s\\n\\nbutton=new\\ntitle=New\\nscope=spot\\nform=true\\n\\nrow=a\\ntitle=A\\n---\\n' "$call"
           fi
           ;;
       esac
@@ -37,7 +37,7 @@ final class SpotRunsStayTests: SpotRunsCase {
           case "$name" in
             stop) ;;
             go) ( while [ ! -f '%@' ]; do sleep 0.05; done; printf 'end=%%s\\n---\\n' "$id" ) & ;;
-            *) printf 'button=go\\ntitle=Go\\nscope=command\\n\\nrow=a\\ntitle=A\\n\\nend=%%s\\n---\\n' "$id" ;;
+            *) printf 'button=go\\ntitle=Go\\nscope=spot\\n\\nrow=a\\ntitle=A\\n\\nend=%%s\\n---\\n' "$id" ;;
           esac
           name= ;;
       esac
@@ -172,7 +172,7 @@ final class SpotRunsStayTests: SpotRunsCase {
           case "$line" in
             call=*) call=${line#call=} ;;
             arg=new) \(untilRelease); printf 'title=New\\n\\nfield=a\\ntitle=A\\n---\\n' ;;
-            arg=read) printf 'end=%s\\n\\nbutton=new\\ntitle=New\\nscope=command\\nform=true\\n---\\n' "$call" ;;
+            arg=read) printf 'end=%s\\n\\nbutton=new\\ntitle=New\\nscope=spot\\nform=true\\n---\\n' "$call" ;;
           esac
         done
         """)
@@ -198,7 +198,7 @@ final class SpotRunsStayTests: SpotRunsCase {
           case "$line" in
             call=*) call=${line#call=} ;;
             arg=new) exit 0 ;;
-            arg=read) printf 'end=%s\\n\\nbutton=new\\ntitle=New\\nscope=command\\nform=true\\n---\\n' "$call" ;;
+            arg=read) printf 'end=%s\\n\\nbutton=new\\ntitle=New\\nscope=spot\\nform=true\\n---\\n' "$call" ;;
           esac
         done
         """)

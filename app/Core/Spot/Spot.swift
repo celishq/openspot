@@ -285,7 +285,7 @@ public struct Spot: Equatable, Sendable {
 
     /// The actions that fit: those an item does not hide, and only the command's own with no item.
     public func actions(for item: SpotItem?) -> [CommandAction] {
-        actions.filter { ($0.scope == .command || item != nil) && item?.hides?.contains($0.id) != true }
+        actions.filter { ($0.scope == .spot || item != nil) && item?.hides?.contains($0.id) != true }
     }
 
     /// What Enter does, in words. A slider has no Enter.

@@ -32,8 +32,8 @@ case "$1" in
   read)
     printf 'recents=false\n'
     printf '\nbutton=open\ntitle=Choose\n'
-    printf '\nbutton=guide\ntitle=Read the guide\nscope=command\nclose=true\n'
-    printf '\nbutton=folder\ntitle=Open plugins folder\nscope=command\nclose=true\n'
+    printf '\nbutton=guide\ntitle=Read the guide\nscope=spot\nclose=true\n'
+    printf '\nbutton=folder\ntitle=Open plugins folder\nscope=spot\nclose=true\n'
     typed=$(sed -n 's/^search=//p' | head -1)
     row ask "Copy prompt for AI" "${typed:-Type what the spot should do}" sparkles
     row button Button "Runs a command when you press it" hand.tap

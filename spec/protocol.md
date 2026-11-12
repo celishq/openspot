@@ -276,8 +276,9 @@ case "$1" in
 esac
 ```
 
-- An action with no row selected acts on the whole spot. An action on a row is `<script> <id> <row id>`.
-  `scope=command` keeps it on the whole spot.
+- An action on a row is `<script> <id> <row id>`, and an action with no row selected is `<script> <id>`, on the whole spot.
+- `scope` says when the ⌘K menu offers an action: `scope=item`, the default, only while a row is selected, and `scope=spot`
+  always.
 - `close=true` closes the panel after it runs. `confirm` asks for a second press.
 - A button `shortcut` is a letter, a digit, `return`, `backspace` or `,`, after `cmd+`, `shift+`, both or neither, such as
   `cmd+shift+n`, or `escape` alone. A row `shortcut` is any text (see Rows), and the key that the person gives a command

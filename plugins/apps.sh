@@ -88,8 +88,8 @@ uninstall_sheet() {
   printf '\n'
   printf 'repeat=files\n\n'
   printf 'button=open\ntitle=Keep or move to Trash\nclose=false\n\n'
-  printf 'button=cancel\ntitle=Cancel\nshortcut=escape\nscope=command\n\n'
-  printf 'button=remove\ntitle=Move to Trash\nshortcut=cmd+return\nscope=command\n\n'
+  printf 'button=cancel\ntitle=Cancel\nshortcut=escape\nscope=spot\n\n'
+  printf 'button=remove\ntitle=Move to Trash\nshortcut=cmd+return\nscope=spot\n\n'
   printf '%s\n' "$files" | while IFS= read -r path; do
     chosen=true
     grep -Fxq "$path" "$kept" 2>/dev/null && chosen=false

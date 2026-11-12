@@ -273,7 +273,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testARunningActionOrPickShowsOnItsRowOfTheMenu() async throws {
         try script(header: "on=sheet.open", """
         case "$1" in
-          read) printf 'button=go\\ntitle=Go\\nscope=command\\n\\nbutton=copy\\ntitle=Copy\\n\\nrow=a\\ntitle=A\\n' ;;
+          read) printf 'button=go\\ntitle=Go\\nscope=spot\\n\\nbutton=copy\\ntitle=Copy\\n\\nrow=a\\ntitle=A\\n' ;;
           go) sleep 30 ;;
           open) sleep 30 ;;
         esac
@@ -346,7 +346,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testAPickOrAnActionWithinOneSecondOfItsStartDoesNothing() async throws {
         try script(header: "on=sheet.open", """
         case "$1" in
-          read) printf 'button=go\\ntitle=Go\\nscope=command\\n\\nrow=a\\ntitle=A\\n' ;;
+          read) printf 'button=go\\ntitle=Go\\nscope=spot\\n\\nrow=a\\ntitle=A\\n' ;;
           go) sleep 0.2; touch '\(path("action"))' ;;
           open) sleep 0.2; touch '\(path("pick"))' ;;
         esac
@@ -384,7 +384,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testASecondAskForAFormWithinOneSecondLeavesTheFirstRunning() async throws {
         try script(header: "on=sheet.open", """
         case "$1" in
-          read) printf 'button=new\\ntitle=New\\nscope=command\\nform=true\\n\\nrow=a\\ntitle=A\\n' ;;
+          read) printf 'button=new\\ntitle=New\\nscope=spot\\nform=true\\n\\nrow=a\\ntitle=A\\n' ;;
           new) \(untilRelease); printf 'title=New\\n\\nfield=a\\ntitle=A\\n' ;;
         esac
         """)

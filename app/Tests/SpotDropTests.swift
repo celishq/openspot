@@ -256,7 +256,7 @@ final class SpotDropTests: XCTestCase {
     private func busySheet() async throws -> SpotRun {
         let sheet = try sheet(header: "on=sheet.open\ndrop=mov", """
         case "$1" in
-          read) printf 'button=work\\ntitle=Work\\nscope=command\\n\\nrow=a\\ntitle=A\\n' ;;
+          read) printf 'button=work\\ntitle=Work\\nscope=spot\\n\\nrow=a\\ntitle=A\\n' ;;
           work) \(untilRelease); touch '\(path("worked"))' ;;
         esac
         """)
@@ -312,7 +312,7 @@ final class SpotDropTests: XCTestCase {
     func testAWaitingDropRunsAfterTheRunningCallFails() async throws {
         let sheet = try sheet(header: "on=sheet.open\ndrop=mov", """
         case "$1" in
-          read) printf 'button=work\\ntitle=Work\\nscope=command\\n\\nrow=a\\ntitle=A\\n' ;;
+          read) printf 'button=work\\ntitle=Work\\nscope=spot\\n\\nrow=a\\ntitle=A\\n' ;;
           work) sleep 0.2; echo gone >&2; exit 3 ;;
         esac
         """)
