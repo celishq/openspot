@@ -29,6 +29,8 @@ enum SpotMotion {
     static let menuOpen = Animation.spring(duration: 0.32, bounce: 0.18)
     static let menuStartScale: CGFloat = 0.9
     static let focusedScale = 1.04
+    /// The card of the open menu coming forward and the rest fading.
+    static let focus = Animation.easeOut(duration: 0.15)
     static let handleFade = Animation.easeOut(duration: 0.12)
     /// How fast the grid scrolls, in points a second, under a lifted card that lies deep in the fade at one of its ends.
     static let edgeScrollSpeed = 500.0
