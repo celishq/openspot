@@ -158,6 +158,7 @@ final class SamplePluginsTests: SamplePluginsCase {
 
             XCTAssertEqual(state.title, "Caffeinate")
             XCTAssertEqual(state.subtitle, "Off")
+            XCTAssertEqual(state.on, false)
             XCTAssertEqual(lines.items.map(\.run), ["1800", "3600", "7200", "14400", "28800", "0"])
             XCTAssertEqual(lines.items.map(\.title), ["30 minutes", "1 hour", "2 hours", "4 hours", "8 hours", "Until turned off"])
             XCTAssertEqual(lines.parts.map(\.id), [])

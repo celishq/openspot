@@ -28,7 +28,9 @@ stop() {
 case "$1" in
   read)
     detail="Off"
+    on=false
     if [ "$running" = 1 ]; then
+      on=true
       detail="Until off"
       if [ "$end" != 0 ]; then
         left=$(( (end - $(date +%s) + 59) / 60 ))
@@ -39,7 +41,7 @@ case "$1" in
         fi
       fi
     fi
-    printf 'detail=%s\nrecents=false\n\n' "$detail"
+    printf 'detail=%s\nvalue=%s\nrecents=false\n\n' "$detail" "$on"
     printf 'button=open\ntitle=Select\n\n'
     if [ "$running" = 1 ]; then
       printf 'row=off\ntitle=Turn off\n\n'

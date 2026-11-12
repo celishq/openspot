@@ -79,7 +79,7 @@ public struct SpotOutput: Equatable, Sendable {
 
     /// The keys that start the head. A block whose first key is neither a kind nor one of them is of an unknown kind, which
     /// is skipped and reported (protocol: The head).
-    private static let headKeys: Set<String> = ["grid", "main", "title", "detail", "recents", "toast", "link", "progress", "select", "end", "call"]
+    private static let headKeys: Set<String> = ["grid", "main", "title", "detail", "value", "recents", "toast", "link", "progress", "select", "end", "call"]
 
     private static func isHead(_ key: String) -> Bool {
         headKeys.contains(key) || key.hasPrefix("grid.")
