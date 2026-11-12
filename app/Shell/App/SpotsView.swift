@@ -83,7 +83,7 @@ struct SpotsView: View {
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
         .overlayPreferenceValue(SpotMenuAnchor.self, alignment: .topLeading) { item in
             menuLayer(at: item)
-                .animation(SpotMotion.liftFade, value: model.menu == nil)
+                .animation(SpotMotion.sheet(isOpen: model.menu != nil), value: model.menu == nil)
         }
         .background(softBlur)
         .environment(\.spotIsShown, model.isShown)
@@ -232,7 +232,7 @@ struct SpotsView: View {
                         .opacity(isGrown ? 1 : 0)
                         .offset(x: shown.minX, y: shown.minY)
                 }
-                .animation(SpotMotion.menuOpen, value: isGrown)
+                .animation(SpotMotion.sheet(isOpen: true), value: isGrown)
                 .transition(.opacity)
                 .onChange(of: place, initial: true) { model.menuPlace = place }
             }

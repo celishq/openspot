@@ -34,7 +34,7 @@ struct SpotFieldView: View {
                 .allowsHitTesting(model.isEditing)
         }
         .opacity(model.menu == nil ? 1 : SpotTheme.unfocused)
-        .animation(SpotMotion.focus, value: model.menu == nil)
+        .animation(SpotMotion.sheet(isOpen: model.menu != nil), value: model.menu == nil)
         .onChange(of: model.isShown) { _, isShown in
             guard isShown else {
                 isFocused = false

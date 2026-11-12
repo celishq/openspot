@@ -74,6 +74,6 @@ struct SpotGridGlass: View {
             .modifier(SpotCardPlace(motion: card.motion, lift: card.isLifted ? lift : nil))
             .opacity(card.isCovered || (isPress && !card.isPressed) ? 0 : 1)
             .opacity(card.isUnfocused ? SpotTheme.unfocused : 1)
-            .animation(SpotMotion.focus, value: card.isFocused || card.isUnfocused)
+            .animation(SpotMotion.sheet(isOpen: card.isFocused || card.isUnfocused), value: card.isFocused || card.isUnfocused)
     }
 }

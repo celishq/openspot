@@ -68,7 +68,7 @@ struct SpotGridView: View {
                 .modifier(SpotLiftedCard(isLifted: card.isLifted, isSolid: card.isHeld, size: card.size))
                 .scaleEffect(card.isFocused ? SpotMotion.focusedScale : 1)
                 .opacity(card.isUnfocused ? SpotTheme.unfocused : 1)
-                .animation(SpotMotion.focus, value: card.isFocused || card.isUnfocused)
+                .animation(SpotMotion.sheet(isOpen: card.isFocused || card.isUnfocused), value: card.isFocused || card.isUnfocused)
                 .modifier(SpotCardPlace(motion: card.motion, lift: card.isLifted ? model.lift : nil))
                 .zIndex(card.isHeld ? 1 : 0)
                 .opacity(entry.id == openID ? 0.001 : 1)
