@@ -2,9 +2,9 @@ import Foundation
 import Observation
 import OpenspotCore
 
-/// The state of the playground window. It runs a file that it keeps in step with the editor in place, or the spot that a
-/// person types from a copy in a folder of its own, through the same sheet as the panel. Each edit runs again after a short
-/// pause, and only the newest edit runs. It reads, writes and watches the file away from the main thread.
+/// The state of the playground window. It runs the spot in a real panel of its own: a file that it keeps in step with the
+/// editor, or the text that a person types. Each edit runs again after a short pause, and only the newest edit runs. It
+/// reads, writes and watches the file away from the main thread.
 @MainActor
 @Observable
 final class SpotSandboxModel {
@@ -14,17 +14,16 @@ final class SpotSandboxModel {
 
     private(set) var sandbox = SheetSandbox()
     private(set) var source = ""
-    /// The text typed in the search of the sheet.
-    private(set) var query = ""
     /// The place of the panel where the spot shows.
     private(set) var place = PlaygroundPlace.sheet
     /// Why the header cannot load, or nil when it loads.
     private(set) var fault: String?
-    private(set) var spot: Spot?
-    private(set) var sheet: SpotRun?
+    /// The ID of the spot in the panel, once it loads.
+    private(set) var id: String?
     let file: URL?
     let presets: [(name: String, text: String)]
-    @ObservationIgnored private let runs = SpotRuns()
+    @ObservationIgnored let panel: PlaygroundPanel
+    @ObservationIgnored private let host = SpotPlaygroundHost()
     @ObservationIgnored private let folder: URL
     @ObservationIgnored private let plugins = SpotFolder.standard().url
     @ObservationIgnored private let disk: SpotSandboxFile?
@@ -35,25 +34,13 @@ final class SpotSandboxModel {
         file?.lastPathComponent
     }
 
+    var spot: Spot? {
+        id.flatMap { id in panel.model.entries.first { $0.id == id }?.spot }
+    }
+
     /// The `on` line that the spot needs before its place reads it, or nil when it has one.
     var lack: String? {
         spot.flatMap(place.lack)
-    }
-
-    /// The rows that the spot gives as answers to the text of the main search.
-    var answers: [SpotItem] {
-        sheet?.answers ?? []
-    }
-
-    var panel: SheetParts? {
-        sheet?.panel ?? sandbox.panel
-    }
-
-    /// The card that the newest frame draws at the size of the spot, or nil when it draws none.
-    var card: (layout: WidgetLayout, face: CardFace, size: SpotSize)? {
-        guard let spot, !sandbox.text.isEmpty else { return nil }
-        let face = SpotOutput(text: sandbox.text).face
-        return face.layout(for: spot.size).map { ($0, face, spot.size) }
     }
 
     /// `isCareful` runs the spot in Careful mode, with no use (protocol: Trust).
@@ -64,9 +51,13 @@ final class SpotSandboxModel {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-playground-\(UUID().uuidString)")
         let guide = Bundle.main.url(forResource: "GUIDE", withExtension: "md").flatMap { try? String(contentsOf: $0, encoding: .utf8) } ?? ""
         presets = SheetSandbox.presets(guide: guide)
-        runs.isCareful = isCareful
-        runs.onCall = { [weak self] record, reason in self?.sandbox.take(call: PlaygroundCall(record: record, reason: reason)) }
-        runs.panelOpened()
+        panel = PlaygroundPanel(host: host, scratch: folder, defaults: UserDefaults(suiteName: "openspot-playground") ?? .standard)
+        host.onNote = { [weak self] in self?.sandbox.record($0) }
+        panel.model.runs.isCareful = isCareful
+        panel.model.runs.onCall = { [weak self] record, reason in
+            self?.sandbox.take(call: PlaygroundCall(record: record, reason: reason))
+            if let frame = record.frames.last { self?.sandbox.note(frame: frame) }
+        }
         if file == nil { edit(Self.starter) }
         startWatch()
     }
@@ -86,87 +77,40 @@ final class SpotSandboxModel {
         }
     }
 
-    /// Types the text in the search of the place: the search of the sheet, or the main search.
-    func search(_ text: String) {
-        query = text
-        if let sheet { place.type(text, in: sheet) }
-    }
-
-    /// Shows the spot in another place, which runs it as that place of the panel does.
+    /// Shows the spot in another place of the panel.
     func choose(_ next: PlaygroundPlace) {
-        guard next != place else { return }
         place = next
-        guard let sheet else { return }
-        sheet.close()
-        place.show(sheet, query: query)
+        if let id { panel.show(next, id: id) }
     }
 
-    /// Runs the spot again as it is.
+    /// Runs the spot again as it is, as a new open of the panel does.
     func rerun() {
-        guard let sheet else { return }
-        if place == .sheet { sheet.read(need: .change) } else { place.show(sheet, query: query) }
+        guard let id else { return }
+        panel.model.panelWillShow(holding: [])
+        if place == .sheet { panel.model.sheets[id]?.read(need: .change) }
     }
 
-    func set(_ part: SpotPart, to value: String) {
-        sandbox.set(value, of: part.id)
-        sheet?.set(part, to: value)
-    }
-
-    /// Picks a row of the sheet or of the main search, which sends `open` with its id.
-    func pick(_ item: SpotItem) {
-        sandbox.record("open \(item.run)")
-        sheet?.pick(item)
-    }
-
-    func press(_ part: SpotPart) {
-        sandbox.press(part.id)
-        sheet?.press(part)
-    }
-
-    /// Stops the watch of the file and the spot, and removes the copy, once the window closes.
+    /// Stops the watch of the file and the panel, and removes its folder, once the window closes.
     func close() {
         watch?.cancel()
-        sheet?.close()
-        runs.quit()
+        panel.model.quit()
         try? FileManager.default.removeItem(at: folder)
     }
 
-    /// Loads the header of the file, or of a copy of typed text, and opens a new sheet of it in place of the last one. A
-    /// header that cannot load keeps the last sheet and shows why.
+    /// Puts the text in the panel, and shows the spot in its place. A header that cannot load keeps the last spot and
+    /// shows why.
     private func run(_ text: String) {
-        let (url, id) = SheetSandbox.place(of: file, text: text, plugins: plugins, scratch: folder)
         do {
-            if file == nil {
-                try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-                for old in (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? [] where old != url {
-                    try? FileManager.default.removeItem(at: old)
-                }
-                try text.write(to: url, atomically: true, encoding: .utf8)
-                if url.pathExtension != SpotFile.inlineExtension {
-                    try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
-                }
-            }
-            guard let loaded = try SpotFile(file: url, id: id)?.spots.first else {
+            let placed = try panel.place(file: file, text: text, plugins: plugins)
+            guard let url = panel.file, try SpotFile(file: url, id: placed)?.spots.first != nil else {
                 fault = "This text is no spot. Start it with #!/bin/sh, or with // lines of a JavaScript header."
                 return
             }
             fault = nil
-            spot = loaded
-            sheet?.close()
-            let next = runs.sheet(for: loaded)
-            next.onReport = { [weak self] in self?.take($0) }
-            sheet = next
-            place.show(next, query: query)
+            id = placed
+            panel.show(place, id: placed)
         } catch {
             fault = (error as? SpotError)?.reason ?? error.localizedDescription
-        }
-    }
-
-    private func take(_ report: SpotRun.Report) {
-        switch report {
-        case .frame(let text): sandbox.note(frame: text)
-        case .failure(let text), .toast(let text), .failureWithFix(let text, _): sandbox.record(text)
-        case .listChange, .chooseFiles, .closed, .landed: break
         }
     }
 

@@ -9,6 +9,9 @@ final class SpotSandbox: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// The sandbox of a process of its own, and each sandbox that the running app shows.
     private static var kept: Set<SpotSandbox> = []
 
+    /// The size of a new playground window, which fits the editor, the whole panel and the call log.
+    private static let size = CGSize(width: 1180, height: 940)
+
     private let window: NSWindow
     private let model: SpotSandboxModel
     private var closed: CheckedContinuation<Void, Never>?
@@ -17,14 +20,12 @@ final class SpotSandbox: NSObject, NSApplicationDelegate, NSWindowDelegate {
         model = SpotSandboxModel(path: path, isCareful: isCareful)
         let view = NSHostingView(rootView: SpotSandboxView(model: model))
         window = NSWindow(
-            contentRect: NSRect(origin: .zero, size: view.fittingSize),
+            contentRect: NSRect(origin: .zero, size: Self.size),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
         window.title = "Openspot playground"
-        window.isOpaque = false
-        window.backgroundColor = .clear
         window.contentView = view
         window.isReleasedWhenClosed = false
         window.center()

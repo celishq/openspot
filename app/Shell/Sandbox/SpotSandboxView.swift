@@ -8,7 +8,7 @@ struct SpotSandboxView: View {
     @Bindable var model: SpotSandboxModel
 
     private static let minTextWidth: CGFloat = 320
-    private static let minStageWidth: CGFloat = SpotTokens.gridWidth + 80
+    private static let minStageWidth: CGFloat = SpotTokens.gridWidth + 2 * SpotTokens.padding
     private static let minTopHeight: CGFloat = 360
     private static let minLogHeight: CGFloat = 120
     private static let codeFont = Font.system(size: 12, design: .monospaced)
@@ -27,11 +27,12 @@ struct SpotSandboxView: View {
                     SpotPlaygroundStage(model: model)
                     faults
                 }
-                .frame(minWidth: Self.minStageWidth, idealWidth: 420, maxHeight: .infinity)
+                .frame(minWidth: Self.minStageWidth, idealWidth: SpotTokens.panelWidth, maxHeight: .infinity)
             }
-            .frame(minHeight: Self.minTopHeight, idealHeight: 620)
+            .frame(minHeight: Self.minTopHeight, idealHeight: SpotTokens.panelHeight + 120)
+            .layoutPriority(1)
             calls
-                .frame(minHeight: Self.minLogHeight, idealHeight: 240)
+                .frame(minHeight: Self.minLogHeight, idealHeight: Self.minLogHeight, maxHeight: .infinity)
                 .background(SpotTheme.window)
         }
         .frame(minWidth: Self.minTextWidth + Self.minStageWidth, minHeight: Self.minTopHeight + Self.minLogHeight)
