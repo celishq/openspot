@@ -16,11 +16,13 @@ final class ToastPanel: NSPanel {
     private var shows = 0
     private var fixKey: HotKey.Registration?
 
-    /// Shows a message, in place of any toast on screen, and hides it after a while. A fix opens on a click or on its key.
-    func show(_ message: String, symbol: String? = nil, fix: (@MainActor @Sendable () -> Void)? = nil, key: Shortcut? = nil, for duration: TimeInterval = ToastPanel.duration) {
+    /// Shows a message, in place of any toast on screen, and hides it after a while, or keeps it with no duration. A fix opens
+    /// on a click or on its key.
+    func show(_ message: String, symbol: String? = nil, isWorking: Bool = false, fix: (@MainActor @Sendable () -> Void)? = nil, key: Shortcut? = nil, for duration: TimeInterval? = ToastPanel.duration) {
         shows += 1
         let current = shows
         toast.symbol = symbol
+        toast.isWorking = isWorking
         let held = hold(fix: fix, key: key)
         toast.message = held.map { "\(message) Press `\($0.label)` to fix it." } ?? message
         let measure = NSHostingController(rootView: ToastView(toast: toast))
@@ -33,6 +35,7 @@ final class ToastPanel: NSPanel {
         DispatchQueue.main.async {
             if self.shows == current { self.toast.isShown = true }
         }
+        guard let duration else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
             if self.shows == current { self.hide() }
         }

@@ -58,6 +58,10 @@ final class TestHost: SpotsHost {
         confirms.append(text)
     }
 
+    func work(_ text: String) {
+        confirms.append(text)
+    }
+
     func applyConfig(_ config: Config) {}
 
     func setEntryKey(on isOn: Bool) {}
