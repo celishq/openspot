@@ -2,9 +2,8 @@
 
 `1.0` `draft`
 
-This is the contract between a spot and Openspot. A spot is one small program. Openspot runs it when something happens,
-reads what it prints, and draws it. This text tells the story in the order that you meet it: a first spot, what it prints,
-when it runs, where it shows, bigger spots, and the tools around them.
+Openspot runs small programs called spots. A spot prints what to show, and Openspot draws it and calls the spot again when
+something happens. This page is all you need to write one: start with a first spot, then read on as you need more.
 
 MUST, MUST NOT, SHOULD and MAY have the meanings of RFC 2119.
 
@@ -53,9 +52,23 @@ An `on=` line says when Openspot reads it, and the script prints what to show.
 printf 'text=cups\ntitle=3\ndetail=Last at 14:20\n'
 ```
 
-- `openspot spot new <name> --from <kind>` writes a working spot to start from: `button`, `list`, `number` or `form`.
-- `openspot check <folder>` loads and reads each spot, and prints each fault. Run it before you stop.
-- `openspot sandbox` opens the playground: type a spot, and see its sheet, its card and each call.
+## Try your spot
+
+Run each example of this page in the playground before you put it in the plugins folder.
+
+- **The playground.** Open the Playground spot, or run `openspot sandbox [file]`. Type a spot, or pick one from Examples,
+  and see its sheet, its card and each call: its arguments, its stdin, each frame, its stderr and how it ended. A file
+  that you name stays in step with the editor.
+- **A start.** `openspot spot new <name> --from <kind>` writes a working spot to change: `button`, `list`, `number` or
+  `form`.
+- **One call.** `openspot spot run <id> [call] [value]...` makes one call as Openspot does, and prints all that the spot
+  prints. With no call, it reads the spot.
+- **A picture.** `openspot render [--view <file>] <file.png>` draws the sheet that stdin holds. `--card <size>` draws its
+  card, and `--spot <id>` draws an installed spot.
+- **The last calls.** `openspot spot log <id>` prints the last calls that Openspot made to a spot, with their stdin,
+  stdout, stderr and exit code.
+- **The check.** `openspot check [--json] <folder>` loads and reads each spot, and prints each fault. Run it before you
+  stop.
 
 ## The format
 
@@ -150,13 +163,12 @@ printf 'text=done\ntitle=Copied\n'
 - Openspot draws each frame at once.
 - The spot holds no state. Each call gets the values on stdin and prints the whole output again, or nothing.
 - A frame with a block is the whole picture. It replaces all that the spot shows.
-- A frame of only a head changes no picture. Its effects act: `toast`, `link`, `select`, `progress` and `end`.
+- A frame of only a head changes no picture, and its effects act (see The head).
 - A read that ends with no picture shows nothing. Another call that ends with no picture makes Openspot read the spot once.
 - Openspot drops the answer to a call that a newer change has outdated.
 - A value from data MUST go through a helper: `openspot_kv`, `openspot_row` or `esc` in a shell, and `openspot.frame` in
   JavaScript, so that a value never adds a line or a block. `openspot check` warns of a block with a line that has no
   `=`, or with a key twice that only a list repeats.
-- `progress=<0 to 1>` in a head shows the progress of a call. `title` and `detail` in that head show only while it runs.
 - Openspot reads `ESC ] 9;4;1;<percent>` as `progress` and `ESC ] 9;<text>` as a toast, and removes each other escape
   code.
 
@@ -314,8 +326,9 @@ grid=a a d e
 The head is the one block with no kind. It is not drawn: it holds the drawing and the effects.
 
 - Its picture keys: `grid=` and `grid.<size>=` lines, `main`, `title` and `detail` for the card, and `recents`.
-- Its effects: `toast`, `link=<url>`, which opens the URL, `progress`, `end=<call>` of a staying spot, and
-  `select=<row id>`, which reads again with that row selected.
+- Its effects: `toast`, `link=<url>`, which opens the URL, `progress=<0 to 1>`, `end=<call>` of a staying spot, and
+  `select=<row id>`, which reads again with that row selected. With `progress`, its `title` and `detail` show only while the
+  call runs.
 - `toast=Saved` shows at once, also with the panel closed.
 - A second block with no kind is skipped and reported.
 
@@ -497,9 +510,7 @@ A spot runs once for each call, unless its header says otherwise.
 - `mode=once` starts a process for each call.
 - `mode=stay` keeps one process that takes each call on stdin while something wants it.
 - `mode=always` keeps that process from the start of the app to its quit.
-- A `.js` file with a header runs inside the app.
-- A call has the same three parts in each mode. A staying spot answers each text of the main search as a call of its own,
-  and only the answer to the newest one shows.
+- A `.js` file with a header runs inside the app, and one with no header MAY hold shared code.
 
 ### A JavaScript spot
 
@@ -519,7 +530,6 @@ function main(args, env, input) {
 - It has no files, no network and no process of its own. It runs one call at a time on a thread of its own.
 - Openspot waits 2 ms for its frame in the turn of the key, and shows a later frame in the next turn.
 - A call has 10 seconds. Then it fails as a slow read, and the spot answers its next call.
-- A `.js` file with no header MAY hold shared code.
 
 ### A staying spot
 
@@ -538,7 +548,8 @@ main() {
 openspot_serve main "$@"
 ```
 
-Openspot writes each call to its stdin as one block:
+Openspot writes each call to its stdin as one block, then a blank line: `call=<n>` numbers it, an `arg` line gives each
+argument, an `env.<name>` line gives each variable, and one `input` line holds its stdin.
 
 ```ini
 call=4
@@ -549,14 +560,12 @@ input=peer=127.0.0.1:47800\nmessage=Hello\n
 
 - A staying spot is one process that talks both ways over stdio. Each call reaches the running process, and no call starts
   a second copy.
-- Each call is one block, then a blank line: `call=<n>` numbers it, an `arg` line gives each argument, an `env.<name>`
-  line gives each variable, and one `input` line holds its stdin.
 - `openspot_serve main "$@"` runs `main` with the three parts of each call, prints `call=<n>` before its output and
   `end=<n>` after it. One `main` runs unchanged in each mode.
 - The spot MAY print frames at any time. It MUST end each call with `end=<n>` in a head. A frame of only `call=<n>` starts
   the output of that call.
-- A second press sends the block `stop=<n>`. A newer text sends `stop=<n>` for the read of the older one. A read after the
-  first gets `stop=<n>` after 10 seconds and fails as a slow read.
+- A second press sends the block `stop=<n>`. A newer text sends `stop=<n>` for the read of the older one, so only the
+  answer to the newest text shows. A read after the first gets `stop=<n>` after 10 seconds and fails as a slow read.
 - With `mode=stay`, it runs while something wants it, or while a call waits for its `end`. When nothing wants it, Openspot
   closes its stdin, and the spot MUST end, with each process that it started. After 2 seconds its process group gets the
   terminate signal, and 2 seconds later the kill signal.
@@ -694,15 +703,11 @@ A spot asks the Mac and the app through one command, which works the same in a t
 - `openspot batch` runs one call per line of stdin and prints `---` after each. It stops at the first failure.
 - `--frame` makes `app status`, `spot list` and `setting list` print blocks in place of JSON.
 
+The commands that try a spot are in Try your spot. The others:
+
 | Command                                            | Does                                                                   |
 | -------------------------------------------------- | ---------------------------------------------------------------------- |
-| `openspot guide`                                   | Prints this guide.                                                     |
-| `openspot spot new <name> --from <kind>`           | Writes a working spot: `button`, `list`, `number` or `form`.           |
-| `openspot spot run <id> [call] [value]...`         | Makes one call as Openspot does, and prints all that it prints.        |
-| `openspot spot log <id>`                           | Prints the last calls to a spot, with stdin, stdout, stderr and exit code. |
-| `openspot check [--json] <folder>`                 | Loads and reads each spot, and prints each fault.                      |
-| `openspot sandbox [file]`                          | Opens the playground: type a spot, and see its sheet, its card and each call with its stdin, frames and stderr. |
-| `openspot render [--view <file>] <file.png>`       | Draws the sheet on stdin. `--card <size>` draws its card, and `--spot <id>` an installed spot. |
+| `openspot guide`                                   | Prints this page.                                                      |
 | `openspot spot show <id>`                          | Opens the panel with the spot selected.                                |
 | `openspot spot add <git url, folder or file.spot>` | Adds a spot, and records it in `spots.lock`. An update that grows its uses needs `--yes`. |
 | `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                       |
