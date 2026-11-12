@@ -112,7 +112,9 @@ final class SpotSandboxModel {
                 try? FileManager.default.removeItem(at: old)
             }
             try text.write(to: url, atomically: true, encoding: .utf8)
-            try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+            if url.pathExtension != SpotFile.inlineExtension {
+                try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+            }
             guard let loaded = try SpotFile(file: url, id: "playground")?.spots.first else {
                 fault = "This text is no spot. Start it with #!/bin/sh, or with // lines of a JavaScript header."
                 return

@@ -516,7 +516,8 @@ A spot runs once for each call, unless its header says otherwise.
 - `mode=once` starts a process for each call.
 - `mode=stay` keeps one process that takes each call on stdin while something wants it.
 - `mode=always` keeps that process from the start of the app to its quit.
-- A `.js` file with a header runs inside the app, and one with no header MAY hold shared code.
+- A `.js` file with a header runs inside the app, and one with no header MAY hold shared code. An executable `.js` file runs
+  as a process, like any other script.
 
 ### A JavaScript spot
 

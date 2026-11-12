@@ -1,6 +1,7 @@
 import Foundation
 
-/// What one file in the plugin folder gives: a spot of an executable or of a JavaScript file with a header.
+/// What one file in the plugin folder gives: a spot of an executable, or of a JavaScript file with a header that runs inline
+/// when it is not executable.
 public struct SpotFile: Equatable, Sendable {
     private static let widgetExtension = "toml"
     public static let inlineExtension = "js"
@@ -46,7 +47,7 @@ public struct SpotFile: Equatable, Sendable {
             throw SpotError.fault("\(name) has an unknown event in its emits: \(word). Write a word with a dot, such as emits=music.track")
         }
         let uses = try SpotUse.set(header.value("uses"), of: name)
-        let isInline = url.pathExtension == Self.inlineExtension
+        let isInline = url.pathExtension == Self.inlineExtension && !FileManager.default.isExecutableFile(atPath: url.path)
         let modeName = header.value("mode") ?? SpotMode.once.rawValue
         guard let named = SpotMode(rawValue: modeName), named != .inline else {
             if modeName == SpotMode.inline.rawValue {

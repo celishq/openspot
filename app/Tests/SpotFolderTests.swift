@@ -267,6 +267,12 @@ final class SpotFolderTests: XCTestCase {
         ])
     }
 
+    func testAnExecutableJavaScriptFileRunsAsAProcess() throws {
+        try "#!/usr/bin/env node\n// title=Node\n// mode=stay\nconsole.log('hi')\n".writeScript(to: folder.appendingPathComponent("node.js"))
+
+        XCTAssertEqual(try scan.spots.map(\.mode), [.stay])
+    }
+
     func testRefusesStayAndNamesTheMode() throws {
         try write("a.sh", header: "stay=true")
         try write("b.sh", header: "stay=always")
