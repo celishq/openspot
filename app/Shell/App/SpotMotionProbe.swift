@@ -218,6 +218,23 @@ final class SpotMotionProbe: NSObject {
                 _ = self.model.handleKey(ActionKey(name: "k", isCommand: true))
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                     self.save(to: "\(folder)/row.png")
+                    self.model.closeMenu()
+                    self.shootResults(into: folder)
+                }
+            }
+        }
+    }
+
+    /// Saves a picture of the actions menu on the first result of a search for the first word of a spot's name.
+    private func shootResults(into folder: String) {
+        _ = model.stepBack()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            let word = self.model.visible.first?.state.title.split(separator: " ").first.map(String.init) ?? "a"
+            self.model.searchText = word
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                _ = self.model.handleKey(ActionKey(name: "k", isCommand: true))
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    self.save(to: "\(folder)/results.png")
                     self.finish(with: "shots\n")
                 }
             }

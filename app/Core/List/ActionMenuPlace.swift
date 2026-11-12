@@ -9,6 +9,9 @@ public struct ActionMenuPlace: Equatable, Sendable {
     private static let tie: CGFloat = 1
 
     public let rect: CGRect
+
+    /// How far the menu stays from the panel's sides.
+    private static let margin: CGFloat = 16
     /// Whether the menu's bottom lies nearer its item than its top, so that its field and its still edge are at the bottom.
     public let growsUp: Bool
     /// The corner of the menu nearest its item, which it grows from, as 0 or 1 on each axis: 0 is the left or the top.
@@ -30,6 +33,12 @@ public struct ActionMenuPlace: Equatable, Sendable {
         rect = CGRect(origin: origin, size: CGSize(width: Self.width, height: height))
         growsUp = origin.y + height / 2 < item.midY
         corner = CGPoint(x: isOnLeft ? 0 : 1, y: growsUp ? 1 : 0)
+    }
+
+    /// Where a menu may lie in the panel: from this top down to the hint line's place at the panel's foot.
+    public static func bounds(under top: CGFloat) -> CGRect {
+        let bottom = SpotTokens.panelHeight - SpotTokens.halo - SpotTokens.hintBlock
+        return CGRect(x: margin, y: top, width: SpotTokens.panelWidth - 2 * margin, height: bottom - top)
     }
 
     /// The menu at the smaller height that a search leaves, with its still edge in place.

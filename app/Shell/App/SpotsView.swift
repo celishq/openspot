@@ -49,7 +49,8 @@ struct SpotsView: View {
             .modifier(SpotScrollEdgeTracker(edges: Binding(get: { fade.edges }, set: { fade.edges = $0 })))
             .modifier(GridFadeMask(fade: fade, height: cardHeight))
             .animation(SpotMotion.sheetFade(isOpen: surfaceIsOut, isLate: !coversGrid)) { $0.opacity(coversGrid ? 0 : 1) }
-            SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: gridHeight, sheetHeight: sheetID == nil ? gridHeight : sheetHeight)
+            SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: cardHeight, sheetHeight: max(sheetID == nil ? gridHeight : sheetHeight, menuBackdropHeight))
+                .animation(SpotMotion.sheet(isOpen: model.menu != nil), value: menuBackdropHeight)
                 .opacity(model.isShown ? 1 : 0)
                 .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
             if let entry = model.entries.first(where: { $0.id == sheetID }) {
@@ -195,16 +196,12 @@ struct SpotsView: View {
     }
 
     private var menuBackdropHeight: CGFloat {
-        model.menu.map { menuBounds($0).maxY + SpotTokens.halo + SpotTokens.hintBlock } ?? 0
+        model.menuPlace.map { $0.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock } ?? 0
     }
 
-    private static let menuMargin: CGFloat = 16
-
-    /// Where the menu may lie: under the field, over the content, and down to the content's bottom or as far as it needs.
-    private func menuBounds(_ menu: ActionMenu) -> CGRect {
-        let top = fieldIsInSheet ? SpotTokens.halo + SpotTokens.sheetFieldDrop + SpotTokens.listRowHeight + SpotTokens.rowGap : SpotTokens.gridTop
-        let bottom = max(contentHeight - SpotTokens.halo - SpotTokens.hintBlock, top + SpotTokens.menuHeight(rows: menu.fullLines))
-        return CGRect(x: Self.menuMargin, y: top, width: SpotTokens.panelWidth - 2 * Self.menuMargin, height: bottom - top)
+    /// Where the menu may lie: under the field, down to the panel's foot.
+    private var menuBounds: CGRect {
+        ActionMenuPlace.bounds(under: fieldIsInSheet ? SpotTokens.halo + SpotTokens.sheetFieldDrop + SpotTokens.listRowHeight + SpotTokens.rowGap : SpotTokens.gridTop)
     }
 
     /// The rect of the menu's glass at a scale from its corner nearest its item, as its rows scale, so that the blur behind
@@ -218,7 +215,7 @@ struct SpotsView: View {
     private func menuLayer(at item: SpotMenuAnchor.Item?) -> some View {
         GeometryReader { proxy in
             if let menu = model.menu {
-                let bounds = menuBounds(menu)
+                let bounds = menuBounds
                 let rect = item.map { proxy[$0.bounds] } ?? SpotFieldView.rect
                 let place = ActionMenuPlace(item: rect, height: SpotTokens.menuHeight(rows: menu.fullLines), bounds: bounds)
                 let shown = place.rect(height: SpotTokens.menuHeight(rows: menu.lines))

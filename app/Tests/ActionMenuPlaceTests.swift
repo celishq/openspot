@@ -96,4 +96,13 @@ final class ActionMenuPlaceTests: XCTestCase {
         XCTAssertFalse(pushedUp.growsUp)
         XCTAssertTrue(ActionMenuPlace(item: card(column: 0, row: 6), height: height, bounds: bounds).growsUp)
     }
+
+    func testTheMenuOfAFullWidthItemOverShortContentLiesUnderIt() {
+        let item = card(column: 0, columns: 4)
+
+        let menu = ActionMenuPlace(item: item, height: 116, bounds: ActionMenuPlace.bounds(under: SpotTokens.gridTop)).rect
+
+        XCTAssertEqual(menu.minY, item.maxY + ActionMenuPlace.gap)
+        XCTAssertLessThanOrEqual(menu.maxY, SpotTokens.panelHeight - SpotTokens.halo - SpotTokens.hintBlock)
+    }
 }
