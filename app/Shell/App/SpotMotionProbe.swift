@@ -133,7 +133,8 @@ final class SpotMotionProbe: NSObject {
     }
 
     /// Saves a picture of Edit Spots with its store a second after it starts, then of the tip of the first card's eye, then of
-    /// the listing of the store's first row, then the pictures of a carried card.
+    /// the listing of the store's first row, then the pictures of a carried card, then of the panel after Edit Spots ends and
+    /// starts again.
     private func shootEdit(into folder: String) {
         model.beginEditing()
         try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
@@ -207,7 +208,21 @@ final class SpotMotionProbe: NSObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             self.save(to: "\(folder)/tile-resized.png")
             self.model.cancelResize()
-            self.finish(with: "shots\n")
+            self.shootEnd(into: folder)
+        }
+    }
+
+    /// Ends Edit Spots and saves a picture of the panel a second later, at its place with the store put away, then starts it
+    /// again and saves a picture of the store as it comes back.
+    private func shootEnd(into folder: String) {
+        model.endEditing()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            self.save(to: "\(folder)/ended.png")
+            self.model.beginEditing()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                self.save(to: "\(folder)/reopened.png")
+                self.finish(with: "shots\n")
+            }
         }
     }
 

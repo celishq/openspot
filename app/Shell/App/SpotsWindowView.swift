@@ -18,6 +18,7 @@ struct SpotsWindowView: View {
                     .environment(\.spotIsShown, place.dock == nil || model.isShown)
                     .allowsHitTesting(place.dock != nil)
                     .accessibilityHidden(place.dock == nil)
+                    .frame(width: place.dock == nil ? 0 : size.width, height: place.dock == nil ? 0 : size.height, alignment: .topLeading)
                     .animation(nil) { $0.offset(x: place.dock?.minX ?? Self.parked, y: place.dock?.minY ?? Self.parked) }
                     .opacity(place.isOut ? 1 : 0.001)
             }
@@ -28,6 +29,7 @@ struct SpotsWindowView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    /// Where the store lies while Edit Spots is off: far outside the window, so that it draws nothing.
+    /// Where the store lies while Edit Spots is off: far outside the window, so that it draws nothing, and in a frame of no
+    /// size, so that the window's content keeps the window's size.
     private static let parked: CGFloat = -10_000
 }
