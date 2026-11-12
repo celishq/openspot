@@ -294,7 +294,7 @@ final class SpotsModelDragTests: XCTestCase {
         model.gridScrolled(to: 40)
         XCTAssertNil(model.tip)
 
-        model.tip = SpotTip(id: "a", anchor: .dockCard, text: "A")
+        model.tip = SpotTip(id: "a", anchor: .trailingCorner, text: "Hide from grid")
         model.dockScrolled(to: 40)
         XCTAssertNil(model.tip)
     }
@@ -310,7 +310,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     /// The dock under the panel, in the panel's space, as the window sets it in Edit Spots.
-    private let dock = CGRect(x: -400, y: SpotTokens.panelHeight, width: 1220, height: SpotTokens.dockHeight(rows: 3))
+    private let dock = CGRect(x: -300, y: SpotTokens.panelHeight, width: SpotTokens.dockWidth, height: SpotTokens.dockHeight(rows: 3))
 
     /// The pointer's move, since the drag started, that takes the centre of the lifted card to this point of the grid.
     private func dragMove(to point: CGPoint) -> CGSize {
@@ -378,8 +378,7 @@ final class SpotsModelDragTests: XCTestCase {
     /// Where the card of a spot of the dock lies in the panel's space, with the dock not scrolled.
     private func tile(_ id: String) -> CGRect {
         let index = model.dock.shown.firstIndex { $0.id == id } ?? 0
-        let rect = model.dock.rects(columns: SpotTokens.dockColumns(width: dock.width))[index]
-        return rect.offsetBy(dx: dock.minX + SpotTokens.padding, dy: dock.minY + SpotTokens.dockRowsTop)
+        return model.dock.rects[index].offsetBy(dx: dock.minX + SpotDock.rowsOrigin.x, dy: dock.minY + SpotDock.rowsOrigin.y)
     }
 
     /// The pointer's move that takes the centre of the dock's card of a spot to this point of the grid.
@@ -393,6 +392,7 @@ final class SpotsModelDragTests: XCTestCase {
         try "#!/bin/sh\n# size=wide\n".writeScript(to: core.appendingPathComponent("timer.sh"))
         model.reload()
         model.dockFrame = dock
+        model.showStoreSection(.store)
         let translation = dockMove("timer", to: leftHalf(of: "b"))
 
         model.dragDockSpot("timer", by: translation)
@@ -410,6 +410,7 @@ final class SpotsModelDragTests: XCTestCase {
         try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
         model.reload()
         model.dockFrame = dock
+        model.showStoreSection(.store)
         model.setOnGrid(false, for: "d")
         let translation = dockMove("timer", to: leftHalf(of: "c"))
         let size = { self.model.placements[self.model.visible.firstIndex { $0.id == "timer" } ?? 0].size }
@@ -428,6 +429,7 @@ final class SpotsModelDragTests: XCTestCase {
         try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
         model.reload()
         model.dockFrame = dock
+        model.showStoreSection(.store)
         model.dragDockSpot("timer", by: dockMove("timer", to: leftHalf(of: "b")))
         XCTAssertTrue(order.contains("timer"))
 
@@ -559,18 +561,33 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.dock.shown.map(\.id), ["timer"])
     }
 
-    func testEachFilterOfTheStoreKeepsItsSpots() throws {
+    func testEachSectionOfTheStoreShowsItsSpots() throws {
         try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
         model.setOnGrid(false, for: "d")
         model.reload()
 
-        let shown = { (filter: SpotDock.Filter) -> [String] in
-            self.model.filterDock(filter)
+        let shown = { (section: SpotDock.Section) -> [String] in
+            self.model.showStoreSection(section)
             return self.model.dock.shown.map(\.id)
         }
-        XCTAssertEqual(shown(.core), ["timer"])
-        XCTAssertEqual(shown(.mine), ["d", "a", "b", "c"])
-        XCTAssertEqual(shown(.all), ["timer", "d", "a", "b", "c"])
+        XCTAssertEqual(shown(.store), ["timer"])
+        XCTAssertEqual(shown(.mine), ["a", "b", "c", "d"])
+        XCTAssertEqual(shown(.added), ["a", "b", "c", "d"])
+    }
+
+    func testTheNextStepAddsASpotToSearchThenToTheGridAndTheMenuTakesItBack() throws {
+        try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        model.reload()
+        let state = { self.model.dock.items.first { $0.id == "timer" }?.state }
+
+        model.takeStep(of: "timer")
+        XCTAssertEqual(state(), .searchOnly)
+
+        model.takeStep(of: "timer")
+        XCTAssertEqual(state(), .onGrid)
+
+        model.choose(.place(.off), for: "timer")
+        XCTAssertEqual(state(), .off)
     }
 
     func testTurnOnAllTurnsOnEachSpotThatIsOff() throws {
@@ -584,14 +601,18 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertTrue(order.contains("timer"))
     }
 
-    func testAClickOnAStoreCardOpensItsListingAndEscapeClosesIt() throws {
+    func testAClickOnAStoreCardOpensItsListingAndEscapeClosesIt() async throws {
         try "#!/bin/sh\n# size=small\n# detail=Counts down\n".writeScript(to: core.appendingPathComponent("timer.sh"))
         try "Counts down.".write(to: core.appendingPathComponent("timer.md"), atomically: true, encoding: .utf8)
         model.reload()
+        model.showStoreSection(.store)
 
         model.openListing("timer")
         XCTAssertEqual(model.dock.opened, "timer")
+        XCTAssertFalse(model.dock.isSheetOut)
         XCTAssertEqual(model.dockListing?.readme, "Counts down.")
+        for _ in 0..<1000 where !model.dock.isSheetOut { await Task.yield() }
+        XCTAssertTrue(model.dock.isSheetOut)
 
         model.searchDock("")
         XCTAssertEqual(model.dock.opened, "timer")

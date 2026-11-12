@@ -93,7 +93,8 @@ struct SpotFieldView: View {
             Spacer()
             SpotRoundButton(symbol: "checkmark", label: "Done", look: .strong) { model.endEditing() }
         }
-        .padding(.horizontal, SpotTokens.padding)
+        .padding(.leading, SpotTokens.padding + SpotTokens.glyphInset)
+        .padding(.trailing, SpotTokens.padding)
         .frame(width: Self.rect.width, height: Self.rect.height)
         .offset(x: Self.rect.minX, y: Self.rect.minY)
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)

@@ -132,9 +132,9 @@ final class SpotMotionProbe: NSObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.edit(left: left - 1) }
     }
 
-    /// Saves a picture of Edit Spots with its dock a second after it starts, then of the tip of the first card's eye, then of
-    /// the tip of the first dock card's corner control, then of the first dock card's listing, then the pictures of a
-    /// carried card.
+    /// Saves a picture of Edit Spots with its store a second after it starts, then of the tip of the first card's eye, then of
+    /// the listing of the store's first row, then the pictures of a carried card, then of the panel after Edit Spots ends and
+    /// starts again.
     private func shootEdit(into folder: String) {
         model.beginEditing()
         try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
@@ -143,16 +143,12 @@ final class SpotMotionProbe: NSObject {
             self.model.tip = self.model.visible.first.map { SpotTip(id: $0.id, anchor: .trailingCorner, text: "Hide from grid") }
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 self.save(to: "\(folder)/tip.png")
-                self.model.tip = self.model.dock.shown.first.map { SpotTip(id: $0.id, anchor: .dockCorner, text: "Delete") }
+                self.model.tip = nil
+                if let id = self.model.dock.shown.first?.id { self.model.openListing(id) }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                    self.save(to: "\(folder)/tip-dock.png")
-                    self.model.tip = nil
-                    if let id = self.model.dock.shown.first?.id { self.model.openListing(id) }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                        self.save(to: "\(folder)/listing.png")
-                        if let id = self.model.dock.opened { self.model.openListing(id) }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.shootCarry(into: folder) }
-                    }
+                    self.save(to: "\(folder)/listing.png")
+                    if let id = self.model.dock.opened { self.model.openListing(id) }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.shootCarry(into: folder) }
                 }
             }
         }
@@ -186,10 +182,10 @@ final class SpotMotionProbe: NSObject {
         guard let dock = model.dockFrame, let index = model.dock.shown.firstIndex(where: { $0.id == id }), let first = model.placements.first else {
             return finish(with: "shots\n")
         }
-        let tile = model.dock.rects(columns: SpotTokens.dockColumns(width: dock.width))[index]
+        let tile = model.dock.rects[index]
         let origin = SpotTokens.gridOrigin(scrollOffset: model.gridScroll)
         let target = CGPoint(x: origin.x + first.rect.minX + first.rect.width / 4, y: origin.y + first.rect.midY)
-        let start = CGPoint(x: dock.minX + SpotTokens.padding + tile.midX, y: dock.minY + SpotTokens.dockRowsTop + tile.midY - model.dockScroll)
+        let start = CGPoint(x: dock.minX + SpotDock.rowsOrigin.x + tile.midX, y: dock.minY + SpotDock.rowsOrigin.y + tile.midY - model.dockScroll)
         let move = CGSize(width: target.x - start.x, height: target.y - start.y)
         model.dragDockSpot(id, by: CGSize(width: 1, height: 1))
         model.dragDockSpot(id, by: move)
@@ -212,7 +208,21 @@ final class SpotMotionProbe: NSObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             self.save(to: "\(folder)/tile-resized.png")
             self.model.cancelResize()
-            self.finish(with: "shots\n")
+            self.shootEnd(into: folder)
+        }
+    }
+
+    /// Ends Edit Spots and saves a picture of the panel a second later, at its place with the store put away, then starts it
+    /// again and saves a picture of the store as it comes back.
+    private func shootEnd(into folder: String) {
+        model.endEditing()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            self.save(to: "\(folder)/ended.png")
+            self.model.beginEditing()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                self.save(to: "\(folder)/reopened.png")
+                self.finish(with: "shots\n")
+            }
         }
     }
 

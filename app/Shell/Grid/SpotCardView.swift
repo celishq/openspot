@@ -13,8 +13,8 @@ struct SpotCardView: View, Equatable {
     let isPressed: Bool
     let takesDrag: Bool
     let isDropTarget: Bool
+    /// The letter of the spot's key, which shows while the model shows the letters.
     let chainLetter: String?
-    let showsChain: Bool
     /// The model that a tap and a slide go to.
     let model: SpotsModel
     /// What a tap does in place of a press on the grid, such as on a float.
@@ -24,7 +24,7 @@ struct SpotCardView: View, Equatable {
     nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.entry == rhs.entry && lhs.size == rhs.size && lhs.index == rhs.index && lhs.isPressed == rhs.isPressed
             && lhs.takesDrag == rhs.takesDrag && lhs.isDropTarget == rhs.isDropTarget && lhs.chainLetter == rhs.chainLetter
-            && lhs.showsChain == rhs.showsChain && lhs.model === rhs.model
+            && lhs.model === rhs.model
     }
 
     /// How far a line reaches past the inset at its trailing end, where the round end of the card leaves room.
@@ -42,7 +42,7 @@ struct SpotCardView: View, Equatable {
             .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, blursBehind: false, rimSize: CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))))
             .modifier(CardHover(shape: shape, isFilled: isFilled, showsPress: showsPress))
             .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape)).modifier(CardReveal()).allowsHitTesting(false))
-            .overlay(alignment: .topTrailing) { keycap }
+            .overlay(alignment: .topTrailing) { chainLetter.map { ChainKeycap(model: model, letter: $0, size: size) } }
             .overlay(alignment: .topTrailing) { FailureMark(entry: entry, size: size) }
             .contentShape(shape)
             .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id) } }
@@ -225,24 +225,6 @@ struct SpotCardView: View, Equatable {
         }
     }
 
-    /// The letter of the spot, on the rim of its top right corner.
-    @ViewBuilder
-    private var keycap: some View {
-        if let chainLetter {
-            let inset = SpotTokens.corner(for: size) * SpotTokens.rimPoint - SpotTokens.keycap / 2
-            Text(chainLetter)
-                .font(SpotType.keycap)
-                .foregroundStyle(SpotTheme.ink)
-                .frame(width: SpotTokens.keycap, height: SpotTokens.keycap)
-                .background(SpotTheme.keycap, in: RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous).strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
-                .offset(x: -inset, y: inset)
-                .opacity(showsChain ? 1 : 0)
-                .animation(SpotMotion.keycap, value: showsChain)
-                .allowsHitTesting(false)
-        }
-    }
-
     private var symbolGlyph: some View {
         Image(systemName: entry.symbol)
             .font(.system(size: 17, weight: .semibold))
@@ -322,5 +304,27 @@ private struct FailureMark: View {
                 .accessibilityLabel("Last run failed")
                 .allowsHitTesting(false)
         }
+    }
+}
+
+/// The letter of a spot's key, on the rim of its card's top right corner. It alone reads whether the letters show, so that
+/// their fade reruns this mark and no card.
+private struct ChainKeycap: View {
+    let model: SpotsModel
+    let letter: String
+    let size: SpotSize
+
+    var body: some View {
+        let inset = SpotTokens.corner(for: size) * SpotTokens.rimPoint - SpotTokens.keycap / 2
+        Text(letter)
+            .font(SpotType.keycap)
+            .foregroundStyle(SpotTheme.ink)
+            .frame(width: SpotTokens.keycap, height: SpotTokens.keycap)
+            .background(SpotTheme.keycap, in: RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous).strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
+            .offset(x: -inset, y: inset)
+            .opacity(model.showsChain ? 1 : 0)
+            .animation(SpotMotion.keycap, value: model.showsChain)
+            .allowsHitTesting(false)
     }
 }

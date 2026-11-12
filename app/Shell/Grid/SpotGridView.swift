@@ -48,7 +48,6 @@ struct SpotGridView: View {
                     takesDrag: model.takesDrag(entry.id),
                     isDropTarget: dropTarget == entry.id,
                     chainLetter: model.chainLetter(of: entry),
-                    showsChain: model.showsChain,
                     model: model
                 )
                 .equatable()

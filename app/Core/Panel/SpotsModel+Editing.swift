@@ -35,24 +35,67 @@ extension SpotsModel {
     public func searchDock(_ text: String) {
         guard text != dock.query else { return }
         dock.opened = nil
+        dock.isSheetOut = false
         dock.query = text
     }
 
-    /// Shows the spots of the store that this filter keeps, and closes the listing.
-    public func filterDock(_ filter: SpotDock.Filter) {
+    /// Shows the spots of this section of the store, and closes the listing.
+    public func showStoreSection(_ section: SpotDock.Section) {
+        guard section != dock.section else { return }
         change(.edit) {
             dock.opened = nil
-            dock.filter = filter
+            dock.isSheetOut = false
+            dock.section = section
         }
     }
 
-    /// Opens the listing of a spot of the store in a sheet under its shelf, or closes it when it is open.
+    /// Takes the next step of a spot of the store: opens it, adds it, puts it on the grid, or publishes it.
+    public func takeStep(of id: String) {
+        guard let item = dock.items.first(where: { $0.id == id }) else { return }
+        switch item.step {
+        case .open: choose(.open, for: id)
+        case .add: setState(.searchOnly, of: id)
+        case .addToGrid: setState(.onGrid, of: id)
+        case .publish: choose(.publish, for: id)
+        }
+    }
+
+    /// Does a choice of the menu of a spot of the store.
+    public func choose(_ action: SpotDock.Action, for id: String) {
+        guard let item = dock.items.first(where: { $0.id == id }) else { return }
+        switch action {
+        case .place(let state): setState(state, of: id)
+        case .open:
+            endEditing()
+            press(id)
+        case .publish: Task { await publish(id) }
+        case .share: sharePackage(id)
+        case .copyPrompt: copyListingPrompt(id)
+        case .edit: edit(Entry(spot: item.spot, run: nil))
+        case .moveToTrash: delete(id)
+        }
+    }
+
+    /// Opens the listing of a spot of the store in a sheet under its line, or closes it when it is open. A new sheet is built
+    /// closed and grows on the next turn; an open sheet moves to the line of another spot.
     public func openListing(_ id: String) {
         guard let item = dock.shown.first(where: { $0.id == id }) else { return }
         tip = nil
-        let isOpen = dock.opened == id
-        if !isOpen { dockListing = SpotListing(beside: item.spot) }
-        change(.edit) { dock.opened = isOpen ? nil : id }
+        guard dock.opened != id else { return closeListing() }
+        dockListing = SpotListing(beside: item.spot)
+        guard !dock.isSheetOut else { return change(.edit) { dock.opened = id } }
+        dock.opened = id
+        Task { @MainActor [weak self] in
+            guard let self, self.dock.opened == id, !self.dock.isSheetOut else { return }
+            self.change(.edit) { self.dock.isSheetOut = true }
+        }
+    }
+
+    /// Closes the sheet of the opened spot back under its line, and drops it when it is in.
+    private func closeListing() {
+        change(.edit, { dock.isSheetOut = false }, completion: {
+            if !self.dock.isSheetOut { self.dock.opened = nil }
+        })
     }
 
     /// Copies a prompt for the person's agent: to change a spot of the plugins folder, or to review any other spot.
@@ -114,8 +157,9 @@ extension SpotsModel {
         let off = dockOff.map { SpotDock.Item(spot: $0.spot, origin: $0.origin, size: choice.size(of: $0.id), publication: dockPublications[$0.id]) }
         var next = SpotDock(items: on + off)
         next.query = dock.query
-        next.filter = dock.filter
+        next.section = dock.section
         next.opened = dock.opened
+        next.isSheetOut = dock.isSheetOut
         if next != dock { dock = next }
     }
 
@@ -160,7 +204,7 @@ extension SpotsModel {
         if cards.first(where: { $0.id == id })?.isOnGrid != (state == .onGrid) { setOnGrid(state == .onGrid, for: id) }
     }
 
-    /// Turns on each spot of the store that is off, and loads the spots again on the edit motion.
+    /// Adds each spot of the store that is not added, and loads the spots again on the edit motion.
     public func turnOnAll() {
         let off = dock.items.filter { $0.state == .off }
         guard !off.isEmpty else { return }
@@ -212,6 +256,7 @@ extension SpotsModel {
             selected = 0
             isSearchingDock = false
             dock.opened = nil
+            dock.isSheetOut = false
             updateVisible()
         }
     }

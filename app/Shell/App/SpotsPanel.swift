@@ -86,9 +86,9 @@ final class SpotsPanel: NSPanel {
         return NSRect(x: frame.minX, y: frame.maxY - height, width: frame.width, height: height).contains(point)
     }
 
-    /// Grows the window in Edit Spots to hold the dock along the bottom of the screen, with the panel at its place on the
-    /// screen, and fades the dock in. When Edit Spots ends, the dock fades out, and then the window gets its frame back. A
-    /// panel that closes keeps its frame until it is gone.
+    /// Grows the window in Edit Spots to hold the store from the top of the screen to its bottom, glides the panel up to the
+    /// top, and fades the store in under it. When Edit Spots ends, the store fades out and the panel glides back, and then
+    /// the window gets its frame back. A panel that closes keeps its frame until it is gone.
     private func followEditing() {
         guard let model else { return }
         let isEditing = withObservationTracking { model.isEditing } onChange: { [weak self] in
@@ -97,21 +97,28 @@ final class SpotsPanel: NSPanel {
         if isEditing, restFrame == nil, let area = screen?.visibleFrame {
             let panel = frame
             let content = SpotTokens.backdropHeight(gridHeight: SpotGrid.height(of: model.placements)) - SpotTokens.halo
-            let dock = ScreenPlace.dock(under: NSRect(x: panel.minX, y: panel.maxY - content, width: panel.width, height: content), in: area)
-            let whole = panel.union(dock)
+            let edit = ScreenPlace.edit(under: NSRect(x: panel.minX, y: panel.maxY - content, width: panel.width, height: content), in: area)
+            let lifted = panel.offsetBy(dx: 0, dy: edit.lift)
+            let whole = panel.union(lifted).union(edit.dock)
             restFrame = panel
-            place.panel = CGPoint(x: panel.minX - whole.minX, y: whole.maxY - panel.maxY)
-            place.dock = CGRect(x: dock.minX - whole.minX, y: whole.maxY - dock.maxY, width: dock.width, height: dock.height)
+            place.panel = CGPoint(x: lifted.minX - whole.minX, y: whole.maxY - lifted.maxY)
+            place.lift = edit.lift
+            place.dock = CGRect(x: edit.dock.minX - whole.minX, y: whole.maxY - edit.dock.maxY, width: edit.dock.width, height: edit.dock.height)
+            place.storeSize = edit.dock.size
             place.isOut = false
             model.dockFrame = place.dock?.offsetBy(dx: -place.panel.x, dy: -place.panel.y)
             resize(to: whole)
             DispatchQueue.main.async { [weak self] in
                 guard let self, self.model?.isEditing == true else { return }
-                withAnimation(SpotMotion.edit) { self.place.isOut = true }
+                withAnimation(SpotMotion.edit) {
+                    self.place.isOut = true
+                    self.place.lift = 0
+                }
             }
-        } else if !isEditing, restFrame != nil, model.isShown {
+        } else if !isEditing, let rest = restFrame, model.isShown {
             withAnimation(SpotMotion.edit) {
                 place.isOut = false
+                place.lift = frame.maxY - rest.maxY - place.panel.y
             } completion: { [weak self] in
                 if self?.model?.isEditing == false { self?.restoreFrame() }
             }
@@ -125,6 +132,7 @@ final class SpotsPanel: NSPanel {
         place.isOut = false
         place.dock = nil
         place.panel = .zero
+        place.lift = 0
         model?.dockFrame = nil
         resize(to: rest)
     }

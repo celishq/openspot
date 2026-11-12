@@ -196,8 +196,7 @@ extension SpotsModel {
     /// Where the card of a spot of the dock lies in the panel's space, as the dock shows it now.
     private func tileRect(of id: String) -> CGRect? {
         guard let dockFrame, let index = dock.shown.firstIndex(where: { $0.id == id }) else { return nil }
-        let rect = dock.rects(columns: SpotTokens.dockColumns(width: dockFrame.width))[index]
-        return rect.offsetBy(dx: dockFrame.minX + SpotTokens.padding, dy: dockFrame.minY + SpotTokens.dockRowsTop - dockScroll)
+        return dock.rects[index].offsetBy(dx: dockFrame.minX + SpotDock.rowsOrigin.x, dy: dockFrame.minY + SpotDock.rowsOrigin.y - dockScroll)
     }
 
     /// Takes how far the dock has scrolled. A scroll ends the tip.

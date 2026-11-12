@@ -112,7 +112,6 @@ struct SpotFloatView: View {
             takesDrag: dropTarget != nil,
             isDropTarget: dropTarget != nil,
             chainLetter: nil,
-            showsChain: false,
             model: model,
             onTap: { model.pressFloatCard(id) }
         )
