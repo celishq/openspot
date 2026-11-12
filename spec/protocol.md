@@ -2,39 +2,43 @@
 
 `1.0` `draft`
 
-Openspot runs small programs called spots. A spot prints what to show. Openspot draws it, and runs the spot again when
-something happens. This page is all you need to write one. Start with [Your first spot](#your-first-spot), and read the
-rest when you need it.
+Openspot runs small programs called spots. You write a spot in any language. It prints a few lines that say what to
+show, and Openspot draws them. When something happens, such as the user opening the spot, Openspot runs it again.
+
+This page has three parts. The first part shows how a spot works and how to try one. The guides show how to do
+one thing each, such as a list or a card. The [reference](#reference) gives every rule.
 
 ## A spot
 
-A spot is one file and one loop:
+Press the Openspot hotkey, and the **panel** opens. It has a search field, and a grid of **cards** under it. Each card is
+a spot. Press a card, and its **sheet** opens: a bigger view of that spot, with its text, its controls and its list.
+
+A spot is one file. Openspot runs it, and the spot prints what to show:
 
 ```text
 event   ─ on= ─►  <spot> read           Openspot runs the spot
-spot    ─ prints ─►  frames of blocks   Openspot draws them
+spot    ─ prints ─►  blocks             Openspot draws them
 press   ─ on a block ─►  <spot> <id>    the user or an agent acts
 ```
 
-- A spot is one executable file, in any language. It lives at the top of the plugins folder, or one folder down.
-- Its id is its path without the extension, such as `home/coffee`.
-- A spot made of several files lives in a folder of its own, one folder down. Openspot shares the folder as one unit, and
-  its spots share one data folder.
-- A file that is not executable can hold shared code.
-- A spot says what it has. The user decides where it shows and which key opens it.
-- An agent makes the same calls as the user. It presses with `openspot spot run <id> <call>` and raises events with
-  `openspot event emit`. A spot cannot tell who called it.
+- Put a spot in the plugins folder, or in a folder one level down. Its id is its path without the extension, such as
+  `home/coffee`.
+- A spot that needs several files goes in a folder of its own. The folder is shared as one unit, and its spots share
+  one data folder. A file in it that isn't executable can hold shared code.
+- A spot only says what it has. The user decides where it shows and which key opens it.
+- An agent can do anything the user does, with `openspot spot run <id> <call>` and `openspot event emit`. A spot
+  can't tell who called it.
 
 ## Your first spot
 
-The smallest spot is a script. A click on its card runs it.
+The smallest spot is a script. Press its card, and it runs.
 
 ```sh
 #!/bin/sh
 say hello
 ```
 
-Comment lines at the top give it a name and an icon.
+Comment lines at the top give it a name and an icon. These lines are the **header**.
 
 ```sh
 #!/bin/sh
@@ -43,7 +47,8 @@ Comment lines at the top give it a name and an icon.
 open -a Calendar
 ```
 
-An `on=` line says when Openspot reads the spot. The spot then prints what to show.
+To show something, add an `on=` line. It tells Openspot when to ask the spot what to show. Here, Openspot asks when the
+sheet opens, and the spot prints a title and a detail.
 
 ```sh
 #!/bin/sh
@@ -53,84 +58,84 @@ An `on=` line says when Openspot reads the spot. The spot then prints what to sh
 printf 'text=cups\ntitle=3\ndetail=Last at 14:20\n'
 ```
 
+Each group of lines that the spot prints is a **block**: here, one `text` block with the id `cups`. The sheet shows a big
+**3** with **Last at 14:20** under it.
+
 ## Try your spot
 
-Run each example of this page in the playground before you put it in the plugins folder.
+Try each example of this page in the playground before you put it in the plugins folder.
 
-- **Playground.** Open the Playground spot, or run `openspot sandbox [file]`. Type a spot, or pick one from Examples. Pick
-  where it shows: its sheet, its card, or the main search. Below, you see each call: its arguments, its stdin, each
-  frame, its stderr, and how it ended. When you name a file, the editor and the file stay the same.
+- **Playground.** Open the Playground spot, or run `openspot sandbox [file]`. Type a spot, or pick one from Examples.
+  Choose where it shows: its sheet, its card or the main search. Under it, you see each call with its arguments, its
+  stdin, what it printed, its stderr and how it ended. When you open a file, edits go straight to the file.
 - **New spot.** `openspot spot new <name> --from <kind>` writes a working spot that you can change. The kinds are
   `button`, `list`, `number` and `form`.
-- **One call.** `openspot spot run <id> [call] [value]...` makes one call as Openspot does, and prints all that the spot
-  prints. With no call, it reads the spot.
-- **Image.** `openspot render [--view <file>] <file.png>` draws the sheet that stdin holds. `--card <size>` draws the card,
+- **One call.** `openspot spot run <id> [call] [value]...` runs one call the way Openspot does, and prints everything the
+  spot prints. With no call, it asks the spot what to show.
+- **Image.** `openspot render [--view <file>] <file.png>` draws the sheet that stdin holds. `--card <size>` draws its card,
   and `--spot <id>` draws an installed spot.
 - **Log.** `openspot spot log <id>` prints the last calls to a spot, with their stdin, stdout, stderr and exit code.
-- **Check.** `openspot check [--json] <folder>` loads and reads each spot, and prints each error. Run it before you
-  finish.
+- **Check.** `openspot check [--json] <folder>` loads each spot, runs it once, and prints each error. Run it before you
+  share a spot.
 
-## Words
+## Show a list
 
-This page uses each word in one meaning only.
+A list lets the user search and pick. Print one `row` block for each item. When the user picks a row, Openspot runs your
+spot with `open` and the id of the row.
 
-| Word       | Meaning                                                                                                   |
-| ---------- | --------------------------------------------------------------------------------------------------------- |
-| **spot**   | One executable file that Openspot runs.                                                                   |
-| **user**   | The person who uses Openspot.                                                                             |
-| **panel**  | The window of Openspot: the main search, and the grid of cards under it.                                  |
-| **card**   | A spot on the grid of the panel.                                                                          |
-| **sheet**  | The view of one spot, which opens over the panel when the user presses its card.                          |
-| **header** | The comment lines at the top of a spot. Openspot reads them without running the spot.                     |
-| **call**   | One run of a spot with arguments, such as `coffee.sh read`.                                               |
-| **read**   | The call `<spot> read`, which asks the spot what to show.                                                 |
-| **event**  | A thing that happens, such as `sheet.open`. An event makes Openspot read the spots that list it.          |
-| **block**  | One thing that a spot shows, such as a text, a switch or a row. It is a group of lines.                   |
-| **frame**  | All the blocks that a spot shows at one time. Each new frame replaces the last one.                       |
-| **head**   | The block of a frame that holds its layout and its effects, such as a toast. Openspot does not draw it.   |
-| **layout** | The `grid=` lines that say where each block goes.                                                         |
-| **row**    | One item of a list. The user searches the rows and picks one.                                             |
-| **action** | A button that has no place in the layout. The user runs it from the ⌘K menu.                              |
-| **press**  | A click, or Enter, on a card, a block or a button.                                                        |
-| **pick**   | A press on a row.                                                                                         |
-| **key**    | The part of a line before `=`. A key on the keyboard is a **shortcut** or a **hotkey**.                   |
-| **hotkey** | A key on the keyboard that the user gives a spot or a button in Settings.                                 |
-
-## The format
-
-Everything that a spot prints, and its header, is lines of `key=value`.
-
-```ini
-text=title
-title=Wi-Fi
-detail=Home · 82 Mb/s
-
-switch=wifi
-value=true
----
+```sh
+#!/bin/sh
+# title=Apps
+# icon=square.grid.2x2
+# on=sheet.open
+. "$OPENSPOT_SH"
+case "$1" in
+  read) printf 'Mail\tMail\tYour inbox\tenvelope\nNotes\tNotes\tYour notes\tnote.text\n' | openspot_rows ;;
+  open) open -a "$2" ;;
+esac
 ```
 
-- A line splits at its first `=`.
-- A blank line ends a block. A line `---` ends a frame.
-- In a value, `\n` is a new line and `\\` is a backslash. There are no other escapes.
-- An empty value is no value. Openspot never splits a value, so a URL or a time stays whole. Only a list splits at commas,
-  such as `uses=screen,clipboard`.
-- The first key of a block is its kind, and its value is the id of the block. For example, `switch=wifi` is a switch
-  with the id `wifi`.
-- The head is the block whose first key is a key of the head (see [The head](#the-head)). A block whose first key is
-  neither a kind nor a key of the head is an error. Openspot skips it.
-- Openspot skips a line with an unknown key.
-- A thing with its own title or icon is a block of its own, such as an `option` after a `choice`.
+The sheet shows two rows, **Mail** and **Notes**. Type in the sheet's search field, and Openspot filters the rows for
+you. Pick **Notes**, and Openspot runs `apps.sh open Notes`.
 
-## The header
+The first argument tells your spot what to do. `read` asks what to show. Any other word is something the user did. The
+shell helper, `$OPENSPOT_SH`, prints rows for you and escapes each value.
 
-The header says what a spot is. It is written like a frame, in comments.
+Learn more in [Rows](#rows) and [The calls](#the-calls).
+
+## Show a value on a card
+
+A card can show one live value, such as free disk space. Add a `clock` event, and Openspot asks your spot again every
+that many seconds while the card shows.
+
+```sh
+#!/bin/sh
+# title=Disk
+# icon=internaldrive
+# on=clock.300
+free=$(df -h / | awk 'NR==2 {print $4}')
+printf 'text=free\ntitle=%s free\n' "$free"
+```
+
+The card shows **120Gi free**, and updates every 5 minutes. The one `text` block is the spot's **main block**: the
+value that stands for the spot on its card. The user can also put the spot in the menu bar, where the main block shows
+next to the clock.
+
+A spot with a clock stays off the grid until the user adds it, so that a new spot doesn't fill the panel.
+
+Learn more in [The main block and the card](#the-main-block-and-the-card) and [Events](#events).
+
+## Add buttons
+
+A button runs a command. Give each button an id. When the user presses it, Openspot runs your spot with that id.
+
+Buttons in the header turn the spot into a set of commands, with no card. The user finds each command in the main
+search, and can give it a hotkey.
 
 ```sh
 #!/bin/sh
 # title=Windows
 # icon=macwindow
-# keywords=tile, snap
 # uses=screen
 #
 # button=full
@@ -146,40 +151,201 @@ case "$1" in
 esac
 ```
 
-- The header is the comment lines right under the first line. They start with `#`, `//` or `--`. It ends at the first
+A button that the spot prints acts on its rows. If no layout places it, it shows in the ⌘K menu of the sheet, and its
+shortcut works while a row is selected.
+
+```sh
+#!/bin/sh
+# title=Notes list
+# on=sheet.open
+. "$OPENSPOT_SH"
+case "$1" in
+  read)
+    openspot_row today Today
+    printf '\nbutton=trash\ntitle=Move to Trash\nshortcut=cmd+backspace\nconfirm=Press again to delete\n'
+    ;;
+  trash) rm -f "$OPENSPOT_DATA/$2" ;;
+esac
+```
+
+Select **Today** and press ⌘⌫ twice, and Openspot runs `notes-list.sh trash today`.
+
+Learn more in [Buttons and actions](#buttons-and-actions).
+
+## Ask for values
+
+A button with `form=true` asks the user for values before it runs. Openspot runs it once with empty stdin to get the
+form, then again with the values the user typed.
+
+```sh
+#!/bin/sh
+# title=Quick note
+# on=sheet.open
+. "$OPENSPOT_SH"
+case "$1" in
+  read) printf 'text=hint\ntitle=Press ⌘K to add a note\n\nbutton=add\ntitle=Add note\nform=true\nscope=spot\n' ;;
+  add)
+    note=$(value note)
+    if [ -z "$note" ]; then
+      printf 'title=New note\n\nfield=note\ntitle=Note\n'
+    else
+      printf '%s\n' "$note" >> "$OPENSPOT_DATA/notes"
+      openspot_kv toast "Saved"
+    fi
+    ;;
+esac
+```
+
+Choose **Add note**, and a form with one field opens. Type a note and press Return. The spot saves it, and a toast says
+**Saved**. `value note` reads the field from stdin.
+
+Learn more in [Buttons and actions](#buttons-and-actions) and [The head](#the-head).
+
+## Answer the main search
+
+A spot can answer what the user types in the main search, like a calculator. Add `on=search.text` with a pattern. When
+the text matches, Openspot asks your spot right away and shows its answer first.
+
+```js
+// title=Calculator
+// icon=equal.square
+// on=search.text ^[0-9(]
+// uses=clipboard
+function main(args, env) {
+  if (args[0] === "read")
+    return openspot.call(["calc", "solve", env.OPENSPOT_VALUE]).stdout;
+  return "";
+}
+```
+
+Type `2+2`, and the answer shows at the top of the main search. `OPENSPOT_VALUE` holds the typed text. A `.js` file runs
+inside Openspot, so it answers in the same keystroke.
+
+Learn more in [Places](#places) and [Modes](#modes).
+
+## Respond to the Mac
+
+Events let a spot update when something happens on the Mac, such as another app coming to the front. A filter after the
+event narrows it down.
+
+```sh
+#!/bin/sh
+# title=Notes
+# on=sheet.open
+# on=app.front com\.apple\.Notes
+printf 'text=n\ntitle=%s\n' "$OPENSPOT_REASON"
+```
+
+Bring Notes to the front while the sheet shows, and Openspot asks the spot again. `OPENSPOT_REASON` says why:
+`sheet.open` or `app.front`.
+
+Learn more in [Events](#events).
+
+## Combine spots on one card
+
+One card can show several spots side by side, such as the battery, the CPU and the memory. You write only a header, and
+Openspot fills the card with the main blocks of the spots that it names.
+
+```sh
+#!/bin/sh
+# title=System
+# grid.large=battery battery cpu    cpu
+# grid.large=battery battery memory memory
+# to=system-info
+```
+
+Each word is the id of another spot. At the large size, the card shows the battery on the left, and the CPU over the
+memory on the right. Press the card, and the spot `system-info` opens.
+
+Learn more in [Cards of other spots](#cards-of-other-spots).
+
+## Let the user choose a setting
+
+A setting keeps a choice of the user, such as a folder. Name it in the header with a `field` block, and the Settings spot
+lists it.
+
+```sh
+#!/bin/sh
+# title=Repos
+#
+# field=folder
+case "$1" in
+  folder)
+    picked=$(openspot folder pick)
+    [ -n "$picked" ] && openspot setting set folder "$picked"
+    ;;
+esac
+```
+
+In Settings, choose **folder**, and Openspot runs `repos.sh folder`. The spot asks for a folder and keeps it. Later
+calls read it with `openspot setting get folder`.
+
+Learn more in [Settings](#settings).
+
+# Reference
+
+## The format
+
+Everything a spot prints, and its header, is lines of `key=value`.
+
+```ini
+text=title
+title=Wi-Fi
+detail=Home · 82 Mb/s
+
+switch=wifi
+value=true
+---
+```
+
+- A line splits at its first `=`. The part before it is the key.
+- A blank line ends a block. A line `---` ends a frame (see [Frames](#frames)).
+- In a value, `\n` is a new line and `\\` is a backslash. There are no other escapes.
+- An empty value is no value. Openspot never splits a value, so a URL or a time stays whole. Only a list splits at
+  commas, such as `uses=screen,clipboard`.
+- The first key of a block is its kind, and its value is the block's id. `switch=wifi` is a switch with the id `wifi`.
+- The head is the block that starts with a key of the head (see [The head](#the-head)). A block that starts with any
+  other unknown key is an error, and Openspot skips it.
+- Openspot skips a line with an unknown key.
+- Anything with its own title or icon is a block of its own, such as an `option` after a `choice`.
+
+## The header
+
+The header says what a spot is. Openspot reads it without running the spot.
+
+- The header is the comment lines right after the first line. They start with `#`, `//` or `--`. It ends at the first
   other line, or after 4096 bytes.
 - The keys of the spot come first. After each empty comment line comes a `button` or a `field` block.
-- Openspot reads the header, and never runs a spot to learn what it is.
-- If a header key is wrong, Openspot does not load that spot, and loads the others.
+- If a header key is wrong, Openspot doesn't load that spot. Other spots still load.
 
-| Key           | Value                                                                                                                   |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `title`       | The name. By default, the file name.                                                                                    |
-| `icon`        | The icon, as in a block (see [Blocks](#blocks)). A path that does not start with `/` starts at the folder of the spot.  |
-| `detail`      | The line under the title.                                                                                               |
-| `keywords`    | More words that find the spot in the main search, split by commas, such as `keywords=coffee, cup`.                      |
-| `on`          | An event that reads the spot. Write one line for each event. See [Events](#events).                                     |
-| `emits`       | The events that the spot raises, split by commas. See [Events](#events).                                                |
-| `offers`      | `search`: its rows show in the main search. See [Places](#places).                                                      |
-| `drop`        | The files that its card takes: extensions such as `mov,mkv`, `folder`, or `*`. See [The calls](#the-calls).             |
-| `preview`     | `sample`: a read with `OPENSPOT_REASON=spot.preview` prints sample data for the store.                                  |
-| `view`        | A SwiftUI file beside the spot, such as `view=cups.swift`. See [Views](#views).                                         |
-| `mode`        | `once` (the default), `stay` or `always`. See [Modes](#modes).                                                          |
+| Key           | Value                                                                                                                            |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `title`       | The name. By default, the file name.                                                                                             |
+| `icon`        | The icon, as in a block (see [Blocks](#blocks)). A path that doesn't start with `/` starts at the spot's folder.                  |
+| `detail`      | The line under the title.                                                                                                        |
+| `keywords`    | More words that find the spot in the main search, split by commas, such as `keywords=coffee, cup`.                               |
+| `on`          | An event that makes Openspot ask the spot what to show. One line for each event. See [Events](#events).                          |
+| `emits`       | The events the spot raises, split by commas. See [Events](#events).                                                              |
+| `offers`      | `search`: its rows show in the main search. See [Places](#places).                                                               |
+| `drop`        | The files its card takes: extensions such as `mov,mkv`, `folder`, or `*`. See [The calls](#the-calls).                           |
+| `preview`     | `sample`: when `OPENSPOT_REASON` is `spot.preview`, the spot prints sample data for the store.                                   |
+| `view`        | A SwiftUI file next to the spot, such as `view=cups.swift`. See [Views](#views).                                                 |
+| `mode`        | `once` (the default), `stay` or `always`. See [Modes](#modes).                                                                   |
 | `uses`        | What the spot uses, split by commas: `app`, `spots`, `screen`, `clipboard`, `calendar`, `network`, `files`. See [Trust](#trust). |
-| `grid.<size>` | A card made of other spots. Each word is the id of another spot. See [Cards of other spots](#cards-of-other-spots).     |
-| `to`          | The spot that opens when the user presses a card of other spots. See [Cards of other spots](#cards-of-other-spots).     |
+| `grid.<size>` | A card made of other spots. Each word is a spot id. See [Cards of other spots](#cards-of-other-spots).                           |
+| `to`          | The spot that opens when the user presses a card of other spots. See [Cards of other spots](#cards-of-other-spots).              |
 
-| Block         | Meaning                                                                                                     |
-| ------------- | ----------------------------------------------------------------------------------------------------------- |
-| `button=<id>` | A command, with its `title` and `icon`. The user can give it a hotkey.                                      |
-| `field=<key>` | A setting that the user chooses, with its `title` (by default, its key) and `icon`. See [Settings](#settings). |
+| Block         | Meaning                                                                                                          |
+| ------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `button=<id>` | A command, with its `title` and `icon`. The user can give it a hotkey.                                           |
+| `field=<key>` | A setting the user chooses, with its `title` (by default, its key) and `icon`. See [Settings](#settings).        |
 
-- A spot with a `button` in its header has no card on the grid. It gives its commands instead.
+- A spot with a `button` in its header has no card. It gives its commands instead.
 
 ## Frames
 
-A frame is everything that a spot shows at one time. Each frame replaces the last one, so a spot can print a new frame
-to show progress, then the result.
+A frame is everything a spot shows at one time. Each new frame replaces the last one, so a spot can show progress and
+then the result.
 
 ```sh
 #!/bin/sh
@@ -190,16 +356,14 @@ printf 'text=done\ntitle=Copied\n'
 ```
 
 - Openspot draws each frame as soon as it arrives.
-- The spot keeps no state between calls. Each call gets the values on stdin, and prints the whole frame again, or
-  nothing.
-- A frame with only a head does not change what shows. Its effects happen, such as a toast (see [The head](#the-head)).
-- A read that prints no frame shows nothing. Another call that prints no frame makes Openspot read the spot once more.
-- When a newer change makes a call out of date, Openspot ignores its frames.
-- Print a value that comes from data with a helper, so that it never adds a line or a block: `openspot_kv`,
+- A spot keeps no state between calls. Each call gets the values on stdin, and prints the whole frame again, or nothing.
+- A frame with only a head doesn't change what shows, but its effects happen, such as a toast (see [The head](#the-head)).
+- If a read prints nothing, the spot shows nothing. If another call prints nothing, Openspot asks the spot again.
+- When a newer change makes a call out of date, Openspot ignores what it prints.
+- Print a value that comes from data with a helper, so that it can't add a line or a block: `openspot_kv`,
   `openspot_row` or `esc` in a shell, and `openspot.frame` in JavaScript. `openspot check` warns of a line with no `=`,
-  and of a key twice in a block where only a list repeats.
-- Openspot reads `ESC ] 9;4;1;<percent>` as `progress` and `ESC ] 9;<text>` as a toast. It removes all other escape
-  codes.
+  and of a key that shows twice in a block where only a list repeats.
+- Openspot reads `ESC ] 9;4;1;<percent>` as `progress` and `ESC ] 9;<text>` as a toast, and removes other escape codes.
 
 ## Blocks
 
@@ -231,98 +395,85 @@ shortcut=cmd+backspace
 confirm=Press again to forget
 ```
 
-- A spot prints blocks, and the layout places them. Openspot decides each size, gap and colour.
-- A block is `<kind>=<id>`. The id names its place in the layout, the call that it sends, and the thing that moves when
-  it changes. Ids must be unique in one frame. Only a `row` can have the id `search`, `form` or `value`, because stdin
-  uses those keys.
+- A spot prints blocks, and the layout places them. Openspot picks every size, gap and colour.
+- A block is `<kind>=<id>`. The id names its place in the layout, the call it sends, and what moves when it changes.
+  Ids must be unique in one frame. Only a `row` can use the id `search`, `form` or `value`, because stdin uses them.
 - Each kind keeps its data in `value`. A kind that shows several values repeats it.
 
-| Kind      | Shows                                                                                                          | Its own keys                                                         | Sends                  |
-| --------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------- |
-| `text`    | Words, and a small mark: a bar from `value`, or with `max` a bar for each `value` line.                        | `value`, `max`                                                       |                        |
-| `number`  | A big number, with its `title` under it. `display` shows in place of `value`.                                  | `value`, `display`                                                   |                        |
+| Kind      | Shows                                                                                                           | Its own keys                                                         | Sends                  |
+| --------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------- |
+| `text`    | Words, and a small mark: a bar from `value`, or with `max` a bar for each `value` line.                         | `value`, `max`                                                       |                        |
+| `number`  | A big number, with its `title` under it. `display` shows instead of `value`.                                    | `value`, `display`                                                   |                        |
 | `graph`   | One `value` from 0 to 1 is a ring in a square place and a bar in a wide one. More values are bars, newest last. | `value`, and `max` for bars                                          |                        |
-| `picture` | An image that fills its place.                                                                                 | `icon`                                                               |                        |
-| `view`    | The SwiftUI view that the header names (see [Views](#views)).                                                  | any key that the view reads                                          |                        |
-| `switch`  | A switch, or with `type=tick` a round tick before its words, for a thing to do.                                | `value`: `true` or `false`, `type`                                   | `<id> true` or `false` |
-| `field`   | A text field, or with a `type` another input.                                                                  | `value`, `type`, `placeholder`, `required`, `readonly`, `min`, `max` | `<id> <value>`         |
-| `choice`  | A menu of the `option` blocks after it, a list when it covers two lines or more, or swatches of `color` lines. | `color`, `value`, `type`                                             | `<id> <option id>`     |
-| `option`  | One choice of the `choice` right before it.                                                                    | `title`, `icon`                                                      |                        |
-| `button`  | A button, or an action (see [Buttons and actions](#buttons-and-actions)).                                      | `shortcut`, `confirm`, `close`, `look`, `form`, `scope`              | `<id>`                 |
-| `section` | A title over the blocks after it.                                                                              |                                                                      |                        |
-| `repeat`  | The place of the rows (see [Rows](#rows)).                                                                     | `grid` lines                                                         |                        |
-| `row`     | One item of a list (see [Rows](#rows)).                                                                        | the keys in [Rows](#rows)                                            | `open <id>`            |
+| `picture` | An image that fills its place.                                                                                  | `icon`                                                               |                        |
+| `view`    | The SwiftUI view the header names (see [Views](#views)).                                                        | any key the view reads                                               |                        |
+| `switch`  | A switch, or with `type=tick` a round tick before its words, for a thing to do.                                 | `value`: `true` or `false`, `type`                                   | `<id> true` or `false` |
+| `field`   | A text field, or another input with a `type`.                                                                   | `value`, `type`, `placeholder`, `required`, `readonly`, `min`, `max` | `<id> <value>`         |
+| `choice`  | A menu of the `option` blocks after it, a list when it covers two lines or more, or swatches of `color` lines.  | `color`, `value`, `type`                                             | `<id> <option id>`     |
+| `option`  | One option of the `choice` right before it.                                                                     | `title`, `icon`                                                      |                        |
+| `button`  | A button, or an action (see [Buttons and actions](#buttons-and-actions)).                                       | `shortcut`, `confirm`, `close`, `look`, `form`, `scope`              | `<id>`                 |
+| `section` | A title over the blocks after it.                                                                               |                                                                      |                        |
+| `repeat`  | The place of the rows (see [Rows](#rows)).                                                                      | `grid` lines                                                         |                        |
+| `row`     | One item of a list (see [Rows](#rows)).                                                                         | the keys in [Rows](#rows)                                            | `open <id>`            |
 
-- The `type` of a field: none for one line of text, `multiline` for several lines, `slider` from `min` to `max` (0 to 100
-  by default), which sends a whole number when the user lets go, and `hotkey` for a shortcut that a press records.
+- A field's `type`: none for one line of text, `multiline` for several lines, `slider` from `min` to `max` (0 to 100 by
+  default), which sends a whole number when the user lets go, and `hotkey` for a hotkey that a press records.
 - `type=multiple` lets a choice pick several options (see [Buttons and actions](#buttons-and-actions)).
-- Each kind also takes `title`, `detail`, `tone` and `icon`. Openspot skips a key that a kind does not take.
-- The value of `icon` says what it draws:
+- Every kind also takes `title`, `detail`, `tone` and `icon`. Openspot skips a key that a kind doesn't take.
+- `icon` draws according to its value:
   - a path of an image file, such as `cups.png`, draws the image;
   - an `https://` URL draws an image from the web, which Openspot downloads once and keeps;
   - any other path draws the Finder icon of the file. It must contain a `/` or start with `~`, such as `./notes.txt`;
   - a name of lowercase letters, digits and dots, such as `wifi`, is an SF Symbol;
   - any other text, such as `😀`, shows as it is.
-- `tone` is `good`, `warn` or `bad`. On a text, it colours the detail, or the title when there is no detail.
+- `tone` is `good`, `warn` or `bad`. On a text, it colours the detail, or the title when there's no detail.
 - `color=#RRGGBB` on a text or a number draws a thin bar of that colour at its leading edge.
 - `look` is the box of a text, a number or a button: `tile` or `bare`, and on a button also `chip` or `strong`.
 - `align=left`, `right` or `center` places a block that is smaller than its place.
 
 ## Layouts
 
-The layout says where each block goes, as CSS grid areas do.
+A layout says where each block goes, the way CSS grid areas do.
 
-- Each `grid=` line of the head is one line of the sheet. Each word is one cell: the id of a block, `.` for an empty cell,
-  or `-` for a divider across the line.
+- Each `grid=` line of the head is one line of the sheet. Each word is one cell: the id of a block, `.` for an empty
+  cell, or `-` for a divider across the line.
 - The words of a line set the columns. A block fills the rectangle of cells that its id covers, and each id must cover a
-  rectangle. A smaller block inside a larger one sits on top of it, at the edge that it touches.
-- `grid.<size>=` lines are the layout of the card at one size: `small`, `wide`, `square`, `strip` or `large`. The user
-  chooses the size of each card. A block that only a card layout places shows only on the card.
-- A card layout can have more lines than the card has rows. A size with no layout uses the layout of the nearest smaller
-  size. A spot with no card layout shows the default card (see [The main block and the card](#the-main-block-and-the-card)).
-- With no `grid=` line, the sheet shows each block that is not a button in one column, in the order printed, then its
+  rectangle. A smaller block inside a bigger one sits on top of it, at the edge it touches.
+- `grid.<size>=` lines lay out the card at one size: `small`, `wide`, `square`, `strip` or `large`. The user chooses the
+  size of each card. A block that only a card layout places shows only on the card.
+- A card layout can have more lines than the card has room for. A size with no layout uses the layout of the next
+  smaller size. A spot with no card layout shows the default card (see
+  [The main block and the card](#the-main-block-and-the-card)).
+- With no `grid=` line, the sheet shows each block that isn't a button in one column, in the order printed, then the
   rows. A `section` starts a new group.
 
 ## Buttons and actions
 
-A button is a verb. If the layout places it, the sheet draws it. If not, it is an action in the ⌘K menu.
-
-```sh
-#!/bin/sh
-# title=Notes list
-# on=sheet.open
-. "$OPENSPOT_SH"
-case "$1" in
-  read)
-    openspot_row today Today
-    printf '\nbutton=trash\ntitle=Move to Trash\nshortcut=cmd+backspace\nconfirm=Press again to delete\n'
-    ;;
-  trash) rm -f "$OPENSPOT_DATA/$2" ;;
-esac
-```
+A button is a verb. If the layout places it, the sheet draws it. If not, it's an **action** in the ⌘K menu. See
+[Add buttons](#add-buttons) for an example.
 
 - An action sends `<spot> <id> <row id>` while a row is selected, and `<spot> <id>` when none is.
 - `scope` says when the ⌘K menu shows an action: `scope=item`, the default, only while a row is selected, and
   `scope=spot` always.
 - `close=true` closes the panel after the call. `confirm` asks for a second press.
 - A button `shortcut` is a letter, a digit, `return`, `backspace` or `,`, after `cmd+`, `shift+`, both or neither, such as
-  `cmd+shift+n`, or `escape` alone. A row `shortcut` is any text (see [Rows](#rows)). The user gives hotkeys in Settings
-  (see [Settings](#settings)).
-- An action must have a `title`. `openspot check` reports an action with no title or with a wrong shortcut.
-- `shortcut=escape` presses the button instead of closing the sheet, as a Cancel button does.
-- In a ⌘K menu of more than 5 rows, a field searches them, so only a `shortcut` with `cmd` runs an action there.
-- Enter on a row runs the action `open`. `button=open` gives it a `title`, and `close=false` keeps the panel open after
+  `cmd+shift+n`, or `escape` alone. A row `shortcut` is any text (see [Rows](#rows)). The user gives hotkeys in
+  [Settings](#settings).
+- An action needs a `title`. `openspot check` reports an action with no title, or with a shortcut it can't use.
+- `shortcut=escape` presses the button instead of closing the sheet, like a Cancel button.
+- In a ⌘K menu of more than 5 rows, a field searches them, so only a `shortcut` with `cmd` works there.
+- Return on a row runs the action `open`. `button=open` gives it a `title`, and `close=false` keeps the panel open after
   a pick.
-- A button with `form=true` asks for values first. The call runs once with empty stdin, and prints a `title` in its head
+- A button with `form=true` asks for values first. Its call runs once with empty stdin, and prints a `title` in its head
   and one `field`, `choice` or `switch` for each value. Then the same call runs again with the values on stdin.
-- A form with only one `choice` shows its options as rows under the search field. Enter or a click sends one.
-- With `type=multiple`, the choice picks several options. A checkmark marks each option of a `value` line. Enter sends
-  the option of its row, and `⌘⇧A` sends each option with no checkmark. The spot keeps the picks and prints the form again.
-- A form can print itself again, such as with a `title` that says what is wrong. Then it stays open.
+- A form with only one `choice` shows its options as rows under the search field. Return or a click sends one.
+- With `type=multiple`, a choice picks several options. A checkmark marks each option in a `value` line. Return sends the
+  option of its row, and `⌘⇧A` sends each option without a checkmark. The spot keeps the picks and prints the form again.
+- A form can print itself again, such as with a `title` that says what's wrong. Then it stays open.
 
 ## Rows
 
-Rows are a list that the user searches and picks from.
+Rows are a list that the user searches and picks from. See [Show a list](#show-a-list) for an example.
 
 | Key        | Meaning                                                                                        |
 | ---------- | ---------------------------------------------------------------------------------------------- |
@@ -333,21 +484,21 @@ Rows are a list that the user searches and picks from.
 | `parent`   | Where the row sits in its spot. The main search shows `<spot> › <parent>`.                     |
 | `tone`     | A dot of its colour on the icon.                                                               |
 | `value`    | `true` draws a checkmark at the end.                                                           |
-| `hides`    | The id of an action that this row does not offer. Write one line for each action.              |
-| `keywords` | Words that find the row and do not show, split by commas.                                      |
+| `hides`    | The id of an action that this row doesn't offer. One line for each action.                     |
+| `keywords` | Words that find the row but don't show, split by commas.                                       |
 | `shortcut` | Any text, such as `⌃⌥K`, that shows at the end of the row.                                     |
 | `type`     | `hotkey`: a pick records a new hotkey and sends `<id> <hotkey>`.                               |
 | `shake`    | `true` lets a shake of the pointer be the hotkey that a pick records, as `<id> shake`.         |
-| `file`     | The file that the row stands for. See [Files out](#files-out).                                 |
+| `file`     | The file the row stands for. See [Files out](#files-out).                                      |
 | `to`       | Another spot that a pick goes to, as `<spot> open <row id>` with the keys of the row on stdin. |
 
-- Rows go into a `repeat`, or into a list when there is none.
+- Rows go into a `repeat`, or into a plain list when there's none.
 - Openspot searches the rows itself, and puts recent picks first. `recents=false` in the head turns that off.
-- With `on=sheet.text`, each change of the search text of the sheet reads the spot, and the spot prints the rows that
-  match. It also reads the spot when its sheet opens, as `on=sheet.open` does. Each call gets the search text on stdin
-  as `search=<text>`.
+- With `on=sheet.text`, each change of the sheet's search text asks the spot, and the spot prints the rows that match.
+  It also asks when the sheet opens, as `on=sheet.open` does. Each call gets the search text on stdin as
+  `search=<text>`.
 - A `repeat` has its own `grid=` lines, in which each word is the place of one row. The layout repeats down for as long
-  as there are rows. Rows take the places in the order in which each word first shows.
+  as there are rows. Rows take the places in the order each word first shows.
 
 ```ini
 repeat=photos
@@ -360,97 +511,80 @@ grid=a a d e
 
 ## The head
 
-The head is the block of a frame whose first key is one of its keys. Openspot does not draw it. It holds the layout and
-the effects.
+The head is the block of a frame that starts with one of its keys. Openspot doesn't draw it. It holds the layout and the
+effects of the frame.
 
 - Its layout keys: `grid=` and `grid.<size>=` lines, `main`, `title` and `detail` for the card, and `recents`.
 - Its effects:
-  - `toast=Saved` shows a short message at once, also when the panel is closed;
+  - `toast=Saved` shows a short message at once, even when the panel is closed;
   - `link=<url>` opens the URL;
   - `progress=<0 to 1>` shows progress. With it, `title` and `detail` show only while the call runs;
-  - `select=<row id>` reads the spot again with that row selected;
+  - `select=<row id>` asks the spot again with that row selected;
   - `call=<n>` and `end=<n>` mark the calls of a staying spot (see [Modes](#modes)).
 - The head can come anywhere in the frame. Openspot skips and reports a second head.
 
 ## The main block and the card
 
-One block stands for the spot on its card and in the menu bar. It is the main block.
+The main block stands for the spot on its card and in the menu bar.
 
-- `main=<id>` in the head names it. With no `main=`, the main block is the only `text`, `number`, `graph`, `switch` or
-  slider of the frame.
+- `main=<id>` in the head names it. Without `main=`, the main block is the only `text`, `number`, `graph`, `switch` or
+  slider in the frame.
 - The menu bar and a card of other spots show a main `text`, `number` or `graph`. A main `switch` shows on the card
   whether its thing is on.
 - A spot has a sheet when its header has `on=sheet.open`, `on=sheet.text`, a `clock`, `offers=search`, or `mode=stay` or
-  `always`. A spot with none of these, such as one with only `on=panel.open` or `on=app.front`, has no sheet, and its
-  rows never show.
-- With no `grid.<size>=` lines, a spot shows the default card: its icon, title and detail, and an arrow when it has a
+  `always`. Without any of these, such as with only `on=panel.open` or `on=app.front`, it has no sheet, and its rows
+  never show.
+- Without `grid.<size>=` lines, a spot shows the default card: its icon, title and detail, and an arrow when it has a
   sheet.
-- When a frame is only one `switch` or one slider, the card draws that block, and a press of the card changes it.
-- A press on a part of the card that is not a control opens the sheet, or sends `<spot> open` when there is no sheet.
+- When a frame holds only one `switch` or one slider, the card draws it, and a press of the card changes it.
+- A press on the card outside a control opens the sheet, or sends `<spot> open` when there's no sheet.
 
 ## Events
 
-An event makes Openspot read a spot. The header lists the events on which a read is safe.
+An event makes Openspot ask a spot what to show. The header lists the events where that is safe. See
+[Respond to the Mac](#respond-to-the-mac) for an example.
 
-```sh
-#!/bin/sh
-# title=Notes
-# on=sheet.open
-# on=app.front com\.apple\.Notes
-```
-
-- An event is a word `<noun>.<verb>`. It can carry a value. The table below gives the value of each event that Openspot
-  raises, and `openspot event emit` gives the value of any other event.
-- Each `on=` line names one event. Text after a space is a filter: a regular expression that the value of the event must
+- An event is a word `<noun>.<verb>`. It can carry a value. The table gives the value of each event Openspot raises, and
+  `openspot event emit` gives the value of any other.
+- Each `on=` line names one event. Text after a space is a filter: a regular expression that the event's value must
   match.
 - Only an event with a value takes a filter: `search.text`, `app.front`, `app.update`, or an event that a spot emits. A
-  filter on any other event is an error. `sheet.text` takes no filter either, because the spot answers every search of
-  its sheet.
-- Openspot never reads a spot with no event. A press of its card sends `<spot> open`.
+  filter on any other event is an error. `sheet.text` takes none either, because the spot answers every search of its
+  sheet.
+- Openspot never asks a spot with no event. A press of its card sends `<spot> open`.
 - Each read gets the event in `OPENSPOT_REASON` and its value in `OPENSPOT_VALUE`.
 
-| Event              | When Openspot raises it                                                      | Value         |
-| ------------------ | ---------------------------------------------------------------------------- | ------------- |
-| `sheet.open`       | When the sheet of the spot opens.                                            |               |
-| `panel.open`       | Each time the panel opens, and once when the app starts.                     |               |
-| `clock.<seconds>`  | Every that many seconds while the spot is wanted, and when the Mac wakes.    |               |
-| `search.text`      | At each change of the text of the main search.                               | the text      |
-| `sheet.text`       | At each change of the search text of its sheet, and when the sheet opens.    | the text      |
-| `clipboard.change` | When the clipboard changes.                                                  |               |
-| `app.front`        | When another app comes to the front.                                         | its bundle ID |
-| `app.update`       | When Openspot has downloaded an update.                                      | its version   |
-| `screen.wake`      | When the screen wakes.                                                       |               |
+| Event              | When Openspot raises it                                                   | Value         |
+| ------------------ | ------------------------------------------------------------------------- | ------------- |
+| `sheet.open`       | When the spot's sheet opens.                                              |               |
+| `panel.open`       | Each time the panel opens, and once when the app starts.                  |               |
+| `clock.<seconds>`  | Every that many seconds while the spot is wanted, and when the Mac wakes. |               |
+| `search.text`      | At each change of the main search text.                                   | the text      |
+| `sheet.text`       | At each change of the sheet's search text, and when the sheet opens.      | the text      |
+| `clipboard.change` | When the clipboard changes.                                               |               |
+| `app.front`        | When another app comes to the front.                                      | its bundle ID |
+| `app.update`       | When Openspot has downloaded an update.                                   | its version   |
+| `screen.wake`      | When the screen wakes.                                                    |               |
 
-- Openspot also reads a spot for these reasons, which are not events:
-  - `spot.change`: after a call that printed no frame;
-  - `spot.want`: when a spot becomes wanted and no event has read it yet;
+- Openspot also asks a spot for these reasons, which aren't events:
+  - `spot.change`: after a call that printed nothing;
+  - `spot.want`: when a spot becomes wanted and no event has asked it yet;
   - `spot.preview`: for the preview in the store.
-- `openspot event emit <event> [value]` raises an event in Openspot, from a spot or a terminal. If Openspot is not
-  running, it starts first.
-- A spot must list each event that it raises in `emits`, such as `emits=music.track`. `openspot check` reports an `on`
-  event that Openspot does not raise and that no spot emits.
+- `openspot event emit <event> [value]` raises an event, from a spot or a terminal. If Openspot isn't running, it starts
+  first.
+- A spot must list each event it raises in `emits`, such as `emits=music.track`. `openspot check` reports an `on` event
+  that neither Openspot nor any spot raises.
 - A read must not raise the event that caused it. `openspot check` warns of a spot whose `on` and `emits` share an event.
-- A spot is wanted while its sheet, the menu bar or a card of other spots shows it, and while the open panel reads it at
-  `panel.open`.
-- A `clock` and the events other than `sheet.open`, `sheet.text` and `search.text` read a spot only while it is wanted.
-  `app.update` reads each spot that lists it, wanted or not.
-- A read must be safe at each event that its header lists. Only you can make sure of this. A spot has one read at a
-  time.
+- A spot is **wanted** while its sheet, the menu bar or a card of other spots shows it, and while the open panel asks it
+  at `panel.open`.
+- A `clock`, and events other than `sheet.open`, `sheet.text` and `search.text`, ask a spot only while it's wanted.
+  `app.update` asks each spot that lists it, wanted or not.
+- A read must be safe at each event its header lists. Only you can make sure of that. A spot has one read at a time.
 
 ## The calls
 
-A call asks a spot to do one thing. It works like a CGI call: arguments, variables and stdin in, a frame out.
-
-```sh
-#!/bin/sh
-# title=Today
-# on=sheet.open
-. "$OPENSPOT_SH"
-case "$1" in
-  read) openspot_row today Today ;;
-  open) open -a Notes ;;
-esac
-```
+A call asks a spot to do one thing. It works like a CGI call: arguments, variables and stdin go in, and a frame comes
+out.
 
 | Call                               | When                                                   |
 | ---------------------------------- | ------------------------------------------------------ |
@@ -459,25 +593,25 @@ esac
 | `<spot> <id> [row id] [value]`     | A change or a press of a block.                        |
 | `<spot> drop <path> [path]...`     | A drop of files on its card.                           |
 | `<spot> drag <row id> [row id]...` | A drag of rows that stand for files out of its sheet.  |
-| `<spot> <command>`                 | A press of the hotkey that the user gave a command.    |
+| `<spot> <command>`                 | A press of the hotkey the user gave a command.         |
 
-- `read` is the only reserved call. `open`, `drop` and `drag` are default ids. A block must not use them, but a button can
+- `read` is the only reserved call. `open`, `drop` and `drag` are default ids. A block can't use them, but a button can
   use `open`.
 - A new default id reaches only a spot that asks for it.
-- A drop on a card waits for the running call of the card. A drop on a card with rows opens its sheet, and the frame can
+- A drop on a card waits for the card's running call. A drop on a card with rows opens its sheet, and the frame can
   select the new row with `select=`.
-- The hotkeys of one spot run one at a time, in order, and never stop a call. Only the user gives a command a hotkey.
+- A spot's hotkeys run one at a time, in order, and never stop a call. Only the user gives a command a hotkey.
 
 Each call has three parts:
 
 - **Arguments:** the id, its row, then its values, so that `case "$1"` handles each call. A value over 64 KB goes only
   on stdin.
-- **Variables:** `OPENSPOT_REASON` and `OPENSPOT_VALUE` of a read, `OPENSPOT_ID`, the id of the spot, `OPENSPOT_DATA`,
-  a folder for its files that one spot folder shares, `OPENSPOT_SH`, the shell helper, and `PATH`, with the `openspot`
+- **Variables:** `OPENSPOT_REASON` and `OPENSPOT_VALUE` of a read, `OPENSPOT_ID`, the spot's id, `OPENSPOT_DATA`, a
+  folder for its files that one spot folder shares, `OPENSPOT_SH`, the shell helper, and `PATH`, with the `openspot`
   command first.
 - **Stdin:** one block of what the user filled in and typed: a line for each field of the sheet, `search=` with the
-  search text, and a `form=` line for each other text that the user may have meant, such as the same keys in another
-  keyboard layout. A value that is not a field comes as `value=`.
+  search text, and a `form=` line for each other text the user may have meant, such as the same keys in another
+  keyboard layout. A value that isn't a field comes as `value=`.
 
 ```ini
 title=Groceries
@@ -493,7 +627,7 @@ The shell helper writes values for you:
 | `value <key>`                               | Prints each value of the key from stdin, one per line, in order.                                    |
 | `openspot_kv <key> <value>`                 | Prints one line, with its value escaped.                                                            |
 | `openspot_row <id> <title> [detail] [icon]` | Prints one row.                                                                                     |
-| `openspot_rows [kind]`                      | Prints a row, or a block of that kind, for each tab-split line of stdin: id, title, detail, icon.   |
+| `openspot_rows [kind]`                      | Prints a row, or a block of that kind, for each tab-separated line of stdin: id, title, detail, icon. |
 | `openspot_serve <function> "$@"`            | Runs the function with the three parts of each call, in each mode.                                  |
 
 - Loading the helper reads all of stdin, except in a staying spot.
@@ -507,57 +641,46 @@ openspot_kv value "$(value input)"
 
 ## The life of a call
 
-A call starts, prints, and ends. These rules say how long it can take, and what a stop does.
+A call starts, prints and ends. These rules say how long it can take, and what happens when it stops.
 
 - A `read` has 10 seconds to print its first frame or end. Other calls have no time limit.
 - A new value of a block stops the older call of that block. A second press of a running call stops it: its process
-  group gets the terminate signal, then the kill signal. When Openspot quits, it stops each call.
+  group gets the terminate signal, then the kill signal. When Openspot quits, it stops every call.
 - A call ends when its output closes. A stopped call changes nothing.
-- Exit code 0 is success. Any other code is a failure, and the user sees the last line of stderr. A failure can print
-  `link=<url>`, the place that fixes it.
+- Exit code 0 means success. Any other code is a failure, and the user sees the last line of stderr. A failure can print
+  `link=<url>`, a page that helps fix it.
 - A failed read at `panel.open` only marks its card, and goes to the app log.
-- A stop can come at any time, and two calls can run at once. A spot must never leave a file half written.
+- A stop can come at any time, and two calls can run at once. Never leave a file half written.
 
 ## Places
 
-The user decides where a spot shows. A spot only offers.
-
-```js
-// title=Calculator
-// icon=equal.square
-// on=search.text ^[0-9(]
-// uses=clipboard
-function main(args, env) {
-  if (args[0] === "read")
-    return openspot.call(["calc", "solve", env.OPENSPOT_VALUE]).stdout;
-  return "";
-}
-```
+The user decides where a spot shows. A spot only offers. See [Answer the main search](#answer-the-main-search) for an
+example.
 
 - The user gives each spot its hotkey, puts spots in the menu bar, floats them, and orders and sizes the cards. A spot
-  must not claim a hotkey or a place.
-- `offers=search` shows the rows of the spot in the main search. It needs `on=panel.open` or a `clock`. Openspot ranks
-  the rows by the picks of the user.
+  can't claim a hotkey or a place.
+- `offers=search` shows the spot's rows in the main search. It needs `on=panel.open` or a `clock`. Openspot ranks the
+  rows by the user's picks.
 - The user can give any spot with a sheet a hotkey, or a shake of the pointer, in Settings. It shows the spot in a small
   window at the pointer, which stays while the user works in other apps. The spot never learns where it shows.
-- `on=search.text <pattern>` makes a spot answer the main search. Openspot reads it at each change of a text that the
+- `on=search.text <pattern>` makes a spot answer the main search. Openspot asks it at each change of a text that the
   pattern matches, with no pause. A newer text stops the older call. The answer should be fast.
 - Its rows show first in the main search until the newest text has an answer, and go at once when the pattern no longer
   matches. A pick of a row sends `<spot> open <row id>`.
 - A spot whose only event is `search.text` has no card.
 - An answer can be one card instead of rows: its head has `grid.large=` or `grid.strip=` lines, and its main block has a
   `value`. A pick of the card sends `<spot> open <value>`.
-- `openspot calc solve <words>...` prints the answer of a sum, a conversion or a date as a row.
+- `openspot calc solve <words>...` prints the answer to a sum, a conversion or a date as a row.
 - A spot with a `clock`, another event, or `mode=stay` or `always`, and a main `text`, `number` or `graph`, can show in
   the menu bar when the user puts it there. A read that prints nothing hides it until the next read.
-- A spot with a `clock` has no card on the grid until the user shows it.
+- A spot with a `clock` has no card on the grid until the user adds it.
 
 ## Modes
 
 Openspot starts a spot for each call, unless its header says otherwise.
 
 - `mode=once` starts a process for each call.
-- `mode=stay` keeps one process that gets each call on stdin while the spot is wanted.
+- `mode=stay` keeps one process, which gets each call on stdin while the spot is wanted.
 - `mode=always` keeps that process from the start of Openspot until it quits.
 - A `.js` file with a header and no execute permission runs inside Openspot. A `.js` file with no header can hold shared
   code. An executable `.js` file runs as a process, like any other spot.
@@ -582,7 +705,7 @@ function main(args, env, input) {
   gives its stdin.
 - `openspot.frame(object)` writes an object, or a list of objects, as blocks.
 - It has no files, no network and no process of its own. It runs one call at a time, on a thread of its own.
-- Openspot waits 2 ms for its frame in the same turn as the keystroke, and shows a later frame in the next turn.
+- Openspot waits 2 ms for its frame in the same keystroke, and shows a later frame on the next one.
 - A call has 10 seconds. After that it fails as a slow read, and the spot answers its next call.
 
 ### A staying spot
@@ -602,9 +725,9 @@ main() {
 openspot_serve main "$@"
 ```
 
-Openspot writes each call to its stdin as one block, then a blank line. `call=<n>` numbers the call, an `arg` line gives
-each argument, an `env.<name>` line gives each variable, such as `env.OPENSPOT_REASON` of a read, and one `input` line
-holds its stdin.
+Openspot writes each call to the spot's stdin as one block, then a blank line. `call=<n>` numbers the call, an `arg`
+line gives each argument, an `env.<name>` line gives each variable, such as `env.OPENSPOT_REASON` of a read, and one
+`input` line holds its stdin.
 
 ```ini
 call=4
@@ -615,14 +738,14 @@ input=message=Hello\n
 - A staying spot is one process that talks both ways over stdin and stdout. Each call goes to the running process, and
   no call starts a second copy.
 - `openspot_serve main "$@"` runs `main` with the three parts of each call, and prints `call=<n>` before its output and
-  `end=<n>` after it. The same `main` works in each mode.
+  `end=<n>` after it. The same `main` works in every mode.
 - The spot can print frames at any time. It must end each call with `end=<n>` in a head. A frame of only `call=<n>`
   starts the output of that call.
 - A second press sends the block `stop=<n>`. A newer search text sends `stop=<n>` for the read of the older text, so only
-  the answer to the newest text shows. A read after the first gets `stop=<n>` after 10 seconds, and fails as a slow read.
+  the newest answer shows. A read after the first gets `stop=<n>` after 10 seconds, and fails as a slow read.
 - With `mode=stay`, the process runs while the spot is wanted, or while a call waits for its `end`. When the spot is no
-  longer wanted, Openspot closes its stdin, and the spot must end, with each process that it started. After 2 seconds
-  its process group gets the terminate signal, and 2 seconds later the kill signal.
+  longer wanted, Openspot closes its stdin, and the spot must end, with every process it started. After 2 seconds its
+  process group gets the terminate signal, and 2 seconds later the kill signal.
 - After 3 failures in one minute, Openspot tells the user, and starts the spot again only when its file changes. Keep
   what must survive in `OPENSPOT_DATA`.
 
@@ -633,7 +756,7 @@ input=message=Hello\n
 
 ## Views
 
-A view draws what blocks cannot: a SwiftUI view in the place of a block.
+A view draws what blocks can't: a SwiftUI view in the place of a block.
 
 ```sh
 #!/bin/sh
@@ -659,7 +782,7 @@ struct SpotView: View {
 }
 ```
 
-- `view=<file>` in the header names a SwiftUI file beside the spot. A `view=<id>` block draws it in its place.
+- `view=<file>` in the header names a SwiftUI file next to the spot. A `view=<id>` block draws it in its place.
 - The spot and its view must be in a folder of their own, such as `cups/cups.sh` and `cups/cups.swift`.
 - The file declares `struct SpotView: View` with `let spot: SpotInput`, and has no top-level code.
 
@@ -668,47 +791,36 @@ struct SpotView: View {
 | `spot["key"]`     | The last value of a key of its block, or nil.                     |
 | `spot.all("key")` | Each value of a key that repeats.                                 |
 | `spot.size`       | The size of its place.                                            |
-| `spot.inset`      | The space that other cards keep between their edge and the words. |
+| `spot.inset`      | The space other cards keep between their edge and their words.    |
 | `spot.corner`     | The corner radius of the card.                                    |
 | `spot.ink`        | The colour of words, for light and dark.                          |
 | `spot.secondary`  | The opacity of a second line.                                     |
 | `spot.accent`     | The accent colour.                                                |
 | `spot.font`       | The fonts of the cards: `title`, `detail`, `metric` and `value`.  |
 
-- The view fills its place, and the whole card when there is no card layout. It cannot change the size of its place.
+- The view fills its place, and the whole card when there's no card layout. It can't change the size of its place.
 - It gets the keys of its block in each frame. A new frame keeps its `@State`.
 - The view only draws. A press works as on any card.
-- Openspot compiles it when its card first shows, and again when the file changes. A view that does not compile shows
-  its first error, and `openspot check` prints it.
+- Openspot compiles it when its card first shows, and again when the file changes. A view that doesn't compile shows its
+  first error, and `openspot check` prints it.
 - A shared spot carries the compiled view as `<name>.view`, which Openspot uses instead of the source.
 - The view runs inside Openspot, so a crash quits Openspot. Do the work in the spot, and only draw in `body`.
 
 ## Cards of other spots
 
-One card can show several spots side by side, such as the battery, the CPU and the memory. You write only a header, and
-Openspot fills the card with the main blocks of the spots that it names.
-
-```sh
-#!/bin/sh
-# title=System
-# grid.large=battery battery cpu    cpu
-# grid.large=battery battery memory memory
-# to=system-info
-```
+A card of other spots shows the main blocks of the spots it names. See
+[Combine spots on one card](#combine-spots-on-one-card) for an example.
 
 - Each `grid.<size>=` line is one line of the card at that size, as in [Layouts](#layouts). Here each word is the id of
-  another spot, not of a block. That spot's main block fills the cells that its id covers.
-- `to=` names the spot that opens when the user presses the card. In the example, a press opens the spot
-  `system-info`. With no `to=`, a press does nothing.
-- While the card shows, Openspot reads each spot that it names, at the events of that spot. A spot with no event that
-  reads it, such as one with only `on=sheet.open`, gets a read with `spot.want`. Each named spot must have an `on=`
-  event.
-- A good spot to name has a `clock` and a main `text`, `number` or `graph`.
-- Openspot looks for each id in the folder of the card first, then among all spots.
-- Each line of one size must have the same number of words, and each id must cover a rectangle. All lines must use one
-  size.
-- The header takes only `title`, `icon`, `detail`, `keywords` and `to` besides its `grid.<size>=` lines. Openspot does
-  not load a card with any other key, because the card runs no code.
+  another spot, not of a block. That spot's main block fills the cells its id covers.
+- `to=` names the spot that opens when the user presses the card. Without `to=`, a press does nothing.
+- While the card shows, Openspot asks each spot it names, at that spot's own events. A spot with no event that would ask
+  it, such as one with only `on=sheet.open`, is asked with `spot.want`. Each named spot must have an `on=` event.
+- The best spots to name have a `clock` and a main `text`, `number` or `graph`.
+- Openspot looks for each id in the card's folder first, then among all spots.
+- Each line of one size must have the same number of words, and each id must cover a rectangle. All lines use one size.
+- The header takes only `title`, `icon`, `detail`, `keywords` and `to` next to its `grid.<size>=` lines. Openspot doesn't
+  load a card with any other key, because the card runs no code.
 
 ## Files out
 
@@ -743,8 +855,8 @@ esac
   with `/`.
 - The other app copies or moves the file. A read should leave out each file that no longer exists.
 - When a drag ends in another app, Openspot sends `<spot> drag <row id>...`. A drag with no drop sends nothing. If the
-  call prints no frame, Openspot reads the spot again.
-- A drag of the icon in the head of the sheet drags each row that has a `file`.
+  call prints nothing, Openspot asks the spot again.
+- Dragging the icon in the head of the sheet drags every row that has a `file`.
 
 ## The openspot command
 
@@ -753,12 +865,12 @@ A spot asks the Mac and Openspot for things through one command, which works the
 - Each capability is `openspot <noun> <verb>`.
 - A noun names its commands, its events and its use, such as `openspot clipboard copy`, `clipboard.change` and
   `uses=clipboard`.
-- A call that reads files or asks the Mac gives the same answer whether Openspot runs or not. A call that needs the
+- A call that reads files or asks the Mac gives the same answer whether Openspot is running or not. A call that needs the
   running app starts it, and waits up to 10 seconds.
 - Ctrl-C stops a call, and the stopped work changes nothing.
 - `openspot help` lists each capability. `openspot help <noun>` prints the guide of a noun, such as `screen` or
   `calendar`.
-- A capability that cannot answer prints `status=<word>`. A capability that keeps state keeps it in its own helper.
+- A capability that can't answer prints `status=<word>`. A capability that keeps state keeps it in its own helper.
 - When macOS already has a command, such as `open`, use it. For the screen and the clipboard, use `openspot screen` and
   `openspot clipboard`, so that the user sees each use.
 - These calls fail in a read, so that a read changes nothing and opens nothing:
@@ -786,27 +898,15 @@ The commands that try a spot are in [Try your spot](#try-your-spot). The others:
 
 ### Settings
 
-A setting is a choice of the user that a spot keeps.
-
-```sh
-#!/bin/sh
-# title=Repos
-#
-# field=folder
-case "$1" in
-  folder)
-    picked=$(openspot folder pick)
-    [ -n "$picked" ] && openspot setting set folder "$picked"
-    ;;
-esac
-```
+A setting keeps a choice of the user. See [Let the user choose a setting](#let-the-user-choose-a-setting) for an
+example.
 
 - A `field` block in the header names a setting. The Settings spot lists it, set or not.
-- Enter on it runs the action with the same id, which can answer with a form. `⌘⌫` removes the value.
+- Return on it runs the action with the same id, which can answer with a form. `⌘⌫` removes the value.
 - `openspot setting get <key>` prints the value, or nothing. `openspot setting set <key> [value]` keeps the value, or
-  removes it when there is no value. In a terminal, `--spot <id>` names the spot.
+  removes it when there's no value. In a terminal, `--spot <id>` names the spot.
 - Keep a choice of the user in a setting. Keep what the spot makes, such as a cache, in `OPENSPOT_DATA`.
-- Openspot keeps some keys for the user, and a `field` must not use them:
+- Openspot keeps some keys for the user, and a `field` can't use them:
   - of any spot: `enabled` and `menubar`, `true` or `false`, and `float` and `key.<command>`, a hotkey such as
     `ctrl+option+k` or `shake`, or no value to remove it;
   - of the spot `openspot`, which is the app: `login`, `link` and `careful`, `true` or `false`, and `panel-key` and
@@ -821,7 +921,7 @@ Openspot counts what each spot cost and used, so that the user can see it.
 openspot spot stats --days 7 --frame
 ```
 
-- Openspot keeps one file for each day, for 90 days. The numbers of today are live.
+- Openspot keeps one file for each day, for 90 days. Today's numbers are live.
 - `--days N` adds up the last N days. `--spot <id>` shows one spot.
 - `--frame` prints a `row=<id>` block for each spot, the most CPU first, then a `use=<n>` block for each call that needs
   a use, the newest first.
@@ -831,7 +931,7 @@ openspot spot stats --days 7 --frame
 | `title`, `detail`    | The name of the spot, and its numbers in words.                       |
 | `runs`, `failures`   | The calls that ended, and those that failed.                          |
 | `cpu`, `seconds`     | The CPU seconds of its processes, and the wall time of its calls.     |
-| `read`, `written`    | The bytes that its processes read and wrote.                          |
+| `read`, `written`    | The bytes its processes read and wrote.                               |
 | `wakeups`            | The times its processes woke the CPU.                                 |
 | `call.<noun>.<verb>` | The count of one call that needs a use, such as `call.screen.shot=2`. |
 | `network`            | `declared` when its header names `network`.                           |
@@ -841,7 +941,7 @@ openspot spot stats --days 7 --frame
 
 ## Trust
 
-A spot runs with the rights of the user. Openspot shows what a spot can do, and what it did.
+A spot runs with the user's rights. Openspot shows what a spot can do, and what it did.
 
 ```sh
 #!/bin/sh
@@ -853,8 +953,8 @@ openspot app quit
 - Openspot asks nothing in daily use. It shows what a spot can do when the user adds or updates it, and shows each use
   after it happens.
 - Openspot knows which spot makes each call of `openspot` from its own records, not from the variables of the process.
-  Only the processes of the user can reach the API.
-- `uses` names what a spot uses. Openspot does not load a spot with an unknown use.
+  Only the user's own processes can reach the API.
+- `uses` names what a spot uses. Openspot doesn't load a spot with an unknown use.
 
 | Use         | The calls that need it                                                                                                                                          |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -866,15 +966,15 @@ openspot app quit
 | `network`   | No call. The spot reaches the network.                                                                                                                          |
 | `files`     | No call. The spot writes outside its data folder.                                                                                                               |
 
-- A call that needs a use that the header does not name still runs, and shows one toast for each spot, use and day.
-  `openspot check` cannot report it, because only a run shows it.
-- Before an add, the review shows the title, the `uses`, and a line `Can also` with what the code seems to do but does
-  not name: the network, `rm`, `screencapture`, `pbcopy` or `pbpaste`. It warns, and never blocks the add.
+- A call that needs a use the header doesn't name still runs, and shows one toast for each spot, use and day.
+  `openspot check` can't report it, because only a run shows it.
+- Before an add, the review shows the title, the `uses`, and a line **Can also** with what the code seems to do but
+  doesn't name: the network, `rm`, `screencapture`, `pbcopy` or `pbpaste`. It warns, and never blocks the add.
 - An update with no new use applies quietly. An update with a new use waits for `--yes`.
 - Careful mode is a setting of the user, off by default. It runs each process of a spot in a sandbox: no network unless
   `uses=network`, and writes only to its data folder and the temp folders unless `uses=files`. With `uses=screen`, it
-  can also write to the Desktop, Movies and the screenshots folder. In Careful mode, a call that needs a use that the
-  header does not name fails.
+  can also write to the Desktop, Movies and the screenshots folder. In Careful mode, a call that needs a use the header
+  doesn't name fails.
 - Without Careful mode, the data folder is no boundary.
 
 ## Messages
@@ -891,11 +991,11 @@ that fixes the rest. Use plain words, a calm tone, and one or two short sentence
 
 The version at the top is the version of this page. A new word raises the minor number, such as `1.1`. A draft becomes
 `final` when real use proves it, and a final version never changes the meaning of a word. A change that breaks an old
-spot raises the major number, and adds a header key `protocol=<major>`. A spot with no such key is version 1.
+spot raises the major number, and adds a header key `protocol=<major>`. A spot without that key is version 1.
 
 ## How to extend
 
-An old spot never sees a word that it did not ask for, and an old app skips a word that it does not know.
+An old spot never sees a word it didn't ask for, and an old app skips a word it doesn't know.
 
 | To add               | Add                                                               |
 | -------------------- | ----------------------------------------------------------------- |
