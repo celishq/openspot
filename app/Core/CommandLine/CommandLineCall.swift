@@ -30,6 +30,8 @@ public enum CommandLineCall: Equatable, Sendable {
     case spotOpen(String)
     /// Shows the whole text of a spot that comes with the app.
     case spotReview(String)
+    /// Opens the panel in Edit Spots with the store.
+    case spotStore
     /// Runs the action of a spot's setting in the panel, as Enter on its row in Settings does.
     case settingChange(spot: String, key: String)
     /// Prints the prompt that asks a coding agent to build a spot that does what the words say.
@@ -146,6 +148,7 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot spot open <id>                      Opens the panel on the sheet of a spot.
     openspot spot review <id>                    Shows the whole text of a spot that comes with the app, and what of it
                                                  runs by itself.
+    openspot spot store                          Opens the panel in Edit Spots with the store of spots.
     openspot check [--json] [folder]             Reports the faults of a plugins folder.
     openspot check --sheet                       Reports the faults of a sheet on stdin.
     openspot render [--view file] <file.png>     Draws the sheet on stdin to a picture, with its view from a Swift file.
@@ -284,6 +287,7 @@ public enum CommandLineCall: Equatable, Sendable {
             } ?? .unknown(arguments.joined(separator: " "))
         case ("spot", "open") where rest.count == 2: self = Self.changing(.spotOpen(rest[1]), "openspot spot open", "opens the panel", environment)
         case ("spot", "review") where rest.count == 2: self = Self.changing(.spotReview(rest[1]), "openspot spot review", "opens the panel", environment)
+        case ("spot", "store") where rest.count == 1: self = Self.changing(.spotStore, "openspot spot store", "opens the panel", environment)
         case ("prompt", "new") where rest.count > 1: self = .promptNew(rest.dropFirst().joined(separator: " "))
         case ("key", "set"): self = Self.key(Array(rest.dropFirst())) ?? .unknown(arguments.joined(separator: " "))
         case ("app", "status") where Self.flags(rest.dropFirst(), within: ["--frame"]): self = .appStatus(frame: rest.contains("--frame"))

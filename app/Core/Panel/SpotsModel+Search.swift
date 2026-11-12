@@ -2,20 +2,11 @@ import Foundation
 
 /// The main search: the cards that its text finds, with the rows and the answers that join them.
 extension SpotsModel {
-    /// Where the cards hidden from the grid start in the order of Edit Spots, after the cards on the grid and a card that
-    /// arrives from the dock. A dragged card counts in the group of its target. It is nil out of Edit Spots and while the
-    /// search has text.
-    var hiddenStart: Int? {
-        guard isEditing, query.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
-        let hidden = cards.filter { !$0.isOnGrid && $0.id != drag?.id }.count + (drag?.target.isOnGrid == false ? 1 : 0)
-        return visible.count - hidden
-    }
-
-    /// The grid of the cards shown: in the groups of Edit Spots, with the size of each card whose size the person chose, and
-    /// of a card that arrives from the dock.
+    /// The grid of the cards shown, with the size of each card whose size the person chose, and of a card that arrives from
+    /// the store.
     var grid: SpotGrid {
         let arriving = carry?.tile == nil ? nil : carry?.entry.id
-        return SpotGrid(split: hiddenStart, kept: Set(visible.indices.filter { visible[$0].isSizeChosen || visible[$0].id == arriving }))
+        return SpotGrid(kept: Set(visible.indices.filter { visible[$0].isSizeChosen || visible[$0].id == arriving }))
     }
 
     /// The entries that have a card. A sheet that grows out of the field, such as the install screen, has none.
@@ -53,7 +44,7 @@ extension SpotsModel {
         let text = query.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else {
             let arriving = carry.flatMap { $0.tile != nil && drag?.id == $0.entry.id ? [$0.entry] : nil } ?? []
-            return dragged(cards.filter(\.isOnGrid) + arriving + (isEditing ? cards.filter { !$0.isOnGrid } : []))
+            return dragged(cards.filter(\.isOnGrid) + arriving)
         }
         var ids = Set<String>()
         let answers = entries.filter { $0.spot.answers.map { runs.answerMatches.matches($0, text) } == true }
@@ -64,7 +55,7 @@ extension SpotsModel {
         if spotListIsStale {
             spotListIsStale = false
             spotListBuilds += 1
-            spotList.replace(cards.filter(\.spot.isFound).map { SpotItem(title: $0.state.title, subtitle: [$0.state.subtitle, $0.spot.name].compactMap { $0 }.joined(separator: " "), run: $0.id) })
+            spotList.replace(cards.filter(\.spot.isFound).map { SpotItem(title: $0.state.title, subtitle: [$0.state.subtitle, $0.spot.name].compactMap { $0 }.joined(separator: " "), run: $0.id, keywords: $0.spot.keywords) })
         }
         let sources = entries.filter { $0.spot.isGlobal && arrangement.isGlobal(of: $0.id) != false }
         let found = mainSearch.matching(SearchQuery(text: text), in: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() }, unpickedLimit: Self.unpickedRows, limit: Self.searchLimit - answers.count)

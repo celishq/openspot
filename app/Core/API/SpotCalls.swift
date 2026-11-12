@@ -61,6 +61,14 @@ struct SpotCalls {
         }
     }
 
+    func store() -> CommandAPI.Work {
+        guard let app else { return CommandAnswer.notRunning }
+        return CommandAnswer.work {
+            await app.openStore()
+            return ""
+        }
+    }
+
     /// Opens the panel with the spot selected, or returns nil when no app runs, so that a process of its own asks for it.
     func show(_ id: String) -> CommandAPI.Work? {
         guard let app else { return nil }

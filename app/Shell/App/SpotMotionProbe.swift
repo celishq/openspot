@@ -133,7 +133,8 @@ final class SpotMotionProbe: NSObject {
     }
 
     /// Saves a picture of Edit Spots with its dock a second after it starts, then of the tip of the first card's eye, then of
-    /// the tip of the first dock card's delete control, then the pictures of a carried card.
+    /// the tip of the first dock card's corner control, then of the first dock card's listing, then the pictures of a
+    /// carried card.
     private func shootEdit(into folder: String) {
         model.beginEditing()
         try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
@@ -146,7 +147,12 @@ final class SpotMotionProbe: NSObject {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                     self.save(to: "\(folder)/tip-dock.png")
                     self.model.tip = nil
-                    self.shootCarry(into: folder)
+                    if let id = self.model.dock.shown.first?.id { self.model.openListing(id) }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        self.save(to: "\(folder)/listing.png")
+                        if let id = self.model.dock.opened { self.model.openListing(id) }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.shootCarry(into: folder) }
+                    }
                 }
             }
         }
@@ -210,21 +216,18 @@ final class SpotMotionProbe: NSObject {
         }
     }
 
-    /// Presses the corner handle of the dock's first spot with more than one size, or of the grid's smallest such card, and
-    /// pulls it two columns right and a row down and back, once for every four presses, with a mouse event on each frame.
-    /// The app takes the focus, as the events reach only the key window.
+    /// Presses the corner handle of the grid's smallest card with more than one size, and pulls it two columns right and a
+    /// row down and back, once for every four presses, with a mouse event on each frame. The app takes the focus, as the
+    /// events reach only the key window.
     private func pullTile() {
-        let index = model.dock.shown.firstIndex { model.sizes(of: SpotsModel.Entry(spot: $0.spot, run: nil)).count > 1 }
-        guard let window = panel as? SpotsPanel, let view = panel.contentView, let dock = model.dockFrame, let index else {
-            return finish(with: "no spot in the dock\n")
-        }
         let cards = model.visible.indices.filter { model.visible[$0].isOnGrid && model.sizes(of: model.visible[$0]).count > 1 }
-        let card = row == "grid" ? cards.min { model.visible[$0].size.columns * model.visible[$0].size.rows < model.visible[$1].size.columns * model.visible[$1].size.rows } : nil
-        let id = card.map { model.visible[$0].id } ?? model.dock.shown[index].id
-        let tile = model.dock.rects(columns: SpotTokens.dockColumns(width: dock.width))[index]
+        let card = cards.min { model.visible[$0].size.columns * model.visible[$0].size.rows < model.visible[$1].size.columns * model.visible[$1].size.rows }
+        guard let window = panel as? SpotsPanel, let view = panel.contentView, let card else {
+            return finish(with: "no card to resize\n")
+        }
+        let id = model.visible[card].id
         let grid = SpotTokens.gridOrigin(scrollOffset: model.gridScroll)
-        let end = card.map { CGPoint(x: grid.x + model.placements[$0].rect.maxX, y: grid.y + model.placements[$0].rect.maxY) }
-            ?? CGPoint(x: dock.minX + SpotTokens.padding + tile.maxX, y: dock.minY + SpotTokens.dockRowsTop + tile.maxY - model.dockScroll)
+        let end = CGPoint(x: grid.x + model.placements[card].rect.maxX, y: grid.y + model.placements[card].rect.maxY)
         panel.ignoresMouseEvents = false
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKey()
@@ -236,7 +239,7 @@ final class SpotMotionProbe: NSObject {
             guard let event = NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: panel.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1) else { return }
             NSApp.postEvent(event, atStart: false)
         }
-        let size = { self.model.dock.items.first { $0.id == id }?.size ?? self.model.visible.first { $0.id == id }?.size }
+        let size = { self.model.visible.first { $0.id == id }?.size }
         var last = size()
         var changes = 0
         var steps: [String] = []
@@ -255,7 +258,7 @@ final class SpotMotionProbe: NSObject {
                 return post(.leftMouseDown, 0)
             }
             let time = now - first
-            resized = resized || model.dockResize != nil || model.resize != nil
+            resized = resized || model.resize != nil
             if size() != last {
                 changes += 1
                 last = size()

@@ -55,6 +55,8 @@ open -a Calendar
 | `title`    | The title. The default comes from the file name.                                                                         |
 | `icon`     | Its picture, as for a block. A path that does not start with `/` starts at the folder of the script.                     |
 | `detail`   | The second line.                                                                                                         |
+| `keyword`  | One more word that finds it in the main search. A header can have more than one.                                         |
+| `preview`  | `sample` says that its read prints fake data while `OPENSPOT_PREVIEW` is 1. The store keeps that text as its preview.    |
 | `size`     | The size it prefers: `wide` (the default), `small`, `square`, `strip` or `large`. The grid can change it, and the person's choice wins (F9). |
 | `read`     | The places where a read is safe: `sheet` and `panel`, split by commas (B6).                                              |
 | `every`    | A number of seconds: a read that often while something wants it (B6).                                                   |
@@ -529,7 +531,7 @@ kinds (S12):
 - A call that reads or writes only files, or asks the Mac, such as `spot list`, `setting get`, `calc solve` or
   `screen shot`, gives the same answer with the app or without it. While the app runs, the command asks it over a socket,
   so a call starts no second app and finds its data ready (S1). With the app closed, the command does the work itself (S2).
-- A call that needs the state of the running app, such as `app status`, `spot open`, `spot show`, `spot review`,
+- A call that needs the state of the running app, such as `app status`, `spot open`, `spot show`, `spot review`, `spot store`,
   `setting change`, `event emit` or `update check`, always goes to the app. With the app closed, the command
   starts it in the background and waits up to 10 seconds for it. After that it fails, and says to open Openspot.
 
@@ -558,8 +560,8 @@ leaves no record. `openspot spot stats` prints what each spot cost and used, day
 
 The spots of the app, such as Settings, Spots and New spot, are scripts in its `openspot` folder that use this command
 like any other spot, and are always on. `openspot spot list [--core] [--frame]` prints the spots as JSON, `spot on|off <id>...`
-turns spots that come with the app on or off, `spot open <id>` opens a spot's sheet, and `spot review <id>` shows the text
-of a spot that comes with the app. `openspot key set` gives keys, `menubar on|off <id>` places a spot in the menu bar,
+turns spots that come with the app on or off, `spot open <id>` opens a spot's sheet, `spot store` opens Edit Spots with the store of spots,
+and `spot review <id>` shows the text of a spot that comes with the app. `openspot key set` gives keys, `menubar on|off <id>` places a spot in the menu bar,
 `setting list` prints each value that spots keep, `setting change <key>` runs a value's action in the panel, `app status`
 prints the state of the app, `app login|link on|off` and `app quit` change the app, `update check|install` updates it, and
 `prompt new <words>` prints a prompt for a coding agent. Each call that changes the Mac, ends the app or opens the panel

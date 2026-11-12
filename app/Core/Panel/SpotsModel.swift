@@ -128,9 +128,6 @@ public final class SpotsModel {
     /// The layouts of the grid for each place that a carried spot of the dock can take. Its card is on the grid while the
     /// drag holds it there.
     @ObservationIgnored var arrival: SpotDrag?
-    /// The spot of the dock that the person resizes by its corner, the size it had, and where its card lay in the dock's
-    /// rows when the drag started.
-    public internal(set) var dockResize: (id: String, start: SpotSize, origin: CGPoint)?
     /// The card that the person resizes by its corner in Edit Spots, and the size that a release keeps.
     public internal(set) var resize: SpotResize?
     /// How long the pointer stays near a new place before the other cards make room there.
@@ -143,8 +140,17 @@ public final class SpotsModel {
     @ObservationIgnored public internal(set) var gridScroll: CGFloat = 0
     @ObservationIgnored var scrollAtPress: CGFloat = 0
     @ObservationIgnored var pointerMove: CGSize?
-    /// The spots of Edit Spots' dock.
+    /// The spots of Edit Spots' store.
     public internal(set) var dock = SpotDock(items: [])
+    /// The listing of the spot that the store opened.
+    public internal(set) var dockListing: SpotListing?
+    /// The spots that are off, and the packages of the spots of the plugins folder, as the last read of the folder found them.
+    @ObservationIgnored var dockOff: [SpotDock.Item] = []
+    @ObservationIgnored var dockPublications: [String: SpotDock.Publication] = [:]
+    /// The stamp of the folder that `dockOff` and `dockPublications` were read from, and the read that runs in the background.
+    /// A publish changes no stamp, so it reads the store again itself.
+    @ObservationIgnored var dockStamp: SpotFolder.Stamp?
+    @ObservationIgnored var dockRead: Task<Void, Never>?
     /// Whether the person types in the dock's search, which then takes each key but Esc.
     public internal(set) var isSearchingDock = false
     /// Where the person pressed a card's resize handle, in the handle's square.
@@ -247,7 +253,7 @@ public final class SpotsModel {
         arrangement = config.arrangement
         scanned = scan.spots
         if let ids, isOnlyNamed { patchEntries(ids) } else { rebuildEntries() }
-        if isEditing { refreshDock(in: folder) }
+        if isEditing { refreshDock(in: folder) } else { readDockLater(in: folder) }
         if problems != self.problems, !problems.isEmpty {
             host.notify(problems.joined(separator: " "))
         }

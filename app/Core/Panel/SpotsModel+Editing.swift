@@ -20,13 +20,53 @@ extension SpotsModel {
             query = ""
             isEditing = true
             updateVisible()
-            refreshDock(in: folder)
+            if dockStamp == folder.stamp() { composeDock() } else { refreshDock(in: folder) }
         }
     }
 
-    /// Shows the spots of the dock whose name holds this text.
+    /// Shows the panel in Edit Spots with the store, from the grid, a search or a sheet.
+    public func openStore() {
+        if openList != nil { closeList(moving: false) }
+        host.show()
+        beginEditing()
+    }
+
+    /// Shows the spots of the dock whose name holds this text, and closes the listing when the text changes.
     public func searchDock(_ text: String) {
+        guard text != dock.query else { return }
+        dock.opened = nil
         dock.query = text
+    }
+
+    /// Shows the spots of the store that this filter keeps, and closes the listing.
+    public func filterDock(_ filter: SpotDock.Filter) {
+        change(.edit) {
+            dock.opened = nil
+            dock.filter = filter
+        }
+    }
+
+    /// Opens the listing of a spot of the store in a sheet under its shelf, or closes it when it is open.
+    public func openListing(_ id: String) {
+        guard let item = dock.shown.first(where: { $0.id == id }) else { return }
+        tip = nil
+        let isOpen = dock.opened == id
+        if !isOpen { dockListing = SpotListing(beside: item.spot) }
+        change(.edit) { dock.opened = isOpen ? nil : id }
+    }
+
+    /// Copies a prompt for the person's agent: to change a spot of the plugins folder, or to review any other spot.
+    public func copyListingPrompt(_ id: String) {
+        guard let item = dock.items.first(where: { $0.id == id }) else { return }
+        guard !item.isOwn else { return copyPrompt(changing: Entry(spot: item.spot, run: nil)) }
+        let prompt = host.agentPrompt(for: files.folder.url)
+        Task {
+            do {
+                host.confirm(try await prompt.copy(prompt.reviewing(item.spot.url)))
+            } catch {
+                host.notify("The prompt for \(item.spot.name) was not copied. \(Self.reason(error))")
+            }
+        }
     }
 
     /// Takes whether the person types in the dock's search.
@@ -34,24 +74,60 @@ extension SpotsModel {
         if isSearchingDock != isOn { isSearchingDock = isOn }
     }
 
-    /// Makes the dock from the spots of this folder that are off, and keeps its search.
+    /// Reads the spots of this folder that are off and the packages of its files in the store, and makes the store again.
     func refreshDock(in folder: SpotFolder) {
+        dockRead?.cancel()
+        dockStamp = folder.stamp()
+        (dockOff, dockPublications) = Self.readDock(in: folder, store: files.store)
+        composeDock()
+    }
+
+    /// Reads what the store needs from this folder off the main thread, so that Edit Spots starts with no read of the disk.
+    func readDockLater(in folder: SpotFolder) {
+        dockRead?.cancel()
+        let store = files.store
+        dockRead = Task { [weak self] in
+            let read = await Task.detached(priority: .utility) { (folder.stamp(), Self.readDock(in: folder, store: store)) }.value
+            guard let self, !Task.isCancelled else { return }
+            (self.dockOff, self.dockPublications) = read.1
+            self.dockStamp = read.0
+        }
+    }
+
+    /// The spots of this folder that are off, and whether the store's package of each file of the folder is current.
+    nonisolated static func readDock(in folder: SpotFolder, store: URL) -> ([SpotDock.Item], [String: SpotDock.Publication]) {
+        let own = (try? SpotFolder(url: folder.url).keptScan()) ?? ScanResult(files: [], refused: [])
+        return (offSpots(in: folder, own: own.files), publications(of: own, in: folder, store: store))
+    }
+
+    /// Makes the store from each card of the panel and each spot that is off, and keeps its filter and its search. A part of
+    /// a widget, such as a metric that it places or a sheet that it opens, is not one.
+    func composeDock() {
+        let folder = files.folder
         let choice = arrangement
-        var next = SpotDock(items: Self.offSpots(in: folder).map { SpotDock.Item(spot: $0.spot, isOwn: $0.isOwn, size: choice.size(of: $0.id)) })
+        let spots = cards.filter { $0.item == nil && $0.spot.fault == nil }
+        let parts = Set(spots.flatMap { $0.spot.places + ($0.spot.opens.map { [$0] } ?? []) })
+        let on = spots.filter { !parts.contains($0.id) }.map { entry in
+            let origin: SpotDock.Origin = entry.spot.isBuiltIn ? .builtIn : folder.isCore(entry.spot) ? .core : .mine
+            return SpotDock.Item(spot: entry.spot, origin: origin, state: entry.isOnGrid ? .onGrid : .searchOnly, size: entry.size, publication: dockPublications[entry.id])
+        }
+        let off = dockOff.map { SpotDock.Item(spot: $0.spot, origin: $0.origin, size: choice.size(of: $0.id), publication: dockPublications[$0.id]) }
+        var next = SpotDock(items: on + off)
         next.query = dock.query
+        next.filter = dock.filter
+        next.opened = dock.opened
         if next != dock { dock = next }
     }
 
     /// The core spots of this folder that are not on, and the spots of its files that the person turned off. A sheet that
     /// another spot opens is not one.
-    private static func offSpots(in folder: SpotFolder) -> [SpotDock.Item] {
-        let own = (try? SpotFolder(url: folder.url).keptScan())?.files ?? []
+    private nonisolated static func offSpots(in folder: SpotFolder, own: [SpotFile]) -> [SpotDock.Item] {
         let ownIDs = Set(own.map(\.id))
         let core = folder.keptCoreChoices()
             .filter { !folder.enabled.contains(SpotFolder.coreID(of: $0)) && !ownIDs.contains(SpotFolder.coreID(of: $0)) }
         let turnedOff = own.filter { folder.disabled.contains($0.id) }.flatMap(\.spots)
         let opened = Set(turnedOff.compactMap(\.opens))
-        return core.map { SpotDock.Item(spot: $0) } + turnedOff.filter { !opened.contains($0.id) }.map { SpotDock.Item(spot: $0, isOwn: true) }
+        return core.map { SpotDock.Item(spot: $0) } + turnedOff.filter { !opened.contains($0.id) }.map { SpotDock.Item(spot: $0, origin: .mine) }
     }
 
     /// Whether the minus of Edit Spots can turn this spot off. A built-in and a card of faults stay on.
@@ -65,15 +141,41 @@ extension SpotsModel {
         turn(entry.spot, on: false)
     }
 
-    /// Turns a spot of the dock on: its card takes a place in the panel.
+    /// Turns a spot of the store that is off on: its card takes a place in the panel.
     public func turnOn(_ id: String) {
-        guard let item = dock.items.first(where: { $0.id == id }) else { return }
+        guard let item = dock.items.first(where: { $0.id == id && $0.state == .off }) else { return }
         turn(item.spot, on: true)
     }
 
-    /// Moves the file of a spot of the dock to the Trash, as Delete does in the action menu, so `⌘Z` puts it back.
+    /// Puts a spot of the store on the grid, in search only, or off. A built-in spot is never off. A spot that comes on
+    /// takes the place of the grid or of search only after it loads.
+    public func setState(_ state: SpotDock.State, of id: String) {
+        guard let item = dock.items.first(where: { $0.id == id }), item.state != state else { return }
+        if state == .off {
+            guard item.origin != .builtIn else { return }
+            turn(item.spot, on: false)
+            return
+        }
+        if item.state == .off, !turn(item.spot, on: true) { return }
+        if cards.first(where: { $0.id == id })?.isOnGrid != (state == .onGrid) { setOnGrid(state == .onGrid, for: id) }
+    }
+
+    /// Turns on each spot of the store that is off, and loads the spots again on the edit motion.
+    public func turnOnAll() {
+        let off = dock.items.filter { $0.state == .off }
+        guard !off.isEmpty else { return }
+        do {
+            for item in off { try files.config.turn(files.folder.fileID(of: item.spot), on: true) }
+        } catch {
+            host.notify("Some spots were not turned on. \(Self.reason(error))")
+        }
+        change(.edit) { reload() }
+    }
+
+    /// Moves the file of a spot of the store that is off to the Trash, as Delete does in the action menu, so `⌘Z` puts it
+    /// back.
     public func delete(_ id: String) {
-        guard let item = dock.items.first(where: { $0.id == id }), item.isOwn else { return }
+        guard let item = dock.items.first(where: { $0.id == id }), item.isOwn, item.state == .off else { return }
         remove(Entry(spot: item.spot, run: nil))
     }
 
@@ -104,12 +206,12 @@ extension SpotsModel {
             landing = nil
             carry = nil
             arrival = nil
-            dockResize = nil
             resize = nil
             pointerMove = nil
             if lift.offset != .zero { lift.offset = .zero }
             selected = 0
             isSearchingDock = false
+            dock.opened = nil
             updateVisible()
         }
     }
@@ -120,7 +222,7 @@ extension SpotsModel {
             isSearchingDock = false
             return
         }
-        if drag != nil || resize != nil || carry != nil || dockResize != nil {
+        if drag != nil || resize != nil || carry != nil {
             if key.name == "escape" {
                 cancelDrag()
                 cancelResize()
@@ -128,6 +230,7 @@ extension SpotsModel {
             return
         }
         if openSheet(on: key) { return }
+        if key.name == "escape", let id = dock.opened { return openListing(id) }
         let order = visible.map(\.id)
         switch (key.name, key.isShift) {
         case ("escape", _): endEditing()
@@ -216,6 +319,7 @@ extension SpotsModel {
         change(.edit, {
             ending()
             rebuildEntries()
+            composeDock()
             if let place = visible.firstIndex(where: { $0.id == id }) { selected = place }
             carryHome()
         }, completion: landed)

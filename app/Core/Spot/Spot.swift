@@ -68,6 +68,10 @@ public struct Spot: Equatable, Sendable {
     /// Whether it comes with the app as a part of it: always on, and never edited, removed or shared as a file of the
     /// person's.
     public private(set) var isBuiltIn = false
+    /// More words that find it in the main search, beside its name and the words under it.
+    public let keywords: [String]
+    /// Whether its read prints fake data while `OPENSPOT_PREVIEW` is 1, for the preview of its listing.
+    public let previewsSample: Bool
 
     public init(
         id: String,
@@ -103,10 +107,14 @@ public struct Spot: Equatable, Sendable {
         glyph: String? = nil,
         view: String? = nil,
         emits: [String] = [],
-        uses: Set<SpotUse> = []
+        uses: Set<SpotUse> = [],
+        keywords: [String] = [],
+        previewsSample: Bool = false
     ) {
         self.emits = emits
         self.uses = uses
+        self.keywords = keywords
+        self.previewsSample = previewsSample
         self.id = id
         self.name = name
         self.url = url

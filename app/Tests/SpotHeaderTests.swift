@@ -65,6 +65,16 @@ final class SpotHeaderTests: XCTestCase {
         }
     }
 
+    func testEachKeywordOfTheHeaderFindsTheSpot() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-keyword-\(UUID().uuidString)")
+        try "#!/bin/sh\n# title=Timer\n# keyword=countdown\n# keyword=pomodoro\n".writeScript(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let spot = try XCTUnwrap(try SpotFile(file: url, id: "timer")?.spots.first)
+
+        XCTAssertEqual(spot.keywords, ["countdown", "pomodoro"])
+    }
+
     func testReadsTheCommentLinesUnderTheFirstLine() {
         let header = SpotHeader(text: "#!/bin/sh\n# title=Morning\n#\n# Prose has no key.\n#icon=sun.max\nsay hello\n# shortcut=m\n")
 

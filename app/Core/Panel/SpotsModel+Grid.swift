@@ -180,8 +180,7 @@ extension SpotsModel {
 
     /// The running call that a press of this row of the open menu stops.
     public func work(of row: ActionMenu.Row) -> ScriptCall? {
-        if row.opensEdit { return nil }
-        return menuTarget.flatMap { sheets[$0.entry.id]?.work(of: row, item: $0.item) }
+        menuTarget.flatMap { sheets[$0.entry.id]?.work(of: row, item: $0.item) }
     }
 
     /// Opens the list of a metric that is also a list, or else selects the widget that places it. Closes the panel

@@ -232,18 +232,18 @@ public final class SpotRuns {
         sheets[id]?.spot.accepts(draggedPaths) == true
     }
 
-    /// Runs one call with no sheet, and returns all that it prints. A `read` runs until it gives its first frame, which is what
-    /// a sheet takes as its answer.
-    public func answer(of spot: Spot, _ action: SpotAction, input: String? = nil, limit: TimeInterval? = nil) async throws -> String {
+    /// Runs one call with no sheet, with `variables` added to its environment, and returns all that it prints. A `read` runs
+    /// until it gives its first frame, which is what a sheet takes as its answer.
+    public func answer(of spot: Spot, _ action: SpotAction, input: String? = nil, limit: TimeInterval? = nil, variables: [String: String] = [:]) async throws -> String {
         if spot.mode.stays, action == .read {
             let (script, frames, token) = stay(spot, limit: limit)
             tokens.setReason(ReadReason.panel.variables["OPENSPOT_REASON"], of: token)
             defer { script.end() }
-            script.send(.read, variables: ReadReason.panel.variables, id: 1)
+            script.send(.read, variables: ReadReason.panel.variables.merging(variables) { _, new in new }, id: 1)
             for try await frame in frames where !SpotOutput(text: frame).isMark || SpotOutput(text: frame).ends.contains("1") { return frame }
             return ""
         }
-        let (stream, halt, _) = frames(of: spot, action, input: input, limit: limit)
+        let (stream, halt, _) = frames(of: spot, action, input: input, limit: limit, variables: variables)
         if action == .read {
             defer { halt() }
             for try await frame in stream { return frame }
@@ -368,7 +368,7 @@ public final class SpotRuns {
         }
         if spot.mode == .inline {
             let script = inline(spot, limit: limit)
-            let call = InlineCall(arguments: action.arguments, input: input)
+            let call = InlineCall(arguments: action.arguments, variables: variables, input: input)
             script.send(call)
             let (stream, halt) = answered {
                 defer { script.end() }

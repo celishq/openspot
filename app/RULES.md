@@ -18,7 +18,7 @@ Code and tests name a rule by its ID.
 | A10 | A dragged `.spot` file shows in the search field, and a drop, a paste or a double-click opens the install screen from there. |
 | A11 | The core spots are the scripts in `plugins/` of this repo. They run in place from the app, so an update updates them. Nothing downloads. |
 | A12 | A first launch turns on each core spot that reads only local data. Each other core spot is off until the person turns it on. A file in the plugins folder with the same ID wins over a core spot, and is always on. |
-| A13 | Enter on a row of Spots turns that spot on or off, and keeps the panel open. |
+| A13 | Spots opens Edit Spots with the store, which shows every spot with its state. A search for "edit spots" finds Spots. |
 | A14 | A first launch has no config and no plugin, opens the panel on the grid once, and does not open at login. |
 | A15 | A toast takes no input, except a failure with a fix (R9). One fix key, which the person chooses, opens it, and only while the toast shows. |
 | A16 | The main search ranks the best match first. Then the most weight of picks, where each pick weighs 0.9 of the one after it, then the spots, then each list in the order of the grid. A list that the person never picked from shows at most 3 rows. |
@@ -28,7 +28,8 @@ Code and tests name a rule by its ID.
 | A20 | The app watches the plugins folder. A change shows on the cards at once, with no motion, and a changed script that the open panel reads at `panel` reads again. |
 | A21 | A spot whose last call failed shows a mark on its card until a call ends well. |
 | A24 | Each spot of the person offers Edit, Copy prompt for AI, Share and Delete. A card of a file that does not load offers Edit and Delete. Delete asks no question and keeps the panel open, and `⌘Z` puts the files back until the next Delete. |
-| A22 | New spot has a small card on the grid after Settings, and the first row of Spots opens it too. `⌘N` on the grid or in Edit Spots opens it, unless an action of the selected card takes the key. |
+| A28 | The actions menu and the right-click menu of a card list only acts on the selected card or row. An act of the whole app is a spot of its own, such as Spots or Settings. |
+| A22 | New spot has a small card on the grid after Settings. `⌘N` on the grid or in Edit Spots opens it, unless an action of the selected card takes the key. |
 | A23 | New spot is a list that the search field fills. Its first row, Copy prompt for AI, copies a prompt that asks an agent to build what the person typed as a new file in the plugins folder, and its toast says so. Openspot starts no agent and writes no file for it. A row for each starter writes a working spot called Untitled and opens its file in the text editor. `⌘K` opens the guide and the plugins folder. |
 | M2 | A `panel` or `sheet` moment takes an answer younger than 5 seconds. A change, a number and a wake always read. |
 | M3 | Reads run at the same time. The panel never waits for one script. A spot shows its header until its answer arrives. |
@@ -49,7 +50,7 @@ Code and tests name a rule by its ID.
 | K2 | A capability's helper starts at its first call, and exits after 30 seconds with no call. The app does not track it. |
 | A25 | A change that the API writes to the config applies only what changed. A key holds the keys again, a spot that turns on or off adds or removes its card, and a value of a spot reads that spot again. The grid does not build again. |
 | A26 | An inline spot makes its JavaScript context and its thread at its first call, and drops them after 30 seconds with no call. Its calls go in the call log, the CPU time of its thread counts in `spot stats`, and Review shows its text. |
-| A27 | Settings, Spots and Updates read with one `openspot` process and no `jq`. |
+| A27 | Settings and Updates read with one `openspot` process and no `jq`. |
 
 ## Sharing
 
@@ -58,12 +59,19 @@ A spot travels as a `.spot` file: JSON with `"format": 1` and `files`, a list of
 opens. Hidden files and `$OPENSPOT_DATA` stay behind. A file of the same path replaces the old one, which goes to the
 Trash.
 
+Share in the store copies a published package as one `.spot` file that is a zip of its folder. Openspot opens a package
+folder, a zip of one, and a JSON file of format 1. A zip with a path that leaves its folder, a link, or more than the
+size limit when unpacked is refused, the last before it unpacks. The install keeps the readme and the preview beside the
+spot's file.
+
 | ID | Rule |
 |---|---|
 | P4 | Before a person installs a shared spot, Openspot shows all the text it can, says what runs by itself and names each file that it cannot show. Only a modified key installs it. |
 | P6 | A `.spot` file can carry a Swift script's `<name>.program`, compiled for both kinds of Mac, which runs in its place. The review says first that no one can read it. |
 | P7 | A `.spot` file has no signature. Openspot warns the sender about secrets, and does not look for them. |
 | P9 | A core spot needs no review, because it is signed with the app. |
+| P10 | A drag of a spot of the plugins folder onto the store publishes it as a package folder `<id>.spot` in `store/` of the config folder: its files, `listing.toml`, `readme.md` and `preview.txt`. A spot with no readme opens its listing and is not published. A spot whose files did not change writes nothing. |
+| P11 | A preview is the text that a spot prints with `OPENSPOT_PREVIEW=1`, on the author's Mac at publish. Drawing a preview runs no code. |
 
 ## Floats
 

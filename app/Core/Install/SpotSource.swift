@@ -1,6 +1,6 @@
 import Foundation
 
-/// Where a spot comes from: a git repository, a folder or a `.spot` file (N1). It puts the spot at the top of a plugins
+/// Where a spot comes from: a git repository, a folder, or a `.spot` file or package with its listing (N1). It puts the spot at the top of a plugins
 /// folder, and runs nothing of it.
 public enum SpotSource: Equatable, Sendable {
     /// A git URL, or the path of a folder that git keeps.
@@ -20,7 +20,7 @@ public enum SpotSource: Equatable, Sendable {
             return
         }
         let path = url.standardizedFileURL
-        if !isFolder.boolValue {
+        if !isFolder.boolValue || path.pathExtension == SharedSpot.fileExtension {
             self = .file(path)
         } else if FileManager.default.fileExists(atPath: path.appendingPathComponent(".git").path) {
             self = .git(path.path)
@@ -92,7 +92,7 @@ public enum SpotSource: Equatable, Sendable {
             try FileManager.default.copyItem(at: url, to: work.appendingPathComponent(name))
             return (nil, [name])
         case .file(let url):
-            let spot = try SharedSpot(contentsOf: url)
+            let spot = try SpotPackage.open(at: url).installed()
             let paths = spot.files.map(\.path)
             try spot.add(to: work)
             let changed = paths.filter { !Self.isSame(work.appendingPathComponent($0), folder.appendingPathComponent($0)) }

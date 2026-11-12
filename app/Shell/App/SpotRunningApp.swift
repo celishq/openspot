@@ -38,6 +38,10 @@ struct SpotRunningApp: RunningApp {
         await model.reviewCore(id)
     }
 
+    func openStore() async {
+        await model.openStore()
+    }
+
     func reveal(_ id: String) async -> Bool {
         await model.reveal(id)
     }

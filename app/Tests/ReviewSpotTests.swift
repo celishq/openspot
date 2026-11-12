@@ -372,4 +372,21 @@ final class ReviewSpotTests: XCTestCase {
     func testAnUnknownCallFails() throws {
         XCTAssertThrowsError(try review("").answer(["other"]))
     }
+
+    func testTheReviewShowsTheReadmeAndThePreviewAndTheAddKeepsThemBesideTheSpotInTheLock() async throws {
+        let shared = try spot([("timer.sh", "#!/bin/sh\n# title=Timer\n", true)])
+        let package = try SpotPackage.write(shared, title: "Timer", description: "Counts down", readme: "Counts down from a time you pick.", preview: "row=a\ntitle=5 minutes\n", to: SpotPackage.url(for: "timer", in: folder))
+        let plugins = folder.appendingPathComponent("plugins")
+        let lock = SpotLock(url: folder.appendingPathComponent("spots.lock"))
+        let review = try ReviewSpot(file: package.url, folder: plugins, lock: lock)
+
+        let text = try shown(review)
+        XCTAssertTrue(text.hasPrefix("Timer\n\nCounts down from a time you pick.\n\nPreview\n5 minutes\n\n"), text)
+
+        _ = try await review.add()
+        XCTAssertEqual(try String(contentsOf: plugins.appendingPathComponent("timer.md"), encoding: .utf8), "Counts down from a time you pick.")
+        XCTAssertEqual(try String(contentsOf: plugins.appendingPathComponent("timer.preview.txt"), encoding: .utf8), "row=a\ntitle=5 minutes\n")
+        XCTAssertEqual(try lock.entries().map(\.paths), [["timer.sh", "timer.md", "timer.preview.txt"]])
+        XCTAssertEqual(try lock.entries().map(\.source), [package.url.path])
+    }
 }

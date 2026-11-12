@@ -95,6 +95,7 @@ public final class CommandAPI: @unchecked Sendable {
         case .spotRemove(let id): return spots.remove(id)
         case .spotOpen(let id): return spots.open(id)
         case .spotReview(let id): return spots.review(id)
+        case .spotStore: return spots.store()
         case .spotNew(let name, let starter): return spots.new(name, from: starter)
         case .spotLog(let id): return spots.log(id)
         case .spotStats(let days, let spot, let format): return spots.stats(days: days, spot: spot, format: format)

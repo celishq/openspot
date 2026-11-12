@@ -70,7 +70,8 @@ targets:
           - UTTypeIdentifier: dev.openspot.spot
             UTTypeDescription: Openspot spot
             UTTypeConformsTo:
-              - public.json
+              - public.data
+              - com.apple.package
             UTTypeTagSpecification:
               public.filename-extension:
                 - spot

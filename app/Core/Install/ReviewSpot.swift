@@ -26,9 +26,9 @@ public struct ReviewSpot: Equatable, Sendable {
     private var source: URL?
     private var lock: SpotLock?
 
-    /// Reads a spot for a plugins folder. Throws a fault when it gives no spot or cannot go into that folder. With `canAdd`
-    /// false it only shows the text.
-    public init(spot: SharedSpot, folder: URL, canAdd: Bool = true) throws {
+    /// Reads a spot for a plugins folder, with the readme and the preview of its listing first. Throws a fault when it gives
+    /// no spot or cannot go into that folder. With `canAdd` false it only shows the text.
+    public init(spot: SharedSpot, folder: URL, canAdd: Bool = true, readme: String? = nil, preview: String? = nil) throws {
         if let clash = spot.clash(in: folder) { throw SpotError.fault(clash) }
         let scan = try Self.scan(of: spot)
         let spots = scan.files.flatMap(\.spots)
@@ -49,6 +49,7 @@ public struct ReviewSpot: Equatable, Sendable {
         let installed = Set(present.flatMap { (try? SpotUse.set(SpotHeader(url: folder.appendingPathComponent($0)).block.value("uses"), of: $0)) ?? [] })
         let grown = spot.replaced(in: folder).isEmpty ? [] : uses.filter { !installed.contains($0) }
         let canAlso = Self.canAlso(spot, uses: Set(uses), id: primary.id)
+        let rows = preview.map { SpotOutput(text: $0).items.map(\.title) } ?? []
         canDo = canAlso.map { "Can also: \($0)" } + runs.map { "Runs by itself: \($0)" }
         trust = [
             Self.section("Uses", uses.isEmpty ? [] : [uses.map(\.rawValue).joined(separator: ", ")]),
@@ -57,6 +58,8 @@ public struct ReviewSpot: Equatable, Sendable {
         ].compactMap { $0 }.joined()
         text = [
             grown.isEmpty ? "\(primary.name)\n\n" : "\(primary.name)\nThis version adds: \(grown.map(\.rawValue).joined(separator: ", "))\n\n",
+            readme.map { "\($0)\n\n" },
+            Self.section("Preview", rows),
             programs.isEmpty ? nil : Self.section(
                 "Program that Openspot cannot show",
                 programs + ["It can do all that you can. Add it only if you trust the sender."]
@@ -70,9 +73,15 @@ public struct ReviewSpot: Equatable, Sendable {
         ].compactMap { $0 }.joined() + spot.files.map(Self.shown).joined(separator: "\n")
     }
 
-    /// Reads a `.spot` file for a plugins folder, which its Add puts in that folder and records in the lock (N1).
+    /// Reads what a package, a zip of one or a `.spot` file holds, with its listing.
+    public init(contents: SpotPackage.Contents, folder: URL) throws {
+        try self.init(spot: contents.installed(), folder: folder, readme: contents.readme, preview: contents.preview)
+    }
+
+    /// Reads a package, a zip of one or a `.spot` file for a plugins folder, which its Add puts in that folder with the
+    /// readme and the preview of its listing, and records in the lock (N1).
     public init(file: URL, folder: URL, lock: SpotLock) throws {
-        try self.init(spot: SharedSpot(contentsOf: file), folder: folder)
+        try self.init(contents: SpotPackage.open(at: file), folder: folder)
         source = file
         self.lock = lock
     }
@@ -121,6 +130,12 @@ public struct ReviewSpot: Equatable, Sendable {
             .init(key: "readonly", value: "true"),
             .init(key: "value", value: text)
         ])
+    }
+
+    /// The path of the file of the spot's first script, which its listing lies beside, or nil when it holds no spot.
+    static func primaryPath(of spot: SharedSpot) throws -> String? {
+        let spots = try scan(of: spot).files.flatMap(\.spots)
+        return spot.files.first { file in spots.contains { $0.url.path.hasSuffix("/\(file.path)") } }?.path
     }
 
     /// Reads the spot as a scan would, from a folder that holds only its files.
