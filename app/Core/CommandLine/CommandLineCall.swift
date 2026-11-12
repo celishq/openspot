@@ -279,13 +279,13 @@ public enum CommandLineCall: Equatable, Sendable {
             guard let starter = SpotStarter(rawValue: rest[3]) else { self = .unknown(arguments.joined(separator: " ")); return }
             self = .spotNew(name: rest[1], starter: starter)
         case ("spot", "run") where rest.count >= 2: self = .spotRun(id: rest[1], arguments: Array(rest.dropFirst(2)))
-        case ("spot", "show") where rest.count == 2: self = .spotShow(rest[1])
+        case ("spot", "show") where rest.count == 2: self = Self.changing(.spotShow(rest[1]), "openspot spot show", "opens the panel", environment)
         case ("spot", "log") where rest.count == 2: self = .spotLog(rest[1])
         case ("spot", "stats"): self = Self.stats(Array(rest.dropFirst())) ?? .unknown(arguments.joined(separator: " "))
         case ("spot", "list") where Self.flags(rest.dropFirst(), within: ["--core", "--frame"]):
             self = .spotList(core: rest.contains("--core"), frame: rest.contains("--frame"))
         case ("spot", "on") where rest.count > 1, ("spot", "off") where rest.count > 1:
-            self = .spotTurn(ids: Array(rest.dropFirst()), on: rest[0] == "on")
+            self = Self.changing(.spotTurn(ids: Array(rest.dropFirst()), on: rest[0] == "on"), "openspot setting set enabled", "turns a spot on or off", environment)
         case ("spot", "add") where rest.dropFirst().filter({ $0 != "--yes" }).count <= 1 && rest.filter({ $0 == "--yes" }).count <= 1:
             self = Self.changing(.spotAdd(rest.dropFirst().first { $0 != "--yes" }, isConfirmed: rest.contains("--yes")), "openspot spot add", "changes your plugins folder", environment)
         case ("spot", "remove") where rest.count == 2: self = Self.changing(.spotRemove(rest[1]), "openspot spot remove", "changes your plugins folder", environment)
@@ -299,7 +299,9 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("spot", "review") where rest.count == 2: self = Self.changing(.spotReview(rest[1]), "openspot spot review", "opens the panel", environment)
         case ("spot", "store") where rest.count == 1: self = Self.changing(.spotStore, "openspot spot store", "opens the panel", environment)
         case ("prompt", "new") where rest.count > 1: self = .promptNew(rest.dropFirst().joined(separator: " "))
-        case ("key", "set"): self = Self.key(Array(rest.dropFirst())) ?? .unknown(arguments.joined(separator: " "))
+        case ("key", "set"):
+            self = Self.key(Array(rest.dropFirst())).map { Self.changing($0, "openspot setting set \(Self.keyName(Array(rest.dropFirst())))", "sets a key of your Mac", environment) }
+                ?? .unknown(arguments.joined(separator: " "))
         case ("app", "status") where Self.flags(rest.dropFirst(), within: ["--frame"]): self = .appStatus(frame: rest.contains("--frame"))
         case ("batch", nil): self = .batch
         case ("app", "login") where rest == ["login", "on"] || rest == ["login", "off"]:
@@ -312,7 +314,7 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("update", "check") where rest.count == 1: self = Self.changing(.updateCheck, "openspot update check", "opens a window", environment)
         case ("update", "install") where rest.count == 1: self = Self.changing(.updateInstall, "openspot update install", "restarts Openspot", environment)
         case ("menubar", "on") where rest.count == 2, ("menubar", "off") where rest.count == 2:
-            self = .menuBar(id: rest[1], isShown: rest[0] == "on")
+            self = Self.changing(.menuBar(id: rest[1], isShown: rest[0] == "on"), "openspot setting set menubar", "changes the menu bar", environment)
         case ("render", "--spot") where rest.count == 3: self = .renderSpot(id: rest[1], size: nil, path: rest[2])
         case ("render", "--spot") where rest.count == 5 && rest[2] == "--card":
             guard let size = SpotSize(name: rest[3]) else { self = .unknown(arguments.joined(separator: " ")); return }
@@ -336,8 +338,8 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("folder", "pick") where rest.count == 1: self = Self.waiting(.folderPick, "openspot folder pick", environment)
         case ("setting", "get"), ("setting", "set"):
             self = Self.setting(Array(rest.dropFirst()), sets: rest.first == "set", environment) ?? .unknown(arguments.joined(separator: " "))
-        case ("clipboard", "copy") where rest.count <= 2: self = .clipboardCopy(rest.dropFirst().first)
-        case ("clipboard", "paste") where rest.count == 1: self = .clipboardPaste
+        case ("clipboard", "copy") where rest.count <= 2: self = Self.changing(.clipboardCopy(rest.dropFirst().first), "openspot clipboard copy", "changes the clipboard", environment)
+        case ("clipboard", "paste") where rest.count == 1: self = Self.changing(.clipboardPaste, "openspot clipboard paste", "types in the front app", environment)
         case ("clipboard", "read") where rest.count == 1: self = .clipboardRead
         case ("event", "emit") where rest.count == 2 || rest.count == 3:
             if !SpotEvent.isName(rest[1]) {
@@ -370,7 +372,7 @@ public enum CommandLineCall: Equatable, Sendable {
                 self = .unknown(arguments.joined(separator: " "))
                 return
             }
-            self = .windowMove(move)
+            self = Self.changing(.windowMove(move), "openspot window move", "moves a window", environment)
         case ("calendar", "events"):
             self = Self.listing(Array(rest.dropFirst())).map { .calendarEvents(days: $0.days, hidden: $0.hidden) }
                 ?? .unknown(arguments.joined(separator: " "))
@@ -417,6 +419,15 @@ public enum CommandLineCall: Equatable, Sendable {
         return call
     }
 
+    /// The setting that a `key set` call stands for, such as `key.go`, `float` or `--spot openspot panel-key`.
+    private static func keyName(_ words: [String]) -> String {
+        switch words.first {
+        case "--panel": "--spot \(ReservedSetting.app) panel-key"
+        case "--fix": "--spot \(ReservedSetting.app) fix-key"
+        default: words.dropFirst().first == "--float" ? "float" : "key.\(words.dropFirst().first ?? "")"
+        }
+    }
+
     /// Reads `[--dry-run] <words>...` into the call that it makes, or returns nil with no words.
     private static func adding(_ words: [String], _ environment: [String: String], _ call: (String, Bool) -> CommandLineCall) -> CommandLineCall? {
         let isDry = words.first == "--dry-run"
@@ -425,8 +436,9 @@ public enum CommandLineCall: Equatable, Sendable {
         return call(rest.joined(separator: " "), isDry)
     }
 
-    /// The call of a command that changes the person's data or opens an app, or its refusal in a read, so that nothing changes
-    /// or opens by surprise. A dry run changes nothing, so it runs in a read (E9).
+    /// The call of a command that changes the person's data, the Mac or the places of the app, or opens a window or the panel,
+    /// or its refusal in a read, so that nothing changes or opens by surprise. A dry run changes nothing, so it runs in a read
+    /// (protocol: The openspot command).
     private static func changing(_ call: CommandLineCall, _ name: String, _ act: String, _ environment: [String: String]) -> CommandLineCall {
         if case .calendarAdd(_, true) = call { return call }
         if case .remindersAdd(_, true) = call { return call }

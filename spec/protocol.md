@@ -723,8 +723,16 @@ A spot asks the Mac and the app through one command, which works the same in a t
 - A capability that cannot answer prints `status=<word>`. One that keeps state keeps it in its own helper.
 - When macOS already has a command, such as `open`, use it. For the screen and the clipboard, use `openspot screen` and
   `openspot clipboard`, so that the person sees each use.
-- A command that waits for the person, such as `openspot color pick` or `openspot folder pick`, fails in a read.
-- A call that changes the Mac, ends the app or opens the panel fails in a read.
+- These calls fail in a read, so that a read changes nothing and opens nothing:
+  - a call that waits for the person: `color pick` and `folder pick`;
+  - a call that captures the screen: `screen shot` and `screen record start` and `stop`;
+  - a call that changes the Mac or the person's data: `window move`, `clipboard copy`, `clipboard paste`, `calendar add`,
+    `reminders add` and `done`, and `spot add` and `remove`;
+  - a call that changes the app or its places: `app quit`, `update install`, and `setting set` of a key that Openspot
+    keeps for the person (see Settings);
+  - a call that opens a window or the panel: `spot show`, `spot open`, `spot review`, `spot store`, `setting change`,
+    `update check`, `calendar show` and `reminders show`.
+- `calendar add --dry-run` and `reminders add --dry-run` change nothing, so they run in a read.
 - `openspot batch` runs one call per line of stdin and prints `---` after each. It stops at the first failure.
 - `--frame` makes `app status`, `spot list` and `setting list` print blocks in place of JSON.
 

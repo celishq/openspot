@@ -175,6 +175,29 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertTrue(CommandLineCall.usage.contains("openspot screen shot"))
     }
 
+    func testACallThatChangesTheMacOrThePlacesOfTheAppIsRefusedInARead() {
+        let read = ["OPENSPOT_REASON": "panel.open", "OPENSPOT_ID": "tools"]
+        let refusals = [
+            (["window", "move", "0 0 1 1"], "`openspot window move` moves a window"),
+            (["clipboard", "copy", "hi"], "`openspot clipboard copy` changes the clipboard"),
+            (["clipboard", "paste"], "`openspot clipboard paste` types in the front app"),
+            (["spot", "show", "notes"], "`openspot spot show` opens the panel"),
+            (["setting", "set", "key.go", "ctrl+k"], "`openspot setting set key.go` sets a key of your Mac"),
+            (["setting", "set", "float", "shake"], "`openspot setting set float` sets a key of your Mac"),
+            (["setting", "set", "--spot", "openspot", "panel-key", "ctrl+space"], "`openspot setting set --spot openspot panel-key` sets a key of your Mac"),
+            (["setting", "set", "--spot", "openspot", "fix-key", "ctrl+f"], "`openspot setting set --spot openspot fix-key` sets a key of your Mac"),
+            (["setting", "set", "menubar", "true"], "`openspot setting set menubar` changes the menu bar"),
+            (["setting", "set", "enabled", "false"], "`openspot setting set enabled` turns a spot on or off"),
+        ]
+        for (arguments, act) in refusals {
+            XCTAssertEqual(CommandLineCall(arguments: arguments, environment: read), .refused("\(act), so it cannot run in a read. Run it from a pick or an action."), arguments.joined(separator: " "))
+            XCTAssertNotEqual(CommandLineCall(arguments: arguments, environment: ["OPENSPOT_ID": "tools"]), .refused("\(act), so it cannot run in a read. Run it from a pick or an action."))
+        }
+        XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "read"], environment: read), .clipboardRead)
+        XCTAssertEqual(CommandLineCall(arguments: ["window", "frame"], environment: read), .windowFrame)
+        XCTAssertEqual(CommandLineCall(arguments: ["setting", "set", "folder", "/tmp"], environment: read), .settingSet(spot: "tools", key: "folder", value: "/tmp"))
+    }
+
     func testAScreenCaptureIsRefusedInAReadAndTheSourcesAreNot() {
         let read = ["OPENSPOT_REASON": "panel"]
 
