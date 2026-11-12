@@ -16,7 +16,7 @@ openspot clipboard copy "$file" && echo "toast=Copied the picture."
 
 | Command                                                                                | Does                                                                   |
 | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `openspot screen sources`                                                              | Prints each display, window, microphone and camera as a row (01).      |
+| `openspot screen sources`                                                              | Prints each display, window, microphone and camera as a row.      |
 | `openspot screen shot [source] [--cursor] [file]`                                      | Takes a picture, and prints its path.                                  |
 | `openspot screen record start [source] [input]... [--cursor] [--events <file>] [file]` | Starts a recording, and prints nothing.                                |
 | `openspot screen record stop`                                                          | Ends the recording, and prints the path of each file, the video first. |

@@ -1,6 +1,6 @@
 import Foundation
 
-/// How a run reaches its script: a process for each call (01), or one process that stays (05). A link starts and ends the
+/// How a run reaches its script: a process for each call, or one process that stays. A link starts and ends the
 /// processes, sends each call, says which frame answers what, and gives each frame and each end to its run. The run keeps
 /// all that the spot shows.
 @MainActor

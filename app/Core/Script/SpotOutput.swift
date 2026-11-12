@@ -2,7 +2,7 @@ import Foundation
 
 /// One frame of what a script prints, sorted by the first key of each block: `row` or a kind of part. The one other block is
 /// the head, which says how the spot itself looks and holds the effects `toast`, `link`, `select`, `progress` and `end`. A
-/// frame with a block is the whole picture, and a frame of only a head carries effects (01). A button that the drawing does
+/// frame with a block is the whole picture, and a frame of only a head carries effects. A button that the drawing does
 /// not place is an action (U6). Each `run` value appears once.
 public struct SpotOutput: Equatable, Sendable {
     public private(set) var summary: TextBlock?
@@ -41,7 +41,7 @@ public struct SpotOutput: Equatable, Sendable {
     private var checkedFaults: [String] = []
     /// The row that a `select` effect selects when the call ends, such as the row that a drop added (D8).
     public private(set) var select: String?
-    /// Whether it holds a block, so that it is the whole picture of the spot (01).
+    /// Whether it holds a block, so that it is the whole picture of the spot.
     public let isPicture: Bool
 
     private static let reserved = "read"

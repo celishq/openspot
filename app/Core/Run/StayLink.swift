@@ -1,6 +1,6 @@
 import Foundation
 
-/// The link to a script that stays (05): one process that takes each call as a block on stdin and prints frames at any
+/// The link to a script that stays: one process that takes each call as a block on stdin and prints frames at any
 /// time. A frame with a block is the whole picture, and the frame that ends the read or the search that runs is its answer
 /// (Y7). The frames after `call=<n>` are the output of that call, as the frames of a once script are (Y8). It runs while
 /// something wants it (Y3), and after 3 failures in one minute it starts again only when its file changes (Y5). A read or a

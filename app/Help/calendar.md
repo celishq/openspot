@@ -15,7 +15,7 @@ esac
 ```
 
 `openspot calendar` reads and adds the events of the person, and `openspot reminders` reads, adds and ticks their
-reminders. Each list prints rows (01), and the id of each row goes to each other verb as it is (E1).
+reminders. Each list prints rows, and the id of each row goes to each other verb as it is (E1).
 
 | Command                                                  | Does                                                                                    |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------- |
@@ -48,8 +48,8 @@ location=Room 4
 meeting=https://meet.google.com/abc-defg-hij
 ```
 
-A row has the keys of 01: `title`, a `detail` in the language of the Mac that says when and where, an `icon`,
-`value=true` for an event that is on now, and `tone=bad` for a late reminder. Its other keys hold the data, so a view (03) can draw them (E2):
+A row has the keys of a row: `title`, a `detail` in the language of the Mac that says when and where, an `icon`,
+`value=true` for an event that is on now, and `tone=bad` for a late reminder. Its other keys hold the data, so a view can draw them (E2):
 
 | Key        | Holds                                                                                       |
 | ---------- | ------------------------------------------------------------------------------------------- |
@@ -105,7 +105,7 @@ A verb never prints an empty list in place of a list that it cannot read.
 
 | Decision                                                                                       | Rejected                                                 |
 | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| A list prints rows of 01, and the id of a row goes to each other verb as it is.                | JSON, or a lookup by title.                              |
+| A list prints rows, and the id of a row goes to each other verb as it is.                | JSON, or a lookup by title.                              |
 | Two nouns, which are the names of the two apps of macOS.                                       | One `agenda` noun.                                       |
 | `add` finds the date in the words, as Calendar's quick event does.                             | A flag for each part of a date.                          |
 | A read never asks for leave, and prints `status=unasked`.                                      | A prompt at the first read, or at the start of the app.  |

@@ -166,7 +166,7 @@ extension SpotRun {
         return true
     }
 
-    /// Takes a frame of only a head: its effects act, and the picture stays (01).
+    /// Takes a frame of only a head: its effects act, and the picture stays.
     func takeEffects(_ lines: SpotOutput, frame: String) {
         report(toastOf: lines)
         onReport(.frame(frame))
