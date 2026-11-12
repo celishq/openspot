@@ -277,7 +277,8 @@ head show on the spot only while the call runs. Openspot reads the codes `ESC ] 
   group gets the terminate signal, and then the kill signal. Quitting Openspot stops each call.
 - A call ends when its output closes. A stopped call changes nothing.
 - Exit 0 is success. Any other code is a failure, and the last line on stderr shows to the person. A failure can print
-  `link=<url>`, the place that fixes it (R9).
+  `link=<url>`, the place that fixes it (R9). A failed read at the opening of the panel, which the person did not ask for,
+  only marks its card and goes to the app log at info (R13).
 - A stop can come at any time, and two calls can run at once, so a script never leaves a file half written.
 
 ## Blocks

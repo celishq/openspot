@@ -34,7 +34,7 @@ extension SpotRun {
             limit: action == read ? runs.readLimit : nil,
             reason: reason,
             variables: action == read ? reason.variables : [:],
-            purpose: .ask(.read(generation: panel?.generation, reports: need != .clock, query: query))
+            purpose: .ask(.read(generation: panel?.generation, reports: need != .clock, query: query, tells: reason != .panel))
         ))
         if isSent { list.beginLoading() }
     }

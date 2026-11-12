@@ -74,14 +74,14 @@ final class StayLink: ScriptLink {
     /// wants does not start the script, and a script that does not run gets the read as it starts.
     func send(_ call: SpotRun.Call) -> Bool {
         switch call.purpose {
-        case .ask(.read(let generation, let reports, _)):
+        case .ask(.read(let generation, let reports, _, let tells)):
             guard run?.isWanted == true else { return false }
             guard let script else {
                 start(reason: call.reason)
                 return self.script != nil
             }
             let id = next()
-            ask(.read(generation: generation, reports: reports), id: id, reason: call.variables["OPENSPOT_REASON"])
+            ask(.read(generation: generation, reports: reports, tells: tells), id: id, reason: call.variables["OPENSPOT_REASON"])
             script.send(.read, input: call.input, variables: call.variables, id: id)
         case .ask(.search(let query)):
             stop { if case .search = $0 { true } else { false } }
