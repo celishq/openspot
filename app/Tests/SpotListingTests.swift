@@ -31,6 +31,20 @@ final class SpotListingTests: XCTestCase {
         XCTAssertEqual(listing.preview.map(\.title), ["5 minutes", "10 minutes"])
     }
 
+    func testALinkedSpotFolderKeepsItsReadme() throws {
+        let real = folder.deletingLastPathComponent().appendingPathComponent("linked-\(UUID().uuidString)")
+        try "#!/bin/sh\n# title=Timer\n".writeScript(to: real.appendingPathComponent("timer.sh"))
+        try "Counts down.".write(to: real.appendingPathComponent("readme.md"), atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: real) }
+        let spots = folder.appendingPathComponent("linked")
+        try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(at: spots.appendingPathComponent("timer.spot"), withDestinationURL: real)
+        let scan = try SpotsFolder(url: spots).scan()
+        let timer = try XCTUnwrap(scan.spots.first, "\(scan.refused) \((try? FileManager.default.contentsOfDirectory(atPath: spots.appendingPathComponent("timer.spot").path)) ?? [])")
+
+        XCTAssertEqual(SpotListing(beside: timer).readme, "Counts down.")
+    }
+
     func testASpotWithNoFilesBesideItHasOnlyItsDescription() throws {
         let listing = SpotListing(beside: try spot("# detail=Counts down"))
 

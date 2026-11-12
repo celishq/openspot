@@ -41,6 +41,16 @@ final class SpotIDTests: XCTestCase {
         XCTAssertFalse(SpotID("home").isSameFolder(as: SpotID("homes")))
     }
 
+    func testAFolderOfTheSameNameIsNoScriptThatAWidgetPlaces() throws {
+        try FileManager.default.createDirectory(at: folder.appendingPathComponent("dash.spot/cpu"), withIntermediateDirectories: true)
+        try "#!/bin/sh\n# on=clock.5\n".writeScript(to: folder.appendingPathComponent("cpu.spot/cpu.sh"))
+        try "#!/bin/sh\n# title=Dash\n# grid.strip=cpu cpu\n".writeScript(to: folder.appendingPathComponent("dash.spot/dash.sh"))
+
+        let dash = try XCTUnwrap(try SpotsFolder(url: folder).scan().spots.first { $0.id == "dash" })
+
+        XCTAssertEqual(dash.places, ["cpu"])
+    }
+
     func testAWidgetPlacesAScriptOfItsOwnSpotFolderByItsName() throws {
         try "#!/bin/sh\n# on=clock.5\n".writeScript(to: folder.appendingPathComponent("board.spot/cpu.sh"))
         try "#!/bin/sh\n# title=Desk\n# grid.strip=cpu cpu\n".writeScript(to: folder.appendingPathComponent("board.spot/board.sh"))

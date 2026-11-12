@@ -100,7 +100,7 @@ extension SpotsModel {
     /// Whether the store's copy of each spot of the spots folder holds its files as they are now.
     nonisolated static func publications(of scan: ScanResult, in folder: SpotsFolder, store: URL) -> [String: SpotDock.Publication] {
         var result: [String: SpotDock.Publication] = [:]
-        for spot in scan.spots {
+        for spot in scan.spots where FileManager.default.fileExists(atPath: store.appendingPathComponent(SpotID(file: spot.url).folderName).path) {
             guard let shared = try? SpotFolder(sharing: spot, from: scan) else { continue }
             result[spot.id] = publication(of: shared, in: store)
         }

@@ -364,6 +364,17 @@ final class SpotAddTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: spots.appendingPathComponent("cups.spot/cups.sh"), encoding: .utf8), "#!/bin/sh\n")
     }
 
+    func testAFolderThatCannotTravelIsStillAddedWithItsHash() async throws {
+        let folder = root.appendingPathComponent("sources/odd")
+        try "#!/bin/sh\n".writeScript(to: folder.appendingPathComponent("odd.sh"))
+        try "safe\u{202E}evil".write(to: folder.appendingPathComponent("notes.txt"), atomically: true, encoding: .utf8)
+
+        let answer = try await answer(["spot", "add", "sources/odd", "--yes"])
+
+        XCTAssertEqual(answer.code, 0, answer.errors)
+        XCTAssertNotNil(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries().first?.hash)
+    }
+
     func testALockOfAnOlderOpenspotReadsEachPathInItsSpotFolder() throws {
         let lock = SpotLock(url: root.appendingPathComponent("spots.lock"))
         try Data(#"[{"source":"/a","paths":["coffee","notes.sh","notes.md","notes.preview.txt","tools/x.sh","tea.spot/tea.sh"]}]"#.utf8).write(to: lock.url)

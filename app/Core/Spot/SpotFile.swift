@@ -262,7 +262,8 @@ public struct SpotFile: Equatable, Sendable {
     private static func tool(_ name: String, beside url: URL, id: String) -> String {
         guard !name.contains("/") else { return name }
         let files = (try? FileManager.default.contentsOfDirectory(at: url.deletingLastPathComponent(), includingPropertiesForKeys: nil)) ?? []
-        let own = files.first { $0.deletingPathExtension().lastPathComponent == name && $0.lastPathComponent != url.lastPathComponent && runs($0) }
+        let own = files.first { $0.deletingPathExtension().lastPathComponent == name && $0.lastPathComponent != url.lastPathComponent
+            && (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) != true && runs($0) }
         return own.map { SpotID(file: $0).description } ?? name
     }
 }

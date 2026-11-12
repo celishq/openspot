@@ -341,8 +341,10 @@ public struct SpotsFolder: Sendable {
         ]
     }
 
+    /// The entries of a folder that are not hidden, in name order, by their paths under the folder as given, also when it
+    /// is a link to a folder.
     private static func sorted(in folder: URL) throws -> [URL] {
-        try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
-            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+        try FileManager.default.contentsOfDirectory(atPath: folder.path).filter { !$0.hasPrefix(".") }.sorted()
+            .map { folder.appendingPathComponent($0) }
     }
 }

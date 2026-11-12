@@ -22,6 +22,26 @@ public struct SpotManifest: Hashable, Sendable {
         self.init(files.map { File(path: $0.path, sha256: Data(CryptoKit.SHA256.hash(data: $0.contents)).hex, size: $0.contents.count, isExecutable: $0.isExecutable) })
     }
 
+    /// The manifest of each file under these paths in a folder, read as they are, with none of the checks of a spot that
+    /// travels. Hidden files are left out.
+    public init(walking paths: [String], in folder: URL) throws {
+        var files: [File] = []
+        for path in paths {
+            let top = folder.appendingPathComponent(path)
+            let inner = FileManager.default.enumerator(atPath: top.path).map { $0.compactMap { $0 as? String } } ?? []
+            for relative in [""] + inner {
+                let url = relative.isEmpty ? top : top.appendingPathComponent(relative)
+                let name = relative.isEmpty ? path : "\(path)/\(relative)"
+                var isFolder: ObjCBool = false
+                guard !name.split(separator: "/").contains(where: { $0.hasPrefix(".") }),
+                      FileManager.default.fileExists(atPath: url.path, isDirectory: &isFolder), !isFolder.boolValue else { continue }
+                let data = try Data(contentsOf: url)
+                files.append(File(path: name, sha256: Data(CryptoKit.SHA256.hash(data: data)).hex, size: data.count, isExecutable: FileManager.default.isExecutableFile(atPath: url.path)))
+            }
+        }
+        self.init(files)
+    }
+
     /// The files in path order.
     public var sorted: [File] {
         files.sorted { $0.path < $1.path }

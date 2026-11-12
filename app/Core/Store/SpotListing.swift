@@ -33,17 +33,21 @@ public struct SpotListing: Equatable, Sendable {
         self.release = release
     }
 
-    /// The listing that the files of this spot's folder give.
+    /// The listing that the files of this spot's folder give. It reads the readme and the preview alone, and the whole
+    /// folder only when it has a release log to compare.
     public init(beside spot: Spot) {
-        let folder = try? SpotFolder(contentsOf: spot.url.deletingLastPathComponent())
-        let preview = folder?.preview.map { SpotOutput(text: $0).items } ?? []
-        self.init(description: spot.subtitle, readme: folder?.readme, preview: preview, release: folder.flatMap(Self.release(of:)))
+        let readme = try? String(contentsOf: Self.readme(of: spot.url), encoding: .utf8)
+        let preview = (try? String(contentsOf: Self.preview(of: spot.url), encoding: .utf8)).map { SpotOutput(text: $0).items } ?? []
+        self.init(description: spot.subtitle, readme: readme?.trimmingCharacters(in: .whitespacesAndNewlines), preview: preview, release: Self.release(of: spot.url))
     }
 
-    /// The last release of a spot folder, and whether its files are still the ones it names.
-    private static func release(of folder: SpotFolder) -> Release? {
-        guard let root = folder.roots.first, let log = folder.releases, let version = log.last?.version else { return nil }
-        return Release(version: version, isCurrent: log.names(folder.manifest(of: root), built: false))
+    /// The last release of the spot folder of a file, and whether its files are still the ones it names.
+    private static func release(of file: URL) -> Release? {
+        let folder = file.deletingLastPathComponent()
+        guard let log = ReleaseLog(installed: folder.lastPathComponent, in: folder.deletingLastPathComponent()), let version = log.last?.version,
+              let manifest = try? SpotManifest(walking: [folder.lastPathComponent], in: folder.deletingLastPathComponent()) else { return nil }
+        let released = SpotManifest(Array(manifest.files).filter { $0.path != "\(folder.lastPathComponent)/\(ReleaseLog.fileName)" })
+        return Release(version: version, isCurrent: log.names(released, built: false))
     }
 
     public static func readme(of file: URL) -> URL {
