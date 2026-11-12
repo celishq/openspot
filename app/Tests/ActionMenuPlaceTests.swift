@@ -75,4 +75,16 @@ final class ActionMenuPlaceTests: XCTestCase {
         XCTAssertEqual(ActionMenuPlace(item: card(column: 2, columns: 2), height: height, bounds: bounds).corner, CGPoint(x: 1, y: 0))
         XCTAssertEqual(ActionMenuPlace(item: row, height: height, bounds: bounds).corner, CGPoint(x: 0, y: 1))
     }
+
+    func testTheMenuOfACentredItemKeepsToItsLeftEdgeAtAnyScale() {
+        for item in [card(column: 0, columns: 4), card(column: 1, columns: 2)] {
+            for shift in [-0.000001, 0.000001] {
+                let scaled = item.insetBy(dx: -item.width * 0.02, dy: -1).offsetBy(dx: shift, dy: 0)
+
+                XCTAssertEqual(place(scaled).minX, scaled.minX)
+                XCTAssertEqual(ActionMenuPlace(item: scaled, height: height, bounds: bounds).corner.x, 0)
+            }
+            XCTAssertEqual(place(item).minX, item.minX)
+        }
+    }
 }

@@ -5,6 +5,8 @@ import Foundation
 public struct ActionMenuPlace: Equatable, Sendable {
     public static let width = SpotTokens.width(columns: 3)
     public static let gap = SpotTokens.placeGap
+    /// How far right of the middle an item may lie and still count as on the left, so that a centred item keeps one side.
+    private static let tie: CGFloat = 1
 
     public let rect: CGRect
     /// Whether the menu starts higher than its item, so that its bottom stays still as a search takes rows away.
@@ -13,7 +15,7 @@ public struct ActionMenuPlace: Equatable, Sendable {
     public let corner: CGPoint
 
     public init(item: CGRect, height: CGFloat, bounds: CGRect) {
-        let isOnLeft = item.minX - bounds.minX <= bounds.maxX - item.maxX
+        let isOnLeft = item.midX <= bounds.midX + Self.tie
         var origin: CGPoint
         if item.width <= SpotTokens.cell {
             origin = CGPoint(x: isOnLeft ? item.maxX + Self.gap : item.minX - Self.gap - Self.width, y: item.minY)
@@ -27,7 +29,7 @@ public struct ActionMenuPlace: Equatable, Sendable {
         origin.y = max(min(origin.y, bounds.maxY - height), bounds.minY)
         rect = CGRect(origin: origin, size: CGSize(width: Self.width, height: height))
         growsUp = origin.y < item.minY
-        corner = CGPoint(x: origin.x >= item.maxX || origin.x == item.minX ? 0 : 1, y: growsUp ? 1 : 0)
+        corner = CGPoint(x: isOnLeft ? 0 : 1, y: growsUp ? 1 : 0)
     }
 
     /// The menu at the smaller height that a search leaves, with its still edge in place.
