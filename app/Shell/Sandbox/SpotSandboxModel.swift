@@ -112,6 +112,12 @@ final class SpotSandboxModel {
         sheet?.set(part, to: value)
     }
 
+    /// Picks a row of the sheet or of the main search, which sends `open` with its id.
+    func pick(_ item: SpotItem) {
+        sandbox.record("open \(item.run)")
+        sheet?.pick(item)
+    }
+
     func press(_ part: SpotPart) {
         sandbox.press(part.id)
         sheet?.press(part)

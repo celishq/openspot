@@ -18,11 +18,13 @@ final class SpotSandbox: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let view = NSHostingView(rootView: SpotSandboxView(model: model))
         window = NSWindow(
             contentRect: NSRect(origin: .zero, size: view.fittingSize),
-            styleMask: [.titled, .closable, .miniaturizable],
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
         window.title = "Openspot playground"
+        window.isOpaque = false
+        window.backgroundColor = .clear
         window.contentView = view
         window.isReleasedWhenClosed = false
         window.center()
