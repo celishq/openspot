@@ -123,6 +123,17 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertFalse(model.menuIsGrown)
     }
 
+    func testPointingAtAMenuRowSelectsIt() throws {
+        try script("weather", header: "title=Weather")
+        _ = try select("weather")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+
+        model.pointMenu(row: 2)
+
+        XCTAssertEqual(model.menu?.selected, 2)
+        XCTAssertNotNil(model.menu)
+    }
+
     func testEditOpensTheFileInTheTextEditor() async throws {
         try script("weather")
         _ = try select("weather")

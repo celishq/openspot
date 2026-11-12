@@ -215,6 +215,12 @@ extension SpotsModel {
         return true
     }
 
+    /// Selects the row of the open menu that the pointer moved onto.
+    public func pointMenu(row: Int) {
+        guard let menu else { return }
+        self.menu?.move(by: row - menu.selected)
+    }
+
     public func searchMenu(_ text: String) {
         menu?.search(text)
     }

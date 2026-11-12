@@ -8,6 +8,8 @@ struct SpotRowsView: View {
     /// The words of the key that records.
     var recordingWords = "Press keys"
     let onRun: (SpotItem) -> Void
+    /// Takes the row that the pointer moves onto.
+    var onPoint: (SpotItem) -> Void = { _ in }
     /// Reads the selected row where it is called. Nil reads it from the list.
     var selection: (() -> Int)?
     /// Takes the rows whose files a drag took out to another app (O2).
@@ -116,6 +118,7 @@ struct SpotRowsView: View {
                     rowLabel(item)
                 }
                 .buttonStyle(.plain)
+                .modifier(SpotPointerMove { onPoint(item) })
                 .modifier(SpotFileDragSource(items: [item], onDrop: onDragOut))
             }
         }
@@ -130,6 +133,7 @@ struct SpotRowsView: View {
                 SpotGridCell(item: item, side: side)
                     .equatable()
                     .onTapGesture { onRun(item) }
+                    .modifier(SpotPointerMove { onPoint(item) })
                     .modifier(SpotFileDragSource(items: [item], onDrop: onDragOut))
             }
         }
@@ -176,6 +180,7 @@ struct SpotRowsView: View {
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
         .contentShape(row)
         .onTapGesture { onRun(item) }
+        .modifier(SpotPointerMove { onPoint(item) })
         .modifier(SpotFileDragSource(items: [item], onDrop: onDragOut))
         .accessibilityLabel(item.title)
         .accessibilityAddTraits(.isButton)

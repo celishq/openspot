@@ -8,6 +8,8 @@ struct SpotActionMenuView: View {
     var fieldIsLast = false
     var work: (ActionMenu.Row) -> ScriptCall? = { _ in nil }
     let onPress: (Int) -> Void
+    /// Takes the row that the pointer moves onto.
+    var onPoint: (Int) -> Void = { _ in }
     /// Takes the text of the field of a menu that searches its rows.
     var onSearch: (String) -> Void = { _ in }
     @FocusState private var isSearching: Bool
@@ -47,6 +49,7 @@ struct SpotActionMenuView: View {
                     .contentShape(shape)
                 }
                 .buttonStyle(.plain)
+                .modifier(SpotPointerMove { onPoint(index) })
             }
             if menu.isSearchable, fieldIsLast {
                 field
