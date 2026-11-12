@@ -66,4 +66,13 @@ final class ActionMenuPlaceTests: XCTestCase {
         XCTAssertEqual(high.rect(height: 80).minY, high.rect.minY)
         XCTAssertEqual(high.rect(height: 80).height, 80)
     }
+
+    func testTheMenuGrowsFromItsCornerNearestItsItem() {
+        let row = CGRect(x: 103, y: 600, width: 263, height: 40)
+
+        XCTAssertEqual(ActionMenuPlace(item: card(column: 0), height: height, bounds: bounds).corner, CGPoint(x: 0, y: 0))
+        XCTAssertEqual(ActionMenuPlace(item: card(column: 3), height: height, bounds: bounds).corner, CGPoint(x: 1, y: 0))
+        XCTAssertEqual(ActionMenuPlace(item: card(column: 2, columns: 2), height: height, bounds: bounds).corner, CGPoint(x: 1, y: 0))
+        XCTAssertEqual(ActionMenuPlace(item: row, height: height, bounds: bounds).corner, CGPoint(x: 0, y: 1))
+    }
 }

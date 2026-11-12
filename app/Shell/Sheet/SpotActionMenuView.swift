@@ -1,7 +1,7 @@
 import OpenspotCore
 import SwiftUI
 
-/// The actions of the selected row or card, each with its key.
+/// The actions of the selected row or card, each with its key. The panel draws its surface.
 struct SpotActionMenuView: View {
     let menu: ActionMenu
     /// Whether the field is the last line, as in a menu that grows up from its item, whose bottom stays still.
@@ -11,6 +11,8 @@ struct SpotActionMenuView: View {
     /// Takes the text of the field of a menu that searches its rows.
     var onSearch: (String) -> Void = { _ in }
     @FocusState private var isSearching: Bool
+
+    static let radius = SpotTokens.radius - SpotTokens.padding + SpotTokens.menuPadding
 
     private var shape: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
@@ -52,7 +54,6 @@ struct SpotActionMenuView: View {
         }
         .padding(SpotTokens.menuPadding)
         .frame(width: ActionMenuPlace.width)
-        .modifier(SpotGlass(radius: SpotTokens.radius - SpotTokens.padding + SpotTokens.menuPadding))
     }
 
     /// The field that searches the rows, at the edge of the menu that stays still while the rows change.

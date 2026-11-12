@@ -111,6 +111,18 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertEqual(model.menu?.selectedRow?.title, model.menu?.rows.first?.title)
     }
 
+    func testTheMenuOpensSmallAndGrowsOnTheNextTurn() async throws {
+        try script("weather", header: "title=Weather")
+        _ = try select("weather")
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+
+        XCTAssertFalse(model.menuIsGrown)
+        try await wait("the growth") { model.menuIsGrown }
+        model.closeMenu()
+        XCTAssertFalse(model.menuIsGrown)
+    }
+
     func testEditOpensTheFileInTheTextEditor() async throws {
         try script("weather")
         _ = try select("weather")

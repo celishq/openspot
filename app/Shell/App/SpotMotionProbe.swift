@@ -13,7 +13,7 @@ import ScreenCaptureKit
 /// `scripts/motion-perf.sh` starts it with `OPENSPOT_PROBE`. The panel stays almost clear, takes no focus and no clicks,
 /// unless `OPENSPOT_SEEN` asks for a picture. With `OPENSPOT_SHOTS`, a drag saves a picture of each state to that folder
 /// from a panel off every screen, `edit` saves Edit Spots with its dock from the panel at its place, and a card carried to
-/// the dock, and neither times anything. `menu` saves the actions menu at its card and row. `tile` pulls the corner of a spot of the dock, or with `OPENSPOT_ROW=grid` of a
+/// the dock, and neither times anything. `menu` opens and closes the actions menu, or saves it at its card and row. `tile` pulls the corner of a spot of the dock, or with `OPENSPOT_ROW=grid` of a
 /// card, with mouse events on each frame, and writes how often its size changed.
 @MainActor
 final class SpotMotionProbe: NSObject {
@@ -74,7 +74,7 @@ final class SpotMotionProbe: NSObject {
         if action == "search" { return beginSearch() }
         if action == "drag" || action == "mouse" { return beginDrag() }
         if action == "edit" { return beginEdit() }
-        if action == "menu", let shots { return shootMenus(into: shots) }
+        if action == "menu" { return beginMenus() }
         if action == "jump" { return beginJump() }
         if action == "tile" {
             model.beginEditing()
@@ -125,6 +125,24 @@ final class SpotMotionProbe: NSObject {
         self.link = link
         start = CACurrentMediaTime()
         edit(left: presses)
+    }
+
+    /// Opens and closes the actions menu of the first small card again and again, or with `OPENSPOT_SHOTS` saves pictures of it.
+    private func beginMenus() {
+        if let shots { return shootMenus(into: shots) }
+        guard let view = panel.contentView else { return finish(with: "no panel\n") }
+        let link = view.displayLink(target: self, selector: #selector(tick))
+        link.add(to: .main, forMode: .common)
+        self.link = link
+        model.selected = model.placements.first { $0.size == .small }?.index ?? 0
+        start = CACurrentMediaTime()
+        toggleMenu(left: presses)
+    }
+
+    private func toggleMenu(left: Int) {
+        guard left > 0 else { return end() }
+        _ = model.handleKey(ActionKey(name: "k", isCommand: true))
+        DispatchQueue.main.asyncAfter(deadline: .now() + pause * 3) { self.toggleMenu(left: left - 1) }
     }
 
     private func edit(left: Int) {

@@ -108,6 +108,8 @@ public final class SpotsModel {
     private var problems: [String] = []
     public var menu: ActionMenu?
     public var menuTarget: Target?
+    /// Whether the open menu has grown from its item to its full size. It opens small and grows on the next turn.
+    public internal(set) var menuIsGrown = false
     public var form: FormSession?
     /// The ask for a form that waits for its script. A newer ask, a cancel, a close or a hidden panel replaces it.
     @ObservationIgnored var formAsk: UUID?

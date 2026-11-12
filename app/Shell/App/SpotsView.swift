@@ -207,6 +207,13 @@ struct SpotsView: View {
         return CGRect(x: Self.menuMargin, y: top, width: SpotTokens.panelWidth - 2 * Self.menuMargin, height: bottom - top)
     }
 
+    /// The rect that the menu grows from: a small share of it at its corner nearest its item.
+    private static func start(of rect: CGRect, at corner: CGPoint) -> CGRect {
+        let share = SpotMotion.menuStartShare
+        let size = CGSize(width: rect.width * share, height: rect.height * share)
+        return CGRect(x: rect.minX + (rect.width - size.width) * corner.x, y: rect.minY + (rect.height - size.height) * corner.y, width: size.width, height: size.height)
+    }
+
     /// The open menu at the selected card or row. With no selected item it opens under the field.
     private func menuLayer(at item: SpotMenuAnchor.Item?) -> some View {
         GeometryReader { proxy in
@@ -215,9 +222,18 @@ struct SpotsView: View {
                 let rect = item.map { proxy[$0.bounds] } ?? SpotFieldView.rect
                 let place = ActionMenuPlace(item: rect, height: SpotTokens.menuHeight(rows: menu.fullLines), bounds: bounds)
                 let shown = place.rect(height: SpotTokens.menuHeight(rows: menu.lines))
-                SpotActionMenuView(menu: menu, fieldIsLast: place.growsUp, work: { model.work(of: $0) }, onPress: { model.pressMenu(row: $0) }, onSearch: { model.searchMenu($0) })
-                    .offset(x: shown.minX, y: shown.minY)
-                    .transition(.opacity)
+                let isGrown = model.menuIsGrown
+                let surface = isGrown ? shown : Self.start(of: shown, at: place.corner)
+                ZStack(alignment: .topLeading) {
+                    SpotSurface(rect: surface, radius: SpotActionMenuView.radius)
+                    SpotActionMenuView(menu: menu, fieldIsLast: place.growsUp, work: { model.work(of: $0) }, onPress: { model.pressMenu(row: $0) }, onSearch: { model.searchMenu($0) })
+                        .offset(x: shown.minX, y: shown.minY)
+                        .opacity(isGrown ? 1 : 0)
+                }
+                .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
+                .clipShape(SpotSurfaceShape(rect: surface, radius: SpotActionMenuView.radius))
+                .animation(SpotMotion.menuGrow, value: isGrown)
+                .transition(.opacity)
             }
         }
     }

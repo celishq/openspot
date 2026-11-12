@@ -230,6 +230,10 @@ extension SpotsModel {
     private func openMenu(on target: Target) {
         menu = actionMenu(on: target)
         menuTarget = target
+        menuIsGrown = false
+        DispatchQueue.main.async { [weak self] in
+            if self?.menu != nil { self?.menuIsGrown = true }
+        }
     }
 
     private func actionMenu(on target: Target) -> ActionMenu? {
@@ -283,6 +287,7 @@ extension SpotsModel {
     public func closeMenu() {
         menu = nil
         menuTarget = nil
+        menuIsGrown = false
     }
 
     public func pressMenu(row: Int) {
