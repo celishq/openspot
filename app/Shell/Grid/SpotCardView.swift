@@ -123,12 +123,29 @@ struct SpotCardView: View, @MainActor Equatable {
     }
 
     private var isFilled: Bool {
-        Self.isFilled(entry, takesDrag: takesDrag, isDropTarget: isDropTarget)
+        Self.isFilled(entry, size: size, takesDrag: takesDrag, isDropTarget: isDropTarget)
     }
 
-    /// Whether a card draws the solid fill of a spot that is on, which no drag or drop tints.
-    static func isFilled(_ entry: SpotsModel.Entry, takesDrag: Bool, isDropTarget: Bool) -> Bool {
+    /// Whether the glyph sits on a solid disc: on a card that is on and larger than 1x1, which draws its glyph.
+    private var isLitGlyph: Bool {
+        Self.isLit(entry, takesDrag: takesDrag, isDropTarget: isDropTarget) && !isFilled
+    }
+
+    /// Whether a spot is on, with no drag or drop that tints its card.
+    static func isLit(_ entry: SpotsModel.Entry, takesDrag: Bool, isDropTarget: Bool) -> Bool {
         entry.isOn && !takesDrag && !isDropTarget
+    }
+
+    /// Whether a card draws the solid fill of a spot that is on: a 1x1 card, or a card that draws no glyph of its own.
+    static func isFilled(_ entry: SpotsModel.Entry, size: SpotSize, takesDrag: Bool, isDropTarget: Bool) -> Bool {
+        isLit(entry, takesDrag: takesDrag, isDropTarget: isDropTarget) && (size == .small || !drawsGlyph(entry, size: size))
+    }
+
+    /// Whether a card of this size draws the default glyph, and not its script's drawing, its own view or a widget.
+    static func drawsGlyph(_ entry: SpotsModel.Entry, size: SpotSize) -> Bool {
+        let ownCard = entry.item == nil || entry.item?.card != nil
+        let drawn = ownCard && (entry.state.face.layout(for: size) != nil || (entry.state.face.hasView && entry.spot.view != nil))
+        return !drawn && entry.spot.layout == nil
     }
 
     private var row: some View {
@@ -213,7 +230,8 @@ struct SpotCardView: View, @MainActor Equatable {
     }
 
     private var glyphDisc: Color {
-        size == .small || isFilled ? .clear : SpotTheme.ink.opacity(SpotTheme.disc)
+        if isLitGlyph { return SpotTheme.solid }
+        return size == .small || isFilled ? .clear : SpotTheme.ink.opacity(SpotTheme.disc)
     }
 
     @ViewBuilder
@@ -223,18 +241,31 @@ struct SpotCardView: View, @MainActor Equatable {
         } else if isBuildingView {
             SpotWorkMark(call: nil, isOnSolid: isFilled)
         } else if let item = entry.item, item.icon != nil {
-            SpotItemIcon(item: item, size: SpotTokens.glyphSize)
+            picture(SpotItemIcon(item: item, size: pictureSize))
         } else if entry.showsHeaderPicture {
-            SpotItemIcon(icon: entry.spot.icon, glyph: entry.spot.glyph, symbol: nil, size: SpotTokens.glyphSize)
+            picture(SpotItemIcon(icon: entry.spot.icon, glyph: entry.spot.glyph, symbol: nil, size: pictureSize))
         } else {
             symbolGlyph
         }
     }
 
+    /// The side of a picture: the glyph's whole place, or less on a solid disc, so that the disc's rim shows around it.
+    private var pictureSize: CGFloat {
+        isLitGlyph ? (SpotTokens.glyphSize * Self.litPictureScale).rounded() : SpotTokens.glyphSize
+    }
+
+    private static let litPictureScale: CGFloat = 0.64
+
+    private func picture(_ icon: SpotItemIcon) -> some View {
+        icon
+            .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
+            .background(isLitGlyph ? SpotTheme.solid : .clear, in: Circle())
+    }
+
     private var symbolGlyph: some View {
         Image(systemName: entry.symbol)
             .font(.system(size: 17, weight: .semibold))
-            .foregroundStyle(isFilled ? SpotTheme.glyphOnSolid : SpotTheme.ink)
+            .foregroundStyle(isFilled || isLitGlyph ? SpotTheme.glyphOnSolid : SpotTheme.ink)
             .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
             .background(glyphDisc, in: Circle())
     }
