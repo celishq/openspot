@@ -9,7 +9,7 @@ public struct ActionMenuPlace: Equatable, Sendable {
     private static let tie: CGFloat = 1
 
     public let rect: CGRect
-    /// Whether the menu starts higher than its item, so that its bottom stays still as a search takes rows away.
+    /// Whether the menu's bottom lies nearer its item than its top, so that its field and its still edge are at the bottom.
     public let growsUp: Bool
     /// The corner of the menu nearest its item, which it grows from, as 0 or 1 on each axis: 0 is the left or the top.
     public let corner: CGPoint
@@ -28,7 +28,7 @@ public struct ActionMenuPlace: Equatable, Sendable {
         origin.x = min(max(origin.x, bounds.minX), bounds.maxX - Self.width)
         origin.y = max(min(origin.y, bounds.maxY - height), bounds.minY)
         rect = CGRect(origin: origin, size: CGSize(width: Self.width, height: height))
-        growsUp = origin.y < item.minY
+        growsUp = origin.y + height / 2 < item.midY
         corner = CGPoint(x: isOnLeft ? 0 : 1, y: growsUp ? 1 : 0)
     }
 

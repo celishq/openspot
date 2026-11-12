@@ -87,4 +87,13 @@ final class ActionMenuPlaceTests: XCTestCase {
             XCTAssertEqual(place(item).minX, item.minX)
         }
     }
+
+    func testTheStillEdgeIsTheEdgeNearerTheItem() {
+        let middle = card(column: 0, row: 3)
+        let pushedUp = ActionMenuPlace(item: middle, height: 400, bounds: bounds)
+
+        XCTAssertLessThan(pushedUp.rect.minY, middle.minY)
+        XCTAssertFalse(pushedUp.growsUp)
+        XCTAssertTrue(ActionMenuPlace(item: card(column: 0, row: 6), height: height, bounds: bounds).growsUp)
+    }
 }
