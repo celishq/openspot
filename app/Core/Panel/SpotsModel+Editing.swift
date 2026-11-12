@@ -98,7 +98,7 @@ extension SpotsModel {
         })
     }
 
-    /// Copies a prompt for the person's agent: to change a spot of the plugins folder, or to review any other spot.
+    /// Copies a prompt for the person's agent: to change a spot of the spots folder, or to review any other spot.
     public func copyListingPrompt(_ id: String) {
         guard let item = dock.items.first(where: { $0.id == id }) else { return }
         guard !item.isOwn else { return copyPrompt(changing: Entry(spot: item.spot, run: nil)) }

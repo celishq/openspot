@@ -54,7 +54,7 @@ final class SpotsModelDragTests: XCTestCase {
     private var files: SpotFiles {
         let trash = trash
         return SpotFiles(
-            environment: ["OPENSPOT_PLUGINS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path, "OPENSPOT_CORE": core.path],
+            environment: ["OPENSPOT_SPOTS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path, "OPENSPOT_CORE": core.path],
             home: folder,
             defaults: defaults,
             trash: { url in

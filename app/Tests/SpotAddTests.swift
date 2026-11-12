@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 /// Proves `openspot spot add` and `openspot spot remove`: a spot from a git repository, a folder or a `.spot` file goes into
-/// the plugins folder, and only a spot that `spot add` added comes out (protocol: The openspot command).
+/// the spots folder, and only a spot that `spot add` added comes out (protocol: The openspot command).
 final class SpotAddTests: XCTestCase {
     private final class Host: Mac {
         func eventStore() -> any EventStore { FakeEventStore() }
@@ -15,7 +15,7 @@ final class SpotAddTests: XCTestCase {
     private var plugins: URL!
 
     private var environment: [String: String] {
-        ["OPENSPOT_CONFIG": root.path, "OPENSPOT_PLUGINS": plugins.path, "OPENSPOT_CORE": root.appendingPathComponent("core").path, "PWD": root.path]
+        ["OPENSPOT_CONFIG": root.path, "OPENSPOT_SPOTS": plugins.path, "OPENSPOT_CORE": root.appendingPathComponent("core").path, "PWD": root.path]
     }
 
     override func setUpWithError() throws {
@@ -98,7 +98,7 @@ final class SpotAddTests: XCTestCase {
         let answer = try await answer(["spot", "add", repo.url.path])
 
         XCTAssertEqual(answer.code, 1)
-        XCTAssertEqual(answer.errors, "The plugins folder has coffee already. Run `openspot spot remove coffee` first, or move it away.\n")
+        XCTAssertEqual(answer.errors, "The spots folder has coffee already. Run `openspot spot remove coffee` first, or move it away.\n")
         XCTAssertEqual(try ids(), ["coffee/mine"])
     }
 
@@ -217,8 +217,8 @@ final class SpotAddTests: XCTestCase {
     func testAddAndRemoveCannotRunInARead() throws {
         let read = environment.merging(["OPENSPOT_REASON": "sheet"]) { _, new in new }
 
-        XCTAssertEqual(CommandLineCall(arguments: ["spot", "add", "x"], environment: read), .refused("`openspot spot add` changes your plugins folder, so it cannot run in a read. Run it from a pick or an action."))
-        XCTAssertEqual(CommandLineCall(arguments: ["spot", "remove", "x"], environment: read), .refused("`openspot spot remove` changes your plugins folder, so it cannot run in a read. Run it from a pick or an action."))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "add", "x"], environment: read), .refused("`openspot spot add` changes your spots folder, so it cannot run in a read. Run it from a pick or an action."))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "remove", "x"], environment: read), .refused("`openspot spot remove` changes your spots folder, so it cannot run in a read. Run it from a pick or an action."))
     }
 
     private func files(in folder: URL) throws -> [String: Data] {
@@ -270,7 +270,7 @@ final class SpotAddTests: XCTestCase {
         let answer = try await answer(["spot", "add"])
 
         XCTAssertEqual(answer.code, 0, answer.errors)
-        XCTAssertEqual(answer.output, "Each spot of spots.lock is in the plugins folder.\n")
+        XCTAssertEqual(answer.output, "Each spot of spots.lock is in the spots folder.\n")
     }
 
     func testAFirstAddPrintsTheReviewAndNeedsYesWhenItHasAUse() async throws {

@@ -20,7 +20,7 @@ struct CommandRequest: Equatable {
     }
 
     static let method = "ask"
-    private static let paths: Set<String> = ["OPENSPOT_CONFIG", "OPENSPOT_DATA", "OPENSPOT_SH", "OPENSPOT_PLUGINS", "OPENSPOT_CORE"]
+    private static let paths: Set<String> = ["OPENSPOT_CONFIG", "OPENSPOT_DATA", "OPENSPOT_SH", "OPENSPOT_SPOTS", "OPENSPOT_CORE"]
 
     let id: Int?
     let arguments: [String]

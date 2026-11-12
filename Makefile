@@ -1,4 +1,4 @@
-.PHONY: verify test perf shots eval-agent docs-images plugins dev-state examples release release-build
+.PHONY: verify test perf shots eval-agent docs-images spots dev-state examples release release-build
 
 verify:
 	sh scripts/check-core.sh
@@ -24,18 +24,18 @@ docs-images:
 	cd app && DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project Openspot.xcodeproj -scheme Openspot -destination 'platform=macOS' -derivedDataPath ../.temp/dd build >/dev/null
 	sh scripts/docs-images.sh
 
-plugins:
+spots:
 	mkdir -p $(HOME)/.config/openspot
-	ln -sfn $(CURDIR)/plugins $(HOME)/.config/openspot/plugins
+	ln -sfn $(CURDIR)/spots $(HOME)/.config/openspot/spots
 
 dev-state:
 	rm -rf .temp/openspot
-	mkdir -p .temp/openspot/plugins
-	[ -n "$(EMPTY)" ] || cp -R plugins/. .temp/openspot/plugins/
+	mkdir -p .temp/openspot/spots
+	[ -n "$(EMPTY)" ] || cp -R spots/. .temp/openspot/spots/
 
 examples:
-	mkdir -p .temp/openspot/plugins
-	cp -R examples/. .temp/openspot/plugins/
+	mkdir -p .temp/openspot/spots
+	cp -R examples/. .temp/openspot/spots/
 
 release:
 	sh scripts/release.sh publish "$(V)"

@@ -82,8 +82,8 @@ final class CoreSpotsTests: XCTestCase {
     func testEachLetterOfTheDefaultConfigIsALetterOfOneSpotThatShips() throws {
         let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let config = Config(text: try String(contentsOf: repo.appendingPathComponent("app/defaults.toml"), encoding: .utf8))
-        let plugins = try FileManager.default.contentsOfDirectory(atPath: repo.appendingPathComponent("plugins").path)
-        let app = try SpotFolder(url: folder, core: repo.appendingPathComponent("plugins")).scan().spots.filter(\.isBuiltIn).map(\.id)
+        let plugins = try FileManager.default.contentsOfDirectory(atPath: repo.appendingPathComponent("spots").path)
+        let app = try SpotFolder(url: folder, core: repo.appendingPathComponent("spots")).scan().spots.filter(\.isBuiltIn).map(\.id)
 
         XCTAssertEqual(config.faults, [])
         for choice in config.arrangement.choices {
@@ -181,7 +181,7 @@ final class CoreSpotsTests: XCTestCase {
 
     func testEachRepoSpotHasASubtitle() throws {
         let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        let place = SpotFolder(url: folder, core: repo.appendingPathComponent("plugins"))
+        let place = SpotFolder(url: folder, core: repo.appendingPathComponent("spots"))
 
         XCTAssertEqual(place.coreChoices().filter { $0.subtitle == nil }.map(\.name), [])
     }

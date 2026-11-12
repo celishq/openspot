@@ -185,7 +185,7 @@ final class SpotUsesTests: SpotRunsCase {
         sheet.open {}
 
         try await wait("the read") { self.log("done").count == 1 }
-        XCTAssertEqual(try String(contentsOfFile: path("errors"), encoding: .utf8), "`openspot spot remove` changes your plugins folder, so it cannot run in a read. Run it from a pick or an action.\n")
+        XCTAssertEqual(try String(contentsOfFile: path("errors"), encoding: .utf8), "`openspot spot remove` changes your spots folder, so it cannot run in a read. Run it from a pick or an action.\n")
     }
 
     func testAnUnknownUseRefusesThePlugin() throws {

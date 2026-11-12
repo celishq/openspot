@@ -119,7 +119,7 @@ final class CalculatorPluginTests: SamplePluginsCase {
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let host = TestHost()
-        let files = SpotFiles(environment: ["OPENSPOT_PLUGINS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path], home: folder, defaults: defaults)
+        let files = SpotFiles(environment: ["OPENSPOT_SPOTS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path], home: folder, defaults: defaults)
         let model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
         defer { model.quit() }
         host.model = model

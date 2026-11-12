@@ -10,11 +10,12 @@ mkdir -p "$out/build" "$out/data"
 if [ ! -s "$out/data/settings.txt" ]; then
   for name in apps settings; do
     mkdir -p "$out/plugin-data/$name"
-    OPENSPOT_DATA="$PWD/$out/plugin-data/$name" sh "plugins/$name.sh" read >"$out/data/$name.txt"
+    OPENSPOT_DATA="$PWD/$out/plugin-data/$name" sh "spots/$name.spot/$name.sh" read >"$out/data/$name.txt"
   done
 fi
 if [ ! -s "$out/data/spots.txt" ]; then
-  for file in plugins/*.sh; do
+  for file in spots/*.spot/*.sh; do
+    case $file in spots/openspot.spot/*) continue ;; esac
     name=$(basename "$file" .sh)
     title=$(sed -n 's/^# title=//p' "$file" | head -1)
     detail=$(sed -n 's/^# detail=//p' "$file" | head -1)

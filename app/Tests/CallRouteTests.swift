@@ -41,7 +41,7 @@ final class CallRouteTests: XCTestCase {
 
     private var config: URL { folder.appendingPathComponent("config", isDirectory: true) }
     private var plugins: URL { config.appendingPathComponent("plugins", isDirectory: true) }
-    private var variables: [String: String] { ["OPENSPOT_CONFIG": config.path, "OPENSPOT_PLUGINS": plugins.path, "TONE": "warm"] }
+    private var variables: [String: String] { ["OPENSPOT_CONFIG": config.path, "OPENSPOT_SPOTS": plugins.path, "TONE": "warm"] }
 
     override func setUp() async throws {
         let temp = try XCTUnwrap(realpath(FileManager.default.temporaryDirectory.path, nil))

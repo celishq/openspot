@@ -19,7 +19,7 @@ spot    ─ prints ─►  blocks             Openspot draws them
 press   ─ on a block ─►  <spot> <id>    the user or an agent acts
 ```
 
-- A spot lives in a **spot folder**: a folder `<name>.spot` in the plugins folder, such as `coffee.spot/coffee.sh`. The
+- A spot lives in a **spot folder**: a folder `<name>.spot` in the spots folder, such as `coffee.spot/coffee.sh`. The
   folder holds its scripts, its `readme.md`, its `preview.txt` and any file that they need.
 - The id of a script is the name of its folder, such as `coffee`. A script with another name adds it, such as
   `home/lights` for `home.spot/lights.sh`.

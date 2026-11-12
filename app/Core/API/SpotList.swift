@@ -77,7 +77,7 @@ struct SpotList {
         }.joined()
     }
 
-    /// Each core spot that a person can turn on, by name. A file of the plugins folder with its ID is always on.
+    /// Each core spot that a person can turn on, by name. A file of the spots folder with its ID is always on.
     func core() throws -> String {
         try Self.json(choices.map { Choice(id: $0.id, name: $0.spot.name, icon: Self.picture(of: $0.spot), detail: $0.spot.subtitle, on: $0.on, own: $0.own) })
     }
@@ -89,7 +89,7 @@ struct SpotList {
         }.joined()
     }
 
-    /// The core spots by name, each with its ID and whether it is on and a file of the plugins folder.
+    /// The core spots by name, each with its ID and whether it is on and a file of the spots folder.
     private var choices: [(id: String, spot: Spot, on: Bool, own: Bool)] {
         let own = folder.ownIDs
         let enabled = config.arrangement.enabled

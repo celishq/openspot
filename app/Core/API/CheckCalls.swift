@@ -1,6 +1,6 @@
 import Foundation
 
-/// The calls of `openspot check`: the faults of a sheet on stdin, and the faults of a plugins folder.
+/// The calls of `openspot check`: the faults of a sheet on stdin, and the faults of a spots folder.
 struct CheckCalls {
     let input: @Sendable () async -> String
     let environment: [String: String]

@@ -3,7 +3,7 @@ import Foundation
 /// What the `openspot` command was asked to do: `openspot <noun> <verb>`. No arguments start the app.
 public enum CommandLineCall: Equatable, Sendable {
     case check(String?)
-    /// Reports the faults of a plugins folder as JSON, for an agent.
+    /// Reports the faults of a spots folder as JSON, for an agent.
     case checkJSON(String?)
     case guide
     /// Writes a working spot from a starter, with a name.
@@ -21,10 +21,10 @@ public enum CommandLineCall: Equatable, Sendable {
     case spotList(core: Bool, frame: Bool)
     /// Turns spots that come with the app on or off.
     case spotTurn(ids: [String], on: Bool)
-    /// Puts a spot from a git URL, a folder or a `.spot` file in the plugins folder, or with none each spot of `spots.lock`
+    /// Puts a spot from a git URL, a folder or a `.spot` file in the spots folder, or with none each spot of `spots.lock`
     /// that is missing (protocol: The openspot command). An update that adds a use applies only when it is confirmed (protocol: Trust).
     case spotAdd(String?, isConfirmed: Bool)
-    /// Takes a spot that `spot add` added out of the plugins folder.
+    /// Takes a spot that `spot add` added out of the spots folder.
     case spotRemove(String)
     /// Opens the panel on the sheet of a spot.
     case spotOpen(String)
@@ -141,7 +141,7 @@ public enum CommandLineCall: Equatable, Sendable {
                                                  app, and whether it is on. --frame prints a spot=<id> block for each
                                                  spot, with a button=<id> or field=<id> block for each of its own.
     openspot spot add [git url | folder | file.spot] [--yes]
-                                                 Puts a spot in the plugins folder, a git one at its newest commit, and
+                                                 Puts a spot in the spots folder, a git one at its newest commit, and
                                                  records it in spots.lock. A source that spots.lock has already updates
                                                  its spot. With no source, it adds each spot of spots.lock that is
                                                  missing, at its commit. An update that adds a use needs --yes.
@@ -150,7 +150,7 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot spot review <id>                    Shows the whole text of a spot that comes with the app, and what of it
                                                  runs by itself.
     openspot spot store                          Opens the panel in Edit Spots with the store of spots.
-    openspot check [--json] [folder]             Reports the faults of a plugins folder.
+    openspot check [--json] [folder]             Reports the faults of a spots folder.
     openspot check --sheet                       Reports the faults of a sheet on stdin.
     openspot render [--view file] <file.png>     Draws the sheet on stdin to a picture, with its view from a Swift file.
     openspot render --card <size> <file.png>     Draws its card at a size, such as wide, to a picture.
@@ -290,8 +290,8 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("spot", "on") where rest.count > 1, ("spot", "off") where rest.count > 1:
             self = Self.changing(.spotTurn(ids: Array(rest.dropFirst()), on: rest[0] == "on"), "openspot setting set enabled", "turns a spot on or off", environment)
         case ("spot", "add") where rest.dropFirst().filter({ $0 != "--yes" }).count <= 1 && rest.filter({ $0 == "--yes" }).count <= 1:
-            self = Self.changing(.spotAdd(rest.dropFirst().first { $0 != "--yes" }, isConfirmed: rest.contains("--yes")), "openspot spot add", "changes your plugins folder", environment)
-        case ("spot", "remove") where rest.count == 2: self = Self.changing(.spotRemove(rest[1]), "openspot spot remove", "changes your plugins folder", environment)
+            self = Self.changing(.spotAdd(rest.dropFirst().first { $0 != "--yes" }, isConfirmed: rest.contains("--yes")), "openspot spot add", "changes your spots folder", environment)
+        case ("spot", "remove") where rest.count == 2: self = Self.changing(.spotRemove(rest[1]), "openspot spot remove", "changes your spots folder", environment)
         case ("setting", "list") where Self.flags(rest.dropFirst(), within: ["--frame"]): self = .settingList(frame: rest.contains("--frame"))
         case ("setting", "change"):
             self = Self.setting(Array(rest.dropFirst()), sets: false, environment).map { call in

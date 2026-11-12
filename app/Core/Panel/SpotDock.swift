@@ -9,12 +9,12 @@ public struct SpotDock: Equatable, Sendable {
         case onGrid, searchOnly, off
     }
 
-    /// Where a spot comes from: the core spots of the app, the plugins folder, or the app's own code.
+    /// Where a spot comes from: the core spots of the app, the spots folder, or the app's own code.
     public enum Origin: Equatable, Sendable {
         case core, mine, builtIn
     }
 
-    /// Whether the store's package of a spot of the plugins folder holds its files as they are, or older ones.
+    /// Whether the store's package of a spot of the spots folder holds its files as they are, or older ones.
     public enum Publication: Equatable, Sendable {
         case current, changed
     }
@@ -84,7 +84,7 @@ public struct SpotDock: Equatable, Sendable {
         public let spot: Spot
         public let origin: Origin
         public let state: State
-        /// Its package in the store, for a spot of the plugins folder that the person published.
+        /// Its package in the store, for a spot of the spots folder that the person published.
         public let publication: Publication?
         /// The size of its card on the grid, as the panel gives it: the preferred size, or else its own. A fault is never 1x1.
         public let size: SpotSize
@@ -93,7 +93,7 @@ public struct SpotDock: Equatable, Sendable {
             spot.id
         }
 
-        /// Whether the spot is a file of the plugins folder, which the person can publish and move to the Trash.
+        /// Whether the spot is a file of the spots folder, which the person can publish and move to the Trash.
         public var isOwn: Bool {
             origin == .mine
         }

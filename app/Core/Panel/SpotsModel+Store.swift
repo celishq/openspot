@@ -1,8 +1,8 @@
 import Foundation
 
-/// The store's publish: the spot folder of a spot of the plugins folder is copied into the store folder.
+/// The store's publish: the spot folder of a spot of the spots folder is copied into the store folder.
 extension SpotsModel {
-    /// Publishes a spot of the plugins folder to the store. A spot with no readme opens its listing, which asks for one. A
+    /// Publishes a spot of the spots folder to the store. A spot with no readme opens its listing, which asks for one. A
     /// spot whose files did not change since its last publish writes nothing. A spot with `preview=sample` prints its preview
     /// first, a Swift spot is compiled into the package, and the package holds a signed release of it.
     @discardableResult
@@ -67,7 +67,7 @@ extension SpotsModel {
         return file
     }
 
-    /// Copies a prompt that asks the person's agent to write the listing of a spot of the plugins folder.
+    /// Copies a prompt that asks the person's agent to write the listing of a spot of the spots folder.
     public func copyListingWritePrompt(_ id: String) {
         guard let item = dock.items.first(where: { $0.id == id }), item.isOwn else { return }
         let prompt = host.agentPrompt(for: files.folder.url)
@@ -80,7 +80,7 @@ extension SpotsModel {
         }
     }
 
-    /// Opens the readme of a spot of the plugins folder in the text editor, and writes its first lines when it has none.
+    /// Opens the readme of a spot of the spots folder in the text editor, and writes its first lines when it has none.
     public func writeReadme(_ id: String) {
         guard let item = dock.items.first(where: { $0.id == id }), item.isOwn else { return }
         let readme = SpotListing.readme(of: item.spot.url)
@@ -100,7 +100,7 @@ extension SpotsModel {
         }
     }
 
-    /// Whether the package of each spot of the plugins folder in the store holds its files as they are now.
+    /// Whether the package of each spot of the spots folder in the store holds its files as they are now.
     nonisolated static func publications(of scan: ScanResult, in folder: SpotFolder, store: URL) -> [String: SpotDock.Publication] {
         var result: [String: SpotDock.Publication] = [:]
         for spot in scan.spots {

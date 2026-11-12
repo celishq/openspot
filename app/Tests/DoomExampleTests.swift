@@ -114,7 +114,7 @@ final class DoomExampleTests: SamplePluginsCase {
         return (frames, nil)
     }
 
-    /// Copies the example into a plugins folder of its own, so that the panel reads no other spot.
+    /// Copies the example into a spots folder of its own, so that the panel reads no other spot.
     private func plugins(in folder: URL) throws -> URL {
         let plugins = folder.appendingPathComponent("plugins")
         try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)

@@ -23,7 +23,7 @@ final class SpotLettersTests: XCTestCase {
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         host = TestHost()
         let files = SpotFiles(
-            environment: ["OPENSPOT_PLUGINS": plugins.path, "OPENSPOT_CONFIG": configFolder.path],
+            environment: ["OPENSPOT_SPOTS": plugins.path, "OPENSPOT_CONFIG": configFolder.path],
             home: folder,
             defaults: defaults,
             defaultConfig: standard

@@ -65,7 +65,7 @@ targets:
         SUAutomaticallyUpdate: true
         SUVerifyUpdateBeforeExtraction: true
         OpenspotDevState: $(OPENSPOT_DEV_STATE)
-        NSAppleEventsUsageDescription: Openspot runs your plugins, and a plugin can ask another app to act, such as to paste.
+        NSAppleEventsUsageDescription: Openspot runs your spots, and a spot can ask another app to act, such as to paste.
         NSMicrophoneUsageDescription: Openspot records the microphone when a plugin records the screen with your voice, or when you dictate.
         NSCameraUsageDescription: Openspot records the camera when a plugin records the screen with your camera.
         NSCalendarsFullAccessUsageDescription: Openspot shows and adds your events when a spot that you use asks for them.
@@ -112,7 +112,7 @@ targets:
           core="$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/spots"
           rm -rf "$core"
           mkdir -p "$(dirname "$core")"
-          cp -RL "$SRCROOT/../plugins" "$core"
+          cp -RL "$SRCROOT/../spots" "$core"
           cp "$SRCROOT/defaults.toml" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/defaults.toml"
       - name: Copy the emoji keywords
         basedOnDependencyAnalysis: false
@@ -123,9 +123,12 @@ targets:
       - name: Fill the dev state
         basedOnDependencyAnalysis: false
         script: |
-          if [ -n "$OPENSPOT_DEV_STATE" ] && [ ! -e "$OPENSPOT_DEV_STATE/plugins" ]; then
+          if [ -n "$OPENSPOT_DEV_STATE" ] && [ ! -e "$OPENSPOT_DEV_STATE/spots" ] && [ -e "$OPENSPOT_DEV_STATE/plugins" ]; then
+            mv "$OPENSPOT_DEV_STATE/plugins" "$OPENSPOT_DEV_STATE/spots"
+          fi
+          if [ -n "$OPENSPOT_DEV_STATE" ] && [ ! -e "$OPENSPOT_DEV_STATE/spots" ]; then
             mkdir -p "$OPENSPOT_DEV_STATE"
-            cp -R "$SRCROOT/../plugins" "$OPENSPOT_DEV_STATE/plugins"
+            cp -R "$SRCROOT/../spots" "$OPENSPOT_DEV_STATE/spots"
           fi
     settings:
       base:

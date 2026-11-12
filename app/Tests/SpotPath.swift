@@ -1,7 +1,7 @@
 import Foundation
 
 extension URL {
-    /// The file of the script of a spot ID in this plugins folder: `x.spot/x.sh` for `x`, and `a.spot/b.sh` for `a/b`.
+    /// The file of the script of a spot ID in this spots folder: `x.spot/x.sh` for `x`, and `a.spot/b.sh` for `a/b`.
     func spotFile(_ id: String, extension kind: String = "sh") -> URL {
         let parts = id.split(separator: "/").map(String.init)
         let name = parts.first ?? id

@@ -2348,7 +2348,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ -n \"$OPENSPOT_DEV_STATE\" ] && [ ! -e \"$OPENSPOT_DEV_STATE/plugins\" ]; then\n  mkdir -p \"$OPENSPOT_DEV_STATE\"\n  cp -R \"$SRCROOT/../plugins\" \"$OPENSPOT_DEV_STATE/plugins\"\nfi\n";
+			shellScript = "if [ -n \"$OPENSPOT_DEV_STATE\" ] && [ ! -e \"$OPENSPOT_DEV_STATE/spots\" ] && [ -e \"$OPENSPOT_DEV_STATE/plugins\" ]; then\n  mv \"$OPENSPOT_DEV_STATE/plugins\" \"$OPENSPOT_DEV_STATE/spots\"\nfi\nif [ -n \"$OPENSPOT_DEV_STATE\" ] && [ ! -e \"$OPENSPOT_DEV_STATE/spots\" ]; then\n  mkdir -p \"$OPENSPOT_DEV_STATE\"\n  cp -R \"$SRCROOT/../spots\" \"$OPENSPOT_DEV_STATE/spots\"\nfi\n";
 		};
 		483CB758F22DD0EEA8575ACE /* Copy the core spots and their defaults */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -2367,7 +2367,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "core=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/spots\"\nrm -rf \"$core\"\nmkdir -p \"$(dirname \"$core\")\"\ncp -RL \"$SRCROOT/../plugins\" \"$core\"\ncp \"$SRCROOT/defaults.toml\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/defaults.toml\"\n";
+			shellScript = "core=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/spots\"\nrm -rf \"$core\"\nmkdir -p \"$(dirname \"$core\")\"\ncp -RL \"$SRCROOT/../spots\" \"$core\"\ncp \"$SRCROOT/defaults.toml\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/defaults.toml\"\n";
 		};
 		9086F9D8FC997F4EEA3460DC /* Copy the openspot command */ = {
 			isa = PBXShellScriptBuildPhase;

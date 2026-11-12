@@ -2,7 +2,7 @@ import CoreServices
 import Foundation
 import OpenspotCore
 
-/// A watch of the plugins folder and the folders in it, which calls back on the main thread a moment after a change that a
+/// A watch of the spots folder and the folders in it, which calls back on the main thread a moment after a change that a
 /// scan reads settles, such as an agent that writes a spot.
 @MainActor
 final class SpotFolderWatch {

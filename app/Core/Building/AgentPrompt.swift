@@ -1,6 +1,6 @@
 import Foundation
 
-/// The words that ask a coding agent to build or fix a spot, with the places that it needs: the plugins folder and the
+/// The words that ask a coding agent to build or fix a spot, with the places that it needs: the spots folder and the
 /// `openspot` command of this app.
 public struct AgentPrompt: Equatable, Sendable {
     public let folder: URL
@@ -25,7 +25,7 @@ public struct AgentPrompt: Equatable, Sendable {
     /// The toast of each copy of a prompt.
     public static let copied = "Copied a prompt for your agent. Paste it into Claude Code, Codex or another agent."
 
-    /// Asks for a new spot in the plugins folder that does what the person described.
+    /// Asks for a new spot in the spots folder that does what the person described.
     public func building(_ description: String) -> String {
         """
         Build an Openspot spot that does this: \(description)

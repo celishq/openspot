@@ -66,12 +66,12 @@ public struct SpotFiles {
         SpotFolder.config(environment: environment, home: home).appendingPathComponent("store", isDirectory: true)
     }
 
-    /// The record of the calls of each spot, beside the plugins folder.
+    /// The record of the calls of each spot, beside the spots folder.
     public var log: CallLog {
         CallLog(folder: SpotFolder.config(environment: environment, home: home).appendingPathComponent("logs", isDirectory: true))
     }
 
-    /// The folder of the stats of each day, beside the plugins folder (protocol: Stats).
+    /// The folder of the stats of each day, beside the spots folder (protocol: Stats).
     public var stats: URL {
         SpotFolder.config(environment: environment, home: home).appendingPathComponent("stats", isDirectory: true)
     }

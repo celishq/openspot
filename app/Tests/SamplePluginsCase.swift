@@ -23,7 +23,7 @@ class SamplePluginsCase: XCTestCase {
         get throws {
             let root = URL(fileURLWithPath: #filePath)
                 .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-            let folder = root.appendingPathComponent("plugins")
+            let folder = root.appendingPathComponent("spots")
             var scan = try SpotFolder(url: folder).scan()
             scan.listKeys(in: ConfigFile(url: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-samples/config.toml")))
             return scan

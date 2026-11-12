@@ -18,7 +18,7 @@ final class SpotsModelTests: XCTestCase {
         let host = TestHost()
         self.host = host
         let files = SpotFiles(
-            environment: ["OPENSPOT_PLUGINS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
+            environment: ["OPENSPOT_SPOTS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
             home: folder,
             defaults: defaults
         )

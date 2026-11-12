@@ -42,7 +42,7 @@ final class AppCallsSocketTests: XCTestCase {
     }
 
     private func request(_ argv: [String], env: [String: String] = [:], cwd: URL? = nil, piped: Bool = false) -> [String: Any] {
-        let variables = ["OPENSPOT_CONFIG": config.path, "OPENSPOT_PLUGINS": plugins.path].merging(env) { _, new in new }
+        let variables = ["OPENSPOT_CONFIG": config.path, "OPENSPOT_SPOTS": plugins.path].merging(env) { _, new in new }
         return ["jsonrpc": "2.0", "id": 1, "method": "ask", "params": ["argv": argv, "cwd": (cwd ?? folder).path, "env": variables, "piped": piped]]
     }
 

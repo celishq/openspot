@@ -57,7 +57,7 @@ final class FirstLaunchTests: XCTestCase {
 
     func testOnlyQuietRepoSpotsStartOn() throws {
         let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        let place = SpotFolder(url: plugins, core: repo.appendingPathComponent("plugins"))
+        let place = SpotFolder(url: plugins, core: repo.appendingPathComponent("spots"))
 
         let starting = place.startingSpots()
 

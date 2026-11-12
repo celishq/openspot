@@ -47,7 +47,7 @@ final class ReviewSpotTests: XCTestCase {
 
     func testTheReviewOfTheInlineCalculatorShowsItsText() throws {
         let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        let place = SpotFolder(url: folder, core: repo.appendingPathComponent("plugins"), enabled: ["calculator"])
+        let place = SpotFolder(url: folder, core: repo.appendingPathComponent("spots"), enabled: ["calculator"])
         let scan = try place.scan()
         let calculator = try XCTUnwrap(scan.spots.first { SpotFolder.coreID(of: $0) == "calculator" })
 

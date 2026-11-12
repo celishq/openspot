@@ -1,7 +1,7 @@
 import Foundation
 
 /// Where a spot comes from: a git repository, a folder, or a `.spot` folder or a zip of one (protocol: The openspot command). It
-/// puts the spot in a spot folder at the top of a plugins folder, and runs nothing of it.
+/// puts the spot in a spot folder at the top of a spots folder, and runs nothing of it.
 public enum SpotSource: Equatable, Sendable {
     /// A git URL, or the path of a folder that git keeps.
     case git(String)
@@ -69,7 +69,7 @@ public enum SpotSource: Equatable, Sendable {
         return (commit, paths)
     }
 
-    /// Writes the spot whole into a work folder, so that a failure leaves the plugins folder as it was.
+    /// Writes the spot whole into a work folder, so that a failure leaves the spots folder as it was.
     private func stage(in work: URL, from folder: URL, at commit: String?, replacing: [String]) async throws -> (commit: String?, paths: [String]) {
         switch self {
         case .git(let text):
@@ -130,7 +130,7 @@ public enum SpotSource: Equatable, Sendable {
     private static func checkFree(_ paths: [String], in folder: URL, replacing: [String]) throws {
         for path in paths where !replacing.contains(path) && FileManager.default.fileExists(atPath: folder.appendingPathComponent(path).path) {
             let name = SpotLock.Entry.name(of: path)
-            throw SpotError.fault("The plugins folder has \(name) already. Run `openspot spot remove \(name)` first, or move it away.")
+            throw SpotError.fault("The spots folder has \(name) already. Run `openspot spot remove \(name)` first, or move it away.")
         }
     }
 

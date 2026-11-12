@@ -5,7 +5,7 @@
 # on=sheet.open
 # on=sheet.text
 # uses=spots,clipboard
-folder="${OPENSPOT_PLUGINS:-$OPENSPOT_CONFIG/plugins}"
+folder="${OPENSPOT_SPOTS:-$OPENSPOT_CONFIG/spots}"
 
 # Prints a row with an id, a title, a detail and an icon.
 row() {
@@ -32,7 +32,7 @@ case "$1" in
     printf 'recents=false\n'
     printf '\nbutton=open\ntitle=Choose\n'
     printf '\nbutton=guide\ntitle=Read the guide\nscope=spot\nclose=true\n'
-    printf '\nbutton=folder\ntitle=Open plugins folder\nscope=spot\nclose=true\n'
+    printf '\nbutton=folder\ntitle=Open spots folder\nscope=spot\nclose=true\n'
     typed=$(sed -n 's/^search=//p' | head -1)
     row ask "Copy prompt for AI" "${typed:-Type what the spot should do}" sparkles
     row button Button "Runs a command when you press it" hand.tap

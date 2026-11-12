@@ -1,7 +1,7 @@
 import Foundation
 
 /// A spot as a person sends it: the files of its spot folders, and of each spot folder that it needs, by their paths in
-/// the plugins folder. It travels as a zip of those folders. Each value of this type passed its checks, so it holds no path
+/// the spots folder. It travels as a zip of those folders. Each value of this type passed its checks, so it holds no path
 /// that leaves a spot folder and no text that hides its order.
 public struct SharedSpot: Equatable, Sendable {
     public struct File: Equatable, Sendable {
@@ -79,7 +79,7 @@ public struct SharedSpot: Equatable, Sendable {
         try self.init(paths: folders, in: place)
     }
 
-    /// Collects a spot from the plugins folder, with what it needs: the whole folder of a script in a folder, and each
+    /// Collects a spot from the spots folder, with what it needs: the whole folder of a script in a folder, and each
     /// script that a widget places or opens. Hidden files stay behind.
     public init(sharing spot: Spot, from scan: ScanResult) throws {
         guard spot.host == nil, !spot.isBuiltIn else { throw SpotError.fault("\(spot.name) comes with Openspot, so it cannot be shared.") }
@@ -174,7 +174,7 @@ public struct SharedSpot: Equatable, Sendable {
         return try SharedSpot(files: files.filter { $0.path != path } + [File(path: path, isExecutable: false, contents: Data(log.text.utf8))])
     }
 
-    /// Writes the release log of its own spot folder into that folder in the plugins folder, so that the next release
+    /// Writes the release log of its own spot folder into that folder in the spots folder, so that the next release
     /// follows it.
     public func keepReleaseLog(in folder: URL) throws {
         guard let root = roots.first, let file = files.first(where: { $0.path == "\(root)/\(ReleaseLog.fileName)" }) else { return }
@@ -260,7 +260,7 @@ public struct SharedSpot: Equatable, Sendable {
             for name in names.dropLast() {
                 place.appendPathComponent(name)
                 guard let type = Self.type(of: place) else { break }
-                if type != .typeDirectory { return "\(file.path) cannot go into the plugins folder, because \(name) is not a folder." }
+                if type != .typeDirectory { return "\(file.path) cannot go into the spots folder, because \(name) is not a folder." }
             }
             if Self.type(of: folder.appendingPathComponent(file.path)) == .typeDirectory {
                 return "\(file.path) cannot replace a folder of the same name."

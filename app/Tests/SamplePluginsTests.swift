@@ -3,7 +3,7 @@ import XCTest
 
 final class SamplePluginsTests: SamplePluginsCase {
     func testACopyAsksForTheCopiedToast() throws {
-        let plugins = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("plugins")
+        let plugins = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
         let tools = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-copy-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tools) }
@@ -44,7 +44,7 @@ final class SamplePluginsTests: SamplePluginsCase {
         for key in ["cmd+c", "cmd+shift+v"] {
             let process = Process()
             let out = Pipe()
-            process.executableURL = root.appendingPathComponent("plugins/confetti.spot/confetti.sh")
+            process.executableURL = root.appendingPathComponent("spots/confetti.spot/confetti.sh")
             process.arguments = ["key", key]
             process.environment = [
                 "PATH": "/usr/bin:/bin", "OPENSPOT_DATA": data.path, "HOME": data.path,
@@ -70,7 +70,7 @@ final class SamplePluginsTests: SamplePluginsCase {
     }
 
     func testTheSpotsFitThePanelWithNoScrolling() throws {
-        let plugins = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("plugins")
+        let plugins = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
         let all = Set(try FileManager.default.contentsOfDirectory(atPath: plugins.path).map { ($0 as NSString).deletingPathExtension })
         let core = try SpotFolder(url: plugins.appendingPathComponent("none"), core: plugins, enabled: all).scan()
         let defaults = Config(text: try String(contentsOf: plugins.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8)).arrangement
@@ -125,13 +125,13 @@ final class SamplePluginsTests: SamplePluginsCase {
         XCTAssertEqual(points?.count, 3)
     }
 
-    func testTheCheckFindsNoFaultInThePluginsAndTheExamples() async throws {
+    func testTheCheckFindsNoFaultInTheSpotsAndTheExamples() async throws {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         try await withPrivateHome { folder in
             try "#!/bin/sh\ncase \"$1 $2\" in 'app status') echo '{}' ;; 'spot list'|'setting list') echo '[]' ;; esac\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
             let views = ViewLibrary(cache: folder.appendingPathComponent("views"))
-            for name in ["plugins", "examples"] {
+            for name in ["spots", "examples"] {
                 let faults = await SpotCheck(folder: SpotFolder(url: root.appendingPathComponent(name)), views: views).faults()
 
                 XCTAssertEqual(faults, [], name)
@@ -227,7 +227,7 @@ final class SamplePluginsTests: SamplePluginsCase {
     }
 
     func testScreenshotPastesTheNewestCaptureOfBothFoldersBySpotlightOrNot() throws {
-        let plugins = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("plugins")
+        let plugins = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-capture-\(UUID().uuidString)")
         let tools = folder.appendingPathComponent("tools")
         let images = folder.appendingPathComponent("images")

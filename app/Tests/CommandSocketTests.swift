@@ -163,7 +163,7 @@ final class CommandSocketTests: XCTestCase {
         try "#!/bin/sh\n".writeScript(to: source.appendingPathComponent("tea.sh"))
         let plugins = folder.appendingPathComponent("plugins").path
 
-        let answer = try ask(["spot", "add", "tea"], env: ["OPENSPOT_CONFIG": folder.path, "OPENSPOT_PLUGINS": plugins], cwd: folder.appendingPathComponent("sources").path)
+        let answer = try ask(["spot", "add", "tea"], env: ["OPENSPOT_CONFIG": folder.path, "OPENSPOT_SPOTS": plugins], cwd: folder.appendingPathComponent("sources").path)
 
         XCTAssertEqual(answer.code, 0, answer.stderr)
         XCTAssertTrue(FileManager.default.fileExists(atPath: plugins + "/tea.spot/tea.sh"))

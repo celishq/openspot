@@ -13,7 +13,7 @@ public struct SpotDrop: Equatable, Sendable {
         detail = review.subtitle
     }
 
-    /// Reads dragged files for a plugins folder. A file that cannot be installed says why, before the drop.
+    /// Reads dragged files for a spots folder. A file that cannot be installed says why, before the drop.
     public init(paths: [String], folder: URL) {
         let url = URL(fileURLWithPath: paths.first ?? "")
         do {

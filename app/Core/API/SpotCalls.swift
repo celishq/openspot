@@ -1,7 +1,7 @@
 import Foundation
 
 /// The calls of `openspot spot`: the spots that the app loads, the ones that come with it, and those that `spot add` put in
-/// the plugins folder.
+/// the spots folder.
 struct SpotCalls {
     let environment: [String: String]
     let app: (any RunningApp)?

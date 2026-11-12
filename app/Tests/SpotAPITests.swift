@@ -31,7 +31,7 @@ final class SpotAPITests: XCTestCase {
     }
 
     private var environment: [String: String] {
-        ["OPENSPOT_CONFIG": root.path, "OPENSPOT_PLUGINS": plugins.path, "OPENSPOT_CORE": core.path]
+        ["OPENSPOT_CONFIG": root.path, "OPENSPOT_SPOTS": plugins.path, "OPENSPOT_CORE": core.path]
     }
 
     override func setUpWithError() throws {
@@ -130,7 +130,7 @@ final class SpotAPITests: XCTestCase {
 
         XCTAssertEqual(unknown.errors, "`gone` is not a spot that comes with Openspot. Run `openspot spot list --core` to see each one.\n")
         XCTAssertEqual(unknown.code, 1)
-        XCTAssertEqual(own.errors, "`files` is a file in your plugins folder, so it is always on.\n")
+        XCTAssertEqual(own.errors, "`files` is a file in your spots folder, so it is always on.\n")
         XCTAssertEqual(file.read().arrangement.enabled, [])
         let changes = await app.changes
         XCTAssertEqual(changes, 0)

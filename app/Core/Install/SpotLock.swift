@@ -1,7 +1,7 @@
 import CryptoKit
 import Foundation
 
-/// `spots.lock` in the config folder: the source of each spot that `openspot spot add` put in the plugins folder, the
+/// `spots.lock` in the config folder: the source of each spot that `openspot spot add` put in the spots folder, the
 /// commit of a git source, the paths that the spot took, a hash of its files, its uses and the lines of what it can also
 /// do and of what runs by itself (protocol: The openspot command, Trust). A first add of a spot that has a use, can do more or runs by itself, and an update that adds a use, change
 /// nothing until the person confirms them. Each read, change and write holds a lock beside the file, in the app and in
@@ -10,7 +10,7 @@ public struct SpotLock: Equatable, Sendable {
     public struct Entry: Codable, Equatable, Sendable {
         public let source: String
         public let commit: String?
-        /// The paths that it took in the plugins folder, each in a spot folder. A path that an older Openspot kept outside
+        /// The paths that it took in the spots folder, each in a spot folder. A path that an older Openspot kept outside
         /// one, such as `coffee` or `notes.sh`, reads as the place where a wrap of the folder put it.
         public let paths: [String]
         /// The SHA-256 of its files, their paths and whether each one runs.
@@ -61,7 +61,7 @@ public struct SpotLock: Equatable, Sendable {
             )
         }
 
-        /// The place of a path in the plugins folder after a wrap, such as `notes.spot/notes.sh` for `notes.sh`.
+        /// The place of a path in the spots folder after a wrap, such as `notes.spot/notes.sh` for `notes.sh`.
         static func wrapped(_ path: String) -> String {
             let parts = path.split(separator: "/", maxSplits: 1).map(String.init)
             guard let first = parts.first, (first as NSString).pathExtension != SpotFolder.spotExtension else { return path }
@@ -197,7 +197,7 @@ public struct SpotLock: Equatable, Sendable {
             }
         }
         if !changed.isEmpty { try write(try self.entries().map { changed[$0.source] ?? $0 }) }
-        if added.isEmpty, faults.isEmpty { added = "Each spot of spots.lock is in the plugins folder.\n" }
+        if added.isEmpty, faults.isEmpty { added = "Each spot of spots.lock is in the spots folder.\n" }
         return CommandAnswer(output: added, errors: faults, code: faults.isEmpty ? 0 : 1)
     }
 

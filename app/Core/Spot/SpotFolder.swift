@@ -46,15 +46,27 @@ public struct SpotFolder: Sendable {
         let arrangement = enabled == nil || disabled == nil ? ConfigFile.standard(environment: environment, home: home).read().arrangement : nil
         let enabled = enabled ?? arrangement?.enabled ?? []
         let disabled = disabled ?? arrangement?.disabled ?? []
-        if let path = environment["OPENSPOT_PLUGINS"], !path.isEmpty {
+        if let path = environment["OPENSPOT_SPOTS"], !path.isEmpty {
             return SpotFolder(url: URL(fileURLWithPath: path, isDirectory: true), core: core, enabled: enabled, disabled: disabled)
         }
-        let url = config(environment: environment, home: home).appendingPathComponent("plugins", isDirectory: true)
+        let folder = config(environment: environment, home: home)
+        let url = folder.appendingPathComponent(folderName, isDirectory: true)
+        moveOldFolder(to: url)
         return SpotFolder(url: url, core: core, enabled: enabled, disabled: disabled)
     }
 
-    /// The folder that holds the plugins folder and the data of plugins.
-    /// A Debug build names its own folder, so that its plugins and config stay out of the real ones.
+    /// The name of the spots folder in the config folder.
+    static let folderName = "spots"
+
+    /// Moves the `plugins` folder of an older Openspot to the place of the spots folder, once, when no spots folder is there.
+    static func moveOldFolder(to url: URL) {
+        let old = url.deletingLastPathComponent().appendingPathComponent("plugins", isDirectory: true)
+        guard !FileManager.default.fileExists(atPath: url.path), FileManager.default.fileExists(atPath: old.path) else { return }
+        try? FileManager.default.moveItem(at: old, to: url)
+    }
+
+    /// The folder that holds the spots folder and the data of spots.
+    /// A Debug build names its own folder, so that its spots and config stay out of the real ones.
     static func config(
         environment: [String: String],
         home: URL,

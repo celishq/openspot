@@ -12,14 +12,14 @@ public final class PlaygroundPanel {
 
     /// Makes the folders of the panel in `scratch`: its plugins, an empty core and its config.
     public init(host: SpotsHost, scratch: URL, defaults: UserDefaults) {
-        plugins = scratch.appendingPathComponent("plugins", isDirectory: true)
+        plugins = scratch.appendingPathComponent("spots", isDirectory: true)
         config = scratch.appendingPathComponent("config", isDirectory: true)
         let core = scratch.appendingPathComponent("core", isDirectory: true)
         for folder in [plugins, config, core] {
             try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         }
         let files = SpotFiles(
-            environment: ["OPENSPOT_PLUGINS": plugins.path, "OPENSPOT_CONFIG": config.path, "OPENSPOT_CORE": core.path],
+            environment: ["OPENSPOT_SPOTS": plugins.path, "OPENSPOT_CONFIG": config.path, "OPENSPOT_CORE": core.path],
             home: scratch,
             defaults: defaults
         )
@@ -27,7 +27,7 @@ public final class PlaygroundPanel {
     }
 
     /// Writes the spot into the plugins of the panel, keeps it on the grid, reads the folder again and returns its ID. Typed
-    /// text is `playground`. A named file keeps the ID that its plugins folder gives it, and its folder comes with it.
+    /// text is `playground`. A named file keeps the ID that its spots folder gives it, and its folder comes with it.
     @discardableResult
     public func place(file: URL?, text: String, plugins real: URL? = nil) throws -> String {
         let (source, id) = SheetSandbox.place(of: file, text: text, plugins: real ?? plugins, scratch: plugins)

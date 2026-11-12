@@ -28,7 +28,7 @@ final class SpotVerbTests: XCTestCase {
         host.app = "/Apps/Openspot.app/Contents/MacOS/Openspot"
         let trash = trash!
         let files = SpotFiles(
-            environment: ["OPENSPOT_PLUGINS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
+            environment: ["OPENSPOT_SPOTS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
             home: folder,
             defaults: defaults,
             trash: { url in

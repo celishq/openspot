@@ -17,7 +17,7 @@ final class SoleCommandTests: XCTestCase {
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         host = TestHost()
         let files = SpotFiles(
-            environment: ["OPENSPOT_PLUGINS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
+            environment: ["OPENSPOT_SPOTS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
             home: folder,
             defaults: defaults
         )

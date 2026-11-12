@@ -144,7 +144,7 @@ public final class SpotsModel {
     public internal(set) var dock = SpotDock(items: [])
     /// The listing of the spot that the store opened.
     public internal(set) var dockListing: SpotListing?
-    /// The spots that are off, and the packages of the spots of the plugins folder, as the last read of the folder found them.
+    /// The spots that are off, and the packages of the spots of the spots folder, as the last read of the folder found them.
     @ObservationIgnored var dockOff: [SpotDock.Item] = []
     @ObservationIgnored var dockPublications: [String: SpotDock.Publication] = [:]
     /// The stamp of the folder that `dockOff` and `dockPublications` were read from, and the read that runs in the background.
@@ -262,7 +262,7 @@ public final class SpotsModel {
         self.problems = problems
     }
 
-    /// Takes a change of the plugins folder, such as an agent that writes a spot: the cards change at once, with no motion,
+    /// Takes a change of the spots folder, such as an agent that writes a spot: the cards change at once, with no motion,
     /// the selected card stays selected, and a changed script that the open panel reads at `panel` reads again.
     public func folderChanged() {
         let stamps = fileStamps

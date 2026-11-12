@@ -26,7 +26,7 @@ public struct ReviewSpot: Equatable, Sendable {
     private var source: URL?
     private var lock: SpotLock?
 
-    /// Reads a spot for a plugins folder, with the readme and the preview of its first spot folder after what it uses and
+    /// Reads a spot for a spots folder, with the readme and the preview of its first spot folder after what it uses and
     /// does. Throws a fault when it gives no spot, cannot go into that folder, or holds a release log that does not check
     /// against its files. With `canAdd` false it only shows the text.
     public init(spot: SharedSpot, folder: URL, canAdd: Bool = true) throws {
@@ -80,7 +80,7 @@ public struct ReviewSpot: Equatable, Sendable {
         ].compactMap { $0 }.joined() + spot.files.filter { !$0.path.hasSuffix("/\(ReleaseLog.fileName)") }.map(Self.shown).joined(separator: "\n")
     }
 
-    /// Reads a spot folder or a zip of spot folders for a plugins folder, which its Add puts in that folder and records in
+    /// Reads a spot folder or a zip of spot folders for a spots folder, which its Add puts in that folder and records in
     /// the lock (protocol: The openspot command).
     public init(file: URL, folder: URL, lock: SpotLock) throws {
         try self.init(spot: SharedSpot(contentsOf: file), folder: folder)
@@ -142,10 +142,10 @@ public struct ReviewSpot: Equatable, Sendable {
         return try SpotFolder(url: place).scan()
     }
 
-    /// The subtitle of a version that another key signed than the copy that the plugins folder holds.
+    /// The subtitle of a version that another key signed than the copy that the spots folder holds.
     static let otherKey = "Signed by another key"
 
-    /// The release log of the copy of a spot folder that the plugins folder holds, when it has one that checks.
+    /// The release log of the copy of a spot folder that the spots folder holds, when it has one that checks.
     private static func installedLog(of root: String?, in folder: URL) -> ReleaseLog? {
         guard let root, let text = try? String(contentsOf: folder.appendingPathComponent(root).appendingPathComponent(ReleaseLog.fileName), encoding: .utf8) else { return nil }
         return try? ReleaseLog(text: text)

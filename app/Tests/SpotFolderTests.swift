@@ -509,22 +509,36 @@ final class SpotFolderTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path))
     }
 
-    func testAConfigPathHoldsThePluginFolder() {
+    func testAConfigPathHoldsTheSpotsFolder() {
         let folder = SpotFolder.standard(environment: ["OPENSPOT_CONFIG": "/tmp/debug"], home: URL(fileURLWithPath: "/home"))
 
-        XCTAssertEqual(folder.url.path, "/tmp/debug/plugins")
+        XCTAssertEqual(folder.url.path, "/tmp/debug/spots")
     }
 
-    func testAPluginPathBeatsAConfigPath() {
-        let folder = SpotFolder.standard(environment: ["OPENSPOT_CONFIG": "/tmp/debug", "OPENSPOT_PLUGINS": "/tmp/own"], home: URL(fileURLWithPath: "/home"))
+    func testThePluginsFolderOfAnOlderOpenspotBecomesTheSpotsFolderOnce() throws {
+        try write("config/plugins/weather.spot/weather.sh")
+        try "How to build a spot.".write(to: folder.appendingPathComponent("config/plugins/AGENTS.md"), atomically: true, encoding: .utf8)
+        let environment = ["OPENSPOT_CONFIG": folder.appendingPathComponent("config").path]
+
+        let spots = SpotFolder.standard(environment: environment, home: folder)
+
+        XCTAssertEqual(try spots.scan().spots.map(\.id), ["weather"])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("config/plugins").path))
+        try write("config/plugins/other.spot/other.sh")
+        _ = SpotFolder.standard(environment: environment, home: folder)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("config/plugins/other.spot/other.sh").path))
+    }
+
+    func testASpotsPathBeatsAConfigPath() {
+        let folder = SpotFolder.standard(environment: ["OPENSPOT_CONFIG": "/tmp/debug", "OPENSPOT_SPOTS": "/tmp/own"], home: URL(fileURLWithPath: "/home"))
 
         XCTAssertEqual(folder.url.path, "/tmp/own")
     }
 
-    func testWithNoPathTheHomeHoldsThePluginFolder() {
+    func testWithNoPathTheHomeHoldsTheSpotsFolder() {
         let folder = SpotFolder.standard(environment: [:], home: URL(fileURLWithPath: "/home"))
 
-        XCTAssertEqual(folder.url.path, "/home/.config/openspot/plugins")
+        XCTAssertEqual(folder.url.path, "/home/.config/openspot/spots")
     }
 
     func testAShortcutInTheHeaderIsRefusedBecauseThePersonGivesTheLetter() throws {
