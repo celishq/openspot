@@ -69,7 +69,7 @@ struct SpotTheme {
         glyphOnSolid: .white,
         glass: .white.withAlphaComponent(0.5),
         isMaterialTinted: false,
-        shade: NSColor(srgbRed: 0.8, green: 0.8, blue: 0.8, alpha: 0.2),
+        shade: .black.withAlphaComponent(0.08),
         keycap: NSColor(white: 0.98, alpha: 1),
         window: NSColor(white: 0.93, alpha: 1),
         preview: NSColor(white: 0.98, alpha: 1),
@@ -105,12 +105,9 @@ struct SpotTheme {
 
     @MainActor private static var chosen: (appearance: NSAppearance, theme: SpotTheme)?
 
-    /// The radius of the blur behind a surface, and of the blur around the panel at its strongest.
+    /// The radius of the blur behind a surface, and of the blur around the panel.
     static let blur: CGFloat = 24
-    static let backdropBlur: CGFloat = 8
-    /// The control points of the curve by which the blur around the panel loses its strength from the content to the
-    /// window's edge.
-    static let backdropFalloff = (start: UnitPoint(x: 0, y: 0.25), end: UnitPoint(x: 0.25, y: 1))
+    static let backdropBlur: CGFloat = 3
     /// The thin dark line down the sides of a surface's rim, at its top, its middle and its foot.
     static let rimSides = NSColor.black
     static let rimSideStrengths: [CGFloat] = [0, 0.3, 0.3, 0]
