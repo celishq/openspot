@@ -94,6 +94,7 @@ too. `make perf` checks it: p99 must stay under 8.3 ms.
 make verify                # the Core and Tests checks, then the XCTest suite, with test classes in parallel
 make test T=SpotRunsTests  # one test class, while you work on it
 make perf N=3              # times a sheet that opens and closes 20 times, 3 runs; fails over the dropped-frame budget
+make film SPOT=caffeinate  # films the open and close of a sheet 10x slower (SLOW=1 for real speed) into .temp/film
 make shots                 # saves pictures of the actions menu in the running panel into .temp/shots
 make docs-images           # draws the image under each GUIDE.md example; GuideImageTests fail when one is out of date
 make eval-agent N=1        # gives N tasks to claude -p with only `openspot guide`, and checks each spot; it costs money

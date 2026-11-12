@@ -5,8 +5,10 @@ import Foundation
 /// settles later.
 @MainActor
 public final class SheetOpening {
+    /// How many times slower each motion of the sheet runs, from `OPENSPOT_MOTION_SLOW`, so that a film can show each frame.
+    public nonisolated static let slow = Double(ProcessInfo.processInfo.environment["OPENSPOT_MOTION_SLOW"] ?? "") ?? 1
     /// How long the open spring of a sheet takes.
-    public nonisolated static let springDuration = 0.15
+    public nonisolated static let springDuration = 0.15 * slow
     /// How long a sheet with no answer yet holds its motion for the first answer.
     public let answerPause: TimeInterval
     /// How long the motion moves, until its spring of `springDuration` lies within a point of its end.
@@ -25,7 +27,7 @@ public final class SheetOpening {
     private var held: (id: String, start: () -> Void)?
     private var pause: Task<Void, Never>?
 
-    public init(answerPause: TimeInterval = 0.15, motionLength: TimeInterval = 0.25) {
+    public init(answerPause: TimeInterval = 0.15, motionLength: TimeInterval = 0.25 * SheetOpening.slow) {
         self.answerPause = answerPause
         self.motionLength = motionLength
     }

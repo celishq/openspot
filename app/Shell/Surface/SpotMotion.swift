@@ -13,7 +13,7 @@ enum SpotMotion {
     static let openDuration = SheetOpening.springDuration
     static let fadeInDuration = 0.1
     static let fadeOutDuration = 0.12
-    static let closeDuration = 0.2
+    static let closeDuration = 0.2 * SheetOpening.slow
     static let hiddenScale = 1.04
     static let backdropHiddenScale = 1.02
     static let pressedScale = 1.04
