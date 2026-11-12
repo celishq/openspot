@@ -207,10 +207,10 @@ struct SpotsView: View {
         return CGRect(x: Self.menuMargin, y: top, width: SpotTokens.panelWidth - 2 * Self.menuMargin, height: bottom - top)
     }
 
-    /// The rect that the menu grows from: a small share of it at its corner nearest its item.
-    private static func start(of rect: CGRect, at corner: CGPoint) -> CGRect {
-        let share = SpotMotion.menuStartShare
-        let size = CGSize(width: rect.width * share, height: rect.height * share)
+    /// The rect of the menu's glass at a scale from its corner nearest its item, as its rows scale, so that the blur behind
+    /// it stays still.
+    private static func rect(_ rect: CGRect, scaledBy scale: CGFloat, from corner: CGPoint) -> CGRect {
+        let size = CGSize(width: rect.width * scale, height: rect.height * scale)
         return CGRect(x: rect.minX + (rect.width - size.width) * corner.x, y: rect.minY + (rect.height - size.height) * corner.y, width: size.width, height: size.height)
     }
 
@@ -223,16 +223,16 @@ struct SpotsView: View {
                 let place = ActionMenuPlace(item: rect, height: SpotTokens.menuHeight(rows: menu.fullLines), bounds: bounds)
                 let shown = place.rect(height: SpotTokens.menuHeight(rows: menu.lines))
                 let isGrown = model.menuIsGrown
-                let surface = isGrown ? shown : Self.start(of: shown, at: place.corner)
+                let scale = isGrown ? 1 : SpotMotion.menuStartScale
+                let corner = UnitPoint(x: place.corner.x, y: place.corner.y)
                 ZStack(alignment: .topLeading) {
-                    SpotSurface(rect: surface, radius: SpotActionMenuView.radius)
+                    SpotSurface(rect: Self.rect(shown, scaledBy: scale, from: place.corner), radius: SpotActionMenuView.radius * scale, glass: isGrown ? 1 : 0)
                     SpotActionMenuView(menu: menu, fieldIsLast: place.growsUp, work: { model.work(of: $0) }, onPress: { model.pressMenu(row: $0) }, onSearch: { model.searchMenu($0) })
-                        .offset(x: shown.minX, y: shown.minY)
+                        .scaleEffect(scale, anchor: corner)
                         .opacity(isGrown ? 1 : 0)
+                        .offset(x: shown.minX, y: shown.minY)
                 }
-                .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
-                .clipShape(SpotSurfaceShape(rect: surface, radius: SpotActionMenuView.radius))
-                .animation(SpotMotion.menuGrow, value: isGrown)
+                .animation(SpotMotion.menuOpen, value: isGrown)
                 .transition(.opacity)
             }
         }

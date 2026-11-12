@@ -25,9 +25,10 @@ enum SpotMotion {
     static let edit = Animation.spring(duration: 0.3, bounce: 0)
     static let hintFade = Animation.easeOut(duration: 0.15)
     static let liftFade = Animation.easeOut(duration: 0.15)
-    /// The actions menu growing out of its item, from this share of its size.
-    static let menuGrow = Animation.spring(duration: 0.32, bounce: 0.18)
-    static let menuStartShare: CGFloat = 0.3
+    /// The actions menu opening at its item by a fade and a scale from this share of its size, and its card coming forward.
+    static let menuOpen = Animation.spring(duration: 0.32, bounce: 0.18)
+    static let menuStartScale: CGFloat = 0.9
+    static let focusedScale = 1.04
     static let handleFade = Animation.easeOut(duration: 0.12)
     /// How fast the grid scrolls, in points a second, under a lifted card that lies deep in the fade at one of its ends.
     static let edgeScrollSpeed = 500.0

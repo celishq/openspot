@@ -118,6 +118,8 @@ struct SpotTheme {
     /// The shadow under a card that the person lifts in Edit Spots: its blur radius and its strength.
     static let liftShadow: CGFloat = 14
     static let liftShadowStrength = 0.25
+    /// How much of the other cards shows while the actions menu of one card is open.
+    static let unfocused = 0.35
     @MainActor static var fill: Double { current.fillStrength }
     @MainActor static var disc: Double { current.discStrength }
     @MainActor static var chip: Double { current.chipStrength }

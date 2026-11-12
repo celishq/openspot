@@ -17,6 +17,7 @@ struct SpotGridView: View {
         let placements = model.placements
         let drag = model.drag
         let height = SpotGrid.height(of: placements)
+        let focus = model.menu != nil && model.openList == nil ? model.selected : nil
         let glass = placements.map { placement in
             let entry = model.visible[placement.index]
             let isLifted = drag?.id == entry.id
@@ -29,7 +30,9 @@ struct SpotGridView: View {
                 isCovered: entry.id == openID || SpotCardView.isFilled(entry, takesDrag: model.takesDrag(entry.id), isDropTarget: dropTarget == entry.id),
                 isPressed: pressed == entry.id && !isHeld && SpotCardView.showsPress(of: entry),
                 isLifted: isLifted,
-                isHeld: isHeld
+                isHeld: isHeld,
+                isFocused: focus == placement.index,
+                isUnfocused: focus != nil && focus != placement.index
             )
         }
         return ZStack(alignment: .topLeading) {
@@ -63,6 +66,9 @@ struct SpotGridView: View {
                     isDragging: drag != nil
                 ))
                 .modifier(SpotLiftedCard(isLifted: card.isLifted, isSolid: card.isHeld, size: card.size))
+                .scaleEffect(card.isFocused ? SpotMotion.focusedScale : 1)
+                .opacity(card.isUnfocused ? SpotTheme.unfocused : 1)
+                .animation(SpotMotion.menuOpen, value: card.isFocused || card.isUnfocused)
                 .modifier(SpotCardPlace(motion: card.motion, lift: card.isLifted ? model.lift : nil))
                 .zIndex(card.isHeld ? 1 : 0)
                 .opacity(entry.id == openID ? 0.001 : 1)
