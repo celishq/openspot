@@ -113,7 +113,7 @@ final class InlineLink: ScriptLink {
         }
         runs.record(run.spot, call.action, input: call.input, frames: text.map { [$0] } ?? [], errors: Self.errors(of: end), end: end, reason: call.reason, started: made.started, begin: begin)
         if case .ask(.answer(let query)) = call.purpose {
-            run.takeAnswers(text.map { SpotOutput(text: $0).items } ?? [], to: query)
+            run.takeAnswers(text.map { SpotOutput(text: $0).answers } ?? [], to: query)
             return run.ended(made, call.purpose, end, hadAnswer: text != nil, showedPicture: false, selected: nil)
         }
         Task { [weak run, runs] in

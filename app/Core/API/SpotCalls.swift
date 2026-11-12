@@ -54,7 +54,7 @@ struct SpotCalls {
     }
 
     func open(_ id: String) -> CommandAPI.Work {
-        guard let app else { return CommandAnswer.notRunning }
+        guard let app else { return CommandAnswer.notRunning("spot open \(id)") }
         return CommandAnswer.work {
             guard await app.open(id) else { throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.") }
             return ""
@@ -62,7 +62,7 @@ struct SpotCalls {
     }
 
     func store() -> CommandAPI.Work {
-        guard let app else { return CommandAnswer.notRunning }
+        guard let app else { return CommandAnswer.notRunning("spot store") }
         return CommandAnswer.work {
             await app.openStore()
             return ""
@@ -108,7 +108,7 @@ struct SpotCalls {
     }
 
     func review(_ id: String) -> CommandAPI.Work {
-        guard let app else { return CommandAnswer.notRunning }
+        guard let app else { return CommandAnswer.notRunning("spot review \(id)") }
         return CommandAnswer.work {
             guard await app.review(id) else { throw SpotError.failed(1, "`\(id)` is not a spot that comes with Openspot. Run `openspot spot list --core` to see each one.") }
             return ""

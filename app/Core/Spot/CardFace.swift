@@ -44,6 +44,11 @@ public struct CardFace: Equatable, Sendable {
         layouts[size.name]
     }
 
+    /// The size of a card that answers the main search: `large` when it draws one, else `strip` when it draws one (A4).
+    public var answerSize: SpotSize? {
+        [SpotSize.large, .strip].first { drawings[$0.name] != nil }
+    }
+
     /// Whether a `view` component places the plugin's view, which fills the card when no drawing places it (V3).
     public var hasView: Bool {
         parts.contains { $0.kind == "view" }

@@ -3,7 +3,7 @@ import Foundation
 /// Every key that a part can hold, as the kinds table of the guide names them, and the faults a printed part can have.
 public enum PartCatalog {
     static let keys: Set<String> = [
-        "title", "detail", "icon", "min", "max", "color", "value",
+        "title", "detail", "icon", "min", "max", "color", "value", "display",
         "placeholder", "readonly", "required", "type", "close", "confirm", "scope", "form", "align", "look",
         "shortcut", "tone"
     ]

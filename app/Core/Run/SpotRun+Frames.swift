@@ -1,7 +1,11 @@
 import Foundation
+import os
 
 /// What the link of a run gives back: each call it starts and ends, and each frame of a call or of the script.
 extension SpotRun {
+    /// The app log, in which a failure that tells no one shows at info.
+    static let appLog = Logger(subsystem: Bundle.main.bundleIdentifier ?? "openspot", category: "spots")
+
     /// Lists a call that the link started, and shows it as running work once its second has passed.
     func track(_ call: ScriptCall) {
         calls.append(call)
@@ -72,12 +76,12 @@ extension SpotRun {
 
     private func take(_ error: Error, of ask: Ask) {
         switch ask {
-        case .read(_, let reports, _):
+        case .read(_, let reports, _, let tells):
             answered = nil
             list.loadFailed()
             changeReading { $0.markStale() }
             answerArrived()
-            if reports { fail(error) }
+            if reports { fail(error, tells: tells) }
         case .answer(let query):
             takeAnswers([], to: query)
         case .search(let query):
@@ -107,13 +111,13 @@ extension SpotRun {
     /// answers no read, such as the frame of an action, leaves the age of the answer and a sheet that waits for a read. The
     /// rows that answer a text of the main search leave all else as it is (A2).
     func takeAnswer(_ lines: SpotOutput, frame: String, to ask: Ask, keeping: String? = nil, answers: Bool = true) async {
-        if case .answer(let query) = ask { return takeAnswers(lines.items, to: query) }
+        if case .answer(let query) = ask { return takeAnswers(lines.answers, to: query) }
         let next: ItemList.Rows? = if case .read = ask { await newRows(lines.items, search: lines.search) } else { nil }
         lastAnswer = lines.withoutBlocks()
         report(toastOf: lines)
         spot = spot.taking(lines)
         switch ask {
-        case .read(let generation, _, let query):
+        case .read(let generation, _, let query, _):
             if answers { answered = runs.now() }
             if spot.readsState { takeState(lines) }
             takeValue(lines)
@@ -243,8 +247,9 @@ extension SpotRun {
         }
     }
 
-    /// Tells the person about a failed call: the script's own message when it gave one, or else what Openspot saw.
-    func fail(_ error: Error) {
+    /// Marks the spot with a failed call: the script's own message when it gave one, or else what Openspot saw. It tells the
+    /// person when `tells`, and else only writes it to the app log at info.
+    func fail(_ error: Error, tells: Bool = true) {
         let text = switch error as? SpotError {
         case .failed(_, let message) where !message.isEmpty, .failedWithFix(_, let message, _) where !message.isEmpty: message
         case .timedOut: "\(spot.name) took too long, so Openspot stopped it."
@@ -253,6 +258,7 @@ extension SpotRun {
         }
         failure = text
         runs.usage.failed(spot, fault: text, at: runs.now())
+        guard tells else { return Self.appLog.info("\(text, privacy: .public)") }
         if case .failedWithFix(_, _, let fix) = error as? SpotError { return onReport(.failureWithFix(text, fix)) }
         onReport(.failure(text))
     }

@@ -127,7 +127,11 @@ esac
 with `OPENSPOT_REASON=search`, at each change of the text with no pause, and a newer text stops the older call (A2). Keep
 the answer fast. The rows show first in the main search, each with its `detail`, until the newest text is answered, and
 they go at once when the pattern no longer matches (A3). A pick of a row is `<script> open <row id>`. A spot with
-`answers` and no `read` has no card and shows only its answers. A staying script answers each text as a call of its own (I2). `openspot calc solve
+`answers` and no `read` has no card and shows only its answers.
+
+An answer can be a card in place of its rows. When its head draws `grid.large=` or `grid.strip=` and its main block has a
+`value`, Openspot shows one card at that size, `large` first, drawn as the spot's card is (U5), and a pick of it is
+`<script> open <value>` (A4). An answer with neither shows its rows. A staying script answers each text as a call of its own (I2). `openspot calc solve
 <words>...` prints the answer of a sum, a conversion or a date as a row, so a spot can print it as it is.
 
 A spot with an `every` or an `on`, or with `mode=stay` or `always`, and a main `text`, `number`, `gauge` or `graph` can show in the menu bar, when the
@@ -273,7 +277,8 @@ head show on the spot only while the call runs. Openspot reads the codes `ESC ] 
   group gets the terminate signal, and then the kill signal. Quitting Openspot stops each call.
 - A call ends when its output closes. A stopped call changes nothing.
 - Exit 0 is success. Any other code is a failure, and the last line on stderr shows to the person. A failure can print
-  `link=<url>`, the place that fixes it (R9).
+  `link=<url>`, the place that fixes it (R9). A failed read at the opening of the panel, which the person did not ask for,
+  only marks its card and goes to the app log at info (R13).
 - A stop can come at any time, and two calls can run at once, so a script never leaves a file half written.
 
 ## Blocks
@@ -317,7 +322,7 @@ when it changes. Ids are unique in one output. Each kind keeps its data in `valu
 | Kind      | Shows                                                   | Its own keys                                                    | Sends                  |
 | --------- | ------------------------------------------------------- | --------------------------------------------------------------- | ---------------------- |
 | `text`    | Words, and a small mark: a bar from `value`, or with `max` a bar for each `value` line. | `value`, `max`               |                        |
-| `number`  | A big number, with its `title` under it.                | `value`                                                         |                        |
+| `number`  | A big number, with its `title` under it. `display` shows in place of `value`. | `value`, `display`                     |                        |
 | `gauge`   | A ring in a square area, a bar in a wide one.           | `value` from 0 to 1                                             |                        |
 | `graph`   | Bars. The last bar is the newest.                       | `value`, one line for each bar, and `max`                       |                        |
 | `picture` | A picture that fills its area.                          | `icon`                                                          |                        |
@@ -628,7 +633,8 @@ read from its own record of the call, not from the variables of the process. Eac
 also gets `OPENSPOT_TOKEN`, a random token that Openspot maps to the spot's ID while it runs, which names the spot of a
 call from outside its group, such as a process that an inline spot starts. A call from no group of a spot and with no
 known token is the person's call. The socket of the API is a file with mode `0600`, so only the person's own processes
-reach it.
+reach it. It is `api.socket` in the config folder, or, when that path is too long for a socket, a file named by a hash of
+the folder in `/tmp/openspot-<uid>`, a folder of mode `0700` (S14).
 
 `uses` names what a spot uses (Z3). It is a closed set, and an unknown word is a fault that names the key.
 

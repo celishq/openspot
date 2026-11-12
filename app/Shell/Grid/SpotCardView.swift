@@ -54,7 +54,7 @@ struct SpotCardView: View, Equatable {
 
     @ViewBuilder
     private var content: some View {
-        if entry.item == nil, let layout = entry.state.face.layout(for: size) {
+        if drawsOwnCard, let layout = entry.state.face.layout(for: size) {
             SpotCardDrawing(layout: layout, face: entry.state.face, card: size, view: { room in
                 drawnView.map { SpotCustomView(source: $0, values: entry.state.values, card: size, room: room, views: SpotViews.shared) }
             }) { model.setCardPart(entry.id, $0, to: $1) }
@@ -78,7 +78,7 @@ struct SpotCardView: View, Equatable {
 
     /// The source of the plugin's own view, which fills the whole card in place of its glyph and words (V3).
     private var ownView: String? {
-        entry.item == nil && entry.state.face.hasView ? entry.spot.view : nil
+        drawsOwnCard && entry.state.face.hasView ? entry.spot.view : nil
     }
 
     /// The source of the plugin's own view once it is built or has failed. While it builds, the card is drawn as any card
@@ -91,7 +91,12 @@ struct SpotCardView: View, Equatable {
 
     /// Whether its script draws the card from a drawing for its size (U5).
     private var isDrawn: Bool {
-        entry.item == nil && entry.state.face.layout(for: size) != nil
+        drawsOwnCard && entry.state.face.layout(for: size) != nil
+    }
+
+    /// Whether the card is the spot's own or an answer card, which its script can draw (U5, A4).
+    private var drawsOwnCard: Bool {
+        entry.item == nil || entry.item?.card != nil
     }
 
     private var isBuildingView: Bool {

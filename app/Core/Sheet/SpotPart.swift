@@ -121,7 +121,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
                 control = .menu(options, value: block.value("value"))
             }
         case "number":
-            control = .metric(block.value("value") ?? "")
+            control = .metric(block.value("display") ?? block.value("value") ?? "")
         default:
             control = .none
         }

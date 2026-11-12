@@ -26,7 +26,7 @@ struct SpotCardDrawing: View {
                         if part.kind == "view" {
                             view(rect.size)
                         } else {
-                            SpotSlotView(part: part, tone: part.tone, onSlot: onSlot)
+                            SpotSlotView(part: part, tone: part.tone, height: rect.height, onSlot: onSlot)
                         }
                     }
                     .frame(width: rect.width, height: rect.height, alignment: .leading)

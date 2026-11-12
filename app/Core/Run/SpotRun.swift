@@ -35,7 +35,8 @@ public final class SpotRun {
     /// What a call asks for, which says what its answer replaces. A read of a list that the script searches carries the text
     /// it was sent with.
     enum Ask {
-        case read(generation: Int?, reports: Bool, query: String = "")
+        /// `tells` says whether its failure shows as a toast, which a read at the opening of the panel does not (R13).
+        case read(generation: Int?, reports: Bool, query: String = "", tells: Bool = true)
         case search(String)
         /// The rows that answer a text of the main search, which leave the spot and its sheet as they are (A2).
         case answer(String)

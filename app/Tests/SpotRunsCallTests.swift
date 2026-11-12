@@ -6,6 +6,20 @@ import XCTest
 final class SpotRunsCallTests: SpotRunsCase {
     // MARK: Section 7
 
+    func testAReadAtThePanelThatTakesTooLongMarksItsCardAndTellsNoOne() async throws {
+        runs = SpotRuns(readLimit: 0.3)
+        try script(header: "read=panel", "sleep 30")
+        let sheet = try sheet()
+        var failures: [String] = []
+        sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
+
+        sheet.read()
+
+        try await wait("the time limit") { sheet.failure != nil }
+        XCTAssertEqual(sheet.failure, "Script took too long, so Openspot stopped it.")
+        XCTAssertEqual(failures, [])
+    }
+
     func testAReadHasTenSecondsAndAnyOtherNameHasNoLimit() async throws {
         XCTAssertEqual(SpotRuns().readLimit, 10)
         runs = SpotRuns(readLimit: 1.5)

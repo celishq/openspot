@@ -1,5 +1,6 @@
 import AppKit
 import OpenspotCore
+import os
 
 @main
 @MainActor
@@ -73,7 +74,12 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
             await MainActor.run { model.runs.raise(event) }
         }, app: SpotRunningApp(model: model, update: update), runs: model.runs)
         model.runs.api = api
-        commandSocket = CommandSocket(folder: ConfigFile.standard().url.deletingLastPathComponent(), api: api)
+        let config = ConfigFile.standard().url.deletingLastPathComponent()
+        commandSocket = CommandSocket(folder: config, api: api)
+        if commandSocket == nil {
+            Logger(subsystem: Bundle.main.bundleIdentifier ?? "openspot", category: "api")
+                .error("Openspot cannot listen for openspot calls for \(config.path, privacy: .public), so spots that ask the app fail.")
+        }
         model.reload()
         folderWatch = SpotFolderWatch(folder: model.files.folder.url) { [weak self] in self?.model.folderChanged() }
         try? AgentNote(command: Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/openspot").path).write(in: model.files.folder.url)

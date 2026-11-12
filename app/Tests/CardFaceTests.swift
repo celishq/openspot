@@ -66,4 +66,34 @@ final class CardFaceTests: XCTestCase {
 
         XCTAssertEqual(state.setting("true", of: "power").face.parts.last?.control, .toggle(true))
     }
+
+    func testAnAnswerThatDrawsALargeCardIsOneCardWhosePressSendsItsMainValue() {
+        let answer = SpotOutput(text: """
+        grid.large=sum sum sum sum
+        grid.large=answer answer answer answer
+        main=answer
+
+        text=sum
+        title=1000 + 234.5
+
+        number=answer
+        value=1234.5
+        display=1,234.5
+        """)
+
+        XCTAssertEqual(answer.answers.map(\.run), ["1234.5"])
+        XCTAssertEqual(answer.answers.first?.title, "1,234.5")
+        XCTAssertEqual(answer.answers.first?.card?.face.answerSize, .large)
+        XCTAssertEqual(answer.answers.first?.card?.face.parts.last?.control, .metric("1,234.5"))
+    }
+
+    func testAnAnswerWithNoMainValueOrNoFullWidthDrawingIsItsRows() {
+        let noMain = SpotOutput(text: "grid.strip=a b\n\nnumber=a\nvalue=1\n\nnumber=b\nvalue=2\n\nrow=r\ntitle=R\n")
+        let wide = SpotOutput(text: "grid.wide=a\n\nnumber=a\nvalue=1\n\nrow=r\ntitle=R\n")
+        let strip = SpotOutput(text: "grid.strip=a\n\nnumber=a\nvalue=1\n")
+
+        XCTAssertEqual(noMain.answers.map(\.run), ["r"])
+        XCTAssertEqual(wide.answers.map(\.run), ["r"])
+        XCTAssertEqual(strip.answers.first?.card?.face.answerSize, .strip)
+    }
 }

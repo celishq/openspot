@@ -50,7 +50,7 @@ struct AppCalls {
     }
 
     func quit() -> CommandAPI.Work {
-        guard let app else { return CommandAnswer.notRunning }
+        guard let app else { return CommandAnswer.notRunning("app quit") }
         return {
             await app.quit()
             return CommandAnswer()
