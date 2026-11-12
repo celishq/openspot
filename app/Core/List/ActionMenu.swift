@@ -39,9 +39,14 @@ public struct ActionMenu: Equatable, Sendable {
         rows.count > Self.glance
     }
 
-    /// How many lines it draws: one for each row that it shows, or one that says no row matches.
+    /// How many lines it draws: one for each row that it shows, and one for the field of a menu that searches.
     public var lines: Int {
-        max(shown.count, 1)
+        isSearchable ? shown.count + 1 : rows.count
+    }
+
+    /// How many lines it draws with no search, which sets its place.
+    public var fullLines: Int {
+        isSearchable ? rows.count + 1 : rows.count
     }
 
     public var selectedRow: Row? {

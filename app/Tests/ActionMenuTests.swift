@@ -30,7 +30,8 @@ final class ActionMenuTests: XCTestCase {
 
         XCTAssertTrue(menu.isSearchable)
         XCTAssertEqual(menu.shown.map(\.title), ["Open in Zed", "Use Zed by default"])
-        XCTAssertEqual(menu.lines, 2)
+        XCTAssertEqual(menu.lines, 3)
+        XCTAssertEqual(menu.fullLines, 8)
         XCTAssertEqual(menu.selectedRow?.title, "Open in Zed")
         menu.move(by: 1)
         XCTAssertEqual(menu.press()?.title, "Use Zed by default")

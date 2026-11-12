@@ -7,6 +7,8 @@ public struct ActionMenuPlace: Equatable, Sendable {
     public static let gap = SpotTokens.placeGap
 
     public let rect: CGRect
+    /// Whether the menu starts higher than its item, so that its bottom stays still as a search takes rows away.
+    public let growsUp: Bool
 
     public init(item: CGRect, height: CGFloat, bounds: CGRect) {
         let isOnLeft = item.minX - bounds.minX <= bounds.maxX - item.maxX
@@ -22,5 +24,11 @@ public struct ActionMenuPlace: Equatable, Sendable {
         origin.x = min(max(origin.x, bounds.minX), bounds.maxX - Self.width)
         origin.y = max(min(origin.y, bounds.maxY - height), bounds.minY)
         rect = CGRect(origin: origin, size: CGSize(width: Self.width, height: height))
+        growsUp = origin.y < item.minY
+    }
+
+    /// The menu at the smaller height that a search leaves, with its still edge in place.
+    public func rect(height: CGFloat) -> CGRect {
+        CGRect(x: rect.minX, y: growsUp ? rect.maxY - height : rect.minY, width: rect.width, height: height)
     }
 }

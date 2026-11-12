@@ -203,33 +203,21 @@ struct SpotsView: View {
     /// Where the menu may lie: under the field, over the content, and down to the content's bottom or as far as it needs.
     private func menuBounds(_ menu: ActionMenu) -> CGRect {
         let top = fieldIsInSheet ? SpotTokens.halo + SpotTokens.sheetFieldDrop + SpotTokens.listRowHeight + SpotTokens.rowGap : SpotTokens.gridTop
-        let bottom = max(contentHeight - SpotTokens.halo - SpotTokens.hintBlock, top + SpotTokens.menuHeight(rows: menu.lines))
+        let bottom = max(contentHeight - SpotTokens.halo - SpotTokens.hintBlock, top + SpotTokens.menuHeight(rows: menu.fullLines))
         return CGRect(x: Self.menuMargin, y: top, width: SpotTokens.panelWidth - 2 * Self.menuMargin, height: bottom - top)
     }
 
-    /// What the veil of the menu covers: the cards under the field, or the open sheet under its field.
-    private func veilArea(under top: CGFloat) -> CGRect {
-        guard fieldIsInSheet else {
-            return CGRect(x: SpotTokens.halo, y: top, width: SpotTokens.gridWidth, height: contentHeight - SpotTokens.halo - SpotTokens.hintBlock - top)
-        }
-        let edge = top - SpotTokens.rowGap / 2
-        return CGRect(x: sheetRect.minX, y: edge, width: sheetRect.width, height: sheetRect.maxY - edge)
-    }
-
-    /// The open menu at the selected card or row, over a veil that fades the rest of the content. With no selected item it
-    /// opens under the field.
+    /// The open menu at the selected card or row. With no selected item it opens under the field.
     private func menuLayer(at item: SpotMenuAnchor.Item?) -> some View {
         GeometryReader { proxy in
             if let menu = model.menu {
                 let bounds = menuBounds(menu)
                 let rect = item.map { proxy[$0.bounds] } ?? SpotFieldView.rect
-                let place = ActionMenuPlace(item: rect, height: SpotTokens.menuHeight(rows: menu.lines), bounds: bounds).rect
-                ZStack(alignment: .topLeading) {
-                    SpotMenuVeil(area: veilArea(under: bounds.minY), isSquareOnTop: fieldIsInSheet, item: item == nil ? .zero : rect, corner: item?.corner ?? 0)
-                    SpotActionMenuView(menu: menu, work: { model.work(of: $0) }, onPress: { model.pressMenu(row: $0) })
-                        .offset(x: place.minX, y: place.minY)
-                }
-                .transition(.opacity)
+                let place = ActionMenuPlace(item: rect, height: SpotTokens.menuHeight(rows: menu.fullLines), bounds: bounds)
+                let shown = place.rect(height: SpotTokens.menuHeight(rows: menu.lines))
+                SpotActionMenuView(menu: menu, fieldIsLast: place.growsUp, work: { model.work(of: $0) }, onPress: { model.pressMenu(row: $0) }, onSearch: { model.searchMenu($0) })
+                    .offset(x: shown.minX, y: shown.minY)
+                    .transition(.opacity)
             }
         }
     }

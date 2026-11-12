@@ -180,10 +180,17 @@ final class SpotMotionProbe: NSObject {
     }
 
     private func shootSearch(into folder: String) {
-        model.selected = model.placements.first { $0.size == .small }?.index ?? 0
-        _ = model.handleKey(ActionKey(name: "k", isCommand: true))
-        model.searchText = "co"
+        for placement in model.placements {
+            model.selected = placement.index
+            _ = model.handleKey(ActionKey(name: "k", isCommand: true))
+            if model.menu?.isSearchable == true { break }
+            model.closeMenu()
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            self.save(to: "\(folder)/long.png")
+            self.model.searchMenu("co")
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
             self.save(to: "\(folder)/search.png")
             self.model.closeMenu()
             guard let id = self.spot else { return self.finish(with: "shots\n") }

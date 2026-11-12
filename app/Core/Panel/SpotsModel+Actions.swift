@@ -215,6 +215,10 @@ extension SpotsModel {
         return true
     }
 
+    public func searchMenu(_ text: String) {
+        menu?.search(text)
+    }
+
     /// Selects the card at this point of the grid and opens its actions menu, as `⌘K` does, for a right or force click. A
     /// sheet or Edit Spots takes none.
     public func openMenu(at point: CGPoint) {

@@ -66,11 +66,9 @@ extension SpotsModel {
 
     /// The text of the field: the search of the open list, or else the search of the spots.
     public var searchText: String {
-        get { menu?.query ?? form?.draft.choices?.query ?? openItems?.query ?? query }
+        get { form?.draft.choices?.query ?? openItems?.query ?? query }
         set {
-            if menu != nil {
-                menu?.search(newValue)
-            } else if form?.draft.choices != nil {
+            if form?.draft.choices != nil {
                 form?.draft.search(newValue)
             } else if let file = SharedSpot.file(in: newValue) {
                 query = ""

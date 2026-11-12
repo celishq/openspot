@@ -1,11 +1,16 @@
 import OpenspotCore
 import SwiftUI
 
-/// The actions of the selected row or card, each with its key. The panel's own field searches them.
+/// The actions of the selected row or card, each with its key.
 struct SpotActionMenuView: View {
     let menu: ActionMenu
+    /// Whether the field is the last line, as in a menu that grows up from its item, whose bottom stays still.
+    var fieldIsLast = false
     var work: (ActionMenu.Row) -> ScriptCall? = { _ in nil }
     let onPress: (Int) -> Void
+    /// Takes the text of the field of a menu that searches its rows.
+    var onSearch: (String) -> Void = { _ in }
+    @FocusState private var isSearching: Bool
 
     private var shape: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
@@ -13,6 +18,9 @@ struct SpotActionMenuView: View {
 
     var body: some View {
         VStack(spacing: SpotTokens.menuRowGap) {
+            if menu.isSearchable, !fieldIsLast {
+                field
+            }
             ForEach(Array(menu.shown.enumerated()), id: \.offset) { index, row in
                 Button {
                     onPress(index)
@@ -38,16 +46,21 @@ struct SpotActionMenuView: View {
                 }
                 .buttonStyle(.plain)
             }
-            if menu.shown.isEmpty {
-                Text("No matching actions")
-                    .font(SpotType.body)
-                    .modifier(SpotSecondaryText())
-                    .frame(height: SpotTokens.menuRowHeight)
+            if menu.isSearchable, fieldIsLast {
+                field
             }
         }
         .padding(SpotTokens.menuPadding)
         .frame(width: ActionMenuPlace.width)
         .modifier(SpotGlass(radius: SpotTokens.radius - SpotTokens.padding + SpotTokens.menuPadding))
+    }
+
+    /// The field that searches the rows, at the edge of the menu that stays still while the rows change.
+    private var field: some View {
+        SpotSearchField(prompt: "Search actions", text: menu.query, onSearch: onSearch, isFocused: $isSearching)
+            .onAppear {
+                DispatchQueue.main.async { isSearching = true }
+            }
     }
 
     private func isConfirming(_ row: ActionMenu.Row) -> Bool {

@@ -147,7 +147,7 @@ struct SpotFieldView: View {
                         model.moveItem(by: -1)
                         return .handled
                     }
-                    if !model.query.isEmpty || model.menu != nil { return .ignored }
+                    if !model.query.isEmpty { return .ignored }
                     if model.selectedIsSlider {
                         model.adjustSelected(by: -5)
                     } else {
@@ -161,7 +161,7 @@ struct SpotFieldView: View {
                         model.moveItem(by: 1)
                         return .handled
                     }
-                    if !model.query.isEmpty || model.menu != nil { return .ignored }
+                    if !model.query.isEmpty { return .ignored }
                     if model.selectedIsSlider {
                         model.adjustSelected(by: 5)
                     } else {
@@ -194,26 +194,6 @@ struct SpotFieldView: View {
 
     /// One line on one path: the first word stays, and the last fades into the other in its place.
     private var promptWords: some View {
-        ZStack(alignment: .leading) {
-            searchWords
-                .opacity(model.menu == nil ? 1 : 0)
-            Text(menuWords)
-                .opacity(model.menu == nil ? 0 : 1)
-        }
-        .font(SpotType.input)
-        .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
-        .lineLimit(1)
-        .modifier(SpotFieldCrossing(isOpen: isOpen, crosses: !isInstall))
-        .modifier(SpotEmptyField(model: model, isHidden: model.showsFieldDrop))
-    }
-
-    /// The words of the field while the actions menu is open, which name the spot that the menu acts on.
-    private var menuWords: String {
-        let title = model.menuTarget.map { $0.item?.title ?? $0.entry.state.title } ?? ""
-        return model.menu?.isSearchable == true ? "Search \(title) actions" : "\(title) actions"
-    }
-
-    private var searchWords: some View {
         HStack(spacing: 0) {
             Text("\(SearchPrompt.verb) ")
             ZStack(alignment: .leading) {
@@ -223,6 +203,11 @@ struct SpotFieldView: View {
                     .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(isOpen ? 1 : 0) }
             }
         }
+        .font(SpotType.input)
+        .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
+        .lineLimit(1)
+        .modifier(SpotFieldCrossing(isOpen: isOpen, crosses: !isInstall))
+        .modifier(SpotEmptyField(model: model, isHidden: model.showsFieldDrop))
     }
 
     /// The last word of the prompt in the open sheet, from its spot's title. It is read here, so that a new title reruns

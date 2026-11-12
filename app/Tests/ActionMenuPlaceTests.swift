@@ -55,4 +55,15 @@ final class ActionMenuPlaceTests: XCTestCase {
         XCTAssertTrue(bounds.contains(tall))
         XCTAssertTrue(bounds.contains(place(card(column: 3))))
     }
+
+    func testASearchShortensTheMenuFromTheEdgeAwayFromItsItem() {
+        let low = ActionMenuPlace(item: CGRect(x: 103, y: 600, width: 263, height: 40), height: height, bounds: bounds)
+        let high = ActionMenuPlace(item: card(column: 0), height: height, bounds: bounds)
+
+        XCTAssertTrue(low.growsUp)
+        XCTAssertFalse(high.growsUp)
+        XCTAssertEqual(low.rect(height: 80).maxY, low.rect.maxY)
+        XCTAssertEqual(high.rect(height: 80).minY, high.rect.minY)
+        XCTAssertEqual(high.rect(height: 80).height, 80)
+    }
 }
