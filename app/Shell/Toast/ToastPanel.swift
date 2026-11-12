@@ -17,7 +17,7 @@ final class ToastPanel: NSPanel {
     private var fixKey: HotKey.Registration?
 
     /// Shows a message, in place of any toast on screen, and hides it after a while. A fix opens on a click or on its key.
-    func show(_ message: String, symbol: String? = nil, fix: (() -> Void)? = nil, key: Shortcut? = nil, for duration: TimeInterval = ToastPanel.duration) {
+    func show(_ message: String, symbol: String? = nil, fix: (@MainActor @Sendable () -> Void)? = nil, key: Shortcut? = nil, for duration: TimeInterval = ToastPanel.duration) {
         shows += 1
         let current = shows
         toast.symbol = symbol
@@ -50,7 +50,7 @@ final class ToastPanel: NSPanel {
 
     /// Holds the fix key and takes clicks while a fix shows, and lets go of both when none does. It returns the key it holds.
     @discardableResult
-    private func hold(fix: (() -> Void)?, key: Shortcut?) -> Shortcut? {
+    private func hold(fix: (@MainActor @Sendable () -> Void)?, key: Shortcut?) -> Shortcut? {
         fixKey.map(HotKey.unregister)
         fixKey = nil
         ignoresMouseEvents = fix == nil
@@ -58,7 +58,7 @@ final class ToastPanel: NSPanel {
             toast.open = nil
             return nil
         }
-        let open = { [weak self] in
+        let open: @MainActor @Sendable () -> Void = { [weak self] in
             fix()
             self?.hide()
         }

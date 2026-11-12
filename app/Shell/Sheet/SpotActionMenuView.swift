@@ -7,7 +7,7 @@ struct SpotActionMenuView: View {
     var work: (ActionMenu.Row) -> ScriptCall? = { _ in nil }
     let onPress: (Int) -> Void
     /// Takes the text of the field of a menu that searches its rows.
-    var onSearch: (String) -> Void = { _ in }
+    var onSearch: @MainActor @Sendable (String) -> Void = { _ in }
     @FocusState private var isSearching: Bool
 
     private var shape: RoundedRectangle {
