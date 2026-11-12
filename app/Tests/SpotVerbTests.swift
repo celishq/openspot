@@ -143,7 +143,8 @@ final class SpotVerbTests: XCTestCase {
         let place = ActionMenuPlace(item: CGRect(x: 90, y: 166, width: 64, height: 64), height: SpotTokens.menuHeight(rows: menu.fullLines), bounds: bounds)
         model.menuPlace = place
         let step = SpotTokens.menuRowHeight + SpotTokens.menuRowGap
-        let row = { (index: Int) in CGPoint(x: place.rect.midX, y: place.rect.minY + SpotTokens.menuPadding + CGFloat(index) * step + SpotTokens.menuRowHeight / 2) }
+        let field = menu.isSearchable ? step : 0
+        let row = { (index: Int) in CGPoint(x: place.rect.midX, y: place.rect.minY + SpotTokens.menuPadding + field + CGFloat(index) * step + SpotTokens.menuRowHeight / 2) }
 
         model.dragMenu(to: row(1))
         XCTAssertEqual(model.menu?.selected, 1)

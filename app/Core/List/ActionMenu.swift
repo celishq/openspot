@@ -14,7 +14,7 @@ public struct ActionMenu: Equatable, Sendable {
     public static let key = "⌘K"
 
     /// How many rows a person takes in at a glance. A menu with more shows a field to search them.
-    private static let glance = 5
+    private static let glance = 2
 
     public let rows: [Row]
     /// The rows that the search finds, best first. With no search, each row.
