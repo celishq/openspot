@@ -16,6 +16,11 @@ public enum SpotTokens {
     /// The gap that a group of the store keeps above its title after another group, with a line across its middle.
     public static let groupGap: CGFloat = rowGap
     public static let glyphSize: CGFloat = 36
+    /// How far the mark of a glyph lies inside its square, such as the search field's magnifier, where a title over a
+    /// column of glyphs starts.
+    public static let glyphInset: CGFloat = 9
+    /// Where a title over a column of item icons starts inside their square, so that its first letter lines up with their marks.
+    public static let iconInset: CGFloat = 3
     public static let workMark: CGFloat = 16
     public static let keycap: CGFloat = 20
     public static let keycapRadius: CGFloat = 6

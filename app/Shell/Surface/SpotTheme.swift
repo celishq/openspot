@@ -27,7 +27,7 @@ struct SpotTheme {
     let onConfirm: NSColor
     /// The light added at the top and bottom of a surface's rim.
     let rimEnds: NSColor
-    /// The tint of the store's side that holds the rows, and the fill of a row on it.
+    /// The tint of the store, and the fill of a row on it.
     let well: NSColor
     let raised: NSColor
     /// The strengths of ink as a fill: a row or a field, a selected one, a glyph's disc and a chip.
