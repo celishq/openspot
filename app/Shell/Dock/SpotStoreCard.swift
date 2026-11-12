@@ -10,7 +10,7 @@ struct SpotStoreCard: View {
 
     var body: some View {
         let size = item.size
-        let icon = SpotItemIcon(icon: item.command.icon, glyph: item.command.glyph, symbol: item.command.symbol, size: SpotTokens.glyphSize)
+        let icon = SpotItemIcon(icon: item.spot.icon, glyph: item.spot.glyph, symbol: item.spot.symbol, size: SpotTokens.glyphSize)
         Group {
             if size == .small {
                 icon.frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -36,13 +36,13 @@ struct SpotStoreCard: View {
 
     private var words: some View {
         VStack(alignment: .leading, spacing: 1) {
-            Text(item.command.name)
+            Text(item.spot.name)
                 .font(SpotType.title)
                 .foregroundStyle(SpotTheme.ink)
                 .frame(height: SpotTokens.nameHeight)
             if leavesRoomForAdd {
                 Color.clear.frame(width: SpotTokens.addWidth, height: SpotTokens.addHeight)
-            } else if let detail = item.command.subtitle {
+            } else if let detail = item.spot.subtitle {
                 Text(detail)
                     .font(SpotType.detail)
                     .modifier(SpotSecondaryText())

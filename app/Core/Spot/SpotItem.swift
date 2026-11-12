@@ -14,14 +14,20 @@ public struct SpotItem: Equatable, Sendable {
     public let keywords: [String]
     /// The key this row shows. A pick records the next key that the person presses.
     public let shortcut: String?
+    /// Whether a shake of the pointer can be its key as well.
+    public let takesShake: Bool
     /// Whether this row shows that its thing is on, from its `value`.
     public let isOn: Bool
     /// The colour of the dot on its picture.
     public let tone: MetricValue.Tone?
     /// The file that the row stands for, which a drag takes out of the sheet (O1).
     public let file: String?
+    /// The ID of the other spot that a pick goes to, as `<spot> open <row id>` (J1).
+    public let to: String?
+    /// The whole block of the row, which a pick sends on stdin to the spot that `to` names. Only such a row keeps it.
+    public let fields: String?
 
-    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, isOn: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil) {
+    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, takesShake: Bool = false, isOn: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, to: String? = nil, fields: String? = nil) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
@@ -30,9 +36,12 @@ public struct SpotItem: Equatable, Sendable {
         self.hides = hides
         self.keywords = keywords
         self.shortcut = shortcut
+        self.takesShake = takesShake
         self.isOn = isOn
         self.tone = tone
         self.file = file
+        self.to = to
+        self.fields = fields
     }
 
     /// Reads the block of one row: `row=<id>`, which a pick sends, and `title`, which is the id when it has none.
@@ -49,9 +58,12 @@ public struct SpotItem: Equatable, Sendable {
             hides: hides.isEmpty ? nil : hides,
             keywords: block.values("keyword"),
             shortcut: block.value("shortcut"),
+            takesShake: block.flag("shake") ?? false,
             isOn: block.flag("value") ?? false,
             tone: block.value("tone").flatMap(MetricValue.Tone.init),
-            file: block.value("file").flatMap { $0.hasPrefix("/") ? $0 : nil }
+            file: block.value("file").flatMap { $0.hasPrefix("/") ? $0 : nil },
+            to: block.value("to"),
+            fields: block.value("to") == nil ? nil : block.text
         )
     }
 

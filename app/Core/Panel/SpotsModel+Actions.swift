@@ -7,7 +7,7 @@ extension SpotsModel {
     private var target: Target? {
         if let entry = openEntry { return (entry, openSheet?.selectedItem) }
         guard let entry = selectedEntry else { return nil }
-        if let item = entry.item, let list = entries.first(where: { $0.id == entry.command.id }) { return (list, item) }
+        if let item = entry.item, let list = entries.first(where: { $0.id == entry.spot.id }) { return (list, item) }
         return (entry, nil)
     }
 
@@ -42,7 +42,7 @@ extension SpotsModel {
             pressPart(part)
             return true
         }
-        if key == ActionKey(name: "escape"), let target, let action = target.entry.command.actions(for: target.item).first(where: { $0.key == key }) {
+        if key == ActionKey(name: "escape"), let target, let action = target.entry.spot.actions(for: target.item).first(where: { $0.key == key }) {
             run(action, on: target)
             return true
         }
@@ -50,13 +50,13 @@ extension SpotsModel {
             if !stepBack() { host.dismiss() }
             return true
         }
-        guard let target else { return openNewSpot(on: key) }
+        guard let target else { return openSheet(on: key) }
         if key == ActionKey(name: "k", isCommand: true) {
             openMenu(on: target)
             return menu != nil
         }
         let quiet = searchText.isEmpty ? extras(on: target) : []
-        guard let action = (target.entry.command.actions(for: target.item) + quiet).first(where: { $0.key == key }) else { return openNewSpot(on: key) }
+        guard let action = (target.entry.spot.actions(for: target.item) + quiet).first(where: { $0.key == key }) else { return openSheet(on: key) }
         if action.confirm != nil {
             openMenu(on: target)
             menu?.select(action)
@@ -67,16 +67,19 @@ extension SpotsModel {
         return true
     }
 
-    /// Opens the sheet that `⌘N` opens, when no action of the selected card takes the key. Returns false for any other
-    /// key.
-    func openNewSpot(on key: ActionKey) -> Bool {
-        guard key == Self.newSpotKey, openList == nil, let id = entries.first(where: { $0.command.opensWithNewKey })?.id else { return false }
+    /// Opens the sheet of the spot that the config gives this key of the panel, such as `⌘N`, when no action of the selected
+    /// card takes the key and no sheet shows. Returns false for any other key.
+    func openSheet(on key: ActionKey) -> Bool {
+        guard openList == nil, let id = spot(openedBy: key) else { return false }
         endEditing(moving: false)
         open(id, moving: true)
         return true
     }
 
-    static let newSpotKey = ActionKey(name: "n", isCommand: true)
+    /// The spot that the config gives a key of the panel, when it has a card.
+    func spot(openedBy key: ActionKey) -> String? {
+        arrangement.spot(openedBy: key, over: defaultArrangement).flatMap { id in entries.contains { $0.id == id } ? id : nil }
+    }
 
     /// Does what the key of a footer label does, as if it were pressed: Return runs the selected row.
     public func pressHint(_ label: String) {
@@ -170,10 +173,11 @@ extension SpotsModel {
         }
     }
 
-    /// Whether the row that records takes a shake too: a row of Settings that gives a key to a command or a float (W3).
+    /// Whether the row that records takes a shake too: a row that says `shake=true`, as a row of Settings that gives a key to
+    /// a command or a float does (W3).
     public var takesShake: Bool {
         guard let recording else { return false }
-        return openEntry?.command.shipped?.takesShake(recording) ?? false
+        return openItems?.shown.first { $0.run == recording }?.takesShake ?? false
     }
 
     /// The words of the key that records.
@@ -223,7 +227,7 @@ extension SpotsModel {
     private func actionMenu(on target: Target) -> ActionMenu? {
         let isOpenList = openList == target.entry.id
         return ActionMenu(
-            command: target.entry.command,
+            spot: target.entry.spot,
             item: target.item,
             showsPrimary: !isOpenList || target.item != nil,
             extras: extras(on: target)
@@ -235,16 +239,16 @@ extension SpotsModel {
     /// own Delete.
     private func extras(on target: Target) -> [CommandAction] {
         guard openList == nil, target.item == nil else { return [] }
-        let command = target.entry.command
+        let command = target.entry.spot
         if command.fault != nil { return [.edit, .remove()] }
-        guard command.shipped == nil else { return [] }
+        guard command.host == nil, !command.isBuiltIn else { return [] }
         guard !files.folder(Config(text: "")).isCore(command) else { return [.share, .turnOff] }
         return [.edit, .copyPrompt, .share, .remove(widgets: widgets(sharingFileWith: target.entry))]
     }
 
     /// How many widgets the file of a widget holds, which go together when it is removed.
     private func widgets(sharingFileWith entry: Entry) -> Int {
-        entry.kind == .widget ? entries.filter { $0.command.url == entry.command.url }.count : 1
+        entry.kind == .widget ? entries.filter { $0.spot.url == entry.spot.url }.count : 1
     }
 
     /// The keys that work on the selected row or card, in words for the bottom of the panel.
@@ -356,13 +360,11 @@ extension SpotsModel {
         }
     }
 
-    /// Runs the action that changes a setting of a spot. A form that it answers with opens on the sheet of that spot, and
-    /// the panel closes when it is done.
-    public func changeSetting(of id: String, with action: CommandAction) {
-        guard let entry = entries.first(where: { $0.id == id }), let sheet = sheets[id] else {
-            host.notify("Openspot cannot find \(id). Turn it on in Spots, then try again.")
-            return
-        }
+    /// Runs the action of a spot that has the name of its setting, as `openspot setting change` asks. A form that it answers
+    /// with opens on the sheet of that spot, and the panel closes when it is done. Returns false when no spot has the ID.
+    public func changeSetting(_ key: String, of id: String) -> Bool {
+        guard let entry = entries.first(where: { $0.id == id }), let sheet = sheets[id] else { return false }
+        let action = CommandAction(id: key, title: "Change \(key)", scope: .command, after: .close)
         let ask = UUID()
         formAsk = ask
         Task {
@@ -380,6 +382,7 @@ extension SpotsModel {
                 host.notify("\(action.title) failed. \(Self.reason(error))")
             }
         }
+        return true
     }
 
     /// Takes a click on an option of a form of one choice, and saves the form with it.

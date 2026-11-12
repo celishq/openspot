@@ -28,7 +28,7 @@ struct SpotDockTile: View {
                 }
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(item.command.name)
+            .accessibilityLabel(item.spot.name)
     }
 }
 

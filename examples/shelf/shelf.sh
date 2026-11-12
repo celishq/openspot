@@ -6,10 +6,7 @@
 # read=sheet
 # offers=float
 list="$OPENSPOT_DATA/files"
-
-esc() {
-  printf '%s' "$1" | sed 's/\\/\\\\/g'
-}
+. "$OPENSPOT_SH"
 
 forget() {
   [ -f "$list" ] || return 0
@@ -30,8 +27,8 @@ case "$1" in
       [ -e "$path" ] || continue
       folder=${path%/*}
       case "$folder" in "$HOME"*) folder="~${folder#"$HOME"}" ;; esac
-      value=$(esc "$path")
-      printf 'row=%s\ntitle=%s\ndetail=%s\nicon=%s\nfile=%s\n\n' "$value" "$(esc "${path##*/}")" "$(esc "$folder")" "$value" "$value"
+      openspot_row "$path" "${path##*/}" "$folder" "$path"
+      openspot_kv file "$path"
     done < "$list"
     ;;
   drop)
@@ -40,7 +37,7 @@ case "$1" in
     for path; do
       grep -qxF "$path" "$list" || printf '%s\n' "$path" >> "$list"
     done
-    printf 'select=%s\n' "$(esc "$1")"
+    openspot_kv select "$1"
     ;;
   drag | remove)
     shift

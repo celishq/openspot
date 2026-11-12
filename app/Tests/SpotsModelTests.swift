@@ -49,6 +49,48 @@ final class SpotsModelTests: XCTestCase {
         XCTFail("waited for \(what)")
     }
 
+    func testAKeyThatTheAPISetsHoldsTheKeysAgainAndBuildsNoGrid() throws {
+        try script("move", header: "title=Move\n\ncommand=left\ntitle=Left side", ":")
+        model.reload()
+        let builds = model.gridBuilds
+        let trigger = try XCTUnwrap(Trigger(text: "ctrl+option+l"))
+        try model.files.config.assign(trigger, to: "move", act: .command("left"))
+
+        model.configChanged(.keys)
+
+        XCTAssertEqual(model.gridBuilds, builds)
+        XCTAssertEqual(host.held.last, [GlobalKey(spot: "move", act: .command("left"), trigger: trigger)])
+    }
+
+    func testAMenuBarPlaceAndAValueThatTheAPISetsBuildNoGridNowOrAtTheNextReload() throws {
+        try script("cups", header: "title=Cups\nevery=60", "printf 'text=c\\ntitle=3\\n'")
+        try script("notes", header: "title=Notes", ":")
+        model.reload()
+        let builds = model.gridBuilds
+        let entries = model.entries
+
+        try model.files.config.showInMenuBar("cups", true)
+        model.configChanged(.spots(["cups"]))
+        try model.files.config.set(setting: "size", of: "cups", to: "big")
+        model.configChanged(.value(spot: "cups", caller: nil))
+        model.reload()
+
+        XCTAssertEqual(model.gridBuilds, builds)
+        XCTAssertEqual(model.entries, entries)
+    }
+
+    func testAFileThatChangesBesideASpotThatTheAPITurnsOnStillShowsItsCard() throws {
+        try script("cups", header: "title=Cups\nevery=60", "printf 'text=c\\ntitle=3\\n'")
+        model.reload()
+        try script("notes", header: "title=Notes", ":")
+        try script("cups", header: "title=Mugs\nevery=60", "printf 'text=c\\ntitle=3\\n'")
+
+        model.configChanged(.spots(["other"]))
+        model.folderChanged()
+
+        XCTAssertEqual(Set(model.entries.map { $0.spot.name }), ["Mugs", "Notes"])
+    }
+
     /// Shows the panel with one list of two rows, and opens that list.
     private func openList() async throws {
         try script("list", header: "read=sheet", "printf 'row=a\\ntitle=Apple\\n\\nrow=b\\ntitle=Banana\\n'")
@@ -73,6 +115,37 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the list") { model.sheets["list"]?.list.shown.count == 1 }
         XCTAssertNotNil(SpotSheetCard.of("list", in: model))
         XCTAssertNil(SpotSheetCard.of("list", in: model)?.look)
+    }
+
+    func testTheDefaultConfigOrdersItsSpotsUnderThePersonsOrder() throws {
+        let added = Date(timeIntervalSince1970: 1_700_000_000)
+        for name in ["a", "b", "c", "d"] {
+            try script(name, header: "title=\(name.uppercased())", "")
+            try FileManager.default.setAttributes([.creationDate: added], ofItemAtPath: plugins.appendingPathComponent("\(name).sh").path)
+        }
+        let defaults = folder.appendingPathComponent("defaults.toml")
+        try "[[spots]]\nid = \"d\"\n\n[[spots]]\nid = \"b\"\n".write(to: defaults, atomically: true, encoding: .utf8)
+        let files = SpotFiles(environment: model.files.environment, home: folder, defaults: self.defaults, defaultConfig: defaults)
+        let ordered = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
+        defer { ordered.quit() }
+
+        ordered.reload()
+        XCTAssertEqual(ordered.entries.map(\.id), ["a", "d", "c", "b"])
+
+        try ordered.files.config.write(SpotArrangement(choices: [SpotArrangement.Choice(id: "b"), SpotArrangement.Choice(id: "a")]))
+        ordered.reload()
+        XCTAssertEqual(ordered.entries.map(\.id), ["b", "d", "c", "a"])
+    }
+
+    func testADownloadedUpdateReadsEachSpotThatListsItWhileThePanelIsHidden() async throws {
+        let seen = folder.appendingPathComponent("seen").path
+        try script("news", header: "read=panel\non=app.update", "[ \"$OPENSPOT_REASON\" = app.update ] && printf '%s' \"$OPENSPOT_VALUE\" > '\(seen)'; printf 'title=News\n'")
+        try script("other", header: "read=panel\non=app.front", "printf 'title=Other\n'")
+        model.reload()
+
+        model.updateIsReady("0.3.0")
+
+        try await wait("the read of the update") { (try? String(contentsOfFile: seen, encoding: .utf8)) == "0.3.0" }
     }
 
     func testAPointOfTheGridFindsTheCardWhosePlaceHoldsIt() throws {
@@ -121,7 +194,7 @@ final class SpotsModelTests: XCTestCase {
         model.panelWillHide()
         nonisolated(unsafe) var changed = false
         withObservationTracking { _ = model.entries } onChange: { changed = true }
-        withObservationTracking { _ = model.sheets["one"]?.command } onChange: { changed = true }
+        withObservationTracking { _ = model.sheets["one"]?.spot } onChange: { changed = true }
 
         model.panelWillShow(holding: [])
 
@@ -211,6 +284,25 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the glyphs") { !host.glyphLists.isEmpty }
 
         XCTAssertEqual(host.glyphLists, [Array(repeating: "😀", count: 100)])
+    }
+
+    func testAReadOfTheSameRowsGivesTheGlyphsItCollectedBefore() async throws {
+        let calls = folder.appendingPathComponent("calls").path
+        try script("faces", header: "read=sheet", "echo x >> '\(calls)'; for i in $(seq 1 100); do printf 'row=f%s\\ntitle=Face %s\\nicon=😀\\n\\n' $i $i; done")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.press("faces")
+        try await wait("the glyphs") { !host.glyphLists.isEmpty }
+        let sheet = try XCTUnwrap(model.sheets["faces"])
+        try await wait("the end of the first read") { sheet.calls.isEmpty }
+
+        sheet.read(need: .change)
+        try await wait("the second read") { (try? String(contentsOfFile: calls, encoding: .utf8))?.count == 4 }
+        try await wait("the end of the second read") { sheet.calls.isEmpty }
+
+        XCTAssertEqual(host.glyphLists.count, 2)
+        XCTAssertTrue(host.glyphLists[0].withUnsafeBufferPointer { first in host.glyphLists[1].withUnsafeBufferPointer { $0.baseAddress == first.baseAddress } })
     }
 
     func testAStepBackClearsTheSearchBeforeItClosesTheList() async throws {
@@ -313,10 +405,10 @@ final class SpotsModelTests: XCTestCase {
         model.isShown = true
         model.panelWillShow(holding: [])
         model.press("list")
-        try await wait("the open list") { model.openList == "list" && model.openEntry?.command.actions.contains(where: \.isForm) == true }
+        try await wait("the open list") { model.openList == "list" && model.openEntry?.spot.actions.contains(where: \.isForm) == true }
         let entry = try XCTUnwrap(model.openEntry)
-        let action = try XCTUnwrap(entry.command.actions.first { $0.id == "new" })
-        let edit = try XCTUnwrap(entry.command.actions.first { $0.id == "edit" })
+        let action = try XCTUnwrap(entry.spot.actions.first { $0.id == "new" })
+        let edit = try XCTUnwrap(entry.spot.actions.first { $0.id == "edit" })
         model.openForm(action, on: (entry, nil))
         try await wait("the form") { model.form != nil }
         model.setFormValue("x", for: "a")
@@ -370,9 +462,9 @@ final class SpotsModelTests: XCTestCase {
         model.isShown = true
         model.panelWillShow(holding: [])
         model.press("list")
-        try await wait("the open list") { model.openList == "list" && model.openEntry?.command.actions.contains(where: \.isForm) == true }
+        try await wait("the open list") { model.openList == "list" && model.openEntry?.spot.actions.contains(where: \.isForm) == true }
         let entry = try XCTUnwrap(model.openEntry)
-        let action = try XCTUnwrap(entry.command.actions.first { $0.id == "pick" })
+        let action = try XCTUnwrap(entry.spot.actions.first { $0.id == "pick" })
         model.openForm(action, on: (entry, nil))
         try await wait("the form") { model.form != nil }
         XCTAssertEqual(model.form?.draft.choices?.shown.map(\.isOn), [true, false, false])
@@ -407,9 +499,9 @@ final class SpotsModelTests: XCTestCase {
         model.isShown = true
         model.panelWillShow(holding: [])
         model.press("list")
-        try await wait("the open list") { model.openList == "list" && model.openEntry?.command.actions.contains(where: \.isForm) == true }
+        try await wait("the open list") { model.openList == "list" && model.openEntry?.spot.actions.contains(where: \.isForm) == true }
         let entry = try XCTUnwrap(model.openEntry)
-        model.openForm(try XCTUnwrap(entry.command.actions.first { $0.id == "pick" }), on: (entry, nil))
+        model.openForm(try XCTUnwrap(entry.spot.actions.first { $0.id == "pick" }), on: (entry, nil))
         try await wait("the form") { model.form != nil }
 
         XCTAssertTrue(model.showsSearch)
@@ -440,9 +532,8 @@ final class SpotsModelTests: XCTestCase {
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
-        let change = try XCTUnwrap(SettingsSpot.change(of: "setting:list:pick"))
-
-        model.changeSetting(of: change.spot, with: change.action)
+        XCTAssertFalse(model.changeSetting("pick", of: "gone"))
+        XCTAssertTrue(model.changeSetting("pick", of: "list"))
         try await wait("the form") { model.form != nil }
         XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
         XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
@@ -465,9 +556,7 @@ final class SpotsModelTests: XCTestCase {
         model.panelWillShow(holding: [])
         model.press("agenda")
         try await wait("the sheet of parts") { model.shownParts(of: "agenda")?.showsRows == true }
-        let change = try XCTUnwrap(SettingsSpot.change(of: "setting:agenda:pick"))
-
-        model.changeSetting(of: change.spot, with: change.action)
+        XCTAssertTrue(model.changeSetting("pick", of: "agenda"))
         try await wait("the form") { model.form != nil }
 
         XCTAssertNil(model.shownParts(of: "agenda"))
@@ -490,9 +579,9 @@ final class SpotsModelTests: XCTestCase {
         model.isShown = true
         model.panelWillShow(holding: [])
         model.press("list")
-        try await wait("the open list") { model.openList == "list" && model.openEntry?.command.actions.isEmpty == false }
+        try await wait("the open list") { model.openList == "list" && model.openEntry?.spot.actions.isEmpty == false }
         let entry = try XCTUnwrap(model.openEntry)
-        let action = try XCTUnwrap(entry.command.actions.first { $0.id == "new" })
+        let action = try XCTUnwrap(entry.spot.actions.first { $0.id == "new" })
         model.openForm(action, on: (entry, nil))
         try await wait("the form call") { model.sheets["list"]?.calls.isEmpty == false }
 
@@ -528,16 +617,11 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(host.motions.contains(.sheet(isOpen: false)))
     }
 
-    func testAPickOfARowThatOpensASpotOpensItInPlaceOfTheListWithNoCollapse() async throws {
-        let build = plugins.appendingPathComponent("build.sh")
-        try "#!/bin/sh\nprintf 'row=g\\ntitle=Guide\\n'\n".writeScript(to: build)
-        let rows = plugins.appendingPathComponent("rows.sh")
-        try "#!/bin/sh\nprintf 'row=openspot.build\\ntitle=New spot\\n'\n".writeScript(to: rows)
-        host.shipped = [
-            Spot(id: ShippedSpot.newID, name: "New spot", url: build, kind: .list, read: .sheet, isOnGrid: false),
-            Spot(id: "picker", name: "Picker", url: rows, kind: .list, read: .sheet, rowOpens: ["openspot.build": ShippedSpot.newID])
-        ]
+    func testASpotThatTheAPIOpensOpensInPlaceOfTheListWithNoCollapse() async throws {
+        try script("build", header: "read=sheet", "printf 'row=g\\ntitle=Guide\\n'")
+        try script("picker", header: "read=sheet", "printf 'row=new\\ntitle=New spot\\n'")
         model.reload()
+        model.setOnGrid(false, for: "build")
         model.isShown = true
         model.panelWillShow(holding: [])
         model.press("picker")
@@ -546,9 +630,11 @@ final class SpotsModelTests: XCTestCase {
         host.motions = []
         host.phases = []
 
-        model.pick(SpotItem(title: "New spot", run: "openspot.build"), of: entry)
+        XCTAssertEqual(entry.id, "picker")
 
-        try await wait("the New spot sheet") { model.openList == ShippedSpot.newID }
+        XCTAssertTrue(model.openSheet("build"))
+
+        try await wait("the New spot sheet") { model.openList == "build" }
         XCTAssertEqual(model.transition.phase, .open)
         XCTAssertFalse(host.phases.contains(.closing))
         XCTAssertFalse(host.phases.contains(.ready))
@@ -611,6 +697,34 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.visible.map(\.id), ["settings\nsound"])
     }
 
+    func testTypingBuildsTheCardsAsSearchedItemsOnce() throws {
+        try script("notes", header: "title=Notes", "true")
+        try script("mail", header: "title=Mail", "true")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        let before = model.spotListBuilds
+
+        for text in ["n", "no", "not", "note", "notes"] { model.searchText = text }
+
+        XCTAssertEqual(model.spotListBuilds - before, 1)
+        XCTAssertEqual(model.visible.map(\.id), ["notes"])
+    }
+
+    func testAChangedTitleOfACardIsFoundOnTheNextKey() async throws {
+        try script("mood", header: "title=Calm\nread=panel", "printf 'title=Stormy\n'")
+        model.reload()
+        model.isShown = true
+        model.searchText = "c"
+        XCTAssertEqual(model.visible.map(\.id), ["mood"])
+        model.panelWillShow(holding: [])
+        try await wait("the read title") { model.sheets["mood"]?.state.title == "Stormy" }
+
+        model.searchText = "st"
+
+        XCTAssertEqual(model.visible.map(\.id), ["mood"])
+    }
+
     /// Shows the panel with a spot that answers the main search for text that starts with a digit.
     private func showAnswers(slow: String = "none") throws {
         let body = #"case "$2" in \#(slow)) sleep 0.5 ;; esac; case "$1" in read) [ -n "$2" ] && printf 'row=%s\ntitle=Is %s\ndetail=Read %s\n' "$2" "$2" "$2" ;; open) printf 'toast=Picked %s\n' "$2" ;; esac"#
@@ -635,6 +749,19 @@ final class SpotsModelTests: XCTestCase {
 
         model.searchText = ""
         XCTAssertFalse(model.visible.contains { $0.id.hasPrefix("calc") })
+    }
+
+    func testEachKeyMatchesEachAnswersPatternOnce() throws {
+        try script("calc", header: "title=Calc\nanswers=^[0-9]", "true")
+        try script("units", header: "title=Units\nanswers=[0-9] ?(km|mi)", "true")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        let before = model.answerMatches.count
+
+        for text in ["1", "12", "12 k", "12 km", "12 kmh"] { model.searchText = text }
+
+        XCTAssertEqual(model.answerMatches.count - before, 10)
     }
 
     func testTheLastAnswerStaysUntilTheNewestTextIsAnswered() async throws {
@@ -684,6 +811,51 @@ final class SpotsModelTests: XCTestCase {
 
         try await wait("the pick of the newest answer") { host.confirms.contains("Picked 12") }
         XCTAssertFalse(host.confirms.contains("Picked 1"))
+    }
+
+    func testReturnOnAKeptRowOfASlowInlineSpotWaitsForTheNewestAnswer() async throws {
+        try """
+        // title=Calc
+        // mode=inline
+        // answers=^[0-9]
+        function main([id, text]) {
+          if (id === "open") return `toast=Picked ${text}\\n`
+          if (text === "12") { const end = Date.now() + 300; while (Date.now() < end) {} }
+          return `row=${text}\\ntitle=Is ${text}\\n`
+        }
+        """.write(to: plugins.appendingPathComponent("calc.js"), atomically: true, encoding: .utf8)
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.searchText = "1"
+        try await wait("the first answer") { model.visible.first?.id == "calc\n1" }
+
+        model.searchText = "12"
+        XCTAssertEqual(model.visible.first?.id, "calc\n1")
+        model.runSelected()
+
+        try await wait("the pick of the newest answer") { host.confirms.contains("Picked 12") }
+        XCTAssertFalse(host.confirms.contains("Picked 1"))
+    }
+
+    func testAStayingSpotAnswersTheKeptTextWhenThePanelShowsAgain() async throws {
+        try script("calc", header: "title=Calc\nmode=stay\nanswers=^[0-9]", """
+        while IFS= read -r line; do
+          case "$line" in call=*) call=${line#call=}; text= ;; arg=read) ;; arg=*) text=${line#arg=} ;; esac
+          [ -n "$line" ] || { [ -n "$text" ] && printf 'end=%s\\n\\nrow=%s\\ntitle=%s\\n---\\n' "$call" "$text" "$text" || printf 'end=%s\\n---\\n' "$call"; }
+        done
+        """)
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.searchText = "5"
+        try await wait("the answer") { model.visible.first?.id == "calc\n5" }
+
+        model.panelWillHide()
+        model.panelDidHide()
+        model.panelWillShow(holding: [])
+
+        try await wait("the answer again") { model.visible.first?.id == "calc\n5" }
     }
 
     func testAnAnswerAndARowOfItsSpotWithOneIdShowOnce() async throws {
@@ -745,31 +917,43 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(model.reveal("three"))
     }
 
-    func testCommandNOpensTheNewSpotSheetFromTheGridAndFromEditSpots() async throws {
+    func testTheAPIOpensASheetWithThePanelHiddenAndNoSpotForAnUnknownID() async throws {
+        try script("list", header: "read=sheet", "printf 'row=a\\ntitle=Apple\\n'")
+        model.reload()
+
+        XCTAssertFalse(model.openSheet("gone"))
+        XCTAssertTrue(model.openSheet("list"))
+
+        XCTAssertEqual(host.shows, 1)
+        try await wait("the sheet") { model.openList == "list" }
+    }
+
+    func testAKeyOfTheConfigOpensTheSheetOfItsSpotFromTheGridAndFromEditSpots() async throws {
         let new = plugins.appendingPathComponent("new.sh")
-        try "#!/bin/sh\nprintf 'row=g\\ntitle=Guide\\n'\n".writeScript(to: new)
-        host.shipped = [Spot(id: ShippedSpot.newID, name: "New spot", url: new, kind: .list, read: .sheet, isOnGrid: false, opensWithNewKey: true)]
+        try "#!/bin/sh\n# read=sheet\nprintf 'row=g\\ntitle=Guide\\n'\n".writeScript(to: new)
+        try FileManager.default.createDirectory(at: folder.appendingPathComponent("config"), withIntermediateDirectories: true)
+        try "[[spots]]\nid = \"new\"\ngrid = false\nkey = \"cmd+n\"\n".write(to: folder.appendingPathComponent("config/config.toml"), atomically: true, encoding: .utf8)
         model.reload()
         model.isShown = true
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "n", isCommand: true)))
-        try await wait("the New spot sheet") { model.openList == ShippedSpot.newID }
+        try await wait("the New spot sheet") { model.openList == "new" }
 
         model.closeList(moving: false)
         model.beginEditing()
         XCTAssertTrue(model.handleKey(ActionKey(name: "n", isCommand: true)))
         XCTAssertFalse(model.isEditing)
-        try await wait("the New spot sheet from Edit Spots") { model.openList == ShippedSpot.newID }
+        try await wait("the New spot sheet from Edit Spots") { model.openList == "new" }
     }
 
-    func testAKeywordFindsASpotAndASpotThatOpensTheStoreStartsEditSpots() {
-        host.shipped = [Spot(id: "store", name: "Spots", url: plugins, keywords: ["edit spots"], opensStore: true)]
+    func testAKeywordFindsASpotAndTheStoreStartsEditSpotsWithTheSearchCleared() throws {
+        try script("store", header: "title=Spots\nkeyword=edit spots", "true")
         model.reload()
 
         model.query = "edit spots"
         XCTAssertEqual(model.visible.first?.id, "store")
 
-        model.press("store")
+        model.openStore()
         XCTAssertTrue(model.isEditing)
         XCTAssertEqual(model.query, "")
     }

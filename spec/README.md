@@ -44,23 +44,24 @@ These rules come from the way Nostr writes its NIPs.
 
 | Word                                                                                                     | Kind                 | Spec |
 | -------------------------------------------------------------------------------------------------------- | -------------------- | ---- |
-| `title`, `icon`, `detail`, `keyword`, `preview`, `size`, `read`, `drop`, `offers`, `answers`             | Header key           | 01   |
+| `title`, `icon`, `detail`, `keyword`, `preview`, `size`, `read`, `every`, `on`, `emits`, `drop`, `offers`, `answers`, `uses` | Header key | 01 |
+| `app`, `update`, `spots`, `settings`, `screen`, `clipboard`, `calendar`, `network`, `files`              | Use                  | 01   |
 | `command`, `setting`                                                                                     | Header block         | 01   |
 | `view`                                                                                                   | Header key           | 03   |
-| `stay`                                                                                                   | Header key           | 05   |
-| `sheet`, `panel`, a number                                                                               | Moment               | 01   |
+| `mode`: `once`, `stay`, `always`, `inline`                                                               | Header key           | 01   |
+| `sheet`, `panel` in `read`; seconds in `every`; an event such as `app.front`, `clipboard`, `screen.wake` in `on` | Moment       | 01   |
 | `search`, `rows`, `float`                                                                                | Place                | 01   |
 | `read`                                                                                                   | Reserved call        | 01   |
 | `open`, `drop`, `drag`                                                                                   | Default id           | 01   |
-| `OPENSPOT_ID`, `OPENSPOT_REASON`, `OPENSPOT_DATA`, `OPENSPOT_SH`, `OPENSPOT_PREVIEW`                     | Environment variable | 01   |
+| `OPENSPOT_ID`, `OPENSPOT_REASON`, `OPENSPOT_VALUE`, `OPENSPOT_DATA`, `OPENSPOT_SH`, `OPENSPOT_TOKEN`, `OPENSPOT_PREVIEW` | Environment variable | 01 |
 | `openspot <noun> <verb>`, `openspot help <noun>`                                                         | Command              | 01   |
 | `text`, `number`, `gauge`, `graph`, `picture`, `switch`, `slider`, `field`, `choice`, `option`, `hotkey`, `button`, `section`, `repeat`, `row` | Block kind | 01 |
 | `view`                                                                                                   | Block kind           | 03   |
 | `title`, `detail`, `icon`, `tone`, `value`, `color`, `look`, `align`                                     | Block key            | 01   |
 | `parent`, `hides`, `keyword`, `shortcut`, `file`                                                         | Row key              | 01   |
 | `grid`, `grid.<size>`, `main`, `title`, `detail`, `search`, `recents`, `toast`, `link`, `progress`, `select` | Head key | 01 |
-| `end`                                                                                                    | Head key             | 05   |
-| `call`, `reason`, `arg`, `stop`                                                                          | Stdin key            | 05   |
+| `call`, `end`                                                                                            | Head key             | 05   |
+| `call`, `arg`, `env.<name>`, `input`, `stop`                                                             | Stdin key            | 05   |
 | `title`, `detail`, `size`, `grid`, `opens`                                                               | Widget key           | 01   |
 
 The verbs and the row keys of each `openspot` noun, such as `screen` or `calendar`, are in `openspot help <noun>`.
@@ -71,3 +72,7 @@ An old script never sees a word that it did not ask for. To add a default id, a 
 or a block kind, add one word to one spec and to the registry. A new `openspot` noun gets its guide in `app/Help`. An old app skips a key that
 it does not know, and skips and reports a block that it does not know. A new default id reaches only a script that asks
 for it.
+
+## Open
+
+A stop of a call that `openspot_serve` runs does not end it early, so a slow staying call runs to its end.

@@ -34,10 +34,10 @@ public struct CalendarEntry: Equatable, Sendable {
     /// Reads the words of an add, or fails with what they lack: any words, or a title beside the date.
     init(titled words: String) throws {
         let trimmed = words.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { throw PluginError.failed(1, "Openspot needs words, such as `Lunch tomorrow 13:00`.") }
+        guard !trimmed.isEmpty else { throw SpotError.failed(1, "Openspot needs words, such as `Lunch tomorrow 13:00`.") }
         self.init(words: words)
         guard !title.isEmpty else {
-            throw PluginError.failed(1, "Openspot found only a date in `\(trimmed)`. Add a title, such as `Lunch tomorrow 13:00`.")
+            throw SpotError.failed(1, "Openspot found only a date in `\(trimmed)`. Add a title, such as `Lunch tomorrow 13:00`.")
         }
     }
 

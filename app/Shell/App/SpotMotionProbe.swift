@@ -79,7 +79,7 @@ final class SpotMotionProbe: NSObject {
             model.beginEditing()
             return DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.pullTile() }
         }
-        let target = model.entries.first { spot == nil ? $0.kind == .widget && $0.command.opens != nil : $0.id == spot }
+        let target = model.entries.first { spot == nil ? $0.kind == .widget && $0.spot.opens != nil : $0.id == spot }
         guard let target, let view = panel.contentView else { return finish(with: "no spot to open\n") }
         let link = view.displayLink(target: self, selector: #selector(tick))
         link.add(to: .main, forMode: .common)

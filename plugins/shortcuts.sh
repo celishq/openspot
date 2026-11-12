@@ -5,6 +5,7 @@
 # read=panel
 # offers=search
 # drop=*
+# uses=clipboard
 . "$OPENSPOT_SH"
 input="$OPENSPOT_DATA/input"
 kept="$OPENSPOT_DATA/rows"
@@ -13,12 +14,8 @@ app=/System/Applications/Shortcuts.app
 # Prints a row for each shortcut in a folder, or with "none" for each shortcut in no folder.
 rows() {
   parent=''
-  [ "$1" = none ] || parent="parent=$(esc "$1")"
-  shortcuts list --folder-name "$1" | sed 's/\\/\\\\/g' | parent=$parent app=$app awk 'NF {
-    printf "row=%s\ntitle=%s\nicon=%s\n", $0, $0, ENVIRON["app"]
-    if (ENVIRON["parent"] != "") print ENVIRON["parent"]
-    print ""
-  }'
+  [ "$1" = none ] || parent="parent=$1"
+  shortcuts list --folder-name "$1" | LC_ALL=C tr -d '\t' | parent=$parent app=$app awk 'NF { printf "%s\t%s\t\t%s\t%s\n", $0, $0, ENVIRON["app"], ENVIRON["parent"] }' | openspot_rows
 }
 
 # Prints a row for each shortcut in no folder, then for each shortcut in each folder. It fails when Shortcuts gives no list.
@@ -108,7 +105,7 @@ case "$1" in
     ;;
   clipboard)
     text="$(mktemp -d)/clipboard.txt"
-    pbpaste >"$text"
+    openspot clipboard read >"$text"
     run "$2" "$text"
     ;;
   edit)

@@ -6,8 +6,9 @@
 data=${OPENSPOT_DATA:-${TMPDIR:-/tmp}}
 pending="$data/uninstall"
 kept="$data/uninstall-kept"
-found="$data/apps"
+found="$data/app-list"
 lib="$HOME/Library"
+. "$OPENSPOT_SH"
 
 # Prints the bundle of each running app, one a line.
 running() {
@@ -27,15 +28,9 @@ find_apps() {
     {
       in_app_folders -maxdepth 3 -name '*.app' -prune
       echo /System/Library/CoreServices/Finder.app
-    } | sed 's/\\/\\\\/g' \
-      | awk -F/ '{ name = $NF; sub(/\.app$/, "", name); print name "\t" $0 }' \
+    } | awk -F/ '{ name = $NF; sub(/\.app$/, "", name); print name "\t" $0 }' \
       | sort -f -u > "$found.$$" && mv "$found.$$" "$found" && mv "$found.looked.$$" "$found.looked"
   fi
-}
-
-# Writes text as a value. A path holds no new line, so only a backslash needs care.
-esc() {
-  printf '%s' "$1" | sed 's/\\/\\\\/g'
 }
 
 bundle_id() {
@@ -75,12 +70,8 @@ apps() {
   { echo; running; } > "$live"
   find_apps
   awk -F'\t' 'NR == FNR { live[$0] = 1; next }
-      {
-        printf "row=%s\ntitle=%s\nicon=%s\n", $2, $1, $2
-        if ($2 in live) print "value=true"; else print "hides=quit"
-        if ($2 ~ /^\/System\//) print "hides=uninstall"
-        print ""
-      }' "$live" "$found"
+      { printf "%s\t%s\t\t%s\t%s\t%s\n", $2, $1, $2, ($2 in live ? "value=true" : "hides=quit"), ($2 ~ /^\/System\// ? "hides=uninstall" : "") }' "$live" "$found" |
+    openspot_rows
 }
 
 # Prints the sheet that asks which files of an app go to the Trash.
@@ -103,8 +94,8 @@ uninstall_sheet() {
     chosen=true
     grep -Fxq "$path" "$kept" 2>/dev/null && chosen=false
     where=$(dirname "$path" | sed "s#^$HOME#~#")
-    printf 'row=%s\ntitle=%s\ndetail=%s\nicon=%s\nvalue=%s\n\n' \
-      "$(esc "$path")" "$(esc "$(basename "$path")")" "$(esc "$where")" "$(esc "$path")" "$chosen"
+    openspot_row "$path" "$(basename "$path")" "$where" "$path"
+    openspot_kv value "$chosen"
   done
 }
 

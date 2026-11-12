@@ -20,7 +20,7 @@ final class CardFaceTests: XCTestCase {
     """
 
     func testACardTakesTheDrawingOfItsSizeOrTheNearestSmallerOne() {
-        let face = PluginOutput(text: clock).face
+        let face = SpotOutput(text: clock).face
 
         XCTAssertNil(face.drawing(for: .small))
         XCTAssertEqual(face.drawing(for: .wide), [["time", "power"]])
@@ -34,35 +34,35 @@ final class CardFaceTests: XCTestCase {
     }
 
     func testTheHeadNamesTheValueThatTheMenuBarShows() {
-        XCTAssertEqual(MetricValue(output: PluginOutput(text: clock))?.title, "14:20")
+        XCTAssertEqual(MetricValue(output: SpotOutput(text: clock))?.title, "14:20")
     }
 
     func testWithNoNameTheOnlyValueStandsForTheSpotAndTwoStandForNone() {
-        XCTAssertEqual(MetricValue(output: PluginOutput(text: "text=a\ntitle=A\n\nbutton=b\ntitle=B\n"))?.title, "A")
-        XCTAssertNil(PluginOutput(text: "text=a\ntitle=A\n\ntext=b\ntitle=B\n").value)
+        XCTAssertEqual(MetricValue(output: SpotOutput(text: "text=a\ntitle=A\n\nbutton=b\ntitle=B\n"))?.title, "A")
+        XCTAssertNil(SpotOutput(text: "text=a\ntitle=A\n\ntext=b\ntitle=B\n").value)
     }
 
     func testOnlyTheMainSwitchSaysWhetherTheCardIsOn() {
-        XCTAssertNil(SpotState(output: PluginOutput(text: "on=true\ndetail=Awake\n"), header: SpotState(title: "Clock")).on)
+        XCTAssertNil(SpotState(output: SpotOutput(text: "on=true\ndetail=Awake\n"), header: SpotState(title: "Clock")).on)
     }
 
     func testTheNamedSwitchSaysWhetherTheCardIsOnWhereverItPrints() {
         let text = "main=power\n\nswitch=other\nvalue=false\n\nswitch=power\nvalue=true\n"
-        XCTAssertEqual(SpotState(output: PluginOutput(text: text), header: SpotState(title: "Clock")).on, true)
-        XCTAssertNil(SpotState(output: PluginOutput(text: "switch=a\nvalue=true\n\nswitch=b\nvalue=false\n"), header: SpotState(title: "Clock")).on)
+        XCTAssertEqual(SpotState(output: SpotOutput(text: text), header: SpotState(title: "Clock")).on, true)
+        XCTAssertNil(SpotState(output: SpotOutput(text: "switch=a\nvalue=true\n\nswitch=b\nvalue=false\n"), header: SpotState(title: "Clock")).on)
     }
 
     func testANameThatNoValueHasAndAnUnknownPlaceAreFaults() {
-        XCTAssertEqual(PluginOutput(text: "main=gone\n\nbutton=go\n").partFaults, ["the head names gone as main, which no text, number, gauge, graph, switch or slider has"])
-        XCTAssertEqual(PluginOutput(text: "grid.tray=a\n\ntext=a\ntitle=A\n").partFaults, ["the head draws grid.tray, which is not a place"])
+        XCTAssertEqual(SpotOutput(text: "main=gone\n\nbutton=go\n").partFaults, ["the head names gone as main, which no text, number, gauge, graph, switch or slider has"])
+        XCTAssertEqual(SpotOutput(text: "grid.tray=a\n\ntext=a\ntitle=A\n").partFaults, ["the head draws grid.tray, which is not a place"])
     }
 
     func testACardDrawingThatNamesNoComponentIsAFault() {
-        XCTAssertEqual(PluginOutput(text: "grid.wide=a b\n\ntext=a\ntitle=A\n").partFaults, ["the card drawing names b, which no component has"])
+        XCTAssertEqual(SpotOutput(text: "grid.wide=a b\n\ntext=a\ntitle=A\n").partFaults, ["the card drawing names b, which no component has"])
     }
 
     func testAChangeOnTheCardShowsBeforeTheAnswer() {
-        let state = SpotState(output: PluginOutput(text: clock), header: SpotState(title: "Clock"))
+        let state = SpotState(output: SpotOutput(text: clock), header: SpotState(title: "Clock"))
 
         XCTAssertEqual(state.setting("true", of: "power").face.parts.last?.control, .toggle(true))
     }

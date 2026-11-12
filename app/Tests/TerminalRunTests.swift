@@ -18,7 +18,7 @@ final class TerminalRunTests: XCTestCase {
     private func spot(_ name: String, header: String = "", _ body: String) throws -> Spot {
         let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
         try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: folder.appendingPathComponent("\(name).sh"))
-        return try XCTUnwrap(PluginFolder(url: folder).scan().scripts.first { $0.id == name })
+        return try XCTUnwrap(SpotFolder(url: folder).scan().scripts.first { $0.id == name })
     }
 
     func testARunGivesTheArgumentsTheInputAndTheIDAndReturnsEachFrameAndTheExit() async throws {
@@ -54,18 +54,16 @@ final class TerminalRunTests: XCTestCase {
     }
 
     func testARunOfAStayingScriptEndsWithTheFrameThatEndsItsCall() async throws {
-        let spot = try spot("relay", header: "stay=true", """
+        let spot = try spot("relay", header: "mode=stay", """
         . "$OPENSPOT_SH"
-        while next; do
-          printf 'text=peer\\ntitle=%s\\n---\\n' "$(arg 1)"
-          printf 'end=%s\\n---\\n' "$call"
-        done
+        main() { printf 'text=peer\\ntitle=%s\\n' "$1"; }
+        openspot_serve main "$@"
         """)
         var frames: [String] = []
 
         let end = await TerminalRun(spot: spot, arguments: ["ping"], input: nil).start { frames.append($0) }
 
-        XCTAssertEqual(frames.first, "text=peer\ntitle=ping\n")
+        XCTAssertEqual(frames, ["text=peer\ntitle=ping\n\n"])
         XCTAssertEqual(end.code, 0)
     }
 }

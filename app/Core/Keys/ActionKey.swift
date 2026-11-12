@@ -31,7 +31,7 @@ public struct ActionKey: Hashable, Sendable {
             self.init(name: last)
             return
         }
-        let isNamed = last == "return" || last == "backspace"
+        let isNamed = last == "return" || last == "backspace" || last == ","
         guard isNamed || (last.count == 1 && last.first?.isLetter == true) || (last.count == 1 && last.first?.isNumber == true) else { return nil }
         self.init(name: last, isCommand: parts.contains("cmd"), isShift: parts.contains("shift"))
     }
@@ -56,6 +56,11 @@ public struct ActionKey: Hashable, Sendable {
             name = rest.lowercased()
         }
         self.init(name: name, isCommand: isCommand, isShift: isShift)
+    }
+
+    /// The key as a script names it, such as cmd+shift+n.
+    public var text: String {
+        (isCommand ? "cmd+" : "") + (isShift ? "shift+" : "") + name
     }
 
     /// The key as the Mac writes it, such as ⌘⇧N.

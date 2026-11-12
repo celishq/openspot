@@ -11,7 +11,7 @@ enum AppCommandLink {
             process.arguments = ["-e", "on run argv", "-e", "do shell script (item 1 of argv) with administrator privileges", "-e", "end run", line]
             try process.run()
             process.waitUntilExit()
-            guard process.terminationStatus == 0 else { throw PluginError.failed(1, "openspot was not installed in Terminal.") }
+            guard process.terminationStatus == 0 else { throw SpotError.failed(1, "openspot was not installed in Terminal.") }
         }
     )
 }

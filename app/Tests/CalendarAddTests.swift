@@ -77,7 +77,7 @@ final class CalendarAddTests: XCTestCase {
             do {
                 _ = try await events(eventStore()).add(words, isDry: false)
                 XCTFail("\(words) was added")
-            } catch PluginError.failed(1, let said) {
+            } catch SpotError.failed(1, let said) {
                 XCTAssertEqual(said, message)
             }
         }
@@ -120,7 +120,7 @@ final class CalendarAddTests: XCTestCase {
         do {
             _ = try await events(store).add("Standup tomorrow 10am", isDry: false)
             XCTFail("an event was added with no calendar")
-        } catch PluginError.failed(1, let said) {
+        } catch SpotError.failed(1, let said) {
             XCTAssertEqual(said, "Openspot found no calendar for new events. Choose a default calendar in Calendar › Settings › General, then try again.")
         }
     }

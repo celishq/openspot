@@ -50,7 +50,7 @@ final class SpotDropTests: XCTestCase {
         let url = folder.appendingPathComponent("script.sh")
         let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
         try "#!/bin/sh\n\(lines)\necho $$ >> '\(path("pids"))'\necho \"$*\" >> '\(path("log"))'\n\(body)\n".writeScript(to: url)
-        let scan = try PluginFolder(url: folder).scan()
+        let scan = try SpotFolder(url: folder).scan()
         XCTAssertEqual(scan.refused, [])
         runs.take(scan)
         return try XCTUnwrap(runs.sheets["script"])
@@ -157,15 +157,15 @@ final class SpotDropTests: XCTestCase {
     func testAHeaderWithDropScansToACardThatTakesItsFiles() throws {
         let sheet = try sheet(header: "drop=mov, MKV,folder")
 
-        XCTAssertTrue(sheet.command.accepts([file("a.mkv"), try directory("plain")]))
-        XCTAssertFalse(sheet.command.accepts([file("a.txt")]))
+        XCTAssertTrue(sheet.spot.accepts([file("a.mkv"), try directory("plain")]))
+        XCTAssertFalse(sheet.spot.accepts([file("a.txt")]))
     }
 
     /// Writes one more script with this header, and takes a new scan.
     private func addScript(_ name: String, header: String) throws {
         let url = folder.appendingPathComponent("\(name).sh")
         try "#!/bin/sh\n# \(header)\n".writeScript(to: url)
-        runs.take(try PluginFolder(url: folder).scan())
+        runs.take(try SpotFolder(url: folder).scan())
     }
 
     private func cardsThatTakeTheDrag() -> Set<String> {
@@ -261,8 +261,8 @@ final class SpotDropTests: XCTestCase {
         esac
         """)
         sheet.open {}
-        try await wait("the action") { sheet.command.actions.count == 1 && sheet.calls.isEmpty }
-        sheet.run(try XCTUnwrap(sheet.command.actions.first), item: nil)
+        try await wait("the action") { sheet.spot.actions.count == 1 && sheet.calls.isEmpty }
+        sheet.run(try XCTUnwrap(sheet.spot.actions.first), item: nil)
         try await wait("the call") { self.log() == ["read", "work"] }
         return sheet
     }
@@ -319,8 +319,8 @@ final class SpotDropTests: XCTestCase {
         var failures: [String] = []
         sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
         sheet.open {}
-        try await wait("the action") { sheet.command.actions.count == 1 && sheet.calls.isEmpty }
-        sheet.run(try XCTUnwrap(sheet.command.actions.first), item: nil)
+        try await wait("the action") { sheet.spot.actions.count == 1 && sheet.calls.isEmpty }
+        sheet.run(try XCTUnwrap(sheet.spot.actions.first), item: nil)
         let file = file("a.mov")
 
         XCTAssertTrue(sheet.drop([file]))
@@ -364,7 +364,7 @@ final class SpotDropTests: XCTestCase {
         exit 0
         """)
         runs.panelOpened()
-        try await wait("the read") { self.log() == ["read"] && sheet.command.kind == .toggle }
+        try await wait("the read") { self.log() == ["read"] && sheet.spot.kind == .toggle }
         let file = file("a.mov")
 
         XCTAssertTrue(sheet.drop([file]))
@@ -386,7 +386,7 @@ final class SpotDropTests: XCTestCase {
 
     /// The sheet of a staying script that takes `mov` files. It logs each line of its stdin, and prints a frame after each block.
     private func stayingSheet(header: String = "") throws -> SpotRun {
-        try sheet(header: "stay=true\ndrop=mov\n\(header)", """
+        try sheet(header: "mode=stay\ndrop=mov\n\(header)", """
         while IFS= read -r line; do
           printf '%s\\n' "$line" >> '\(path("blocks"))'
           case "$line" in call=*) call=${line#call=} ;; esac
@@ -399,7 +399,7 @@ final class SpotDropTests: XCTestCase {
     private func blocks() -> [String] {
         let text = (try? String(contentsOfFile: path("blocks"), encoding: .utf8)) ?? ""
         return text.components(separatedBy: "\n\n").filter { !$0.isEmpty }.map { block in
-            block.split(separator: "\n").filter { !$0.hasPrefix("call=") && !$0.hasPrefix("reason=") }.joined(separator: "\n")
+            block.split(separator: "\n").filter { !$0.hasPrefix("call=") && !$0.hasPrefix("env.") }.joined(separator: "\n")
         }
     }
 
@@ -517,7 +517,7 @@ final class SpotDropTests: XCTestCase {
         let sheet = try sheet(header: "read=panel\ndrop=mov", "[ \"$1\" = read ] && printf 'switch=power\\nvalue=false\\n'\nexit 0")
         let choices = choiceCount(of: sheet)
         runs.panelOpened()
-        try await wait("the kind") { sheet.command.kind == .toggle }
+        try await wait("the kind") { sheet.spot.kind == .toggle }
 
         sheet.pressCard()
 

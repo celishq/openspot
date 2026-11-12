@@ -3,7 +3,7 @@ import XCTest
 
 final class AppsPluginTests: SamplePluginsCase {
     private func apps() throws -> Spot {
-        try XCTUnwrap(try scan.commands.first { $0.name == "Apps" })
+        try XCTUnwrap(try scan.spots.first { $0.name == "Apps" })
     }
 
     /// Makes an app with a bundle id in a private home, and fake `find`, `ps` and `osascript`. The fake `osascript` writes
@@ -142,7 +142,7 @@ final class AppsPluginTests: SamplePluginsCase {
             do {
                 try await apps.perform(SpotAction(arguments: ["uninstall", "/System/Applications/Notes.app"]), timeout: 10)
                 XCTFail("A system app was taken for deletion")
-            } catch PluginError.failed(_, let message) {
+            } catch SpotError.failed(_, let message) {
                 XCTAssertEqual(message, "Notes is part of macOS, so it cannot be deleted.")
             }
         }

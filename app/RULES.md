@@ -28,7 +28,7 @@ Code and tests name a rule by its ID.
 | A20 | The app watches the plugins folder. A change shows on the cards at once, with no motion, and a changed script that the open panel reads at `panel` reads again. |
 | A21 | A spot whose last call failed shows a mark on its card until a call ends well. |
 | A24 | Each spot of the person offers Edit, Copy prompt for AI, Share and Delete. A card of a file that does not load offers Edit and Delete. Delete asks no question and keeps the panel open, and `⌘Z` puts the files back until the next Delete. |
-| A25 | The actions menu and the right-click menu of a card list only acts on the selected card or row. An act of the whole app is a spot of its own, such as Spots or Settings. |
+| A28 | The actions menu and the right-click menu of a card list only acts on the selected card or row. An act of the whole app is a spot of its own, such as Spots or Settings. |
 | A22 | New spot has a small card on the grid after Settings. `⌘N` on the grid or in Edit Spots opens it, unless an action of the selected card takes the key. |
 | A23 | New spot is a list that the search field fills. Its first row, Copy prompt for AI, copies a prompt that asks an agent to build what the person typed as a new file in the plugins folder, and its toast says so. Openspot starts no agent and writes no file for it. A row for each starter writes a working spot called Untitled and opens its file in the text editor. `⌘K` opens the guide and the plugins folder. |
 | M2 | A `panel` or `sheet` moment takes an answer younger than 5 seconds. A change, a number and a wake always read. |
@@ -41,12 +41,16 @@ Code and tests name a rule by its ID.
 | G1 | A running call shows a ring from the `value` of its last frame, or a spinner with no `value`. |
 | G3 | The menu bar item shows the oldest running call and how many run. A click on it opens the panel with that spot selected. |
 | G4 | The `title` and `detail` of a call's last frame of only a head show on the spot only while its call runs. |
+| G5 | Today's stats stay in memory, and go to `stats/<day>.json` in the config folder at most every 5 seconds and at quit, never on each call. A start reads today's file again, and drops each file older than 90 days (Z10). |
 | D2 | During a drag, only a card whose `drop` takes every dragged file shows it and takes the drop. |
 | D6 | A `drop` call runs as any other call does. |
 | D5 | A click on a card with `drop` and no sheet opens a file chooser, and the choice runs the same call. A drag over the menu bar item opens the panel with no change of focus, and a drop closes it, unless D8 keeps it. |
 | D7 | When a press in another app takes the focus, the panel closes as the press ends. A drag of files that the press starts keeps it open, as a drag over the menu bar item does (D5): the other app keeps the focus, and the panel closes when the drag ends, unless D8 keeps it. |
 | D8 | A drop on a card with rows opens its sheet with the focus, and the panel stays open, so the person can act on what the drop added. The sheet holds the focus while the app that the drag came from lets go of it. A drop on any other card closes the panel. |
 | K2 | A capability's helper starts at its first call, and exits after 30 seconds with no call. The app does not track it. |
+| A25 | A change that the API writes to the config applies only what changed. A key holds the keys again, a spot that turns on or off adds or removes its card, and a value of a spot reads that spot again. The grid does not build again. |
+| A26 | An inline spot makes its JavaScript context and its thread at its first call, and drops them after 30 seconds with no call. Its calls go in the call log, the CPU time of its thread counts in `spot stats`, and Review shows its text. |
+| A27 | Settings and Updates read with one `openspot` process and no `jq`. |
 
 ## Sharing
 

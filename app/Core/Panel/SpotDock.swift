@@ -48,7 +48,7 @@ public struct SpotDock: Equatable, Sendable {
 
     /// One spot in the store.
     public struct Item: Identifiable, Equatable, Sendable {
-        public let command: Spot
+        public let spot: Spot
         public let origin: Origin
         public let state: State
         /// Its package in the store, for a spot of the plugins folder that the person published.
@@ -57,7 +57,7 @@ public struct SpotDock: Equatable, Sendable {
         public let size: SpotSize
 
         public var id: String {
-            command.id
+            spot.id
         }
 
         /// Whether the spot is a file of the plugins folder, which the store can delete while it is off.
@@ -65,13 +65,13 @@ public struct SpotDock: Equatable, Sendable {
             origin == .mine
         }
 
-        public init(command: Spot, origin: Origin = .core, state: State = .off, size: SpotSize? = nil, publication: Publication? = nil) {
-            self.command = command
+        public init(spot: Spot, origin: Origin = .core, state: State = .off, size: SpotSize? = nil, publication: Publication? = nil) {
+            self.spot = spot
             self.origin = origin
             self.state = state
             self.publication = publication
-            let own = size ?? command.size
-            self.size = command.fault != nil && own == .small ? .wide : own
+            let own = size ?? spot.size
+            self.size = spot.fault != nil && own == .small ? .wide : own
         }
     }
 
@@ -82,14 +82,14 @@ public struct SpotDock: Equatable, Sendable {
     public var opened: String?
 
     public init(items: [Item]) {
-        self.items = items.sorted { $0.command.name.localizedCaseInsensitiveCompare($1.command.name) == .orderedAscending }
+        self.items = items.sorted { $0.spot.name.localizedCaseInsensitiveCompare($1.spot.name) == .orderedAscending }
     }
 
     /// The spots that the filter keeps and whose name, or the words under it, hold the search: off, then in search only,
     /// then on the grid, each by name.
     public var shown: [Item] {
         let kept = items.filter { item in
-            filter.keeps(item) && (query.isEmpty || [item.command.name, item.command.subtitle ?? ""].contains { $0.localizedStandardContains(query) })
+            filter.keeps(item) && (query.isEmpty || [item.spot.name, item.spot.subtitle ?? ""].contains { $0.localizedStandardContains(query) })
         }
         return Self.states.flatMap { state in kept.filter { $0.state == state } }
     }

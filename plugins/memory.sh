@@ -1,7 +1,7 @@
 #!/bin/sh
 # title=Memory
 # icon=memorychip
-# read=5
+# every=5
 /usr/bin/memory_pressure -Q | awk -F': ' -v level="$(/usr/sbin/sysctl -n kern.memorystatus_vm_pressure_level)" '
   /free percentage/ { sub("%", "", $2); free = $2 }
   END {

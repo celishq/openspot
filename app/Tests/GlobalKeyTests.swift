@@ -3,9 +3,9 @@ import XCTest
 
 final class GlobalKeyTests: XCTestCase {
     private func command(header: String) throws -> Spot {
-        let block = PluginHeader(text: "#!/bin/sh\n\(header)\n").block
-        let plugin = try Plugin(script: URL(fileURLWithPath: "/plugins/move.sh"), header: block, id: "move")
-        return try XCTUnwrap(plugin.commands.first)
+        let block = SpotHeader(text: "#!/bin/sh\n\(header)\n").block
+        let plugin = try SpotFile(script: URL(fileURLWithPath: "/plugins/move.sh"), header: block, id: "move")
+        return try XCTUnwrap(plugin.spots.first)
     }
 
     func testAHeaderListsEachCommandAsABlockAfterABlankCommentLine() throws {
@@ -20,7 +20,7 @@ final class GlobalKeyTests: XCTestCase {
     func testABadCommandRefusesThePluginAndNamesTheFault() {
         for block in ["# command=full", "# command=read\n# title=Read", "# command=full now\n# title=Full"] {
             XCTAssertThrowsError(try command(header: block), block) { error in
-                XCTAssertTrue((error as? PluginError)?.reason.contains("cannot read the command") == true, block)
+                XCTAssertTrue((error as? SpotError)?.reason.contains("cannot read the command") == true, block)
             }
         }
     }
@@ -28,7 +28,7 @@ final class GlobalKeyTests: XCTestCase {
     func testACommandInTheOldFormIsRefusedWithTheNewForm() {
         for header in ["# command=full:Full screen", "# title=Move\n# command=full:Full screen"] {
             XCTAssertThrowsError(try command(header: header), header) { error in
-                XCTAssertEqual((error as? PluginError)?.reason, "Move has command=full:Full screen, which Openspot no longer reads. Write each command as a block after a blank comment line, such as command=left with title=Left side")
+                XCTAssertEqual((error as? SpotError)?.reason, "Move has command=full:Full screen, which Openspot no longer reads. Write each command as a block after a blank comment line, such as command=left with title=Left side")
             }
         }
     }
@@ -40,7 +40,7 @@ final class GlobalKeyTests: XCTestCase {
         XCTAssertEqual(spot.settings.map(\.title), ["Folder", "Default app"])
         XCTAssertEqual(spot.settings.map(\.icon), [nil, "app.badge"])
         XCTAssertThrowsError(try command(header: "# title=Repos\n# settings=folder")) { error in
-            XCTAssertEqual((error as? PluginError)?.reason, "Repos has settings, which Openspot no longer reads. Write each setting as a block after a blank comment line, such as setting=folder with title=Folder")
+            XCTAssertEqual((error as? SpotError)?.reason, "Repos has settings, which Openspot no longer reads. Write each setting as a block after a blank comment line, such as setting=folder with title=Folder")
         }
     }
 
@@ -54,7 +54,7 @@ final class GlobalKeyTests: XCTestCase {
         let unlisted = GlobalKey(spot: "move", command: "rm", shortcut: shortcut)
         let gone = GlobalKey(spot: "gone", command: "full", shortcut: shortcut)
 
-        XCTAssertEqual(try PluginFolder(url: folder).scan().offered([listed, unlisted, gone]), [listed])
+        XCTAssertEqual(try SpotFolder(url: folder).scan().offered([listed, unlisted, gone]), [listed])
     }
 
     func testTheFileHoldsKeysAndNamesABadOne() {
@@ -116,14 +116,14 @@ final class GlobalKeyTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: folder) }
         try "#!/bin/sh\n# offers=float\n".writeScript(to: folder.appendingPathComponent("shelf.sh"))
         try "#!/bin/sh\n".writeScript(to: folder.appendingPathComponent("notes.sh"))
-        try "#!/bin/sh\n# read=60\n# offers=float\necho text=cups\n".writeScript(to: folder.appendingPathComponent("cups.sh"))
+        try "#!/bin/sh\n# every=60\n# offers=float\necho text=cups\n".writeScript(to: folder.appendingPathComponent("cups.sh"))
         let shortcut = try XCTUnwrap(Shortcut(text: "ctrl+up"))
         let shelf = GlobalKey(spot: "shelf", act: .float, trigger: .key(shortcut))
         let cups = GlobalKey(spot: "cups", act: .float, trigger: .key(shortcut))
         let notes = GlobalKey(spot: "notes", act: .float, trigger: .key(shortcut))
         let gone = GlobalKey(spot: "gone", act: .float, trigger: .key(shortcut))
 
-        XCTAssertEqual(try PluginFolder(url: folder).scan().offered([shelf, cups, notes, gone]), [shelf, cups])
+        XCTAssertEqual(try SpotFolder(url: folder).scan().offered([shelf, cups, notes, gone]), [shelf, cups])
     }
 
     func testSavingTheGridKeepsTheKeys() throws {

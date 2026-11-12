@@ -16,7 +16,7 @@ final class RepeatDrawingTests: XCTestCase {
     """
 
     func testARepeatWithNoDrawingIsAList() {
-        let output = PluginOutput(text: apps)
+        let output = SpotOutput(text: apps)
 
         XCTAssertEqual(output.drawing, .list)
         XCTAssertEqual(output.perLine, 1)
@@ -25,7 +25,7 @@ final class RepeatDrawingTests: XCTestCase {
     }
 
     func testOneLineOfSingleCellsIsAGrid() {
-        let output = PluginOutput(text: "grid=tone\ngrid=a\n\nrepeat=a\ngrid=a b c d e f g\n\nchoice=tone\n\noption=none\ntitle=Yellow\n\nrow=x\ntitle=x\n")
+        let output = SpotOutput(text: "grid=tone\ngrid=a\n\nrepeat=a\ngrid=a b c d e f g\n\nchoice=tone\n\noption=none\ntitle=Yellow\n\nrow=x\ntitle=x\n")
 
         XCTAssertEqual(output.drawing.perLine, 7)
         XCTAssertEqual(output.perLine, 7)
@@ -44,7 +44,7 @@ final class RepeatDrawingTests: XCTestCase {
     }
 
     func testASheetWithNoDrawingShowsItsComponentsThenItsRows() throws {
-        let output = PluginOutput(text: "text=note\ntitle=Note\n\nbutton=copy\ntitle=Copy\n\nrow=a\ntitle=A\n")
+        let output = SpotOutput(text: "text=note\ntitle=Note\n\nbutton=copy\ntitle=Copy\n\nrow=a\ntitle=A\n")
 
         XCTAssertEqual(output.layout?.rows, [["note"], ["rows"]])
         XCTAssertEqual(output.layout?.repeated?.area, "rows")

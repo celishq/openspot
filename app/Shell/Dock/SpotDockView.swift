@@ -113,7 +113,7 @@ struct SpotDockView: View {
             return
         }
         let changed = item.publication == .changed ? "Changes not published" : nil
-        let words = (item.size == .small ? [item.command.name, item.command.subtitle] : [item.command.subtitle]).compactMap { $0 } + [changed].compactMap { $0 }
+        let words = (item.size == .small ? [item.spot.name, item.spot.subtitle] : [item.spot.subtitle]).compactMap { $0 } + [changed].compactMap { $0 }
         let tip: SpotTip? = switch part {
         case .add: SpotTip(id: id, anchor: .dockCard, text: item.state == .off ? "Turn on" : "Put on the grid")
         case .delete: SpotTip(id: id, anchor: .dockCard, text: "Delete")

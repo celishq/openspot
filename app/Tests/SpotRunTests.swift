@@ -18,12 +18,12 @@ final class SpotRunTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func make(name: String = "script", _ body: String, stays: Bool = false, read: SpotRead? = nil) throws -> SpotRun {
+    private func make(name: String = "script", _ body: String, mode: SpotMode = .once, read: SpotRead? = nil) throws -> SpotRun {
         let url = folder.appendingPathComponent("\(name).sh")
         try "#!/bin/sh\n\(body)\n".writeScript(to: url)
         let made = SpotRuns()
         runs.append(made)
-        return made.sheet(for: Spot(id: name, name: name, url: url, kind: .list, read: read ?? (stays ? nil : .sheet), stays: stays))
+        return made.sheet(for: Spot(id: name, name: name, url: url, kind: .list, read: read ?? (mode.stays ? nil : .sheet), mode: mode))
     }
 
     private func path(_ name: String) -> String {
@@ -339,7 +339,7 @@ final class SpotRunTests: XCTestCase {
     """
 
     func testAStayingSheetOpensWithItsFirstFrame() async throws {
-        let sheet = try make("sleep 0.2\n" + String(format: Self.counter, path("ended")), stays: true)
+        let sheet = try make("sleep 0.2\n" + String(format: Self.counter, path("ended")), mode: .stay)
         var isReady = false
 
         runs.last?.panelOpened()
@@ -351,7 +351,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAStayingScriptDoesNotStartBeforeItsSheetOpens() async throws {
-        let sheet = try make("touch '\(path("started"))'", stays: true, read: .panel)
+        let sheet = try make("touch '\(path("started"))'", mode: .stay, read: .panel)
 
         sheet.read()
         try await Task.sleep(for: .milliseconds(150))
@@ -360,7 +360,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testClosingEndsAStayingScriptAndTheNextOpenStartsAfresh() async throws {
-        let sheet = try make(String(format: Self.counter, path("ended")), stays: true)
+        let sheet = try make(String(format: Self.counter, path("ended")), mode: .stay)
         runs.last?.panelOpened()
         sheet.open {}
         try await wait("the first frame") { sheet.panel != nil }
@@ -387,7 +387,7 @@ final class SpotRunTests: XCTestCase {
             '') printf 'grid=copy\\nend=%s\\n\\nbutton=copy\\ntitle=Copy\\n---\\n' "$call" ;;
           esac
         done
-        """, stays: true)
+        """, mode: .stay)
         runs.last?.panelOpened()
         sheet.open {}
         try await wait("the first frame") { sheet.panel != nil }
@@ -398,16 +398,13 @@ final class SpotRunTests: XCTestCase {
         try await wait("the copy") { exists("copied") }
     }
 
-    func testAStayingScriptGetsEachValueOfTheSheetInItsBlock() async throws {
+    func testAStayingScriptGetsTheValuesOfTheSheetAsTheStdinOfItsCall() async throws {
         let sheet = try make("""
-        while IFS= read -r line; do
-          case "$line" in
-            call=*) call=${line#call=} ;;
-            input=*) seen=${line#input=} ;;
-            '') printf 'end=%s\\n\\nfield=input\\nvalue=x\\n\\ntext=seen\\ntitle=%s\\n---\\n' "$call" "$seen" ;;
-          esac
-        done
-        """, stays: true)
+        # mode=stay
+        . "$OPENSPOT_SH"
+        main() { printf 'field=input\\nvalue=x\\n\\ntext=seen\\ntitle=%s\\n' "$(value input)"; }
+        openspot_serve main "$@"
+        """, mode: .stay)
         runs.last?.panelOpened()
         sheet.open {}
         try await wait("the first frame") { sheet.panel != nil }

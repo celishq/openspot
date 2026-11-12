@@ -4,13 +4,13 @@ import XCTest
 /// Proves the System Settings plugin with its real script, a folder of fake panes and a fake language list.
 final class SettingsPluginTests: SamplePluginsCase {
     func testSystemSettingsJoinsTheMainSearch() throws {
-        let settings = try XCTUnwrap(try scan.commands.first { $0.name == "System Settings" })
+        let settings = try XCTUnwrap(try scan.spots.first { $0.name == "System Settings" })
 
         XCTAssertTrue(settings.isGlobal)
     }
 
     func testSystemSettingsReadsWhenThePanelOpens() throws {
-        let read = try XCTUnwrap(try scan.commands.first { $0.name == "System Settings" }?.read)
+        let read = try XCTUnwrap(try scan.spots.first { $0.name == "System Settings" }?.read)
 
         XCTAssertTrue(read.has(.panel))
     }
@@ -45,7 +45,7 @@ final class SettingsPluginTests: SamplePluginsCase {
 
     func testAPickOpensTheSectionOfItsPane() async throws {
         try await withPanes { home in
-            let settings = try XCTUnwrap(try self.scan.commands.first { $0.name == "System Settings" })
+            let settings = try XCTUnwrap(try self.scan.spots.first { $0.name == "System Settings" })
             let rows = try await self.rows()
             let section = try XCTUnwrap(rows.first { $0.title == "Громкость" })
 
@@ -57,7 +57,7 @@ final class SettingsPluginTests: SamplePluginsCase {
     }
 
     private func rows() async throws -> [SpotItem] {
-        let settings = try XCTUnwrap(try scan.commands.first { $0.name == "System Settings" })
+        let settings = try XCTUnwrap(try scan.spots.first { $0.name == "System Settings" })
         let output = try await settings.items(timeout: 10)
         XCTAssertEqual(output.errors, [])
         return output.items

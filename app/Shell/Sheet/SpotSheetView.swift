@@ -68,11 +68,11 @@ struct SpotSheetView: View {
                         selectedPart: { [model, id = entry.id] in model.sheets[id]?.selectedPart?.id },
                         nudge: { model.sheets[entry.id]?.nudge ?? SheetParts.Nudge.rest },
                         customView: { room in
-                            entry.command.view.map { SpotCustomView(source: $0, values: entry.state.values, card: .square, room: room, views: SpotViews.shared) }
+                            entry.spot.view.map { SpotCustomView(source: $0, values: entry.state.values, card: .square, room: room, views: SpotViews.shared) }
                         }
                     )
-                    .task(id: panel.parts.contains { $0.kind == "view" } ? entry.command.view : nil) {
-                        if let view = entry.command.view, panel.parts.contains(where: { $0.kind == "view" }) { await SpotViews.shared.load(view) }
+                    .task(id: panel.parts.contains { $0.kind == "view" } ? entry.spot.view : nil) {
+                        if let view = entry.spot.view, panel.parts.contains(where: { $0.kind == "view" }) { await SpotViews.shared.load(view) }
                     }
                 } else if let form {
                     if form.choices != nil { Color.clear.frame(height: SpotTokens.listRowHeight) }

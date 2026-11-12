@@ -49,7 +49,7 @@ public final class ScriptCall: Identifiable {
     }
 
     /// Takes a frame. Only a frame of only a head changes its status.
-    func take(_ output: PluginOutput) {
+    func take(_ output: SpotOutput) {
         guard !output.isPicture else { return }
         status = output.summary
     }

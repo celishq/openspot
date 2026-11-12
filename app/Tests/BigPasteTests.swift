@@ -41,7 +41,7 @@ final class BigPasteTests: XCTestCase {
           input) \(answer) ;;
         esac
         """.writeScript(to: url)
-        runs.take(try PluginFolder(url: folder).scan())
+        runs.take(try SpotFolder(url: folder).scan())
         return try XCTUnwrap(runs.sheets["script"])
     }
 

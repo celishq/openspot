@@ -43,7 +43,7 @@ public struct SpotState: Equatable, Sendable {
     /// Reads how a spot looks from what its script printed: the words of its head, and its main value, which says whether its
     /// card is on or at what level. A spot whose output is one switch or one slider takes that control's words for its card (U12).
     /// What the output leaves out comes from the header.
-    public init(output: PluginOutput, header: SpotState) {
+    public init(output: SpotOutput, header: SpotState) {
         let block = output.summary
         let control = output.control
         var on: Bool?
@@ -71,7 +71,7 @@ public struct SpotState: Equatable, Sendable {
 
     /// This state with what a frame of a running call changes: the value of its card's control, or of its value.
     /// Its words stay the spot's own.
-    public func taking(_ output: PluginOutput) -> SpotState {
+    public func taking(_ output: SpotOutput) -> SpotState {
         var on = self.on
         var level = self.level
         let part = output.parts.first { $0.id == control } ?? output.valuePart
