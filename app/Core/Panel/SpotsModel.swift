@@ -106,17 +106,8 @@ public final class SpotsModel {
     var chainWatch: Task<Void, Never>?
     public var recording: String?
     private var problems: [String] = []
-    public var menu: ActionMenu?
-    public var menuTarget: Target?
-    /// Whether the open menu has grown from its item to its full size. It opens small and grows on the next turn.
-    public internal(set) var menuIsGrown = false
-    /// The menu that fades away after its close, drawn while its motion runs. Keys and the focus already treat it as closed.
-    public internal(set) var closingMenu: ActionMenu?
-    /// Whether the open menu's growth has ended, so that a text field of its own can show where the motion left it.
-    public internal(set) var menuIsSettled = false
-    /// Where the open menu lies in the panel: a drag of a force click reads it to find its rows, and the backdrop and the
-    /// hint line reach below it.
-    public var menuFrame: ActionMenuFrame?
+    /// The actions menu from its open to the end of its close.
+    public internal(set) var menuSession: ActionMenuSession?
     public var form: FormSession?
     /// The ask for a form that waits for its script. A newer ask, a cancel, a close or a hidden panel replaces it.
     @ObservationIgnored var formAsk: UUID?

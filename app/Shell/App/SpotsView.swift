@@ -196,7 +196,7 @@ struct SpotsView: View {
     }
 
     private var menuBackdropHeight: CGFloat {
-        model.menuFrame.map { $0.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock } ?? 0
+        model.menuSession?.frame.map { $0.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock } ?? 0
     }
 
     /// Where the menu may lie: under the field, down to the panel's foot.
@@ -215,26 +215,27 @@ struct SpotsView: View {
     /// the field.
     private func menuLayer(at item: SpotMenuAnchor.Item?) -> some View {
         GeometryReader { proxy in
-            if let menu = model.menu ?? model.closingMenu {
+            if let session = model.menuSession {
+                let menu = session.menu
                 let bounds = menuBounds
                 let rect = item.map { proxy[$0.bounds] } ?? SpotFieldView.rect
-                let isClosing = model.menu == nil
+                let isClosing = session.phase == .closing
                 let fresh = ActionMenuFrame(item: rect, menu: menu, bounds: bounds)
-                let frame = isClosing ? model.menuFrame ?? fresh : fresh
+                let frame = isClosing ? session.frame ?? fresh : fresh
                 let shown = frame.rect(of: menu)
-                let isGrown = model.menuIsGrown
+                let isGrown = session.isGrown
                 let scale = isGrown ? 1 : SpotMotion.menuStartScale
                 let corner = UnitPoint(x: frame.side == .left ? 0 : 1, y: frame.stillEdge == .top ? 0 : 1)
                 ZStack(alignment: .topLeading) {
                     SpotSurface(rect: Self.rect(shown, scaledBy: scale, from: corner), radius: SpotActionMenuView.radius * scale, glass: isGrown ? 1 : 0)
-                    SpotActionMenuView(menu: menu, frame: frame, isSettled: model.menuIsSettled, work: { model.work(of: $0) }, onPress: { model.pressMenu(row: $0) }, onPoint: { model.pointMenu(row: $0) }, onSearch: { model.searchMenu($0) })
+                    SpotActionMenuView(menu: menu, frame: frame, isSettled: session.phase == .settled, work: { model.work(of: $0) }, onPress: { model.pressMenu(row: $0) }, onPoint: { model.pointMenu(row: $0) }, onSearch: { model.searchMenu($0) })
                         .scaleEffect(scale, anchor: corner)
                         .opacity(isGrown ? 1 : 0)
                         .offset(x: shown.minX, y: shown.minY)
                 }
                 .allowsHitTesting(!isClosing)
                 .transition(.opacity)
-                .onChange(of: frame, initial: true) { if !isClosing { model.menuFrame = frame } }
+                .onChange(of: frame, initial: true) { model.placeMenu(frame) }
             }
         }
     }

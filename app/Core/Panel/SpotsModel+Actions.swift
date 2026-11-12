@@ -232,8 +232,28 @@ extension SpotsModel {
     }
 
     private func menuRow(at point: CGPoint) -> Int? {
-        guard let menu, let menuFrame else { return nil }
-        return menuFrame.row(at: point, of: menu)
+        guard let menu, let frame = menuSession?.frame else { return nil }
+        return frame.row(at: point, of: menu)
+    }
+
+    /// The open menu, which keys and the pointer act on. A closing menu is closed.
+    public var menu: ActionMenu? {
+        get { menuSession?.phase == .closing ? nil : menuSession?.menu }
+        set {
+            guard let newValue, menu != nil else { return }
+            menuSession?.menu = newValue
+        }
+    }
+
+    /// What the open menu acts on.
+    public var menuTarget: Target? {
+        menu == nil ? nil : menuSession?.target
+    }
+
+    /// Keeps where the view placed the open menu.
+    public func placeMenu(_ frame: ActionMenuFrame) {
+        guard menu != nil else { return }
+        menuSession?.frame = frame
     }
 
     public func searchMenu(_ text: String) {
@@ -249,15 +269,11 @@ extension SpotsModel {
     }
 
     private func openMenu(on target: Target) {
-        menu = actionMenu(on: target)
-        menuTarget = target
-        closingMenu = nil
-        menuIsGrown = false
-        menuIsSettled = false
+        menuSession = actionMenu(on: target).map { ActionMenuSession(menu: $0, target: target) }
         DispatchQueue.main.async { [weak self] in
-            guard let self, menu != nil else { return }
-            change(.sheet(isOpen: true), { self.menuIsGrown = true }, completion: { [weak self] in
-                if self?.menuIsGrown == true { self?.menuIsSettled = true }
+            guard let self, menuSession?.phase == .opening else { return }
+            change(.sheet(isOpen: true), { self.menuSession?.phase = .open }, completion: { [weak self] in
+                if self?.menuSession?.phase == .open { self?.menuSession?.phase = .settled }
             })
         }
     }
@@ -312,15 +328,9 @@ extension SpotsModel {
 
     /// Closes the menu at once for keys and the focus, and leaves its look to fade back into its item, then lets it go.
     public func closeMenu() {
-        guard let open = menu else { return }
-        closingMenu = open
-        menu = nil
-        menuTarget = nil
-        menuIsSettled = false
-        change(.sheet(isOpen: false), { menuIsGrown = false }, completion: { [weak self] in
-            guard let self, menu == nil else { return }
-            closingMenu = nil
-            menuFrame = nil
+        guard menu != nil else { return }
+        change(.sheet(isOpen: false), { menuSession?.phase = .closing }, completion: { [weak self] in
+            if self?.menuSession?.phase == .closing { self?.menuSession = nil }
         })
     }
 

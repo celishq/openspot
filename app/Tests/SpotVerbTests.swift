@@ -117,21 +117,19 @@ final class SpotVerbTests: XCTestCase {
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
 
-        XCTAssertFalse(model.menuIsGrown)
-        XCTAssertFalse(model.menuIsSettled)
-        try await wait("the growth") { model.menuIsGrown }
+        XCTAssertEqual(model.menuSession?.phase, .opening)
+        try await wait("the growth") { model.menuSession?.phase != .opening }
         XCTAssertEqual(host.motions.last, .sheet(isOpen: true))
-        XCTAssertTrue(model.menuIsSettled)
+        XCTAssertEqual(model.menuSession?.phase, .settled)
         let open = model.menu
         host.heldEnds = []
         model.closeMenu()
         XCTAssertNil(model.menu)
-        XCTAssertEqual(model.closingMenu, open)
+        XCTAssertEqual(model.menuSession?.menu, open)
+        XCTAssertEqual(model.menuSession?.phase, .closing)
         XCTAssertEqual(host.motions.last, .sheet(isOpen: false))
-        XCTAssertFalse(model.menuIsGrown)
-        XCTAssertFalse(model.menuIsSettled)
         host.heldEnds?.forEach { $0() }
-        XCTAssertNil(model.closingMenu)
+        XCTAssertNil(model.menuSession)
     }
 
     func testPointingAtAMenuRowSelectsIt() throws {
@@ -151,7 +149,7 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
         let menu = try XCTUnwrap(model.menu)
         let frame = ActionMenuFrame(item: CGRect(x: 90, y: 166, width: 64, height: 64), menu: menu, bounds: CGRect(x: 16, y: 166, width: 437, height: 500))
-        model.menuFrame = frame
+        model.placeMenu(frame)
         let row = { (index: Int) in CGPoint(x: frame.rect.midX, y: frame.rowRect(index, of: menu).midY) }
 
         model.dragMenu(to: row(1))
