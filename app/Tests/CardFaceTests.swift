@@ -46,10 +46,19 @@ final class CardFaceTests: XCTestCase {
         XCTAssertNil(SpotState(output: SpotOutput(text: "on=true\ndetail=Awake\n"), header: SpotState(title: "Clock")).on)
     }
 
-    func testTheNamedSwitchSaysWhetherTheCardIsOnWhereverItPrints() {
-        let text = "main=power\n\nswitch=other\nvalue=false\n\nswitch=power\nvalue=true\n"
-        XCTAssertEqual(SpotState(output: SpotOutput(text: text), header: SpotState(title: "Clock")).on, true)
-        XCTAssertNil(SpotState(output: SpotOutput(text: "switch=a\nvalue=true\n\nswitch=b\nvalue=false\n"), header: SpotState(title: "Clock")).on)
+    func testOnlyASwitchThatIsTheWholeCardSaysWhetherTheCardIsOn() {
+        let state = { (text: String) in SpotState(output: SpotOutput(text: text), header: SpotState(title: "Clock")).on }
+        XCTAssertEqual(state("switch=power\nvalue=true\n"), true)
+        XCTAssertNil(state("switch=power\nvalue=true\n\nrow=a\ntitle=A\n"))
+        XCTAssertNil(state("switch=power\nvalue=true\n\ntext=bar\ntitle=Bar\n"))
+        XCTAssertNil(state("main=power\n\nswitch=power\nvalue=true\n\ntext=bar\ntitle=Bar\n"))
+        XCTAssertNil(SpotState(title: "Clock").taking(SpotOutput(text: "main=power\n\nswitch=power\nvalue=true\n\ntext=bar\ntitle=Bar\n")).on)
+    }
+
+    func testTheHeadCanNameASwitchAsMain() {
+        let output = SpotOutput(text: "main=power\n\nswitch=power\nvalue=true\n\ntext=bar\ntitle=Bar\n")
+        XCTAssertEqual(output.value?.value("switch"), "power")
+        XCTAssertEqual(output.partFaults, [])
     }
 
     func testANameThatNoValueHasAndAnUnknownPlaceAreFaults() {

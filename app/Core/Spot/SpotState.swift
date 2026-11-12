@@ -40,14 +40,15 @@ public struct SpotState: Equatable, Sendable {
         self.face = face
     }
 
-    /// Reads how a spot looks from what its script printed: the words of its head, and its main value, which says whether its
-    /// card is on or at what level. A spot whose output is one switch or one slider takes that control's words for its card (protocol: The main block and the card).
+    /// Reads how a spot looks from what its script printed: the words of its head, and `active` in its head or the switch that is its
+    /// whole card, which says whether its card is on, and its main slider, which says at what level. A spot whose output is one switch or one slider takes that control's words for its card (protocol: The main block and the card).
     /// What the output leaves out comes from the header.
     public init(output: SpotOutput, header: SpotState) {
         let block = output.summary
         let control = output.control
         var on: Bool?
-        if case .toggle(let value)? = output.valuePart?.control { on = value }
+        if case .toggle(let value)? = control?.control { on = value }
+        if let value = block?.flag("active") { on = value }
         var level: (Double, Double, Double)?
         if case .slider(let value, let low, let high)? = output.valuePart?.control { level = (value, low, high) }
         self.init(
@@ -69,14 +70,15 @@ public struct SpotState: Equatable, Sendable {
         return SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, values: values, control: control, face: face)
     }
 
-    /// This state with what a frame of a running call changes: the value of its card's control, or of its value.
+    /// This state with what a frame of a running call changes: whether its card's switch is on, and the level of its
+    /// card's slider or of its main slider.
     /// Its words stay the spot's own.
     public func taking(_ output: SpotOutput) -> SpotState {
         var on = self.on
         var level = self.level
-        let part = output.parts.first { $0.id == control } ?? output.valuePart
+        let part = output.parts.first { $0.id == control }
         if case .toggle(let value)? = part?.control { on = value }
-        if case .slider(let value, _, _)? = part?.control { level = value }
+        if case .slider(let value, _, _)? = (part ?? output.valuePart)?.control { level = value }
         return SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, values: values, control: control, face: face)
     }
 
