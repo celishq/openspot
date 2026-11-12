@@ -40,7 +40,7 @@ extension SpotsModel {
         sheets[id]?.setLevel(value)
     }
 
-    /// Sends a change or a press of a component that a card draws (protocol: Drawings).
+    /// Sends a change or a press of a component that a card draws (protocol: Layouts).
     public func setCardPart(_ id: String, _ part: String, to value: String?) {
         sheets[id]?.setCardPart(part, to: value)
     }

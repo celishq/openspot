@@ -1,7 +1,7 @@
 import Foundation
 
 /// What a card draws from its script: a drawing for each size that the script printed with `grid.<size>=`, and the
-/// components that the drawings place (protocol: Drawings). A size with no drawing takes the drawing of the nearest smaller size.
+/// components that the drawings place (protocol: Layouts). A size with no drawing takes the drawing of the nearest smaller size.
 public struct CardFace: Equatable, Sendable {
     /// The places a drawing can name, from the smallest card.
     public static let places = ["small", "wide", "square", "strip", "large"]

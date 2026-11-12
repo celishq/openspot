@@ -30,7 +30,7 @@ public struct SheetLayout: Equatable, Sendable {
         areas = Self.areas(in: rows)
     }
 
-    /// The default drawing (protocol: Drawings): one column of lines in the order of the parts, then the area of the rows. A section with a
+    /// The default drawing (protocol: Layouts): one column of lines in the order of the parts, then the area of the rows. A section with a
     /// title starts with a divider, and a section with no title is only a divider.
     public init(flat parts: [SpotPart], repeating: (area: String, perLine: Int)? = nil) {
         var rows: [[String]] = []
@@ -47,7 +47,7 @@ public struct SheetLayout: Equatable, Sendable {
         repeatCount = 0
     }
 
-    /// The area a part fills, which its id names (protocol: Drawings).
+    /// The area a part fills, which its id names (protocol: Layouts).
     public func letter(of part: SpotPart) -> String? {
         part.id
     }

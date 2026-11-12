@@ -1,7 +1,7 @@
 import OpenspotCore
 import SwiftUI
 
-/// A card that its script draws: each component in the area that the card's drawing gives it (protocol: Drawings). A control acts at once,
+/// A card that its script draws: each component in the area that the card's drawing gives it (protocol: Layouts). A control acts at once,
 /// and a press anywhere else works as on any card.
 struct SpotCardDrawing: View {
     /// The card's drawing, read into places.

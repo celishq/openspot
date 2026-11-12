@@ -77,7 +77,7 @@ extension SpotRun {
         work(action, key: Self.cardKey, as: Work(undo: before))
     }
 
-    /// Takes a change or a press of a component that the card draws (protocol: Drawings). The card shows a new value at once, and the call
+    /// Takes a change or a press of a component that the card draws (protocol: Layouts). The card shows a new value at once, and the call
     /// sends `<id> [value]`.
     public func setCardPart(_ id: String, to value: String?) {
         guard let value else { return work(.press(id), key: Self.key(part: id)) }

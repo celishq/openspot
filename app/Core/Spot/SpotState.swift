@@ -13,7 +13,7 @@ public struct SpotState: Equatable, Sendable {
     public let values: [String: [String]]
     /// The id of the switch or the slider that its card changes, which a change of the card sends (protocol: The main block and the card).
     public let control: String?
-    /// The drawings of its card, with the components that they place (protocol: Drawings).
+    /// The drawings of its card, with the components that they place (protocol: Layouts).
     public private(set) var face: CardFace
 
     public init(

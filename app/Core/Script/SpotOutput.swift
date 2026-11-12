@@ -25,7 +25,7 @@ public struct SpotOutput: Equatable, Sendable {
     public private(set) var value: TextBlock?
     /// The block of the first `view`, whose keys the plugin's view reads (protocol: Views).
     public private(set) var view: TextBlock?
-    /// The drawings of the spot's card and of the menu bar, with the components that they place (protocol: Drawings).
+    /// The drawings of the spot's card and of the menu bar, with the components that they place (protocol: Layouts).
     public private(set) var face = CardFace.none
     /// The drawing that the rows flow through (protocol: Rows). With no `repeat` block, the rows are a list.
     public private(set) var drawing = RepeatDrawing.list
@@ -66,7 +66,7 @@ public struct SpotOutput: Equatable, Sendable {
     private static let retired = "retired"
     /// The kinds that the protocol folded into others: `gauge` into a `graph`, and `slider` and `hotkey` into a `field`.
     private static let foldedKinds: Set<String> = ["gauge", "slider", "hotkey"]
-    /// The area of the rows in the default drawing of a sheet with no `repeat` block (protocol: Drawings).
+    /// The area of the rows in the default drawing of a sheet with no `repeat` block (protocol: Layouts).
     private static let rowsArea = "rows"
     private static let formKinds: Set<String> = ["field", "choice", "switch", "slider"]
     /// The kinds of component that can stand for the spot.

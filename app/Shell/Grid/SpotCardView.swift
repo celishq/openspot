@@ -89,12 +89,12 @@ struct SpotCardView: View, Equatable {
         return ownView
     }
 
-    /// Whether its script draws the card from a drawing for its size (protocol: Drawings).
+    /// Whether its script draws the card from a drawing for its size (protocol: Layouts).
     private var isDrawn: Bool {
         drawsOwnCard && entry.state.face.layout(for: size) != nil
     }
 
-    /// Whether the card is the spot's own or an answer card, which its script can draw (protocol: Drawings, Places).
+    /// Whether the card is the spot's own or an answer card, which its script can draw (protocol: Layouts, Places).
     private var drawsOwnCard: Bool {
         entry.item == nil || entry.item?.card != nil
     }

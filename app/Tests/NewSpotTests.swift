@@ -180,7 +180,7 @@ final class NewSpotTests: BuiltInCase {
 
     /// The guide names each key that a part takes, and a part takes each key that the kinds table of the guide gives it.
     func testTheGuideAndThePartsTakeTheSameKeys() {
-        let blocks = guideText.components(separatedBy: "## Blocks").dropFirst().first?.components(separatedBy: "## Drawings").first ?? ""
+        let blocks = guideText.components(separatedBy: "## Blocks").dropFirst().first?.components(separatedBy: "## Layouts").first ?? ""
         for key in PartCatalog.keys {
             XCTAssertTrue(blocks.contains("`\(key)"), key)
         }
