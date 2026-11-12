@@ -26,7 +26,7 @@ struct SpotGridView: View {
                 id: entry.id,
                 size: shown.size,
                 motion: motion(of: placement, at: shown.rect, id: entry.id),
-                isCovered: entry.id == openID || SpotCardView.isFilled(entry, size: shown.size, takesDrag: model.takesDrag(entry.id), isDropTarget: dropTarget == entry.id),
+                isCovered: entry.id == openID || SpotCardView.isFilled(entry, takesDrag: model.takesDrag(entry.id), isDropTarget: dropTarget == entry.id),
                 isPressed: pressed == entry.id && !isHeld && SpotCardView.showsPress(of: entry),
                 isLifted: isLifted,
                 isHeld: isHeld,
