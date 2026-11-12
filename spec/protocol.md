@@ -14,7 +14,7 @@ A spot is one file and one loop:
 ```text
 event   ─ on= ─►  <script> read          Openspot calls the script
 script  ─ prints ─►  frames of blocks    Openspot draws them
-person  ─ presses a block ─►  <script> <id>
+press   ─ on a block ─►  <script> <id>    a person or an agent acts
 ```
 
 - A spot is one executable file, in any language, at the top of the plugins folder or one folder down.
@@ -23,6 +23,8 @@ person  ─ presses a block ─►  <script> <id>
   whole, and its scripts share one data folder.
 - A file that is not executable MAY hold shared code.
 - The spot says what it has. Openspot and the person decide where, when and on which key it shows.
+- A person or an agent makes the same calls. An agent presses through `openspot spot run <id> <call>`, and raises events
+  through `openspot event emit`. The spot cannot tell which one called.
 
 ## Your first spot
 
