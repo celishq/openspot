@@ -288,7 +288,7 @@ grid=a a d e
 The head is the block of a frame that starts with one of its keys. Openspot doesn't draw it. It holds the layout and the
 effects of the frame.
 
-- Its layout keys: `grid=` and `grid.<size>=` lines, `main`, `title` and `detail` for the card, and `recents`.
+- Its layout keys: `grid=` and `grid.<size>=` lines, `main`, `title`, `detail` and `active` for the card, and `recents`.
 - Its effects:
   - `toast=Saved` shows a short message at once, even when the panel is closed;
   - `link=<url>` opens the URL;
@@ -303,14 +303,15 @@ The main block stands for the spot on its card and in the menu bar.
 
 - `main=<id>` in the head names it. Without `main=`, the main block is the only `text`, `number`, `graph`, `switch` or
   slider in the frame.
-- The menu bar and a card of other spots show a main `text`, `number` or `graph`. A main `switch` shows on the card
-  whether its thing is on.
+- The menu bar and a card of other spots show a main `text`, `number` or `graph`.
+- `active=true` in the head shows on the card that the spot's thing is on, and `active=false` that it is off.
 - A spot has a sheet when its header has `on=sheet.open`, `on=sheet.text`, a `clock`, `offers=search`, or `mode=stay` or
   `always`. Without any of these, such as with only `on=panel.open` or `on=app.front`, it has no sheet, and its rows
   never show.
 - Without `grid.<size>=` lines, a spot shows the default card: its icon, title and detail, and an arrow when it has a
   sheet.
-- When a frame holds only one `switch` or one slider, the card draws it, and a press of the card changes it.
+- When a frame holds only one `switch` or one slider, the card draws it, and a press of the card changes it. A card
+  that is a switch is active while the switch is on.
 - A press on the card outside a control opens the sheet, or sends `<spot> open` when there's no sheet.
 
 ## Events
