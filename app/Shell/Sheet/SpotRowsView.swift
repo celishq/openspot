@@ -244,7 +244,7 @@ private struct RowRing: ViewModifier {
     let shape: RoundedRectangle
 
     func body(content: Content) -> some View {
-        content.modifier(SpotSelectionRing(isSelected: selectedRun() == run, shape: shape))
+        content.modifier(SpotSelectionRing(isSelected: selectedRun() == run, shape: shape, marksMenu: true))
     }
 }
 
@@ -262,7 +262,7 @@ private struct BentoRing: View {
             let size = SpotRowsView.size(of: area, step: step)
             Color.clear
                 .frame(width: size.width, height: size.height)
-                .modifier(SpotSelectionRing(isSelected: true, shape: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)))
+                .modifier(SpotSelectionRing(isSelected: true, shape: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous), marksMenu: true))
                 .offset(x: CGFloat(area.x0) * step, y: CGFloat(area.y0) * step)
         }
     }
@@ -324,7 +324,8 @@ private struct GridRing: View {
                 .modifier(SpotSelectionRing(
                     isSelected: true,
                     shape: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous),
-                    width: SpotSelectionRing<RoundedRectangle>.thinWidth
+                    width: SpotSelectionRing<RoundedRectangle>.thinWidth,
+                    marksMenu: true
                 ))
                 .offset(x: CGFloat(index % perLine) * step, y: CGFloat(index / perLine) * step)
         }

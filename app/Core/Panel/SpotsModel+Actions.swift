@@ -215,10 +215,6 @@ extension SpotsModel {
         return true
     }
 
-    public func searchMenu(_ text: String) {
-        menu?.search(text)
-    }
-
     private func openMenu(on target: Target) {
         menu = actionMenu(on: target)
         menuTarget = target

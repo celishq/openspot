@@ -1,14 +1,11 @@
 import OpenspotCore
 import SwiftUI
 
-/// The actions of the selected row or card, each with its key.
+/// The actions of the selected row or card, each with its key. The panel's own field searches them.
 struct SpotActionMenuView: View {
     let menu: ActionMenu
     var work: (ActionMenu.Row) -> ScriptCall? = { _ in nil }
     let onPress: (Int) -> Void
-    /// Takes the text of the field of a menu that searches its rows.
-    var onSearch: (String) -> Void = { _ in }
-    @FocusState private var isSearching: Bool
 
     private var shape: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
@@ -41,21 +38,16 @@ struct SpotActionMenuView: View {
                 }
                 .buttonStyle(.plain)
             }
-            if menu.isSearchable {
-                field
+            if menu.shown.isEmpty {
+                Text("No matching actions")
+                    .font(SpotType.body)
+                    .modifier(SpotSecondaryText())
+                    .frame(height: SpotTokens.menuRowHeight)
             }
         }
         .padding(SpotTokens.menuPadding)
-        .frame(width: SpotTokens.gridWidth)
+        .frame(width: ActionMenuPlace.width)
         .modifier(SpotGlass(radius: SpotTokens.radius - SpotTokens.padding + SpotTokens.menuPadding))
-    }
-
-    /// The field that searches the rows. It sits at the bottom, which stays in place while the rows above it change.
-    private var field: some View {
-        SpotSearchField(prompt: "Search actions", text: menu.query, onSearch: onSearch, isFocused: $isSearching)
-            .onAppear {
-                DispatchQueue.main.async { isSearching = true }
-            }
     }
 
     private func isConfirming(_ row: ActionMenu.Row) -> Bool {

@@ -95,6 +95,24 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertEqual(rows.map(\.keyLabel), ["⌘E", "", "⌘⇧C", "⌘⌫"])
     }
 
+    func testTheSearchFieldFiltersALongOpenMenuAndLeavesTheGridSearch() throws {
+        try script("weather", header: "title=Weather")
+        _ = try select("weather")
+        let actions = ["Open in Zed", "Use Zed by default", "Show in Finder", "Copy path", "Rename"].enumerated().map {
+            CommandAction(id: "a\($0.offset)", title: $0.element)
+        }
+        let spot = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .list, primary: "Open", actions: actions)
+        model.menu = ActionMenu(spot: spot, item: SpotItem(title: "One", run: "1"))
+
+        model.searchText = "zed"
+
+        XCTAssertEqual(model.searchText, "zed")
+        XCTAssertEqual(model.menu?.shown.map(\.title), ["Open in Zed", "Use Zed by default"])
+        XCTAssertEqual(model.query, "")
+        model.closeMenu()
+        XCTAssertEqual(model.searchText, "")
+    }
+
     func testEditOpensTheFileInTheTextEditor() async throws {
         try script("weather")
         _ = try select("weather")

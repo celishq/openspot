@@ -72,17 +72,19 @@ struct SpotsView: View {
                 showsField: showsSearchField,
                 surfaceIsOut: surfaceIsOut
             )
-            if let menu = model.menu {
+            if model.menu != nil {
                 Color.clear
                     .contentShape(Rectangle())
                     .onTapGesture { model.closeMenu() }
-                SpotActionMenuView(menu: menu, work: { model.work(of: $0) }, onPress: { model.pressMenu(row: $0) }, onSearch: { model.searchMenu($0) })
-                    .offset(x: SpotTokens.halo, y: menuTop(menu))
             }
         }
         .onDrop(of: [.fileURL], delegate: SpotAddDrop(model: model))
         .coordinateSpace(name: Self.panelSpace)
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
+        .overlayPreferenceValue(SpotMenuAnchor.self, alignment: .topLeading) { item in
+            menuLayer(at: item)
+                .animation(SpotMotion.liftFade, value: model.menu == nil)
+        }
         .background(softBlur)
         .environment(\.spotIsShown, model.isShown)
         .onChange(of: model.isShown) { _, isShown in
@@ -193,12 +195,43 @@ struct SpotsView: View {
     }
 
     private var menuBackdropHeight: CGFloat {
-        model.menu.map { SpotTokens.menuHeight(rows: $0.lines) + 2 * SpotTokens.halo } ?? 0
+        model.menu.map { menuBounds($0).maxY + SpotTokens.halo + SpotTokens.hintBlock } ?? 0
     }
 
-    /// Where the menu starts: its bottom meets the bottom of the content.
-    private func menuTop(_ menu: ActionMenu) -> CGFloat {
-        max(SpotTokens.halo, contentHeight - SpotTokens.halo - SpotTokens.hintBlock - SpotTokens.menuHeight(rows: menu.lines))
+    private static let menuMargin: CGFloat = 16
+
+    /// Where the menu may lie: under the field, over the content, and down to the content's bottom or as far as it needs.
+    private func menuBounds(_ menu: ActionMenu) -> CGRect {
+        let top = fieldIsInSheet ? SpotTokens.halo + SpotTokens.sheetFieldDrop + SpotTokens.listRowHeight + SpotTokens.rowGap : SpotTokens.gridTop
+        let bottom = max(contentHeight - SpotTokens.halo - SpotTokens.hintBlock, top + SpotTokens.menuHeight(rows: menu.lines))
+        return CGRect(x: Self.menuMargin, y: top, width: SpotTokens.panelWidth - 2 * Self.menuMargin, height: bottom - top)
+    }
+
+    /// What the veil of the menu covers: the cards under the field, or the open sheet under its field.
+    private func veilArea(under top: CGFloat) -> CGRect {
+        guard fieldIsInSheet else {
+            return CGRect(x: SpotTokens.halo, y: top, width: SpotTokens.gridWidth, height: contentHeight - SpotTokens.halo - SpotTokens.hintBlock - top)
+        }
+        let edge = top - SpotTokens.rowGap / 2
+        return CGRect(x: sheetRect.minX, y: edge, width: sheetRect.width, height: sheetRect.maxY - edge)
+    }
+
+    /// The open menu at the selected card or row, over a veil that fades the rest of the content. With no selected item it
+    /// opens under the field.
+    private func menuLayer(at item: SpotMenuAnchor.Item?) -> some View {
+        GeometryReader { proxy in
+            if let menu = model.menu {
+                let bounds = menuBounds(menu)
+                let rect = item.map { proxy[$0.bounds] } ?? SpotFieldView.rect
+                let place = ActionMenuPlace(item: rect, height: SpotTokens.menuHeight(rows: menu.lines), bounds: bounds).rect
+                ZStack(alignment: .topLeading) {
+                    SpotMenuVeil(area: veilArea(under: bounds.minY), isSquareOnTop: fieldIsInSheet, item: item == nil ? .zero : rect, corner: item?.corner ?? 0)
+                    SpotActionMenuView(menu: menu, work: { model.work(of: $0) }, onPress: { model.pressMenu(row: $0) })
+                        .offset(x: place.minX, y: place.minY)
+                }
+                .transition(.opacity)
+            }
+        }
     }
 
     /// Whether the install screen takes the place of the grid and the field.
