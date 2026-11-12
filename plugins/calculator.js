@@ -11,7 +11,22 @@ const noRates = {
   "status=unavailable": "detail=The source of the rates does not answer. Sums, units and dates still work. Try again later.\nicon=exclamationmark.triangle\n",
 }
 
-/** The row of the answer of a sum, a conversion or a date for a read, or the copy of the plain value of a picked row. */
+/** The fields of the row that `openspot calc solve` prints, by key. */
+function fields(text) {
+  return Object.fromEntries(text.trim().split("\n").map((line) => [line.slice(0, line.indexOf("=")), line.slice(line.indexOf("=") + 1)]))
+}
+
+/** The card of an answer: the sum as it was read over the big answer, whose pick sends the plain value. */
+function card(row) {
+  return openspot.frame([
+    { "grid.large": ["sum sum sum sum", "answer answer answer answer", "answer answer answer answer"], main: "answer" },
+    { number: "sum", value: row.detail },
+    { number: "answer", value: row.row, display: row.title },
+  ])
+}
+
+/** The card of the answer of a sum, a conversion or a date for a read, or the row of an answer from old rates, which warns.
+ * A pick copies the plain value. */
 function main([id, text]) {
   if (id === "open") {
     if (text === "offline" || openspot.call(["clipboard", "copy"], text).code !== 0) return ""
@@ -20,5 +35,7 @@ function main([id, text]) {
   if (!text) return ""
   const answer = openspot.call(["calc", "solve", text]).stdout
   const why = noRates[answer.trim()]
-  return why ? "row=offline\ntitle=No exchange rates\n" + why : answer
+  if (why) return "row=offline\ntitle=No exchange rates\n" + why
+  const row = fields(answer)
+  return row.row && !row.tone ? card(row) : answer
 }

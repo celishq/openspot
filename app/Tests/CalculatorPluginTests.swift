@@ -36,15 +36,28 @@ final class CalculatorPluginTests: SamplePluginsCase {
         XCTAssertFalse(calculator.isFound)
     }
 
-    func testAnAnswerIsTheRowOfTheCalcCommandForTheText() async throws {
+    func testAnAnswerIsALargeCardOfTheSumOverTheAnswerWhosePickSendsThePlainValue() async throws {
         try await withPrivateHome { home in
-            try "row=14\ntitle=14\ndetail=2 × (3 + 4)\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
+            try "row=1234.5\ntitle=1,234.5\ndetail=1000 + 234.5\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
-            let rows = try await self.calculator.items(query: "2*(3+4)", timeout: 5).items
+            let answers = try await self.calculator.items(query: "1000+234.5", timeout: 5).answers
 
-            XCTAssertEqual(rows.map(\.run), ["14"])
-            XCTAssertEqual(rows.first?.subtitle, "2 × (3 + 4)")
-            XCTAssertEqual(try String(contentsOf: home.appendingPathComponent("calc-asked"), encoding: .utf8), "2*(3+4)\n")
+            XCTAssertEqual(answers.map(\.run), ["1234.5"])
+            XCTAssertEqual(answers.first?.card?.face.answerSize, .large)
+            XCTAssertEqual(answers.first?.card?.face.parts.map(\.control), [.metric("1000 + 234.5"), .metric("1,234.5")])
+            XCTAssertEqual(try String(contentsOf: home.appendingPathComponent("calc-asked"), encoding: .utf8), "1000+234.5\n")
+        }
+    }
+
+    func testAnAnswerFromOldRatesStaysARowThatWarns() async throws {
+        try await withPrivateHome { home in
+            try "row=13.46\ntitle=13,46 €\ndetail=15 USD in EUR · rates of 3 days ago\ntone=warn\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
+
+            let answers = try await self.calculator.items(query: "15 usd in eur", timeout: 5).answers
+
+            XCTAssertEqual(answers.map(\.run), ["13.46"])
+            XCTAssertNil(answers.first?.card)
+            XCTAssertEqual(answers.first?.tone, .warn)
         }
     }
 
