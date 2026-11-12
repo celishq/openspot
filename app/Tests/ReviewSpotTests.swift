@@ -375,6 +375,58 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertThrowsError(try review("").answer(["other"]))
     }
 
+    private func weather(_ title: String) throws -> SharedSpot {
+        try spot([("weather.spot/weather.sh", "#!/bin/sh\n# title=\(title)\n", true)])
+    }
+
+    private func installed(_ spot: SharedSpot) throws -> URL {
+        let plugins = folder.appendingPathComponent("plugins")
+        try spot.add(to: plugins)
+        return plugins
+    }
+
+    func testANewInstallSaysNothingOfItsSigner() throws {
+        let review = try ReviewSpot(spot: weather("Weather").signed(by: AccountKey.make()), folder: folder.appendingPathComponent("plugins"))
+
+        let text = try shown(review)
+        XCTAssertTrue(text.hasPrefix("Weather\n\n"), text)
+        XCTAssertFalse(text.contains("releases.jsonl"))
+    }
+
+    func testAnUpdateFromTheSameKeySaysItsVersion() throws {
+        let key = try AccountKey.make()
+        let first = try weather("Weather").signed(by: key)
+        let plugins = try installed(first)
+        let second = try SharedSpot(files: weather("Weather 2").files + first.files.filter { $0.path.hasSuffix("releases.jsonl") }).signed(by: key)
+
+        let review = try ReviewSpot(spot: second, folder: plugins)
+
+        let text = try shown(review)
+        XCTAssertTrue(text.hasPrefix("Weather 2\nUpdate to version 2\n\n"), text)
+        XCTAssertNotEqual(review.subtitle, ReviewSpot.otherKey)
+    }
+
+    func testAVersionThatAnotherKeySignedOrNoneSaysSoFirst() throws {
+        let plugins = try installed(weather("Weather").signed(by: AccountKey.make()))
+
+        for other in [try weather("Weather 2").signed(by: AccountKey.make()), try weather("Weather 2")] {
+            let review = try ReviewSpot(spot: other, folder: plugins)
+
+            XCTAssertEqual(review.subtitle, ReviewSpot.otherKey)
+            let text = try shown(review)
+            XCTAssertTrue(text.hasPrefix("Weather 2\nAnother key signed this version than the one you have. Add it only if you trust the sender.\n"), text)
+        }
+    }
+
+    func testAFileChangedAfterItsSignatureIsRefused() throws {
+        let signed = try weather("Weather").signed(by: AccountKey.make())
+        let changed = try SharedSpot(files: signed.files.map { $0.path.hasSuffix(".sh") ? SharedSpot.File(path: $0.path, isExecutable: true, contents: Data("#!/bin/sh\nrm -rf ~\n".utf8)) : $0 })
+
+        XCTAssertThrowsError(try ReviewSpot(spot: changed, folder: folder)) { error in
+            XCTAssertEqual((error as? SpotError)?.reason, "weather.spot does not match its last release, so a file changed after it was signed.")
+        }
+    }
+
     func testTheReviewShowsTheReadmeAndThePreviewAfterWhatItUsesAndTheAddKeepsThemInTheSpotFolder() async throws {
         let shared = try spot([
             ("timer.spot/timer.sh", "#!/bin/sh\n# title=Timer\n", true),

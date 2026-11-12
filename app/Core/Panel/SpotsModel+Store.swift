@@ -4,7 +4,7 @@ import Foundation
 extension SpotsModel {
     /// Publishes a spot of the plugins folder to the store. A spot with no readme opens its listing, which asks for one. A
     /// spot whose files did not change since its last publish writes nothing. A spot with `preview=sample` prints its preview
-    /// first, and a Swift spot is compiled into the package.
+    /// first, a Swift spot is compiled into the package, and the package holds a signed release of it.
     @discardableResult
     public func publish(_ id: String) async -> SpotPublish {
         guard let item = dock.items.first(where: { $0.id == id }) else { return .notOwn }
@@ -34,6 +34,8 @@ extension SpotsModel {
                 host.work("Compiling \(spot.name)")
                 shared = try await shared.compiled()
             }
+            shared = try shared.signed(by: files.account.keyMadeOnce())
+            try shared.keepReleaseLog(in: folder.url)
             try FileManager.default.createDirectory(at: files.store, withIntermediateDirectories: true)
             try SpotPackage.write(shared, to: files.store)
         } catch {

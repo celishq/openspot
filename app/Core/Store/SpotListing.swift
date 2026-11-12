@@ -10,21 +10,43 @@ public struct SpotListing: Equatable, Sendable {
     static let readmeExtension = "md"
     static let previewSuffix = ".preview.txt"
 
+    /// The last signed release of a spot folder: its version, and whether the files are still those it names.
+    public struct Release: Equatable, Sendable {
+        public let version: Int
+        public let isCurrent: Bool
+
+        /// What the listing says of it.
+        public var words: String {
+            isCurrent ? "Version \(version)" : "Changed since version \(version)"
+        }
+    }
+
     public let description: String?
     public let readme: String?
     public let preview: [SpotItem]
+    public let release: Release?
 
-    public init(description: String?, readme: String?, preview: [SpotItem]) {
+    public init(description: String?, readme: String?, preview: [SpotItem], release: Release? = nil) {
         self.description = description
         self.readme = readme
         self.preview = preview
+        self.release = release
     }
 
-    /// The listing that the files beside this spot's file give.
+    /// The listing that the files of this spot's folder give.
     public init(beside spot: Spot) {
         let readme = try? String(contentsOf: Self.readme(of: spot.url), encoding: .utf8)
         let preview = (try? String(contentsOf: Self.preview(of: spot.url), encoding: .utf8)).map { SpotOutput(text: $0).items } ?? []
-        self.init(description: spot.subtitle, readme: readme?.trimmingCharacters(in: .whitespacesAndNewlines), preview: preview)
+        self.init(description: spot.subtitle, readme: readme?.trimmingCharacters(in: .whitespacesAndNewlines), preview: preview, release: Self.release(of: spot.url))
+    }
+
+    /// The last release of the spot folder of a file, when its log checks.
+    private static func release(of file: URL) -> Release? {
+        let folder = file.deletingLastPathComponent()
+        guard let text = try? String(contentsOf: folder.appendingPathComponent(ReleaseLog.fileName), encoding: .utf8),
+              let log = try? ReleaseLog(text: text), let version = log.last?.version,
+              let spot = try? SharedSpot(contentsOf: folder) else { return nil }
+        return Release(version: version, isCurrent: log.names(spot.released(in: folder.lastPathComponent), built: false))
     }
 
     public static func readme(of file: URL) -> URL {

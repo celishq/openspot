@@ -340,6 +340,30 @@ final class SpotAddTests: XCTestCase {
         XCTAssertEqual(try lock.entries().map(\.uses), [[.spots, .app, .network]])
     }
 
+    func testAnAddOfASignedSpotKeepsItsAddressAndKeyAndAnUpdateFromAnotherKeyNeedsYes() async throws {
+        let file = root.appendingPathComponent("Cups.spot")
+        let mine = try AccountKey.make()
+        let cups = try SharedSpot(files: [.init(path: "cups.spot/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8))]).signed(by: mine)
+        try cups.zip(to: file)
+        let lock = SpotLock(url: root.appendingPathComponent("spots.lock"))
+
+        _ = try await lock.add(.file(file), to: plugins, isConfirmed: true)
+
+        let release = try XCTUnwrap(cups.releaseLog(in: "cups.spot")?.last)
+        XCTAssertEqual(try lock.entries().map(\.address), [release.address])
+        XCTAssertEqual(try lock.entries().map(\.key), [mine.publicKey])
+
+        let changed = try SharedSpot(files: [.init(path: "cups.spot/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\necho two\n".utf8))]).signed(by: AccountKey.make())
+        try changed.zip(to: file)
+        do {
+            _ = try await lock.add(.file(file), to: plugins)
+            XCTFail("An update from another key needs --yes.")
+        } catch {
+            XCTAssertTrue((error as? SpotError)?.reason.hasPrefix("Another key signed this version than the one you have.") == true, "\(error)")
+        }
+        XCTAssertEqual(try String(contentsOf: plugins.appendingPathComponent("cups.spot/cups.sh"), encoding: .utf8), "#!/bin/sh\n")
+    }
+
     func testALockOfAnOlderOpenspotReadsEachPathInItsSpotFolder() throws {
         let lock = SpotLock(url: root.appendingPathComponent("spots.lock"))
         try Data(#"[{"source":"/a","paths":["coffee","notes.sh","notes.md","notes.preview.txt","tools/x.sh","tea.spot/tea.sh"]}]"#.utf8).write(to: lock.url)

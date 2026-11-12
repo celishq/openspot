@@ -19,6 +19,9 @@ public struct SpotLock: Equatable, Sendable {
         public let uses: [SpotUse]?
         /// The lines of what it can also do and of what runs by itself, as its review shows them.
         public var canDo: [String]?
+        /// The address and the signing key of its last release, when it came signed.
+        public var address: String?
+        public var key: String?
 
         /// The name of the spot: its first spot folder with no extension.
         public var name: String {
@@ -33,13 +36,15 @@ public struct SpotLock: Equatable, Sendable {
             }
         }
 
-        public init(source: String, commit: String?, paths: [String], hash: String?, uses: [SpotUse]?, canDo: [String]? = nil) {
+        public init(source: String, commit: String?, paths: [String], hash: String?, uses: [SpotUse]?, canDo: [String]? = nil, address: String? = nil, key: String? = nil) {
             self.source = source
             self.commit = commit
             self.paths = paths
             self.hash = hash
             self.uses = uses
             self.canDo = canDo
+            self.address = address
+            self.key = key
         }
 
         public init(from decoder: Decoder) throws {
@@ -50,7 +55,9 @@ public struct SpotLock: Equatable, Sendable {
                 paths: values.decode([String].self, forKey: .paths).map(Self.wrapped),
                 hash: values.decodeIfPresent(String.self, forKey: .hash),
                 uses: values.decodeIfPresent([SpotUse].self, forKey: .uses),
-                canDo: values.decodeIfPresent([String].self, forKey: .canDo)
+                canDo: values.decodeIfPresent([String].self, forKey: .canDo),
+                address: values.decodeIfPresent(String.self, forKey: .address),
+                key: values.decodeIfPresent(String.self, forKey: .key)
             )
         }
 
@@ -81,11 +88,13 @@ public struct SpotLock: Equatable, Sendable {
         }
     }
 
-    /// The hash, the uses and the lines of what it can also do and of what runs by itself, of a spot's paths in a folder.
+    /// The hash, the uses, the lines of what it can also do and of what runs by itself, and the last release, of a spot's
+    /// paths in a folder.
     private struct Facts {
         let hash: String
         let uses: [SpotUse]
         let canDo: [String]
+        let release: SpotRelease?
     }
 
     private static let name = "spots.lock"
@@ -142,13 +151,16 @@ public struct SpotLock: Equatable, Sendable {
                     }
                     if !review.trust.isEmpty { throw SpotError.fault("\(review.name)\n\n\(review.trust)\(confirm)") }
                 }
+                if let old, !isConfirmed, let key = old.key, new.release?.publicKey != key {
+                    throw SpotError.fault("Another key signed this version than the one you have. Openspot kept the one you have. Run `openspot spot add \(source.text) --yes` to update it.")
+                }
                 if let old, !isConfirmed {
                     let before = old.uses == nil || old.canDo == nil ? try Self.facts(of: old.paths, in: folder) : nil
                     try Self.refuseGrowth(from: old.uses ?? before?.uses ?? [], old.canDo ?? before?.canDo ?? [], to: new, confirm: "openspot spot add \(source.text) --yes")
                 }
                 facts = new
             }
-            let entry = Entry(source: source.text, commit: commit, paths: paths, hash: facts?.hash, uses: facts?.uses, canDo: facts?.canDo)
+            let entry = Entry(source: source.text, commit: commit, paths: paths, hash: facts?.hash, uses: facts?.uses, canDo: facts?.canDo, address: facts?.release?.address, key: facts?.release?.publicKey)
             try write(try entries().filter { Set($0.paths).isDisjoint(with: paths) && $0.source != source.text } + [entry])
             return old == nil ? entry.added : entry.updated
         }
@@ -177,7 +189,7 @@ public struct SpotLock: Equatable, Sendable {
                     }
                     facts = new
                 })
-                entries[index] = Entry(source: entry.source, commit: entry.commit, paths: entry.paths, hash: facts?.hash, uses: facts?.uses, canDo: facts?.canDo)
+                entries[index] = Entry(source: entry.source, commit: entry.commit, paths: entry.paths, hash: facts?.hash, uses: facts?.uses, canDo: facts?.canDo, address: facts?.release?.address, key: facts?.release?.publicKey)
                 changed[entry.source] = entries[index]
                 added += entry.added
             } catch {
@@ -231,7 +243,9 @@ public struct SpotLock: Equatable, Sendable {
         } catch {
             canDo = ["Cannot review it: \((error as? SpotError)?.reason ?? error.localizedDescription)"]
         }
-        return Facts(hash: hash.finalize().map { String(format: "%02x", $0) }.joined(), uses: uses, canDo: canDo)
+        let shared = try? SharedSpot(paths: paths, in: folder)
+        let release = try shared.flatMap { spot in try spot.roots.first.flatMap { try spot.releaseLog(in: $0)?.last } }
+        return Facts(hash: hash.finalize().map { String(format: "%02x", $0) }.joined(), uses: uses, canDo: canDo, release: release)
     }
 
     /// Moves each path of the entry that holds this ID to the Trash, and drops the entry. A spot that `spot add` did not add

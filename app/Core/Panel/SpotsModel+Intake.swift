@@ -161,7 +161,8 @@ extension SpotsModel {
         reload()
     }
 
-    /// Puts the file of a spot on the clipboard, ready to paste into a chat, and warns the sender about secrets.
+    /// Puts the file of a spot on the clipboard, ready to paste into a chat, and warns the sender about secrets. It signs a
+    /// release of the spot first when its files changed since the last one, and keeps the log in its spot folder.
     public func share(_ entry: Entry) {
         if isShown { host.dismiss() }
         Task {
@@ -172,6 +173,8 @@ extension SpotsModel {
                     host.work("Compiling \(entry.spot.name)")
                     spot = try await spot.compiled()
                 }
+                spot = try spot.signed(by: files.account.keyMadeOnce())
+                try spot.keepReleaseLog(in: folder.url)
                 let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-shared/\(UUID().uuidString)", isDirectory: true)
                 try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
                 let file = place.appendingPathComponent(SharedSpot.fileName(for: entry.spot.name))

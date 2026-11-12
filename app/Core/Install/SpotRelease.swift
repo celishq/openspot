@@ -10,7 +10,7 @@ public struct SpotRelease: Equatable, Sendable {
     static let previousMarker = "previous"
 
     /// A file as a release names it.
-    public struct File: Equatable, Sendable {
+    public struct File: Hashable, Sendable {
         public let path: String
         public let sha256: String
         public let size: Int

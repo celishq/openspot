@@ -56,6 +56,11 @@ public struct SpotFiles {
         folder(config.read())
     }
 
+    /// Where the person's account key lives.
+    public var account: AccountStore {
+        .standard(environment: environment, home: home)
+    }
+
     /// The folder of the packages that the person published to the store.
     public var store: URL {
         SpotFolder.config(environment: environment, home: home).appendingPathComponent("store", isDirectory: true)

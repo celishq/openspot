@@ -639,6 +639,9 @@ final class SpotsModelDragTests: XCTestCase {
 
         let first = await model.publish("a")
         XCTAssertEqual(first, .published)
+        let log = try ReleaseLog(text: String(contentsOf: store.appendingPathComponent("a.spot/releases.jsonl"), encoding: .utf8))
+        XCTAssertEqual(log.last?.version, 1)
+        XCTAssertEqual(try String(contentsOf: plugins.appendingPathComponent("a.spot/releases.jsonl"), encoding: .utf8), log.text)
         XCTAssertEqual(try String(contentsOf: store.appendingPathComponent("a.spot/readme.md"), encoding: .utf8), "Does a.")
         XCTAssertEqual(publication(of: "a"), .current)
         let again = await model.publish("a")

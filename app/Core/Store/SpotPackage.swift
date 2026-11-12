@@ -16,10 +16,10 @@ public struct SpotPackage: Equatable, Sendable {
     }
 
     /// The hash of the paths, the modes and the bytes of the files of one spot folder that a person writes, which says
-    /// whether they changed. Programs and view libraries, which a publish builds, are not in it.
+    /// whether they changed. Programs and view libraries, which a publish builds, and the release log are not in it.
     public static func hash(of spot: SharedSpot, in root: String) -> String {
         var hasher = SHA256()
-        let written = spot.files(in: root).filter { !SwiftProgram.isProgram(URL(fileURLWithPath: $0.path)) && !ViewLibrary.isLibrary($0.path) }
+        let written = spot.released(in: root).filter { !SwiftProgram.isProgram(URL(fileURLWithPath: $0.path)) && !ViewLibrary.isLibrary($0.path) }
         for file in written.sorted(by: { $0.path < $1.path }) {
             hasher.update(data: Data("\(file.path)\n\(file.isExecutable)\n\(file.contents.count)\n".utf8))
             hasher.update(data: file.contents)

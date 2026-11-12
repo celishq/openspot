@@ -27,9 +27,11 @@ public struct ReviewSpot: Equatable, Sendable {
     private var lock: SpotLock?
 
     /// Reads a spot for a plugins folder, with the readme and the preview of its first spot folder after what it uses and
-    /// does. Throws a fault when it gives no spot or cannot go into that folder. With `canAdd` false it only shows the text.
+    /// does. Throws a fault when it gives no spot, cannot go into that folder, or holds a release log that does not check
+    /// against its files. With `canAdd` false it only shows the text.
     public init(spot: SharedSpot, folder: URL, canAdd: Bool = true) throws {
         if let clash = spot.clash(in: folder) { throw SpotError.fault(clash) }
+        let logs = try spot.roots.map { try spot.releaseLog(in: $0) }
         let scan = try Self.scan(of: spot)
         let spots = scan.files.flatMap(\.spots)
         let primary = spot.files.lazy.compactMap { file in spots.first { $0.url.path.hasSuffix("/\(file.path)") } }.first
@@ -43,7 +45,9 @@ public struct ReviewSpot: Equatable, Sendable {
         self.folder = folder
         let programs = spot.files.filter { ($0.isExecutable || ViewLibrary.isLibrary($0.path)) && !Self.canShow($0) }.map(\.path)
         let quiet = "Runs only when you use it"
-        subtitle = !programs.isEmpty ? "Holds a program that you cannot read" : primary.subtitle ?? (runs.isEmpty ? quiet : "Runs by itself")
+        let release = Self.release(of: logs.first ?? nil, over: Self.installedLog(of: spot.roots.first, in: folder))
+        subtitle = release.isOtherKey ? Self.otherKey
+            : !programs.isEmpty ? "Holds a program that you cannot read" : primary.subtitle ?? (runs.isEmpty ? quiet : "Runs by itself")
         let uses = SpotUse.allCases.filter { use in scan.scripts.contains { $0.uses.contains(use) } }
         let present = spot.files.map(\.path).filter { FileManager.default.fileExists(atPath: folder.appendingPathComponent($0).path) }
         let installed = Set(present.flatMap { (try? SpotUse.set(SpotHeader(url: folder.appendingPathComponent($0)).block.value("uses"), of: $0)) ?? [] })
@@ -60,7 +64,7 @@ public struct ReviewSpot: Equatable, Sendable {
             Self.section("Runs by itself", runs)
         ].compactMap { $0 }.joined()
         text = [
-            grown.isEmpty ? "\(primary.name)\n\n" : "\(primary.name)\nThis version adds: \(grown.map(\.rawValue).joined(separator: ", "))\n\n",
+            ([primary.name] + release.lines + (grown.isEmpty ? [] : ["This version adds: \(grown.map(\.rawValue).joined(separator: ", "))"])).joined(separator: "\n") + "\n\n",
             programs.isEmpty ? nil : Self.section(
                 "Program that Openspot cannot show",
                 programs + ["It can do all that you can. Add it only if you trust the sender."]
@@ -73,7 +77,7 @@ public struct ReviewSpot: Equatable, Sendable {
             Self.section("Will not load", scan.refused.map { "\($0.file): \($0.reason)" }),
             readme.map { "\($0)\n\n" },
             Self.section("Preview", rows)
-        ].compactMap { $0 }.joined() + spot.files.map(Self.shown).joined(separator: "\n")
+        ].compactMap { $0 }.joined() + spot.files.filter { !$0.path.hasSuffix("/\(ReleaseLog.fileName)") }.map(Self.shown).joined(separator: "\n")
     }
 
     /// Reads a spot folder or a zip of spot folders for a plugins folder, which its Add puts in that folder and records in
@@ -136,6 +140,26 @@ public struct ReviewSpot: Equatable, Sendable {
         defer { try? FileManager.default.removeItem(at: place) }
         try spot.add(to: place)
         return try SpotFolder(url: place).scan()
+    }
+
+    /// The subtitle of a version that another key signed than the copy that the plugins folder holds.
+    static let otherKey = "Signed by another key"
+
+    /// The release log of the copy of a spot folder that the plugins folder holds, when it has one that checks.
+    private static func installedLog(of root: String?, in folder: URL) -> ReleaseLog? {
+        guard let root, let text = try? String(contentsOf: folder.appendingPathComponent(root).appendingPathComponent(ReleaseLog.fileName), encoding: .utf8) else { return nil }
+        return try? ReleaseLog(text: text)
+    }
+
+    /// The lines that a review shows of a release over the installed copy. A new install shows nothing of its signer. An
+    /// update says its version, and a version that another key signed, or that no key signed over a signed copy, says so
+    /// first.
+    private static func release(of log: ReleaseLog?, over installed: ReleaseLog?) -> (lines: [String], isOtherKey: Bool) {
+        guard let mine = installed?.last else { return ([], false) }
+        guard let theirs = log?.last, theirs.publicKey == mine.publicKey else {
+            return (["Another key signed this version than the one you have. Add it only if you trust the sender."], true)
+        }
+        return theirs.version.map { (["Update to version \($0)"], false) } ?? ([], false)
     }
 
     /// A line for each script that runs with no act of a person, which says when.

@@ -764,6 +764,8 @@ openspot app quit
   can also write to the Desktop, Movies and the screenshots folder. In Careful mode, a call that needs a use the header
   doesn't name fails.
 - Without Careful mode, the data folder is no boundary.
+- A spot folder can hold `releases.jsonl`, the signed releases of the spot. Openspot writes it when the user shares or
+  publishes the spot, and refuses a shared spot whose files don't match its last release. A spot reads nothing from it.
 
 ## Messages
 
