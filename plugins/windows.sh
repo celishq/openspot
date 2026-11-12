@@ -4,19 +4,19 @@
 # detail=Give each command a key
 # uses=screen
 #
-# command=full
+# button=full
 # title=Full screen
 # icon=rectangle.inset.filled
 #
-# command=center
+# button=center
 # title=Centre
 # icon=rectangle.center.inset.filled
 #
-# command=left
+# button=left
 # title=Left side
 # icon=rectangle.lefthalf.inset.filled
 #
-# command=right
+# button=right
 # title=Right side
 # icon=rectangle.righthalf.inset.filled
 case "$1" in

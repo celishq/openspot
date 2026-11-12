@@ -94,42 +94,29 @@ final class SharedSpotTests: XCTestCase {
     }
 
     func testAWidgetTravelsWithEachMetricItPlacesAndTheCommandItOpens() throws {
-        try script("cpu.sh", "#!/bin/sh\n# every=5\n")
-        try script("home/disk.sh", "#!/bin/sh\n# every=5\n")
-        try script("links.sh", "#!/bin/sh\n# read=sheet\n")
+        try script("cpu.sh", "#!/bin/sh\n# on=clock.5\n")
+        try script("home/disk.sh", "#!/bin/sh\n# on=clock.5\n")
+        try script("links.sh", "#!/bin/sh\n# on=sheet.open\n")
         try script("other.sh")
-        try plain("board.toml", Data("""
-        [[widgets]]
-        title = "Desk"
-        grid = ["cpu cpu home/disk home/disk"]
-        opens = "links"
+        try script("board.sh", "#!/bin/sh\n# title=Desk\n# grid.strip=cpu cpu home/disk home/disk\n# to=links\n")
 
-        """.utf8))
+        let spot = try sharing("board")
 
-        let spot = try sharing("board/Desk")
-
-        XCTAssertEqual(spot.files.map(\.path).sorted(), ["board.toml", "cpu.sh", "home/disk.sh", "links.sh"])
-        XCTAssertEqual(spot.files.first?.path, "board.toml")
+        XCTAssertEqual(spot.files.map(\.path).sorted(), ["board.sh", "cpu.sh", "home/disk.sh", "links.sh"])
+        XCTAssertEqual(spot.files.first?.path, "board.sh")
     }
 
     func testAWidgetThatOpensASpotOfTheAppCarriesNoFileForIt() throws {
-        try script("cpu.sh", "#!/bin/sh\n# every=5\n")
-        try plain("board.toml", Data("""
-        [[widgets]]
-        title = "Desk"
-        grid = ["cpu"]
-        size = "square"
-        opens = "openspot/plugins"
-
-        """.utf8))
+        try script("cpu.sh", "#!/bin/sh\n# on=clock.5\n")
+        try script("board.sh", "#!/bin/sh\n# title=Desk\n# grid.square=cpu\n# to=openspot/plugins\n")
         let core = plugins.deletingLastPathComponent().appendingPathComponent("core")
-        _ = try script("openspot/plugins.sh", "#!/bin/sh\n# read=sheet\n", in: core)
+        _ = try script("openspot/plugins.sh", "#!/bin/sh\n# on=sheet.open\n", in: core)
         let scan = try SpotFolder(url: plugins, core: core).scan()
-        let widget = try XCTUnwrap(scan.spots.first { $0.id == "board/Desk" })
+        let widget = try XCTUnwrap(scan.spots.first { $0.id == "board" })
 
         let spot = try SharedSpot(sharing: widget, from: scan)
 
-        XCTAssertEqual(spot.files.map(\.path).sorted(), ["board.toml", "cpu.sh"])
+        XCTAssertEqual(spot.files.map(\.path).sorted(), ["board.sh", "cpu.sh"])
     }
 
     func testACompiledProgramTravelsWithItsBytesAndStaysExecutable() throws {

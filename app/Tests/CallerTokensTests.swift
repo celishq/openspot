@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 /// Proves that each process and inline link of a spot gets a token that the app maps to the spot while it runs, and that a
-/// call with no token, or with an unknown one, is the person's (Z2).
+/// call with no token, or with an unknown one, is the person's (protocol: Trust).
 @MainActor
 final class CallerTokensTests: SpotRunsCase {
     private func caller(_ token: String?) -> String? {
@@ -19,7 +19,7 @@ final class CallerTokensTests: SpotRunsCase {
     }
 
     func testAProcessHasATokenOfItsSpotUntilItEnds() async throws {
-        try script(header: "read=sheet", "echo \"$OPENSPOT_TOKEN\" > '\(path("token"))'\n\(untilRelease)\nprintf 'row=a\\n'")
+        try script(header: "on=sheet.open", "echo \"$OPENSPOT_TOKEN\" > '\(path("token"))'\n\(untilRelease)\nprintf 'row=a\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -33,8 +33,8 @@ final class CallerTokensTests: SpotRunsCase {
     }
 
     func testEachProcessHasATokenOfItsOwn() async throws {
-        try script("one", header: "read=panel", "echo \"$OPENSPOT_TOKEN\" > '\(path("one-token"))'\n\(untilRelease)")
-        try script("two", header: "read=panel", "echo \"$OPENSPOT_TOKEN\" > '\(path("two-token"))'\n\(untilRelease)")
+        try script("one", header: "on=panel.open", "echo \"$OPENSPOT_TOKEN\" > '\(path("one-token"))'\n\(untilRelease)")
+        try script("two", header: "on=panel.open", "echo \"$OPENSPOT_TOKEN\" > '\(path("two-token"))'\n\(untilRelease)")
         _ = try scanned()
         runs.panelOpened()
 
@@ -49,7 +49,7 @@ final class CallerTokensTests: SpotRunsCase {
     }
 
     func testAStayingProcessKeepsItsTokenBetweenCalls() async throws {
-        try script(header: "mode=stay\nread=sheet", """
+        try script(header: "mode=stay\non=sheet.open", """
         echo "$OPENSPOT_TOKEN" > '\(path("token"))'
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
@@ -67,7 +67,7 @@ final class CallerTokensTests: SpotRunsCase {
     }
 
     func testAnInlineCallHasATokenOfItsSpot() async throws {
-        try "// mode=inline\n// read=sheet\nfunction main(args, env) { return `text=t\\ntitle=${env.OPENSPOT_TOKEN}\\n` }\n"
+        try "// on=sheet.open\nfunction main(args, env) { return `text=t\\ntitle=${env.OPENSPOT_TOKEN}\\n` }\n"
             .write(to: folder.appendingPathComponent("script.js"), atomically: true, encoding: .utf8)
         let sheet = try sheet()
         runs.panelOpened()

@@ -1,6 +1,6 @@
 import Foundation
 
-/// Where a spot comes from: a git repository, a folder, or a `.spot` file or package with its listing (N1). It puts the spot at the top of a plugins
+/// Where a spot comes from: a git repository, a folder, or a `.spot` file or package with its listing (protocol: The openspot command). It puts the spot at the top of a plugins
 /// folder, and runs nothing of it.
 public enum SpotSource: Equatable, Sendable {
     /// A git URL, or the path of a folder that git keeps.

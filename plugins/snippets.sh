@@ -1,8 +1,7 @@
 #!/bin/sh
 # icon=text.quote
 # detail=Copy text
-# size=small
-# read=panel
+# on=panel.open
 # offers=search
 # uses=clipboard
 export LC_ALL=en_US.UTF-8
@@ -49,7 +48,7 @@ case "$1" in
     printf 'button=paste\ntitle=Paste\nshortcut=cmd+return\nclose=true\n\n'
     printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\n\n'
     printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\n\n'
-    printf 'button=new\ntitle=New snippet\nshortcut=cmd+n\nscope=command\nform=true\n\n'
+    printf 'button=new\ntitle=New snippet\nshortcut=cmd+n\nscope=spot\nform=true\n\n'
     load | jq -r "$esc"'.[] | "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.content | gsub("\\s+"; " ") | .[0:200] | esc)\n"'
     ;;
   new)

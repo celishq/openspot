@@ -50,7 +50,7 @@ final class SpotStateTests: XCTestCase {
     }
 
     func testReadsASliderState() throws {
-        let state = try state("slider=display\ntitle=Display\nvalue=70\nmin=0\nmax=100")
+        let state = try state("field=display\ntype=slider\ntitle=Display\nvalue=70\nmin=0\nmax=100")
         XCTAssertEqual(state.level, 70)
         XCTAssertEqual(state.min, 0)
         XCTAssertEqual(state.max, 100)

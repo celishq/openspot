@@ -1,8 +1,7 @@
 #!/bin/sh
 # icon=/System/Applications/Shortcuts.app
 # detail=Run a shortcut
-# size=small
-# read=panel
+# on=panel.open
 # offers=search
 # drop=*
 # uses=clipboard
@@ -37,7 +36,7 @@ head_of_list() {
       printf 'title=Run with %s files\n' "$count"
     fi
     printf 'detail=Pick a shortcut\n\n'
-    printf 'button=cancel\ntitle=Cancel\nshortcut=escape\nscope=command\n\n'
+    printf 'button=cancel\ntitle=Cancel\nshortcut=escape\nscope=spot\n\n'
   fi
   printf 'button=open\ntitle=Run\n\n'
   printf 'button=clipboard\ntitle=Run with clipboard\nshortcut=cmd+return\nclose=true\n\n'
@@ -79,7 +78,7 @@ run() {
 
 case "$1" in
   read)
-    [ "$OPENSPOT_REASON" = panel ] && rm -f "$input"
+    [ "$OPENSPOT_REASON" = panel.open ] && rm -f "$input"
     head_of_list
     if [ -s "$kept" ]; then
       cat "$kept"

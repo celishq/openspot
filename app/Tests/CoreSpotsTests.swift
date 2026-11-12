@@ -44,8 +44,8 @@ final class CoreSpotsTests: XCTestCase {
     }
 
     func testASpotThatIsOnLoadsThePartsItPlaces() throws {
-        try write("cpu.sh", in: core, header: "every=5")
-        try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
+        try write("cpu.sh", in: core, header: "on=clock.5")
+        try "#!/bin/sh\n# title=Overview\n# grid.square=cpu\n".writeScript(to: core.appendingPathComponent("overview.sh"))
 
         let off = try SpotFolder(url: folder, core: core, enabled: []).scan()
         XCTAssertEqual(off.scripts.map(\.id), [])
@@ -57,8 +57,8 @@ final class CoreSpotsTests: XCTestCase {
     }
 
     func testAWidgetInThePluginsFolderCanPlaceACorePart() throws {
-        try write("cpu.sh", in: core, header: "every=5")
-        try "[[widgets]]\ntitle = \"Mine\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: folder.appendingPathComponent("mine.toml"), atomically: true, encoding: .utf8)
+        try write("cpu.sh", in: core, header: "on=clock.5")
+        try "#!/bin/sh\n# title=Mine\n# grid.square=cpu\n".writeScript(to: folder.appendingPathComponent("mine.sh"))
 
         let scan = try SpotFolder(url: folder, core: core, enabled: []).scan()
 
@@ -110,9 +110,9 @@ final class CoreSpotsTests: XCTestCase {
     }
 
     func testTheChoicesLeaveOutPartsWithNoCard() throws {
-        try write("cpu.sh", in: core, header: "every=5")
+        try write("cpu.sh", in: core, header: "on=clock.5")
         try write("apps.sh", in: core)
-        try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
+        try "#!/bin/sh\n# title=Overview\n# grid.square=cpu\n".writeScript(to: core.appendingPathComponent("overview.sh"))
 
         XCTAssertEqual(SpotFolder(url: folder, core: core).coreChoices().map(\.name), ["Apps", "Overview"])
     }
@@ -135,13 +135,13 @@ final class CoreSpotsTests: XCTestCase {
     }
 
     func testACoreWidgetSharesWithItsPartsFromTheCoreFolder() throws {
-        try write("cpu.sh", in: core, header: "every=5")
-        try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
+        try write("cpu.sh", in: core, header: "on=clock.5")
+        try "#!/bin/sh\n# title=Overview\n# grid.square=cpu\n".writeScript(to: core.appendingPathComponent("overview.sh"))
         let scan = try SpotFolder(url: folder, core: core, enabled: ["overview"]).scan()
 
         let spot = try SharedSpot(sharing: XCTUnwrap(scan.spots.first { $0.name == "Overview" }), from: scan)
 
-        XCTAssertEqual(spot.files.map(\.path), ["overview.toml", "cpu.sh"])
+        XCTAssertEqual(spot.files.map(\.path), ["overview.sh", "cpu.sh"])
         XCTAssertEqual(spot.files.last?.isExecutable, true)
     }
 

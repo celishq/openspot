@@ -16,6 +16,11 @@ public struct SearchQuery: Equatable, Sendable {
     /// The text as a glyph matches it whole: with no mark that asks for a picture or a text form.
     private let plain: String
 
+    /// The lines that give the text and its forms to a script on stdin: `search=` and a `form=` for each form.
+    public var input: String {
+        TextBlock(fields: [.init(key: "search", value: text)] + forms.map { .init(key: "form", value: $0) }).text
+    }
+
     public init(text: String, layouts: [KeyLayout] = KeyLayout.enabled) {
         self.text = text.trimmingCharacters(in: .whitespaces)
         plain = FoldedItem.plain(self.text)

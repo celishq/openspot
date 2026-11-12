@@ -1,12 +1,17 @@
 #!/bin/sh
-# every=30
+# on=clock.30
+# preview=sample
+if [ "$OPENSPOT_REASON" = spot.preview ]; then
+  printf 'graph=battery\ntitle=84%%\ndetail=3:12 left\nicon=battery.75\nvalue=0.84\n'
+  exit 0
+fi
 pmset -g batt | awk '
   /InternalBattery/ && match($0, /[0-9]+%/) { line = $0 }
   !first && /[0-9]+%/ { first = $0 }
   END {
     if (line == "") line = first
     if (line == "") {
-      printf "gauge=battery\ntitle=–\ndetail=No battery\nicon=powerplug.fill\nvalue=0\n"
+      printf "graph=battery\ntitle=–\ndetail=No battery\nicon=powerplug.fill\nvalue=0\n"
       exit
     }
     $0 = line
@@ -23,5 +28,5 @@ pmset -g batt | awk '
       tone = "good"
     }
     if (percent == 100) detail = "Full"
-    printf "gauge=battery\ntitle=%d%%\ndetail=%s\nicon=%s\nvalue=%s\ntone=%s\n", percent, (detail == "" ? "On battery" : detail), symbol, percent / 100, tone
+    printf "graph=battery\ntitle=%d%%\ndetail=%s\nicon=%s\nvalue=%s\ntone=%s\n", percent, (detail == "" ? "On battery" : detail), symbol, percent / 100, tone
   }'

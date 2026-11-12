@@ -6,7 +6,7 @@ public enum ConfigChange: Equatable, Sendable {
     case keys
     /// Spots that turned on or off, or that went into the menu bar or out of it.
     case spots([String])
-    /// Careful mode turned on or off (Z8).
+    /// Careful mode turned on or off (protocol: Trust).
     case careful
     /// A value that a spot keeps, which the spot `caller` set, or a terminal with none.
     case value(spot: String, caller: String?)

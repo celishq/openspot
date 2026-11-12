@@ -73,7 +73,7 @@ final class AppsPluginTests: SamplePluginsCase {
             let support = try Self.library(folder, "Application Support/Zed/settings.json")
             let preferences = try Self.library(folder, "Preferences/dev.zed.Zed.plist")
             _ = try Self.library(folder, "Caches/com.other.App/db")
-            setenv("OPENSPOT_REASON", "change", 1)
+            setenv("OPENSPOT_REASON", "spot.change", 1)
             defer { unsetenv("OPENSPOT_REASON") }
 
             try await apps.perform(SpotAction(arguments: ["uninstall", app.path]), timeout: 10)
@@ -83,7 +83,7 @@ final class AppsPluginTests: SamplePluginsCase {
             XCTAssertEqual(sheet.parts.map(\.id), [])
             XCTAssertEqual(sheet.actions.map(\.id), ["cancel", "remove"])
             XCTAssertEqual(sheet.actions.map(\.key), [ActionKey(name: "escape"), ActionKey(name: "return", isCommand: true)])
-            XCTAssertEqual(sheet.actions.map(\.scope), [.command, .command])
+            XCTAssertEqual(sheet.actions.map(\.scope), [.spot, .spot])
             XCTAssertEqual(Set(sheet.items.map(\.run)), [
                 app.path, support.deletingLastPathComponent().path, cache.deletingLastPathComponent().path, preferences.path
             ])

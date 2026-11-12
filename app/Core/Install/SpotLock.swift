@@ -3,7 +3,7 @@ import Foundation
 
 /// `spots.lock` in the config folder: the source of each spot that `openspot spot add` put in the plugins folder, the
 /// commit of a git source, the paths that the spot took, a hash of its files, its uses and the lines of what it can also
-/// do and of what runs by itself (N1, N2, Z7). A first add of a spot that has a use, can do more or runs by itself, and an update that adds a use, change
+/// do and of what runs by itself (protocol: The openspot command, Trust). A first add of a spot that has a use, can do more or runs by itself, and an update that adds a use, change
 /// nothing until the person confirms them. Each read, change and write holds a lock beside the file, in the app and in
 /// the command alike.
 public struct SpotLock: Equatable, Sendable {
@@ -74,7 +74,7 @@ public struct SpotLock: Equatable, Sendable {
     /// Puts a spot from a source in the folder, and records it in place of each entry that shared a path with it. A first
     /// add of a spot that the review would show with lines of uses, of what it can also do or of what runs by itself
     /// throws those lines, and a source that the lock has already is an update of its spot, which applies only when it adds
-    /// no use; `isConfirmed` lets either through (Z6, Z7). `replaces` names more paths that the new spot may replace, and
+    /// no use; `isConfirmed` lets either through (protocol: Trust). `replaces` names more paths that the new spot may replace, and
     /// `expecting` the files that the source must still hold, such as those a review showed. The old copy goes to `discard`,
     /// as the Trash. Returns the line that tells the person what changed.
     public func add(
@@ -116,7 +116,7 @@ public struct SpotLock: Equatable, Sendable {
     }
 
     /// Adds each spot of the lockfile whose first path the folder lacks, a git one at its commit. One whose files no longer
-    /// match the hash comes back only when it adds no use, or when `isConfirmed` (Z7). A spot that cannot come back is a
+    /// match the hash comes back only when it adds no use, or when `isConfirmed` (protocol: Trust). A spot that cannot come back is a
     /// fault line, and the others still come.
     public func restore(to folder: URL, isConfirmed: Bool = false) async throws -> CommandAnswer {
         try await locked { try await restoring(to: folder, isConfirmed: isConfirmed) }

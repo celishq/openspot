@@ -33,12 +33,12 @@ public struct SpotListing: Equatable, Sendable {
         return stem.deletingLastPathComponent().appendingPathComponent(stem.lastPathComponent + previewSuffix)
     }
 
-    /// Runs the read of a spot through these runs with `OPENSPOT_PREVIEW=1`, so that it prints fake data as the spot's own
+    /// Runs the read of a spot through these runs with `OPENSPOT_REASON=spot.preview`, so that it prints fake data as the spot's own
     /// call, and keeps the text beside its file.
     @MainActor
     public static func capturePreview(of spot: Spot, runs: SpotRuns) async throws {
         guard spot.previewsSample else { throw SpotError.fault("\(spot.name) has no preview mode. Add preview=sample to its header.") }
-        let text = try await runs.answer(of: spot, .read, limit: 10, variables: ["OPENSPOT_PREVIEW": "1"])
+        let text = try await runs.answer(of: spot, .read, limit: 10, variables: ReadReason.preview.variables)
         try text.write(to: preview(of: spot.url), atomically: true, encoding: .utf8)
     }
 }

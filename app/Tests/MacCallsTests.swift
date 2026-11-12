@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 /// Proves that the running app answers the calls of the clipboard, the windows, the screen, translation and the picks
-/// through its socket, with its own Mac, so that the command starts no second app for them (S1).
+/// through its socket, with its own Mac, so that the command starts no second app for them (protocol: The openspot command).
 final class MacCallsTests: XCTestCase {
     /// A Mac that keeps each act that a call asks of it, as a line.
     private final class Host: Mac, @unchecked Sendable {
@@ -159,7 +159,7 @@ final class MacCallsTests: XCTestCase {
 
     /// In Careful mode, a spot with no `files` use takes a capture only into a file of its data folder, a temp folder or a
     /// folder of its `screen` use, as its own process could write, and a capture into any other file is refused with no ask
-    /// of the screen (Z8).
+    /// of the screen (protocol: Trust).
     @MainActor
     func testInCarefulModeASpotsCaptureIntoAFileOutsideItsFoldersIsRefused() async throws {
         let runs = SpotRuns()

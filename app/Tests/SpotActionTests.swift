@@ -32,11 +32,10 @@ final class SpotActionTests: XCTestCase {
         XCTAssertEqual(SpotAction.item(SpotItem(title: "1 hour", run: "3600")).arguments, ["open", "3600"])
     }
 
-    func testAReadPassesATextOnlyWhenThereIsOne() {
+    func testAReadHasNoArgumentsAndItsTextGoesOnStdinWithEachForm() {
         XCTAssertEqual(SpotAction.read.arguments, ["read"])
-        XCTAssertEqual(SpotAction.items(query: "").arguments, ["read"])
-        XCTAssertEqual(SpotAction.items(query: "rep").arguments, ["read", "rep"])
-        XCTAssertEqual(SpotAction.items(query: "сафари", forms: ["safari"]).arguments, ["read", "сафари", "safari"])
+        XCTAssertEqual(SearchQuery(text: "rep", layouts: []).input, "search=rep\n")
+        XCTAssertEqual(SearchQuery(text: "сафари", layouts: []).input, "search=сафари\nform=safari\n")
     }
 
     func testAnActionSendsItsIdAndItsItem() {

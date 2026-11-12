@@ -3,7 +3,7 @@ import XCTest
 
 /// Proves `Contents/Helpers/openspot`: it asks the socket of the running app, and runs the program of its app with the same
 /// arguments for a call of files when no socket answers or the call runs in a process of its own. A live call starts the
-/// app and waits for its socket, and Ctrl-C stops its work in the app (S12, S13).
+/// app and waits for its socket, and Ctrl-C stops its work in the app (protocol: The openspot command).
 final class CommandClientTests: XCTestCase {
     private final class Host: Mac {
         func eventStore() -> any EventStore { FakeEventStore() }
@@ -232,7 +232,7 @@ final class CommandClientTests: XCTestCase {
         for live in [["app", "status"], ["spot", "open", "x"], ["setting", "change", "k"], ["event", "emit", "a.b"], ["update", "check"], ["batch"]] {
             XCTAssertTrue(CommandKind.needsApp(live), live.joined(separator: " "))
         }
-        for files in [["spot", "list"], ["setting", "get", "k"], ["calc", "solve", "1"], ["app", "login", "on"], ["app", "quit"], ["spot", "stats"], ["guide"], ["screen", "shot"], []] {
+        for files in [["spot", "list"], ["setting", "get", "k"], ["calc", "solve", "1"], ["setting", "set", "--spot", "openspot", "login", "true"], ["app", "quit"], ["spot", "stats"], ["guide"], ["screen", "shot"], []] {
             XCTAssertFalse(CommandKind.needsApp(files), files.joined(separator: " "))
         }
     }

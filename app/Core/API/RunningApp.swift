@@ -23,7 +23,7 @@ public protocol RunningApp: Sendable {
     /// Opens the panel with the card of a spot selected. Returns false when no card has that ID.
     func reveal(_ id: String) async -> Bool
     /// Opens the sandbox window on a file, or on typed text with none, and returns once the person closes it. A script that
-    /// it runs runs in Careful mode when `isCareful` (Z8).
+    /// it runs runs in Careful mode when `isCareful` (protocol: Trust).
     func sandbox(_ file: URL?, isCareful: Bool) async
     /// Runs the action of a spot's setting, as Enter on its row does: its form shows in the panel, and the panel closes when
     /// it is done. Returns false when no spot has that ID.

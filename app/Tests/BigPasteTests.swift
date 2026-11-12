@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves C6 with real processes: the answer to a paste of 1 MB shows in a time that only a slow algorithm misses. It
+/// Proves the 64 KB rule of the calls of the protocol with real processes: the answer to a paste of 1 MB shows in a time that only a slow algorithm misses. It
 /// takes about 0.5 seconds in a Debug build, and each run prints its time.
 @MainActor
 final class BigPasteTests: XCTestCase {
@@ -35,7 +35,7 @@ final class BigPasteTests: XCTestCase {
         let url = folder.appendingPathComponent("script.sh")
         try """
         #!/bin/sh
-        # read=sheet
+        # on=sheet.open
         case "$1" in
           read) printf 'field=input\\nvalue=\\n\\nfield=output\\nvalue=\\nreadonly=true\\n' ;;
           input) \(answer) ;;

@@ -154,7 +154,7 @@ extension SpotsModel {
             let origin: SpotDock.Origin = entry.spot.isBuiltIn ? .builtIn : folder.isCore(entry.spot) ? .core : .mine
             return SpotDock.Item(spot: entry.spot, origin: origin, state: entry.isOnGrid ? .onGrid : .searchOnly, size: entry.size, publication: dockPublications[entry.id])
         }
-        let off = dockOff.map { SpotDock.Item(spot: $0.spot, origin: $0.origin, size: choice.size(of: $0.id), publication: dockPublications[$0.id]) }
+        let off = dockOff.map { SpotDock.Item(spot: $0.spot, origin: $0.origin, size: choice.size(of: $0.id) ?? defaultArrangement.size(of: $0.id), publication: dockPublications[$0.id]) }
         var next = SpotDock(items: on + off)
         next.query = dock.query
         next.section = dock.section

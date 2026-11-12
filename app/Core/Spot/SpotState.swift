@@ -9,11 +9,11 @@ public struct SpotState: Equatable, Sendable {
     public let max: Double?
     /// Whether the grid shows the spot. Search and its key find it either way.
     public let isOnGrid: Bool
-    /// Each value of the head of its last read by key, in order, which its view draws (V4).
+    /// Each value of the head of its last read by key, in order, which its view draws (protocol: Views).
     public let values: [String: [String]]
-    /// The id of the switch or the slider that its card changes, which a change of the card sends (U12).
+    /// The id of the switch or the slider that its card changes, which a change of the card sends (protocol: The main block and the card).
     public let control: String?
-    /// The drawings of its card, with the components that they place (U5).
+    /// The drawings of its card, with the components that they place (protocol: Layouts).
     public private(set) var face: CardFace
 
     public init(
@@ -41,7 +41,7 @@ public struct SpotState: Equatable, Sendable {
     }
 
     /// Reads how a spot looks from what its script printed: the words of its head, and its main value, which says whether its
-    /// card is on or at what level. A spot whose output is one switch or one slider takes that control's words for its card (U12).
+    /// card is on or at what level. A spot whose output is one switch or one slider takes that control's words for its card (protocol: The main block and the card).
     /// What the output leaves out comes from the header.
     public init(output: SpotOutput, header: SpotState) {
         let block = output.summary

@@ -71,7 +71,7 @@ public struct AgentPrompt: Equatable, Sendable {
         Write the store listing of the Openspot spot in \(file.path). Do not change what it does.
         1. Write \(readme) beside it: what the spot does and how to use it, in two or three short paragraphs, then what it runs on my computer, which files it reads or writes, and whether it uses the network.
         2. Give its header a detail= line of one short sentence, if it has none.
-        3. Add preview=sample to its header, and make its read print fake rows, with no data of mine, while OPENSPOT_PREVIEW is 1.
+        3. Add preview=sample to its header, and make its read print fake rows, with no data of mine, while OPENSPOT_REASON is spot.preview.
         \(steps(for: file.deletingPathExtension().lastPathComponent))
         """
     }

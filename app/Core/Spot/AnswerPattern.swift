@@ -1,6 +1,6 @@
 import Foundation
 
-/// The regular expression of a header's `answers=`, which says the text of the main search that a spot answers (A1).
+/// The regular expression of an `on=search.text` line, which says the text of the main search that a spot answers (protocol: Places).
 public struct AnswerPattern: Equatable, @unchecked Sendable {
     public let text: String
     private let expression: NSRegularExpression

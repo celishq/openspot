@@ -16,9 +16,9 @@ public struct TerminalRun {
     public let spot: Spot
     public let arguments: [String]
     public let input: String?
-    /// The uses that Careful mode leaves the script, or nil to run it as the person (Z8).
+    /// The uses that Careful mode leaves the script, or nil to run it as the person (protocol: Trust).
     let careful: Set<SpotUse>?
-    /// The record of the app, which then knows the script's calls of `openspot` as the spot's (Z2).
+    /// The record of the app, which then knows the script's calls of `openspot` as the spot's (protocol: Trust).
     let tokens: CallerTokens?
     /// The environment and the working folder of the caller, or nil for those of this process.
     let environment: [String: String]?

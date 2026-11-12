@@ -53,11 +53,12 @@ ${1-}
 EOF_OPENSPOT
 }
 
-# Prints the real text of one value from stdin: `\n` as a new line and `\\` as a backslash. It prints nothing when stdin has no such value.
+# Prints the real text of each value of a key from stdin, one per line: `\n` as a new line and `\\` as a backslash. It prints
+# nothing when stdin has no such value.
 value() (
   if [ "${#_openspot_stdin}" -gt 1024 ]; then
     printf %s "$_openspot_stdin" |
-      _OPENSPOT_ID=${1-} LC_ALL=C /usr/bin/awk 'index($0, ENVIRON["_OPENSPOT_ID"] "=") == 1 { printf "%s", substr($0, length(ENVIRON["_OPENSPOT_ID"]) + 2); exit }' |
+      _OPENSPOT_ID=${1-} LC_ALL=C /usr/bin/awk 'index($0, ENVIRON["_OPENSPOT_ID"] "=") == 1 { if (seen++) printf "%s", "\\n"; printf "%s", substr($0, length(ENVIRON["_OPENSPOT_ID"]) + 2) }' |
       LC_ALL=C /usr/bin/sed -e 's/\\\\/\
 /g' -e 's/\\\([^n]\)/\
 \1/g' -e 's/\\$/\
@@ -65,10 +66,14 @@ value() (
       LC_ALL=C /usr/bin/tr '\n\\' '\\\n'
     return
   fi
+  _openspot_key=${1-}
+  _openspot_seen=
   while IFS= read -r _openspot_line; do
     case $_openspot_line in
-      "${1-}="*)
-        _openspot_line=${_openspot_line#"$1="}
+      "$_openspot_key="*)
+        [ -z "$_openspot_seen" ] || printf '\n'
+        _openspot_seen=1
+        _openspot_line=${_openspot_line#"$_openspot_key="}
         set -f
         IFS=\\
         set -- $_openspot_line
@@ -85,7 +90,6 @@ value() (
             esac
           fi
         done
-        return
         ;;
     esac
   done <<EOF_OPENSPOT
@@ -128,7 +132,7 @@ _openspot_decode() {
   done
 }
 
-# Reads the next call block of a staying script from stdin, and fails at the end of stdin (Y8). It sets `_openspot_call`,
+# Reads the next call block of a staying script from stdin, and fails at the end of stdin (protocol: Modes). It sets `_openspot_call`,
 # `_openspot_args` with one written argument on each line, and `_openspot_stdin`, and exports each variable of the call in
 # place of those of the call before. A stop block gives no call.
 _openspot_next() {
@@ -173,7 +177,7 @@ $_openspot_feed
 EOF_OPENSPOT
 }
 
-# Runs a function with the three parts of each call: its arguments, its variables and its stdin (Y9). A script that runs
+# Runs a function with the three parts of each call: its arguments, its variables and its stdin (protocol: Modes). A script that runs
 # once runs it once, with the arguments after its name, and returns its code. A staying script runs it for each call block
 # on stdin, one at a time, and prints `call=<n>` before its output and `end=<n>` after it.
 openspot_serve() {
@@ -199,7 +203,7 @@ EOF_OPENSPOT
   done
 }
 
-# Prints one line of a block with its value written for you, so that a new line or a backslash in the value stays in it (C8).
+# Prints one line of a block with its value written for you, so that a new line or a backslash in the value stays in it (protocol: The calls).
 openspot_kv() {
   printf '%s=' "$1"
   esc "${2-}"
@@ -207,7 +211,7 @@ openspot_kv() {
 }
 
 # Prints one row after a blank line: its id and title, and its detail and icon when they are given, each written for you
-# (C8). More lines of the row can follow with `openspot_kv`.
+# (protocol: The calls). More lines of the row can follow with `openspot_kv`.
 openspot_row() {
   printf '\n'
   openspot_kv row "$1"
@@ -218,7 +222,7 @@ openspot_row() {
 
 # Prints a block for each line of stdin, a row or one of the kind given, such as `text`. A line holds its id, title, detail
 # and icon split by tabs, and after them any more `key=value` fields of the block. Each backslash is written for you, and an
-# empty field prints no line (C8).
+# empty field prints no line (protocol: The calls).
 openspot_rows() {
   LC_ALL=C /usr/bin/sed 's/\\/\\\\/g' | LC_ALL=C /usr/bin/awk -F '\t' -v kind="${1:-row}" '
     NF {

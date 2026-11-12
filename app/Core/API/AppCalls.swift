@@ -40,7 +40,7 @@ struct AppCalls {
         }
     }
 
-    /// Turns Careful mode on or off, and tells the running app (Z8).
+    /// Turns Careful mode on or off, and tells the running app (protocol: Trust).
     func careful(_ isOn: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [environment, app] in
             try ConfigFile.standard(environment: environment).set("careful", to: isOn)

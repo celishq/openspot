@@ -81,6 +81,11 @@ public struct TextBlock: Equatable, Sendable {
         fields.filter { $0.key == key && !$0.value.isEmpty }.map(\.value)
     }
 
+    /// The words of a comma list, such as `keywords=a, b`, with no spaces around them and no empty one.
+    public func list(_ key: String) -> [String] {
+        (value(key) ?? "").split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+    }
+
     public func number(_ key: String) -> Double? {
         value(key).flatMap(Double.init).flatMap { $0.isFinite ? $0 : nil }
     }

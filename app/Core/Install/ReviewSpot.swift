@@ -1,7 +1,7 @@
 import Foundation
 
 /// What a person sees before they add a shared spot: its title, the uses that it names, what its text seems to do beyond
-/// them, what runs by itself and its whole text (Z6). It learns this from the text of the files, runs none of them, and
+/// them, what runs by itself and its whole text (protocol: Trust). It learns this from the text of the files, runs none of them, and
 /// warns without a refusal.
 public struct ReviewSpot: Equatable, Sendable {
     /// The ID of its sheet, which has no card in the grid.
@@ -79,7 +79,7 @@ public struct ReviewSpot: Equatable, Sendable {
     }
 
     /// Reads a package, a zip of one or a `.spot` file for a plugins folder, which its Add puts in that folder with the
-    /// readme and the preview of its listing, and records in the lock (N1).
+    /// readme and the preview of its listing, and records in the lock (protocol: The openspot command).
     public init(file: URL, folder: URL, lock: SpotLock) throws {
         try self.init(contents: SpotPackage.open(at: file), folder: folder)
         source = file

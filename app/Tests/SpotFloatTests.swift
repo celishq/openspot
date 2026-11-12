@@ -54,7 +54,7 @@ final class SpotFloatTests: XCTestCase {
 
     /// Floats a list of two rows whose pick and action each toast what they got.
     private func floatList() async throws {
-        try script("list", header: "read=sheet", """
+        try script("list", header: "on=sheet.open", """
         case "$1" in
           read) printf 'row=a\\ntitle=%s\\n\\nrow=b\\ntitle=Banana\\n\\nbutton=trash\\ntitle=Trash\\nshortcut=cmd+backspace\\n\\nbutton=rename\\ntitle=Rename\\nform=true\\n' "$OPENSPOT_REASON" ;;
           open) printf 'toast=Opened %s\\n' "$2" ;;
@@ -73,7 +73,7 @@ final class SpotFloatTests: XCTestCase {
         XCTAssertEqual(host.shows, 0)
         XCTAssertNil(model.openList)
         XCTAssertEqual(model.runs.floating, ["list"])
-        XCTAssertEqual(model.sheets["list"]?.list.shown.first?.title, "sheet")
+        XCTAssertEqual(model.sheets["list"]?.list.shown.first?.title, "sheet.open")
     }
 
     func testTheSameKeyAgainClosesTheFloatAndDuringADragBringsItToThePointer() async throws {
@@ -130,7 +130,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testAFloatOfPartsKeepsItsValuesWhenThePanelClosesAndDropsThemWhenItCloses() async throws {
-        try script("note", header: "read=sheet", "printf 'field=note\\nvalue=hi\\n'")
+        try script("note", header: "on=sheet.open", "printf 'field=note\\nvalue=hi\\n'")
         model.reload()
         model.press(try key("note"))
         try await wait("the parts") { model.sheets["note"]?.panel != nil }
@@ -148,7 +148,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testAFloatOfPartsWithNoFieldKeepsItsPartsWhenItCloses() async throws {
-        try script("note", header: "read=sheet", "printf 'text=hi\\ntitle=Hi\\n'")
+        try script("note", header: "on=sheet.open", "printf 'text=hi\\ntitle=Hi\\n'")
         model.reload()
         model.press(try key("note"))
         try await wait("the parts") { model.sheets["note"]?.panel != nil }
@@ -160,7 +160,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testADropOnAFloatGoesToItsScriptAndLeavesThePanel() async throws {
-        try script("shelf", header: "read=sheet\ndrop=*", """
+        try script("shelf", header: "on=sheet.open\ndrop=*", """
         case "$1" in
           read) printf 'row=a\\n' ;;
           drop) shift; printf 'toast=Kept %s\\n' "$*" ;;
@@ -185,7 +185,7 @@ final class SpotFloatTests: XCTestCase {
 
     func testAShakeWhileARowThatTakesOneRecordsGivesItTheShake() async throws {
         let given = folder.appendingPathComponent("given").path
-        try script("keys", header: "title=Keys\nread=sheet", """
+        try script("keys", header: "title=Keys\non=sheet.open", """
         case "$1" in
           read) printf 'button=open\\ntitle=Change\\nclose=false\\n\\nrow=panel_key\\ntitle=Open\\nshortcut=ctrl+space\\n\\nrow=float:shelf\\ntitle=Float\\nshortcut=Record\\nshake=true\\n' ;;
           *) printf '%s %s' "$1" "$2" > '\(given)' ;;

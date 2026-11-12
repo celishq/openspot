@@ -37,7 +37,7 @@ final class SheetStreamTests: XCTestCase {
         XCTAssertNil(reader.finish())
     }
 
-    // MARK: R12
+    // MARK: Frames
 
     func testATerminalProgressCodeIsAFrameWithItsValue() {
         var reader = SheetFrameReader()
@@ -131,7 +131,7 @@ final class SheetStreamTests: XCTestCase {
 
     func testACallOfAStayingScriptIsOneBlock() {
         XCTAssertEqual(SpotAction.read.block(id: 1), "call=1\narg=read\n\n")
-        XCTAssertEqual(SpotAction.read.block(variables: ReadReason.timer.variables, id: 5), "call=5\narg=read\nenv.OPENSPOT_REASON=timer\n\n")
+        XCTAssertEqual(SpotAction.read.block(variables: ReadReason.clock(60).variables, id: 5), "call=5\narg=read\nenv.OPENSPOT_REASON=clock.60\n\n")
         XCTAssertEqual(SpotAction.press("swap").block(id: 2), "call=2\narg=swap\n\n")
         XCTAssertEqual(SpotAction.set("input", to: "one\ntwo").block(id: 3), "call=3\narg=input\narg=one\\ntwo\n\n")
         XCTAssertEqual(SpotAction.drop(paths: ["/a b.mov", "-rf.mov"]).block(id: 4), "call=4\narg=drop\narg=/a b.mov\narg=-rf.mov\n\n")
@@ -176,7 +176,7 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testAScriptThatStaysIsAList() throws {
-        let url = try script("# mode=stay\n# read=panel")
+        let url = try script("# mode=stay\n# on=panel.open")
         let command = try XCTUnwrap(try SpotFile(file: url, id: "script")).spots.first
 
         XCTAssertEqual(command?.mode, .stay)

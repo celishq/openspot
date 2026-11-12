@@ -199,7 +199,7 @@ final class ShortcutsPluginTests: SamplePluginsCase {
 
             try await shortcuts.perform(.drop(paths: [file]), timeout: 10)
             let dropped = try await shortcuts.items(timeout: 10)
-            setenv("OPENSPOT_REASON", "panel", 1)
+            setenv("OPENSPOT_REASON", "panel.open", 1)
             let reopened = try await shortcuts.items(timeout: 10)
             unsetenv("OPENSPOT_REASON")
             try await shortcuts.perform(.drop(paths: [file]), timeout: 10)

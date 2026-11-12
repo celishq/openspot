@@ -1,6 +1,6 @@
 import Foundation
 
-/// What each spot cost and used, one day at a time (G1, Z10): its runs and failures, their time, the CPU time, the disk
+/// What each spot cost and used, one day at a time (protocol: Stats): its runs and failures, their time, the CPU time, the disk
 /// bytes and the wakeups of its processes, the count of each call that needs a use and its last fault, with a short log of
 /// those calls. Today lives in memory and goes to `<day>.json` in its folder at most once a pause, never on each call (G5). A
 /// process that runs counts its time since the last reading at each change of day and each flush, so that each day gets
@@ -66,7 +66,7 @@ public final class SpotUsage: @unchecked Sendable {
         public var spots: [String: Count] = [:]
         /// The newest calls that need a use, the oldest first.
         public var uses: [Use] = []
-        /// Each spot and use that the person was told of this day, as `<spot> <use>` (Z4).
+        /// Each spot and use that the person was told of this day, as `<spot> <use>` (protocol: Trust).
         var told: [String] = []
     }
 
@@ -162,7 +162,7 @@ public final class SpotUsage: @unchecked Sendable {
     }
 
     /// Counts and logs a spot's call that needs a use, and returns whether to tell the person: its first such call of the
-    /// day whose use its header does not name (Z4).
+    /// day whose use its header does not name (protocol: Trust).
     func used(_ call: SpotUseCall, by caller: CallerTokens.Caller, at date: Date) -> Bool {
         let declared = caller.uses.contains(call.use)
         var tells = false

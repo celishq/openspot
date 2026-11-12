@@ -1,6 +1,6 @@
 import Foundation
 
-/// How a spot's script runs, as its header's `mode=` names it (I1, I3).
+/// How a spot's script runs, as its header's `mode=` names it (protocol: Modes).
 public enum SpotMode: String, CaseIterable, Equatable, Sendable {
     /// A process for each call.
     case once

@@ -13,7 +13,7 @@ extension SpotRuns {
                 asked[sheet.spot.id] = nil
             } else if asked[sheet.spot.id] == nil {
                 asked[sheet.spot.id] = time
-                sheet.read(need: .clock, reason: .timer)
+                sheet.read(need: .clock, reason: .clock(sheet.spot.read?.seconds))
             }
         }
         for sheet in sheets.values where sheet.isWanted {
@@ -23,7 +23,7 @@ extension SpotRuns {
                 left = seconds - time.timeIntervalSince(last)
             } else {
                 asked[sheet.spot.id] = time
-                sheet.read(need: .clock, reason: .timer)
+                sheet.read(need: .clock, reason: .clock(sheet.spot.read?.seconds))
             }
             next = min(next ?? left, left)
         }

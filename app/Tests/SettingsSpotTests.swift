@@ -25,7 +25,7 @@ final class SettingsSpotTests: BuiltInCase {
 
         XCTAssertEqual(spot.name, "Settings")
         XCTAssertEqual(spot.subtitle, "Choose your key")
-        XCTAssertEqual(spot.size, .small)
+        XCTAssertEqual(defaults.arrangement.size(of: spot.id), .small)
         XCTAssertEqual(spot.kind, .list)
         XCTAssertTrue(spot.isGlobal)
         XCTAssertTrue(spot.isFound)
@@ -35,9 +35,9 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     func testTheSheetListsAMenuBarRowForEachSpotThatCanShowThereAndEnterTurnsItOnAndOff() async throws {
-        try script("cups.sh", "title=Cups\nevery=60")
+        try script("cups.sh", "title=Cups\non=clock.60")
         try script("relay.sh", "title=Relay\nmode=stay")
-        try script("notes.sh", "title=Notes\nread=panel")
+        try script("notes.sh", "title=Notes\non=panel.open")
 
         let before = try await items()
         XCTAssertEqual(before.filter { $0.run.hasPrefix("menubar:") }.map(\.run), ["menubar:cups", "menubar:relay"])
@@ -57,7 +57,7 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     func testAReadStartsOneOpenspotAndNoJq() async throws {
-        try script("cups.sh", "title=Cups\nevery=60\n\nsetting=size")
+        try script("cups.sh", "title=Cups\non=clock.60\n\nfield=size")
         let programs = try countPrograms()
 
         _ = try await items()
@@ -88,7 +88,7 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     func testTheSheetListsEachCommandOfAScriptAndGivesItAKey() async throws {
-        try script("move.sh", "title=Move\nicon=macwindow\n\ncommand=left\ntitle=Left side\n\ncommand=right\ntitle=Right side")
+        try script("move.sh", "title=Move\nicon=macwindow\n\nbutton=left\ntitle=Left side\n\nbutton=right\ntitle=Right side")
 
         let before = try await items()
         XCTAssertEqual(before.map(\.title), ["Open Openspot", "Open a fix", "Careful mode", "Left side", "Right side"])
@@ -111,10 +111,10 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(file.read().keys.map(\.act), [.command("right")])
     }
 
-    func testTheSheetListsAFloatRowForEachSpotThatOffersOneAndGivesItAKey() async throws {
-        try script("shelf.sh", "title=Shelf\nicon=tray.full\noffers=float")
+    func testTheSheetListsAFloatRowForEachSpotWithASheetAndGivesItAKey() async throws {
+        try script("shelf.sh", "title=Shelf\nicon=tray.full\non=sheet.open")
         try script("notes.sh", "title=Notes")
-        try script("move.sh", "title=Move\n\ncommand=left\ntitle=Left side")
+        try script("move.sh", "title=Move\n\nbutton=left\ntitle=Left side")
 
         let before = try await items()
         let floats = before.filter { $0.title == "Float" }
@@ -138,8 +138,8 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     func testAShakeOnARowTakesTheShakeFromTheRowThatHadIt() async throws {
-        try script("shelf.sh", "title=Shelf\noffers=float")
-        try script("notes.sh", "title=Notes\noffers=float")
+        try script("shelf.sh", "title=Shelf\non=sheet.open")
+        try script("notes.sh", "title=Notes\non=sheet.open")
 
         try await call(["float:shelf", "shake"])
         XCTAssertEqual(file.read().keys, [GlobalKey(spot: "shelf", act: .float, trigger: .shake)])
@@ -158,7 +158,7 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     func testTheSheetListsEachSettingThatAScriptNamesOrKeepsAndRemovesIt() async throws {
-        try script("repos.sh", "title=Repos\nicon=folder\n\nsetting=folder\n\nsetting=editor\ntitle=Default app\nicon=app.badge")
+        try script("repos.sh", "title=Repos\nicon=folder\n\nfield=folder\n\nfield=editor\ntitle=Default app\nicon=app.badge")
         try file.set(setting: "folder", of: "repos", to: "~/Code")
         try file.set(setting: "editor", of: "gone", to: "Zed")
 
@@ -197,7 +197,7 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     func testARowShowsTheIconOfItsCommandOrElseOfItsScript() async throws {
-        try script("move.sh", "title=Move\nicon=macwindow\n\ncommand=left\ntitle=Left side\nicon=rectangle.lefthalf.filled\n\ncommand=right\ntitle=Right side\n\ncommand=fun\ntitle=Fun\nicon=🎉")
+        try script("move.sh", "title=Move\nicon=macwindow\n\nbutton=left\ntitle=Left side\nicon=rectangle.lefthalf.filled\n\nbutton=right\ntitle=Right side\n\nbutton=fun\ntitle=Fun\nicon=🎉")
 
         let items = try await items()
 
@@ -311,11 +311,12 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(mac.elevated, [])
     }
 
-    func testARowCarriesItsKeyAndWhetherAShakeCanBeIt() {
-        let items = SpotOutput(text: "row=open\ntitle=Open\nshortcut=ctrl+k\nshake=true\n\nrow=other\ntitle=Other\n").items
+    func testARowShowsItsKeyAndRecordsANewOneOnlyWithTypeHotkey() {
+        let items = SpotOutput(text: "row=open\ntitle=Open\ntype=hotkey\nshortcut=ctrl+k\nshake=true\n\nrow=shown\ntitle=Shown\nshortcut=cmd+k\n\nrow=other\ntitle=Other\n").items
 
-        XCTAssertEqual(items.map(\.shortcut), ["ctrl+k", nil])
-        XCTAssertEqual(items.map(\.takesShake), [true, false])
+        XCTAssertEqual(items.map(\.shortcut), ["ctrl+k", "cmd+k", nil])
+        XCTAssertEqual(items.map(\.records), [true, false, false])
+        XCTAssertEqual(items.map(\.takesShake), [true, false, false])
     }
 
     func testAPartRecordsAKeyAndReportsItsValue() throws {
@@ -329,7 +330,7 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     func testTheCheckFindsABadHotkey() {
-        XCTAssertEqual(SpotOutput(text: "hotkey=a\nvalue=k\n").partFaults, ["the part a needs a shortcut that holds cmd, ctrl or option: k"])
-        XCTAssertEqual(SpotOutput(text: "hotkey=a\nvalue=ctrl+k\n").partFaults, [])
+        XCTAssertEqual(SpotOutput(text: "field=a\ntype=hotkey\nvalue=k\n").partFaults, ["the part a needs a shortcut that holds cmd, ctrl or option: k"])
+        XCTAssertEqual(SpotOutput(text: "field=a\ntype=hotkey\nvalue=ctrl+k\n").partFaults, [])
     }
 }

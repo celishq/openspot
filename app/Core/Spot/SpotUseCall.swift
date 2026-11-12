@@ -1,6 +1,6 @@
 import Foundation
 
-/// A call of `openspot` that needs a use, with the use that a spot's header names for it (Z3). It reads the words of the
+/// A call of `openspot` that needs a use, with the use that a spot's header names for it (protocol: Trust). It reads the words of the
 /// call, so that the API and a review of a text that runs nothing know it the same way.
 public struct SpotUseCall: Equatable, Sendable {
     private static let spotWord = "--spot"
@@ -14,6 +14,7 @@ public struct SpotUseCall: Equatable, Sendable {
     /// The use that a call of this spot with these words needs, or nil for a call that needs none, such as a setting of its
     /// own plugin.
     public init?(arguments: [String], of spot: String) {
+        let arguments = ReservedSetting.words(of: arguments, spot: spot)
         guard arguments.count >= 2, let (use, words) = Self.use(arguments, spot: spot) else { return nil }
         self.use = use
         name = "\(arguments[0]).\(arguments[1])"
@@ -30,8 +31,8 @@ public struct SpotUseCall: Equatable, Sendable {
         case ("app", "quit"): (.app, "quit Openspot")
         case ("key", "set"): (.app, "changed a key")
         case ("menubar", "on"), ("menubar", "off"): (.app, "changed the menu bar")
-        case ("update", "check"): (.update, "checked for an update")
-        case ("update", "install"): (.update, "installed an update")
+        case ("update", "check"): (.app, "checked for an update")
+        case ("update", "install"): (.app, "installed an update")
         case ("spot", "add"): (.spots, "added a spot")
         case ("spot", "remove"): (.spots, "removed a spot")
         case ("spot", "on"): (.spots, "turned on a spot")
@@ -39,9 +40,9 @@ public struct SpotUseCall: Equatable, Sendable {
         case ("spot", "new"): (.spots, "wrote a new spot")
         case ("spot", "run"): (.spots, "ran a spot")
         case ("spot", "log"): (.spots, "read the calls of a spot")
-        case ("setting", "list"): (.settings, "read the settings of each spot")
-        case ("setting", "get") where isOther: (.settings, "read a setting of another spot")
-        case ("setting", "set") where isOther, ("setting", "change") where isOther: (.settings, "changed a setting of another spot")
+        case ("setting", "list"): (.spots, "read the settings of each spot")
+        case ("setting", "get") where isOther: (.spots, "read a setting of another spot")
+        case ("setting", "set") where isOther, ("setting", "change") where isOther: (.spots, "changed a setting of another spot")
         case ("screen", "sources"): (.screen, "listed the screens and windows")
         case ("screen", "shot"): (.screen, "took a screenshot")
         case ("screen", "record"): (.screen, "used a screen recording")

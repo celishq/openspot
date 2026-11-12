@@ -2,12 +2,15 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// The `openspot sandbox` window: a window of the running app, or an ordinary window in a process of its own, whose close
+/// The `openspot sandbox` window, the playground: a window of the running app, or an ordinary window in a process of its own, whose close
 /// ends the process.
 @MainActor
 final class SpotSandbox: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// The sandbox of a process of its own, and each sandbox that the running app shows.
     private static var kept: Set<SpotSandbox> = []
+
+    /// The size of a new playground window, which fits the editor, the whole panel and the call log.
+    private static let size = CGSize(width: 1180, height: 940)
 
     private let window: NSWindow
     private let model: SpotSandboxModel
@@ -17,12 +20,12 @@ final class SpotSandbox: NSObject, NSApplicationDelegate, NSWindowDelegate {
         model = SpotSandboxModel(path: path, isCareful: isCareful)
         let view = NSHostingView(rootView: SpotSandboxView(model: model))
         window = NSWindow(
-            contentRect: NSRect(origin: .zero, size: view.fittingSize),
-            styleMask: [.titled, .closable, .miniaturizable],
+            contentRect: NSRect(origin: .zero, size: Self.size),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
-        window.title = "Openspot sandbox"
+        window.title = "Openspot playground"
         window.contentView = view
         window.isReleasedWhenClosed = false
         window.center()
@@ -47,14 +50,15 @@ final class SpotSandbox: NSObject, NSApplicationDelegate, NSWindowDelegate {
     static func show(path: String?, isCareful: Bool) async {
         let sandbox = SpotSandbox(path: path, isCareful: isCareful)
         kept.insert(sandbox)
+        AppPresence.open()
         sandbox.window.makeKeyAndOrderFront(nil)
-        NSApp.activate()
         await withTaskCancellationHandler {
             await withCheckedContinuation { sandbox.closed = $0 }
         } onCancel: {
             Task { @MainActor in sandbox.window.close() }
         }
         kept.remove(sandbox)
+        AppPresence.close()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

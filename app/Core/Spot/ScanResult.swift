@@ -29,7 +29,7 @@ public struct ScanResult: Equatable, Sendable {
         files.flatMap(\.spots).filter { $0.kind != .widget }
     }
 
-    /// The assigned keys whose script still lists their command, or still offers a float (W1, T1).
+    /// The assigned keys whose script still lists their command, or still offers a float (W1; protocol: Places).
     public func offered(_ keys: [GlobalKey]) -> [GlobalKey] {
         keys.filter { key in
             switch key.act {
@@ -53,11 +53,16 @@ public struct ScanResult: Equatable, Sendable {
 
     mutating func removeWidgetsWithLostParts() {
         let metrics = Set(scripts.filter { $0.read != nil }.map(\.id))
+        let silent = Set(scripts.filter { $0.read == nil && $0.answers == nil }.map(\.id))
         let ids = Set(spots.map(\.id))
         files = files.map { plugin in
             let kept = plugin.spots.filter { command in
                 guard command.kind == .widget else { return true }
-                var reason = command.places.first { !metrics.contains($0) }.map { "\(command.name) names no metric called \($0)" }
+                var reason = command.places.first { !metrics.contains($0) }.map { id in
+                    silent.contains(id)
+                        ? "\(command.name) names \(id), which has no on= line, so it never prints a value. Give \(id) an event, such as on=clock.60."
+                        : "\(command.name) names no metric called \(id)"
+                }
                 if reason == nil, let opens = command.opens, !ids.contains(opens) {
                     reason = "\(command.name) opens no command called \(opens)"
                 }

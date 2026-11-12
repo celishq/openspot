@@ -102,7 +102,7 @@ final class ReposPluginTests: SamplePluginsCase {
             XCTAssertEqual(first.primary, "Open in Cursor")
             XCTAssertEqual(opened, "-a \(cursor.path) \(item.run)\n")
             XCTAssertFalse(first.actions.contains { $0.title.hasPrefix("Use ") })
-            XCTAssertEqual(change.scope, .command)
+            XCTAssertEqual(change.scope, .spot)
             XCTAssertTrue(change.isForm)
             XCTAssertEqual(form.soleChoice?.options.map(\.title), ["Cursor", "Zed", "Finder"])
             XCTAssertEqual(try self.read("setting-editor", in: folder), zed.path)
@@ -115,7 +115,7 @@ final class ReposPluginTests: SamplePluginsCase {
         try await withPrivateHome { folder in
             let zed = folder.appendingPathComponent("Applications/Zed.app")
             try FileManager.default.createDirectory(at: zed, withIntermediateDirectories: true)
-            let change = CommandAction(id: "editor", title: "Change editor", scope: .command, after: .close)
+            let change = CommandAction(id: "editor", title: "Change editor", scope: .spot, after: .close)
 
             let form = try await repos.form(change, item: nil, timeout: 5)
             var draft = FormDraft(form: form)

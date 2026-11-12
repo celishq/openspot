@@ -209,11 +209,22 @@ final class AgendaExampleTests: SamplePluginsCase {
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
 
-            let work = try await SpotRuns().answer(of: agenda, .items(query: "WORK"), limit: 30)
-            let family = try await SpotRuns().answer(of: agenda, .items(query: "ауфьшдн", forms: ["family"]), limit: 30)
+            let work = try await SpotRuns().answer(of: agenda, .read, input: "search=WORK\n", limit: 30)
+            let family = try await SpotRuns().answer(of: agenda, .read, input: "search=ауфьшдн\nform=family\n", limit: 30)
 
             XCTAssertEqual(SpotOutput(text: work).items.map(\.run), ["add-reminder", "event:B/2", "event:C/3"])
             XCTAssertEqual(SpotOutput(text: family).items.map(\.run), ["add-reminder", "reminder:R1", "reminder:R2", "reminder:R3", "reminder:R4"])
+        }
+    }
+
+    func testEachFormMatchesAsAWholeLine() async throws {
+        let agenda = try example("Agenda")
+        try await withPrivateHome { folder in
+            try self.fakeOpenspot(in: folder)
+
+            let output = try await SpotRuns().answer(of: agenda, .read, input: "search=qqq\nform=mom call\nform=standup\n", limit: 30)
+
+            XCTAssertEqual(SpotOutput(text: output).items.map(\.run).filter { $0.contains(":") }, ["event:B/2"])
         }
     }
 

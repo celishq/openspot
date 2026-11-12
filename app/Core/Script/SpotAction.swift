@@ -12,12 +12,7 @@ public struct SpotAction: Equatable, Sendable {
         self.arguments = arguments
     }
 
-    /// A read for the text of a search, followed by each other form of it that the person may have meant.
-    public static func items(query: String, forms: [String] = []) -> SpotAction {
-        SpotAction(arguments: query.isEmpty ? ["read"] : ["read", query] + forms)
-    }
-
-    /// A press of a card that is a switch: its id and its new value (U12).
+    /// A press of a card that is a switch: its id and its new value (protocol: The main block and the card).
     public static func toggle(_ state: SpotState) -> SpotAction {
         SpotAction(arguments: [state.control ?? "", (state.on ?? false) ? "false" : "true"])
     }
@@ -45,12 +40,12 @@ public struct SpotAction: Equatable, Sendable {
         SpotAction(arguments: ["drop"] + paths)
     }
 
-    /// The rows that a drag took out of the sheet as files (O2).
+    /// The rows that a drag took out of the sheet as files (protocol: Files out).
     public static func drag(runs: [String]) -> SpotAction {
         SpotAction(arguments: ["drag"] + runs)
     }
 
-    /// This call as one block for a script that stays (Y8): `call=<id>`, an `arg` for each argument, an `env.<name>` for each
+    /// This call as one block for a script that stays (protocol: Modes): `call=<id>`, an `arg` for each argument, an `env.<name>` for each
     /// variable, and its stdin as one `input` value.
     public func block(input: String? = nil, variables: [String: String] = [:], id: Int) -> String {
         let call = [TextBlock.Field(key: "call", value: String(id))] + arguments.map { TextBlock.Field(key: "arg", value: $0) }
@@ -74,7 +69,7 @@ public struct SpotAction: Equatable, Sendable {
         return (arguments.prefix(1) + arguments.dropFirst().filter { !long.contains($0) }, (input ?? "") + TextBlock(fields: missing).text)
     }
 
-    /// A new level of a card that is a slider: its id and the level (U12).
+    /// A new level of a card that is a slider: its id and the level (protocol: The main block and the card).
     public static func level(_ value: Double, of control: String) -> SpotAction {
         SpotAction(arguments: [control, String(Int(value.rounded()))])
     }

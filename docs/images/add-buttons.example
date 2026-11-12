@@ -1,0 +1,11 @@
+#!/bin/sh
+# title=Notes list
+# on=sheet.open
+. "$OPENSPOT_SH"
+case "$1" in
+  read)
+    openspot_row today Today
+    printf '\nbutton=trash\ntitle=Move to Trash\nshortcut=cmd+backspace\nconfirm=Press again to delete\n'
+    ;;
+  trash) rm -f "$OPENSPOT_DATA/$2" ;;
+esac

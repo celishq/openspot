@@ -32,7 +32,7 @@ extension SpotRun {
 
     /// Takes the end of a call. A read or a search that ended with no answer changes nothing when it was stopped, and tells
     /// of its failure. A call of work that ended is followed by a read: with the row that a `select` effect named selected
-    /// (D8), or else when it showed no picture (M4). A stopped toggle goes back.
+    /// (protocol: The calls), or else when it showed no picture (protocol: Frames). A stopped toggle goes back.
     func ended(_ call: ScriptCall, _ purpose: Purpose, _ end: ScriptCall.End, hadAnswer: Bool, showedPicture: Bool, selected: String?) {
         let isAnswer = if case .ask(let ask) = purpose { ask.isAnswer } else { false }
         if case .ended = end, failure != nil, !isAnswer { failure = nil }
@@ -107,12 +107,12 @@ extension SpotRun {
 
     /// Takes the answer of a read or of a search: a frame of it with a block, the head of one that ended with no picture, or
     /// the frame that ends a call of a staying script. A read's answer replaces all that the spot shows, and a search's
-    /// answer replaces its rows (01, Y7). `keeping` names a part whose text the person owns while they type. A picture that
+    /// answer replaces its rows (protocol: Modes). `keeping` names a part whose text the person owns while they type. A picture that
     /// answers no read, such as the frame of an action, leaves the age of the answer and a sheet that waits for a read. The
-    /// rows that answer a text of the main search leave all else as it is (A2).
+    /// rows that answer a text of the main search leave all else as it is (protocol: Places).
     func takeAnswer(_ lines: SpotOutput, frame: String, to ask: Ask, keeping: String? = nil, answers: Bool = true) async {
         if case .answer(let query) = ask { return takeAnswers(lines.answers, to: query) }
-        let next: ItemList.Rows? = if case .read = ask { await newRows(lines.items, search: lines.search) } else { nil }
+        let next: ItemList.Rows? = if case .read = ask { await newRows(lines.items, search: spot.read?.searchesSheet == true ? .script : .local) } else { nil }
         lastAnswer = lines.withoutBlocks()
         report(toastOf: lines)
         spot = spot.taking(lines)
@@ -124,7 +124,7 @@ extension SpotRun {
             let kept = selecting
             selecting = nil
             changeList {
-                $0.take(search: lines.search)
+                $0.take(search: spot.read?.searchesSheet == true ? .script : .local)
                 $0.take(drawing: lines.drawing)
                 if let next { $0.replace(next) }
                 if let kept { $0.select(run: kept) }
@@ -137,7 +137,7 @@ extension SpotRun {
             await prepare(firstScreen(of: lines.items), [])
             guard query == list.query else { return }
             changeList {
-                $0.take(search: lines.search)
+                $0.take(search: spot.read?.searchesSheet == true ? .script : .local)
                 $0.take(drawing: lines.drawing)
                 $0.answer(lines.items, to: query)
             }
@@ -153,7 +153,7 @@ extension SpotRun {
     }
 
     /// Takes a frame with a block of a call that is not a read or a search, or of a staying script by itself: the whole
-    /// picture, unless a newer change has outdated its call (U10). Returns whether it showed. The state of a spot that reads
+    /// picture, unless a newer change has outdated its call (protocol: Frames). Returns whether it showed. The state of a spot that reads
     /// no state of its own takes the value of its control from it.
     @discardableResult
     func takePicture(_ lines: SpotOutput, frame: String, of work: Work?) async -> Bool {
@@ -166,7 +166,7 @@ extension SpotRun {
         return true
     }
 
-    /// Takes a frame of only a head: its effects act, and the picture stays (01).
+    /// Takes a frame of only a head: its effects act, and the picture stays.
     func takeEffects(_ lines: SpotOutput, frame: String) {
         report(toastOf: lines)
         onReport(.frame(frame))

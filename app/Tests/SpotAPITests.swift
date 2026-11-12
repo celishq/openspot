@@ -65,8 +65,8 @@ final class SpotAPITests: XCTestCase {
     }
 
     func testTheListHoldsEachScriptWithItsCommandsSettingsAndKeys() async throws {
-        try "#!/bin/sh\n# title=Move\n# icon=macwindow\n# offers=float\n#\n# command=left\n# title=Left side\n#\n# setting=folder\n".writeScript(to: plugins.appendingPathComponent("move.sh"))
-        try "#!/bin/sh\n# title=Cups\n# every=60\n".writeScript(to: plugins.appendingPathComponent("cups.sh"))
+        try "#!/bin/sh\n# title=Move\n# icon=macwindow\n# on=sheet.open\n#\n# button=left\n# title=Left side\n#\n# field=folder\n".writeScript(to: plugins.appendingPathComponent("move.sh"))
+        try "#!/bin/sh\n# title=Cups\n# on=clock.60\n".writeScript(to: plugins.appendingPathComponent("cups.sh"))
         try file.write(keys: [
             GlobalKey(spot: "move", act: .command("left"), trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+left")))),
             GlobalKey(spot: "move", act: .float, trigger: .shake)
@@ -81,8 +81,8 @@ final class SpotAPITests: XCTestCase {
         XCTAssertEqual(move["icon"] as? String, "macwindow")
         XCTAssertEqual(move["float"] as? Bool, true)
         XCTAssertEqual(move["floatKey"] as? String, "shake")
-        XCTAssertEqual((move["commands"] as? [[String: Any]])?.first?["key"] as? String, "ctrl+option+left")
-        XCTAssertEqual((move["settings"] as? [[String: Any]])?.map { $0["title"] as? String }, ["Folder"])
+        XCTAssertEqual((move["buttons"] as? [[String: Any]])?.first?["key"] as? String, "ctrl+option+left")
+        XCTAssertEqual((move["fields"] as? [[String: Any]])?.map { $0["title"] as? String }, ["Folder"])
         XCTAssertEqual(spots.first?["menubar"] as? Bool, true)
         XCTAssertEqual(spots.first?["inMenuBar"] as? Bool, true)
         XCTAssertEqual(move["menubar"] as? Bool, false)
@@ -92,7 +92,7 @@ final class SpotAPITests: XCTestCase {
         try "#!/bin/sh\n# detail=Open app\n# icon=star\n".writeScript(to: core.appendingPathComponent("zebra.sh"))
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.sh"))
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("files.sh"))
-        try "#!/bin/sh\n# every=5\n".writeScript(to: core.appendingPathComponent("cpu.sh"))
+        try "#!/bin/sh\n# on=clock.5\n".writeScript(to: core.appendingPathComponent("cpu.sh"))
         try "#!/bin/sh\n".writeScript(to: plugins.appendingPathComponent("files.sh"))
         try file.turn("zebra", on: true)
 
@@ -109,14 +109,15 @@ final class SpotAPITests: XCTestCase {
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.sh"))
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("zebra.sh"))
 
-        let on = try await answer(["spot", "on", "apps", "zebra"])
+        let on = try await answer(["setting", "set", "--spot", "apps", "enabled", "true"])
         XCTAssertEqual(on, CommandAnswer())
+        _ = try await answer(["setting", "set", "--spot", "zebra", "enabled", "true"])
         XCTAssertEqual(file.read().arrangement.enabled, ["apps", "zebra"])
 
-        _ = try await answer(["spot", "off", "zebra"])
+        _ = try await answer(["setting", "set", "--spot", "zebra", "enabled", "false"])
         XCTAssertEqual(file.read().arrangement.enabled, ["apps"])
         let changes = await app.changes
-        XCTAssertEqual(changes, 2)
+        XCTAssertEqual(changes, 3)
     }
 
     func testOnRefusesAnUnknownSpotAndAFileOfTheFolderAndChangesNothing() async throws {
@@ -124,8 +125,8 @@ final class SpotAPITests: XCTestCase {
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("files.sh"))
         try "#!/bin/sh\n".writeScript(to: plugins.appendingPathComponent("files.sh"))
 
-        let unknown = try await answer(["spot", "on", "apps", "gone"])
-        let own = try await answer(["spot", "off", "files"])
+        let unknown = try await answer(["setting", "set", "--spot", "gone", "enabled", "true"])
+        let own = try await answer(["setting", "set", "--spot", "files", "enabled", "false"])
 
         XCTAssertEqual(unknown.errors, "`gone` is not a spot that comes with Openspot. Run `openspot spot list --core` to see each one.\n")
         XCTAssertEqual(unknown.code, 1)
@@ -136,7 +137,7 @@ final class SpotAPITests: XCTestCase {
     }
 
     func testOnWithNoSpotIsUnknown() {
-        XCTAssertEqual(CommandLineCall(arguments: ["spot", "on"], environment: [:]), .unknown("spot on"))
+        XCTAssertEqual(CommandLineCall(arguments: ["setting", "set", "--spot", "a", "enabled"], environment: [:]), .refused("`enabled` takes `true` or `false`, such as `openspot setting set --spot a enabled true`."))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "list", "--all"], environment: [:]), .unknown("spot list --all"))
     }
 
@@ -152,14 +153,14 @@ final class SpotAPITests: XCTestCase {
     }
 
     func testKeySetGivesACommandAKeyAndTakesItAway() async throws {
-        _ = try await answer(["key", "set", "move", "left", "ctrl+option+left"])
-        _ = try await answer(["key", "set", "move", "left", "ctrl+option+up"])
-        _ = try await answer(["key", "set", "move", "right", "ctrl+option+right"])
+        _ = try await answer(["setting", "set", "--spot", "move", "key.left", "ctrl+option+left"])
+        _ = try await answer(["setting", "set", "--spot", "move", "key.left", "ctrl+option+up"])
+        _ = try await answer(["setting", "set", "--spot", "move", "key.right", "ctrl+option+right"])
 
         XCTAssertEqual(file.read().keys.map(\.act), [.command("left"), .command("right")])
         XCTAssertEqual(file.read().keys.map(\.trigger.text), ["ctrl+option+up", "ctrl+option+right"])
 
-        _ = try await answer(["key", "set", "move", "left"])
+        _ = try await answer(["setting", "set", "--spot", "move", "key.left"])
 
         XCTAssertEqual(file.read().keys.map(\.act), [.command("right")])
         let changes = await app.changes
@@ -167,19 +168,19 @@ final class SpotAPITests: XCTestCase {
     }
 
     func testAShakeTakesTheShakeFromTheKeyThatHadIt() async throws {
-        _ = try await answer(["key", "set", "shelf", "--float", "shake"])
+        _ = try await answer(["setting", "set", "--spot", "shelf", "float", "shake"])
         XCTAssertEqual(file.read().keys, [GlobalKey(spot: "shelf", act: .float, trigger: .shake)])
 
-        _ = try await answer(["key", "set", "notes", "--float", "shake"])
+        _ = try await answer(["setting", "set", "--spot", "notes", "float", "shake"])
 
         XCTAssertEqual(file.read().keys, [GlobalKey(spot: "notes", act: .float, trigger: .shake)])
     }
 
     func testTheKeysOfTheAppTakeAKeyAndRefuseAShake() async throws {
-        let panel = try await answer(["key", "set", "--panel", "option+space"])
-        let fix = try await answer(["key", "set", "--fix", "ctrl+option+f"])
-        let shake = try await answer(["key", "set", "--panel", "shake"])
-        let bad = try await answer(["key", "set", "move", "left", "k"])
+        let panel = try await answer(["setting", "set", "--spot", "openspot", "panel-key", "option+space"])
+        let fix = try await answer(["setting", "set", "--spot", "openspot", "fix-key", "ctrl+option+f"])
+        let shake = try await answer(["setting", "set", "--spot", "openspot", "panel-key", "shake"])
+        let bad = try await answer(["setting", "set", "--spot", "move", "key.left", "k"])
 
         XCTAssertEqual(panel, CommandAnswer())
         XCTAssertEqual(fix, CommandAnswer())
@@ -192,23 +193,22 @@ final class SpotAPITests: XCTestCase {
     }
 
     func testAKeyItCannotUseLeavesTheFile() async throws {
-        _ = try await answer(["key", "set", "--panel", "k"])
+        _ = try await answer(["setting", "set", "--spot", "openspot", "panel-key", "k"])
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: file.url.path))
     }
 
     func testKeySetReadsItsWords() {
-        XCTAssertEqual(CommandLineCall(arguments: ["key", "set", "a", "--float"], environment: [:]), .keySet(spot: "a", act: .float, key: nil))
-        XCTAssertEqual(CommandLineCall(arguments: ["key", "set", "a", "go", "cmd+k"], environment: [:]), .keySet(spot: "a", act: .command("go"), key: "cmd+k"))
-        XCTAssertEqual(CommandLineCall(arguments: ["key", "set", "--panel"], environment: [:]), .unknown("key set --panel"))
-        XCTAssertEqual(CommandLineCall(arguments: ["key", "set", "a", "--b", "cmd+k"], environment: [:]), .unknown("key set a --b cmd+k"))
+        XCTAssertEqual(CommandLineCall(arguments: ["setting", "set", "--spot", "a", "float"], environment: [:]), .keySet(spot: "a", act: .float, key: nil))
+        XCTAssertEqual(CommandLineCall(arguments: ["setting", "set", "--spot", "a", "key.go", "cmd+k"], environment: [:]), .keySet(spot: "a", act: .command("go"), key: "cmd+k"))
+        XCTAssertEqual(CommandLineCall(arguments: ["setting", "set", "--spot", "openspot", "panel-key"], environment: [:]), .refused("`panel-key` needs a key, such as `openspot setting set --spot openspot panel-key ctrl+space`."))
     }
 
     func testMenuBarPutsASpotInAndTakesItOut() async throws {
-        _ = try await answer(["menubar", "on", "cups"])
+        _ = try await answer(["setting", "set", "--spot", "cups", "menubar", "true"])
         XCTAssertEqual(file.read().arrangement.menuBar, ["cups"])
 
-        _ = try await answer(["menubar", "off", "cups"])
+        _ = try await answer(["setting", "set", "--spot", "cups", "menubar", "false"])
 
         XCTAssertEqual(file.read().arrangement.menuBar, [])
         let changes = await app.changes
@@ -239,14 +239,14 @@ final class SpotAPITests: XCTestCase {
         let state = Login()
         let host = Host(login: LoginItem(isOn: { state.isOn }, set: { state.isOn = $0 }))
 
-        _ = try await answer(["app", "login", "on"], host: host)
+        _ = try await answer(["setting", "set", "--spot", "openspot", "login", "true"], host: host)
         XCTAssertTrue(state.isOn)
         let status = try await answer(["app", "status"], host: host)
         XCTAssertTrue(status.output.contains("\"login\":true"))
 
-        _ = try await answer(["app", "login", "off"], host: host)
+        _ = try await answer(["setting", "set", "--spot", "openspot", "login", "false"], host: host)
         XCTAssertFalse(state.isOn)
-        let none = try await answer(["app", "login", "on"])
+        let none = try await answer(["setting", "set", "--spot", "openspot", "login", "true"])
         XCTAssertEqual(none.errors, "This copy of Openspot cannot open at login. Move it to Applications, then try again.\n")
     }
 

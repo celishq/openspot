@@ -2,8 +2,7 @@
 # title=Emojis & Symbols
 # icon=face.smiling
 # detail=Copy an emoji or a symbol
-# size=small
-# read=sheet
+# on=sheet.open
 # uses=clipboard
 export LC_ALL=en_US.UTF-8
 saved="$OPENSPOT_DATA/tone"
@@ -52,7 +51,7 @@ case "$1" in
     printf 'grid=tone tone tone tone tone tone tone\ngrid=a a a a a a a\n\nrepeat=a\ngrid=a b c d e f g\n\n'
     printf 'button=open\ntitle=Copy\n\n'
     printf 'button=paste\ntitle=Paste\nshortcut=cmd+return\nclose=true\n\n'
-    printf 'button=next-tone\ntitle=Next skin tone\nshortcut=cmd+t\nscope=command\n\n'
+    printf 'button=next-tone\ntitle=Next skin tone\nshortcut=cmd+t\nscope=spot\n\n'
     printf 'choice=tone\ntitle=Skin tone\nvalue=%s\n\n' "$tone"
     printf 'option=none\ntitle=Yellow\n\noption=light\ntitle=Light\n\noption=medium-light\ntitle=Medium light\n\n'
     printf 'option=medium\ntitle=Medium\n\noption=medium-dark\ntitle=Medium dark\n\noption=dark\ntitle=Dark\n\n'

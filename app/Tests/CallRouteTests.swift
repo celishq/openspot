@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 /// Proves that each call that the running app now answers gives the same stdout, stderr and exit code through the socket
-/// of the app as through the Core work of a process of its own, so that the router picks only the transport (S1, S2). A
+/// of the app as through the Core work of a process of its own, so that the router picks only the transport (protocol: The openspot command). A
 /// fake Mac stands in for the clipboard, the windows, the screen, translation and the picks.
 final class CallRouteTests: XCTestCase {
     /// A Mac that answers each call of the clipboard, the windows, the screen, translation and the picks the same way.
@@ -80,8 +80,8 @@ final class CallRouteTests: XCTestCase {
     }
 
     func testEachCallThatTheAppAnswersGivesTheSameAnswerAlone() async throws {
-        try "#!/bin/sh\n# size=huge\necho\n".writeScript(to: plugins.appendingPathComponent("weather.sh"))
-        try "#!/bin/sh\n# read=sheet\nprintf 'title=Notes\\n'\n".writeScript(to: plugins.appendingPathComponent("notes.sh"))
+        try "#!/bin/sh\n# mode=huge\necho\n".writeScript(to: plugins.appendingPathComponent("weather.sh"))
+        try "#!/bin/sh\n# on=sheet.open\nprintf 'title=Notes\\n'\n".writeScript(to: plugins.appendingPathComponent("notes.sh"))
         try "#!/bin/sh\nprintf 'args=%s\\nfolder=%s\\ntone=%s\\n---\\n' \"$*\" \"$PWD\" \"$TONE\"; cat; echo 'said' >&2; exit 3\n".writeScript(to: plugins.appendingPathComponent("echo.sh"))
         let calls: [([String], String?)] = [
             (["check"], nil),

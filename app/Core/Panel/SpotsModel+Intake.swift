@@ -71,7 +71,7 @@ extension SpotsModel {
         return true
     }
 
-    /// Tells the script of the rows that a drag took out of its sheet to another app (O2). A drag of every row with a file
+    /// Tells the script of the rows that a drag took out of its sheet to another app (protocol: Files out). A drag of every row with a file
     /// out of a float closes it (W6).
     public func dragOut(_ items: [SpotItem], of id: String) {
         guard let sheet = sheets[id] else { return }

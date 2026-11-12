@@ -53,7 +53,7 @@ final class CardFaceTests: XCTestCase {
     }
 
     func testANameThatNoValueHasAndAnUnknownPlaceAreFaults() {
-        XCTAssertEqual(SpotOutput(text: "main=gone\n\nbutton=go\n").partFaults, ["the head names gone as main, which no text, number, gauge, graph, switch or slider has"])
+        XCTAssertEqual(SpotOutput(text: "main=gone\n\nbutton=go\ntitle=Go\n").partFaults, ["the head names gone as main, which no text, number, gauge, graph, switch or slider has"])
         XCTAssertEqual(SpotOutput(text: "grid.tray=a\n\ntext=a\ntitle=A\n").partFaults, ["the head draws grid.tray, which is not a place"])
     }
 

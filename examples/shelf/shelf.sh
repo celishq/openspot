@@ -3,8 +3,7 @@
 # icon=tray.full
 # detail=Keeps files at hand
 # drop=*
-# read=sheet
-# offers=float
+# on=sheet.open
 list="$OPENSPOT_DATA/files"
 . "$OPENSPOT_SH"
 
@@ -21,7 +20,7 @@ case "$1" in
     printf 'recents=false\n\n'
     printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\n\n'
     printf 'button=remove\ntitle=Remove from Shelf\nshortcut=cmd+backspace\n\n'
-    printf 'button=clear\ntitle=Clear Shelf\nscope=command\n\n'
+    printf 'button=clear\ntitle=Clear Shelf\nscope=spot\n\n'
     [ -f "$list" ] || exit 0
     while IFS= read -r path; do
       [ -e "$path" ] || continue

@@ -1,6 +1,6 @@
 import Foundation
 
-/// What `openspot spot stats` prints from the days of the counts (Z10, Z11): their sum for a person, a `row` block for each
+/// What `openspot spot stats` prints from the days of the counts (protocol: Stats): their sum for a person, a `row` block for each
 /// spot with the most CPU time first and a `use` block for each call that needs a use, the newest first, or the days as
 /// JSON.
 public struct StatsReport: Sendable {
