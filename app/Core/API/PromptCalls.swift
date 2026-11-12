@@ -9,7 +9,7 @@ struct PromptCalls {
         CommandAnswer.work { [mac, environment] in
             let folder = SpotFolder.standard(environment: environment).url
             let guide = mac.guide ?? folder
-            return AgentPrompt(folder: folder, guide: guide, app: Bundle.main.executablePath ?? "openspot").building(words)
+            return AgentPrompt(folder: folder, guide: guide, app: AgentPrompt.command(of: Bundle.main.executablePath ?? "openspot")).building(words)
         }
     }
 }

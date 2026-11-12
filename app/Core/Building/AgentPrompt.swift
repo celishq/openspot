@@ -5,13 +5,21 @@ import Foundation
 public struct AgentPrompt: Equatable, Sendable {
     public let folder: URL
     public let guide: URL
-    /// The program of this app, which is the `openspot` command.
+    /// The `openspot` command that the agent runs.
     public let app: String
 
     public init(folder: URL, guide: URL, app: String) {
         self.folder = folder
         self.guide = guide
         self.app = app
+    }
+
+    /// The `openspot` client in the Helpers of the app, which reaches the running app, or the app's own program when the
+    /// app has no client.
+    public static func command(of app: String) -> String {
+        let contents = URL(fileURLWithPath: app).deletingLastPathComponent().deletingLastPathComponent()
+        let client = contents.appendingPathComponent("Helpers/openspot").path
+        return FileManager.default.isExecutableFile(atPath: client) ? client : app
     }
 
     /// The toast of each copy of a prompt.
