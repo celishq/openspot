@@ -20,7 +20,7 @@ enum SpotCardPicture {
         }
         let card = CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))
         let shape = RoundedRectangle(cornerRadius: SpotTokens.corner(for: size), style: .continuous)
-        let view = NSHostingView(rootView: SpotPictureStage(size: card, radius: SpotTokens.corner(for: size)) {
+        let view = NSHostingView(rootView: SpotPictureStage(size: card, radius: SpotTokens.corner(for: size), seed: URL(fileURLWithPath: path).lastPathComponent) {
             SpotCardDrawing(layout: layout, face: face, card: size) { _, _ in }
                 .padding(SpotTokens.cardPadding(for: size, isWidget: true))
                 .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
@@ -59,7 +59,7 @@ enum SpotCardPicture {
         let draw = {
             let card = CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))
             let shown = model.entries.first { $0.id == id } ?? entry
-            let view = NSHostingView(rootView: SpotPictureStage(size: card, radius: SpotTokens.corner(for: size)) {
+            let view = NSHostingView(rootView: SpotPictureStage(size: card, radius: SpotTokens.corner(for: size), seed: URL(fileURLWithPath: path).lastPathComponent) {
                 SpotCardView(entry: shown, size: size, index: -1, isPressed: false, takesDrag: false, isDropTarget: false, chainLetter: nil, model: model)
                     .environment(\.spotIsShown, true)
             }

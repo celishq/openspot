@@ -11,6 +11,8 @@ struct SpotSheetPreview: View {
     var onPress: (SpotPart) -> Void = { _ in }
     var list = ItemList()
     var customView: (CGSize) -> SpotCustomView? = { _ in nil }
+    /// What places the wallpaper behind it, such as the name of the picture.
+    var seed = ""
 
     var body: some View {
         let frame = panel.map { SpotTokens.panelRect($0).size } ?? SpotTokens.floatSize(rows: list.shown.count)
@@ -37,6 +39,6 @@ struct SpotSheetPreview: View {
         }
         .padding(SpotTokens.padding)
         .frame(width: frame.width, height: frame.height, alignment: .topLeading)
-        .background { SpotPictureStage(size: frame, radius: SpotTokens.radius) { Color.clear }.padding(-SpotPictureStage<Color>.margin) }
+        .background { SpotPictureStage(size: frame, radius: SpotTokens.radius, seed: seed) { Color.clear }.padding(-SpotPictureStage<Color>.margin) }
     }
 }
