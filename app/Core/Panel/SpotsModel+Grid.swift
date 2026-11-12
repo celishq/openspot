@@ -30,8 +30,9 @@ extension SpotsModel {
         sheets[entry.id]?.setLevel((entry.state.level ?? 0) + delta)
     }
 
+    /// Runs the card, unless the actions menu is open, as after a force press whose click ends on the card.
     public func tap(_ id: String) {
-        guard let position = visible.firstIndex(where: { $0.id == id }) else { return }
+        guard menu == nil, let position = visible.firstIndex(where: { $0.id == id }) else { return }
         selected = position
         runSelected()
     }

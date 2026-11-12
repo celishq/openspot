@@ -10,6 +10,8 @@ final class SpotsPanel: NSPanel {
     /// The frame that the window had before Edit Spots grew it.
     private var restFrame: NSRect?
     private var pressWatch: Task<Void, Never>?
+    /// The stage of the trackpad's press: 1 for a click, 2 for a force click.
+    private var pressStage = 0
 
     override var canBecomeKey: Bool { true }
 
@@ -165,6 +167,7 @@ final class SpotsPanel: NSPanel {
     /// Gives each key to the actions first, so that they work whichever field has the focus.
     override func sendEvent(_ event: NSEvent) {
         if event.type == .flagsChanged { model?.takeHeld(Self.modifiers(of: event.modifierFlags)) }
+        if event.type == .pressure { takePressure(event) }
         if event.type == .keyDown {
             if model?.recording != nil {
                 if Int(event.keyCode) == kVK_Escape {
@@ -178,6 +181,15 @@ final class SpotsPanel: NSPanel {
             if model?.handleChain(code: UInt32(event.keyCode), modifiers: Self.modifiers(of: event.modifierFlags)) == true { return }
         }
         super.sendEvent(event)
+    }
+
+    /// Opens the actions menu of the card under a force click, when the press reaches its second stage.
+    private func takePressure(_ event: NSEvent) {
+        defer { pressStage = event.stage }
+        guard event.stage == 2, pressStage < 2, let model, let view = contentView else { return }
+        let origin = SpotTokens.gridOrigin(scrollOffset: model.gridScroll)
+        let point = CGPoint(x: event.locationInWindow.x - origin.x, y: view.bounds.height - event.locationInWindow.y - origin.y)
+        model.forcePress(at: point)
     }
 
     private static func modifiers(of flags: NSEvent.ModifierFlags) -> Shortcut.Modifiers {
