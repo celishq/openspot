@@ -118,7 +118,7 @@ extension SpotsModel {
     }
 
     /// Reads the spots of this folder that are off and the packages of its files in the store, and makes the store again.
-    func refreshDock(in folder: SpotFolder) {
+    func refreshDock(in folder: SpotsFolder) {
         dockRead?.cancel()
         dockStamp = folder.stamp()
         (dockOff, dockPublications) = Self.readDock(in: folder, store: files.store)
@@ -126,7 +126,7 @@ extension SpotsModel {
     }
 
     /// Reads what the store needs from this folder off the main thread, so that Edit Spots starts with no read of the disk.
-    func readDockLater(in folder: SpotFolder) {
+    func readDockLater(in folder: SpotsFolder) {
         dockRead?.cancel()
         let store = files.store
         dockRead = Task { [weak self] in
@@ -138,8 +138,8 @@ extension SpotsModel {
     }
 
     /// The spots of this folder that are off, and whether the store's package of each file of the folder is current.
-    nonisolated static func readDock(in folder: SpotFolder, store: URL) -> ([SpotDock.Item], [String: SpotDock.Publication]) {
-        let own = (try? SpotFolder(url: folder.url).keptScan()) ?? ScanResult(files: [], refused: [])
+    nonisolated static func readDock(in folder: SpotsFolder, store: URL) -> ([SpotDock.Item], [String: SpotDock.Publication]) {
+        let own = (try? SpotsFolder(url: folder.url).keptScan()) ?? ScanResult(files: [], refused: [])
         return (offSpots(in: folder, own: own.files), publications(of: own, in: folder, store: store))
     }
 
@@ -165,10 +165,10 @@ extension SpotsModel {
 
     /// The core spots of this folder that are not on, and the spots of its files that the person turned off. A sheet that
     /// another spot opens is not one.
-    private nonisolated static func offSpots(in folder: SpotFolder, own: [SpotFile]) -> [SpotDock.Item] {
+    private nonisolated static func offSpots(in folder: SpotsFolder, own: [SpotFile]) -> [SpotDock.Item] {
         let ownIDs = Set(own.map(\.id))
         let core = folder.keptCoreChoices()
-            .filter { !folder.enabled.contains(SpotFolder.coreID(of: $0)) && !ownIDs.contains(SpotFolder.coreID(of: $0)) }
+            .filter { !folder.enabled.contains(SpotsFolder.coreID(of: $0)) && !ownIDs.contains(SpotsFolder.coreID(of: $0)) }
         let turnedOff = own.filter { folder.disabled.contains($0.id) }.flatMap(\.spots)
         let opened = Set(turnedOff.compactMap(\.opens))
         return core.map { SpotDock.Item(spot: $0) } + turnedOff.filter { !opened.contains($0.id) }.map { SpotDock.Item(spot: $0, origin: .mine) }

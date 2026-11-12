@@ -11,8 +11,8 @@ final class SpotReleaseTests: XCTestCase {
     }
 
     private let files = [
-        SharedSpot.File(path: "cups.spot/cups.sh", isExecutable: true, contents: Data("test".utf8)),
-        SharedSpot.File(path: "cups.spot/readme.md", isExecutable: false, contents: Data("Counts cups.\n".utf8))
+        SpotFolder.File(path: "cups.spot/cups.sh", isExecutable: true, contents: Data("test".utf8)),
+        SpotFolder.File(path: "cups.spot/readme.md", isExecutable: false, contents: Data("Counts cups.\n".utf8))
     ]
 
     func testAnEventThatCelisSignedIsAuthenticAndReadsItsParts() throws {

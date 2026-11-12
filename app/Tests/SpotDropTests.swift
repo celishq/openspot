@@ -50,7 +50,7 @@ final class SpotDropTests: XCTestCase {
         let url = folder.appendingPathComponent("script.sh")
         let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
         try "#!/bin/sh\n\(lines)\necho $$ >> '\(path("pids"))'\necho \"$*\" >> '\(path("log"))'\n\(body)\n".writeScript(to: url)
-        let scan = try SpotFolder(url: folder).scan()
+        let scan = try SpotsFolder(url: folder).scan()
         XCTAssertEqual(scan.refused, [])
         runs.take(scan)
         return try XCTUnwrap(runs.sheets["script"])
@@ -165,7 +165,7 @@ final class SpotDropTests: XCTestCase {
     private func addScript(_ name: String, header: String) throws {
         let url = folder.spotFile(name)
         try "#!/bin/sh\n# \(header)\n".writeScript(to: url)
-        runs.take(try SpotFolder(url: folder).scan())
+        runs.take(try SpotsFolder(url: folder).scan())
     }
 
     private func cardsThatTakeTheDrag() -> Set<String> {

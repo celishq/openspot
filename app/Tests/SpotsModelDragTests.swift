@@ -13,7 +13,7 @@ final class SpotsModelDragTests: XCTestCase {
 
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-drag-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: core, withIntermediateDirectories: true)
         try "[[spots]]\nid = \"coin\"\nsize = \"small\"\n\n[[spots]]\nid = \"timer\"\nsize = \"small\"\n\n[[spots]]\nid = \"d\"\nsize = \"small\"\n"
             .write(to: folder.appendingPathComponent("defaults.toml"), atomically: true, encoding: .utf8)
@@ -24,7 +24,7 @@ final class SpotsModelDragTests: XCTestCase {
         model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2, prepare: { await host.prepare($0, glyphs: $1) }))
         host.model = model
         for name in ["a", "b", "c", "d"] {
-            let file = plugins.appendingPathComponent("\(name).spot/\(name).sh")
+            let file = spots.appendingPathComponent("\(name).spot/\(name).sh")
             try "#!/bin/sh\n".writeScript(to: file)
             try FileManager.default.setAttributes([.creationDate: Date(timeIntervalSince1970: 1_700_000_000)], ofItemAtPath: file.path)
         }
@@ -39,8 +39,8 @@ final class SpotsModelDragTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private var plugins: URL {
-        folder.appendingPathComponent("plugins", isDirectory: true)
+    private var spots: URL {
+        folder.appendingPathComponent("spots", isDirectory: true)
     }
 
     private var core: URL {
@@ -51,10 +51,10 @@ final class SpotsModelDragTests: XCTestCase {
         folder.appendingPathComponent("trash", isDirectory: true)
     }
 
-    private var files: SpotFiles {
+    private var files: AppPlaces {
         let trash = trash
-        return SpotFiles(
-            environment: ["OPENSPOT_SPOTS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path, "OPENSPOT_CORE": core.path],
+        return AppPlaces(
+            environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path, "OPENSPOT_CORE": core.path],
             home: folder,
             defaults: defaults,
             trash: { url in
@@ -530,7 +530,7 @@ final class SpotsModelDragTests: XCTestCase {
     func testTheGridGrowsDownPastTheRowsThePanelShows() throws {
         model.endEditing()
         for name in ["e", "f", "g", "h", "i", "j", "k", "l", "m"] {
-            try "#!/bin/sh\n".writeScript(to: plugins.spotFile(name))
+            try "#!/bin/sh\n".writeScript(to: spots.spotFile(name))
         }
         model.reload()
         model.beginEditing()
@@ -634,20 +634,20 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testPublishWritesAPackageOnceAndAgainOnlyWhenTheFilesChange() async throws {
-        try "Does a.".write(to: plugins.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
+        try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
         XCTAssertNil(publication(of: "a"))
 
         let first = await model.publish("a")
         XCTAssertEqual(first, .published)
         let log = try ReleaseLog(text: String(contentsOf: store.appendingPathComponent("a.spot/releases.jsonl"), encoding: .utf8))
         XCTAssertEqual(log.last?.version, 1)
-        XCTAssertEqual(try String(contentsOf: plugins.appendingPathComponent("a.spot/releases.jsonl"), encoding: .utf8), log.text)
+        XCTAssertEqual(try String(contentsOf: spots.appendingPathComponent("a.spot/releases.jsonl"), encoding: .utf8), log.text)
         XCTAssertEqual(try String(contentsOf: store.appendingPathComponent("a.spot/readme.md"), encoding: .utf8), "Does a.")
         XCTAssertEqual(publication(of: "a"), .current)
         let again = await model.publish("a")
         XCTAssertEqual(again, .unchanged)
 
-        let script = try FileHandle(forWritingTo: plugins.appendingPathComponent("a.spot/a.sh"))
+        let script = try FileHandle(forWritingTo: spots.appendingPathComponent("a.spot/a.sh"))
         try script.seekToEnd()
         try script.write(contentsOf: Data("echo changed\n".utf8))
         try script.close()
@@ -659,14 +659,14 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testShareCopiesTheStoresPackageAsOneZipThatOpensWithItsReadme() async throws {
-        try "Does a.".write(to: plugins.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
+        try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
         XCTAssertNil(model.sharePackage("a"))
         _ = await model.publish("a")
 
         let file = try XCTUnwrap(model.sharePackage("a"))
 
         XCTAssertEqual(file.pathExtension, "spot")
-        XCTAssertEqual(try SharedSpot(contentsOf: file).files.first { $0.path == "a.spot/readme.md" }?.text, "Does a.")
+        XCTAssertEqual(try SpotFolder(contentsOf: file).files.first { $0.path == "a.spot/readme.md" }?.text, "Does a.")
     }
 
     func testASpotWithNoReadmeOpensItsListingAndIsNotPublished() async {
@@ -685,8 +685,8 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(result, .notOwn)
     }
 
-    func testACardOfThePluginsFolderReleasedOnTheStoreIsPublished() async throws {
-        try "Does b.".write(to: plugins.appendingPathComponent("b.spot/readme.md"), atomically: true, encoding: .utf8)
+    func testACardOfTheSpotsFolderReleasedOnTheStoreIsPublished() async throws {
+        try "Does b.".write(to: spots.appendingPathComponent("b.spot/readme.md"), atomically: true, encoding: .utf8)
         model.dockFrame = dock
         let translation = move("b", to: inGrid(CGPoint(x: dock.midX, y: dock.midY)))
 
@@ -718,14 +718,14 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(order, ["a", "b", "c", "d"])
     }
 
-    func testTheMinusTurnsASpotOfThePluginsFolderOffIntoTheDockAndItStaysOff() {
+    func testTheMinusTurnsASpotOfTheSpotsFolderOffIntoTheDockAndItStaysOff() {
         model.turnOff("a")
 
         XCTAssertEqual(order, ["b", "c", "d"])
         XCTAssertEqual(offInStore, ["a"])
         XCTAssertEqual(model.dock.items.first { $0.id == "a" }?.origin, .mine)
         XCTAssertEqual(savedOrder(), ["b", "c", "d"])
-        XCTAssertTrue(FileManager.default.fileExists(atPath: plugins.spotFile("a").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: spots.spotFile("a").path))
     }
 
     func testASpotTurnedOnFromTheDockComesBackToThePanel() {
@@ -752,7 +752,7 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.dock.items.first { $0.id == "timer" }?.origin, .core)
     }
 
-    func testTheDockDeletesOnlyASpotOfThePluginsFolderAndUndoPutsItBack() throws {
+    func testTheDockDeletesOnlyASpotOfTheSpotsFolderAndUndoPutsItBack() throws {
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
         model.turnOff("a")
 

@@ -64,12 +64,12 @@ public struct SpotLock: Equatable, Sendable {
         /// The place of a path in the spots folder after a wrap, such as `notes.spot/notes.sh` for `notes.sh`.
         static func wrapped(_ path: String) -> String {
             let parts = path.split(separator: "/", maxSplits: 1).map(String.init)
-            guard let first = parts.first, (first as NSString).pathExtension != SpotFolder.spotExtension else { return path }
-            if parts.count > 1 { return "\(first).\(SpotFolder.spotExtension)/\(parts[1])" }
+            guard let first = parts.first, (first as NSString).pathExtension != SpotFolder.fileExtension else { return path }
+            if parts.count > 1 { return "\(first).\(SpotFolder.fileExtension)/\(parts[1])" }
             let stem = String(first.prefix { $0 != "." })
-            guard first.contains(".") else { return "\(first).\(SpotFolder.spotExtension)" }
+            guard first.contains(".") else { return "\(first).\(SpotFolder.fileExtension)" }
             let name = first == "\(stem).md" ? SpotListing.readmeName : first == "\(stem).preview.txt" ? SpotListing.previewName : first
-            return "\(stem).\(SpotFolder.spotExtension)/\(name)"
+            return "\(stem).\(SpotFolder.fileExtension)/\(name)"
         }
 
         /// The name of the spot folder at the start of a path, with no extension.
@@ -107,7 +107,7 @@ public struct SpotLock: Equatable, Sendable {
     }
 
     public static func standard(environment: [String: String], home: URL = FileManager.default.homeDirectoryForCurrentUser) -> SpotLock {
-        SpotLock(url: SpotFolder.config(environment: environment, home: home).appendingPathComponent(name))
+        SpotLock(url: SpotsFolder.config(environment: environment, home: home).appendingPathComponent(name))
     }
 
     /// Each entry, in the order that the spots came in. No file has none.
@@ -130,14 +130,14 @@ public struct SpotLock: Equatable, Sendable {
         to folder: URL,
         isConfirmed: Bool = false,
         replaces: [String] = [],
-        expecting: SharedSpot? = nil,
+        expecting: SpotFolder? = nil,
         discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }
     ) async throws -> String {
         try await locked {
             let old = try entries().first { $0.source == source.text }
             var facts: Facts?
             let (commit, paths) = try await source.add(to: folder, at: nil, replacing: (old?.paths ?? []) + replaces, discard: discard) { work, paths in
-                if let expecting, try SharedSpot(paths: paths, in: work) != expecting {
+                if let expecting, try SpotFolder(paths: paths, in: work) != expecting {
                     throw SpotError.fault("The file changed after you looked at it, so Openspot added nothing. Open it again to see it.")
                 }
                 let new = try Self.facts(of: paths, in: work)
@@ -145,7 +145,7 @@ public struct SpotLock: Equatable, Sendable {
                     let confirm = "Openspot added nothing. Run `openspot spot add \(source.text) --yes` to add it."
                     let review: ReviewSpot
                     do {
-                        review = try ReviewSpot(spot: SharedSpot(paths: paths, in: work), folder: folder)
+                        review = try ReviewSpot(spot: SpotFolder(paths: paths, in: work), folder: folder)
                     } catch {
                         throw SpotError.fault("Openspot cannot review it: \((error as? SpotError)?.reason ?? error.localizedDescription)\n\(confirm)")
                     }
@@ -233,17 +233,17 @@ public struct SpotLock: Equatable, Sendable {
             hash.update(data: Data("\(file.path)\0\(FileManager.default.isExecutableFile(atPath: file.url.path))\0".utf8))
             hash.update(data: try Data(contentsOf: file.url))
         }
-        let scan = try SpotFolder(url: folder).scan()
+        let scan = try SpotsFolder(url: folder).scan()
         let names = Set(paths.map(Entry.name(of:)))
         let scripts = scan.scripts.filter { script in names.contains(String(script.id.split(separator: "/").first ?? "")) }
         let uses = SpotUse.allCases.filter { use in scripts.contains { $0.uses.contains(use) } }
         let canDo: [String]
         do {
-            canDo = try ReviewSpot(spot: SharedSpot(paths: paths, in: folder), folder: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-none", isDirectory: true)).canDo
+            canDo = try ReviewSpot(spot: SpotFolder(paths: paths, in: folder), folder: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-none", isDirectory: true)).canDo
         } catch {
             canDo = ["Cannot review it: \((error as? SpotError)?.reason ?? error.localizedDescription)"]
         }
-        let shared = try? SharedSpot(paths: paths, in: folder)
+        let shared = try? SpotFolder(paths: paths, in: folder)
         let release = try shared.flatMap { spot in try spot.roots.first.flatMap { try spot.releaseLog(in: $0)?.last } }
         return Facts(hash: hash.finalize().map { String(format: "%02x", $0) }.joined(), uses: uses, canDo: canDo, release: release)
     }

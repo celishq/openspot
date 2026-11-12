@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 /// Proves the Dictate example: the words it keeps from Whisper, the sound it sends, and how its script wakes the helper.
-final class DictateExampleTests: SamplePluginsCase {
+final class DictateExampleTests: SampleSpotsCase {
     private static let model = "ggml-large-v3-turbo.bin"
 
     /// The data folder of the spot, with a stand-in Whisper server on the `PATH` and a stand-in helper that runs this

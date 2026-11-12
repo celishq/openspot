@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 /// Proves the Doom example with its real script, in a private home, with stand-ins for `curl`, `clang` and the engine.
-final class DoomExampleTests: SamplePluginsCase {
+final class DoomExampleTests: SampleSpotsCase {
     /// The commit of the engine that the script pins, which names the folder of its source and its engine.
     private func engineCommit() throws -> String {
         let script = try String(contentsOf: examples.appendingPathComponent("doom.spot/doom.sh"), encoding: .utf8)
@@ -115,22 +115,22 @@ final class DoomExampleTests: SamplePluginsCase {
     }
 
     /// Copies the example into a spots folder of its own, so that the panel reads no other spot.
-    private func plugins(in folder: URL) throws -> URL {
-        let plugins = folder.appendingPathComponent("plugins")
-        try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
-        try FileManager.default.copyItem(at: examples.appendingPathComponent("doom.spot"), to: plugins.appendingPathComponent("doom.spot"))
-        return plugins
+    private func spots(in folder: URL) throws -> URL {
+        let spots = folder.appendingPathComponent("spots")
+        try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
+        try FileManager.default.copyItem(at: examples.appendingPathComponent("doom.spot"), to: spots.appendingPathComponent("doom.spot"))
+        return spots
     }
 
     /// Opens the panel once for each change and once more, each 10 seconds after the last, as a person does, and returns
     /// the picture that the card of the spot drew after each read, or nil for its default card, with the drawing of its
     /// sheet. Each change runs while the panel is closed.
     @MainActor
-    private static func pictures(plugins: URL, changes: [@Sendable () throws -> Void]) async throws -> [(picture: String?, sheet: [[String]]?)] {
+    private static func pictures(spots: URL, changes: [@Sendable () throws -> Void]) async throws -> [(picture: String?, sheet: [[String]]?)] {
         var time = Date(timeIntervalSince1970: 1000)
         let runs = SpotRuns(now: { time }, stopPause: 0.2, tickPause: .milliseconds(50))
         defer { runs.quit() }
-        runs.take(try SpotFolder(url: plugins).scan())
+        runs.take(try SpotsFolder(url: spots).scan())
         let sheet = try XCTUnwrap(runs.sheets["doom"])
         let log = FrameLog(sheet)
         var pictures: [(picture: String?, sheet: [[String]]?)] = []
@@ -324,12 +324,12 @@ final class DoomExampleTests: SamplePluginsCase {
         try await withPrivateHome { folder in
             try self.fakeCurl(in: folder)
             try self.fakeClang(in: folder)
-            let plugins = try self.plugins(in: folder)
+            let spots = try self.spots(in: folder)
             let screens = self.data(in: folder).appendingPathComponent("screens")
             let first = screens.appendingPathComponent("screen-1.png")
             let second = screens.appendingPathComponent("screen-2.png")
 
-            let pictures = try await Self.pictures(plugins: plugins, changes: [
+            let pictures = try await Self.pictures(spots: spots, changes: [
                 {
                     try FileManager.default.createDirectory(at: screens, withIntermediateDirectories: true)
                     try Data("png".utf8).write(to: first)

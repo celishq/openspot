@@ -20,7 +20,7 @@ extension SpotsModel {
         }
         let folder = files.folder
         do {
-            var shared = try SharedSpot(sharing: spot, from: SpotFolder(url: folder.url).keptScan())
+            var shared = try SpotFolder(sharing: spot, from: SpotsFolder(url: folder.url).keptScan())
             let url = SpotPackage.url(for: folder.fileID(of: spot), in: files.store)
             guard SpotPackage(url: url).hash != SpotPackage.hash(of: shared, in: url.lastPathComponent) else {
                 host.confirm("\(spot.name) has no change since its last publish.")
@@ -28,7 +28,7 @@ extension SpotsModel {
             }
             if spot.previewsSample {
                 try await SpotListing.capturePreview(of: spot, runs: runs)
-                shared = try SharedSpot(sharing: spot, from: SpotFolder(url: folder.url).scan())
+                shared = try SpotFolder(sharing: spot, from: SpotsFolder(url: folder.url).scan())
             }
             if shared.needsCompile {
                 host.work("Compiling \(spot.name)")
@@ -54,7 +54,7 @@ extension SpotsModel {
         guard let item = dock.items.first(where: { $0.id == id }), item.publication != nil else { return nil }
         let package = SpotPackage(url: SpotPackage.url(for: files.folder.fileID(of: item.spot), in: files.store))
         let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-shared/\(UUID().uuidString)", isDirectory: true)
-        let file = place.appendingPathComponent(SharedSpot.fileName(for: item.spot.name))
+        let file = place.appendingPathComponent(SpotFolder.fileName(for: item.spot.name))
         do {
             try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
             try package.spot().zip(to: file)
@@ -101,11 +101,11 @@ extension SpotsModel {
     }
 
     /// Whether the package of each spot of the spots folder in the store holds its files as they are now.
-    nonisolated static func publications(of scan: ScanResult, in folder: SpotFolder, store: URL) -> [String: SpotDock.Publication] {
+    nonisolated static func publications(of scan: ScanResult, in folder: SpotsFolder, store: URL) -> [String: SpotDock.Publication] {
         var result: [String: SpotDock.Publication] = [:]
         for spot in scan.spots {
             let package = SpotPackage(url: SpotPackage.url(for: folder.fileID(of: spot), in: store))
-            guard let hash = package.hash, let shared = try? SharedSpot(sharing: spot, from: scan) else { continue }
+            guard let hash = package.hash, let shared = try? SpotFolder(sharing: spot, from: scan) else { continue }
             result[spot.id] = SpotPackage.hash(of: shared, in: package.url.lastPathComponent) == hash ? .current : .changed
         }
         return result

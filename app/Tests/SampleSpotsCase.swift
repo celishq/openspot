@@ -1,16 +1,16 @@
 import XCTest
 @testable import OpenspotCore
 
-/// The scan of the repo plugins and the fakes and helpers of the tests that run them.
-class SamplePluginsCase: XCTestCase {
-    /// The folder of the example plugins, which the app does not ship.
+/// The scan of the repo spots and the fakes and helpers of the tests that run them.
+class SampleSpotsCase: XCTestCase {
+    /// The folder of the example spots, which the app does not ship.
     var examples: URL {
         URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("examples")
     }
 
     var exampleScan: ScanResult {
         get throws {
-            try SpotFolder(url: examples).scan()
+            try SpotsFolder(url: examples).scan()
         }
     }
 
@@ -24,7 +24,7 @@ class SamplePluginsCase: XCTestCase {
             let root = URL(fileURLWithPath: #filePath)
                 .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             let folder = root.appendingPathComponent("spots")
-            var scan = try SpotFolder(url: folder).scan()
+            var scan = try SpotsFolder(url: folder).scan()
             scan.listKeys(in: ConfigFile(url: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-samples/config.toml")))
             return scan
         }

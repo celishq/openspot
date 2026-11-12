@@ -27,7 +27,7 @@ public struct SpotRelease: Equatable, Sendable {
 
     /// Signs a release of these files.
     public static func sign(
-        _ files: [SharedSpot.File],
+        _ files: [SpotFolder.File],
         address: String,
         version: Int,
         previous: String?,

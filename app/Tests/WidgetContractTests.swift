@@ -30,7 +30,7 @@ final class WidgetContractTests: XCTestCase {
     }
 
     private var scan: ScanResult {
-        get throws { try SpotFolder(url: folder).scan() }
+        get throws { try SpotsFolder(url: folder).scan() }
     }
 
     private func single(size: String?) throws {
@@ -297,7 +297,7 @@ final class WidgetContractTests: XCTestCase {
     func testTheCheckReportsNoFaultsForAGoodFolder() async throws {
         try power()
 
-        let faults = await SpotCheck(folder: SpotFolder(url: folder)).faults()
+        let faults = await SpotCheck(folder: SpotsFolder(url: folder)).faults()
 
         XCTAssertEqual(faults, [])
     }
@@ -306,7 +306,7 @@ final class WidgetContractTests: XCTestCase {
         try power("echo nonsense")
         try script("broken.sh", "#!/bin/sh\n# mode=huge\n")
 
-        let faults = await SpotCheck(folder: SpotFolder(url: folder)).faults()
+        let faults = await SpotCheck(folder: SpotsFolder(url: folder)).faults()
 
         XCTAssertEqual(faults, ["broken: Broken has an unknown mode: huge. Use once, stay or always", "power: It sent a metric Openspot cannot read."])
     }
@@ -314,7 +314,7 @@ final class WidgetContractTests: XCTestCase {
     func testTheCheckReportsAListThatFails() async throws {
         try script("tools.sh", "#!/bin/sh\n# on=sheet.open\necho gone >&2\nexit 1\n")
 
-        let faults = await SpotCheck(folder: SpotFolder(url: folder)).faults()
+        let faults = await SpotCheck(folder: SpotsFolder(url: folder)).faults()
 
         XCTAssertEqual(faults, ["tools: gone"])
     }
@@ -322,7 +322,7 @@ final class WidgetContractTests: XCTestCase {
     func testTheCheckFaultsAPartOrAnActionCalledRead() async throws {
         try script("tools.sh", "#!/bin/sh\n# on=sheet.open\nprintf 'button=read\\ntitle=A\\n\\nrow=a\\ntitle=A\\n\\ntext=read\\ntitle=B\\n'\n")
 
-        let faults = await SpotCheck(folder: SpotFolder(url: folder)).faults()
+        let faults = await SpotCheck(folder: SpotsFolder(url: folder)).faults()
 
         XCTAssertEqual(faults, ["tools: an action cannot be called read", "tools: a part cannot be called read"])
     }
@@ -331,7 +331,7 @@ final class WidgetContractTests: XCTestCase {
         let marker = folder.appendingPathComponent("marker")
         try script("once.sh", "#!/bin/sh\ntouch '\(marker.path)'\n")
 
-        let faults = await SpotCheck(folder: SpotFolder(url: folder)).faults()
+        let faults = await SpotCheck(folder: SpotsFolder(url: folder)).faults()
 
         XCTAssertEqual(faults, [])
         XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path))

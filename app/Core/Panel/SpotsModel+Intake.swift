@@ -6,7 +6,7 @@ extension SpotsModel {
     /// Whether a card, or a float, takes these dragged files. A card under an open sheet takes none (D2, W9).
     public func acceptsDrop(_ paths: [String], on id: String, in place: SheetPlace = .panel) -> Bool {
         let isOpenToDrops = place == .panel ? openList == nil : runs.floating.contains(id)
-        return isOpenToDrops && !SharedSpot.isFile(paths) && sheets[id]?.spot.accepts(paths) == true
+        return isOpenToDrops && !SpotFolder.isFile(paths) && sheets[id]?.spot.accepts(paths) == true
     }
 
     /// The card whose place on the grid holds this point of the grid. A point in a gap has none.
@@ -25,9 +25,9 @@ extension SpotsModel {
         let paths = host.draggedPaths
         guard paths != dragPaths else { return }
         dragPaths = paths
-        runs.draggedPaths = SharedSpot.isFile(paths) ? [] : paths
+        runs.draggedPaths = SpotFolder.isFile(paths) ? [] : paths
         isPointerOverDrop = host.isPointerOverDrop
-        draggedSpot = SharedSpot.isFile(paths) ? SpotDrop(paths: paths, folder: files.folder.url) : nil
+        draggedSpot = SpotFolder.isFile(paths) ? SpotDrop(paths: paths, folder: files.folder.url) : nil
         dragWatch?.cancel()
         dragWatch = Task { [weak self] in
             while self?.host.isMouseDown == true {
@@ -112,11 +112,11 @@ extension SpotsModel {
     public func reviewCore(_ id: String) -> Bool {
         let folder = files.folder
         do {
-            let place = SpotFolder(url: folder.url, core: folder.core, enabled: folder.enabled.union([id]), disabled: folder.disabled)
+            let place = SpotsFolder(url: folder.url, core: folder.core, enabled: folder.enabled.union([id]), disabled: folder.disabled)
             let scan = try place.scan()
-            guard let command = scan.spots.first(where: { place.isCore($0) && SpotFolder.coreID(of: $0) == id }) else { return false }
+            guard let command = scan.spots.first(where: { place.isCore($0) && SpotsFolder.coreID(of: $0) == id }) else { return false }
             closeList(moving: isShown)
-            show(try ReviewSpot(spot: SharedSpot(sharing: command, from: scan), folder: folder.url, canAdd: false))
+            show(try ReviewSpot(spot: SpotFolder(sharing: command, from: scan), folder: folder.url, canAdd: false))
         } catch {
             host.notify(Self.reason(error))
         }
@@ -149,7 +149,7 @@ extension SpotsModel {
     /// Opens the review of a `.spot` file on the clipboard. Returns false when the clipboard holds other things, or a form is open.
     public func pasteSpot() -> Bool {
         let paths = host.pastedPaths
-        guard form == nil, SharedSpot.isFile(paths) else { return false }
+        guard form == nil, SpotFolder.isFile(paths) else { return false }
         review(paths.map { URL(fileURLWithPath: $0) })
         return true
     }
@@ -168,7 +168,7 @@ extension SpotsModel {
         Task {
             do {
                 let folder = files.folder
-                var spot = try SharedSpot(sharing: entry.spot, from: folder.scan())
+                var spot = try SpotFolder(sharing: entry.spot, from: folder.scan())
                 if spot.needsCompile {
                     host.work("Compiling \(entry.spot.name)")
                     spot = try await spot.compiled()
@@ -177,7 +177,7 @@ extension SpotsModel {
                 try spot.keepReleaseLog(in: folder.url)
                 let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-shared/\(UUID().uuidString)", isDirectory: true)
                 try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
-                let file = place.appendingPathComponent(SharedSpot.fileName(for: entry.spot.name))
+                let file = place.appendingPathComponent(SpotFolder.fileName(for: entry.spot.name))
                 try spot.zip(to: file)
                 host.copy(file)
                 host.confirm(spot.notice(name: entry.spot.name))
@@ -192,7 +192,7 @@ extension SpotsModel {
         closeList(moving: isShown)
         if isShown { host.dismiss() }
         do {
-            try files.config.turn(SpotFolder.coreID(of: entry.spot), on: false)
+            try files.config.turn(SpotsFolder.coreID(of: entry.spot), on: false)
             host.confirm("\(entry.spot.name) is off")
             reload()
         } catch {

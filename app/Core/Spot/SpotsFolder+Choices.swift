@@ -1,9 +1,9 @@
 import Foundation
 
-extension SpotFolder {
+extension SpotsFolder {
     /// The IDs of the files in the folder itself, which are always on.
     public var ownIDs: Set<String> {
-        Set(((try? SpotFolder(url: url).keptScan())?.files ?? []).map(\.id))
+        Set(((try? SpotsFolder(url: url).keptScan())?.files ?? []).map(\.id))
     }
 
     /// Turns core spots on or off in the config, in one write. It refuses all for an ID that no core spot has, and for a

@@ -45,7 +45,7 @@ public struct SpotListing: Equatable, Sendable {
         let folder = file.deletingLastPathComponent()
         guard let text = try? String(contentsOf: folder.appendingPathComponent(ReleaseLog.fileName), encoding: .utf8),
               let log = try? ReleaseLog(text: text), let version = log.last?.version,
-              let spot = try? SharedSpot(contentsOf: folder) else { return nil }
+              let spot = try? SpotFolder(contentsOf: folder) else { return nil }
         return Release(version: version, isCurrent: log.names(spot.released(in: folder.lastPathComponent), built: false))
     }
 

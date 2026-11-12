@@ -9,7 +9,7 @@ public struct ReviewSpot: Equatable, Sendable {
     static let textLimit = 256_000
     static let installPart = "install"
 
-    public let shared: SharedSpot
+    public let shared: SpotFolder
     public let name: String
     public let symbol: String
     public let description: String?
@@ -29,7 +29,7 @@ public struct ReviewSpot: Equatable, Sendable {
     /// Reads a spot for a spots folder, with the readme and the preview of its first spot folder after what it uses and
     /// does. Throws a fault when it gives no spot, cannot go into that folder, or holds a release log that does not check
     /// against its files. With `canAdd` false it only shows the text.
-    public init(spot: SharedSpot, folder: URL, canAdd: Bool = true) throws {
+    public init(spot: SpotFolder, folder: URL, canAdd: Bool = true) throws {
         if let clash = spot.clash(in: folder) { throw SpotError.fault(clash) }
         let logs = try spot.roots.map { try spot.releaseLog(in: $0) }
         let scan = try Self.scan(of: spot)
@@ -83,7 +83,7 @@ public struct ReviewSpot: Equatable, Sendable {
     /// Reads a spot folder or a zip of spot folders for a spots folder, which its Add puts in that folder and records in
     /// the lock (protocol: The openspot command).
     public init(file: URL, folder: URL, lock: SpotLock) throws {
-        try self.init(spot: SharedSpot(contentsOf: file), folder: folder)
+        try self.init(spot: SpotFolder(contentsOf: file), folder: folder)
         source = file
         self.lock = lock
     }
@@ -135,11 +135,11 @@ public struct ReviewSpot: Equatable, Sendable {
     }
 
     /// Reads the spot as a scan would, from a folder that holds only its files.
-    private static func scan(of spot: SharedSpot) throws -> ScanResult {
+    private static func scan(of spot: SpotFolder) throws -> ScanResult {
         let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-review-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: place) }
         try spot.add(to: place)
-        return try SpotFolder(url: place).scan()
+        return try SpotsFolder(url: place).scan()
     }
 
     /// The subtitle of a version that another key signed than the copy that the spots folder holds.
@@ -188,7 +188,7 @@ public struct ReviewSpot: Equatable, Sendable {
 
     /// A line for each thing that the text of the files seems to do and `uses` does not name: the network, a delete, a
     /// screenshot or a copy that skips `openspot`, and each call of `openspot` for another use.
-    private static func canAlso(_ spot: SharedSpot, uses: Set<SpotUse>, id: String) -> [String] {
+    private static func canAlso(_ spot: SpotFolder, uses: Set<SpotUse>, id: String) -> [String] {
         let texts = spot.files.compactMap(\.text)
         func found(_ tools: [String]) -> [String] {
             tools.filter { tool in
@@ -236,15 +236,15 @@ public struct ReviewSpot: Equatable, Sendable {
     }
 
     /// Whether this path is the program of a Swift script or the library of a view in the spot.
-    private static func hasSource(_ path: String, in spot: SharedSpot) -> Bool {
+    private static func hasSource(_ path: String, in spot: SpotFolder) -> Bool {
         spot.files.contains { SwiftProgram.path(beside: $0.path) == path || (URL(fileURLWithPath: $0.path).pathExtension == SwiftProgram.sourceExtension && ViewLibrary.path(beside: $0.path) == path) }
     }
 
-    private static func canShow(_ file: SharedSpot.File) -> Bool {
+    private static func canShow(_ file: SpotFolder.File) -> Bool {
         file.text != nil && file.contents.count <= textLimit
     }
 
-    private static func shown(_ file: SharedSpot.File) -> String {
+    private static func shown(_ file: SpotFolder.File) -> String {
         if canShow(file), let text = file.text { return "\(file.path)\n\(text)" }
         let reason = file.text == nil ? "Not text, so Openspot cannot show it." : "Too long to show."
         return "\(file.path)\n\(reason) \(file.contents.count) bytes.\n"

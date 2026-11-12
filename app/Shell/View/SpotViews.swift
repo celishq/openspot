@@ -2,7 +2,7 @@ import Foundation
 import OpenspotCore
 import SwiftUI
 
-/// The views of plugins, each one building, ready or failed, by the path of its source. A library stays loaded until the
+/// The views of spots, each one building, ready or failed, by the path of its source. A library stays loaded until the
 /// app quits, so an edit of a view loads a new library beside the old one.
 @MainActor
 @Observable
@@ -22,7 +22,7 @@ final class SpotViews {
     @ObservationIgnored private var made: [String: URL] = [:]
     @ObservationIgnored private let library: ViewLibrary
 
-    /// The one set of plugin views that every card draws from.
+    /// The one set of spot views that every card draws from.
     static let shared = SpotViews()
 
     init(library: ViewLibrary = .standard()) {

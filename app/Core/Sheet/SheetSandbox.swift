@@ -84,11 +84,11 @@ public struct SheetSandbox: Equatable, Sendable {
 
     /// The file that the playground runs and its ID. A named file runs in place, with the ID that its spots folder gives
     /// it, or its name with no extension outside one. Typed text runs from a copy in the scratch folder, as `playground`.
-    public static func place(of file: URL?, text: String, plugins: URL, scratch: URL) -> (url: URL, id: String) {
+    public static func place(of file: URL?, text: String, spots: URL, scratch: URL) -> (url: URL, id: String) {
         guard let file else { return (scratch.appendingPathComponent("playground.\(fileExtension(of: text))"), "playground") }
         let folder = file.deletingLastPathComponent().resolvingSymlinksInPath()
-        if folder.pathExtension == SpotFolder.spotExtension, folder.deletingLastPathComponent().path == plugins.resolvingSymlinksInPath().path {
-            return (file, SpotFolder.id(of: file))
+        if folder.pathExtension == SpotFolder.fileExtension, folder.deletingLastPathComponent().path == spots.resolvingSymlinksInPath().path {
+            return (file, SpotsFolder.id(of: file))
         }
         return (file, file.deletingPathExtension().lastPathComponent)
     }

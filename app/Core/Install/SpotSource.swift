@@ -20,7 +20,7 @@ public enum SpotSource: Equatable, Sendable {
             return
         }
         let path = url.standardizedFileURL
-        if !isFolder.boolValue || path.pathExtension == SharedSpot.fileExtension {
+        if !isFolder.boolValue || path.pathExtension == SpotFolder.fileExtension {
             self = .file(path)
         } else if FileManager.default.fileExists(atPath: path.appendingPathComponent(".git").path) {
             self = .git(path.path)
@@ -92,7 +92,7 @@ public enum SpotSource: Equatable, Sendable {
             try FileManager.default.copyItem(at: url, to: work.appendingPathComponent(name))
             return (nil, [name])
         case .file(let url):
-            let spot = try SharedSpot(contentsOf: url)
+            let spot = try SpotFolder(contentsOf: url)
             let paths = spot.files.map(\.path)
             try spot.add(to: work)
             let changed = paths.filter { !Self.isSame(work.appendingPathComponent($0), folder.appendingPathComponent($0)) }
@@ -112,7 +112,7 @@ public enum SpotSource: Equatable, Sendable {
 
     /// The name of a spot folder for a folder of this name.
     private static func spotName(_ name: String) -> String {
-        (name as NSString).pathExtension == SharedSpot.fileExtension ? name : name + "." + SharedSpot.fileExtension
+        (name as NSString).pathExtension == SpotFolder.fileExtension ? name : name + "." + SpotFolder.fileExtension
     }
 
     /// The name of the spot folder of a git source: the last part of its URL or path, with no `.git`.

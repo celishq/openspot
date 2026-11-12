@@ -1,7 +1,7 @@
 import Foundation
 
 /// The cards of the files that give no spot.
-extension SpotFolder {
+extension SpotsFolder {
     /// A card for each file of this folder that gives no spot, which opens its faults. Its title says what a press does, and
     /// its detail names the spot, so that both fit a wide card. A file that loads with a fault, such as a key that another
     /// spot has, keeps its own card. Each card takes the ID and the place of the spot it stands for.
@@ -31,7 +31,7 @@ extension SpotFolder {
     func file(of id: String) -> URL? {
         let parts = id.split(separator: "/").map(String.init)
         guard let name = parts.first else { return nil }
-        let place = url.appendingPathComponent(name + "." + Self.spotExtension, isDirectory: true)
+        let place = url.appendingPathComponent(name + "." + SpotFolder.fileExtension, isDirectory: true)
         guard let stem = parts.last, let names = try? FileManager.default.contentsOfDirectory(atPath: place.path) else { return nil }
         return names.sorted().lazy.map { place.appendingPathComponent($0) }.first { file in
             var isFolder: ObjCBool = false

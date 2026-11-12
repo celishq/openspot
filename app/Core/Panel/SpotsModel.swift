@@ -149,7 +149,7 @@ public final class SpotsModel {
     @ObservationIgnored var dockPublications: [String: SpotDock.Publication] = [:]
     /// The stamp of the folder that `dockOff` and `dockPublications` were read from, and the read that runs in the background.
     /// A publish changes no stamp, so it reads the store again itself.
-    @ObservationIgnored var dockStamp: SpotFolder.Stamp?
+    @ObservationIgnored var dockStamp: SpotsFolder.Stamp?
     @ObservationIgnored var dockRead: Task<Void, Never>?
     /// Whether the person types in the dock's search, which then takes each key but Esc.
     public internal(set) var isSearchingDock = false
@@ -166,7 +166,7 @@ public final class SpotsModel {
     private var spotScan = SpotScan()
     private var lastScan = ScanResult(files: [], refused: [])
     /// The stamp of the folder and the config that the cards were last built from.
-    @ObservationIgnored private var loadedStamp: SpotFolder.Stamp?
+    @ObservationIgnored private var loadedStamp: SpotsFolder.Stamp?
     @ObservationIgnored private var loadedConfig: Config?
     /// How many times the grid built all its cards again, which a change of the config through the API does not do (A25).
     @ObservationIgnored private(set) var gridBuilds = 0
@@ -177,12 +177,12 @@ public final class SpotsModel {
 
     /// The app around the panel, which shows it, tells the person and moves each change.
     @ObservationIgnored public unowned let host: SpotsHost
-    /// Where the plugins, the config and the recent rows live.
-    @ObservationIgnored public let files: SpotFiles
+    /// Where the spots, the config and the recent rows live.
+    @ObservationIgnored public let files: AppPlaces
     /// The global keys that the person gave and that a spot still offers, as the app holds them.
     private(set) var assignedKeys: [GlobalKey] = []
 
-    public init(host: SpotsHost, files: SpotFiles = .standard, runs: SpotRuns? = nil) {
+    public init(host: SpotsHost, files: AppPlaces = .standard, runs: SpotRuns? = nil) {
         self.host = host
         self.files = files
         defaultArrangement = files.defaultArrangement
@@ -222,7 +222,7 @@ public final class SpotsModel {
         host.present()
     }
 
-    /// Reads the config file again, and the plugin folder when a file that its scan reads has changed. No script runs for
+    /// Reads the config file again, and the spots folder when a file that its scan reads has changed. No script runs for
     /// this, and each card shows its header until its answer arrives. A file that gives no spot shows a card of its faults,
     /// and any other fault shows in a toast. With no file changed and the same config as the last time, it only holds the
     /// keys again.
@@ -328,7 +328,7 @@ public final class SpotsModel {
 
     /// Builds the card of each spot that these IDs name again, by its ID or its core ID, and keeps each other card (A25).
     private func patchEntries(_ ids: Set<String>) {
-        let named: (Spot) -> Bool = { ids.contains($0.id) || ids.contains(SpotFolder.coreID(of: $0)) }
+        let named: (Spot) -> Bool = { ids.contains($0.id) || ids.contains(SpotsFolder.coreID(of: $0)) }
         let letters = arrangement.letters(over: defaultArrangement)
         var next = entries.filter { !named($0.spot) }
         for (index, spot) in ordered().enumerated() where named(spot) {
@@ -353,7 +353,7 @@ public final class SpotsModel {
     }
 
     /// The panel starts to show: a pick that its fade left finishes, the first card is selected, the held keys count, the
-    /// plugin folder is read again if it changed, and each script that the panel shows reads. The panel says it shows on the
+    /// spots folder is read again if it changed, and each script that the panel shows reads. The panel says it shows on the
     /// next turn, so that its fade starts from hidden.
     public func panelWillShow(holding modifiers: Shortcut.Modifiers) {
         finishPick()

@@ -1,7 +1,7 @@
 import OpenspotCore
 import SwiftUI
 
-/// A plugin's own view, which fills its area of a card or a sheet drawing, or else its whole card, and is clipped to that
+/// A spot's own view, which fills its area of a card or a sheet drawing, or else its whole card, and is clipped to that
 /// shape. It gets the block of its `view` component and its size, inset, corner and theme, and it draws only (protocol:
 /// Views). A card or a sheet loads it. A view that fails shows why, shrunk to fit.
 /// The view exists only while the panel shows, so a hidden panel runs none of its work.

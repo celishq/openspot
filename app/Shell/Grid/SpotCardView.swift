@@ -77,12 +77,12 @@ struct SpotCardView: View, @MainActor Equatable {
         entry.kind == .widget ? { [model] in model.reading(of: $0) } : { _ in nil }
     }
 
-    /// The source of the plugin's own view, which fills the whole card in place of its glyph and words (protocol: Views).
+    /// The source of the spot's own view, which fills the whole card in place of its glyph and words (protocol: Views).
     private var ownView: String? {
         drawsOwnCard && entry.state.face.hasView ? entry.spot.view : nil
     }
 
-    /// The source of the plugin's own view once it is built or has failed. While it builds, the card is drawn as any card
+    /// The source of the spot's own view once it is built or has failed. While it builds, the card is drawn as any card
     /// with running work.
     private var drawnView: String? {
         guard let ownView else { return nil }
@@ -277,7 +277,7 @@ private struct CardReveal: ViewModifier {
     }
 }
 
-/// Builds the plugin's own view of a card each time the panel shows (protocol: Views).
+/// Builds the spot's own view of a card each time the panel shows (protocol: Views).
 private struct CardViewLoad: ViewModifier {
     let source: String?
     @Environment(\.spotIsShown) private var isShown

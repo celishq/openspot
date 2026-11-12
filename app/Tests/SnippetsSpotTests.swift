@@ -1,9 +1,9 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Snippets plugin with its real script in a private home.
-final class SnippetsPluginTests: SamplePluginsCase {
-    func testAConfigPathHoldsTheDataOfAPlugin() async throws {
+/// Proves the Snippets spot with its real script in a private home.
+final class SnippetsSpotTests: SampleSpotsCase {
+    func testAConfigPathHoldsTheDataOfASpot() async throws {
         let snippets = try XCTUnwrap(try scan.spots.first { $0.name == "Snippets" })
         try await withPrivateHome { folder in
             let config = folder.appendingPathComponent("debug-config")

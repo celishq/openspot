@@ -12,12 +12,12 @@ final class SpotFloatTests: XCTestCase {
 
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-float-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         suite = "openspot-float-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         host = TestHost()
-        let files = SpotFiles(
-            environment: ["OPENSPOT_SPOTS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
+        let files = AppPlaces(
+            environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
             home: folder,
             defaults: defaults
         )
@@ -31,13 +31,13 @@ final class SpotFloatTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private var plugins: URL {
-        folder.appendingPathComponent("plugins", isDirectory: true)
+    private var spots: URL {
+        folder.appendingPathComponent("spots", isDirectory: true)
     }
 
     private func script(_ name: String, header: String, _ body: String) throws {
         let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: plugins.spotFile(name))
+        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: spots.spotFile(name))
     }
 
     private func wait(_ what: String, until condition: () -> Bool) async throws {

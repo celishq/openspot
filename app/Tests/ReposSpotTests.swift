@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 /// Proves the Repos example with its real script, a fake openspot command and a fake folder of repos.
-final class ReposPluginTests: SamplePluginsCase {
+final class ReposSpotTests: SampleSpotsCase {
     private var repos: Spot {
         get throws {
             try example("Repos")

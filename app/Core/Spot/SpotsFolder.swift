@@ -1,7 +1,7 @@
 import Foundation
 import Synchronization
 
-public struct SpotFolder: Sendable {
+public struct SpotsFolder: Sendable {
     /// What a scan reads: the identity, mode, size and times of each file through its links, the spots that are on or off
     /// and the sheets of the app. An equal stamp gives an equal scan, because a write, a change of mode and a move each change
     /// the change time of a file.
@@ -12,8 +12,6 @@ public struct SpotFolder: Sendable {
         fileprivate let hosted: [Spot]
     }
 
-    /// The extension of the folder that holds one spot: its scripts, its readme, its preview and what they need.
-    public static let spotExtension = "spot"
     private static let coreName = "spots"
     /// The spot folder of the core that holds the spots of the app itself, which are always on.
     private static let appName = "openspot.spot"
@@ -40,19 +38,19 @@ public struct SpotFolder: Sendable {
         home: URL = FileManager.default.homeDirectoryForCurrentUser,
         enabled: Set<String>? = nil,
         disabled: Set<String>? = nil
-    ) -> SpotFolder {
+    ) -> SpotsFolder {
         let core = environment["OPENSPOT_CORE"].flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0, isDirectory: true) }
             ?? Bundle.main.resourceURL?.appendingPathComponent(coreName, isDirectory: true)
         let arrangement = enabled == nil || disabled == nil ? ConfigFile.standard(environment: environment, home: home).read().arrangement : nil
         let enabled = enabled ?? arrangement?.enabled ?? []
         let disabled = disabled ?? arrangement?.disabled ?? []
         if let path = environment["OPENSPOT_SPOTS"], !path.isEmpty {
-            return SpotFolder(url: URL(fileURLWithPath: path, isDirectory: true), core: core, enabled: enabled, disabled: disabled)
+            return SpotsFolder(url: URL(fileURLWithPath: path, isDirectory: true), core: core, enabled: enabled, disabled: disabled)
         }
         let folder = config(environment: environment, home: home)
         let url = folder.appendingPathComponent(folderName, isDirectory: true)
         moveOldFolder(to: url)
-        return SpotFolder(url: url, core: core, enabled: enabled, disabled: disabled)
+        return SpotsFolder(url: url, core: core, enabled: enabled, disabled: disabled)
     }
 
     /// The name of the spots folder in the config folder.
@@ -87,7 +85,7 @@ public struct SpotFolder: Sendable {
         var result = ScanResult(files: hosted.isEmpty ? [] : [SpotFile(id: "openspot", spots: hosted)], refused: [])
         for file in ((try? Self.sorted(in: url)) ?? []).filter(Self.isScript) {
             let name = Self.stem(of: file.lastPathComponent)
-            let reason = "\(file.lastPathComponent) is outside a spot folder, and \(name).\(Self.spotExtension) has a file of that name. Move it into a spot folder of its own, such as \(name)-2.\(Self.spotExtension)."
+            let reason = "\(file.lastPathComponent) is outside a spot folder, and \(name).\(SpotFolder.fileExtension) has a file of that name. Move it into a spot folder of its own, such as \(name)-2.\(SpotFolder.fileExtension)."
             result.refused.append(ScanResult.Refusal(file: file.lastPathComponent, reason: reason))
         }
         let own = Self.files(in: core == nil ? try Self.spotFolders(in: url) : (try? Self.spotFolders(in: url)) ?? [])
@@ -148,7 +146,7 @@ public struct SpotFolder: Sendable {
     /// The core choices, kept from the last look while no file of the core folder changed.
     public func keptCoreChoices() -> [Spot] {
         guard let core else { return [] }
-        let stamp = SpotFolder(url: core).stamp()
+        let stamp = SpotsFolder(url: core).stamp()
         if let kept = Self.choices.withLock({ $0[core.path] }), kept.stamp == stamp { return kept.result }
         let result = coreChoices()
         Self.choices.withLock { $0[core.path] = (stamp, result) }
@@ -184,7 +182,7 @@ public struct SpotFolder: Sendable {
     /// Whether the app runs for the first time here: no config file, and no spot in the folder.
     public func isFirstLaunch(config: ConfigFile) -> Bool {
         guard !FileManager.default.fileExists(atPath: config.url.path) else { return false }
-        return ((try? SpotFolder(url: url).scan())?.spots ?? []).isEmpty
+        return ((try? SpotsFolder(url: url).scan())?.spots ?? []).isEmpty
     }
 
     /// The IDs of the core spots that a first launch turns on, in the order of the grid.
@@ -209,7 +207,7 @@ public struct SpotFolder: Sendable {
         }
         let names = Set(own.map(\.lastPathComponent))
         let others = ((try? Self.sorted(in: folder)) ?? []).filter { !names.contains($0.lastPathComponent) && Self.isScript($0) }
-        guard others.isEmpty, folder.pathExtension == Self.spotExtension else { return try own.forEach(discard) }
+        guard others.isEmpty, folder.pathExtension == SpotFolder.fileExtension else { return try own.forEach(discard) }
         try discard(folder)
     }
 
@@ -220,8 +218,8 @@ public struct SpotFolder: Sendable {
     public func wrap() throws {
         let entries = try Self.sorted(in: url)
         var loose = entries.filter { !Self.isFolder($0) }
-        for entry in entries where entry.pathExtension != Self.spotExtension && Self.isFolder(entry) && ((try? Self.sorted(in: entry)) ?? []).contains(where: Self.isScript) {
-            let target = url.appendingPathComponent(entry.lastPathComponent + "." + Self.spotExtension, isDirectory: true)
+        for entry in entries where entry.pathExtension != SpotFolder.fileExtension && Self.isFolder(entry) && ((try? Self.sorted(in: entry)) ?? []).contains(where: Self.isScript) {
+            let target = url.appendingPathComponent(entry.lastPathComponent + "." + SpotFolder.fileExtension, isDirectory: true)
             if !FileManager.default.fileExists(atPath: target.path) { try FileManager.default.moveItem(at: entry, to: target) }
         }
         let scripts = loose.filter(Self.isScript)
@@ -232,7 +230,7 @@ public struct SpotFolder: Sendable {
                 let names = [view, (ViewLibrary.path(beside: view) as NSString).lastPathComponent]
                 group += loose.filter { names.contains($0.lastPathComponent) && !group.contains($0) }
             }
-            let target = url.appendingPathComponent(name + "." + Self.spotExtension, isDirectory: true)
+            let target = url.appendingPathComponent(name + "." + SpotFolder.fileExtension, isDirectory: true)
             try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
             for file in group {
                 loose.removeAll { $0 == file }
@@ -270,9 +268,9 @@ public struct SpotFolder: Sendable {
     /// and a read-only one comes with the app.
     private static func read(_ file: URL, id: String, into result: inout ScanResult, isDated: Bool = false, isReadOnly: Bool = false) {
         do {
-            guard let plugin = try SpotFile(file: file, id: id) else { return }
+            guard let loaded = try SpotFile(file: file, id: id) else { return }
             let added = isDated ? (try? file.resourceValues(forKeys: [.creationDateKey]).creationDate) : nil
-            let spots = plugin.spots.map { command in
+            let spots = loaded.spots.map { command in
                 let dated = added.map(command.added(at:)) ?? command
                 return isReadOnly ? dated.builtIn() : dated
             }
@@ -317,7 +315,7 @@ public struct SpotFolder: Sendable {
 
     /// The spot folders at the top of a folder.
     private static func spotFolders(in folder: URL) throws -> [URL] {
-        try sorted(in: folder).filter { $0.pathExtension == spotExtension && isFolder($0) }
+        try sorted(in: folder).filter { $0.pathExtension == SpotFolder.fileExtension && isFolder($0) }
     }
 
     /// The files at the top of these spot folders, by their IDs. A folder inside one, such as of shared code, is no spot.

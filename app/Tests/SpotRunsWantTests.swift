@@ -65,7 +65,7 @@ final class SpotRunsWantTests: SpotRunsCase {
         try script("once")
         try "#!/bin/sh\n# title=W\n# grid.square=once\n".writeScript(to: folder.appendingPathComponent("w.sh"))
 
-        let scan = try SpotFolder(url: folder).scan()
+        let scan = try SpotsFolder(url: folder).scan()
 
         XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "w", reason: "W names once, which has no on= line, so it never prints a value. Give once an event, such as on=clock.60.")])
     }
@@ -268,7 +268,7 @@ final class SpotRunsWantTests: SpotRunsCase {
         try script("a", header: "on=clock.30\noffers=search")
         try script("b", header: "on=panel.open\non=clock.30\noffers=search")
 
-        let scan = try SpotFolder(url: folder).scan()
+        let scan = try SpotsFolder(url: folder).scan()
 
         XCTAssertEqual(scan.refused, [])
         XCTAssertEqual(scan.spots.map(\.isGlobal), [true, true])

@@ -22,7 +22,7 @@ public struct AccountStore: Sendable {
         devState: String? = Bundle.main.object(forInfoDictionaryKey: "OpenspotDevState") as? String
     ) -> AccountStore {
         let isOwnState = [environment["OPENSPOT_CONFIG"], devState].contains { $0?.isEmpty == false }
-        let folder = SpotFolder.config(environment: environment, home: home, devState: devState)
+        let folder = SpotsFolder.config(environment: environment, home: home, devState: devState)
         return AccountStore(file: isOwnState ? folder.appendingPathComponent(fileName) : nil)
     }
 

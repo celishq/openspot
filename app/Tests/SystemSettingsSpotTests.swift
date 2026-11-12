@@ -1,8 +1,8 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the System Settings plugin with its real script, a folder of fake panes and a fake language list.
-final class SettingsPluginTests: SamplePluginsCase {
+/// Proves the System Settings spot with its real script, a folder of fake panes and a fake language list.
+final class SystemSettingsSpotTests: SampleSpotsCase {
     func testSystemSettingsJoinsTheMainSearch() throws {
         let settings = try XCTUnwrap(try scan.spots.first { $0.name == "System Settings" })
 

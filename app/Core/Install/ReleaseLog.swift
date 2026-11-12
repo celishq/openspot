@@ -39,7 +39,7 @@ public struct ReleaseLog: Equatable, Sendable {
 
     /// Whether the last release names exactly these files, with their bytes and modes. With `built` false, a program or a
     /// view library that the release names and the files lack still matches, since a publish builds it.
-    public func names(_ files: [SharedSpot.File], built: Bool = true) -> Bool {
+    public func names(_ files: [SpotFolder.File], built: Bool = true) -> Bool {
         guard let named = try? last?.files() else { return false }
         let given = Set(files.map { SpotRelease.File(path: $0.path, sha256: AccountKey.hex(Data(CryptoKit.SHA256.hash(data: $0.contents))), size: $0.contents.count, isExecutable: $0.isExecutable) })
         let paths = Set(given.map(\.path))
@@ -49,7 +49,7 @@ public struct ReleaseLog: Equatable, Sendable {
 
     /// This log with a release of these files after its last one: the next version of its address when this key signed the
     /// last one, and else version 1 of a new address, since a changed copy of another person's spot is a new spot.
-    public func signing(_ files: [SharedSpot.File], readme: String, by key: AccountKey, at date: Date = Date()) throws -> ReleaseLog {
+    public func signing(_ files: [SpotFolder.File], readme: String, by key: AccountKey, at date: Date = Date()) throws -> ReleaseLog {
         let isOwn = last?.publicKey == key.publicKey
         let address = isOwn ? last?.address : nil
         let version = isOwn ? (last?.version ?? 0) + 1 : 1

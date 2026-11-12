@@ -14,7 +14,7 @@ final class SpotTests: XCTestCase {
         XCTAssertEqual(try dataName(id: "home/coffee"), "home")
     }
 
-    func testADataKeyRefusesThePluginAndSaysThatAFolderSharesItsData() throws {
+    func testADataKeyRefusesTheSpotAndSaysThatAFolderSharesItsData() throws {
         XCTAssertThrowsError(try dataName(id: "links", header: [.init(key: "data", value: "notes")])) { error in
             XCTAssertTrue((error as? SpotError)?.reason.contains("OPENSPOT_DATA") == true, "\(error)")
         }
@@ -24,7 +24,7 @@ final class SpotTests: XCTestCase {
 
     override func setUpWithError() throws {
         folder = FileManager.default.temporaryDirectory
-            .appendingPathComponent("openspot-plugin-\(UUID().uuidString)")
+            .appendingPathComponent("openspot-spot-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
     }
 
@@ -54,8 +54,8 @@ final class SpotTests: XCTestCase {
 
     func testOnlyASpotWithAViewKeepsTheValuesOfItsViewBlock() throws {
         let output = SpotOutput(text: "view=cups\ntitle=3\npoint=1\npoint=2\n")
-        let plain = Spot(id: "cups", name: "Cups", url: URL(fileURLWithPath: "/plugins/cups.sh"), read: .panel)
-        let drawn = Spot(id: "cups", name: "Cups", url: URL(fileURLWithPath: "/plugins/cups.sh"), read: .panel, view: "/plugins/cups.swift")
+        let plain = Spot(id: "cups", name: "Cups", url: URL(fileURLWithPath: "/spots/cups.sh"), read: .panel)
+        let drawn = Spot(id: "cups", name: "Cups", url: URL(fileURLWithPath: "/spots/cups.sh"), read: .panel, view: "/spots/cups.swift")
 
         XCTAssertEqual(try plain.state(of: output).values, [:])
         XCTAssertEqual(try drawn.state(of: output).values, ["view": ["cups"], "title": ["3"], "point": ["1", "2"]])

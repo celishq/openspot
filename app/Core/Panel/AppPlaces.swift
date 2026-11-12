@@ -1,7 +1,7 @@
 import Foundation
 
-/// Where the app keeps its plugins, its config and the recent rows of each list. A test points it at a folder of its own.
-public struct SpotFiles {
+/// Where the app keeps its spots, its config and the recent rows of each list. A test points it at a folder of its own.
+public struct AppPlaces {
     public let environment: [String: String]
     public let home: URL
     public let defaults: UserDefaults
@@ -15,7 +15,7 @@ public struct SpotFiles {
         environment: [String: String],
         home: URL,
         defaults: UserDefaults,
-        trash: @escaping (URL) throws -> URL = SpotFiles.systemTrash,
+        trash: @escaping (URL) throws -> URL = AppPlaces.systemTrash,
         defaultConfig: URL? = Bundle.main.url(forResource: "defaults", withExtension: "toml")
     ) {
         self.environment = environment
@@ -32,8 +32,8 @@ public struct SpotFiles {
         return (place as URL?) ?? url
     }
 
-    public static var standard: SpotFiles {
-        SpotFiles(environment: ProcessInfo.processInfo.environment, home: FileManager.default.homeDirectoryForCurrentUser, defaults: .standard)
+    public static var standard: AppPlaces {
+        AppPlaces(environment: ProcessInfo.processInfo.environment, home: FileManager.default.homeDirectoryForCurrentUser, defaults: .standard)
     }
 
     public var config: ConfigFile {
@@ -46,13 +46,13 @@ public struct SpotFiles {
         return Config(text: text).arrangement
     }
 
-    /// The plugin folder, with the core spots that this config turns on.
-    public func folder(_ config: Config) -> SpotFolder {
+    /// The spots folder, with the core spots that this config turns on.
+    public func folder(_ config: Config) -> SpotsFolder {
         .standard(environment: environment, home: home, enabled: config.arrangement.enabled, disabled: config.arrangement.disabled)
     }
 
-    /// The plugin folder, with the core spots that the config file turns on now.
-    public var folder: SpotFolder {
+    /// The spots folder, with the core spots that the config file turns on now.
+    public var folder: SpotsFolder {
         folder(config.read())
     }
 
@@ -63,17 +63,17 @@ public struct SpotFiles {
 
     /// The folder of the packages that the person published to the store.
     public var store: URL {
-        SpotFolder.config(environment: environment, home: home).appendingPathComponent("store", isDirectory: true)
+        SpotsFolder.config(environment: environment, home: home).appendingPathComponent("store", isDirectory: true)
     }
 
     /// The record of the calls of each spot, beside the spots folder.
     public var log: CallLog {
-        CallLog(folder: SpotFolder.config(environment: environment, home: home).appendingPathComponent("logs", isDirectory: true))
+        CallLog(folder: SpotsFolder.config(environment: environment, home: home).appendingPathComponent("logs", isDirectory: true))
     }
 
     /// The folder of the stats of each day, beside the spots folder (protocol: Stats).
     public var stats: URL {
-        SpotFolder.config(environment: environment, home: home).appendingPathComponent("stats", isDirectory: true)
+        SpotsFolder.config(environment: environment, home: home).appendingPathComponent("stats", isDirectory: true)
     }
 
     /// The rows that a person picked last in a list, the newest first.

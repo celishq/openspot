@@ -21,7 +21,7 @@ final class SettingsSpotTests: BuiltInCase {
 
     func testItIsASmallListThatTheSearchFindsAndTheSettingsKeyOpens() throws {
         let spot = try settings
-        let defaults = Config(text: try String(contentsOf: repoPlugins.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8))
+        let defaults = Config(text: try String(contentsOf: repoSpots.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8))
 
         XCTAssertEqual(spot.name, "Settings")
         XCTAssertEqual(spot.subtitle, "Choose your key")

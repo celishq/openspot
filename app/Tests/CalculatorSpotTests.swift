@@ -1,9 +1,9 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Calculator plugin with its real script and a fake `openspot calc solve` that prints a file, and its time from
+/// Proves the Calculator spot with its real script and a fake `openspot calc solve` that prints a file, and its time from
 /// a key to its rows with the real API.
-final class CalculatorPluginTests: SamplePluginsCase {
+final class CalculatorSpotTests: SampleSpotsCase {
     /// A host of the API that reaches nothing on the Mac.
     private final class Host: Mac {
         func eventStore() -> any EventStore { FakeEventStore() }
@@ -111,15 +111,15 @@ final class CalculatorPluginTests: SamplePluginsCase {
     @MainActor
     func testAKeyShowsTheRowOfASumWithin4Milliseconds() async throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-calc-\(UUID().uuidString)")
-        let plugins = folder.appendingPathComponent("plugins", isDirectory: true)
-        try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
+        let spots = folder.appendingPathComponent("spots", isDirectory: true)
+        try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
-        try FileManager.default.copyItem(at: try calculator.url, to: plugins.appendingPathComponent(try calculator.url.lastPathComponent))
+        try FileManager.default.copyItem(at: try calculator.url, to: spots.appendingPathComponent(try calculator.url.lastPathComponent))
         let suite = "openspot-calc-\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let host = TestHost()
-        let files = SpotFiles(environment: ["OPENSPOT_SPOTS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path], home: folder, defaults: defaults)
+        let files = AppPlaces(environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path], home: folder, defaults: defaults)
         let model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
         defer { model.quit() }
         host.model = model

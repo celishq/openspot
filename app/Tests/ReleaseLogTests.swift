@@ -16,20 +16,20 @@ final class ReleaseLogTests: XCTestCase {
     private let mine = try! AccountKey(words: "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about".split(separator: " ").map(String.init))
     private let theirs = try! AccountKey.make()
 
-    private func spot(_ script: String = "#!/bin/sh\n# title=Cups\n", extra: [SharedSpot.File] = []) throws -> SharedSpot {
-        try SharedSpot(files: [
-            SharedSpot.File(path: "cups.spot/cups.sh", isExecutable: true, contents: Data(script.utf8)),
-            SharedSpot.File(path: "cups.spot/readme.md", isExecutable: false, contents: Data("Counts cups.\n".utf8))
+    private func spot(_ script: String = "#!/bin/sh\n# title=Cups\n", extra: [SpotFolder.File] = []) throws -> SpotFolder {
+        try SpotFolder(files: [
+            SpotFolder.File(path: "cups.spot/cups.sh", isExecutable: true, contents: Data(script.utf8)),
+            SpotFolder.File(path: "cups.spot/readme.md", isExecutable: false, contents: Data("Counts cups.\n".utf8))
         ] + extra)
     }
 
-    private func log(of spot: SharedSpot) throws -> ReleaseLog {
+    private func log(of spot: SpotFolder) throws -> ReleaseLog {
         try XCTUnwrap(try spot.releaseLog(in: "cups.spot"))
     }
 
     /// The spot with one of its files replaced, as an edit after a signature leaves it.
-    private func editing(_ spot: SharedSpot, _ path: String, to text: String) throws -> SharedSpot {
-        try SharedSpot(files: spot.files.map { $0.path == path ? SharedSpot.File(path: path, isExecutable: $0.isExecutable, contents: Data(text.utf8)) : $0 })
+    private func editing(_ spot: SpotFolder, _ path: String, to text: String) throws -> SpotFolder {
+        try SpotFolder(files: spot.files.map { $0.path == path ? SpotFolder.File(path: path, isExecutable: $0.isExecutable, contents: Data(text.utf8)) : $0 })
     }
 
     func testAFirstSignatureMakesVersionOneOfANewAddressThatNamesEveryFileButTheLog() throws {
@@ -76,8 +76,8 @@ final class ReleaseLogTests: XCTestCase {
     func testALogThatDoesNotMatchItsFilesIsRefused() throws {
         let signed = try spot().signed(by: mine)
         let changed = try editing(signed, "cups.spot/cups.sh", to: "#!/bin/sh\nrm -rf ~\n")
-        let missing = try SharedSpot(files: signed.files.filter { $0.path != "cups.spot/readme.md" })
-        let added = try SharedSpot(files: signed.files + [SharedSpot.File(path: "cups.spot/more.sh", isExecutable: true, contents: Data("x".utf8))])
+        let missing = try SpotFolder(files: signed.files.filter { $0.path != "cups.spot/readme.md" })
+        let added = try SpotFolder(files: signed.files + [SpotFolder.File(path: "cups.spot/more.sh", isExecutable: true, contents: Data("x".utf8))])
 
         for spot in [changed, missing, added] {
             XCTAssertThrowsError(try spot.releaseLog(in: "cups.spot")) { error in
@@ -100,7 +100,7 @@ final class ReleaseLogTests: XCTestCase {
     }
 
     func testAProgramThatAPublishBuiltCanBeMissingFromTheFolderOnTheDisk() throws {
-        let program = SharedSpot.File(path: "cups.spot/cups.program", isExecutable: true, contents: Data([0xCF, 0xFA]))
+        let program = SpotFolder.File(path: "cups.spot/cups.program", isExecutable: true, contents: Data([0xCF, 0xFA]))
         let log = try log(of: spot(extra: [program]).signed(by: mine))
 
         XCTAssertTrue(log.names(try spot().files, built: false))

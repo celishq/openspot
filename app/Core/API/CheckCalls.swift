@@ -21,7 +21,7 @@ struct CheckCalls {
     func folder(_ path: String?, json: Bool, careful: Set<SpotUse>?) -> CommandAPI.Work {
         { [environment, tokens] in
             let place = URL(fileURLWithPath: environment["PWD"] ?? FileManager.default.currentDirectoryPath, isDirectory: true)
-            let folder = path.map { SpotFolder(url: URL(fileURLWithPath: $0, isDirectory: true, relativeTo: place).absoluteURL) } ?? .standard(environment: environment)
+            let folder = path.map { SpotsFolder(url: URL(fileURLWithPath: $0, isDirectory: true, relativeTo: place).absoluteURL) } ?? .standard(environment: environment)
             let findings = await SpotCheck(folder: folder, careful: careful, tokens: tokens).findings()
             guard !json else { return CommandAnswer(output: SpotCheck.json(findings), code: findings.isEmpty ? 0 : 1) }
             let summary = findings.isEmpty ? "No faults in \(folder.url.path)." : "\(findings.count) faults in \(folder.url.path)."

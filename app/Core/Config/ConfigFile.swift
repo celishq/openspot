@@ -9,7 +9,7 @@ public struct ConfigFile: Equatable, Sendable {
         environment: [String: String] = ProcessInfo.processInfo.environment,
         home: URL = FileManager.default.homeDirectoryForCurrentUser
     ) -> ConfigFile {
-        ConfigFile(url: SpotFolder.config(environment: environment, home: home).appendingPathComponent("config.toml"))
+        ConfigFile(url: SpotsFolder.config(environment: environment, home: home).appendingPathComponent("config.toml"))
     }
 
     /// What the file asks for. With no file, that is each default.

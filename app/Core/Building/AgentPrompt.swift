@@ -41,7 +41,7 @@ public struct AgentPrompt: Equatable, Sendable {
         Fix the Openspot spot in \(file.path). Openspot does not load it, and says:
         \(faults.joined(separator: "\n"))
 
-        \(steps(for: SpotFolder.id(of: file)))
+        \(steps(for: SpotsFolder.id(of: file)))
         """
     }
 
@@ -51,7 +51,7 @@ public struct AgentPrompt: Equatable, Sendable {
         return """
         Change the Openspot spot in \(file.path). Ask me what to change before you change it.
         \(failed)
-        \(steps(for: SpotFolder.id(of: file)))
+        \(steps(for: SpotsFolder.id(of: file)))
         """
     }
 
@@ -72,7 +72,7 @@ public struct AgentPrompt: Equatable, Sendable {
         1. Write \(readme) in its folder: what the spot does and how to use it, in two or three short paragraphs, then what it runs on my computer, which files it reads or writes, and whether it uses the network.
         2. Give its header a detail= line of one short sentence, if it has none.
         3. Add preview=sample to its header, and make its read print fake rows, with no data of mine, while OPENSPOT_REASON is spot.preview.
-        \(steps(for: SpotFolder.id(of: file)))
+        \(steps(for: SpotsFolder.id(of: file)))
         """
     }
 

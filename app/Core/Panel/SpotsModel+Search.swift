@@ -70,7 +70,7 @@ extension SpotsModel {
         set {
             if form?.draft.choices != nil {
                 form?.draft.search(newValue)
-            } else if let file = SharedSpot.file(in: newValue) {
+            } else if let file = SpotFolder.file(in: newValue) {
                 query = ""
                 openSheet?.search("")
                 DispatchQueue.main.async { self.review([file]) }

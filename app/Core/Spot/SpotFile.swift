@@ -1,6 +1,6 @@
 import Foundation
 
-/// What one file in the plugin folder gives: a spot of an executable, or of a JavaScript file with a header that runs inline
+/// What one file in the spots folder gives: a spot of an executable, or of a JavaScript file with a header that runs inline
 /// when it is not executable.
 public struct SpotFile: Equatable, Sendable {
     private static let widgetExtension = "toml"

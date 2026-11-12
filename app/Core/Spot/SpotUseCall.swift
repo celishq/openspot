@@ -12,7 +12,7 @@ public struct SpotUseCall: Equatable, Sendable {
     public let words: String
 
     /// The use that a call of this spot with these words needs, or nil for a call that needs none, such as a setting of its
-    /// own plugin.
+    /// own spot folder.
     public init?(arguments: [String], of spot: String) {
         let arguments = ReservedSetting.words(of: arguments, spot: spot)
         guard arguments.count >= 2, let (use, words) = Self.use(arguments, spot: spot) else { return nil }

@@ -14,7 +14,7 @@ final class SpotVerbTests: XCTestCase {
 
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-verb-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: trash, withIntermediateDirectories: true)
         let tools = folder.appendingPathComponent("tools")
         try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
@@ -27,8 +27,8 @@ final class SpotVerbTests: XCTestCase {
         host = TestHost()
         host.app = "/Apps/Openspot.app/Contents/MacOS/Openspot"
         let trash = trash!
-        let files = SpotFiles(
-            environment: ["OPENSPOT_SPOTS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
+        let files = AppPlaces(
+            environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
             home: folder,
             defaults: defaults,
             trash: { url in
@@ -48,8 +48,8 @@ final class SpotVerbTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private var plugins: URL {
-        folder.appendingPathComponent("plugins", isDirectory: true)
+    private var spots: URL {
+        folder.appendingPathComponent("spots", isDirectory: true)
     }
 
     private var trash: URL! {
@@ -58,7 +58,7 @@ final class SpotVerbTests: XCTestCase {
 
     private func script(_ name: String, header: String = "", _ body: String = "echo") throws {
         let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: plugins.spotFile(name))
+        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: spots.spotFile(name))
     }
 
     private func wait(_ what: String, until condition: () -> Bool) async throws {
@@ -201,7 +201,7 @@ final class SpotVerbTests: XCTestCase {
         try script("weather")
         _ = try select("weather")
         XCTAssertTrue(model.handleKey(ActionKey(name: "e", isCommand: true)))
-        try await wait("the editor") { saved("opened")?.hasPrefix("-t /") == true && saved("opened")?.hasSuffix("/plugins/weather.spot/weather.sh\n") == true }
+        try await wait("the editor") { saved("opened")?.hasPrefix("-t /") == true && saved("opened")?.hasSuffix("/spots/weather.spot/weather.sh\n") == true }
     }
 
     func testCopyPromptForAICopiesTheFileAndTheLastFailure() async throws {
@@ -214,7 +214,7 @@ final class SpotVerbTests: XCTestCase {
         try await wait("the toast") { host.confirms.last == AgentPrompt.copied }
 
         let prompt = try XCTUnwrap(saved("clipboard"))
-        XCTAssertTrue(prompt.contains(plugins.spotFile("ping").path))
+        XCTAssertTrue(prompt.contains(spots.spotFile("ping").path))
         XCTAssertTrue(prompt.contains("Ask me what to change"))
         XCTAssertTrue(prompt.contains("Openspot cannot reach the server."))
     }
@@ -233,7 +233,7 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertTrue(model.handleKey(ActionKey(name: "z", isCommand: true)))
 
         XCTAssertEqual(model.selectedEntry?.id, "weather")
-        XCTAssertTrue(FileManager.default.fileExists(atPath: plugins.spotFile("weather").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: spots.spotFile("weather").path))
         XCTAssertFalse(model.handleKey(ActionKey(name: "z", isCommand: true)))
     }
 

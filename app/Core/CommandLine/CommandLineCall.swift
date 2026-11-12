@@ -39,7 +39,7 @@ public enum CommandLineCall: Equatable, Sendable {
     /// Draws the sheet of an installed spot, or its card at a size.
     case renderSpot(id: String, size: SpotSize?, path: String)
     case checkSheet
-    /// Draws the sheet on stdin, with the plugin's view from a Swift file when it names one.
+    /// Draws the sheet on stdin, with the spot's view from a Swift file when it names one.
     case render(String, view: String?)
     /// Draws the card of the output on stdin at a size, from its drawing for that size.
     case renderCard(SpotSize, String)

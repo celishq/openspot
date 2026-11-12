@@ -1,8 +1,8 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Links plugin with its real script and fake tools.
-final class LinksPluginTests: SamplePluginsCase {
+/// Proves the Links spot with its real script and fake tools.
+final class LinksSpotTests: SampleSpotsCase {
     func testLinksAndAppsJoinTheMainSearch() throws {
         let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
         let apps = try XCTUnwrap(try scan.spots.first { $0.name == "Apps" })
@@ -12,7 +12,7 @@ final class LinksPluginTests: SamplePluginsCase {
     }
 
     func testAFixableFailureLinksItsFix() throws {
-        let plugins = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
+        let spots = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-fix-\(UUID().uuidString)")
         let tools = folder.appendingPathComponent("tools")
         try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
@@ -27,7 +27,7 @@ final class LinksPluginTests: SamplePluginsCase {
             let process = Process()
             let out = Pipe()
             let errors = Pipe()
-            process.executableURL = plugins.appendingPathComponent(script.inSpotFolder)
+            process.executableURL = spots.appendingPathComponent(script.inSpotFolder)
             process.arguments = arguments
             process.environment = ["PATH": "\(tools.path):/usr/bin:/bin", "HOME": folder.path, "OPENSPOT_DATA": folder.path]
             process.standardOutput = out

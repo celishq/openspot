@@ -1,6 +1,6 @@
 import Foundation
 
-/// One executable of a plugin, with the look its spot takes. A widget runs nothing, and places scripts in a layout.
+/// One script of a spot, with the look its spot takes. A widget runs nothing, and places scripts in a layout.
 public struct Spot: Equatable, Sendable {
     private static let folderWord = "folder"
     private static let anyWord = "*"

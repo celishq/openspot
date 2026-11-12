@@ -3,7 +3,7 @@ import Foundation
 /// A spot as a person sends it: the files of its spot folders, and of each spot folder that it needs, by their paths in
 /// the spots folder. It travels as a zip of those folders. Each value of this type passed its checks, so it holds no path
 /// that leaves a spot folder and no text that hides its order.
-public struct SharedSpot: Equatable, Sendable {
+public struct SpotFolder: Equatable, Sendable {
     public struct File: Equatable, Sendable {
         public let path: String
         public let isExecutable: Bool
@@ -22,7 +22,8 @@ public struct SharedSpot: Equatable, Sendable {
         }
     }
 
-    public static let fileExtension = SpotFolder.spotExtension
+    /// The extension of a spot folder.
+    public static let fileExtension = "spot"
     static let sizeLimit = 64_000_000
     private static let hiddenOrder: ClosedRange<UInt32> = 0x202A...0x202E
     private static let hiddenIsolate: ClosedRange<UInt32> = 0x2066...0x2069
@@ -104,7 +105,7 @@ public struct SharedSpot: Equatable, Sendable {
 
     /// This spot with the program of each Swift script and the library of each view that has none, so that a Mac with no
     /// Swift tools can run it (protocol: Views).
-    public func compiled(by program: SwiftProgram = SwiftProgram(), views: ViewLibrary = .standard()) async throws -> SharedSpot {
+    public func compiled(by program: SwiftProgram = SwiftProgram(), views: ViewLibrary = .standard()) async throws -> SpotFolder {
         var all = files
         for (file, path) in uncompiled {
             all.append(File(path: path, isExecutable: true, contents: try await program.build(source: file.contents)))
@@ -113,7 +114,7 @@ public struct SharedSpot: Equatable, Sendable {
             let name = URL(fileURLWithPath: file.path).lastPathComponent
             all.append(File(path: path, isExecutable: false, contents: try await views.build(source: file.contents, named: name, kinds: SwiftProgram.kinds)))
         }
-        return try SharedSpot(files: all)
+        return try SpotFolder(files: all)
     }
 
     private var uncompiled: [(file: File, path: String)] {
@@ -163,7 +164,7 @@ public struct SharedSpot: Equatable, Sendable {
 
     /// This spot with a release of its own spot folder signed by the key, after the releases of its log. It is the same
     /// spot when its last release names its files already, as for a forward, which keeps the first author's signature.
-    public func signed(by key: AccountKey, at date: Date = Date()) throws -> SharedSpot {
+    public func signed(by key: AccountKey, at date: Date = Date()) throws -> SpotFolder {
         guard let root = roots.first else { return self }
         let path = "\(root)/\(ReleaseLog.fileName)"
         let current = try files.first { $0.path == path }.map { try ReleaseLog(text: $0.text ?? "") } ?? ReleaseLog(releases: [])
@@ -171,7 +172,7 @@ public struct SharedSpot: Equatable, Sendable {
         guard !current.names(released) else { return self }
         let readme = files.first { $0.path == "\(root)/\(SpotListing.readmeName)" }?.text ?? ""
         let log = try current.signing(released, readme: readme, by: key, at: date)
-        return try SharedSpot(files: files.filter { $0.path != path } + [File(path: path, isExecutable: false, contents: Data(log.text.utf8))])
+        return try SpotFolder(files: files.filter { $0.path != path } + [File(path: path, isExecutable: false, contents: Data(log.text.utf8))])
     }
 
     /// Writes the release log of its own spot folder into that folder in the spots folder, so that the next release
@@ -303,8 +304,8 @@ public struct SharedSpot: Equatable, Sendable {
         var waiting = [spot.id]
         while !waiting.isEmpty {
             let id = waiting.removeFirst()
-            guard let plugin = scan.files.first(where: { $0.spots.contains { $0.id == id } }),
-                  let first = plugin.spots.first, first.host == nil, !first.isBuiltIn
+            guard let file = scan.files.first(where: { $0.spots.contains { $0.id == id } }),
+                  let first = file.spots.first, first.host == nil, !first.isBuiltIn
             else { continue }
             let folder = first.url.deletingLastPathComponent()
             guard !roots.contains(where: { $0.url == folder }) else { continue }

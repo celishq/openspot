@@ -15,16 +15,16 @@ final class SheetSandboxTests: XCTestCase {
         XCTAssertEqual(modes, [.stay, .stay, .once, .once])
     }
 
-    func testANamedFileRunsInPlaceWithTheIDOfItsPluginsFolder() {
-        let plugins = URL(fileURLWithPath: "/p/plugins")
+    func testANamedFileRunsInPlaceWithTheIDOfItsSpotsFolder() {
+        let spots = URL(fileURLWithPath: "/p/spots")
         let scratch = URL(fileURLWithPath: "/t/playground")
         let place = { (file: String?, text: String) in
-            SheetSandbox.place(of: file.map { URL(fileURLWithPath: $0) }, text: text, plugins: plugins, scratch: scratch)
+            SheetSandbox.place(of: file.map { URL(fileURLWithPath: $0) }, text: text, spots: spots, scratch: scratch)
         }
 
-        XCTAssertEqual(place("/p/plugins/home.spot/cups.sh", "").url.path, "/p/plugins/home.spot/cups.sh")
-        XCTAssertEqual(place("/p/plugins/home.spot/cups.sh", "").id, "home/cups")
-        XCTAssertEqual(place("/p/plugins/cups.spot/cups.js", "").id, "cups")
+        XCTAssertEqual(place("/p/spots/home.spot/cups.sh", "").url.path, "/p/spots/home.spot/cups.sh")
+        XCTAssertEqual(place("/p/spots/home.spot/cups.sh", "").id, "home/cups")
+        XCTAssertEqual(place("/p/spots/cups.spot/cups.js", "").id, "cups")
         XCTAssertEqual(place("/elsewhere/tools/cups.sh", "").id, "cups")
         XCTAssertEqual(place(nil, "// title=A\n").url.path, "/t/playground/playground.js")
         XCTAssertEqual(place(nil, "#!/bin/sh\n").id, "playground")

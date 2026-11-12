@@ -21,7 +21,7 @@ final class KeyListTests: XCTestCase {
     }
 
     private func scan() throws -> ScanResult {
-        var scan = try SpotFolder(url: folder).scan()
+        var scan = try SpotsFolder(url: folder).scan()
         scan.listKeys(in: file)
         return scan
     }

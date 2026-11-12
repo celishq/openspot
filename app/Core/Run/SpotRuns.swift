@@ -105,7 +105,7 @@ public final class SpotRuns {
 
     nonisolated deinit {}
 
-    /// Takes a new look at the plugin folder, with the spots that the person put in the menu bar. Each script keeps its sheet,
+    /// Takes a new look at the spots folder, with the spots that the person put in the menu bar. Each script keeps its sheet,
     /// and a sheet whose script is gone stops its reads. A staying script that something wants starts. At most once a day, it
     /// prunes the builds of Swift scripts.
     public func take(_ scan: ScanResult, menuBar: Set<String> = []) {

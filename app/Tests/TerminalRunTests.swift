@@ -18,7 +18,7 @@ final class TerminalRunTests: XCTestCase {
     private func spot(_ name: String, header: String = "", _ body: String) throws -> Spot {
         let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
         try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: folder.spotFile(name))
-        return try XCTUnwrap(SpotFolder(url: folder).scan().scripts.first { $0.id == name })
+        return try XCTUnwrap(SpotsFolder(url: folder).scan().scripts.first { $0.id == name })
     }
 
     func testARunGivesTheArgumentsTheInputAndTheIDAndReturnsEachFrameAndTheExit() async throws {

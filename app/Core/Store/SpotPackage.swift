@@ -12,12 +12,12 @@ public struct SpotPackage: Equatable, Sendable {
     /// The place of the package of a spot with this ID in a store folder: the spot folder of its first name.
     public static func url(for id: String, in store: URL) -> URL {
         let name = id.split(separator: "/").first.map(String.init) ?? id
-        return store.appendingPathComponent(name + "." + SharedSpot.fileExtension, isDirectory: true)
+        return store.appendingPathComponent(name + "." + SpotFolder.fileExtension, isDirectory: true)
     }
 
     /// The hash of the paths, the modes and the bytes of the files of one spot folder that a person writes, which says
     /// whether they changed. Programs and view libraries, which a publish builds, and the release log are not in it.
-    public static func hash(of spot: SharedSpot, in root: String) -> String {
+    public static func hash(of spot: SpotFolder, in root: String) -> String {
         var hasher = SHA256()
         let written = spot.released(in: root).filter { !SwiftProgram.isProgram(URL(fileURLWithPath: $0.path)) && !ViewLibrary.isLibrary($0.path) }
         for file in written.sorted(by: { $0.path < $1.path }) {
@@ -28,7 +28,7 @@ public struct SpotPackage: Equatable, Sendable {
     }
 
     /// Writes each spot folder of a spot into the store folder, in place of the one there.
-    public static func write(_ spot: SharedSpot, to store: URL) throws {
+    public static func write(_ spot: SpotFolder, to store: URL) throws {
         let manager = FileManager.default
         let draft = store.appendingPathComponent(".draft-\(UUID().uuidString)", isDirectory: true)
         defer { try? manager.removeItem(at: draft) }
@@ -46,7 +46,7 @@ public struct SpotPackage: Equatable, Sendable {
     }
 
     /// The spot's files, with the checks of every shared spot.
-    public func spot() throws -> SharedSpot {
-        try SharedSpot(contentsOf: url)
+    public func spot() throws -> SpotFolder {
+        try SpotFolder(contentsOf: url)
     }
 }

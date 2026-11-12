@@ -13,8 +13,8 @@ final class ReviewSpotTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func spot(_ files: [(path: String, text: String, isExecutable: Bool)]) throws -> SharedSpot {
-        try SharedSpot(files: files.map { SharedSpot.File(path: $0.path, isExecutable: $0.isExecutable, contents: Data($0.text.utf8)) })
+    private func spot(_ files: [(path: String, text: String, isExecutable: Bool)]) throws -> SpotFolder {
+        try SpotFolder(files: files.map { SpotFolder.File(path: $0.path, isExecutable: $0.isExecutable, contents: Data($0.text.utf8)) })
     }
 
     private func review(_ header: String, path: String = "weather.spot/weather.sh", body: String = "") throws -> ReviewSpot {
@@ -47,11 +47,11 @@ final class ReviewSpotTests: XCTestCase {
 
     func testTheReviewOfTheInlineCalculatorShowsItsText() throws {
         let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        let place = SpotFolder(url: folder, core: repo.appendingPathComponent("spots"), enabled: ["calculator"])
+        let place = SpotsFolder(url: folder, core: repo.appendingPathComponent("spots"), enabled: ["calculator"])
         let scan = try place.scan()
-        let calculator = try XCTUnwrap(scan.spots.first { SpotFolder.coreID(of: $0) == "calculator" })
+        let calculator = try XCTUnwrap(scan.spots.first { SpotsFolder.coreID(of: $0) == "calculator" })
 
-        let text = try shown(ReviewSpot(spot: SharedSpot(sharing: calculator, from: scan), folder: folder, canAdd: false))
+        let text = try shown(ReviewSpot(spot: SpotFolder(sharing: calculator, from: scan), folder: folder, canAdd: false))
 
         XCTAssertTrue(text.contains("calculator.js\n// title=Calculator"), text)
         XCTAssertTrue(text.contains("function main("), text)
@@ -68,20 +68,20 @@ final class ReviewSpotTests: XCTestCase {
 
     func testAFileThatIsNotTextIsNamedWithItsSize() throws {
         let files = [
-            SharedSpot.File(path: "home.spot/a.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8)),
-            SharedSpot.File(path: "home.spot/icon.png", isExecutable: false, contents: Data([0xFF, 0x00, 0xFE]))
+            SpotFolder.File(path: "home.spot/a.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8)),
+            SpotFolder.File(path: "home.spot/icon.png", isExecutable: false, contents: Data([0xFF, 0x00, 0xFE]))
         ]
 
-        let text = try shown(ReviewSpot(spot: SharedSpot(files: files), folder: folder))
+        let text = try shown(ReviewSpot(spot: SpotFolder(files: files), folder: folder))
 
         XCTAssertTrue(text.contains("home.spot/icon.png\nNot text, so Openspot cannot show it. 3 bytes."), text)
         XCTAssertFalse(text.contains("Program"), text)
     }
 
     func testAProgramSaysThatItCannotBeShown() throws {
-        let files = [SharedSpot.File(path: "tool.spot/tool", isExecutable: true, contents: Data([0xCF, 0xFA, 0xED, 0xFE, 0x00]))]
+        let files = [SpotFolder.File(path: "tool.spot/tool", isExecutable: true, contents: Data([0xCF, 0xFA, 0xED, 0xFE, 0x00]))]
 
-        let review = try ReviewSpot(spot: SharedSpot(files: files), folder: folder)
+        let review = try ReviewSpot(spot: SpotFolder(files: files), folder: folder)
 
         XCTAssertEqual(review.subtitle, "Holds a program that you cannot read")
         let text = try shown(review)
@@ -91,11 +91,11 @@ final class ReviewSpotTests: XCTestCase {
     func testVeryLongTextIsNamedAndNotDrawn() throws {
         let long = String(repeating: "x", count: ReviewSpot.textLimit + 1)
         let files = [
-            SharedSpot.File(path: "a.spot/a.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8)),
-            SharedSpot.File(path: "a.spot/notes.txt", isExecutable: false, contents: Data(long.utf8))
+            SpotFolder.File(path: "a.spot/a.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8)),
+            SpotFolder.File(path: "a.spot/notes.txt", isExecutable: false, contents: Data(long.utf8))
         ]
 
-        let text = try shown(ReviewSpot(spot: SharedSpot(files: files), folder: folder))
+        let text = try shown(ReviewSpot(spot: SpotFolder(files: files), folder: folder))
 
         XCTAssertFalse(text.contains(long.prefix(100)))
         XCTAssertTrue(text.contains("notes.txt\nToo long to show. \(ReviewSpot.textLimit + 1) bytes."), text)
@@ -121,15 +121,15 @@ final class ReviewSpotTests: XCTestCase {
 
     func testAProgramWarningComesBeforeTheDescription() throws {
         let long = "#!/bin/sh\n# detail=Nice\n" + String(repeating: "x", count: ReviewSpot.textLimit)
-        let files = [SharedSpot.File(path: "tool.spot/tool", isExecutable: true, contents: Data(long.utf8))]
+        let files = [SpotFolder.File(path: "tool.spot/tool", isExecutable: true, contents: Data(long.utf8))]
 
-        XCTAssertEqual(try ReviewSpot(spot: SharedSpot(files: files), folder: folder).subtitle, "Holds a program that you cannot read")
+        XCTAssertEqual(try ReviewSpot(spot: SpotFolder(files: files), folder: folder).subtitle, "Holds a program that you cannot read")
     }
 
     func testADragOfASpotSaysWhatADropInstalls() throws {
         let file = folder.appendingPathComponent("any name.spot")
         try spot([("weather.spot/weather.sh", "#!/bin/sh\n# title=Weather\n# icon=sun.max\n# detail=Today\n", true)]).zip(to: file)
-        let target = folder.appendingPathComponent("plugins")
+        let target = folder.appendingPathComponent("spots")
 
         let drop = SpotDrop(paths: [file.path], folder: target)
 
@@ -317,12 +317,12 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertThrowsError(try review(""))
     }
 
-    /// A review of a `.spot` file with one script, which adds to the folder `plugins` and records in a lock beside it.
+    /// A review of a `.spot` file with one script, which adds to the folder `spots` and records in a lock beside it.
     private func filed(_ header: String, body: String = "") throws -> ReviewSpot {
         let text = "#!/bin/sh\n\(header.split(separator: "\n").map { "# \($0)\n" }.joined())\(body)"
         let file = folder.appendingPathComponent("Weather.spot")
         try spot([("weather.spot/weather.sh", text, true)]).zip(to: file)
-        return try ReviewSpot(file: file, folder: folder.appendingPathComponent("plugins"), lock: SpotLock(url: folder.appendingPathComponent("spots.lock")))
+        return try ReviewSpot(file: file, folder: folder.appendingPathComponent("spots"), lock: SpotLock(url: folder.appendingPathComponent("spots.lock")))
     }
 
     func testNoScriptRunsForAReviewOrForAdd() async throws {
@@ -339,7 +339,7 @@ final class ReviewSpotTests: XCTestCase {
         let answer = try await filed("title=Weather\nicon=sun.max").add()
 
         XCTAssertEqual(SpotOutput(text: answer).summary?.value("toast"), "Weather added")
-        let scan = try SpotFolder(url: folder.appendingPathComponent("plugins")).scan()
+        let scan = try SpotsFolder(url: folder.appendingPathComponent("spots")).scan()
         XCTAssertEqual(scan.spots.map(\.name), ["Weather"])
         XCTAssertEqual(scan.refused, [])
     }
@@ -347,15 +347,15 @@ final class ReviewSpotTests: XCTestCase {
     func testAddKeepsTheSpotInTheLockAsSpotAddDoes() async throws {
         let file = folder.appendingPathComponent("Weather.spot")
         try spot([("weather.spot/weather.sh", "#!/bin/sh\n# title=Weather\n", true)]).zip(to: file)
-        let plugins = folder.appendingPathComponent("plugins")
+        let spots = folder.appendingPathComponent("spots")
         let lock = SpotLock(url: folder.appendingPathComponent("spots.lock"))
-        let review = try ReviewSpot(file: file, folder: plugins, lock: lock)
+        let review = try ReviewSpot(file: file, folder: spots, lock: lock)
 
         _ = try await review.add()
 
         XCTAssertEqual(try lock.entries().map(\.source), [file.path])
         XCTAssertEqual(try lock.entries().map(\.paths), [["weather.spot/weather.sh"]])
-        XCTAssertEqual(try SpotFolder(url: plugins).scan().spots.map(\.name), ["Weather"])
+        XCTAssertEqual(try SpotsFolder(url: spots).scan().spots.map(\.name), ["Weather"])
     }
 
     func testTheAppOffersTheReviewAsASheetThatGrowsOutOfTheField() async throws {
@@ -375,18 +375,18 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertThrowsError(try review("").answer(["other"]))
     }
 
-    private func weather(_ title: String) throws -> SharedSpot {
+    private func weather(_ title: String) throws -> SpotFolder {
         try spot([("weather.spot/weather.sh", "#!/bin/sh\n# title=\(title)\n", true)])
     }
 
-    private func installed(_ spot: SharedSpot) throws -> URL {
-        let plugins = folder.appendingPathComponent("plugins")
-        try spot.add(to: plugins)
-        return plugins
+    private func installed(_ spot: SpotFolder) throws -> URL {
+        let spots = folder.appendingPathComponent("spots")
+        try spot.add(to: spots)
+        return spots
     }
 
     func testANewInstallSaysNothingOfItsSigner() throws {
-        let review = try ReviewSpot(spot: weather("Weather").signed(by: AccountKey.make()), folder: folder.appendingPathComponent("plugins"))
+        let review = try ReviewSpot(spot: weather("Weather").signed(by: AccountKey.make()), folder: folder.appendingPathComponent("spots"))
 
         let text = try shown(review)
         XCTAssertTrue(text.hasPrefix("Weather\n\n"), text)
@@ -396,10 +396,10 @@ final class ReviewSpotTests: XCTestCase {
     func testAnUpdateFromTheSameKeySaysItsVersion() throws {
         let key = try AccountKey.make()
         let first = try weather("Weather").signed(by: key)
-        let plugins = try installed(first)
-        let second = try SharedSpot(files: weather("Weather 2").files + first.files.filter { $0.path.hasSuffix("releases.jsonl") }).signed(by: key)
+        let spots = try installed(first)
+        let second = try SpotFolder(files: weather("Weather 2").files + first.files.filter { $0.path.hasSuffix("releases.jsonl") }).signed(by: key)
 
-        let review = try ReviewSpot(spot: second, folder: plugins)
+        let review = try ReviewSpot(spot: second, folder: spots)
 
         let text = try shown(review)
         XCTAssertTrue(text.hasPrefix("Weather 2\nUpdate to version 2\n\n"), text)
@@ -407,10 +407,10 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testAVersionThatAnotherKeySignedOrNoneSaysSoFirst() throws {
-        let plugins = try installed(weather("Weather").signed(by: AccountKey.make()))
+        let spots = try installed(weather("Weather").signed(by: AccountKey.make()))
 
         for other in [try weather("Weather 2").signed(by: AccountKey.make()), try weather("Weather 2")] {
-            let review = try ReviewSpot(spot: other, folder: plugins)
+            let review = try ReviewSpot(spot: other, folder: spots)
 
             XCTAssertEqual(review.subtitle, ReviewSpot.otherKey)
             let text = try shown(review)
@@ -420,7 +420,7 @@ final class ReviewSpotTests: XCTestCase {
 
     func testAFileChangedAfterItsSignatureIsRefused() throws {
         let signed = try weather("Weather").signed(by: AccountKey.make())
-        let changed = try SharedSpot(files: signed.files.map { $0.path.hasSuffix(".sh") ? SharedSpot.File(path: $0.path, isExecutable: true, contents: Data("#!/bin/sh\nrm -rf ~\n".utf8)) : $0 })
+        let changed = try SpotFolder(files: signed.files.map { $0.path.hasSuffix(".sh") ? SpotFolder.File(path: $0.path, isExecutable: true, contents: Data("#!/bin/sh\nrm -rf ~\n".utf8)) : $0 })
 
         XCTAssertThrowsError(try ReviewSpot(spot: changed, folder: folder)) { error in
             XCTAssertEqual((error as? SpotError)?.reason, "weather.spot does not match its last release, so a file changed after it was signed.")
@@ -436,16 +436,16 @@ final class ReviewSpotTests: XCTestCase {
         let store = folder.appendingPathComponent("store")
         try SpotPackage.write(shared, to: store)
         let package = SpotPackage(url: SpotPackage.url(for: "timer", in: store))
-        let plugins = folder.appendingPathComponent("plugins")
+        let spots = folder.appendingPathComponent("spots")
         let lock = SpotLock(url: folder.appendingPathComponent("spots.lock"))
-        let review = try ReviewSpot(file: package.url, folder: plugins, lock: lock)
+        let review = try ReviewSpot(file: package.url, folder: spots, lock: lock)
 
         let text = try shown(review)
         XCTAssertTrue(text.hasPrefix("Timer\n\nUses nothing\n\nRuns only when you use it\n\nCounts down from a time you pick.\n\nPreview\n5 minutes\n\n"), text)
 
         _ = try await review.add()
-        XCTAssertEqual(try String(contentsOf: plugins.appendingPathComponent("timer.spot/readme.md"), encoding: .utf8), "Counts down from a time you pick.\n")
-        XCTAssertEqual(try String(contentsOf: plugins.appendingPathComponent("timer.spot/preview.txt"), encoding: .utf8), "row=a\ntitle=5 minutes\n")
+        XCTAssertEqual(try String(contentsOf: spots.appendingPathComponent("timer.spot/readme.md"), encoding: .utf8), "Counts down from a time you pick.\n")
+        XCTAssertEqual(try String(contentsOf: spots.appendingPathComponent("timer.spot/preview.txt"), encoding: .utf8), "row=a\ntitle=5 minutes\n")
         XCTAssertEqual(try lock.entries().map(\.paths), [["timer.spot/preview.txt", "timer.spot/readme.md", "timer.spot/timer.sh"]])
         XCTAssertEqual(try lock.entries().map(\.source), [package.url.path])
     }

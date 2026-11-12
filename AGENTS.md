@@ -4,7 +4,7 @@
 
 - `app/` is the Mac app, built with XcodeGen from `app/project.yml`. Run `xcodegen generate` in `app/` after you
   add or move a file. Targets:
-  - `Core/` — the plugin contract and loading. Imports Foundation only.
+  - `Core/` — the spot contract and loading. Imports Foundation only.
   - `Shell/` — the menu bar app, the panel and the hotkey. Imports AppKit and SwiftUI.
   - `StandIn/` — a small program for tests: a capability that needs no Mac feature. It does not ship.
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.

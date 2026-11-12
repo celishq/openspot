@@ -1,8 +1,8 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Translate plugin with its real script and a fake translation command.
-final class TranslatePluginTests: SamplePluginsCase {
+/// Proves the Translate spot with its real script and a fake translation command.
+final class TranslateSpotTests: SampleSpotsCase {
     func testTranslateShowsItsPartsBeforeItKnowsItsLanguages() async throws {
         try await withPrivateHome { folder in
             _ = try self.fakeTranslate(in: folder)

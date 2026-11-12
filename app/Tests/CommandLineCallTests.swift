@@ -85,7 +85,7 @@ final class CommandLineCallTests: XCTestCase {
 
     func testACheckCanPrintJSONAndARenderCanNameAnInstalledSpot() {
         XCTAssertEqual(CommandLineCall(arguments: ["check", "--json"]), .checkJSON(nil))
-        XCTAssertEqual(CommandLineCall(arguments: ["check", "--json", "plugins"]), .checkJSON("plugins"))
+        XCTAssertEqual(CommandLineCall(arguments: ["check", "--json", "spots"]), .checkJSON("spots"))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "--spot", "weather", "a.png"]), .renderSpot(id: "weather", size: nil, path: "a.png"))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "--spot", "weather", "--card", "wide", "a.png"]), .renderSpot(id: "weather", size: .wide, path: "a.png"))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "--spot", "weather", "--card", "huge", "a.png"]), .unknown("render --spot weather --card huge a.png"))

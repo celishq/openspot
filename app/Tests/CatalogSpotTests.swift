@@ -19,7 +19,7 @@ final class CatalogSpotTests: BuiltInCase {
 
     func testItIsASmallCardOnTheGridWithItsLetterThatAKeywordFinds() throws {
         let spot = try catalog
-        let defaults = Config(text: try String(contentsOf: repoPlugins.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8))
+        let defaults = Config(text: try String(contentsOf: repoSpots.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8))
 
         XCTAssertEqual(spot.name, "Spots")
         XCTAssertEqual(spot.subtitle, "Edit Spots")
@@ -42,12 +42,12 @@ final class CatalogSpotTests: BuiltInCase {
 
         try file.turn("overview", on: true)
 
-        let scan = try SpotFolder(url: plugins, core: core, enabled: file.read().arrangement.enabled).scan()
+        let scan = try SpotsFolder(url: spots, core: core, enabled: file.read().arrangement.enabled).scan()
         XCTAssertEqual(scan.spots.filter(\.headerState.isOnGrid).map(\.name), ["Overview"])
     }
 
     func testTheSpotsSpotShowsWithAnEmptyFolder() throws {
-        let scan = try SpotFolder(url: plugins, core: repoPlugins).scan()
+        let scan = try SpotsFolder(url: spots, core: repoSpots).scan()
 
         XCTAssertTrue(scan.spots.contains { $0.id == "openspot/spots" })
         XCTAssertEqual(scan.refused, [])
@@ -63,10 +63,10 @@ final class CatalogSpotTests: BuiltInCase {
     }
 
     func testAReviewThatCannotAddShowsTheTextWithNoAddPart() throws {
-        let scan = try SpotFolder(url: plugins, core: core, enabled: ["apps"]).scan()
-        let shared = try SharedSpot(sharing: XCTUnwrap(scan.spots.first { $0.id == "apps" }), from: scan)
+        let scan = try SpotsFolder(url: spots, core: core, enabled: ["apps"]).scan()
+        let shared = try SpotFolder(sharing: XCTUnwrap(scan.spots.first { $0.id == "apps" }), from: scan)
 
-        let review = try ReviewSpot(spot: shared, folder: plugins, canAdd: false)
+        let review = try ReviewSpot(spot: shared, folder: spots, canAdd: false)
         let sheet = try review.answer(["read"])
 
         XCTAssertFalse(sheet.contains("text=install"))

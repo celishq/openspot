@@ -59,8 +59,8 @@ final class SpotListingTests: XCTestCase {
     }
 
     func testEachCoreSpotHasAReadme() throws {
-        let plugins = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../spots").standardizedFileURL
-        let choices = SpotFolder(url: folder, core: plugins).coreChoices()
+        let spots = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../spots").standardizedFileURL
+        let choices = SpotsFolder(url: folder, core: spots).coreChoices()
 
         XCTAssertFalse(choices.isEmpty)
         for spot in choices {

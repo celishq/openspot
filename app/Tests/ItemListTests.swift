@@ -227,7 +227,7 @@ final class ItemListTests: XCTestCase {
         XCTAssertEqual(list.shown.map(\.title), ["Notes"])
     }
 
-    func testALiveListShowsWhatThePluginAnswersWithoutFilteringIt() {
+    func testALiveListShowsWhatTheSpotAnswersWithoutFilteringIt() {
         var list = ItemList(search: .script)
         list.search("rep")
 

@@ -12,12 +12,12 @@ final class FilesOutTests: XCTestCase {
 
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-out-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         suite = "openspot-out-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         host = TestHost()
-        let files = SpotFiles(
-            environment: ["OPENSPOT_SPOTS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
+        let files = AppPlaces(
+            environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
             home: folder,
             defaults: defaults
         )
@@ -31,8 +31,8 @@ final class FilesOutTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private var plugins: URL {
-        folder.appendingPathComponent("plugins", isDirectory: true)
+    private var spots: URL {
+        folder.appendingPathComponent("spots", isDirectory: true)
     }
 
     private func wait(_ what: String, until condition: () -> Bool) async throws {
@@ -69,7 +69,7 @@ final class FilesOutTests: XCTestCase {
           drag) shift; printf 'toast=Took %s\\n' "$*" ;;
         esac
         """
-        try "#!/bin/sh\n# on=sheet.open\n\(body)\n".writeScript(to: plugins.spotFile("shelf"))
+        try "#!/bin/sh\n# on=sheet.open\n\(body)\n".writeScript(to: spots.spotFile("shelf"))
         model.reload()
         model.press(GlobalKey(spot: "shelf", act: .float, trigger: .shake))
         try await wait("the rows") { model.sheets["shelf"]?.list.shown.count == 3 }

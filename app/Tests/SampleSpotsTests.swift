@@ -1,21 +1,21 @@
 import XCTest
 @testable import OpenspotCore
 
-final class SamplePluginsTests: SamplePluginsCase {
+final class SampleSpotsTests: SampleSpotsCase {
     func testACopyAsksForTheCopiedToast() throws {
-        let plugins = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
+        let spots = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
         let tools = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-copy-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tools) }
         try "#!/bin/sh\ncat >/dev/null\n".writeScript(to: tools.appendingPathComponent("pbcopy"))
         try "#!/bin/sh\ncat >/dev/null\n".writeScript(to: tools.appendingPathComponent("openspot"))
-        let examples = plugins.deletingLastPathComponent().appendingPathComponent("examples")
-        for (script, call) in [(plugins.spotFile("emoji"), "open"), (plugins.spotFile("files"), "copy"), (examples.spotFile("pulls"), "copy")] {
+        let examples = spots.deletingLastPathComponent().appendingPathComponent("examples")
+        for (script, call) in [(spots.spotFile("emoji"), "open"), (spots.spotFile("files"), "copy"), (examples.spotFile("pulls"), "copy")] {
             let process = Process()
             let out = Pipe()
             process.executableURL = script
             process.arguments = [call, "x"]
-            process.environment = ["PATH": "\(tools.path):/usr/bin:/bin", "OPENSPOT_DATA": tools.path, "HOME": tools.path, "OPENSPOT_SH": plugins.deletingLastPathComponent().appendingPathComponent("app/Shell/openspot.sh").path]
+            process.environment = ["PATH": "\(tools.path):/usr/bin:/bin", "OPENSPOT_DATA": tools.path, "HOME": tools.path, "OPENSPOT_SH": spots.deletingLastPathComponent().appendingPathComponent("app/Shell/openspot.sh").path]
             process.standardInput = FileHandle.nullDevice
             process.standardOutput = out
             try process.run()
@@ -70,10 +70,10 @@ final class SamplePluginsTests: SamplePluginsCase {
     }
 
     func testTheSpotsFitThePanelWithNoScrolling() throws {
-        let plugins = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
-        let all = Set(try FileManager.default.contentsOfDirectory(atPath: plugins.path).map { ($0 as NSString).deletingPathExtension })
-        let core = try SpotFolder(url: plugins.appendingPathComponent("none"), core: plugins, enabled: all).scan()
-        let defaults = Config(text: try String(contentsOf: plugins.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8)).arrangement
+        let spots = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
+        let all = Set(try FileManager.default.contentsOfDirectory(atPath: spots.path).map { ($0 as NSString).deletingPathExtension })
+        let core = try SpotsFolder(url: spots.appendingPathComponent("none"), core: spots, enabled: all).scan()
+        let defaults = Config(text: try String(contentsOf: spots.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8)).arrangement
         let placements = SpotGrid().place(core.spots.filter { (defaults.isOnGrid(of: $0.id) ?? $0.isOnGrid) && !$0.isBuiltIn }.map { defaults.size(of: $0.id) ?? $0.size })
         let rows = placements.map { $0.row + $0.size.rows }.max()
 
@@ -132,7 +132,7 @@ final class SamplePluginsTests: SamplePluginsCase {
             try "#!/bin/sh\ncase \"$1 $2\" in 'app status') echo '{}' ;; 'spot list'|'setting list') echo '[]' ;; esac\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
             let views = ViewLibrary(cache: folder.appendingPathComponent("views"))
             for name in ["spots", "examples"] {
-                let faults = await SpotCheck(folder: SpotFolder(url: root.appendingPathComponent(name)), views: views).faults()
+                let faults = await SpotCheck(folder: SpotsFolder(url: root.appendingPathComponent(name)), views: views).faults()
 
                 XCTAssertEqual(faults, [], name)
             }
@@ -227,7 +227,7 @@ final class SamplePluginsTests: SamplePluginsCase {
     }
 
     func testScreenshotPastesTheNewestCaptureOfBothFoldersBySpotlightOrNot() throws {
-        let plugins = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
+        let spots = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-capture-\(UUID().uuidString)")
         let tools = folder.appendingPathComponent("tools")
         let images = folder.appendingPathComponent("images")
@@ -255,7 +255,7 @@ final class SamplePluginsTests: SamplePluginsCase {
             try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: -60)], ofItemAtPath: newest.path)
             try FileManager.default.setAttributes([.modificationDate: Date()], ofItemAtPath: other.path)
             let process = Process()
-            process.executableURL = plugins.spotFile("paste-screenshot")
+            process.executableURL = spots.spotFile("paste-screenshot")
             process.environment = ["PATH": "\(tools.path):/usr/bin:/bin", "HOME": folder.path]
             try process.run()
             process.waitUntilExit()

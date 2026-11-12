@@ -15,15 +15,15 @@ final class SpotLettersTests: XCTestCase {
 
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-letters-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: configFolder, withIntermediateDirectories: true)
         let standard = folder.appendingPathComponent("defaults.toml")
         try "[[spots]]\nid = \"notes\"\nletter = \"n\"\n".write(to: standard, atomically: true, encoding: .utf8)
         suite = "openspot-letters-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         host = TestHost()
-        let files = SpotFiles(
-            environment: ["OPENSPOT_SPOTS": plugins.path, "OPENSPOT_CONFIG": configFolder.path],
+        let files = AppPlaces(
+            environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": configFolder.path],
             home: folder,
             defaults: defaults,
             defaultConfig: standard
@@ -38,8 +38,8 @@ final class SpotLettersTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private var plugins: URL {
-        folder.appendingPathComponent("plugins", isDirectory: true)
+    private var spots: URL {
+        folder.appendingPathComponent("spots", isDirectory: true)
     }
 
     private var configFolder: URL {
@@ -51,7 +51,7 @@ final class SpotLettersTests: XCTestCase {
     }
 
     private func script(_ name: String) throws {
-        try "#!/bin/sh\n# title=\(name.capitalized)\n".writeScript(to: plugins.spotFile(name))
+        try "#!/bin/sh\n# title=\(name.capitalized)\n".writeScript(to: spots.spotFile(name))
     }
 
     private func letter(of id: String) -> String? {

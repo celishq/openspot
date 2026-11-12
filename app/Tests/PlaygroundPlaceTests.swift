@@ -59,12 +59,12 @@ final class PlaygroundPlaceTests: XCTestCase {
         try await wait("the answer") { self.panel.model.visible.contains { $0.item?.title == "Twice 21" } }
     }
 
-    func testANamedFileRunsFromACopyWithTheIdOfItsPluginsFolder() throws {
-        let plugins = folder.appendingPathComponent("real-plugins", isDirectory: true)
-        let file = plugins.spotFile("home/coffee")
+    func testANamedFileRunsFromACopyWithTheIdOfItsSpotsFolder() throws {
+        let spots = folder.appendingPathComponent("real-spots", isDirectory: true)
+        let file = spots.spotFile("home/coffee")
         try "#!/bin/sh\n# title=Coffee\n".writeScript(to: file)
 
-        let id = try panel.place(file: file, text: "#!/bin/sh\n# title=Coffee\n", plugins: plugins)
+        let id = try panel.place(file: file, text: "#!/bin/sh\n# title=Coffee\n", spots: spots)
 
         XCTAssertEqual(id, "home/coffee")
         XCTAssertEqual(panel.model.visible.map(\.id), ["home/coffee"])

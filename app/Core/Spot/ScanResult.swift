@@ -44,7 +44,7 @@ public struct ScanResult: Equatable, Sendable {
         files = files.map { SpotFile(id: $0.id, spots: $0.spots.map { $0.listingKeys(in: config) }) }
     }
 
-    /// Leaves out each widget that names a script with no `read` or a command no plugin has, and reports why.
+    /// Leaves out each widget that names a script with no `read` or a command no spot has, and reports why.
     /// Takes each script that a widget opens off the grid.
     mutating func keepOpenedOffTheGrid() {
         let opened = Set(files.flatMap(\.spots).compactMap(\.opens))
@@ -55,8 +55,8 @@ public struct ScanResult: Equatable, Sendable {
         let metrics = Set(scripts.filter { $0.read != nil }.map(\.id))
         let silent = Set(scripts.filter { $0.read == nil && $0.answers == nil }.map(\.id))
         let ids = Set(spots.map(\.id))
-        files = files.map { plugin in
-            let kept = plugin.spots.filter { command in
+        files = files.map { file in
+            let kept = file.spots.filter { command in
                 guard command.kind == .widget else { return true }
                 var reason = command.places.first { !metrics.contains($0) }.map { id in
                     silent.contains(id)
@@ -66,10 +66,10 @@ public struct ScanResult: Equatable, Sendable {
                 if reason == nil, let opens = command.opens, !ids.contains(opens) {
                     reason = "\(command.name) opens no command called \(opens)"
                 }
-                if let reason { refused.append(Refusal(file: plugin.id, reason: reason)) }
+                if let reason { refused.append(Refusal(file: file.id, reason: reason)) }
                 return reason == nil
             }
-            return SpotFile(id: plugin.id, spots: kept)
+            return SpotFile(id: file.id, spots: kept)
         }
     }
 }

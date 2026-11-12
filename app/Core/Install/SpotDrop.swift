@@ -17,7 +17,7 @@ public struct SpotDrop: Equatable, Sendable {
     public init(paths: [String], folder: URL) {
         let url = URL(fileURLWithPath: paths.first ?? "")
         do {
-            let review = try ReviewSpot(spot: SharedSpot(contentsOf: url), folder: folder)
+            let review = try ReviewSpot(spot: SpotFolder(contentsOf: url), folder: folder)
             symbol = review.symbol
             title = review.name
             detail = paths.count > 1 ? "Openspot installs one spot at a time" : "Drop to install"

@@ -12,12 +12,12 @@ final class SoleCommandTests: XCTestCase {
 
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-sole-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         suite = "openspot-sole-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         host = TestHost()
-        let files = SpotFiles(
-            environment: ["OPENSPOT_SPOTS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
+        let files = AppPlaces(
+            environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
             home: folder,
             defaults: defaults
         )
@@ -31,13 +31,13 @@ final class SoleCommandTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private var plugins: URL {
-        folder.appendingPathComponent("plugins", isDirectory: true)
+    private var spots: URL {
+        folder.appendingPathComponent("spots", isDirectory: true)
     }
 
     private func script(_ name: String, header: String) throws {
         let lines = header.split(separator: "\n", omittingEmptySubsequences: false).map { $0.isEmpty ? "#" : "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\nprintf 'toast=Ran %s\\n' \"$1\"\n".writeScript(to: plugins.appendingPathComponent("\(name).sh"))
+        try "#!/bin/sh\n\(lines)\nprintf 'toast=Ran %s\\n' \"$1\"\n".writeScript(to: spots.appendingPathComponent("\(name).sh"))
     }
 
     private func wait(_ what: String, until condition: () -> Bool) async throws {
@@ -112,7 +112,7 @@ final class SoleCommandTests: XCTestCase {
     func testCommandReturnOpensTheSpotsOwnRowsAboveItsPinnedKey() async throws {
         let lines = ["title=Dictate", "on=sheet.open", "", "button=dictate", "title=Dictate"].map { $0.isEmpty ? "#" : "# \($0)" }
         try "#!/bin/sh\n\(lines.joined(separator: "\n"))\ncase \"$1\" in read) printf 'row=one\\ntitle=Hello there\\n\\nrow=two\\ntitle=Second\\n' ;; esac\n"
-            .writeScript(to: plugins.appendingPathComponent("dictate.sh"))
+            .writeScript(to: spots.appendingPathComponent("dictate.sh"))
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
@@ -161,7 +161,7 @@ final class SoleCommandTests: XCTestCase {
     func testARowThatSaysCloseFalseNamesItsEnterAndKeepsThePanelOpen() async throws {
         let lines = ["title=Get", "on=sheet.open"].map { "# \($0)" }
         try "#!/bin/sh\n\(lines.joined(separator: "\n"))\ncase \"$1\" in read) printf 'button=open\\ntitle=Copy\\n\\nrow=model\\ntitle=Download\\nopen=Download\\nclose=false\\n\\nrow=text\\ntitle=Hello\\n' ;; esac\n"
-            .writeScript(to: plugins.appendingPathComponent("get.sh"))
+            .writeScript(to: spots.appendingPathComponent("get.sh"))
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
@@ -181,7 +181,7 @@ final class SoleCommandTests: XCTestCase {
     func testASheetWithSearchOffHasNoFieldAndItsSetupRowFirst() async throws {
         let lines = ["title=Dictate", "on=sheet.open", "", "button=dictate", "title=Dictate"].map { $0.isEmpty ? "#" : "# \($0)" }
         try "#!/bin/sh\n\(lines.joined(separator: "\n"))\ncase \"$1\" in read) printf 'row=whisper\\ntitle=Download\\npin=top\\n\\nsearch=off\\n' ;; esac\n"
-            .writeScript(to: plugins.appendingPathComponent("dictate.sh"))
+            .writeScript(to: spots.appendingPathComponent("dictate.sh"))
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])

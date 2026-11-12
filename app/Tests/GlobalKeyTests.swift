@@ -4,8 +4,8 @@ import XCTest
 final class GlobalKeyTests: XCTestCase {
     private func command(header: String) throws -> Spot {
         let block = SpotHeader(text: "#!/bin/sh\n\(header)\n").block
-        let plugin = try SpotFile(script: URL(fileURLWithPath: "/plugins/move.sh"), header: block, id: "move")
-        return try XCTUnwrap(plugin.spots.first)
+        let spot = try SpotFile(script: URL(fileURLWithPath: "/spots/move.sh"), header: block, id: "move")
+        return try XCTUnwrap(spot.spots.first)
     }
 
     func testAHeaderListsEachCommandAsABlockAfterABlankCommentLine() throws {
@@ -17,7 +17,7 @@ final class GlobalKeyTests: XCTestCase {
         XCTAssertEqual(spot.offers.map(\.icon), [nil, "https://example.com/meet.png"])
     }
 
-    func testABadCommandRefusesThePluginAndNamesTheFault() {
+    func testABadCommandRefusesTheSpotAndNamesTheFault() {
         for block in ["# button=full", "# button=read\n# title=Read", "# button=full now\n# title=Full"] {
             XCTAssertThrowsError(try command(header: block), block) { error in
                 XCTAssertTrue((error as? SpotError)?.reason.contains("cannot read the button") == true, block)
@@ -54,7 +54,7 @@ final class GlobalKeyTests: XCTestCase {
         let unlisted = GlobalKey(spot: "move", command: "rm", shortcut: shortcut)
         let gone = GlobalKey(spot: "gone", command: "full", shortcut: shortcut)
 
-        XCTAssertEqual(try SpotFolder(url: folder).scan().offered([listed, unlisted, gone]), [listed])
+        XCTAssertEqual(try SpotsFolder(url: folder).scan().offered([listed, unlisted, gone]), [listed])
     }
 
     func testTheFileHoldsKeysAndNamesABadOne() {
@@ -123,7 +123,7 @@ final class GlobalKeyTests: XCTestCase {
         let notes = GlobalKey(spot: "notes", act: .float, trigger: .key(shortcut))
         let gone = GlobalKey(spot: "gone", act: .float, trigger: .key(shortcut))
 
-        XCTAssertEqual(try SpotFolder(url: folder).scan().offered([shelf, cups, notes, gone]), [shelf, cups])
+        XCTAssertEqual(try SpotsFolder(url: folder).scan().offered([shelf, cups, notes, gone]), [shelf, cups])
     }
 
     func testSavingTheGridKeepsTheKeys() throws {

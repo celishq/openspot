@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 /// Proves the Shortcuts spot with its real script in a private home and a fake `shortcuts` command.
-final class ShortcutsPluginTests: SamplePluginsCase {
+final class ShortcutsSpotTests: SampleSpotsCase {
     private func shortcuts() throws -> Spot {
         try XCTUnwrap(try scan.spots.first { $0.name == "Shortcuts" })
     }

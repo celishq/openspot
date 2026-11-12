@@ -33,7 +33,7 @@ struct SpotList {
         let own: Bool
     }
 
-    let folder: SpotFolder
+    let folder: SpotsFolder
     let config: Config
 
     /// Each script of the scan, in its order.
@@ -94,7 +94,7 @@ struct SpotList {
         let own = folder.ownIDs
         let enabled = config.arrangement.enabled
         return folder.keptCoreChoices().sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }.map { spot in
-            let id = SpotFolder.coreID(of: spot)
+            let id = SpotsFolder.coreID(of: spot)
             return (id, spot, own.contains(id) || enabled.contains(id), own.contains(id))
         }
     }
