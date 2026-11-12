@@ -92,7 +92,8 @@ value=true
 - An empty value is no value. A value is never split again, so a URL or a time stays whole.
 - Only a list of plain words splits at commas, such as `uses=screen,clipboard`.
 - The first key of a block names its kind, and its value is the id of the block.
-- The one block whose first key names no kind is the head.
+- The one block whose first key is a key of the head is the head (see The head). A block whose first key is neither a kind
+  nor a key of the head is of an unknown kind, which Openspot skips and reports.
 - Openspot skips a line with an unknown key.
 - A thing with its own title or picture is a block of its own, such as an `option` after a `choice`.
 
@@ -334,14 +335,14 @@ grid=a a d e
 
 ## The head
 
-The head is the one block with no kind. It is not drawn: it holds the drawing and the effects.
+The head is the one block whose first key is one of its keys. It is not drawn: it holds the drawing and the effects.
 
 - Its picture keys: `grid=` and `grid.<size>=` lines, `main`, `title` and `detail` for the card, and `recents`.
-- Its effects: `toast`, `link=<url>`, which opens the URL, `progress=<0 to 1>`, `end=<call>` of a staying spot, and
-  `select=<row id>`, which reads again with that row selected. With `progress`, its `title` and `detail` show only while the
+- Its effects: `toast`, `link=<url>`, which opens the URL, `progress=<0 to 1>`, `call=<n>` and `end=<n>` of a staying
+  spot, and `select=<row id>`, which reads again with that row selected. With `progress`, its `title` and `detail` show only while the
   call runs.
 - `toast=Saved` shows at once, also with the panel closed.
-- A second block with no kind is skipped and reported.
+- The head MAY come anywhere in the output. A second head is skipped and reported.
 
 ## The main block and the card
 

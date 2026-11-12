@@ -298,7 +298,7 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertEqual(faults("grid=a b\n\nbutton=a\nlook=strong\nicon=play\n\nbutton=b\nlook=strong\nicon=stop\n"), ["only one part can use look=strong"])
         XCTAssertEqual(faults("grid=a - b\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n"), ["the divider in row 1 is not whole"])
         XCTAssertEqual(faults("grid=a b\ngrid=b a\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n"), ["a and b overlap at one size, so neither lies on top"])
-        XCTAssertEqual(faults("layout=pair\n\ntext=a\ntitle=A\n"), ["a sheet has no layout key, so draw it with grid= lines"])
+        XCTAssertEqual(faults("grid=a\nlayout=pair\n\ntext=a\ntitle=A\n"), ["a sheet has no layout key, so draw it with grid= lines"])
     }
 
     func testACheckOfOneSheetReportsWhatCannotBeRead() {

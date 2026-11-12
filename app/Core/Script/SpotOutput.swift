@@ -77,6 +77,14 @@ public struct SpotOutput: Equatable, Sendable {
         key == "row" || key == repeatKind || key == optionKind || retiredKinds.contains(key) || SpotPart.kinds.contains(key)
     }
 
+    /// The keys that start the head. A block whose first key is neither a kind nor one of them is of an unknown kind, which
+    /// is skipped and reported (protocol: The head).
+    private static let headKeys: Set<String> = ["grid", "main", "title", "detail", "recents", "toast", "link", "progress", "select", "end", "call"]
+
+    private static func isHead(_ key: String) -> Bool {
+        headKeys.contains(key) || key.hasPrefix("grid.")
+    }
+
     /// The pictures on the web that its blocks name, which a render fetches before it draws.
     public var webPictures: [String] {
         blocks.flatMap { [$0] + $0.children }.compactMap { $0.value("icon") }.filter(WebPictures.isWeb)
@@ -151,7 +159,7 @@ public struct SpotOutput: Equatable, Sendable {
         self.checks = checks
         isPicture = blocks.contains { block in block.fields.first.map { Self.isKind($0.key) } ?? false }
         var runs = Set<String>()
-        let head = blocks.first { block in block.fields.first.map { !Self.isKind($0.key) } ?? false }
+        let head = blocks.first { block in block.fields.first.map { Self.isHead($0.key) } ?? false }
         let repeats = blocks.filter { $0.fields.first?.key == Self.repeatKind }
         let repeated = repeats.first.flatMap { block in block.value(Self.repeatKind).map { (block, $0) } }
         if let (block, _) = repeated { drawing = RepeatDrawing(block: block) }

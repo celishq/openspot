@@ -376,7 +376,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testASizeInAReadLeavesTheCardAtTheSizeOfItsHeader() async throws {
-        try script("grow", header: "on=panel.open\nsize=small", "printf 'size=large\\ndetail=Read\\n'")
+        try script("grow", header: "on=panel.open\nsize=small", "printf 'detail=Read\\nsize=large\\n'")
         model.reload()
         model.panelWillShow(holding: [])
         try await wait("the read") { model.visible.first?.state.subtitle == "Read" }

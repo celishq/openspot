@@ -61,6 +61,20 @@ final class SpotOutputTests: XCTestCase {
         XCTAssertEqual(output.errors, ["detail=Late"])
     }
 
+    func testABlockOfAnUnknownKindBeforeTheHeadIsSkippedAndReported() {
+        let output = SpotOutput(text: "badge=new\ntitle=New\n\ntitle=Mine\ntoast=Saved\n\ntext=a\ntitle=A\n")
+        let alone = SpotOutput(text: "badge=new\ntitle=New\n")
+
+        XCTAssertEqual(output.summary?.value("title"), "Mine")
+        XCTAssertEqual(output.toast, "Saved")
+        XCTAssertEqual(output.parts.map(\.id), ["a"])
+        XCTAssertTrue(output.isPicture)
+        XCTAssertEqual(output.errors, ["badge=new"])
+        XCTAssertNil(alone.summary)
+        XCTAssertFalse(alone.isPicture)
+        XCTAssertEqual(alone.errors, ["badge=new"])
+    }
+
     func testAnEffectIsAKeyOfTheOneHeadAtAnyPlace() {
         let head = SpotOutput(text: "toast=Saved\nlink=https://example.com\n")
         let after = SpotOutput(text: "row=a\ntitle=A\n\ntoast=Saved\nlink=https://example.com\n")

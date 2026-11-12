@@ -221,8 +221,8 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(actions?.drawsKeys, false)
     }
 
-    func testAnEveryLineIsAnUnknownKeyThatASheetSkips() throws {
-        XCTAssertEqual(SpotOutput(text: "on=clock.5\n\ntext=a\ntitle=A\n").sheetFaults, [])
+    func testAnEveryLineIsAnUnknownKindThatASheetSkips() throws {
+        XCTAssertEqual(SpotOutput(text: "on=clock.5\n\ntext=a\ntitle=A\n").sheetFaults, ["cannot read the block that starts: on=clock.5"])
         XCTAssertEqual(try panel("on=clock.5\n\ntext=a\ntitle=A\n").parts.map(\.id), ["a"])
     }
 
