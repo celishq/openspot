@@ -8,7 +8,7 @@ import Observation
 @Observable
 public final class AccountFlow {
     public enum Step: Equatable, Sendable {
-        case choose, about, words, check, restore, signOut, done
+        case choose, about, words, check, restore, account, signOut, done
     }
 
     /// One word of the check: its place among the 12, the 4 words to pick from, and the pick.
@@ -37,10 +37,21 @@ public final class AccountFlow {
     /// Whether the sign-in takes an `nsec` in place of the words.
     public var usesNsec = false
 
+    /// Whether the Mac held a key when the flow began, so that its words show only after Touch ID.
+    public let hadKey: Bool
+
     public init(store: AccountStore, step: Step) {
         self.store = store
         self.step = step
+        hadKey = (try? store.key()) != nil
         if step == .words { words = (try? store.key())?.words ?? [] }
+    }
+
+    /// The flow on the step that the account's state calls for: set up with no key, the words with a key that is not
+    /// backed up, and the account with one that is.
+    public convenience init(store: AccountStore) {
+        let key = try? store.key()
+        self.init(store: store, step: key == nil ? .choose : (try? store.isBackedUp()) == true ? .account : .about)
     }
 
     nonisolated deinit {}
@@ -75,11 +86,10 @@ public final class AccountFlow {
         start(.about)
     }
 
-    /// Makes and keeps a new key, and shows its words.
+    /// Shows the words of the kept key, or of a new key that it makes and keeps.
     public func showWords() {
         attempt {
-            let key = try AccountKey.make()
-            try store.keep(key)
+            let key = try store.keyMadeOnce()
             words = key.words ?? []
             step = .words
         }

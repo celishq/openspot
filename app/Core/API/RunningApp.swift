@@ -29,5 +29,5 @@ public protocol RunningApp: Sendable {
     /// it is done. Returns false when no spot has that ID.
     func changeSetting(_ key: String, of spot: String) async -> Bool
     /// Opens the account sheet on a step, and returns once it closes, with whether the Mac then holds an account.
-    func openAccount(_ open: AccountOpen) async -> Bool
+    func openAccount() async -> Bool
 }

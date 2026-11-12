@@ -680,12 +680,11 @@ A spot asks the Mac and Openspot for things through one command, which works the
   - calls that change Openspot or its places: `app quit`, `update install`, and `setting set` of a key that Openspot
     keeps for the user (see [Settings](#settings));
   - calls that open a window or the panel: `spot show`, `spot open`, `spot review`, `spot store`, `setting change`,
-    `update check`, `account set-up`, `account sign-in`, `account words`, `account sign-out`, `calendar show` and
-    `reminders show`;
+    `update check`, `account open`, `calendar show` and `reminders show`;
   - `account sync`, which only the user and the spots of Openspot can call.
 - `calendar add --dry-run` and `reminders add --dry-run` change nothing, so they work in a read.
 - `openspot batch` runs one call for each line of stdin, and prints `---` after each. It stops at the first failure.
-- `--frame` makes `app status`, `account status`, `spot list` and `setting list` print blocks instead of JSON.
+- `--frame` makes `app status`, `account`, `spot list` and `setting list` print blocks instead of JSON.
 
 The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The others:
 
@@ -760,7 +759,7 @@ openspot app quit
 
 | Use         | The calls that need it                                                                                                                                          |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app`       | `app quit`, `update check`, `update install`, each call of `account`, and `setting set` of `menubar`, `float`, `key.<command>` or of the spot `openspot`         |
+| `app`       | `app quit`, `update check`, `update install`, `account open`, `account sync`, and `setting set` of `menubar`, `float`, `key.<command>` or of the spot `openspot` |
 | `spots`     | `spot add`, `spot remove`, `spot new`, `spot run`, `spot log`, `setting list`, `setting set` of `enabled`, and `setting get`, `set` or `change` of another spot |
 | `screen`    | `screen sources`, `screen shot`, `screen record`, `window frame`, `window move` and `color pick`                                                                |
 | `clipboard` | `clipboard copy`, `clipboard paste` and `clipboard read`                                                                                                        |
@@ -780,8 +779,9 @@ openspot app quit
 - Without Careful mode, the data folder is no boundary.
 - A spot folder can hold `releases.jsonl`, the signed releases of the spot. Openspot writes it when the user shares or
   publishes the spot, and refuses a shared spot whose files don't match its last release. A spot reads nothing from it.
-- The account that signs releases never reaches a spot. `openspot account` tells a spot whether one is signed in and
-  its `npub`, and opens the account sheet, which the app draws itself. The words never pass through a script.
+- A spot never touches a secret. `openspot account` tells a spot only public facts: whether an account is signed in,
+  its `npub`, whether its words are backed up, and whether it syncs. `openspot account open` opens the app's account
+  sheet, which shows or takes the words.
 
 ## Messages
 

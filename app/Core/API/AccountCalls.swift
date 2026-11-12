@@ -10,7 +10,7 @@ struct AccountCalls {
     }
 
     func status(frame: Bool) -> CommandAPI.Work {
-        guard app != nil else { return CommandAnswer.notRunning("account status") }
+        guard app != nil else { return CommandAnswer.notRunning("account") }
         return CommandAnswer.work { [store] in
             let key = try store.key()
             return try AccountStatus(
@@ -22,10 +22,10 @@ struct AccountCalls {
         }
     }
 
-    func open(_ open: AccountOpen) -> CommandAPI.Work {
-        guard let app else { return CommandAnswer.notRunning("account \(open.rawValue)") }
+    func open() -> CommandAPI.Work {
+        guard let app else { return CommandAnswer.notRunning("account open") }
         return CommandAnswer.work {
-            _ = await app.openAccount(open)
+            _ = await app.openAccount()
             return ""
         }
     }

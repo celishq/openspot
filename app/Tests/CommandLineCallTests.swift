@@ -27,17 +27,15 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertTrue(CommandLineCall.usage.contains("openspot event emit <name> [value]"))
     }
 
-    func testAccountReadsItsStateOpensItsWindowAndSetsItsSync() {
-        XCTAssertEqual(CommandLineCall(arguments: ["account", "status"]), .accountStatus(frame: false))
-        XCTAssertEqual(CommandLineCall(arguments: ["account", "status", "--frame"], environment: ["OPENSPOT_REASON": "sheet.open"]), .accountStatus(frame: true))
-        XCTAssertEqual(CommandLineCall(arguments: ["account", "set-up"]), .accountOpen(.setUp))
-        XCTAssertEqual(CommandLineCall(arguments: ["account", "sign-in"]), .accountOpen(.signIn))
-        XCTAssertEqual(CommandLineCall(arguments: ["account", "words"]), .accountOpen(.words))
-        XCTAssertEqual(CommandLineCall(arguments: ["account", "sign-out"]), .accountOpen(.signOut))
+    func testAccountPrintsItsFactsOpensItsSheetAndSetsItsSync() {
+        XCTAssertEqual(CommandLineCall(arguments: ["account"]), .accountStatus(frame: false))
+        XCTAssertEqual(CommandLineCall(arguments: ["account", "--frame"], environment: ["OPENSPOT_REASON": "sheet.open"]), .accountStatus(frame: true))
+        XCTAssertEqual(CommandLineCall(arguments: ["account", "open"]), .accountOpen)
         XCTAssertEqual(CommandLineCall(arguments: ["account", "sync", "off"]), .accountSync(false))
-        XCTAssertEqual(CommandLineCall(arguments: ["account", "words"], environment: ["OPENSPOT_REASON": "sheet.open"]), .refused("`openspot account words` opens the panel, so it cannot run in a read. Run it from a pick or an action."))
+        XCTAssertEqual(CommandLineCall(arguments: ["account", "open"], environment: ["OPENSPOT_REASON": "sheet.open"]), .refused("`openspot account open` opens the panel, so it cannot run in a read. Run it from a pick or an action."))
+        XCTAssertEqual(CommandLineCall(arguments: ["account", "words"]), .unknown("account words"))
         XCTAssertEqual(CommandLineCall(arguments: ["account", "sync", "maybe"]), .unknown("account sync maybe"))
-        XCTAssertTrue(CommandLineCall.usage.contains("openspot account words"))
+        XCTAssertTrue(CommandLineCall.usage.contains("openspot account open"))
     }
 
     func testEmojiCanNameATone() {

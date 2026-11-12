@@ -113,7 +113,7 @@ public final class CommandAPI: @unchecked Sendable {
         case .updateCheck: return UpdateCalls(app: app).check()
         case .updateInstall: return UpdateCalls(app: app).install()
         case .accountStatus(let frame): return AccountCalls(environment: environment, app: app).status(frame: frame)
-        case .accountOpen(let open): return AccountCalls(environment: environment, app: app).open(open)
+        case .accountOpen: return AccountCalls(environment: environment, app: app).open()
         case .accountSync(let isOn): return AccountCalls(environment: environment, app: app).sync(isOn)
         case .eventEmit(let name, let value): return EventCalls(raise: raise).emit(name, value: value)
         case .calcSolve(let words): return CalcCalls().solve(words)

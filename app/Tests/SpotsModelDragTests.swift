@@ -688,7 +688,7 @@ final class SpotsModelDragTests: XCTestCase {
         let sheet = try await accountSheet()
         XCTAssertEqual(model.openList, AccountSheet.id)
         XCTAssertEqual(sheet.flow.step, .choose)
-        _ = try sheet.answer(["close"])
+        _ = try await sheet.answer(["close"])
 
         let result = await publish.value
         XCTAssertEqual(result, .failed)
@@ -702,38 +702,60 @@ final class SpotsModelDragTests: XCTestCase {
         let publish = Task { await model.publish("a") }
 
         let sheet = try await accountSheet()
-        _ = try sheet.answer(["create"])
+        _ = try await sheet.answer(["create"])
         XCTAssertEqual(sheet.flow.step, .about)
-        _ = try sheet.answer(["show"])
+        _ = try await sheet.answer(["show"])
         XCTAssertEqual(sheet.flow.step, .words)
-        _ = try sheet.answer(["close"])
+        _ = try await sheet.answer(["close"])
 
         let result = await publish.value
         XCTAssertEqual(result, .published)
         XCTAssertNotNil(try model.files.account.key())
     }
 
-    func testTheWordsOfAKeptKeyShowOnlyAfterTouchID() async throws {
-        _ = try model.files.account.keyMadeOnce()
-        host.allowsActs = false
+    func testTheSheetOpensOnTheStepOfTheAccount() async throws {
+        let key = try model.files.account.keyMadeOnce()
+        try model.files.account.markBackedUp()
+        let open = Task { await model.openAccount() }
 
-        let opened = await model.openAccount(.words)
-
+        let sheet = try await accountSheet()
+        XCTAssertEqual(sheet.flow.step, .account)
+        XCTAssertEqual(sheet.flow.npub, key.npub)
+        _ = try await sheet.answer(["close"])
+        let opened = await open.value
         XCTAssertTrue(opened)
-        XCTAssertEqual(host.asked, ["show your account words"])
+    }
+
+    func testTheWordsOfAKeptKeyAndASignOutShowOnlyAfterTouchID() async throws {
+        _ = try model.files.account.keyMadeOnce()
+        try model.files.account.markBackedUp()
+        host.allowsActs = false
+        Task { await model.openAccount() }
+        let sheet = try await accountSheet()
+
+        _ = try await sheet.answer(["show"])
+        XCTAssertEqual(sheet.flow.step, .account)
+        _ = try await sheet.answer(["leave"])
+        _ = try await sheet.answer(["sign-out"])
+        XCTAssertNotNil(try model.files.account.key())
+        XCTAssertEqual(host.asked, ["show your account words", "sign out of your account"])
+
+        host.allowsActs = true
+        _ = try await sheet.answer(["sign-out"])
+        XCTAssertNil(try model.files.account.key())
         XCTAssertNil(model.accountSheet)
     }
 
     func testTheSheetPrintsTheButtonsOfItsStep() async throws {
-        Task { await model.openAccount(.choose) }
+        Task { await model.openAccount() }
         let sheet = try await accountSheet()
 
-        let read = try sheet.answer(["read"])
+        let read = try await sheet.answer(["read"])
 
         XCTAssertTrue(read.contains("view=account"))
         XCTAssertTrue(read.contains("button=create\ntitle=Create account\nshortcut=cmd+return\nlook=strong"))
         XCTAssertTrue(read.contains("button=sign-in\ntitle=Use existing account"))
-        _ = try sheet.answer(["close"])
+        _ = try await sheet.answer(["close"])
     }
 
     func testASpotWithNoReadmeOpensItsListingAndIsNotPublished() async {

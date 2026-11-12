@@ -11,11 +11,14 @@ public final class AccountSheet: Sendable, Equatable {
     public static let viewPart = "account"
 
     public let flow: AccountFlow
+    /// Asks for Touch ID or the Mac password, and returns whether the person passed.
+    private let allows: @MainActor (String) async -> Bool
     /// Ends the sheet, once its flow is done or the person leaves it.
     private let finished: @MainActor () -> Void
 
-    public init(flow: AccountFlow, finished: @escaping @MainActor () -> Void) {
+    public init(flow: AccountFlow, allows: @escaping @MainActor (String) async -> Bool = { _ in true }, finished: @escaping @MainActor () -> Void) {
         self.flow = flow
+        self.allows = allows
         self.finished = finished
     }
 
@@ -43,6 +46,7 @@ public final class AccountSheet: Sendable, Equatable {
         switch flow.step {
         case .choose: [Button(id: "sign-in", title: "Use existing account"), Button(id: "create", title: "Create account", isMain: true)]
         case .about: [Button(id: "show", title: "Show my words", isMain: true)]
+        case .account: [Button(id: "close", title: "Done", isMain: true), Button(id: "show", title: "Show my words"), Button(id: "leave", title: "Sign out…")]
         case .words: [Button(id: "close", title: flow.isBackedUp ? "Done" : "Later"), Button(id: "wrote", title: "I wrote them down", isMain: true)]
         case .check: [Button(id: "again", title: "Show the words again")]
         case .restore: [Button(id: "nsec", title: flow.usesNsec ? "Use your 12 words" : "Use an nsec instead"), Button(id: "sign-in", title: "Sign in", isMain: true)]
@@ -52,12 +56,15 @@ public final class AccountSheet: Sendable, Equatable {
     }
 
     /// Answers one call with the text a script would print: the sheet for `read`, and nothing after a press, so that the
-    /// sheet reads again.
-    public func answer(_ arguments: [String]) throws -> String {
+    /// sheet reads again. The words of a key that the Mac held before, and a sign-out, first ask for Touch ID.
+    public func answer(_ arguments: [String]) async throws -> String {
         switch arguments.first {
         case "read": return sheet
         case "create": flow.create()
-        case "show": flow.showWords()
+        case "show":
+            if flow.hadKey, !(await allows("show your account words")) { return "" }
+            flow.showWords()
+        case "leave": flow.start(.signOut)
         case "wrote": flow.wroteThemDown()
         case "again": flow.showWordsAgain()
         case "sign-in" where flow.step == .restore: flow.signIn()
@@ -65,7 +72,9 @@ public final class AccountSheet: Sendable, Equatable {
         case "nsec":
             flow.usesNsec.toggle()
             flow.phrase = ""
-        case "sign-out": flow.signOut()
+        case "sign-out":
+            guard await allows("sign out of your account") else { return "" }
+            flow.signOut()
         case "close": finished()
         default: throw SpotError.failed(1, "This sheet cannot do that.")
         }

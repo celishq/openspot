@@ -31,6 +31,7 @@ struct AccountSheetView: View {
         case .words: words
         case .check: check
         case .restore: restore
+        case .account: account
         case .signOut: signOut
         case .done: EmptyView()
         }
@@ -131,6 +132,17 @@ struct AccountSheetView: View {
             Text("Tab: \(completion)").font(SpotType.detail).modifier(SpotSecondaryText())
         } else if !flow.usesNsec {
             Text(flow.counter).font(SpotType.detail).modifier(SpotSecondaryText())
+        }
+    }
+
+    private var account: some View {
+        VStack(alignment: .leading, spacing: Self.gap) {
+            heading("Your account")
+            Text("Openspot signs what you publish with it.").modifier(SpotSecondaryText())
+            if let npub = flow.npub {
+                Text("\(String(npub.prefix(12)))…\(String(npub.suffix(6)))").font(SpotType.body.monospaced()).textSelection(.enabled)
+            }
+            point(flow.isBackedUp ? "checkmark.shield" : "exclamationmark.triangle", flow.isBackedUp ? "Your 12 words are backed up." : "Your 12 words are not backed up yet.")
         }
     }
 

@@ -42,6 +42,26 @@ final class AccountFlowTests: XCTestCase {
         XCTAssertFalse(try store.isBackedUp())
     }
 
+    func testTheSheetStartsFromTheStateOfTheAccount() throws {
+        XCTAssertEqual(AccountFlow(store: store).step, .choose)
+        _ = try store.keyMadeOnce()
+        XCTAssertEqual(AccountFlow(store: store).step, .about)
+        try store.markBackedUp()
+        XCTAssertEqual(AccountFlow(store: store).step, .account)
+    }
+
+    func testShowWordsOfAKeptKeyShowsThatKey() throws {
+        let key = try store.keyMadeOnce()
+        let flow = AccountFlow(store: store)
+
+        flow.showWords()
+
+        XCTAssertEqual(flow.words, key.words)
+        XCTAssertEqual(try store.key(), key)
+        XCTAssertTrue(flow.hadKey)
+        XCTAssertFalse(AccountFlow(store: AccountStore.standard(environment: ["OPENSPOT_CONFIG": folder.appendingPathComponent("other").path], home: folder, devState: nil)).hadKey)
+    }
+
     func testTheCheckAsksForTwoWordsEachAmongFourChoices() {
         let flow = AccountFlow(store: store, step: .choose)
         flow.create()

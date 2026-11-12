@@ -113,7 +113,6 @@
 		2D70BDB9FA41937888CF1383 /* StayLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CAD5CE39CAD25C7A95410C8 /* StayLink.swift */; };
 		2D767FD965D15EAF5F644AF0 /* ConfigFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = C534CF8DF32EE7ABB64624F6 /* ConfigFile.swift */; };
 		2DA0ED84843B556BFECCAA29 /* ToastKeyFill.swift in Sources */ = {isa = PBXBuildFile; fileRef = D14A96CD1B177F8A53D7B7DE /* ToastKeyFill.swift */; };
-		2E02F499506CEDA0B02D89C9 /* AccountOpen.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF0AAED7BCACA2760766E309 /* AccountOpen.swift */; };
 		308E4A6E1A9C16D53ECE5570 /* CalendarClock.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC23A55EB94A4EF24BD0D2F7 /* CalendarClock.swift */; };
 		30B15963F9513FE78062736C /* SpotRunsReadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F06E95F6AF356EBFD00D06E1 /* SpotRunsReadTests.swift */; };
 		31238DCDE06CF384FF529EC3 /* SpotToneWords.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0344D30DF4D5FAD7AC93DE4D /* SpotToneWords.swift */; };
@@ -1213,7 +1212,6 @@
 		FBFEB6D19CC148722FFAB8E5 /* ActionMenuFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionMenuFrame.swift; sourceTree = "<group>"; };
 		FC4D1B3F6C10C56B2E0494AC /* SpotPlaygroundHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotPlaygroundHost.swift; sourceTree = "<group>"; };
 		FE803D5549E8BDF6A311F932 /* EventCalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventCalls.swift; sourceTree = "<group>"; };
-		FF0AAED7BCACA2760766E309 /* AccountOpen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountOpen.swift; sourceTree = "<group>"; };
 		FF54036BAB7C42C5F74AB672 /* SpotLiftedCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotLiftedCard.swift; sourceTree = "<group>"; };
 		FFA79A70AAB0FAA5BF6E22F3 /* FilesOutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilesOutTests.swift; sourceTree = "<group>"; };
 		FFD8983A5D718934384188E9 /* FocusLoss.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusLoss.swift; sourceTree = "<group>"; };
@@ -1291,7 +1289,6 @@
 			children = (
 				18BE68AC87B434D7C4B72258 /* AccountFlow.swift */,
 				30DF96BBA01C22BC7442B0BD /* AccountKey.swift */,
-				FF0AAED7BCACA2760766E309 /* AccountOpen.swift */,
 				0E57516D348B7439271BBA93 /* AccountSheet.swift */,
 				6BDF5ACEF48B0C8FFA68E5C9 /* AccountStore.swift */,
 				5535F3A21CF82E7BFEC8D9E1 /* AccountWords.swift */,
@@ -2491,7 +2488,6 @@
 				42AA1A1C4424F3F23CB2B877 /* AccountCalls.swift in Sources */,
 				D76F3B47CC99DBB9F2048C8B /* AccountFlow.swift in Sources */,
 				CB75599EB988C24F0CA50B20 /* AccountKey.swift in Sources */,
-				2E02F499506CEDA0B02D89C9 /* AccountOpen.swift in Sources */,
 				7D1DDD47845C1781A619FAA4 /* AccountSheet.swift in Sources */,
 				556567C19488B513B210A168 /* AccountStatus.swift in Sources */,
 				390DF70A6C3C21F70549DD37 /* AccountStore.swift in Sources */,

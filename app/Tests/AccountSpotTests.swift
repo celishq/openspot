@@ -35,35 +35,27 @@ final class AccountSpotTests: BuiltInCase {
     func testWithNoAccountItOffersToSetOneUp() async throws {
         let rows = try await items()
 
-        XCTAssertEqual(rows.map(\.run), ["set_up"])
+        XCTAssertEqual(rows.map(\.run), ["account"])
         XCTAssertEqual(rows.first?.title, "Set up your account")
-        try await call(["open", "set_up"])
+        try await call(["open", "account"])
         let opened = await app.opened
-        XCTAssertEqual(opened, ["account set-up"])
+        XCTAssertEqual(opened, ["account"])
     }
 
-    func testWithAnAccountItShowsItsIDItsBackupAndSignOut() async throws {
+    func testWithAnAccountItShowsItsIDAndItsBackupAndEachOpensTheSheet() async throws {
         let key = try store.keyMadeOnce()
 
         let rows = try await items()
 
-        XCTAssertEqual(rows.map(\.run), ["npub", "words", "sign_out"])
+        XCTAssertEqual(rows.map(\.run), ["account", "backup"])
+        XCTAssertEqual(rows[0].title, "Your account")
         XCTAssertEqual(rows[0].subtitle, String(key.npub.prefix(12)) + "…" + String(key.npub.suffix(6)))
         XCTAssertEqual(rows[1].title, "Back up your words")
-        XCTAssertEqual(rows[1].subtitle, "Not backed up")
         try store.markBackedUp()
         let backedUp = try await items()
-        XCTAssertEqual(backedUp[1].title, "Show your words")
-        XCTAssertEqual(backedUp[1].subtitle, "Backed up")
-    }
-
-    func testEachButtonOpensItsStepOfTheWindow() async throws {
-        _ = try store.keyMadeOnce()
-
-        try await call(["open", "words"])
-        try await call(["open", "sign_out"])
-
+        XCTAssertEqual(backedUp[1].title, "Backed up")
+        try await call(["open", "backup"])
         let opened = await app.opened
-        XCTAssertEqual(opened, ["account words", "account sign-out"])
+        XCTAssertEqual(opened, ["account"])
     }
 }

@@ -67,8 +67,8 @@ actor FakeRunningApp: RunningApp {
         return spot != "gone"
     }
 
-    func openAccount(_ open: AccountOpen) -> Bool {
-        opened.append("account \(open.rawValue)")
+    func openAccount() -> Bool {
+        opened.append("account")
         return true
     }
 
