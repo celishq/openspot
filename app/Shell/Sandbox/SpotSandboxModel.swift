@@ -2,8 +2,8 @@ import Foundation
 import Observation
 import OpenspotCore
 
-/// The state of the playground window. It runs the spot that a person types, or a file that it keeps in step with the
-/// editor, from a copy in a folder of its own, through the same sheet as the panel. Each edit runs again after a short
+/// The state of the playground window. It runs a file that it keeps in step with the editor in place, or the spot that a
+/// person types from a copy in a folder of its own, through the same sheet as the panel. Each edit runs again after a short
 /// pause, and only the newest edit runs. It reads, writes and watches the file away from the main thread.
 @MainActor
 @Observable
@@ -24,6 +24,7 @@ final class SpotSandboxModel {
     let presets: [(name: String, text: String)]
     @ObservationIgnored private let runs = SpotRuns()
     @ObservationIgnored private let folder: URL
+    @ObservationIgnored private let plugins = SpotFolder.standard().url
     @ObservationIgnored private let disk: SpotSandboxFile?
     @ObservationIgnored private var watch: Task<Void, Never>?
     @ObservationIgnored private var edits = 0
@@ -102,20 +103,22 @@ final class SpotSandboxModel {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    /// Writes the text to a copy that runs, loads its header, and opens a new sheet of it in place of the last one. A header
-    /// that cannot load keeps the last sheet and shows why.
+    /// Loads the header of the file, or of a copy of typed text, and opens a new sheet of it in place of the last one. A
+    /// header that cannot load keeps the last sheet and shows why.
     private func run(_ text: String) {
-        let url = folder.appendingPathComponent("playground.\(SheetSandbox.fileExtension(of: text))")
+        let (url, id) = SheetSandbox.place(of: file, text: text, plugins: plugins, scratch: folder)
         do {
-            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            for old in (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? [] where old != url {
-                try? FileManager.default.removeItem(at: old)
+            if file == nil {
+                try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+                for old in (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? [] where old != url {
+                    try? FileManager.default.removeItem(at: old)
+                }
+                try text.write(to: url, atomically: true, encoding: .utf8)
+                if url.pathExtension != SpotFile.inlineExtension {
+                    try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+                }
             }
-            try text.write(to: url, atomically: true, encoding: .utf8)
-            if url.pathExtension != SpotFile.inlineExtension {
-                try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
-            }
-            guard let loaded = try SpotFile(file: url, id: "playground")?.spots.first else {
+            guard let loaded = try SpotFile(file: url, id: id)?.spots.first else {
                 fault = "This text is no spot. Start it with #!/bin/sh, or with // lines of a JavaScript header."
                 return
             }
