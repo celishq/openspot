@@ -32,6 +32,7 @@ final class ToastPanel: NSPanel {
             setFrame(NSRect(x: screen.midX - size.width / 2, y: screen.maxY - size.height, width: size.width, height: size.height), display: true)
         }
         orderFrontRegardless()
+        contentView?.layoutSubtreeIfNeeded()
         DispatchQueue.main.async {
             if self.shows == current { self.toast.isShown = true }
         }
