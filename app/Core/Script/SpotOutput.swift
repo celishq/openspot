@@ -118,6 +118,8 @@ public struct SpotOutput: Equatable, Sendable {
         switch first.key {
         case "gauge": return "gauge=\(first.value) is now a graph. Write graph=\(first.value) with one value from 0 to 1."
         case "slider", "hotkey": return "\(first.key)=\(first.value) is now a field. Write field=\(first.value) with type=\(first.key)."
+        case "row" where block.value("keyword") != nil:
+            return "The row \(first.value) has keyword=\(block.value("keyword")!), which Openspot no longer reads. Write keywords=a, b."
         case "switch" where block.value("look") == "tick": return "The switch \(first.value) has look=tick, which Openspot no longer reads. Write type=tick."
         case _ where !isKind(first.key) && block.value("search") == "script":
             return "The head has search=script, which Openspot no longer reads. Write on=sheet.text in the header."

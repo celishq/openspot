@@ -62,7 +62,7 @@ public struct SpotItem: Equatable, Sendable {
             picture: Icon(text: block.value("icon")),
             parent: block.value("parent"),
             hides: hides.isEmpty ? nil : hides,
-            keywords: block.values("keyword"),
+            keywords: block.list("keywords"),
             shortcut: block.value("shortcut"),
             records: block.value("type") == "hotkey",
             takesShake: block.flag("shake") ?? false,

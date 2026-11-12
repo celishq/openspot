@@ -55,7 +55,7 @@ public struct EmojiCatalog: Sendable {
                 .init(key: "row", value: form),
                 .init(key: "title", value: names[emoji] ?? emoji),
                 .init(key: "icon", value: form)
-            ] + keywords.of(emoji).map { .init(key: "keyword", value: $0) })
+            ] + keywords.field(of: emoji))
             text += row.text + "\n"
         }
         return text

@@ -63,12 +63,24 @@ final class SpotHeaderTests: XCTestCase {
 
     func testEachKeywordOfTheHeaderFindsTheSpot() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-keyword-\(UUID().uuidString)")
-        try "#!/bin/sh\n# title=Timer\n# keyword=countdown\n# keyword=pomodoro\n".writeScript(to: url)
+        try "#!/bin/sh\n# title=Timer\n# keywords=countdown,  pomodoro timer , ,\n".writeScript(to: url)
         defer { try? FileManager.default.removeItem(at: url) }
 
         let spot = try XCTUnwrap(try SpotFile(file: url, id: "timer")?.spots.first)
 
-        XCTAssertEqual(spot.keywords, ["countdown", "pomodoro"])
+        XCTAssertEqual(spot.keywords, ["countdown", "pomodoro timer"])
+    }
+
+    func testAKeywordLineRefusesThePluginAndNamesTheList() throws {
+        for header in ["title=Timer\n# keyword=countdown", "grid.small=cpu\n# keyword=load"] {
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-keyword-\(UUID().uuidString)")
+            try "#!/bin/sh\n# \(header)\n".writeScript(to: url)
+            defer { try? FileManager.default.removeItem(at: url) }
+
+            XCTAssertThrowsError(try SpotFile(file: url, id: "timer"), header) { error in
+                XCTAssertTrue((error as? SpotError)?.reason.contains("Write keywords=a, b") == true, "\(header): \(error)")
+            }
+        }
     }
 
     func testReadsTheCommentLinesUnderTheFirstLine() {

@@ -964,7 +964,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAKeywordFindsASpotAndTheStoreStartsEditSpotsWithTheSearchCleared() throws {
-        try script("store", header: "title=Spots\nkeyword=edit spots", "true")
+        try script("store", header: "title=Spots\nkeywords=edit spots", "true")
         model.reload()
 
         model.query = "edit spots"

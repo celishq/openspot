@@ -253,9 +253,15 @@ final class SpotOutputTests: XCTestCase {
     }
 
     func testARowReadsEachKeyword() {
-        let output = SpotOutput(text: "row=😀\ntitle=grinning face\nkeyword=happy\nkeyword=smile\n")
+        let output = SpotOutput(text: "row=😀\ntitle=grinning face\nkeywords=happy, big smile,,\n")
 
-        XCTAssertEqual(output.items.first?.keywords, ["happy", "smile"])
+        XCTAssertEqual(output.items.first?.keywords, ["happy", "big smile"])
+    }
+
+    func testAKeywordLineInARowNamesTheList() {
+        let output = SpotOutput(text: "row=a\ntitle=A\nkeyword=happy\n")
+
+        XCTAssertEqual(output.retired, ["The row a has keyword=happy, which Openspot no longer reads. Write keywords=a, b."])
     }
 
     func testATemplateOrASpotBlockIsSkippedAndReportedWhereverItIs() {

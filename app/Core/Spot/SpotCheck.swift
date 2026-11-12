@@ -109,7 +109,7 @@ public struct SpotCheck: Sendable {
     /// (protocol: The calls).
     static func brokenBlocks(in text: String) -> [String] {
         let fix = "as a value with a new line prints. Print each value from data with openspot_kv, openspot_row or esc"
-        let lists: Set<String> = ["grid", "value", "hides", "keyword", "color"]
+        let lists: Set<String> = ["grid", "value", "hides", "color"]
         var faults: [String] = []
         let blocks = text.components(separatedBy: "\n").split { $0.isEmpty || $0 == SheetFrameReader.mark }
         for block in blocks {

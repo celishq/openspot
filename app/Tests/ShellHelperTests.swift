@@ -277,7 +277,7 @@ final class ShellHelperTests: XCTestCase {
         bad=$(printf 'one\\n\\nrow=x\\ntitle=x')
         openspot_row a "$bad" "$bad" 'a\\b'
         openspot_kv tone good
-        printf 'b\\tBack\\\\slash\\t\\t\\tvalue=true\\tkeyword=c\\\\d\\n' | openspot_rows
+        printf 'b\\tBack\\\\slash\\t\\t\\tvalue=true\\tkeywords=c\\\\d\\n' | openspot_rows
         """)
 
         let output = try await ScriptProcess.output(url: url, limit: 10)

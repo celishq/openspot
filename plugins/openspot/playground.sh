@@ -2,5 +2,5 @@
 # title=Playground
 # icon=hammer
 # detail=Try a spot and see each call
-# keyword=sandbox
+# keywords=sandbox
 exec openspot sandbox

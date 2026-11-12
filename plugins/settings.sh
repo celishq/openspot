@@ -46,7 +46,7 @@ pane() {
       ($terms | to_entries[] | .key as $anchor | (.value.localizableStrings // [])[]
         | select(.title != null and (.title | ascii_downcase) != ($titles[0] | ascii_downcase))
         | "row=\($pane)?\($anchor)#\(.title | esc)\ntitle=\(.title | esc)\ndetail=System Settings › \($titles[0] | esc)\nparent=\($titles[0] | esc)\n\($icon)\n"
-          + ((.index // "") | split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(. != "")) | map("keyword=\(esc)\n") | join("")))'
+          + ((.index // "") | split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(. != "")) | if length > 0 then "keywords=\(join(", ") | esc)\n" else "" end))'
 }
 
 case "$1" in

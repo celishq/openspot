@@ -207,9 +207,9 @@ final class WidgetContractTests: XCTestCase {
 
     func testACardOfOtherSpotsRefusesAKeyOfASpotThatRuns() throws {
         try power()
-        try widget(more: "# icon=cpu\n# detail=Now\n# keyword=load\n# size=large\n# on=clock.60\n")
+        try widget(more: "# icon=cpu\n# detail=Now\n# keywords=load\n# size=large\n# on=clock.60\n")
 
-        XCTAssertEqual(try scan.refused.first?.reason, "Now draws a card of other spots, so it takes no on. Keep title, icon, detail, keyword, size, to and its grid lines, or draw its own blocks with grid lines in its output")
+        XCTAssertEqual(try scan.refused.first?.reason, "Now draws a card of other spots, so it takes no on. Keep title, icon, detail, keywords, size, to and its grid lines, or draw its own blocks with grid lines in its output")
     }
 
     func testAWidgetThatNamesAMissingMetricIsLeftOutAndReported() throws {
