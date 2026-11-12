@@ -188,7 +188,7 @@ case "$1" in
     fi
     [ "$events" != status=unasked ] || printf 'row=allow-calendar\ntitle=Allow Calendar\ndetail=Show your events here\nicon=calendar\nhides=join\nhides=tick\n\n'
     [ "$reminders" != status=unasked ] || printf 'row=allow-reminders\ntitle=Allow Reminders\ndetail=Show and tick your reminders here\nicon=checklist\nhides=join\nhides=tick\n\n'
-    rows "$typed" $(value form)
+    rows "$typed" "$(value form)"
     ;;
   open)
     case "$2" in

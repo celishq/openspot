@@ -447,7 +447,7 @@ The shell helper writes values for you:
 | Function                                    | Does                                                                                              |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | `esc <text>`                                | Prints text as a value.                                                                           |
-| `value <id>`                                | Prints one value from stdin.                                                                      |
+| `value <id>`                                | Prints each value of the key from stdin, one per line, in order.                                  |
 | `openspot_kv <key> <value>`                 | Prints one line, with its value written for you.                                                  |
 | `openspot_row <id> <title> [detail] [icon]` | Prints one row.                                                                                   |
 | `openspot_rows [kind]`                      | Prints a row, or a block of that kind, for each tab-split line of stdin: id, title, detail, icon. |

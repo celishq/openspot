@@ -65,6 +65,21 @@ final class ShellHelperTests: XCTestCase {
         XCTAssertTrue(output.hasPrefix("a\\\\b\\nc|:|one|2"), output)
     }
 
+    func testValueOfARepeatedKeyPrintsEachValueOnItsOwnLineInEachShellAndSize() async throws {
+        let padding = String(repeating: "x", count: 2_000)
+        for shell in ["/bin/sh", "/bin/dash"] {
+            let url = try script("PATH=/none\nvalue a", shell: shell)
+            for tail in ["", padding] {
+                let values = ["one two", "a\\b\nc", "three" + tail]
+                let input = TextBlock(fields: values.flatMap { [.init(key: "a", value: $0), .init(key: "b", value: "not this")] }).text
+
+                let output = try await ScriptProcess.output(url: url, input: input, limit: 10)
+
+                XCTAssertEqual(output, values.joined(separator: "\n"), "\(shell) \(tail.count)")
+            }
+        }
+    }
+
     func testValueOfAnUnknownIdPrintsNothing() async throws {
         let url = try script("value none\nvalue a=\nprintf '%s' \"$(value ''; value a)\"")
 

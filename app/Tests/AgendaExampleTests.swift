@@ -217,6 +217,17 @@ final class AgendaExampleTests: SamplePluginsCase {
         }
     }
 
+    func testEachFormMatchesAsAWholeLine() async throws {
+        let agenda = try example("Agenda")
+        try await withPrivateHome { folder in
+            try self.fakeOpenspot(in: folder)
+
+            let output = try await SpotRuns().answer(of: agenda, .read, input: "search=qqq\nform=mom call\nform=standup\n", limit: 30)
+
+            XCTAssertEqual(SpotOutput(text: output).items.map(\.run).filter { $0.contains(":") }, ["event:B/2"])
+        }
+    }
+
     func testTextTypedInTheOpenSheetShowsTheRowsThatMatch() async throws {
         let agenda = try example("Agenda")
         try await withPrivateHome { folder in

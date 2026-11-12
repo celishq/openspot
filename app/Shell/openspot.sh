@@ -53,11 +53,12 @@ ${1-}
 EOF_OPENSPOT
 }
 
-# Prints the real text of one value from stdin: `\n` as a new line and `\\` as a backslash. It prints nothing when stdin has no such value.
+# Prints the real text of each value of a key from stdin, one per line: `\n` as a new line and `\\` as a backslash. It prints
+# nothing when stdin has no such value.
 value() (
   if [ "${#_openspot_stdin}" -gt 1024 ]; then
     printf %s "$_openspot_stdin" |
-      _OPENSPOT_ID=${1-} LC_ALL=C /usr/bin/awk 'index($0, ENVIRON["_OPENSPOT_ID"] "=") == 1 { printf "%s", substr($0, length(ENVIRON["_OPENSPOT_ID"]) + 2); exit }' |
+      _OPENSPOT_ID=${1-} LC_ALL=C /usr/bin/awk 'index($0, ENVIRON["_OPENSPOT_ID"] "=") == 1 { if (seen++) printf "%s", "\\n"; printf "%s", substr($0, length(ENVIRON["_OPENSPOT_ID"]) + 2) }' |
       LC_ALL=C /usr/bin/sed -e 's/\\\\/\
 /g' -e 's/\\\([^n]\)/\
 \1/g' -e 's/\\$/\
@@ -65,10 +66,14 @@ value() (
       LC_ALL=C /usr/bin/tr '\n\\' '\\\n'
     return
   fi
+  _openspot_key=${1-}
+  _openspot_seen=
   while IFS= read -r _openspot_line; do
     case $_openspot_line in
-      "${1-}="*)
-        _openspot_line=${_openspot_line#"$1="}
+      "$_openspot_key="*)
+        [ -z "$_openspot_seen" ] || printf '\n'
+        _openspot_seen=1
+        _openspot_line=${_openspot_line#"$_openspot_key="}
         set -f
         IFS=\\
         set -- $_openspot_line
@@ -85,7 +90,6 @@ value() (
             esac
           fi
         done
-        return
         ;;
     esac
   done <<EOF_OPENSPOT
