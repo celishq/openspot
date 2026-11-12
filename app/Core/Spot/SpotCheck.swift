@@ -7,16 +7,19 @@ public struct SpotCheck: Sendable {
     public let views: ViewLibrary
     /// The most uses that Careful mode leaves each read, or nil to run each one as the person (Z8).
     let careful: Set<SpotUse>?
+    /// The record of the app, which then knows each read's calls of `openspot` as its spot's (Z2), or nil for one of its own.
+    let tokens: CallerTokens?
 
     public init(folder: SpotFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard()) {
-        self.init(folder: folder, timeout: timeout, views: views, careful: nil)
+        self.init(folder: folder, timeout: timeout, views: views, careful: nil, tokens: nil)
     }
 
-    init(folder: SpotFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard(), careful: Set<SpotUse>?) {
+    init(folder: SpotFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard(), careful: Set<SpotUse>?, tokens: CallerTokens?) {
         self.folder = folder
         self.timeout = timeout
         self.views = views
         self.careful = careful
+        self.tokens = tokens
     }
 
     /// One fault, with the spot and the file that it is in when it has them.
@@ -43,7 +46,8 @@ public struct SpotCheck: Sendable {
     }
 
     /// Returns each fault with its spot and its file. None means that all plugins load and answer, and each view compiles.
-    /// Only the start of each read runs on the main thread.
+    /// Only the start of each read runs on the main thread. A stop of its task starts no more reads and compiles no more
+    /// views.
     public func findings() async -> [Finding] {
         let scan: ScanResult
         do {
@@ -63,9 +67,10 @@ public struct SpotCheck: Sendable {
                 findings.append(Finding(spot: script.id, file: script.url.path, fault: fault))
             }
         }
-        let runs = await SpotRuns()
+        let runs = await SpotRuns(tokens: tokens ?? CallerTokens())
         if careful != nil { await MainActor.run { runs.isCareful = true } }
         for var script in scan.scripts where script.read != nil {
+            guard !Task.isCancelled else { return findings }
             if let careful { script.uses.formIntersection(careful) }
             func found(_ fault: String) -> Finding { Finding(spot: script.id, file: script.url.path, fault: fault) }
             do {
@@ -81,6 +86,7 @@ public struct SpotCheck: Sendable {
             }
         }
         for script in scan.scripts {
+            guard !Task.isCancelled else { return findings }
             guard let view = script.view else { continue }
             do {
                 _ = try await views.library(of: URL(fileURLWithPath: view))

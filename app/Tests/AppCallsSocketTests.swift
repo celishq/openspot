@@ -114,9 +114,9 @@ final class AppCallsSocketTests: XCTestCase {
         XCTAssertFalse(exists(far))
     }
 
-    func testCarefulModeRunsASpotRunWithinItsUsesAndThoseOfItsCaller() async throws {
+    func testCarefulModeRunsAPersonsSpotRunInItsUsesAndLeavesASpotsRunToItsOwnSandbox() async throws {
         try spot("writer", header: "uses=files", "echo a > '\(outside.path)/'\"$1\" && echo wrote")
-        try spot("reader", "echo")
+        try spot("reader", header: "uses=spots", "echo")
         let runs = await SpotRuns()
         await MainActor.run { runs.isCareful = true }
         listen(runs: runs)
@@ -129,7 +129,7 @@ final class AppCallsSocketTests: XCTestCase {
         XCTAssertEqual(person.stdout, "wrote\n", person.stderr)
         XCTAssertTrue(exists(outside.appendingPathComponent("person")))
         XCTAssertFalse(exists(outside.appendingPathComponent("spot")))
-        XCTAssertNotEqual(spot.code, 0)
+        XCTAssertEqual((spot.reply["error"] as? [String: Any])?["code"] as? Int, -32000)
     }
 
     func testACheckInTheAppReadsARelativeFolderOfItsCallerAndRunsEachReadInCarefulMode() async throws {
@@ -144,6 +144,25 @@ final class AppCallsSocketTests: XCTestCase {
         XCTAssertEqual(answer.stdout, "No faults in \(plugins.path).\n")
         XCTAssertEqual(answer.code, 0)
         XCTAssertFalse(exists(leak))
+    }
+
+    func testTheReadsOfACheckInCarefulModeAreKnownAsTheirSpots() async throws {
+        let token = folder.appendingPathComponent("token")
+        let go = folder.appendingPathComponent("go")
+        try spot("reader", header: "read=sheet", "echo \"$OPENSPOT_TOKEN\" > '\(token.path)'; i=0; while [ ! -f '\(go.path)' ] && [ $i -lt 1000 ]; do sleep 0.01; i=$((i+1)); done; printf 'title=Reader\\n'")
+        let runs = await SpotRuns()
+        await MainActor.run { runs.isCareful = true }
+        listen(runs: runs)
+        let connection = connect()
+        defer { connection.close() }
+        try connection.send(request(["check"]))
+        try await wait("the read") { !((try? String(contentsOf: token, encoding: .utf8)) ?? "").isEmpty }
+
+        let caller = runs.tokens.caller(of: [CallerTokens.variable: try String(contentsOf: token, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)])
+        FileManager.default.createFile(atPath: go.path, contents: nil)
+
+        XCTAssertEqual(caller?.id, "reader")
+        XCTAssertEqual(try connection.exchange().code, 0)
     }
 
     func testACheckAsJSONInTheAppNamesEachFault() async throws {

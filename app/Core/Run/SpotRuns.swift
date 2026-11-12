@@ -35,7 +35,7 @@ public final class SpotRuns {
         }
     }
     /// The token of each process and inline link that runs, by which the API knows a spot's call (Z2).
-    public nonisolated let tokens = CallerTokens()
+    public nonisolated let tokens: CallerTokens
     @ObservationIgnored let now: () -> Date
     @ObservationIgnored private let stopPause: TimeInterval
     @ObservationIgnored let tickPause: Duration
@@ -83,8 +83,10 @@ public final class SpotRuns {
         inlineIdle: TimeInterval = 30,
         log: CallLog? = nil,
         stats: URL? = nil,
-        swift: SwiftProgram = SwiftProgram()
+        swift: SwiftProgram = SwiftProgram(),
+        tokens: CallerTokens = CallerTokens()
     ) {
+        self.tokens = tokens
         self.log = log
         self.swift = swift
         usage = SpotUsage(folder: stats, at: now(), now: now)

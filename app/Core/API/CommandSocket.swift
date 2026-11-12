@@ -72,11 +72,13 @@ public final class CommandSocket: @unchecked Sendable {
         let environment = api.environment(of: peer(of: connection), over: request.environment(over: ProcessInfo.processInfo.environment))
         let call = CommandLineCall(arguments: request.arguments, environment: environment).map { api.admit($0, arguments: request.arguments, environment: environment) }
         let output = CommandOutput { text, isError in link.notify(isError ? "stderr" : "stdout", text: text) }
-        guard let call, let work = api.work(for: call, input: { await link.stdin() }, environment: environment, isPiped: request.isPiped, output: output) else {
+        guard let call, let work = api.work(for: call, input: { await link.stdin() }, environment: environment, isPiped: request.isPiped, isSandboxed: CallerTokens.isSandboxedApart(peer(of: connection)), output: output) else {
             return link.end(fault(alone, "Run this call in a process of its own.", id: request.id))
         }
+        let stop = CommandStop()
+        link.listen { stop.cancel() }
         let task = Task.detached { await work() }
-        link.listen { task.cancel() }
+        stop.hold(task)
         Task.detached {
             let answer = await task.value
             output.print(answer.output)

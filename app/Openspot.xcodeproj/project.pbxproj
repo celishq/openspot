@@ -202,6 +202,7 @@
 		68A50DEEB887A754F0DFAACD /* SearchQueryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 993ACD223429E2D7E989A884 /* SearchQueryTests.swift */; };
 		690B53980B360911CFC74EAF /* CalculatorPluginTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 949E8A52AB0A32C750A39623 /* CalculatorPluginTests.swift */; };
 		6930CB842DE6E4B430671935 /* SpotSheetFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49ACB26CF7EE399D010673E5 /* SpotSheetFrame.swift */; };
+		6945ACDA1F602F5BAC07618B /* CommandStop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77FBFA1BAEE9F4DB24EC1363 /* CommandStop.swift */; };
 		697F86EDA41387C392C14F43 /* SpotsModel+Sheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4762AB426CAACFDAD9AC43A8 /* SpotsModel+Sheet.swift */; };
 		6A3AF5954E5869CA883E02B9 /* ScreenCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB2F24416F8028DDBD5AADA /* ScreenCapture.swift */; };
 		6B08DAE4383D074596964CA5 /* CoreSpotsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA6B0D4E912ED2F8DDF8428A /* CoreSpotsTests.swift */; };
@@ -796,6 +797,7 @@
 		7702B90896633377BA869E9A /* MenuBarCalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarCalls.swift; sourceTree = "<group>"; };
 		7718E04D2F516B25C5A9B7EE /* FileIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileIcon.swift; sourceTree = "<group>"; };
 		77CA1A1F50C44D2C91139D8A /* TextBlockTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextBlockTests.swift; sourceTree = "<group>"; };
+		77FBFA1BAEE9F4DB24EC1363 /* CommandStop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandStop.swift; sourceTree = "<group>"; };
 		7913B8D24BD3608005D9C919 /* SpotDockTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotDockTile.swift; sourceTree = "<group>"; };
 		791B6404E5AFEBBD2B796C9C /* SpotRuns.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotRuns.swift; sourceTree = "<group>"; };
 		79BF942DE32EA30B7D6FFB87 /* SheetTransition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetTransition.swift; sourceTree = "<group>"; };
@@ -1535,6 +1537,7 @@
 				0C1202B3AEBB702FB458A39F /* CommandOutput.swift */,
 				00C657D3F5ECF7B0FA02E349 /* CommandRequest.swift */,
 				BE0C9C4EA0B544ABC9806EC2 /* CommandSocket.swift */,
+				77FBFA1BAEE9F4DB24EC1363 /* CommandStop.swift */,
 				D5CA6B2444A12FFFD1FA36F5 /* ConfigChange.swift */,
 				BEB57C92F63515E40EE9CAC1 /* EmojiCalls.swift */,
 				FE803D5549E8BDF6A311F932 /* EventCalls.swift */,
@@ -2297,6 +2300,7 @@
 				DA6A71F8AB56DB968E3A4043 /* CommandOutput.swift in Sources */,
 				7C20955FAAE1D03C059CD03B /* CommandRequest.swift in Sources */,
 				C9A4D73791F4D6864C8C050D /* CommandSocket.swift in Sources */,
+				6945ACDA1F602F5BAC07618B /* CommandStop.swift in Sources */,
 				0CCE18E2EDEB9BBFCE16CE08 /* Config.swift in Sources */,
 				F7384BBC55C8B505BAC2F3D9 /* ConfigChange.swift in Sources */,
 				2D767FD965D15EAF5F644AF0 /* ConfigFile.swift in Sources */,

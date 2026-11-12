@@ -40,6 +40,16 @@ public final class CallerTokens: @unchecked Sendable {
     private static let sandboxCheck: (@convention(c) (pid_t, UnsafePointer<CChar>?, Int32) -> Int32)? =
         dlsym(UnsafeMutableRawPointer(bitPattern: -2), "sandbox_check").map { unsafeBitCast($0, to: (@convention(c) (pid_t, UnsafePointer<CChar>?, Int32) -> Int32).self) }
 
+    /// Whether a process runs in a sandbox, such as a spot's in Careful mode or an agent's of its own.
+    static func isSandboxed(_ process: pid_t) -> Bool {
+        sandboxCheck?(process, nil, 0) == 1
+    }
+
+    /// Whether a process runs in a sandbox and this one does not, so that work for it here would leave its sandbox.
+    static func isSandboxedApart(_ process: pid_t) -> Bool {
+        isSandboxed(process) && !isSandboxed(getpid())
+    }
+
     public init() {
         records[Self.sandboxed] = Record(caller: Caller(id: "", name: "A sandboxed process", uses: []))
     }
@@ -111,7 +121,7 @@ public final class CallerTokens: @unchecked Sendable {
             return (token, record)
         }
         guard let (token, record) = known else {
-            guard isCareful, caller(of: environment) == nil, Self.sandboxCheck?(peer, nil, 0) == 1 else { return environment }
+            guard isCareful, caller(of: environment) == nil, Self.isSandboxed(peer) else { return environment }
             return environment.merging([Self.variable: Self.sandboxed]) { _, new in new }
         }
         var environment = environment

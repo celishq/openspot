@@ -25,14 +25,16 @@ struct ScreenCalls {
         refusal(of: capture) ?? CommandAnswer.work { [mac, folder] in try await mac.startRecording(capture, in: folder) }
     }
 
-    /// The answer that refuses a capture into a file that the calling spot's own process could not write, or nil.
+    /// The answer that refuses a capture into a file that the calling spot's own process could not write, or nil. A path
+    /// with `..` is refused, because the system follows a link before it climbs.
     private func refusal(of capture: ScreenCapture) -> CommandAPI.Work? {
         guard let fence else { return nil }
         let own = ProcessInfo.processInfo.environment
         let data = fence.caller.dataName.map { ScriptProcess.dataFolder(base: own, dataName: $0).path }
         for path in [capture.file, capture.events].compactMap({ $0 }) {
-            let file = URL(fileURLWithPath: path, relativeTo: folder).absoluteURL
-            guard !fence.mode.allows(writing: file, data: data, temp: own["TMPDIR"] ?? NSTemporaryDirectory(), home: own["HOME"] ?? NSHomeDirectory()) else { continue }
+            let file = path.hasPrefix("/") ? URL(fileURLWithPath: path) : folder.appendingPathComponent(path)
+            let climbs = path.split(separator: "/").contains("..")
+            guard climbs || !fence.mode.allows(writing: file, data: data, temp: own["TMPDIR"] ?? NSTemporaryDirectory(), home: own["HOME"] ?? NSHomeDirectory()) else { continue }
             let line = "Careful mode keeps \(fence.caller.name) from writing \(file.path). Name a file in its data folder or a temp folder, or add `uses=files` to its header.\n"
             return { CommandAnswer(errors: line, code: 1) }
         }

@@ -73,4 +73,22 @@ final class SpotCheckTests: XCTestCase {
 
         XCTAssertEqual(SpotCheck.json(findings), "[]\n")
     }
+
+    func testAStoppedCheckRunsNoMoreReads() async throws {
+        let started = folder.appendingPathComponent("started")
+        let far = folder.appendingPathComponent("far")
+        let body = "if [ -f '\(started.path)' ]; then touch '\(far.path)'; fi; touch '\(started.path)'; sleep 30"
+        try "#!/bin/sh\n# read=sheet\n\(body)\n".writeScript(to: folder.appendingPathComponent("first.sh"))
+        try "#!/bin/sh\n# read=sheet\n\(body)\n".writeScript(to: folder.appendingPathComponent("second.sh"))
+        let check = Task { await SpotCheck(folder: SpotFolder(url: folder), timeout: 60).findings() }
+        for _ in 0..<1000 {
+            if FileManager.default.fileExists(atPath: started.path) { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+
+        check.cancel()
+        _ = await check.value
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: far.path))
+    }
 }

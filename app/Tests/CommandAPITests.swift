@@ -203,6 +203,14 @@ final class CommandAPITests: XCTestCase {
             XCTAssertNil(CommandAPI(mac: host).work(for: call, input: { "" }, environment: [:]), arguments.joined(separator: " "))
         }
     }
+
+    func testACallThatStartsScriptsForASandboxedCallerRunsAloneInItsSandbox() throws {
+        for arguments in [["check"], ["check", "--json"], ["spot", "run", "notes"], ["sandbox"]] {
+            let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: [:]))
+            XCTAssertNil(CommandAPI(mac: host, app: FakeRunningApp()).work(for: call, input: { "" }, environment: [:], isSandboxed: true), arguments.joined(separator: " "))
+            XCTAssertNotNil(CommandAPI(mac: host, app: FakeRunningApp()).work(for: call, input: { "" }, environment: [:]), arguments.joined(separator: " "))
+        }
+    }
 }
 
 /// The events that a test's API raised.

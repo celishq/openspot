@@ -52,13 +52,14 @@ public final class CommandAPI: @unchecked Sendable {
     }
 
     /// The work that answers a call, or nil for a call that runs in a process of its own: one that draws a picture or runs
-    /// a helper, or a show or a sandbox with no app to reach. `input` reads stdin, and only a call that takes stdin reads it. `isPiped` says
-    /// whether stdin is a pipe or a file, which `spot run` passes on. A call prints to `output` as it runs, and with none,
+    /// a helper, or a show or a sandbox with no app to reach, and a call that starts scripts for a caller in a sandbox, such
+    /// as a spot in Careful mode, whose process of its own then keeps that sandbox (Z8). `input` reads stdin, and only a call that takes stdin reads it. `isPiped` says
+    /// whether stdin is a pipe or a file, which `spot run` passes on, and `isSandboxed` whether the caller runs in a sandbox. A call prints to `output` as it runs, and with none,
     /// its answer holds all that it printed.
-    public func work(for call: CommandLineCall, input: @escaping @Sendable () async -> String, environment: [String: String], isPiped: Bool = true, output: CommandOutput? = nil) -> Work? {
+    public func work(for call: CommandLineCall, input: @escaping @Sendable () async -> String, environment: [String: String], isPiped: Bool = true, isSandboxed: Bool = false, output: CommandOutput? = nil) -> Work? {
         guard let output else {
             let kept = CommandOutput()
-            guard let work = work(for: call, input: input, environment: environment, isPiped: isPiped, output: kept) else { return nil }
+            guard let work = work(for: call, input: input, environment: environment, isPiped: isPiped, isSandboxed: isSandboxed, output: kept) else { return nil }
             return { kept.answer(ending: await work()) }
         }
         let isRead = environment["OPENSPOT_REASON"] != nil
@@ -68,6 +69,7 @@ public final class CommandAPI: @unchecked Sendable {
         let apps = AppCalls(mac: mac, environment: environment, app: app)
         let clipboard = ClipboardCalls(mac: mac, environment: environment)
         let screen = ScreenCalls(mac: mac, environment: environment, fence: fence(of: environment))
+        if Self.startsScripts(call), isSandboxed || runs?.tokens.isCareful == true && runs?.tokens.caller(of: environment) != nil { return nil }
         switch call {
         case .help: return HelpCalls().list()
         case .guideOf(let noun): return HelpCalls().guide(of: noun)
@@ -76,8 +78,8 @@ public final class CommandAPI: @unchecked Sendable {
         case .guide: return GuideCalls(mac: mac).text()
         case .promptNew(let words): return PromptCalls(mac: mac, environment: environment).new(words)
         case .checkSheet: return CheckCalls(input: input, environment: environment).sheet()
-        case .check(let path): return CheckCalls(input: input, environment: environment).folder(path, json: false, careful: fence(environment))
-        case .checkJSON(let path): return CheckCalls(input: input, environment: environment).folder(path, json: true, careful: fence(environment))
+        case .check(let path): return CheckCalls(input: input, environment: environment, tokens: runs?.tokens).folder(path, json: false, careful: fence(environment))
+        case .checkJSON(let path): return CheckCalls(input: input, environment: environment, tokens: runs?.tokens).folder(path, json: true, careful: fence(environment))
         case .spotRun(let id, let arguments): return spots.run(id, arguments, input: isPiped ? input : nil, careful: fence(environment), output: output)
         case .spotShow(let id): return spots.show(id)
         case .sandbox(let path): return SandboxCalls(environment: environment, app: app).open(path, isCareful: runs?.tokens.isCareful == true)
@@ -141,11 +143,18 @@ public final class CommandAPI: @unchecked Sendable {
         }
     }
 
-    /// The most uses that Careful mode leaves the scripts that a call starts: those of the spot that calls, or all for the
-    /// person. Nil when Careful mode is off (Z8).
+    /// Whether a call starts scripts or a window, which a caller in a sandbox runs in a process of its own (Z8).
+    private static func startsScripts(_ call: CommandLineCall) -> Bool {
+        switch call {
+        case .check, .checkJSON, .spotRun, .sandbox: true
+        default: false
+        }
+    }
+
+    /// The most uses that Careful mode leaves the scripts that the person's call starts: each spot's own. Nil when Careful
+    /// mode is off (Z8).
     private func fence(_ environment: [String: String]) -> Set<SpotUse>? {
-        guard let runs, runs.tokens.isCareful else { return nil }
-        return runs.tokens.caller(of: environment)?.uses ?? Set(SpotUse.allCases)
+        runs?.tokens.isCareful == true ? Set(SpotUse.allCases) : nil
     }
 
     /// The spot that calls and its Careful mode, when that mode keeps it from writing outside its own folders (Z8).
