@@ -76,7 +76,7 @@ With no file, it goes to the folder where macOS keeps screenshots, with a name s
 
 ## Rules
 
-- `shot`, `record start` and `record stop` fail in a read (K4), so that nothing captures the screen by surprise.
+- `shot`, `record start` and `record stop` fail in a read (protocol: The openspot command), so that nothing captures the screen by surprise.
   `sources` and `record status` work in a read (S8).
 - A capture never shows a window of Openspot (S9).
 - One recording runs at a time. It goes on after the call that started it ends, until `openspot screen record stop` (S10).

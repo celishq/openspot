@@ -2,8 +2,8 @@ import Foundation
 
 /// The link to a script that stays: one process that takes each call as a block on stdin and prints frames at any
 /// time. A frame with a block is the whole picture, and the frame that ends the read or the search that runs is its answer
-/// (Y7). The frames after `call=<n>` are the output of that call, as the frames of a once script are (Y8). It runs while
-/// something wants it (Y3), and after 3 failures in one minute it starts again only when its file changes (Y5). A read or a
+/// (protocol: Modes). The frames after `call=<n>` are the output of that call, as the frames of a once script are (protocol: Modes). It runs while
+/// something wants it (protocol: Modes), and after 3 failures in one minute it starts again only when its file changes (protocol: Modes). A read or a
 /// search after the first that the script does not end within the read limit stops, fails as a slow read, and its late
 /// answer changes nothing; a second such stop with no answer in time between starts the script again, as a failure.
 @MainActor
@@ -16,7 +16,7 @@ final class StayLink: ScriptLink {
     let keepsState = true
     private let runs: SpotRuns
     private var script: ScriptProcess?
-    /// The token of the script that runs, whose reason tells the API whether the script reads now (Z2).
+    /// The token of the script that runs, whose reason tells the API whether the script reads now (protocol: Trust).
     private var token: String?
     /// Each read and search that the script has not ended yet, by its call number.
     private var asks: [Int: SpotRun.Ask] = [:] {
@@ -35,7 +35,7 @@ final class StayLink: ScriptLink {
     private var pictured: Set<Int> = []
     /// The last frame with a block, which answers a read that ends with only a head.
     private var lastPicture: SpotOutput?
-    /// The call whose output the script prints now, from the `call=<n>` mark of its start (Y8).
+    /// The call whose output the script prints now, from the `call=<n>` mark of its start (protocol: Modes).
     private var current: Int?
     private var count = 0
     /// When each call that has not ended was sent, by its number.
@@ -70,7 +70,7 @@ final class StayLink: ScriptLink {
         script != nil
     }
 
-    /// Sends a read or a search as a block, and a call of work as a block that runs until its `end` (Y7). A read that nothing
+    /// Sends a read or a search as a block, and a call of work as a block that runs until its `end` (protocol: Modes). A read that nothing
     /// wants does not start the script, and a script that does not run gets the read as it starts.
     func send(_ call: SpotRun.Call) -> Bool {
         switch call.purpose {
@@ -176,7 +176,7 @@ final class StayLink: ScriptLink {
     }
 
     /// Sends a call to the script, starts it if it does not run, and returns its number. With nothing that wants it, it ends
-    /// after the call. A call with a `key` runs until its own `end`, and a stop sends its number (Y7).
+    /// after the call. A call with a `key` runs until its own `end`, and a stop sends its number (protocol: Modes).
     @discardableResult
     private func send(_ action: SpotAction, input: String?, variables: [String: String] = [:], key: String? = nil) -> Int? {
         if script == nil { start() }
@@ -231,7 +231,7 @@ final class StayLink: ScriptLink {
         settle()
     }
 
-    /// Stops each ask of this kind that runs, and drops its answer when it comes (Y7).
+    /// Stops each ask of this kind that runs, and drops its answer when it comes (protocol: Modes).
     private func stop(_ kind: (SpotRun.Ask) -> Bool) {
         for (id, ask) in asks {
             guard kind(ask) else { continue }
@@ -341,7 +341,7 @@ final class StayLink: ScriptLink {
     }
 
     /// Counts a failure. It tells the person each one that `telling` allows, and the third in one minute stops new starts
-    /// (Y5).
+    /// (protocol: Modes).
     private func failed(_ error: Error, telling: Bool = true) {
         guard let run else { return }
         let time = runs.now()

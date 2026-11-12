@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-/// The rules of events: a spot lists them in its `read`, and each one reads the wanted spots that list it (B1-B5).
+/// The rules of events: a spot lists them in its `read`, and each one reads the wanted spots that list it (protocol: Events).
 @MainActor
 final class SpotEventsTests: SpotRunsCase {
     /// A Mac that raises what a test tells it, with a clipboard whose count the test sets.
@@ -168,7 +168,7 @@ final class SpotEventsTests: SpotRunsCase {
         XCTAssertTrue(try sheet().spot.canShowInMenuBar)
     }
 
-    // MARK: B2, the events of the Mac
+    // MARK: Events, the events of the Mac
 
     func testTheMacRaisesTheFrontAppAndTheScreenWake() async throws {
         menuBar.insert("script")
@@ -268,7 +268,7 @@ final class SpotEventsTests: SpotRunsCase {
         XCTAssertFalse(runs.watchesClipboard)
     }
 
-    // MARK: B3, openspot event emit
+    // MARK: Events, openspot event emit
 
     func testAnEventFromAShellReadsTheSpotThatListsIt() async throws {
         menuBar.insert("script")

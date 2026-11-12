@@ -1,6 +1,6 @@
 import Foundation
 
-/// A call of `openspot` that needs a use, with the use that a spot's header names for it (Z3). It reads the words of the
+/// A call of `openspot` that needs a use, with the use that a spot's header names for it (protocol: Trust). It reads the words of the
 /// call, so that the API and a review of a text that runs nothing know it the same way.
 public struct SpotUseCall: Equatable, Sendable {
     private static let spotWord = "--spot"

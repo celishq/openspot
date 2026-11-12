@@ -18,7 +18,7 @@ struct SheetPartsView: View {
     /// Reads the id of the selected part where it is called. Nil reads it from the parts.
     var selectedPart: (() -> String?)?
     var nudge: () -> SheetParts.Nudge = { SheetParts.Nudge.rest }
-    /// The plugin's own view at the size of the area of a `view` component (V1).
+    /// The plugin's own view at the size of the area of a `view` component (protocol: Views).
     var customView: (CGSize) -> SpotCustomView? = { _ in nil }
     @FocusState private var focus: String?
 

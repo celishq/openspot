@@ -18,7 +18,7 @@ extension SpotsModel {
     private static let unpickedRows = 3
 
     /// Shows the spots that the search finds and the items it finds in the lists that offer them, in one ranking. While the
-    /// search has text, each one is a full-width row, and an answer card keeps its own full-width size (A4).
+    /// search has text, each one is a full-width row, and an answer card keeps its own full-width size (protocol: Places).
     public func updateVisible() {
         let next = found()
         if next != visible { visible = next }
@@ -33,13 +33,13 @@ extension SpotsModel {
         if transition.phase == .closing, !hasPlace(transition.id) { cutSheet(to: nil) }
     }
 
-    /// Raises the text of the main search, which each spot whose `answers` pattern matches answers (A2).
+    /// Raises the text of the main search, which each spot whose `answers` pattern matches answers (protocol: Places).
     func askAnswers() {
         runs.raise(.query(query))
     }
 
     /// The cards that the search finds, or each card on the grid when there is no search. The rows that spots give as
-    /// answers to the text come first (A3).
+    /// answers to the text come first (protocol: Places).
     private func found() -> [Entry] {
         let text = query.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else {

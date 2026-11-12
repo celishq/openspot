@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 /// Proves that each call that the running app now answers gives the same stdout, stderr and exit code through the socket
-/// of the app as through the Core work of a process of its own, so that the router picks only the transport (S1, S2). A
+/// of the app as through the Core work of a process of its own, so that the router picks only the transport (protocol: The openspot command). A
 /// fake Mac stands in for the clipboard, the windows, the screen, translation and the picks.
 final class CallRouteTests: XCTestCase {
     /// A Mac that answers each call of the clipboard, the windows, the screen, translation and the picks the same way.

@@ -89,7 +89,7 @@ extension SpotRuns {
         sheets.values.forEach { $0.settleScript() }
     }
 
-    /// Reads each wanted script that lists the event at once and with no young answer, as the clock does (B1, B5). With
+    /// Reads each wanted script that lists the event at once and with no young answer, as the clock does (protocol: Events). With
     /// `readsEachSpot` it reads each one as a change does, which tells its failure.
     private func read(_ name: String, _ value: String?, readsEachSpot: Bool) {
         for sheet in sheets.values where (readsEachSpot || sheet.isWanted) && sheet.spot.read?.admits(name, value: value) == true {
@@ -98,7 +98,7 @@ extension SpotRuns {
     }
 
     /// Sends the text to each spot whose `search.text` pattern matches it, and an empty text to the others, which drops their
-    /// answers (A2).
+    /// answers (protocol: Places).
     private func ask(_ query: String) {
         let text = query.trimmingCharacters(in: .whitespaces)
         for sheet in sheets.values {

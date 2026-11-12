@@ -76,7 +76,7 @@ struct SpotCardView: View, Equatable {
         entry.kind == .widget ? { [model] in model.reading(of: $0) } : { _ in nil }
     }
 
-    /// The source of the plugin's own view, which fills the whole card in place of its glyph and words (V3).
+    /// The source of the plugin's own view, which fills the whole card in place of its glyph and words (protocol: Views).
     private var ownView: String? {
         drawsOwnCard && entry.state.face.hasView ? entry.spot.view : nil
     }
@@ -89,12 +89,12 @@ struct SpotCardView: View, Equatable {
         return ownView
     }
 
-    /// Whether its script draws the card from a drawing for its size (U5).
+    /// Whether its script draws the card from a drawing for its size (protocol: Drawings).
     private var isDrawn: Bool {
         drawsOwnCard && entry.state.face.layout(for: size) != nil
     }
 
-    /// Whether the card is the spot's own or an answer card, which its script can draw (U5, A4).
+    /// Whether the card is the spot's own or an answer card, which its script can draw (protocol: Drawings, Places).
     private var drawsOwnCard: Bool {
         entry.item == nil || entry.item?.card != nil
     }
@@ -278,7 +278,7 @@ private struct CardReveal: ViewModifier {
     }
 }
 
-/// Builds the plugin's own view of a card each time the panel shows (V3).
+/// Builds the plugin's own view of a card each time the panel shows (protocol: Views).
 private struct CardViewLoad: ViewModifier {
     let source: String?
     @Environment(\.spotIsShown) private var isShown

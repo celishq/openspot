@@ -3,7 +3,7 @@ import XCTest
 
 /// Proves Careful mode with the real `sandbox-exec`: a spot's process writes only to its data folder and the temp folder
 /// unless its header names `files`, and reaches no network unless it names `network`. Off, a spot can do all that the
-/// person can (Z8, Z9).
+/// person can (protocol: Trust).
 @MainActor
 final class CarefulModeTests: SpotRunsCase {
     private var outside: URL!

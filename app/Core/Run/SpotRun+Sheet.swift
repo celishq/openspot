@@ -78,13 +78,13 @@ extension SpotRun {
         link.settle()
     }
 
-    /// The panel opened: an open sheet of rows is in view again and reads, by M1 and M2.
+    /// The panel opened: an open sheet of rows is in view again and reads, by Events in the protocol and M2.
     func panelOpened() {
         if isOpen { read() }
         link.settle()
     }
 
-    /// A scan looked at the folder: a stopped script that changed can start again (Y5).
+    /// A scan looked at the folder: a stopped script that changed can start again (protocol: Modes).
     func scanned() {
         link.scanned()
     }
@@ -101,7 +101,7 @@ extension SpotRun {
         isOpen && runs.isPanelOpen || isFloating
     }
 
-    /// Whether something wants this script now (L3), also a call of a staying script that waits for its `end`.
+    /// Whether something wants this script now (protocol: Events), also a call of a staying script that waits for its `end`.
     var isWanted: Bool {
         isInView || runs.wants(spot) || link.holdsScript
     }

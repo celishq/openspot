@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 /// Proves `openspot spot add` and `openspot spot remove`: a spot from a git repository, a folder or a `.spot` file goes into
-/// the plugins folder, and only a spot that `spot add` added comes out (N1).
+/// the plugins folder, and only a spot that `spot add` added comes out (protocol: The openspot command).
 final class SpotAddTests: XCTestCase {
     private final class Host: Mac {
         func eventStore() -> any EventStore { FakeEventStore() }

@@ -100,7 +100,7 @@ enum SpotCommandLine {
         SpotSheetPicture.run(text: text, path: path, view: spot.view, spot: spot)
     }
 
-    /// Whether a call runs scripts, which Ctrl-C stops before the command exits with 130 (S13).
+    /// Whether a call runs scripts, which Ctrl-C stops before the command exits with 130 (protocol: The openspot command).
     private static func runsScripts(_ call: CommandLineCall) -> Bool {
         switch call {
         case .check, .checkJSON, .spotRun: true

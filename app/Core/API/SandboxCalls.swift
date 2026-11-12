@@ -7,7 +7,7 @@ struct SandboxCalls {
     let app: (any RunningApp)?
 
     /// Opens the window and returns once the person closes it, or returns nil when no app runs, so that a process of its
-    /// own opens it. A script runs in Careful mode when `isCareful` (Z8).
+    /// own opens it. A script runs in Careful mode when `isCareful` (protocol: Trust).
     func open(_ path: String?, isCareful: Bool) -> CommandAPI.Work? {
         guard let app else { return nil }
         let place = URL(fileURLWithPath: environment["PWD"] ?? FileManager.default.currentDirectoryPath, isDirectory: true)

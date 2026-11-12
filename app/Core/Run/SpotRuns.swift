@@ -19,13 +19,13 @@ public final class SpotRuns {
     @ObservationIgnored public var partsArrival: (String, () -> Void) -> Void = { _, bring in bring() }
     /// The open of a sheet: its motion waits for its first answer, and what its script prints waits for its motion.
     @ObservationIgnored public let opening: SheetOpening
-    /// The time a `read` has to its first frame or its end, and a call of an inline spot has to its end (I7).
+    /// The time a `read` has to its first frame or its end, and a call of an inline spot has to its end (protocol: Modes).
     public let readLimit: TimeInterval
     /// The time with no call after which an inline spot lets go of its context and its thread (A26).
     let inlineIdle: TimeInterval
-    /// What each spot cost and used, day by day (G1, Z10).
+    /// What each spot cost and used, day by day (protocol: Stats).
     public nonisolated let usage: SpotUsage
-    /// Whether each process of a spot runs in Careful mode, with only what its uses name (Z8). A change starts each staying
+    /// Whether each process of a spot runs in Careful mode, with only what its uses name (protocol: Trust). A change starts each staying
     /// script again in the new mode, and each inline script at its next call.
     @ObservationIgnored public var isCareful = false {
         didSet {
@@ -34,7 +34,7 @@ public final class SpotRuns {
             sheets.values.forEach { $0.restartScript() }
         }
     }
-    /// The token of each process and inline link that runs, by which the API knows a spot's call (Z2).
+    /// The token of each process and inline link that runs, by which the API knows a spot's call (protocol: Trust).
     public nonisolated let tokens: CallerTokens
     @ObservationIgnored let now: () -> Date
     @ObservationIgnored private let stopPause: TimeInterval
@@ -414,7 +414,7 @@ public final class SpotRuns {
         })
     }
 
-    /// Takes a spot's call that needs a use, and shows a toast at its first use of the day that its header does not name (Z4).
+    /// Takes a spot's call that needs a use, and shows a toast at its first use of the day that its header does not name (protocol: Trust).
     func used(_ call: SpotUseCall, by caller: CallerTokens.Caller) {
         guard usage.used(call, by: caller, at: now()) else { return }
         onReport(caller.id, .toast("\(caller.name) \(call.words) without `uses=\(call.use.rawValue)` in its header. Add it to stop this note."))

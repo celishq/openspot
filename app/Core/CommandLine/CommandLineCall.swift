@@ -14,15 +14,15 @@ public enum CommandLineCall: Equatable, Sendable {
     case spotShow(String)
     /// Prints the record of the last calls of a spot.
     case spotLog(String)
-    /// Prints what each spot cost and used over the last days, for one spot or each one (Z10).
+    /// Prints what each spot cost and used over the last days, for one spot or each one (protocol: Stats).
     case spotStats(days: Int, spot: String?, format: StatsReport.Format)
     /// Prints each script that the app loads as JSON, or with `core` each spot that comes with the app, and with `frame` as
-    /// `key=value` blocks (K8).
+    /// `key=value` blocks (protocol: The openspot command).
     case spotList(core: Bool, frame: Bool)
     /// Turns spots that come with the app on or off.
     case spotTurn(ids: [String], on: Bool)
     /// Puts a spot from a git URL, a folder or a `.spot` file in the plugins folder, or with none each spot of `spots.lock`
-    /// that is missing (N1, N2). An update that adds a use applies only when it is confirmed (Z7).
+    /// that is missing (protocol: The openspot command). An update that adds a use applies only when it is confirmed (protocol: Trust).
     case spotAdd(String?, isConfirmed: Bool)
     /// Takes a spot that `spot add` added out of the plugins folder.
     case spotRemove(String)
@@ -46,13 +46,13 @@ public enum CommandLineCall: Equatable, Sendable {
     case sandbox(String?)
     case colorPick
     case folderPick
-    /// Prints the value of a spot's setting, or nothing when it has none (K6).
+    /// Prints the value of a spot's setting, or nothing when it has none (protocol: Settings).
     case settingGet(spot: String, key: String)
-    /// Keeps the value of a spot's setting, or removes it with no value (K6).
+    /// Keeps the value of a spot's setting, or removes it with no value (protocol: Settings).
     case settingSet(spot: String, key: String, value: String?)
     /// Prints each value that a spot keeps, as JSON.
     case settingList(frame: Bool)
-    /// Runs one call for each line of stdin, and prints the output of each with a line `---` after it (K7).
+    /// Runs one call for each line of stdin, and prints the output of each with a line `---` after it (protocol: The openspot command).
     case batch
     /// Gives the app a key of its own: `panel_key` opens the panel, and `fix_key` opens the fix of a failure.
     case appKeySet(name: String, key: String)
@@ -66,7 +66,7 @@ public enum CommandLineCall: Equatable, Sendable {
     case appLogin(Bool)
     /// Puts `openspot` on the path of a terminal, or takes it off.
     case appLink(Bool)
-    /// Turns Careful mode on or off (Z8).
+    /// Turns Careful mode on or off (protocol: Trust).
     case appCareful(Bool)
     case appQuit
     case updateCheck
@@ -79,7 +79,7 @@ public enum CommandLineCall: Equatable, Sendable {
     case clipboardPaste
     /// Prints the text on the clipboard.
     case clipboardRead
-    /// Raises an event in the running app, with a value, so that each spot that lists it reads (B3).
+    /// Raises an event in the running app, with a value, so that each spot that lists it reads (protocol: Events).
     case eventEmit(name: String, value: String?)
     case translate(from: String?, to: String?)
     case translateLanguages
@@ -244,7 +244,7 @@ public enum CommandLineCall: Equatable, Sendable {
     }
 
     /// Returns nil when these arguments start the app, such as none or the flags that the system passes. The environment
-    /// names the spot of a setting and tells a read, in which a command that waits for the person is refused (K4).
+    /// names the spot of a setting and tells a read, in which a command that waits for the person is refused (protocol: The openspot command).
     public init?(arguments: [String], environment: [String: String] = ProcessInfo.processInfo.environment) {
         guard let noun = arguments.first else { return nil }
         if noun == "--help" || noun == "help" {
@@ -392,7 +392,7 @@ public enum CommandLineCall: Equatable, Sendable {
         }
     }
 
-    /// The call of a command that waits for the person, or its refusal in a read (K4).
+    /// The call of a command that waits for the person, or its refusal in a read (protocol: The openspot command).
     private static func waiting(_ call: CommandLineCall, _ name: String, _ environment: [String: String]) -> CommandLineCall {
         guard environment["OPENSPOT_REASON"] == nil else {
             return .refused("`\(name)` waits for the person, so it cannot run in a read. Run it from a pick or an action.")

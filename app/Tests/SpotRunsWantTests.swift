@@ -35,7 +35,7 @@ final class SpotRunsWantTests: SpotRunsCase {
         XCTAssertEqual(sheet.list.shown.count, 1)
     }
 
-    // MARK: F7
+    // MARK: Places
 
     func testAWidgetCanPlaceAnyScriptWithARead() async throws {
         try script("onpanel", header: "on=panel.open", log: "onpanel", "printf 'text=m\\ntitle=P\\n'")
@@ -106,7 +106,7 @@ final class SpotRunsWantTests: SpotRunsCase {
         await fulfillment(of: [changed], timeout: 2)
     }
 
-    // MARK: L3, moments
+    // MARK: Events, moments
 
     func testEachMomentReadsOnlyTheScriptsThatListIt() async throws {
         try script("onsheet", header: "on=sheet.open", log: "onsheet", "printf 'row=s\\ntitle=S\\n'")

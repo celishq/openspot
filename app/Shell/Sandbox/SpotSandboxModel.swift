@@ -43,7 +43,7 @@ final class SpotSandboxModel {
         return face.layout(for: spot.size).map { ($0, face, spot.size) }
     }
 
-    /// `isCareful` runs the spot in Careful mode, with no use (Z8).
+    /// `isCareful` runs the spot in Careful mode, with no use (protocol: Trust).
     init(path: String?, isCareful: Bool = false) {
         let file = path.map { URL(fileURLWithPath: $0) }
         self.file = file

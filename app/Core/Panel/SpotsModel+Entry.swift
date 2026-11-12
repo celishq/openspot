@@ -8,7 +8,7 @@ extension SpotsModel {
     public struct Entry: Identifiable, Equatable {
         public let id: String
         public let item: SpotItem?
-        /// Whether its row is an answer of its spot to the text of the main search (A3).
+        /// Whether its row is an answer of its spot to the text of the main search (protocol: Places).
         public let isAnswer: Bool
         private let sizeChoice: SpotSize?
         private let run: SpotRun?
@@ -31,7 +31,7 @@ extension SpotsModel {
         }
 
         /// A card of a full row for an item that the main search found in a list. A row that answers the text shows its own
-        /// detail, which says how the spot read the text (A3), and an answer card draws its own card at its size (A4).
+        /// detail, which says how the spot read the text (protocol: Places), and an answer card draws its own card at its size (protocol: Places).
         public init(spot: Spot, item: SpotItem, isAnswer: Bool = false) {
             id = "\(spot.id)\n\(item.run)"
             sizeChoice = item.card?.face.answerSize ?? .strip
@@ -53,7 +53,7 @@ extension SpotsModel {
             sizeChoice != nil
         }
 
-        /// The size of its card: the person's choice, or else its header (F9). A card of a fault is never small, so that its
+        /// The size of its card: the person's choice, or else its header (protocol: The header). A card of a fault is never small, so that its
         /// words show.
         @MainActor public var size: SpotSize {
             let size = sizeChoice ?? spot.size

@@ -29,7 +29,7 @@ public struct SpotFile: Equatable, Sendable {
         }
     }
 
-    /// A script with a clock starts off the grid until the person shows it (F7).
+    /// A script with a clock starts off the grid until the person shows it (protocol: Places).
     public init(script url: URL, header: TextBlock, id: String) throws {
         let name = header.value("title") ?? Self.name(of: url)
         if header.fields.contains(where: { $0.key.hasPrefix(Self.drawingPrefix) }) {
@@ -235,7 +235,7 @@ public struct SpotFile: Equatable, Sendable {
     }
 
     /// The ID of a tool that a widget names: a script of the widget's own folder by its file name first, else the name as an
-    /// ID (F10).
+    /// ID (protocol: A spot).
     private static func tool(_ name: String, beside url: URL, id: String) -> String {
         guard !name.contains("/"), let folder = id.split(separator: "/").first, id.contains("/") else { return name }
         let files = (try? FileManager.default.contentsOfDirectory(at: url.deletingLastPathComponent(), includingPropertiesForKeys: nil)) ?? []

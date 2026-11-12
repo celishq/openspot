@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 /// Proves how a JavaScript spot answers inside the app: in the turn of the text when it is fast, and in a later turn,
-/// with the last rows kept, when it is slow (I3, I5).
+/// with the last rows kept, when it is slow (protocol: Modes).
 @MainActor
 final class SpotRunsInlineTests: SpotRunsCase {
     /// A host of the API that reaches nothing on the Mac.

@@ -29,7 +29,7 @@ public struct ScanResult: Equatable, Sendable {
         files.flatMap(\.spots).filter { $0.kind != .widget }
     }
 
-    /// The assigned keys whose script still lists their command, or still offers a float (W1, T1).
+    /// The assigned keys whose script still lists their command, or still offers a float (W1; protocol: Places).
     public func offered(_ keys: [GlobalKey]) -> [GlobalKey] {
         keys.filter { key in
             switch key.act {

@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves K1 to K3 with real processes, through a stand-in capability: a small program that uses the same `Capability`.
+/// Proves the openspot command of the protocol with real processes, through a stand-in capability: a small program that uses the same `Capability`.
 final class CapabilityTests: XCTestCase {
     private var folder: URL!
     private var label = ""

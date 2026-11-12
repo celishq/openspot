@@ -5,9 +5,9 @@ public struct SpotCheck: Sendable {
     public let folder: SpotFolder
     public let timeout: TimeInterval
     public let views: ViewLibrary
-    /// The most uses that Careful mode leaves each read, or nil to run each one as the person (Z8).
+    /// The most uses that Careful mode leaves each read, or nil to run each one as the person (protocol: Trust).
     let careful: Set<SpotUse>?
-    /// The record of the app, which then knows each read's calls of `openspot` as its spot's (Z2), or nil for one of its own.
+    /// The record of the app, which then knows each read's calls of `openspot` as its spot's (protocol: Trust), or nil for one of its own.
     let tokens: CallerTokens?
 
     public init(folder: SpotFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard()) {
@@ -105,7 +105,7 @@ public struct SpotCheck: Sendable {
     }
 
     /// The faults of blocks that a value with a new line breaks: a line with no `=`, or a key twice that only a list repeats
-    /// (C8).
+    /// (protocol: The calls).
     static func brokenBlocks(in text: String) -> [String] {
         let fix = "as a value with a new line prints. Print each value from data with openspot_kv, openspot_row or esc"
         let lists: Set<String> = ["grid", "value", "hides", "keyword", "color"]

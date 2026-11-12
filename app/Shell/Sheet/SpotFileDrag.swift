@@ -2,7 +2,7 @@ import AppKit
 import OpenspotCore
 
 /// A drag of the files of rows out of a sheet, as a drag out of Finder: the app that takes the drop copies or moves them
-/// (O1). When the drop ends in another app, it tells its owner (O2). A drop on Openspot, such as back on its own shelf,
+/// (protocol: Files out). When the drop ends in another app, it tells its owner (protocol: Files out). A drop on Openspot, such as back on its own shelf,
 /// tells it nothing.
 @MainActor
 final class SpotFileDrag: NSObject, NSDraggingSource {

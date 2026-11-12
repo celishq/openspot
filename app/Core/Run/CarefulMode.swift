@@ -1,6 +1,6 @@
 import Foundation
 
-/// The `sandbox-exec` words that run a spot's process in Careful mode (Z8): it reads everywhere, writes only to its data
+/// The `sandbox-exec` words that run a spot's process in Careful mode (protocol: Trust): it reads everywhere, writes only to its data
 /// folder, the temp folders, `/private/tmp`, `/dev` and the cache folder unless its uses name `files`, and the folder of
 /// screenshots, the Desktop and Movies too when they name `screen`. It reaches no network unless they name `network`, and
 /// sends no Apple Event. A file that the app writes for the spot, such as a capture, follows the same folders.

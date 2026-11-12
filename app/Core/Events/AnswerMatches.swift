@@ -1,6 +1,6 @@
 import Foundation
 
-/// Which `answers` patterns match the text of the main search (A2). It matches each pattern once for each text.
+/// Which `answers` patterns match the text of the main search (protocol: Places). It matches each pattern once for each text.
 struct AnswerMatches {
     private var text = ""
     private var found: [String: Bool] = [:]

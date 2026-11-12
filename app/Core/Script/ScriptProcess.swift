@@ -54,7 +54,7 @@ public final class ScriptProcess: @unchecked Sendable {
 
     /// `limit` is the time the script has to its first frame or its end. With none, it has no limit. `stopPause` is the time
     /// between each step of a stop. `variables` add to its environment. `errorLimit` is how many of the last bytes of stderr
-    /// it keeps, and nil keeps all. `careful` runs it in Careful mode with these uses (Z8), and nil runs it as the person.
+    /// it keeps, and nil keeps all. `careful` runs it in Careful mode with these uses (protocol: Trust), and nil runs it as the person.
     /// `name` is its first argument in place of its path, which `sandbox-exec` in Careful mode does not pass on. `base` and
     /// `folder` start it with another environment and working folder than the app's, and Careful mode still takes its
     /// folders from the app's.
@@ -167,7 +167,7 @@ public final class ScriptProcess: @unchecked Sendable {
         follow(output: output, errors: errors)
     }
 
-    /// Sends one call to the script as a block with its `id`, its stdin and its variables, in the order of the calls (Y8).
+    /// Sends one call to the script as a block with its `id`, its stdin and its variables, in the order of the calls (protocol: Modes).
     public func send(_ action: SpotAction, input: String? = nil, variables: [String: String] = [:], id: Int) {
         send(text: action.block(input: input, variables: variables, id: id))
     }

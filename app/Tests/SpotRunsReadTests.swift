@@ -30,7 +30,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         XCTAssertEqual(items.map(\.run), ["coffee"])
     }
 
-    // MARK: M6
+    // MARK: Events
 
     func testALaterFrameOfAReadWithABlockReplacesItsValue() async throws {
         try script(header: "on=sheet.open", "printf 'main=m\\n\\ntext=m\\ntitle=3\\n---\\n'\nsleep 0.05\nprintf 'text=b\\ntitle=B\\n---\\n'")
@@ -192,7 +192,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         XCTAssertFalse(exists("went-on"))
     }
 
-    // MARK: M1, M2, M3, M4
+    // MARK: M2; M3; Events, Frames
 
     func testARequestJoinsTheReadThatRuns() async throws {
         try script(header: "on=sheet.open", "sleep 0.2\nprintf 'row=a\\ntitle=A\\n'")

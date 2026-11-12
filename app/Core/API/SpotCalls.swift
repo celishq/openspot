@@ -81,7 +81,7 @@ struct SpotCalls {
     /// Makes one call of an installed spot, prints each frame as it comes with a `---` line between frames and its stderr
     /// at its end, and exits with the code of the script. It runs with the working folder and the variables of the caller,
     /// and `input` is its stdin, or nil when the caller's stdin is no pipe or file. `careful` is the most uses that Careful
-    /// mode leaves the script, or nil to run it as the person (Z8).
+    /// mode leaves the script, or nil to run it as the person (protocol: Trust).
     func run(_ id: String, _ arguments: [String], input: (@Sendable () async -> String)?, careful: Set<SpotUse>?, output: CommandOutput) -> CommandAPI.Work {
         { [environment, runs] in
             let folder = SpotFolder.standard(environment: environment)
@@ -129,7 +129,7 @@ struct SpotCalls {
         }
     }
 
-    /// The counts of the last days: today's live from the running app, or with none each day from its file (Z11).
+    /// The counts of the last days: today's live from the running app, or with none each day from its file (protocol: Stats).
     func stats(days: Int, spot: String?, format: StatsReport.Format) -> CommandAPI.Work {
         CommandAnswer.work { [environment, runs] in
             let counts: [SpotUsage.Day]

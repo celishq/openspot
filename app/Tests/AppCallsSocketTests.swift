@@ -3,7 +3,7 @@ import XCTest
 
 /// Proves that the running app answers `check`, `spot run`, `spot show` and `sandbox` on its socket: a run gets the folder,
 /// the variables and the stdin of its caller and streams each frame, Ctrl-C stops its script, and Careful mode fences what
-/// a run or a check starts to the uses of the spot and of its caller (Z8).
+/// a run or a check starts to the uses of the spot and of its caller (protocol: Trust).
 final class AppCallsSocketTests: XCTestCase {
     private final class Host: Mac {
         func eventStore() -> any EventStore { FakeEventStore() }

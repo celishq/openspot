@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 /// Proves that a spot's call of a use that its header does not name still runs, and shows one toast for each spot, use
-/// and day, while a named use and the person's call show none (Z3, Z4).
+/// and day, while a named use and the person's call show none (protocol: Trust).
 @MainActor
 final class SpotUsesTests: SpotRunsCase {
     private final class NoHost: Mac {

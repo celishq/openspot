@@ -1,6 +1,6 @@
 import Foundation
 
-/// One call of a JavaScript spot: its arguments, its variables and its stdin (C7), and the frame that its thread gives back. The
+/// One call of a JavaScript spot: its arguments, its variables and its stdin (protocol: The calls), and the frame that its thread gives back. The
 /// main thread waits a short time for the frame, and a frame that comes later goes to `later`. A stopped call that has not
 /// run never runs. Only its first outcome counts.
 final class InlineCall: @unchecked Sendable {

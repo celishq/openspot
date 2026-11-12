@@ -1,7 +1,7 @@
 import Foundation
 
-/// The link to a JavaScript spot that runs inside the app (I3). Each call runs on the thread of the script, which loads at
-/// the first call (A26). The main thread waits 2 ms for its frame, and a later frame lands in a later turn (I5). A stopped
+/// The link to a JavaScript spot that runs inside the app (protocol: Modes). Each call runs on the thread of the script, which loads at
+/// the first call (A26). The main thread waits 2 ms for its frame, and a later frame lands in a later turn (protocol: Modes). A stopped
 /// call that has not run never runs, and one that ran changes nothing. Each call goes in the call log. A change of the
 /// file loads it again.
 @MainActor

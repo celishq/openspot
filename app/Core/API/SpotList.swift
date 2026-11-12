@@ -59,7 +59,7 @@ struct SpotList {
     }
 
     /// Each script of the scan as a `spot` block, with a `button` block for each of its commands and a `field` block for
-    /// each of its settings after it (K8).
+    /// each of its settings after it (protocol: The openspot command).
     func loadedFrame() throws -> String {
         let scan = try folder.keptScan()
         let keys = config.keys
@@ -82,7 +82,7 @@ struct SpotList {
         try Self.json(choices.map { Choice(id: $0.id, name: $0.spot.name, icon: Self.picture(of: $0.spot), detail: $0.spot.subtitle, on: $0.on, own: $0.own) })
     }
 
-    /// Each core spot that a person can turn on, as a `spot` block (K8).
+    /// Each core spot that a person can turn on, as a `spot` block (protocol: The openspot command).
     func coreFrame() -> String {
         choices.map { choice in
             Self.block([("spot", choice.id), ("name", choice.spot.name), ("icon", Self.picture(of: choice.spot)), ("detail", choice.spot.subtitle), ("on", String(choice.on)), ("own", String(choice.own))])
@@ -104,7 +104,7 @@ struct SpotList {
         try Self.json(config.settings.map { ["spot": $0.spot, "key": $0.key, "value": $0.value] })
     }
 
-    /// Each value that a spot keeps as a `field` block, in the order of the file (K8).
+    /// Each value that a spot keeps as a `field` block, in the order of the file (protocol: The openspot command).
     func valuesFrame() -> String {
         config.settings.map { Self.block([("field", $0.key), ("spot", $0.spot), ("value", $0.value)]) }.joined()
     }

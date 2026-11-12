@@ -29,6 +29,6 @@ protocol ScriptLink: AnyObject {
     func end()
     /// Lets go of the script as the app quits, which ends its processes itself.
     func leave()
-    /// A scan looked at the folder: a stopped script that changed can start again (Y5).
+    /// A scan looked at the folder: a stopped script that changed can start again (protocol: Modes).
     func scanned()
 }

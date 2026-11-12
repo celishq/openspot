@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the rows that a person drags out of a sheet as files (01, O1): `file` on a row, and the `drag` call after the drop.
+/// Proves the rows that a person drags out of a sheet as files (protocol: Files out): `file` on a row, and the `drag` call after the drop.
 @MainActor
 final class FilesOutTests: XCTestCase {
     private var folder: URL!

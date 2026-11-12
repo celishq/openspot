@@ -12,7 +12,7 @@ Code and tests name a rule by its ID.
 | A2 | Each script has one sheet model in Core. It holds the last frame, the rows, the parts and the running calls, and each place that shows the script reads from it. A run of one script never stops a run of another. |
 | A4 | Search text stays until the person presses Esc. |
 | A5 | Spots, New spot, Settings, Updates and Quit ship with the app and answer the same calls, in Swift. |
-| A6 | One global key opens the panel, and the person chooses it. A script never holds a key (P8). |
+| A6 | One global key opens the panel, and the person chooses it. A script never holds a key (protocol: The calls). |
 | A7 | The person arranges the grid in `config.toml`: order, `size`, `grid`, `enabled`, `global`, which takes a list out of the main search, and `tray`, which puts a spot in the menu bar. It wins over the plugin. A size is a preference, and the grid can change it to fill a row. With no choice, the person's files come first, the newest first, then the core spots. |
 | A8 | The app opens the panel unseen once as it starts, so that each `panel` read runs. It waits at most 2 seconds, then shows a toast that names the key. |
 | A9 | A sheet with no answer yet holds its motion for at most 150 ms, so that it grows once, to its real size. |
@@ -21,7 +21,7 @@ Code and tests name a rule by its ID.
 | A12 | A first launch turns on each core spot that reads only local data. Each other core spot is off until the person turns it on. A file in the plugins folder with the same ID wins over a core spot, and is always on. |
 | A13 | Spots opens Edit Spots with the store, which shows every spot with its state. A search for "edit spots" finds Spots. |
 | A14 | A first launch has no config and no plugin, opens the panel on the grid once, and does not open at login. |
-| A15 | A toast takes no input, except a failure with a fix (R9). One fix key, which the person chooses, opens it, and only while the toast shows. |
+| A15 | A toast takes no input, except a failure with a fix (protocol: The life of a call). One fix key, which the person chooses, opens it, and only while the toast shows. |
 | A16 | The main search ranks the best match first. Then the most weight of picks, where each pick weighs 0.9 of the one after it, then the spots, then each list in the order of the grid. A list that the person never picked from shows at most 3 rows. |
 | A17 | A ⌘ shortcut on a layout whose letters are not Latin, such as Ukrainian, goes by the letter that the same key types in the Latin layout that the Mac keeps for shortcuts, as its menus do. A key with no ⌘ types its own letter. |
 | A18 | The panel opens on the screen that holds most of the front window, or with no window in front, on the screen of the pointer. A drag over the menu bar item opens it on the screen of the pointer. It sits as a centred window sits, and an open panel does not move. |
@@ -42,7 +42,7 @@ Code and tests name a rule by its ID.
 | G1 | A running call shows a ring from the `value` of its last frame, or a spinner with no `value`. |
 | G3 | The menu bar item shows the oldest running call and how many run. A click on it opens the panel with that spot selected. |
 | G4 | The `title` and `detail` of a call's last frame of only a head show on the spot only while its call runs. |
-| G5 | Today's stats stay in memory, and go to `stats/<day>.json` in the config folder at most every 5 seconds and at quit, never on each call. A start reads today's file again, and drops each file older than 90 days (Z10). |
+| G5 | Today's stats stay in memory, and go to `stats/<day>.json` in the config folder at most every 5 seconds and at quit, never on each call. A start reads today's file again, and drops each file older than 90 days (protocol: Stats). |
 | D2 | During a drag, only a card whose `drop` takes every dragged file shows it and takes the drop. |
 | D6 | A `drop` call runs as any other call does. |
 | D5 | A click on a card with `drop` and no sheet opens a file chooser, and the choice runs the same call. A drag over the menu bar item opens the panel with no change of focus, and a drop closes it, unless D8 keeps it. |
@@ -80,13 +80,13 @@ A float is one spot in a window of its own, at the pointer, outside the panel.
 
 | ID | Rule |
 |---|---|
-| W1 | A `[[keys]]` entry with no `command` floats its spot, when its header says `offers=float` (T1): its sheet, or its card when it has no sheet. An entry with a `command` runs that command. A widget does not float. |
+| W1 | A `[[keys]]` entry with no `command` floats its spot, when its header says `offers=float` (protocol: Places): its sheet, or its card when it has no sheet. An entry with a `command` runs that command. A widget does not float. |
 | W2 | `key = "shake"` takes a shake of the pointer in place of a key press: quick turns left and right, with or without a drag. One entry at most holds it, and the app watches the pointer only while one does. The shake needs no permission, because the app reads the pointer and not the keys. |
 | W3 | Settings lists a Float row for each spot whose header says `offers=float`, beside its commands. Its key records a key press or a shake. |
 | W4 | A float opens at the pointer, whole on the pointer's screen. It has no card to grow from, so it shows whole once its first answer comes, or after 150 ms (A9). |
 | W5 | A float that opens during a drag does not take the focus, and it stays open through the drop (D7). One that opens with no drag takes the focus, so that its keys work. |
-| W6 | A float stays open across apps until Esc, its close button, or a drag of all its files out (O3). The same key or shake again closes it, and while a drag holds the mouse button, brings it to the pointer, where the drag needs it. A drag of its background moves it. |
-| W7 | Each spot has one float at most. Floats of other spots and the panel show at the same time. A float wants its script as an open sheet does (L3), and the panel's close does not close it. A float's close drops the values of a sheet of parts with a field, as the panel's close does (K5). |
+| W6 | A float stays open across apps until Esc, its close button, or a drag of all its files out (protocol: Files out). The same key or shake again closes it, and while a drag holds the mouse button, brings it to the pointer, where the drag needs it. A drag of its background moves it. |
+| W7 | Each spot has one float at most. Floats of other spots and the panel show at the same time. A float wants its script as an open sheet does (protocol: Events), and the panel's close does not close it. A float's close drops the values of a sheet of parts with a field, as the panel's close does (K5). |
 | W8 | A float takes Up, Down, Return, Esc and the shortcuts of its spot's actions. It has no search field, no `⌘K` menu and no form: an action or a pick that asks with a form, a key or a second press opens the spot in the panel. A pick leaves the float open. |
 | W9 | A drop on a float works as a drop on its card (D2, D6). The float shows that it takes a drag only while the pointer lies over it. |
 
@@ -131,8 +131,7 @@ In order. An earlier goal wins when two goals conflict.
 2. **The example first.** One real example, then the rules as short bullets, as Nostr NIPs write them.
 3. **Plain words.** Short sentences in ASD-STE100, and MUST, SHOULD and MAY as RFC 2119 gives them. The why of a rule goes
    in the table of decisions, not in the rule.
-4. **Each rule once.** A rule keeps an ID, such as `C6`, only when code or a test names it, and an ID is
-   never changed or used again.
+4. **Each rule once.** The protocol keeps no rule IDs. Code, tests and this file cite a section of it by name.
 5. **A decision** that later work must not break goes in the table of decisions, with the one it rejected.
 6. **One way to do one thing,** and each word in one place, as the registry shows.
 
@@ -165,10 +164,10 @@ The verbs and the row keys of each `openspot` noun, such as `screen` or `calenda
 
 | Decision                                                                                                    | Rejected                                     |
 | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| One `on` key lists events, and each moment of a read is an event `<noun>.<verb>` with a value (B6).          | `read` for places, `every` for seconds, `answers` for a pattern and `on` for events. |
+| One `on` key lists events, and each moment of a read is an event `<noun>.<verb>` with a value (protocol: Events).          | `read` for places, `every` for seconds, `answers` for a pattern and `on` for events. |
 | A filter on an event is a regular expression of its value, after a space.                                   | A key for each kind of filter.               |
 | The reason of a read is the name of its event.                                                              | A word for each reason beside the events.    |
-| A spot names the events that it raises in `emits`, so that a check can know each name (B7).                | Any word with a dot as an event.             |
+| A spot names the events that it raises in `emits`, so that a check can know each name (protocol: Events).                | Any word with a dot as an event.             |
 | The app's events are default ids, and `read` is the only reserved call.                                     | A verb for each kind of call.                |
 | A call is the id, its row and its values; what the person typed is on stdin.                                | The search text and its forms as arguments of `read`. |
 | A press of a card with no sheet is `open` with no row.                                                      | A `run` id beside `open`.                    |
@@ -182,22 +181,22 @@ The verbs and the row keys of each `openspot` noun, such as `screen` or `calenda
 | `openspot guide` is the one text of the contract, and a part takes only the keys that it names.             | A catalog of parts beside the guide.         |
 | A value is whole, and a thing with its own title or picture is a block.                                     | `<id>:<title>:<icon>` in one value, which a URL or a time such as 09:30 breaks. |
 | A person can see and stop each call, so a call has no time limit.                                           | A `job` key.                                 |
-| A script runs once for each call, unless its header gives another `mode`, and a `.js` file runs inline (I1). | A process that stays by default, and `mode=inline`. |
-| A call is the same arguments, variables and stdin in each mode, as CGI and the socket of the API give them (C7). | `call=` blocks read with `next`, and a JavaScript function for each id. |
-| A helper writes each value from data (C8).                                                                  | An author who escapes each value by hand.    |
+| A script runs once for each call, unless its header gives another `mode`, and a `.js` file runs inline (protocol: Modes). | A process that stays by default, and `mode=inline`. |
+| A call is the same arguments, variables and stdin in each mode, as CGI and the socket of the API give them (protocol: The calls). | `call=` blocks read with `next`, and a JavaScript function for each id. |
+| A helper writes each value from data (protocol: The calls).                                                                  | An author who escapes each value by hand.    |
 | The header is in each file, and a scan runs nothing.                                                        | A manifest.                                  |
 | The header lists the events where a read is safe, because only the author knows what a read costs.         | `read=true`, with moments that the app picks. |
-| A call that needs the app starts it, and a call of files runs where it is (S12).                           | A process of its own that answers in part, or fails. |
-| One call of `openspot batch` asks several things, and `--frame` prints them as frames (K7, K8).              | A process and a `jq` for each thing.         |
+| A call that needs the app starts it, and a call of files runs where it is (protocol: The openspot command).                           | A process of its own that answers in part, or fails. |
+| One call of `openspot batch` asks several things, and `--frame` prints them as frames (protocol: The openspot command).              | A process and a `jq` for each thing.         |
 | The person gives each letter, each float and each place in the menu bar, and the header only offers the main search. | `shortcut`, `tray`, `global` and `float` in the header, which two shared spots could both claim. |
 | A pattern in the header says which text a spot answers, so a scan learns it with no run, and a key starts no other script. | Each script asked at each key. |
 | An answer is a read at `search.text`, so a script has one shape for both.                                   | A new call, such as `answer <text>`.         |
 | Answers show first, because they are about the whole text that the person typed.                            | A rank that each spot gives its rows.        |
-| A plugin runs with the full access of the person, names what it uses in `uses`, and each use shows after it happens (Z1, Z4). | A prompt at each use, a refused call, or a sandbox by default. |
-| A spot's call is known by Openspot's own record of its processes (Z2).                                      | `OPENSPOT_ID` alone, which a process can set or drop. |
-| A missing use shows when a run makes it, and `openspot check` does not guess it (Z4).                      | A check that reads the text for calls.       |
-| The person decides at an add or an update, which shows the uses and what grew (Z6, Z7).                     | A review of each call.                       |
-| Careful mode is a sandbox that the person turns on, and it allows what `uses` names (Z8).                  | A data folder that claims to be a boundary.  |
+| A plugin runs with the full access of the person, names what it uses in `uses`, and each use shows after it happens (protocol: Trust). | A prompt at each use, a refused call, or a sandbox by default. |
+| A spot's call is known by Openspot's own record of its processes (protocol: Trust).                                      | `OPENSPOT_ID` alone, which a process can set or drop. |
+| A missing use shows when a run makes it, and `openspot check` does not guess it (protocol: Trust).                      | A check that reads the text for calls.       |
+| The person decides at an add or an update, which shows the uses and what grew (protocol: Trust).                     | A review of each call.                       |
+| Careful mode is a sandbox that the person turns on, and it allows what `uses` names (protocol: Trust).                  | A data folder that claims to be a boundary.  |
 | A script keeps a setting through `openspot setting`, and asks for it when it needs it.                      | A setting with a kind, and required settings. |
 | The app owns each canvas, and a drawing only names areas, so each result stays even.                        | Sizes, gaps and colours in points.           |
 | A drawing is CSS grid areas, which authors and models know.                                                 | Nested stacks, ratios and named layouts.     |

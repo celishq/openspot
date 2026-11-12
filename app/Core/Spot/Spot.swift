@@ -20,7 +20,7 @@ public struct Spot: Equatable, Sendable {
     public let isGlobal: Bool
     /// Whether the main search finds the spot itself. A header with `offers=rows` offers only its rows.
     public let isFound: Bool
-    /// The text of the main search that its script answers with rows (A1).
+    /// The text of the main search that its script answers with rows (protocol: Places).
     public let answers: AnswerPattern?
     /// Its place in the grid before the person's choice: a lower number first. The person's newest file comes first.
     public private(set) var order: Int
@@ -38,12 +38,12 @@ public struct Spot: Equatable, Sendable {
     public let mode: SpotMode
     /// The file extensions that its card takes, with `folder` and `*`.
     public let drop: [String]
-    /// Whether its header offers it as a float, which the person can give a key or a shake (T1).
+    /// Whether its header offers it as a float, which the person can give a key or a shake (protocol: Places).
     public let offersFloat: Bool
     /// The folder of its files inside the data of the app. A sheet of the app and a widget have none.
     public let dataName: String?
     /// Whether the grid shows its card before the person's choice. A script with commands, one that offers only its rows,
-    /// one with a number in its `read` (F7), or one that a widget opens, has no card on the grid.
+    /// one with a number in its `read` (protocol: Places), or one that a widget opens, has no card on the grid.
     public private(set) var isOnGrid: Bool
     /// The `symbol` its header names, if any.
     public let headerSymbol: String?
@@ -53,11 +53,11 @@ public struct Spot: Equatable, Sendable {
     public let image: String?
     /// The short text, such as an emoji, that its header names as its picture.
     public let glyph: String?
-    /// The Swift file of the view that its card draws, as a full path (V1).
+    /// The Swift file of the view that its card draws, as a full path (protocol: Views).
     public let view: String?
-    /// The events that it raises with `openspot event emit`, which its header names in `emits` (B7).
+    /// The events that it raises with `openspot event emit`, which its header names in `emits` (protocol: Events).
     public let emits: [String]
-    /// The uses that its header names in `uses` (Z3).
+    /// The uses that its header names in `uses` (protocol: Trust).
     public internal(set) var uses: Set<SpotUse>
     /// The commands its header lists, which a person can give keys.
     public let offers: [CommandOffer]

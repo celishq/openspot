@@ -4,7 +4,7 @@ import XCTest
 /// Proves how a script that stays starts, takes calls and ends.
 @MainActor
 final class SpotRunsStayTests: SpotRunsCase {
-    // MARK: Y2, Y3, Y5
+    // MARK: Modes
 
     private static let form = """
     while IFS= read -r line; do
@@ -24,7 +24,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     done
     """
 
-    // MARK: Y7
+    // MARK: Modes
 
     private static let ends = """
     while IFS= read -r line; do

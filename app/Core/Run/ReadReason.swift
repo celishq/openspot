@@ -1,11 +1,11 @@
 import Foundation
 
 /// Why a read runs: the name of its event, with its value, or a reason with no event. A script gets it as
-/// `OPENSPOT_REASON`, and the value as `OPENSPOT_VALUE` (B4).
+/// `OPENSPOT_REASON`, and the value as `OPENSPOT_VALUE` (protocol: Events).
 public struct ReadReason: Equatable, Sendable {
     public static let panel = ReadReason(rawValue: SpotEvent.panelOpen)
     public static let sheet = ReadReason(rawValue: SpotEvent.sheetOpen)
-    /// The first read of a script whose events would not read it yet, when something starts to want it (B5).
+    /// The first read of a script whose events would not read it yet, when something starts to want it (protocol: Events).
     public static let want = ReadReason(rawValue: "spot.want")
     public static let change = ReadReason(rawValue: "spot.change")
     public static let preview = ReadReason(rawValue: "spot.preview")

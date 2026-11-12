@@ -214,7 +214,7 @@ final class SpotDropTests: XCTestCase {
         XCTAssertTrue(frames.frames.isEmpty)
     }
 
-    // MARK: D3
+    // MARK: The calls
 
     func testADropRunsOneCallWithEachPathAsItsOwnArgument() async throws {
         let sheet = try sheet(header: "drop=mov", """
@@ -250,7 +250,7 @@ final class SpotDropTests: XCTestCase {
         XCTAssertTrue(sheet.calls.isEmpty)
     }
 
-    // MARK: D4
+    // MARK: The calls
 
     /// An open sheet whose running `work` action goes on until the file `release` appears.
     private func busySheet() async throws -> SpotRun {
@@ -382,7 +382,7 @@ final class SpotDropTests: XCTestCase {
         XCTAssertEqual(log(), ["read", "work"])
     }
 
-    // MARK: Y1, Y2
+    // MARK: Modes
 
     /// The sheet of a staying script that takes `mov` files. It logs each line of its stdin, and prints a frame after each block.
     private func stayingSheet(header: String = "") throws -> SpotRun {

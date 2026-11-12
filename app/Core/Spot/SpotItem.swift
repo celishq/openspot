@@ -20,13 +20,13 @@ public struct SpotItem: Equatable, Sendable {
     public let isOn: Bool
     /// The colour of the dot on its picture.
     public let tone: MetricValue.Tone?
-    /// The file that the row stands for, which a drag takes out of the sheet (O1).
+    /// The file that the row stands for, which a drag takes out of the sheet (protocol: Files out).
     public let file: String?
-    /// The ID of the other spot that a pick goes to, as `<spot> open <row id>` (J1).
+    /// The ID of the other spot that a pick goes to, as `<spot> open <row id>` (protocol: Rows).
     public let to: String?
     /// The whole block of the row, which a pick sends on stdin to the spot that `to` names. Only such a row keeps it.
     public let fields: String?
-    /// The card that an answer draws in place of its row, from the drawing and the blocks of its frame (A4).
+    /// The card that an answer draws in place of its row, from the drawing and the blocks of its frame (protocol: Places).
     public let card: SpotState?
 
     public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, takesShake: Bool = false, isOn: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, to: String? = nil, fields: String? = nil, card: SpotState? = nil) {

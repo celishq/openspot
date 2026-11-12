@@ -10,7 +10,7 @@ extension SpotRun {
 
     /// Asks the script for what it shows. A list that the script searches sends the text that is typed on stdin, so that the answer
     /// gives the spot's new value and the rows of that text. A request joins the read that runs, and a change reads again
-    /// after it (M1). A `panel` or a `sheet` moment uses an answer younger than 5 seconds (M2). A file with no `read` gets
+    /// after it (protocol: Events). A `panel` or a `sheet` moment uses an answer younger than 5 seconds (M2). A file with no `read` gets
     /// its click instead.
     public func read(selecting run: String? = nil, need: ReadNeed = .moment, reason: ReadReason? = nil) {
         let reason = reason ?? (need == .change ? .change : showsSheet ? .sheet : .panel)
@@ -66,7 +66,7 @@ extension SpotRun {
     }
 
     /// Asks the script for the rows that answer a text of the main search, at once, and stops the older ask. An empty text
-    /// drops the answers (A2, A3).
+    /// drops the answers (protocol: Places).
     public func answer(_ text: String) {
         guard text != answerQuery else { return }
         answerQuery = text

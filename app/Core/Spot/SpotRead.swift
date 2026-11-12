@@ -1,6 +1,6 @@
 import Foundation
 
-/// The events that read a script, from the `on=<event> [filter]` lines of its header (B1, B6): the open of its sheet or of
+/// The events that read a script, from the `on=<event> [filter]` lines of its header (protocol: Events): the open of its sheet or of
 /// the panel, a clock, a text of the main search or of its sheet, and any other event with a name. A filter is a regular
 /// expression that the value of its event must match.
 public struct SpotRead: Equatable, Sendable {
@@ -15,7 +15,7 @@ public struct SpotRead: Equatable, Sendable {
     public static let sheet = SpotRead(moments: [.sheet])
 
     public let moments: [Moment]
-    /// The pattern of the texts of the main search that it answers, from `on=search.text <pattern>` (A1).
+    /// The pattern of the texts of the main search that it answers, from `on=search.text <pattern>` (protocol: Places).
     public let answers: AnswerPattern?
     /// Whether each change of the search of its sheet reads it, from `on=sheet.text`.
     public let searchesSheet: Bool
@@ -29,7 +29,7 @@ public struct SpotRead: Equatable, Sendable {
     }
 
     /// Reads the `on` lines of the header of the spot `name`. Returns nil when it has none, and throws a fault that names
-    /// the line that it cannot read (B6).
+    /// the line that it cannot read (protocol: Events).
     public init?(on lines: [String], of name: String) throws {
         guard !lines.isEmpty else { return nil }
         var moments: [Moment] = []

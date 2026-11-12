@@ -3,7 +3,7 @@ import Foundation
 /// One frame of what a script prints, sorted by the first key of each block: `row` or a kind of part. The one other block is
 /// the head, which says how the spot itself looks and holds the effects `toast`, `link`, `select`, `progress` and `end`. A
 /// frame with a block is the whole picture, and a frame of only a head carries effects. A button that the drawing does
-/// not place is an action (U6). Each `run` value appears once.
+/// not place is an action (protocol: Buttons and actions). Each `run` value appears once.
 public struct SpotOutput: Equatable, Sendable {
     public private(set) var summary: TextBlock?
     public private(set) var rows: [TextBlock] = []
@@ -18,28 +18,28 @@ public struct SpotOutput: Equatable, Sendable {
     public private(set) var parts: [SpotPart] = []
     public private(set) var errors: [String] = []
     public private(set) var layout: SheetLayout?
-    /// The block of the component that stands for the spot (H1): the one that `main=<id>` in the head names, or else the
+    /// The block of the component that stands for the spot (protocol: The main block and the card): the one that `main=<id>` in the head names, or else the
     /// only `text`, `gauge`, `graph`, `switch` or `slider`.
     public private(set) var value: TextBlock?
-    /// The block of the first `view`, whose keys the plugin's view reads (V4).
+    /// The block of the first `view`, whose keys the plugin's view reads (protocol: Views).
     public private(set) var view: TextBlock?
-    /// The drawings of the spot's card and of the menu bar, with the components that they place (U5).
+    /// The drawings of the spot's card and of the menu bar, with the components that they place (protocol: Drawings).
     public private(set) var face = CardFace.none
-    /// The drawing that the rows flow through (U7). With no `repeat` block, the rows are a list.
+    /// The drawing that the rows flow through (protocol: Rows). With no `repeat` block, the rows are a list.
     public private(set) var drawing = RepeatDrawing.list
     public private(set) var toast: String?
     /// The URL of a `link` effect, which opens it, such as the fix of a failure.
     public private(set) var link: String?
     /// The ids of the calls of a staying script that this frame ends.
     public private(set) var ends: [String] = []
-    /// The id of the call of a staying script whose output starts after this frame, from `call=<n>` in its head (Y8).
+    /// The id of the call of a staying script whose output starts after this frame, from `call=<n>` in its head (protocol: Modes).
     public private(set) var start: String?
     /// The blocks it was read from, which a check of its parts reads again.
     private var blocks: [TextBlock]
     /// Whether this reading checks each part, which only a check asks for, so that a frame on screen costs no check.
     private let checks: Bool
     private var checkedFaults: [String] = []
-    /// The row that a `select` effect selects when the call ends, such as the row that a drop added (D8).
+    /// The row that a `select` effect selects when the call ends, such as the row that a drop added (protocol: The calls).
     public private(set) var select: String?
     /// Whether it holds a block, so that it is the whole picture of the spot.
     public let isPicture: Bool
@@ -48,7 +48,7 @@ public struct SpotOutput: Equatable, Sendable {
     /// The app's own events. A part cannot take one, and a button can take only `open`, to change the pick.
     private static let defaults = ["open", "drop"]
 
-    /// The newer events that this output asks for: `drag` when a row names a file (O2).
+    /// The newer events that this output asks for: `drag` when a row names a file (protocol: Files out).
     private var takenDefaults: [String] {
         blocks.contains { $0.fields.first?.key == "row" && $0.value("file") != nil } ? ["drag"] : []
     }
@@ -62,7 +62,7 @@ public struct SpotOutput: Equatable, Sendable {
     private static let retired = "retired"
     /// The kinds that the protocol folded into others: `gauge` into a `graph`, and `slider` and `hotkey` into a `field`.
     private static let foldedKinds: Set<String> = ["gauge", "slider", "hotkey"]
-    /// The area of the rows in the default drawing of a sheet with no `repeat` block (U13).
+    /// The area of the rows in the default drawing of a sheet with no `repeat` block (protocol: Drawings).
     private static let rowsArea = "rows"
     private static let formKinds: Set<String> = ["field", "choice", "switch", "slider"]
     /// The kinds of component that can stand for the spot.
@@ -222,7 +222,7 @@ public struct SpotOutput: Equatable, Sendable {
         if !sheet.isEmpty { checkedFaults += SheetFaults.of(layout: layout, summary: summary, parts: sheet) }
     }
 
-    /// The one switch or slider that is all the output, which the card draws and changes (U12).
+    /// The one switch or slider that is all the output, which the card draws and changes (protocol: The main block and the card).
     public var control: SpotPart? {
         guard items.isEmpty, actions.isEmpty, parts.count == 1, let part = parts.first else { return nil }
         return part.kind == "switch" || part.kind == "slider" ? part : nil
@@ -233,13 +233,13 @@ public struct SpotOutput: Equatable, Sendable {
         ["text", "number", "gauge", "graph"].contains(value?.fields.first?.key ?? "") ? value : nil
     }
 
-    /// The part of a running call that is done, from 0 to 1, from `progress` in the head (R12).
+    /// The part of a running call that is done, from 0 to 1, from `progress` in the head (protocol: Frames).
     public var progress: Double? {
         summary?.number("progress").map { min(max($0, 0), 1) }
     }
 
     /// Whether this frame only marks the start or the end of a call of a staying script, or holds nothing, so that a person
-    /// who reads the frames needs not see it (Y8).
+    /// who reads the frames needs not see it (protocol: Modes).
     public var isMark: Bool {
         !isPicture && blocks.allSatisfy { $0.fields.allSatisfy { ["call", "end"].contains($0.key) } }
     }
@@ -256,7 +256,7 @@ public struct SpotOutput: Equatable, Sendable {
     }
 
     /// The rows that answer a text of the main search, or one card in their place when the head draws a `strip` or a `large`
-    /// card and the main block has a `value`, which a press sends (A4).
+    /// card and the main block has a `value`, which a press sends (protocol: Places).
     public var answers: [SpotItem] {
         guard face.answerSize != nil, let value, let run = value.value("value") else { return items }
         let title = value.value("display") ?? run

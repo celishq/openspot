@@ -3,7 +3,7 @@ import XCTest
 
 /// Proves `Contents/Helpers/openspot`: it asks the socket of the running app, and runs the program of its app with the same
 /// arguments for a call of files when no socket answers or the call runs in a process of its own. A live call starts the
-/// app and waits for its socket, and Ctrl-C stops its work in the app (S12, S13).
+/// app and waits for its socket, and Ctrl-C stops its work in the app (protocol: The openspot command).
 final class CommandClientTests: XCTestCase {
     private final class Host: Mac {
         func eventStore() -> any EventStore { FakeEventStore() }

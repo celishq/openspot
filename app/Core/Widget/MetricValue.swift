@@ -54,7 +54,7 @@ public struct MetricValue: Equatable, Sendable {
         self.isHidden = isHidden
     }
 
-    /// Reads what a metric prints: its value when that is a `text`, `gauge` or `graph` (H1), or its rows. Nothing means nothing to show. Rows
+    /// Reads what a metric prints: its value when that is a `text`, `gauge` or `graph` (protocol: The main block and the card), or its rows. Nothing means nothing to show. Rows
     /// count themselves, and all else needs a title.
     public init?(output: SpotOutput) {
         let rows = output.rows.compactMap { block in

@@ -1,6 +1,6 @@
 import Foundation
 
-/// The record of each process and inline link of a spot that runs, which marks its calls of `openspot` as the spot's (Z2).
+/// The record of each process and inline link of a spot that runs, which marks its calls of `openspot` as the spot's (protocol: Trust).
 /// A call comes from the process group that Openspot started for the spot, or else carries the spot's token. The record
 /// keeps the reason of the call that runs, and outlives the first process of its group while a child of it still runs. A
 /// call from no known group and with no known token is the person's.
@@ -62,7 +62,7 @@ public final class CallerTokens: @unchecked Sendable {
         return token
     }
 
-    /// Whether Careful mode is on, in which a spot's call of a use that its header does not name is refused (Z8).
+    /// Whether Careful mode is on, in which a spot's call of a use that its header does not name is refused (protocol: Trust).
     public var isCareful: Bool {
         get { lock.withLock { careful } }
         set { lock.withLock { careful = newValue } }
