@@ -39,18 +39,22 @@ public struct SpotFile: Equatable, Sendable {
             throw SpotError.fault("\(name) has an unknown event in its emits: \(word). Write a word with a dot, such as emits=music.track")
         }
         let uses = try SpotUse.set(header.value("uses"), of: name)
+        let isInline = url.pathExtension == Self.inlineExtension
         let modeName = header.value("mode") ?? SpotMode.once.rawValue
-        guard let mode = SpotMode(rawValue: modeName) else {
-            throw SpotError.fault("\(name) has an unknown mode: \(modeName). Use once, stay, always or inline")
+        guard let named = SpotMode(rawValue: modeName), named != .inline else {
+            if modeName == SpotMode.inline.rawValue {
+                throw SpotError.fault("\(name) has mode=inline, which Openspot no longer reads. A .js file runs inline, so remove the line")
+            }
+            throw SpotError.fault("\(name) has an unknown mode: \(modeName). Use once, stay or always")
         }
-        if mode == .inline, url.pathExtension != Self.inlineExtension {
-            throw SpotError.fault("\(name) runs inline, so it needs a .js file with its header in // lines")
+        if isInline, named != .once {
+            throw SpotError.fault("\(name) is a .js file, which runs inline, so it takes no mode=\(modeName)")
         }
+        let mode = isInline ? SpotMode.inline : named
         let sizeName = header.value("size") ?? "wide"
         guard let size = SpotSize(name: sizeName) else { throw SpotError.fault("\(name) has an unknown size: \(sizeName)") }
         let places = try Self.places(header.value("offers"), of: name)
-        let isRowsOnly = places.contains("rows")
-        let isGlobal = isRowsOnly || places.contains("search")
+        let isGlobal = places.contains("search")
         if isGlobal {
             guard read?.has(.panel) == true || read?.seconds != nil else {
                 throw SpotError.fault("\(name) needs on=panel.open or a clock, such as on=clock.60, to join the main search")
@@ -58,9 +62,9 @@ public struct SpotFile: Equatable, Sendable {
         }
         let answers = on?.answers
         let answersOnly = answers != nil && read == nil
-        let offers = try header.children.filter { $0.fields.first?.key == "command" }.map { block in
+        let offers = try header.children.filter { $0.fields.first?.key == "button" }.map { block in
             guard let offer = CommandOffer(block: block) else {
-                throw SpotError.fault("\(name) cannot read the command \(block.value("command") ?? ""). Give it an ID with no space and a title, such as command=left with title=Left side")
+                throw SpotError.fault("\(name) cannot read the button \(block.value("button") ?? ""). Give it an ID with no space and a title, such as button=left with title=Left side")
             }
             return offer
         }
@@ -75,26 +79,27 @@ public struct SpotFile: Equatable, Sendable {
         guard preview == nil || preview == "sample" else {
             throw SpotError.fault("\(name) has an unknown preview: \(preview!). Use preview=sample, and print fake data while OPENSPOT_REASON is spot.preview")
         }
+        let kind: SpotKind = mode.stays || isGlobal || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch
         let command = Spot(
             id: id,
             name: name,
             url: url,
-            kind: mode.stays || isGlobal || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch,
+            kind: kind,
             size: size,
             symbol: symbol ?? "app",
             subtitle: header.value("detail"),
             read: read,
             isGlobal: isGlobal,
-            isFound: !isRowsOnly && !answersOnly,
+            isFound: !answersOnly,
             answers: answers,
             mode: mode,
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
-            offersFloat: places.contains("float"),
+            offersFloat: kind == .list,
             dataName: id.split(separator: "/").first.map(String.init),
-            isOnGrid: offers.isEmpty && !isRowsOnly && read?.seconds == nil && !answersOnly,
+            isOnGrid: offers.isEmpty && read?.seconds == nil && !answersOnly,
             headerSymbol: symbol,
             offers: offers,
-            settings: header.children.filter { $0.fields.first?.key == "setting" }.compactMap { CommandOffer(setting: $0) },
+            settings: header.children.filter { $0.fields.first?.key == "field" }.compactMap { CommandOffer(setting: $0) },
             file: icon?.file.map { Self.path($0, beside: url) },
             image: icon?.image.map { Self.path($0, beside: url) },
             glyph: icon?.glyph,
@@ -107,21 +112,24 @@ public struct SpotFile: Equatable, Sendable {
         self.init(id: id, spots: [command])
     }
 
-    /// Whether a file is a spot that runs: an executable, or a JavaScript file with `mode=inline`.
+    /// Whether a file is a spot that runs: an executable, or a JavaScript file with a header.
     private static func runs(_ url: URL) -> Bool {
         if FileManager.default.isExecutableFile(atPath: url.path) { return true }
-        return url.pathExtension == inlineExtension && SpotHeader(url: url).block.value("mode") == SpotMode.inline.rawValue
+        return url.pathExtension == inlineExtension && !SpotHeader(url: url).block.fields.isEmpty
     }
 
-    /// The places that `offers` names. An unknown place, or `search` with `rows`, is a fault.
+    /// The places that `offers` names. Only `search` is a place, and `rows` and `float` name their fix.
     private static func places(_ text: String?, of name: String) throws -> Set<String> {
         guard let text else { return [] }
         let words = text.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
-        if let word = words.first(where: { !["search", "rows", "float"].contains($0) }) {
-            throw SpotError.fault("\(name) offers an unknown place: \(word). Use search, rows or float")
+        if words.contains("rows") {
+            throw SpotError.fault("\(name) offers rows, which Openspot no longer reads. Use offers=search, and the person hides its card")
         }
-        if words.contains("search"), words.contains("rows") {
-            throw SpotError.fault("\(name) offers both search and rows. Use search for the spot and its rows, or rows for its rows alone")
+        if words.contains("float") {
+            throw SpotError.fault("\(name) offers float, which Openspot no longer reads. The person floats any spot with a sheet in Settings, so remove it")
+        }
+        if let word = words.first(where: { $0 != "search" }) {
+            throw SpotError.fault("\(name) offers an unknown place: \(word). Use offers=search")
         }
         return Set(words)
     }
@@ -142,19 +150,22 @@ public struct SpotFile: Equatable, Sendable {
         if header.value("stay") != nil {
             throw SpotError.fault("\(name) has stay, which Openspot no longer reads. Use mode=stay or mode=always")
         }
-        let commands = header.values("command") + header.children.compactMap { $0.value("command") }.filter { $0.contains(":") }
+        let commands = header.values("command") + header.children.compactMap { $0.value("command") }
         if let command = commands.first {
-            throw SpotError.fault("\(name) has command=\(command), which Openspot no longer reads. Write each command as a block after a blank comment line, such as command=left with title=Left side")
+            throw SpotError.fault("\(name) has command=\(command), which Openspot no longer reads. Write each command as a button block after a blank comment line, such as button=left with title=Left side")
+        }
+        let settings = header.values("setting") + header.children.compactMap { $0.value("setting") }
+        if let setting = settings.first {
+            throw SpotError.fault("\(name) has setting=\(setting), which Openspot no longer reads. Write each setting as a field block after a blank comment line, such as field=folder with title=Folder")
         }
         if header.value("settings") != nil {
-            throw SpotError.fault("\(name) has settings, which Openspot no longer reads. Write each setting as a block after a blank comment line, such as setting=folder with title=Folder")
+            throw SpotError.fault("\(name) has settings, which Openspot no longer reads. Write each setting as a field block after a blank comment line, such as field=folder with title=Folder")
         }
         if let global = header.value("global") {
-            let place = global == "rows" ? "rows" : "search"
-            throw SpotError.fault("\(name) has global=\(global), which Openspot no longer reads. Use offers=\(place)")
+            throw SpotError.fault("\(name) has global=\(global), which Openspot no longer reads. Use offers=search")
         }
         if header.value("float") != nil {
-            throw SpotError.fault("\(name) has float, which Openspot no longer reads. Use offers=float")
+            throw SpotError.fault("\(name) has float, which Openspot no longer reads. The person floats any spot with a sheet in Settings, so remove it")
         }
         if header.value("tray") != nil {
             throw SpotError.fault("\(name) has tray, which Openspot no longer reads. The person puts a spot in the menu bar in Settings")

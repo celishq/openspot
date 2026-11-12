@@ -21,7 +21,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
 
     /// A spot that answers each text with one row of it, and works for 300 ms first on the text `slow`.
     private func answering() throws {
-        try inline(header: "mode=inline\non=search.text ^[0-9]", """
+        try inline(header: "on=search.text ^[0-9]", """
         function main([id, row], env) {
           const text = id === "open" ? row : env.OPENSPOT_VALUE
           if (text === "12") { const end = Date.now() + 300; while (Date.now() < end) {} }
@@ -70,7 +70,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
 
     func testOpenspotCallAsksTheAPIInTheApp() async throws {
         runs.api = CommandAPI(mac: Host())
-        try inline(header: "mode=inline\non=search.text ^[0-9]", """
+        try inline(header: "on=search.text ^[0-9]", """
         function main([id, row], env) {
           const text = id === "open" ? row : env.OPENSPOT_VALUE
           const answer = openspot.call(["calc", "solve", text])
@@ -86,7 +86,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testAPickRunsItsOpenFunctionWithTheRow() async throws {
-        try inline(header: "mode=inline\non=search.text ^[0-9]", """
+        try inline(header: "on=search.text ^[0-9]", """
         function main([id, row], env) {
           const text = id === "open" ? row : env.OPENSPOT_VALUE
           if (id === "open") return `toast=Picked ${text}\\n`
@@ -103,7 +103,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testAThrownErrorIsTheFailureOfTheCall() async throws {
-        try inline(header: "mode=inline\non=sheet.open", "function main() { throw new Error('No sky today') }")
+        try inline(header: "on=sheet.open", "function main() { throw new Error('No sky today') }")
         let (sheet, told) = try toldSheet()
 
         sheet.open {}
@@ -125,7 +125,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testMainGetsTheArgumentsTheVariablesAndTheStdinOfACall() async throws {
-        try inline(header: "mode=inline", "function main(args, env, input) { return `text=t\\ntitle=${args.length}|${args[0]}|${args[1]}|${env.OPENSPOT_REASON}|${env.OPENSPOT_ID}|${input}` }")
+        try inline(header: "title=Script", "function main(args, env, input) { return `text=t\\ntitle=${args.length}|${args[0]}|${args[1]}|${env.OPENSPOT_REASON}|${env.OPENSPOT_ID}|${input}` }")
         let script = InlineScript(spot: try XCTUnwrap(try scanned().scripts.first), api: nil)
         defer { script.end() }
         let call = InlineCall(arguments: ["read", "a b"], variables: ["OPENSPOT_REASON": "panel"], input: "note=x\\ny")
@@ -137,7 +137,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testFrameWritesAValueWithANewLineAndAKeyLineAsOneValue() async throws {
-        try inline(header: "mode=inline", "function main() { return openspot.frame([{ row: 'a', title: 'one\\n\\nrow=x\\ntitle=x', hides: ['x', 'y'], none: null }, { row: 'b', value: true }]) }")
+        try inline(header: "title=Script", "function main() { return openspot.frame([{ row: 'a', title: 'one\\n\\nrow=x\\ntitle=x', hides: ['x', 'y'], none: null }, { row: 'b', value: true }]) }")
         let spot = try XCTUnwrap(try scanned().scripts.first)
 
         let text = try await runs.answer(of: spot, SpotAction(arguments: ["read"]), limit: 5)
@@ -150,7 +150,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testMainReadsItsStdinAsItsInput() async throws {
-        try inline(header: "mode=inline", "function main(args, env, input) { return `toast=Saved ${input}` }")
+        try inline(header: "title=Script", "function main(args, env, input) { return `toast=Saved ${input}` }")
         let spot = try XCTUnwrap(try scanned().scripts.first)
 
         let text = try await runs.answer(of: spot, SpotAction(arguments: ["save"]), input: "a=1", limit: 5)
@@ -166,7 +166,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
 
     func testAnEndlessLoopFailsAsTooSlowAndTheSpotAnswersItsNextCall() async throws {
         runs(limit: 0.5)
-        try inline(header: "mode=inline\non=sheet.open", """
+        try inline(header: "on=sheet.open", """
         function main(args, env) {
           if (env.OPENSPOT_REASON === "sheet.open") while (true) {}
           return "row=a\\ntitle=A\\n"
@@ -200,7 +200,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     func testEachCallGoesInTheCallLogWithItsArgumentsStdinAndFailure() async throws {
         let log = CallLog(folder: folder.appendingPathComponent("logs"))
         runs(log: log)
-        try inline(header: "mode=inline\non=sheet.open", "function main(args) { if (args[0] === 'save') throw new Error('No sky today'); return 'row=a\\n' }")
+        try inline(header: "on=sheet.open", "function main(args) { if (args[0] === 'save') throw new Error('No sky today'); return 'row=a\\n' }")
         let (sheet, told) = try toldSheet()
         sheet.open {}
         try await wait("the rows") { sheet.list.shown.count == 1 }
@@ -214,7 +214,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testTheCPUTimeOfItsThreadCountsInItsUsage() async throws {
-        try inline(header: "mode=inline\non=sheet.open", "function main() { const end = Date.now() + 300; while (Date.now() < end) {} return 'row=a\\n' }")
+        try inline(header: "on=sheet.open", "function main() { const end = Date.now() + 300; while (Date.now() < end) {} return 'row=a\\n' }")
         let sheet = try sheet()
         sheet.open {}
 
@@ -223,7 +223,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testARunWithALimitStopsWaitingForAFunctionThatRunsTooLong() async throws {
-        try inline(header: "mode=inline\non=sheet.open", "function main() { const end = Date.now() + 2000; while (Date.now() < end) {} }")
+        try inline(header: "on=sheet.open", "function main() { const end = Date.now() + 2000; while (Date.now() < end) {} }")
         let spot = try XCTUnwrap(try scanned().scripts.first)
 
         do {

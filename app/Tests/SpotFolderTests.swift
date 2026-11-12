@@ -249,19 +249,21 @@ final class SpotFolderTests: XCTestCase {
 
         let scan = try scan
         XCTAssertEqual(scan.spots.map(\.mode), [.stay, .always, .once])
-        XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "d", reason: "D has an unknown mode: sometimes. Use once, stay, always or inline")])
+        XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "d", reason: "D has an unknown mode: sometimes. Use once, stay or always")])
     }
 
-    func testAJavaScriptFileWithModeInlineRunsInlineAndAnotherIsLeft() throws {
-        try "// title=Sum\n// mode=inline\nfunction main() { return '' }\n".write(to: folder.appendingPathComponent("sum.js"), atomically: true, encoding: .utf8)
-        try "// title=Plain\nfunction main() { return '' }\n".write(to: folder.appendingPathComponent("plain.js"), atomically: true, encoding: .utf8)
+    func testAJavaScriptFileWithAHeaderRunsInlineAndAnotherIsLeft() throws {
+        try "// title=Sum\nfunction main() { return '' }\n".write(to: folder.appendingPathComponent("sum.js"), atomically: true, encoding: .utf8)
+        try "function shared() { return '' }\n".write(to: folder.appendingPathComponent("plain.js"), atomically: true, encoding: .utf8)
+        try "// mode=stay\nfunction main() { return '' }\n".write(to: folder.appendingPathComponent("stays.js"), atomically: true, encoding: .utf8)
         try write("a.sh", header: "mode=inline")
 
         let scan = try scan
         XCTAssertEqual(scan.spots.map(\.id), ["sum"])
         XCTAssertEqual(scan.spots.map(\.mode), [.inline])
         XCTAssertEqual(scan.refused, [
-            ScanResult.Refusal(file: "a", reason: "A runs inline, so it needs a .js file with its header in // lines"),
+            ScanResult.Refusal(file: "a", reason: "A has mode=inline, which Openspot no longer reads. A .js file runs inline, so remove the line"),
+            ScanResult.Refusal(file: "stays", reason: "Stays is a .js file, which runs inline, so it takes no mode=stay"),
         ])
     }
 
@@ -305,11 +307,12 @@ final class SpotFolderTests: XCTestCase {
         XCTAssertFalse(command.isGlobal)
     }
 
-    func testASpotThatOffersSearchHasACardAndOneThatOffersRowsHasNone() throws {
+    func testASpotThatOffersSearchHasACardAndOffersRowsIsRefusedWithItsFix() throws {
         try write("a.sh", header: "on=panel.open\noffers=search")
         try write("b.sh", header: "on=panel.open\noffers=rows")
 
-        XCTAssertEqual(try scan.spots.map(\.headerState.isOnGrid), [true, false])
+        XCTAssertEqual(try scan.spots.map(\.headerState.isOnGrid), [true])
+        XCTAssertEqual(try scan.refused, [ScanResult.Refusal(file: "b", reason: "B offers rows, which Openspot no longer reads. Use offers=search, and the person hides its card")])
     }
 
     func testTheMainSearchNeedsAMomentOutsideTheSheet() throws {

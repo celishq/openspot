@@ -57,3 +57,7 @@ key = "cmd+n"
 [[spots]]
 id = "openspot/quit"
 grid = false
+
+[[spots]]
+id = "settings"
+grid = false

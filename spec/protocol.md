@@ -25,8 +25,8 @@ say hello
 
 This is a spot called Hello, and a click runs it. A Swift file with `#!/usr/bin/env swift` on its first line is a script
 too, with its header in `//` lines. It needs the Command Line Tools on the Mac that runs it. Its first run builds it once
-in the background, and each later run starts the built program, until the file changes. A `.js` file runs inside the app
-(see Modes).
+in the background, and each later run starts the built program, until the file changes. A `.js` file with a header runs
+inside the app (see Modes), and one with no header can hold shared code.
 
 The script says what it has and what it offers. Openspot and the person decide where, when and on which key it shows.
 
@@ -146,7 +146,7 @@ cannot claim a letter or a place.
 
 - `offers=search` shows the rows of the spot in the main search. It needs `on=panel.open` or a `clock`. Openspot ranks the
   rows by the person's picks.
-- The person can give any spot a key or a shake of the pointer in Settings, which shows the spot in a small window of its
+- The person can give any spot with a sheet a key or a shake of the pointer in Settings, which shows the spot in a small window of its
   own at the pointer: its sheet, or its card when it has no sheet (T1). The window stays while the person works in other
   apps, and the same key or shake closes it. The script never learns where it shows.
 
@@ -184,7 +184,7 @@ wants it, and `mode=always` keeps it from the start of the app to its quit (I1).
 search: each text is a call with its own id, and only the answer to the newest one shows (I2). A call has the same three
 parts in each mode (C7).
 
-A `.js` file runs inside the app, with its header in `//` lines (I3). The file defines `main(args, env, input)`, which
+A `.js` file with a header runs inside the app, with its header in `//` lines (I3). The file defines `main(args, env, input)`, which
 gets the three parts of each call as an array, an object and a string, and returns the text of a frame (I6).
 `openspot.call(["calc", "solve", "2+2"])` asks the openspot command and returns `{ stdout, code }`, and a second argument
 gives its stdin (I4). `openspot.frame(object)` writes an object as one block (C8). An inline spot has no files, no network
@@ -977,7 +977,6 @@ Each line goes when its phase lands.
 
 | Part        | The code today                                                                                         |
 | ----------- | ------------------------------------------------------------------------------------------------------ |
-| Header      | Reads `command` and `setting` blocks, `offers=rows` and `offers=float`, and `mode=inline`.             |
 | Blocks      | Reads `gauge`, `slider` and `hotkey` as kinds, and `look=tick`.                                        |
 | Trust       | Reads the uses `update` and `settings`, and the guide names `OPENSPOT_TOKEN`.                          |
 

@@ -8,7 +8,7 @@
 # on=clock.60
 # uses=calendar
 #
-# setting=calendars
+# field=calendars
 # icon=calendar
 . "$OPENSPOT_SH"
 

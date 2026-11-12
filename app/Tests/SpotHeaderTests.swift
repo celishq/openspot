@@ -4,7 +4,7 @@ import XCTest
 final class SpotHeaderTests: XCTestCase {
     func testAScriptWithCommandsHasNoCardOnTheGridAndStaysInTheScan() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-grid-\(UUID().uuidString)")
-        try Data("#!/bin/sh\n#\n# command=left\n# title=Left side\n".utf8).write(to: url)
+        try Data("#!/bin/sh\n#\n# button=left\n# title=Left side\n".utf8).write(to: url)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
         defer { try? FileManager.default.removeItem(at: url) }
 
@@ -13,28 +13,24 @@ final class SpotHeaderTests: XCTestCase {
         XCTAssertFalse(command.headerState.isOnGrid)
     }
 
-    func testOffersNamesThePlacesThatASpotIsMadeFor() throws {
+    func testOffersSearchJoinsTheMainSearchAndASpotWithASheetCanFloat() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-grid-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
-        let searchOnly = folder.appendingPathComponent("search.sh")
-        let rowsOnly = folder.appendingPathComponent("rows.sh"), floating = folder.appendingPathComponent("float.sh")
-        try "#!/bin/sh\n# on=panel.open\n# offers=search\n".writeScript(to: searchOnly)
-        try "#!/bin/sh\n# on=panel.open\n# offers=rows\n".writeScript(to: rowsOnly)
-        try "#!/bin/sh\n# on=sheet.open\n# offers=float\n".writeScript(to: floating)
+        let searching = folder.appendingPathComponent("search.sh"), sheet = folder.appendingPathComponent("sheet.sh"), click = folder.appendingPathComponent("click.sh")
+        try "#!/bin/sh\n# on=panel.open\n# offers=search\n".writeScript(to: searching)
+        try "#!/bin/sh\n# on=sheet.open\n".writeScript(to: sheet)
+        try "#!/bin/sh\n".writeScript(to: click)
 
-        let search = try XCTUnwrap(try SpotFile(file: searchOnly, id: "search")?.spots.first)
-        let rows = try XCTUnwrap(try SpotFile(file: rowsOnly, id: "rows")?.spots.first)
-        let float = try XCTUnwrap(try SpotFile(file: floating, id: "float")?.spots.first)
+        let search = try XCTUnwrap(try SpotFile(file: searching, id: "search")?.spots.first)
+        let float = try XCTUnwrap(try SpotFile(file: sheet, id: "sheet")?.spots.first)
+        let launch = try XCTUnwrap(try SpotFile(file: click, id: "click")?.spots.first)
         XCTAssertTrue(search.headerState.isOnGrid)
         XCTAssertTrue(search.isGlobal)
         XCTAssertTrue(search.isFound)
-        XCTAssertTrue(rows.isGlobal)
-        XCTAssertFalse(rows.isFound)
-        XCTAssertFalse(rows.headerState.isOnGrid)
         XCTAssertTrue(float.offersFloat)
         XCTAssertFalse(float.isGlobal)
-        XCTAssertFalse(search.offersFloat)
+        XCTAssertFalse(launch.offersFloat)
     }
 
     func testAnUnknownPlaceRefusesThePlugin() throws {
@@ -43,15 +39,15 @@ final class SpotHeaderTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: url) }
 
         XCTAssertThrowsError(try SpotFile(file: url, id: "script")) { error in
-            XCTAssertTrue((error as? SpotError)?.reason.contains("search, rows or float") == true, "\(error)")
+            XCTAssertTrue((error as? SpotError)?.reason.contains("Use offers=search") == true, "\(error)")
         }
     }
 
     func testGlobalFloatAndTrayRefuseThePluginAndNameTheirNewWay() throws {
         let cases = [
             ("on=panel.open\n# global=true", "offers=search"),
-            ("on=panel.open\n# global=rows", "offers=rows"),
-            ("on=sheet.open\n# float=true", "offers=float"),
+            ("on=panel.open\n# global=rows", "offers=search"),
+            ("on=sheet.open\n# float=true", "floats any spot with a sheet"),
             ("on=clock.60\n# tray=true", "menu bar")
         ]
         for (header, hint) in cases {

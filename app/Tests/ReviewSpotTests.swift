@@ -58,7 +58,7 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testAnInlineSpotShowsItsTextAndRunsOnlyWhenItIsUsed() throws {
-        let review = try ReviewSpot(spot: spot([("sum.js", "// title=Sum\n// mode=inline\n// on=panel.open\nfunction main() { return '' }\n", false)]), folder: folder)
+        let review = try ReviewSpot(spot: spot([("sum.js", "// title=Sum\n// on=panel.open\nfunction main() { return '' }\n", false)]), folder: folder)
 
         let text = try shown(review)
 
@@ -222,7 +222,7 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testCanAlsoReadsTheCallsOfAnInlineSpot() throws {
-        let review = try ReviewSpot(spot: spot([("bye.js", "// title=Bye\n// mode=inline\nfunction main() { openspot.call([\"app\", \"quit\"]) }\n", false)]), folder: folder)
+        let review = try ReviewSpot(spot: spot([("bye.js", "// title=Bye\nfunction main() { openspot.call([\"app\", \"quit\"]) }\n", false)]), folder: folder)
 
         XCTAssertTrue(try shown(review).contains("Can also\nCall openspot app quit without uses=app\n"))
     }

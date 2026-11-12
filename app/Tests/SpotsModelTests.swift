@@ -50,7 +50,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAKeyThatTheAPISetsHoldsTheKeysAgainAndBuildsNoGrid() throws {
-        try script("move", header: "title=Move\n\ncommand=left\ntitle=Left side", ":")
+        try script("move", header: "title=Move\n\nbutton=left\ntitle=Left side", ":")
         model.reload()
         let builds = model.gridBuilds
         let trigger = try XCTUnwrap(Trigger(text: "ctrl+option+l"))
@@ -523,7 +523,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testTheFormOfASettingMovesWithTheArrowsAndSearchesItsRows() async throws {
-        try script("list", header: "on=sheet.open\n\nsetting=pick", """
+        try script("list", header: "on=sheet.open\n\nfield=pick", """
         case "$1" in
           pick) printf 'title=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n\noption=c\ntitle=Cherry\n' ;;
           *) printf 'row=a\ntitle=Apple\n' ;;
@@ -545,7 +545,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAFormTakesThePlaceOfThePartsOfTheSheetItOpensOn() async throws {
-        try script("agenda", header: "on=sheet.open\n\nsetting=pick", """
+        try script("agenda", header: "on=sheet.open\n\nfield=pick", """
         case "$1" in
           pick) printf 'title=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n' ;;
           *) printf 'grid=items\ngrid.wide=next\n\nnumber=next\nvalue=09:30\n\nrepeat=items\n\nrow=e\ntitle=Standup\n' ;;
@@ -685,8 +685,8 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.visible.map(\.id), ["shortcuts", "apps\nshortcuts"])
     }
 
-    func testTheGridSearchFindsOnlyTheRowsOfASpotWhoseHeaderSaysGlobalRows() async throws {
-        try script("settings", header: "title=System Settings\non=panel.open\noffers=rows", "printf 'row=sound\\ntitle=Sound Settings\\n'")
+    func testTheGridSearchFindsASpotThatOffersSearchAndItsRows() async throws {
+        try script("settings", header: "title=System Settings\non=panel.open\noffers=search", "printf 'row=sound\\ntitle=Sound Settings\\n'")
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
@@ -694,7 +694,7 @@ final class SpotsModelTests: XCTestCase {
         model.searchText = "settings"
 
         try await wait("the row") { model.visible.contains { $0.id == "settings\nsound" } }
-        XCTAssertEqual(model.visible.map(\.id), ["settings\nsound"])
+        XCTAssertEqual(model.visible.map(\.id), ["settings", "settings\nsound"])
     }
 
     func testTypingBuildsTheCardsAsSearchedItemsOnce() throws {
@@ -833,7 +833,6 @@ final class SpotsModelTests: XCTestCase {
     func testReturnOnAKeptRowOfASlowInlineSpotWaitsForTheNewestAnswer() async throws {
         try """
         // title=Calc
-        // mode=inline
         // on=search.text ^[0-9]
         function main([id, row], env) {
           const text = id === "open" ? row : env.OPENSPOT_VALUE
@@ -877,7 +876,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAnAnswerAndARowOfItsSpotWithOneIdShowOnce() async throws {
-        try script("both", header: "title=Both\non=panel.open\noffers=rows\non=search.text ^[0-9]", "printf 'row=7\\ntitle=7 days\\n'")
+        try script("both", header: "title=Both\non=panel.open\noffers=search\non=search.text ^[0-9]", "printf 'row=7\\ntitle=7 days\\n'")
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
@@ -903,7 +902,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAKeyShowsTheSymbolOfItsCommandOrElseOfItsScriptForAMoment() async throws {
-        try script("move", header: "icon=macwindow\n\ncommand=left\ntitle=Left side\nicon=rectangle.lefthalf.inset.filled\n\ncommand=plain\ntitle=Plain", "true")
+        try script("move", header: "icon=macwindow\n\nbutton=left\ntitle=Left side\nicon=rectangle.lefthalf.inset.filled\n\nbutton=plain\ntitle=Plain", "true")
         model.reload()
         model.flashPause = .milliseconds(50)
         let shortcut = try XCTUnwrap(Shortcut(text: "ctrl+left"))

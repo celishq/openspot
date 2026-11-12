@@ -5,9 +5,9 @@
 # on=sheet.open
 # uses=clipboard
 #
-# setting=folder
+# field=folder
 #
-# setting=editor
+# field=editor
 # title=Default app
 export LC_ALL=en_US.UTF-8
 . "$OPENSPOT_SH"

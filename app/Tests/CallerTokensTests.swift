@@ -67,7 +67,7 @@ final class CallerTokensTests: SpotRunsCase {
     }
 
     func testAnInlineCallHasATokenOfItsSpot() async throws {
-        try "// mode=inline\n// on=sheet.open\nfunction main(args, env) { return `text=t\\ntitle=${env.OPENSPOT_TOKEN}\\n` }\n"
+        try "// on=sheet.open\nfunction main(args, env) { return `text=t\\ntitle=${env.OPENSPOT_TOKEN}\\n` }\n"
             .write(to: folder.appendingPathComponent("script.js"), atomically: true, encoding: .utf8)
         let sheet = try sheet()
         runs.panelOpened()

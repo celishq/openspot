@@ -4,7 +4,6 @@
 # detail=Keeps files at hand
 # drop=*
 # on=sheet.open
-# offers=float
 list="$OPENSPOT_DATA/files"
 . "$OPENSPOT_SH"
 

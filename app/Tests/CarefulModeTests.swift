@@ -133,7 +133,7 @@ final class CarefulModeTests: SpotRunsCase {
         let path = ProcessInfo.processInfo.environment["PATH"] ?? ""
         setenv("PATH", "\(bin.path):\(path)", 1)
         defer { setenv("PATH", path, 1) }
-        try "// mode=inline\n// on=sheet.open\nfunction main() { return `text=t\\ntitle=${openspot.call([\"color\", \"pick\"]).stdout.trim()}\\n` }\n"
+        try "// on=sheet.open\nfunction main() { return `text=t\\ntitle=${openspot.call([\"color\", \"pick\"]).stdout.trim()}\\n` }\n"
             .write(to: folder.appendingPathComponent("script.js"), atomically: true, encoding: .utf8)
         let sheet = try sheet()
         let before = try await result(of: sheet)
