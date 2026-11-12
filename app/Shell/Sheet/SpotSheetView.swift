@@ -73,9 +73,9 @@ struct SpotSheetView: View {
                         nudge: { model.sheets[entry.id]?.nudge ?? SheetParts.Nudge.rest },
                         menuOpening: { model.sheets[entry.id]?.menuOpening },
                         onFocus: { model.focusPart($0) },
-                        customView: { room in
+                        customView: { room, send in
                             if case .account(let sheet) = entry.spot.host { return AnyView(AccountSheetView(flow: sheet.flow)) }
-                            return entry.spot.view.map { AnyView(SpotCustomView(source: $0, values: entry.state.values, card: .square, room: room, views: SpotViews.shared)) }
+                            return entry.spot.view.map { AnyView(SpotCustomView(source: $0, values: entry.state.values, card: .square, room: room, views: SpotViews.shared, send: send)) }
                         }
                     )
                     .task(id: panel.parts.contains { $0.kind == "view" } ? entry.spot.view : nil) {

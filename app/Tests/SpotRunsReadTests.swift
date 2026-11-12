@@ -309,6 +309,17 @@ final class SpotRunsReadTests: SpotRunsCase {
         XCTAssertEqual(sheet.panel?.parts.first?.value, "")
     }
 
+    func testAViewSendsAValueToItsSpotWithItsID() async throws {
+        try script(header: "on=sheet.open", "printf 'view=steps\\n'")
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the view") { sheet.panel != nil && !sheet.isReading }
+
+        sheet.set(try XCTUnwrap(sheet.panel?.parts.first { $0.kind == "view" }), to: "pick 4 ecology")
+
+        try await wait("the call") { self.log().contains("steps pick 4 ecology") }
+    }
+
     func testATimerReadAlwaysRuns() async throws {
         menuBar.insert("fast")
         try script("fast", header: "on=clock.1", "printf 'title=1\\n'")

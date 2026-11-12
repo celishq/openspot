@@ -596,10 +596,12 @@ struct SpotView: View {
 | `spot.secondary`  | The opacity of a second line.                                    |
 | `spot.accent`     | The accent colour.                                               |
 | `spot.font`       | The fonts of the cards: `title`, `detail`, `metric` and `value`. |
+| `spot.send(v)`    | Calls the spot with the view's id and `v`, as a field does.      |
 
 - The view fills its place, and the whole card when there's no card layout. It can't change the size of its place.
 - It gets the keys of its block in each frame. A new frame keeps its `@State`.
-- The view only draws. A press works as on any card.
+- On a card, the view only draws, and a press works as on any card. In a sheet, it takes clicks and keys, and
+  `spot.send(value)` calls the spot with `<id> <value>`, as a field does. A newer send stops the call of the older one.
 - Openspot compiles it when its card first shows, and again when the file changes. A view that doesn't compile shows its
   first error, and `openspot check` prints it.
 - A shared spot carries the compiled view as `<name>.view`, which Openspot uses instead of the source.
