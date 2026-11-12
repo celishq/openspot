@@ -123,28 +123,28 @@ esac
 - Openspot reads the header and never runs a spot to scan it.
 - A header key that is not valid refuses that spot. The other spots still load.
 
-| Key           | Value                                                                                                   |
-| ------------- | ------------------------------------------------------------------------------------------------------- |
-| `title`       | The name. The default comes from the file name.                                                         |
-| `icon`        | The picture, as for a block. A path that does not start with `/` starts at the folder of the script.    |
-| `detail`      | The second line.                                                                                        |
-| `keyword`     | One more word that finds it in the main search. It MAY repeat.                                          |
-| `on`          | An event that reads it, with a filter of its value. It MAY repeat. See Events.                          |
-| `emits`       | The events that it raises, split by commas. See Events.                                                 |
-| `offers`      | `search`: its rows show in the main search. See Places.                                                 |
-| `drop`        | The files that its card takes: extensions such as `mov,mkv`, `folder`, or `*`.                          |
-| `size`        | The size it prefers: `wide` (the default), `small`, `square`, `strip` or `large`. The person's choice wins. |
-| `preview`     | `sample`: a read with `OPENSPOT_REASON=spot.preview` prints fake data for the store.                    |
-| `view`        | A SwiftUI file beside the script, such as `view=cups.swift`. See Views.                                 |
-| `mode`        | `once` (the default), `stay` or `always`. See Modes.                                                    |
+| Key           | Value                                                                                                            |
+| ------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `title`       | The name. The default comes from the file name.                                                                  |
+| `icon`        | The picture, as for a block. A path that does not start with `/` starts at the folder of the script.             |
+| `detail`      | The second line.                                                                                                 |
+| `keyword`     | One more word that finds it in the main search. It MAY repeat.                                                   |
+| `on`          | An event that reads it, with a filter of its value. It MAY repeat. See Events.                                   |
+| `emits`       | The events that it raises, split by commas. See Events.                                                          |
+| `offers`      | `search`: its rows show in the main search. See Places.                                                          |
+| `drop`        | The files that its card takes: extensions such as `mov,mkv`, `folder`, or `*`.                                   |
+| `size`        | The size it prefers: `wide` (the default), `small`, `square`, `strip` or `large`. The person's choice wins.      |
+| `preview`     | `sample`: a read with `OPENSPOT_REASON=spot.preview` prints fake data for the store.                             |
+| `view`        | A SwiftUI file beside the script, such as `view=cups.swift`. See Views.                                          |
+| `mode`        | `once` (the default), `stay` or `always`. See Modes.                                                             |
 | `uses`        | What it uses, split by commas: `app`, `spots`, `screen`, `clipboard`, `calendar`, `network`, `files`. See Trust. |
-| `grid.<size>` | A card drawn from other spots. See Cards of other spots.                                                |
-| `to`          | The spot that a press of a card of other spots opens.                                                   |
+| `grid.<size>` | A card drawn from other spots. See Cards of other spots.                                                         |
+| `to`          | The spot that a press of a card of other spots opens.                                                            |
 
-| Block          | Meaning                                                                                       |
-| -------------- | --------------------------------------------------------------------------------------------- |
-| `button=<id>`  | A command that the person can give a key, with its `title` and its `icon`.                    |
-| `field=<key>`  | A value that the person chooses, with its `title` (its key by default) and its `icon`. See Settings. |
+| Block         | Meaning                                                                                              |
+| ------------- | ---------------------------------------------------------------------------------------------------- |
+| `button=<id>` | A command that the person can give a key, with its `title` and its `icon`.                           |
+| `field=<key>` | A value that the person chooses, with its `title` (its key by default) and its `icon`. See Settings. |
 
 - A spot with a `button` block in its header has no card on the grid. Its commands are what it gives.
 
@@ -207,21 +207,21 @@ confirm=Press again to forget
   MUST be unique in one output.
 - Each kind keeps its data in `value`. A kind that shows several values repeats it.
 
-| Kind      | Shows                                                   | Its own keys                                                    | Sends                  |
-| --------- | ------------------------------------------------------- | --------------------------------------------------------------- | ---------------------- |
-| `text`    | Words, and a small mark: a bar from `value`, or with `max` a bar for each `value` line. | `value`, `max`               |                        |
-| `number`  | A big number, with its `title` under it. `display` shows in place of `value`. | `value`, `display`                     |                        |
-| `graph`   | One `value` from 0 to 1 is a ring in a square area and a bar in a wide one. More are bars, the newest last. | `value`, and `max` for bars |  |
-| `picture` | A picture that fills its area.                          | `icon`                                                          |                        |
-| `view`    | The SwiftUI view that the header names (see Views).     | any key that the view reads                                     |                        |
-| `switch`  | A switch, or with `type=tick` a round tick before its words, for a thing to do. | `value`: `true` or `false`, `type`     | `<id> true` or `false` |
-| `field`   | A text field, or with a `type` another input.           | `value`, `type`, `placeholder`, `required`, `readonly`, `min`, `max` | `<id> <value>`    |
-| `choice`  | A menu of the `option` blocks after it, a list when it covers two lines or more, or swatches of `color` lines. | `color`, `value`, `type` | `<id> <option id>` |
-| `option`  | One choice of the `choice` right before it.             | `title`, `icon`                                                 |                        |
-| `button`  | A button, or an action (see Buttons and actions).       | `shortcut`, `confirm`, `close`, `look`, `form`, `scope`         | `<id>`                 |
-| `section` | A title over the lines that follow it.                  |                                                                 |                        |
-| `repeat`  | The rows of the output (see Rows).                      | `grid` lines                                                    |                        |
-| `row`     | One item of a list (see Rows).                          | the keys of Rows                                                | `open <id>`            |
+| Kind      | Shows                                                                                                          | Its own keys                                                         | Sends                  |
+| --------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------- |
+| `text`    | Words, and a small mark: a bar from `value`, or with `max` a bar for each `value` line.                        | `value`, `max`                                                       |                        |
+| `number`  | A big number, with its `title` under it. `display` shows in place of `value`.                                  | `value`, `display`                                                   |                        |
+| `graph`   | One `value` from 0 to 1 is a ring in a square area and a bar in a wide one. More are bars, the newest last.    | `value`, and `max` for bars                                          |                        |
+| `picture` | A picture that fills its area.                                                                                 | `icon`                                                               |                        |
+| `view`    | The SwiftUI view that the header names (see Views).                                                            | any key that the view reads                                          |                        |
+| `switch`  | A switch, or with `type=tick` a round tick before its words, for a thing to do.                                | `value`: `true` or `false`, `type`                                   | `<id> true` or `false` |
+| `field`   | A text field, or with a `type` another input.                                                                  | `value`, `type`, `placeholder`, `required`, `readonly`, `min`, `max` | `<id> <value>`         |
+| `choice`  | A menu of the `option` blocks after it, a list when it covers two lines or more, or swatches of `color` lines. | `color`, `value`, `type`                                             | `<id> <option id>`     |
+| `option`  | One choice of the `choice` right before it.                                                                    | `title`, `icon`                                                      |                        |
+| `button`  | A button, or an action (see Buttons and actions).                                                              | `shortcut`, `confirm`, `close`, `look`, `form`, `scope`              | `<id>`                 |
+| `section` | A title over the lines that follow it.                                                                         |                                                                      |                        |
+| `repeat`  | The rows of the output (see Rows).                                                                             | `grid` lines                                                         |                        |
+| `row`     | One item of a list (see Rows).                                                                                 | the keys of Rows                                                     | `open <id>`            |
 
 - The `type` of a field: none for a line of text, `multiline` for several lines, `slider` from `min` to `max` (0 to 100 by
   default), which sends when the person lets go, and `hotkey` for a key combination that a press records.
@@ -289,20 +289,20 @@ esac
 
 Rows are a list that the person searches and picks from.
 
-| Key        | Meaning                                                                                  |
-| ---------- | ---------------------------------------------------------------------------------------- |
-| `row`      | The id. A pick sends `<script> open <id>`.                                               |
-| `title`    | The first line. The id, when it has none.                                                |
-| `detail`   | The second line.                                                                         |
-| `icon`     | The picture.                                                                             |
-| `parent`   | Where it sits in its spot. The main search shows `<spot> › <parent>`.                    |
-| `tone`     | A dot of its colour on the picture.                                                      |
-| `value`    | `true` draws a checkmark at the end.                                                     |
-| `hides`    | The id of an action that this row does not offer. It MAY repeat.                         |
-| `keyword`  | A word that finds the row and does not show.                                             |
-| `shortcut` | A key at the end of the row. A pick records a new key and calls `<id> <shortcut>`.        |
-| `shake`    | `true` lets a shake of the pointer be the key that a pick records, as `<id> shake`.       |
-| `file`     | The file that the row stands for. See Files out.                                         |
+| Key        | Meaning                                                                                     |
+| ---------- | ------------------------------------------------------------------------------------------- |
+| `row`      | The id. A pick sends `<script> open <id>`.                                                  |
+| `title`    | The first line. The id, when it has none.                                                   |
+| `detail`   | The second line.                                                                            |
+| `icon`     | The picture.                                                                                |
+| `parent`   | Where it sits in its spot. The main search shows `<spot> › <parent>`.                       |
+| `tone`     | A dot of its colour on the picture.                                                         |
+| `value`    | `true` draws a checkmark at the end.                                                        |
+| `hides`    | The id of an action that this row does not offer. It MAY repeat.                            |
+| `keyword`  | A word that finds the row and does not show.                                                |
+| `shortcut` | A key at the end of the row. A pick records a new key and calls `<id> <shortcut>`.          |
+| `shake`    | `true` lets a shake of the pointer be the key that a pick records, as `<id> shake`.         |
+| `file`     | The file that the row stands for. See Files out.                                            |
 | `to`       | Another spot that a pick goes to, as `<spot> open <row id>` with the row's fields on stdin. |
 
 - Rows flow through a `repeat`, or through a list when there is none.
@@ -361,17 +361,17 @@ An event is what makes Openspot read a spot. The header lists the events that ar
 - A spot with no event is never read. A click runs `<script> open`.
 - Each read gets the event in `OPENSPOT_REASON` and its value in `OPENSPOT_VALUE`.
 
-| Event              | Openspot raises it                                                         | Value          |
-| ------------------ | -------------------------------------------------------------------------- | -------------- |
-| `sheet.open`       | When its sheet opens.                                                      |                |
-| `panel.open`       | Each time the panel opens, and once as the app starts.                     |                |
-| `clock.<seconds>`  | Every that many seconds while something wants it, and when the Mac wakes.  |                |
-| `search.text`      | At each change of the text of the main search.                             | the text       |
-| `sheet.text`       | At each change of the text of the search of its sheet.                     | the text       |
-| `clipboard.change` | When the clipboard changes.                                                |                |
-| `app.front`        | When another app comes to the front.                                       | its bundle ID  |
-| `app.update`       | When the app has downloaded an update.                                     | its version    |
-| `screen.wake`      | When the screen wakes.                                                     |                |
+| Event              | Openspot raises it                                                        | Value         |
+| ------------------ | ------------------------------------------------------------------------- | ------------- |
+| `sheet.open`       | When its sheet opens.                                                     |               |
+| `panel.open`       | Each time the panel opens, and once as the app starts.                    |               |
+| `clock.<seconds>`  | Every that many seconds while something wants it, and when the Mac wakes. |               |
+| `search.text`      | At each change of the text of the main search.                            | the text      |
+| `sheet.text`       | At each change of the text of the search of its sheet.                    | the text      |
+| `clipboard.change` | When the clipboard changes.                                               |               |
+| `app.front`        | When another app comes to the front.                                      | its bundle ID |
+| `app.update`       | When the app has downloaded an update.                                    | its version   |
+| `screen.wake`      | When the screen wakes.                                                    |               |
 
 - Openspot also reads a spot with these reasons, which are no events:
   - `spot.change`: after a call that printed no picture;
@@ -403,14 +403,14 @@ case "$1" in
 esac
 ```
 
-| Call                                 | When                                                        |
-| ------------------------------------ | ----------------------------------------------------------- |
-| `<script> read`                      | An event that its header lists.                             |
-| `<script> open [row id]`             | A row is picked, or a card with no sheet is pressed.        |
-| `<script> <id> [row id] [value]`     | A block changes or is pressed.                              |
-| `<script> drop <path> [path]...`     | Files are dropped on its card.                              |
-| `<script> drag <row id> [row id]...` | Rows that hold files are dragged out of its sheet.          |
-| `<script> <command>`                 | A key that the person gave a command is pressed.            |
+| Call                                 | When                                                 |
+| ------------------------------------ | ---------------------------------------------------- |
+| `<script> read`                      | An event that its header lists.                      |
+| `<script> open [row id]`             | A row is picked, or a card with no sheet is pressed. |
+| `<script> <id> [row id] [value]`     | A block changes or is pressed.                       |
+| `<script> drop <path> [path]...`     | Files are dropped on its card.                       |
+| `<script> drag <row id> [row id]...` | Rows that hold files are dragged out of its sheet.   |
+| `<script> <command>`                 | A key that the person gave a command is pressed.     |
 
 - `read` is the only reserved call. `open`, `drop` and `drag` are default ids. A block MUST NOT use one, but a button MAY
   use `open`.
@@ -439,14 +439,14 @@ form=ьшдл
 
 The shell helper writes values for you:
 
-| Function                                    | Does                                                                   |
-| ------------------------------------------- | ---------------------------------------------------------------------- |
-| `esc <text>`                                | Prints text as a value.                                                |
-| `value <id>`                                | Prints one value from stdin.                                           |
-| `openspot_kv <key> <value>`                 | Prints one line, with its value written for you.                       |
-| `openspot_row <id> <title> [detail] [icon]` | Prints one row.                                                        |
+| Function                                    | Does                                                                                              |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `esc <text>`                                | Prints text as a value.                                                                           |
+| `value <id>`                                | Prints one value from stdin.                                                                      |
+| `openspot_kv <key> <value>`                 | Prints one line, with its value written for you.                                                  |
+| `openspot_row <id> <title> [detail] [icon]` | Prints one row.                                                                                   |
 | `openspot_rows [kind]`                      | Prints a row, or a block of that kind, for each tab-split line of stdin: id, title, detail, icon. |
-| `openspot_serve <function> "$@"`            | Runs the function with the three parts of each call, in each mode.     |
+| `openspot_serve <function> "$@"`            | Runs the function with the three parts of each call, in each mode.                                |
 
 - Loading the helper reads all of stdin, except in a staying spot.
 
@@ -480,8 +480,9 @@ The person decides where a spot shows. A spot only offers.
 // on=search.text ^[0-9(]
 // uses=clipboard
 function main(args, env) {
-  if (args[0] === "read") return openspot.call(["calc", "solve", env.OPENSPOT_VALUE]).stdout
-  return ""
+  if (args[0] === "read")
+    return openspot.call(["calc", "solve", env.OPENSPOT_VALUE]).stdout;
+  return "";
 }
 ```
 
@@ -518,8 +519,12 @@ A spot runs once for each call, unless its header says otherwise.
 // title=Hello
 // on=sheet.open
 function main(args, env, input) {
-  if (args[0] === "read") return openspot.frame({ row: "hi", title: `Hello from ${env.OPENSPOT_REASON}` })
-  return ""
+  if (args[0] === "read")
+    return openspot.frame({
+      row: "hi",
+      title: `Hello from ${env.OPENSPOT_REASON}`,
+    });
+  return "";
 }
 ```
 
@@ -608,17 +613,17 @@ struct SpotView: View {
 - The spot and its view MUST lie in a folder of their own, such as `cups/cups.sh` and `cups/cups.swift`.
 - The file declares `struct SpotView: View` with `let spot: SpotInput`, and has no top-level code.
 
-| Member             | Gives                                                             |
-| ------------------ | ----------------------------------------------------------------- |
-| `spot["key"]`      | The last value of a key of its block, or nil.                     |
-| `spot.all("key")`  | Each value of a key that repeats.                                 |
-| `spot.size`        | The size of its area.                                             |
-| `spot.inset`       | The space that other cards keep between their edge and words.     |
-| `spot.corner`      | The corner radius of the card.                                    |
-| `spot.ink`         | The colour of words, for light and dark.                          |
-| `spot.secondary`   | The opacity of a second line.                                     |
-| `spot.accent`      | The accent colour.                                                |
-| `spot.font`        | The fonts of the cards: `title`, `detail`, `metric` and `value`.  |
+| Member            | Gives                                                            |
+| ----------------- | ---------------------------------------------------------------- |
+| `spot["key"]`     | The last value of a key of its block, or nil.                    |
+| `spot.all("key")` | Each value of a key that repeats.                                |
+| `spot.size`       | The size of its area.                                            |
+| `spot.inset`      | The space that other cards keep between their edge and words.    |
+| `spot.corner`     | The corner radius of the card.                                   |
+| `spot.ink`        | The colour of words, for light and dark.                         |
+| `spot.secondary`  | The opacity of a second line.                                    |
+| `spot.accent`     | The accent colour.                                               |
+| `spot.font`       | The fonts of the cards: `title`, `detail`, `metric` and `value`. |
 
 - The view fills its area, and with no card drawing the whole card. It cannot change the size of its area.
 - It gets the keys of its block in each frame. A new frame keeps its `@State`.
@@ -705,13 +710,13 @@ A spot asks the Mac and the app through one command, which works the same in a t
 
 The commands that try a spot are in Try your spot. The others:
 
-| Command                                            | Does                                                                   |
-| -------------------------------------------------- | ---------------------------------------------------------------------- |
-| `openspot guide`                                   | Prints this page.                                                      |
-| `openspot spot show <id>`                          | Opens the panel with the spot selected.                                |
+| Command                                            | Does                                                                                      |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `openspot guide`                                   | Prints this page.                                                                         |
+| `openspot spot show <id>`                          | Opens the panel with the spot selected.                                                   |
 | `openspot spot add <git url, folder or file.spot>` | Adds a spot, and records it in `spots.lock`. An update that grows its uses needs `--yes`. |
-| `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                       |
-| `openspot spot stats`                              | Prints what each spot cost and used. See Stats.                        |
+| `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                          |
+| `openspot spot stats`                              | Prints what each spot cost and used. See Stats.                                           |
 
 ### Settings
 
@@ -749,16 +754,16 @@ openspot spot stats --days 7 --frame
 - `--frame` prints a `row=<id>` block for each spot, the most CPU first, then a `use=<n>` block for each call that needs a
   use, the newest first.
 
-| Row key              | Meaning                                                              |
-| -------------------- | -------------------------------------------------------------------- |
-| `title`, `detail`    | The name of the spot, and its numbers in words.                      |
-| `runs`, `failures`   | The calls that ended, and those that failed.                         |
-| `cpu`, `seconds`     | The CPU seconds of its processes, and the wall time of its calls.    |
-| `read`, `written`    | The bytes that its processes read and wrote.                         |
-| `wakeups`            | The times its processes woke the CPU.                                |
+| Row key              | Meaning                                                               |
+| -------------------- | --------------------------------------------------------------------- |
+| `title`, `detail`    | The name of the spot, and its numbers in words.                       |
+| `runs`, `failures`   | The calls that ended, and those that failed.                          |
+| `cpu`, `seconds`     | The CPU seconds of its processes, and the wall time of its calls.     |
+| `read`, `written`    | The bytes that its processes read and wrote.                          |
+| `wakeups`            | The times its processes woke the CPU.                                 |
 | `call.<noun>.<verb>` | The count of one call that needs a use, such as `call.screen.shot=2`. |
-| `network`            | `declared` when its header names `network`.                          |
-| `fault`, `tone`      | Its last fault, with `tone=bad`.                                     |
+| `network`            | `declared` when its header names `network`.                           |
+| `fault`, `tone`      | Its last fault, with `tone=bad`.                                      |
 
 - A `use` block holds `time`, `spot`, `call`, such as `app.quit`, and `declared`, `true` or `false`.
 
@@ -779,15 +784,15 @@ openspot app quit
   Only the person's own processes reach the socket of the API.
 - `uses` names what a spot uses. An unknown word refuses the spot.
 
-| Use         | The calls that need it                                                                                 |
-| ----------- | ------------------------------------------------------------------------------------------------------ |
-| `app`       | `app login`, `app link`, `app quit`, `key set`, `menubar`, `update check` and `update install`         |
+| Use         | The calls that need it                                                                                                                                     |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app`       | `app login`, `app link`, `app quit`, `key set`, `menubar`, `update check` and `update install`                                                             |
 | `spots`     | `spot add`, `spot remove`, `spot on`, `spot off`, `spot new`, `spot run`, `spot log`, `setting list`, and `setting get`, `set` or `change` of another spot |
-| `screen`    | `screen sources`, `screen shot`, `screen record`, `window frame`, `window move` and `color pick`       |
-| `clipboard` | `clipboard copy`, `clipboard paste` and `clipboard read`                                               |
-| `calendar`  | each call of `calendar` and `reminders`                                                                |
-| `network`   | No call. The spot reaches the network.                                                                 |
-| `files`     | No call. The spot writes outside its data folder.                                                      |
+| `screen`    | `screen sources`, `screen shot`, `screen record`, `window frame`, `window move` and `color pick`                                                           |
+| `clipboard` | `clipboard copy`, `clipboard paste` and `clipboard read`                                                                                                   |
+| `calendar`  | each call of `calendar` and `reminders`                                                                                                                    |
+| `network`   | No call. The spot reaches the network.                                                                                                                     |
+| `files`     | No call. The spot writes outside its data folder.                                                                                                          |
 
 - A call that needs a use that the header does not name still runs, and shows one toast for each spot, use and day.
   `openspot check` does not report it, because only a run shows it.
@@ -819,10 +824,10 @@ spot raises the major number and adds a header key `protocol=<major>`. A spot wi
 
 An old spot never sees a word that it did not ask for, and an old app skips a word that it does not know.
 
-| To add                | Add                                                         |
-| --------------------- | ----------------------------------------------------------- |
-| A thing that happens  | an event `<noun>.<verb>`                                    |
-| A thing to draw       | a kind `<kind>=`, which an old app skips and reports        |
-| A detail of a kind    | a key, or a `type` value                                    |
-| A power of the Mac    | a noun: `openspot <noun> <verb>`, its events and its `uses` word |
-| A complex look        | nothing: a `view` of the spot                               |
+| To add               | Add                                                              |
+| -------------------- | ---------------------------------------------------------------- |
+| A thing that happens | an event `<noun>.<verb>`                                         |
+| A thing to draw      | a kind `<kind>=`, which an old app skips and reports             |
+| A detail of a kind   | a key, or a `type` value                                         |
+| A power of the Mac   | a noun: `openspot <noun> <verb>`, its events and its `uses` word |
+| A complex look       | nothing: a `view` of the spot                                    |
