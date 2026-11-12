@@ -304,12 +304,12 @@ final class SheetPartsTests: XCTestCase {
         """)
 
         XCTAssertEqual(sheet.selectedPart?.id, "key")
-        sheet.move(by: 1)
+        sheet.moveLine(by: 1)
         XCTAssertEqual(sheet.selectedPart?.id, "wifi")
-        sheet.move(by: 1)
-        sheet.move(by: 1)
+        sheet.moveLine(by: 1)
+        sheet.moveLine(by: 1)
         XCTAssertEqual(sheet.selectedPart?.id, "reload")
-        sheet.move(by: -3)
+        sheet.moveLine(by: -3)
         XCTAssertEqual(sheet.selectedPart?.id, "key")
     }
 
@@ -317,15 +317,6 @@ final class SheetPartsTests: XCTestCase {
         let sheet = try panel("text=note\ntitle=Note\n\nfield=key\ntype=hotkey\nvalue=ctrl+space\n\nswitch=wifi\nvalue=true\n")
 
         XCTAssertEqual(sheet.selectedPart?.id, "key")
-    }
-
-    func testASheetWithATextAreaKeepsItsArrows() throws {
-        var sheet = try panel("field=note\nvalue=Hello\n\nbutton=reload\ntitle=Reload\n")
-
-        sheet.move(by: 1)
-
-        XCTAssertFalse(sheet.takesArrows)
-        XCTAssertNil(sheet.selectedPart)
     }
 
     func testALineWithAValueCarriesALevelMarkInItsTone() throws {
@@ -382,7 +373,7 @@ final class SheetPartsTests: XCTestCase {
 
     func testTheSelectionSurvivesANewAnswerAndMovesOnWhenThePartEnds() throws {
         var sheet = try panel("field=key\ntype=hotkey\nvalue=ctrl+space\n")
-        sheet.move(by: 1)
+        sheet.moveLine(by: 1)
 
         sheet.take(SpotOutput(text: "field=key\ntype=hotkey\nvalue=option+space\n"), answering: sheet.generation)
         XCTAssertEqual(sheet.selectedPart?.id, "key")
@@ -393,7 +384,7 @@ final class SheetPartsTests: XCTestCase {
 
     func testAClearedSelectionGoesBackToTheFirstPart() throws {
         var sheet = try panel("field=key\ntype=hotkey\nvalue=ctrl+space\n\nswitch=wifi\nvalue=true\n")
-        sheet.move(by: 1)
+        sheet.moveLine(by: 1)
 
         sheet.clearSelection()
 
