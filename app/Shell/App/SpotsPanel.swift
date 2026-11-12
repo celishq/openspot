@@ -168,6 +168,10 @@ final class SpotsPanel: NSPanel {
     override func sendEvent(_ event: NSEvent) {
         if event.type == .flagsChanged { model?.takeHeld(Self.modifiers(of: event.modifierFlags)) }
         if event.type == .pressure { takePressure(event) }
+        if event.type == .rightMouseDown, let model, model.isShown, !model.isEditing, model.openList == nil {
+            openMenu(at: event)
+            return
+        }
         if event.type == .keyDown {
             if model?.recording != nil {
                 if Int(event.keyCode) == kVK_Escape {
@@ -186,10 +190,15 @@ final class SpotsPanel: NSPanel {
     /// Opens the actions menu of the card under a force click, when the press reaches its second stage.
     private func takePressure(_ event: NSEvent) {
         defer { pressStage = event.stage }
-        guard event.stage == 2, pressStage < 2, let model, let view = contentView else { return }
+        guard event.stage == 2, pressStage < 2 else { return }
+        openMenu(at: event)
+    }
+
+    /// Opens the actions menu of the card under the pointer of this event.
+    private func openMenu(at event: NSEvent) {
+        guard let model, let view = contentView else { return }
         let origin = SpotTokens.gridOrigin(scrollOffset: model.gridScroll)
-        let point = CGPoint(x: event.locationInWindow.x - origin.x, y: view.bounds.height - event.locationInWindow.y - origin.y)
-        model.forcePress(at: point)
+        model.openMenu(at: CGPoint(x: event.locationInWindow.x - origin.x, y: view.bounds.height - event.locationInWindow.y - origin.y))
     }
 
     private static func modifiers(of flags: NSEvent.ModifierFlags) -> Shortcut.Modifiers {

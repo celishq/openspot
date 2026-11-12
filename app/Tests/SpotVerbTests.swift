@@ -113,7 +113,7 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertEqual(model.searchText, "")
     }
 
-    func testAForcePressOnACardOpensItsMenuAndTheClickThatEndsItRunsNothing() throws {
+    func testARightOrForceClickOnACardOpensItsMenuAndTheClickThatEndsItRunsNothing() throws {
         try script("weather", header: "title=Weather")
         try script("clock", header: "title=Clock")
         model.reload()
@@ -121,7 +121,7 @@ final class SpotVerbTests: XCTestCase {
         let index = try XCTUnwrap(model.visible.firstIndex { $0.id == "weather" })
         let card = try XCTUnwrap(model.placements.first { $0.index == index }).rect
 
-        model.forcePress(at: CGPoint(x: card.midX, y: card.midY))
+        model.openMenu(at: CGPoint(x: card.midX, y: card.midY))
         model.tap("weather")
 
         XCTAssertEqual(model.selectedEntry?.id, "weather")
