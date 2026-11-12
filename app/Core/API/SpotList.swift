@@ -58,7 +58,7 @@ struct SpotList {
         })
     }
 
-    /// Each script of the scan as a `spot` block, with a `command` block for each of its commands and a `setting` block for
+    /// Each script of the scan as a `spot` block, with a `button` block for each of its commands and a `field` block for
     /// each of its settings after it (K8).
     func loadedFrame() throws -> String {
         let scan = try folder.keptScan()
@@ -70,9 +70,9 @@ struct SpotList {
                 ("menubar", String(script.canShowInMenuBar)), ("inMenuBar", String(config.arrangement.menuBar.contains(script.id)))
             ])
             let commands = script.offers.map { offer in
-                Self.block([("command", offer.id), ("title", offer.title), ("icon", offer.icon), ("key", keys.first { $0.spot == script.id && $0.act == .command(offer.id) }?.trigger.text)])
+                Self.block([("button", offer.id), ("title", offer.title), ("icon", offer.icon), ("key", keys.first { $0.spot == script.id && $0.act == .command(offer.id) }?.trigger.text)])
             }
-            let settings = script.settings.map { Self.block([("setting", $0.id), ("title", $0.title), ("icon", $0.icon)]) }
+            let settings = script.settings.map { Self.block([("field", $0.id), ("title", $0.title), ("icon", $0.icon)]) }
             return ([spot] + commands + settings).joined()
         }.joined()
     }
@@ -104,9 +104,9 @@ struct SpotList {
         try Self.json(config.settings.map { ["spot": $0.spot, "key": $0.key, "value": $0.value] })
     }
 
-    /// Each value that a spot keeps as a `setting` block, in the order of the file (K8).
+    /// Each value that a spot keeps as a `field` block, in the order of the file (K8).
     func valuesFrame() -> String {
-        config.settings.map { Self.block([("setting", $0.key), ("spot", $0.spot), ("value", $0.value)]) }.joined()
+        config.settings.map { Self.block([("field", $0.key), ("spot", $0.spot), ("value", $0.value)]) }.joined()
     }
 
     /// One block of the lines that have a value, and a blank line after it.

@@ -68,7 +68,7 @@ settingrow() {
   fi
 }
 
-# Takes the block that ends: a spot gives its menu bar and float rows, a command its key row, and a setting its row.
+# Takes the block that ends: a spot gives its menu bar and float rows, a button its key row, and a field its row.
 flush() {
   case $kind in
     spot)
@@ -77,8 +77,8 @@ flush() {
       [ "$b_menubar" != true ] || menubars="$menubars${nl}row=menubar:$spot${nl}title=Show in the menu bar${nl}detail=$name${nl}parent=$name${nl}icon=$icon${nl}hides=clear${nl}value=$b_in$nl"
       [ "$b_float" != true ] || floats="$floats$(keyrow "float:$spot" Float "$name" "$icon" "$b_floatKey")$nl"
       ;;
-    command) keys="$keys$(keyrow "key:$spot:$id" "$b_title" "$name" "${b_icon:-$icon}" "$b_key")$nl" ;;
-    setting)
+    button) keys="$keys$(keyrow "key:$spot:$id" "$b_title" "$name" "${b_icon:-$icon}" "$b_key")$nl" ;;
+    field)
       named="$named$spot $id$nl"
       settings="$settings$(settingrow "$spot" "$id" "$b_title" "${b_icon:-${icon:-gearshape}}" "$name")$nl"
       ;;
@@ -93,7 +93,7 @@ sheet() {
     case $part:$line in
       *:---) flush; part=$((part + 1)) ;;
       *:) flush ;;
-      1:setting=*) value_key=${line#setting=} ;;
+      1:field=*) value_key=${line#field=} ;;
       1:spot=*) value_spot=${line#spot=} ;;
       1:value=*) values="$values$value_spot$nl$value_key$nl${line#value=}$nl" ;;
       2:panelKey=*) panel=${line#*=} ;;
@@ -101,7 +101,7 @@ sheet() {
       2:careful=*) careful=${line#*=} ;;
       2:login=*) login=${line#*=} ;;
       2:link=*) link=${line#*=} ;;
-      3:spot=* | 3:command=* | 3:setting=*) flush; kind=${line%%=*} id=${line#*=} ;;
+      3:spot=* | 3:button=* | 3:field=*) flush; kind=${line%%=*} id=${line#*=} ;;
       3:name=*) b_name=${line#*=} ;;
       3:icon=*) b_icon=${line#*=} ;;
       3:title=*) b_title=${line#*=} ;;

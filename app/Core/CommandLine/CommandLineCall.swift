@@ -137,7 +137,7 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot spot list [--core] [--frame]        Prints each spot that the app loads as JSON, with its commands, its
                                                  settings and their keys. --core prints each spot that comes with the
                                                  app, and whether it is on. --frame prints a spot=<id> block for each
-                                                 spot, with a command=<id> or setting=<id> block for each of its own.
+                                                 spot, with a button=<id> or field=<id> block for each of its own.
     openspot spot on|off <id>...                 Turns spots that come with the app on or off.
     openspot spot add [git url | folder | file.spot] [--yes]
                                                  Puts a spot in the plugins folder, a git one at its newest commit, and
@@ -161,7 +161,7 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot setting get [--spot id] <key>       Prints the value the person chose for the spot, or nothing.
     openspot setting set [--spot id] <key> [v]   Keeps a value for the spot, or removes it with no value.
     openspot setting list [--frame]              Prints each value that a spot keeps as JSON, with its spot and key.
-                                                 --frame prints a setting=<key> block with spot and value for each.
+                                                 --frame prints a field=<key> block with spot and value for each.
     openspot setting change [--spot id] <key>    Runs the action of the setting in the panel, which can ask with a form.
     openspot prompt new <words>...               Prints a prompt that asks a coding agent to build a spot that does
                                                  what the words say.
