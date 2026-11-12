@@ -16,6 +16,8 @@ final class SpotSandboxModel {
     private(set) var source = ""
     /// The text typed in the search of the sheet.
     private(set) var query = ""
+    /// The place of the panel where the spot shows.
+    private(set) var place = PlaygroundPlace.sheet
     /// Why the header cannot load, or nil when it loads.
     private(set) var fault: String?
     private(set) var spot: Spot?
@@ -31,6 +33,16 @@ final class SpotSandboxModel {
 
     var fileName: String? {
         file?.lastPathComponent
+    }
+
+    /// The `on` line that the spot needs before its place reads it, or nil when it has one.
+    var lack: String? {
+        spot.flatMap(place.lack)
+    }
+
+    /// The rows that the spot gives as answers to the text of the main search.
+    var answers: [SpotItem] {
+        sheet?.answers ?? []
     }
 
     var panel: SheetParts? {
@@ -74,15 +86,25 @@ final class SpotSandboxModel {
         }
     }
 
-    /// Types the text in the search of the sheet, which reads a spot with `on=sheet.text`.
+    /// Types the text in the search of the place: the search of the sheet, or the main search.
     func search(_ text: String) {
         query = text
-        sheet?.search(text)
+        if let sheet { place.type(text, in: sheet) }
+    }
+
+    /// Shows the spot in another place, which runs it as that place of the panel does.
+    func choose(_ next: PlaygroundPlace) {
+        guard next != place else { return }
+        place = next
+        guard let sheet else { return }
+        sheet.close()
+        place.show(sheet, query: query)
     }
 
     /// Runs the spot again as it is.
     func rerun() {
-        sheet?.read(need: .change)
+        guard let sheet else { return }
+        if place == .sheet { sheet.read(need: .change) } else { place.show(sheet, query: query) }
     }
 
     func set(_ part: SpotPart, to value: String) {
@@ -128,7 +150,7 @@ final class SpotSandboxModel {
             let next = runs.sheet(for: loaded)
             next.onReport = { [weak self] in self?.take($0) }
             sheet = next
-            next.open {}
+            place.show(next, query: query)
         } catch {
             fault = (error as? SpotError)?.reason ?? error.localizedDescription
         }

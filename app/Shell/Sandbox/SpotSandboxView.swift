@@ -1,8 +1,8 @@
 import OpenspotCore
 import SwiftUI
 
-/// The playground: the text of a spot on the left; its live sheet, its card and its faults on the right; and below them
-/// each call that the spot got, with what it printed.
+/// The playground: the text of a spot on the left; on the right the place where it shows, its sheet, its card or its rows in
+/// the main search, with its faults; and below them each call that the spot got, with what it printed.
 struct SpotSandboxView: View {
     @Bindable var model: SpotSandboxModel
 
@@ -70,30 +70,30 @@ struct SpotSandboxView: View {
         .fixedSize()
     }
 
+    private var placeChoice: Binding<PlaygroundPlace> {
+        Binding(get: { model.place }, set: { model.choose($0) })
+    }
+
     private var result: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: SpotTokens.formFieldGap) {
-                TextField("Search the sheet", text: query)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: SpotTokens.gridWidth)
-                if let panel = model.panel {
-                    SpotSheetPreview(
-                        panel: panel,
-                        title: model.spot?.name ?? "Sheet",
-                        subtitle: model.spot?.subtitle ?? "",
-                        symbol: model.spot?.symbol ?? "square.dashed",
-                        onSet: { model.set($0, to: $1) },
-                        onPress: { model.press($0) },
-                        list: model.sheet?.list ?? ItemList()
-                    )
-                } else {
-                    Text("Type a spot, or choose an example.")
-                        .font(SpotType.body)
-                        .modifier(SpotSecondaryText())
-                        .frame(width: SpotTokens.gridWidth, height: SpotTokens.glyphSize, alignment: .leading)
+                Picker("Place", selection: placeChoice) {
+                    ForEach(PlaygroundPlace.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
-                if let card = model.card { cardView(card) }
-                let faults = (model.fault.map { [$0] } ?? []) + model.sandbox.faults
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(width: SpotTokens.gridWidth)
+                if model.place != .card {
+                    TextField(model.place == .search ? "Search" : "Search the sheet", text: query)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: SpotTokens.gridWidth)
+                }
+                switch model.place {
+                case .sheet: sheetView
+                case .card: cardView
+                case .search: searchView
+                }
+                let faults = (model.fault.map { [$0] } ?? []) + (model.lack.map { [$0] } ?? []) + model.sandbox.faults
                 lines(faults.isEmpty ? ["No faults"] : faults, color: faults.isEmpty ? SpotTheme.ink.opacity(SpotTheme.secondaryLight) : .orange)
                 if !model.sandbox.log.isEmpty {
                     lines(model.sandbox.log, color: SpotTheme.ink.opacity(SpotTheme.secondaryLight))
@@ -104,13 +104,70 @@ struct SpotSandboxView: View {
         .frame(width: Self.sideWidth, alignment: .topLeading)
     }
 
-    private func cardView(_ card: (layout: WidgetLayout, face: CardFace, size: SpotSize)) -> some View {
-        let size = CGSize(width: SpotTokens.width(columns: card.size.columns), height: SpotTokens.height(rows: card.size.rows))
-        let shape = RoundedRectangle(cornerRadius: SpotTokens.corner(for: card.size), style: .continuous)
-        return SpotCardDrawing(layout: card.layout, face: card.face, card: card.size) { _, _ in }
-            .padding(SpotTokens.cardPadding(for: card.size, isWidget: true))
-            .frame(width: size.width, height: size.height)
+    @ViewBuilder
+    private var sheetView: some View {
+        if let panel = model.panel {
+            SpotSheetPreview(
+                panel: panel,
+                title: model.spot?.name ?? "Sheet",
+                subtitle: model.spot?.subtitle ?? "",
+                symbol: model.spot?.symbol ?? "square.dashed",
+                onSet: { model.set($0, to: $1) },
+                onPress: { model.press($0) },
+                list: model.sheet?.list ?? ItemList()
+            )
+        } else {
+            empty("Type a spot, or choose an example.")
+        }
+    }
+
+    /// The card of the spot at its size: the drawing of its newest frame, or else its icon, title and detail.
+    @ViewBuilder
+    private var cardView: some View {
+        if let spot = model.spot {
+            let size = model.card?.size ?? spot.size
+            let frame = CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))
+            let shape = RoundedRectangle(cornerRadius: SpotTokens.corner(for: size), style: .continuous)
+            Group {
+                if let card = model.card {
+                    SpotCardDrawing(layout: card.layout, face: card.face, card: card.size) { _, _ in }
+                } else {
+                    VStack(alignment: .leading, spacing: SpotType.lineGap) {
+                        Image(systemName: spot.symbol).font(.system(size: 17, weight: .semibold))
+                        Spacer(minLength: 0)
+                        Text(model.sheet?.state.title ?? spot.name).font(SpotType.title).lineLimit(1)
+                        if let detail = model.sheet?.state.subtitle ?? spot.subtitle {
+                            Text(detail).font(SpotType.detail).modifier(SpotSecondaryText()).lineLimit(1)
+                        }
+                    }
+                    .foregroundStyle(SpotTheme.ink)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                }
+            }
+            .padding(SpotTokens.cardPadding(for: size, isWidget: true))
+            .frame(width: frame.width, height: frame.height)
             .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
+        } else {
+            empty("Type a spot, or choose an example.")
+        }
+    }
+
+    /// The rows that the spot gives to the text of the main search, as the panel lists them.
+    @ViewBuilder
+    private var searchView: some View {
+        if model.answers.isEmpty {
+            empty(model.query.isEmpty ? "Type a text in the search." : "No rows for this text.")
+        } else {
+            SpotRowsView(list: ItemList(items: model.answers), onRun: { _ in })
+                .frame(width: SpotTokens.gridWidth, height: CGFloat(model.answers.count) * SpotTokens.listRowHeight)
+        }
+    }
+
+    private func empty(_ text: String) -> some View {
+        Text(text)
+            .font(SpotType.body)
+            .modifier(SpotSecondaryText())
+            .frame(width: SpotTokens.gridWidth, height: SpotTokens.glyphSize, alignment: .leading)
     }
 
     private var calls: some View {
