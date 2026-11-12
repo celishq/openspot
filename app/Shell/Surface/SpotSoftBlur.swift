@@ -2,8 +2,8 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// One blur of what lies behind the window, with a dark tint. The tint grows from nothing at its edge across the whole margin,
-/// and the blur grows only close to the content.
+/// One blur of what lies behind the window, with the theme's shade. The shade grows from nothing at its edge across the
+/// whole margin, and the blur grows only close to the content.
 struct SpotSoftBlur: NSViewRepresentable {
     private static let blurInset: CGFloat = SpotTokens.halo - 5
     private static let blurSoftness: CGFloat = 20
@@ -31,6 +31,11 @@ struct SpotSoftBlur: NSViewRepresentable {
                 filter = Self.filter(mask: masks?.blur, radius: SpotTheme.backdropBlur)
                 applyBlur()
             }
+        }
+
+        /// Whether the panel is in the dark theme, which picks the shade of the tint.
+        var isDark = true {
+            didSet { if isDark != oldValue { applyShade() } }
         }
 
         private let tint = CALayer()
@@ -62,8 +67,16 @@ struct SpotSoftBlur: NSViewRepresentable {
             }
             tint.frame = bounds
             tintMask.frame = bounds
-            tint.backgroundColor = SpotTheme.tint.cgColor
+            applyShade()
             applyBlur()
+        }
+
+        /// Gives the tint the shade of the theme that the panel is in.
+        private func applyShade() {
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            defer { CATransaction.commit() }
+            tint.backgroundColor = (isDark ? SpotTheme.dark : SpotTheme.light).shade.cgColor
         }
 
         override func updateLayer() {
@@ -107,11 +120,13 @@ struct SpotSoftBlur: NSViewRepresentable {
         surface.blendingMode = .behindWindow
         surface.state = .active
         surface.appearance = NSAppearance(named: .darkAqua)
+        surface.isDark = context.environment.colorScheme == .dark
         surface.masks = Self.masks(height: height)
         return surface
     }
 
     func updateNSView(_ surface: Surface, context: Context) {
+        surface.isDark = context.environment.colorScheme == .dark
         surface.masks = Self.masks(height: height)
     }
 

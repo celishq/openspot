@@ -54,7 +54,7 @@ final class DoomExampleTests: SamplePluginsCase {
     }
 
     /// A clang that logs each call to `compiled`, fails as a Mac with no Command Line Tools does while the file
-    /// `clang-fails` is there, writes an empty object for `-c`, one second later for a file named `slow`, and links a fake
+    /// `clang-fails` is there, writes an empty object for `-c`, for a file named `slow` once the file `release` is there, and links a fake
     /// engine with the mark `built`.
     private func fakeClang(in folder: URL) throws {
         try fakeEngine(at: folder.appendingPathComponent("built"), in: folder, mark: "built")
@@ -71,7 +71,9 @@ final class DoomExampleTests: SamplePluginsCase {
           previous=$a
         done
         case " $* " in
-          *" -c "*"/slow.c "*) sleep 1; : > "$out" ;;
+          *" -c "*"/slow.c "*)
+            n=0; while [ ! -f '\(folder.path)/release' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done
+            : > "$out" ;;
           *" -c "*) : > "$out" ;;
           *) cp '\(folder.path)/built' "$out" ;;
         esac
@@ -85,20 +87,26 @@ final class DoomExampleTests: SamplePluginsCase {
         try "SRC_DOOM = \(files)\n".write(to: source.appendingPathComponent("Makefile"), atomically: true, encoding: .utf8)
     }
 
+    /// Lets the compile of `slow` end.
+    private func release(in folder: URL) {
+        FileManager.default.createFile(atPath: folder.appendingPathComponent("release").path, contents: Data())
+    }
+
     private func gameData(in folder: URL) throws {
         try FileManager.default.createDirectory(at: data(in: folder), withIntermediateDirectories: true)
         try "wad".write(to: data(in: folder).appendingPathComponent("doom1.wad"), atomically: true, encoding: .utf8)
     }
 
     /// Runs the script once with the host's process, as a press of its card or of its Play button does, and returns each
-    /// frame that it printed and the line that its failure shows, if it failed.
-    private func press(_ spot: Spot, _ call: String = "open") async -> (frames: [String], failure: String?) {
+    /// frame that it printed and the line that its failure shows, if it failed. `onFrame` sees each frame when it comes.
+    private func press(_ spot: Spot, _ call: String = "open", onFrame: (String) -> Void = { _ in }) async -> (frames: [String], failure: String?) {
         var frames: [String] = []
         do {
             for try await frame in ScriptProcess(url: spot.url, arguments: [call], limit: 30, dataName: spot.dataName).start() {
                 frames.append(frame)
+                onFrame(frame)
             }
-        } catch PluginError.failed(_, let line) {
+        } catch SpotError.failed(_, let line) {
             return (frames, line)
         } catch {
             return (frames, "\(error)")
@@ -122,7 +130,7 @@ final class DoomExampleTests: SamplePluginsCase {
         var time = Date(timeIntervalSince1970: 1000)
         let runs = SpotRuns(now: { time }, stopPause: 0.2, tickPause: .milliseconds(50))
         defer { runs.quit() }
-        runs.take(try PluginFolder(url: plugins).scan())
+        runs.take(try SpotFolder(url: plugins).scan())
         let sheet = try XCTUnwrap(runs.sheets["doom/doom"])
         let log = FrameLog(sheet)
         var pictures: [(picture: String?, sheet: [[String]]?)] = []
@@ -135,7 +143,7 @@ final class DoomExampleTests: SamplePluginsCase {
                 try await Task.sleep(for: .milliseconds(10))
             }
             runs.panelClosed()
-            let drawing = PluginOutput(text: log.last ?? "").layout?.rows
+            let drawing = SpotOutput(text: log.last ?? "").layout?.rows
             pictures.append((sheet.state.face.hasView ? sheet.state.values["picture"]?.last : nil, drawing))
         }
         return pictures
@@ -303,7 +311,9 @@ final class DoomExampleTests: SamplePluginsCase {
             try self.gameData(in: folder)
             try self.engineSource(in: folder, files: "quick.o slow.o doomgeneric_xlib.o")
 
-            let run = await self.press(doom)
+            let run = await self.press(doom) { frame in
+                if frame.contains("progress=0.50") { self.release(in: folder) }
+            }
 
             XCTAssertTrue(run.frames.contains { $0.contains("title=Building the Doom engine\nprogress=0.50\ndetail=50%") }, "\(run.frames)")
             XCTAssertTrue(run.frames.contains { $0.contains("title=Building the Doom engine\nprogress=1.00\ndetail=100%") }, "\(run.frames)")
@@ -352,9 +362,5 @@ final class DoomExampleTests: SamplePluginsCase {
 
             XCTAssertEqual(self.lines("played", in: folder).first, "old -iwad \(self.data(in: folder).path)/doom1.wad")
         }
-    }
-
-    func testTheCardIsSquareTheSizeNearestToTheShapeOfTheGameScreen() throws {
-        XCTAssertEqual(try example("Doom").size, .square)
     }
 }

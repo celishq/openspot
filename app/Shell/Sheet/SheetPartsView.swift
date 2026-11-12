@@ -22,7 +22,7 @@ struct SheetPartsView: View {
     var menuOpening: () -> SheetParts.MenuOpening? = { nil }
     /// Takes a click into a field, which gives that part the focus.
     var onFocus: (SpotPart) -> Void = { _ in }
-    /// The plugin's own view at the size of the area of a `view` component (V1).
+    /// The plugin's own view at the size of the area of a `view` component (protocol: Views).
     var customView: (CGSize) -> SpotCustomView? = { _ in nil }
     @FocusState private var focus: String?
 
@@ -538,7 +538,7 @@ struct SheetPartsView: View {
 
 /// Gives the focus back once the panel has faded in. It alone reads whether the panel shows, so that a show reruns no part.
 private struct FocusOnShow: ViewModifier {
-    let focus: () -> Void
+    let focus: @MainActor @Sendable () -> Void
     @Environment(\.spotIsShown) private var isShown
 
     func body(content: Content) -> some View {

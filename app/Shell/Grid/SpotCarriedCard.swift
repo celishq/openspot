@@ -20,8 +20,6 @@ struct SpotCarriedCard: View {
                     takesDrag: false,
                     isDropTarget: false,
                     chainLetter: nil,
-                    showsChain: false,
-                    isHiddenFromGrid: !carry.entry.isOnGrid,
                     model: model,
                     onTap: {}
                 )

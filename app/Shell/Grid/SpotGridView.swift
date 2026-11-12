@@ -16,12 +16,12 @@ struct SpotGridView: View {
     var body: some View {
         let placements = model.placements
         let drag = model.drag
-        let rows = placements.map { $0.row + $0.size.rows }.max() ?? 0
+        let height = SpotGrid.height(of: placements)
         let glass = placements.map { placement in
             let entry = model.visible[placement.index]
             let isLifted = drag?.id == entry.id
             let isHeld = isLifted || model.landing == entry.id
-            let shown = isLifted ? drag.flatMap { $0.placement(at: $0.start) } ?? placement : placement
+            let shown = isLifted ? drag.flatMap { $0.placement(at: $0.home) } ?? placement : placement
             return SpotGridGlass.Card(
                 id: entry.id,
                 size: shown.size,
@@ -29,14 +29,15 @@ struct SpotGridView: View {
                 isCovered: entry.id == openID || SpotCardView.isFilled(entry, takesDrag: model.takesDrag(entry.id), isDropTarget: dropTarget == entry.id),
                 isPressed: pressed == entry.id && !isHeld && SpotCardView.showsPress(of: entry),
                 isLifted: isLifted,
-                isHeld: isHeld
+                isHeld: isHeld,
+                focus: model.focus(ofCard: placement.index)
             )
         }
         return ZStack(alignment: .topLeading) {
-            SpotGridGlass(cards: glass, pressable: openID == nil ? glass : [], size: CGSize(width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows)), lift: model.lift)
+            SpotGridGlass(cards: glass, pressable: openID == nil ? glass : [], size: CGSize(width: SpotTokens.gridWidth, height: height), lift: model.lift)
             if model.isEditing {
                 landing(of: drag, in: placements)
-                    .frame(width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows))
+                    .frame(width: SpotTokens.gridWidth, height: height)
             }
             ForEach(Array(zip(placements, glass)), id: \.1.id) { placement, card in
                 let entry = model.visible[placement.index]
@@ -48,8 +49,6 @@ struct SpotGridView: View {
                     takesDrag: model.takesDrag(entry.id),
                     isDropTarget: dropTarget == entry.id,
                     chainLetter: model.chainLetter(of: entry),
-                    showsChain: model.showsChain,
-                    isHiddenFromGrid: model.isEditing && !entry.isOnGrid,
                     model: model
                 )
                 .equatable()
@@ -60,22 +59,20 @@ struct SpotGridView: View {
                     id: entry.id,
                     size: card.size,
                     turnsOff: model.isEditing && !card.isLifted && model.turnsOff(entry),
-                    showsEye: model.isEditing && entry.item == nil,
-                    isHidden: !entry.isOnGrid,
                     sizes: model.isEditing && !card.isLifted ? model.sizes(of: entry) : [],
                     isResizing: model.resize?.id == entry.id,
                     isDragging: drag != nil
                 ))
                 .modifier(SpotLiftedCard(isLifted: card.isLifted, isSolid: card.isHeld, size: card.size))
+                .modifier(SpotFocusLook(focus: card.focus))
                 .modifier(SpotCardPlace(motion: card.motion, lift: card.isLifted ? model.lift : nil))
                 .zIndex(card.isHeld ? 1 : 0)
-                .contextMenu { SpotCardMenu(model: model, entry: entry) }
                 .opacity(entry.id == openID ? 0.001 : 1)
                 .animation(nil) { $0.opacity(model.carry?.entry.id == entry.id ? 0.001 : 1) }
                 .allowsHitTesting(entry.id != openID)
             }
         }
-        .frame(width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows), alignment: .topLeading)
+        .frame(width: SpotTokens.gridWidth, height: height, alignment: .topLeading)
         .contentShape(Rectangle())
         .onDrop(of: [.fileURL], delegate: SpotGridDrop(model: model, target: $dropTarget))
     }
@@ -122,27 +119,5 @@ struct SpotGridView: View {
                 withTransaction(still) { model.dragSpot(entry.id, by: value.translation) }
             }
             .onEnded { model.dropSpot(by: $0.translation) }
-    }
-}
-
-/// What a card offers on a right click: its preferred size, its place on the grid and Edit Spots. It reads the card's state
-/// itself, so that a change of a card's value reruns this menu and not the grid.
-private struct SpotCardMenu: View {
-    let model: SpotsModel
-    let entry: SpotsModel.Entry
-
-    var body: some View {
-        let sizes = model.sizes(of: entry)
-        if !sizes.isEmpty {
-            Picker("Size", selection: Binding(get: { entry.size.name }, set: { name in
-                if let size = SpotSize(name: name) { model.prefer(size, for: entry.id) }
-            })) {
-                ForEach(sizes.map(\.name), id: \.self) { Text($0.capitalized).tag($0) }
-            }
-        }
-        if entry.item == nil {
-            Button(entry.isOnGrid ? "Hide from Grid" : "Show on Grid") { model.setOnGrid(!entry.isOnGrid, for: entry.id) }
-            Button("Edit Spots") { model.beginEditing() }
-        }
     }
 }

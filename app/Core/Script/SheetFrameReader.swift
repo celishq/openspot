@@ -2,7 +2,7 @@ import Foundation
 
 /// Splits what a script prints into frames. A line `---` ends a frame. It keeps a line that has not ended, so a chunk can
 /// stop anywhere, even inside a character. A terminal's progress code (OSC 9;4) and notification code (OSC 9) each give a
-/// frame of their own, and each other escape code leaves the text (R12).
+/// frame of their own, and each other escape code leaves the text (protocol: Frames).
 public struct SheetFrameReader: Sendable {
     public static let mark = "---"
 

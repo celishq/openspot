@@ -2,7 +2,7 @@
 # title=Paste latest screenshot
 # icon=doc.on.clipboard.fill
 # detail=From the screenshot folder
-# size=small
+# uses=clipboard
 folder() {
   dir=$(defaults read com.apple.screencapture "$1" 2>/dev/null || defaults read com.apple.screencapture location 2>/dev/null || echo "$HOME/Desktop")
   case "$dir" in "~"*) dir="$HOME${dir#\~}" ;; esac

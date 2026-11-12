@@ -1,5 +1,0 @@
-[[widgets]]
-title = "System"
-detail = "Battery, CPU, memory and devices"
-grid = ["battery battery cpu cpu", "battery battery memory memory", "battery battery devices devices"]
-opens = "system-info"

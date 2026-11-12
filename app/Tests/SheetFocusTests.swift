@@ -1,10 +1,10 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves where the arrows move the focus among the parts of a sheet (A25).
+/// Proves where the arrows move the focus among the parts of a sheet (A29).
 final class SheetFocusTests: XCTestCase {
     private func panel(_ text: String) throws -> SheetParts {
-        try XCTUnwrap(SheetParts(output: PluginOutput(text: text)))
+        try XCTUnwrap(SheetParts(output: SpotOutput(text: text)))
     }
 
     private let confetti = """
@@ -22,7 +22,8 @@ final class SheetFocusTests: XCTestCase {
     option=gold
     title=Gold
 
-    hotkey=key
+    field=key
+    type=hotkey
     title=Shortcut
     value=option+c
 
@@ -73,7 +74,7 @@ final class SheetFocusTests: XCTestCase {
     }
 
     func testAFieldTakesTheFocusFirstAndTheArrowsLeaveIt() throws {
-        var sheet = try panel("grid=reload\ngrid=note\ngrid=level\n\nbutton=reload\ntitle=Reload\n\nfield=note\nvalue=Hello\n\nslider=level\nvalue=50\n")
+        var sheet = try panel("grid=reload\ngrid=note\ngrid=level\n\nbutton=reload\ntitle=Reload\n\nfield=note\nvalue=Hello\n\nfield=level\ntype=slider\nvalue=50\n")
 
         XCTAssertTrue(sheet.takesArrows)
         XCTAssertEqual(sheet.selectedPart?.id, "note")

@@ -74,11 +74,11 @@ struct SpotSheetView: View {
                         menuOpening: { model.sheets[entry.id]?.menuOpening },
                         onFocus: { model.focusPart($0) },
                         customView: { room in
-                            entry.command.view.map { SpotCustomView(source: $0, values: entry.state.values, card: .square, room: room, views: SpotViews.shared) }
+                            entry.spot.view.map { SpotCustomView(source: $0, values: entry.state.values, card: .square, room: room, views: SpotViews.shared) }
                         }
                     )
-                    .task(id: panel.parts.contains { $0.kind == "view" } ? entry.command.view : nil) {
-                        if let view = entry.command.view, panel.parts.contains(where: { $0.kind == "view" }) { await SpotViews.shared.load(view) }
+                    .task(id: panel.parts.contains { $0.kind == "view" } ? entry.spot.view : nil) {
+                        if let view = entry.spot.view, panel.parts.contains(where: { $0.kind == "view" }) { await SpotViews.shared.load(view) }
                     }
                 } else if let form {
                     if form.choices != nil { Color.clear.frame(height: SpotTokens.listRowHeight) }
@@ -96,7 +96,7 @@ struct SpotSheetView: View {
                         }
                         .buttonStyle(.plain)
                     } else {
-                        SpotRowsView(list: list, recording: model.recording, recordingWords: model.recordingWords, onRun: { model.runItem($0) }, selection: selection, onDragOut: { model.dragOut($0, of: entry.id) })
+                        SpotRowsView(list: list, recording: model.recording, recordingWords: model.recordingWords, onRun: { model.runItem($0) }, onPoint: { model.point(at: .item($0)) }, selection: selection, onDragOut: { model.dragOut($0, of: entry.id) })
                     }
                 }
             }

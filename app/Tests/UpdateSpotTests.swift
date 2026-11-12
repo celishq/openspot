@@ -1,127 +1,104 @@
 import XCTest
 @testable import OpenspotCore
 
-final class UpdateSpotTests: XCTestCase {
-    private actor Presses {
-        var checks = 0
-        var restarts = 0
-        func check() { checks += 1 }
-        func restart() { restarts += 1 }
+/// Proves the Updates spot of the app: search finds it with the version, and the grid shows it with a downloaded update.
+/// A press checks now or restarts into the update, and it warns once before a restart that would stop running calls.
+final class UpdateSpotTests: BuiltInCase {
+    private var version: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
     }
 
-    private actor Work {
-        var count = 0
-        func set(_ value: Int) { count = value }
-    }
+    func testAReadStartsOneOpenspotAndNoJq() async throws {
+        let programs = try countPrograms()
 
-    private let presses = Presses()
-    private let work = Work()
+        _ = try await spot("updates").state(timeout: 5)
 
-    private func command(_ spot: UpdateSpot) throws -> Spot {
-        let folder = URL(fileURLWithPath: "/tmp")
-        return try XCTUnwrap(ShippedSpot.commands(folder: folder, guide: folder, app: "", update: spot).first { $0.name == "Updates" })
-    }
-
-    private func spot() -> UpdateSpot {
-        let presses = presses
-        let work = work
-        return UpdateSpot(
-            version: "0.2.0",
-            runningWork: { await work.count },
-            check: { await presses.check() },
-            restart: { await presses.restart() }
-        )
+        XCTAssertEqual(programs(), ["openspot app status --frame"])
     }
 
     func testTheCardShowsTheVersionAndAPressChecks() async throws {
-        let command = try command(spot())
+        let spot = try spot("updates")
 
-        let state = try await command.state(timeout: 5)
-        _ = try await command.perform(.open, timeout: 5)
+        let state = try await spot.state(timeout: 5)
+        _ = try await spot.perform(.open, timeout: 5)
 
-        XCTAssertEqual(state, SpotState(title: "Updates", subtitle: "0.2.0", isOnGrid: false))
-        let checks = await presses.checks
-        let restarts = await presses.restarts
+        XCTAssertEqual(state, SpotState(title: "Updates", subtitle: version, isOnGrid: false))
+        let checks = await app.checks
+        let installs = await app.installs
         XCTAssertEqual(checks, 1)
-        XCTAssertEqual(restarts, 0)
+        XCTAssertEqual(installs, 0)
     }
 
     func testAReadyUpdateShowsAndAPressRestarts() async throws {
-        let spot = spot()
-        await spot.take(ready: "0.3.0")
-        let command = try command(spot)
+        await app.set(update: "0.3.0", calls: 0)
+        let spot = try spot("updates")
 
-        let state = try await command.state(timeout: 5)
-        _ = try await command.perform(.open, timeout: 5)
+        let state = try await spot.state(timeout: 5)
+        _ = try await spot.perform(.open, timeout: 5)
 
         XCTAssertEqual(state, SpotState(title: "Restart", subtitle: "Update 0.3.0", isOnGrid: true))
-        let checks = await presses.checks
-        let restarts = await presses.restarts
+        let checks = await app.checks
+        let installs = await app.installs
         XCTAssertEqual(checks, 0)
-        XCTAssertEqual(restarts, 1)
+        XCTAssertEqual(installs, 1)
     }
 
-    func testTheSpotComesFirstInTheGrid() throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-order-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
-        let script = folder.appendingPathComponent("aaa.sh")
-        try Data("#!/bin/sh\n".utf8).write(to: script)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
+    func testItReadsWhenTheAppHasAnUpdate() throws {
+        let spot = try spot("updates")
 
-        let shipped = ShippedSpot.commands(folder: folder, guide: folder, app: "", update: spot())
-        let scan = try PluginFolder(url: folder).scan(shipped: shipped)
-
-        XCTAssertEqual(scan.commands.first?.name, "Updates")
-        XCTAssertEqual(scan.commands.dropFirst().first?.id, "aaa")
+        XCTAssertTrue(spot.read?.has(.event(SpotEvent.appUpdate)) == true)
+        XCTAssertTrue(spot.read?.has(.panel) == true)
+        XCTAssertTrue(spot.isBuiltIn)
     }
 
     func testWithRunningWorkTheFirstPressWarnsAndTheSecondRestarts() async throws {
-        let spot = spot()
-        await spot.take(ready: "0.3.0")
-        await work.set(2)
-        let command = try command(spot)
+        await app.set(update: "0.3.0", calls: 2)
+        let spot = try spot("updates")
 
-        let warning = try await spot.answer(["open"])
-        let warned = try await command.state(timeout: 5)
-        let first = await presses.restarts
-        _ = try await spot.answer(["open"])
-        let second = await presses.restarts
+        let warning = try await spot.perform(.open, timeout: 5)
+        let warned = try await spot.state(timeout: 5)
+        let first = await app.installs
+        _ = try await spot.perform(.open, timeout: 5)
+        let second = await app.installs
 
-        XCTAssertEqual(warning, "toast=Restarting stops 2 calls. Press again to restart.\n")
+        XCTAssertEqual(warning, "Restarting stops 2 calls. Press again to restart.")
         XCTAssertEqual(warned, SpotState(title: "Restart", subtitle: "Stops 2 calls"))
         XCTAssertEqual(first, 0)
         XCTAssertEqual(second, 1)
     }
 
     func testOneRunningCallIsNamedInTheSingular() async throws {
-        let spot = spot()
-        await spot.take(ready: "0.3.0")
-        await work.set(1)
+        await app.set(update: "0.3.0", calls: 1)
 
-        let warning = try await spot.answer(["open"])
+        let warning = try await spot("updates").perform(.open, timeout: 5)
 
-        XCTAssertEqual(warning, "toast=Restarting stops 1 call. Press again to restart.\n")
+        XCTAssertEqual(warning, "Restarting stops 1 call. Press again to restart.")
     }
 
     func testWhenTheWorkChangesAPressWarnsAgain() async throws {
-        let spot = spot()
-        await spot.take(ready: "0.3.0")
-        await work.set(2)
-        _ = try await spot.answer(["open"])
-        await work.set(1)
+        let spot = try spot("updates")
+        await app.set(update: "0.3.0", calls: 2)
+        _ = try await spot.perform(.open, timeout: 5)
+        await app.set(update: "0.3.0", calls: 1)
 
-        _ = try await spot.answer(["open"])
+        _ = try await spot.perform(.open, timeout: 5)
 
-        let restarts = await presses.restarts
-        XCTAssertEqual(restarts, 0)
+        let installs = await app.installs
+        XCTAssertEqual(installs, 0)
     }
 
-    func testTheCardComesFirstOfTheShippedSpotsAndHasRoomForItsWords() throws {
-        let folder = URL(fileURLWithPath: "/tmp")
-        let commands = ShippedSpot.commands(folder: folder, guide: folder, app: "", update: spot())
+    func testAWarningEndsWithItsUpdate() async throws {
+        let spot = try spot("updates")
+        await app.set(update: "0.3.0", calls: 2)
+        _ = try await spot.perform(.open, timeout: 5)
+        await app.set(update: nil, calls: 2)
+        _ = try await spot.state(timeout: 5)
+        await app.set(update: "0.4.0", calls: 2)
 
-        XCTAssertEqual(commands.map(\.name), ["Updates", "Spots", "Settings", "New spot"])
-        XCTAssertEqual(commands.first?.size, .wide)
+        let warning = try await spot.perform(.open, timeout: 5)
+
+        XCTAssertEqual(warning, "Restarting stops 2 calls. Press again to restart.")
+        let installs = await app.installs
+        XCTAssertEqual(installs, 0)
     }
 }

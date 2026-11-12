@@ -37,15 +37,16 @@ public struct ScreenPlace: Sendable {
         return CGPoint(x: x.rounded(.down), y: y.rounded(.down))
     }
 
-    /// Where the dock of Edit Spots lies: along the bottom of the free area, centred under the panel's content and whole on
-    /// the screen, with as many rows as fit under that content, up to `dockRows`, and one at least.
-    public static func dock(under panel: CGRect, in area: CGRect) -> CGRect {
+    /// How far Edit Spots lifts the panel, whose content is this rect from the window's top, so that the window's top meets
+    /// the top of the free area, and where the store lies then: centred under the content, whole on the screen, and from
+    /// the bottom of the free area up to a margin under the lifted content, one line of rows high at least.
+    public static func edit(under content: CGRect, in area: CGRect) -> (lift: CGFloat, dock: CGRect) {
         let margin = SpotTokens.dockMargin
+        let lift = area.maxY - content.maxY
         let width = min(SpotTokens.dockWidth, area.width - 2 * margin)
-        let x = min(max(panel.midX - width / 2, area.minX + margin), area.maxX - margin - width).rounded(.down)
-        let room = panel.minY - area.minY - 2 * margin
-        let rows = (1...SpotTokens.dockRows).last { SpotTokens.dockHeight(rows: $0) <= room } ?? 1
-        return CGRect(x: x, y: area.minY + margin, width: width, height: SpotTokens.dockHeight(rows: rows))
+        let x = min(max(content.midX - width / 2, area.minX + margin), area.maxX - margin - width).rounded(.down)
+        let height = max(content.minY + lift - area.minY - 2 * margin, SpotTokens.dockHeight(rows: 1))
+        return (lift, CGRect(x: x, y: area.minY + margin, width: width, height: height))
     }
 
     private func screen(window: CGRect?, pointer: CGPoint) -> Screen? {

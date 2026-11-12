@@ -1,7 +1,7 @@
 import OpenspotCore
 import SwiftUI
 
-/// Lets a person drag the files of these rows out of a sheet (O1, O3). It adds nothing when no row has a file.
+/// Lets a person drag the files of these rows out of a sheet (protocol: Files out). It adds nothing when no row has a file.
 struct SpotFileDragSource: ViewModifier {
     let items: [SpotItem]
     let onDrop: ([SpotItem]) -> Void

@@ -70,7 +70,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     /// detail from `point` lines.
     public let mark: MetricValue?
 
-    /// The kinds of block that make a part, in the order of the table in spec 01 (U2).
+    /// The kinds of block that make a part, in the order of the table in Blocks of the protocol.
     public static let kinds = ["text", "number", "gauge", "graph", "picture", "view", "switch", "slider", "field", "choice", "hotkey", "button", "section"]
 
     /// Reads a block whose first key is a kind of part. Its value is the id, and the kind decides the control.
@@ -121,7 +121,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
                 control = .menu(options, value: block.value("value"))
             }
         case "number":
-            control = .metric(block.value("value") ?? "")
+            control = .metric(block.value("display") ?? block.value("value") ?? "")
         default:
             control = .none
         }

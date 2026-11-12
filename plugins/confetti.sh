@@ -2,7 +2,8 @@
 # title=Confetti
 # icon=party.popper
 # detail=Celebrate on each screen
-# read=panel,sheet
+# on=panel.open
+# on=sheet.open
 # press=open
 dir=$(cd "$(dirname "$0")" && pwd)/confetti
 . "$dir/shared.sh"
@@ -61,7 +62,7 @@ case "$1" in
     printf 'grid=look look look look\ngrid=key key key key\ngrid=make make make make\n\n'
     printf 'choice=look\ntitle=Look\nvalue=%s\n\n' "$chosen"
     for id in $(look_ids); do printf 'option=%s\ntitle=%s\n\n' "$id" "$(esc "$(look_title "$id")")"; done
-    printf 'hotkey=key\ntitle=Shortcut\nvalue=%s\n\n' "$key"
+    printf 'field=key\ntype=hotkey\ntitle=Shortcut\nvalue=%s\n\n' "$key"
     printf 'button=make\ntitle=Make your own with AI\nalign=center\nshortcut=cmd+n\n\n'
     printf 'button=paste\ntitle=Paste a look from an AI chat\nshortcut=cmd+shift+v\n\n'
     if [ -f "$mine/$chosen.look" ]; then
@@ -121,7 +122,7 @@ case "$1" in
     own "$id"
     name=$(value name)
     if [ -z "$name" ]; then
-      printf 'title=Rename\n\nfield=name\ntitle=Name\ntext=%s\n' "$(esc "$(look_title "$id")")"
+      printf 'title=Rename\n\nfield=name\ntitle=Name\nvalue=%s\n' "$(esc "$(look_title "$id")")"
       exit 0
     fi
     file="$mine/$id.look"

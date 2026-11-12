@@ -9,10 +9,11 @@ final class SpotResizeTests: XCTestCase {
         CGPoint(x: rect.maxX, y: rect.maxY)
     }
 
-    func testEachSizeLaysOutTheGridAndASizeThatChangesNothingIsLeftOut() {
+    func testEachSizeLaysOutTheGridWithTheCardKeptAtThatSize() {
         let resize = SpotResize(id: "c", index: 2, sizes: sizes, choices: SpotSize.all)
 
-        XCTAssertEqual(resize.choices, [.wide, .square, .strip, .large])
+        XCTAssertEqual(resize.choices, [.small, .wide, .square, .strip, .large])
+        XCTAssertEqual(resize.placement(of: .small)?.size, .small)
         XCTAssertEqual(resize.placement(of: .square), SpotPlacement(index: 2, row: 1, column: 0, size: .square))
         XCTAssertEqual(resize.layout(of: .square)[3], SpotPlacement(index: 3, row: 1, column: 2, size: .square))
     }

@@ -6,10 +6,24 @@ import XCTest
 final class SpotRunsCallTests: SpotRunsCase {
     // MARK: Section 7
 
+    func testAReadAtThePanelThatTakesTooLongMarksItsCardAndTellsNoOne() async throws {
+        runs = SpotRuns(readLimit: 0.3)
+        try script(header: "on=panel.open", "sleep 30")
+        let sheet = try sheet()
+        var failures: [String] = []
+        sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
+
+        sheet.read()
+
+        try await wait("the time limit") { sheet.failure != nil }
+        XCTAssertEqual(sheet.failure, "Script took too long, so Openspot stopped it.")
+        XCTAssertEqual(failures, [])
+    }
+
     func testAReadHasTenSecondsAndAnyOtherNameHasNoLimit() async throws {
         XCTAssertEqual(SpotRuns().readLimit, 10)
         runs = SpotRuns(readLimit: 1.5)
-        try script(header: "read=sheet", """
+        try script(header: "on=sheet.open", """
         case "$1" in
           read) [ -f '\(path("slow"))' ] && sleep 30; touch '\(path("slow"))'; printf 'title=1\\n\\nrow=a\\ntitle=A\\n' ;;
           open) \(untilRelease); touch '\(path("done"))' ;;
@@ -37,7 +51,7 @@ final class SpotRunsCallTests: SpotRunsCase {
 
     func testAFailedTimerReadKeepsTheValueAndDimsWithNoToast() async throws {
         menuBar.insert("script")
-        try script(header: "read=5", """
+        try script(header: "on=clock.5", """
         [ -f '\(path("second"))' ] && exit 1
         touch '\(path("second"))'
         printf 'text=m\\ntitle=3\\n'
@@ -50,7 +64,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         XCTAssertEqual(runs.trayMarks.first?.mark.isStale, false)
 
         time += 5
-        runs.tick()
+        runs.raise(.clock)
 
         try await wait("the dim") { sheet.reading.isStale }
         XCTAssertEqual(sheet.reading.value?.title, "3")
@@ -83,7 +97,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testWhatASheetPrintsDuringItsOpenMotionShowsWhenTheMotionEnds() async throws {
         runs.quit()
         runs = SpotRuns(opening: SheetOpening(motionLength: 30), stopPause: 0.2)
-        try script(header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
+        try script(header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         runs.opening.moving = "script"
@@ -100,7 +114,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testASheetOfRowsSaysItsKindWhileItsFirstAnswerWaitsForTheOpenMotion() async throws {
         runs.quit()
         runs = SpotRuns(opening: SheetOpening(motionLength: 30), stopPause: 0.2)
-        try script(header: "read=sheet", "printf 'repeat=a\\n\\nrow=a\\ntitle=A\\n'")
+        try script(header: "on=sheet.open", "printf 'repeat=a\\n\\nrow=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         runs.opening.moving = "script"
@@ -116,7 +130,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testASheetOfPartsWithNoRowsSaysItsKindWhileItsFirstAnswerWaitsForTheOpenMotion() async throws {
         runs.quit()
         runs = SpotRuns(opening: SheetOpening(motionLength: 30), stopPause: 0.2)
-        try script(header: "read=sheet", "printf 'text=a\\ntitle=A\\n'")
+        try script(header: "on=sheet.open", "printf 'text=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         runs.opening.moving = "script"
@@ -134,7 +148,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testASheetForgetsTheKindOfAHeldAnswerThatItsStoppedReadDrops() async throws {
         runs.quit()
         runs = SpotRuns(opening: SheetOpening(motionLength: 30), stopPause: 0.2)
-        try script(header: "read=sheet", "printf 'text=a\\ntitle=A\\n'")
+        try script(header: "on=sheet.open", "printf 'text=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         runs.opening.moving = "script"
@@ -151,7 +165,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testWhatASheetPrintsShowsAfterTheLengthOfItsOpenMotionThoughItsSpringSettlesLater() async throws {
-        try script(header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
+        try script(header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         runs.opening.moving = "script"
@@ -163,7 +177,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testTheOpenMotionOfAnotherSheetHoldsNothingOfThisOne() async throws {
-        try script(header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
+        try script(header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         runs.opening.moving = "other"
@@ -174,7 +188,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testAReadStopsWhenThePanelThatWantedItCloses() async throws {
-        try script(header: "read=panel\noffers=search", "printf 'row=a\\ntitle=A\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
+        try script(header: "on=panel.open\noffers=search", "printf 'row=a\\ntitle=A\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the first frame") { sheet.list.shown.count == 1 }
@@ -187,7 +201,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testClosingASheetLeavesAReadThatThePanelWants() async throws {
-        try script(header: "read=panel\noffers=search", "sleep 0.2\nprintf 'row=a\\ntitle=A\\n'")
+        try script(header: "on=panel.open\noffers=search", "sleep 0.2\nprintf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -198,7 +212,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testAStreamThatNothingWantsStopsAfterItsFirstFrame() async throws {
-        try script(header: "read=sheet", "printf 'row=a\\ntitle=A\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
+        try script(header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
         let sheet = try sheet()
 
         sheet.read()
@@ -209,7 +223,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testAStoppedReadChangesNothing() async throws {
-        try script(header: "read=sheet", """
+        try script(header: "on=sheet.open", """
         [ -f '\(path("second"))' ] && { sleep 5; exit 0; }
         touch '\(path("second"))'
         printf 'row=a\\ntitle=A\\n'
@@ -241,7 +255,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     """
 
     func testAWorkCallGoesOnWithTheSheetAndThePanelClosedAndItsLastPictureStands() async throws {
-        try script(header: "read=sheet", String(format: Self.worker, path("done")))
+        try script(header: "on=sheet.open", String(format: Self.worker, path("done")))
         let sheet = try sheet()
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
@@ -265,7 +279,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testAFrameOfAPickWithNoOpenSheetIsTheWholePicture() async throws {
-        try script(header: "read=panel", """
+        try script(header: "on=panel.open", """
         case "$1" in
           read) printf 'detail=Idle\\n\\nrow=a\\ntitle=A\\n\\ntext=bar\\ntitle=idle\\n' ;;
           open) printf 'toast=Saved\\ntitle=Other\\nmain=power\\n\\nswitch=power\\nvalue=true\\n\\ntext=bar\\ntitle=work\\n' ;;
@@ -288,7 +302,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testOpeningASheetWhileACallRunsShowsItsRead() async throws {
-        try script(header: "read=sheet", """
+        try script(header: "on=sheet.open", """
         case "$1" in
           read) printf 'grid=go\\ngrid=note\\ngrid=bar\\n\\nbutton=go\\ntitle=Go\\n\\nfield=note\\nvalue=\\n\\ntext=bar\\ntitle=idle\\n' ;;
           go) printf 'title=Half\\nprogress=0.5\\n---\\n'; sleep 30 ;;
@@ -310,7 +324,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testANewValueStopsTheOlderCallOfThatPartAndNoOther() async throws {
-        try script(header: "read=sheet", """
+        try script(header: "on=sheet.open", """
         case "$1" in
           read) printf 'switch=a\\nvalue=false\\n\\nswitch=b\\nvalue=false\\n\\ntext=out\\ntitle=none\\n' ;;
           a) [ "$2" = true ] && { sleep 30; touch '\(path("old-a"))'; exit 0; }; touch '\(path("new-a"))'; printf 'switch=a\\nvalue=false\\n\\nswitch=b\\nvalue=true\\n\\ntext=out\\ntitle=new\\n' ;;
@@ -337,7 +351,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testAnOlderCallOfAnotherPartLeavesAPartThatChangedSince() async throws {
-        try script(header: "read=sheet", """
+        try script(header: "on=sheet.open", """
         case "$1" in
           read) printf 'switch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=%s\\n' "$(cat '\(path("a"))' 2>/dev/null || echo false)" "$(cat '\(path("b"))' 2>/dev/null || echo false)" ;;
           a) sleep 0.2; echo "$2" > '\(path("a"))'; printf 'switch=a\\nvalue=true\\n\\nswitch=b\\nvalue=false\\n' ;;
@@ -357,7 +371,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testASecondPressOfARunningPartStopsItAndChangesNothing() async throws {
-        try script(header: "read=sheet", """
+        try script(header: "on=sheet.open", """
         case "$1" in
           read) printf 'grid=go\\n\\nbutton=go\\ntitle=Go\\n' ;;
           go) sleep 5; touch '\(path("went-on"))' ;;
@@ -380,16 +394,16 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testASecondPressOfARunningActionStopsIt() async throws {
-        try script(header: "read=sheet", """
+        try script(header: "on=sheet.open", """
         case "$1" in
-          read) printf 'button=go\\ntitle=Go\\nscope=command\\n\\nrow=a\\ntitle=A\\n' ;;
+          read) printf 'button=go\\ntitle=Go\\nscope=spot\\n\\nrow=a\\ntitle=A\\n' ;;
           go) sleep 5; touch '\(path("went-on"))' ;;
         esac
         """)
         let sheet = try sheet()
         sheet.open {}
-        try await wait("the action") { sheet.command.actions.count == 1 }
-        let action = try XCTUnwrap(sheet.command.actions.first)
+        try await wait("the action") { sheet.spot.actions.count == 1 }
+        let action = try XCTUnwrap(sheet.spot.actions.first)
 
         sheet.run(action, item: nil)
         try await wait("the call") { self.log() == ["read", "go"] }
@@ -402,10 +416,10 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testAStoppedToggleGoesBack() async throws {
-        try script(header: "read=panel", "[ \"$1\" = read ] && { printf 'switch=power\\nvalue=false\\n'; exit 0; }\nsleep 5")
+        try script(header: "on=panel.open", "[ \"$1\" = read ] && { printf 'switch=power\\nvalue=false\\n'; exit 0; }\nsleep 5")
         let sheet = try sheet()
         runs.panelOpened()
-        try await wait("the kind") { sheet.command.kind == .toggle }
+        try await wait("the kind") { sheet.spot.kind == .toggle }
 
         sheet.pressCard()
         XCTAssertEqual(sheet.state.on, true)
@@ -415,12 +429,12 @@ final class SpotRunsCallTests: SpotRunsCase {
         try await wait("the old state") { sheet.state.on == false }
     }
 
-    // MARK: C6
+    // MARK: The calls
 
     private static let big = String(repeating: "line \\ one=two\n", count: 2_000_000 / 15)
 
     func testATwoMegabyteValueOfAPartIsLeftOutOfTheArgumentsAndStdinHoldsIt() async throws {
-        try script(header: "read=sheet", """
+        try script(header: "on=sheet.open", """
         case "$1" in
           read) printf 'field=input\\nvalue=\\n' ;;
           input) printf '%s' "$#" > '\(path("count"))'; cat > '\(path("got"))'; touch '\(path("done"))' ;;

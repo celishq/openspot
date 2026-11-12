@@ -1,6 +1,6 @@
 import Foundation
 
-/// How a run reaches its script: a process for each call (01), or one process that stays (05). A link starts and ends the
+/// How a run reaches its script: a process for each call, or one process that stays. A link starts and ends the
 /// processes, sends each call, says which frame answers what, and gives each frame and each end to its run. The run keeps
 /// all that the spot shows.
 @MainActor
@@ -8,6 +8,9 @@ protocol ScriptLink: AnyObject {
     var run: SpotRun? { get set }
     /// Whether a read or a search waits for its answer.
     var isAsking: Bool { get }
+    /// Whether the script holds its own state, as one that stays does: its sheet opens only with its answer, sends no text
+    /// of its search with a read, forgets its answer when it leaves its place, and takes a filled form with no answer.
+    var keepsState: Bool { get }
     /// Whether the link holds the script for a call of its own, such as a form or a call that waits for its `end`.
     var holdsScript: Bool { get }
     /// Whether the script can answer now.
@@ -26,6 +29,6 @@ protocol ScriptLink: AnyObject {
     func end()
     /// Lets go of the script as the app quits, which ends its processes itself.
     func leave()
-    /// A scan looked at the folder: a stopped script that changed can start again (Y5).
+    /// A scan looked at the folder: a stopped script that changed can start again (protocol: Modes).
     func scanned()
 }

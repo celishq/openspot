@@ -33,7 +33,7 @@ final class SymbolCatalogTests: XCTestCase {
 
     private func rows(languages: [String] = ["en"]) throws -> [SpotItem] {
         let keywords = GlyphKeywords(folder: folder.appendingPathComponent("Keywords"), languages: languages)
-        return PluginOutput(text: try SymbolCatalog(resources: folder, languages: languages, keywords: keywords).rows()).items
+        return SpotOutput(text: try SymbolCatalog(resources: folder, languages: languages, keywords: keywords).rows()).items
     }
 
     func testRowsFollowTheOrderOfTheCharacterViewer() throws {
@@ -95,13 +95,13 @@ final class SymbolCatalogTests: XCTestCase {
 
     func testMissingFilesSayTheCause() {
         XCTAssertThrowsError(try SymbolCatalog(resources: folder, languages: ["en"]).rows()) { error in
-            XCTAssertEqual((error as? PluginError)?.reason, "This Mac has no symbol lists. Update macOS, or tell the spot's author.")
+            XCTAssertEqual((error as? SpotError)?.reason, "This Mac has no symbol lists. Update macOS, or tell the spot's author.")
         }
     }
 
     func testTheSymbolsOfThisMac() throws {
         guard FileManager.default.fileExists(atPath: SymbolCatalog.standardResources.path) else { throw XCTSkip("No symbol files.") }
-        let rows = PluginOutput(text: try SymbolCatalog(languages: ["en"]).rows()).items
+        let rows = SpotOutput(text: try SymbolCatalog(languages: ["en"]).rows()).items
 
         XCTAssertGreaterThan(rows.count, 500)
         XCTAssertTrue(rows.contains { $0.run == "€" && $0.title == "euro sign" && $0.subtitle == "Currency Symbols" })

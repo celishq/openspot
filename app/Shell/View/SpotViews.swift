@@ -45,12 +45,12 @@ final class SpotViews {
             }
             let entry = try await Task.detached { try Self.entry(of: url) }.value
             let object = Unmanaged<AnyObject>.fromOpaque(entry()).takeRetainedValue()
-            guard let make = object as? Make else { throw PluginError.fault("This view has an entry that Openspot cannot read. Build it again.") }
+            guard let make = object as? Make else { throw SpotError.fault("This view has an entry that Openspot cannot read. Build it again.") }
             loaded[url] = make
             ready(source, make, from: url)
         } catch {
             made[source] = nil
-            phases[source] = .failed((error as? PluginError)?.reason ?? error.localizedDescription)
+            phases[source] = .failed((error as? SpotError)?.reason ?? error.localizedDescription)
         }
     }
 
@@ -62,10 +62,10 @@ final class SpotViews {
     /// Opens a library and finds its entry.
     private nonisolated static func entry(of url: URL) throws -> @convention(c) () -> UnsafeMutableRawPointer {
         guard let handle = dlopen(url.path, RTLD_NOW | RTLD_LOCAL) else {
-            throw PluginError.fault("Openspot cannot load this view. \(String(cString: dlerror()))")
+            throw SpotError.fault("Openspot cannot load this view. \(String(cString: dlerror()))")
         }
         guard let symbol = dlsym(handle, ViewLibrary.entry) else {
-            throw PluginError.fault("This view has no entry. Build it again.")
+            throw SpotError.fault("This view has no entry. Build it again.")
         }
         return unsafeBitCast(symbol, to: (@convention(c) () -> UnsafeMutableRawPointer).self)
     }

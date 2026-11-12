@@ -4,10 +4,13 @@ import SwiftUI
 /// A short message from Openspot on the same surface as a spot.
 struct ToastView: View {
     let toast: Toast
+    private static let markSide: CGFloat = 16
 
     var body: some View {
         HStack(spacing: 8) {
-            if let symbol = toast.symbol {
+            if toast.isWorking {
+                SpotWorkMark(call: nil, side: Self.markSide)
+            } else if let symbol = toast.symbol {
                 Image(systemName: symbol)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(SpotTheme.ink)

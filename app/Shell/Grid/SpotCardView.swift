@@ -4,7 +4,7 @@ import OpenspotCore
 /// A spot: a glyph, then a title with a detail, then an accessory. A small card shows the glyph alone, and a widget shows
 /// its places. A kind differs only in what fills a slot: a slider has its track as its detail, and running work takes the
 /// place of the glyph.
-struct SpotCardView: View, Equatable {
+struct SpotCardView: View, @MainActor Equatable {
     let entry: SpotsModel.Entry
     let size: SpotSize
     /// The card's place among the visible cards, which its ring compares with the selection.
@@ -13,19 +13,18 @@ struct SpotCardView: View, Equatable {
     let isPressed: Bool
     let takesDrag: Bool
     let isDropTarget: Bool
+    /// The letter of the spot's key, which shows while the model shows the letters.
     let chainLetter: String?
-    let showsChain: Bool
-    let isHiddenFromGrid: Bool
     /// The model that a tap and a slide go to.
     let model: SpotsModel
     /// What a tap does in place of a press on the grid, such as on a float.
     var onTap: (() -> Void)?
 
     /// Whether two cards show the same values, so that a run of the grid reruns only the cards that changed.
-    nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
+    static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.entry == rhs.entry && lhs.size == rhs.size && lhs.index == rhs.index && lhs.isPressed == rhs.isPressed
             && lhs.takesDrag == rhs.takesDrag && lhs.isDropTarget == rhs.isDropTarget && lhs.chainLetter == rhs.chainLetter
-            && lhs.showsChain == rhs.showsChain && lhs.isHiddenFromGrid == rhs.isHiddenFromGrid && lhs.model === rhs.model
+            && lhs.model === rhs.model
     }
 
     /// How far a line reaches past the inset at its trailing end, where the round end of the card leaves room.
@@ -41,12 +40,13 @@ struct SpotCardView: View, Equatable {
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
             .background(shape.fill(SpotTheme.accent).opacity(dropFill))
             .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, blursBehind: false, rimSize: CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))))
-            .modifier(CardHover(shape: shape, isFilled: isFilled, showsPress: showsPress))
+            .modifier(CardPress(shape: shape, isFilled: isFilled, showsPress: showsPress))
+            .modifier(SpotPointerMove { model.point(at: .card(entry.id)) })
             .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape)).modifier(CardReveal()).allowsHitTesting(false))
-            .overlay(alignment: .topTrailing) { keycap }
-            .overlay(alignment: .topTrailing) { if !isHiddenFromGrid { FailureMark(entry: entry, size: size) } }
+            .overlay(alignment: .topTrailing) { chainLetter.map { ChainKeycap(model: model, letter: $0, size: size) } }
+            .overlay(alignment: .topTrailing) { FailureMark(entry: entry, size: size) }
             .contentShape(shape)
-            .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id, opening: NSEvent.modifierFlags.contains(.option)) } }
+            .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id, opening: NSEvent.modifierFlags.contains(.command)) } }
             .animation(.easeInOut(duration: 0.2), value: isOn)
             .scaleEffect(showsPress ? SpotMotion.pressedScale : 1)
             .animation(SpotMotion.press, value: showsPress)
@@ -55,14 +55,14 @@ struct SpotCardView: View, Equatable {
 
     @ViewBuilder
     private var content: some View {
-        if entry.item == nil, let layout = entry.state.face.layout(for: size) {
+        if drawsOwnCard, let layout = entry.state.face.layout(for: size) {
             SpotCardDrawing(layout: layout, face: entry.state.face, card: size, view: { room in
                 drawnView.map { SpotCustomView(source: $0, values: entry.state.values, card: size, room: room, views: SpotViews.shared) }
             }) { model.setCardPart(entry.id, $0, to: $1) }
         } else if let view = drawnView {
             SpotCustomView(source: view, values: entry.state.values, card: size, views: SpotViews.shared)
-        } else if let layout = entry.command.layout {
-            SpotWidgetView(layout: layout, places: entry.command.places, reading: reading, card: size)
+        } else if let layout = entry.spot.layout {
+            SpotWidgetView(layout: layout, places: entry.spot.places, reading: reading, card: size)
         } else if size == .small {
             glyph.frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if size.rows > 1 {
@@ -77,9 +77,9 @@ struct SpotCardView: View, Equatable {
         entry.kind == .widget ? { [model] in model.reading(of: $0) } : { _ in nil }
     }
 
-    /// The source of the plugin's own view, which fills the whole card in place of its glyph and words (V3).
+    /// The source of the plugin's own view, which fills the whole card in place of its glyph and words (protocol: Views).
     private var ownView: String? {
-        entry.item == nil && entry.state.face.hasView ? entry.command.view : nil
+        drawsOwnCard && entry.state.face.hasView ? entry.spot.view : nil
     }
 
     /// The source of the plugin's own view once it is built or has failed. While it builds, the card is drawn as any card
@@ -90,9 +90,14 @@ struct SpotCardView: View, Equatable {
         return ownView
     }
 
-    /// Whether its script draws the card from a drawing for its size (U5).
+    /// Whether its script draws the card from a drawing for its size (protocol: Layouts).
     private var isDrawn: Bool {
-        entry.item == nil && entry.state.face.layout(for: size) != nil
+        drawsOwnCard && entry.state.face.layout(for: size) != nil
+    }
+
+    /// Whether the card is the spot's own or an answer card, which its script can draw (protocol: Layouts, Places).
+    private var drawsOwnCard: Bool {
+        entry.item == nil || entry.item?.card != nil
     }
 
     private var isBuildingView: Bool {
@@ -109,7 +114,7 @@ struct SpotCardView: View, Equatable {
 
     /// Whether a press shows on a card: a slider takes its own drags, and a widget that opens nothing has no press.
     static func showsPress(of entry: SpotsModel.Entry) -> Bool {
-        entry.kind != .slider && (entry.kind != .widget || entry.command.opens != nil)
+        entry.kind != .slider && (entry.kind != .widget || entry.spot.opens != nil)
     }
 
     /// How strong the fill is: part of the way on a card that takes the drag, and full on the card that takes the drop.
@@ -220,27 +225,9 @@ struct SpotCardView: View, Equatable {
         } else if let item = entry.item, item.icon != nil {
             SpotItemIcon(item: item, size: SpotTokens.glyphSize)
         } else if entry.showsHeaderPicture {
-            SpotItemIcon(icon: entry.command.icon, glyph: entry.command.glyph, symbol: nil, size: SpotTokens.glyphSize)
+            SpotItemIcon(icon: entry.spot.icon, glyph: entry.spot.glyph, symbol: nil, size: SpotTokens.glyphSize)
         } else {
             symbolGlyph
-        }
-    }
-
-    /// The letter of the spot, on the rim of its top right corner. The mark of a hidden card takes its place in Edit Spots.
-    @ViewBuilder
-    private var keycap: some View {
-        if let chainLetter {
-            let inset = SpotTokens.corner(for: size) * SpotTokens.rimPoint - SpotTokens.keycap / 2
-            Text(chainLetter)
-                .font(SpotType.keycap)
-                .foregroundStyle(SpotTheme.ink)
-                .frame(width: SpotTokens.keycap, height: SpotTokens.keycap)
-                .background(SpotTheme.keycap, in: RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous).strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
-                .offset(x: -inset, y: inset)
-                .opacity(showsChain && !isHiddenFromGrid ? 1 : 0)
-                .animation(SpotMotion.keycap, value: showsChain)
-                .allowsHitTesting(false)
         }
     }
 
@@ -260,22 +247,20 @@ private struct CardRing: ViewModifier {
     let shape: RoundedRectangle
 
     func body(content: Content) -> some View {
-        content.modifier(SpotSelectionRing(isSelected: model.selected == index, shape: shape))
+        content.modifier(SpotSelectionRing(isSelected: model.selected == index, shape: shape, marksMenu: model.openList == nil))
     }
 }
 
-/// The tint of a card under the pointer or a press. It alone holds the hover, so that a hover reruns no card.
-private struct CardHover: ViewModifier {
+/// The tint of a pressed card. The pointer moves the selection ring, not a tint.
+private struct CardPress: ViewModifier {
     let shape: RoundedRectangle
     let isFilled: Bool
     let showsPress: Bool
-    @State private var isHovered = false
 
     func body(content: Content) -> some View {
         content
-            .overlay(shape.fill((isFilled ? SpotTheme.onSolid : SpotTheme.ink).opacity(showsPress ? 0.12 : isHovered ? 0.08 : 0)).allowsHitTesting(false))
+            .overlay(shape.fill((isFilled ? SpotTheme.onSolid : SpotTheme.ink).opacity(showsPress ? 0.12 : 0)).allowsHitTesting(false))
             .contentShape(shape)
-            .onHover { isHovered = $0 }
     }
 }
 
@@ -292,7 +277,7 @@ private struct CardReveal: ViewModifier {
     }
 }
 
-/// Builds the plugin's own view of a card each time the panel shows (V3).
+/// Builds the plugin's own view of a card each time the panel shows (protocol: Views).
 private struct CardViewLoad: ViewModifier {
     let source: String?
     @Environment(\.spotIsShown) private var isShown
@@ -323,5 +308,27 @@ private struct FailureMark: View {
                 .accessibilityLabel("Last run failed")
                 .allowsHitTesting(false)
         }
+    }
+}
+
+/// The letter of a spot's key, on the rim of its card's top right corner. It alone reads whether the letters show, so that
+/// their fade reruns this mark and no card.
+private struct ChainKeycap: View {
+    let model: SpotsModel
+    let letter: String
+    let size: SpotSize
+
+    var body: some View {
+        let inset = SpotTokens.corner(for: size) * SpotTokens.rimPoint - SpotTokens.keycap / 2
+        Text(letter)
+            .font(SpotType.keycap)
+            .foregroundStyle(SpotTheme.ink)
+            .frame(width: SpotTokens.keycap, height: SpotTokens.keycap)
+            .background(SpotTheme.keycap, in: RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous).strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
+            .offset(x: -inset, y: inset)
+            .opacity(model.showsChain ? 1 : 0)
+            .animation(SpotMotion.keycap, value: model.showsChain)
+            .allowsHitTesting(false)
     }
 }

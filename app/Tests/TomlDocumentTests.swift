@@ -34,13 +34,13 @@ final class TomlDocumentTests: XCTestCase {
 
     func testNamesTheLineOfAFault() {
         XCTAssertThrowsError(try TomlDocument(text: "name = \"A\"\nnot a pair\n")) { error in
-            XCTAssertEqual(error as? PluginError, .fault("line 2: expected a key and a value"))
+            XCTAssertEqual(error as? SpotError, .fault("line 2: expected a key and a value"))
         }
     }
 
     func testRefusesARepeatedKey() {
         XCTAssertThrowsError(try TomlDocument(text: "a = 1\na = 2\n")) { error in
-            XCTAssertEqual(error as? PluginError, .fault("line 2: a is set twice"))
+            XCTAssertEqual(error as? SpotError, .fault("line 2: a is set twice"))
         }
     }
 

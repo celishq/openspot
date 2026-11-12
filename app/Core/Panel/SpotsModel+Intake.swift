@@ -6,7 +6,7 @@ extension SpotsModel {
     /// Whether a card, or a float, takes these dragged files. A card under an open sheet takes none (D2, W9).
     public func acceptsDrop(_ paths: [String], on id: String, in place: SheetPlace = .panel) -> Bool {
         let isOpenToDrops = place == .panel ? openList == nil : runs.floating.contains(id)
-        return isOpenToDrops && !SharedSpot.isFile(paths) && sheets[id]?.command.accepts(paths) == true
+        return isOpenToDrops && !SharedSpot.isFile(paths) && sheets[id]?.spot.accepts(paths) == true
     }
 
     /// The card whose place on the grid holds this point of the grid. A point in a gap has none.
@@ -71,7 +71,7 @@ extension SpotsModel {
         return true
     }
 
-    /// Tells the script of the rows that a drag took out of its sheet to another app (O2). A drag of every row with a file
+    /// Tells the script of the rows that a drag took out of its sheet to another app (protocol: Files out). A drag of every row with a file
     /// out of a float closes it (W6).
     public func dragOut(_ items: [SpotItem], of id: String) {
         guard let sheet = sheets[id] else { return }
@@ -100,32 +100,34 @@ extension SpotsModel {
         closeList(moving: isShown)
         endReview()
         do {
-            show(try ReviewSpot(spot: SharedSpot(contentsOf: url), folder: files.folder.url))
+            show(try ReviewSpot(file: url, folder: files.folder.url, lock: SpotLock.standard(environment: files.environment, home: files.home)))
             if urls.count > 1 { host.notify("Openspot installs one spot at a time.") }
         } catch {
             host.notify(Self.reason(error))
         }
     }
 
-    /// Shows the text of a core spot, which is on or off, with no way to add it.
-    public func reviewCore(_ item: SpotItem) {
+    /// Shows the text of a core spot, which is on or off, with no way to add it. Returns false when no core spot has the ID.
+    @discardableResult
+    public func reviewCore(_ id: String) -> Bool {
         let folder = files.folder
         do {
-            let place = PluginFolder(url: folder.url, core: folder.core, enabled: folder.enabled.union([item.run]), disabled: folder.disabled)
+            let place = SpotFolder(url: folder.url, core: folder.core, enabled: folder.enabled.union([id]), disabled: folder.disabled)
             let scan = try place.scan()
-            guard let command = scan.commands.first(where: { place.isCore($0) && PluginFolder.coreID(of: $0) == item.run }) else { return }
+            guard let command = scan.spots.first(where: { place.isCore($0) && SpotFolder.coreID(of: $0) == id }) else { return false }
             closeList(moving: isShown)
             show(try ReviewSpot(spot: SharedSpot(sharing: command, from: scan), folder: folder.url, canAdd: false))
         } catch {
             host.notify(Self.reason(error))
         }
+        return true
     }
 
     private func show(_ review: ReviewSpot) {
         let moves = isShown
         reviewed = review
         host.present()
-        open(ShippedSpot.command(reviewing: review).id, moving: moves)
+        open(review.spot.id, moving: moves)
     }
 
     /// What the search field says as the open review grows out of it.
@@ -165,19 +167,19 @@ extension SpotsModel {
         Task {
             do {
                 let folder = files.folder
-                var spot = try SharedSpot(sharing: entry.command, from: folder.scan())
+                var spot = try SharedSpot(sharing: entry.spot, from: folder.scan())
                 if spot.needsCompile {
-                    host.confirm("Compiling \(entry.command.name)")
+                    host.work("Compiling \(entry.spot.name)")
                     spot = try await spot.compiled()
                 }
                 let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-shared/\(UUID().uuidString)", isDirectory: true)
                 try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
-                let file = place.appendingPathComponent(SharedSpot.fileName(for: entry.command.name))
+                let file = place.appendingPathComponent(SharedSpot.fileName(for: entry.spot.name))
                 try spot.data.write(to: file)
                 host.copy(file)
-                host.confirm(spot.notice(name: entry.command.name))
+                host.confirm(spot.notice(name: entry.spot.name))
             } catch {
-                host.notify("\(entry.command.name) was not copied. \(Self.reason(error))")
+                host.notify("\(entry.spot.name) was not copied. \(Self.reason(error))")
             }
         }
     }
@@ -187,11 +189,11 @@ extension SpotsModel {
         closeList(moving: isShown)
         if isShown { host.dismiss() }
         do {
-            try files.config.turn(PluginFolder.coreID(of: entry.command), on: false)
-            host.confirm("\(entry.command.name) is off")
+            try files.config.turn(SpotFolder.coreID(of: entry.spot), on: false)
+            host.confirm("\(entry.spot.name) is off")
             reload()
         } catch {
-            host.notify("\(entry.command.name) was not turned off. \(Self.reason(error))")
+            host.notify("\(entry.spot.name) was not turned off. \(Self.reason(error))")
         }
     }
 }

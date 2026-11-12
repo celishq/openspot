@@ -16,6 +16,8 @@ enum SpotGlyphShelf {
     private static let books = Mutex<[String: SpotGlyphBook]>([:])
     /// The number of the newest bind for each size, so that a bind that a newer one follows does nothing.
     private static let binds = Mutex<[String: Int]>([:])
+    /// The glyphs of the book in use for each size, so that a bind of the same glyphs again builds no layout.
+    private static let bound = Mutex<[String: [String]]>([:])
     /// The books that failed in this session, by their file names, so that a list does not run a helper on each read.
     private static let failures = Mutex<Set<String>>([])
     /// What the pictures of a book depend on besides its glyphs and sizes: the system and the app that draws them.
@@ -37,7 +39,7 @@ enum SpotGlyphShelf {
             return binds[size] ?? 0
         }
         binding.async {
-            guard binds.withLock({ $0[size] }) == number else { return }
+            guard binds.withLock({ $0[size] }) == number, bound.withLock({ $0[size] }) != glyphs else { return }
             let layout = GlyphBook(glyphs: glyphs.filter(SpotGlyphPicture.isColour), side: Double(side), fontSize: Double(fontSize))
             guard layout.glyphs.count >= bookFloor, books.withLock({ $0[size]?.layout }) != layout else { return }
             let name = layout.name(system: maker)
@@ -48,6 +50,7 @@ enum SpotGlyphShelf {
                 return
             }
             books.withLock { $0[size] = book }
+            bound.withLock { $0[size] = glyphs }
         }
     }
 
