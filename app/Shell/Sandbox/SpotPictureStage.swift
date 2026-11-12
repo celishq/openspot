@@ -28,7 +28,7 @@ struct SpotPictureStage<Content: View>: View {
     }
 }
 
-/// A wallpaper drawn from a few soft colours, which stands in for the desktop behind the panel.
+/// A dark blue-green wallpaper, which stands in for the desktop behind the panel and keeps clear of the accent colour.
 struct SpotWallpaper: View {
     var body: some View {
         MeshGradient(
@@ -40,9 +40,9 @@ struct SpotWallpaper: View {
                 [0, 1], [0.5, 1], [1, 1],
             ],
             colors: [
-                Color(red: 0.13, green: 0.16, blue: 0.42), Color(red: 0.42, green: 0.20, blue: 0.55), Color(red: 0.86, green: 0.36, blue: 0.42),
-                Color(red: 0.10, green: 0.34, blue: 0.56), Color(red: 0.36, green: 0.30, blue: 0.70), Color(red: 0.95, green: 0.55, blue: 0.40),
-                Color(red: 0.05, green: 0.12, blue: 0.30), Color(red: 0.20, green: 0.22, blue: 0.52), Color(red: 0.62, green: 0.30, blue: 0.52),
+                Color(red: 0.04, green: 0.08, blue: 0.12), Color(red: 0.05, green: 0.16, blue: 0.20), Color(red: 0.08, green: 0.22, blue: 0.22),
+                Color(red: 0.05, green: 0.12, blue: 0.18), Color(red: 0.07, green: 0.24, blue: 0.27), Color(red: 0.10, green: 0.30, blue: 0.26),
+                Color(red: 0.03, green: 0.06, blue: 0.09), Color(red: 0.05, green: 0.13, blue: 0.16), Color(red: 0.07, green: 0.18, blue: 0.17),
             ]
         )
     }

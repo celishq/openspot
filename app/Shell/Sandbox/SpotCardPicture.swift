@@ -45,13 +45,14 @@ enum SpotCardPicture {
         exit(0)
     }
 
-    /// Draws the real card of an installed spot at a size, after the read that the open panel would make, writes the picture
-    /// as a PNG and exits. A spot that no card shows exits with 1.
+    /// Draws the real card of an installed spot at a size, after the read that the open panel would make, or after the reads
+    /// of the spots that a card of other spots names, writes the picture as a PNG and exits. A spot that no card shows exits
+    /// with 1.
     static func run(spot id: String, size: SpotSize, path: String) -> Never {
         NSApplication.shared.setActivationPolicy(.prohibited)
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
         model.reload()
-        guard let entry = model.entries.first(where: { $0.id == id }), let sheet = model.sheets[id] else {
+        guard let entry = model.entries.first(where: { $0.id == id }) else {
             FileHandle.standardError.write(Data("Openspot has no card for \(id). Run `openspot check` to see each file that does not load.\n".utf8))
             exit(1)
         }
@@ -76,7 +77,18 @@ enum SpotCardPicture {
                 }
             }
         }
-        if entry.spot.readsState { sheet.afterAnswer(draw) } else { draw() }
+        if entry.kind == .widget {
+            model.panelWillShow(holding: [])
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(300))
+                await model.waitForReads()
+                draw()
+            }
+        } else if let sheet = model.sheets[id], entry.spot.readsState {
+            sheet.afterAnswer(draw)
+        } else {
+            draw()
+        }
         NSApplication.shared.run()
         exit(0)
     }

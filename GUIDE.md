@@ -108,7 +108,8 @@ free=$(df -h / | awk 'NR==2 {print $4}')
 printf 'detail=%s free\n\ntext=free\ntitle=%s free\n' "$free" "$free"
 ```
 
-![The card of Disk, with the free space under its title](docs/images/show-a-value-card.png)
+<!-- card: wide -->
+![The card of Disk, with the free space under its title](docs/images/show-a-value.png)
 
 The first block, `detail=…`, is the **head**: it isn't drawn, and its `detail` becomes the line under the card's title.
 The `text` block is the spot's **main block**. The user can put the spot in the menu bar, where the main block shows
@@ -213,6 +214,9 @@ function main(args, env) {
 }
 ```
 
+<!-- draw: openspot calc solve 2+2 -->
+![The answer to 2+2: one row, 4](docs/images/answer-the-search.png)
+
 Type `2+2`, and the answer shows at the top of the main search. `OPENSPOT_VALUE` holds the typed text. A `.js` file runs
 inside Openspot, so it answers in the same keystroke.
 
@@ -231,6 +235,9 @@ event narrows it down.
 printf 'text=n\ntitle=%s\n' "$OPENSPOT_REASON"
 ```
 
+<!-- draw: OPENSPOT_REASON=app.front sh "$EXAMPLE" -->
+![The sheet of Notes after Notes came to the front: one line, app.front](docs/images/respond-to-the-mac.png)
+
 Bring Notes to the front while the sheet shows, and Openspot asks the spot again. `OPENSPOT_REASON` says why:
 `sheet.open` or `app.front`.
 
@@ -248,6 +255,9 @@ Openspot fills the card with the main blocks of the spots that it names.
 # grid.large=battery battery memory memory
 # to=system-info
 ```
+
+<!-- card: large -->
+![The System card: the battery on the left, the CPU over the memory on the right](docs/images/combine-spots.png)
 
 Each word is the id of another spot. At the large size, the card shows the battery on the left, and the CPU over the
 memory on the right. Press the card, and the spot `system-info` opens.
