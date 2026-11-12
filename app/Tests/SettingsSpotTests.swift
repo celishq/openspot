@@ -329,7 +329,7 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     func testTheCheckFindsABadHotkey() {
-        XCTAssertEqual(SpotOutput(text: "hotkey=a\nvalue=k\n").partFaults, ["the part a needs a shortcut that holds cmd, ctrl or option: k"])
-        XCTAssertEqual(SpotOutput(text: "hotkey=a\nvalue=ctrl+k\n").partFaults, [])
+        XCTAssertEqual(SpotOutput(text: "field=a\ntype=hotkey\nvalue=k\n").partFaults, ["the part a needs a shortcut that holds cmd, ctrl or option: k"])
+        XCTAssertEqual(SpotOutput(text: "field=a\ntype=hotkey\nvalue=ctrl+k\n").partFaults, [])
     }
 }

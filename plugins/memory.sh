@@ -9,5 +9,5 @@
     if (level == 4) { detail = "Pressure critical"; tone = "bad" }
     else if (level == 2) { detail = "Pressure high"; tone = "warn" }
     else { detail = "Pressure normal"; tone = "" }
-    printf "gauge=memory\ntitle=%d%%\ndetail=%s\nvalue=%s\ntone=%s\n", used, detail, used / 100, tone
+    printf "graph=memory\ntitle=%d%%\ndetail=%s\nvalue=%s\ntone=%s\n", used, detail, used / 100, tone
   }'

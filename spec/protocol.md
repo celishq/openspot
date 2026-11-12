@@ -977,7 +977,6 @@ Each line goes when its phase lands.
 
 | Part        | The code today                                                                                         |
 | ----------- | ------------------------------------------------------------------------------------------------------ |
-| Blocks      | Reads `gauge`, `slider` and `hotkey` as kinds, and `look=tick`.                                        |
 | Trust       | Reads the uses `update` and `settings`, and the guide names `OPENSPOT_TOKEN`.                          |
 
 ### Open

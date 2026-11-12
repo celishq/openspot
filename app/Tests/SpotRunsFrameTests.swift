@@ -79,7 +79,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
         try script(header: "on=sheet.open", """
         case "$1" in
           read) printf 'row=a\\ntitle=A\\n' ;;
-          open) printf 'gauge=g\\nvalue=0.4\\n---\\n'; \(untilRelease) ;;
+          open) printf 'graph=g\\nvalue=0.4\\n---\\n'; \(untilRelease) ;;
         esac
         """)
         let sheet = try sheet()

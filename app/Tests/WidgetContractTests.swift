@@ -27,7 +27,7 @@ final class WidgetContractTests: XCTestCase {
         try widgets("[[widgets]]\ntitle = \"\(name)\"\ngrid = [\(lines)]\n\(more)\n")
     }
 
-    private func power(_ body: String = "printf 'gauge=power\\ntitle=84%%\\nvalue=0.84\\ntone=good\\n'") throws {
+    private func power(_ body: String = "printf 'graph=power\\ntitle=84%%\\nvalue=0.84\\ntone=good\\n'") throws {
         try script("power.sh", "#!/bin/sh\n# on=clock.5\n\(body)\n")
     }
 

@@ -93,7 +93,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testACallToAStayingScriptNeverShowsAsWorkAndItsFrameDoesNotMakeItShow() async throws {
-        try staying(frame: "gauge=p\\ntitle=42%%\\nvalue=0.42\\n")
+        try staying(frame: "graph=p\\ntitle=42%%\\nvalue=0.42\\n")
         let sheet = try sheet()
         let frames = FrameLog(sheet)
         runs.panelOpened()

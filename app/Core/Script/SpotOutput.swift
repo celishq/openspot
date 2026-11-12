@@ -57,7 +57,11 @@ public struct SpotOutput: Equatable, Sendable {
     private static let optionKind = "option"
     /// The kinds of block that Openspot no longer reads. Each one is skipped and reported, so it never takes the place of the
     /// head.
-    private static let retiredKinds: Set<String> = ["template", "spot"]
+    private static let retiredKinds: Set<String> = ["template", "spot", retired]
+    /// The first key that a block of a folded kind takes, so that it is skipped and reported with its own first line.
+    private static let retired = "retired"
+    /// The kinds that the protocol folded into others: `gauge` into a `graph`, and `slider` and `hotkey` into a `field`.
+    private static let foldedKinds: Set<String> = ["gauge", "slider", "hotkey"]
     /// The area of the rows in the default drawing of a sheet with no `repeat` block (U13).
     private static let rowsArea = "rows"
     private static let formKinds: Set<String> = ["field", "choice", "switch", "slider"]
@@ -91,12 +95,30 @@ public struct SpotOutput: Equatable, Sendable {
     }
 
     public init(text: String) {
-        self.init(blocks: TextBlock.blocks(in: text), checks: false)
+        self.init(blocks: TextBlock.blocks(in: text).map(Self.drawn), checks: false)
     }
 
     /// Reads a frame on another thread, so that a panel or a sheet in motion keeps its frames.
     static func reading(_ text: String) async -> SpotOutput {
         await Task.detached(priority: .userInitiated) { SpotOutput(text: text) }.value
+    }
+
+    /// The block as a part reads it: a `graph` of one value and no `max` is a gauge, a `field` of `type=slider` or
+    /// `type=hotkey` is that input, and a `switch` of `type=tick` draws a tick. A block of a folded kind is retired.
+    private static func drawn(_ block: TextBlock) -> TextBlock {
+        guard let first = block.fields.first else { return block }
+        func renamed(_ kind: String, adding extra: [TextBlock.Field] = []) -> TextBlock {
+            let rest = block.fields.dropFirst().filter { !($0.key == "look" && $0.value == "tick") }
+            return TextBlock(fields: [.init(key: kind, value: first.value)] + rest + extra, firstLine: block.firstLine, children: block.children)
+        }
+        if foldedKinds.contains(first.key) { return renamed(retired) }
+        switch (first.key, block.value("type")) {
+        case ("graph", _) where block.values("value").count == 1 && block.value("max") == nil: return renamed("gauge")
+        case ("field", "slider"): return renamed("slider")
+        case ("field", "hotkey"): return renamed("hotkey")
+        case ("switch", "tick"): return renamed("switch", adding: [.init(key: "look", value: "tick")])
+        default: return renamed(first.key)
+        }
     }
 
     private init(blocks: [TextBlock], checks: Bool) {

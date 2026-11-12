@@ -147,7 +147,7 @@ final class SpotOutputTests: XCTestCase {
         XCTAssertEqual(SpotOutput(text: "").kind, .launch)
         XCTAssertEqual(SpotOutput(text: "title=Hi\n").kind, .launch)
         XCTAssertEqual(SpotOutput(text: "switch=power\nvalue=true\n").kind, .toggle)
-        XCTAssertEqual(SpotOutput(text: "slider=volume\nvalue=7\n").kind, .slider)
+        XCTAssertEqual(SpotOutput(text: "field=volume\ntype=slider\nvalue=7\n").kind, .slider)
         XCTAssertEqual(SpotOutput(text: "switch=power\nvalue=true\n\nrow=a\ntitle=A\n").kind, .list)
         XCTAssertEqual(SpotOutput(text: "button=new\ntitle=New\n").kind, .list)
     }
@@ -160,7 +160,7 @@ final class SpotOutputTests: XCTestCase {
         XCTAssertEqual(try kind("text=m\ntitle=3\n"), .value)
         XCTAssertEqual(try kind("text=m\ntitle=3\nicon=star\ntone=good\n"), .value)
         XCTAssertEqual(try kind("text=m\ntitle=Up\ntone=good\n"), .status)
-        XCTAssertEqual(try kind("gauge=m\ntitle=84%\nvalue=0.84\n"), .gauge)
+        XCTAssertEqual(try kind("graph=m\ntitle=84%\nvalue=0.84\n"), .gauge)
         XCTAssertEqual(try kind("graph=m\ntitle=2\nvalue=1\nvalue=2\n"), .trend)
         XCTAssertEqual(try kind("row=Build\n"), .rows)
     }
@@ -264,5 +264,13 @@ final class SpotOutputTests: XCTestCase {
         let row = try XCTUnwrap(output.items.first)
         XCTAssertEqual(row, SpotItem(title: "R", run: "r"))
         XCTAssertTrue(output.partFaults.contains("the row r has as=, which Openspot no longer reads. A row draws its own keys"), "\(output.partFaults)")
+    }
+
+    func testAGraphOfOneValueIsAGaugeAFieldTypeIsItsInputAndAnOldKindIsReported() {
+        let output = SpotOutput(text: "graph=g\nvalue=0.5\n\nfield=s\ntype=slider\nvalue=40\n\nfield=k\ntype=hotkey\nvalue=ctrl+k\n\nswitch=t\ntype=tick\n\nswitch=w\nlook=tick\n\ngauge=old\nvalue=1\n")
+
+        XCTAssertEqual(output.parts.map(\.control), [.progress(level: 50), .slider(level: 40, min: 0, max: 100), .shortcut("ctrl+k"), .toggle(false), .toggle(false)])
+        XCTAssertEqual(output.parts.map(\.look), [nil, nil, nil, .tick, nil])
+        XCTAssertEqual(output.errors, ["gauge=old"])
     }
 }

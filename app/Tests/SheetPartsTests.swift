@@ -19,7 +19,8 @@ final class SheetPartsTests: XCTestCase {
     detail=Connecting…
     value=false
 
-    slider=brightness
+    field=brightness
+    type=slider
     value=80
     max=100
     icon=sun.max
@@ -57,13 +58,13 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testATextOrANumberTakesAColourForItsBarAndOtherPartsDoNot() {
-        let output = SpotOutput(text: "number=next\nvalue=09:30\ncolor=#1BADF8\n\ntext=work\ncolor=#ff9500\n\nnumber=odd\nvalue=1\ncolor=blue\n\ngauge=disk\nvalue=0.5\ncolor=#1BADF8\n")
+        let output = SpotOutput(text: "number=next\nvalue=09:30\ncolor=#1BADF8\n\ntext=work\ncolor=#ff9500\n\nnumber=odd\nvalue=1\ncolor=blue\n\ngraph=disk\nvalue=0.5\ncolor=#1BADF8\n")
 
         XCTAssertEqual(output.parts.map(\.color), ["#1BADF8", "#ff9500", nil, nil])
     }
 
     func testATextsToneColoursItsWordsAndAGaugeKeepsItsOwn() {
-        let output = SpotOutput(text: "text=due\ndetail=Late\ntone=bad\n\ntext=now\ntitle=Standup\ntone=on\n\ngauge=disk\nvalue=0.9\ntone=bad\n")
+        let output = SpotOutput(text: "text=due\ndetail=Late\ntone=bad\n\ntext=now\ntitle=Standup\ntone=on\n\ngraph=disk\nvalue=0.9\ntone=bad\n")
 
         XCTAssertEqual(output.parts.map(\.textTone), [.bad, nil, nil])
         XCTAssertEqual(output.partFaults, ["the part now has an unknown tone: on"])
@@ -100,7 +101,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testEachKindKeepsItsDataInValue() throws {
-        let parts = try panel("switch=wifi\nvalue=true\n\nslider=volume\nvalue=40\nmax=100\n\nfield=name\nvalue=Ann\n\ngraph=history\nvalue=2\nvalue=4\n").parts
+        let parts = try panel("switch=wifi\nvalue=true\n\nfield=volume\ntype=slider\nvalue=40\nmax=100\n\nfield=name\nvalue=Ann\n\ngraph=history\nvalue=2\nvalue=4\n").parts
 
         XCTAssertEqual(parts.map(\.control), [
             .toggle(true), .slider(level: 40, min: 0, max: 100), .text("Ann", placeholder: nil, isReadOnly: false), .chart([2, 4])
@@ -108,7 +109,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testOnLevelTextAndPointAreNoLongerTheDataOfAKind() throws {
-        let parts = try panel("switch=wifi\non=true\n\nslider=volume\nlevel=40\n\nfield=name\ntext=Ann\n\ngraph=history\npoint=2\n").parts
+        let parts = try panel("switch=wifi\non=true\n\nfield=volume\ntype=slider\nlevel=40\n\nfield=name\ntext=Ann\n\ngraph=history\npoint=2\n").parts
 
         XCTAssertEqual(parts.map(\.control), [.toggle(false), .slider(level: 0, min: 0, max: 100), .text("", placeholder: nil, isReadOnly: false), .chart([])])
         for (kind, key) in [("switch", "on"), ("slider", "level"), ("field", "text"), ("graph", "point")] {
@@ -268,7 +269,8 @@ final class SheetPartsTests: XCTestCase {
         grid=wifi
         grid=reload
 
-        hotkey=key
+        field=key
+        type=hotkey
         title=Key
         value=ctrl+space
 
@@ -294,7 +296,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testASheetOpensWithItsFirstPartSelected() throws {
-        let sheet = try panel("text=note\ntitle=Note\n\nhotkey=key\nvalue=ctrl+space\n\nswitch=wifi\nvalue=true\n")
+        let sheet = try panel("text=note\ntitle=Note\n\nfield=key\ntype=hotkey\nvalue=ctrl+space\n\nswitch=wifi\nvalue=true\n")
 
         XCTAssertEqual(sheet.selectedPart?.id, "key")
     }
@@ -355,16 +357,16 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testTheArrowsDoNotScrollASheetWithAPartToSelect() throws {
-        let sheet = try panel("text=mac\ntitle=This Mac\n\nhotkey=key\nvalue=ctrl+space\n")
+        let sheet = try panel("text=mac\ntitle=This Mac\n\nfield=key\ntype=hotkey\nvalue=ctrl+space\n")
 
         XCTAssertFalse(sheet.scrollsByArrows)
     }
 
     func testTheSelectionSurvivesANewAnswerAndMovesOnWhenThePartEnds() throws {
-        var sheet = try panel("hotkey=key\nvalue=ctrl+space\n")
+        var sheet = try panel("field=key\ntype=hotkey\nvalue=ctrl+space\n")
         sheet.move(by: 1)
 
-        sheet.take(SpotOutput(text: "hotkey=key\nvalue=option+space\n"), answering: sheet.generation)
+        sheet.take(SpotOutput(text: "field=key\ntype=hotkey\nvalue=option+space\n"), answering: sheet.generation)
         XCTAssertEqual(sheet.selectedPart?.id, "key")
 
         sheet.take(SpotOutput(text: "switch=wifi\nvalue=true\n"), answering: sheet.generation)
@@ -372,7 +374,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testAClearedSelectionGoesBackToTheFirstPart() throws {
-        var sheet = try panel("hotkey=key\nvalue=ctrl+space\n\nswitch=wifi\nvalue=true\n")
+        var sheet = try panel("field=key\ntype=hotkey\nvalue=ctrl+space\n\nswitch=wifi\nvalue=true\n")
         sheet.move(by: 1)
 
         sheet.clearSelection()
@@ -407,11 +409,11 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testASwitchWithATickLookKeepsItsValue() throws {
-        let part = try XCTUnwrap(SpotOutput(text: "switch=done\ntitle=Call mom\nvalue=true\nlook=tick\n").parts.first)
+        let part = try XCTUnwrap(SpotOutput(text: "switch=done\ntitle=Call mom\nvalue=true\ntype=tick\n").parts.first)
 
         XCTAssertEqual(part.look, .tick)
         XCTAssertEqual(part.control, .toggle(true))
-        XCTAssertEqual(SpotOutput(text: "switch=done\nvalue=true\nlook=tick\n").partFaults, [])
+        XCTAssertEqual(SpotOutput(text: "switch=done\nvalue=true\ntype=tick\n").partFaults, [])
     }
 
 }

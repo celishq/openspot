@@ -136,7 +136,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testACloseClearsTheSelectionOfTheParts() async throws {
-        let sheet = try holding("printf 'hotkey=k\\nvalue=ctrl+space\\n\\nswitch=w\\nvalue=true\\n'", pause: 0.02)
+        let sheet = try holding("printf 'field=k\\ntype=hotkey\\nvalue=ctrl+space\\n\\nswitch=w\\nvalue=true\\n'", pause: 0.02)
         sheet.open(waits: true) {}
         try await wait("the parts") { sheet.panel != nil }
         let first = sheet.panel?.selectedPart?.id
@@ -149,7 +149,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAMoveOfThePartSelectionTellsOnlyTheReadersOfTheSelectedPart() async throws {
-        let sheet = try holding("printf 'hotkey=k\\nvalue=ctrl+space\\n\\nswitch=w\\nvalue=true\\n'", pause: 0.02)
+        let sheet = try holding("printf 'field=k\\ntype=hotkey\\nvalue=ctrl+space\\n\\nswitch=w\\nvalue=true\\n'", pause: 0.02)
         sheet.open(waits: true) {}
         try await wait("the parts") { sheet.panel != nil }
         let first = sheet.selectedPart?.id
