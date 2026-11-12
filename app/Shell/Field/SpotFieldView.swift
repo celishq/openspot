@@ -33,6 +33,7 @@ struct SpotFieldView: View {
                 .opacity(model.isEditing ? 1 : 0)
                 .allowsHitTesting(model.isEditing)
         }
+        .modifier(SpotFocusLook(focus: model.menu == nil ? .none : .faded))
         .onChange(of: model.isShown) { _, isShown in
             guard isShown else {
                 isFocused = false

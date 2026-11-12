@@ -10,6 +10,10 @@ final class SpotsPanel: NSPanel {
     /// The frame that the window had before Edit Spots grew it.
     private var restFrame: NSRect?
     private var pressWatch: Task<Void, Never>?
+    /// The stage of the trackpad's press: 1 for a click, 2 for a force click.
+    private var pressStage = 0
+    /// Whether a force click opened the menu and its button is still down, so that its release runs the row under it.
+    private var isForceDragging = false
 
     override var canBecomeKey: Bool { true }
 
@@ -165,6 +169,23 @@ final class SpotsPanel: NSPanel {
     /// Gives each key to the actions first, so that they work whichever field has the focus.
     override func sendEvent(_ event: NSEvent) {
         if event.type == .flagsChanged { model?.takeHeld(Self.modifiers(of: event.modifierFlags)) }
+        if event.type == .pressure { takePressure(event) }
+        if isForceDragging, let model {
+            switch event.type {
+            case .leftMouseDragged:
+                model.dragMenu(to: panelPoint(of: event))
+            case .leftMouseUp:
+                isForceDragging = false
+                super.sendEvent(event)
+                model.releaseMenu(at: panelPoint(of: event))
+                return
+            default: break
+            }
+        }
+        if event.type == .rightMouseDown, let model, model.isShown, !model.isEditing, model.openList == nil {
+            openMenu(at: event)
+            return
+        }
         if event.type == .keyDown {
             if model?.recording != nil {
                 if Int(event.keyCode) == kVK_Escape {
@@ -178,6 +199,24 @@ final class SpotsPanel: NSPanel {
             if model?.handleChain(code: UInt32(event.keyCode), modifiers: Self.modifiers(of: event.modifierFlags)) == true { return }
         }
         super.sendEvent(event)
+    }
+
+    /// Opens the actions menu of the card under a force click, when the press reaches its second stage.
+    private func takePressure(_ event: NSEvent) {
+        defer { pressStage = event.stage }
+        guard event.stage == 2, pressStage < 2 else { return }
+        openMenu(at: event)
+        isForceDragging = model?.menu != nil
+    }
+
+    /// Opens the actions menu of the card under the pointer of this event.
+    private func openMenu(at event: NSEvent) {
+        model?.openMenu(at: panelPoint(of: event))
+    }
+
+    /// Where the pointer of this event lies in the panel, from its top left corner.
+    private func panelPoint(of event: NSEvent) -> CGPoint {
+        CGPoint(x: event.locationInWindow.x, y: (contentView?.bounds.height ?? 0) - event.locationInWindow.y)
     }
 
     private static func modifiers(of flags: NSEvent.ModifierFlags) -> Shortcut.Modifiers {

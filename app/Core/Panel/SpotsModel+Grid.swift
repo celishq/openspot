@@ -30,8 +30,15 @@ extension SpotsModel {
         sheets[entry.id]?.setLevel((entry.state.level ?? 0) + delta)
     }
 
+    /// How the card at this index shows: forward while its menu is open on the grid, faded while another card's is.
+    public func focus(ofCard index: Int) -> CardFocus {
+        guard menu != nil, openList == nil else { return .none }
+        return index == selected ? .focused : .faded
+    }
+
+    /// Runs the card, unless the open menu owns the pointer, as after a force press whose click ends on the card.
     public func tap(_ id: String) {
-        guard let position = visible.firstIndex(where: { $0.id == id }) else { return }
+        guard !menuOwnsPointer, let position = visible.firstIndex(where: { $0.id == id }) else { return }
         selected = position
         runSelected()
     }

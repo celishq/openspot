@@ -106,8 +106,8 @@ public final class SpotsModel {
     var chainWatch: Task<Void, Never>?
     public var recording: String?
     private var problems: [String] = []
-    public var menu: ActionMenu?
-    public var menuTarget: Target?
+    /// The actions menu from its open to the end of its close.
+    public internal(set) var menuSession: ActionMenuSession?
     public var form: FormSession?
     /// The ask for a form that waits for its script. A newer ask, a cancel, a close or a hidden panel replaces it.
     @ObservationIgnored var formAsk: UUID?

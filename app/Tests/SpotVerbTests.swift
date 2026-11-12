@@ -95,6 +95,108 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertEqual(rows.map(\.keyLabel), ["⌘E", "", "⌘⇧C", "⌘⌫"])
     }
 
+    func testARightOrForceClickOnACardOpensItsMenuAndTheClickThatEndsItRunsNothing() throws {
+        try script("weather", header: "title=Weather")
+        try script("clock", header: "title=Clock")
+        model.reload()
+        model.isShown = true
+        let index = try XCTUnwrap(model.visible.firstIndex { $0.id == "weather" })
+        let card = try XCTUnwrap(model.placements.first { $0.index == index }).rect
+
+        let origin = SpotTokens.gridOrigin(scrollOffset: model.gridScroll)
+        model.openMenu(at: CGPoint(x: origin.x + card.midX, y: origin.y + card.midY))
+        model.tap("weather")
+
+        XCTAssertEqual(model.selectedEntry?.id, "weather")
+        XCTAssertEqual(model.menuTarget?.entry.id, "weather")
+        XCTAssertEqual(model.menu?.selectedRow?.title, model.menu?.rows.first?.title)
+    }
+
+    func testTheMenuOpensSmallAndGrowsOnTheNextTurn() async throws {
+        try script("weather", header: "title=Weather")
+        _ = try select("weather")
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+
+        XCTAssertEqual(model.menuSession?.phase, .opening)
+        try await wait("the growth") { model.menuSession?.phase != .opening }
+        XCTAssertEqual(host.motions.last, .sheet(isOpen: true))
+        XCTAssertEqual(model.menuSession?.phase, .settled)
+        let open = model.menu
+        host.heldEnds = []
+        model.closeMenu()
+        XCTAssertNil(model.menu)
+        XCTAssertEqual(model.menuSession?.menu, open)
+        XCTAssertEqual(model.menuSession?.phase, .closing)
+        XCTAssertEqual(host.motions.last, .sheet(isOpen: false))
+        host.heldEnds?.forEach { $0() }
+        XCTAssertNil(model.menuSession)
+    }
+
+    func testPointingAtAMenuRowSelectsIt() throws {
+        try script("weather", header: "title=Weather")
+        _ = try select("weather")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+
+        model.point(at: .menuRow(2))
+
+        XCTAssertEqual(model.menu?.selected, 2)
+        XCTAssertNotNil(model.menu)
+    }
+
+    func testADragOfAForceClickHighlightsTheRowUnderItAndItsReleaseRunsThatRow() throws {
+        try script("weather", header: "title=Weather")
+        _ = try select("weather")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        let menu = try XCTUnwrap(model.menu)
+        let frame = ActionMenuFrame(item: CGRect(x: 90, y: 166, width: 64, height: 64), menu: menu, bounds: CGRect(x: 16, y: 166, width: 437, height: 500))
+        model.placeMenu(frame)
+        let row = { (index: Int) in CGPoint(x: frame.rect.midX, y: frame.rowRect(index, of: menu).midY) }
+
+        model.dragMenu(to: row(1))
+        XCTAssertEqual(model.menu?.selected, 1)
+        model.releaseMenu(at: CGPoint(x: frame.rect.maxX + 40, y: row(1).y))
+        XCTAssertNotNil(model.menu)
+
+        model.dragMenu(to: row(2))
+        model.releaseMenu(at: row(2))
+        XCTAssertNil(model.menu)
+    }
+
+    func testPointingAtACardSelectsItUnlessAMenuIsOpenOrTheGridIsEdited() throws {
+        try script("weather", header: "title=Weather")
+        try script("clock", header: "title=Clock")
+        _ = try select("weather")
+
+        model.point(at: .card("clock"))
+        XCTAssertEqual(model.selectedEntry?.id, "clock")
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        model.point(at: .card("weather"))
+        XCTAssertEqual(model.selectedEntry?.id, "clock")
+        model.closeMenu()
+
+        model.beginEditing()
+        model.point(at: .card("weather"))
+        XCTAssertEqual(model.selectedEntry?.id, "clock")
+    }
+
+    func testTheCardOfTheOpenMenuIsFocusedAndTheOthersFaded() throws {
+        try script("weather", header: "title=Weather")
+        try script("clock", header: "title=Clock")
+        _ = try select("weather")
+        let weather = try XCTUnwrap(model.visible.firstIndex { $0.id == "weather" })
+        let clock = try XCTUnwrap(model.visible.firstIndex { $0.id == "clock" })
+        XCTAssertEqual(model.focus(ofCard: weather), .none)
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+
+        XCTAssertEqual(model.focus(ofCard: weather), .focused)
+        XCTAssertEqual(model.focus(ofCard: clock), .faded)
+        model.closeMenu()
+        XCTAssertEqual(model.focus(ofCard: clock), .none)
+    }
+
     func testEditOpensTheFileInTheTextEditor() async throws {
         try script("weather")
         _ = try select("weather")
