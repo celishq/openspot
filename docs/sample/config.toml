@@ -24,6 +24,6 @@ size = "small"
 grid = true
 
 [[spots]]
-id = "screenshot"
+id = "calendar/calendar"
 size = "small"
 grid = true

@@ -67,10 +67,12 @@ for example in "$work"/examples/*.example; do
   echo "docs/images/$name.png"
 done
 rm -rf "$work/config"/* "$work/plugins"/*
-cp docs/sample/*.sh "$work/plugins/"
+cp -R docs/sample/. "$work/plugins/"
+rm "$work/plugins/config.toml"
 for spot in system system-info battery cpu memory devices; do cp "plugins/$spot.sh" "$work/plugins/"; done
 cp -R examples/now-playing "$work/plugins/"
 cp docs/sample/config.toml "$work/config/config.toml"
+OPENSPOT_PLUGINS="$work/plugins" OPENSPOT_CONFIG="$work/config" OPENSPOT_CORE="$work/core" "$app" check >/dev/null
 OPENSPOT_PLUGINS="$work/plugins" OPENSPOT_CONFIG="$work/config" OPENSPOT_CORE="$work/core" \
   "$app" render --panel docs/images/panel.png
 echo docs/images/panel.png
