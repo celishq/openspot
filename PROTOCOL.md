@@ -64,7 +64,7 @@ The header says what a spot is. Openspot reads it without running the spot.
 | Key           | Value                                                                                                                            |
 | ------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `title`       | The name. By default, the file name.                                                                                             |
-| `icon`        | The icon, as in a block (see [Blocks](#blocks)). A path that doesn't start with `/` starts at the spot's folder.                  |
+| `icon`        | The icon, as in a block (see [Blocks](#blocks)). A path that doesn't start with `/` starts at the spot's folder.                 |
 | `detail`      | The line under the title.                                                                                                        |
 | `keywords`    | More words that find the spot in the main search, split by commas, such as `keywords=coffee, cup`.                               |
 | `on`          | An event that makes Openspot ask the spot what to show. One line for each event. See [Events](#events).                          |
@@ -78,10 +78,10 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `grid.<size>` | A card made of other spots. Each word is a spot id. See [Cards of other spots](#cards-of-other-spots).                           |
 | `to`          | The spot that opens when the user presses a card of other spots. See [Cards of other spots](#cards-of-other-spots).              |
 
-| Block         | Meaning                                                                                                          |
-| ------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `button=<id>` | A command, with its `title` and `icon`. The user can give it a hotkey.                                           |
-| `field=<key>` | A setting the user chooses, with its `title` (by default, its key) and `icon`. See [Settings](#settings).        |
+| Block         | Meaning                                                                                                   |
+| ------------- | --------------------------------------------------------------------------------------------------------- |
+| `button=<id>` | A command, with its `title` and `icon`. The user can give it a hotkey.                                    |
+| `field=<key>` | A setting the user chooses, with its `title` (by default, its key) and `icon`. See [Settings](#settings). |
 
 - A spot with a `button` in its header has no card. It gives its commands instead.
 
@@ -329,14 +329,14 @@ An event makes Openspot ask a spot what to show. The header lists the events whe
 A call asks a spot to do one thing. It works like a CGI call: arguments, variables and stdin go in, and a frame comes
 out.
 
-| Call                               | When                                                   |
-| ---------------------------------- | ------------------------------------------------------ |
-| `<spot> read`                      | An event that its header lists.                        |
-| `<spot> open [row id]`             | A pick of a row, or a press of a card with no sheet.   |
-| `<spot> <id> [row id] [value]`     | A change or a press of a block.                        |
-| `<spot> drop <path> [path]...`     | A drop of files on its card.                           |
-| `<spot> drag <row id> [row id]...` | A drag of rows that stand for files out of its sheet.  |
-| `<spot> <command>`                 | A press of the hotkey the user gave a command.         |
+| Call                               | When                                                  |
+| ---------------------------------- | ----------------------------------------------------- |
+| `<spot> read`                      | An event that its header lists.                       |
+| `<spot> open [row id]`             | A pick of a row, or a press of a card with no sheet.  |
+| `<spot> <id> [row id] [value]`     | A change or a press of a block.                       |
+| `<spot> drop <path> [path]...`     | A drop of files on its card.                          |
+| `<spot> drag <row id> [row id]...` | A drag of rows that stand for files out of its sheet. |
+| `<spot> <command>`                 | A press of the hotkey the user gave a command.        |
 
 - `read` is the only reserved call. `open`, `drop` and `drag` are default ids. A block can't use them, but a button can
   use `open`.
@@ -364,14 +364,14 @@ form=ьшдл
 
 The shell helper writes values for you:
 
-| Function                                    | Does                                                                                                |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `esc <text>`                                | Prints text as a value.                                                                             |
-| `value <key>`                               | Prints each value of the key from stdin, one per line, in order.                                    |
-| `openspot_kv <key> <value>`                 | Prints one line, with its value escaped.                                                            |
-| `openspot_row <id> <title> [detail] [icon]` | Prints one row.                                                                                     |
+| Function                                    | Does                                                                                                  |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `esc <text>`                                | Prints text as a value.                                                                               |
+| `value <key>`                               | Prints each value of the key from stdin, one per line, in order.                                      |
+| `openspot_kv <key> <value>`                 | Prints one line, with its value escaped.                                                              |
+| `openspot_row <id> <title> [detail] [icon]` | Prints one row.                                                                                       |
 | `openspot_rows [kind]`                      | Prints a row, or a block of that kind, for each tab-separated line of stdin: id, title, detail, icon. |
-| `openspot_serve <function> "$@"`            | Runs the function with the three parts of each call, in each mode.                                  |
+| `openspot_serve <function> "$@"`            | Runs the function with the three parts of each call, in each mode.                                    |
 
 - Loading the helper reads all of stdin, except in a staying spot.
 
@@ -529,17 +529,17 @@ struct SpotView: View {
 - The spot and its view must be in a folder of their own, such as `cups/cups.sh` and `cups/cups.swift`.
 - The file declares `struct SpotView: View` with `let spot: SpotInput`, and has no top-level code.
 
-| Member            | Gives                                                             |
-| ----------------- | ----------------------------------------------------------------- |
-| `spot["key"]`     | The last value of a key of its block, or nil.                     |
-| `spot.all("key")` | Each value of a key that repeats.                                 |
-| `spot.size`       | The size of its place.                                            |
-| `spot.inset`      | The space other cards keep between their edge and their words.    |
-| `spot.corner`     | The corner radius of the card.                                    |
-| `spot.ink`        | The colour of words, for light and dark.                          |
-| `spot.secondary`  | The opacity of a second line.                                     |
-| `spot.accent`     | The accent colour.                                                |
-| `spot.font`       | The fonts of the cards: `title`, `detail`, `metric` and `value`.  |
+| Member            | Gives                                                            |
+| ----------------- | ---------------------------------------------------------------- |
+| `spot["key"]`     | The last value of a key of its block, or nil.                    |
+| `spot.all("key")` | Each value of a key that repeats.                                |
+| `spot.size`       | The size of its place.                                           |
+| `spot.inset`      | The space other cards keep between their edge and their words.   |
+| `spot.corner`     | The corner radius of the card.                                   |
+| `spot.ink`        | The colour of words, for light and dark.                         |
+| `spot.secondary`  | The opacity of a second line.                                    |
+| `spot.accent`     | The accent colour.                                               |
+| `spot.font`       | The fonts of the cards: `title`, `detail`, `metric` and `value`. |
 
 - The view fills its place, and the whole card when there's no card layout. It can't change the size of its place.
 - It gets the keys of its block in each frame. A new frame keeps its `@State`.
@@ -631,13 +631,13 @@ A spot asks the Mac and Openspot for things through one command, which works the
 
 The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The others:
 
-| Command                                            | Does                                                                                              |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `openspot guide`                                   | Prints the guide, then this protocol.                                                             |
-| `openspot spot show <id>`                          | Opens the panel with the spot selected.                                                           |
-| `openspot spot add <git url, folder or file.spot>` | Adds a spot, and records it in `spots.lock`. An update that needs a new use also needs `--yes`.   |
-| `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                                  |
-| `openspot spot stats`                              | Prints what each spot cost and used. See [Stats](#stats).                                         |
+| Command                                            | Does                                                                                            |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `openspot guide`                                   | Prints the guide, then this protocol.                                                           |
+| `openspot spot show <id>`                          | Opens the panel with the spot selected.                                                         |
+| `openspot spot add <git url, folder or file.spot>` | Adds a spot, and records it in `spots.lock`. An update that needs a new use also needs `--yes`. |
+| `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                                |
+| `openspot spot stats`                              | Prints what each spot cost and used. See [Stats](#stats).                                       |
 
 ### Settings
 
@@ -740,10 +740,10 @@ spot raises the major number, and adds a header key `protocol=<major>`. A spot w
 
 An old spot never sees a word it didn't ask for, and an old app skips a word it doesn't know.
 
-| To add               | Add                                                               |
-| -------------------- | ----------------------------------------------------------------- |
-| A thing that happens | an event `<noun>.<verb>`                                          |
-| A thing to draw      | a kind `<kind>=`, which an old app skips and reports              |
-| A detail of a kind   | a key, or a `type` value                                          |
-| A power of the Mac   | a noun: `openspot <noun> <verb>`, its events and its `uses` word  |
-| A complex look       | nothing: a `view` of the spot                                     |
+| To add               | Add                                                              |
+| -------------------- | ---------------------------------------------------------------- |
+| A thing that happens | an event `<noun>.<verb>`                                         |
+| A thing to draw      | a kind `<kind>=`, which an old app skips and reports             |
+| A detail of a kind   | a key, or a `type` value                                         |
+| A power of the Mac   | a noun: `openspot <noun> <verb>`, its events and its `uses` word |
+| A complex look       | nothing: a `view` of the spot                                    |
