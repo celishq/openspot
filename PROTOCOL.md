@@ -90,6 +90,22 @@ The header says what a spot is. Openspot reads it without running the spot.
 A frame is everything a spot shows at one time. Each new frame replaces the last one, so a spot can show progress and
 then the result.
 
+```text
+ what the spot prints              what it is
+┌──────────────────────────────┐
+│ grid=title                   │ ─┐
+│ grid=wifi                    │  ├─ the head: layout and effects, not drawn
+│ toast=Saved                  │ ─┘
+│                              │
+│ text=title                   │ ─┐
+│ title=Wi-Fi                  │  │
+│                              │  ├─ blocks: each one is drawn
+│ switch=wifi                  │  │
+│ value=true                   │ ─┘
+│ ---                          │ ─── the end of this frame; the next one replaces it
+└──────────────────────────────┘
+```
+
 ```sh
 #!/bin/sh
 # title=Copy
@@ -177,6 +193,21 @@ confirm=Press again to forget
 ## Layouts
 
 A layout says where each block goes, the way CSS grid areas do.
+
+```text
+grid=title title title      ┌──────────────────────────────┐
+grid=wifi  wifi  nets       │ title                        │
+grid=all   .     nets       ├───────────────────┬──────────┤
+grid=-     -     -          │ wifi              │          │
+grid=note  note  note       ├─────────┬─────────┤   nets   │
+                            │ all     │  empty  │          │
+                            │ ─────────────────────────────│  the divider
+                            │ note                         │
+                            └──────────────────────────────┘
+```
+
+Three words make three columns. `nets` covers the last column of two lines, `.` leaves a cell empty, and `-` draws a
+divider across its line.
 
 - Each `grid=` line of the head is one line of the sheet. Each word is one cell: the id of a block, `.` for an empty
   cell, or `-` for a divider across the line.
@@ -385,6 +416,16 @@ openspot_kv value "$(value input)"
 ## The life of a call
 
 A call starts, prints and ends. These rules say how long it can take, and what happens when it stops.
+
+```text
+start ──► frame ──► frame ──► ... ──► end        exit 0: done; another code: the last line of stderr shows
+  │                                    ▲
+  │   a read must print its first      │
+  │   frame or end within 10 seconds   │
+  │                                    │
+  └──► stop: a newer value, a second press or a quit
+       terminate signal, then kill; a stopped call changes nothing
+```
 
 - A `read` has 10 seconds to print its first frame or end. Other calls have no time limit.
 - A new value of a block stops the older call of that block. A second press of a running call stops it: its process
