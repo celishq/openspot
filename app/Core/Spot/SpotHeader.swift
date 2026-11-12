@@ -1,13 +1,13 @@
 import Foundation
 
 /// The `key=value` comment lines at the top of a script, which say what it is without running it. They are a frame in
-/// comments: a blank comment line ends a block, and a `command` or `setting` block follows the keys of the spot.
+/// comments: a blank comment line ends a block, and a `button` or `field` block follows the keys of the spot.
 public struct SpotHeader: Equatable, Sendable {
     private static let limit = 4096
     private static let marks = ["//", "--", "#"]
-    private static let kinds: Set<String> = ["command", "setting"]
+    private static let kinds: Set<String> = ["button", "field", "command", "setting"]
 
-    /// The keys of the spot, with each `command` and `setting` block as a child.
+    /// The keys of the spot, with each `button` and `field` block as a child.
     public let block: TextBlock
 
     /// Reads the comment lines under the first line of a script. The first other line ends them, and a program has none.

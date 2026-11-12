@@ -1,7 +1,7 @@
 import Darwin
 
 /// Where the API socket of a config folder lies: `api.socket` in the folder, or a short path in `/tmp/openspot-<uid>` when
-/// that one is too long for a socket address (S1). The app and the command find the same path from the folder's real path.
+/// that one is too long for a socket address (protocol: The openspot command). The app and the command find the same path from the folder's real path.
 enum SocketPath {
     static let name = "api.socket"
 

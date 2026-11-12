@@ -1,6 +1,6 @@
 import Foundation
 
-/// A value that the person chose for one spot, which its script keeps through `openspot setting` (K6).
+/// A value that the person chose for one spot, which its script keeps through `openspot setting` (protocol: Settings).
 public struct SpotSetting: Hashable, Sendable {
     public let spot: String
     public let key: String

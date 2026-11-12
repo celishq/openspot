@@ -223,7 +223,7 @@ extension SpotsModel {
     /// The action that makes a new item from what the search did not find.
     public var createAction: CommandAction? {
         guard let list = openItems, !list.query.isEmpty, list.shown.isEmpty, list.search == .local else { return nil }
-        return openEntry?.spot.actions.first { $0.scope == .command && $0.isForm }
+        return openEntry?.spot.actions.first { $0.scope == .spot && $0.isForm }
     }
 
     public func createFromSearch() {
@@ -255,11 +255,11 @@ extension SpotsModel {
     /// with the picked row selected, and a pick that asks with a form or records a key opens the spot in the panel (W8).
     public func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil, in place: SheetPlace = .panel) {
         if place == .float {
-            if action == nil, entry.spot.pickForm != nil || item.shortcut != nil { return press(entry.id) }
+            if action == nil, entry.spot.pickForm != nil || item.records { return press(entry.id) }
             remember(item, of: entry)
             sheets[entry.id]?.list.select(run: item.run)
         } else {
-            if action == nil, item.shortcut != nil {
+            if action == nil, item.records {
                 toggleRecording(id: item.run)
                 return
             }

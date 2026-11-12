@@ -10,9 +10,9 @@ public struct Config: Equatable, Sendable {
     public private(set) var arrangement = SpotArrangement()
     /// The keys that the person assigned to commands of scripts, or to spots that they float.
     public private(set) var keys: [GlobalKey] = []
-    /// The values that scripts keep for the person through `openspot setting` (K6).
+    /// The values that scripts keep for the person through `openspot setting` (protocol: Settings).
     public private(set) var settings: [SpotSetting] = []
-    /// Whether each spot's process runs with only what its uses name (Z8).
+    /// Whether each spot's process runs with only what its uses name (protocol: Trust).
     public private(set) var isCareful = false
 
     public init(text: String) {

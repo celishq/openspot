@@ -17,7 +17,7 @@ struct CheckCalls {
 
     /// Reports the faults of a folder, or of the standard one, in lines or as JSON, and exits with 1 when there are any. A
     /// relative folder starts in the working folder of the caller. `careful` is the most uses that Careful mode leaves each
-    /// read, or nil to run each one as the person (Z8).
+    /// read, or nil to run each one as the person (protocol: Trust).
     func folder(_ path: String?, json: Bool, careful: Set<SpotUse>?) -> CommandAPI.Work {
         { [environment, tokens] in
             let place = URL(fileURLWithPath: environment["PWD"] ?? FileManager.default.currentDirectoryPath, isDirectory: true)

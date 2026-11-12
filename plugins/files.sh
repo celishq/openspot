@@ -1,21 +1,23 @@
 #!/bin/sh
 # icon=doc.text.magnifyingglass
 # detail=Find a file
-# read=sheet
+# on=sheet.open
+# on=sheet.text
 # uses=clipboard
+texts=$(sed -n 's/^search=//p; s/^form=//p')
 . "$OPENSPOT_SH"
 case "$1" in
   read)
-    printf 'search=script\n\n'
     printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\nclose=true\n\n'
     printf 'button=copy\ntitle=Copy path\nshortcut=cmd+shift+c\nclose=true\n\n'
-    shift
     predicate=''
-    for text in "$@"; do
+    while IFS= read -r text; do
       query=$(printf '%s' "$text" | tr -d '"\\*')
       [ "${#query}" -lt 2 ] && continue
       predicate="$predicate${predicate:+ || }kMDItemFSName == \"*$query*\"cd"
-    done
+    done <<EOF
+$texts
+EOF
     [ -z "$predicate" ] && exit 0
     mdfind -onlyin "$HOME" "$predicate" 2>/dev/null \
       | grep -v "^$HOME/Library/" \

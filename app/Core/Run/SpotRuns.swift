@@ -19,13 +19,13 @@ public final class SpotRuns {
     @ObservationIgnored public var partsArrival: (String, () -> Void) -> Void = { _, bring in bring() }
     /// The open of a sheet: its motion waits for its first answer, and what its script prints waits for its motion.
     @ObservationIgnored public let opening: SheetOpening
-    /// The time a `read` has to its first frame or its end, and a call of an inline spot has to its end (I7).
+    /// The time a `read` has to its first frame or its end, and a call of an inline spot has to its end (protocol: Modes).
     public let readLimit: TimeInterval
     /// The time with no call after which an inline spot lets go of its context and its thread (A26).
     let inlineIdle: TimeInterval
-    /// What each spot cost and used, day by day (G1, Z10).
+    /// What each spot cost and used, day by day (protocol: Stats).
     public nonisolated let usage: SpotUsage
-    /// Whether each process of a spot runs in Careful mode, with only what its uses name (Z8). A change starts each staying
+    /// Whether each process of a spot runs in Careful mode, with only what its uses name (protocol: Trust). A change starts each staying
     /// script again in the new mode, and each inline script at its next call.
     @ObservationIgnored public var isCareful = false {
         didSet {
@@ -34,7 +34,7 @@ public final class SpotRuns {
             sheets.values.forEach { $0.restartScript() }
         }
     }
-    /// The token of each process and inline link that runs, by which the API knows a spot's call (Z2).
+    /// The token of each process and inline link that runs, by which the API knows a spot's call (protocol: Trust).
     public nonisolated let tokens: CallerTokens
     @ObservationIgnored let now: () -> Date
     @ObservationIgnored private let stopPause: TimeInterval
@@ -68,6 +68,8 @@ public final class SpotRuns {
     @ObservationIgnored public var api: CommandAPI?
     /// The record of each call that runs once, or nil to keep none.
     @ObservationIgnored private let log: CallLog?
+    /// Hears each call that ends, quiet ones too, with the reason of a read, such as the playground that shows each call.
+    @ObservationIgnored public var onCall: ((CallLog.Record, ReadReason?) -> Void)?
     /// The builds of Swift scripts, which each process runs once they are ready.
     @ObservationIgnored private let swift: SwiftProgram
 
@@ -277,7 +279,7 @@ public final class SpotRuns {
     /// Whether a call leaves no record: a timed read, a read of an event or a search that did not fail, which runs too often
     /// to keep.
     private static func isQuiet(_ reason: ReadReason?, _ end: ScriptCall.End) -> Bool {
-        guard reason == .timer || reason == .search || reason?.isEvent == true else { return false }
+        guard reason?.isFrequent == true else { return false }
         if case .failed = end { return false }
         return true
     }
@@ -306,7 +308,7 @@ public final class SpotRuns {
             do {
                 for try await frame in stream {
                     guard !call.isStopped else { break }
-                    log?.add(frame, to: &printed)
+                    if let log { log.add(frame, to: &printed) } else if self?.onCall != nil { printed.append(frame) }
                     guard let output = await self?.intake(frame, of: id), !call.isStopped else { break }
                     call.take(output)
                     await onFrame(call, frame, output)
@@ -326,8 +328,7 @@ public final class SpotRuns {
 
     /// Keeps the record of a call that ended in the call log, unless it is a quiet one.
     func record(_ spot: Spot, _ action: SpotAction, input: String?, frames: [String], errors: String, end: ScriptCall.End, reason: ReadReason?, started: Date, begin: Date) {
-        guard let log, !Self.isQuiet(reason, end) else { return }
-        log.write(CallLog.Record(
+        let record = CallLog.Record(
             spot: spot.id,
             arguments: action.arguments,
             input: input,
@@ -336,7 +337,10 @@ public final class SpotRuns {
             end: CallLog.End(end),
             started: started,
             seconds: Date().timeIntervalSince(begin)
-        ))
+        )
+        onCall?(record, reason)
+        guard let log, !Self.isQuiet(reason, end) else { return }
+        log.write(record)
     }
 
     /// A JavaScript spot of these runs, which loads at its first call and counts the CPU time of its thread (A26).
@@ -410,7 +414,7 @@ public final class SpotRuns {
         })
     }
 
-    /// Takes a spot's call that needs a use, and shows a toast at its first use of the day that its header does not name (Z4).
+    /// Takes a spot's call that needs a use, and shows a toast at its first use of the day that its header does not name (protocol: Trust).
     func used(_ call: SpotUseCall, by caller: CallerTokens.Caller) {
         guard usage.used(call, by: caller, at: now()) else { return }
         onReport(caller.id, .toast("\(caller.name) \(call.words) without `uses=\(call.use.rawValue)` in its header. Add it to stop this note."))

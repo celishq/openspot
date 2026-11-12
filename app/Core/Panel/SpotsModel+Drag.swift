@@ -95,7 +95,7 @@ extension SpotsModel {
                 return
             }
             guard let tile = tileRect(of: id) else { return }
-            let entry = Entry(spot: item.spot, run: nil, choice: arrangement)
+            let entry = Entry(spot: item.spot, run: nil, choice: arrangement, defaults: defaultArrangement)
             let start = visible.filter(\.isOnGrid).count
             var sizes = visible.map(\.size)
             sizes.insert(item.size, at: start)

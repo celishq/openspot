@@ -3,7 +3,7 @@ import XCTest
 
 /// Proves that the running app answers `check`, `spot run`, `spot show` and `sandbox` on its socket: a run gets the folder,
 /// the variables and the stdin of its caller and streams each frame, Ctrl-C stops its script, and Careful mode fences what
-/// a run or a check starts to the uses of the spot and of its caller (Z8).
+/// a run or a check starts to the uses of the spot and of its caller (protocol: Trust).
 final class AppCallsSocketTests: XCTestCase {
     private final class Host: Mac {
         func eventStore() -> any EventStore { FakeEventStore() }
@@ -134,7 +134,7 @@ final class AppCallsSocketTests: XCTestCase {
 
     func testACheckInTheAppReadsARelativeFolderOfItsCallerAndRunsEachReadInCarefulMode() async throws {
         let leak = outside.appendingPathComponent("leak")
-        try spot("leaky", header: "read=sheet", "echo a > '\(leak.path)'; printf 'title=Leaky\\n'")
+        try spot("leaky", header: "on=sheet.open", "echo a > '\(leak.path)'; printf 'title=Leaky\\n'")
         let runs = await SpotRuns()
         await MainActor.run { runs.isCareful = true }
         listen(runs: runs)
@@ -149,7 +149,7 @@ final class AppCallsSocketTests: XCTestCase {
     func testTheReadsOfACheckInCarefulModeAreKnownAsTheirSpots() async throws {
         let token = folder.appendingPathComponent("token")
         let go = folder.appendingPathComponent("go")
-        try spot("reader", header: "read=sheet", "echo \"$OPENSPOT_TOKEN\" > '\(token.path)'; i=0; while [ ! -f '\(go.path)' ] && [ $i -lt 1000 ]; do sleep 0.01; i=$((i+1)); done; printf 'title=Reader\\n'")
+        try spot("reader", header: "on=sheet.open", "echo \"$OPENSPOT_TOKEN\" > '\(token.path)'; i=0; while [ ! -f '\(go.path)' ] && [ $i -lt 1000 ]; do sleep 0.01; i=$((i+1)); done; printf 'title=Reader\\n'")
         let runs = await SpotRuns()
         await MainActor.run { runs.isCareful = true }
         listen(runs: runs)
@@ -166,13 +166,13 @@ final class AppCallsSocketTests: XCTestCase {
     }
 
     func testACheckAsJSONInTheAppNamesEachFault() async throws {
-        try spot("weather", header: "size=huge", "echo")
+        try spot("weather", header: "mode=huge", "echo")
         listen()
 
         let answer = try ask(["check", "--json"])
 
         let json = try JSONSerialization.jsonObject(with: Data(answer.stdout.utf8)) as? [[String: String]]
-        XCTAssertEqual(json?.map { $0["fault"] }, ["Weather has an unknown size: huge"])
+        XCTAssertEqual(json?.map { $0["fault"] }, ["Weather has an unknown mode: huge. Use once, stay or always"])
         XCTAssertEqual(answer.code, 1)
     }
 

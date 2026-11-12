@@ -1,7 +1,7 @@
 import Foundation
 
 /// One connection to the socket of the API, after its request: the JSON-RPC notifications that it sends one per line in
-/// order, the stdin that the caller sends once a call pulls it, and the close of the caller, which stops the call (S13).
+/// order, the stdin that the caller sends once a call pulls it, and the close of the caller, which stops the call (protocol: The openspot command).
 final class CommandConnection: @unchecked Sendable {
     private let descriptor: Int32
     private let writes = DispatchQueue(label: "dev.openspot.api.write")

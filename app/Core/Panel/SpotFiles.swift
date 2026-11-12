@@ -66,7 +66,7 @@ public struct SpotFiles {
         CallLog(folder: SpotFolder.config(environment: environment, home: home).appendingPathComponent("logs", isDirectory: true))
     }
 
-    /// The folder of the stats of each day, beside the plugins folder (Z10).
+    /// The folder of the stats of each day, beside the plugins folder (protocol: Stats).
     public var stats: URL {
         SpotFolder.config(environment: environment, home: home).appendingPathComponent("stats", isDirectory: true)
     }

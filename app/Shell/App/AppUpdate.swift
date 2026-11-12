@@ -10,6 +10,8 @@ final class AppUpdate: NSObject, SPUUpdaterDelegate, SPUStandardUserDriverDelega
     private(set) var ready: String?
     private var controller: SPUStandardUpdaterController?
     private var install: (() -> Void)?
+    /// Whether Sparkle shows its window now, which keeps the app in the Dock.
+    private var showsWindow = false
     private let onReady: @MainActor (String) -> Void
 
     init?(onReady: @escaping @MainActor (String) -> Void) {
@@ -46,14 +48,17 @@ final class AppUpdate: NSObject, SPUUpdaterDelegate, SPUStandardUserDriverDelega
     ) {
         guard handleShowingUpdate else { return }
         MainActor.assumeIsolated {
-            NSApp.setActivationPolicy(.regular)
-            NSApp.activate(ignoringOtherApps: true)
+            guard !showsWindow else { return }
+            showsWindow = true
+            AppPresence.open()
         }
     }
 
     nonisolated func standardUserDriverWillFinishUpdateSession() {
         MainActor.assumeIsolated {
-            _ = NSApp.setActivationPolicy(.accessory)
+            guard showsWindow else { return }
+            showsWindow = false
+            AppPresence.close()
         }
     }
 

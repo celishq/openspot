@@ -15,6 +15,21 @@ final class SheetSandboxTests: XCTestCase {
         XCTAssertEqual(modes, [.stay, .stay, .once, .once])
     }
 
+    func testANamedFileRunsInPlaceWithTheIDOfItsPluginsFolder() {
+        let plugins = URL(fileURLWithPath: "/p/plugins")
+        let scratch = URL(fileURLWithPath: "/t/playground")
+        let place = { (file: String?, text: String) in
+            SheetSandbox.place(of: file.map { URL(fileURLWithPath: $0) }, text: text, plugins: plugins, scratch: scratch)
+        }
+
+        XCTAssertEqual(place("/p/plugins/home/cups.sh", "").url.path, "/p/plugins/home/cups.sh")
+        XCTAssertEqual(place("/p/plugins/home/cups.sh", "").id, "home/cups")
+        XCTAssertEqual(place("/p/plugins/cups.js", "").id, "cups")
+        XCTAssertEqual(place("/elsewhere/tools/cups.sh", "").id, "cups")
+        XCTAssertEqual(place(nil, "// title=A\n").url.path, "/t/playground/playground.js")
+        XCTAssertEqual(place(nil, "#!/bin/sh\n").id, "playground")
+    }
+
     func testEachExampleHasNoFaults() {
         for example in SheetExamples.all {
             XCTAssertEqual(SpotOutput(text: example.text).sheetFaults, [], example.name)

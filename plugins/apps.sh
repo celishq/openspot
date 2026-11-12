@@ -1,7 +1,7 @@
 #!/bin/sh
 # icon=/System/Applications/Apps.app
 # detail=Open app
-# read=panel
+# on=panel.open
 # offers=search
 data=${OPENSPOT_DATA:-${TMPDIR:-/tmp}}
 pending="$data/uninstall"
@@ -88,8 +88,8 @@ uninstall_sheet() {
   printf '\n'
   printf 'repeat=files\n\n'
   printf 'button=open\ntitle=Keep or move to Trash\nclose=false\n\n'
-  printf 'button=cancel\ntitle=Cancel\nshortcut=escape\nscope=command\n\n'
-  printf 'button=remove\ntitle=Move to Trash\nshortcut=cmd+return\nscope=command\n\n'
+  printf 'button=cancel\ntitle=Cancel\nshortcut=escape\nscope=spot\n\n'
+  printf 'button=remove\ntitle=Move to Trash\nshortcut=cmd+return\nscope=spot\n\n'
   printf '%s\n' "$files" | while IFS= read -r path; do
     chosen=true
     grep -Fxq "$path" "$kept" 2>/dev/null && chosen=false
@@ -108,7 +108,7 @@ trash_files() {
 
 case "$1" in
   read)
-    if [ "$OPENSPOT_REASON" = change ] && [ -s "$pending" ] && [ -d "$(cat "$pending")" ]; then
+    if [ "$OPENSPOT_REASON" = spot.change ] && [ -s "$pending" ] && [ -d "$(cat "$pending")" ]; then
       uninstall_sheet "$(cat "$pending")"
     else
       rm -f "$pending" "$kept"

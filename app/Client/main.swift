@@ -2,10 +2,10 @@ import Darwin
 
 /// The time a live call waits for the app that it starts, in seconds, unless `OPENSPOT_START_WAIT` gives another.
 let startWait = getenv("OPENSPOT_START_WAIT").flatMap { Double(String(cString: $0)) } ?? 10
-/// The connection to the app, which Ctrl-C closes so that the app stops the work of the call (S13).
+/// The connection to the app, which Ctrl-C closes so that the app stops the work of the call (protocol: The openspot command).
 nonisolated(unsafe) var connection: Int32 = -1
 
-/// Runs the program of the app with the same arguments, which does a call of files itself (S2).
+/// Runs the program of the app with the same arguments, which does a call of files itself (protocol: The openspot command).
 func runAlone(_ app: AppBundle) -> Never {
     let program = app.program
     var argv: [UnsafeMutablePointer<CChar>?] = ([program] + CommandLine.arguments.dropFirst()).map { strdup($0) }
@@ -42,7 +42,7 @@ func startInBackground(_ app: AppBundle, config: String) {
     _ = posix_spawn(&started, arguments[0], &actions, &attributes, words, environ)
 }
 
-/// Starts the app and waits for its socket, for `startWait` seconds at most, or fails and says so (S12).
+/// Starts the app and waits for its socket, for `startWait` seconds at most, or fails and says so (protocol: The openspot command).
 func reachStarted(_ app: AppBundle, config: String) -> Int32 {
     startInBackground(app, config: config)
     var waited = 0.0

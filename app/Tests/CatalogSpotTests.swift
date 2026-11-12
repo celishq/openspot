@@ -8,7 +8,7 @@ final class CatalogSpotTests: BuiltInCase {
         try await super.setUp()
         try "#!/bin/sh\n# detail=Open app\n# icon=star\n".writeScript(to: core.appendingPathComponent("zebra.sh"))
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.sh"))
-        try "#!/bin/sh\n# every=5\n".writeScript(to: core.appendingPathComponent("cpu.sh"))
+        try "#!/bin/sh\n# on=clock.5\n".writeScript(to: core.appendingPathComponent("cpu.sh"))
     }
 
     private var catalog: Spot {
@@ -24,7 +24,7 @@ final class CatalogSpotTests: BuiltInCase {
         XCTAssertEqual(spot.name, "Spots")
         XCTAssertEqual(spot.subtitle, "Edit Spots")
         XCTAssertNil(spot.read)
-        XCTAssertEqual(spot.size, .small)
+        XCTAssertEqual(defaults.arrangement.size(of: spot.id), .small)
         XCTAssertTrue(spot.isOnGrid)
         XCTAssertEqual(spot.keywords, ["edit spots"])
         XCTAssertEqual(defaults.arrangement.choices.first { $0.id == spot.id }?.letter, "p")
@@ -38,7 +38,7 @@ final class CatalogSpotTests: BuiltInCase {
     }
 
     func testTurningOnACoreWidgetLoadsItInAScan() throws {
-        try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
+        try "#!/bin/sh\n# title=Overview\n# grid.square=cpu\n".writeScript(to: core.appendingPathComponent("overview.sh"))
 
         try file.turn("overview", on: true)
 

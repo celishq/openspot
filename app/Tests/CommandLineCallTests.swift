@@ -18,10 +18,10 @@ final class CommandLineCallTests: XCTestCase {
     func testEventEmitTakesAnEventNameAndAValue() {
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music.track"]), .eventEmit(name: "music.track", value: nil))
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music.track", "Blue in Green"]), .eventEmit(name: "music.track", value: "Blue in Green"))
-        XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "clipboard"], environment: ["OPENSPOT_REASON": "panel"]), .eventEmit(name: "clipboard", value: nil))
+        XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "clipboard.change"], environment: ["OPENSPOT_REASON": "panel.open"]), .eventEmit(name: "clipboard.change", value: nil))
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music.track"], environment: ["OPENSPOT_REASON": "music.track"]), .refused("`openspot event emit music.track` runs in a read of `music.track`, so it would read that spot again without end, and Openspot did not raise it. Raise it from an action, or raise another event."))
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music.next"], environment: ["OPENSPOT_REASON": "music.track"]), .eventEmit(name: "music.next", value: nil))
-        XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music"]), .refused("`music` is not an event. Name one with a dot, such as `music.track`, or `clipboard`."))
+        XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music"]), .refused("`music` is not an event. Name one with a dot, such as `music.track`."))
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit"]), .unknown("event emit"))
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "a.b", "c", "d"]), .unknown("event emit a.b c d"))
         XCTAssertTrue(CommandLineCall.usage.contains("openspot event emit <name> [value]"))
@@ -58,6 +58,7 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["render", "--view", "cups.swift", "a.png"]), .render("a.png", view: "cups.swift"))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "--card", "wide", "a.png"]), .renderCard(.wide, "a.png"))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "--card", "huge", "a.png"]), .unknown("render --card huge a.png"))
+        XCTAssertEqual(CommandLineCall(arguments: ["render", "--panel", "a.png"]), .renderPanel("a.png"))
         XCTAssertEqual(CommandLineCall(arguments: ["render"]), .unknown("render"))
     }
 
@@ -173,6 +174,29 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["screen"]), .unknown("screen"))
         XCTAssertTrue(CommandLineCall.usage.contains("openspot screen sources"))
         XCTAssertTrue(CommandLineCall.usage.contains("openspot screen shot"))
+    }
+
+    func testACallThatChangesTheMacOrThePlacesOfTheAppIsRefusedInARead() {
+        let read = ["OPENSPOT_REASON": "panel.open", "OPENSPOT_ID": "tools"]
+        let refusals = [
+            (["window", "move", "0 0 1 1"], "`openspot window move` moves a window"),
+            (["clipboard", "copy", "hi"], "`openspot clipboard copy` changes the clipboard"),
+            (["clipboard", "paste"], "`openspot clipboard paste` types in the front app"),
+            (["spot", "show", "notes"], "`openspot spot show` opens the panel"),
+            (["setting", "set", "key.go", "ctrl+k"], "`openspot setting set key.go` sets a key of your Mac"),
+            (["setting", "set", "float", "shake"], "`openspot setting set float` sets a key of your Mac"),
+            (["setting", "set", "--spot", "openspot", "panel-key", "ctrl+space"], "`openspot setting set --spot openspot panel-key` sets a key of your Mac"),
+            (["setting", "set", "--spot", "openspot", "fix-key", "ctrl+f"], "`openspot setting set --spot openspot fix-key` sets a key of your Mac"),
+            (["setting", "set", "menubar", "true"], "`openspot setting set menubar` changes the menu bar"),
+            (["setting", "set", "enabled", "false"], "`openspot setting set enabled` turns a spot on or off"),
+        ]
+        for (arguments, act) in refusals {
+            XCTAssertEqual(CommandLineCall(arguments: arguments, environment: read), .refused("\(act), so it cannot run in a read. Run it from a pick or an action."), arguments.joined(separator: " "))
+            XCTAssertNotEqual(CommandLineCall(arguments: arguments, environment: ["OPENSPOT_ID": "tools"]), .refused("\(act), so it cannot run in a read. Run it from a pick or an action."))
+        }
+        XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "read"], environment: read), .clipboardRead)
+        XCTAssertEqual(CommandLineCall(arguments: ["window", "frame"], environment: read), .windowFrame)
+        XCTAssertEqual(CommandLineCall(arguments: ["setting", "set", "folder", "/tmp"], environment: read), .settingSet(spot: "tools", key: "folder", value: "/tmp"))
     }
 
     func testAScreenCaptureIsRefusedInAReadAndTheSourcesAreNot() {

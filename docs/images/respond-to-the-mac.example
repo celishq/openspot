@@ -1,0 +1,5 @@
+#!/bin/sh
+# title=Notes
+# on=sheet.open
+# on=app.front com\.apple\.Notes
+printf 'text=n\ntitle=%s\n' "$OPENSPOT_REASON"

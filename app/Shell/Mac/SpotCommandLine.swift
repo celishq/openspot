@@ -42,6 +42,8 @@ enum SpotCommandLine {
             SpotSheetPicture.run(text: standardInput, path: path, view: view)
         case .renderCard(let size, let path):
             SpotCardPicture.run(text: standardInput, size: size, path: path)
+        case .renderPanel(let path):
+            SpotPanelPicture.run(path: path)
         case .helper(SpotTranslation.capability.name):
             SpotTranslation.serve()
         case .helper(SpotRecording.capability.name):
@@ -93,14 +95,10 @@ enum SpotCommandLine {
             FileHandle.standardError.write(Data("\(reason)\n".utf8))
             exit(1)
         }
-        guard !SpotOutput(text: text).parts.isEmpty else {
-            FileHandle.standardError.write(Data("\(spot.name) shows rows, and `openspot render` draws only a sheet of parts. Run `openspot spot run \(id)` to see its rows, or add `--card wide` to draw its card.\n".utf8))
-            exit(1)
-        }
         SpotSheetPicture.run(text: text, path: path, view: spot.view, spot: spot)
     }
 
-    /// Whether a call runs scripts, which Ctrl-C stops before the command exits with 130 (S13).
+    /// Whether a call runs scripts, which Ctrl-C stops before the command exits with 130 (protocol: The openspot command).
     private static func runsScripts(_ call: CommandLineCall) -> Bool {
         switch call {
         case .check, .checkJSON, .spotRun: true

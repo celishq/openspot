@@ -1,10 +1,10 @@
 import Foundation
 import JavaScriptCore
 
-/// A JavaScript spot that runs inside the app, in a context of its own on a thread of its own (I3). It makes the thread
+/// A JavaScript spot that runs inside the app, in a context of its own on a thread of its own (protocol: Modes). It makes the thread
 /// and loads its file at its first call, and lets go of both after `idle` seconds with no call (A26). Each call runs
-/// `main(args, env, input)` with the three parts of the call and returns the text of a frame (I6), and fails as too slow
-/// past `limit` (I7). `openspot.call(argv, input)` asks the API and returns `{ stdout, code }` (I4).
+/// `main(args, env, input)` with the three parts of the call and returns the text of a frame (protocol: Modes), and fails as too slow
+/// past `limit` (protocol: Modes). `openspot.call(argv, input)` asks the API and returns `{ stdout, code }` (protocol: Modes).
 final class InlineScript: @unchecked Sendable {
     private final class Box: @unchecked Sendable {
         var answer = CommandAnswer()
@@ -18,7 +18,7 @@ final class InlineScript: @unchecked Sendable {
         .map { unsafeBitCast($0, to: TimeLimit.self) }
 
     /// `openspot.frame(object)`, which writes an object as one block, or a list of objects as blocks, with each value
-    /// written as a value: a list repeats its key, and null leaves it out (C8).
+    /// written as a value: a list repeats its key, and null leaves it out (protocol: The calls).
     private static let frame = """
     openspot.frame = function frame(value) {
       if (Array.isArray(value)) return value.map(frame).join("\\n")
@@ -56,8 +56,8 @@ final class InlineScript: @unchecked Sendable {
     /// The variables of the call that runs, which `openspot.call` passes on.
     private var variables: [String: String] = [:]
 
-    /// `tokens` gives the script a token of its spot for as long as it lives (Z2). `careful` runs each process that it starts
-    /// in Careful mode with these uses (Z8).
+    /// `tokens` gives the script a token of its spot for as long as it lives (protocol: Trust). `careful` runs each process that it starts
+    /// in Careful mode with these uses (protocol: Trust).
     init(spot: Spot, api: CommandAPI?, tokens: CallerTokens? = nil, careful: Set<SpotUse>? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
         self.careful = careful.map(CarefulMode.init)
         url = spot.url
@@ -152,7 +152,7 @@ final class InlineScript: @unchecked Sendable {
         return user + Double(info.system_time.seconds) + Double(info.system_time.microseconds) / 1_000_000
     }
 
-    /// Runs `main` with the arguments, the variables and the stdin of the call (I6). A script with no `main` gives an empty
+    /// Runs `main` with the arguments, the variables and the stdin of the call (protocol: Modes). A script with no `main` gives an empty
     /// frame.
     private func run(_ call: InlineCall) throws -> String {
         let context = try loaded()

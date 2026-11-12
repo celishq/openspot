@@ -8,6 +8,7 @@ struct SpotsView: View {
     @State private var scroll = ScrollPosition()
     @State private var scrollOffset: CGFloat = 0
     @State private var dropTarget: String?
+    @Environment(\.spotDrawsBlur) private var drawsBlur
 
     /// The sheet that is built, from its first frame on its card to the end of its close.
     private var sheetID: String? {
@@ -105,9 +106,12 @@ struct SpotsView: View {
         .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
     }
 
+    @ViewBuilder
     private func blur(height: CGFloat, isShown: Bool) -> some View {
         let height = max(height, menuBackdropHeight)
-        return SpotSoftBlur(height: height)
+        Group {
+            if drawsBlur { SpotSoftBlur(height: height) } else { Color.clear }
+        }
             .frame(height: height)
             .transaction { $0.animation = nil }
             .animation(SpotMotion.blurFade(isSheetOpen: sheetOpen)) { $0.opacity(isShown ? 1 : 0) }

@@ -2,8 +2,8 @@
 # title=New spot
 # icon=plus
 # detail=Make your own
-# size=small
-# read=sheet
+# on=sheet.open
+# on=sheet.text
 # uses=spots,clipboard
 folder="${OPENSPOT_PLUGINS:-$OPENSPOT_CONFIG/plugins}"
 
@@ -29,11 +29,12 @@ starter() {
 
 case "$1" in
   read)
-    printf 'search=script\nrecents=false\n'
+    printf 'recents=false\n'
     printf '\nbutton=open\ntitle=Choose\n'
-    printf '\nbutton=guide\ntitle=Read the guide\nscope=command\nclose=true\n'
-    printf '\nbutton=folder\ntitle=Open plugins folder\nscope=command\nclose=true\n'
-    row ask "Copy prompt for AI" "${2:-Type what the spot should do}" sparkles
+    printf '\nbutton=guide\ntitle=Read the guide\nscope=spot\nclose=true\n'
+    printf '\nbutton=folder\ntitle=Open plugins folder\nscope=spot\nclose=true\n'
+    typed=$(sed -n 's/^search=//p' | head -1)
+    row ask "Copy prompt for AI" "${typed:-Type what the spot should do}" sparkles
     row button Button "Runs a command when you press it" hand.tap
     row list List "Shows rows to pick from" list.bullet
     row number "Live value" "Shows a value that updates" clock

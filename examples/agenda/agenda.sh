@@ -2,12 +2,12 @@
 # title=Agenda
 # icon=calendar
 # detail=Today and tomorrow, with your reminders
-# size=large
-# read=panel
-# every=60
+# on=panel.open
+# on=sheet.text
+# on=clock.60
 # uses=calendar
 #
-# setting=calendars
+# field=calendars
 # icon=calendar
 . "$OPENSPOT_SH"
 
@@ -103,7 +103,7 @@ card() {
   fi
   strip=next
   [ -z "$join" ] || strip='next next next join-now'
-  printf 'main=next\nsearch=script\nrecents=false\ngrid=items\ngrid.small=at\ngrid.wide=next\ngrid.strip=%s\n' "$strip"
+  printf 'main=next\nrecents=false\ngrid=items\ngrid.small=at\ngrid.wide=next\ngrid.strip=%s\n' "$strip"
   printf 'grid.square=next next\ngrid.square=next next\ngrid.large=next next next next\ngrid.large=next next next next\n'
   if [ "$late" -gt 0 ]; then
     printf 'grid.square=todo late\n'
@@ -129,7 +129,7 @@ card() {
         if ($i ~ /^detail=/) { due = substr($i, 8); sub(/ · .*/, "", due) }
         if ($i ~ /^tone=/) tone = $i
       }
-      printf "switch=%s\nlook=tick\ntitle=%s\nvalue=false\n\ntext=due-%s\ndetail=%s\n", id, title, id, due
+      printf "switch=%s\ntype=tick\ntitle=%s\nvalue=false\n\ntext=due-%s\ndetail=%s\n", id, title, id, due
       if (tone != "") print tone
       print ""
     }'
@@ -179,15 +179,15 @@ case "$1" in
     card
     printf 'repeat=items\n\n'
     printf 'button=open\ntitle=Open\n\nbutton=join\ntitle=Join call\nshortcut=cmd+j\nclose=true\n\n'
-    printf 'button=tick\ntitle=Mark as done\nshortcut=cmd+shift+c\n\nbutton=calendars\ntitle=Choose calendars\nform=true\nscope=command\n\n'
-    if [ -n "$2" ]; then
-      adding reminders "$2" reminder 'Add reminder'
-      adding calendar "$2" event 'Add event'
+    printf 'button=tick\ntitle=Mark as done\nshortcut=cmd+shift+c\n\nbutton=calendars\ntitle=Choose calendars\nform=true\nscope=spot\n\n'
+    typed=$(value search)
+    if [ -n "$typed" ]; then
+      adding reminders "$typed" reminder 'Add reminder'
+      adding calendar "$typed" event 'Add event'
     fi
     [ "$events" != status=unasked ] || printf 'row=allow-calendar\ntitle=Allow Calendar\ndetail=Show your events here\nicon=calendar\nhides=join\nhides=tick\n\n'
     [ "$reminders" != status=unasked ] || printf 'row=allow-reminders\ntitle=Allow Reminders\ndetail=Show and tick your reminders here\nicon=checklist\nhides=join\nhides=tick\n\n'
-    shift
-    rows "$@"
+    rows "$typed" "$(value form)"
     ;;
   open)
     case "$2" in

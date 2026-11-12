@@ -4,7 +4,7 @@ import XCTest
 /// Proves how a script that stays starts, takes calls and ends.
 @MainActor
 final class SpotRunsStayTests: SpotRunsCase {
-    // MARK: Y2, Y3, Y5
+    // MARK: Modes
 
     private static let form = """
     while IFS= read -r line; do
@@ -17,14 +17,14 @@ final class SpotRunsStayTests: SpotRunsCase {
           if [ "$name" = new ] && [ -z "$filled" ]; then
             printf 'title=New\\nend=%%s\\n\\nfield=a\\ntitle=A\\n---\\n' "$call"
           else
-            printf 'end=%%s\\n\\nbutton=new\\ntitle=New\\nscope=command\\nform=true\\n\\nrow=a\\ntitle=A\\n---\\n' "$call"
+            printf 'end=%%s\\n\\nbutton=new\\ntitle=New\\nscope=spot\\nform=true\\n\\nrow=a\\ntitle=A\\n---\\n' "$call"
           fi
           ;;
       esac
     done
     """
 
-    // MARK: Y7
+    // MARK: Modes
 
     private static let ends = """
     while IFS= read -r line; do
@@ -37,7 +37,7 @@ final class SpotRunsStayTests: SpotRunsCase {
           case "$name" in
             stop) ;;
             go) ( while [ ! -f '%@' ]; do sleep 0.05; done; printf 'end=%%s\\n---\\n' "$id" ) & ;;
-            *) printf 'button=go\\ntitle=Go\\nscope=command\\n\\nrow=a\\ntitle=A\\n\\nend=%%s\\n---\\n' "$id" ;;
+            *) printf 'button=go\\ntitle=Go\\nscope=spot\\n\\nrow=a\\ntitle=A\\n\\nend=%%s\\n---\\n' "$id" ;;
           esac
           name= ;;
       esac
@@ -53,7 +53,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
         sheet.pick(try XCTUnwrap(sheet.list.selectedItem))
 
-        try await wait("the call") { self.blocks(ids: true) == ["call=1\narg=read\nenv.OPENSPOT_REASON=sheet", "call=2\narg=open\narg=a"] }
+        try await wait("the call") { self.blocks(ids: true) == ["call=1\narg=read\nenv.OPENSPOT_REASON=sheet.open", "call=2\narg=open\narg=a"] }
     }
 
     func testACallRunsUntilItsEndOnceTheScriptPrintsEnds() async throws {
@@ -172,7 +172,7 @@ final class SpotRunsStayTests: SpotRunsCase {
           case "$line" in
             call=*) call=${line#call=} ;;
             arg=new) \(untilRelease); printf 'title=New\\n\\nfield=a\\ntitle=A\\n---\\n' ;;
-            arg=read) printf 'end=%s\\n\\nbutton=new\\ntitle=New\\nscope=command\\nform=true\\n---\\n' "$call" ;;
+            arg=read) printf 'end=%s\\n\\nbutton=new\\ntitle=New\\nscope=spot\\nform=true\\n---\\n' "$call" ;;
           esac
         done
         """)
@@ -198,7 +198,7 @@ final class SpotRunsStayTests: SpotRunsCase {
           case "$line" in
             call=*) call=${line#call=} ;;
             arg=new) exit 0 ;;
-            arg=read) printf 'end=%s\\n\\nbutton=new\\ntitle=New\\nscope=command\\nform=true\\n---\\n' "$call" ;;
+            arg=read) printf 'end=%s\\n\\nbutton=new\\ntitle=New\\nscope=spot\\nform=true\\n---\\n' "$call" ;;
           esac
         done
         """)
@@ -217,7 +217,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testASearchReachesTheRunningStayingScript() async throws {
-        try staying(head: "search=script\\n", frame: "row=a\\ntitle=A\\n")
+        try staying(header: "mode=stay\non=sheet.text", frame: "row=a\\ntitle=A\\n")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -225,7 +225,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
         sheet.search("rep")
 
-        try await wait("the search") { self.blocks() == ["arg=read", "arg=read\narg=rep"] }
+        try await wait("the search") { self.blocks() == ["arg=read", "arg=read\ninput=search=rep\\n"] }
         try await wait("the answer") { !sheet.list.isWaiting }
         XCTAssertEqual(log().count, 1)
     }
@@ -238,7 +238,7 @@ final class SpotRunsStayTests: SpotRunsCase {
           case "$line" in
             call=*) call=${line#call=}; n=0; text= ;;
             stop=*) call= ;;
-            arg=*) n=$((n + 1)); [ $n = 2 ] && text=${line#arg=} ;;
+            env.OPENSPOT_VALUE=*) text=${line#env.OPENSPOT_VALUE=} ;;
           esac
           [ -n "$line" ] || [ -z "$call" ] || {
             if [ -n "$text" ]; then printf 'end=%s\\n\\nrow=%s\\ntitle=%s\\n---\\n' "$call" "$text" "$text"; else printf 'end=%s\\n---\\n' "$call"; fi
@@ -248,7 +248,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testAStayingScriptAnswersTheMainSearchWithOnlyTheNewestOfFiveFastTexts() async throws {
-        try script(header: "mode=stay\nanswers=^[0-9]", answering)
+        try script(header: "mode=stay\non=search.text ^[0-9]", answering)
         let sheet = try sheet()
         runs.panelOpened()
         var shown: [[String]] = []
@@ -264,7 +264,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testAnAnswerOfAStayingScriptThatEndsIsNoLongerAwaited() async throws {
-        try script(header: "mode=stay\nanswers=^[0-9]", "while IFS= read -r line; do [ \"$line\" = arg=12 ] && exit 1; done")
+        try script(header: "mode=stay\non=search.text ^[0-9]", "while IFS= read -r line; do [ \"$line\" = env.OPENSPOT_VALUE=12 ] && exit 1; done")
         let sheet = try sheet()
         runs.panelOpened()
 
@@ -275,7 +275,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testThePictureOfAStayingScriptIsNoAnswerOfTheSearch() async throws {
-        try script(header: "mode=always\nanswers=^[0-9]\nread=panel", """
+        try script(header: "mode=always\non=search.text ^[0-9]\non=panel.open", """
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; arg=12) printf 'row=clock\\ntitle=Clock\\n---\\n' ;; esac
           [ -n "$line" ] || printf 'end=%s\\n---\\n' "$call"
@@ -294,12 +294,12 @@ final class SpotRunsStayTests: SpotRunsCase {
         try """
         #!/bin/sh
         # mode=stay
-        # read=sheet
-        # answers=^[0-9]
+        # on=sheet.open
+        # on=search.text ^[0-9]
         . "$OPENSPOT_SH"
         main() {
           case "$1" in
-            read) if [ -n "$2" ]; then printf 'row=%s\\ntitle=Is %s\\n' "$2" "$2"; else printf 'row=a\\ntitle=A\\n'; fi ;;
+            read) if [ -n "$OPENSPOT_VALUE" ]; then printf 'row=%s\\ntitle=Is %s\\n' "$OPENSPOT_VALUE" "$OPENSPOT_VALUE"; else printf 'row=a\\ntitle=A\\n'; fi ;;
           esac
         }
         openspot_serve main "$@"
@@ -398,7 +398,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testAStayingScriptIsWantedByThePanelOnlyWhileItIsOpen() async throws {
-        try staying(header: "mode=stay\nread=panel")
+        try staying(header: "mode=stay\non=panel.open")
         let sheet = try sheet()
         try await pause(0.1)
         XCTAssertEqual(log(), [])
@@ -417,7 +417,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         let sheet = try sheet()
 
         try await wait("the frame") { sheet.list.shown.count == 1 }
-        XCTAssertEqual(blocks(ids: true), ["call=1\narg=read\nenv.OPENSPOT_REASON=panel"])
+        XCTAssertEqual(blocks(ids: true), ["call=1\narg=read\nenv.OPENSPOT_REASON=panel.open"])
 
         runs.panelOpened()
         runs.panelClosed()
@@ -429,7 +429,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testAStayingScriptThatNothingWantsDoesNotStartOnAWake() async throws {
-        try staying(header: "mode=stay\nevery=600")
+        try staying(header: "mode=stay\non=clock.600")
         _ = try scanned()
 
         runs.woke()
@@ -440,7 +440,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
     func testAStayingScriptWithANumberGetsAReadOnItsTimer() async throws {
         menuBar.insert("script")
-        try staying(header: "mode=stay\nevery=5", frame: "text=n\\ntitle=3\\n")
+        try staying(header: "mode=stay\non=clock.5", frame: "text=n\\ntitle=3\\n")
         _ = try scanned()
         try await wait("the mark") { !self.runs.trayMarks.isEmpty }
         XCTAssertEqual(blocks(), ["arg=read"])
@@ -621,18 +621,19 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testANewerSearchStopsTheOlderOneOfAStayingScriptAndItsLateAnswerChangesNothing() async throws {
-        try script(header: "mode=stay", """
+        try script(header: "mode=stay\non=sheet.text", """
         while IFS= read -r line; do
           printf '%s\\n' "$line" >> '\(path("blocks"))'
           case "$line" in
             call=*) call=${line#call=}; args= ;;
             arg=*) args="$args ${line#arg=}" ;;
+            env.OPENSPOT_VALUE=*) args="$args ${line#env.OPENSPOT_VALUE=}" ;;
             stop=*) touch '\(path("stopped"))'; args=stop ;;
             '')
               case "$args" in
-                ' read a') ( \(untilRelease); printf 'search=script\\nend=%s\\n\\nrow=o\\ntitle=Old\\n---\\n' "$call"; printf 'toast=Done\\n---\\n' ) & ;;
-                ' read ab') printf 'search=script\\nend=%s\\n\\nrow=n\\ntitle=New\\n---\\n' "$call" ;;
-                ' read') printf 'search=script\\nend=%s\\n\\nrow=x\\ntitle=X\\n---\\n' "$call" ;;
+                ' read a') ( \(untilRelease); printf 'end=%s\\n\\nrow=o\\ntitle=Old\\n---\\n' "$call"; printf 'toast=Done\\n---\\n' ) & ;;
+                ' read ab') printf 'end=%s\\n\\nrow=n\\ntitle=New\\n---\\n' "$call" ;;
+                ' read') printf 'end=%s\\n\\nrow=x\\ntitle=X\\n---\\n' "$call" ;;
               esac ;;
           esac
         done
@@ -643,7 +644,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         sheet.open {}
         try await wait("the first rows") { sheet.list.search == .script && sheet.list.shown.count == 1 }
         sheet.search("a")
-        try await wait("the older search") { self.blocks().contains("arg=read\narg=a") }
+        try await wait("the older search") { self.blocks().contains("arg=read\ninput=search=a\\n") }
 
         sheet.search("ab")
 
@@ -658,7 +659,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     private func slowStaying(limit: TimeInterval = 1) throws -> (sheet: SpotRun, told: () -> [String]) {
         runs.quit()
         runs = SpotRuns(readLimit: limit, now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50))
-        try script(header: "mode=stay\nread=sheet", """
+        try script(header: "mode=stay\non=sheet.open", """
         first=; [ -f '\(path("started"))' ] || first=1; touch '\(path("started"))'
         while IFS= read -r line; do
           printf '%s\\n' "$line" >> '\(path("blocks"))'

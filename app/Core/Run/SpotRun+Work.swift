@@ -77,7 +77,7 @@ extension SpotRun {
         work(action, key: Self.cardKey, as: Work(undo: before))
     }
 
-    /// Takes a change or a press of a component that the card draws (U5). The card shows a new value at once, and the call
+    /// Takes a change or a press of a component that the card draws (protocol: Layouts). The card shows a new value at once, and the call
     /// sends `<id> [value]`.
     public func setCardPart(_ id: String, to value: String?) {
         guard let value else { return work(.press(id), key: Self.key(part: id)) }
@@ -95,7 +95,7 @@ extension SpotRun {
         return true
     }
 
-    /// Tells the script of the rows that a drag took out to another app (O2).
+    /// Tells the script of the rows that a drag took out to another app (protocol: Files out).
     public func dragged(_ items: [SpotItem]) {
         guard !items.isEmpty else { return }
         waitingFiles.append(.drag(runs: items.map(\.run)))
@@ -132,7 +132,7 @@ extension SpotRun {
 
     /// Runs a pick of a row. A second pick of a running row stops its call. In a list that the script searches, stdin holds
     /// the text of the search, so that a pick that comes before the read of the last text still gets it. A row with `to` goes
-    /// to that spot instead, with the row on stdin (J1).
+    /// to that spot instead, with the row on stdin (protocol: Rows).
     public func pick(_ item: SpotItem) {
         if let to = item.to {
             guard let other = runs.sheets[to] else { return fail(SpotError.failed(1, "\(spot.name) hands this row to `\(to)`, which is not on. Turn it on, then try again.")) }
@@ -255,7 +255,7 @@ extension SpotRun {
     }
 
     /// Runs a call that does work. It has no time limit, and it goes on with the sheet and the panel closed. A stopped call
-    /// changes nothing. After one that ended with no picture shown, a script that runs once is read once (M4).
+    /// changes nothing. After one that ended with no picture shown, a script that runs once is read once (protocol: Frames).
     private func work(_ action: SpotAction, key: String, input: String? = nil, as work: Work = Work()) {
         answered = nil
         link.send(Call(action: action, key: key, input: input, purpose: .work(work)))

@@ -11,7 +11,7 @@ public final class SpotRun {
     public enum Report: Sendable {
         case toast(String)
         case failure(String)
-        /// A failure with a link that opens its fix (R9).
+        /// A failure with a link that opens its fix (protocol: The life of a call).
         case failureWithFix(String, URL)
         case frame(String)
         /// The rows that a search finds, or the state, changed.
@@ -35,10 +35,10 @@ public final class SpotRun {
     /// What a call asks for, which says what its answer replaces. A read of a list that the script searches carries the text
     /// it was sent with.
     enum Ask {
-        /// `tells` says whether its failure shows as a toast, which a read at the opening of the panel does not (R13).
+        /// `tells` says whether its failure shows as a toast, which a read at the opening of the panel does not (protocol: The life of a call).
         case read(generation: Int?, reports: Bool, query: String = "", tells: Bool = true)
         case search(String)
-        /// The rows that answer a text of the main search, which leave the spot and its sheet as they are (A2).
+        /// The rows that answer a text of the main search, which leave the spot and its sheet as they are (protocol: Places).
         case answer(String)
 
         var isAnswer: Bool {
@@ -86,7 +86,7 @@ public final class SpotRun {
     static let globalKey = "global"
 
     public internal(set) var spot: Spot
-    /// The rows that the script gave for the text of the main search, which stay until the newest text is answered (A3).
+    /// The rows that the script gave for the text of the main search, which stay until the newest text is answered (protocol: Places).
     public internal(set) var answers: [SpotItem] = []
     /// The text of the main search that the script was last asked to answer, and the text that its rows answer.
     var answerQuery = ""
@@ -232,7 +232,7 @@ public final class SpotRun {
     @ObservationIgnored var eventAgain: ReadReason?
     @ObservationIgnored var pauses: [String: Task<Void, Never>] = [:]
     @ObservationIgnored var editing: String?
-    /// The drops and the drags of files that wait for the running work, each in turn (D4, O2).
+    /// The drops and the drags of files that wait for the running work, each in turn (protocol: The calls, Files out).
     @ObservationIgnored var waitingFiles: [SpotAction] = []
     @ObservationIgnored var waitingKeys: [String] = []
 
@@ -278,7 +278,7 @@ public final class SpotRun {
     }
 
     /// Ends a staying script that runs, so that it starts again with the mode of the runs while something wants it, and
-    /// lets an inline script load again at its next call (Z8).
+    /// lets an inline script load again at its next call (protocol: Trust).
     func restartScript() {
         guard spot.mode.stays || spot.mode == .inline, link.isReachable else { return }
         link.end()

@@ -1,0 +1,29 @@
+[[spots]]
+id = "now-playing/now-playing"
+size = "large"
+grid = true
+
+[[spots]]
+id = "system"
+size = "large"
+grid = true
+
+[[spots]]
+id = "weather"
+size = "small"
+grid = true
+
+[[spots]]
+id = "focus"
+size = "small"
+grid = true
+
+[[spots]]
+id = "coffee"
+size = "small"
+grid = true
+
+[[spots]]
+id = "calendar/calendar"
+size = "small"
+grid = true

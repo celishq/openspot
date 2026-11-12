@@ -5,9 +5,9 @@ public struct SpotCheck: Sendable {
     public let folder: SpotFolder
     public let timeout: TimeInterval
     public let views: ViewLibrary
-    /// The most uses that Careful mode leaves each read, or nil to run each one as the person (Z8).
+    /// The most uses that Careful mode leaves each read, or nil to run each one as the person (protocol: Trust).
     let careful: Set<SpotUse>?
-    /// The record of the app, which then knows each read's calls of `openspot` as its spot's (Z2), or nil for one of its own.
+    /// The record of the app, which then knows each read's calls of `openspot` as its spot's (protocol: Trust), or nil for one of its own.
     let tokens: CallerTokens?
 
     public init(folder: SpotFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard()) {
@@ -56,7 +56,7 @@ public struct SpotCheck: Sendable {
             return [Finding(spot: nil, file: folder.url.path, fault: "Cannot read \(folder.url.path).")]
         }
         var findings = scan.refused.map { Finding(spot: $0.file, file: folder.file(of: $0.file)?.path, fault: $0.reason) }
-        let known = Set([SpotEvent.frontApp, SpotEvent.clipboard, SpotEvent.screenWake, SpotEvent.appUpdate] + scan.scripts.flatMap(\.emits))
+        let known = Set(SpotEvent.known + scan.scripts.flatMap(\.emits))
         for script in scan.scripts {
             for event in script.read?.events ?? [] where !known.contains(event) {
                 let fault = "\(script.name) reads on \(event), which Openspot does not raise and no spot names in its emits. Add emits=\(event) to the spot that raises it, or fix the name"
@@ -78,7 +78,8 @@ public struct SpotCheck: Sendable {
                 let output = SpotOutput(text: text)
                 _ = try script.state(of: output)
                 if script.read?.seconds != nil, MetricValue(output: output) == nil { throw SpotError.badMetric }
-                findings += output.errors.map { found("cannot read the item \($0)") }
+                findings += output.retired.map(found)
+                findings += output.unreadable.map { found("cannot read the item \($0)") }
                 findings += Self.brokenBlocks(in: text).map(found)
                 findings += output.partFaults.map(found)
             } catch {
@@ -105,10 +106,10 @@ public struct SpotCheck: Sendable {
     }
 
     /// The faults of blocks that a value with a new line breaks: a line with no `=`, or a key twice that only a list repeats
-    /// (C8).
+    /// (protocol: The calls).
     static func brokenBlocks(in text: String) -> [String] {
         let fix = "as a value with a new line prints. Print each value from data with openspot_kv, openspot_row or esc"
-        let lists: Set<String> = ["grid", "value", "hides", "keyword", "color"]
+        let lists: Set<String> = ["grid", "value", "hides", "color"]
         var faults: [String] = []
         let blocks = text.components(separatedBy: "\n").split { $0.isEmpty || $0 == SheetFrameReader.mark }
         for block in blocks {

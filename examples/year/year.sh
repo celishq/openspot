@@ -2,7 +2,7 @@
 # title=Year
 # icon=calendar
 # detail=The months of this year
-# read=panel
+# on=panel.open
 # view=year.swift
 [ "$1" = read ] || exit 0
 year=$(date +%Y)

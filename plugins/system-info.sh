@@ -1,7 +1,7 @@
 #!/bin/sh
 # title=System details
 # icon=gauge.with.dots.needle.50percent
-# read=sheet
+# on=sheet.open
 here=$(dirname "$0")
 . "$OPENSPOT_SH"
 

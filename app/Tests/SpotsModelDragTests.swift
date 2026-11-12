@@ -15,15 +15,17 @@ final class SpotsModelDragTests: XCTestCase {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-drag-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: core, withIntermediateDirectories: true)
+        try "[[spots]]\nid = \"coin\"\nsize = \"small\"\n\n[[spots]]\nid = \"timer\"\nsize = \"small\"\n\n[[spots]]\nid = \"d\"\nsize = \"small\"\n"
+            .write(to: folder.appendingPathComponent("defaults.toml"), atomically: true, encoding: .utf8)
         suite = "openspot-drag-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         let host = TestHost()
         self.host = host
         model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2, prepare: { await host.prepare($0, glyphs: $1) }))
         host.model = model
-        for (name, size) in [("a", "wide"), ("b", "wide"), ("c", "wide"), ("d", "small")] {
+        for name in ["a", "b", "c", "d"] {
             let file = plugins.appendingPathComponent("\(name).sh")
-            try "#!/bin/sh\n# size=\(size)\n".writeScript(to: file)
+            try "#!/bin/sh\n".writeScript(to: file)
             try FileManager.default.setAttributes([.creationDate: Date(timeIntervalSince1970: 1_700_000_000)], ofItemAtPath: file.path)
         }
         model.reload()
@@ -60,7 +62,8 @@ final class SpotsModelDragTests: XCTestCase {
                 let place = trash.appendingPathComponent(url.lastPathComponent)
                 try FileManager.default.moveItem(at: url, to: place)
                 return place
-            }
+            },
+            defaultConfig: folder.appendingPathComponent("defaults.toml")
         )
     }
 
@@ -389,25 +392,25 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testASpotDraggedFromTheDockMakesRoomOnTheGridAndAReleaseTurnsItOnThere() throws {
-        try "#!/bin/sh\n# size=wide\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("clock.sh"))
         model.reload()
         model.dockFrame = dock
         model.showStoreSection(.store)
-        let translation = dockMove("timer", to: leftHalf(of: "b"))
+        let translation = dockMove("clock", to: leftHalf(of: "b"))
 
-        model.dragDockSpot("timer", by: translation)
-        XCTAssertEqual(model.carry?.entry.id, "timer")
-        XCTAssertEqual(order, ["a", "timer", "b", "c", "d"])
+        model.dragDockSpot("clock", by: translation)
+        XCTAssertEqual(model.carry?.entry.id, "clock")
+        XCTAssertEqual(order, ["a", "clock", "b", "c", "d"])
 
         model.dropDockSpot(by: translation)
         XCTAssertNil(model.carry)
-        XCTAssertEqual(order, ["a", "timer", "b", "c", "d"])
+        XCTAssertEqual(order, ["a", "clock", "b", "c", "d"])
         XCTAssertEqual(offInStore, [])
-        XCTAssertEqual(savedOrder(), ["a", "timer", "b", "c", "d"])
+        XCTAssertEqual(savedOrder(), ["a", "clock", "b", "c", "d"])
     }
 
     func testASpotDroppedFromTheDockKeepsItsSizeOnTheGrid() throws {
-        try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.sh"))
         model.reload()
         model.dockFrame = dock
         model.showStoreSection(.store)
@@ -426,7 +429,7 @@ final class SpotsModelDragTests: XCTestCase {
 
     func testASpotOfTheDockReleasedOffTheGridGlidesBackToItsTileAndStaysOff() throws {
         host.heldEnds = []
-        try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.sh"))
         model.reload()
         model.dockFrame = dock
         model.showStoreSection(.store)
@@ -527,7 +530,7 @@ final class SpotsModelDragTests: XCTestCase {
     func testTheGridGrowsDownPastTheRowsThePanelShows() throws {
         model.endEditing()
         for name in ["e", "f", "g", "h", "i", "j", "k", "l", "m"] {
-            try "#!/bin/sh\n# size=wide\n".writeScript(to: plugins.appendingPathComponent("\(name).sh"))
+            try "#!/bin/sh\n".writeScript(to: plugins.appendingPathComponent("\(name).sh"))
         }
         model.reload()
         model.beginEditing()
@@ -546,8 +549,8 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testTheStoreShowsEverySpotWithItsStateAndOrigin() throws {
-        try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
-        try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("coin.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("coin.sh"))
         model.setOnGrid(false, for: "d")
 
         model.endEditing()
@@ -562,7 +565,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testEachSectionOfTheStoreShowsItsSpots() throws {
-        try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.sh"))
         model.setOnGrid(false, for: "d")
         model.reload()
 
@@ -576,7 +579,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testTheNextStepAddsASpotToSearchThenToTheGridAndTheMenuTakesItBack() throws {
-        try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.sh"))
         model.reload()
         let state = { self.model.dock.items.first { $0.id == "timer" }?.state }
 
@@ -591,7 +594,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testTurnOnAllTurnsOnEachSpotThatIsOff() throws {
-        try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.sh"))
         model.turnOff("a")
 
         model.turnOnAll()
@@ -602,7 +605,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testAClickOnAStoreCardOpensItsListingAndEscapeClosesIt() async throws {
-        try "#!/bin/sh\n# size=small\n# detail=Counts down\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        try "#!/bin/sh\n# detail=Counts down\n".writeScript(to: core.appendingPathComponent("timer.sh"))
         try "Counts down.".write(to: core.appendingPathComponent("timer.md"), atomically: true, encoding: .utf8)
         model.reload()
         model.showStoreSection(.store)
@@ -672,7 +675,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testACoreSpotIsNotPublished() async throws {
-        try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.sh"))
         model.reload()
 
         let result = await model.publish("timer")
@@ -732,7 +735,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testACoreSpotTurnsOnFromTheDockAndOffIntoIt() throws {
-        try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.sh"))
         model.reload()
         XCTAssertEqual(offInStore, ["timer"])
 
@@ -747,7 +750,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testTheDockDeletesOnlyASpotOfThePluginsFolderAndUndoPutsItBack() throws {
-        try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.sh"))
         model.turnOff("a")
 
         model.delete("timer")

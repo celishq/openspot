@@ -12,7 +12,7 @@ struct SpotRowsView: View {
     var onPoint: (SpotItem) -> Void = { _ in }
     /// Reads the selected row where it is called. Nil reads it from the list.
     var selection: (() -> Int)?
-    /// Takes the rows whose files a drag took out to another app (O2).
+    /// Takes the rows whose files a drag took out to another app (protocol: Files out).
     var onDragOut: ([SpotItem]) -> Void = { _ in }
     @State private var position = ScrollPosition(edge: .top)
     @State private var reading = GridScrollReading()

@@ -1,6 +1,6 @@
 import Foundation
 
-/// The stop of a command that runs scripts in the terminal, such as `openspot spot run` or `openspot check` (S13). It knows
+/// The stop of a command that runs scripts in the terminal, such as `openspot spot run` or `openspot check` (protocol: The openspot command). It knows
 /// the process group of each script that this program runs, and on Ctrl-C or the terminate signal each group gets the
 /// terminate signal, then the kill signal, and the program exits with 130.
 public enum TerminalStop {

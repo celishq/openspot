@@ -1,7 +1,7 @@
 import Foundation
 
-/// The spots that `openspot spot list` prints as JSON or as blocks: each script that the app loads, with its commands, its
-/// settings and their keys, or with `core` each spot that comes with the app and that the person turns on or off. It also
+/// The spots that `openspot spot list` prints as JSON or as blocks: each script that the app loads, with its buttons, its
+/// fields and their keys, or with `core` each spot that comes with the app and that the person turns on or off. It also
 /// prints the values that the spots keep, for `openspot setting list`.
 struct SpotList {
     private struct Loaded: Encodable {
@@ -16,8 +16,8 @@ struct SpotList {
         let name: String
         let icon: String
         let detail: String?
-        let commands: [Offer]
-        let settings: [Offer]
+        let buttons: [Offer]
+        let fields: [Offer]
         let float: Bool
         let floatKey: String?
         let menubar: Bool
@@ -46,10 +46,10 @@ struct SpotList {
                 name: script.name,
                 icon: Self.picture(of: script),
                 detail: script.subtitle,
-                commands: script.offers.map { offer in
+                buttons: script.offers.map { offer in
                     Loaded.Offer(id: offer.id, title: offer.title, icon: offer.icon, key: keys.first { $0.spot == script.id && $0.act == .command(offer.id) }?.trigger.text)
                 },
-                settings: script.settings.map { Loaded.Offer(id: $0.id, title: $0.title, icon: $0.icon, key: nil) },
+                fields: script.settings.map { Loaded.Offer(id: $0.id, title: $0.title, icon: $0.icon, key: nil) },
                 float: script.offersFloat,
                 floatKey: keys.first { $0.spot == script.id && $0.act == .float }?.trigger.text,
                 menubar: script.canShowInMenuBar,
@@ -58,8 +58,8 @@ struct SpotList {
         })
     }
 
-    /// Each script of the scan as a `spot` block, with a `command` block for each of its commands and a `setting` block for
-    /// each of its settings after it (K8).
+    /// Each script of the scan as a `spot` block, with a `button` block for each of its commands and a `field` block for
+    /// each of its settings after it (protocol: The openspot command).
     func loadedFrame() throws -> String {
         let scan = try folder.keptScan()
         let keys = config.keys
@@ -70,9 +70,9 @@ struct SpotList {
                 ("menubar", String(script.canShowInMenuBar)), ("inMenuBar", String(config.arrangement.menuBar.contains(script.id)))
             ])
             let commands = script.offers.map { offer in
-                Self.block([("command", offer.id), ("title", offer.title), ("icon", offer.icon), ("key", keys.first { $0.spot == script.id && $0.act == .command(offer.id) }?.trigger.text)])
+                Self.block([("button", offer.id), ("title", offer.title), ("icon", offer.icon), ("key", keys.first { $0.spot == script.id && $0.act == .command(offer.id) }?.trigger.text)])
             }
-            let settings = script.settings.map { Self.block([("setting", $0.id), ("title", $0.title), ("icon", $0.icon)]) }
+            let settings = script.settings.map { Self.block([("field", $0.id), ("title", $0.title), ("icon", $0.icon)]) }
             return ([spot] + commands + settings).joined()
         }.joined()
     }
@@ -82,7 +82,7 @@ struct SpotList {
         try Self.json(choices.map { Choice(id: $0.id, name: $0.spot.name, icon: Self.picture(of: $0.spot), detail: $0.spot.subtitle, on: $0.on, own: $0.own) })
     }
 
-    /// Each core spot that a person can turn on, as a `spot` block (K8).
+    /// Each core spot that a person can turn on, as a `spot` block (protocol: The openspot command).
     func coreFrame() -> String {
         choices.map { choice in
             Self.block([("spot", choice.id), ("name", choice.spot.name), ("icon", Self.picture(of: choice.spot)), ("detail", choice.spot.subtitle), ("on", String(choice.on)), ("own", String(choice.own))])
@@ -104,9 +104,9 @@ struct SpotList {
         try Self.json(config.settings.map { ["spot": $0.spot, "key": $0.key, "value": $0.value] })
     }
 
-    /// Each value that a spot keeps as a `setting` block, in the order of the file (K8).
+    /// Each value that a spot keeps as a `field` block, in the order of the file (protocol: The openspot command).
     func valuesFrame() -> String {
-        config.settings.map { Self.block([("setting", $0.key), ("spot", $0.spot), ("value", $0.value)]) }.joined()
+        config.settings.map { Self.block([("field", $0.key), ("spot", $0.spot), ("value", $0.value)]) }.joined()
     }
 
     /// One block of the lines that have a value, and a blank line after it.

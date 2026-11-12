@@ -104,7 +104,7 @@ final class SpotTests: XCTestCase {
 
     func testPassesTheSearchToAList() async throws {
         let command = try writeCommand(kind: .list, """
-        printf 'row=%s\\ntitle=%s\\n' "$1" "$2"
+        printf 'row=%s\\ntitle=%s\\n' "$1" "$(sed -n 's/^search=//p')"
         """)
 
         let lines = try await command.items(query: "rep", timeout: 5)

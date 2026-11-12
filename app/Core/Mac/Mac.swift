@@ -1,7 +1,7 @@
 import Foundation
 
 /// What the Mac gives through the frameworks that Core does not import: EventKit, the apps that open, the settings of the
-/// app, the events of the Mac with the count of changes of the clipboard (B2), the clipboard, the window in front, the
+/// app, the events of the Mac with the count of changes of the clipboard (protocol: Events), the clipboard, the window in front, the
 /// screen, translation and the picks of a colour and a folder. A test gives a Mac of its own. A member with no `@MainActor` runs on the thread of its call, never on the main thread of the app.
 public protocol Mac: AnyObject, Sendable {
     func eventStore() -> any EventStore

@@ -17,13 +17,11 @@ final class SpotOutputTests: XCTestCase {
         XCTAssertEqual(kept.toast, "Hi")
     }
 
-    func testAScriptPrintsWhoSearchesItsRowsAndWhetherRecentPicksMoveUp() {
+    func testAScriptPrintsWhetherRecentPicksMoveUp() {
         let plain = SpotOutput(text: "row=a\ntitle=A\n")
-        let printed = SpotOutput(text: "search=script\nrecents=false\n\nrow=a\ntitle=A\n")
+        let printed = SpotOutput(text: "recents=false\n\nrow=a\ntitle=A\n")
 
-        XCTAssertEqual(plain.search, .local)
         XCTAssertTrue(plain.keepsRecent)
-        XCTAssertEqual(printed.search, .script)
         XCTAssertFalse(printed.keepsRecent)
         XCTAssertEqual(printed.errors, [])
     }
@@ -63,6 +61,20 @@ final class SpotOutputTests: XCTestCase {
         XCTAssertEqual(output.errors, ["detail=Late"])
     }
 
+    func testABlockOfAnUnknownKindBeforeTheHeadIsSkippedAndReported() {
+        let output = SpotOutput(text: "badge=new\ntitle=New\n\ntitle=Mine\ntoast=Saved\n\ntext=a\ntitle=A\n")
+        let alone = SpotOutput(text: "badge=new\ntitle=New\n")
+
+        XCTAssertEqual(output.summary?.value("title"), "Mine")
+        XCTAssertEqual(output.toast, "Saved")
+        XCTAssertEqual(output.parts.map(\.id), ["a"])
+        XCTAssertTrue(output.isPicture)
+        XCTAssertEqual(output.errors, ["badge=new"])
+        XCTAssertNil(alone.summary)
+        XCTAssertFalse(alone.isPicture)
+        XCTAssertEqual(alone.errors, ["badge=new"])
+    }
+
     func testAnEffectIsAKeyOfTheOneHeadAtAnyPlace() {
         let head = SpotOutput(text: "toast=Saved\nlink=https://example.com\n")
         let after = SpotOutput(text: "row=a\ntitle=A\n\ntoast=Saved\nlink=https://example.com\n")
@@ -83,7 +95,7 @@ final class SpotOutputTests: XCTestCase {
         button=new
         title=New
         shortcut=cmd+n
-        scope=command
+        scope=spot
         form=true
 
         button=delete
@@ -93,15 +105,19 @@ final class SpotOutputTests: XCTestCase {
         """)
 
         XCTAssertEqual(output.actions, [
-            CommandAction(id: "new", title: "New", key: ActionKey(text: "cmd+n"), scope: .command, isForm: true),
+            CommandAction(id: "new", title: "New", key: ActionKey(text: "cmd+n"), scope: .spot, isForm: true),
             CommandAction(id: "delete", title: "Delete", after: .close, confirm: "Delete this?")
         ])
     }
 
-    func testAnActionItCannotReadIsReportedByItsFirstLine() {
-        XCTAssertEqual(SpotOutput(text: "button=a\n").errors, ["button=a"])
-        XCTAssertEqual(SpotOutput(text: "button=b\ntitle=B\nshortcut=ctrl+b\n").errors, ["button=b"])
-        XCTAssertEqual(SpotOutput(text: "button=c\ntitle=C\nscope=world\n").errors, ["button=c"])
+    func testAnActionWithAnUnknownScopeIsAFaultThatNamesTheScopes() {
+        let old = SpotOutput(text: "button=b\ntitle=B\nscope=command\n")
+        let unknown = SpotOutput(text: "button=c\ntitle=C\nscope=world\n")
+
+        XCTAssertEqual(old.actions, [])
+        XCTAssertEqual(old.partFaults, ["the button b has scope=command, which Openspot no longer reads. Write scope=spot"])
+        XCTAssertEqual(unknown.partFaults, ["the button c has an unknown scope: world. Use item or spot"])
+        XCTAssertEqual(unknown.errors, [])
     }
 
     func testTheOpenActionSetsTheWordForEnterAndThePick() {
@@ -149,7 +165,7 @@ final class SpotOutputTests: XCTestCase {
         XCTAssertEqual(SpotOutput(text: "").kind, .launch)
         XCTAssertEqual(SpotOutput(text: "title=Hi\n").kind, .launch)
         XCTAssertEqual(SpotOutput(text: "switch=power\nvalue=true\n").kind, .toggle)
-        XCTAssertEqual(SpotOutput(text: "slider=volume\nvalue=7\n").kind, .slider)
+        XCTAssertEqual(SpotOutput(text: "field=volume\ntype=slider\nvalue=7\n").kind, .slider)
         XCTAssertEqual(SpotOutput(text: "switch=power\nvalue=true\n\nrow=a\ntitle=A\n").kind, .list)
         XCTAssertEqual(SpotOutput(text: "button=new\ntitle=New\n").kind, .list)
     }
@@ -162,7 +178,7 @@ final class SpotOutputTests: XCTestCase {
         XCTAssertEqual(try kind("text=m\ntitle=3\n"), .value)
         XCTAssertEqual(try kind("text=m\ntitle=3\nicon=star\ntone=good\n"), .value)
         XCTAssertEqual(try kind("text=m\ntitle=Up\ntone=good\n"), .status)
-        XCTAssertEqual(try kind("gauge=m\ntitle=84%\nvalue=0.84\n"), .gauge)
+        XCTAssertEqual(try kind("graph=m\ntitle=84%\nvalue=0.84\n"), .gauge)
         XCTAssertEqual(try kind("graph=m\ntitle=2\nvalue=1\nvalue=2\n"), .trend)
         XCTAssertEqual(try kind("row=Build\n"), .rows)
     }
@@ -237,9 +253,15 @@ final class SpotOutputTests: XCTestCase {
     }
 
     func testARowReadsEachKeyword() {
-        let output = SpotOutput(text: "row=😀\ntitle=grinning face\nkeyword=happy\nkeyword=smile\n")
+        let output = SpotOutput(text: "row=😀\ntitle=grinning face\nkeywords=happy, big smile,,\n")
 
-        XCTAssertEqual(output.items.first?.keywords, ["happy", "smile"])
+        XCTAssertEqual(output.items.first?.keywords, ["happy", "big smile"])
+    }
+
+    func testAKeywordLineInARowNamesTheList() {
+        let output = SpotOutput(text: "row=a\ntitle=A\nkeyword=happy\n")
+
+        XCTAssertEqual(output.retired, ["The row a has keyword=happy, which Openspot no longer reads. Write keywords=a, b."])
     }
 
     func testATemplateOrASpotBlockIsSkippedAndReportedWhereverItIs() {
@@ -266,5 +288,32 @@ final class SpotOutputTests: XCTestCase {
         let row = try XCTUnwrap(output.items.first)
         XCTAssertEqual(row, SpotItem(title: "R", run: "r"))
         XCTAssertTrue(output.partFaults.contains("the row r has as=, which Openspot no longer reads. A row draws its own keys"), "\(output.partFaults)")
+    }
+
+    func testAGraphOfOneValueIsAGaugeAFieldTypeIsItsInputAndAnOldKindIsReported() {
+        let output = SpotOutput(text: "graph=g\nvalue=0.5\n\nfield=s\ntype=slider\nvalue=40\n\nfield=k\ntype=hotkey\nvalue=ctrl+k\n\nswitch=t\ntype=tick\n\nswitch=w\nlook=tick\n\ngauge=old\nvalue=1\n")
+
+        XCTAssertEqual(output.parts.map(\.control), [.progress(level: 50), .slider(level: 40, min: 0, max: 100), .shortcut("ctrl+k"), .toggle(false), .toggle(false)])
+        XCTAssertEqual(output.parts.map(\.look), [nil, nil, nil, .tick, nil])
+        XCTAssertEqual(output.errors, ["gauge=old"])
+    }
+
+    func testSearchScriptInTheHeadNamesTheEventThatTookItsPlace() {
+        let output = SpotOutput(text: "search=script\ngrid=rows\n\nrow=a\ntitle=A\n")
+
+        XCTAssertEqual(output.retired, ["The head has search=script, which Openspot no longer reads. Write on=sheet.text in the header."])
+    }
+
+    func testEachOldOutputWordNamesTheWordThatTookItsPlace() {
+        let output = SpotOutput(text: "gauge=g\nvalue=1\n\nslider=s\nvalue=4\n\nhotkey=k\nvalue=ctrl+k\n\nswitch=t\nlook=tick\n")
+
+        XCTAssertEqual(output.retired, [
+            "gauge=g is now a graph. Write graph=g with one value from 0 to 1.",
+            "slider=s is now a field. Write field=s with type=slider.",
+            "hotkey=k is now a field. Write field=k with type=hotkey.",
+            "The switch t has look=tick, which Openspot no longer reads. Write type=tick."
+        ])
+        XCTAssertEqual(output.sheetFaults.filter { $0.contains("cannot read the block") }, [])
+        XCTAssertTrue(output.sheetFaults.contains("slider=s is now a field. Write field=s with type=slider."))
     }
 }

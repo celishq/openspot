@@ -47,7 +47,7 @@ extension SpotsModel {
         sheets[id]?.setLevel(value)
     }
 
-    /// Sends a change or a press of a component that a card draws (U5).
+    /// Sends a change or a press of a component that a card draws (protocol: Layouts).
     public func setCardPart(_ id: String, _ part: String, to value: String?) {
         sheets[id]?.setCardPart(part, to: value)
     }
@@ -126,7 +126,7 @@ extension SpotsModel {
 
     public func run(_ entry: Entry) {
         if let item = entry.item, let list = entries.first(where: { $0.id == entry.spot.id }) {
-            if item.shortcut != nil, openList != list.id {
+            if item.records, openList != list.id {
                 open(list.id, moving: true)
             }
             pick(item, of: list)

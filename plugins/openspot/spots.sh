@@ -2,8 +2,7 @@
 # title=Spots
 # icon=puzzlepiece.extension
 # detail=Edit Spots
-# size=small
-# keyword=edit spots
+# keywords=edit spots
 case "$1" in
   open) exec openspot spot store ;;
   *)

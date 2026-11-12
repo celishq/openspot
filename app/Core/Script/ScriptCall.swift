@@ -35,7 +35,7 @@ public final class ScriptCall: Identifiable {
         action.arguments.first != SpotAction.read.arguments.first
     }
 
-    /// The part of its ring that is full, from 0 to 1, from `progress` in its status (R12). With none, a spinner shows.
+    /// The part of its ring that is full, from 0 to 1, from `progress` in its status (protocol: Frames). With none, a spinner shows.
     public var fill: Double? {
         status?.number("progress").map { min(max($0, 0), 1) }
     }

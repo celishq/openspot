@@ -1,11 +1,11 @@
 import Foundation
 
-/// The socket of the API in the config folder, which answers each `openspot` call while the app runs (S1). It speaks
+/// The socket of the API in the config folder, which answers each `openspot` call while the app runs (protocol: The openspot command). It speaks
 /// JSON-RPC 2.0 with one JSON object on each line, as the stdio transport of MCP frames it. A call is a request
 /// (`CommandRequest`). The app answers with a notification `stdout` or `stderr` for each piece that the call prints, a
 /// notification `stdin` once the call reads stdin, and then a result with the `code`, or an error for a call that the API
 /// leaves to a process of its own, which the caller then starts. The caller answers `stdin` with notifications `stdin` whose
-/// params hold `text`, and then one whose params hold `end`. A caller that closes its connection stops its call (S13).
+/// params hold `text`, and then one whose params hold `end`. A caller that closes its connection stops its call (protocol: The openspot command).
 public final class CommandSocket: @unchecked Sendable {
     public static let name = SocketPath.name
     /// The JSON-RPC code of a line that is not a request.

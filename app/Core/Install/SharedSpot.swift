@@ -116,7 +116,7 @@ public struct SharedSpot: Equatable, Sendable {
     }
 
     /// This spot with the program of each Swift script and the library of each view that has none, so that a Mac with no
-    /// Swift tools can run it (V7).
+    /// Swift tools can run it (protocol: Views).
     public func compiled(by program: SwiftProgram = SwiftProgram(), views: ViewLibrary = .standard()) async throws -> SharedSpot {
         var all = files
         for (file, path) in uncompiled {

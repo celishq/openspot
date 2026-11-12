@@ -1,0 +1,9 @@
+// title=Calculator
+// icon=equal.square
+// on=search.text ^[0-9(]
+// uses=clipboard
+function main(args, env) {
+  if (args[0] === "read")
+    return openspot.call(["calc", "solve", env.OPENSPOT_VALUE]).stdout;
+  return "";
+}

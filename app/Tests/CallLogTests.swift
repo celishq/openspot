@@ -38,23 +38,23 @@ final class CallLogTests: SpotRunsCase {
     }
 
     func testATimedReadThatEndsWellLeavesNoRecordAndAPanelReadDoes() async throws {
-        try script(header: "read=panel", "echo \"title=$OPENSPOT_REASON\"")
+        try script(header: "on=panel.open", "echo \"title=$OPENSPOT_REASON\"")
         let sheet = try sheet()
 
-        sheet.read(reason: .timer)
+        sheet.read(reason: .clock(60))
         try await wait("the end of the timed read") { self.log().count == 1 && sheet.calls.isEmpty }
         time += 10
         sheet.read(reason: .panel)
-        try await wait("the record of the panel read") { self.log.text(of: "script").contains("title=panel") }
+        try await wait("the record of the panel read") { self.log.text(of: "script").contains("title=panel.open") }
 
-        XCTAssertFalse(log.text(of: "script").contains("title=timer"))
+        XCTAssertFalse(log.text(of: "script").contains("title=clock.60"))
     }
 
     func testATimedReadThatFailsLeavesARecord() async throws {
-        try script(header: "read=panel", "echo 'The sensor is gone.' >&2; exit 2")
+        try script(header: "on=panel.open", "echo 'The sensor is gone.' >&2; exit 2")
         let sheet = try sheet()
 
-        sheet.read(reason: .timer)
+        sheet.read(reason: .clock(60))
 
         try await wait("the record") { self.log.text(of: "script").contains("The sensor is gone.") }
     }

@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 /// Proves `openspot spot add` and `openspot spot remove`: a spot from a git repository, a folder or a `.spot` file goes into
-/// the plugins folder, and only a spot that `spot add` added comes out (N1).
+/// the plugins folder, and only a spot that `spot add` added comes out (protocol: The openspot command).
 final class SpotAddTests: XCTestCase {
     private final class Host: Mac {
         func eventStore() -> any EventStore { FakeEventStore() }
@@ -275,7 +275,7 @@ final class SpotAddTests: XCTestCase {
 
     func testAFirstAddPrintsTheReviewAndNeedsYesWhenItHasAUse() async throws {
         let repo = try repo()
-        try repo.commit(["coffee.sh": "#!/bin/sh\n# title=Coffee\n# uses=network\n# every=60\ncurl -s https://example.com\n"])
+        try repo.commit(["coffee.sh": "#!/bin/sh\n# title=Coffee\n# uses=network\n# on=clock.60\ncurl -s https://example.com\n"])
 
         let first = try await answer(["spot", "add", repo.url.path])
 
@@ -333,6 +333,13 @@ final class SpotAddTests: XCTestCase {
 
         XCTAssertEqual(removed.source, "/b.spot")
         XCTAssertTrue(FileManager.default.fileExists(atPath: plugins.appendingPathComponent("tools/notes.sh").path))
+    }
+
+    func testALockWithTheOldUsesReadsThemAsTheUsesThatTookThem() throws {
+        let lock = SpotLock(url: root.appendingPathComponent("spots.lock"))
+        try Data(#"[{"source":"/a.spot","paths":["a.sh"],"uses":["settings","update","network"]}]"#.utf8).write(to: lock.url)
+
+        XCTAssertEqual(try lock.entries().map(\.uses), [[.spots, .app, .network]])
     }
 
     func testAddsAtTheSameTimeLoseNoEntryOfTheLock() async throws {
@@ -398,7 +405,7 @@ final class SpotAddTests: XCTestCase {
         let repo = try repo()
         _ = try await answer(["spot", "add", repo.url.path])
         let before = try files(in: plugins)
-        try repo.commit(["coffee.sh": "#!/bin/sh\n# title=Coffee\n# every=60\nrm -f /tmp/x\n"])
+        try repo.commit(["coffee.sh": "#!/bin/sh\n# title=Coffee\n# on=clock.60\nrm -f /tmp/x\n"])
 
         let refused = try await answer(["spot", "add", repo.url.path])
 

@@ -2,7 +2,7 @@ import Foundation
 
 /// The calls of `openspot screen`, which reach the screen through the Mac. A relative file starts in the working folder of
 /// the caller. In Careful mode, a spot with no `files` use takes a capture only into a file that its own process could
-/// write, and any other file is refused (Z8).
+/// write, and any other file is refused (protocol: Trust).
 struct ScreenCalls {
     let mac: any Mac
     let environment: [String: String]
