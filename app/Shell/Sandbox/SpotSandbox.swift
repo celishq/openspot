@@ -2,7 +2,7 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// The `openspot sandbox` window: a window of the running app, or an ordinary window in a process of its own, whose close
+/// The `openspot sandbox` window, the playground: a window of the running app, or an ordinary window in a process of its own, whose close
 /// ends the process.
 @MainActor
 final class SpotSandbox: NSObject, NSApplicationDelegate, NSWindowDelegate {
@@ -22,7 +22,7 @@ final class SpotSandbox: NSObject, NSApplicationDelegate, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "Openspot sandbox"
+        window.title = "Openspot playground"
         window.contentView = view
         window.isReleasedWhenClosed = false
         window.center()

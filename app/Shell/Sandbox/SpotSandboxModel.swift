@@ -2,55 +2,86 @@ import Foundation
 import Observation
 import OpenspotCore
 
-/// The state of the sandbox window. It reads a sheet from typed text, a file it watches, or a script that it runs through
-/// the same sheet as the panel. It reads, writes and watches the file away from the main thread.
+/// The state of the playground window. It runs the spot that a person types, or a file that it keeps in step with the
+/// editor, from a copy in a folder of its own, through the same sheet as the panel. Each edit runs again after a short
+/// pause, and only the newest edit runs. It reads, writes and watches the file away from the main thread.
 @MainActor
 @Observable
 final class SpotSandboxModel {
     nonisolated private static let watchPause: Duration = .milliseconds(500)
+    private static let editPause: Duration = .milliseconds(300)
+    private static let starter = "#!/bin/sh\n# title=Hello\n# on=sheet.open\nprintf 'text=hello\\ntitle=Hello\\ndetail=%s\\n' \"$OPENSPOT_REASON\"\n"
 
     private(set) var sandbox = SheetSandbox()
-    private let sheet: SpotRun?
+    private(set) var source = ""
+    /// The text typed in the search of the sheet.
+    private(set) var query = ""
+    /// Why the header cannot load, or nil when it loads.
+    private(set) var fault: String?
+    private(set) var spot: Spot?
+    private(set) var sheet: SpotRun?
     let file: URL?
+    let presets: [(name: String, text: String)]
+    @ObservationIgnored private let runs = SpotRuns()
+    @ObservationIgnored private let folder: URL
     @ObservationIgnored private let disk: SpotSandboxFile?
     @ObservationIgnored private var watch: Task<Void, Never>?
+    @ObservationIgnored private var edits = 0
 
     var fileName: String? {
         file?.lastPathComponent
-    }
-
-    /// Whether the left side is a script's answer, which a person does not edit here.
-    var isScript: Bool {
-        sheet != nil
     }
 
     var panel: SheetParts? {
         sheet?.panel ?? sandbox.panel
     }
 
-    /// `isCareful` runs a script in Careful mode, with no use (Z8).
+    /// The card that the newest frame draws at the size of the spot, or nil when it draws none.
+    var card: (layout: WidgetLayout, face: CardFace, size: SpotSize)? {
+        guard let spot, !sandbox.text.isEmpty else { return nil }
+        let face = SpotOutput(text: sandbox.text).face
+        return face.layout(for: spot.size).map { ($0, face, spot.size) }
+    }
+
+    /// `isCareful` runs the spot in Careful mode, with no use (Z8).
     init(path: String?, isCareful: Bool = false) {
         let file = path.map { URL(fileURLWithPath: $0) }
         self.file = file
         disk = file.map(SpotSandboxFile.init)
-        if let file, FileManager.default.isExecutableFile(atPath: file.path) {
-            let runs = SpotRuns()
-            runs.isCareful = isCareful
-            sheet = runs.sheet(for: SheetSandbox.command(file: file))
-        } else {
-            sheet = nil
-        }
-        sheet?.onReport = { [weak self] in self?.take($0) }
+        folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-playground-\(UUID().uuidString)")
+        let guide = Bundle.main.url(forResource: "GUIDE", withExtension: "md").flatMap { try? String(contentsOf: $0, encoding: .utf8) } ?? ""
+        presets = SheetSandbox.presets(guide: guide)
+        runs.isCareful = isCareful
+        runs.onCall = { [weak self] record, reason in self?.sandbox.take(call: PlaygroundCall(record: record, reason: reason)) }
+        runs.panelOpened()
+        if file == nil { edit(Self.starter) }
         startWatch()
     }
 
     nonisolated deinit {}
 
-    /// Takes text that a person typed, and saves it when the sandbox has a file.
+    /// Takes the text of the spot that a person typed, saves it to the file, and runs it once the typing pauses.
     func edit(_ text: String) {
-        sandbox.take(text: text)
-        guard let disk, sheet == nil else { return }
-        Task.detached { await disk.write(text) }
+        source = text
+        if let disk { Task.detached { await disk.write(text) } }
+        edits += 1
+        let edit = edits
+        Task { [weak self] in
+            try? await Task.sleep(for: Self.editPause)
+            guard let self, edit == self.edits else { return }
+            self.run(text)
+        }
+    }
+
+    /// Types the text in the search of the sheet, which reads a spot with `on=sheet.text`.
+    func search(_ text: String) {
+        query = text
+        sheet?.search(text)
+    }
+
+    /// Runs the spot again as it is.
+    func rerun() {
+        sheet?.read(need: .change)
     }
 
     func set(_ part: SpotPart, to value: String) {
@@ -63,10 +94,39 @@ final class SpotSandboxModel {
         sheet?.press(part)
     }
 
-    /// Stops the watch of the file and the script, once the window closes.
+    /// Stops the watch of the file and the spot, and removes the copy, once the window closes.
     func close() {
         watch?.cancel()
         sheet?.close()
+        runs.quit()
+        try? FileManager.default.removeItem(at: folder)
+    }
+
+    /// Writes the text to a copy that runs, loads its header, and opens a new sheet of it in place of the last one. A header
+    /// that cannot load keeps the last sheet and shows why.
+    private func run(_ text: String) {
+        let url = folder.appendingPathComponent("playground.\(SheetSandbox.fileExtension(of: text))")
+        do {
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            for old in (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? [] where old != url {
+                try? FileManager.default.removeItem(at: old)
+            }
+            try text.write(to: url, atomically: true, encoding: .utf8)
+            try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+            guard let loaded = try SpotFile(file: url, id: "playground")?.spots.first else {
+                fault = "This text is no spot. Start it with #!/bin/sh, or with // lines of a JavaScript header."
+                return
+            }
+            fault = nil
+            spot = loaded
+            sheet?.close()
+            let next = runs.sheet(for: loaded)
+            next.onReport = { [weak self] in self?.take($0) }
+            sheet = next
+            next.open {}
+        } catch {
+            fault = (error as? SpotError)?.reason ?? error.localizedDescription
+        }
     }
 
     private func take(_ report: SpotRun.Report) {
@@ -77,26 +137,23 @@ final class SpotSandboxModel {
         }
     }
 
-    /// Reads the file, or runs the script, at once and again each time something else changes the file.
+    /// Reads the file at once, and again each time another app changes it.
     private func startWatch() {
         guard let disk else { return }
         watch = Task.detached { [weak self] in
             while !Task.isCancelled {
                 if let text = await disk.change() {
                     guard let self else { return }
-                    await self.reload(text)
+                    await self.load(text)
                 }
                 try? await Task.sleep(for: Self.watchPause)
             }
         }
     }
 
-    private func reload(_ text: String) {
-        if let sheet {
-            sheet.close()
-            sheet.open(need: .change) {}
-        } else {
-            sandbox.take(text: text)
-        }
+    private func load(_ text: String) {
+        guard text != source else { return }
+        source = text
+        run(text)
     }
 }
