@@ -898,6 +898,48 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.visible.map(\.id), ["notes"])
     }
 
+    func testAKeyInAFormOfOneChoiceTellsNoReaderOfTheFormsPlaceAndKind() async throws {
+        try script("list", header: "on=sheet.open", """
+        case "$1" in
+          pick) printf 'title=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n' ;;
+          *) printf 'button=pick\ntitle=Pick\nscope=spot\nform=true\n\nrow=a\ntitle=Apple\n' ;;
+        esac
+        """)
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.press("list")
+        try await wait("the open list") { model.openList == "list" && model.openEntry?.spot.actions.contains(where: \.isForm) == true }
+        let entry = try XCTUnwrap(model.openEntry)
+        model.openForm(try XCTUnwrap(entry.spot.actions.first { $0.id == "pick" }), on: (entry, nil))
+        try await wait("the form") { model.form != nil }
+        XCTAssertNotNil(model.formRect)
+        XCTAssertTrue(model.formHasChoices)
+        XCTAssertTrue(model.formIsMultiple)
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = (model.formRect, model.formHasChoices, model.formIsMultiple, model.isMenuOpen, model.gridHeight) } onChange: { changed = true }
+
+        model.searchText = "b"
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+
+        XCTAssertFalse(changed)
+    }
+
+    func testAMoveInTheActionsMenuTellsNoReaderThatTheMenuIsOpen() throws {
+        try script("weather", header: "title=Weather", ":")
+        model.reload()
+        model.isShown = true
+        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "weather" })
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        XCTAssertTrue(model.isMenuOpen)
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = model.isMenuOpen } onChange: { changed = true }
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+
+        XCTAssertFalse(changed)
+    }
+
     func testTheSameTextOfTheSearchFindsNothingAgain() throws {
         try script("notes", header: "title=Notes", "true")
         model.reload()

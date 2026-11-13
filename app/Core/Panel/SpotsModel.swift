@@ -62,7 +62,14 @@ public final class SpotsModel {
     /// The search of the cards and the lists that offer their rows, which keeps the matches of the last text.
     @ObservationIgnored var mainSearch = MainSearch()
     /// Where each visible spot lies on the grid, in the order of `visible`.
-    public internal(set) var placements: [SpotPlacement] = []
+    public internal(set) var placements: [SpotPlacement] = [] {
+        didSet {
+            let height = SpotTokens.backdropHeight(gridHeight: SpotGrid.height(of: placements))
+            if height != gridHeight { gridHeight = height }
+        }
+    }
+    /// The height of the backdrop of the grid's cards, which changes only when the placements change it.
+    public private(set) var gridHeight = SpotTokens.backdropHeight(gridHeight: 0)
     public var selected = 0
     /// The sheet that shows: the transition's sheet, from its first frame on its card until its close starts. It follows the
     /// open run: a run's first answer shows its sheet, and a close or a hidden panel takes it away. It changes only with the
@@ -112,8 +119,29 @@ public final class SpotsModel {
     public var recording: String?
     @ObservationIgnored private var problems: [String] = []
     /// The actions menu from its open to the end of its close.
-    public internal(set) var menuSession: ActionMenuSession?
-    public var form: FormSession?
+    public internal(set) var menuSession: ActionMenuSession? {
+        didSet {
+            let isOpen = menuSession != nil && menuSession?.phase != .closing
+            if isOpen != isMenuOpen { isMenuOpen = isOpen }
+        }
+    }
+    /// Whether the actions menu is open and not closing. A search or a move in the menu tells no reader of it.
+    public private(set) var isMenuOpen = false
+    public var form: FormSession? {
+        didSet {
+            let rect = form.map { SpotTokens.formRect($0.draft.form) }
+            if rect != formRect { formRect = rect }
+            let hasChoices = form?.draft.choices != nil
+            if hasChoices != formHasChoices { formHasChoices = hasChoices }
+            let isMultiple = form?.draft.isMultiple == true
+            if isMultiple != formIsMultiple { formIsMultiple = isMultiple }
+        }
+    }
+    /// Where the open form lies, whether it is a form of one choice whose options the field searches, and whether that
+    /// choice takes many options. A key in the form tells no reader of them.
+    public private(set) var formRect: CGRect?
+    public private(set) var formHasChoices = false
+    public private(set) var formIsMultiple = false
     /// The ask for a form that waits for its script. A newer ask, a cancel, a close or a hidden panel replaces it.
     @ObservationIgnored var formAsk: UUID?
     /// Whether the grid is in Edit Spots, where it also shows the spots that are off the grid, and a press only selects.
