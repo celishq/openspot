@@ -499,23 +499,13 @@ struct SheetPartsView: View {
     }
 
     private func chart(_ points: [Double]) -> some View {
-        let top = max(points.max() ?? 1, 1)
-        return GeometryReader { room in
-            HStack(alignment: .bottom, spacing: Self.barGap) {
-                ForEach(Array(points.enumerated()), id: \.offset) { _, point in
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
-                        .frame(height: room.size.height * max(point, 0) / top)
-                }
-            }
-            .frame(maxHeight: .infinity, alignment: .bottom)
-        }
-        .padding(SpotTokens.padding)
-        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
+        SpotBars(points: points, gap: Self.barGap, radius: 2)
+            .padding(SpotTokens.padding)
+            .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
     }
 
     private func image(_ path: String) -> some View {
-        SheetPicture(key: SpotPictureStore.Key(path: path))
+        SheetPicture(key: SpotPictureStore.Key(path: path, changed: panel.pictureTimes[path]))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .clipShape(shape)
     }

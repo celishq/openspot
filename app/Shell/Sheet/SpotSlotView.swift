@@ -47,7 +47,7 @@ struct SpotSlotView: View {
         case .chart(let points):
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
                 if part.title != nil || part.detail != nil { words.fixedSize(horizontal: false, vertical: true) }
-                SpotSlotBars(points: points)
+                SpotBars(points: points, gap: 2, radius: 1.5)
             }
         case .shortcut(let text):
             SpotKeyLabel(text: text, isRecording: false)
@@ -145,24 +145,5 @@ private struct SpotSlotField: View {
                 if let typed { onSubmit(typed) }
                 typed = nil
             }
-    }
-}
-
-/// Bars in a row. The last bar is the newest.
-private struct SpotSlotBars: View {
-    let points: [Double]
-
-    var body: some View {
-        let top = max(points.max() ?? 1, 1)
-        GeometryReader { room in
-            HStack(alignment: .bottom, spacing: 2) {
-                ForEach(Array(points.enumerated()), id: \.offset) { _, point in
-                    RoundedRectangle(cornerRadius: 1.5)
-                        .fill(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
-                        .frame(height: room.size.height * max(point, 0) / top)
-                }
-            }
-            .frame(maxHeight: .infinity, alignment: .bottom)
-        }
     }
 }

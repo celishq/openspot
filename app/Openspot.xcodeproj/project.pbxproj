@@ -551,6 +551,7 @@
 		E77455E27C0DC28C7F09969E /* AccountSpotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E39D3BAD1304B6A6AA9E159 /* AccountSpotTests.swift */; };
 		E787CC83780AF0DD333E3AFD /* SpotTapWatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = D804B826EE1EB3E60610605F /* SpotTapWatch.swift */; };
 		E799FBD402E2FB89788B2A34 /* CallerTokensTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA3E267D6A1D5752DCBC051D /* CallerTokensTests.swift */; };
+		E7AD752650B7F3DE12B05FF7 /* SpotBars.swift in Sources */ = {isa = PBXBuildFile; fileRef = D82A94DDBC2832F95B364CCF /* SpotBars.swift */; };
 		E7D9A2111A2382D2D6D87B1B /* AnswerMatches.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8253CF332DE61A8AA6479298 /* AnswerMatches.swift */; };
 		E84631A262B0391BAEED7C3B /* SwiftProgram.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBB2BFB5C1B6183D4038D32C /* SwiftProgram.swift */; };
 		E869384BA45FEA291362C156 /* KeyLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97FF91498E0327AD3EBDF3EB /* KeyLayout.swift */; };
@@ -1148,6 +1149,7 @@
 		D65F822AFBA898E8C191089E /* SpotSetting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSetting.swift; sourceTree = "<group>"; };
 		D759213DFC6C93C115AF4D73 /* HostSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostSheet.swift; sourceTree = "<group>"; };
 		D804B826EE1EB3E60610605F /* SpotTapWatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotTapWatch.swift; sourceTree = "<group>"; };
+		D82A94DDBC2832F95B364CCF /* SpotBars.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotBars.swift; sourceTree = "<group>"; };
 		D8537B2D6978D8BD23935625 /* AppUpdate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdate.swift; sourceTree = "<group>"; };
 		D85AD5EC56456D478327C3F4 /* SearchPromptTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPromptTests.swift; sourceTree = "<group>"; };
 		D880CE78C17279A773F315C7 /* SwiftProgramTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftProgramTests.swift; sourceTree = "<group>"; };
@@ -1424,6 +1426,7 @@
 				171DE2A93C238530C6A56985 /* SheetPartsView.swift */,
 				C9F4B52019C643E51B06CAD6 /* SpotActionMenuView.swift */,
 				4FBF38806826AAD61118F1A5 /* SpotArrowScroll.swift */,
+				D82A94DDBC2832F95B364CCF /* SpotBars.swift */,
 				51D21CF903F24FBEACCADEC5 /* SpotChoiceMenu.swift */,
 				7C387D3F42D00284C238F537 /* SpotColorBar.swift */,
 				8432BCA1B2C4A049D23563DA /* SpotFileChooser.swift */,
@@ -2834,6 +2837,7 @@
 				A5ADD51CB75B131393FBB9EA /* SpotAddDrop.swift in Sources */,
 				AB86C0A4DC2B9C60D33CCDB9 /* SpotArrowScroll.swift in Sources */,
 				5BB16A946B7B0879659A6831 /* SpotBackdrop.swift in Sources */,
+				E7AD752650B7F3DE12B05FF7 /* SpotBars.swift in Sources */,
 				DBC230393CF874C437542081 /* SpotBlocking.swift in Sources */,
 				D8146746E1EB9C6FE5E2D733 /* SpotBlur.swift in Sources */,
 				F46C0274AA306738AC012321 /* SpotCalendarApp.swift in Sources */,

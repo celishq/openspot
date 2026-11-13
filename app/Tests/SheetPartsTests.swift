@@ -48,6 +48,22 @@ final class SheetPartsTests: XCTestCase {
         try XCTUnwrap(SheetParts(output: SpotOutput(text: text)))
     }
 
+    func testThePartsKeepTheTimeOfTheLastChangeOfEachPictureWhenTheyArrive() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-pictures-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let file = folder.appendingPathComponent("cover.png")
+        try Data([1]).write(to: file)
+        let changed = Date(timeIntervalSince1970: 1_700_000_000)
+        try FileManager.default.setAttributes([.modificationDate: changed], ofItemAtPath: file.path)
+        let missing = folder.appendingPathComponent("gone.png").path
+
+        let parts = try XCTUnwrap(SheetParts(output: SpotOutput(text: "picture=cover\nicon=\(file.path)\n\npicture=gone\nicon=\(missing)\n")))
+
+        XCTAssertEqual(parts.pictureTimes[file.path], changed.timeIntervalSince1970)
+        XCTAssertNil(parts.pictureTimes[missing])
+    }
+
     func testAButtonThatOnlyACardDrawingPlacesIsAPartOfTheCardAndNoAction() {
         let output = SpotOutput(text: "grid.strip=next next next join-now\n\nnumber=next\nvalue=09:30\n\nbutton=join-now\ntitle=Join\n\nbutton=tick\ntitle=Mark as done\n")
 
