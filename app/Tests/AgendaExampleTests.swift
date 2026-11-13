@@ -182,7 +182,7 @@ final class AgendaExampleTests: SampleSpotsCase {
             XCTAssertEqual(items["reminder:R2"]?.title, "Take pills")
             XCTAssertEqual(output.errors, [])
             XCTAssertEqual(output.actions.map(\.id), ["join", "tick", "calendars"])
-            XCTAssertEqual(output.primary, "Open")
+            XCTAssertEqual(output.openTitle, "Open")
         }
     }
 
