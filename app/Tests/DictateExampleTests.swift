@@ -195,11 +195,8 @@ final class DictateExampleTests: SampleSpotsCase {
             let pressed = folder.appendingPathComponent("pressed")
             let started = folder.appendingPathComponent("started")
             let data = try self.fakeHelper("touch '\(started.path)'", in: folder)
-            let waiting = Process()
-            waiting.executableURL = URL(fileURLWithPath: "/bin/sh")
-            waiting.arguments = ["-c", "trap 'touch \(pressed.path)' USR1; while [ ! -f \(pressed.path) ]; do sleep 0.05; done"]
-            try waiting.run()
-            defer { waiting.terminate(); waiting.waitUntilExit() }
+            let waiting = try TestChild("/bin/sh", ["-c", "trap 'touch \(pressed.path)' USR1; while [ ! -f \(pressed.path) ]; do sleep 0.05; done"])
+            defer { waiting.stop() }
             try String(waiting.processIdentifier).write(to: data.appendingPathComponent("dictate.pid"), atomically: true, encoding: .utf8)
 
             _ = try await dictate.perform(.press("dictate"), timeout: 5)
@@ -315,11 +312,8 @@ final class DictateExampleTests: SampleSpotsCase {
             let first = try await dictate.items(timeout: 5)
             let offer = first.items.first { $0.run == "whisper" }
 
-            let waiting = Process()
-            waiting.executableURL = URL(fileURLWithPath: "/bin/sh")
-            waiting.arguments = ["-c", "trap 'touch \(fetched.path)' USR2; while true; do sleep 0.05; done"]
-            try waiting.run()
-            defer { waiting.terminate(); waiting.waitUntilExit() }
+            let waiting = try TestChild("/bin/sh", ["-c", "trap 'touch \(fetched.path)' USR2; while true; do sleep 0.05; done"])
+            defer { waiting.stop() }
             try String(waiting.processIdentifier).write(to: data.appendingPathComponent("dictate.pid"), atomically: true, encoding: .utf8)
             try "42".write(to: data.appendingPathComponent("download"), atomically: true, encoding: .utf8)
             let progress = try await dictate.items(timeout: 5).items.first { $0.run == "whisper" }
@@ -363,14 +357,10 @@ final class DictateExampleTests: SampleSpotsCase {
         print(s.server_address[1], flush=True)
         s.serve_forever()
         """.write(to: server, atomically: true, encoding: .utf8)
-        let serving = Process()
         let out = Pipe()
-        serving.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
         let served = folder.appendingPathComponent("served")
-        serving.arguments = [server.path, source.path, served.path]
-        serving.standardOutput = out
-        try serving.run()
-        defer { serving.terminate(); serving.waitUntilExit() }
+        let serving = try TestChild("/usr/bin/python3", [server.path, source.path, served.path], output: out)
+        defer { serving.stop() }
         let port = String(decoding: out.fileHandleForReading.availableData, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
 
         let resumed = try await ScriptProcess.output(url: helper, arguments: ["fetch", "http://127.0.0.1:\(port)/model", target.path])

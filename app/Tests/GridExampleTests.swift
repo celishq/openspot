@@ -112,11 +112,8 @@ final class GridExampleTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let shown = folder.appendingPathComponent("shown")
             let data = try self.fakeGrid("echo '0 0 1 1'", in: folder)
-            let waiting = Process()
-            waiting.executableURL = URL(fileURLWithPath: "/bin/sh")
-            waiting.arguments = ["-c", "trap 'touch \(shown.path)' USR1; while [ ! -f \(shown.path) ]; do sleep 0.05; done"]
-            try waiting.run()
-            defer { waiting.terminate(); waiting.waitUntilExit() }
+            let waiting = try TestChild("/bin/sh", ["-c", "trap 'touch \(shown.path)' USR1; while [ ! -f \(shown.path) ]; do sleep 0.05; done"])
+            defer { waiting.stop() }
             try String(waiting.processIdentifier).write(to: data.appendingPathComponent("grid.pid"), atomically: true, encoding: .utf8)
 
             _ = try await grid.perform(.open, timeout: 5)
