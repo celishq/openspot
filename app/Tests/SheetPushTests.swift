@@ -28,7 +28,7 @@ final class SheetPushTests: XCTestCase {
         XCTAssertEqual(push.offset(of: card(row: 1, column: 0)), CGSize(width: -75, height: 0))
     }
 
-    func testOnAWideGridACardBesideTheSheetsColumnsMovesOnlyToItsSide() {
+    func testOnAWideGridACardBesideTheSheetsColumnsStays() {
         let step = SpotTokens.cell + SpotTokens.columnGap
         let wide = SheetPush(
             open: SpotPlacement(index: 5, row: 1, column: 5, size: .small),
@@ -36,8 +36,8 @@ final class SheetPushTests: XCTestCase {
             window: CGRect(x: -24, y: -100, width: 700, height: 600)
         )
 
-        XCTAssertEqual(wide.offset(of: card(row: 0, column: 1)), CGSize(width: -step, height: 0))
-        XCTAssertEqual(wide.offset(of: card(row: 3, column: 2)), CGSize(width: -step, height: 0))
+        XCTAssertEqual(wide.offset(of: card(row: 1, column: 1)), .zero)
+        XCTAssertNil(wide.fade(of: card(row: 3, column: 2), movedBy: .zero))
         XCTAssertEqual(wide.offset(of: card(row: 0, column: 5)), CGSize(width: 0, height: -152))
     }
 

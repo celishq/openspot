@@ -16,13 +16,11 @@ public struct SheetPush: Equatable, Sendable {
         self.window = window
     }
 
-    /// How far the open sheet pushes a card. A card that lies wholly beside the sheet's columns, on a wide grid, moves only to
-    /// its side.
+    /// How far the open sheet pushes a card. A card that lies wholly beside the sheet's columns, on a wide grid, stays.
     public func offset(of placement: SpotPlacement) -> CGSize {
         let from = open.rect
         let rect = placement.rect
-        if rect.maxX <= sheet.minX { return CGSize(width: sheet.minX - from.minX, height: 0) }
-        if rect.minX >= sheet.maxX { return CGSize(width: sheet.maxX - from.maxX, height: 0) }
+        if rect.maxX <= sheet.minX || rect.minX >= sheet.maxX { return .zero }
         let away = placement.direction(awayFrom: open)
         return CGSize(
             width: away.columns < 0 ? sheet.minX - from.minX : away.columns > 0 ? sheet.maxX - from.maxX : 0,

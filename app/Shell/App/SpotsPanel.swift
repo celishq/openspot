@@ -92,8 +92,8 @@ final class SpotsPanel: NSPanel {
         return NSRect(x: frame.minX, y: frame.maxY - height, width: frame.width, height: height).contains(point)
     }
 
-    /// Grows the window in Edit Spots to hold the store from the top of the screen to its bottom, glides the panel up to the
-    /// top, and fades the store in under it. When Edit Spots ends, the store fades out and the panel glides back, and then
+    /// Grows the window in Edit Spots to hold the store under the panel, lifts the panel only as far as the store needs, and
+    /// fades the store in under it. When Edit Spots ends, the store fades out and the panel glides back, and then
     /// the window gets its frame back. A panel that closes keeps its frame until it is gone.
     private func followEditing() {
         guard let model else { return }
@@ -137,19 +137,27 @@ final class SpotsPanel: NSPanel {
         resize(to: whole)
     }
 
-    /// Gives the window the width of the grid's columns about the same middle, and in Edit Spots lays the store out again.
+    /// Gives the window the width of the grid's columns, and draws the blur of the new width ahead. The panel keeps its left
+    /// edge, so that its cards stay where they are, and moves in only as far as the screen needs; the next open centres it.
+    /// In Edit Spots it lays the store out again.
     private func followColumns() {
         guard let model else { return }
         let width = withObservationTracking { SpotTokens.panelWidth(columns: model.columns) } onChange: { [weak self] in
             Task { @MainActor in self?.followColumns() }
         }
+        let area = screen?.visibleFrame
+        let placed = { (frame: NSRect) in
+            let x = area.map { min(frame.minX, $0.maxX - width) } ?? frame.minX
+            return NSRect(x: x, y: frame.minY, width: width, height: frame.height)
+        }
         if let rest = restFrame {
-            guard rest.width != width, let area = screen?.visibleFrame else { return }
-            restFrame = NSRect(x: (rest.midX - width / 2).rounded(.down), y: rest.minY, width: width, height: rest.height)
+            guard rest.width != width, let area else { return }
+            restFrame = placed(rest)
             layOutEditing(in: area, isSettled: true)
         } else if frame.width != width {
-            resize(to: NSRect(x: (frame.midX - width / 2).rounded(.down), y: frame.minY, width: width, height: frame.height))
+            resize(to: placed(frame))
         }
+        SpotSoftBlur.warm(SpotsView.blurHeights(of: model), width: width)
     }
 
     /// Shows the wallpaper over the other apps while the panel shows in Edit Spots, and takes it away when either ends.

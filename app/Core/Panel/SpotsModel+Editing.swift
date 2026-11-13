@@ -22,8 +22,12 @@ extension SpotsModel {
             updateVisible()
             composeDock()
         }
-        dockRead?.cancel()
-        dockRead = Task { [weak self] in await self?.refreshDockIfChanged(in: folder) }
+        let pending = dockRead
+        dockRead = Task { [weak self] in
+            await withTaskCancellationHandler { await pending?.value } onCancel: { pending?.cancel() }
+            guard !Task.isCancelled else { return }
+            await self?.refreshDockIfChanged(in: folder)
+        }
     }
 
     /// Shows the panel in Edit Spots with the store, from the grid, a search or a sheet.
@@ -159,6 +163,7 @@ extension SpotsModel {
             guard let self, !Task.isCancelled else { return }
             (self.dockOff, self.dockPublications) = read.1
             self.dockStamp = read.0
+            if self.isEditing { self.composeDock() }
         }
     }
 
@@ -354,7 +359,8 @@ extension SpotsModel {
         saveArrangement(selecting: id)
     }
 
-    /// Gives the grid this many columns, 4, 8 or 12, and saves it.
+    /// Gives the grid this many columns, 4, 8 or 12, and saves it. The panel takes its new width at once, and the cards
+    /// move to their new places.
     public func setColumns(_ count: Int) {
         guard count != columns, SpotGrid.columnCounts.contains(count) else { return }
         do {
@@ -363,10 +369,8 @@ extension SpotsModel {
         } catch {
             host.notify("Openspot could not save the columns. \(Self.reason(error))")
         }
-        change(.edit) {
-            columns = count
-            updateVisible()
-        }
+        columns = count
+        change(.edit) { updateVisible() }
     }
 
     /// Takes the letter for the spot that records: a letter or a digit with no modifier gives it, and Delete takes its letter

@@ -50,9 +50,7 @@ struct SpotsView: View {
             .modifier(SpotScrollEdgeTracker(edges: Binding(get: { fade.edges }, set: { fade.edges = $0 })))
             .modifier(GridFadeMask(fade: fade, height: cardHeight))
             .morph(coversGrid ? 0 : 1, opacity: { SheetMorph.sheetLook(at: $0) })
-            if model.isEditing, sheetID == nil {
-                SpotWidthHandles(model: model)
-            }
+            SpotWidthHandles(model: model)
             SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: max(gridHeight, model.menuBackdropHeight), sheetHeight: max(sheetID == nil ? gridHeight : sheetHeight, model.menuBackdropHeight))
                 .modifier(SpotShownFade(isShown: model.isShown))
             if let entry = model.entries.first(where: { $0.id == sheetID }) {
@@ -119,8 +117,9 @@ struct SpotsView: View {
 
     /// The open sheet's rect, over its card's columns on a wide grid.
     private var sheetRect: CGRect {
-        let column = SpotSheetCard.of(sheetID, in: model)?.placement.column ?? 0
-        return (model.formRect ?? rect(of: sheetID)).offsetBy(dx: SpotTokens.sheetShift(column: column, columns: model.columns), dy: 0)
+        let rect = model.formRect ?? rect(of: sheetID)
+        guard model.columns > SpotTokens.columns, let column = SpotSheetCard.of(sheetID, in: model)?.placement.column else { return rect }
+        return rect.offsetBy(dx: SpotTokens.sheetShift(column: column, columns: model.columns), dy: 0)
     }
 
     private func rect(of id: String?) -> CGRect {

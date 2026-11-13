@@ -193,7 +193,7 @@ struct SpotFieldView: View {
             .modifier(SpotShownFade(
                 isShown: model.isShown,
                 hiddenScale: MotionTokens.hiddenScale,
-                anchor: UnitPoint(x: 0.5, y: (SpotTokens.halo + SpotTokens.rowHeight / 2) / SpotTokens.panelHeight)
+                anchor: UnitPoint(x: Self.rect.midX / panelWidth, y: (SpotTokens.halo + SpotTokens.rowHeight / 2) / SpotTokens.panelHeight)
             ))
             .allowsHitTesting(false)
     }
