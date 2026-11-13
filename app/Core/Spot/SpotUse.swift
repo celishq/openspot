@@ -6,6 +6,12 @@ public enum SpotUse: String, CaseIterable, Codable, Sendable {
     /// The account key, which only a spot shipped in the app reaches, so an error line does not offer it (protocol: Trust).
     case account
 
+    /// Whether a spot with these uses reaches the account key: only one that ships inside the app and names `account`
+    /// (protocol: Trust).
+    static func reachesAccountKey(_ uses: Set<SpotUse>, isBuiltIn: Bool) -> Bool {
+        isBuiltIn && uses.contains(.account)
+    }
+
     /// The words that Openspot no longer reads, with the use that took each one.
     private static let merged: [String: SpotUse] = ["update": .app, "settings": .spots]
 

@@ -72,6 +72,10 @@ public struct Spot: Equatable, Sendable {
     /// Whether it comes with the app as a part of it: always on, and never edited, removed or shared as a file of the
     /// person's.
     public private(set) var isBuiltIn = false
+    /// Whether it reaches the account key, whose calls stay out of the call log (protocol: Trust).
+    public var reachesAccountKey: Bool {
+        SpotUse.reachesAccountKey(uses, isBuiltIn: isBuiltIn)
+    }
     /// More words that find it in the main search, beside its name and the words under it.
     public let keywords: [String]
     /// Whether its read prints fake data while `OPENSPOT_REASON` is `spot.preview`, for the preview of its listing.

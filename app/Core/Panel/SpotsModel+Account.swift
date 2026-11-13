@@ -11,7 +11,7 @@ extension SpotsModel {
     /// can set one up, and returns nil.
     func accountKey() async throws -> AccountKey? {
         if let key = try files.account.key() { return key }
-        if let account = entries.first(where: { $0.spot.isBuiltIn && $0.spot.uses.contains(.account) }) {
+        if let account = entries.first(where: { $0.spot.reachesAccountKey }) {
             host.present()
             _ = openSheet(account.id)
         }

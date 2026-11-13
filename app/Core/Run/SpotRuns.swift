@@ -329,7 +329,7 @@ public final class SpotRuns {
     /// Keeps the record of a call that ended in the call log, unless it is a quiet one or a call of a spot that uses the
     /// account, whose frames can hold its words.
     func record(_ spot: Spot, _ action: SpotAction, input: String?, frames: [String], errors: String, end: ScriptCall.End, reason: ReadReason?, started: Date, begin: Date) {
-        guard !spot.uses.contains(.account) else { return }
+        guard !spot.reachesAccountKey else { return }
         let record = CallLog.Record(
             spot: spot.id,
             arguments: action.arguments,

@@ -41,7 +41,7 @@ public final class CommandAPI: @unchecked Sendable {
         }
         if call.reachesAccountKey {
             let caller = runs?.tokens.caller(of: environment)
-            guard let caller, caller.isBuiltIn, caller.uses.contains(.account) else { return .refused("Only Openspot's Account spot can reach your account key.") }
+            guard caller?.reachesAccountKey == true else { return .refused("Only Openspot's Account spot can reach your account key.") }
             return call
         }
         guard let runs, let caller = runs.tokens.caller(of: environment) else { return call }
