@@ -31,6 +31,7 @@
 		095DF16B5D9CE11A2EE0D0AD /* CalendarAddTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0ABD4DC3959E204822BE5FD /* CalendarAddTests.swift */; };
 		096988AD621994D7965250D2 /* SpotPointerMove.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8826B778C9737CC4F2157A2A /* SpotPointerMove.swift */; };
 		0A25A661610D38B40A8E1727 /* libOpenspotCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 04798119A31A08BDE55ED6D1 /* libOpenspotCore.a */; };
+		0A8E2048318FEB0B036B9FCE /* ScreenPlace+Mac.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE66F66030A2669E2B8E269 /* ScreenPlace+Mac.swift */; };
 		0B53C1A084EBB8845F711F47 /* FormAnswer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DE5812AC3B0E0BC7C8CF0A9 /* FormAnswer.swift */; };
 		0C5A950E5216C6EED3762988 /* SpotMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DC0207B11DC84FB401C64BE /* SpotMotion.swift */; };
 		0C67694EA372E3B8A0D47A84 /* SpotSecondaryText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8441ACA09A9CCAD4120C9B00 /* SpotSecondaryText.swift */; };
@@ -1112,6 +1113,7 @@
 		CC23A55EB94A4EF24BD0D2F7 /* CalendarClock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarClock.swift; sourceTree = "<group>"; };
 		CC547C7C4B07E55EEAA0CCB7 /* SpotSheetPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSheetPreview.swift; sourceTree = "<group>"; };
 		CC762975D4C4D4BFE7BDA8D2 /* SpotDockTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotDockTests.swift; sourceTree = "<group>"; };
+		CCE66F66030A2669E2B8E269 /* ScreenPlace+Mac.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ScreenPlace+Mac.swift"; sourceTree = "<group>"; };
 		CDE1E784B8464206231EDC52 /* SpotMetricView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotMetricView.swift; sourceTree = "<group>"; };
 		CED62FCD01AA8E839E330A70 /* SpotHintWatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotHintWatch.swift; sourceTree = "<group>"; };
 		CEE7051C07C60049ADCA9629 /* SpotBlocking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotBlocking.swift; sourceTree = "<group>"; };
@@ -1524,6 +1526,7 @@
 				48341C1F654BB89F7DF8B4BE /* HotKey.swift */,
 				8C5560019E060B304559DE2B /* OpenspotApp.swift */,
 				552F81E4432F2F7D939CDE9E /* OpenspotApp+Host.swift */,
+				CCE66F66030A2669E2B8E269 /* ScreenPlace+Mac.swift */,
 				72BD7DADB263F55E1F52EABD /* SpotHint.swift */,
 				6F93916DDD4E4ED935810BFC /* SpotHintLine.swift */,
 				CED62FCD01AA8E839E330A70 /* SpotHintWatch.swift */,
@@ -2793,6 +2796,7 @@
 				AB371E421B7AD912D259B7AB /* OpenspotApp+Host.swift in Sources */,
 				D4FCC1ED72664CC622423052 /* OpenspotApp.swift in Sources */,
 				98081F9D7F2FDB1427D1BFD5 /* OpenspotItem.swift in Sources */,
+				0A8E2048318FEB0B036B9FCE /* ScreenPlace+Mac.swift in Sources */,
 				9F44FE0E902094859A3CAABD /* SheetPartsView.swift in Sources */,
 				9B60A6B6A16D5C0A88DD6173 /* SpotActionMenuView.swift in Sources */,
 				A5ADD51CB75B131393FBB9EA /* SpotAddDrop.swift in Sources */,

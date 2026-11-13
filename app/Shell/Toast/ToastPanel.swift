@@ -27,7 +27,7 @@ final class ToastPanel: NSPanel {
         let measure = NSHostingController(rootView: ToastView(toast: toast))
         let width = min(measure.view.fittingSize.width.rounded(.up) + 1, Self.maxSize.width)
         let size = measure.sizeThatFits(in: NSSize(width: width, height: Self.maxSize.height))
-        let place = ScreenPlace(screens: NSScreen.screens.map { ScreenPlace.Screen(frame: $0.frame, area: $0.visibleFrame) })
+        let place = ScreenPlace(screens: ScreenPlace.Screen.all)
         if let origin = place.origin(ofToast: size, under: item?.frame) {
             setFrame(NSRect(origin: origin, size: size), display: true)
         }
