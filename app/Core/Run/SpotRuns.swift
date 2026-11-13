@@ -70,6 +70,11 @@ public final class SpotRuns {
     @ObservationIgnored private let log: CallLog?
     /// Hears each call that ends, quiet ones too, with the reason of a read, such as the playground that shows each call.
     @ObservationIgnored public var onCall: ((CallLog.Record, ReadReason?) -> Void)?
+    /// The number of times that the main thread waited for the frames of JavaScript spots.
+    @ObservationIgnored var frameWaits = 0
+    /// The waits for the answers of JavaScript spots to a text of the main search, which `ask` sends to each spot first and
+    /// then waits for together, or nil outside of it.
+    @ObservationIgnored var answerWaits: [(DispatchTime) -> Void]?
     /// The builds of Swift scripts, which each process runs once they are ready.
     @ObservationIgnored private let swift: SwiftProgram
 

@@ -107,12 +107,18 @@ extension SpotRuns {
     }
 
     /// Sends the text to each spot whose `search.text` pattern matches it, and an empty text to the others, which drops their
-    /// answers (protocol: Places).
+    /// answers (protocol: Places). The answers of JavaScript spots share one wait of 2 ms, after the text reaches each spot.
     private func ask(_ query: String) {
         let text = query.trimmingCharacters(in: .whitespaces)
+        let deadline = DispatchTime.now() + InlineLink.frameWait
+        answerWaits = []
         for sheet in sheets.values {
             guard let pattern = sheet.spot.answers else { continue }
             sheet.answer(!text.isEmpty && answerMatches.matches(pattern, text) ? text : "")
         }
+        let waits = answerWaits ?? []
+        answerWaits = nil
+        if !waits.isEmpty { frameWaits += 1 }
+        waits.forEach { $0(deadline) }
     }
 }

@@ -45,6 +45,28 @@ final class SpotRunsInlineTests: SpotRunsCase {
         XCTAssertFalse(sheet.isAnswering)
     }
 
+    func testThreeSlowInlineSpotsShareOneWaitForTheirAnswers() async throws {
+        let body = """
+        function main([id], env) {
+          if (env.OPENSPOT_VALUE === "12") { const end = Date.now() + 300; while (Date.now() < end) {} }
+          return `row=${env.OPENSPOT_VALUE}\\ntitle=Is ${env.OPENSPOT_VALUE}\\n`
+        }
+        """
+        for name in ["a", "b", "c"] { try inline(name, header: "on=search.text ^[0-9]", body) }
+        _ = try scanned()
+        let sheets = ["a", "b", "c"].compactMap { runs.sheets[$0] }
+        runs.raise(.query("1"))
+        try await wait("the loaded scripts") { sheets.allSatisfy { $0.answers.map(\.run) == ["1"] } }
+        runs.raise(.query("7"))
+        XCTAssertTrue(sheets.allSatisfy { $0.answers.map(\.run) == ["7"] })
+        let waits = runs.frameWaits
+
+        runs.raise(.query("12"))
+
+        XCTAssertEqual(runs.frameWaits - waits, 1)
+        try await wait("the slow answers") { sheets.allSatisfy { $0.answers.map(\.run) == ["12"] } }
+    }
+
     func testASlowInlineSpotKeepsTheLastRowsUntilItsAnswerLandsInALaterTurn() async throws {
         try answering()
         let sheet = try sheet()
