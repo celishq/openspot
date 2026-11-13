@@ -75,7 +75,7 @@ public enum SheetFaults {
             let width = CGFloat(area.x1 - area.x0 + 1) * (columnWidth + SheetPlacement.gap) - SheetPlacement.gap
             let height = frame.isOnTop ? CGFloat.infinity : frame.rect.height
             switch part.control {
-            case .metric:
+            case .number:
                 if width < metricWidth {
                     faults.append("the part \(part.id) needs at least \(Int((metricWidth + SheetPlacement.gap) / (columnWidth + SheetPlacement.gap)) + 1) columns of \(columns) for its number")
                 }

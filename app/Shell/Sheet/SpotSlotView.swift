@@ -53,19 +53,8 @@ struct SpotSlotView: View {
             SpotKeyLabel(text: text, isRecording: false)
         case .text(let text, let placeholder, let isReadOnly):
             SpotSlotField(text: text, placeholder: placeholder ?? part.title ?? "", isReadOnly: isReadOnly) { onSlot(part.id, $0) }
-        case .metric(let number):
-            VStack(alignment: .leading, spacing: SpotType.lineGap) {
-                Text(number)
-                    .font(.system(size: metricSize, weight: .semibold, design: .rounded))
-                    .foregroundStyle(SpotTheme.ink)
-                    .lineLimit(1)
-                    .minimumScaleFactor(metricSize > 28 ? 0.2 : 0.5)
-                if let label = part.title {
-                    Text(label).font(SpotType.detail).modifier(SpotSecondaryText()).lineLimit(1)
-                }
-            }
-            .modifier(SpotColorBar(color: part.color))
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        case .number:
+            SpotNumberView(part: part, font: .system(size: numberSize, weight: .semibold, design: .rounded), leastScale: numberSize > 28 ? 0.2 : 0.5)
         case .image(let path):
             picture(icon: .image(path))
         default:
@@ -99,7 +88,7 @@ struct SpotSlotView: View {
         }
     }
 
-    private var metricSize: CGFloat {
+    private var numberSize: CGFloat {
         part.title == nil ? height.map { $0 * 0.8 } ?? 28 : 28
     }
 

@@ -25,7 +25,7 @@ public struct Spot: Equatable, Sendable {
     /// Its place in the grid before the person's choice: a lower number first. The person's newest file comes first.
     public private(set) var order: Int
     public private(set) var keepsRecent = true
-    public private(set) var primary: String?
+    public private(set) var openTitle: String?
     public private(set) var actions: [CommandAction]
     public let layout: WidgetLayout?
     public let places: [String]
@@ -95,7 +95,7 @@ public struct Spot: Equatable, Sendable {
         isFound: Bool = true,
         answers: AnswerPattern? = nil,
         order: Int = 0,
-        primary: String? = nil,
+        openTitle: String? = nil,
         actions: [CommandAction] = [],
         layout: WidgetLayout? = nil,
         places: [String] = [],
@@ -137,7 +137,7 @@ public struct Spot: Equatable, Sendable {
         self.isFound = isFound
         self.answers = answers
         self.order = order
-        self.primary = primary
+        self.openTitle = openTitle
         self.actions = actions
         self.layout = layout
         self.places = places
@@ -284,7 +284,7 @@ public struct Spot: Equatable, Sendable {
     public func taking(_ output: SpotOutput) -> Spot {
         var command = self
         command.actions = output.actions
-        command.primary = output.primary
+        command.openTitle = output.openTitle
         command.pick = output.pick
         command.pickForm = output.pickForm
         command.keepsRecent = output.keepsRecent
@@ -309,8 +309,8 @@ public struct Spot: Equatable, Sendable {
     }
 
     /// What Enter does, in words. A slider has no Enter.
-    public func primaryTitle(hasItem: Bool) -> String? {
-        if hasItem { return primary ?? "Open" }
+    public func openTitle(hasItem: Bool) -> String? {
+        if hasItem { return openTitle ?? "Open" }
         switch kind {
         case .launch: return "Run"
         case .toggle: return "Toggle"

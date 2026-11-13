@@ -196,7 +196,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             XCTAssertNil(lines.layout)
             XCTAssertEqual(lines.errors, [])
             XCTAssertEqual(lines.pick, .close)
-            XCTAssertEqual(lines.primary, "Select")
+            XCTAssertEqual(lines.openTitle, "Select")
             XCTAssertFalse(lines.keepsRecent)
         }
     }
@@ -339,7 +339,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             XCTAssertEqual(output.items.map(\.title), ["thumbs up, none", "rightwards arrow"])
             XCTAssertEqual(output.items.last?.subtitle, "Rightwards Arrows")
             XCTAssertEqual(self.text(of: "tone", in: output), "none")
-            XCTAssertEqual(output.primary, "Copy")
+            XCTAssertEqual(output.openTitle, "Copy")
         }
     }
 

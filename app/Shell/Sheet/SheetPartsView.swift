@@ -35,7 +35,7 @@ struct SheetPartsView: View {
     private static let narrowGap: CGFloat = 2
     private static let markValueWidth: CGFloat = 36
     private static let symbolWidth: CGFloat = 22
-    private static let metricFont = Font.system(size: 24, weight: .semibold, design: .rounded).monospacedDigit()
+    private static let numberFont = Font.system(size: 24, weight: .semibold, design: .rounded).monospacedDigit()
 
     private var shape: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
@@ -159,8 +159,8 @@ struct SheetPartsView: View {
         case .list(let items, let value):
             list(part, items: items, value: value)
                 .overlay(alignment: .topTrailing) { cornerMark(part, frame) }
-        case .metric(let number):
-            metric(part, number: number)
+        case .number:
+            number(part)
         case .chart(let points):
             chart(points)
         case .image(let path):
@@ -478,24 +478,10 @@ struct SheetPartsView: View {
         }
     }
 
-    private func metric(_ part: SpotPart, number: String) -> some View {
-        VStack(alignment: part.look == .bare ? .trailing : .leading, spacing: SpotType.lineGap) {
-            Text(number)
-                .font(Self.metricFont)
-                .foregroundStyle(SpotTheme.ink)
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-            if let title = part.title {
-                Text(title)
-                    .font(SpotType.detail)
-                    .modifier(SpotSecondaryText())
-                    .lineLimit(1)
-            }
-        }
-        .modifier(SpotColorBar(color: part.color))
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: part.look == .bare ? .trailing : .leading)
-        .padding(.horizontal, part.look == .bare ? 0 : SpotTokens.padding)
-        .background(SpotTheme.ink.opacity(part.look == .bare ? 0 : SpotTheme.fill), in: shape)
+    private func number(_ part: SpotPart) -> some View {
+        SpotNumberView(part: part, font: Self.numberFont, leastScale: 0.6, alignment: part.look == .bare ? .trailing : .leading)
+            .padding(.horizontal, part.look == .bare ? 0 : SpotTokens.padding)
+            .background(SpotTheme.ink.opacity(part.look == .bare ? 0 : SpotTheme.fill), in: shape)
     }
 
     private func chart(_ points: [Double]) -> some View {

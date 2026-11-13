@@ -124,7 +124,7 @@ final class SpotOutputTests: XCTestCase {
         let copy = SpotOutput(text: "button=open\ntitle=Copy\nclose=false\n")
 
         XCTAssertEqual(copy.actions, [])
-        XCTAssertEqual(copy.primary, "Copy")
+        XCTAssertEqual(copy.openTitle, "Copy")
         XCTAssertEqual(copy.pick, .stay)
         XCTAssertEqual(SpotOutput(text: "").pick, .close)
     }

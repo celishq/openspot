@@ -15,18 +15,18 @@ function fields(text) {
   return Object.fromEntries(text.trim().split("\n").map((line) => [line.slice(0, line.indexOf("=")), line.slice(line.indexOf("=") + 1)]))
 }
 
-/** The card of an answer: the sum as it was read, with no day of its fresh rates, over the big answer, whose pick sends the
- * plain value. */
+/** The card of an answer: the sum as it was read, faint, over the big answer with its unit faint. The sum names the day
+ * of old rates, in the tone that warns. A pick copies the plain value. */
 function card(row) {
   return openspot.frame([
     { "grid.large": ["sum sum sum sum", "answer answer answer answer", "answer answer answer answer"], main: "answer" },
-    { number: "sum", value: row.detail.split(" · ")[0] },
-    { number: "answer", value: row.row, display: row.title },
+    { text: "sum", detail: row.tone ? `${row.detail} · rates of ${row.rates}` : row.detail, tone: row.tone },
+    { number: "answer", value: row.row, display: row.title, unit: row.unit },
+    { button: "open", title: "Copy" },
   ])
 }
 
-/** The card of the answer of a sum, a conversion or a date for a read, or the row of an answer from old rates, which warns.
- * A pick copies the plain value. */
+/** The card of the answer of a sum, a conversion or a date for a read. A pick copies the plain value. */
 function main([id, picked], env) {
   if (id === "open") {
     if (picked === "offline" || openspot.call(["clipboard", "copy"], picked).code !== 0) return ""
@@ -38,5 +38,5 @@ function main([id, picked], env) {
   const why = noRates[answer.trim()]
   if (why) return "row=offline\ntitle=No exchange rates\n" + why
   const row = fields(answer)
-  return row.row && !row.tone ? card(row) : answer
+  return row.row ? card(row) : answer
 }

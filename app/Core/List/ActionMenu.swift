@@ -30,10 +30,10 @@ public struct ActionMenu: Equatable, Sendable {
 
     /// Lists what Enter does, the actions that fit, then the rows that the app adds, each of them on this spot or item.
     /// Returns nil when there is nothing to list.
-    public init?(spot: Spot, item: SpotItem?, showsPrimary: Bool = true, extras: [CommandAction] = []) {
+    public init?(spot: Spot, item: SpotItem?, showsOpen: Bool = true, extras: [CommandAction] = []) {
         var rows: [Row] = []
         let keyTitle = item.flatMap { $0.records ? ($0.shortcut == KeyList.unset ? Self.setTitle : Self.changeTitle) : nil }
-        if showsPrimary, let title = item?.openTitle ?? keyTitle ?? spot.primaryTitle(hasItem: item != nil) {
+        if showsOpen, let title = item?.openTitle ?? keyTitle ?? spot.openTitle(hasItem: item != nil) {
             rows.append(Row(title: title, keyLabel: "⏎", action: nil))
         }
         rows += spot.actions(for: item).map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0) }

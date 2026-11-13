@@ -116,7 +116,7 @@ final class ActionMenuFrameTests: XCTestCase {
 
     func testTheRowUnderAPointSkipsTheFieldOnTheStillEdge() throws {
         let actions = ["One", "Two", "Three"].enumerated().map { CommandAction(id: "a\($0.offset)", title: $0.element) }
-        let spot = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .list, primary: "Open", actions: actions)
+        let spot = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .list, openTitle: "Open", actions: actions)
         let menu = try XCTUnwrap(ActionMenu(spot: spot, item: SpotItem(title: "One", run: "1")))
         let top = ActionMenuFrame(item: card(column: 0), menu: menu, bounds: bounds)
         let bottom = ActionMenuFrame(item: card(column: 0, row: 6), menu: menu, bounds: bounds)

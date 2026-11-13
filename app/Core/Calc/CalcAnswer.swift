@@ -2,26 +2,28 @@ import Foundation
 
 /// The answer to a typed sum or conversion, as one row: its id is the plain value to copy, its title the answer written the
 /// way of the Mac, and its detail how the text was read. It tries a conversion, then a sum, then a date, and a text that
-/// starts as `2026-12-25` only as a date. Text that is none has no answer, and a currency with no rates to convert it has the
-/// answer `status=offline`.
+/// starts as `2026-12-25` only as a date. Text that is none has no answer, and a currency with no rates to convert it throws
+/// why.
 public struct CalcAnswer: Equatable, Sendable {
     /// The value with a dot and no grouping, such as `3.75`.
     public let value: String
     public let title: String
     public let detail: String
-    /// Why there is no value, such as `offline`.
-    public let status: String?
-    /// `warn` for an answer from old rates.
-    public let tone: String?
+    /// The part of the title that names what the value counts, such as `€`, `mi` or `days`.
+    public let unit: String?
+    /// The day of the exchange rates of a currency, with their age when they are old, such as `Nov 2, 9 days old`.
+    public let rates: String?
+    /// Whether the rates are so old that the answer warns.
+    public let ratesAreOld: Bool
 
-    /// Reads the text. `rates` gives the exchange rates, and is asked only for a currency.
+    /// Reads the text. `rates` gives the exchange rates, and is asked only for a currency that needs them.
     public init?(
         text: String,
         locale: Locale = .autoupdatingCurrent,
         clock: Calendar = .autoupdatingCurrent,
         now: Date = Date(),
         rates: @escaping () -> Result<CalcRates, CalcRateFailure> = { .failure(.offline) }
-    ) {
+    ) throws(CalcRateFailure) {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         var asked: Result<CalcRates, CalcRateFailure>?
         let kept = {
@@ -30,34 +32,35 @@ public struct CalcAnswer: Equatable, Sendable {
             return answer
         }
         let isDate = text.prefixMatch(of: /\d{4}-\d{1,2}-\d{1,2}(\s|$)/) != nil
-        if let answer = Self.conversion(of: text, locale: locale, clock: clock, now: now, rates: kept) {
+        if let answer = try Self.conversion(of: text, locale: locale, clock: clock, now: now, rates: kept) {
             self = answer
         } else if !isDate, let expression = CalcExpression(text: text, locale: locale), !expression.isPlain {
             self.init(value: Self.plain(expression.value, digits: 15), title: Self.written(expression.value, locale: locale), detail: expression.detail)
-        } else if let date = CalcDate(text: text, locale: locale, clock: clock, now: now) {
-            self.init(value: date.value, title: date.title, detail: date.detail)
+        } else if let date = CalcDate.answer(to: text, locale: locale, clock: clock, now: now) {
+            self = date
         } else {
             return nil
         }
     }
 
-    private init(value: String, title: String, detail: String, status: String? = nil, tone: String? = nil) {
+    init(value: String, title: String, detail: String, unit: String? = nil, rates: String? = nil, ratesAreOld: Bool = false) {
         self.value = value
         self.title = title
         self.detail = detail
-        self.status = status
-        self.tone = tone
+        self.unit = unit
+        self.rates = rates
+        self.ratesAreOld = ratesAreOld
     }
 
-    /// The row that `openspot calc solve` prints, or its status.
+    /// The row that `openspot calc solve` prints.
     public var text: String {
-        if let status { return TextBlock(fields: [.init(key: "status", value: status)]).text }
         let fields: [TextBlock.Field] = [.init(key: "row", value: value), .init(key: "title", value: title), .init(key: "detail", value: detail)]
-        return TextBlock(fields: fields + (tone.map { [.init(key: "tone", value: $0)] } ?? [])).text
+        let more = [("unit", unit), ("rates", rates), ("tone", ratesAreOld ? "warn" : nil)].compactMap { key, value in value.map { TextBlock.Field(key: key, value: $0) } }
+        return TextBlock(fields: fields + more).text
     }
 
     /// The first split of the text whose names are two units of one kind, or two currencies that the rates know.
-    private static func conversion(of text: String, locale: Locale, clock: Calendar, now: Date, rates asking: () -> Result<CalcRates, CalcRateFailure>) -> CalcAnswer? {
+    private static func conversion(of text: String, locale: Locale, clock: Calendar, now: Date, rates asking: () -> Result<CalcRates, CalcRateFailure>) throws(CalcRateFailure) -> CalcAnswer? {
         for split in CalcConversion.splits(of: text, locale: locale) {
             if let to = split.to, let answer = units(split.amount, from: split.from, to: to, locale: locale) { return answer }
             guard let from = CalcCurrency.code(split.from), let to = split.to.map(CalcCurrency.code) ?? locale.currency?.identifier, from != to,
@@ -66,7 +69,7 @@ public struct CalcAnswer: Equatable, Sendable {
             switch asking() {
             case .success(let kept): rates = kept
             case .failure(let failure):
-                if CalcCurrency.isKnown(from), CalcCurrency.isKnown(to) { return CalcAnswer(value: "", title: "", detail: "", status: failure.rawValue) }
+                if CalcCurrency.isKnown(from), CalcCurrency.isKnown(to) { throw failure }
                 continue
             }
             guard let rate = rates.rate(from: from, to: to) else { continue }
@@ -75,6 +78,7 @@ public struct CalcAnswer: Equatable, Sendable {
             formatter.locale = locale
             formatter.numberStyle = .currency
             formatter.currencyCode = to
+            formatter.currencySymbol = CalcCurrency.symbol(of: to, written: formatter.currencySymbol)
             if !CalcCurrency.isFiat(to) {
                 formatter.minimumFractionDigits = 0
                 formatter.maximumFractionDigits = 8
@@ -85,12 +89,13 @@ public struct CalcAnswer: Equatable, Sendable {
             plain.maximumFractionDigits = formatter.maximumFractionDigits
             let age = days(of: rates, clock: clock, now: now)
             let old = age.map { $0 >= oldDays ? ", \(daysWritten($0, clock: clock, locale: locale)) old" : "" } ?? ""
-            let detail = "\(split.amount.detail) \(from) in \(to) · rates of \(day(of: rates, clock: clock, now: now, locale: locale))\(old)"
             return CalcAnswer(
                 value: plain.string(from: NSNumber(value: value)) ?? Self.plain(value, digits: 15),
                 title: formatter.string(from: NSNumber(value: value)) ?? "",
-                detail: detail,
-                tone: old.isEmpty ? nil : "warn"
+                detail: "\(split.amount.detail) \(from) in \(to)",
+                unit: formatter.currencySymbol,
+                rates: "\(day(of: rates, clock: clock, now: now, locale: locale))\(old)",
+                ratesAreOld: !old.isEmpty
             )
         }
         return nil
@@ -106,7 +111,13 @@ public struct CalcAnswer: Equatable, Sendable {
         formatter.unitStyle = .medium
         formatter.numberFormatter = significant(6, locale: locale)
         let title = formatter.string(from: Measurement(value: value, unit: toUnit))
-        return CalcAnswer(value: plain(value, digits: 6), title: title, detail: "\(amount.detail) \(from) in \(to)")
+        return CalcAnswer(value: plain(value, digits: 6), title: title, detail: "\(amount.detail) \(from) in \(to)", unit: unit(of: title, number: formatter.numberFormatter.string(from: NSNumber(value: value)) ?? ""))
+    }
+
+    /// The words of a title with no number, such as `mi` of `3.10686 mi`, as its formatter wrote the number.
+    static func unit(of title: String, number: String) -> String? {
+        let words = title.replacingOccurrences(of: number, with: "").trimmingCharacters(in: .whitespaces.union(CharacterSet(charactersIn: "\u{00A0}\u{202F}")))
+        return words.isEmpty || number.isEmpty ? nil : words
     }
 
     /// The age in days from which an answer says that its rates are old. The file changes once a day.
