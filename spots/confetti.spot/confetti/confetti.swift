@@ -517,12 +517,26 @@ func chosen(data: String, builtIn: String) -> Look? {
 
 var listening: (data: String, builtIn: String) = ("", "")
 
-/// Waits for the key in the background, and plays the picked look each time it is pressed.
-func listen(key: String, data: String, builtIn: String) -> Never {
+/// The watch of the process whose end ends the listener.
+var parentWatch: DispatchSourceProcess?
+
+/// Ends this program when the process `parent` ends, or at once when it has ended.
+func end(with parent: pid_t) {
+    let watch = DispatchSource.makeProcessSource(identifier: parent, eventMask: .exit, queue: .main)
+    watch.setEventHandler { exit(0) }
+    watch.resume()
+    parentWatch = watch
+    if kill(parent, 0) != 0, errno == ESRCH { exit(0) }
+}
+
+/// Waits for the key in the background, and plays the picked look each time it is pressed. With a `parent`, it ends when
+/// that process ends.
+func listen(key: String, data: String, builtIn: String, parent: pid_t?) -> Never {
     guard let (code, modifiers) = hotKey(key) else {
         FileHandle.standardError.write("Openspot cannot use the key \(key). Hold cmd, ctrl or option with a letter, a digit or a key such as space.\n".data(using: .utf8)!)
         exit(2)
     }
+    if let parent { end(with: parent) }
     listening = (data, builtIn)
     let app = NSApplication.shared
     app.setActivationPolicy(.accessory)
@@ -545,16 +559,17 @@ let usage = """
     confetti <file.look>                             Plays the look on each screen.
     confetti check <file.look>                       Says whether the look file can play, or what to fix.
     confetti still <file.look> <seconds> <file.png>  Draws the look as it is that many seconds in.
-    confetti listen <key> <data folder> <looks folder>  Plays the picked look each time the key is pressed.
+    confetti listen <key> <data folder> <looks folder> [parent pid]  Plays the picked look each time the key is pressed,
+                                                     until the parent ends.
     """
 let arguments = Array(CommandLine.arguments.dropFirst())
 let command = arguments.first ?? ""
 if command == "listen" {
-    guard arguments.count == 4 else {
+    guard arguments.count == 4 || arguments.count == 5 else {
         print(usage)
         exit(2)
     }
-    listen(key: arguments[1], data: arguments[2], builtIn: arguments[3])
+    listen(key: arguments[1], data: arguments[2], builtIn: arguments[3], parent: arguments.count == 5 ? pid_t(arguments[4]) : nil)
 }
 let path = command == "check" || command == "still" ? arguments.dropFirst().first : arguments.first
 guard let path, !path.isEmpty else {

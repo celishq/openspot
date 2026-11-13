@@ -34,6 +34,71 @@ final class SampleSpotsTests: SampleSpotsCase {
         _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-typecheck", source.path])
     }
 
+    func testTheConfettiListenerEndsWhenItsParentEnds() async throws {
+        let confetti = try XCTUnwrap(try scan.spots.first { $0.id == "confetti" })
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-listen-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let source = confetti.url.deletingPathExtension().appendingPathComponent("confetti.swift")
+        let program = folder.appendingPathComponent("confetti")
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-o", program.path, source.path], limit: 300)
+        let parent = Process()
+        parent.executableURL = URL(fileURLWithPath: "/bin/sleep")
+        parent.arguments = ["300"]
+        try parent.run()
+        defer { parent.terminate() }
+        let listener = Process()
+        listener.executableURL = program
+        listener.arguments = ["listen", "ctrl+option+shift+f12", folder.path, source.deletingLastPathComponent().appendingPathComponent("looks").path, String(parent.processIdentifier)]
+        listener.standardOutput = FileHandle.nullDevice
+        listener.standardError = FileHandle.nullDevice
+        try listener.run()
+        defer { if listener.isRunning { listener.terminate() } }
+
+        parent.terminate()
+        parent.waitUntilExit()
+        let end = Date().addingTimeInterval(30)
+        while listener.isRunning, Date() < end { try await Task.sleep(nanoseconds: 20_000_000) }
+
+        XCTAssertFalse(listener.isRunning)
+        XCTAssertEqual(listener.terminationReason, .exit)
+        XCTAssertEqual(listener.terminationStatus, 0)
+    }
+
+    func testAConfettiReadStartsOneListenerThatEndsWithItsCaller() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let data = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-read-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: data) }
+        let log = data.appendingPathComponent("started")
+        try "#!/bin/sh\nprintf '%s\\n' \"$*\" >> '\(log.path)'\nexec /bin/sleep 300\n".writeScript(to: data.appendingPathComponent("confetti"))
+        defer {
+            if let pid = try? String(contentsOf: data.appendingPathComponent("listen.pid"), encoding: .utf8), let id = pid_t(pid) { kill(id, SIGTERM) }
+        }
+
+        for _ in 0..<2 {
+            let process = Process()
+            process.executableURL = root.appendingPathComponent("spots/confetti.spot/confetti.sh")
+            process.arguments = ["read"]
+            process.environment = [
+                "PATH": "/usr/bin:/bin", "OPENSPOT_DATA": data.path, "HOME": data.path, "OPENSPOT_REASON": "panel.open",
+                "OPENSPOT_SH": root.appendingPathComponent("app/Shell/openspot.sh").path
+            ]
+            process.standardOutput = FileHandle.nullDevice
+            process.standardInput = FileHandle.nullDevice
+            try process.run()
+            process.waitUntilExit()
+            let end = Date().addingTimeInterval(10)
+            while !FileManager.default.fileExists(atPath: data.appendingPathComponent("listen.pid").path), Date() < end {
+                RunLoop.current.run(until: Date().addingTimeInterval(0.02))
+            }
+        }
+
+        let started = try String(contentsOf: log, encoding: .utf8).split(separator: "\n")
+        XCTAssertEqual(started.count, 1)
+        XCTAssertEqual(started.first?.split(separator: " ").last.map(String.init), String(ProcessInfo.processInfo.processIdentifier))
+    }
+
     func testConfettiRefusesAPlayKeyThatTheAppsUse() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let data = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-key-\(UUID().uuidString)")

@@ -5,7 +5,7 @@
 # on=panel.open
 # on=sheet.open
 # press=open
-dir=$(cd "$(dirname "$0")" && pwd)/confetti
+dir=$(cd "${0%/*}" && pwd)/confetti
 . "$dir/shared.sh"
 
 prompt() {
@@ -70,7 +70,7 @@ case "$1" in
       printf 'button=delete\ntitle=Delete %s\nshortcut=cmd+backspace\nconfirm=Press again to move it to the Trash\n\n' "$(esc "$(look_title "$chosen")")"
     fi
     printf 'button=mine\ntitle=Show my looks in Finder\nshortcut=cmd+o\n'
-    [ -z "${OPENSPOT_REASON-}" ] || (listen > /dev/null 2>&1 &)
+    [ -z "${OPENSPOT_REASON-}" ] || listening || (listen > /dev/null 2>&1 &)
     ;;
   open | play)
     play "$(default_look)"
