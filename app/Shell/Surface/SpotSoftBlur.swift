@@ -130,24 +130,33 @@ struct SpotSoftBlur: NSViewRepresentable {
         surface.masks = Self.masks(height: height)
     }
 
+    private static let byteLimit = 8 << 20
     private static var kept: [CGFloat: Masks] = [:]
+    private static var keptBytes = 0
 
-    /// Draws the masks of these heights ahead, one in each turn of the main queue, so that an open of a sheet finds them.
+    /// Draws the masks of these heights ahead, one in each turn of the main queue, so that an open of a sheet finds them. It
+    /// stops at the limit of the kept masks.
     static func warm(_ heights: [CGFloat]) {
         var left = Set(heights).subtracting(kept.keys)
-        guard let height = left.popFirst() else { return }
+        guard keptBytes < byteLimit, let height = left.popFirst() else { return }
         _ = masks(height: height)
         DispatchQueue.main.async { warm(Array(left)) }
     }
 
-    /// The masks of this height, kept for each height.
+    /// The masks of this height, kept for each height up to 8 MB of masks, after which it starts again.
     private static func masks(height: CGFloat) -> Masks {
         if let masks = kept[height] { return masks }
         let masks = Masks(
             blur: mask(height: height, inset: blurInset, softness: blurSoftness),
             tint: mask(height: height, inset: tintInset, softness: tintSoftness)
         )
+        let cost = [masks.blur, masks.tint].reduce(0) { $0 + ($1.map { $0.bytesPerRow * $0.height } ?? 0) }
+        if keptBytes + cost > byteLimit {
+            kept = [:]
+            keptBytes = 0
+        }
         kept[height] = masks
+        keptBytes += cost
         return masks
     }
 
