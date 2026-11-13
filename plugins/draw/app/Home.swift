@@ -11,7 +11,6 @@ struct Home: View {
     let trash: ([URL]) -> Void
     let rename: (URL) -> Void
     @State private var entries: [Shelf.Entry] = []
-    @State private var adding = false
     @State private var width: CGFloat = 900
     @State private var height: CGFloat = 600
 
@@ -34,19 +33,15 @@ struct Home: View {
                     if drawer.query.isEmpty {
                         Button(action: make) {
                             VStack(spacing: 8) {
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(Color.primary.opacity(adding ? 0.04 : 0))
-                                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .strokeBorder(Color.primary.opacity(adding ? 0.32 : 0.18), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
-                                    .overlay(Image(systemName: "plus").font(.system(size: 24, weight: .medium)).foregroundStyle(adding ? .primary : .secondary))
-                                    .aspectRatio(1.5, contentMode: .fit)
+                                Lifted(dashed: true) {
+                                    Image(systemName: "plus").font(.system(size: 24, weight: .medium)).foregroundStyle(.secondary)
+                                }
                                 Text("New board").font(.system(size: 13, weight: .medium)).frame(maxWidth: .infinity, alignment: .leading)
                                 Text(" ").font(.system(size: 11))
                             }
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .onHover { inside in withAnimation(.easeOut(duration: 0.15)) { adding = inside } }
                     }
                     ForEach(entries) { entry in
                         Card(entry: entry, open: { open(entry.file) }, menu: {
@@ -84,35 +79,73 @@ struct Home: View {
     }
 }
 
-/// One board on the start page: its picture, its title and when it changed.
+/// One board on the start page: its picture on a raised card, its title and when it changed. The card lifts and tilts
+/// toward the pointer while it rests on it.
 struct Card: View {
     let entry: Shelf.Entry
     let open: () -> Void
     let menu: () -> NSMenu
-    @State private var hovering = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Group {
+            Lifted {
                 if let picture = NSImage(contentsOf: entry.picture) {
-                    Image(nsImage: picture).resizable().aspectRatio(contentMode: .fit)
-                } else {
-                    Color.white
+                    Image(nsImage: picture).resizable().aspectRatio(contentMode: .fit).padding(6)
                 }
             }
-            .aspectRatio(1.5, contentMode: .fit)
-            .frame(maxWidth: .infinity)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.primary.opacity(hovering ? 0.25 : 0.1)))
-            .shadow(color: .black.opacity(hovering ? 0.12 : 0.05), radius: hovering ? 10 : 4, y: 2)
             Text(entry.title).font(.system(size: 13, weight: .medium)).lineLimit(1)
             Text(entry.edited.formatted(.relative(presentation: .named)).capitalized(with: nil))
                 .font(.system(size: 11)).foregroundStyle(.secondary)
         }
         .contentShape(Rectangle())
-        .onHover { inside in withAnimation(.easeOut(duration: 0.15)) { hovering = inside } }
         .onTapGesture(perform: open)
         .overlay(MenuSpot(menu: menu))
+    }
+}
+
+/// A raised white card of the start page, with layered shadows, that lifts and tilts toward the pointer.
+struct Lifted<Content: View>: View {
+    var dashed = false
+    @ViewBuilder let content: Content
+    @State private var tilt = CGSize.zero
+    @State private var hovering = false
+
+    var body: some View {
+        GeometryReader { place in
+            ZStack {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(dashed ? Color.primary.opacity(hovering ? 0.035 : 0.015) : Color.white)
+                content
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay {
+                if dashed {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(hovering ? 0.3 : 0.16), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                } else {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(LinearGradient(colors: [.white, Color.black.opacity(0.08)], startPoint: .top, endPoint: .bottom), lineWidth: 1)
+                }
+            }
+            .shadow(color: .black.opacity(dashed ? 0 : 0.05), radius: 1, y: 1)
+            .shadow(color: .black.opacity(dashed ? 0 : hovering ? 0.16 : 0.08), radius: hovering ? 18 : 10, y: hovering ? 12 : 5)
+            .rotation3DEffect(.degrees(Double(tilt.height) * 6), axis: (x: 1, y: 0, z: 0), perspective: 0.6)
+            .rotation3DEffect(.degrees(Double(tilt.width) * -6), axis: (x: 0, y: 1, z: 0), perspective: 0.6)
+            .scaleEffect(hovering ? 1.025 : 1)
+            .offset(y: hovering ? -3 : 0)
+            .onContinuousHover { phase in
+                withAnimation(.spring(duration: 0.3, bounce: 0.2)) {
+                    switch phase {
+                    case .active(let point):
+                        hovering = true
+                        tilt = CGSize(width: point.x / max(place.size.width, 1) - 0.5, height: point.y / max(place.size.height, 1) - 0.5)
+                    case .ended:
+                        hovering = false
+                        tilt = .zero
+                    }
+                }
+            }
+        }
+        .aspectRatio(1.5, contentMode: .fit)
     }
 }

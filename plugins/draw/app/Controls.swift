@@ -1,50 +1,34 @@
 import SwiftUI
 
-/// The name and key of a control, which fades in after the pointer rests on it for a moment. Near an edge of the window
-/// it lines up with that side of the control, so it stays whole.
+/// The name and key of a control, which fades in after the pointer rests on it for a moment, in a floating panel above
+/// the whole window, beside the control and inside the window's edges.
 struct Tip: ViewModifier {
     let text: String
     var below = false
     @State private var resting = false
-    @State private var shown = false
-    @State private var side = HorizontalAlignment.center
+    @State private var frame = CGRect.zero
+    @State private var id = UUID()
 
     func body(content: Content) -> some View {
         content
             .background(GeometryReader { place in
-                Color.clear.onChange(of: shown) { _, now in
-                    guard now else { return }
-                    let frame = place.frame(in: .global)
-                    let width = NSApp.keyWindow?.frame.width ?? .greatestFiniteMagnitude
-                    side = frame.midX + 90 > width ? .trailing : frame.midX < 90 ? .leading : .center
-                }
+                Color.clear
+                    .onAppear { frame = place.frame(in: .global) }
+                    .onChange(of: place.frame(in: .global)) { _, now in frame = now }
             })
             .onHover { inside in
                 resting = inside
                 if inside {
                     Task {
                         try? await Task.sleep(for: .seconds(0.8))
-                        if resting { withAnimation(.easeOut(duration: 0.2)) { shown = true } }
+                        guard resting, let window = NSApp.keyWindow else { return }
+                        TipPanel.shared.show(text, for: frame, below: below, in: window, owner: id)
                     }
                 } else {
-                    withAnimation(.easeIn(duration: 0.1)) { shown = false }
+                    TipPanel.shared.hide(owner: id)
                 }
             }
-            .overlay(alignment: Alignment(horizontal: side, vertical: below ? .bottom : .top)) {
-                if shown {
-                    Text(text)
-                        .font(.system(size: 12, weight: .medium))
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 5)
-                        .background(Color.white, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).strokeBorder(Color.black.opacity(0.06)))
-                        .shadow(color: .black.opacity(0.18), radius: 6, y: 2)
-                        .fixedSize()
-                        .offset(y: below ? 38 : -40)
-                        .transition(.opacity)
-                        .allowsHitTesting(false)
-                }
-            }
+            .onDisappear { TipPanel.shared.hide(owner: id) }
     }
 }
 

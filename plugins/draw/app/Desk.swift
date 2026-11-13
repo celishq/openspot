@@ -279,8 +279,17 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
             alert.informativeText = boards == 0 ? "The folder moves to the Trash." : "The folder and the \(boards) \(boards == 1 ? "board" : "boards") in it move to the Trash."
             alert.addButton(withTitle: "Delete").hasDestructiveAction = true
             alert.addButton(withTitle: "Cancel")
-            guard alert.runModal() == .alertFirstButtonReturn else { return }
+            alert.beginSheetModal(for: window) { [weak self] answer in
+                guard answer == .alertFirstButtonReturn else { return }
+                MainActor.assumeIsolated { self?.discard(files) }
+            }
+            return
         }
+        discard(files)
+    }
+
+    /// Moves boards and folders to the Trash and closes their tabs.
+    private func discard(_ files: [URL]) {
         for file in files {
             for open in tabs.studios where open.file.standardizedFileURL == file.standardizedFileURL || open.file.path.hasPrefix(file.path + "/") {
                 if let page = tabs.page(of: open) { close(page: page) }
