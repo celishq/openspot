@@ -187,6 +187,7 @@
 		5134351A5BC6D67C42C1070F /* SpotsModel+Floats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BA8C216DCA6199D80AE9136 /* SpotsModel+Floats.swift */; };
 		514D07D97685E1E7ACF85C17 /* InlineCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA209D9AD4FD095679CB5F54 /* InlineCall.swift */; };
 		517CCF4BA1DB4F34EFEA4E0B /* FoldedItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF73F1965C9FFF9F8F6300EE /* FoldedItem.swift */; };
+		5189C339DB9B568559B04A2B /* PictureFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8139FA570BA5DD5D405F95E6 /* PictureFile.swift */; };
 		5191D04ED65A1F1F14B70474 /* SpotTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C362E457EDE5671E191C260 /* SpotTheme.swift */; };
 		51CD2A78316EEFB92AC1E85F /* SpotTrayMarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BA3B77A16C1E0C4D246D752 /* SpotTrayMarkView.swift */; };
 		5234425085BE4F5729B4E2DB /* SpotsModel+Grid.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3CD13ED5DE95AB2AAE0FB33 /* SpotsModel+Grid.swift */; };
@@ -936,6 +937,7 @@
 		808794ED0B6B75DB34BE08F3 /* PlaygroundCallTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaygroundCallTests.swift; sourceTree = "<group>"; };
 		80D063F29976A3A35734DE15 /* SpotEventsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotEventsTests.swift; sourceTree = "<group>"; };
 		8104FD67862989AC8C1DA091 /* SpotScreenPick.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotScreenPick.swift; sourceTree = "<group>"; };
+		8139FA570BA5DD5D405F95E6 /* PictureFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PictureFile.swift; sourceTree = "<group>"; };
 		814ECF718B17193CD5DBBCE8 /* IconBody.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconBody.swift; sourceTree = "<group>"; };
 		8154CD722F25157477CF454F /* PlaygroundCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaygroundCall.swift; sourceTree = "<group>"; };
 		81708547DDCAC262759EB258 /* FormDraftTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormDraftTests.swift; sourceTree = "<group>"; };
@@ -1504,6 +1506,7 @@
 				1A24E5DCD2962EE9052D8FD5 /* HintWords.swift */,
 				D35BAF65C7F62271F335C770 /* ItemForm.swift */,
 				9E2BBBB5CFD3D9C12B7A7857 /* PartCatalog.swift */,
+				8139FA570BA5DD5D405F95E6 /* PictureFile.swift */,
 				8154CD722F25157477CF454F /* PlaygroundCall.swift */,
 				B51F0F601C6825E0B9796809 /* PlaygroundPanel.swift */,
 				30A80CC4F576F670DF5A6D01 /* PlaygroundPlace.swift */,
@@ -2681,6 +2684,7 @@
 				2AA3FBC09252C22BB0B9D56D /* PanelMotion.swift in Sources */,
 				CF4DF2850057B528C8AFBB61 /* PartCatalog.swift in Sources */,
 				8BB52178DFB873CEDF8BCABE /* PickWeights.swift in Sources */,
+				5189C339DB9B568559B04A2B /* PictureFile.swift in Sources */,
 				17D080086AA5F15C23AF1247 /* PlaygroundCall.swift in Sources */,
 				9CC101A98EA61AFFDA36137A /* PlaygroundPanel.swift in Sources */,
 				CFA248FB984F1AD3B40685F7 /* PlaygroundPlace.swift in Sources */,
