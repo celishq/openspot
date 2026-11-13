@@ -95,7 +95,7 @@ final class RemindersTests: XCTestCase {
             do {
                 _ = try await reminders(store, isRead: false).done(id, true)
                 XCTFail("\(id) was ticked")
-            } catch PluginError.failed(1, let message) {
+            } catch SpotError.failed(1, let message) {
                 XCTAssertEqual(message, "Openspot cannot find \(id). Read the list again, and use the id of one of its rows.")
             }
         }
@@ -112,7 +112,7 @@ final class RemindersTests: XCTestCase {
         do {
             _ = try await reminders(refused, isRead: false).due(days: 1, hiding: [])
             XCTFail("a refusal printed a list")
-        } catch PluginError.failedWithFix(1, let message, let link) {
+        } catch SpotError.failedWithFix(1, let message, let link) {
             XCTAssertEqual(refused.asks, 1)
             XCTAssertEqual(message, "Openspot has no access to your reminders. Allow Openspot in Privacy & Security › Reminders, then try again.")
             XCTAssertEqual(link.absoluteString, "x-apple.systempreferences:com.apple.preference.security?Privacy_Reminders")

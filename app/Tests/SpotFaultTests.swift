@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 /// Proves that the panel keeps each fault of a spot where the person looks: a file that does not load keeps a card, a failed
-/// run marks its card, and a change of the plugins folder shows at once.
+/// run marks its card, and a change of the spots folder shows at once.
 @MainActor
 final class SpotFaultTests: XCTestCase {
     private var folder: URL!
@@ -14,7 +14,7 @@ final class SpotFaultTests: XCTestCase {
 
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-fault-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         let tools = folder.appendingPathComponent("tools")
         try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
         for (name, body) in [("pbcopy", "cat > '\(folder.path)/clipboard'"), ("open", "echo \"$@\" > '\(folder.path)/opened'")] {
@@ -24,9 +24,8 @@ final class SpotFaultTests: XCTestCase {
         suite = "openspot-fault-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         host = TestHost()
-        host.shipped = ShippedSpot.commands(folder: plugins, guide: folder.appendingPathComponent("GUIDE.md"), app: "/Apps/Openspot")
-        let files = SpotFiles(
-            environment: ["OPENSPOT_PLUGINS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
+        let files = AppPlaces(
+            environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
             home: folder,
             defaults: defaults
         )
@@ -41,13 +40,13 @@ final class SpotFaultTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private var plugins: URL {
-        folder.appendingPathComponent("plugins", isDirectory: true)
+    private var spots: URL {
+        folder.appendingPathComponent("spots", isDirectory: true)
     }
 
     private func script(_ name: String, header: String = "", _ body: String) throws {
         let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: plugins.appendingPathComponent("\(name).sh"))
+        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: spots.spotFile(name))
     }
 
     private func wait(_ what: String, until condition: () -> Bool) async throws {
@@ -68,7 +67,7 @@ final class SpotFaultTests: XCTestCase {
 
     /// Opens the sheet of the spot of a file that does not load.
     private func openFault() async throws -> SheetParts {
-        try script("weather", header: "size=huge", "echo")
+        try script("weather", header: "mode=huge", "echo")
         model.reload()
         model.isShown = true
         model.press("weather")
@@ -77,7 +76,7 @@ final class SpotFaultTests: XCTestCase {
     }
 
     func testAFileThatDoesNotLoadKeepsAWideCardThatSaysHowToFixIt() throws {
-        try script("weather", header: "size=huge", "echo")
+        try script("weather", header: "mode=huge", "echo")
 
         model.reload()
 
@@ -90,7 +89,7 @@ final class SpotFaultTests: XCTestCase {
     }
 
     func testAFaultCardStaysWideWhenThePersonChoseTheSmallSize() throws {
-        try script("weather", header: "size=huge", "echo")
+        try script("weather", header: "mode=huge", "echo")
         model.reload()
 
         model.prefer(.small, for: "weather")
@@ -102,8 +101,8 @@ final class SpotFaultTests: XCTestCase {
         let sheet = try await openFault()
 
         let text = sheet.parts.compactMap { if case .text(let value, _, _) = $0.control { value } else { nil } }.joined()
-        XCTAssertTrue(text.contains(plugins.appendingPathComponent("weather.sh").path))
-        XCTAssertTrue(text.contains("Weather has an unknown size: huge"))
+        XCTAssertTrue(text.contains(spots.spotFile("weather").path))
+        XCTAssertTrue(text.contains("Weather has an unknown mode: huge. Use once, stay or always"))
         XCTAssertEqual(Set(sheet.parts.map(\.id)).intersection(["fix", "edit"]), ["fix", "edit"])
     }
 
@@ -116,8 +115,8 @@ final class SpotFaultTests: XCTestCase {
         try await wait("the whole prompt") { saved("clipboard")?.contains("what the spot runs on my computer.") == true }
 
         let prompt = try XCTUnwrap(saved("clipboard"))
-        XCTAssertTrue(prompt.contains(plugins.appendingPathComponent("weather.sh").path))
-        XCTAssertTrue(prompt.contains("Weather has an unknown size: huge"))
+        XCTAssertTrue(prompt.contains(spots.spotFile("weather").path))
+        XCTAssertTrue(prompt.contains("Weather has an unknown mode: huge. Use once, stay or always"))
         XCTAssertTrue(prompt.contains("check"))
     }
 
@@ -127,18 +126,18 @@ final class SpotFaultTests: XCTestCase {
         model.pressPart(try XCTUnwrap(sheet.parts.first { $0.id == "edit" }))
         try await wait("the editor") { saved("opened")?.hasSuffix("\n") == true }
 
-        XCTAssertEqual(saved("opened"), "-t \(plugins.appendingPathComponent("weather.sh").path)\n")
+        XCTAssertEqual(saved("opened"), "-t \(spots.spotFile("weather").path)\n")
     }
 
     func testAFileThatLoadsAgainTakesBackItsCard() throws {
-        try script("weather", header: "size=huge", "echo")
+        try script("weather", header: "mode=huge", "echo")
         model.reload()
 
-        try script("weather", header: "size=small", "echo")
+        try script("weather", header: "mode=once", "echo")
         model.folderChanged()
 
         XCTAssertEqual(entry("weather")?.state.title, "Weather")
-        XCTAssertNil(entry("weather")?.command.fault)
+        XCTAssertNil(entry("weather")?.spot.fault)
     }
 
     func testAFailedRunMarksItsCardUntilARunSucceeds() async throws {
@@ -165,13 +164,13 @@ final class SpotFaultTests: XCTestCase {
     }
 
     func testAChangedScriptReadsAgainWhileTheOpenPanelShowsIt() async throws {
-        try script("cups", header: "read=panel", "printf 'title=One cup\\n'")
+        try script("cups", header: "on=panel.open", "printf 'title=One cup\\n'")
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
         try await wait("the first read") { entry("cups")?.state.title == "One cup" }
 
-        try script("cups", header: "read=panel", "printf 'title=Two cups\\n'")
+        try script("cups", header: "on=panel.open", "printf 'title=Two cups\\n'")
         model.folderChanged()
 
         try await wait("the read of the changed script") { entry("cups")?.state.title == "Two cups" }

@@ -10,6 +10,11 @@ final class SpotsPanel: NSPanel {
     /// The frame that the window had before Edit Spots grew it.
     private var restFrame: NSRect?
     private var pressWatch: Task<Void, Never>?
+    private var tap = ModifierTap()
+    /// The stage of the trackpad's press: 1 for a click, 2 for a force click.
+    private var pressStage = 0
+    /// Whether a force click opened the menu and its button is still down, so that its release runs the row under it.
+    private var isForceDragging = false
 
     override var canBecomeKey: Bool { true }
 
@@ -24,7 +29,7 @@ final class SpotsPanel: NSPanel {
             await self?.model?.waitForReads()
             self?.contentView?.layoutSubtreeIfNeeded()
             self?.displayIfNeeded()
-            try? await Task.sleep(for: .seconds(2 * SpotMotion.fadeInDuration))
+            try? await Task.sleep(for: .seconds(2 * MotionTokens.fadeIn))
             if self?.model?.isWarming == true {
                 self?.model?.isWarming = false
                 self?.hide(then: done)
@@ -86,9 +91,9 @@ final class SpotsPanel: NSPanel {
         return NSRect(x: frame.minX, y: frame.maxY - height, width: frame.width, height: height).contains(point)
     }
 
-    /// Grows the window in Edit Spots to hold the dock along the bottom of the screen, with the panel at its place on the
-    /// screen, and fades the dock in. When Edit Spots ends, the dock fades out, and then the window gets its frame back. A
-    /// panel that closes keeps its frame until it is gone.
+    /// Grows the window in Edit Spots to hold the store from the top of the screen to its bottom, glides the panel up to the
+    /// top, and fades the store in under it. When Edit Spots ends, the store fades out and the panel glides back, and then
+    /// the window gets its frame back. A panel that closes keeps its frame until it is gone.
     private func followEditing() {
         guard let model else { return }
         let isEditing = withObservationTracking { model.isEditing } onChange: { [weak self] in
@@ -97,21 +102,28 @@ final class SpotsPanel: NSPanel {
         if isEditing, restFrame == nil, let area = screen?.visibleFrame {
             let panel = frame
             let content = SpotTokens.backdropHeight(gridHeight: SpotGrid.height(of: model.placements)) - SpotTokens.halo
-            let dock = ScreenPlace.dock(under: NSRect(x: panel.minX, y: panel.maxY - content, width: panel.width, height: content), in: area)
-            let whole = panel.union(dock)
+            let edit = ScreenPlace.edit(under: NSRect(x: panel.minX, y: panel.maxY - content, width: panel.width, height: content), in: area)
+            let lifted = panel.offsetBy(dx: 0, dy: edit.lift)
+            let whole = panel.union(lifted).union(edit.dock)
             restFrame = panel
-            place.panel = CGPoint(x: panel.minX - whole.minX, y: whole.maxY - panel.maxY)
-            place.dock = CGRect(x: dock.minX - whole.minX, y: whole.maxY - dock.maxY, width: dock.width, height: dock.height)
+            place.panel = CGPoint(x: lifted.minX - whole.minX, y: whole.maxY - lifted.maxY)
+            place.lift = edit.lift
+            place.dock = CGRect(x: edit.dock.minX - whole.minX, y: whole.maxY - edit.dock.maxY, width: edit.dock.width, height: edit.dock.height)
+            place.storeSize = edit.dock.size
             place.isOut = false
             model.dockFrame = place.dock?.offsetBy(dx: -place.panel.x, dy: -place.panel.y)
             resize(to: whole)
             DispatchQueue.main.async { [weak self] in
                 guard let self, self.model?.isEditing == true else { return }
-                withAnimation(SpotMotion.edit) { self.place.isOut = true }
+                withAnimation(SpotMotion.move) {
+                    self.place.isOut = true
+                    self.place.lift = 0
+                }
             }
-        } else if !isEditing, restFrame != nil, model.isShown {
-            withAnimation(SpotMotion.edit) {
+        } else if !isEditing, let rest = restFrame, model.isShown {
+            withAnimation(SpotMotion.move) {
                 place.isOut = false
+                place.lift = frame.maxY - rest.maxY - place.panel.y
             } completion: { [weak self] in
                 if self?.model?.isEditing == false { self?.restoreFrame() }
             }
@@ -125,6 +137,7 @@ final class SpotsPanel: NSPanel {
         place.isOut = false
         place.dock = nil
         place.panel = .zero
+        place.lift = 0
         model?.dockFrame = nil
         resize(to: rest)
     }
@@ -143,7 +156,7 @@ final class SpotsPanel: NSPanel {
     /// Starts the close motion, and takes the panel off the screen when it ends. Then it runs the given work.
     func hide(then done: (() -> Void)? = nil) {
         model?.panelWillHide()
-        DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeOutDuration) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + MotionTokens.fadeOut) {
             defer { done?() }
             guard self.model?.isShown == false else { return }
             self.orderOut(nil)
@@ -156,8 +169,31 @@ final class SpotsPanel: NSPanel {
 
     /// Gives each key to the actions first, so that they work whichever field has the focus.
     override func sendEvent(_ event: NSEvent) {
-        if event.type == .flagsChanged { model?.takeHeld(Self.modifiers(of: event.modifierFlags)) }
+        if event.type == .flagsChanged {
+            model?.takeHeld(Self.modifiers(of: event.modifierFlags))
+            if let modifier = tap.take(Self.modifiers(of: event.modifierFlags), at: event.timestamp), model?.recording != nil {
+                model?.recordTap(modifier)
+            }
+        }
+        if event.type == .pressure { takePressure(event) }
+        if isForceDragging, let model {
+            switch event.type {
+            case .leftMouseDragged:
+                model.dragMenu(to: panelPoint(of: event))
+            case .leftMouseUp:
+                isForceDragging = false
+                super.sendEvent(event)
+                model.releaseMenu(at: panelPoint(of: event))
+                return
+            default: break
+            }
+        }
+        if event.type == .rightMouseDown, let model, model.isShown, !model.isEditing, model.openList == nil {
+            openMenu(at: event)
+            return
+        }
         if event.type == .keyDown {
+            tap.spoil()
             if model?.recording != nil {
                 if Int(event.keyCode) == kVK_Escape {
                     model?.stopRecording()
@@ -166,13 +202,44 @@ final class SpotsPanel: NSPanel {
                 }
                 return
             }
-            if let key = Self.actionKey(of: event), model?.handleKey(key) == true { return }
+            if Int(event.keyCode) == kVK_Return, event.modifierFlags.contains(.command), model?.openSoleSettings() == true { return }
+            if let key = Self.actionKey(of: event), !textKeepsArrow(key), model?.handleKey(key) == true { return }
             if model?.handleChain(code: UInt32(event.keyCode), modifiers: Self.modifiers(of: event.modifierFlags)) == true { return }
         }
         super.sendEvent(event)
     }
 
-    private static func modifiers(of flags: NSEvent.ModifierFlags) -> Shortcut.Modifiers {
+    /// Opens the actions menu of the card under a force click, when the press reaches its second stage.
+    private func takePressure(_ event: NSEvent) {
+        defer { pressStage = event.stage }
+        guard event.stage == 2, pressStage < 2 else { return }
+        openMenu(at: event)
+        isForceDragging = model?.menu != nil
+    }
+
+    /// Opens the actions menu of the card under the pointer of this event.
+    private func openMenu(at event: NSEvent) {
+        model?.openMenu(at: panelPoint(of: event))
+    }
+
+    /// Where the pointer of this event lies in the panel, from its top left corner.
+    private func panelPoint(of event: NSEvent) -> CGPoint {
+        CGPoint(x: event.locationInWindow.x, y: (contentView?.bounds.height ?? 0) - event.locationInWindow.y)
+    }
+
+    /// Whether the text view that has the focus keeps an up or down arrow: up while its caret lies below its first line, and
+    /// down while it lies above its last. At an edge, the arrow moves the focus to the next part of the sheet.
+    private func textKeepsArrow(_ key: ActionKey) -> Bool {
+        guard key == ActionKey(name: "up") || key == ActionKey(name: "down"),
+              let text = firstResponder as? NSTextView, text.isEditable, !text.isFieldEditor
+        else { return false }
+        let line = { (location: Int) in text.firstRect(forCharacterRange: NSRange(location: location, length: 0), actualRange: nil).midY }
+        let caret = line(text.selectedRange().location)
+        let edge = line(key.name == "up" ? 0 : (text.string as NSString).length)
+        return abs(caret - edge) > 1
+    }
+
+    static func modifiers(of flags: NSEvent.ModifierFlags) -> Shortcut.Modifiers {
         var modifiers: Shortcut.Modifiers = []
         if flags.contains(.command) { modifiers.insert(.command) }
         if flags.contains(.control) { modifiers.insert(.control) }

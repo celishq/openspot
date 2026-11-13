@@ -34,21 +34,12 @@ struct SpotTipView: View {
             isShown = false
             guard model.tip != nil else { return }
             try? await Task.sleep(for: Self.delay)
-            if !Task.isCancelled { withAnimation(SpotMotion.handleFade) { isShown = true } }
+            if !Task.isCancelled { withAnimation(SpotMotion.fade(isShown: true)) { isShown = true } }
         }
     }
 
-    /// The middle of the tip's top edge in the panel: under the control on the rim of a card's top corner, on the grid or in
-    /// the dock, or under the card of the dock.
+    /// The middle of the tip's top edge in the panel: under the control on the rim of a card's top corner on the grid.
     private func top(of tip: SpotTip) -> CGPoint? {
-        if tip.anchor == .dockCard || tip.anchor == .dockCorner {
-            guard let dock = model.dockFrame, let index = model.dock.shown.firstIndex(where: { $0.id == tip.id }) else { return nil }
-            let rect = model.dock.rects(columns: SpotTokens.dockColumns(width: dock.width))[index]
-                .offsetBy(dx: dock.minX + SpotTokens.padding, dy: dock.minY + SpotTokens.dockRowsTop - model.dockScroll)
-            guard tip.anchor == .dockCorner else { return CGPoint(x: rect.midX, y: rect.maxY) }
-            let inset = SpotTokens.corner(for: model.dock.shown[index].size) * SpotTokens.rimPoint
-            return CGPoint(x: rect.minX + inset, y: rect.minY + inset + SpotTokens.keycap / 2)
-        }
         guard let index = model.visible.firstIndex(where: { $0.id == tip.id }),
               let placement = model.placements.first(where: { $0.index == index }) else { return nil }
         let rect = placement.rect

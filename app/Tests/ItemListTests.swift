@@ -227,7 +227,7 @@ final class ItemListTests: XCTestCase {
         XCTAssertEqual(list.shown.map(\.title), ["Notes"])
     }
 
-    func testALiveListShowsWhatThePluginAnswersWithoutFilteringIt() {
+    func testALiveListShowsWhatTheSpotAnswersWithoutFilteringIt() {
         var list = ItemList(search: .script)
         list.search("rep")
 
@@ -339,6 +339,22 @@ final class ItemListTests: XCTestCase {
 
         XCTAssertEqual(list.recent.count, ItemList.recentLimit)
         XCTAssertEqual(list.recent.first, "149")
+    }
+
+    func testTypingMakesNoPickWeightsAndAPickMakesThemOnce() {
+        var list = ItemList(items: items("Safari", "Slack", "Notes"), recent: ["Slack"])
+        var search = MainSearch()
+        let before = PickWeights.builds
+
+        for text in ["s", "sa", "saf", "sl", "s"] {
+            list.search(text)
+            _ = search.matching(SearchQuery(text: text), in: [list])
+        }
+        XCTAssertEqual(PickWeights.builds - before, 0)
+        list.remember(list.all[0])
+
+        XCTAssertEqual(PickWeights.builds - before, 1)
+        XCTAssertEqual(list.shown.map(\.title), ["Safari", "Slack", "Notes"])
     }
 
     func testEachKeystrokeInALargeListAnswersQuickly() {

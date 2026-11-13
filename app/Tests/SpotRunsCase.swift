@@ -37,7 +37,7 @@ class SpotRunsCase: XCTestCase {
     /// Writes a script with these header lines, which logs each call before its body runs.
     @discardableResult
     func script(_ name: String = "script", header: String = "", log: String = "log", _ body: String = "") throws -> URL {
-        let url = folder.appendingPathComponent("\(name).sh")
+        let url = folder.spotFile(name)
         let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
         try "#!/bin/sh\n\(lines)\necho $$ >> '\(path("pids"))'\necho \"$*\" >> '\(path(log))'\n\(body)\n".writeScript(to: url)
         return url
@@ -49,7 +49,7 @@ class SpotRunsCase: XCTestCase {
     }
 
     func scanned() throws -> ScanResult {
-        let scan = try PluginFolder(url: folder).scan()
+        let scan = try SpotsFolder(url: folder).scan()
         XCTAssertEqual(scan.refused, [])
         runs.take(scan, menuBar: menuBar)
         return scan
@@ -101,7 +101,7 @@ class SpotRunsCase: XCTestCase {
     /// Writes a staying script. It logs each line of its stdin, and after each block prints the frame with `head` and the
     /// `end` of that call in its head.
     @discardableResult
-    func staying(header: String = "stay=true", head: String = "", frame: String = "row=a\\ntitle=A\\n") throws -> URL {
+    func staying(header: String = "mode=stay", head: String = "", frame: String = "row=a\\ntitle=A\\n") throws -> URL {
         try script(header: header, """
         trap 'touch "\(path("ended"))"' EXIT
         while IFS= read -r line; do
@@ -112,17 +112,17 @@ class SpotRunsCase: XCTestCase {
         """)
     }
 
-    /// The blocks that a staying script got, one string for each, with no `call` or `reason` line unless `ids` keeps them.
+    /// The blocks that a staying script got, one string for each, with no `call` or `env.` line unless `ids` keeps them.
     func blocks(ids: Bool = false) -> [String] {
         let text = (try? String(contentsOfFile: path("blocks"), encoding: .utf8)) ?? ""
         return text.components(separatedBy: "\n\n").filter { !$0.isEmpty }.map { block in
-            ids ? block : block.split(separator: "\n").filter { !$0.hasPrefix("call=") && !$0.hasPrefix("reason=") }.joined(separator: "\n")
+            ids ? block : block.split(separator: "\n").filter { !$0.hasPrefix("call=") && !$0.hasPrefix("env.") }.joined(separator: "\n")
         }
     }
 
     /// The first scanned script's sheet, with each failure that it tells the person, before the script can start.
     func toldSheet() throws -> (sheet: SpotRun, told: () -> [String]) {
-        let sheet = runs.sheet(for: try XCTUnwrap(PluginFolder(url: folder).scan().scripts.first))
+        let sheet = runs.sheet(for: try XCTUnwrap(SpotsFolder(url: folder).scan().scripts.first))
         var failures: [String] = []
         sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
         return (sheet, { failures })

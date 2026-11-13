@@ -3,69 +3,53 @@ import XCTest
 
 /// Proves the New spot sheet: it copies a prompt for an agent or makes a working starter, and the guide that it opens
 /// teaches a spot that works.
-final class NewSpotTests: XCTestCase {
-    private var folder: URL!
-    private var plugins: URL!
-    private var tools: URL!
+final class NewSpotTests: BuiltInCase {
     private var guideText = ""
-    private var guideURL: URL!
-    private var root: URL!
-    private let path = ProcessInfo.processInfo.environment["PATH"]
-
-    override func setUpWithError() throws {
-        root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-new-\(UUID().uuidString)")
-        plugins = folder.appendingPathComponent("plugins")
-        tools = folder.appendingPathComponent("tools")
-        try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
-        try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
-        guideURL = folder.appendingPathComponent("GUIDE.md")
-        guideText = try joinedSpecs()
-        try guideText.write(to: guideURL, atomically: true, encoding: .utf8)
-        for (name, script) in [("pbcopy", "cat > '\(folder.path)/clipboard'"), ("open", "echo \"$@\" > '\(folder.path)/opened'")] {
-            try "#!/bin/sh\n\(script)\n".writeScript(to: tools.appendingPathComponent(name))
-        }
-        setenv("PATH", "\(tools.path):/usr/bin:/bin", 1)
+    private var repo: URL {
+        repoSpots.deletingLastPathComponent()
     }
 
-    override func tearDownWithError() throws {
-        if let path { setenv("PATH", path, 1) }
-        try FileManager.default.removeItem(at: folder)
+    override func setUp() async throws {
+        try await super.setUp()
+        guideText = try protocolGuide()
+        try guideText.write(to: guide, atomically: true, encoding: .utf8)
+        try fake("pbcopy", "cat > '\(root.path)/direct'")
+        let real = tools.appendingPathComponent("openspot-real")
+        try FileManager.default.moveItem(at: tools.appendingPathComponent("openspot"), to: real)
+        try fake("openspot", "[ \"$1 $2\" = 'clipboard copy' ] && exec cat > '\(root.path)/clipboard'\nexec '\(real.path)' \"$@\"")
+        try fake("open", "echo \"$@\" > '\(root.path)/opened'")
     }
 
-    /// The New spot sheet of this test's plugins folder.
+    /// The New spot sheet of the app.
     private func newSpot() throws -> Spot {
-        let config = ConfigFile(url: folder.appendingPathComponent("config.toml"))
-        let spots = ShippedSpot.commands(folder: plugins, guide: guideURL, app: "/Apps/Openspot.app/Contents/MacOS/Openspot", config: config)
-        return try XCTUnwrap(spots.first { $0.id == ShippedSpot.newID })
+        try spot("new")
     }
 
     private func saved(_ name: String) throws -> String {
-        try String(contentsOf: folder.appendingPathComponent(name), encoding: .utf8)
+        try String(contentsOf: root.appendingPathComponent(name), encoding: .utf8)
     }
 
-    private func sheet(of spot: Spot) async throws -> SheetParts {
-        let output = try await spot.items(timeout: 5)
-        return try XCTUnwrap(SheetParts(output: output))
-    }
+    func testItIsASmallListThatTheConfigOpensWithCommandN() throws {
+        let spot = try newSpot()
+        let defaults = Config(text: try String(contentsOf: repo.appendingPathComponent("app/defaults.toml"), encoding: .utf8))
 
-    func testTheSpotsSpotShowsWithAnEmptyFolder() throws {
-        let shipped = ShippedSpot.commands(folder: plugins, guide: guideURL, app: "")
-
-        let scan = try PluginFolder(url: plugins).scan(shipped: shipped)
-
-        XCTAssertTrue(scan.commands.contains { $0.id == ShippedSpot.spotsID })
-        XCTAssertEqual(scan.refused, [])
+        XCTAssertEqual(spot.name, "New spot")
+        XCTAssertEqual(spot.kind, .list)
+        XCTAssertEqual(defaults.arrangement.size(of: spot.id), .small)
+        XCTAssertTrue(spot.isOnGrid)
+        XCTAssertEqual(SpotArrangement().spot(openedBy: ActionKey(name: "n", isCommand: true), over: defaults.arrangement), spot.id)
     }
 
     func testTheSheetIsAListThatSearchesByScriptWithCopyPromptForAIFirstThenEachStarter() async throws {
         let output = try await newSpot().items(timeout: 5)
 
-        XCTAssertEqual(output.search, .script)
-        XCTAssertEqual(output.items.map(\.title), ["Copy prompt for AI"] + SpotStarter.allCases.map(\.title))
+        XCTAssertEqual(try newSpot().read?.searchesSheet, true)
+        XCTAssertEqual(output.items.map(\.title), ["Copy prompt for AI", "Button", "List", "Live value", "Form"])
+        XCTAssertEqual(output.items.dropFirst().map(\.run), SpotStarter.allCases.map(\.rawValue))
+        XCTAssertFalse(output.keepsRecent)
         XCTAssertEqual(output.items.first?.subtitle, "Type what the spot should do")
         XCTAssertTrue(Set(output.actions.map(\.id)).isSuperset(of: ["guide", "folder"]))
+        XCTAssertEqual(output.primary, "Choose")
     }
 
     func testTheFirstRowShowsTheTextOfTheSearch() async throws {
@@ -83,10 +67,10 @@ final class NewSpotTests: XCTestCase {
         XCTAssertEqual(toast, "Copied a prompt for your agent. Paste it into Claude Code, Codex or another agent.")
         let prompt = try saved("clipboard")
         XCTAssertTrue(prompt.contains("Build an Openspot spot that does this: Show the weather here"))
-        XCTAssertTrue(prompt.contains(plugins.path))
+        XCTAssertTrue(prompt.contains(spots.path))
         XCTAssertTrue(prompt.contains("guide"))
-        XCTAssertEqual(try PluginFolder(url: plugins).scan().commands, [])
-        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("opened").path))
+        XCTAssertEqual(try SpotsFolder(url: spots).scan().spots, [])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("opened").path))
     }
 
     func testCopyPromptForAINeedsADescription() async throws {
@@ -94,11 +78,10 @@ final class NewSpotTests: XCTestCase {
             _ = try await newSpot().perform(.item(SpotItem(title: "Copy prompt for AI", run: "ask")), timeout: 5)
             XCTFail("expected a fault")
         } catch {
-            XCTAssertEqual((error as? PluginError)?.reason, "Type what the spot should do, then press `⏎`.")
+            XCTAssertEqual((error as? SpotError)?.reason, "Type what the spot should do, then press `⏎`.")
         }
     }
 
-    @MainActor
     func testWordsTypedJustBeforeEnterReachThePrompt() async throws {
         let runs = SpotRuns()
         defer { runs.quit() }
@@ -118,12 +101,16 @@ final class NewSpotTests: XCTestCase {
     func testAStarterMakesAWorkingSpotCalledUntitledAndOpensItsFile() async throws {
         let spot = try newSpot()
 
-        _ = try await spot.perform(.item(SpotItem(title: "List", run: "list")), timeout: 5)
-        _ = try await spot.perform(.item(SpotItem(title: "Button", run: "button")), timeout: 5)
+        let first = try await spot.perform(.item(SpotItem(title: "List", run: "list")), timeout: 5)
+        let second = try await spot.perform(.item(SpotItem(title: "Button", run: "button")), timeout: 5)
 
-        let names = try PluginFolder(url: plugins).scan().commands.map(\.id).sorted()
+        XCTAssertEqual(first, "Made Untitled. Change the file that opened to make it yours.")
+        XCTAssertEqual(second, "Made Untitled 2. Change the file that opened to make it yours.")
+
+        let names = try SpotsFolder(url: spots).scan().spots.map(\.id).sorted()
         XCTAssertEqual(names, ["untitled", "untitled-2"])
-        XCTAssertEqual(try saved("opened"), "-t \(plugins.appendingPathComponent("untitled-2.sh").path)\n")
+        XCTAssertEqual(try saved("opened"), "-t \(spots.spotFile("untitled-2").path)\n")
+        XCTAssertEqual(try SpotsFolder(url: spots).scan().spots.map(\.name).sorted(), ["Untitled", "Untitled 2"])
     }
 
     func testTheActionsOpenTheGuideAndTheFolder() async throws {
@@ -133,7 +120,16 @@ final class NewSpotTests: XCTestCase {
         XCTAssertTrue(try saved("opened").contains("GUIDE.md"))
 
         _ = try await spot.perform(SpotAction(arguments: ["folder"]), timeout: 5)
-        XCTAssertTrue(try saved("opened").contains(plugins.path))
+        XCTAssertTrue(try saved("opened").contains(spots.path))
+    }
+
+    func testAnUnknownCallFails() async throws {
+        do {
+            _ = try await newSpot().perform(SpotAction(arguments: ["gone"]), timeout: 5)
+            XCTFail("expected a fault")
+        } catch {
+            XCTAssertEqual((error as? SpotError)?.reason, "New spot cannot do that.")
+        }
     }
 
     /// The text of each block in the guide with this fence.
@@ -141,41 +137,54 @@ final class NewSpotTests: XCTestCase {
         guideText.components(separatedBy: "```\(fence)\n").dropFirst().map { $0.components(separatedBy: "```")[0] }
     }
 
+    /// Each script of the guide passes the check in a folder of its own. A spot that its card drawing or `to=` names is a stub
+    /// metric beside it, and a script with a view stays out, since a view needs the Command Line Tools to build.
     func testEachExampleScriptInTheGuideLoadsAndAnswers() async throws {
-        let scripts = blocks("sh")
-        XCTAssertGreaterThan(scripts.count, 2)
-        for (index, script) in scripts.enumerated() {
-            let url = plugins.appendingPathComponent("example-\(index).sh")
-            try script.writeScript(to: url)
+        let scripts = blocks("sh").map { ($0, "sh") } + blocks("js").map { ($0, "js") }
+        XCTAssertGreaterThan(scripts.count, 5)
+        for (index, (script, kind)) in scripts.enumerated() where !script.contains("view=") {
+            let folder = root.appendingPathComponent("example-\(index)")
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            let file = folder.spotFile("example", extension: kind)
+            try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+            if kind == "js" { try script.write(to: file, atomically: true, encoding: .utf8) } else { try script.writeScript(to: file) }
+            let header = SpotHeader(text: script).block
+            let named = header.fields.filter { $0.key.hasPrefix("grid.") }.flatMap { $0.value.split(separator: " ").map(String.init) } + header.values("to")
+            for name in Set(named) {
+                try "#!/bin/sh\n# on=clock.60\nprintf 'text=t\\ntitle=T\\n'\n".writeScript(to: folder.spotFile(name))
+            }
+
+            let faults = await SpotCheck(folder: SpotsFolder(url: folder)).faults()
+
+            XCTAssertEqual(faults, [], script)
         }
-
-        let faults = await PluginCheck(folder: PluginFolder(url: plugins)).faults()
-
-        XCTAssertEqual(faults, [])
     }
 
-    func testTheGuideIsTheSpecsJoinedInOrder() throws {
-        let out = folder.appendingPathComponent("built.md")
-        let script = Process()
-        script.executableURL = URL(fileURLWithPath: "/bin/sh")
-        script.arguments = [root.appendingPathComponent("scripts/guide.sh").path, out.path]
-        try script.run()
-        script.waitUntilExit()
+    /// The bundled guide is GUIDE.md then PROTOCOL.md, and each link in it goes to a heading of the one page.
+    func testTheGuideIsTheGuideThenTheProtocolWithEachLinkInThePage() throws {
+        let headings = Set(guideText.split(separator: "\n").filter { $0.hasPrefix("#") && $0.contains("# ") }.map { line in
+            String(line.drop { $0 == "#" }.dropFirst()).lowercased().filter { $0.isLetter || $0.isNumber || $0 == " " || $0 == "-" }.replacingOccurrences(of: " ", with: "-")
+        })
+        let links = guideText.components(separatedBy: "](#").dropFirst().map { String($0.prefix { $0 != ")" }) }
 
-        XCTAssertEqual(script.terminationStatus, 0)
-        XCTAssertTrue(try String(contentsOf: out, encoding: .utf8) == guideText)
-        XCTAssertTrue(guideText.hasPrefix("# 01 Core"))
+        XCTAssertTrue(guideText.hasPrefix("# Openspot guide"))
+        XCTAssertTrue(guideText.contains("\n# Openspot protocol\n"))
+        XCTAssertFalse(guideText.contains("GUIDE.md#") || guideText.contains("PROTOCOL.md#"))
+        XCTAssertGreaterThan(links.count, 20)
+        for link in links {
+            XCTAssertTrue(headings.contains(link), link)
+        }
     }
 
     func testTheGuideTeachesNoOldKeyOrCall() {
-        for old in ["read=open", "read=click", "live=true", "search=live", "form <action>", "search <text>", "set <id>", "press <id>", "press <word>", "event=", "OPENSPOT_CONFIG", "openspot catalog"] {
+        for old in ["read=open", "read=click", "live=true", "search=live", "form <action>", "search <text>", "set <id>", "press <id>", "press <word>", "event=", "OPENSPOT_CONFIG", "openspot catalog", "while next", "openspot.input", "function read("] {
             XCTAssertFalse(guideText.contains(old), old)
         }
     }
 
     /// The guide names each key that a part takes, and a part takes each key that the kinds table of the guide gives it.
     func testTheGuideAndThePartsTakeTheSameKeys() {
-        let blocks = guideText.components(separatedBy: "## Blocks").dropFirst().first?.components(separatedBy: "## Drawings").first ?? ""
+        let blocks = guideText.components(separatedBy: "## Blocks").dropFirst().first?.components(separatedBy: "## Layouts").first ?? ""
         for key in PartCatalog.keys {
             XCTAssertTrue(blocks.contains("`\(key)"), key)
         }
@@ -190,11 +199,16 @@ final class NewSpotTests: XCTestCase {
         }
     }
 
-    /// The specs `00` to `99` of `spec/`, joined in order with one blank line between them.
-    private func joinedSpecs() throws -> String {
-        let specs = root.appendingPathComponent("spec")
-        let names = try FileManager.default.contentsOfDirectory(atPath: specs.path).filter { $0.first?.isNumber == true && $0.hasSuffix(".md") }.sorted()
-        return try names.map { try String(contentsOf: specs.appendingPathComponent($0), encoding: .utf8) }.joined(separator: "\n")
+    /// The guide that `scripts/guide.sh` joins from `GUIDE.md` and `PROTOCOL.md`, as the app bundles it.
+    private func protocolGuide() throws -> String {
+        let out = root.appendingPathComponent("built.md")
+        let script = Process()
+        script.executableURL = URL(fileURLWithPath: "/bin/sh")
+        script.arguments = [repo.appendingPathComponent("scripts/guide.sh").path, out.path]
+        try script.run()
+        script.waitUntilExit()
+        XCTAssertEqual(script.terminationStatus, 0)
+        return try String(contentsOf: out, encoding: .utf8)
     }
 
 }

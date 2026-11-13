@@ -20,8 +20,8 @@ final class TestHost: SpotsHost {
     var phases: [SheetTransition.Phase] = []
     /// The sheet whose open motion runs, after each change.
     var openings: [String?] = []
-    /// The spots that ship with the app in this test.
-    var shipped: [Spot] = []
+    /// The program of the app that the prompt for an agent names.
+    var app = "/Apps/Openspot"
     /// The rows whose pictures the model asked to draw ahead.
     var prepared: [SpotItem] = []
     /// The glyphs of each whole list whose pictures the model asked for.
@@ -32,6 +32,7 @@ final class TestHost: SpotsHost {
     weak var model: SpotsModel?
 
     nonisolated deinit {}
+
 
     func dismiss() {
         dismissals += 1
@@ -44,7 +45,23 @@ final class TestHost: SpotsHost {
         model?.panelWillShow(holding: [])
     }
 
-    func present() {}
+    var presents = 0
+    var focusTakes = 0
+
+    func takeFocus() {
+        focusTakes += 1
+    }
+    /// Whether the panel held its focus during each ask for Touch ID.
+    var heldDuringAsks: [Bool] = []
+
+    func present() {
+        presents += 1
+    }
+
+    func allows(_ reason: String) async -> Bool {
+        heldDuringAsks.append(model?.holdsFocus ?? false)
+        return true
+    }
 
     func notify(_ text: String) {
         notes.append(text)
@@ -58,13 +75,22 @@ final class TestHost: SpotsHost {
         confirms.append(text)
     }
 
-    func applyConfig() {}
+    func work(_ text: String) {
+        confirms.append(text)
+    }
+
+    func applyConfig(_ config: Config) {}
 
     func setEntryKey(on isOn: Bool) {}
 
-    func hold(_ keys: [GlobalKey]) {}
+    /// The keys that the model held, at each time it held them.
+    var held: [[GlobalKey]] = []
 
-    func chooseFiles(for command: Spot, then take: @escaping ([String]) -> Void) {}
+    func hold(_ keys: [GlobalKey]) {
+        held.append(keys)
+    }
+
+    func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void) {}
 
     func float(_ entry: SpotsModel.Entry, followsDrag: Bool) {
         floats.append(entry.id)
@@ -81,8 +107,8 @@ final class TestHost: SpotsHost {
         if !glyphs.isEmpty { glyphLists.append(glyphs) }
     }
 
-    func shippedSpots(folder: PluginFolder, config: ConfigFile, update: UpdateSpot?) -> [Spot] {
-        shipped
+    func agentPrompt(for folder: URL) -> AgentPrompt {
+        AgentPrompt(folder: folder, guide: folder.appendingPathComponent("GUIDE.md"), app: app)
     }
 
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void) {

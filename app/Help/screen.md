@@ -16,7 +16,7 @@ openspot clipboard copy "$file" && echo "toast=Copied the picture."
 
 | Command                                                                                | Does                                                                   |
 | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `openspot screen sources`                                                              | Prints each display, window, microphone and camera as a row (01).      |
+| `openspot screen sources`                                                              | Prints each display, window, microphone and camera as a row.      |
 | `openspot screen shot [source] [--cursor] [file]`                                      | Takes a picture, and prints its path.                                  |
 | `openspot screen record start [source] [input]... [--cursor] [--events <file>] [file]` | Starts a recording, and prints nothing.                                |
 | `openspot screen record stop`                                                          | Ends the recording, and prints the path of each file, the video first. |
@@ -76,7 +76,7 @@ With no file, it goes to the folder where macOS keeps screenshots, with a name s
 
 ## Rules
 
-- `shot`, `record start` and `record stop` fail in a read (K4), so that nothing captures the screen by surprise.
+- `shot`, `record start` and `record stop` fail in a read (protocol: The openspot command), so that nothing captures the screen by surprise.
   `sources` and `record status` work in a read (S8).
 - A capture never shows a window of Openspot (S9).
 - One recording runs at a time. It goes on after the call that started it ends, until `openspot screen record stop` (S10).

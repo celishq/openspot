@@ -40,13 +40,13 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>Openspot runs your plugins, and a plugin can ask another app to act, such as to paste.</string>
+	<string>Openspot runs your spots, and a spot can ask another app to act, such as to paste.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>Openspot shows and adds your events when a spot that you use asks for them.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Openspot records the camera when a plugin records the screen with your camera.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Openspot records the microphone when a plugin records the screen with your voice.</string>
+	<string>Openspot records the microphone when a plugin records the screen with your voice, or when you dictate.</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
 	<string>Openspot shows, adds and ticks your reminders when a spot that you use asks for them.</string>
 	<key>OpenspotDevState</key>

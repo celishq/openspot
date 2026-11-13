@@ -2,7 +2,7 @@ import Foundation
 import OpenspotCore
 import SwiftUI
 
-/// The views of plugins, each one building, ready or failed, by the path of its source. A library stays loaded until the
+/// The views of spots, each one building, ready or failed, by the path of its source. A library stays loaded until the
 /// app quits, so an edit of a view loads a new library beside the old one.
 @MainActor
 @Observable
@@ -22,7 +22,7 @@ final class SpotViews {
     @ObservationIgnored private var made: [String: URL] = [:]
     @ObservationIgnored private let library: ViewLibrary
 
-    /// The one set of plugin views that every card draws from.
+    /// The one set of spot views that every card draws from.
     static let shared = SpotViews()
 
     init(library: ViewLibrary = .standard()) {
@@ -45,12 +45,12 @@ final class SpotViews {
             }
             let entry = try await Task.detached { try Self.entry(of: url) }.value
             let object = Unmanaged<AnyObject>.fromOpaque(entry()).takeRetainedValue()
-            guard let make = object as? Make else { throw PluginError.fault("This view has an entry that Openspot cannot read. Build it again.") }
+            guard let make = object as? Make else { throw SpotError.fault("This view has an entry that Openspot cannot read. Build it again.") }
             loaded[url] = make
             ready(source, make, from: url)
         } catch {
             made[source] = nil
-            phases[source] = .failed((error as? PluginError)?.reason ?? error.localizedDescription)
+            phases[source] = .failed((error as? SpotError)?.reason ?? error.localizedDescription)
         }
     }
 
@@ -62,10 +62,10 @@ final class SpotViews {
     /// Opens a library and finds its entry.
     private nonisolated static func entry(of url: URL) throws -> @convention(c) () -> UnsafeMutableRawPointer {
         guard let handle = dlopen(url.path, RTLD_NOW | RTLD_LOCAL) else {
-            throw PluginError.fault("Openspot cannot load this view. \(String(cString: dlerror()))")
+            throw SpotError.fault("Openspot cannot load this view. \(String(cString: dlerror()))")
         }
         guard let symbol = dlsym(handle, ViewLibrary.entry) else {
-            throw PluginError.fault("This view has no entry. Build it again.")
+            throw SpotError.fault("This view has no entry. Build it again.")
         }
         return unsafeBitCast(symbol, to: (@convention(c) () -> UnsafeMutableRawPointer).self)
     }

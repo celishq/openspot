@@ -13,26 +13,31 @@ public enum SpotTokens {
     /// The height of a group's title in Edit Spots, and of its band over the group's cards.
     public static let groupTitleHeight: CGFloat = 16
     public static let groupTitleBand: CGFloat = groupTitleHeight + placeGap
+    /// The gap that a group of the store keeps above its title after another group, with a line across its middle.
+    public static let groupGap: CGFloat = rowGap
     public static let glyphSize: CGFloat = 36
+    /// How far the mark of a glyph lies inside its square, such as the search field's magnifier, where a title over a
+    /// column of glyphs starts.
+    public static let glyphInset: CGFloat = 9
+    /// Where a title over a column of item icons starts inside their square, so that its first letter lines up with their marks.
+    public static let iconInset: CGFloat = 3
     public static let workMark: CGFloat = 16
     public static let keycap: CGFloat = 20
     public static let keycapRadius: CGFloat = 6
     /// The side of the square that takes a drag of a card's resize handle, and the width of its line on the rim.
     public static let resizeHandle: CGFloat = 28
     public static let resizeHandleLine: CGFloat = 5
-    /// The widest the dock of Edit Spots grows, and its gap to the edges of the screen.
-    public static let dockWidth: CGFloat = 1220
+    /// The widest the store of Edit Spots grows, twelve columns of the grid, and its gap to the edges of the screen.
+    public static let dockWidth: CGFloat = 2 * padding + width(columns: 12)
     public static let dockMargin: CGFloat = 20
-    /// The most rows of spots that the dock shows before it scrolls.
-    public static let dockRows = 3
-    /// The size of the Add pill of a store card, which takes the line under its name, and the height of that name.
-    public static let addWidth: CGFloat = 44
-    public static let addHeight: CGFloat = 18
-    public static let nameHeight: CGFloat = 16
+    /// The height of the button at the end of a store row, the width of its main part, which every step shares, and of its arrow.
+    public static let storeButtonHeight: CGFloat = 28
+    public static let storeStepWidth: CGFloat = 80
+    public static let storeArrowWidth: CGFloat = 26
     /// The height of the sheet that shows a listing in the store.
     public static let storeSheetHeight: CGFloat = height(rows: 3)
-    /// Where the dock's first row of spots starts, under its title and its search.
-    public static let dockRowsTop: CGFloat = padding + menuRowHeight + rowGap
+    /// Where the store's rows start: the title of their first group lies on the middle line of the search beside it.
+    public static let dockRowsTop: CGFloat = padding + (menuRowHeight - groupTitleHeight) / 2
     /// How far from each edge the rim of a round corner passes through its diagonal, as a part of the radius.
     public static let rimPoint: CGFloat = 1 - 0.5.squareRoot()
     public static let listRowHeight: CGFloat = 40
@@ -56,6 +61,9 @@ public enum SpotTokens {
     public static let placeGap: CGFloat = 8
     public static let sideGap: CGFloat = 20
     public static let controlPadding: CGFloat = 7
+    /// How far the outer edge of the focus ring of a part in a sheet lies outside the part's own box. It leaves clear space
+    /// on both sides of the ring, within the gap between two parts, as a system focus ring does.
+    public static let focusGap: CGFloat = 4
     public static let formLabelHeight: CGFloat = 14
     public static let formLabelGap: CGFloat = 4
     public static let formFieldGap: CGFloat = 12
@@ -76,14 +84,9 @@ public enum SpotTokens {
         CGFloat(rows) * rowHeight + CGFloat(rows - 1) * rowGap
     }
 
-    /// The height of the dock when it shows this many rows of spots.
+    /// The height of the store when it shows this many lines of rows under one group title.
     public static func dockHeight(rows: Int) -> CGFloat {
-        dockRowsTop + height(rows: rows) + padding
-    }
-
-    /// How many columns of spots a dock this wide holds, two at least.
-    public static func dockColumns(width: CGFloat) -> Int {
-        max(Int((width - 2 * padding + columnGap) / (cell + columnGap)), 2)
+        dockRowsTop + groupTitleBand + height(rows: rows) + padding
     }
 
     /// The space between the edge of a card and what it shows. A 1x1 widget keeps more room for its one mark.
@@ -97,6 +100,9 @@ public enum SpotTokens {
         return min(fit, room.height <= listRowHeight ? listIconSize : fit * 0.6)
     }
 
+    /// The height of the room that holds the thin line between the rows that scroll and the rows pinned under them.
+    public static let pinRuleRoom: CGFloat = 9
+
     /// How far a sheet's rows start below its top edge.
     public static let sheetRowsTop: CGFloat = sheetFieldDrop + listRowHeight + rowGap
 
@@ -107,10 +113,11 @@ public enum SpotTokens {
 
     /// The frame of a sheet with these rows. An empty sheet keeps room for one row, and a long one stops at the panel.
     /// More than one row on a line makes square buttons.
-    public static func sheetRect(rows: Int, perLine: Int = 1) -> CGRect {
+    public static func sheetRect(rows: Int, perLine: Int = 1, hasField: Bool = true, setsApart: Bool = false) -> CGRect {
         let lines = CGFloat(max((rows + perLine - 1) / perLine, 1))
         let line = perLine > 1 ? square(perLine: perLine) : listRowHeight
-        let height = sheetRowsTop + lines * line + (lines - 1) * listRowGap + padding
+        let height = sheetRowsTop - (hasField ? 0 : listRowHeight + rowGap) + lines * line + (lines - 1) * listRowGap + padding
+            + (setsApart ? pinRuleRoom + listRowGap : 0)
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 

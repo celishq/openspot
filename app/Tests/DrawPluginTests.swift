@@ -2,9 +2,9 @@ import XCTest
 @testable import OpenspotCore
 
 /// Proves the Draw spot with its real script in a private home: its boards, a rename, a delete, and its app's source.
-final class DrawPluginTests: SamplePluginsCase {
+final class DrawPluginTests: SampleSpotsCase {
     private func draw() throws -> Spot {
-        try XCTUnwrap(try scan.commands.first { $0.id == "draw" })
+        try XCTUnwrap(try scan.spots.first { $0.id == "draw" })
     }
 
     /// Runs the body with the data folder of Draw under a private config.
@@ -67,7 +67,7 @@ final class DrawPluginTests: SamplePluginsCase {
             let found = try await spot.items(query: "board 10", timeout: 5).items
             XCTAssertEqual(found.map(\.title), ["Board 10"])
 
-            let typed = try await spot.items(query: "ищфкв", forms: ["board"], timeout: 5).items
+            let typed = try await spot.items(query: "ищфкв", input: "form=board\n", timeout: 5).items
             XCTAssertEqual(typed.count, 10)
         }
     }
@@ -117,14 +117,14 @@ final class DrawPluginTests: SamplePluginsCase {
             do {
                 try await spot.perform(.item(SpotItem(title: "Gone", run: "gone")), timeout: 5)
                 XCTFail("expected a failure")
-            } catch let error as PluginError {
+            } catch let error as SpotError {
                 XCTAssertEqual(error.reason, "This board is gone.")
             }
         }
     }
 
     func testTheBoardAppTypeChecks() async throws {
-        let folder = try draw().url.deletingPathExtension()
+        let folder = try draw().url.deletingLastPathComponent()
         let sources = try ["model", "app"].flatMap { part in
             try FileManager.default.contentsOfDirectory(atPath: folder.appendingPathComponent(part).path)
                 .filter { $0.hasSuffix(".swift") }

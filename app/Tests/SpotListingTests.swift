@@ -14,21 +14,35 @@ final class SpotListingTests: XCTestCase {
     }
 
     private func spot(_ header: String, body: String = "", named name: String = "timer") throws -> Spot {
-        let url = folder.appendingPathComponent("\(name).sh")
+        let url = folder.spotFile(name)
         try "#!/bin/sh\n\(header)\n\(body)\n".writeScript(to: url)
-        return try XCTUnwrap(try Plugin(file: url, id: name)?.commands.first)
+        return try XCTUnwrap(try SpotFile(file: url, id: name)?.spots.first)
     }
 
     func testTheListingReadsTheReadmeAndThePreviewBesideTheSpot() throws {
-        let command = try spot("# title=Timer\n# detail=Counts down")
-        try "Counts down from a time you pick.".write(to: folder.appendingPathComponent("timer.md"), atomically: true, encoding: .utf8)
-        try "row=five\ntitle=5 minutes\n\nrow=ten\ntitle=10 minutes\n".write(to: folder.appendingPathComponent("timer.preview.txt"), atomically: true, encoding: .utf8)
+        let spot = try self.spot("# title=Timer\n# detail=Counts down")
+        try "Counts down from a time you pick.".write(to: folder.appendingPathComponent("timer.spot/readme.md"), atomically: true, encoding: .utf8)
+        try "row=five\ntitle=5 minutes\n\nrow=ten\ntitle=10 minutes\n".write(to: folder.appendingPathComponent("timer.spot/preview.txt"), atomically: true, encoding: .utf8)
 
-        let listing = SpotListing(beside: command)
+        let listing = SpotListing(beside: spot)
 
         XCTAssertEqual(listing.description, "Counts down")
         XCTAssertEqual(listing.readme, "Counts down from a time you pick.")
         XCTAssertEqual(listing.preview.map(\.title), ["5 minutes", "10 minutes"])
+    }
+
+    func testALinkedSpotFolderKeepsItsReadme() throws {
+        let real = folder.deletingLastPathComponent().appendingPathComponent("linked-\(UUID().uuidString)")
+        try "#!/bin/sh\n# title=Timer\n".writeScript(to: real.appendingPathComponent("timer.sh"))
+        try "Counts down.".write(to: real.appendingPathComponent("readme.md"), atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: real) }
+        let spots = folder.appendingPathComponent("linked")
+        try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(at: spots.appendingPathComponent("timer.spot"), withDestinationURL: real)
+        let scan = try SpotsFolder(url: spots).scan()
+        let timer = try XCTUnwrap(scan.spots.first, "\(scan.refused) \((try? FileManager.default.contentsOfDirectory(atPath: spots.appendingPathComponent("timer.spot").path)) ?? [])")
+
+        XCTAssertEqual(SpotListing(beside: timer).readme, "Counts down.")
     }
 
     func testASpotWithNoFilesBesideItHasOnlyItsDescription() throws {
@@ -42,26 +56,29 @@ final class SpotListingTests: XCTestCase {
     func testPreviewSampleMarksASpotThatPrintsFakeData() throws {
         XCTAssertTrue(try spot("# preview=sample", named: "sample").previewsSample)
         XCTAssertFalse(try spot("# title=Timer", named: "plain").previewsSample)
-        let live = folder.appendingPathComponent("live.sh")
+        let live = folder.spotFile("live")
         try "#!/bin/sh\n# preview=live\n".writeScript(to: live)
-        XCTAssertThrowsError(try Plugin(file: live, id: "live"))
+        XCTAssertThrowsError(try SpotFile(file: live, id: "live"))
     }
 
-    func testTheCaptureRunsThePreviewModeAndKeepsItsTextBesideTheSpot() async throws {
-        let command = try spot("# preview=sample", body: "[ \"$OPENSPOT_PREVIEW\" = 1 ] && printf 'row=a\\ntitle=Sample\\n' || printf 'row=a\\ntitle=Real\\n'")
+    @MainActor
+    func testTheCaptureRunsThePreviewModeAsTheSpotsCallAndKeepsItsTextBesideTheSpot() async throws {
+        let spot = try self.spot("# preview=sample", body: "[ \"$OPENSPOT_REASON\" = spot.preview ] && [ -n \"$OPENSPOT_TOKEN\" ] && printf 'row=a\\ntitle=Sample\\n' || printf 'row=a\\ntitle=Real\\n'")
+        let runs = SpotRuns()
+        defer { runs.quit() }
 
-        try await SpotListing.capturePreview(of: command)
+        try await SpotListing.capturePreview(of: spot, runs: runs)
 
-        XCTAssertEqual(SpotListing(beside: command).preview.map(\.title), ["Sample"])
+        XCTAssertEqual(SpotListing(beside: spot).preview.map(\.title), ["Sample"])
     }
 
     func testEachCoreSpotHasAReadme() throws {
-        let plugins = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../plugins").standardizedFileURL
-        let choices = PluginFolder(url: folder, core: plugins).coreChoices()
+        let spots = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../spots").standardizedFileURL
+        let choices = SpotsFolder(url: folder, core: spots).coreChoices()
 
         XCTAssertFalse(choices.isEmpty)
-        for command in choices {
-            XCTAssertNotNil(SpotListing(beside: command).readme, "\(command.name) has no readme")
+        for spot in choices {
+            XCTAssertNotNil(SpotListing(beside: spot).readme, "\(spot.name) has no readme")
         }
     }
 }

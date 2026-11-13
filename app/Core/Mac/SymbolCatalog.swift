@@ -36,12 +36,12 @@ public struct SymbolCatalog: Sendable {
                     var fields: [TextBlock.Field] = [.init(key: "row", value: symbol), .init(key: "title", value: name)]
                     if let subtitle { fields.append(.init(key: "detail", value: subtitle)) }
                     fields += [.init(key: "icon", value: symbol)]
-                    fields += keywords.of(symbol).map { .init(key: "keyword", value: $0) }
+                    fields += keywords.field(of: symbol)
                     text += TextBlock(fields: fields).text + "\n"
                 }
             }
         }
-        guard found else { throw PluginError.fault(Self.missing) }
+        guard found else { throw SpotError.fault(Self.missing) }
         return text
     }
 

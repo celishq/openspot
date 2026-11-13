@@ -1,4 +1,5 @@
 import AppKit
+import LocalAuthentication
 import OpenspotCore
 import SwiftUI
 
@@ -28,6 +29,10 @@ extension OpenspotApp: SpotsHost {
 
     func confirm(_ text: String) {
         toast?.show(text, symbol: ToastPanel.confirmSymbol)
+    }
+
+    func work(_ text: String) {
+        toast?.show(text, isWorking: true, for: nil)
     }
 
     /// Shows the float of a spot at the pointer once its first answer comes, or after the pause of a sheet (W4), or moves
@@ -87,6 +92,22 @@ extension OpenspotApp: SpotsHost {
         SpotGridDrop.paths(on: .general)
     }
 
+    func takeFocus() {
+        NSApp.activate(ignoringOtherApps: true)
+        panel?.makeKeyAndOrderFront(nil)
+    }
+
+    /// Asks for Touch ID or the Mac password, which then counts for 5 minutes. A Mac with neither allows it.
+    func allows(_ reason: String) async -> Bool {
+        if let passed = Self.touchIDPassed, Date().timeIntervalSince(passed) < Self.touchIDReuse { return true }
+        let context = LAContext()
+        var error: NSError?
+        guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else { return true }
+        guard (try? await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason)) == true else { return false }
+        Self.touchIDPassed = Date()
+        return true
+    }
+
     func copy(_ file: URL) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.writeObjects([file as NSURL])
@@ -97,18 +118,8 @@ extension OpenspotApp: SpotsHost {
         await SpotIconStore.shared.prepare(items)
     }
 
-    func shippedSpots(folder: PluginFolder, config: ConfigFile, update: UpdateSpot?) -> [Spot] {
-        ShippedSpot.commands(
-            folder: folder.url,
-            guide: Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder.url,
-            app: Bundle.main.executablePath ?? "",
-            config: config,
-            update: update,
-            core: folder.core,
-            login: AppLogin.item,
-            link: AppCommandLink.item,
-            quit: QuitSpot { await NSApp.terminate(nil) }
-        )
+    func agentPrompt(for folder: URL) -> AgentPrompt {
+        AgentPrompt(folder: folder, guide: Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder, app: AgentPrompt.command(of: Bundle.main.executablePath ?? ""))
     }
 
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void) {

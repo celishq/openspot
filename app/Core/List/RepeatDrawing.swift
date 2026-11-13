@@ -1,6 +1,6 @@
 import Foundation
 
-/// The drawing of a repeat: the places of one tile, in the order in which rows take them (U7). The tile repeats down for as
+/// The drawing of a repeat: the places of one tile, in the order in which rows take them (protocol: Rows). The tile repeats down for as
 /// long as there are rows, so `grid=a` is a list, `grid=a b c` is a grid of three to a line, and a drawing with larger places
 /// is a bento.
 public struct RepeatDrawing: Equatable, Sendable {

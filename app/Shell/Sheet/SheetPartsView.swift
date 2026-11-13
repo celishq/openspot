@@ -18,8 +18,13 @@ struct SheetPartsView: View {
     /// Reads the id of the selected part where it is called. Nil reads it from the parts.
     var selectedPart: (() -> String?)?
     var nudge: () -> SheetParts.Nudge = { SheetParts.Nudge.rest }
-    /// The plugin's own view at the size of the area of a `view` component (V1).
-    var customView: (CGSize) -> SpotCustomView? = { _ in nil }
+    /// The last press of return that asks a menu to open.
+    var menuOpening: () -> SheetParts.MenuOpening? = { nil }
+    /// Takes a click into a field, which gives that part the focus.
+    var onFocus: (SpotPart) -> Void = { _ in }
+    /// The spot's own view at the size of the area of a `view` component (protocol: Views).
+    /// A spot's own view in the place of a block, with the send that calls the spot with the block's id and a value.
+    var customView: (CGSize, [String: [String]], @escaping (String) -> Void) -> AnyView? = { _, _, _ in nil }
     @FocusState private var focus: String?
 
     private static let swatchSize: CGFloat = 22
@@ -46,8 +51,12 @@ struct SheetPartsView: View {
                 canvas(sheet)
             }
         }
-        .onAppear(perform: focusFirstField)
-        .modifier(FocusOnShow(focus: focusFirstField))
+        .onAppear(perform: focusSelectedField)
+        .modifier(FocusOnShow(focus: focusSelectedField))
+        .modifier(FocusOnSelect(selectedID: selectedID, focus: focusSelectedField))
+        .onChange(of: focus) { _, id in
+            if let part = panel.parts.first(where: { $0.id == id }) { onFocus(part) }
+        }
     }
 
     private func canvas(_ sheet: SheetPlacement) -> some View {
@@ -81,8 +90,8 @@ struct SheetPartsView: View {
             )
             .frame(width: frame.rect.width, height: frame.rect.height, alignment: Self.alignment(frame))
             .background {
-                if part.look != .tile, part.isSelectable {
-                    Color.clear.modifier(PartRing(id: part.id, selectedID: selectedID, shape: shape)).padding(-SpotTokens.controlPadding)
+                if part.isFocusable {
+                    Color.clear.modifier(PartRing(id: part.id, selectedID: selectedID, hasBox: hasBox(part, frame), shape: shape))
                 }
             }
             .offset(x: frame.rect.minX, y: frame.rect.minY)
@@ -91,6 +100,17 @@ struct SheetPartsView: View {
 
     private var selectedID: () -> String? {
         selectedPart ?? { [panel] in panel.selectedPart?.id }
+    }
+
+    /// Whether a part fills its whole cell with a box of its own, as a button, a tile or a field does.
+    private func hasBox(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> Bool {
+        if part.isEditable || part.look == .tile { return true }
+        guard part.press == .line else { return false }
+        return switch part.look {
+        case .chip, .bare: false
+        case .strong: !frame.isOnTop
+        default: true
+        }
     }
 
     private static func alignment(_ frame: SheetPlacement.Frame) -> Alignment {
@@ -107,15 +127,17 @@ struct SheetPartsView: View {
         return Alignment(horizontal: horizontal, vertical: vertical)
     }
 
-    private func focusFirstField() {
+    /// Gives the text focus to the field that has the focus of the sheet, and takes it from a field that lost it.
+    private func focusSelectedField() {
         guard !panel.showsRows else { return }
-        DispatchQueue.main.async { focus = panel.parts.first(where: \.isEditable)?.id }
+        let id = selectedID()
+        DispatchQueue.main.async { focus = panel.parts.first { $0.id == id && $0.isEditable }?.id }
     }
 
     @ViewBuilder
     private func drawn(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         if part.kind == "view" {
-            customView(frame.rect.size)
+            customView(frame.rect.size, part.values) { onSet(part, $0) }
         } else {
             content(part, frame)
         }
@@ -149,7 +171,7 @@ struct SheetPartsView: View {
             if part.press == .line {
                 lineButton(part, frame)
             } else {
-                labelled(part, frame).modifier(TileLook(isOn: part.look == .tile, id: part.id, selectedID: selectedID))
+                labelled(part, frame).modifier(TileLook(isOn: part.look == .tile))
             }
         }
     }
@@ -167,8 +189,44 @@ struct SheetPartsView: View {
         mark(part).padding(SpotTokens.controlPadding)
     }
 
-    /// A line with a label, a value, a round button and a switch or a menu.
+    /// A line with a label, a value, a round button and a switch or a menu, or a text over two lines with its detail under
+    /// its title.
+    @ViewBuilder
     private func labelled(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
+        if frame.hasDetailUnderTitle, part.control == .none, part.press == .none, part.mark == nil, let title = part.title, let detail = part.detail {
+            stacked(part, title: title, detail: detail)
+        } else {
+            line(part, frame)
+        }
+    }
+
+    /// A title with its detail under it, which wraps to fill the height of its place.
+    private func stacked(_ part: SpotPart, title: String, detail: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: Self.lineGap) {
+            if let symbol = part.symbol {
+                Image(systemName: symbol)
+                    .modifier(SpotSecondaryText())
+                    .frame(width: Self.symbolWidth)
+            }
+            VStack(alignment: .leading, spacing: SpotType.lineGap) {
+                Text(title).font(SpotType.body).foregroundStyle(SpotTheme.ink).lineLimit(1)
+                Group {
+                    if let colour = SpotToneWords.colour(of: part.textTone) {
+                        Text(detail).foregroundStyle(colour)
+                    } else {
+                        Text(detail).modifier(SpotSecondaryText())
+                    }
+                }
+                .font(SpotType.detail)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .modifier(SpotColorBar(color: part.color))
+    }
+
+    /// A line with a label, a value, a round button and a switch or a menu.
+    private func line(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         HStack(spacing: frame.rect.width < Self.narrowCell ? Self.narrowGap : Self.lineGap) {
             if !hasRoundMark(part), work(part) != nil {
                 mark(part)
@@ -265,7 +323,7 @@ struct SheetPartsView: View {
                 centeredLine(part, text: SpotTheme.onSolid, fill: SpotTheme.solid)
             case .tile:
                 labelled(part, frame)
-                    .modifier(TileLook(isOn: true, id: part.id, selectedID: selectedID))
+                    .modifier(TileLook(isOn: true))
                     .contentShape(shape)
             default:
                 centeredLine(part, text: SpotTheme.ink, fill: SpotTheme.ink.opacity(SpotTheme.selectedFill))
@@ -332,6 +390,17 @@ struct SheetPartsView: View {
         .menuIndicator(.hidden)
         .buttonStyle(.plain)
         .fixedSize()
+        .background {
+            GeometryReader { room in
+                Color.clear.onChange(of: menuOpening()) { _, opening in
+                    guard opening?.part == part.id else { return }
+                    let rect = room.frame(in: .global)
+                    DispatchQueue.main.async {
+                        SpotChoiceMenu.popUp(options: options, value: value, under: rect) { onSet(part, $0) }
+                    }
+                }
+            }
+        }
     }
 
     /// The key of a part. A click asks for the next key that the person presses.
@@ -506,33 +575,49 @@ struct SheetPartsView: View {
 
 /// Gives the focus back once the panel has faded in. It alone reads whether the panel shows, so that a show reruns no part.
 private struct FocusOnShow: ViewModifier {
-    let focus: () -> Void
+    let focus: @MainActor @Sendable () -> Void
     @Environment(\.spotIsShown) private var isShown
 
     func body(content: Content) -> some View {
         content.onChange(of: isShown) { _, isShown in
-            if isShown { DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeInDuration, execute: focus) }
+            if isShown { DispatchQueue.main.asyncAfter(deadline: .now() + MotionTokens.fadeIn, execute: focus) }
         }
     }
 }
 
-/// The ring of a selected part that is not a tile. It alone reads the selection, so that an arrow press reruns the rings and
-/// not the sheet.
+/// The ring of the focused part: a few points outside its own box, with that box's corners, or around its line, with room
+/// for its words at each side, when it has no box. It reads the focus itself, so a move of the focus redraws only rings.
 private struct PartRing: ViewModifier {
     let id: String
     let selectedID: () -> String?
+    let hasBox: Bool
     let shape: RoundedRectangle
 
     func body(content: Content) -> some View {
-        content.modifier(SpotSelectionRing(isSelected: selectedID() == id, shape: shape))
+        let isSelected = selectedID() == id
+        if hasBox {
+            let gap = SpotTokens.focusGap
+            let ring = RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding + gap, style: .continuous)
+            content.modifier(SpotSelectionRing(isSelected: isSelected, shape: ring)).padding(-gap)
+        } else {
+            content.modifier(SpotSelectionRing(isSelected: isSelected, shape: shape)).padding(.horizontal, -SpotTokens.controlPadding)
+        }
+    }
+}
+
+/// Gives the focus to the field that the keyboard selects. It reads the selection itself, so a move redraws only this.
+private struct FocusOnSelect: ViewModifier {
+    let selectedID: () -> String?
+    let focus: () -> Void
+
+    func body(content: Content) -> some View {
+        content.onChange(of: selectedID()) { focus() }
     }
 }
 
 /// The filled row of `look=tile`.
 private struct TileLook: ViewModifier {
     let isOn: Bool
-    let id: String
-    let selectedID: () -> String?
 
     func body(content: Content) -> some View {
         if isOn {
@@ -540,7 +625,6 @@ private struct TileLook: ViewModifier {
                 .padding(.horizontal, SpotTokens.padding)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(SpotTheme.ink.opacity(SpotTheme.fill), in: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous))
-                .modifier(SpotSelectionRing(isSelected: selectedID() == id, shape: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)))
         } else {
             content
         }

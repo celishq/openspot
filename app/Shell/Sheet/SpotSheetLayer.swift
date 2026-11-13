@@ -23,36 +23,52 @@ struct SpotSheetLayer: View {
             entry: entry,
             cardSize: card?.placement.size ?? entry.size,
             isOpen: isOpen,
-            showsFill: entry.isOn && !isOpen,
+            showsFill: entry.isOn,
             rect: sheetRect,
             closeShift: isInstall ? 0 : showsArrow ? (frame?.width ?? sheetRect.width) - sheetRect.width : nil,
             cardWidth: isInstall ? SpotFieldView.rect.width : frame?.width ?? sheetRect.width,
-            hasCardLook: card?.look != nil
+            hasCardLook: card?.look != nil,
+            morph: SheetMorph(card: closedRect, sheet: sheetRect)
         )
         .id(entry.id)
-        .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(card?.look == nil || isOpen ? 1 : 0) }
+        .morph(progress, opacity: contentOpacity)
         .overlay(alignment: .topLeading) {
             if let look = card?.look, let frame {
                 cardLook(look, size: card?.placement.size ?? look.size)
                     .frame(width: frame.width, height: frame.height)
-                    .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: !isOpen)) { $0.opacity(isOpen ? 0 : 1) }
+                    .morph(progress, opacity: SheetMorph.cardLook(at:))
                     .allowsHitTesting(false)
             }
         }
         .background {
-            SpotTheme.solid
-                .animation(SpotMotion.fillFade(isOpen: isOpen)) { $0.opacity(entry.isOn && !isOpen ? 1 : 0) }
+            if entry.isOn {
+                SpotTheme.solid
+                    .morph(progress, opacity: SheetMorph.cardLook(at:))
+            }
         }
         .modifier(SpotSheetFrame(
             rect: isOpen ? sheetRect : closedRect,
             radius: isOpen ? SpotTokens.radius : isInstall ? SpotTokens.corner(for: .strip) : SpotTokens.corner(for: card?.placement.size ?? entry.size),
             sheetRect: sheetRect,
             shift: isOpen ? .zero : shift(to: closedRect),
-            showsRing: !isOpen && cardIsSelected,
+            showsRing: cardIsSelected,
+            progress: progress,
             arrow: showsArrow ? AnyView(arrow) : nil,
             arrowBox: frame?.size ?? .zero
         ))
         .modifier(SheetFadeMask(fade: fade, height: fadeHeight, isOpen: isOpen))
+    }
+
+    /// How far the sheet is open, which the sheet's motion carries from 0 on its card to 1.
+    private var progress: Double {
+        isOpen ? 1 : 0
+    }
+
+    /// How strongly the sheet's content shows: whole, unless the card draws its own look, which it takes the place of in the
+    /// second half of the motion.
+    private var contentOpacity: (Double) -> Double {
+        if card?.look == nil { return { _ in 1 } }
+        return { SheetMorph.sheetLook(at: $0) }
     }
 
     /// The rect that the sheet grows out of and collapses into: its card, or the field for the install screen.
@@ -72,14 +88,14 @@ struct SpotSheetLayer: View {
 
     /// The arrow of the card while its sheet moves. It stays in view until the close button takes its place at the edge.
     private var arrow: some View {
-        SpotCardArrow(isOnSolid: entry.isOn && !isOpen)
+        SpotCardArrow(isOnSolid: entry.isOn)
             .placed(isTall: (frame?.height ?? 0) > SpotTokens.rowHeight)
-            .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: !isOpen)) { $0.opacity(isOpen ? 0 : 1) }
+            .morph(progress, opacity: SheetMorph.cardLook(at:))
             .allowsHitTesting(false)
     }
 
     private var isInstall: Bool {
-        entry.id == ShippedSpot.installID
+        entry.spot.growsFromField
     }
 
     private var cardIsSelected: Bool {
@@ -94,13 +110,13 @@ struct SpotSheetLayer: View {
         let reading: (String) -> MetricReading? = card.kind == .widget ? { [model] in model.reading(of: $0) } : { _ in nil }
         if card.item == nil, let layout = card.state.face.layout(for: size) {
             SpotCardDrawing(layout: layout, face: card.state.face, card: size, view: { room in
-                card.command.view.map { SpotCustomView(source: $0, values: card.state.values, card: size, room: room, views: SpotViews.shared) }
+                card.spot.view.map { SpotCustomView(source: $0, values: card.state.values, card: size, room: room, views: SpotViews.shared) }
             }, onSlot: { _, _ in })
             .padding(SpotTokens.cardPadding(for: size, isWidget: true))
-        } else if card.item == nil, card.state.face.hasView, let view = card.command.view {
+        } else if card.item == nil, card.state.face.hasView, let view = card.spot.view {
             SpotCustomView(source: view, values: card.state.values, card: size, views: SpotViews.shared)
-        } else if let layout = card.command.layout {
-            SpotWidgetView(layout: layout, places: card.command.places, reading: reading, card: size)
+        } else if let layout = card.spot.layout {
+            SpotWidgetView(layout: layout, places: card.spot.places, reading: reading, card: size)
                 .padding(SpotTokens.cardPadding(for: size, isWidget: true))
         }
     }

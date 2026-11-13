@@ -1,3 +1,5 @@
+import Foundation
+
 /// The rows of the actions menu for one command and its selected item, with the selected row.
 public struct ActionMenu: Equatable, Sendable {
     public struct Row: Equatable, Sendable {
@@ -8,11 +10,16 @@ public struct ActionMenu: Equatable, Sendable {
         var isQuiet = false
     }
 
+    /// What Enter does on a row that shows a key: it records a new one.
+    static let changeTitle = "Change"
+    /// What Enter does on a row that has no key yet.
+    static let setTitle = "Set"
+
     /// The key that opens and closes the menu, as the footer shows it.
     public static let key = "⌘K"
 
-    /// How many rows a person takes in at a glance. A menu with more shows a field to search them.
-    private static let glance = 5
+    /// How many rows a menu needs to show a field to search them.
+    private static let searchFrom = 3
 
     public let rows: [Row]
     /// The rows that the search finds, best first. With no search, each row.
@@ -21,14 +28,15 @@ public struct ActionMenu: Equatable, Sendable {
     public private(set) var selected = 0
     public private(set) var confirming: String?
 
-    /// Lists what Enter does, the actions that fit, then the rows that the app adds, each of them on this command or item.
+    /// Lists what Enter does, the actions that fit, then the rows that the app adds, each of them on this spot or item.
     /// Returns nil when there is nothing to list.
-    public init?(command: Spot, item: SpotItem?, showsPrimary: Bool = true, extras: [CommandAction] = []) {
+    public init?(spot: Spot, item: SpotItem?, showsPrimary: Bool = true, extras: [CommandAction] = []) {
         var rows: [Row] = []
-        if showsPrimary, let title = command.primaryTitle(hasItem: item != nil) {
+        let keyTitle = item.flatMap { $0.records ? ($0.shortcut == KeyList.unset ? Self.setTitle : Self.changeTitle) : nil }
+        if showsPrimary, let title = item?.openTitle ?? keyTitle ?? spot.primaryTitle(hasItem: item != nil) {
             rows.append(Row(title: title, keyLabel: "⏎", action: nil))
         }
-        rows += command.actions(for: item).map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0) }
+        rows += spot.actions(for: item).map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0) }
         rows += extras.map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0, isQuiet: true) }
         guard !rows.isEmpty else { return nil }
         self.rows = rows
@@ -36,12 +44,17 @@ public struct ActionMenu: Equatable, Sendable {
     }
 
     public var isSearchable: Bool {
-        rows.count > Self.glance
+        rows.count >= Self.searchFrom
     }
 
     /// How many lines it draws: one for each row that it shows, and one for the field of a menu that searches.
     public var lines: Int {
         isSearchable ? shown.count + 1 : rows.count
+    }
+
+    /// How many lines it draws with no search, which sets its place.
+    public var fullLines: Int {
+        isSearchable ? rows.count + 1 : rows.count
     }
 
     public var selectedRow: Row? {
@@ -64,12 +77,13 @@ public struct ActionMenu: Equatable, Sendable {
     }
 
     /// The first two keys, an action that holds Esc, and the key of this menu, in words for a footer. The key of a running row
-    /// says that it stops the call.
-    public func hint(stopping isRunning: (Row) -> Bool) -> String {
+    /// says that it stops the call. A second key of the item, such as ⌘⏎ Settings, follows the first.
+    public func hint(stopping isRunning: (Row) -> Bool, second: String? = nil) -> String {
         let keyed = rows.filter { !$0.keyLabel.isEmpty && !$0.isQuiet }
         let isEscape = { (row: Row) in row.action?.key == ActionKey(name: "escape") }
         let shown = Array(keyed.filter { !isEscape($0) }.prefix(2)) + keyed.filter(isEscape)
-        let keys = shown.map { "\($0.keyLabel) \(isRunning($0) ? Self.stopTitle(of: $0) : $0.title)" }
+        var keys = shown.map { "\($0.keyLabel) \(isRunning($0) ? Self.stopTitle(of: $0) : $0.title)" }
+        if let second { keys.insert(second, at: min(1, keys.count)) }
         return (keys + ["\(Self.key) Actions"]).joined(separator: "   ")
     }
 

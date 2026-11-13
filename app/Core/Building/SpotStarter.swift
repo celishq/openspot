@@ -8,27 +8,8 @@ public enum SpotStarter: String, CaseIterable, Sendable {
     case number
     case form
 
-    /// The words of each starter in a list for a person.
-    public var title: String {
-        switch self {
-        case .button: "Button"
-        case .list: "List"
-        case .number: "Live value"
-        case .form: "Form"
-        }
-    }
-
-    /// What a spot made from it does, in a line under its title.
-    public var detail: String {
-        switch self {
-        case .button: "Runs a command when you press it"
-        case .list: "Shows rows to pick from"
-        case .number: "Shows a value that updates"
-        case .form: "Asks for words and saves them"
-        }
-    }
-
-    public var symbol: String {
+    /// The SF Symbol that a spot made from it shows.
+    var symbol: String {
         switch self {
         case .button: "hand.tap"
         case .list: "list.bullet"
@@ -37,8 +18,9 @@ public enum SpotStarter: String, CaseIterable, Sendable {
         }
     }
 
-    /// Writes this starter as a new script in the folder, and returns its file. The file takes the words of the name in
-    /// lowercase with dashes, and the spot takes the name as its title. A name that another spot has is refused.
+    /// Writes this starter as a new script in a new spot folder in the folder, and returns its file. The spot folder and the
+    /// file take the words of the name in lowercase with dashes, and the spot takes the name as its title. A name that another
+    /// spot has is refused.
     public func write(name: String, in folder: URL) throws -> URL {
         try Self.write(name: name, in: folder, text: text(title:))
     }
@@ -46,24 +28,19 @@ public enum SpotStarter: String, CaseIterable, Sendable {
     /// Writes a new script with the text that its title gives, under the name's words in lowercase with dashes.
     static func write(name: String, in folder: URL, text: (String) -> String) throws -> URL {
         let slug = slug(of: name)
-        guard !slug.isEmpty else { throw PluginError.fault("Use letters or digits in the name.") }
-        guard !isTaken(slug, in: folder) else { throw PluginError.fault("A spot called \(slug) already exists. Choose another name.") }
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let file = folder.appendingPathComponent("\(slug).sh")
+        guard !slug.isEmpty else { throw SpotError.fault("Use letters or digits in the name.") }
+        guard !isTaken(slug, in: folder) else { throw SpotError.fault("A spot called \(slug) already exists. Choose another name.") }
+        let place = folder.appendingPathComponent("\(slug).\(SpotPackage.fileExtension)", isDirectory: true)
+        try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
+        let file = place.appendingPathComponent("\(slug).sh")
         let title = name.components(separatedBy: .newlines).joined(separator: " ").trimmingCharacters(in: .whitespaces)
         try text(title).write(to: file, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: file.path)
         return file
     }
 
-    /// The name, or the name with the first number from 2 that no spot of the folder has.
-    static func freeName(_ name: String, in folder: URL) -> String {
-        guard isTaken(slug(of: name), in: folder) else { return name }
-        return (2...).lazy.map { "\(name) \($0)" }.first { !isTaken(slug(of: $0), in: folder) } ?? name
-    }
-
     private static func isTaken(_ slug: String, in folder: URL) -> Bool {
-        PluginFolder(url: folder).file(of: slug) != nil || FileManager.default.fileExists(atPath: folder.appendingPathComponent(slug).path)
+        ["", ".\(SpotPackage.fileExtension)", ".sh"].contains { FileManager.default.fileExists(atPath: folder.appendingPathComponent(slug + $0).path) }
     }
 
     /// The words of a name in lowercase, joined by dashes, with only Latin letters and digits.
@@ -88,7 +65,7 @@ public enum SpotStarter: String, CaseIterable, Sendable {
             #!/bin/sh
             # title=\(title)
             # icon=\(symbol)
-            # read=sheet
+            # on=sheet.open
             case "$1" in
               read)
                 printf 'row=first\\ntitle=First row\\ndetail=Press Enter to pick it\\n\\n'
@@ -105,7 +82,7 @@ public enum SpotStarter: String, CaseIterable, Sendable {
             #!/bin/sh
             # title=\(title)
             # icon=\(symbol)
-            # read=panel
+            # on=panel.open
             printf 'title=%s\\ndetail=Reads each time the panel opens\\n' "$(date +%H:%M)"
 
             """
@@ -114,7 +91,7 @@ public enum SpotStarter: String, CaseIterable, Sendable {
             #!/bin/sh
             # title=\(title)
             # icon=\(symbol)
-            # read=sheet
+            # on=sheet.open
             . "$OPENSPOT_SH"
             case "$1" in
               read)

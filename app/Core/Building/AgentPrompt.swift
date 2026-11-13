@@ -1,11 +1,11 @@
 import Foundation
 
-/// The words that ask a coding agent to build or fix a spot, with the places that it needs: the plugins folder and the
+/// The words that ask a coding agent to build or fix a spot, with the places that it needs: the spots folder and the
 /// `openspot` command of this app.
 public struct AgentPrompt: Equatable, Sendable {
     public let folder: URL
     public let guide: URL
-    /// The program of this app, which is the `openspot` command.
+    /// The `openspot` command that the agent runs.
     public let app: String
 
     public init(folder: URL, guide: URL, app: String) {
@@ -14,15 +14,23 @@ public struct AgentPrompt: Equatable, Sendable {
         self.app = app
     }
 
+    /// The `openspot` client in the Helpers of the app, which reaches the running app, or the app's own program when the
+    /// app has no client.
+    public static func command(of app: String) -> String {
+        let contents = URL(fileURLWithPath: app).deletingLastPathComponent().deletingLastPathComponent()
+        let client = contents.appendingPathComponent("Helpers/openspot").path
+        return FileManager.default.isExecutableFile(atPath: client) ? client : app
+    }
+
     /// The toast of each copy of a prompt.
     public static let copied = "Copied a prompt for your agent. Paste it into Claude Code, Codex or another agent."
 
-    /// Asks for a new spot in the plugins folder that does what the person described.
+    /// Asks for a new spot in the spots folder that does what the person described.
     public func building(_ description: String) -> String {
         """
         Build an Openspot spot that does this: \(description)
 
-        Write it as one new file in \(folder.path). Its ID is the name of the file with no extension.
+        Write it as a script in a new spot folder in \(folder.path), such as weather.spot/weather.sh. Its ID is the name of the folder with no extension.
         \(steps(for: "<id>"))
         """
     }
@@ -33,7 +41,7 @@ public struct AgentPrompt: Equatable, Sendable {
         Fix the Openspot spot in \(file.path). Openspot does not load it, and says:
         \(faults.joined(separator: "\n"))
 
-        \(steps(for: file.deletingPathExtension().lastPathComponent))
+        \(steps(for: SpotID(file: file).description))
         """
     }
 
@@ -43,7 +51,7 @@ public struct AgentPrompt: Equatable, Sendable {
         return """
         Change the Openspot spot in \(file.path). Ask me what to change before you change it.
         \(failed)
-        \(steps(for: file.deletingPathExtension().lastPathComponent))
+        \(steps(for: SpotID(file: file).description))
         """
     }
 
@@ -56,15 +64,15 @@ public struct AgentPrompt: Equatable, Sendable {
         """
     }
 
-    /// Asks for the store listing of a spot: a readme beside it, a description, and a preview mode with fake data.
+    /// Asks for the store listing of a spot: a readme in its spot folder, a description, and a preview mode with fake data.
     public func listing(_ file: URL) -> String {
         let readme = SpotListing.readme(of: file).lastPathComponent
         return """
         Write the store listing of the Openspot spot in \(file.path). Do not change what it does.
-        1. Write \(readme) beside it: what the spot does and how to use it, in two or three short paragraphs, then what it runs on my computer, which files it reads or writes, and whether it uses the network.
+        1. Write \(readme) in its folder: what the spot does and how to use it, in two or three short paragraphs, then what it runs on my computer, which files it reads or writes, and whether it uses the network.
         2. Give its header a detail= line of one short sentence, if it has none.
-        3. Add preview=sample to its header, and make its read print fake rows, with no data of mine, while OPENSPOT_PREVIEW is 1.
-        \(steps(for: file.deletingPathExtension().lastPathComponent))
+        3. Add preview=sample to its header, and make its read print fake rows, with no data of mine, while OPENSPOT_REASON is spot.preview.
+        \(steps(for: SpotID(file: file).description))
         """
     }
 

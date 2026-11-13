@@ -3,7 +3,7 @@ import XCTest
 
 /// Proves the Agenda example with its real script and a stand-in for the openspot command, which logs each call with its
 /// reason and its stdin.
-final class AgendaExampleTests: SamplePluginsCase {
+final class AgendaExampleTests: SampleSpotsCase {
     /// A time from now in ISO 8601 with the offset of the zone, as `openspot calendar events` prints it.
     private func iso(_ seconds: TimeInterval) -> String {
         let format = ISO8601DateFormatter()
@@ -209,11 +209,22 @@ final class AgendaExampleTests: SamplePluginsCase {
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
 
-            let work = try await SpotRuns().answer(of: agenda, .items(query: "WORK"), limit: 30)
-            let family = try await SpotRuns().answer(of: agenda, .items(query: "ауфьшдн", forms: ["family"]), limit: 30)
+            let work = try await SpotRuns().answer(of: agenda, .read, input: "search=WORK\n", limit: 30)
+            let family = try await SpotRuns().answer(of: agenda, .read, input: "search=ауфьшдн\nform=family\n", limit: 30)
 
-            XCTAssertEqual(PluginOutput(text: work).items.map(\.run), ["add-reminder", "event:B/2", "event:C/3"])
-            XCTAssertEqual(PluginOutput(text: family).items.map(\.run), ["add-reminder", "reminder:R1", "reminder:R2", "reminder:R3", "reminder:R4"])
+            XCTAssertEqual(SpotOutput(text: work).items.map(\.run), ["add-reminder", "event:B/2", "event:C/3"])
+            XCTAssertEqual(SpotOutput(text: family).items.map(\.run), ["add-reminder", "reminder:R1", "reminder:R2", "reminder:R3", "reminder:R4"])
+        }
+    }
+
+    func testEachFormMatchesAsAWholeLine() async throws {
+        let agenda = try example("Agenda")
+        try await withPrivateHome { folder in
+            try self.fakeOpenspot(in: folder)
+
+            let output = try await SpotRuns().answer(of: agenda, .read, input: "search=qqq\nform=mom call\nform=standup\n", limit: 30)
+
+            XCTAssertEqual(SpotOutput(text: output).items.map(\.run).filter { $0.contains(":") }, ["event:B/2"])
         }
     }
 
@@ -325,7 +336,7 @@ final class AgendaExampleTests: SamplePluginsCase {
             let calendars = SpotAction.action(CommandAction(id: "calendars", title: "Choose calendars"), item: nil)
 
             let first = try await SpotRuns().answer(of: agenda, calendars, limit: 30)
-            let form = try XCTUnwrap(ItemForm(output: PluginOutput(text: first)))
+            let form = try XCTUnwrap(ItemForm(output: SpotOutput(text: first)))
             let choice = try XCTUnwrap(form.soleChoice)
             XCTAssertEqual(agenda.settings.map(\.id), ["calendars"])
             XCTAssertEqual(agenda.settings.first?.icon, "calendar")
@@ -336,7 +347,7 @@ final class AgendaExampleTests: SamplePluginsCase {
 
             let after = try await SpotRuns().answer(of: agenda, calendars, input: "calendars=7D10\n", limit: 30)
             XCTAssertEqual(try self.read("setting-calendars", in: folder), "B1 7D10")
-            XCTAssertEqual(ItemForm(output: PluginOutput(text: after))?.soleChoice?.picks, ["A8E2"])
+            XCTAssertEqual(ItemForm(output: SpotOutput(text: after))?.soleChoice?.picks, ["A8E2"])
             _ = try await SpotRuns().answer(of: agenda, calendars, input: "calendars=B1\n", limit: 30)
             XCTAssertEqual(try self.read("setting-calendars", in: folder), "7D10")
             _ = try await SpotRuns().answer(of: agenda, calendars, input: "calendars=7D10\n", limit: 30)
@@ -351,14 +362,14 @@ final class AgendaExampleTests: SamplePluginsCase {
             try "B1 7D10".write(to: folder.appendingPathComponent("setting-calendars"), atomically: true, encoding: .utf8)
             let calendars = SpotAction.action(CommandAction(id: "calendars", title: "Choose calendars"), item: nil)
             let first = try await SpotRuns().answer(of: agenda, calendars, limit: 30)
-            let form = try XCTUnwrap(ItemForm(output: PluginOutput(text: first)))
+            let form = try XCTUnwrap(ItemForm(output: SpotOutput(text: first)))
             let all = try XCTUnwrap(FormDraft(form: form).selectingAll())
 
             let after = try await SpotRuns().answer(of: agenda, calendars, input: all.text, limit: 30)
 
             XCTAssertEqual(all.values["calendars"], "B1\n7D10")
             XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("setting-calendars").path))
-            XCTAssertEqual(ItemForm(output: PluginOutput(text: after))?.soleChoice?.picks, ["A8E2", "B1", "7D10"])
+            XCTAssertEqual(ItemForm(output: SpotOutput(text: after))?.soleChoice?.picks, ["A8E2", "B1", "7D10"])
         }
     }
 }

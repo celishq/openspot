@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves that the plugins folder tells any agent that opens it how to build a spot, and keeps a note that a person wrote.
+/// Proves that the spots folder tells any agent that opens it how to build a spot, and keeps a note that a person wrote.
 final class AgentNoteTests: XCTestCase {
     private var folder: URL!
 
@@ -40,6 +40,6 @@ final class AgentNoteTests: XCTestCase {
     func testTheNoteGivesNoSpot() throws {
         try AgentNote(command: "/Apps/openspot").write(in: folder)
 
-        XCTAssertEqual(try PluginFolder(url: folder).scan().commands, [])
+        XCTAssertEqual(try SpotsFolder(url: folder).scan().spots, [])
     }
 }

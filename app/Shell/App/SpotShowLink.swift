@@ -5,15 +5,15 @@ import OpenspotCore
 /// folder, which the app of that folder answers. With no answer, the command opens the app and asks again.
 @MainActor
 enum SpotShowLink {
-    private static let ask = Notification.Name("dev.openspot.show")
-    private static let answer = Notification.Name("dev.openspot.shown")
+    nonisolated private static let ask = Notification.Name("dev.openspot.show")
+    nonisolated private static let answer = Notification.Name("dev.openspot.shown")
     private static let firstWait: TimeInterval = 1
     private static let launchWait: TimeInterval = 15
     private static let askPause: TimeInterval = 0.5
 
     /// The config folder of this app, which tells a Debug build and the installed app apart.
     static var config: String {
-        SpotFiles.standard.log.folder.deletingLastPathComponent().standardizedFileURL.path
+        AppPlaces.standard.log.folder.deletingLastPathComponent().standardizedFileURL.path
     }
 
     /// Answers each ask for this config folder with whether the model showed the spot.
@@ -31,7 +31,7 @@ enum SpotShowLink {
     static func send(_ id: String) -> Never {
         let center = DistributedNotificationCenter.default()
         let token = UUID().uuidString
-        var found: Bool?
+        nonisolated(unsafe) var found: Bool?
         let observer = center.addObserver(forName: answer, object: nil, queue: .main) { note in
             guard let info = note.userInfo as? [String: String], info["token"] == token else { return }
             found = info["found"] == "true"

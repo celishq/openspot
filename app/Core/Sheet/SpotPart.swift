@@ -69,8 +69,10 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     /// The small mark of a line, drawn as a widget draws it: a ring around its detail from `value`, or bars before its
     /// detail from `point` lines.
     public let mark: MetricValue?
+    /// Each key of its block with its values, which a spot's own view draws. Only a `view` block keeps them.
+    public let values: [String: [String]]
 
-    /// The kinds of block that make a part, in the order of the table in spec 01 (U2).
+    /// The kinds of block that make a part, in the order of the table in Blocks of the protocol.
     public static let kinds = ["text", "number", "gauge", "graph", "picture", "view", "switch", "slider", "field", "choice", "hotkey", "button", "section"]
 
     /// Reads a block whose first key is a kind of part. Its value is the id, and the kind decides the control.
@@ -78,6 +80,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         guard let kind = block.fields.first?.key, Self.kinds.contains(kind), let id = block.value(kind) else { return nil }
         self.id = id
         self.kind = kind
+        values = kind == "view" ? Dictionary(grouping: block.fields, by: \.key).mapValues { $0.map(\.value) } : [:]
         isSection = kind == "section"
         title = block.value("title")
         detail = block.value("detail")
@@ -121,7 +124,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
                 control = .menu(options, value: block.value("value"))
             }
         case "number":
-            control = .metric(block.value("value") ?? "")
+            control = .metric(block.value("display") ?? block.value("value") ?? "")
         default:
             control = .none
         }
@@ -226,10 +229,11 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         return false
     }
 
-    /// Whether the return key can use it.
-    public var isSelectable: Bool {
+    /// Whether the arrows can move the focus to it: a switch, a slider, a menu, a key, a field or a button.
+    public var isFocusable: Bool {
         switch control {
-        case .toggle, .shortcut: true
+        case .toggle, .shortcut, .menu, .slider: true
+        case .text(_, _, let isReadOnly): !isReadOnly
         default: press != .none
         }
     }

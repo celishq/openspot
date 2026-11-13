@@ -7,6 +7,8 @@ public struct ItemList: Equatable, Sendable {
     public private(set) var search: ItemSearch
     public private(set) var query = ""
     public private(set) var recent: [String]
+    /// The weight of each recent pick, made again only when `recent` changes.
+    private(set) var weights: PickWeights
     public private(set) var shown: [SpotItem] = []
     public private(set) var selected = 0
     public private(set) var perLine = 1
@@ -32,6 +34,7 @@ public struct ItemList: Equatable, Sendable {
         self.search = search
         all = items
         self.recent = recent
+        weights = PickWeights(recent)
         reindex()
         refresh()
     }
@@ -60,7 +63,7 @@ public struct ItemList: Equatable, Sendable {
     /// Searches for new text, and selects the first row. Returns false when the text is the same, and changes nothing.
     @discardableResult
     public mutating func search(_ text: String) -> Bool {
-        guard text != query else { return false }
+        guard text != query, search != .off else { return false }
         begin(text)
         return true
     }
@@ -156,6 +159,16 @@ public struct ItemList: Equatable, Sendable {
         selected = shown.firstIndex { $0.run == run } ?? selected
     }
 
+    /// Whether rows pinned at the bottom lie under rows that scroll, so that a thin line sets them apart.
+    public var setsApart: Bool {
+        perLine == 1 && shown.contains { $0.pin == .bottom } && shown.contains { $0.pin == nil }
+    }
+
+    /// Selects the first row, or the last, as ⌘↑ and ⌘↓ do.
+    public mutating func moveToEdge(last: Bool) {
+        selected = last ? max(shown.count - 1, 0) : 0
+    }
+
     public mutating func move(by step: Int) {
         selected = min(max(selected + step, 0), max(shown.count - 1, 0))
     }
@@ -176,6 +189,11 @@ public struct ItemList: Equatable, Sendable {
         drawing.perLine == nil
     }
 
+    /// Whether the selection lies on the last line of the shown rows, or no row shows.
+    public var isOnLastLine: Bool {
+        shown.isEmpty || selected / perLine == (shown.count - 1) / perLine
+    }
+
     /// Moves to another line and keeps the place in the line. A shorter last line takes its last item, and the first and the
     /// last line stop the move.
     public mutating func moveLine(by lines: Int) {
@@ -189,6 +207,7 @@ public struct ItemList: Equatable, Sendable {
     /// Adds a pick to the front of the recent picks, which keep each pick so that a count of them shows how often.
     public mutating func remember(_ item: SpotItem) {
         recent = Array(([item.run] + recent).prefix(Self.recentLimit))
+        weights = PickWeights(recent)
         narrowings = []
         refresh()
     }
@@ -201,15 +220,21 @@ public struct ItemList: Equatable, Sendable {
     private mutating func refresh() {
         guard search == .local else {
             narrowings = []
-            shown = all
+            shown = Self.pinning(all, all)
             return
         }
         let next = SearchQuery(text: query)
         while let last = narrowings.last, !next.text.hasPrefix(last.query.text) { narrowings.removeLast() }
         if narrowings.last?.query.text != next.text {
             let among = narrowings.last.flatMap { $0.query.narrows(to: next) ? $0.matches : nil } ?? Array(all.indices)
-            narrowings.append(Narrowing(query: next, matches: next.ranking(searchIndex, items: all, among: among, recent: recent)))
+            narrowings.append(Narrowing(query: next, matches: next.ranking(searchIndex, items: all, among: among, weights: weights)))
         }
-        shown = narrowings.last?.matches.map { all[$0] } ?? []
+        shown = Self.pinning(narrowings.last?.matches.map { all[$0] } ?? [], all)
+    }
+
+    /// The found rows between the rows of all pinned at the top and those pinned at the bottom, so that a search never hides
+    /// them.
+    private static func pinning(_ found: [SpotItem], _ all: [SpotItem]) -> [SpotItem] {
+        all.filter { $0.pin == .top } + found.filter { $0.pin == nil } + all.filter { $0.pin == .bottom }
     }
 }

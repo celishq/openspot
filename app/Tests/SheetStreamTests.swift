@@ -14,7 +14,7 @@ final class SheetStreamTests: XCTestCase {
     }
 
     private func script(_ body: String, name: String = "script") throws -> URL {
-        let url = folder.appendingPathComponent("\(name).sh")
+        let url = folder.spotFile(name)
         try "#!/bin/sh\n\(body)\n".writeScript(to: url)
         return url
     }
@@ -37,7 +37,7 @@ final class SheetStreamTests: XCTestCase {
         XCTAssertNil(reader.finish())
     }
 
-    // MARK: R12
+    // MARK: Frames
 
     func testATerminalProgressCodeIsAFrameWithItsValue() {
         var reader = SheetFrameReader()
@@ -104,7 +104,7 @@ final class SheetStreamTests: XCTestCase {
             for try await _ in ScriptProcess(url: silent, limit: 1.5).start() {}
             XCTFail("It should time out.")
         } catch {
-            XCTAssertEqual(error as? PluginError, .timedOut)
+            XCTAssertEqual(error as? SpotError, .timedOut)
         }
         FileManager.default.createFile(atPath: release, contents: Data())
         let second = try await frames.next()
@@ -113,36 +113,36 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testAFrameReplacesTheWholeSheet() throws {
-        var panel = try XCTUnwrap(SheetParts(output: PluginOutput(text: "grid=a b\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")))
+        var panel = try XCTUnwrap(SheetParts(output: SpotOutput(text: "grid=a b\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")))
 
-        panel.take(PluginOutput(text: "text=c\ntitle=C\n"), answering: panel.generation)
+        panel.take(SpotOutput(text: "text=c\ntitle=C\n"), answering: panel.generation)
 
         XCTAssertEqual(panel.parts.map(\.id), ["c"])
         XCTAssertNil(panel.layout)
     }
 
     func testAFrameKeepsTheTextThePersonIsTyping() throws {
-        var panel = try XCTUnwrap(SheetParts(output: PluginOutput(text: "field=a\nvalue=typed\n")))
+        var panel = try XCTUnwrap(SheetParts(output: SpotOutput(text: "field=a\nvalue=typed\n")))
 
-        panel.take(PluginOutput(text: "field=a\nvalue=old\n"), answering: panel.generation, keeping: "a")
+        panel.take(SpotOutput(text: "field=a\nvalue=old\n"), answering: panel.generation, keeping: "a")
 
         XCTAssertEqual(panel.parts.first?.value, "typed")
     }
 
-    func testEventsAreBlocks() {
-        XCTAssertEqual(SpotAction.read.event(id: 1), "call=1\narg=read\n\n")
-        XCTAssertEqual(SpotAction.read.event(id: 5, reason: .timer), "call=5\nreason=timer\narg=read\n\n")
-        XCTAssertEqual(SpotAction.press("swap").event(id: 2), "call=2\narg=swap\n\n")
-        XCTAssertEqual(SpotAction.set("input", to: "one\ntwo").event(id: 3), "call=3\narg=input\narg=one\\ntwo\n\n")
-        XCTAssertEqual(SpotAction.drop(paths: ["/a b.mov", "-rf.mov"]).event(id: 4), "call=4\narg=drop\narg=/a b.mov\narg=-rf.mov\n\n")
+    func testACallOfAStayingScriptIsOneBlock() {
+        XCTAssertEqual(SpotAction.read.block(id: 1), "call=1\narg=read\n\n")
+        XCTAssertEqual(SpotAction.read.block(variables: ReadReason.clock(60).variables, id: 5), "call=5\narg=read\nenv.OPENSPOT_REASON=clock.60\n\n")
+        XCTAssertEqual(SpotAction.press("swap").block(id: 2), "call=2\narg=swap\n\n")
+        XCTAssertEqual(SpotAction.set("input", to: "one\ntwo").block(id: 3), "call=3\narg=input\narg=one\\ntwo\n\n")
+        XCTAssertEqual(SpotAction.drop(paths: ["/a b.mov", "-rf.mov"]).block(id: 4), "call=4\narg=drop\narg=/a b.mov\narg=-rf.mov\n\n")
     }
 
-    func testAnEventHoldsEachValueOfTheSheet() {
+    func testTheBlockHoldsTheStdinOfTheCallAsOneInput() {
         let values = "input=one\\ntwo\nsource=auto\n"
 
         XCTAssertEqual(
-            SpotAction.set("source", to: "auto").event(values: values, id: 7),
-            "call=7\narg=source\narg=auto\ninput=one\\ntwo\nsource=auto\n\n"
+            SpotAction.set("source", to: "auto").block(input: values, id: 7),
+            "call=7\narg=source\narg=auto\ninput=input=one\\\\ntwo\\nsource=auto\\n\n\n"
         )
     }
 
@@ -176,17 +176,17 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testAScriptThatStaysIsAList() throws {
-        let url = try script("# stay=true\n# read=panel")
-        let command = try XCTUnwrap(try Plugin(file: url, id: "script")).commands.first
+        let url = try script("# mode=stay\n# on=panel.open")
+        let command = try XCTUnwrap(try SpotFile(file: url, id: "script")).spots.first
 
-        XCTAssertEqual(command?.stays, true)
+        XCTAssertEqual(command?.mode, .stay)
         XCTAssertEqual(command?.kind, .list)
         XCTAssertEqual(command?.readsState, false)
     }
 
     func testAPlainFirstReadOfAStayingScriptGivesItsFirstFrame() async throws {
-        let url = try script("# stay=true\nwhile IFS= read -r line; do case \"$line\" in call=*) call=${line#call=} ;; esac; [ -n \"$line\" ] || printf 'end=%s\\n\\ntext=a\\ntitle=A\\n---\\n' \"$call\"; done")
-        let command = Spot(id: "a", name: "A", url: url, kind: .list, stays: true)
+        let url = try script("# mode=stay\nwhile IFS= read -r line; do case \"$line\" in call=*) call=${line#call=} ;; esac; [ -n \"$line\" ] || printf 'end=%s\\n\\ntext=a\\ntitle=A\\n---\\n' \"$call\"; done")
+        let command = Spot(id: "a", name: "A", url: url, kind: .list, mode: .stay)
 
         let output = try await command.items(timeout: 5)
 

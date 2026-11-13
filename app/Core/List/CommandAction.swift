@@ -1,9 +1,9 @@
 /// One more thing a command can do, which its script prints and its actions menu lists.
 public struct CommandAction: Equatable, Sendable {
-    /// What an action needs: a selected item, or only its command.
+    /// What an action acts on: the selected item, the default, or the whole spot (protocol: Buttons and actions).
     public enum Scope: String, Sendable {
         case item
-        case command
+        case spot
     }
 
     /// What the panel does after the action runs.
@@ -13,24 +13,24 @@ public struct CommandAction: Equatable, Sendable {
     }
 
     /// The row that the app adds to the menu of a spot, which no script prints or answers.
-    public static let share = CommandAction(id: "openspot.share", title: "Share", key: ActionKey(text: "cmd+shift+c"), scope: .command, after: .close)
+    public static let share = CommandAction(id: "openspot.share", title: "Share", key: ActionKey(text: "cmd+shift+c"), scope: .spot, after: .close)
 
-    /// The row that takes a spot out of the plugins folder, which `⌘Z` puts back. A widget file takes each widget that it
+    /// The row that takes a spot out of the spots folder, which `⌘Z` puts back. A widget file takes each widget that it
     /// holds.
     public static func remove(widgets count: Int = 1) -> CommandAction {
-        CommandAction(id: removeID, title: count > 1 ? "Delete \(count) widgets" : "Delete", key: ActionKey(text: "cmd+backspace"), scope: .command, after: .stay)
+        CommandAction(id: removeID, title: count > 1 ? "Delete \(count) widgets" : "Delete", key: ActionKey(text: "cmd+backspace"), scope: .spot, after: .stay)
     }
 
     /// The row that opens the file of a spot in the text editor.
-    public static let edit = CommandAction(id: "openspot.edit", title: "Edit", key: ActionKey(text: "cmd+e"), scope: .command, after: .close)
+    public static let edit = CommandAction(id: "openspot.edit", title: "Edit", key: ActionKey(text: "cmd+e"), scope: .spot, after: .close)
 
     /// The row that copies a prompt that asks a coding agent to change a spot.
-    public static let copyPrompt = CommandAction(id: "openspot.copy-prompt", title: "Copy prompt for AI", scope: .command, after: .close)
+    public static let copyPrompt = CommandAction(id: "openspot.copy-prompt", title: "Copy prompt for AI", scope: .spot, after: .close)
 
     public static let removeID = "openspot.remove"
 
     /// The row that turns a core spot off. Its file stays in the app, and its data stays.
-    public static let turnOff = CommandAction(id: "openspot.turn-off", title: "Turn off", key: ActionKey(text: "cmd+backspace"), scope: .command, after: .close)
+    public static let turnOff = CommandAction(id: "openspot.turn-off", title: "Turn off", key: ActionKey(text: "cmd+backspace"), scope: .spot, after: .close)
 
     public let id: String
     public let title: String

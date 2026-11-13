@@ -94,7 +94,7 @@ final class SpotRecordingSession {
             do { try await camera.end.wait() } catch { failure = failure ?? error }
             camera.session.stopRunning()
         }
-        if let failure { throw PluginError.fault("The recording stopped with a fault: \(failure.localizedDescription) What it wrote is in \(plan.file).") }
+        if let failure { throw SpotError.fault("The recording stopped with a fault: \(failure.localizedDescription) What it wrote is in \(plan.file).") }
         return TextBlock(fields: files)
     }
 
@@ -109,13 +109,13 @@ final class SpotRecordingSession {
             return nil
         }.first ?? nil
         guard let device = id.flatMap(AVCaptureDevice.init(uniqueID:)) ?? (id == nil ? AVCaptureDevice.default(for: .video) : nil) else {
-            throw PluginError.fault("Openspot cannot find the camera \(id ?? ""). Run `openspot screen sources` to see each camera.")
+            throw SpotError.fault("Openspot cannot find the camera \(id ?? ""). Run `openspot screen sources` to see each camera.")
         }
         let session = AVCaptureSession()
         let movie = AVCaptureMovieFileOutput()
         let input = try AVCaptureDeviceInput(device: device)
         guard session.canAddInput(input), session.canAddOutput(movie) else {
-            throw PluginError.fault("Openspot cannot record \(device.localizedName). Close the app that uses it, then try again.")
+            throw SpotError.fault("Openspot cannot record \(device.localizedName). Close the app that uses it, then try again.")
         }
         session.addInput(input)
         session.addOutput(movie)

@@ -9,7 +9,7 @@ public struct ConfigFile: Equatable, Sendable {
         environment: [String: String] = ProcessInfo.processInfo.environment,
         home: URL = FileManager.default.homeDirectoryForCurrentUser
     ) -> ConfigFile {
-        ConfigFile(url: PluginFolder.config(environment: environment, home: home).appendingPathComponent("config.toml"))
+        ConfigFile(url: SpotsFolder.config(environment: environment, home: home).appendingPathComponent("config.toml"))
     }
 
     /// What the file asks for. With no file, that is each default.
@@ -19,11 +19,19 @@ public struct ConfigFile: Equatable, Sendable {
 
     /// Writes one setting above the tables, and keeps each other line as the person wrote it.
     public func set(_ key: String, to value: String) throws {
+        try set(key, line: "\(key) = \"\(value)\"")
+    }
+
+    /// Writes one switch above the tables, as `true` or `false`.
+    public func set(_ key: String, to isOn: Bool) throws {
+        try set(key, line: "\(key) = \(isOn)")
+    }
+
+    private func set(_ key: String, line: String) throws {
         try locked {
             let text = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
             var lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
             if lines.last == "" { lines.removeLast() }
-            let line = "\(key) = \"\(value)\""
             if let index = lines.firstIndex(where: { $0.split(separator: "=", maxSplits: 1).first?.trimmingCharacters(in: .whitespaces) == key }) {
                 lines[index] = line
             } else {
@@ -33,7 +41,7 @@ public struct ConfigFile: Equatable, Sendable {
         }
     }
 
-    /// Keeps the value of a script's setting for its spot, or removes it with no value (K6).
+    /// Keeps the value of a script's setting for its spot, or removes it with no value (protocol: Settings).
     public func set(setting key: String, of spot: String, to value: String?) throws {
         try locked {
             let config = read()
@@ -61,6 +69,25 @@ public struct ConfigFile: Equatable, Sendable {
     public func write(keys: [GlobalKey]) throws {
         try locked {
             let config = read()
+            try writeTables(config.arrangement, keys: keys, settings: config.settings)
+        }
+    }
+
+    /// Gives a command, or the float of a spot, this key or the shake, or takes its key away with none, and keeps the place
+    /// of each other key. One key at most holds the shake, so a new shake takes it from the one before (W2).
+    public func assign(_ trigger: Trigger?, to spot: String, act: GlobalKey.Act) throws {
+        try locked {
+            let config = read()
+            var keys = config.keys
+            if trigger == .shake { keys.removeAll { $0.trigger == .shake && ($0.spot != spot || $0.act != act) } }
+            let place = keys.firstIndex { $0.spot == spot && $0.act == act }
+            let key = trigger.map { GlobalKey(spot: spot, act: act, trigger: $0) }
+            switch (place, key) {
+            case (let place?, let key?): keys[place] = key
+            case (let place?, nil): keys.remove(at: place)
+            case (nil, let key?): keys.append(key)
+            case (nil, nil): break
+            }
             try writeTables(config.arrangement, keys: keys, settings: config.settings)
         }
     }

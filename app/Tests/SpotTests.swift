@@ -3,7 +3,7 @@ import XCTest
 
 final class SpotTests: XCTestCase {
     private func dataName(id: String, header: [TextBlock.Field] = []) throws -> String? {
-        try Plugin(script: URL(fileURLWithPath: "/p/\(id).sh"), header: TextBlock(fields: header), id: id).commands.first?.dataName
+        try SpotFile(script: URL(fileURLWithPath: "/p/\(id).sh"), header: TextBlock(fields: header), id: id).spots.first?.dataName
     }
 
     func testTheDataFolderOfASpotIsItsName() throws {
@@ -14,9 +14,9 @@ final class SpotTests: XCTestCase {
         XCTAssertEqual(try dataName(id: "home/coffee"), "home")
     }
 
-    func testADataKeyRefusesThePluginAndSaysThatAFolderSharesItsData() throws {
+    func testADataKeyRefusesTheSpotAndSaysThatAFolderSharesItsData() throws {
         XCTAssertThrowsError(try dataName(id: "links", header: [.init(key: "data", value: "notes")])) { error in
-            XCTAssertTrue((error as? PluginError)?.reason.contains("OPENSPOT_DATA") == true, "\(error)")
+            XCTAssertTrue((error as? SpotError)?.reason.contains("OPENSPOT_DATA") == true, "\(error)")
         }
     }
 
@@ -24,7 +24,7 @@ final class SpotTests: XCTestCase {
 
     override func setUpWithError() throws {
         folder = FileManager.default.temporaryDirectory
-            .appendingPathComponent("openspot-plugin-\(UUID().uuidString)")
+            .appendingPathComponent("openspot-spot-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
     }
 
@@ -53,9 +53,9 @@ final class SpotTests: XCTestCase {
     }
 
     func testOnlyASpotWithAViewKeepsTheValuesOfItsViewBlock() throws {
-        let output = PluginOutput(text: "view=cups\ntitle=3\npoint=1\npoint=2\n")
-        let plain = Spot(id: "cups", name: "Cups", url: URL(fileURLWithPath: "/plugins/cups.sh"), read: .panel)
-        let drawn = Spot(id: "cups", name: "Cups", url: URL(fileURLWithPath: "/plugins/cups.sh"), read: .panel, view: "/plugins/cups.swift")
+        let output = SpotOutput(text: "view=cups\ntitle=3\npoint=1\npoint=2\n")
+        let plain = Spot(id: "cups", name: "Cups", url: URL(fileURLWithPath: "/spots/cups.sh"), read: .panel)
+        let drawn = Spot(id: "cups", name: "Cups", url: URL(fileURLWithPath: "/spots/cups.sh"), read: .panel, view: "/spots/cups.swift")
 
         XCTAssertEqual(try plain.state(of: output).values, [:])
         XCTAssertEqual(try drawn.state(of: output).values, ["view": ["cups"], "title": ["3"], "point": ["1", "2"]])
@@ -81,14 +81,14 @@ final class SpotTests: XCTestCase {
 
     func testOpeningGivesTheKindAndTheActionsThatItPrints() async throws {
         let command = try writeCommand(kind: .launch, read: .panel, """
-        printf 'switch=power\\nvalue=true\\n\\nbutton=open\\ntitle=Select\\n\\nbutton=copy\\ntitle=Copy\\n\\nrow=a\\ntitle=A\\n'
+        printf 'active=true\\n\\nbutton=open\\ntitle=Select\\n\\nbutton=copy\\ntitle=Copy\\n\\nrow=a\\ntitle=A\\n'
         """)
 
         let opened = try await command.opened(timeout: 5)
 
-        XCTAssertEqual(opened.command.kind, .list)
-        XCTAssertEqual(opened.command.primary, "Select")
-        XCTAssertEqual(opened.command.actions.map(\.id), ["copy"])
+        XCTAssertEqual(opened.spot.kind, .list)
+        XCTAssertEqual(opened.spot.primary, "Select")
+        XCTAssertEqual(opened.spot.actions.map(\.id), ["copy"])
         XCTAssertEqual(opened.state.on, true)
     }
 
@@ -104,7 +104,7 @@ final class SpotTests: XCTestCase {
 
     func testPassesTheSearchToAList() async throws {
         let command = try writeCommand(kind: .list, """
-        printf 'row=%s\\ntitle=%s\\n' "$1" "$2"
+        printf 'row=%s\\ntitle=%s\\n' "$1" "$(sed -n 's/^search=//p')"
         """)
 
         let lines = try await command.items(query: "rep", timeout: 5)
@@ -154,7 +154,7 @@ final class SpotTests: XCTestCase {
         do {
             _ = try await command.form(CommandAction(id: "new", title: "New", isForm: true), item: nil, timeout: 5)
             XCTFail("expected a failure")
-        } catch PluginError.badForm {
+        } catch SpotError.badForm {
         }
     }
 
@@ -176,7 +176,7 @@ final class SpotTests: XCTestCase {
         do {
             _ = try await command.state(timeout: 5)
             XCTFail("expected a failure")
-        } catch PluginError.badState {
+        } catch SpotError.badState {
         }
     }
 
@@ -204,17 +204,17 @@ final class SpotTests: XCTestCase {
         do {
             try await command.perform(command.click, timeout: 5)
             XCTFail("expected a failure")
-        } catch let error as PluginError {
+        } catch let error as SpotError {
             XCTAssertEqual(error, .failed(3, "No screenshot found."))
             XCTAssertEqual(error.reason, "No screenshot found.")
         }
     }
 
     func testASilentFailureNamesItsCode() {
-        XCTAssertEqual(PluginError.failed(3, "").reason, "It stopped with code 3.")
+        XCTAssertEqual(SpotError.failed(3, "").reason, "It stopped with code 3.")
     }
 
     func testATimeoutHasAPlainReason() {
-        XCTAssertEqual(PluginError.timedOut.reason, "It took too long.")
+        XCTAssertEqual(SpotError.timedOut.reason, "It took too long.")
     }
 }

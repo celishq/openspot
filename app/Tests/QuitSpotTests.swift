@@ -1,31 +1,25 @@
 import XCTest
 @testable import OpenspotCore
 
-@MainActor
-final class QuitSpotTests: XCTestCase {
-    private actor Presses {
-        var count = 0
-        func press() { count += 1 }
-    }
-
-    private let folder = URL(fileURLWithPath: "/tmp")
-
+/// Proves the Quit spot of the app: search finds it, it has no card on the grid, and a press ends the app.
+final class QuitSpotTests: BuiltInCase {
     func testACardPressQuitsTheApp() async throws {
-        let presses = Presses()
-        let commands = ShippedSpot.commands(folder: folder, guide: folder, app: "", quit: QuitSpot { await presses.press() })
-        let spot = try XCTUnwrap(commands.first { $0.name == "Quit" })
+        let spot = try spot("quit")
 
-        _ = try await spot.perform(spot.click, timeout: 1)
+        _ = try await spot.perform(spot.click, timeout: 5)
 
-        let count = await presses.count
-        XCTAssertEqual(count, 1)
+        let quits = await app.quits
+        XCTAssertEqual(quits, 1)
     }
 
     func testItRunsAtOnceAndLeavesTheGrid() throws {
-        let commands = ShippedSpot.commands(folder: folder, guide: folder, app: "", quit: QuitSpot {})
-        let spot = try XCTUnwrap(commands.first { $0.id == ShippedSpot.quitID })
+        let spot = try spot("quit")
+        let defaults = Config(text: try String(contentsOf: repoSpots.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8))
 
         XCTAssertEqual(spot.kind, .launch)
-        XCTAssertFalse(spot.isOnGrid)
+        XCTAssertEqual(spot.name, "Quit")
+        XCTAssertEqual(spot.subtitle, "Openspot")
+        XCTAssertTrue(spot.isFound)
+        XCTAssertEqual(defaults.arrangement.isOnGrid(of: spot.id), false)
     }
 }

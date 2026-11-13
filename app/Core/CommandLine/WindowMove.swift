@@ -35,12 +35,63 @@ public struct WindowMove: Equatable, Sendable {
         return rects[(held + 1) % rects.count]
     }
 
-    /// The top left corner for a window of this real size, which holds each edge of the area that the target touches.
+    /// The top left corner for a window of this real size in its target. On each axis it holds the target's edge in
+    /// the half of the area that holds the target, the top or the left one for a target in the middle, to a point. A
+    /// window that would leave the area from that edge holds the other edge, and it stays inside the area.
     public static func origin(of size: CGSize, target: CGRect, area: CGRect) -> CGPoint {
         CGPoint(
-            x: start(target.minX, target.maxX, area.minX, area.maxX, size.width),
-            y: start(target.minY, target.maxY, area.minY, area.maxY, size.height)
+            x: edge(target.minX, target.maxX, length: size.width, area: (area.minX, area.maxX)),
+            y: edge(target.minY, target.maxY, length: size.height, area: (area.minY, area.maxY))
         )
+    }
+
+    /// The place a window takes before it gets this size, as an app cuts a size that would leave its screen. It is
+    /// the window's own place when the size fits from there, else the nearest place on its own screen, or on the
+    /// screen of its target when its own screen is too small.
+    public static func start(of size: CGSize, from origin: CGPoint, home: CGRect, area: CGRect) -> CGPoint {
+        let room = size.width <= home.width && size.height <= home.height ? home : area
+        return CGPoint(
+            x: max(room.minX, min(origin.x, room.maxX - size.width)),
+            y: max(room.minY, min(origin.y, room.maxY - size.height))
+        )
+    }
+
+    /// The size a window takes for a wanted size, given the size it has and a way to ask the app for a size, which
+    /// returns the size the app then gives. An app that refuses a size under its own smallest keeps its old size, so
+    /// an axis that is longer than wanted is asked again from the wanted length upward until the app takes it, and
+    /// the other axis keeps its wanted length. A refused size shows nothing, so the window changes once, or twice
+    /// when both axes are under the smallest.
+    public static func fit(_ wanted: CGSize, from old: CGSize, ask: (CGSize) -> CGSize) -> CGSize {
+        func near(_ first: CGFloat, _ second: CGFloat) -> Bool { abs(first - second) <= 1 }
+        let size = ask(wanted)
+        let longWidth = size.width > wanted.width + 1
+        let longHeight = size.height > wanted.height + 1
+        guard near(size.width, old.width), near(size.height, old.height), longWidth || longHeight else { return size }
+        func takes(_ width: CGFloat, _ height: CGFloat) -> Bool {
+            let given = ask(CGSize(width: width, height: height))
+            return near(given.width, width) && near(given.height, height)
+        }
+        if longWidth, let width = rise(wanted.width, to: size.width, taken: { takes($0, wanted.height) }) {
+            return CGSize(width: width, height: wanted.height)
+        }
+        if longHeight, let height = rise(wanted.height, to: size.height, taken: { takes(wanted.width, $0) }) {
+            return CGSize(width: wanted.width, height: height)
+        }
+        guard longWidth, longHeight else { return ask(size) }
+        let width = rise(wanted.width, to: size.width) { takes($0, size.height) } ?? size.width
+        let height = rise(wanted.height, to: size.height) { takes(width, $0) } ?? size.height
+        return ask(CGSize(width: width, height: height))
+    }
+
+    /// The first length from `low` upward to `high`, by small steps, that is `taken`, or nil.
+    private static func rise(_ low: CGFloat, to high: CGFloat, taken: (CGFloat) -> Bool) -> CGFloat? {
+        let step = max(4, ((high - low) / 100).rounded(.up))
+        var length = low
+        while length < high {
+            if taken(length) { return length }
+            length += step
+        }
+        return taken(high) ? high : nil
     }
 
     private static func value(_ word: String) -> Value? {
@@ -69,9 +120,10 @@ public struct WindowMove: Equatable, Sendable {
             && abs(first.width - second.width) <= margin && abs(first.height - second.height) <= margin
     }
 
-    private static func start(_ low: CGFloat, _ high: CGFloat, _ areaLow: CGFloat, _ areaHigh: CGFloat, _ length: CGFloat) -> CGFloat {
-        if abs(low - areaLow) < 1 { return low }
-        if abs(high - areaHigh) < 1 { return high - length }
-        return (low + (high - low - length) / 2).rounded()
+    private static func edge(_ low: CGFloat, _ high: CGFloat, length: CGFloat, area: (CGFloat, CGFloat)) -> CGFloat {
+        let holdsLow = (low + high) / 2 <= (area.0 + area.1) / 2 + 1
+        let fits = holdsLow ? low + length <= area.1 : high - length >= area.0
+        let begin = holdsLow == fits ? low : high - length
+        return max(area.0, min(begin, area.1 - length))
     }
 }

@@ -58,12 +58,12 @@ struct SpotFloatView: View {
                     selection: { run.selection },
                     selectedPart: { run.selectedPart?.id },
                     nudge: { run.nudge },
-                    customView: { room in
-                        entry.command.view.map { SpotCustomView(source: $0, values: entry.state.values, card: .square, room: room, views: SpotViews.shared) }
+                    customView: { room, values, send in
+                        entry.spot.view.map { AnyView(SpotCustomView(source: $0, values: values, card: .square, room: room, views: SpotViews.shared, send: send)) }
                     }
                 )
-                .task(id: parts.parts.contains { $0.kind == "view" } ? entry.command.view : nil) {
-                    if let view = entry.command.view, parts.parts.contains(where: { $0.kind == "view" }) { await SpotViews.shared.load(view) }
+                .task(id: parts.parts.contains { $0.kind == "view" } ? entry.spot.view : nil) {
+                    if let view = entry.spot.view, parts.parts.contains(where: { $0.kind == "view" }) { await SpotViews.shared.load(view) }
                 }
             } else {
                 SpotRowsView(
@@ -112,7 +112,6 @@ struct SpotFloatView: View {
             takesDrag: dropTarget != nil,
             isDropTarget: dropTarget != nil,
             chainLetter: nil,
-            showsChain: false,
             model: model,
             onTap: { model.pressFloatCard(id) }
         )

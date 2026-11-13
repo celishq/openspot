@@ -8,7 +8,7 @@ struct SpotKeyLabel: View {
     var recordingWords = "Press keys"
 
     var body: some View {
-        Text(isRecording ? recordingWords : Trigger(text: text)?.label ?? text)
+        Text(isRecording ? recordingWords : text == KeyList.unset ? "Not set" : Trigger(text: text)?.label ?? text)
             .font(SpotType.action)
             .foregroundStyle(SpotTheme.ink)
             .padding(.horizontal, SpotTokens.padding)
