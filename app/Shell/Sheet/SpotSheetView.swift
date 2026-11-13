@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 import OpenspotCore
 
@@ -49,11 +48,6 @@ struct SpotSheetView: View {
         model.form?.entry.id == entry.id ? model.form?.draft : nil
     }
 
-    /// The words of the button that makes a new item from the search, or nil when there is none.
-    private var createTitle: String? {
-        model.createAction.map { "\($0.title): \(model.searchText)" }
-    }
-
     private var row: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
     }
@@ -80,9 +74,7 @@ struct SpotSheetView: View {
                         nudge: { model.sheets[entry.id]?.nudge ?? SheetParts.Nudge.rest },
                         menuOpening: { model.sheets[entry.id]?.menuOpening },
                         onFocus: { model.focusPart($0) },
-                        customView: { room, values, send in
-                            entry.spot.view.map { AnyView(SpotCustomView(source: $0, values: values, card: .square, room: room, views: SpotViews.shared, send: send)) }
-                        }
+                        viewSource: entry.spot.view
                     )
                     .task(id: panel.parts.contains { $0.kind == "view" } ? entry.spot.view : nil) {
                         if let view = entry.spot.view, panel.parts.contains(where: { $0.kind == "view" }) { await SpotViews.shared.load(view) }
@@ -97,9 +89,9 @@ struct SpotSheetView: View {
                     )
                 } else {
                     if list.search != .off { Color.clear.frame(height: SpotTokens.listRowHeight) }
-                    if let createTitle {
+                    if let create = model.createAction {
                         Button { model.createFromSearch() } label: {
-                            createLabel(createTitle)
+                            CreateLabel(model: model, title: create.title, shape: row)
                         }
                         .buttonStyle(.plain)
                     } else {
@@ -111,6 +103,7 @@ struct SpotSheetView: View {
         }
         .padding(SpotTokens.padding)
         .frame(width: rect.width, height: rect.height, alignment: .topLeading)
+        .overlay(alignment: .topLeading) { fileDrag }
     }
 
     private var header: some View {
@@ -118,7 +111,8 @@ struct SpotSheetView: View {
                 glyph
                 ZStack(alignment: .topLeading) {
                     if showsCardWords {
-                        words(subtitle: entry.shownState.subtitle, isOnSolid: showsFill)
+                        words(subtitle: entry.shownState.subtitle)
+                            .environment(\.spotIsOnSolid, showsFill)
                             .frame(width: max(cardWordsWidth, 0), alignment: .leading)
                             .morph(progress, opacity: SheetMorph.cardLook(at:))
                     }
@@ -134,20 +128,20 @@ struct SpotSheetView: View {
     }
 
     /// The title and the second line of the header, in one copy of its words.
-    private func words(subtitle: String?, selectedName: Bool = false, isOnSolid: Bool = false) -> some View {
+    private func words(subtitle: String?, selectedName: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: SpotType.lineGap) {
             Text(form?.form.title ?? entry.shownState.title)
                 .font(SpotType.title)
                 .frame(height: SpotType.titleLine)
-                .foregroundStyle(isOnSolid ? SpotTheme.onSolid : SpotTheme.ink)
+                .modifier(SpotInk())
                 .lineLimit(1)
             if form == nil, selectedName {
-                SelectedName(list: list, selection: selection, fallback: entry.shownState.subtitle, isOnSolid: isOnSolid)
+                SelectedName(list: list, selection: selection, fallback: entry.shownState.subtitle)
             } else if form == nil, let subtitle {
                 Text(subtitle)
                     .font(SpotType.detail)
                     .frame(height: SpotType.detailLine)
-                    .modifier(SpotSecondaryText(isOnSolid: isOnSolid))
+                    .modifier(SpotSecondaryText())
                     .lineLimit(1)
             }
         }
@@ -171,12 +165,7 @@ struct SpotSheetView: View {
 
     /// The width of the header's words as they are drawn, the longer of the title and the second line.
     private var wordsWidth: CGFloat {
-        let title = (form?.form.title ?? entry.shownState.title) as NSString
-        let detail = (entry.shownState.subtitle ?? "") as NSString
-        return max(
-            title.size(withAttributes: [.font: NSFont.systemFont(ofSize: 13, weight: .medium)]).width,
-            detail.size(withAttributes: [.font: NSFont.systemFont(ofSize: 11)]).width
-        )
+        SpotWordsWidth.of(title: form?.form.title ?? entry.shownState.title, detail: entry.shownState.subtitle)
     }
 
     private static let wordsGap = SpotTokens.padding - 5
@@ -207,7 +196,7 @@ struct SpotSheetView: View {
         } else {
             let place = CGRect(x: rect.width - SpotTokens.padding - SpotTokens.glyphSize, y: SpotTokens.padding, width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
             button
-                .morph(progress, opacity: { [morph] in morph.growth(of: place, at: $0) }, scale: { [morph] in morph.growth(of: place, at: $0) })
+                .morph(progress, opacity: { [morph] in morph.growth(of: place, at: $0) })
         }
     }
 
@@ -217,12 +206,24 @@ struct SpotSheetView: View {
         ZStack {
             SpotGlyph(entry: entry)
             if glyphDiffersOnCard {
-                SpotGlyph(entry: entry, isOnSolid: showsFill, showsDisc: !(isSmallCard || showsFill))
+                SpotGlyph(entry: entry, showsDisc: !(isSmallCard || showsFill))
+                    .environment(\.spotIsOnSolid, showsFill)
                     .morph(progress, opacity: SheetMorph.cardLook(at:))
             }
         }
         .morph(progress, offset: { [smallCardShift] in SheetMorph.place(onCard: CGSize(width: smallCardShift, height: 0), at: $0) })
-        .modifier(SpotFileDragSource(items: isOpen ? list.shown : [], onDrop: { model.dragOut($0, of: entry.id) }))
+    }
+
+    /// Where a drag takes the files of the rows out, at the glyph's place in the open header. It does not move with the glyph.
+    @ViewBuilder
+    private var fileDrag: some View {
+        if isOpen, list.hasFiles {
+            Color.clear
+                .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
+                .contentShape(Rectangle())
+                .modifier(SpotFileDragSource(items: list.shown, hasFiles: true, onDrop: { model.dragOut($0, of: entry.id) }))
+                .padding(SpotTokens.padding)
+        }
     }
 
     /// Whether the card draws its glyph unlike the header: on its fill, or alone with no disc on a 1x1 card.
@@ -261,18 +262,26 @@ struct SpotSheetView: View {
             height: SpotTokens.height(rows: cardSize.rows) - SpotTokens.padding - wordsHeight - top
         )
     }
+}
 
-    private func createLabel(_ title: String) -> some View {
-        Text(title)
+/// The button that makes a new item from the text that the search did not find. It alone reads the text, so that a key
+/// reruns only this label.
+private struct CreateLabel: View {
+    let model: SpotsModel
+    let title: String
+    let shape: RoundedRectangle
+
+    var body: some View {
+        Text("\(title): \(model.searchText)")
             .font(SpotType.body)
             .foregroundStyle(SpotTheme.ink)
             .lineLimit(1)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, SpotTokens.padding)
             .frame(height: SpotTokens.listRowHeight)
-            .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
-            .modifier(SpotSelectionRing(isSelected: true, shape: row))
-            .contentShape(row)
+            .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
+            .modifier(SpotSelectionRing(isSelected: true, shape: shape))
+            .contentShape(shape)
     }
 }
 
@@ -282,7 +291,6 @@ private struct SelectedName: View {
     let list: ItemList
     let selection: () -> Int
     let fallback: String?
-    let isOnSolid: Bool
 
     var body: some View {
         let index = selection()
@@ -290,7 +298,7 @@ private struct SelectedName: View {
             Text(name)
                 .font(SpotType.detail)
                 .frame(height: SpotType.detailLine)
-                .modifier(SpotSecondaryText(isOnSolid: isOnSolid))
+                .modifier(SpotSecondaryText())
                 .lineLimit(1)
         }
     }

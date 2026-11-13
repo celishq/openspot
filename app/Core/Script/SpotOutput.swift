@@ -11,7 +11,7 @@ public struct SpotOutput: Equatable, Sendable {
     /// The blocks that a form takes: each `field`, `choice`, `switch` and `slider`.
     public private(set) var fields: [TextBlock] = []
     public private(set) var actions: [CommandAction] = []
-    public private(set) var primary: String?
+    public private(set) var openTitle: String?
     public private(set) var pick = ItemPick.close
     /// The form that Enter on a row asks with first, when `button=open` has `form=true`.
     public private(set) var pickForm: CommandAction?
@@ -297,7 +297,7 @@ public struct SpotOutput: Equatable, Sendable {
     public var answers: [SpotItem] {
         guard face.answerSize != nil, let value, let run = value.value("value") else { return items }
         let title = value.value("display") ?? run
-        return [SpotItem(title: title, run: run, card: SpotState(output: self, header: SpotState(title: title)).holding(view))]
+        return [SpotItem(title: title, run: run, card: SpotState(output: self, header: SpotState(title: title)).holding(view), openTitle: openTitle)]
     }
 
     /// The component of the value.
@@ -344,10 +344,10 @@ public struct SpotOutput: Equatable, Sendable {
         if checks, id == Self.reserved || ((Self.defaults + takenDefaults).contains(id) && id != "open") { checkedFaults.append("an action cannot be called \(id)") }
         if checks, Self.inputKeys.contains(id) { checkedFaults.append("an action cannot be called \(id), which stdin uses") }
         if id == "open" {
-            primary = block.value("title")
+            openTitle = block.value("title")
             pick = block.flag("close") == false ? .stay : .close
             if block.flag("form") == true {
-                pickForm = CommandAction(id: id, title: primary ?? "Open", after: pick == .close ? .close : .stay, isForm: true)
+                pickForm = CommandAction(id: id, title: openTitle ?? "Open", after: pick == .close ? .close : .stay, isForm: true)
             }
         } else if let action = CommandAction(id: id, block: block) {
             actions.append(action)

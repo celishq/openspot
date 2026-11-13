@@ -233,6 +233,28 @@ final class SpotRunsReadTests: SpotRunsCase {
         XCTAssertEqual(log(), ["read"])
     }
 
+    func testASheetOpenThatTheSpotListsReadsAfterAYoungPanelAnswer() async throws {
+        try script(header: "on=panel.open\non=sheet.open", "echo \"$OPENSPOT_REASON\" >> '\(path("reasons"))'\nprintf 'row=a\\ntitle=A\\n'")
+        let sheet = try sheet()
+
+        runs.panelOpened()
+        try await wait("the row") { sheet.list.shown.count == 1 }
+        sheet.open {}
+
+        try await wait("the sheet read") { self.log("reasons") == ["panel.open", "sheet.open"] }
+    }
+
+    func testASheetOpenThatTheSpotListsDuringAPanelReadReadsAgain() async throws {
+        try script(header: "on=panel.open\non=sheet.open", "sleep 0.2\necho \"$OPENSPOT_REASON\" >> '\(path("reasons"))'\nprintf 'row=a\\ntitle=A\\n'")
+        let sheet = try sheet()
+
+        runs.panelOpened()
+        sheet.open {}
+
+        try await wait("the second read") { self.log("reasons").count == 2 }
+        XCTAssertEqual(log("reasons").first, "panel.open")
+    }
+
     func testAPanelOpenAndASheetOpenAtOnceRunOnce() async throws {
         try script(header: "on=panel.open", "sleep 0.2\nprintf 'detail=Off\\n\\nrow=a\\ntitle=A\\n'")
         let sheet = try sheet()

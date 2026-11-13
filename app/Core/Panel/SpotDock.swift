@@ -32,7 +32,8 @@ public struct SpotDock: Equatable, Sendable {
         }
 
         public func keeps(_ item: Item) -> Bool {
-            switch self {
+            SpotDock.keepChecks += 1
+            return switch self {
             case .added: item.state != .off
             case .store: item.state == .off
             case .mine: item.isOwn
@@ -117,30 +118,56 @@ public struct SpotDock: Equatable, Sendable {
         }
     }
 
+    /// The number of times that a section checked whether it keeps a spot, in all docks. Only a test reads it.
+    nonisolated(unsafe) static var keepChecks = 0
+    /// The number of times that a dock laid out its rows, in all docks. Only a test reads it.
+    nonisolated(unsafe) static var layouts = 0
     public let items: [Item]
-    public var query = ""
-    public var section = Section.added
+    /// How many spots each section keeps, counted once.
+    private let counts: [Section: Int]
+    public var query = "" {
+        didSet { if query != oldValue { arrange() } }
+    }
+    public var section = Section.added {
+        didSet { if section != oldValue { arrange() } }
+    }
     /// The spot whose listing shows in a sheet under its line.
-    public var opened: String?
+    public var opened: String? {
+        didSet { if opened != oldValue { arrange() } }
+    }
     /// Whether the sheet of the opened spot is out at its whole size, with the later rows pushed down. A sheet starts in,
     /// so that it is built before it grows.
-    public var isSheetOut = false
+    public var isSheetOut = false {
+        didSet { if isSheetOut != oldValue { arrange() } }
+    }
+    /// The spots that the section keeps, or with a search the spots of every section whose name or the words under it hold
+    /// it, in the order of their groups.
+    public private(set) var shown: [Item] = []
+    /// The titles of the groups. The titles under the sheet of an opened spot lie lower by the sheet and a gap.
+    public private(set) var groups: [Group] = []
+    /// Where the row of each shown spot lies, in the order of `shown`, from the top left of the rows. The rows under the sheet
+    /// of an opened spot lie lower by the sheet and a gap.
+    public private(set) var rects: [CGRect] = []
+    /// Where the sheet of the opened spot lies: under the line of its row, as wide as the rows.
+    public private(set) var sheetRect: CGRect?
+    /// The height of the rows that hold the shown spots, and of the sheet of the opened spot while it is out.
+    public private(set) var height: CGFloat = 0
 
-    public init(items: [Item]) {
+    public init(items: [Item], query: String = "", section: Section = .added, opened: String? = nil, isSheetOut: Bool = false) {
         self.items = items.sorted { $0.spot.name.localizedCaseInsensitiveCompare($1.spot.name) == .orderedAscending }
+        counts = Dictionary(uniqueKeysWithValues: Section.allCases.map { section in (section, items.count { section.keeps($0) }) })
+        self.query = query
+        self.section = section
+        self.opened = opened
+        self.isSheetOut = isSheetOut
+        arrange()
     }
 
     /// Where the rows start in the store, right of the sidebar, which is as wide as the panel's grid.
     public static let rowsOrigin = CGPoint(x: SpotTokens.padding + SpotTokens.gridWidth + SpotTokens.columnGap, y: SpotTokens.dockRowsTop)
 
     public func count(of section: Section) -> Int {
-        items.filter(section.keeps).count
-    }
-
-    /// The spots that the section keeps, or with a search the spots of every section whose name or the words under it hold
-    /// it, in the order of their groups.
-    public var shown: [Item] {
-        parts.flatMap(\.items)
+        counts[section] ?? 0
     }
 
     /// The titled groups of the shown spots, each with its spots in order.
@@ -157,42 +184,43 @@ public struct SpotDock: Equatable, Sendable {
         return groups.filter { !$0.1.isEmpty }.map { (title: $0.0, items: $0.1) }
     }
 
-    /// The titles of the groups. The titles under the sheet of an opened spot lie lower by the sheet and a gap.
-    public var groups: [Group] {
-        let (rects, groups) = layout
-        guard isSheetOut, let top = sheetTop(in: rects) else { return groups }
-        return groups.map { $0.top < top ? $0 : Group(title: $0.title, count: $0.count, top: $0.top + Self.sheetDrop) }
-    }
-
-    /// Where the row of each shown spot lies, in the order of `shown`, from the top left of the rows. The rows under the sheet
-    /// of an opened spot lie lower by the sheet and a gap.
-    public var rects: [CGRect] {
-        let rects = layout.rects
-        guard isSheetOut, let top = sheetTop(in: rects) else { return rects }
-        return rects.map { $0.minY < top ? $0 : $0.offsetBy(dx: 0, dy: Self.sheetDrop) }
-    }
-
     private static let sheetDrop = SpotTokens.storeSheetHeight + SpotTokens.rowGap
 
-    /// Where the sheet of the opened spot lies: under the line of its row, as wide as the rows.
-    public var sheetRect: CGRect? {
-        sheetTop(in: layout.rects).map { CGRect(x: 0, y: $0, width: SpotTokens.width(columns: 8), height: SpotTokens.storeSheetHeight) }
-    }
-
-    /// The height of the rows that hold the shown spots, and of the sheet of the opened spot while it is out.
-    public var height: CGFloat {
-        (rects.map(\.maxY) + [isSheetOut ? sheetRect?.maxY : nil].compactMap { $0 }).max() ?? 0
+    /// Lays out the rows, the group titles and the sheet again, from the items, the search, the section and the opened spot.
+    private mutating func arrange() {
+        Self.layouts += 1
+        let parts = parts
+        shown = parts.flatMap(\.items)
+        var plain: [CGRect] = [], titles: [Group] = [], top: CGFloat = 0
+        let line = SpotTokens.rowHeight + SpotTokens.rowGap
+        for part in parts {
+            if !titles.isEmpty { top += SpotTokens.groupGap }
+            titles.append(Group(title: part.title, count: part.items.count, top: top))
+            let start = top + SpotTokens.groupTitleBand
+            plain += part.items.indices.map { index in
+                CGRect(x: CGFloat(index % 2) * (SpotTokens.gridWidth + SpotTokens.columnGap), y: start + CGFloat(index / 2) * line, width: SpotTokens.gridWidth, height: SpotTokens.rowHeight)
+            }
+            top = start + CGFloat((part.items.count + 1) / 2) * line
+        }
+        let sheetTop = opened.flatMap { opened in shown.firstIndex { $0.id == opened } }.map { plain[$0].maxY + SpotTokens.rowGap }
+        sheetRect = sheetTop.map { CGRect(x: 0, y: $0, width: SpotTokens.width(columns: 8), height: SpotTokens.storeSheetHeight) }
+        if isSheetOut, let sheetTop {
+            rects = plain.map { $0.minY < sheetTop ? $0 : $0.offsetBy(dx: 0, dy: Self.sheetDrop) }
+            groups = titles.map { $0.top < sheetTop ? $0 : Group(title: $0.title, count: $0.count, top: $0.top + Self.sheetDrop) }
+        } else {
+            rects = plain
+            groups = titles
+        }
+        height = (rects.map(\.maxY) + [isSheetOut ? sheetRect?.maxY : nil].compactMap { $0 }).max() ?? 0
     }
 
     /// The places in `shown` of the spots whose rows reach into this band of the rows.
     public func shownIndices(within band: ClosedRange<CGFloat>) -> [Int] {
-        let rects = rects
-        return rects.indices.filter { rects[$0].maxY >= band.lowerBound && rects[$0].minY <= band.upperBound }
+        rects.indices.filter { rects[$0].maxY >= band.lowerBound && rects[$0].minY <= band.upperBound }
     }
 
     /// The shown spot and the part of its row under a point of the rows, if any.
     public func part(at point: CGPoint) -> (id: String, part: Part)? {
-        let rects = rects
         guard let index = rects.firstIndex(where: { $0.contains(point) }) else { return nil }
         let rect = rects[index], id = shown[index].id
         if Self.menuRect(in: rect).contains(point) { return (id, .menu) }
@@ -227,28 +255,5 @@ public struct SpotDock: Equatable, Sendable {
         )
         parts.append([Choice(title: "Edit", action: .edit)] + (item.state == .off ? [Choice(title: "Move to Trash", action: .moveToTrash)] : []))
         return parts
-    }
-
-    /// The rect of each shown spot with no sheet open, and the title of each group: two rows to a line, each group under its
-    /// title band, and each group after the first a gap lower.
-    private var layout: (rects: [CGRect], groups: [Group]) {
-        var rects: [CGRect] = [], groups: [Group] = [], top: CGFloat = 0
-        let line = SpotTokens.rowHeight + SpotTokens.rowGap
-        for part in parts {
-            if !groups.isEmpty { top += SpotTokens.groupGap }
-            groups.append(Group(title: part.title, count: part.items.count, top: top))
-            let start = top + SpotTokens.groupTitleBand
-            rects += part.items.indices.map { index in
-                CGRect(x: CGFloat(index % 2) * (SpotTokens.gridWidth + SpotTokens.columnGap), y: start + CGFloat(index / 2) * line, width: SpotTokens.gridWidth, height: SpotTokens.rowHeight)
-            }
-            top = start + CGFloat((part.items.count + 1) / 2) * line
-        }
-        return (rects, groups)
-    }
-
-    /// The top of the sheet: a gap under the line of the opened row.
-    private func sheetTop(in rects: [CGRect]) -> CGFloat? {
-        guard let opened, let index = shown.firstIndex(where: { $0.id == opened }) else { return nil }
-        return rects[index].maxY + SpotTokens.rowGap
     }
 }

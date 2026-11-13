@@ -110,19 +110,33 @@ public final class SpotRun {
         }
         set {
             guard newValue != rows else { return }
-            if newValue.differsOnlyInSelection(from: rows) {
-                withMutation(keyPath: \.selection) { rows = newValue }
-                return
-            }
+            let tellsList = !newValue.differsOnlyInText(from: rows)
             let findsSameRows = newValue.findsSameRows(as: rows)
-            if newValue.selected != rows.selected {
-                withMutation(keyPath: \.selection) { withMutation(keyPath: \.list) { rows = newValue } }
-            } else {
-                withMutation(keyPath: \.list) { rows = newValue }
+            tell(\.query, newValue.query != rows.query) {
+                tell(\.selection, newValue.selected != rows.selected) {
+                    tell(\.list, tellsList) { rows = newValue }
+                }
             }
+            guard tellsList else { return }
             settle()
             if !findsSameRows { onReport(.listChange) }
         }
+    }
+
+    /// Lands the rows of the newest text at once when they are still being found, for an action that reads them.
+    public func landRows() {
+        if rows.isFinding { list.landFinding() }
+    }
+
+    /// The text of the search of the rows. New text tells its readers before the rows that it finds land.
+    public var query: String {
+        access(keyPath: \.query)
+        return rows.query
+    }
+
+    /// Makes a change that tells the readers of a key path when `tells`, and else tells no one.
+    private func tell<Member>(_ path: KeyPath<SpotRun, Member>, _ tells: Bool, _ change: () -> Void) {
+        tells ? withMutation(keyPath: path, change) : change()
     }
 
     /// The index of the selected row among the shown rows.
@@ -191,6 +205,11 @@ public final class SpotRun {
     /// part reaches no view that reads only these.
     public private(set) var partsRect: CGRect?
     public private(set) var partsKind: SheetKind?
+    /// The rect of its sheet in the panel: of its parts, or else of its rows up to the tallest sheet, and whether its search
+    /// field shows. They change only when they do, so that a search that leaves a long list long reaches no view that reads
+    /// only these.
+    public private(set) var sheetRect = SpotTokens.sheetRect(rows: 0)
+    public private(set) var showsField = true
     /// The kind of the first answer while it waits for the open motion, or nil when no such answer waits.
     @ObservationIgnored var heardKind: SheetKind? {
         didSet { settle() }
@@ -225,6 +244,10 @@ public final class SpotRun {
         didSet { settle() }
     }
     @ObservationIgnored var lastAnswer: SpotOutput?
+    /// The reason of the newest read that was sent, which the answer it gives carries.
+    @ObservationIgnored var readReason: ReadReason?
+    /// Whether the running read finishes even when nothing wants the spot, as a read at launch or of offered rows does.
+    @ObservationIgnored var finishesRead = false
     @ObservationIgnored var hasAsked = false
     /// The work that waits for the next answer, such as a press of a card whose kind the answer says.
     @ObservationIgnored var waiter: (() -> Void)?
@@ -322,6 +345,10 @@ public final class SpotRun {
         if rect != partsRect { partsRect = rect }
         let parts = panel?.kind
         if parts != partsKind { partsKind = parts }
+        let sheet = rect ?? SpotTokens.sheetRect(rows: next.rows, perLine: next.perLine, hasField: next.hasField, setsApart: next.setsApart)
+        if sheet != sheetRect { sheetRect = sheet }
+        let field = nextKind.showsField && rows.search != .off
+        if field != showsField { showsField = field }
     }
 
     /// Hears a frame that waits for the open motion, or nil when the wait ends. A sheet that waits for its first answer

@@ -88,7 +88,7 @@ public final class SpotUsage: @unchecked Sendable {
 
     /// Starts the day of `date` from its file in `folder`, and drops each file older than 90 days. With no folder it keeps
     /// nothing on the disk. `pause` is the most time that a change waits for its write.
-    public init(folder: URL? = nil, at date: Date = Date(), pause: TimeInterval = 5, now: @escaping () -> Date = { Date() }) {
+    public init(folder: URL? = nil, at date: Date = Date(), pause: TimeInterval = 60, now: @escaping () -> Date = { Date() }) {
         self.folder = folder
         self.pause = pause
         self.now = now
@@ -103,8 +103,9 @@ public final class SpotUsage: @unchecked Sendable {
     }
 
     /// The counts of the last `count` days through the day of `date`, the newest first: today live, and each older day from
-    /// its file.
+    /// its file, after each write that waits.
     public func days(_ count: Int, at date: Date) -> [Day] {
+        writes.sync {}
         let now = lock.withLock { Self.day(of: date) == today.day ? withLive(today) : nil }
         return Self.days(count, at: date, today: now, in: folder)
     }
@@ -209,7 +210,8 @@ public final class SpotUsage: @unchecked Sendable {
         return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
     }
 
-    /// Changes the day that runs, or with a date first moves to its day, and asks for a write after the pause.
+    /// Changes the day that runs, or with a date first moves to its day, and asks for a write after the pause. The day that
+    /// ends is written on the queue of the writes.
     private func change(at date: Date? = nil, _ work: (inout Day) -> Void) {
         let (ended, waits): (Day?, Bool) = lock.withLock {
             let ended = date.flatMap(roll)
@@ -220,8 +222,10 @@ public final class SpotUsage: @unchecked Sendable {
         }
         guard let folder else { return }
         if let ended {
-            writes.sync { Self.write(ended, in: folder) }
-            if let date { Self.prune(folder, at: date) }
+            writes.async {
+                Self.write(ended, in: folder)
+                if let date { Self.prune(folder, at: date) }
+            }
         }
         if waits {
             DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + pause) { [weak self] in self?.flush() }

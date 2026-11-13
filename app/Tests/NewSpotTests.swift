@@ -49,7 +49,7 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertFalse(output.keepsRecent)
         XCTAssertEqual(output.items.first?.subtitle, "Type what the spot should do")
         XCTAssertTrue(Set(output.actions.map(\.id)).isSuperset(of: ["guide", "folder"]))
-        XCTAssertEqual(output.primary, "Choose")
+        XCTAssertEqual(output.openTitle, "Choose")
     }
 
     func testTheFirstRowShowsTheTextOfTheSearch() async throws {

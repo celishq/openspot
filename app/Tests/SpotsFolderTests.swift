@@ -470,7 +470,6 @@ final class SpotsFolderTests: XCTestCase {
         try write("b.sh", header: "mode=huge")
         try write("c.sh", header: "shortcut=ctrl+d")
         try write("f.sh", header: "offers=search")
-        try write("h.sh", header: "on=sheet.open\noffers=search")
         try write("j.sh", header: "read=open")
         try write("k.sh", header: "read=click")
         try write("l.sh", header: "read=panel,later")
@@ -480,8 +479,7 @@ final class SpotsFolderTests: XCTestCase {
             ScanResult.Refusal(file: "a", reason: "A has read=sometimes, which Openspot no longer reads. Write an event, such as on=sheet.open"),
             ScanResult.Refusal(file: "b", reason: "B has an unknown mode: huge. Use once, stay or always"),
             ScanResult.Refusal(file: "c", reason: "C has shortcut, which Openspot no longer reads. The person gives each spot its letter in Edit Spots"),
-            ScanResult.Refusal(file: "f", reason: "F needs on=panel.open or a clock, such as on=clock.60, to join the main search"),
-            ScanResult.Refusal(file: "h", reason: "H needs on=panel.open or a clock, such as on=clock.60, to join the main search"),
+            ScanResult.Refusal(file: "f", reason: "F needs on=panel.open, on=sheet.open or a clock, such as on=clock.60, to join the main search"),
             ScanResult.Refusal(file: "j", reason: "J has read=open, which Openspot no longer reads. Write an event, such as on=sheet.open"),
             ScanResult.Refusal(file: "k", reason: "K has read=click, which Openspot no longer reads. Write an event, such as on=sheet.open"),
             ScanResult.Refusal(file: "l", reason: "L has read=panel,later, which Openspot no longer reads. Write on=panel.open")

@@ -36,7 +36,7 @@ struct SpotListingSheet: View {
             }
             HStack(alignment: .top, spacing: SpotTokens.sideGap) {
                 ScrollView(.vertical, showsIndicators: false) {
-                    Text(readme)
+                    Text(listing.shownReadme)
                         .font(SpotType.body)
                         .foregroundStyle(SpotTheme.ink)
                         .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -78,12 +78,6 @@ struct SpotListingSheet: View {
         case .changed: return "Changes not published"
         case nil: return listing.readme == nil ? "Needs a readme to publish" : listing.release?.words
         }
-    }
-
-    /// The readme with its inline Markdown, or words that say it has none.
-    private var readme: AttributedString {
-        guard let text = listing.readme else { return AttributedString("This spot has no readme yet.") }
-        return (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text)
     }
 }
 

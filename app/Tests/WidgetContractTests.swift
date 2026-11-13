@@ -238,8 +238,8 @@ final class WidgetContractTests: XCTestCase {
         let still = Spot(id: "a/b", name: "b", url: url, kind: .widget)
         let opening = Spot(id: "a/c", name: "c", url: url, kind: .widget, opens: "a/d")
 
-        XCTAssertNil(still.primaryTitle(hasItem: false))
-        XCTAssertEqual(opening.primaryTitle(hasItem: false), "Open")
+        XCTAssertNil(still.openTitle(hasItem: false))
+        XCTAssertEqual(opening.openTitle(hasItem: false), "Open")
     }
 
     func testAWidgetWithAShortcutIsRefusedBecauseThePersonGivesTheLetter() throws {
