@@ -18,11 +18,11 @@ struct SpotSurface: View {
             SpotBlur(radius: SpotTheme.blur)
                 .overlay(SpotTheme.glass)
                 .mask(shape)
-                .opacity(isShown ? glass : 0)
+                .opacity(isShown ? glass : MotionTokens.hiddenOpacity)
                 .animation(SpotMotion.fade(isShown: isShown), value: isShown)
             shape.fill(SpotTheme.ink.opacity(SpotTheme.fill * fill))
             SpotRim(radius: radius, rect: rect)
-                .opacity(isShown ? glass : 0)
+                .opacity(isShown ? glass : MotionTokens.hiddenOpacity)
                 .animation(SpotMotion.fade(isShown: isShown), value: isShown)
         }
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)

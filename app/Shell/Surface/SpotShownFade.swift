@@ -9,7 +9,7 @@ struct SpotShownFade: ViewModifier {
 
     func body(content: Content) -> some View {
         content.animation(SpotMotion.fade(isShown: isShown)) {
-            $0.opacity(isShown ? 1 : 0)
+            $0.opacity(isShown ? 1 : MotionTokens.hiddenOpacity)
                 .scaleEffect(isShown ? 1 : hiddenScale)
         }
     }

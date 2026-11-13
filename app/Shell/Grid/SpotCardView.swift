@@ -271,7 +271,7 @@ private struct CardReveal: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .opacity(isShown ? 1 : 0)
+            .opacity(isShown ? 1 : MotionTokens.hiddenOpacity)
             .scaleEffect(isShown ? 1 : MotionTokens.hiddenScale)
             .animation(SpotMotion.fade(isShown: isShown), value: isShown)
     }
