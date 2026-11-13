@@ -5,7 +5,10 @@ import Observation
 extension SpotsModel {
     /// What the actions menu and the action keys work on: the selected row, or else the selected card.
     private var target: Target? {
-        if let entry = openEntry { return (entry, openSheet?.selectedItem) }
+        if let entry = openEntry {
+            openSheet?.landRows()
+            return (entry, openSheet?.selectedItem)
+        }
         guard let entry = selectedEntry else { return nil }
         if let item = entry.item, let list = entries.first(where: { $0.id == entry.spot.id }) { return (list, item) }
         return (entry, nil)
@@ -115,6 +118,7 @@ extension SpotsModel {
     /// that has the focus. All other keys go to the rows.
     private func handleRowsPanelKey(_ key: ActionKey, _ panel: SheetParts) -> Bool {
         if let part = panel.selectedPart { return handleFocusKey(key, part) }
+        openSheet?.landRows()
         guard key == ActionKey(name: "down"), openItems?.isOnLastLine != false else { return false }
         return openSheet?.leaveRows() == true
     }

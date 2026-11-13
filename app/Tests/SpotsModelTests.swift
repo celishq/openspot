@@ -343,8 +343,63 @@ final class SpotsModelTests: XCTestCase {
 
         model.searchText = "ban"
 
-        XCTAssertEqual(model.openItems?.shown.map(\.run), ["b"])
+        try await wait("the found rows") { model.openItems?.shown.map(\.run) == ["b"] }
         XCTAssertEqual(model.query, "")
+    }
+
+    func testReturnRightAfterAKeyRunsTheFirstRowOfTheNewText() async throws {
+        let picks = folder.appendingPathComponent("picks").path
+        try script("list", header: "on=sheet.open", """
+        case "$1" in
+          read) printf 'row=a\\ntitle=Apple\\n\\nrow=b\\ntitle=Banana\\n' ;;
+          *) echo "$1 $2" >> '\(picks)' ;;
+        esac
+        """)
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.press("list")
+        try await wait("the open list") { model.openList == "list" && model.openItems?.shown.count == 2 }
+
+        model.searchText = "ban"
+        model.runSelectedItem()
+
+        try await wait("the pick") { FileManager.default.fileExists(atPath: picks) }
+        XCTAssertEqual(try String(contentsOfFile: picks, encoding: .utf8), "open b\n")
+    }
+
+    func testAnArrowRightAfterAKeyMovesInTheRowsOfTheNewText() async throws {
+        try script("list", header: "on=sheet.open", "printf 'row=a\\ntitle=Apple\\n\\nrow=b\\ntitle=Banana\\n\\nrow=c\\ntitle=Blueberry\\n'")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.press("list")
+        try await wait("the open list") { model.openList == "list" && model.openItems?.shown.count == 3 }
+
+        model.searchText = "bl"
+        model.moveItem(by: 1)
+
+        XCTAssertEqual(model.openItems?.shown.map(\.run), ["c"])
+        XCTAssertEqual(model.openItems?.selectedItem?.run, "c")
+    }
+
+    func testReturnRightAfterAKeyThatFindsNothingOpensTheFormThatCreates() async throws {
+        try script("list", header: "on=sheet.open", """
+        case "$1" in
+          new) printf 'title=New\\n\\nfield=a\\ntitle=A\\n' ;;
+          *) printf 'button=new\\ntitle=New\\nscope=spot\\nform=true\\n\\nrow=a\\ntitle=Apple\\n' ;;
+        esac
+        """)
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.press("list")
+        try await wait("the open list") { model.openList == "list" && model.openItems?.shown.count == 1 }
+
+        model.searchText = "zzz"
+        model.runSelectedItem()
+
+        try await wait("the form") { model.form?.action.id == "new" }
     }
 
     func testAListDrawsAheadOnlyThePicturesOfTheRowsOnItsFirstScreen() async throws {
@@ -1040,7 +1095,7 @@ final class SpotsModelTests: XCTestCase {
 
         model.searchText = "ap"
 
-        XCTAssertEqual(model.openItems?.shown.count, 50)
+        try await wait("the found rows") { model.openItems?.shown.count == 50 }
         XCTAssertEqual(model.openSheet?.sheetRect, rect)
         XCTAssertEqual(model.openSheet?.showsField, true)
         XCTAssertFalse(told)

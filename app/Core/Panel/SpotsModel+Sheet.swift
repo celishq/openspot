@@ -217,6 +217,7 @@ extension SpotsModel {
     }
 
     public func runSelectedItem() {
+        openSheet?.landRows()
         guard let item = openItems?.selectedItem else {
             createFromSearch()
             return
@@ -231,6 +232,7 @@ extension SpotsModel {
     }
 
     public func createFromSearch() {
+        openSheet?.landRows()
         guard let action = createAction, let entry = openEntry else { return }
         openForm(action, on: (entry, nil), prefill: openItems?.query ?? "")
     }

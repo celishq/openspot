@@ -46,9 +46,20 @@ extension SpotRun {
 
     /// Takes new text in the search. A newer search stops the older one, and the script hears after a pause.
     public func search(_ text: String) {
+        if list.search == .local { return find(text) }
         guard list.search(text), list.search == .script else { return }
         if let older = running(Self.searchKey) { stop(older) }
         after(Self.textPause, key: Self.searchKey) { [weak self] in self?.ask() }
+    }
+
+    /// Ranks the rows for new text away from the main thread, and shows them in one change unless newer text came first.
+    private func find(_ text: String) {
+        guard list.beginFinding(text) else { return }
+        let asked = rows
+        Task { [weak self] in
+            let found = await Task.detached(priority: .userInitiated) { asked.found() }.value
+            self?.list.take(found)
+        }
     }
 
     /// Asks the script about the current search, with the values of the sheet and the text on stdin. A newer search stops

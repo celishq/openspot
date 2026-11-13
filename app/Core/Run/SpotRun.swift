@@ -110,19 +110,33 @@ public final class SpotRun {
         }
         set {
             guard newValue != rows else { return }
-            if newValue.differsOnlyInSelection(from: rows) {
-                withMutation(keyPath: \.selection) { rows = newValue }
-                return
-            }
+            let tellsList = !newValue.differsOnlyInText(from: rows)
             let findsSameRows = newValue.findsSameRows(as: rows)
-            if newValue.selected != rows.selected {
-                withMutation(keyPath: \.selection) { withMutation(keyPath: \.list) { rows = newValue } }
-            } else {
-                withMutation(keyPath: \.list) { rows = newValue }
+            tell(\.query, newValue.query != rows.query) {
+                tell(\.selection, newValue.selected != rows.selected) {
+                    tell(\.list, tellsList) { rows = newValue }
+                }
             }
+            guard tellsList else { return }
             settle()
             if !findsSameRows { onReport(.listChange) }
         }
+    }
+
+    /// Lands the rows of the newest text at once when they are still being found, for an action that reads them.
+    public func landRows() {
+        if rows.isFinding { list.landFinding() }
+    }
+
+    /// The text of the search of the rows. New text tells its readers before the rows that it finds land.
+    public var query: String {
+        access(keyPath: \.query)
+        return rows.query
+    }
+
+    /// Makes a change that tells the readers of a key path when `tells`, and else tells no one.
+    private func tell<Member>(_ path: KeyPath<SpotRun, Member>, _ tells: Bool, _ change: () -> Void) {
+        tells ? withMutation(keyPath: path, change) : change()
     }
 
     /// The index of the selected row among the shown rows.

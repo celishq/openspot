@@ -49,10 +49,6 @@ struct SpotSheetView: View {
     }
 
     /// The words of the button that makes a new item from the search, or nil when there is none.
-    private var createTitle: String? {
-        model.createAction.map { "\($0.title): \(model.searchText)" }
-    }
-
     private var row: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
     }
@@ -94,9 +90,9 @@ struct SpotSheetView: View {
                     )
                 } else {
                     if list.search != .off { Color.clear.frame(height: SpotTokens.listRowHeight) }
-                    if let createTitle {
+                    if let create = model.createAction {
                         Button { model.createFromSearch() } label: {
-                            createLabel(createTitle)
+                            CreateLabel(model: model, title: create.title, shape: row)
                         }
                         .buttonStyle(.plain)
                     } else {
@@ -265,18 +261,26 @@ struct SpotSheetView: View {
             height: SpotTokens.height(rows: cardSize.rows) - SpotTokens.padding - wordsHeight - top
         )
     }
+}
 
-    private func createLabel(_ title: String) -> some View {
-        Text(title)
+/// The button that makes a new item from the text that the search did not find. It alone reads the text, so that a key
+/// reruns only this label.
+private struct CreateLabel: View {
+    let model: SpotsModel
+    let title: String
+    let shape: RoundedRectangle
+
+    var body: some View {
+        Text("\(title): \(model.searchText)")
             .font(SpotType.body)
             .foregroundStyle(SpotTheme.ink)
             .lineLimit(1)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, SpotTokens.padding)
             .frame(height: SpotTokens.listRowHeight)
-            .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
-            .modifier(SpotSelectionRing(isSelected: true, shape: row))
-            .contentShape(row)
+            .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
+            .modifier(SpotSelectionRing(isSelected: true, shape: shape))
+            .contentShape(shape)
     }
 }
 

@@ -92,7 +92,7 @@ extension SpotsModel {
 
     /// The text of the field: the search of the open list, or else the search of the spots.
     public var searchText: String {
-        get { form?.draft.choices?.query ?? openItems?.query ?? query }
+        get { form?.draft.choices?.query ?? openSheet?.query ?? query }
         set {
             if form?.draft.choices != nil {
                 form?.draft.search(newValue)
