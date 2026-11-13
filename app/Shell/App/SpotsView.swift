@@ -117,8 +117,10 @@ struct SpotsView: View {
         return SheetPush(open: card.placement, sheet: sheetRect.offsetBy(dx: -origin.x, dy: -origin.y), window: window)
     }
 
+    /// The open sheet's rect, over its card's columns on a wide grid.
     private var sheetRect: CGRect {
-        model.formRect ?? rect(of: sheetID)
+        let column = SpotSheetCard.of(sheetID, in: model)?.placement.column ?? 0
+        return (model.formRect ?? rect(of: sheetID)).offsetBy(dx: SpotTokens.sheetShift(column: column, columns: model.columns), dy: 0)
     }
 
     private func rect(of id: String?) -> CGRect {

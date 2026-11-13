@@ -78,6 +78,12 @@ public enum SpotTokens {
     /// How far the search field moves down to sit under the title of an open sheet.
     public static let sheetFieldDrop: CGFloat = padding + glyphSize + rowGap
 
+    /// How far right of the grid's left edge a sheet opens on a grid of this many columns: at its card's column, and moved
+    /// left as far as it needs to stay inside the grid.
+    public static func sheetShift(column: Int, columns: Int) -> CGFloat {
+        CGFloat(min(max(column, 0), max(columns - Self.columns, 0))) * (cell + columnGap)
+    }
+
     /// The width of the panel around a grid of this many columns.
     public static func panelWidth(columns: Int) -> CGFloat {
         width(columns: columns) + 2 * halo
