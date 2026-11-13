@@ -527,6 +527,24 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertNil(savedSize)
     }
 
+    func testANewColumnCountLaysOutTheGridAndIsSaved() {
+        model.setColumns(8)
+
+        XCTAssertEqual(model.columns, 8)
+        XCTAssertEqual(model.grid.columns, 8)
+        XCTAssertEqual(files.config.read().columns, 8)
+        model.setColumns(5)
+        XCTAssertEqual(model.columns, 8)
+    }
+
+    func testTheGridTakesTheColumnsOfTheConfig() throws {
+        try files.config.set("columns", to: 12)
+
+        model.reload()
+
+        XCTAssertEqual(model.columns, 12)
+    }
+
     func testTheGridGrowsDownPastTheRowsThePanelShows() throws {
         model.endEditing()
         for name in ["e", "f", "g", "h", "i", "j", "k", "l", "m"] {

@@ -27,6 +27,11 @@ public struct ConfigFile: Equatable, Sendable {
         try set(key, line: "\(key) = \(isOn)")
     }
 
+    /// Writes one number above the tables.
+    public func set(_ key: String, to number: Int) throws {
+        try set(key, line: "\(key) = \(number)")
+    }
+
     private func set(_ key: String, line: String) throws {
         try locked {
             let text = (try? String(contentsOf: url, encoding: .utf8)) ?? ""

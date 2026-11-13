@@ -73,6 +73,8 @@ public final class SpotsModel {
             if height != gridHeight { gridHeight = height }
         }
     }
+    /// How many columns the grid has: 4, 8 or 12.
+    public internal(set) var columns = SpotTokens.columns
     /// The height of the backdrop of the grid's cards, which changes only when the placements change it.
     public private(set) var gridHeight = SpotTokens.backdropHeight(gridHeight: 0)
     public var selected = 0
@@ -325,6 +327,7 @@ public final class SpotsModel {
         fileStamps = stamps
         holdAssignedKeys(config)
         arrangement = config.arrangement
+        if columns != config.columns { columns = config.columns }
         scanned = scan.spots
         if let ids, isOnlyNamed { patchEntries(ids) } else { rebuildEntries() }
         if isEditing { refreshDock(in: folder) } else { readDockLater(in: folder) }

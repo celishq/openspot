@@ -23,6 +23,8 @@ public struct SpotDrag: Equatable, Sendable {
     /// Where a release puts the card.
     public var target: Target
     private let layouts: [Target: [SpotPlacement]]
+    /// How many columns the grid has.
+    private let columns: Int
 
     /// The card's place in the order when the drag started.
     public var start: Int {
@@ -44,6 +46,7 @@ public struct SpotDrag: Equatable, Sendable {
     /// on the grid come before the grid's split, the card among them when its home is on the grid; a target moves the split
     /// by the card's change of group.
     public init(id: String, home: Target, sizes: [SpotSize], targets: [Target], grid: SpotGrid) {
+        columns = grid.columns
         self.id = id
         self.home = home
         target = home
@@ -92,7 +95,7 @@ public struct SpotDrag: Equatable, Sendable {
 
     /// Whether a release at this point lands on the grid: on its cards, or less than half a row past them.
     public func holds(_ point: CGPoint) -> Bool {
-        let grid = CGRect(x: 0, y: 0, width: SpotTokens.gridWidth, height: SpotGrid.height(of: layout(at: home)))
+        let grid = CGRect(x: 0, y: 0, width: SpotTokens.width(columns: columns), height: SpotGrid.height(of: layout(at: home)))
         return grid.insetBy(dx: -SpotTokens.rowHeight / 2, dy: -SpotTokens.rowHeight / 2).contains(point)
     }
 

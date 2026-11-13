@@ -8,6 +8,7 @@ struct SpotMenuLayer: View {
     let item: SpotMenuAnchor.Item?
     /// Whether the search field lies in the open sheet, which moves the top of the menu's room down to under it.
     let fieldIsInSheet: Bool
+    @Environment(\.spotPanelWidth) private var panelWidth
 
     var body: some View {
         GeometryReader { proxy in
@@ -39,7 +40,7 @@ struct SpotMenuLayer: View {
 
     /// Where the menu may lie: under the field, down to the panel's foot.
     private var bounds: CGRect {
-        ActionMenuFrame.bounds(under: fieldIsInSheet ? SpotTokens.halo + SpotTokens.sheetFieldDrop + SpotTokens.listRowHeight + SpotTokens.rowGap : SpotTokens.gridTop)
+        ActionMenuFrame.bounds(under: fieldIsInSheet ? SpotTokens.halo + SpotTokens.sheetFieldDrop + SpotTokens.listRowHeight + SpotTokens.rowGap : SpotTokens.gridTop, panelWidth: panelWidth)
     }
 
     /// The rect of the menu's glass at a scale from its corner nearest its item, as its rows scale, so that the blur behind

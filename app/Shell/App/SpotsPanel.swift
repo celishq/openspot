@@ -101,19 +101,9 @@ final class SpotsPanel: NSPanel {
             Task { @MainActor in self?.followEditing() }
         }
         if isEditing, restFrame == nil, let area = screen?.visibleFrame {
-            let panel = frame
-            let content = SpotTokens.backdropHeight(gridHeight: SpotGrid.height(of: model.placements)) - SpotTokens.halo
-            let edit = ScreenPlace.edit(under: NSRect(x: panel.minX, y: panel.maxY - content, width: panel.width, height: content), in: area)
-            let lifted = panel.offsetBy(dx: 0, dy: edit.lift)
-            let whole = panel.union(lifted).union(edit.dock)
-            restFrame = panel
-            place.panel = CGPoint(x: lifted.minX - whole.minX, y: whole.maxY - lifted.maxY)
-            place.lift = edit.lift
-            place.dock = CGRect(x: edit.dock.minX - whole.minX, y: whole.maxY - edit.dock.maxY, width: edit.dock.width, height: edit.dock.height)
-            place.storeSize = edit.dock.size
+            restFrame = frame
             place.isOut = false
-            model.dockFrame = place.dock?.offsetBy(dx: -place.panel.x, dy: -place.panel.y)
-            resize(to: whole)
+            layOutEditing(in: area, isSettled: false)
             DispatchQueue.main.async { [weak self] in
                 guard let self, self.model?.isEditing == true else { return }
                 withAnimation(SpotMotion.move) {
@@ -128,6 +118,37 @@ final class SpotsPanel: NSPanel {
             } completion: { [weak self] in
                 if self?.model?.isEditing == false { self?.restoreFrame() }
             }
+        }
+    }
+
+    /// Grows the window in Edit Spots from its frame at rest to hold the store under the panel, with the panel lifted as far
+    /// as the store needs. A settled panel is drawn at its lifted place, and one that is not yet settled at its place at rest.
+    private func layOutEditing(in area: NSRect, isSettled: Bool) {
+        guard let model, let panel = restFrame else { return }
+        let content = SpotTokens.backdropHeight(gridHeight: SpotGrid.height(of: model.placements)) - SpotTokens.halo
+        let edit = ScreenPlace.edit(under: NSRect(x: panel.minX, y: panel.maxY - content, width: panel.width, height: content), in: area)
+        let lifted = panel.offsetBy(dx: 0, dy: edit.lift)
+        let whole = panel.union(lifted).union(edit.dock)
+        place.panel = CGPoint(x: lifted.minX - whole.minX, y: whole.maxY - lifted.maxY)
+        place.lift = isSettled ? 0 : edit.lift
+        place.dock = CGRect(x: edit.dock.minX - whole.minX, y: whole.maxY - edit.dock.maxY, width: edit.dock.width, height: edit.dock.height)
+        place.storeSize = edit.dock.size
+        model.dockFrame = place.dock?.offsetBy(dx: -place.panel.x, dy: -place.panel.y)
+        resize(to: whole)
+    }
+
+    /// Gives the window the width of the grid's columns about the same middle, and in Edit Spots lays the store out again.
+    private func followColumns() {
+        guard let model else { return }
+        let width = withObservationTracking { SpotTokens.panelWidth(columns: model.columns) } onChange: { [weak self] in
+            Task { @MainActor in self?.followColumns() }
+        }
+        if let rest = restFrame {
+            guard rest.width != width, let area = screen?.visibleFrame else { return }
+            restFrame = NSRect(x: (rest.midX - width / 2).rounded(.down), y: rest.minY, width: width, height: rest.height)
+            layOutEditing(in: area, isSettled: true)
+        } else if frame.width != width {
+            resize(to: NSRect(x: (frame.midX - width / 2).rounded(.down), y: frame.minY, width: width, height: frame.height))
         }
     }
 
@@ -369,6 +390,7 @@ final class SpotsPanel: NSPanel {
         panel.center()
         panel.followEditing()
         panel.followCover()
+        panel.followColumns()
         return panel
     }
 }

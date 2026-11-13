@@ -11,6 +11,7 @@ struct SpotBackdrop: View {
     /// The height of the backdrop under the actions menu, which each blur keeps at the least.
     let menuHeight: CGFloat
     let drawsBlur: Bool
+    @Environment(\.spotPanelWidth) private var panelWidth
 
     var body: some View {
         let phase = model.transition.phase
@@ -29,7 +30,7 @@ struct SpotBackdrop: View {
     private func blur(height: CGFloat, isShown: Bool, fades: Bool) -> some View {
         let height = max(height, menuHeight)
         Group {
-            if drawsBlur { SpotSoftBlur(height: height) } else { Color.clear }
+            if drawsBlur { SpotSoftBlur(height: height, width: panelWidth) } else { Color.clear }
         }
             .frame(height: height)
             .transaction { $0.animation = nil }

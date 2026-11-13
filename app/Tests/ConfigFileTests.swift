@@ -46,6 +46,20 @@ final class ConfigFileTests: XCTestCase {
         XCTAssertEqual(Config(text: "fix_key = \"f\"\n").faults.count, 1)
     }
 
+    func testTheGridHasFourColumnsUntilTheFileAsksForEightOrTwelve() {
+        XCTAssertEqual(Config(text: "").columns, 4)
+        XCTAssertEqual(Config(text: "columns = 12\n").columns, 12)
+        XCTAssertEqual(Config(text: "columns = 6\n").columns, 4)
+        XCTAssertEqual(Config(text: "columns = 6\n").faults, ["config.toml: columns is 4, 8 or 12."])
+    }
+
+    func testSettingTheColumnsWritesANumber() throws {
+        try file.set("columns", to: 8)
+
+        XCTAssertEqual(try String(contentsOf: file.url, encoding: .utf8), "columns = 8\n")
+        XCTAssertEqual(file.read().columns, 8)
+    }
+
     func testABadKeyGivesNoKeyAndAFault() {
         let config = Config(text: "panel_key = \"k\"\n")
 

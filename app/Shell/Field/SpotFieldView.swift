@@ -24,6 +24,7 @@ struct SpotFieldView: View {
     /// and the radius of its card. Nil with no sheet with a card, or for the install screen, which grows out of the field.
     var sheet: (morph: SheetMorph, cardRadius: CGFloat)?
     @FocusState private var isFocused: Bool
+    @Environment(\.spotPanelWidth) private var panelWidth
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -72,9 +73,9 @@ struct SpotFieldView: View {
         }
         .font(SpotType.input)
         .foregroundStyle(SpotTheme.ink)
-        .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
+        .frame(width: panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
         .animation(SpotMotion.fade(isShown: model.isShown)) {
-            $0.scaleEffect(model.isShown ? 1 : MotionTokens.hiddenScale, anchor: UnitPoint(x: 0.5, y: Self.rect.midY / SpotTokens.panelHeight))
+            $0.scaleEffect(model.isShown ? 1 : MotionTokens.hiddenScale, anchor: UnitPoint(x: Self.rect.midX / panelWidth, y: Self.rect.midY / SpotTokens.panelHeight))
         }
     }
 
@@ -91,7 +92,7 @@ struct SpotFieldView: View {
         .padding(.trailing, SpotTokens.padding)
         .frame(width: Self.rect.width, height: Self.rect.height)
         .offset(x: Self.rect.minX, y: Self.rect.minY)
-        .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
+        .frame(width: panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
     }
 
     /// The field's row in an open sheet.
@@ -182,7 +183,7 @@ struct SpotFieldView: View {
         return promptWords
             .frame(height: SpotTokens.rowHeight)
             .offset(x: left, y: top)
-            .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
+            .frame(width: panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
             .morph(showsField ? 1 : 0, opacity: { SheetMorph.sheetLook(at: $0) })
             .modifier(SpotShownFade(
                 isShown: model.isShown,

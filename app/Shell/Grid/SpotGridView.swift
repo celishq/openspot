@@ -34,10 +34,10 @@ struct SpotGridView: View {
             )
         }
         return ZStack(alignment: .topLeading) {
-            SpotGridGlass(cards: glass, pressable: openID == nil ? glass : [], size: CGSize(width: SpotTokens.gridWidth, height: height), lift: model.lift)
+            SpotGridGlass(cards: glass, pressable: openID == nil ? glass : [], size: CGSize(width: SpotTokens.width(columns: model.columns), height: height), lift: model.lift)
             if model.isEditing {
                 landing(of: drag, in: placements)
-                    .frame(width: SpotTokens.gridWidth, height: height)
+                    .frame(width: SpotTokens.width(columns: model.columns), height: height)
             }
             ForEach(Array(zip(placements, glass)), id: \.1.id) { placement, card in
                 let entry = model.visible[placement.index]
@@ -72,7 +72,7 @@ struct SpotGridView: View {
                 .allowsHitTesting(entry.id != openID)
             }
         }
-        .frame(width: SpotTokens.gridWidth, height: height, alignment: .topLeading)
+        .frame(width: SpotTokens.width(columns: model.columns), height: height, alignment: .topLeading)
         .contentShape(Rectangle())
         .onDrop(of: [.fileURL], delegate: SpotGridDrop(model: model, target: $dropTarget))
     }

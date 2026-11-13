@@ -14,6 +14,8 @@ public struct Config: Equatable, Sendable {
     public private(set) var settings: [SpotSetting] = []
     /// Whether each spot's process runs with only what its uses name (protocol: Trust).
     public private(set) var isCareful = false
+    /// How many columns the panel's grid has: 4, 8 or 12.
+    public private(set) var columns = SpotTokens.columns
 
     public init(text: String) {
         let document: TomlDocument
@@ -24,7 +26,7 @@ public struct Config: Equatable, Sendable {
             faults = ["config.toml: \((error as? SpotError)?.reason ?? String(describing: error))"]
             return
         }
-        for key in (Array(document.values.keys) + Array(document.arrays.keys)).sorted() where !["panel_key", "fix_key", "careful", "spots", "keys", "settings"].contains(key) {
+        for key in (Array(document.values.keys) + Array(document.arrays.keys)).sorted() where !["panel_key", "fix_key", "careful", "columns", "spots", "keys", "settings"].contains(key) {
             faults.append("config.toml: \(key) is not a setting.")
         }
         arrangement = SpotArrangement(choices: (document.arrays["spots"] ?? []).compactMap { choice(of: $0) })
@@ -36,6 +38,11 @@ public struct Config: Equatable, Sendable {
         case .boolean(let isOn)?: isCareful = isOn
         case nil: break
         default: faults.append("config.toml: careful is true or false.")
+        }
+        switch document.values["columns"] {
+        case .integer(let count)? where SpotGrid.columnCounts.contains(count): columns = count
+        case nil: break
+        default: faults.append("config.toml: columns is 4, 8 or 12.")
         }
     }
 

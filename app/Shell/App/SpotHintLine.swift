@@ -10,6 +10,7 @@ struct SpotHintLine: View {
     let surfaceIsOut: Bool
     let gridHeight: CGFloat
     let sheetHeight: CGFloat
+    @Environment(\.spotPanelWidth) private var panelWidth
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -26,7 +27,7 @@ struct SpotHintLine: View {
                     .transition(.opacity)
             }
         }
-        .frame(width: SpotTokens.panelWidth)
+        .frame(width: panelWidth)
         .allowsHitTesting(isShown)
         .offset(y: height - SpotTokens.halo - SpotTokens.hintPillHeight)
         .morph(isShown ? 1 : 0, opacity: { SheetMorph.sheetLook(at: $0) })

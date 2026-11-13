@@ -2,6 +2,32 @@ import XCTest
 @testable import OpenspotCore
 
 final class SpotGridTests: XCTestCase {
+    func testOnEightColumnsEachShelfTakesTheShortestBandOfFourColumns() {
+        XCTAssertEqual(SpotGrid(columns: 8).place([.strip, .large, .strip, .strip]), [
+            SpotPlacement(index: 0, row: 0, column: 0, size: .strip),
+            SpotPlacement(index: 1, row: 0, column: 4, size: .large),
+            SpotPlacement(index: 2, row: 1, column: 0, size: .strip),
+            SpotPlacement(index: 3, row: 2, column: 0, size: .strip)
+        ])
+    }
+
+    func testOnTwelveColumnsATieGoesToTheLeftBand() {
+        XCTAssertEqual(SpotGrid(columns: 12).place([.strip, .strip, .strip, .strip]).map { [$0.row, $0.column] }, [[0, 0], [0, 4], [0, 8], [1, 0]])
+    }
+
+    func testAStretchedGridTakesTheNearestOfFourEightOrTwelveColumns() {
+        XCTAssertEqual(SpotGrid.columns(fitting: SpotTokens.width(columns: 4)), 4)
+        XCTAssertEqual(SpotGrid.columns(fitting: SpotTokens.width(columns: 7)), 8)
+        XCTAssertEqual(SpotGrid.columns(fitting: SpotTokens.width(columns: 11)), 12)
+        XCTAssertEqual(SpotGrid.columns(fitting: 5000), 12)
+        XCTAssertEqual(SpotGrid.columns(fitting: 0), 4)
+    }
+
+    func testAMovedGridKeepsItsColumns() {
+        XCTAssertEqual(SpotGrid(columns: 8).moving(0, to: 1, split: nil).columns, 8)
+        XCTAssertEqual(SpotGrid(columns: 12).keeping(0).columns, 12)
+    }
+
     func testTwoSmallSpotsThenAWideOneShareARow() {
         let placements = SpotGrid().place([.small, .small, .wide])
         XCTAssertEqual(placements, [

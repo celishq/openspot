@@ -6,7 +6,7 @@ extension SpotsModel {
     /// the store.
     var grid: SpotGrid {
         let arriving = carry?.tile == nil ? nil : carry?.entry.id
-        return SpotGrid(kept: Set(visible.indices.filter { visible[$0].isSizeChosen || visible[$0].id == arriving }))
+        return SpotGrid(kept: Set(visible.indices.filter { visible[$0].isSizeChosen || visible[$0].id == arriving }), columns: columns)
     }
 
     /// The entries that have a card. A sheet that grows out of the field, such as the install screen, has none.

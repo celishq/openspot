@@ -100,7 +100,7 @@ extension SpotsModel {
             var sizes = visible.map(\.size)
             sizes.insert(item.size, at: start)
             let kept = Set(grid.kept.map { $0 >= start ? $0 + 1 : $0 }).union([start])
-            arrival = SpotDrag(id: id, start: start, sizes: sizes, places: 0...start, grid: SpotGrid(kept: kept))
+            arrival = SpotDrag(id: id, start: start, sizes: sizes, places: 0...start, grid: SpotGrid(kept: kept, columns: columns))
             stopDragWait()
             lift.origin = tile.origin
             change(.edit) { carry = SpotCarry(entry: entry, size: item.size, tile: tile) }
@@ -110,7 +110,7 @@ extension SpotsModel {
         let centre = CGPoint(x: tile.midX + translation.width, y: tile.midY + translation.height)
         let grid = SpotTokens.gridOrigin(scrollOffset: gridScroll)
         let point = CGPoint(x: centre.x - grid.x, y: centre.y - grid.y)
-        let panel = CGRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
+        let panel = CGRect(x: 0, y: 0, width: SpotTokens.panelWidth(columns: columns), height: SpotTokens.panelHeight)
         let isOverGrid = panel.contains(centre) && dockFrame?.contains(centre) != true && arrival.holds(point)
         let size = isOverGrid ? arrival.placement(at: arrival.home)?.size ?? carry.entry.size : dock.items.first { $0.id == id }?.size ?? carry.size
         if carry.size != size { self.carry?.size = size }
@@ -267,7 +267,7 @@ extension SpotsModel {
 
     /// The panel's window in the panel's space, a padding inside its edges. In Edit Spots it holds the dock too.
     private var windowInPanel: CGRect {
-        let panel = CGRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
+        let panel = CGRect(x: 0, y: 0, width: SpotTokens.panelWidth(columns: columns), height: SpotTokens.panelHeight)
         return panel.union(dockFrame ?? panel).insetBy(dx: SpotTokens.padding, dy: SpotTokens.padding)
     }
 

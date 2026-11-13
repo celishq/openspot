@@ -354,6 +354,21 @@ extension SpotsModel {
         saveArrangement(selecting: id)
     }
 
+    /// Gives the grid this many columns, 4, 8 or 12, and saves it.
+    public func setColumns(_ count: Int) {
+        guard count != columns, SpotGrid.columnCounts.contains(count) else { return }
+        do {
+            try files.config.set("columns", to: count)
+            tookOwnWrite()
+        } catch {
+            host.notify("Openspot could not save the columns. \(Self.reason(error))")
+        }
+        change(.edit) {
+            columns = count
+            updateVisible()
+        }
+    }
+
     /// Takes the letter for the spot that records: a letter or a digit with no modifier gives it, and Delete takes its letter
     /// away. A letter that another spot held moves, and a toast names that spot. Any other key leaves it recording, and says
     /// why.
