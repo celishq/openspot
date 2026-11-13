@@ -59,13 +59,7 @@ public struct SpotFile: Equatable, Sendable {
             throw SpotError.fault("\(name) is a .js file, which runs inline, so it takes no mode=\(modeName)")
         }
         let mode = isInline ? SpotMode.inline : named
-        let places = try Self.places(header.values("offers"), of: name)
-        let isGlobal = places.contains("search")
-        if isGlobal {
-            guard read?.has(.panel) == true || read?.has(.sheet) == true || read?.seconds != nil else {
-                throw SpotError.fault("\(name) needs on=panel.open, on=sheet.open or a clock, such as on=clock.60, to join the main search")
-            }
-        }
+        let namedPlaces = try Place.read(header.values("offers"), of: name)
         let answers = on?.answers
         let answersOnly = answers != nil && read == nil
         if let field = header.children.compactMap({ $0.value("field") }).first(where: ReservedSetting.isReserved) {
@@ -123,14 +117,9 @@ public struct SpotFile: Equatable, Sendable {
         guard preview == nil || preview == "sample" else {
             throw SpotError.fault("\(name) has an unknown preview: \(preview!). Use preview=sample, and print fake data while OPENSPOT_REASON is spot.preview")
         }
-        let offersCard = places.isEmpty && offeredActions.isEmpty && !header.values("offers").contains("none") ? !answersOnly : places.contains("card")
-        let kind: SpotKind = mode.stays || isGlobal || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch
-        if places.contains("float"), kind != .list {
-            throw SpotError.fault("\(name) offers float, which needs a sheet. Add on=sheet.open, or remove offers=float")
-        }
-        if places.contains("menubar"), read?.seconds == nil, read?.hasEvent != true, !mode.stays {
-            throw SpotError.fault("\(name) offers menubar, which needs a clock, an event or mode=stay, such as on=clock.60")
-        }
+        let places: Set<Place> = namedPlaces ?? (offeredActions.isEmpty && !answersOnly ? [.card] : [])
+        let kind: SpotKind = mode.stays || places.contains(.search) || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch
+        try Place.check(places, read: read, mode: mode, kind: kind, of: name)
         let command = Spot(
             id: id,
             name: name,
@@ -139,17 +128,14 @@ public struct SpotFile: Equatable, Sendable {
             symbol: symbol ?? "app",
             subtitle: header.value("detail"),
             read: read,
-            isGlobal: isGlobal,
             isFound: !answersOnly,
             answers: answers,
             mode: mode,
             pressRuns: press == "open",
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
-            offersFloat: places.contains("float"),
-            offersCard: offersCard,
-            offersMenuBar: places.contains("menubar"),
+            offeredPlaces: places,
             dataName: SpotID(id).name,
-            isOnGrid: offersCard && offers.isEmpty && read?.seconds == nil && !answersOnly,
+            isOnGrid: places.contains(.card) && offers.isEmpty && read?.seconds == nil && !answersOnly,
             headerSymbol: symbol,
             offers: offers,
             offeredActions: offeredActions,
@@ -172,34 +158,6 @@ public struct SpotFile: Equatable, Sendable {
         if FileManager.default.isExecutableFile(atPath: url.path) { return true }
         return url.pathExtension == inlineExtension && !SpotHeader(url: url).block.fields.isEmpty
     }
-
-    /// The places of the header's `offers` lines, one place on each line (protocol: Places). With no line, a spot offers
-    /// its card, and `none` alone offers no place.
-    private static func places(_ lines: [String], of name: String) throws -> Set<String> {
-        if lines.contains("none") {
-            guard lines == ["none"] else { throw SpotError.fault("\(name) offers none and another place. Keep offers=none alone, or remove it") }
-            return []
-        }
-        return try Set(lines.map { line in
-            let word = line.trimmingCharacters(in: .whitespaces)
-            if word.contains(",") {
-                throw SpotError.fault("\(name) has offers=\(word). Write one place on each line, such as offers=card and offers=search")
-            }
-            if word == "actions" {
-                throw SpotError.fault("\(name) offers actions in its header. Write offers=actions on a button, such as after button=change")
-            }
-            if word == "rows" {
-                throw SpotError.fault("\(name) offers rows, which Openspot no longer reads. Use offers=search, and leave out offers=card")
-            }
-            guard places.contains(word) else {
-                throw SpotError.fault("\(name) offers an unknown place: \(word). Use card, search, menubar, float or none")
-            }
-            return word
-        })
-    }
-
-    /// The places a spot's header can offer.
-    private static let places: Set<String> = ["card", "search", "menubar", "float"]
 
     /// Refuses a header that still has `global`, `float`, `tray`, `data`, `stay` or `shortcut`, and names the new way.
     private static func refuseOldKeys(_ header: TextBlock, of name: String) throws {

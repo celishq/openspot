@@ -16,8 +16,10 @@ public struct Spot: Equatable, Sendable {
     public private(set) var pick: ItemPick
     /// The form that Enter on a row asks with first, from the last output of its script.
     public private(set) var pickForm: CommandAction?
+    /// The places its header offers, where the person can show it (protocol: Places).
+    public let offeredPlaces: Set<Place>
     /// Whether its rows join the main search.
-    public let isGlobal: Bool
+    public var isGlobal: Bool { offeredPlaces.contains(.search) }
     /// Whether the main search finds the spot itself. A header with `offers=rows` offers only its rows.
     public let isFound: Bool
     /// The text of the main search that its script answers with rows (protocol: Places).
@@ -40,12 +42,11 @@ public struct Spot: Equatable, Sendable {
     public let pressRuns: Bool
     /// The file extensions that its card takes, with `folder` and `*`.
     public let drop: [String]
-    /// Whether its header offers it as a float, which the person can give a key or a shake (protocol: Places).
-    public let offersFloat: Bool
-    /// Whether its header offers it as a card, which the person can put on the grid (protocol: Places).
-    public let offersCard: Bool
-    /// Whether its header offers it to the menu bar (protocol: Places).
-    public let offersMenuBar: Bool
+    /// Whether the person can float it, with a key or a shake.
+    public var offersFloat: Bool { offeredPlaces.contains(.float) }
+    /// Whether the person can put its card on the grid.
+    public var offersCard: Bool { offeredPlaces.contains(.card) }
+    public var offersMenuBar: Bool { offeredPlaces.contains(.menubar) }
     /// The folder of its files inside the data of the app. A sheet of the app and a widget have none.
     public let dataName: String?
     /// Whether the grid shows its card before the person's choice. A script with commands, one that offers only its rows,
@@ -100,7 +101,6 @@ public struct Spot: Equatable, Sendable {
         subtitle: String? = nil,
         read: SpotRead? = nil,
         pick: ItemPick = .close,
-        isGlobal: Bool = false,
         isFound: Bool = true,
         answers: AnswerPattern? = nil,
         order: Int = 0,
@@ -114,9 +114,7 @@ public struct Spot: Equatable, Sendable {
         mode: SpotMode = .once,
         pressRuns: Bool = false,
         drop: [String] = [],
-        offersFloat: Bool = false,
-        offersCard: Bool = true,
-        offersMenuBar: Bool = true,
+        offeredPlaces: Set<Place> = [.card, .menubar],
         dataName: String? = nil,
         isOnGrid: Bool = true,
         headerSymbol: String? = nil,
@@ -146,7 +144,6 @@ public struct Spot: Equatable, Sendable {
         self.subtitle = subtitle
         self.read = read
         self.pick = pick
-        self.isGlobal = isGlobal
         self.isFound = isFound
         self.answers = answers
         self.order = order
@@ -160,9 +157,7 @@ public struct Spot: Equatable, Sendable {
         self.mode = mode
         self.pressRuns = pressRuns
         self.drop = drop
-        self.offersFloat = offersFloat
-        self.offersCard = offersCard
-        self.offersMenuBar = offersMenuBar
+        self.offeredPlaces = offeredPlaces
         self.dataName = dataName
         self.isOnGrid = isOnGrid
         self.headerSymbol = headerSymbol
