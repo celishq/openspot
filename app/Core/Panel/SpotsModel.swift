@@ -77,9 +77,9 @@ public final class SpotsModel {
             if opening != (oldValue.phase == .opening ? oldValue.id : nil) { runs.opening.moving = opening }
         }
     }
-    public var closingPick: (item: SpotItem, entry: Entry)?
+    @ObservationIgnored public var closingPick: (item: SpotItem, entry: Entry)?
     public let runs: SpotRuns
-    public var dragWatch: Task<Void, Never>?
+    @ObservationIgnored public var dragWatch: Task<Void, Never>?
     public var dragPaths: [String] = []
     public var draggedSpot: SpotDrop? {
         didSet { followSpotDrop(from: isPointerOverDrop ? oldValue : nil) }
@@ -108,9 +108,9 @@ public final class SpotsModel {
 
     public var entryKey = Shortcut.standard
     var isChainHeld = false
-    var chainWatch: Task<Void, Never>?
+    @ObservationIgnored var chainWatch: Task<Void, Never>?
     public var recording: String?
-    private var problems: [String] = []
+    @ObservationIgnored private var problems: [String] = []
     /// The actions menu from its open to the end of its close.
     public internal(set) var menuSession: ActionMenuSession?
     public var form: FormSession?
@@ -167,9 +167,9 @@ public final class SpotsModel {
     public internal(set) var flashSymbol: String?
     @ObservationIgnored public var flashPause: Duration = .milliseconds(1500)
     @ObservationIgnored var flashWatch: Task<Void, Never>?
-    private var scanned: [Spot] = []
-    private var spotScan = SpotScan()
-    private var lastScan = ScanResult(files: [], refused: [])
+    @ObservationIgnored private var scanned: [Spot] = []
+    @ObservationIgnored private var spotScan = SpotScan()
+    @ObservationIgnored private var lastScan = ScanResult(files: [], refused: [])
     /// The stamp of the folder and the config that the cards were last built from.
     @ObservationIgnored private var loadedStamp: SpotsFolder.Stamp?
     @ObservationIgnored private var loadedConfig: Config?
@@ -185,7 +185,7 @@ public final class SpotsModel {
     /// Where the spots, the config and the recent rows live.
     @ObservationIgnored public let files: AppPlaces
     /// The global keys that the person gave and that a spot still offers, as the app holds them.
-    private(set) var assignedKeys: [GlobalKey] = []
+    @ObservationIgnored private(set) var assignedKeys: [GlobalKey] = []
 
     public init(host: SpotsHost, files: AppPlaces = .standard, runs: SpotRuns? = nil) {
         self.host = host

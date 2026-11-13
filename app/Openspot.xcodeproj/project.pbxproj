@@ -70,6 +70,7 @@
 		17D080086AA5F15C23AF1247 /* PlaygroundCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8154CD722F25157477CF454F /* PlaygroundCall.swift */; };
 		1819BF2B037E6794D4AACF65 /* SpotDrag.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BC66EA3227BE39AC4E9A0E1 /* SpotDrag.swift */; };
 		188DA828A7BB2490589D4706 /* SpotReminderStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 212290B63B7D0AE43BF65CD5 /* SpotReminderStore.swift */; };
+		18DD79BD12D3403783A9E77B /* CalcFormats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97653D56352C01CC432CACF0 /* CalcFormats.swift */; };
 		1A9EE2687483E9A6322551A0 /* CalendarStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4A9335ED3170AEC3B728749 /* CalendarStore.swift */; };
 		1B0D0D7FE2A03FBA2458A139 /* SpotRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70A41B43814742034E568CF4 /* SpotRing.swift */; };
 		1B2CDB90B88E5511523F2326 /* SheetLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48B0DA6204425E910C82D1D7 /* SheetLayoutTests.swift */; };
@@ -976,6 +977,7 @@
 		96997A67D01A45DDF4D97F54 /* PlaygroundPlaceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaygroundPlaceTests.swift; sourceTree = "<group>"; };
 		96BBB062EF397B6F7064CC2D /* FoldedText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoldedText.swift; sourceTree = "<group>"; };
 		96BBEE55FE461CA42CDD90AD /* GuideImageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuideImageTests.swift; sourceTree = "<group>"; };
+		97653D56352C01CC432CACF0 /* CalcFormats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalcFormats.swift; sourceTree = "<group>"; };
 		97A09B4D4F88E55986E6C8FB /* SpotGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotGrid.swift; sourceTree = "<group>"; };
 		97FF91498E0327AD3EBDF3EB /* KeyLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyLayout.swift; sourceTree = "<group>"; };
 		9812F1BA02128234368525EC /* TrayMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrayMark.swift; sourceTree = "<group>"; };
@@ -1285,6 +1287,7 @@
 				251678C3FC2938A6AC64953A /* CalcCurrency.swift */,
 				2C544E7F0BD5FF71CCDB6E8C /* CalcDate.swift */,
 				88B9FA4F7FBE192C0F3F809B /* CalcExpression.swift */,
+				97653D56352C01CC432CACF0 /* CalcFormats.swift */,
 				BAA1D7EA55A6E23D8075E202 /* CalcRateCache.swift */,
 				9447205042159420F5563CF7 /* CalcRateFailure.swift */,
 				8C1AD818DAD0892B880BF962 /* CalcRates.swift */,
@@ -2536,6 +2539,7 @@
 				B6AE0BA72B641A993510EADF /* CalcCurrency.swift in Sources */,
 				B0F69B37D3952F5CF308D7F8 /* CalcDate.swift in Sources */,
 				C2D55EFB45E530CACBCC825D /* CalcExpression.swift in Sources */,
+				18DD79BD12D3403783A9E77B /* CalcFormats.swift in Sources */,
 				4532F7F19749CA37C62C6E58 /* CalcRateCache.swift in Sources */,
 				D6941DD74277E9AFBBA2CE8B /* CalcRateFailure.swift in Sources */,
 				A67D9B1197DD1C93AD53140F /* CalcRates.swift in Sources */,
