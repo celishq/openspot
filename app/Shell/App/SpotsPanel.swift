@@ -160,16 +160,18 @@ final class SpotsPanel: NSPanel {
         SpotSoftBlur.warm(SpotsView.blurHeights(of: model), width: width)
     }
 
-    /// Shows the wallpaper over the other apps while the panel shows in Edit Spots, and takes it away when either ends.
+    /// Shows the wallpaper over the other apps while the panel shows in Edit Spots, and takes it away when either ends. The
+    /// cover decodes its pictures while the panel shows, and lets them go when it hides.
     private func followCover() {
         guard let model else { return }
-        let covers = withObservationTracking { model.isEditing && model.isShown } onChange: { [weak self] in
+        let (isShown, isEditing) = withObservationTracking { (model.isShown, model.isEditing) } onChange: { [weak self] in
             Task { @MainActor in self?.followCover() }
         }
-        if covers {
+        if isShown, isEditing {
             cover.show(under: self) { [weak model] in model?.endEditing() }
         } else {
             cover.hide()
+            if isShown { cover.prepare() } else { cover.release() }
         }
     }
 
