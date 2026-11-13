@@ -55,7 +55,7 @@ final class SpotHeaderTests: XCTestCase {
         }
     }
 
-    func testAnUnknownPlaceRefusesThePlugin() throws {
+    func testAnUnknownPlaceRefusesTheSpot() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-place-\(UUID().uuidString)")
         try "#!/bin/sh\n# on=panel.open\n# offers=dock\n".writeScript(to: url)
         defer { try? FileManager.default.removeItem(at: url) }
@@ -65,7 +65,7 @@ final class SpotHeaderTests: XCTestCase {
         }
     }
 
-    func testGlobalFloatAndTrayRefuseThePluginAndNameTheirNewWay() throws {
+    func testGlobalFloatAndTrayRefuseTheSpotAndNameTheirNewWay() throws {
         let cases = [
             ("on=panel.open\n# global=true", "offers=search"),
             ("on=panel.open\n# global=rows", "offers=search"),
@@ -93,7 +93,7 @@ final class SpotHeaderTests: XCTestCase {
         XCTAssertEqual(spot.keywords, ["countdown", "pomodoro timer"])
     }
 
-    func testASizeLineRefusesThePluginAndNamesItsFix() throws {
+    func testASizeLineRefusesTheSpotAndNamesItsFix() throws {
         for header in ["title=Timer\n# size=small", "title=Timer\n# grid.small=cpu\n# size=small"] {
             let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-size-\(UUID().uuidString)")
             try "#!/bin/sh\n# \(header)\n".writeScript(to: url)
@@ -105,7 +105,7 @@ final class SpotHeaderTests: XCTestCase {
         }
     }
 
-    func testAKeywordLineRefusesThePluginAndNamesTheList() throws {
+    func testAKeywordLineRefusesTheSpotAndNamesTheList() throws {
         for header in ["title=Timer\n# keyword=countdown", "grid.small=cpu\n# keyword=load"] {
             let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-keyword-\(UUID().uuidString)")
             try "#!/bin/sh\n# \(header)\n".writeScript(to: url)
@@ -139,18 +139,18 @@ final class SpotHeaderTests: XCTestCase {
     }
 
     func testAViewIsASwiftFileBesideTheScript() throws {
-        let folder = URL(fileURLWithPath: "/plugins/home")
+        let folder = URL(fileURLWithPath: "/spots/home")
         let header = SpotHeader(text: "#!/bin/sh\n# view=cups.swift\n").block
 
         let spot = try XCTUnwrap(try SpotFile(script: folder.appendingPathComponent("cups.sh"), header: header, id: "home/cups").spots.first)
 
-        XCTAssertEqual(spot.view, "/plugins/home/cups.swift")
+        XCTAssertEqual(spot.view, "/spots/home/cups.swift")
     }
 
     func testAnAnswersPatternIsTheWholeRestOfItsLine() throws {
         let header = SpotHeader(text: "#!/bin/sh\n# on=search.text ^\\s*([0-9,.]|(?i:today|now)\\b)\n").block
 
-        let spot = try XCTUnwrap(try SpotFile(script: URL(fileURLWithPath: "/plugins/calc.sh"), header: header, id: "calc").spots.first)
+        let spot = try XCTUnwrap(try SpotFile(script: URL(fileURLWithPath: "/spots/calc.sh"), header: header, id: "calc").spots.first)
 
         XCTAssertEqual(spot.answers?.text, #"^\s*([0-9,.]|(?i:today|now)\b)"#)
         XCTAssertEqual(["1,5", "Today", "notes"].map { spot.answers?.matches($0) }, [true, true, false])
@@ -159,7 +159,7 @@ final class SpotHeaderTests: XCTestCase {
     func testAHeaderPictureOnTheWebKeepsItsURL() throws {
         let header = SpotHeader(text: "#!/bin/sh\n# icon=https://example.com/cups.png\n").block
 
-        let spot = try XCTUnwrap(try SpotFile(script: URL(fileURLWithPath: "/plugins/home/cups.sh"), header: header, id: "home/cups").spots.first)
+        let spot = try XCTUnwrap(try SpotFile(script: URL(fileURLWithPath: "/spots/home/cups.sh"), header: header, id: "home/cups").spots.first)
 
         XCTAssertEqual(spot.icon, .image("https://example.com/cups.png"))
     }
@@ -167,16 +167,8 @@ final class SpotHeaderTests: XCTestCase {
     func testAViewThatIsNoSwiftFileIsRefused() {
         let header = SpotHeader(text: "#!/bin/sh\n# title=Cups\n# view=cups.txt\n").block
 
-        XCTAssertThrowsError(try SpotFile(script: URL(fileURLWithPath: "/plugins/cups.sh"), header: header, id: "cups")) { error in
+        XCTAssertThrowsError(try SpotFile(script: URL(fileURLWithPath: "/spots/cups.sh"), header: header, id: "cups")) { error in
             XCTAssertEqual((error as? SpotError)?.reason, "Cups needs a Swift file for its view, such as view=cups.swift")
-        }
-    }
-
-    func testAViewInATopLevelScriptIsRefusedWithTheFolderToMoveTo() {
-        let header = SpotHeader(text: "#!/bin/sh\n# title=Cups\n# view=cups.swift\n").block
-
-        XCTAssertThrowsError(try SpotFile(script: URL(fileURLWithPath: "/plugins/cups.sh"), header: header, id: "cups")) { error in
-            XCTAssertEqual((error as? SpotError)?.reason, "Cups has a view, so it needs a folder of its own. Move cups.sh and cups.swift into a folder such as cups/")
         }
     }
 }

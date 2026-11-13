@@ -20,9 +20,9 @@ final class SpotStarterTests: XCTestCase {
 
             let file = try starter.write(name: "Weather today", in: place)
 
-            let faults = await SpotCheck(folder: SpotFolder(url: place)).faults()
+            let faults = await SpotCheck(folder: SpotsFolder(url: place)).faults()
             XCTAssertEqual(faults, [], "\(starter)")
-            let spot = try XCTUnwrap(SpotFolder(url: place).scan().spots.first, "\(starter)")
+            let spot = try XCTUnwrap(SpotsFolder(url: place).scan().spots.first, "\(starter)")
             XCTAssertEqual(spot.id, "weather-today")
             XCTAssertEqual(spot.name, "Weather today")
             XCTAssertEqual(file.lastPathComponent, "weather-today.sh")

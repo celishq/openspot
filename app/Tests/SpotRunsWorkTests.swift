@@ -116,7 +116,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         let live = SpotRuns()
         defer { live.quit() }
         try script(body: "sleep 30")
-        live.take(try SpotFolder(url: folder).scan())
+        live.take(try SpotsFolder(url: folder).scan())
         let sheet = try XCTUnwrap(live.sheets["script"])
         sheet.pressCard()
         let changes = expectation(description: "the second has passed")

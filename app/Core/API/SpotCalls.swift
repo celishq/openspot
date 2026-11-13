@@ -1,7 +1,7 @@
 import Foundation
 
 /// The calls of `openspot spot`: the spots that the app loads, the ones that come with it, and those that `spot add` put in
-/// the plugins folder.
+/// the spots folder.
 struct SpotCalls {
     let environment: [String: String]
     let app: (any RunningApp)?
@@ -10,7 +10,7 @@ struct SpotCalls {
 
     func list(core: Bool, frame: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [environment] in
-            let list = SpotList(folder: SpotFolder.standard(environment: environment), config: ConfigFile.standard(environment: environment).read())
+            let list = SpotList(folder: SpotsFolder.standard(environment: environment), config: ConfigFile.standard(environment: environment).read())
             switch (core, frame) {
             case (true, true): return list.coreFrame()
             case (true, false): return try list.core()
@@ -22,7 +22,7 @@ struct SpotCalls {
 
     func turn(_ ids: [String], on isOn: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [environment, app] in
-            try SpotFolder.standard(environment: environment).turn(ids, on: isOn, in: ConfigFile.standard(environment: environment))
+            try SpotsFolder.standard(environment: environment).turn(ids, on: isOn, in: ConfigFile.standard(environment: environment))
             await app?.configChanged(.spots(ids))
             return ""
         }
@@ -31,7 +31,7 @@ struct SpotCalls {
     func add(_ source: String, isConfirmed: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [environment] in
             let place = URL(fileURLWithPath: environment["PWD"] ?? FileManager.default.currentDirectoryPath, isDirectory: true)
-            let folder = SpotFolder.standard(environment: environment, enabled: [], disabled: [])
+            let folder = SpotsFolder.standard(environment: environment, enabled: [], disabled: [])
             return try await SpotLock.standard(environment: environment).add(SpotSource(text: source, place: place), to: folder.url, isConfirmed: isConfirmed)
         }
     }
@@ -39,7 +39,7 @@ struct SpotCalls {
     func restore(isConfirmed: Bool) -> CommandAPI.Work {
         { [environment] in
             do {
-                return try await SpotLock.standard(environment: environment).restore(to: SpotFolder.standard(environment: environment, enabled: [], disabled: []).url, isConfirmed: isConfirmed)
+                return try await SpotLock.standard(environment: environment).restore(to: SpotsFolder.standard(environment: environment, enabled: [], disabled: []).url, isConfirmed: isConfirmed)
             } catch {
                 return CommandAnswer(failure: error)
             }
@@ -48,7 +48,7 @@ struct SpotCalls {
 
     func remove(_ id: String) -> CommandAPI.Work {
         CommandAnswer.work { [environment] in
-            let folder = SpotFolder.standard(environment: environment, enabled: [], disabled: [])
+            let folder = SpotsFolder.standard(environment: environment, enabled: [], disabled: [])
             return "Removed \(try SpotLock.standard(environment: environment).remove(id, from: folder.url).name).\n"
         }
     }
@@ -84,7 +84,7 @@ struct SpotCalls {
     /// mode leaves the script, or nil to run it as the person (protocol: Trust).
     func run(_ id: String, _ arguments: [String], input: (@Sendable () async -> String)?, careful: Set<SpotUse>?, output: CommandOutput) -> CommandAPI.Work {
         { [environment, runs] in
-            let folder = SpotFolder.standard(environment: environment)
+            let folder = SpotsFolder.standard(environment: environment)
             let found: Spot?
             do {
                 found = try folder.scan().scripts.first { $0.id == id }
@@ -117,14 +117,14 @@ struct SpotCalls {
 
     func new(_ name: String, from starter: SpotStarter) -> CommandAPI.Work {
         CommandAnswer.work { [environment] in
-            let file = try starter.write(name: name, in: SpotFolder.standard(environment: environment).url)
+            let file = try starter.write(name: name, in: SpotsFolder.standard(environment: environment).url)
             return "Wrote \(file.path). Its ID is \(file.deletingPathExtension().lastPathComponent).\n"
         }
     }
 
     func log(_ id: String) -> CommandAPI.Work {
         CommandAnswer.work { [environment] in
-            let text = SpotFiles(environment: environment, home: FileManager.default.homeDirectoryForCurrentUser, defaults: .standard).log.text(of: id)
+            let text = AppPlaces(environment: environment, home: FileManager.default.homeDirectoryForCurrentUser, defaults: .standard).log.text(of: id)
             return text.isEmpty ? "Openspot has made no call to \(id) yet. Use it in the panel, then run this again.\n" : text
         }
     }
@@ -137,7 +137,7 @@ struct SpotCalls {
                 let now = await MainActor.run { runs.now() }
                 counts = runs.usage.days(days, at: now)
             } else {
-                counts = SpotUsage.days(days, at: Date(), in: SpotFiles(environment: environment, home: FileManager.default.homeDirectoryForCurrentUser, defaults: .standard).stats)
+                counts = SpotUsage.days(days, at: Date(), in: AppPlaces(environment: environment, home: FileManager.default.homeDirectoryForCurrentUser, defaults: .standard).stats)
             }
             return try StatsReport(days: counts, spot: spot).text(format)
         }

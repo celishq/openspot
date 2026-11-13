@@ -320,6 +320,15 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertEqual(faults(String(repeating: "grid=a\n", count: 20) + "\nfield=a\nvalue=Hi\n"), ["the drawing is too tall: 914pt of 442pt"])
     }
 
+    func testATextOverTwoLinesShowsItsDetailUnderItsTitle() throws {
+        let text = "grid=intro\ngrid=intro\ngrid=go\n\ntext=intro\ntitle=Your account is 12 words\ndetail=Write them down. They are the only way back in.\nlook=tile\n\nbutton=go\ntitle=Go\n"
+        let sheet = try placement(text)
+
+        XCTAssertTrue(try XCTUnwrap(sheet.frames["intro"]).hasDetailUnderTitle)
+        XCTAssertFalse(try XCTUnwrap(sheet.frames["go"]).hasDetailUnderTitle)
+        XCTAssertEqual(output(text).partFaults, [])
+    }
+
     func testAViewFillsItsAreaOfASheetAndSharesTheFreeHeight() throws {
         let sheet = try placement("grid=chart chart\ngrid=chart chart\ngrid=go go\n\nview=chart\npoint=1\n\nbutton=go\ntitle=Go\n")
         let frame = try XCTUnwrap(sheet.frames["chart"])

@@ -1,7 +1,7 @@
 import CryptoKit
 import Foundation
 
-/// The compiled form of a plugin's view: a library with one entry that makes the view (protocol: Views). A library is kept in a cache
+/// The compiled form of a spot's view: a library with one entry that makes the view (protocol: Views). A library is kept in a cache
 /// by the text it was built from, so an unchanged view is built once.
 public struct ViewLibrary: Sendable {
     /// The C name of the entry, which returns a retained function from the values, the card and a send to a view.

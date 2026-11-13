@@ -112,6 +112,16 @@ final class SpotUsesTests: SpotRunsCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: config.appendingPathComponent("config.toml").path))
     }
 
+    func testASpotCannotChangeWhereTheAccountIsKept() async throws {
+        try caller(header: "uses=app", "account sync off")
+        _ = try scanned()
+
+        let (code, errors) = try await pressed()
+
+        XCTAssertEqual(code, "1")
+        XCTAssertEqual(errors, "Only Openspot's Account spot can reach your account key.\n")
+    }
+
     func testInCarefulModeAnUndeclaredUseIsRefused() async throws {
         runs.isCareful = true
         try caller("setting list")
@@ -185,13 +195,13 @@ final class SpotUsesTests: SpotRunsCase {
         sheet.open {}
 
         try await wait("the read") { self.log("done").count == 1 }
-        XCTAssertEqual(try String(contentsOfFile: path("errors"), encoding: .utf8), "`openspot spot remove` changes your plugins folder, so it cannot run in a read. Run it from a pick or an action.\n")
+        XCTAssertEqual(try String(contentsOfFile: path("errors"), encoding: .utf8), "`openspot spot remove` changes your spots folder, so it cannot run in a read. Run it from a pick or an action.\n")
     }
 
-    func testAnUnknownUseRefusesThePlugin() throws {
+    func testAnUnknownUseRefusesTheSpot() throws {
         try script(header: "uses=camera")
 
-        XCTAssertEqual(try SpotFolder(url: folder).scan().refused.map(\.reason), [
+        XCTAssertEqual(try SpotsFolder(url: folder).scan().refused.map(\.reason), [
             "Script has an unknown use in its uses: camera. Use app, spots, screen, clipboard, calendar, network or files"
         ])
     }
@@ -211,7 +221,7 @@ final class SpotUsesTests: SpotRunsCase {
         for (arguments, use) in cases {
             XCTAssertEqual(SpotUseCall(arguments: arguments, of: "own")?.use.rawValue, use, arguments.joined(separator: " "))
         }
-        XCTAssertNil(SpotUseCall(arguments: ["setting", "get", "--spot", "record/inputs", "k"], of: "record/record"), "a script of the same folder is the same plugin")
-        XCTAssertNotNil(SpotUseCall(arguments: ["setting", "get", "--spot", "notes", "k"], of: "record/record"))
+        XCTAssertNil(SpotUseCall(arguments: ["setting", "get", "--spot", "record/inputs", "k"], of: "record"), "a script of the same folder is the same spot")
+        XCTAssertNotNil(SpotUseCall(arguments: ["setting", "get", "--spot", "notes", "k"], of: "record"))
     }
 }

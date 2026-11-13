@@ -7,9 +7,13 @@ packages:
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
     from: 2.10.1
+  secp256k1:
+    url: https://github.com/21-DOT-DEV/swift-secp256k1
+    exactVersion: 0.24.0
 settings:
   base:
     SWIFT_VERSION: "6.0"
+    OTHER_SWIFT_FLAGS: $(inherited) -Xcc -fmodule-map-file=$(GENERATED_MODULEMAP_DIR)/libsecp256k1.modulemap
     CODE_SIGN_STYLE: Manual
     CODE_SIGN_IDENTITY: "-"
     ENABLE_HARDENED_RUNTIME: YES
@@ -26,6 +30,9 @@ targets:
       - path: Core
       - path: Client/CommandKind.swift
       - path: Client/SocketPath.swift
+    dependencies:
+      - package: secp256k1
+        product: P256K
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.openspot.core
@@ -37,6 +44,8 @@ targets:
       - path: Shell
     dependencies:
       - target: OpenspotCore
+      - package: secp256k1
+        product: P256K
       - package: Sparkle
       - target: OpenspotClient
         link: false
@@ -56,7 +65,7 @@ targets:
         SUAutomaticallyUpdate: true
         SUVerifyUpdateBeforeExtraction: true
         OpenspotDevState: $(OPENSPOT_DEV_STATE)
-        NSAppleEventsUsageDescription: Openspot runs your plugins, and a plugin can ask another app to act, such as to paste.
+        NSAppleEventsUsageDescription: Openspot runs your spots, and a spot can ask another app to act, such as to paste.
         NSMicrophoneUsageDescription: Openspot records the microphone when a plugin records the screen with your voice, or when you dictate.
         NSCameraUsageDescription: Openspot records the camera when a plugin records the screen with your camera.
         NSCalendarsFullAccessUsageDescription: Openspot shows and adds your events when a spot that you use asks for them.
@@ -103,7 +112,7 @@ targets:
           core="$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/spots"
           rm -rf "$core"
           mkdir -p "$(dirname "$core")"
-          cp -RL "$SRCROOT/../plugins" "$core"
+          cp -RL "$SRCROOT/../spots" "$core"
           cp "$SRCROOT/defaults.toml" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/defaults.toml"
       - name: Copy the emoji keywords
         basedOnDependencyAnalysis: false
@@ -114,9 +123,13 @@ targets:
       - name: Fill the dev state
         basedOnDependencyAnalysis: false
         script: |
-          if [ -n "$OPENSPOT_DEV_STATE" ] && [ ! -e "$OPENSPOT_DEV_STATE/plugins" ]; then
+          if [ -n "$OPENSPOT_DEV_STATE" ] && [ ! -e "$OPENSPOT_DEV_STATE/spots" ] && [ -e "$OPENSPOT_DEV_STATE/plugins" ]; then
+            mv "$OPENSPOT_DEV_STATE/plugins" "$OPENSPOT_DEV_STATE/spots"
+          fi
+          if [ -n "$OPENSPOT_DEV_STATE" ] && [ ! -e "$OPENSPOT_DEV_STATE/spots" ]; then
             mkdir -p "$OPENSPOT_DEV_STATE"
-            cp -R "$SRCROOT/../plugins" "$OPENSPOT_DEV_STATE/plugins"
+            cp -R "$SRCROOT/../spots" "$OPENSPOT_DEV_STATE/spots"
+            rm -rf "$OPENSPOT_DEV_STATE/spots/openspot.spot"
           fi
     settings:
       base:
@@ -147,6 +160,8 @@ targets:
       - path: StandIn
     dependencies:
       - target: OpenspotCore
+      - package: secp256k1
+        product: P256K
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.openspot.standin
@@ -157,6 +172,8 @@ targets:
       - path: Tests
     dependencies:
       - target: OpenspotCore
+      - package: secp256k1
+        product: P256K
       - target: OpenspotStandIn
         link: false
         embed: false

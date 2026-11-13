@@ -106,28 +106,28 @@ final class ViewLibraryTests: XCTestCase {
 
     @MainActor
     func testTheCheckNamesAViewThatIsMissingOrDoesNotCompile() async throws {
-        let plugins = folder.appendingPathComponent("plugins")
+        let spots = folder.appendingPathComponent("spots")
         for name in ["lost", "bad"] {
-            try FileManager.default.createDirectory(at: plugins.appendingPathComponent(name), withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(at: spots.appendingPathComponent(name + ".spot"), withIntermediateDirectories: true)
         }
-        try "#!/bin/sh\n# view=lost.swift\n".writeScript(to: plugins.appendingPathComponent("lost/lost.sh"))
-        try "#!/bin/sh\n# view=bad.swift\n".writeScript(to: plugins.appendingPathComponent("bad/bad.sh"))
-        try Data("struct".utf8).write(to: plugins.appendingPathComponent("bad/bad.swift"))
+        try "#!/bin/sh\n# view=lost.swift\n".writeScript(to: spots.appendingPathComponent("lost.spot/lost.sh"))
+        try "#!/bin/sh\n# view=bad.swift\n".writeScript(to: spots.appendingPathComponent("bad.spot/bad.sh"))
+        try Data("struct".utf8).write(to: spots.appendingPathComponent("bad.spot/bad.swift"))
         let views = try tools(compiler: "echo 'bad.swift:1:7: error: expected identifier' >&2; exit 1")
 
-        let faults = await SpotCheck(folder: SpotFolder(url: plugins), views: views).faults()
+        let faults = await SpotCheck(folder: SpotsFolder(url: spots), views: views).faults()
 
         XCTAssertEqual(faults, [
-            "bad/bad: This view does not compile. bad.swift:1:7: error: expected identifier",
-            "lost/lost: Openspot cannot find the view lost.swift."
+            "bad: This view does not compile. bad.swift:1:7: error: expected identifier",
+            "lost: Openspot cannot find the view lost.swift."
         ])
     }
 
-    private var sharedCups: SharedSpot {
+    private var sharedCups: SpotPackage {
         get throws {
-            try SharedSpot(files: [
-                .init(path: "home/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\n# view=cups.swift\n".utf8)),
-                .init(path: "home/cups.swift", isExecutable: false, contents: Data(view.utf8))
+            try SpotPackage(files: [
+                .init(path: "home.spot/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\n# view=cups.swift\n".utf8)),
+                .init(path: "home.spot/cups.swift", isExecutable: false, contents: Data(view.utf8))
             ])
         }
     }
@@ -139,33 +139,33 @@ final class ViewLibraryTests: XCTestCase {
         let compiled = try await spot.compiled(views: try tools())
 
         XCTAssertFalse(compiled.needsCompile)
-        XCTAssertEqual(compiled.files.map(\.path), ["home/cups.sh", "home/cups.swift", "home/cups.view"])
+        XCTAssertEqual(compiled.files.map(\.path), ["home.spot/cups.sh", "home.spot/cups.swift", "home.spot/cups.view"])
         XCTAssertEqual(compiled.files.last?.contents, Data("both".utf8))
         XCTAssertEqual(compiled.files.last?.isExecutable, false)
     }
 
     func testTheReviewSaysThatAViewLibraryIsCodeThatMayNotMatchItsSource() throws {
         var files = try sharedCups.files
-        files.append(.init(path: "home/cups.view", isExecutable: false, contents: Data([0xCF, 0xFA, 0xED, 0xFE, 0x00])))
+        files.append(.init(path: "home.spot/cups.view", isExecutable: false, contents: Data([0xCF, 0xFA, 0xED, 0xFE, 0x00])))
 
-        let review = try ReviewSpot(spot: try SharedSpot(files: files), folder: folder)
+        let review = try ReviewSpot(spot: try SpotPackage(files: files), folder: folder)
 
         XCTAssertEqual(review.subtitle, "Holds a program that you cannot read")
         let part = try XCTUnwrap(SpotOutput(text: try review.answer(["read"])).parts.first { $0.id == "review" })
         guard case .text(let text, _, _) = part.control else { throw SpotError.badForm }
-        XCTAssertTrue(text.hasPrefix("\(review.name)\n\nProgram that Openspot cannot show\nhome/cups.view\nIt can do all that you can. Add it only if you trust the sender.\nThe source beside it may not match the program.\n\n"), text)
+        XCTAssertTrue(text.hasPrefix("\(review.name)\n\nProgram that Openspot cannot show\nhome.spot/cups.view\nIt can do all that you can. Add it only if you trust the sender.\nThe source beside it may not match the program.\n\n"), text)
     }
 
     func testRemovingASpotAlsoTakesItsViewAndItsLibrary() throws {
-        let plugins = folder.appendingPathComponent("plugins")
-        let cups = plugins.appendingPathComponent("cups")
+        let spots = folder.appendingPathComponent("spots")
+        let cups = spots.appendingPathComponent("cups.spot")
         try FileManager.default.createDirectory(at: cups, withIntermediateDirectories: true)
         try "#!/bin/sh\n# view=cups.swift\n".writeScript(to: cups.appendingPathComponent("cups.sh"))
         try "#!/bin/sh\n".writeScript(to: cups.appendingPathComponent("other.sh"))
         try Data(view.utf8).write(to: cups.appendingPathComponent("cups.swift"))
         try Data("built".utf8).write(to: cups.appendingPathComponent("cups.view"))
-        let place = SpotFolder(url: plugins)
-        let spot = try XCTUnwrap(try place.scan().spots.first { $0.id == "cups/cups" })
+        let place = SpotsFolder(url: spots)
+        let spot = try XCTUnwrap(try place.scan().spots.first { $0.id == "cups" })
         var discarded: [String] = []
 
         try place.remove(spot) { discarded.append($0.lastPathComponent) }

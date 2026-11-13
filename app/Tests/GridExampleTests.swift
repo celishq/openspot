@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 /// Proves the Grid example: the block of cells it gives `openspot window move`, and how its script runs the grid.
-final class GridExampleTests: SamplePluginsCase {
+final class GridExampleTests: SampleSpotsCase {
     /// A stand-in for the openspot command that logs each call to `calls`, and a stand-in grid in the data folder of the
     /// spot that runs this body. Its file is newer than the source, so the script does not build it.
     private func fakeGrid(_ body: String, in folder: URL) throws -> URL {
@@ -22,7 +22,7 @@ final class GridExampleTests: SamplePluginsCase {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
         let grid = folder.appendingPathComponent("grid")
-        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-o", grid.path, examples.appendingPathComponent("grid/grid.swift").path])
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-o", grid.path, examples.appendingPathComponent("grid.spot/grid.swift").path])
 
         func pick(_ numbers: Int...) async throws -> String {
             try await ScriptProcess.output(url: grid, arguments: ["pick"] + numbers.map(String.init))
@@ -45,7 +45,7 @@ final class GridExampleTests: SamplePluginsCase {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
         let grid = folder.appendingPathComponent("grid")
-        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-o", grid.path, examples.appendingPathComponent("grid/grid.swift").path])
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-o", grid.path, examples.appendingPathComponent("grid.spot/grid.swift").path])
         let areas = [
             CGRect(x: 0, y: 33, width: 1728, height: 1084),
             CGRect(x: 0, y: 25, width: 1440, height: 875),

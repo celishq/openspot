@@ -1,7 +1,7 @@
 #!/bin/sh
 # Measures goal 5 of the protocol in app/RULES.md: a coding agent with only `openspot guide` and one sentence writes a spot that
 # passes `openspot check --json` with [], so that it shows on the grid, on its first try.
-# Usage: scripts/agent-eval.sh [tasks]. Each task runs `claude -p` once in an empty plugins folder of its own, and costs
+# Usage: scripts/agent-eval.sh [tasks]. Each task runs `claude -p` once in an empty spots folder of its own, and costs
 # money, so run one task first. A stand-in for `openspot spot show` keeps the app closed and notes each try.
 # It prints one line for each task, then the score, and writes them to .temp/agent-eval/result.txt.
 set -e
@@ -24,12 +24,12 @@ total=0
 while IFS= read -r task; do
   total=$((total + 1))
   place="$out/runs/$total"
-  mkdir -p "$place/plugins"
-  (cd "$place/plugins" && OPENSPOT_CONFIG="$place" PATH="$out/bin:$PATH" claude -p \
+  mkdir -p "$place/spots"
+  (cd "$place/spots" && OPENSPOT_CONFIG="$place" PATH="$out/bin:$PATH" claude -p \
     "Run \`openspot guide\` and read all of it. Then build an Openspot spot in this folder that $task." \
     --permission-mode acceptEdits --allowedTools "Bash Read Write Edit" </dev/null >"$place/agent.txt" 2>&1) || true
-  OPENSPOT_CONFIG="$place" "$real" check --json "$place/plugins" >"$place/check.json" 2>&1 || true
-  spots=$(find "$place/plugins" -maxdepth 2 -type f -perm -u+x | wc -l | tr -d ' ')
+  OPENSPOT_CONFIG="$place" "$real" check --json "$place/spots" >"$place/check.json" 2>&1 || true
+  spots=$(find "$place/spots" -maxdepth 2 -type f -perm -u+x | wc -l | tr -d ' ')
   if [ "$(cat "$place/check.json")" = "[]" ] && [ "$spots" -gt 0 ]; then
     passed=$((passed + 1))
     echo "pass  $task" | tee -a "$out/result.txt"

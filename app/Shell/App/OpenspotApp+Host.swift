@@ -1,4 +1,5 @@
 import AppKit
+import LocalAuthentication
 import OpenspotCore
 import SwiftUI
 
@@ -89,6 +90,22 @@ extension OpenspotApp: SpotsHost {
 
     var pastedPaths: [String] {
         SpotGridDrop.paths(on: .general)
+    }
+
+    func takeFocus() {
+        NSApp.activate(ignoringOtherApps: true)
+        panel?.makeKeyAndOrderFront(nil)
+    }
+
+    /// Asks for Touch ID or the Mac password, which then counts for 5 minutes. A Mac with neither allows it.
+    func allows(_ reason: String) async -> Bool {
+        if let passed = Self.touchIDPassed, Date().timeIntervalSince(passed) < Self.touchIDReuse { return true }
+        let context = LAContext()
+        var error: NSError?
+        guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else { return true }
+        guard (try? await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason)) == true else { return false }
+        Self.touchIDPassed = Date()
+        return true
     }
 
     func copy(_ file: URL) {

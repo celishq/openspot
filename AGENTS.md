@@ -4,7 +4,7 @@
 
 - `app/` is the Mac app, built with XcodeGen from `app/project.yml`. Run `xcodegen generate` in `app/` after you
   add or move a file. Targets:
-  - `Core/` — the plugin contract and loading. Imports Foundation only.
+  - `Core/` — the spot contract and loading. Imports Foundation only.
   - `Shell/` — the menu bar app, the panel and the hotkey. Imports AppKit and SwiftUI.
   - `StandIn/` — a small program for tests: a capability that needs no Mac feature. It does not ship.
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
@@ -12,15 +12,15 @@
   it from a pinned CLDR version, and the build copies it into the app.
 - `app/Help/` holds the guide of each `openspot` noun that has one, which `openspot help <noun>` prints. The build copies it
   into the app.
-- `plugins/` holds the source of the core spots. The build copies it into the app, and they run from there.
-  `plugins/openspot/` holds the spots of the app itself, such as Settings, which are always on and use only the `openspot`
+- `spots/` holds the source of the core spots, each a `<name>.spot` folder. The build copies it into the app, and they run
+  from there. `spots/openspot.spot/` holds the spots of the app itself, such as Settings, which are always on and use only the `openspot`
   API. No code outside that folder names one of them.
-- `examples/` holds plugins that show a feature, such as a view. The app does not ship them, and a test checks them.
-  `make examples` copies them into the plugins of a Debug build.
+- `examples/` holds spots that show a feature, such as a view. The app does not ship them, and a test checks them.
+  `make examples` copies them into the spots of a Debug build.
 - `plans/` holds design plans. It is git-ignored.
 - `.temp/` holds throwaway mock-ups and screenshots. It is git-ignored.
-- `.temp/openspot/` holds the plugins and the config of a Debug build, so that it never changes `plugins/` or
-  `~/.config/openspot`. The build fills it once from `plugins/`, and `make dev-state` resets it. `make dev-state EMPTY=1` leaves it empty, so that the core spots run from the app, as on a new Mac.
+- `.temp/openspot/` holds the spots and the config of a Debug build, so that it never changes `spots/` or
+  `~/.config/openspot`. The build fills it once from `spots/`, and `make dev-state` resets it. `make dev-state EMPTY=1` leaves it empty, so that the core spots run from the app, as on a new Mac.
 
 ## Writing
 

@@ -21,7 +21,7 @@ struct SettingCalls {
 
     func list(frame: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [environment] in
-            let list = SpotList(folder: SpotFolder.standard(environment: environment), config: ConfigFile.standard(environment: environment).read())
+            let list = SpotList(folder: SpotsFolder.standard(environment: environment), config: ConfigFile.standard(environment: environment).read())
             return try frame ? list.valuesFrame() : list.values()
         }
     }

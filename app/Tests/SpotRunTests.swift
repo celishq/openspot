@@ -19,7 +19,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     private func make(name: String = "script", searches: Bool = false, _ body: String, mode: SpotMode = .once, read: SpotRead? = nil) throws -> SpotRun {
-        let url = folder.appendingPathComponent("\(name).sh")
+        let url = folder.spotFile(name)
         let typed = searches ? "[ \"$1\" = read ] && in=$(cat); t=$(printf '%s\\n' \"$in\" | sed -n 's/^search=//p'); f=$(printf '%s\\n' \"$in\" | sed -n 's/^form=//p' | head -1)\n" : ""
         try "#!/bin/sh\n\(typed)\(body)\n".writeScript(to: url)
         let made = SpotRuns()

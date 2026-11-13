@@ -261,7 +261,7 @@ public final class SpotRun {
         }
     }
 
-    /// Takes the spot again after a new look at the plugin folder, with what its script last printed. A script that starts
+    /// Takes the spot again after a new look at the spots folder, with what its script last printed. A script that starts
     /// or stops staying, or that starts or stops running inline, gets a new link.
     public func update(_ new: Spot) {
         let header = spot.headerState

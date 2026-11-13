@@ -69,14 +69,14 @@ struct SpotListingSheet: View {
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: RoundedRectangle(cornerRadius: SpotTokens.radius, style: .continuous))
     }
 
-    /// Where the spot stands in the store, in words: a spot of the plugins folder is published, has changes, or needs a readme
-    /// before its first publish.
+    /// Where the spot stands in the store, in words: a spot of the spots folder is published, has changes, needs a readme
+    /// before its first publish, or has the version of its last signed release.
     private var status: String? {
         guard item.isOwn else { return nil }
         switch item.publication {
         case .current: return "Published"
         case .changed: return "Changes not published"
-        case nil: return listing.readme == nil ? "Needs a readme to publish" : nil
+        case nil: return listing.readme == nil ? "Needs a readme to publish" : listing.release?.words
         }
     }
 

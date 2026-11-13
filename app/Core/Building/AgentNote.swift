@@ -1,6 +1,6 @@
 import Foundation
 
-/// The note for coding agents in the plugins folder: `AGENTS.md`, which says how to build a spot there, and `CLAUDE.md`,
+/// The note for coding agents in the spots folder: `AGENTS.md`, which says how to build a spot there, and `CLAUDE.md`,
 /// which points to it. The app keeps a note that it wrote up to date, and never changes a note that a person wrote.
 public struct AgentNote: Equatable, Sendable {
     static let mark = "<!-- Openspot keeps this file up to date. Write your own rules in another file. -->"

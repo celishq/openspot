@@ -3,7 +3,7 @@ import XCTest
 
 /// Proves the Agenda example with its real script and a stand-in for the openspot command, which logs each call with its
 /// reason and its stdin.
-final class AgendaExampleTests: SamplePluginsCase {
+final class AgendaExampleTests: SampleSpotsCase {
     /// A time from now in ISO 8601 with the offset of the zone, as `openspot calendar events` prints it.
     private func iso(_ seconds: TimeInterval) -> String {
         let format = ISO8601DateFormatter()

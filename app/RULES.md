@@ -1,6 +1,6 @@
 # Rules of the app
 
-These rules are decisions about how this app works that no plugin author sees. The plugin contract is in
+These rules are decisions about how this app works that no spot author sees. The spot contract is in
 `PROTOCOL.md`, and this file points to its sections, never the other way.
 Code and tests name a rule by its ID.
 
@@ -13,25 +13,25 @@ Code and tests name a rule by its ID.
 | A4 | Search text stays until the person presses Esc. |
 | A5 | Spots, New spot, Settings, Updates and Quit ship with the app and answer the same calls, in Swift. |
 | A6 | One global key opens the panel, and the person chooses it. A script never holds a key (protocol: The calls). |
-| A7 | The person arranges the grid in `config.toml`: order, `size`, `grid`, `enabled`, `global`, which takes a list out of the main search, and `tray`, which puts a spot in the menu bar. It wins over the plugin. A size is a preference, and the grid can change it to fill a row. With no choice, the person's files come first, the newest first, then the core spots. |
+| A7 | The person arranges the grid in `config.toml`: order, `size`, `grid`, `enabled`, `global`, which takes a list out of the main search, and `tray`, which puts a spot in the menu bar. It wins over the spot's own header. A size is a preference, and the grid can change it to fill a row. With no choice, the person's files come first, the newest first, then the core spots. |
 | A8 | The app opens the panel unseen once as it starts, so that each `panel` read runs. It waits at most 2 seconds, then shows a toast that names the key. |
 | A9 | A sheet with no answer yet holds its motion for at most 150 ms, so that it grows once, to its real size. |
 | A10 | A dragged `.spot` file shows in the search field, and a drop, a paste or a double-click opens the install screen from there. |
-| A11 | The core spots are the scripts in `plugins/` of this repo. They run in place from the app, so an update updates them. Nothing downloads. |
-| A12 | A first launch turns on each core spot that reads only local data. Each other core spot is off until the person turns it on. A file in the plugins folder with the same ID wins over a core spot, and is always on. |
+| A11 | The core spots are the spot folders in `spots/` of this repo. They run in place from the app, so an update updates them. Nothing downloads. |
+| A12 | A first launch turns on each core spot that reads only local data. Each other core spot is off until the person turns it on. A spot in the spots folder with the same ID wins over a core spot, and is always on. |
 | A13 | Spots opens Edit Spots with the store, which shows every spot with its state. A search for "edit spots" finds Spots. |
-| A14 | A first launch has no config and no plugin, opens the panel on the grid once, and does not open at login. |
+| A14 | A first launch has no config and no spot, opens the panel on the grid once, and does not open at login. |
 | A15 | A toast takes no input, except a failure with a fix (protocol: The life of a call). One fix key, which the person chooses, opens it, and only while the toast shows. |
 | A16 | The main search ranks the best match first. Then the most weight of picks, where each pick weighs 0.9 of the one after it, then the spots, then each list in the order of the grid. A list that the person never picked from shows at most 3 rows. |
 | A17 | A ⌘ shortcut on a layout whose letters are not Latin, such as Ukrainian, goes by the letter that the same key types in the Latin layout that the Mac keeps for shortcuts, as its menus do. A key with no ⌘ types its own letter. |
 | A18 | The panel opens on the screen that holds most of the front window, or with no window in front, on the screen of the pointer. A drag over the menu bar item opens it on the screen of the pointer. It sits as a centred window sits, and an open panel does not move. |
-| A19 | A file in the plugins folder that gives no spot keeps a card of its faults, with the ID and the place of the spot it stands for, and never a small one. Its sheet shows the file and each fault, with Edit and Copy prompt for AI. Any other fault of a scan shows in a toast. |
-| A20 | The app watches the plugins folder. A change shows on the cards at once, with no motion, and a changed script that the open panel reads at `panel` reads again. |
+| A19 | A file in the spots folder that gives no spot keeps a card of its faults, with the ID and the place of the spot it stands for, and never a small one. Its sheet shows the file and each fault, with Edit and Copy prompt for AI. Any other fault of a scan shows in a toast. |
+| A20 | The app watches the spots folder. A change shows on the cards at once, with no motion, and a changed script that the open panel reads at `panel` reads again. |
 | A21 | A spot whose last call failed shows a mark on its card until a call ends well. |
 | A24 | Each spot of the person offers Edit, Copy prompt for AI, Share and Delete. A card of a file that does not load offers Edit and Delete. Delete asks no question and keeps the panel open, and `⌘Z` puts the files back until the next Delete. |
 | A28 | The actions menu and the right-click menu of a card list only acts on the selected card or row. An act of the whole app is a spot of its own, such as Spots or Settings. |
 | A22 | New spot has a small card on the grid after Settings. `⌘N` on the grid or in Edit Spots opens it, unless an action of the selected card takes the key. |
-| A23 | New spot is a list that the search field fills. Its first row, Copy prompt for AI, copies a prompt that asks an agent to build what the person typed as a new file in the plugins folder, and its toast says so. Openspot starts no agent and writes no file for it. A row for each starter writes a working spot called Untitled and opens its file in the text editor. `⌘K` opens the guide and the plugins folder. |
+| A23 | New spot is a list that the search field fills. Its first row, Copy prompt for AI, copies a prompt that asks an agent to build what the person typed as a new file in the spots folder, and its toast says so. Openspot starts no agent and writes no file for it. A row for each starter writes a working spot called Untitled and opens its file in the text editor. `⌘K` opens the guide and the spots folder. |
 | A29 | The arrows move the focus among the parts of a sheet that a person can use, in the order they are drawn: up and down between lines, to the part closest across, and left and right along a line. Return uses the focused part as a click does, and opens a menu as the system menu. A slider takes left and right, and a field keeps its text keys until its caret reaches its first or last line. Below rows, down on the last row moves to the parts, and up comes back. |
 | M2 | A `panel` or `sheet` moment takes an answer younger than 5 seconds. A change, a number and a wake always read. |
 | M3 | Reads run at the same time. The panel never waits for one script. A spot shows its header until its answer arrives. |
@@ -56,23 +56,22 @@ Code and tests name a rule by its ID.
 
 ## Sharing
 
-A spot travels as a `.spot` file: JSON with `"format": 1` and `files`, a list of `path`, `executable`, and `text` or
-`data` in base64. A script in a folder takes the whole folder, and a widget file takes each script that it places or
-opens. Hidden files and `$OPENSPOT_DATA` stay behind. A file of the same path replaces the old one, which goes to the
-Trash.
-
-Share in the store copies a published package as one `.spot` file that is a zip of its folder. Openspot opens a package
-folder, a zip of one, and a JSON file of format 1. A zip with a path that leaves its folder, a link, or more than the
-size limit when unpacked is refused, the last before it unpacks. The install keeps the readme and the preview beside the
-spot's file.
+A spot travels as its spot folder `<name>.spot`, zipped into one file of the same name. A spot whose widget places or
+opens another spot takes that spot's folder too. Hidden files and `$OPENSPOT_DATA` stay behind. Openspot opens a spot
+folder and a zip of spot folders. A zip with a path that leaves its folder, a link, or more than the size limit when
+unpacked is refused, the last before it unpacks. A file of the same path replaces the old one, which goes to the Trash.
 
 | ID | Rule |
 |---|---|
 | P4 | Before a person installs a shared spot, Openspot shows all the text it can, says what runs by itself and names each file that it cannot show. Only a modified key installs it. |
-| P6 | A `.spot` file can carry a Swift script's `<name>.program`, compiled for both kinds of Mac, which runs in its place. The review says first that no one can read it. |
-| P7 | A `.spot` file has no signature. Openspot warns the sender about secrets, and does not look for them. |
+| P6 | A `.spot` can carry a Swift script's `<name>.program`, compiled for both kinds of Mac, which runs in its place. The review says first that no one can read it. |
+| P7 | Share and publish sign a release of the spot's own folder into its `releases.jsonl` when its files changed since the last release, and keep the log in the spot folder. A forward of files that the last release names keeps that signature. Openspot warns the sender about secrets, and does not look for them. |
+| P12 | `releases.jsonl` holds one nostr event a line, the oldest first: kind 30063, the release artifact set of NIP-51. Its `d` tag is `<address>@<version>`, a `file` tag names each file of the folder but the log with its path, SHA-256, size and mode (`755` or `644`), an `e` tag with the marker `previous` names the release before, and its content is the readme. Each event checks by NIP-01, each names the one before it, and the last names exactly the files beside it, or Openspot refuses the spot before the drop. |
+| P13 | A release by the key of the last one is the next version of its address. A release by another key starts version 1 of a new address and keeps the log, since a changed copy of another person's spot is a new spot. |
+| P14 | The account key comes from 12 BIP-39 words as celis makes it: the BIP-39 seed with no passphrase, then HKDF-SHA256 with salt `celis-identity-v1` and info `account-secp256k1`. The account is the Account spot of `spots/openspot.spot`, with its own view; a Share or publish with no key opens it and stops. Only a spot that ships in the app and declares `uses=account` reaches the key through `openspot account`; the words and a sign-out ask Touch ID, which counts for 5 minutes, and those calls stay out of the call log. A release build keeps the key in the data-protection Keychain, synced through iCloud Keychain, when the app has its Keychain group, and else in the login Keychain. A Debug build or a test keeps it in a file `account` with mode 0600 in its state folder. |
+| P15 | The review of a new install says nothing of its signer. Over an installed copy that has a release, it says `Update to version N` when the same key signed it, and else says first that another key signed it. `spots.lock` keeps the address and the key of each signed spot that `spot add` added, and an update from another key waits for `--yes`. |
 | P9 | A core spot needs no review, because it is signed with the app. |
-| P10 | A drag of a spot of the plugins folder onto the store publishes it as a package folder `<id>.spot` in `store/` of the config folder: its files, `listing.toml`, `readme.md` and `preview.txt`. A spot with no readme opens its listing and is not published. A spot whose files did not change writes nothing. |
+| P10 | A drag of a spot of the spots folder onto the store publishes a copy of its spot folder in `store/` of the config folder, with the program of each Swift script. A spot with no `readme.md` opens its listing and is not published. A spot whose files did not change writes nothing. |
 | P11 | A preview is the text that a spot prints with `OPENSPOT_REASON=spot.preview`, on the author's Mac at publish. Drawing a preview runs no code. |
 
 ## Floats
@@ -97,12 +96,14 @@ A float is one spot in a window of its own, at the pointer, outside the panel.
 |---|---|---|
 | A spot offers a float with `offers=float`, and the person sends it out of the panel by a key or a shake | Settings lists only the spots that offer one, so it stays short, and the script still never learns where it is drawn. | A Float row for every spot, and `command=shake`, which lets a script claim an input. |
 | One sheet model for each script | A metric and a sheet both hold what a script last printed, and a widget can place any script. | A separate table and type for metrics. |
-| Core spots run in place from the app, from `plugins/*.sh` | A first run needs no network, an update updates them, and a diff shows the changed line. | A download, a copy at first launch, `.spot` files in the repo. |
+| Core spots run in place from the app, from `spots/*.spot` | A first run needs no network, an update updates them, and a diff shows the changed line. | A download, a copy at first launch, `.spot` files in the repo. |
 | One progressive backdrop blur close to the cards, under a shade of each theme that fades across the 90 pt margin: black at 20% in dark and at 8% in light. In the dark theme a surface keeps the system material's own fill, tone and saturation | One layer gives a soft edge with no line and no second pass. Side by side with Control Center, the material's own tint gave the cards its lightness and evenness. A blur close to the cards keeps the page behind readable, as in v0.0.7. | Three masked blur steps, which show a line at the window edge. Black at 30% over a bare blur, which can only darken. A blur and a light grey shade spread across the whole margin, which wash the page out. Liquid Glass cards, for their cost on each frame. |
 | The panel follows the Mac's appearance. Light mode has near-white bubbles with a hairline edge, dark text and a dark turned-on card | Dark text on a strong white fill reads on any backdrop. A dark turned-on card stays apart from the selection ring. | A look that reacts to what lies behind the panel. An accent turned-on card, which hides the ring. |
 | A hidden card keeps its full strength, and Edit Spots marks it with `eye.slash` | A dim card looks disabled, and it is not. | Dimming the card at 40%. A card with no fill. |
 | A DMG window that shows where to drag, with no background image | The app and Applications side by side say all that a person needs. | An image with an arrow. |
-| A `.spot` file of JSON: a format number and its files | A chat takes a file of any size, any editor shows JSON, and each header already holds each fact. | Encoded text, a zip, a link. |
+| A signed release is a nostr event of kind 30063 in `releases.jsonl` inside the spot folder, one file tag for each file | Other nostr apps read the kind, a copy from any place checks file by file, and the log shows who released what. | A kind of Openspot's own, a separate signature file, one hash of the zip. |
+| A spot is a `<name>.spot` folder everywhere, zipped only when it leaves the Mac | Every editor, agent and git work on its plain files, and one shape serves the spots folder, the core, the store and a share. | Loose files with a JSON `.spot` to share them, and a store package with `listing.toml`. |
+| The app moves a loose script into a spot folder of its name | A quick script and an agent's file still work, and the same move is the migration of an older spots folder. | Refusing a loose script with a fault line. |
 | A shared file of the same path replaces the old one | A new name would break the IDs that a widget places. | A new name for each clash. |
 
 Each colour, strength and blur radius is in `Shell/Surface/SpotTheme.swift`.
@@ -116,12 +117,12 @@ of the protocol that holds its rule.
 
 In order. An earlier goal wins when two goals conflict.
 
-1. **A small plugin costs almost nothing.** One executable file. No build, no manifest, no account, no SDK.
-2. **Openspot draws a plugin's data.** A script prints data, and Openspot draws it. A plugin can add its own SwiftUI
+1. **A small spot costs almost nothing.** One executable file. No build, no manifest, no account, no SDK.
+2. **Openspot draws a spot's data.** A script prints data, and Openspot draws it. A spot can add its own SwiftUI
    view to its spot, and a script can open its own Mac window.
 3. **Nothing runs by surprise.** Openspot runs a script only when a person acts or when its header says so.
-4. **A plugin has real power.** It can use any Mac API, keep state in files, stream a long process and stay running.
-5. **A coding agent writes a working plugin.** Given only `openspot guide` and one sentence, a coding agent writes a plugin
+4. **A spot has real power.** It can use any Mac API, keep state in files, stream a long process and stay running.
+5. **A coding agent writes a working spot.** Given only `openspot guide` and one sentence, a coding agent writes a spot
    that passes `openspot check --json` with `[]`, so that it shows on the grid, on its first try. `make eval-agent`
    measures it.
 
@@ -195,7 +196,7 @@ The verbs and the row keys of each `openspot` noun, such as `screen` or `calenda
 | A pattern in the header says which text a spot answers, so a scan learns it with no run, and a key starts no other script. | Each script asked at each key. |
 | An answer is a read at `search.text`, so a script has one shape for both.                                   | A new call, such as `answer <text>`.         |
 | Answers show first, because they are about the whole text that the person typed.                            | A rank that each spot gives its rows.        |
-| A plugin runs with the full access of the person, names what it uses in `uses`, and each use shows after it happens (protocol: Trust). | A prompt at each use, a refused call, or a sandbox by default. |
+| A spot runs with the full access of the person, names what it uses in `uses`, and each use shows after it happens (protocol: Trust). | A prompt at each use, a refused call, or a sandbox by default. |
 | A spot's call is known by Openspot's own record of its processes (protocol: Trust).                                      | `OPENSPOT_ID` alone, which a process can set or drop. |
 | A missing use shows when a run makes it, and `openspot check` does not guess it (protocol: Trust).                      | A check that reads the text for calls.       |
 | The person decides at an add or an update, which shows the uses and what grew (protocol: Trust).                     | A review of each call.                       |
@@ -210,7 +211,7 @@ The verbs and the row keys of each `openspot` noun, such as `screen` or `calenda
 | One `icon` key, whose value says what the picture is.                                                       | `symbol`, `file`, `image` and `glyph`.       |
 | A picture on the web is an `icon` URL, which Openspot fetches once and keeps.                               | A script that downloads each picture into `OPENSPOT_DATA`. |
 | A look only draws a box, and a kind, a type or a drawing says the rest.                                     | `look=large`, `look=list`, `look=section` and `look=tick`. |
-| A complex view is a `view` of the plugin in an area, so the text language stays small.                      | More words for each new look.                |
+| A complex view is a `view` of the spot in an area, so the text language stays small.                      | More words for each new look.                |
 | One Swift file, compiled by Openspot, with no package and no build step.                                    | A Swift package, or a bundle that the author builds. |
 | The script holds the state, and the view draws its own block, in Openspot's process.                        | A view that runs its own work or keeps its own data. |
 | A card of several spots is a spot whose header draws them by their IDs, and Openspot passes their data.      | A TOML file of widgets, and a spot that reads other spots itself. |

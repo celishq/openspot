@@ -40,14 +40,14 @@ final class CallRouteTests: XCTestCase {
     private let host = Host()
 
     private var config: URL { folder.appendingPathComponent("config", isDirectory: true) }
-    private var plugins: URL { config.appendingPathComponent("plugins", isDirectory: true) }
-    private var variables: [String: String] { ["OPENSPOT_CONFIG": config.path, "OPENSPOT_PLUGINS": plugins.path, "TONE": "warm"] }
+    private var spots: URL { config.appendingPathComponent("spots", isDirectory: true) }
+    private var variables: [String: String] { ["OPENSPOT_CONFIG": config.path, "OPENSPOT_SPOTS": spots.path, "TONE": "warm"] }
 
     override func setUp() async throws {
         let temp = try XCTUnwrap(realpath(FileManager.default.temporaryDirectory.path, nil))
         defer { free(temp) }
         folder = URL(fileURLWithPath: String(cString: temp), isDirectory: true).appendingPathComponent("cr-\(UUID().uuidString.prefix(8))", isDirectory: true)
-        try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         let runs = await SpotRuns()
         socket = CommandSocket(folder: folder, api: CommandAPI(mac: host, app: FakeRunningApp(), runs: runs))
     }
@@ -80,13 +80,13 @@ final class CallRouteTests: XCTestCase {
     }
 
     func testEachCallThatTheAppAnswersGivesTheSameAnswerAlone() async throws {
-        try "#!/bin/sh\n# mode=huge\necho\n".writeScript(to: plugins.appendingPathComponent("weather.sh"))
-        try "#!/bin/sh\n# on=sheet.open\nprintf 'title=Notes\\n'\n".writeScript(to: plugins.appendingPathComponent("notes.sh"))
-        try "#!/bin/sh\nprintf 'args=%s\\nfolder=%s\\ntone=%s\\n---\\n' \"$*\" \"$PWD\" \"$TONE\"; cat; echo 'said' >&2; exit 3\n".writeScript(to: plugins.appendingPathComponent("echo.sh"))
+        try "#!/bin/sh\n# mode=huge\necho\n".writeScript(to: spots.spotFile("weather"))
+        try "#!/bin/sh\n# on=sheet.open\nprintf 'title=Notes\\n'\n".writeScript(to: spots.spotFile("notes"))
+        try "#!/bin/sh\nprintf 'args=%s\\nfolder=%s\\ntone=%s\\n---\\n' \"$*\" \"$PWD\" \"$TONE\"; cat; echo 'said' >&2; exit 3\n".writeScript(to: spots.spotFile("echo"))
         let calls: [([String], String?)] = [
             (["check"], nil),
             (["check", "--json"], nil),
-            (["check", "config/plugins"], nil),
+            (["check", "config/spots"], nil),
             (["check", "--sheet"], "title=Hi\n"),
             (["spot", "run", "echo", "open", "home"], "note=hi\n"),
             (["spot", "run", "echo"], nil),

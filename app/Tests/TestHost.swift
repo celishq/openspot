@@ -33,6 +33,7 @@ final class TestHost: SpotsHost {
 
     nonisolated deinit {}
 
+
     func dismiss() {
         dismissals += 1
         model?.panelWillHide()
@@ -44,7 +45,23 @@ final class TestHost: SpotsHost {
         model?.panelWillShow(holding: [])
     }
 
-    func present() {}
+    var presents = 0
+    var focusTakes = 0
+
+    func takeFocus() {
+        focusTakes += 1
+    }
+    /// Whether the panel held its focus during each ask for Touch ID.
+    var heldDuringAsks: [Bool] = []
+
+    func present() {
+        presents += 1
+    }
+
+    func allows(_ reason: String) async -> Bool {
+        heldDuringAsks.append(model?.holdsFocus ?? false)
+        return true
+    }
 
     func notify(_ text: String) {
         notes.append(text)

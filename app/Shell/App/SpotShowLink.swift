@@ -13,7 +13,7 @@ enum SpotShowLink {
 
     /// The config folder of this app, which tells a Debug build and the installed app apart.
     static var config: String {
-        SpotFiles.standard.log.folder.deletingLastPathComponent().standardizedFileURL.path
+        AppPlaces.standard.log.folder.deletingLastPathComponent().standardizedFileURL.path
     }
 
     /// Answers each ask for this config folder with whether the model showed the spot.

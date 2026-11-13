@@ -15,7 +15,7 @@ public struct CommandAction: Equatable, Sendable {
     /// The row that the app adds to the menu of a spot, which no script prints or answers.
     public static let share = CommandAction(id: "openspot.share", title: "Share", key: ActionKey(text: "cmd+shift+c"), scope: .spot, after: .close)
 
-    /// The row that takes a spot out of the plugins folder, which `⌘Z` puts back. A widget file takes each widget that it
+    /// The row that takes a spot out of the spots folder, which `⌘Z` puts back. A widget file takes each widget that it
     /// holds.
     public static func remove(widgets count: Int = 1) -> CommandAction {
         CommandAction(id: removeID, title: count > 1 ? "Delete \(count) widgets" : "Delete", key: ActionKey(text: "cmd+backspace"), scope: .spot, after: .stay)

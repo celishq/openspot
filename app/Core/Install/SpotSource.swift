@@ -1,7 +1,7 @@
 import Foundation
 
-/// Where a spot comes from: a git repository, a folder, or a `.spot` file or package with its listing (protocol: The openspot command). It puts the spot at the top of a plugins
-/// folder, and runs nothing of it.
+/// Where a spot comes from: a git repository, a folder, or a `.spot` folder or a zip of one (protocol: The openspot command). It
+/// puts the spot in a spot folder at the top of a spots folder, and runs nothing of it.
 public enum SpotSource: Equatable, Sendable {
     /// A git URL, or the path of a folder that git keeps.
     case git(String)
@@ -20,7 +20,7 @@ public enum SpotSource: Equatable, Sendable {
             return
         }
         let path = url.standardizedFileURL
-        if !isFolder.boolValue || path.pathExtension == SharedSpot.fileExtension {
+        if !isFolder.boolValue || path.pathExtension == SpotPackage.fileExtension {
             self = .file(path)
         } else if FileManager.default.fileExists(atPath: path.appendingPathComponent(".git").path) {
             self = .git(path.path)
@@ -38,7 +38,7 @@ public enum SpotSource: Equatable, Sendable {
     }
 
     /// Puts the spot in the folder, a git source at `commit` or else at its newest commit, and returns the commit and the
-    /// paths that it took: the folder of a git source or a folder, and each file of a `.spot` file, of which an equal one
+    /// paths that it took: the spot folder of a git source or a folder, and each file of a `.spot`, of which an equal one
     /// stays as it is. A replaced folder that holds files of the new spot keeps its other files, and only those files go. A path that is there already is a fault, unless `replacing` names it:
     /// then `discard` takes each replaced path, and each one the new version lacks, as the Trash does. `check` sees the whole
     /// spot in a work folder first, and a throw from it, as any fault or a stop of the task, leaves the folder as it was.
@@ -69,7 +69,7 @@ public enum SpotSource: Equatable, Sendable {
         return (commit, paths)
     }
 
-    /// Writes the spot whole into a work folder, so that a failure leaves the plugins folder as it was.
+    /// Writes the spot whole into a work folder, so that a failure leaves the spots folder as it was.
     private func stage(in work: URL, from folder: URL, at commit: String?, replacing: [String]) async throws -> (commit: String?, paths: [String]) {
         switch self {
         case .git(let text):
@@ -87,12 +87,12 @@ public enum SpotSource: Equatable, Sendable {
                 throw SpotError.fault("Openspot cannot add \(text). \(error.reason)")
             }
         case .folder(let url):
-            let name = url.lastPathComponent
+            let name = Self.spotName(url.lastPathComponent)
             try Self.checkFree([name], in: folder, replacing: replacing)
             try FileManager.default.copyItem(at: url, to: work.appendingPathComponent(name))
             return (nil, [name])
         case .file(let url):
-            let spot = try SpotPackage.open(at: url).installed()
+            let spot = try SpotPackage(contentsOf: url)
             let paths = spot.files.map(\.path)
             try spot.add(to: work)
             let changed = paths.filter { !Self.isSame(work.appendingPathComponent($0), folder.appendingPathComponent($0)) }
@@ -110,7 +110,12 @@ public enum SpotSource: Equatable, Sendable {
         return FileManager.default.contentsEqual(atPath: one.path, andPath: other.path)
     }
 
-    /// The name of the folder of a git source: the last part of its URL or path, with no `.git`.
+    /// The name of a spot folder for a folder of this name.
+    private static func spotName(_ name: String) -> String {
+        (name as NSString).pathExtension == SpotPackage.fileExtension ? name : name + "." + SpotPackage.fileExtension
+    }
+
+    /// The name of the spot folder of a git source: the last part of its URL or path, with no `.git`.
     private static func name(of text: String) throws -> String {
         var path = text
         while path.hasSuffix("/") { path.removeLast() }
@@ -119,13 +124,13 @@ public enum SpotSource: Equatable, Sendable {
         guard let name = path.split(whereSeparator: { $0 == "/" || $0 == ":" }).last.map(String.init), !name.hasPrefix(".") else {
             throw SpotError.fault("Openspot cannot name a folder for \(text). Give the URL of a git repository.")
         }
-        return name
+        return spotName(name)
     }
 
     private static func checkFree(_ paths: [String], in folder: URL, replacing: [String]) throws {
         for path in paths where !replacing.contains(path) && FileManager.default.fileExists(atPath: folder.appendingPathComponent(path).path) {
-            let name = URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent
-            throw SpotError.fault("The plugins folder has \(path) already. Run `openspot spot remove \(name)` first, or move it away.")
+            let name = SpotID(path: path).name
+            throw SpotError.fault("The spots folder has \(name) already. Run `openspot spot remove \(name)` first, or move it away.")
         }
     }
 

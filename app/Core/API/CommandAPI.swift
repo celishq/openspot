@@ -39,10 +39,16 @@ public final class CommandAPI: @unchecked Sendable {
         case .refused, .unknown: return call
         default: break
         }
+        if case .account(let account) = call, account.reachesKey {
+            let caller = runs?.tokens.caller(of: environment)
+            guard caller?.reachesAccountKey == true else { return .refused("Only Openspot's Account spot can reach your account key.") }
+            return call
+        }
         guard let runs, let caller = runs.tokens.caller(of: environment) else { return call }
         if case .appCareful = call, !caller.isBuiltIn {
             return .refused("\(caller.name) cannot change Careful mode. Only you can, in Settings or with `openspot setting set --spot openspot careful true` in Terminal.")
         }
+
         guard let needed = SpotUseCall(arguments: arguments, of: caller.id) else { return call }
         if runs.tokens.isCareful, !caller.uses.contains(needed.use) {
             return .refused("Careful mode stopped \(caller.name), because it \(needed.words) without `uses=\(needed.use.rawValue)` in its header. Add it, or turn Careful mode off.")
@@ -109,6 +115,7 @@ public final class CommandAPI: @unchecked Sendable {
         case .appQuit: return apps.quit()
         case .updateCheck: return UpdateCalls(app: app).check()
         case .updateInstall: return UpdateCalls(app: app).install()
+        case .account(let call): return AccountCalls(environment: environment, app: app).work(for: call, input: input)
         case .eventEmit(let name, let value): return EventCalls(raise: raise).emit(name, value: value)
         case .calcSolve(let words): return CalcCalls().solve(words)
         case .emoji(let tone): return EmojiCalls(keywords: keywords).rows(tone: tone)

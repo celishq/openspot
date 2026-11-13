@@ -25,7 +25,7 @@ final class SpotSandboxModel {
     @ObservationIgnored let panel: PlaygroundPanel
     @ObservationIgnored private let host = SpotPlaygroundHost()
     @ObservationIgnored private let folder: URL
-    @ObservationIgnored private let plugins = SpotFolder.standard().url
+    @ObservationIgnored private let spots = SpotsFolder.standard().url
     @ObservationIgnored private let disk: SpotSandboxFile?
     @ObservationIgnored private var watch: Task<Void, Never>?
     @ObservationIgnored private var edits = 0
@@ -101,7 +101,7 @@ final class SpotSandboxModel {
     /// shows why.
     private func run(_ text: String) {
         do {
-            let placed = try panel.place(file: file, text: text, plugins: plugins)
+            let placed = try panel.place(file: file, text: text, spots: spots)
             guard let url = panel.file, try SpotFile(file: url, id: placed)?.spots.first != nil else {
                 fault = "This text is no spot. Start it with #!/bin/sh, or with // lines of a JavaScript header."
                 return

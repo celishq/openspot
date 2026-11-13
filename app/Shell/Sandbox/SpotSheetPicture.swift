@@ -26,11 +26,10 @@ enum SpotSheetPicture {
         }
         let views = SpotViews()
         let source = source.map { URL(fileURLWithPath: $0).path }
-        let values = Dictionary(grouping: output.view?.fields ?? [], by: \.key).mapValues { $0.map(\.value) }
         let list = Self.list(of: output)
         let size = panel.map { SpotTokens.panelRect($0).size } ?? SpotTokens.floatSize(rows: list.shown.count)
-        let preview = SpotSheetPreview(panel: panel, title: spot?.name ?? "Sheet", subtitle: spot?.subtitle ?? (spot == nil ? "Preview" : ""), symbol: spot?.symbol ?? "square.dashed", list: list, customView: { room in
-            source.map { SpotCustomView(source: $0, values: values, card: .square, room: room, views: views) }
+        let preview = SpotSheetPreview(panel: panel, title: spot?.name ?? "Sheet", subtitle: spot?.subtitle ?? (spot == nil ? "Preview" : ""), symbol: spot?.symbol ?? "square.dashed", list: list, customView: { room, values, _ in
+            source.map { AnyView(SpotCustomView(source: $0, values: values, card: .square, room: room, views: views)) }
         }, seed: URL(fileURLWithPath: path).lastPathComponent)
         let view = NSHostingView(rootView: preview
             .padding(margin)

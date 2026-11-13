@@ -6,7 +6,7 @@ import XCTest
 final class NewSpotTests: BuiltInCase {
     private var guideText = ""
     private var repo: URL {
-        repoPlugins.deletingLastPathComponent()
+        repoSpots.deletingLastPathComponent()
     }
 
     override func setUp() async throws {
@@ -67,9 +67,9 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(toast, "Copied a prompt for your agent. Paste it into Claude Code, Codex or another agent.")
         let prompt = try saved("clipboard")
         XCTAssertTrue(prompt.contains("Build an Openspot spot that does this: Show the weather here"))
-        XCTAssertTrue(prompt.contains(plugins.path))
+        XCTAssertTrue(prompt.contains(spots.path))
         XCTAssertTrue(prompt.contains("guide"))
-        XCTAssertEqual(try SpotFolder(url: plugins).scan().spots, [])
+        XCTAssertEqual(try SpotsFolder(url: spots).scan().spots, [])
         XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("opened").path))
     }
 
@@ -107,10 +107,10 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(first, "Made Untitled. Change the file that opened to make it yours.")
         XCTAssertEqual(second, "Made Untitled 2. Change the file that opened to make it yours.")
 
-        let names = try SpotFolder(url: plugins).scan().spots.map(\.id).sorted()
+        let names = try SpotsFolder(url: spots).scan().spots.map(\.id).sorted()
         XCTAssertEqual(names, ["untitled", "untitled-2"])
-        XCTAssertEqual(try saved("opened"), "-t \(plugins.appendingPathComponent("untitled-2.sh").path)\n")
-        XCTAssertEqual(try SpotFolder(url: plugins).scan().spots.map(\.name).sorted(), ["Untitled", "Untitled 2"])
+        XCTAssertEqual(try saved("opened"), "-t \(spots.spotFile("untitled-2").path)\n")
+        XCTAssertEqual(try SpotsFolder(url: spots).scan().spots.map(\.name).sorted(), ["Untitled", "Untitled 2"])
     }
 
     func testTheActionsOpenTheGuideAndTheFolder() async throws {
@@ -120,7 +120,7 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertTrue(try saved("opened").contains("GUIDE.md"))
 
         _ = try await spot.perform(SpotAction(arguments: ["folder"]), timeout: 5)
-        XCTAssertTrue(try saved("opened").contains(plugins.path))
+        XCTAssertTrue(try saved("opened").contains(spots.path))
     }
 
     func testAnUnknownCallFails() async throws {
@@ -145,15 +145,16 @@ final class NewSpotTests: BuiltInCase {
         for (index, (script, kind)) in scripts.enumerated() where !script.contains("view=") {
             let folder = root.appendingPathComponent("example-\(index)")
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            let file = folder.appendingPathComponent("example.\(kind)")
+            let file = folder.spotFile("example", extension: kind)
+            try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
             if kind == "js" { try script.write(to: file, atomically: true, encoding: .utf8) } else { try script.writeScript(to: file) }
             let header = SpotHeader(text: script).block
             let named = header.fields.filter { $0.key.hasPrefix("grid.") }.flatMap { $0.value.split(separator: " ").map(String.init) } + header.values("to")
             for name in Set(named) {
-                try "#!/bin/sh\n# on=clock.60\nprintf 'text=t\\ntitle=T\\n'\n".writeScript(to: folder.appendingPathComponent("\(name).sh"))
+                try "#!/bin/sh\n# on=clock.60\nprintf 'text=t\\ntitle=T\\n'\n".writeScript(to: folder.spotFile(name))
             }
 
-            let faults = await SpotCheck(folder: SpotFolder(url: folder)).faults()
+            let faults = await SpotCheck(folder: SpotsFolder(url: folder)).faults()
 
             XCTAssertEqual(faults, [], script)
         }

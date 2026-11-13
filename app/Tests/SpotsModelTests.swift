@@ -12,13 +12,13 @@ final class SpotsModelTests: XCTestCase {
 
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-panel-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         suite = "openspot-panel-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         let host = TestHost()
         self.host = host
-        let files = SpotFiles(
-            environment: ["OPENSPOT_PLUGINS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
+        let files = AppPlaces(
+            environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
             home: folder,
             defaults: defaults
         )
@@ -32,13 +32,13 @@ final class SpotsModelTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private var plugins: URL {
-        folder.appendingPathComponent("plugins", isDirectory: true)
+    private var spots: URL {
+        folder.appendingPathComponent("spots", isDirectory: true)
     }
 
     private func script(_ name: String, header: String, _ body: String) throws {
         let lines = header.split(separator: "\n", omittingEmptySubsequences: false).map { "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: plugins.appendingPathComponent("\(name).sh"))
+        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: spots.spotFile(name))
     }
 
     private func wait(_ what: String, until condition: () -> Bool) async throws {
@@ -47,6 +47,21 @@ final class SpotsModelTests: XCTestCase {
             try await Task.sleep(for: .milliseconds(10))
         }
         XCTFail("waited for \(what)")
+    }
+
+    func testThePanelKeepsItsFocusWhileTouchIDAsksAndTakesItBackAfter() async throws {
+        host.show()
+        try await wait("the panel to show") { model.isShown }
+        let shows = host.shows
+
+        let allowed = await model.allows("show your account words")
+
+        XCTAssertTrue(allowed)
+        XCTAssertEqual(host.heldDuringAsks, [true])
+        XCTAssertFalse(model.holdsFocus)
+        XCTAssertEqual(host.focusTakes, 1)
+        XCTAssertEqual(host.presents, 0)
+        XCTAssertEqual(host.shows, shows)
     }
 
     func testAKeyThatTheAPISetsHoldsTheKeysAgainAndBuildsNoGrid() throws {
@@ -103,14 +118,13 @@ final class SpotsModelTests: XCTestCase {
 
     func testASheetTakesTheLookOfItsCardOnlyWhenItsScriptDrawsTheCard() async throws {
         try script("agenda", header: "on=panel.open", "printf 'grid.small=next\\n\\nnumber=next\\nvalue=09:30\\n\\nrow=e\\ntitle=Standup\\n'")
-        try FileManager.default.createDirectory(at: plugins.appendingPathComponent("year"), withIntermediateDirectories: true)
-        try script("year/year", header: "on=panel.open\nview=year.swift", "printf 'view=year\\ntitle=2026\\n\\nrow=e\\ntitle=Standup\\n'")
+        try script("year", header: "on=panel.open\nview=year.swift", "printf 'view=year\\ntitle=2026\\n\\nrow=e\\ntitle=Standup\\n'")
         try script("list", header: "on=panel.open", "printf 'row=a\\ntitle=Apple\\n'")
         model.reload()
         model.panelWillShow(holding: [])
 
         try await wait("the drawn cards") {
-            SpotSheetCard.of("agenda", in: model)?.look?.id == "agenda" && SpotSheetCard.of("year/year", in: model)?.look?.id == "year/year"
+            SpotSheetCard.of("agenda", in: model)?.look?.id == "agenda" && SpotSheetCard.of("year", in: model)?.look?.id == "year"
         }
         try await wait("the list") { model.sheets["list"]?.list.shown.count == 1 }
         XCTAssertNotNil(SpotSheetCard.of("list", in: model))
@@ -121,11 +135,11 @@ final class SpotsModelTests: XCTestCase {
         let added = Date(timeIntervalSince1970: 1_700_000_000)
         for name in ["a", "b", "c", "d"] {
             try script(name, header: "title=\(name.uppercased())", "")
-            try FileManager.default.setAttributes([.creationDate: added], ofItemAtPath: plugins.appendingPathComponent("\(name).sh").path)
+            try FileManager.default.setAttributes([.creationDate: added], ofItemAtPath: spots.spotFile(name).path)
         }
         let defaults = folder.appendingPathComponent("defaults.toml")
         try "[[spots]]\nid = \"d\"\n\n[[spots]]\nid = \"b\"\n".write(to: defaults, atomically: true, encoding: .utf8)
-        let files = SpotFiles(environment: model.files.environment, home: folder, defaults: self.defaults, defaultConfig: defaults)
+        let files = AppPlaces(environment: model.files.environment, home: folder, defaults: self.defaults, defaultConfig: defaults)
         let ordered = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
         defer { ordered.quit() }
 
@@ -143,7 +157,7 @@ final class SpotsModelTests: XCTestCase {
         try script("c", header: "title=C", "")
         let defaults = folder.appendingPathComponent("defaults.toml")
         try "[[spots]]\nid = \"a\"\nsize = \"small\"\n\n[[spots]]\nid = \"b\"\nsize = \"small\"\n".write(to: defaults, atomically: true, encoding: .utf8)
-        let files = SpotFiles(environment: model.files.environment, home: folder, defaults: self.defaults, defaultConfig: defaults)
+        let files = AppPlaces(environment: model.files.environment, home: folder, defaults: self.defaults, defaultConfig: defaults)
         let sized = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
         defer { sized.quit() }
         try sized.files.config.write(SpotArrangement(choices: [SpotArrangement.Choice(id: "b", size: .large)]))
@@ -193,7 +207,8 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAnOpenFindsAScriptMadeExecutableSinceTheOpenBefore() throws {
-        let late = plugins.appendingPathComponent("late.sh")
+        let late = spots.spotFile("late")
+        try FileManager.default.createDirectory(at: late.deletingLastPathComponent(), withIntermediateDirectories: true)
         try "#!/bin/sh\n# title=Late\n".write(to: late, atomically: false, encoding: .utf8)
         model.panelWillShow(holding: [])
         XCTAssertFalse(model.entries.contains { $0.id == "late" })
@@ -237,7 +252,7 @@ final class SpotsModelTests: XCTestCase {
         model.panelWillShow(holding: [])
         try await wait("the first read") { model.entries.first { $0.id == "cups" }?.state.title == "One cup" }
 
-        try "#!/bin/sh\n# on=panel.open\nprintf 'title=Two cups\\n'\n".write(to: plugins.appendingPathComponent("cups.sh"), atomically: false, encoding: .utf8)
+        try "#!/bin/sh\n# on=panel.open\nprintf 'title=Two cups\\n'\n".write(to: spots.spotFile("cups"), atomically: false, encoding: .utf8)
         model.folderChanged()
 
         try await wait("the read of the changed body") { model.entries.first { $0.id == "cups" }?.state.title == "Two cups" }
@@ -979,6 +994,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testReturnOnAKeptRowOfASlowInlineSpotWaitsForTheNewestAnswer() async throws {
+        try FileManager.default.createDirectory(at: spots.appendingPathComponent("calc.spot"), withIntermediateDirectories: true)
         try """
         // title=Calc
         // on=search.text ^[0-9]
@@ -988,7 +1004,7 @@ final class SpotsModelTests: XCTestCase {
           if (text === "12") { const end = Date.now() + 300; while (Date.now() < end) {} }
           return `row=${text}\\ntitle=Is ${text}\\n`
         }
-        """.write(to: plugins.appendingPathComponent("calc.js"), atomically: true, encoding: .utf8)
+        """.write(to: spots.spotFile("calc", extension: "js"), atomically: true, encoding: .utf8)
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
@@ -1094,7 +1110,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAKeyOfTheConfigOpensTheSheetOfItsSpotFromTheGridAndFromEditSpots() async throws {
-        let new = plugins.appendingPathComponent("new.sh")
+        let new = spots.spotFile("new")
         try "#!/bin/sh\n# on=sheet.open\nprintf 'row=g\\ntitle=Guide\\n'\n".writeScript(to: new)
         try FileManager.default.createDirectory(at: folder.appendingPathComponent("config"), withIntermediateDirectories: true)
         try "[[spots]]\nid = \"new\"\ngrid = false\nkey = \"cmd+n\"\n".write(to: folder.appendingPathComponent("config/config.toml"), atomically: true, encoding: .utf8)

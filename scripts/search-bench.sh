@@ -10,18 +10,33 @@ mkdir -p "$out/build" "$out/data"
 if [ ! -s "$out/data/settings.txt" ]; then
   for name in apps settings; do
     mkdir -p "$out/plugin-data/$name"
-    OPENSPOT_DATA="$PWD/$out/plugin-data/$name" sh "plugins/$name.sh" read >"$out/data/$name.txt"
+    OPENSPOT_SH="$PWD/app/Shell/openspot.sh" OPENSPOT_DATA="$PWD/$out/plugin-data/$name" sh "spots/$name.spot/$name.sh" read >"$out/data/$name.txt"
   done
 fi
 if [ ! -s "$out/data/spots.txt" ]; then
-  for file in plugins/*.sh; do
+  for file in spots/*.spot/*.sh; do
+    case $file in spots/openspot.spot/*) continue ;; esac
     name=$(basename "$file" .sh)
     title=$(sed -n 's/^# title=//p' "$file" | head -1)
     detail=$(sed -n 's/^# detail=//p' "$file" | head -1)
     printf 'row=%s\ntitle=%s\ndetail=%s\n\n' "$name" "${title:-$name}" "$detail"
   done >"$out/data/spots.txt"
 fi
-cp scripts/search-bench.swift "$out/build/main.swift"
-swiftc -O -wmo -swift-version 6 -target arm64-apple-macos26.0 -module-name OpenspotCore $(find app/Core -name '*.swift') \
-  "$out/build/main.swift" -o "$out/build/bench" 2>"$out/build/log" || { grep error: "$out/build/log"; exit 1; }
-"$out/build/bench" "$PWD/$out/data" "$PWD/app/Keywords" | tee "$out/${1:-run}.txt"
+package="$out/package"
+mkdir -p "$package/Sources/OpenspotCore"
+ln -sfn "$PWD/app/Core" "$package/Sources/OpenspotCore/Core"
+for file in CommandKind SocketPath; do ln -sfn "$PWD/app/Client/$file.swift" "$package/Sources/OpenspotCore/$file.swift"; done
+cp scripts/search-bench.swift "$package/Sources/OpenspotCore/main.swift"
+cat > "$package/Package.swift" <<'SWIFT'
+// swift-tools-version: 6.1
+import PackageDescription
+
+let package = Package(
+    name: "SearchBench",
+    platforms: [.macOS("26.0")],
+    dependencies: [.package(url: "https://github.com/21-DOT-DEV/swift-secp256k1", exact: "0.24.0")],
+    targets: [.executableTarget(name: "OpenspotCore", dependencies: [.product(name: "P256K", package: "swift-secp256k1")])]
+)
+SWIFT
+swift build -c release --package-path "$package" >"$out/build/log" 2>&1 || { grep error: "$out/build/log"; exit 1; }
+"$package/.build/release/OpenspotCore" "$PWD/$out/data" "$PWD/app/Keywords" | tee "$out/${1:-run}.txt"

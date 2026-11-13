@@ -14,7 +14,7 @@ final class SheetStreamTests: XCTestCase {
     }
 
     private func script(_ body: String, name: String = "script") throws -> URL {
-        let url = folder.appendingPathComponent("\(name).sh")
+        let url = folder.spotFile(name)
         try "#!/bin/sh\n\(body)\n".writeScript(to: url)
         return url
     }

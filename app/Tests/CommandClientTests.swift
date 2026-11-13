@@ -21,6 +21,7 @@ final class CommandClientTests: XCTestCase {
         func status() async -> (update: String?, calls: Int, isFirstLaunch: Bool) { (nil, 0, false) }
         func checkUpdate() async -> Bool { true }
         func installUpdate() async -> Bool { true }
+        func allows(_ reason: String) async -> Bool { false }
         func quit() async {}
         func open(_ id: String) async -> Bool { true }
         func review(_ id: String) async -> Bool { true }

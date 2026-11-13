@@ -303,7 +303,7 @@ final class SpotRunsStayTests: SpotRunsCase {
           esac
         }
         openspot_serve main "$@"
-        """.writeScript(to: folder.appendingPathComponent("script.sh"))
+        """.writeScript(to: folder.spotFile("script"))
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}

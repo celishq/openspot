@@ -7,7 +7,7 @@ public enum PartCatalog {
         "placeholder", "readonly", "required", "type", "close", "confirm", "scope", "form", "align", "look",
         "shortcut", "tone"
     ]
-    /// The kinds whose blocks can hold keys of the plugin's own, which a view reads.
+    /// The kinds whose blocks can hold keys of the spot's own, which a view reads.
     private static let open: Set<String> = ["view"]
     /// The keys of an `option` block after a choice.
     private static let optionKeys: Set<String> = ["option", "title", "icon"]

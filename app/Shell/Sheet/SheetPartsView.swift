@@ -22,8 +22,9 @@ struct SheetPartsView: View {
     var menuOpening: () -> SheetParts.MenuOpening? = { nil }
     /// Takes a click into a field, which gives that part the focus.
     var onFocus: (SpotPart) -> Void = { _ in }
-    /// The plugin's own view at the size of the area of a `view` component (protocol: Views).
-    var customView: (CGSize) -> SpotCustomView? = { _ in nil }
+    /// The spot's own view at the size of the area of a `view` component (protocol: Views).
+    /// A spot's own view in the place of a block, with the send that calls the spot with the block's id and a value.
+    var customView: (CGSize, [String: [String]], @escaping (String) -> Void) -> AnyView? = { _, _, _ in nil }
     @FocusState private var focus: String?
 
     private static let swatchSize: CGFloat = 22
@@ -136,7 +137,7 @@ struct SheetPartsView: View {
     @ViewBuilder
     private func drawn(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         if part.kind == "view" {
-            customView(frame.rect.size)
+            customView(frame.rect.size, part.values) { onSet(part, $0) }
         } else {
             content(part, frame)
         }
@@ -188,8 +189,44 @@ struct SheetPartsView: View {
         mark(part).padding(SpotTokens.controlPadding)
     }
 
-    /// A line with a label, a value, a round button and a switch or a menu.
+    /// A line with a label, a value, a round button and a switch or a menu, or a text over two lines with its detail under
+    /// its title.
+    @ViewBuilder
     private func labelled(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
+        if frame.hasDetailUnderTitle, part.control == .none, part.press == .none, part.mark == nil, let title = part.title, let detail = part.detail {
+            stacked(part, title: title, detail: detail)
+        } else {
+            line(part, frame)
+        }
+    }
+
+    /// A title with its detail under it, which wraps to fill the height of its place.
+    private func stacked(_ part: SpotPart, title: String, detail: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: Self.lineGap) {
+            if let symbol = part.symbol {
+                Image(systemName: symbol)
+                    .modifier(SpotSecondaryText())
+                    .frame(width: Self.symbolWidth)
+            }
+            VStack(alignment: .leading, spacing: SpotType.lineGap) {
+                Text(title).font(SpotType.body).foregroundStyle(SpotTheme.ink).lineLimit(1)
+                Group {
+                    if let colour = SpotToneWords.colour(of: part.textTone) {
+                        Text(detail).foregroundStyle(colour)
+                    } else {
+                        Text(detail).modifier(SpotSecondaryText())
+                    }
+                }
+                .font(SpotType.detail)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .modifier(SpotColorBar(color: part.color))
+    }
+
+    /// A line with a label, a value, a round button and a switch or a menu.
+    private func line(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         HStack(spacing: frame.rect.width < Self.narrowCell ? Self.narrowGap : Self.lineGap) {
             if !hasRoundMark(part), work(part) != nil {
                 mark(part)

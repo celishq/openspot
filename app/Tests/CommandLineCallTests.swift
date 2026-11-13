@@ -27,6 +27,18 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertTrue(CommandLineCall.usage.contains("openspot event emit <name> [value]"))
     }
 
+    func testAccountPrintsItsFactsAndReachesTheKey() {
+        XCTAssertEqual(CommandLineCall(arguments: ["account"]), .account(.status(frame: false)))
+        XCTAssertEqual(CommandLineCall(arguments: ["account", "--frame"], environment: ["OPENSPOT_REASON": "sheet.open"]), .account(.status(frame: true)))
+        XCTAssertEqual(CommandLineCall(arguments: ["account", "open"]), .unknown("account open"))
+        XCTAssertEqual(CommandLineCall(arguments: ["account", "sync", "off"]), .account(.sync(false)))
+        XCTAssertEqual(CommandLineCall(arguments: ["account", "sign-out"], environment: ["OPENSPOT_REASON": "sheet.open"]), .refused("`openspot account sign-out` changes your account, so it cannot run in a read. Run it from a pick or an action."))
+        XCTAssertEqual(CommandLineCall(arguments: ["account", "words"], environment: ["OPENSPOT_REASON": "sheet.open"]), .account(.words))
+        XCTAssertEqual(CommandLineCall(arguments: ["account", "check", "4", "13"]), .unknown("account check 4 13"))
+        XCTAssertEqual(CommandLineCall(arguments: ["account", "sync", "maybe"]), .unknown("account sync maybe"))
+        XCTAssertTrue(CommandLineCall.usage.contains("openspot account words"))
+    }
+
     func testEmojiCanNameATone() {
         XCTAssertEqual(CommandLineCall(arguments: ["emoji"]), .emoji(tone: .none))
         XCTAssertEqual(CommandLineCall(arguments: ["emoji", "--tone", "medium-dark"]), .emoji(tone: .mediumDark))
@@ -85,7 +97,7 @@ final class CommandLineCallTests: XCTestCase {
 
     func testACheckCanPrintJSONAndARenderCanNameAnInstalledSpot() {
         XCTAssertEqual(CommandLineCall(arguments: ["check", "--json"]), .checkJSON(nil))
-        XCTAssertEqual(CommandLineCall(arguments: ["check", "--json", "plugins"]), .checkJSON("plugins"))
+        XCTAssertEqual(CommandLineCall(arguments: ["check", "--json", "spots"]), .checkJSON("spots"))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "--spot", "weather", "a.png"]), .renderSpot(id: "weather", size: nil, path: "a.png"))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "--spot", "weather", "--card", "wide", "a.png"]), .renderSpot(id: "weather", size: .wide, path: "a.png"))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "--spot", "weather", "--card", "huge", "a.png"]), .unknown("render --spot weather --card huge a.png"))
