@@ -16,39 +16,9 @@ final class DictateExampleTests: SampleSpotsCase {
         return data
     }
 
-    private func helper() async throws -> (URL, URL) {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-dictate-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let helper = folder.appendingPathComponent("dictate")
-        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-o", helper.path, examples.appendingPathComponent("dictate.spot/dictate.swift").path])
-        return (folder, helper)
-    }
-
-    private func waitFor(_ url: URL) async throws {
-        for _ in 0..<100 where !FileManager.default.fileExists(atPath: url.path) {
-            try await Task.sleep(for: .milliseconds(50))
-        }
-    }
-
-    /// Waits up to ten seconds for a fact.
-    private func waitUntil(_ fact: () -> Bool) async throws {
-        for _ in 0..<200 where !fact() {
-            try await Task.sleep(for: .milliseconds(50))
-        }
-    }
-
-    /// A process that only sleeps, which stands in for the app that a helper watches.
-    private func sleeping() throws -> Process {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/sleep")
-        process.arguments = ["600"]
-        try process.run()
-        return process
-    }
-
     /// The helper in `folder`, waiting as the script starts it, with a stand-in Whisper server on its `PATH` that writes
     /// its process ID to `server` in the folder and sleeps.
-    private func stay(_ helper: URL, watching parent: Process, action: String? = nil, rest: String = "600", in folder: URL) throws -> Process {
+    private func stay(_ helper: URL, watching parent: TestChild, action: String? = nil, rest: String = "600", in folder: URL) throws -> Process {
         try "#!/bin/sh\necho $$ > '\(folder.path)/server.new'\nmv '\(folder.path)/server.new' '\(folder.path)/server'\nexec /bin/sleep 600\n".writeScript(to: folder.appendingPathComponent("tools/whisper-server"))
         let process = Process()
         process.executableURL = helper
@@ -68,10 +38,10 @@ final class DictateExampleTests: SampleSpotsCase {
     }
 
     func testAHelperEndedByForceTakesItsWhisperServerWithIt() async throws {
-        let (folder, helper) = try await helper()
+        let (folder, helper) = try await built("dictate")
         defer { try? FileManager.default.removeItem(at: folder) }
-        let parent = try sleeping()
-        defer { parent.terminate() }
+        let parent = try TestChild("/bin/sleep", ["600"])
+        defer { parent.stop() }
         let staying = try stay(helper, watching: parent, action: "serve", in: folder)
         defer { kill(staying.processIdentifier, SIGKILL) }
         let server = try await server(in: folder)
@@ -84,16 +54,16 @@ final class DictateExampleTests: SampleSpotsCase {
     }
 
     func testTheEndOfTheAppEndsTheHelperAndItsWhisperServer() async throws {
-        let (folder, helper) = try await helper()
+        let (folder, helper) = try await built("dictate")
         defer { try? FileManager.default.removeItem(at: folder) }
-        let parent = try sleeping()
-        defer { parent.terminate() }
+        let parent = try TestChild("/bin/sleep", ["600"])
+        defer { parent.stop() }
         let staying = try stay(helper, watching: parent, action: "serve", in: folder)
         defer { kill(staying.processIdentifier, SIGKILL) }
         let server = try await server(in: folder)
         defer { kill(server, SIGKILL) }
 
-        parent.terminate()
+        kill(parent.processIdentifier, SIGTERM)
         try await waitUntil { !staying.isRunning && kill(server, 0) != 0 }
 
         XCTAssertFalse(staying.isRunning)
@@ -101,10 +71,10 @@ final class DictateExampleTests: SampleSpotsCase {
     }
 
     func testAWhisperServerThatHeardNoRecordingStopsAfterItsRest() async throws {
-        let (folder, helper) = try await helper()
+        let (folder, helper) = try await built("dictate")
         defer { try? FileManager.default.removeItem(at: folder) }
-        let parent = try sleeping()
-        defer { parent.terminate() }
+        let parent = try TestChild("/bin/sleep", ["600"])
+        defer { parent.stop() }
         let staying = try stay(helper, watching: parent, action: "serve", rest: "0.3", in: folder)
         defer { kill(staying.processIdentifier, SIGKILL) }
         let server = try await server(in: folder)
@@ -117,10 +87,10 @@ final class DictateExampleTests: SampleSpotsCase {
     }
 
     func testTheHelperKeepsItsProcessIDInThePidFile() async throws {
-        let (folder, helper) = try await helper()
+        let (folder, helper) = try await built("dictate")
         defer { try? FileManager.default.removeItem(at: folder) }
-        let parent = try sleeping()
-        defer { parent.terminate() }
+        let parent = try TestChild("/bin/sleep", ["600"])
+        defer { parent.stop() }
         let pidfile = folder.appendingPathComponent("dictate.pid")
 
         let staying = try stay(helper, watching: parent, in: folder)
@@ -158,10 +128,10 @@ final class DictateExampleTests: SampleSpotsCase {
     }
 
     func testASecondHelperHandsItsActionToTheOneThatWaitsAndEnds() async throws {
-        let (folder, helper) = try await helper()
+        let (folder, helper) = try await built("dictate")
         defer { try? FileManager.default.removeItem(at: folder) }
-        let parent = try sleeping()
-        defer { parent.terminate() }
+        let parent = try TestChild("/bin/sleep", ["600"])
+        defer { parent.stop() }
         let fetched = folder.appendingPathComponent("fetched")
         try Data().write(to: folder.appendingPathComponent(Self.model))
         let waiting = try await holder(in: folder, fetched: fetched)
@@ -176,12 +146,12 @@ final class DictateExampleTests: SampleSpotsCase {
     }
 
     func testASecondHelperSignalsNoProcessThatOnlyThePidFileNames() async throws {
-        let (folder, helper) = try await helper()
+        let (folder, helper) = try await built("dictate")
         defer { try? FileManager.default.removeItem(at: folder) }
-        let parent = try sleeping()
-        defer { parent.terminate() }
-        let other = try sleeping()
-        defer { other.terminate() }
+        let parent = try TestChild("/bin/sleep", ["600"])
+        defer { parent.stop() }
+        let other = try TestChild("/bin/sleep", ["600"])
+        defer { other.stop() }
         try Data().write(to: folder.appendingPathComponent(Self.model))
         let waiting = try await holder(in: folder, naming: other.processIdentifier, fetched: folder.appendingPathComponent("fetched"))
         defer { waiting.terminate() }
@@ -191,14 +161,14 @@ final class DictateExampleTests: SampleSpotsCase {
         try await waitUntil { !second.isRunning }
 
         XCTAssertFalse(second.isRunning)
-        XCTAssertTrue(other.isRunning)
+        XCTAssertEqual(kill(other.processIdentifier, 0), 0)
     }
 
     func testAHelperTakesItsSignalsFromTheMomentItNamesItself() async throws {
-        let (folder, helper) = try await helper()
+        let (folder, helper) = try await built("dictate")
         defer { try? FileManager.default.removeItem(at: folder) }
-        let parent = try sleeping()
-        defer { parent.terminate() }
+        let parent = try TestChild("/bin/sleep", ["600"])
+        defer { parent.stop() }
         try Data().write(to: folder.appendingPathComponent(Self.model))
         let pidfile = folder.appendingPathComponent("dictate.pid")
 
@@ -219,8 +189,8 @@ final class DictateExampleTests: SampleSpotsCase {
 
     func testAPressAfterARebuildStartsTheNewHelperOnceTheOldOneHasEnded() async throws {
         let dictate = try example("Dictate")
-        let (built, helper) = try await helper()
-        defer { try? FileManager.default.removeItem(at: built) }
+        let (build, helper) = try await built("dictate")
+        defer { try? FileManager.default.removeItem(at: build) }
         try await withPrivateHome { folder in
             let data = folder.appendingPathComponent(".config/openspot/data/dictate")
             try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
@@ -244,7 +214,7 @@ final class DictateExampleTests: SampleSpotsCase {
     }
 
     func testTheHelperKeepsTheWordsAndDropsTheTagsOfSounds() async throws {
-        let (folder, helper) = try await helper()
+        let (folder, helper) = try await built("dictate")
         defer { try? FileManager.default.removeItem(at: folder) }
         let input = folder.appendingPathComponent("heard")
         try " [BLANK_AUDIO]\n Привіт, світе.\n (soft music)\n  Second   line [Music] here.\n *laughs*\n".write(to: input, atomically: true, encoding: .utf8)
@@ -259,7 +229,7 @@ final class DictateExampleTests: SampleSpotsCase {
     }
 
     func testTheHelperSendsSixteenBitMonoSoundAtSixteenKilohertz() async throws {
-        let (folder, helper) = try await helper()
+        let (folder, helper) = try await built("dictate")
         defer { try? FileManager.default.removeItem(at: folder) }
         let file = folder.appendingPathComponent("speech.wav")
 
@@ -287,7 +257,7 @@ final class DictateExampleTests: SampleSpotsCase {
             try String(waiting.processIdentifier).write(to: data.appendingPathComponent("dictate.pid"), atomically: true, encoding: .utf8)
 
             _ = try await dictate.perform(.press("dictate"), timeout: 5)
-            try await self.waitFor(pressed)
+            try await self.waitUntil { FileManager.default.fileExists(atPath: pressed.path) }
 
             XCTAssertTrue(FileManager.default.fileExists(atPath: pressed.path))
             XCTAssertFalse(FileManager.default.fileExists(atPath: started.path))
@@ -301,7 +271,7 @@ final class DictateExampleTests: SampleSpotsCase {
             _ = try self.fakeHelper("echo \"$1 $4\" > '\(started.path)'", in: folder)
 
             _ = try await dictate.perform(.press("dictate"), timeout: 5)
-            try await self.waitFor(started)
+            try await self.waitUntil { FileManager.default.fileExists(atPath: started.path) }
 
             XCTAssertEqual(try self.read("started", in: folder), "stay start\n")
         }
@@ -314,7 +284,7 @@ final class DictateExampleTests: SampleSpotsCase {
             _ = try self.fakeHelper("echo \"$1 $4\" > '\(started.path)'", model: false, in: folder)
 
             _ = try await dictate.perform(.press("dictate"), timeout: 5)
-            try await self.waitFor(started)
+            try await self.waitUntil { FileManager.default.fileExists(atPath: started.path) }
 
             XCTAssertEqual(try self.read("started", in: folder), "stay start\n")
             XCTAssertNil(try? self.read("fetched", in: folder))
@@ -322,7 +292,7 @@ final class DictateExampleTests: SampleSpotsCase {
     }
 
     func testTheModelLandsWholeOrNotAtAll() async throws {
-        let (folder, helper) = try await helper()
+        let (folder, helper) = try await built("dictate")
         defer { try? FileManager.default.removeItem(at: folder) }
         let source = folder.appendingPathComponent("model.bin")
         let target = folder.appendingPathComponent("data/ggml.bin")
@@ -338,7 +308,7 @@ final class DictateExampleTests: SampleSpotsCase {
     }
 
     func testThePillRidesTheEdgeNearestThePointerAndStandsUpOnTheSides() async throws {
-        let (folder, helper) = try await helper()
+        let (folder, helper) = try await built("dictate")
         defer { try? FileManager.default.removeItem(at: folder) }
 
         func place(_ kept: String, droppedAt x: Int, _ y: Int) async throws -> String {
@@ -359,7 +329,7 @@ final class DictateExampleTests: SampleSpotsCase {
     }
 
     func testTheHistoryListsTheNewestTextFirstAndKeepsTheLastTen() async throws {
-        let (folder, helper) = try await helper()
+        let (folder, helper) = try await built("dictate")
         defer { try? FileManager.default.removeItem(at: folder) }
         let file = folder.appendingPathComponent("history")
 
@@ -405,7 +375,7 @@ final class DictateExampleTests: SampleSpotsCase {
             try "42".write(to: data.appendingPathComponent("download"), atomically: true, encoding: .utf8)
             let progress = try await dictate.items(timeout: 5).items.first { $0.run == "whisper" }
             _ = try await dictate.perform(.item(try XCTUnwrap(offer)), timeout: 5)
-            try await self.waitFor(fetched)
+            try await self.waitUntil { FileManager.default.fileExists(atPath: fetched.path) }
 
             XCTAssertEqual(offer?.title, "Download speech model")
             XCTAssertEqual(offer?.pin, .top)
@@ -419,7 +389,7 @@ final class DictateExampleTests: SampleSpotsCase {
     }
 
     func testABrokenDownloadGoesOnFromTheBytesItHas() async throws {
-        let (folder, helper) = try await helper()
+        let (folder, helper) = try await built("dictate")
         defer { try? FileManager.default.removeItem(at: folder) }
         let source = folder.appendingPathComponent("model.bin")
         let target = folder.appendingPathComponent("ggml.bin")
@@ -459,7 +429,7 @@ final class DictateExampleTests: SampleSpotsCase {
     }
 
     func testADownloadThatCannotResumeStartsOver() async throws {
-        let (folder, helper) = try await helper()
+        let (folder, helper) = try await built("dictate")
         defer { try? FileManager.default.removeItem(at: folder) }
         let source = folder.appendingPathComponent("model.bin")
         let target = folder.appendingPathComponent("ggml.bin")

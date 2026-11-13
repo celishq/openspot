@@ -19,6 +19,22 @@ class SampleSpotsCase: XCTestCase {
         try XCTUnwrap(try exampleScan.spots.first { $0.name == name })
     }
 
+    /// The Swift example with this name, built by `swiftc` into a new folder in the temp folder.
+    func built(_ name: String) async throws -> (folder: URL, program: URL) {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-\(name)-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let program = folder.appendingPathComponent(name)
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-o", program.path, examples.appendingPathComponent("\(name).spot/\(name).swift").path])
+        return (folder, program)
+    }
+
+    /// Waits up to ten seconds for a fact.
+    @nonobjc func waitUntil(_ fact: () -> Bool) async throws {
+        for _ in 0..<200 where !fact() {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+    }
+
     var scan: ScanResult {
         get throws {
             let root = URL(fileURLWithPath: #filePath)
