@@ -34,7 +34,7 @@ struct SpotSheetLayer: View {
         .morph(progress, opacity: contentOpacity)
         .overlay(alignment: .topLeading) {
             if let look = card?.look, let frame {
-                cardLook(look, size: card?.placement.size ?? look.size)
+                MovingLook(model: model, id: entry.id) { cardLook(look, size: card?.placement.size ?? look.size) }
                     .frame(width: frame.width, height: frame.height)
                     .morph(progress, opacity: SheetMorph.cardLook(at:))
                     .allowsHitTesting(false)
@@ -51,7 +51,9 @@ struct SpotSheetLayer: View {
             radius: isOpen ? SpotTokens.radius : isInstall ? SpotTokens.corner(for: .strip) : SpotTokens.corner(for: card?.placement.size ?? entry.size),
             sheetRect: sheetRect,
             shift: isOpen ? .zero : shift(to: closedRect),
-            showsRing: cardIsSelected,
+            isSelected: { [model, id = card?.look?.id ?? entry.id] in
+                model.placements.first { model.visible[$0.index].id == id }?.index == model.selected
+            },
             progress: progress,
             arrow: showsArrow ? AnyView(arrow) : nil,
             arrowBox: frame?.size ?? .zero
@@ -98,11 +100,6 @@ struct SpotSheetLayer: View {
         entry.spot.growsFromField
     }
 
-    private var cardIsSelected: Bool {
-        let id = card?.look?.id ?? entry.id
-        return model.placements.first { model.visible[$0.index].id == id }?.index == model.selected
-    }
-
     /// The card's own look without its glass, since the sheet draws the glass under it: the drawing of its script, its view,
     /// or the places of a widget, as the card draws them.
     @ViewBuilder
@@ -118,6 +115,21 @@ struct SpotSheetLayer: View {
         } else if let layout = card.spot.layout {
             SpotWidgetView(layout: layout, places: card.spot.places, reading: reading, card: size)
                 .padding(SpotTokens.cardPadding(for: size, isWidget: true))
+        }
+    }
+}
+
+/// The card's own look over its sheet, built only while the sheet moves or lies on its card. Once the sheet has settled
+/// open, where the look is clear, it builds nothing, so that a new reading of the card draws nothing under the sheet. It
+/// alone reads the phase of the motion.
+private struct MovingLook<Look: View>: View {
+    let model: SpotsModel
+    let id: String
+    @ViewBuilder let look: () -> Look
+
+    var body: some View {
+        if model.transition.phase != .open || model.transition.id != id {
+            look()
         }
     }
 }
