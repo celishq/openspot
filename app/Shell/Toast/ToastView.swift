@@ -8,9 +8,9 @@ struct ToastView: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            if toast.isWorking {
+            if toast.kind == .work {
                 SpotWorkMark(call: nil, side: Self.markSide)
-            } else if let symbol = toast.symbol {
+            } else if let symbol = toast.kind.symbol {
                 Image(systemName: symbol)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(SpotTheme.ink)

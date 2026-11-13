@@ -2,7 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 /// The round button of a sheet, with one symbol, such as close or swap. A button that floats on other content has the
-/// sheet's own glass under it, so that it looks like a button on the sheet and nothing sharp shows through it. While its call runs, it shows that work and says Stop.
+/// sheet's own glass under it, so that it looks like a button on the sheet and nothing sharp shows through it. While its call runs, it fills solid, shows that work and says Stop.
 struct SpotRoundButton: View {
     enum Look {
         case plain, floating, strong, bare
@@ -21,15 +21,15 @@ struct SpotRoundButton: View {
         Button(action: action) {
             Group {
                 if let work {
-                    SpotWorkMark(call: work, side: size, stops: true, isOnSolid: look == .strong)
+                    SpotWorkMark(call: work, side: size, stops: true)
                 } else {
                     Image(systemName: symbol)
                         .font(.system(size: max(size * Self.symbolRatio, 10), weight: .semibold))
-                        .foregroundStyle(look == .strong ? SpotTheme.onSolid : SpotTheme.ink)
+                        .modifier(SpotInk())
                         .frame(width: size, height: size)
                 }
             }
-                .background(fill, in: Circle())
+                .spotFill(isActive: work != nil || look == .strong, otherwise: fill, in: Circle())
                 .background { if look == .floating { SpotFloatGlass(shape: Circle()) } }
                 .contentShape(Circle())
         }
@@ -37,12 +37,11 @@ struct SpotRoundButton: View {
         .accessibilityLabel(work == nil ? label : "Stop")
     }
 
-    private var fill: AnyShapeStyle {
+    /// The fill of a button that is not active.
+    private var fill: Color {
         switch look {
-        case .plain: AnyShapeStyle(SpotTheme.ink.opacity(SpotTheme.control))
-        case .floating: AnyShapeStyle(SpotTheme.ink.opacity(SpotTheme.control))
-        case .strong: AnyShapeStyle(SpotTheme.solid)
-        case .bare: AnyShapeStyle(Color.clear)
+        case .plain, .floating: SpotTheme.ink.opacity(SpotTheme.control)
+        case .strong, .bare: .clear
         }
     }
 }

@@ -95,13 +95,17 @@ public struct AccountStore: Sendable {
     }
 
     /// A read of the data-protection Keychain finds nothing in an app with no Keychain group, and only a write or a delete
-    /// says that the group is missing, so the gate deletes an item that is never kept.
-    private var keychain: Keychain {
+    /// says that the group is missing, so the gate deletes an item that is never kept, once for each launch.
+    private static let place: Keychain = {
         let probe: [CFString: Any] = [
-            kSecClass: kSecClassGenericPassword, kSecAttrService: Self.service + ".probe", kSecUseDataProtectionKeychain: true,
+            kSecClass: kSecClassGenericPassword, kSecAttrService: service + ".probe", kSecUseDataProtectionKeychain: true,
             kSecAttrSynchronizable: kSecAttrSynchronizableAny
         ]
         return SecItemDelete(probe as CFDictionary) == errSecMissingEntitlement ? .login : .synced
+    }()
+
+    private var keychain: Keychain {
+        Self.place
     }
 
     private func lines() throws -> [String]? {

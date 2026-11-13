@@ -22,9 +22,9 @@ struct SheetPartsView: View {
     var menuOpening: () -> SheetParts.MenuOpening? = { nil }
     /// Takes a click into a field, which gives that part the focus.
     var onFocus: (SpotPart) -> Void = { _ in }
-    /// The spot's own view at the size of the area of a `view` component (protocol: Views).
-    /// A spot's own view in the place of a block, with the send that calls the spot with the block's id and a value.
-    var customView: (CGSize, [String: [String]], @escaping (String) -> Void) -> AnyView? = { _, _, _ in nil }
+    /// The source of the spot's own view, which a `view` component draws at the size of its area (protocol: Views).
+    var viewSource: String?
+    var views = SpotViews.shared
     @FocusState private var focus: String?
 
     private static let swatchSize: CGFloat = 22
@@ -35,7 +35,7 @@ struct SheetPartsView: View {
     private static let narrowGap: CGFloat = 2
     private static let markValueWidth: CGFloat = 36
     private static let symbolWidth: CGFloat = 22
-    private static let metricFont = Font.system(size: 24, weight: .semibold, design: .rounded).monospacedDigit()
+    private static let numberFont = Font.system(size: 24, weight: .semibold, design: .rounded).monospacedDigit()
 
     private var shape: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
@@ -137,7 +137,10 @@ struct SheetPartsView: View {
     @ViewBuilder
     private func drawn(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         if part.kind == "view" {
-            customView(frame.rect.size, part.values) { onSet(part, $0) }
+            if let viewSource {
+                SpotCustomView(source: viewSource, values: part.values, card: .square, room: frame.rect.size, views: views) { onSet(part, $0) }
+                    .equatable()
+            }
         } else {
             content(part, frame)
         }
@@ -159,8 +162,8 @@ struct SheetPartsView: View {
         case .list(let items, let value):
             list(part, items: items, value: value)
                 .overlay(alignment: .topTrailing) { cornerMark(part, frame) }
-        case .metric(let number):
-            metric(part, number: number)
+        case .number:
+            number(part)
         case .chart(let points):
             chart(points)
         case .image(let path):
@@ -281,7 +284,7 @@ struct SheetPartsView: View {
     private func pressLabel(_ part: SpotPart, words: String, font: Font) -> some View {
         if let call = work(part) {
             HStack(spacing: SpotTokens.placeGap / 2) {
-                SpotWorkMark(call: call, side: SpotTokens.workMark, isOnSolid: part.look == .strong)
+                SpotWorkMark(call: call, side: SpotTokens.workMark)
                 Text("Stop").font(font).lineLimit(1)
             }
         } else {
@@ -296,11 +299,10 @@ struct SheetPartsView: View {
             switch part.look {
             case .chip:
                 pressLabel(part, words: part.title ?? part.id, font: SpotType.action)
-                    .foregroundStyle(SpotTheme.ink)
                     .padding(.horizontal, SpotTokens.padding)
                     .padding(.vertical, 5)
                     .fixedSize()
-                    .background(SpotTheme.ink.opacity(frame.isOnTop ? SpotTheme.control : SpotTheme.selectedFill), in: Capsule())
+                    .spotFill(isActive: work(part) != nil, otherwise: SpotTheme.ink.opacity(frame.isOnTop ? SpotTheme.control : SpotTheme.selectedFill), in: Capsule())
                     .background { if frame.isOnTop { SpotFloatGlass(shape: Capsule()) } }
                     .contentShape(Capsule())
             case .bare:
@@ -313,30 +315,28 @@ struct SheetPartsView: View {
                 .contentShape(Rectangle())
             case .strong where frame.isOnTop:
                 pressLabel(part, words: part.title ?? part.id.capitalized, font: SpotType.action)
-                    .foregroundStyle(SpotTheme.onSolid)
                     .padding(.horizontal, SpotTokens.padding)
                     .padding(.vertical, 5)
                     .fixedSize()
-                    .background(SpotTheme.solid, in: Capsule())
+                    .spotFill(isActive: true, in: Capsule())
                     .contentShape(Capsule())
             case .strong:
-                centeredLine(part, text: SpotTheme.onSolid, fill: SpotTheme.solid)
+                centeredLine(part, isActive: true)
             case .tile:
                 labelled(part, frame)
                     .modifier(TileLook(isOn: true))
                     .contentShape(shape)
             default:
-                centeredLine(part, text: SpotTheme.ink, fill: SpotTheme.ink.opacity(SpotTheme.selectedFill))
+                centeredLine(part, isActive: work(part) != nil)
             }
         }
         .buttonStyle(.plain)
     }
 
-    private func centeredLine(_ part: SpotPart, text: Color, fill: Color) -> some View {
+    private func centeredLine(_ part: SpotPart, isActive: Bool) -> some View {
         pressLabel(part, words: part.title ?? part.id.capitalized, font: SpotType.body.weight(.medium))
-            .foregroundStyle(text)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(fill, in: shape)
+            .spotFill(isActive: isActive, otherwise: SpotTheme.ink.opacity(SpotTheme.selectedFill), in: shape)
             .contentShape(shape)
     }
 
@@ -425,10 +425,7 @@ struct SheetPartsView: View {
                 Image(systemName: symbol)
                     .foregroundStyle(SpotTheme.ink)
             }
-            Slider(value: Binding(get: { level }, set: { onSet(part, String(Int($0.rounded()))) }), in: low...max(high, low + 1))
-                .controlSize(.small)
-                .tint(SpotTheme.ink)
-                .labelsHidden()
+            SpotSlider(level: level, range: low...max(high, low + 1)) { onSet(part, String(Int($0.rounded()))) }
         }
     }
 
@@ -478,44 +475,20 @@ struct SheetPartsView: View {
         }
     }
 
-    private func metric(_ part: SpotPart, number: String) -> some View {
-        VStack(alignment: part.look == .bare ? .trailing : .leading, spacing: SpotType.lineGap) {
-            Text(number)
-                .font(Self.metricFont)
-                .foregroundStyle(SpotTheme.ink)
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-            if let title = part.title {
-                Text(title)
-                    .font(SpotType.detail)
-                    .modifier(SpotSecondaryText())
-                    .lineLimit(1)
-            }
-        }
-        .modifier(SpotColorBar(color: part.color))
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: part.look == .bare ? .trailing : .leading)
-        .padding(.horizontal, part.look == .bare ? 0 : SpotTokens.padding)
-        .background(SpotTheme.ink.opacity(part.look == .bare ? 0 : SpotTheme.fill), in: shape)
+    private func number(_ part: SpotPart) -> some View {
+        SpotNumberView(part: part, font: Self.numberFont, leastScale: 0.6, alignment: part.look == .bare ? .trailing : .leading)
+            .padding(.horizontal, part.look == .bare ? 0 : SpotTokens.padding)
+            .background(SpotTheme.ink.opacity(part.look == .bare ? 0 : SpotTheme.fill), in: shape)
     }
 
     private func chart(_ points: [Double]) -> some View {
-        let top = max(points.max() ?? 1, 1)
-        return GeometryReader { room in
-            HStack(alignment: .bottom, spacing: Self.barGap) {
-                ForEach(Array(points.enumerated()), id: \.offset) { _, point in
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
-                        .frame(height: room.size.height * max(point, 0) / top)
-                }
-            }
-            .frame(maxHeight: .infinity, alignment: .bottom)
-        }
-        .padding(SpotTokens.padding)
-        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
+        SpotBars(points: points, gap: Self.barGap, radius: 2)
+            .padding(SpotTokens.padding)
+            .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
     }
 
     private func image(_ path: String) -> some View {
-        SheetPicture(key: SpotPictureStore.Key(path: path))
+        SheetPicture(arrived: SpotPictureStore.Key(path: path, changed: panel.pictureTimes[path]))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .clipShape(shape)
     }
@@ -632,12 +605,19 @@ private struct TileLook: ViewModifier {
 }
 
 /// The picture at a file path, which fills its area and is cut at its edges. It shows an empty tile until it is read, and
-/// stays empty for a file it cannot read.
+/// stays empty for a file it cannot read. It starts from the time its parts read, and follows the file's later changes off
+/// the main thread, so that a picture that a spot writes after its answer shows.
 private struct SheetPicture: View {
-    let key: SpotPictureStore.Key
+    let arrived: SpotPictureStore.Key
+    @State private var followed: (from: SpotPictureStore.Key, changed: Double?)?
     @State private var loaded: (key: SpotPictureStore.Key, image: CGImage)?
 
+    private var key: SpotPictureStore.Key {
+        followed.flatMap { $0.from == arrived ? SpotPictureStore.Key(path: arrived.path, changed: $0.changed) : nil } ?? arrived
+    }
+
     var body: some View {
+        let key = key
         Color.clear
             .overlay {
                 if let image = SpotPictureStore.shared.cached(key) ?? (loaded?.key == key ? loaded?.image : nil) {
@@ -648,6 +628,9 @@ private struct SheetPicture: View {
             }
             .task(id: key) {
                 if let image = await SpotPictureStore.shared.image(key) { loaded = (key, image) }
+            }
+            .task(id: arrived) {
+                for await changed in PictureFile(path: arrived.path).changes { followed = (arrived, changed) }
             }
     }
 }

@@ -125,8 +125,9 @@ final class SoleCommandTests: XCTestCase {
         XCTAssertEqual(model.openItems?.shown.map(\.run), ["key:dictate:dictate", "one", "two"])
         XCTAssertEqual(model.sheets["dictate"]?.shape.setsApart, false)
         model.searchText = "zzz"
-        XCTAssertEqual(model.openItems?.shown.map(\.run), ["key:dictate:dictate"])
+        try await wait("the pinned key alone") { model.openItems?.shown.map(\.run) == ["key:dictate:dictate"] }
         model.searchText = ""
+        try await wait("all the rows") { model.openItems?.shown.count == 3 }
         model.moveItemToEdge(last: true)
         XCTAssertEqual(model.openItems?.selectedItem?.run, "two")
         model.moveItemToEdge(last: false)

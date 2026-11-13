@@ -652,7 +652,7 @@ final class SpotsModelDragTests: XCTestCase {
         try script.seekToEnd()
         try script.write(contentsOf: Data("echo changed\n".utf8))
         try script.close()
-        model.folderChanged()
+        model.spotsChanged()
         XCTAssertEqual(publication(of: "a"), .changed)
         let third = await model.publish("a")
         XCTAssertEqual(third, .published)

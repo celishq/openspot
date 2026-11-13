@@ -8,7 +8,7 @@ struct SpotWorkMark: View {
     let call: ScriptCall?
     var side = SpotTokens.glyphSize
     var stops = false
-    var isOnSolid = false
+    @Environment(\.spotIsOnSolid) private var isOnSolid
     @Environment(\.colorScheme) private var scheme
 
     private static let thickLine: CGFloat = 4

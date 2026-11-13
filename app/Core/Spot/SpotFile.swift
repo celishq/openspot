@@ -62,8 +62,8 @@ public struct SpotFile: Equatable, Sendable {
         let places = try Self.places(header.value("offers"), of: name)
         let isGlobal = places.contains("search")
         if isGlobal {
-            guard read?.has(.panel) == true || read?.seconds != nil else {
-                throw SpotError.fault("\(name) needs on=panel.open or a clock, such as on=clock.60, to join the main search")
+            guard read?.has(.panel) == true || read?.has(.sheet) == true || read?.seconds != nil else {
+                throw SpotError.fault("\(name) needs on=panel.open, on=sheet.open or a clock, such as on=clock.60, to join the main search")
             }
         }
         let answers = on?.answers
@@ -112,6 +112,7 @@ public struct SpotFile: Equatable, Sendable {
             image: icon?.image.map { Self.path($0, beside: url) },
             glyph: icon?.glyph,
             view: view.map { Self.path($0, beside: url) },
+            viewDate: view.flatMap { Self.viewDate(of: Self.path($0, beside: url), script: url) },
             emits: emits,
             uses: uses,
             keywords: header.list("keywords"),
@@ -202,6 +203,15 @@ public struct SpotFile: Equatable, Sendable {
     private static func refuseSize(_ header: TextBlock, of name: String) throws {
         guard let size = header.value("size") else { return }
         throw SpotError.fault("\(name) has size=\(size), which Openspot no longer reads. Openspot sizes a card by the person's choice, so remove it")
+    }
+
+    /// When a file that the build of a view reads last changed: its source or the library beside it. Nil where the scan and
+    /// the watch of the folder miss an edit: a view outside its script's folder, or in a linked spot folder.
+    private static func viewDate(of view: String, script: URL) -> Date? {
+        let folder = script.deletingLastPathComponent().path
+        let isLinked = (try? FileManager.default.destinationOfSymbolicLink(atPath: folder)) != nil
+        guard (view as NSString).deletingLastPathComponent == folder, !isLinked else { return nil }
+        return [view, ViewLibrary.path(beside: view)].compactMap { try? FileManager.default.attributesOfItem(atPath: $0)[.modificationDate] as? Date }.max()
     }
 
     /// A path that the header names: a full path or an https URL stays, and any other starts at the folder of the script.

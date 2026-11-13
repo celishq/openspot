@@ -2,6 +2,7 @@
 # icon=link
 # detail=Open a link
 # on=panel.open
+# on=app.launch
 # offers=search
 # uses=network,clipboard
 export LC_ALL=en_US.UTF-8
@@ -24,6 +25,7 @@ prepare() {
     {id: "screenshots", title: "Screenshots", url: $shots}
   ]' | store
   rm -f "$old"
+  fetch_missing >/dev/null 2>&1 </dev/null &
 }
 
 load() {
@@ -107,7 +109,8 @@ fetch_icon() {
   touch "$icons/$host.none"
 }
 
-# Looks for the icon of each web link that has none. A site with no icon is tried again after a week.
+# Looks for the icon of each web link that has none. A site with no icon is tried again at a launch a week or more after
+# the last try.
 fetch_missing() {
   [ -d "$icons" ] && find "$icons" -name '*.none' -mtime +7 -delete
   load | jq -r '.[].url | capture("^(?<origin>https?://(?<host>[^/?#]+))") | "\(.origin) \(.host)"' | sort -u |
@@ -143,16 +146,18 @@ case "$1" in
     printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\n\n'
     printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\n\n'
     printf 'button=new\ntitle=New link\nshortcut=cmd+n\nscope=spot\nform=true\n\n'
-    found=$(ls "$icons" 2>/dev/null | jq -R . | jq -sc .)
-    load | jq -r --arg icons "$icons" --argjson found "$found" --arg home "$HOME" "$esc"'.[]
+    [ -s "$data" ] || exit 0
+    set --
+    for icon in "$icons"/*.png; do [ -e "$icon" ] && set -- "$@" "${icon##*/}"; done
+    [ "$OPENSPOT_REASON" != app.launch ] || { fetch_missing >/dev/null 2>&1 </dev/null & }
+    jq -r --arg icons "$icons" --arg home "$HOME" "$esc"'$ARGS.positional as $found | .[]
       | if (.url | test("^[/~]")) then
           "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.url | esc)\nicon=\(.url | if startswith("~") then $home + .[1:] else . end | esc)\n"
         else
           (.url | sub("^[a-zA-Z][a-zA-Z0-9+.-]*:(//)?"; "") | sub("[/?#].*$"; "")) as $host
           | "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\($host | esc)\nhides=reveal\n"
           + (if ($found | index($host + ".png")) then "icon=\("\($icons)/\($host).png" | esc)\n" else "icon=link\n" end)
-        end'
-    fetch_missing >/dev/null 2>&1 </dev/null &
+        end' "$data" --args "$@"
     ;;
   new)
     if [ -z "$(value title)$(value url)" ]; then
@@ -172,6 +177,7 @@ case "$1" in
     fi
     values=$(checked) || exit 1
     load | jq -c --arg id "$2" --argjson v "$values" 'map(if .id == $id then .title = $v.title | .url = $v.url else . end)' | store
+    fetch_missing >/dev/null 2>&1 </dev/null &
     echo "$2"
     ;;
   delete)

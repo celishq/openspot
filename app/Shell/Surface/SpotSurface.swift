@@ -15,14 +15,14 @@ struct SpotSurface: View {
     var body: some View {
         let shape = SpotSurfaceShape(rect: rect, radius: radius)
         ZStack(alignment: .topLeading) {
-            SpotBlur(radius: isShown ? SpotTheme.blur : 0)
+            SpotBlur(radius: SpotTheme.blur)
                 .overlay(SpotTheme.glass)
                 .mask(shape)
-                .opacity(isShown ? glass : 0)
+                .opacity(isShown ? glass : MotionTokens.hiddenOpacity)
                 .animation(SpotMotion.fade(isShown: isShown), value: isShown)
             shape.fill(SpotTheme.ink.opacity(SpotTheme.fill * fill))
             SpotRim(radius: radius, rect: rect)
-                .opacity(isShown ? glass : 0)
+                .opacity(isShown ? glass : MotionTokens.hiddenOpacity)
                 .animation(SpotMotion.fade(isShown: isShown), value: isShown)
         }
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)

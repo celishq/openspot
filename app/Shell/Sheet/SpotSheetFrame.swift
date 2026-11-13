@@ -12,8 +12,8 @@ struct SpotSheetFrame: ViewModifier {
     let sheetRect: CGRect
     /// How far the content lies from its open place: as far as the card lies from the sheet's corner, and none when open.
     let shift: CGSize
-    /// Whether the card is selected, which shows its ring as the card's look until the sheet opens.
-    let showsRing: Bool
+    /// Reads whether the card is selected where it is called, which shows its ring as the card's look until the sheet opens.
+    let isSelected: () -> Bool
     /// How far the sheet is open, from 0 on its card to 1.
     let progress: Double
     /// The arrow of the card, which stays at the moving trailing edge as the sheet grows out of the card.
@@ -29,8 +29,9 @@ struct SpotSheetFrame: ViewModifier {
             content
                 .frame(width: sheetRect.width, height: sheetRect.height, alignment: .topLeading)
                 .offset(x: sheetRect.minX + shift.width, y: sheetRect.minY + shift.height)
-                .opacity(isShown ? 1 : 0)
+                .opacity(isShown ? 1 : MotionTokens.hiddenOpacity)
                 .animation(SpotMotion.fade(isShown: isShown), value: isShown)
+                .allowsHitTesting(isShown)
             if let arrow {
                 arrow
                     .frame(width: arrowBox.width, height: arrowBox.height, alignment: .topTrailing)
@@ -39,7 +40,7 @@ struct SpotSheetFrame: ViewModifier {
         }
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
         .clipShape(shape)
-        .modifier(SpotSelectionRing(isSelected: showsRing, shape: shape, progress: progress))
+        .modifier(SpotLiveSelectionRing(isSelected: isSelected, shape: shape, progress: progress))
         .scaleEffect(isShown ? 1 : MotionTokens.hiddenScale, anchor: UnitPoint(x: rect.midX / SpotTokens.panelWidth, y: rect.midY / SpotTokens.panelHeight))
         .animation(SpotMotion.fade(isShown: isShown), value: isShown)
     }

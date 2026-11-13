@@ -47,9 +47,9 @@ final class SpotHeaderTests: XCTestCase {
         let open = try XCTUnwrap(try SpotFile(file: opens, id: "opens")?.spots.first)
 
         XCTAssertTrue(run.pressRuns)
-        XCTAssertEqual(run.primaryTitle(hasItem: false), "Run")
+        XCTAssertEqual(run.openTitle(hasItem: false), "Run")
         XCTAssertFalse(open.pressRuns)
-        XCTAssertEqual(open.primaryTitle(hasItem: false), "Open")
+        XCTAssertEqual(open.openTitle(hasItem: false), "Open")
         XCTAssertThrowsError(try SpotFile(file: unknown, id: "unknown")) { error in
             XCTAssertTrue((error as? SpotError)?.reason.contains("Use open or sheet") == true, "\(error)")
         }
@@ -145,6 +145,57 @@ final class SpotHeaderTests: XCTestCase {
         let spot = try XCTUnwrap(try SpotFile(script: folder.appendingPathComponent("cups.sh"), header: header, id: "home/cups").spots.first)
 
         XCTAssertEqual(spot.view, "/spots/home/cups.swift")
+    }
+
+    func testAnEditOfAViewChangesItsSpot() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-view-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let view = folder.appendingPathComponent("cups.swift")
+        try "".write(to: view, atomically: true, encoding: .utf8)
+        let header = SpotHeader(text: "#!/bin/sh\n# view=cups.swift\n").block
+        let script = folder.appendingPathComponent("cups.sh")
+        let before = try SpotFile(script: script, header: header, id: "cups").spots.first
+
+        try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSince1970: 1_000_000)], ofItemAtPath: view.path)
+        let after = try SpotFile(script: script, header: header, id: "cups").spots.first
+
+        XCTAssertNotEqual(before, after)
+    }
+
+    func testAnEditOfTheLibraryBesideAViewChangesItsSpot() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-view-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        try "".write(to: folder.appendingPathComponent("cups.swift"), atomically: true, encoding: .utf8)
+        let library = folder.appendingPathComponent("cups.view")
+        try "".write(to: library, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSince1970: 1_000_000)], ofItemAtPath: library.path)
+        let header = SpotHeader(text: "#!/bin/sh\n# view=cups.swift\n").block
+        let script = folder.appendingPathComponent("cups.sh")
+        let before = try SpotFile(script: script, header: header, id: "cups").spots.first
+
+        try FileManager.default.setAttributes([.modificationDate: Date()], ofItemAtPath: library.path)
+        let after = try SpotFile(script: script, header: header, id: "cups").spots.first
+
+        XCTAssertNotEqual(before, after)
+    }
+
+    func testAViewThatTheScanDoesNotWatchHasNoDate() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-view-\(UUID().uuidString)")
+        let real = folder.appendingPathComponent("real.spot")
+        let linked = folder.appendingPathComponent("linked.spot")
+        try FileManager.default.createDirectory(at: real.appendingPathComponent("views"), withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        try "".write(to: real.appendingPathComponent("views/cups.swift"), atomically: true, encoding: .utf8)
+        try "".write(to: real.appendingPathComponent("cups.swift"), atomically: true, encoding: .utf8)
+        try FileManager.default.createSymbolicLink(at: linked, withDestinationURL: real)
+
+        let deeper = try SpotFile(script: real.appendingPathComponent("cups.sh"), header: SpotHeader(text: "#!/bin/sh\n# view=views/cups.swift\n").block, id: "cups").spots.first
+        let throughLink = try SpotFile(script: linked.appendingPathComponent("cups.sh"), header: SpotHeader(text: "#!/bin/sh\n# view=cups.swift\n").block, id: "cups").spots.first
+
+        XCTAssertNil(deeper?.viewDate)
+        XCTAssertNil(throughLink?.viewDate)
     }
 
     func testAnAnswersPatternIsTheWholeRestOfItsLine() throws {

@@ -13,10 +13,14 @@ struct SpotLiftedCard: ViewModifier {
         let shape = RoundedRectangle(cornerRadius: SpotTokens.corner(for: size), style: .continuous)
         return content
             .background {
-                shape.fill(SpotTheme.window)
-                    .shadow(color: .black.opacity(SpotTheme.liftShadowStrength), radius: SpotTheme.liftShadow, y: 4)
-                    .opacity(isSolid ? 1 : 0)
-                    .animation(isSolid ? nil : SpotMotion.fade(isShown: true), value: isSolid)
+                ZStack {
+                    if isSolid {
+                        shape.fill(SpotTheme.window)
+                            .shadow(color: .black.opacity(SpotTheme.liftShadowStrength), radius: SpotTheme.liftShadow, y: 4)
+                            .transition(.opacity)
+                    }
+                }
+                .animation(isSolid ? nil : SpotMotion.fade(isShown: true), value: isSolid)
             }
             .scaleEffect(isLifted ? MotionTokens.liftedScale : 1)
     }

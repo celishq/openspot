@@ -36,22 +36,8 @@ struct SpotFieldView: View {
                 .opacity(model.isEditing ? 1 : 0)
                 .allowsHitTesting(model.isEditing)
         }
-        .modifier(SpotFocusLook(focus: model.menu == nil ? .none : .faded))
-        .onChange(of: model.isShown) { _, isShown in
-            guard isShown else {
-                isFocused = false
-                return
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + MotionTokens.fadeIn) {
-                if model.isShown, model.showsSearch, !model.isOpenForDrag { isFocused = true }
-            }
-        }
-        .onChange(of: model.showsSearch) { _, shows in
-            isFocused = shows
-        }
-        .onChange(of: model.menu == nil) { _, isClosed in
-            if isClosed, model.isShown, model.showsSearch { isFocused = true }
-        }
+        .modifier(SpotFocusLook(focus: model.isMenuOpen ? .faded : .none))
+        .background(SpotFieldFocus(model: model, isFocused: $isFocused))
     }
 
     private var searchField: some View {
@@ -75,8 +61,7 @@ struct SpotFieldView: View {
             }
             .morph(progress, opacity: crossing)
             .opacity(model.showsFieldDrop || model.isEditing ? 0 : 1)
-            .opacity(model.isShown ? 1 : 0)
-            .animation(SpotMotion.fade(isShown: model.isShown), value: model.isShown)
+            .modifier(SpotShownFade(isShown: model.isShown))
             if let drop = model.fieldDrop {
                 SpotDropView(drop: drop)
                     .padding(.horizontal, SpotTokens.padding)
@@ -88,8 +73,9 @@ struct SpotFieldView: View {
         .font(SpotType.input)
         .foregroundStyle(SpotTheme.ink)
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
-        .scaleEffect(model.isShown ? 1 : MotionTokens.hiddenScale, anchor: UnitPoint(x: 0.5, y: Self.rect.midY / SpotTokens.panelHeight))
-        .animation(SpotMotion.fade(isShown: model.isShown), value: model.isShown)
+        .animation(SpotMotion.fade(isShown: model.isShown)) {
+            $0.scaleEffect(model.isShown ? 1 : MotionTokens.hiddenScale, anchor: UnitPoint(x: 0.5, y: Self.rect.midY / SpotTokens.panelHeight))
+        }
     }
 
     /// The words of Edit Spots and its Done button, on the field's glass in the place of the search.
@@ -198,9 +184,11 @@ struct SpotFieldView: View {
             .offset(x: left, y: top)
             .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
             .morph(showsField ? 1 : 0, opacity: { SheetMorph.sheetLook(at: $0) })
-            .opacity(model.isShown ? 1 : 0)
-            .scaleEffect(model.isShown ? 1 : MotionTokens.hiddenScale, anchor: UnitPoint(x: 0.5, y: (SpotTokens.halo + SpotTokens.rowHeight / 2) / SpotTokens.panelHeight))
-            .animation(SpotMotion.fade(isShown: model.isShown), value: model.isShown)
+            .modifier(SpotShownFade(
+                isShown: model.isShown,
+                hiddenScale: MotionTokens.hiddenScale,
+                anchor: UnitPoint(x: 0.5, y: (SpotTokens.halo + SpotTokens.rowHeight / 2) / SpotTokens.panelHeight)
+            ))
             .allowsHitTesting(false)
     }
 

@@ -19,6 +19,22 @@ class SampleSpotsCase: XCTestCase {
         try XCTUnwrap(try exampleScan.spots.first { $0.name == name })
     }
 
+    /// The Swift example with this name, built by `swiftc` into a new folder in the temp folder.
+    func built(_ name: String) async throws -> (folder: URL, program: URL) {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-\(name)-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let program = folder.appendingPathComponent(name)
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-o", program.path, examples.appendingPathComponent("\(name).spot/\(name).swift").path])
+        return (folder, program)
+    }
+
+    /// Waits up to ten seconds for a fact.
+    @nonobjc func waitUntil(_ fact: () -> Bool) async throws {
+        for _ in 0..<200 where !fact() {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+    }
+
     var scan: ScanResult {
         get throws {
             let root = URL(fileURLWithPath: #filePath)
@@ -238,6 +254,8 @@ class SampleSpotsCase: XCTestCase {
         return last
     }
 
+    /// Puts a stand-in for the openspot command on the path, which prints one emoji and one symbol, and a `defaults` that
+    /// prints the languages in the file `languages`, or English.
     func fakeEmoji(in folder: URL) throws -> Spot {
         let script = """
         #!/bin/sh
@@ -249,6 +267,7 @@ class SampleSpotsCase: XCTestCase {
 
         """
         try script.writeScript(to: folder.appendingPathComponent("tools/openspot"))
+        try "#!/bin/sh\ncat '\(folder.path)/languages' 2>/dev/null || printf '(\\n    \"en-US\"\\n)\\n'\n".writeScript(to: folder.appendingPathComponent("tools/defaults"))
         return try XCTUnwrap(try scan.spots.first { $0.name == "Emojis & Symbols" })
     }
 

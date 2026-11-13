@@ -43,11 +43,13 @@ final class UpdateSpotTests: BuiltInCase {
         XCTAssertEqual(installs, 1)
     }
 
-    func testItReadsWhenTheAppHasAnUpdate() throws {
+    func testItReadsAtLaunchAndWhenTheAppHasAnUpdateAndNotAtEachPanelOpen() throws {
         let spot = try spot("updates")
 
         XCTAssertTrue(spot.read?.has(.event(SpotEvent.appUpdate)) == true)
-        XCTAssertTrue(spot.read?.has(.panel) == true)
+        XCTAssertTrue(spot.read?.has(.event(SpotEvent.appLaunch)) == true)
+        XCTAssertFalse(spot.read?.has(.panel) == true)
+        XCTAssertTrue(spot.readsState)
         XCTAssertTrue(spot.isBuiltIn)
     }
 

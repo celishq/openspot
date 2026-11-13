@@ -2,8 +2,8 @@ import OpenspotCore
 import SwiftUI
 
 /// What one menu bar item draws. Marks take the colour of the menu bar, and a tone adds colour where it means something.
-struct SpotTrayMarkView: View {
-    let mark: TrayMark
+struct SpotMenuBarMarkView: View {
+    let mark: MenuBarMark
 
     private static let gap: CGFloat = 5
     private static let countGap: CGFloat = 3
@@ -29,7 +29,7 @@ struct SpotTrayMarkView: View {
             }
             content
         }
-        .font(SpotType.tray)
+        .font(SpotType.menuBar)
         .foregroundStyle(.primary)
         .lineLimit(1)
         .padding(.horizontal, Self.padding)
@@ -59,13 +59,6 @@ struct SpotTrayMarkView: View {
         case .status(let title):
             dot(markColour)
             Text(title)
-        case .work(let fill, let count):
-            if let fill {
-                ring(fill: fill)
-            } else {
-                ProgressView().progressViewStyle(.circular).controlSize(.small).frame(width: Self.ring, height: Self.ring)
-            }
-            if let count { Text("\(count)") }
         }
     }
 
@@ -90,7 +83,7 @@ struct SpotTrayMarkView: View {
     }
 }
 
-private extension TrayMark {
+private extension MenuBarMark {
     var isRing: Bool {
         if case .ring = content { return true }
         return false

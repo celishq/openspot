@@ -62,8 +62,8 @@ public struct SheetMorph: Equatable, Sendable {
         return Self.ease(Double(past / Self.clearance))
     }
 
-    /// The scale of a part that grows in place about its centre as the shape's edge reaches it, so that the edge never
-    /// cuts it: 0 while the edge lies at its centre, and 1 once the edge has passed it.
+    /// How strongly a part shows as the shape's edge passes over it: 0 while the edge lies at its centre, and 1 once the
+    /// edge has passed it.
     public func growth(of part: CGRect, at progress: Double) -> Double {
         let room = size(at: progress)
         let across = part.width > 0 ? Double((room.width - part.midX) / (part.width / 2)) : 1

@@ -25,7 +25,7 @@ public struct Spot: Equatable, Sendable {
     /// Its place in the grid before the person's choice: a lower number first. The person's newest file comes first.
     public private(set) var order: Int
     public private(set) var keepsRecent = true
-    public private(set) var primary: String?
+    public private(set) var openTitle: String?
     public private(set) var actions: [CommandAction]
     public let layout: WidgetLayout?
     public let places: [String]
@@ -57,6 +57,9 @@ public struct Spot: Equatable, Sendable {
     public let glyph: String?
     /// The Swift file of the view that its card draws, as a full path (protocol: Views).
     public let view: String?
+    /// When the files of its view last changed, so that an edit of the view changes the spot. Nil when the scan does not
+    /// watch them.
+    public let viewDate: Date?
     /// The events that it raises with `openspot event emit`, which its header names in `emits` (protocol: Events).
     public let emits: [String]
     /// The uses that its header names in `uses` (protocol: Trust).
@@ -95,7 +98,7 @@ public struct Spot: Equatable, Sendable {
         isFound: Bool = true,
         answers: AnswerPattern? = nil,
         order: Int = 0,
-        primary: String? = nil,
+        openTitle: String? = nil,
         actions: [CommandAction] = [],
         layout: WidgetLayout? = nil,
         places: [String] = [],
@@ -115,6 +118,7 @@ public struct Spot: Equatable, Sendable {
         image: String? = nil,
         glyph: String? = nil,
         view: String? = nil,
+        viewDate: Date? = nil,
         emits: [String] = [],
         uses: Set<SpotUse> = [],
         keywords: [String] = [],
@@ -137,7 +141,7 @@ public struct Spot: Equatable, Sendable {
         self.isFound = isFound
         self.answers = answers
         self.order = order
-        self.primary = primary
+        self.openTitle = openTitle
         self.actions = actions
         self.layout = layout
         self.places = places
@@ -157,6 +161,7 @@ public struct Spot: Equatable, Sendable {
         self.image = image
         self.glyph = glyph
         self.view = view
+        self.viewDate = viewDate
     }
 
     /// The sheet of the file that does not load, which this card stands for.
@@ -231,9 +236,21 @@ public struct Spot: Equatable, Sendable {
         SpotState(title: name, subtitle: subtitle, isOnGrid: isOnGrid)
     }
 
-    /// Whether the panel asks the command how it looks each time it opens.
+    /// Whether its read tells how its card looks: the panel asks it at each open, or the app at its launch.
     public var readsState: Bool {
-        read?.has(.panel) == true && !isGlobal && !mode.stays
+        (read?.has(.panel) == true || read?.has(.event(SpotEvent.appLaunch)) == true) && !isGlobal && !mode.stays
+    }
+
+    /// Whether the app reads it once as it starts: it lists `app.launch`.
+    public var readsAtLaunch: Bool {
+        read?.has(.event(SpotEvent.appLaunch)) == true
+    }
+
+    /// Whether it offers rows to the main search that no panel open or clock reads, so that each load of the spots or of
+    /// the config reads it (protocol: Places).
+    public var readsOfferedRows: Bool {
+        guard let read else { return false }
+        return isGlobal && !read.has(.panel) && read.seconds == nil
     }
 
     /// Whether the person can put it in the menu bar: it has a number or an event in its `read`, or it stays.
@@ -284,7 +301,7 @@ public struct Spot: Equatable, Sendable {
     public func taking(_ output: SpotOutput) -> Spot {
         var command = self
         command.actions = output.actions
-        command.primary = output.primary
+        command.openTitle = output.openTitle
         command.pick = output.pick
         command.pickForm = output.pickForm
         command.keepsRecent = output.keepsRecent
@@ -309,8 +326,8 @@ public struct Spot: Equatable, Sendable {
     }
 
     /// What Enter does, in words. A slider has no Enter.
-    public func primaryTitle(hasItem: Bool) -> String? {
-        if hasItem { return primary ?? "Open" }
+    public func openTitle(hasItem: Bool) -> String? {
+        if hasItem { return openTitle ?? "Open" }
         switch kind {
         case .launch: return "Run"
         case .toggle: return "Toggle"

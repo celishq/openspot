@@ -61,14 +61,14 @@ final class SpotRunsCallTests: SpotRunsCase {
         sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
         try await wait("the value") { sheet.reading.value?.title == "3" && sheet.calls.isEmpty }
         XCTAssertFalse(sheet.reading.isStale)
-        XCTAssertEqual(runs.trayMarks.first?.mark.isStale, false)
+        XCTAssertEqual(runs.menuBarMarks.first?.mark.isStale, false)
 
         time += 5
         runs.raise(.clock)
 
         try await wait("the dim") { sheet.reading.isStale }
         XCTAssertEqual(sheet.reading.value?.title, "3")
-        XCTAssertEqual(runs.trayMarks.first?.mark.isStale, true)
+        XCTAssertEqual(runs.menuBarMarks.first?.mark.isStale, true)
         XCTAssertEqual(failures, [])
     }
 
@@ -222,6 +222,16 @@ final class SpotRunsCallTests: SpotRunsCase {
         XCTAssertFalse(exists("went-on"))
     }
 
+    func testAProcessThatEndedIsLetGoWithNoLaterCall() async throws {
+        try script(header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
+        let sheet = try sheet()
+
+        sheet.read()
+
+        try await wait("the row") { sheet.list.shown.count == 1 && sheet.calls.isEmpty }
+        try await wait("no process kept") { self.runs.processes.isEmpty }
+    }
+
     func testAStoppedReadChangesNothing() async throws {
         try script(header: "on=sheet.open", """
         [ -f '\(path("second"))' ] && { sleep 5; exit 0; }
@@ -232,10 +242,10 @@ final class SpotRunsCallTests: SpotRunsCase {
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 && sheet.calls.isEmpty }
         sheet.read(need: .change)
-        XCTAssertTrue(sheet.list.isLoading)
+        XCTAssertFalse(sheet.calls.isEmpty)
 
         sheet.close()
-        try await wait("the end of the read") { !sheet.list.isLoading }
+        try await wait("the end of the read") { sheet.calls.isEmpty }
         try await pause(0.1)
 
         XCTAssertEqual(sheet.list.shown.count, 1)

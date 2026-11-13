@@ -14,12 +14,18 @@ extension SpotsModel {
         entries.filter { $0.id != fieldSheet }
     }
 
+    /// The entry with a card that has this ID, found with no copy of the cards.
+    public func card(id: String) -> Entry? {
+        id == fieldSheet ? nil : entries.first { $0.id == id }
+    }
+
     /// The most rows that the main search shows from a list that the person never picked from.
     private static let unpickedRows = 3
 
     /// Shows the spots that the search finds and the items it finds in the lists that offer them, in one ranking. While the
     /// search has text, each one is a full-width row, and an answer card keeps its own full-width size (protocol: Places).
     public func updateVisible() {
+        visibleUpdates += 1
         let next = found()
         if next != visible { visible = next }
         let sizes = query.isEmpty ? visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size } : visible.map { $0.isAnswer ? $0.size : SpotSize.strip }
@@ -31,6 +37,14 @@ extension SpotsModel {
             placements = grid.place(sizes)
         }
         if transition.phase == .closing, !hasPlace(transition.id) { cutSheet(to: nil) }
+    }
+
+    /// Whether a change of the rows or the state of a spot can change the cards that show: with no search, when it moves its
+    /// card on or off the grid, and with a search, when the search finds the spot, its rows or its answers.
+    func mayMove(_ id: String) -> Bool {
+        guard let entry = entries.first(where: { $0.id == id }) else { return false }
+        guard !query.trimmingCharacters(in: .whitespaces).isEmpty else { return entry.isOnGrid != visible.contains { $0.id == id } }
+        return entry.spot.isFound || entry.spot.isGlobal || entry.spot.answers != nil
     }
 
     /// Raises the text of the main search, which each spot whose `answers` pattern matches answers (protocol: Places).
@@ -55,7 +69,7 @@ extension SpotsModel {
         if spotListIsStale {
             spotListIsStale = false
             spotListBuilds += 1
-            spotList.replace(cards.filter(\.spot.isFound).map { SpotItem(title: $0.state.title, subtitle: [$0.state.subtitle, $0.spot.name].compactMap { $0 }.joined(separator: " "), run: $0.id, keywords: $0.spot.keywords) })
+            spotList.replace(cards.filter(\.spot.isFound).map(Self.foundItem))
         }
         let sources = entries.filter { $0.spot.isGlobal && arrangement.isGlobal(of: $0.id) != false }
         let found = mainSearch.matching(SearchQuery(text: text), in: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() }, unpickedLimit: Self.unpickedRows, limit: Self.searchLimit - answers.count)
@@ -64,9 +78,21 @@ extension SpotsModel {
         }.filter { !ids.contains($0.id) }
     }
 
+    /// The item that the main search finds for a card.
+    private static func foundItem(_ card: Entry) -> SpotItem {
+        SpotItem(title: card.state.title, subtitle: [card.state.subtitle, card.spot.name].compactMap { $0 }.joined(separator: " "), run: card.id, keywords: card.spot.keywords)
+    }
+
+    /// Marks `spotList` stale when the searched text of this card differs from its item there.
+    func markFound(_ id: String) {
+        guard !spotListIsStale else { return }
+        let card = cards.first { $0.id == id }.flatMap { $0.spot.isFound ? Self.foundItem($0) : nil }
+        if spotList.all.first(where: { $0.run == id }) != card { spotListIsStale = true }
+    }
+
     /// The text of the field: the search of the open list, or else the search of the spots.
     public var searchText: String {
-        get { form?.draft.choices?.query ?? openItems?.query ?? query }
+        get { form?.draft.choices?.query ?? openSheet?.query ?? query }
         set {
             if form?.draft.choices != nil {
                 form?.draft.search(newValue)

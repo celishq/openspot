@@ -43,7 +43,8 @@ extension SpotRuns {
         clock = Task { [weak self, tickPause] in
             while !Task.isCancelled {
                 let isPanelOpen = self?.isPanelOpen ?? false
-                try? await Task.sleep(for: isPanelOpen ? tickPause : max(tickPause, .seconds(next ?? 0)))
+                let wait = isPanelOpen ? tickPause : max(tickPause, .seconds(next ?? 0))
+                try? await Task.sleep(for: wait, tolerance: wait / 10)
                 guard !Task.isCancelled, let self else { return }
                 raise(.clock)
                 next = nextRead

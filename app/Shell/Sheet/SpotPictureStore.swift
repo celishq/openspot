@@ -13,12 +13,6 @@ final class SpotPictureStore {
     struct Key: Hashable, Sendable {
         let path: String
         let changed: Double?
-
-        init(path: String) {
-            var info = stat()
-            self.path = path
-            changed = stat(path, &info) == 0 ? Double(info.st_mtimespec.tv_sec) + Double(info.st_mtimespec.tv_nsec) / 1e9 : nil
-        }
     }
 
     private final class Bitmap {

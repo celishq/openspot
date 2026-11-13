@@ -27,7 +27,7 @@ extension SpotsModel {
         dragPaths = paths
         runs.draggedPaths = SpotPackage.isFile(paths) ? [] : paths
         isPointerOverDrop = host.isPointerOverDrop
-        draggedSpot = SpotPackage.isFile(paths) ? SpotDrop(paths: paths, folder: files.folder.url) : nil
+        draggedSpot = SpotPackage.isFile(paths) ? SpotDrop(paths: paths, folder: folder.url) : nil
         dragWatch?.cancel()
         dragWatch = Task { [weak self] in
             while self?.host.isMouseDown == true {
@@ -100,7 +100,7 @@ extension SpotsModel {
         closeList(moving: isShown)
         endReview()
         do {
-            show(try ReviewSpot(file: url, folder: files.folder.url, lock: SpotLock.standard(environment: files.environment, home: files.home)))
+            show(try ReviewSpot(file: url, folder: folder.url, lock: SpotLock.standard(environment: files.environment, home: files.home)))
             if urls.count > 1 { host.notify("Openspot installs one spot at a time.") }
         } catch {
             host.notify(Self.reason(error))
@@ -110,7 +110,7 @@ extension SpotsModel {
     /// Shows the text of a core spot, which is on or off, with no way to add it. Returns false when no core spot has the ID.
     @discardableResult
     public func reviewCore(_ id: String) -> Bool {
-        let folder = files.folder
+        let folder = self.folder
         do {
             let place = SpotsFolder(url: folder.url, core: folder.core, enabled: folder.enabled.union([id]), disabled: folder.disabled)
             let scan = try place.scan()
@@ -167,7 +167,7 @@ extension SpotsModel {
         if isShown { host.dismiss() }
         Task {
             do {
-                guard let spot = try await release(SpotPackage(sharing: entry.spot, from: files.folder.scan()), named: entry.spot.name) else { return }
+                guard let spot = try await release(SpotPackage(sharing: entry.spot, from: folder.scan()), named: entry.spot.name) else { return }
                 let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-shared/\(UUID().uuidString)", isDirectory: true)
                 try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
                 let file = place.appendingPathComponent(SpotPackage.fileName(for: entry.spot.name))

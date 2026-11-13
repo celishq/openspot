@@ -30,7 +30,7 @@ struct SpotSlotView: View {
                 toggle
             }
         case .slider(let level, let low, let high):
-            SpotSlotSlider(level: level, low: low, high: high) { onSlot(part.id, String(Int($0.rounded()))) }
+            SpotSlider(level: level, range: low...high) { onSlot(part.id, String(Int($0.rounded()))) }
         case .menu(let options, let value), .list(let options, let value):
             Menu(options.first { $0.id == value }?.title ?? part.title ?? "") {
                 ForEach(options, id: \.id) { option in
@@ -47,25 +47,14 @@ struct SpotSlotView: View {
         case .chart(let points):
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
                 if part.title != nil || part.detail != nil { words.fixedSize(horizontal: false, vertical: true) }
-                SpotSlotBars(points: points)
+                SpotBars(points: points, gap: 2, radius: 1.5)
             }
         case .shortcut(let text):
             SpotKeyLabel(text: text, isRecording: false)
         case .text(let text, let placeholder, let isReadOnly):
             SpotSlotField(text: text, placeholder: placeholder ?? part.title ?? "", isReadOnly: isReadOnly) { onSlot(part.id, $0) }
-        case .metric(let number):
-            VStack(alignment: .leading, spacing: SpotType.lineGap) {
-                Text(number)
-                    .font(.system(size: metricSize, weight: .semibold, design: .rounded))
-                    .foregroundStyle(SpotTheme.ink)
-                    .lineLimit(1)
-                    .minimumScaleFactor(metricSize > 28 ? 0.2 : 0.5)
-                if let label = part.title {
-                    Text(label).font(SpotType.detail).modifier(SpotSecondaryText()).lineLimit(1)
-                }
-            }
-            .modifier(SpotColorBar(color: part.color))
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        case .number:
+            SpotNumberView(part: part, font: .system(size: numberSize, weight: .semibold, design: .rounded), leastScale: numberSize > 28 ? 0.2 : 0.5)
         case .image(let path):
             picture(icon: .image(path))
         default:
@@ -99,7 +88,7 @@ struct SpotSlotView: View {
         }
     }
 
-    private var metricSize: CGFloat {
+    private var numberSize: CGFloat {
         part.title == nil ? height.map { $0 * 0.8 } ?? 28 : 28
     }
 
@@ -145,41 +134,5 @@ private struct SpotSlotField: View {
                 if let typed { onSubmit(typed) }
                 typed = nil
             }
-    }
-}
-
-/// A slider in a row, which sends its value once the person lets go.
-private struct SpotSlotSlider: View {
-    let level: Double
-    let low: Double
-    let high: Double
-    let onEnd: (Double) -> Void
-    @State private var dragged: Double?
-
-    var body: some View {
-        Slider(value: Binding(get: { dragged ?? level }, set: { dragged = $0 }), in: low...high) { editing in
-            if !editing, let dragged { onEnd(dragged); self.dragged = nil }
-        }
-        .controlSize(.small)
-        .tint(SpotTheme.ink)
-    }
-}
-
-/// Bars in a row. The last bar is the newest.
-private struct SpotSlotBars: View {
-    let points: [Double]
-
-    var body: some View {
-        let top = max(points.max() ?? 1, 1)
-        GeometryReader { room in
-            HStack(alignment: .bottom, spacing: 2) {
-                ForEach(Array(points.enumerated()), id: \.offset) { _, point in
-                    RoundedRectangle(cornerRadius: 1.5)
-                        .fill(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
-                        .frame(height: room.size.height * max(point, 0) / top)
-                }
-            }
-            .frame(maxHeight: .infinity, alignment: .bottom)
-        }
     }
 }

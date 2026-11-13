@@ -22,7 +22,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     static let touchIDReuse: TimeInterval = 300
     static var touchIDPassed: Date?
 
-    private(set) var statusItem: NSStatusItem?
+    private(set) var item: OpenspotItem?
     private(set) lazy var model = SpotsModel(host: self)
     private(set) var panel: SpotsPanel?
     private(set) var toast: ToastPanel?
@@ -31,13 +31,12 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     var wantedKeys: [GlobalKey] = []
     private var heldKeys: [GlobalKey: HotKey.Registration] = [:]
     private var keyFaults: [String] = []
-    private var trayBar: SpotTrayBar?
+    private var menuBar: SpotMenuBar?
     private var configFaults: [String] = []
-    private var menuBarDrag: SpotMenuBarDrag?
     private var fileChooser: SpotFileChooser?
     private var motionProbe: SpotMotionProbe?
     private var update: AppUpdate?
-    private var folderWatch: SpotsFolderWatch?
+    private var spotsWatch: SpotsWatch?
     private var showListener: NSObjectProtocol?
     private var commandSocket: CommandSocket?
     private let mac = SpotMac()
@@ -50,24 +49,17 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var tapWatch: SpotTapWatch?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        #if DEBUG
-        item.button?.image = NSImage(named: "TrayMarkNightly")
-        #else
-        item.button?.image = NSImage(named: "TrayMark")
-        #endif
-        item.button?.setAccessibilityLabel("Openspot")
-        item.button?.target = self
-        item.button?.action = #selector(pressItem)
-        statusItem = item
-        menuBarDrag = item.button.map { button in
-            SpotMenuBarDrag(button: button, onEnter: { [weak self] in self?.showPanelForDrag() }, onDrop: { [weak self] in self?.model.review($0) })
-        }
+        toast = ToastPanel.make()
+        let item = OpenspotItem(
+            model: model, toast: toast?.toast, target: self, action: #selector(pressItem),
+            onDragEnter: { [weak self] in self?.showPanelForDrag() }, onDrop: { [weak self] in self?.model.review($0) }
+        )
+        self.item = item
+        toast?.item = item
         EditMenu.install()
         SpotKeyLayouts.start()
         panel = SpotsPanel.make(model: model)
-        toast = ToastPanel.make()
-        trayBar = SpotTrayBar(model: model, openspotItem: item)
+        menuBar = SpotMenuBar(model: model, openspotItem: item)
         if let panel, let probe = SpotMotionProbe(model: model, panel: panel) {
             motionProbe = probe
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) { probe.run(show: panel.show) }
@@ -85,14 +77,16 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
                 .error("Openspot cannot listen for openspot calls for \(config.path, privacy: .public), so spots that ask the app fail.")
         }
         model.reload()
-        folderWatch = SpotsFolderWatch(folder: model.files.folder.url) { [weak self] in self?.model.folderChanged() }
+        spotsWatch = SpotsWatch(folder: model.files.folder.url, config: model.files.config.url) { [weak self] in self?.model.spotsChanged() }
         try? AgentNote(command: Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/openspot").path).write(in: model.files.folder.url)
         showListener = SpotShowLink.listen { [weak self] id in self?.model.reveal(id) ?? false }
         let isFirstLaunch = SpotsFolder.standard().isFirstLaunch(config: .standard())
+        model.runs.launched()
         panel?.warm { [weak self] in
             guard let self else { return }
             SpotSheetWarmth.draw()
             SpotSoftBlur.warm(SpotsView.blurHeights(of: model))
+            update?.start()
             if isFirstLaunch {
                 model.beginFirstLaunch()
             } else {
@@ -202,7 +196,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
 
     private func register(_ key: Shortcut) -> HotKey.Registration? {
         HotKey.register(key) { [weak self] in
-            Task { @MainActor in self?.togglePanel() }
+            MainActor.assumeIsolated { self?.togglePanel() }
         }
     }
 
@@ -216,7 +210,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        folderWatch?.stop()
+        spotsWatch?.stop()
         commandSocket?.close()
         model.quit()
     }
