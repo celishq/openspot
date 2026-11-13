@@ -34,6 +34,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var menuBar: SpotMenuBar?
     private var configFaults: [String] = []
     private var fileChooser: SpotFileChooser?
+    private var submenu: SpotSubmenuWindow?
     private var motionProbe: SpotMotionProbe?
     private var update: AppUpdate?
     private var spotsWatch: SpotsWatch?
@@ -262,6 +263,17 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         previousApp = nil
         panel?.place(over: nil)
         panel?.showForDrag()
+    }
+
+    func showSubmenu(beside row: CGRect, of menu: CGRect) {
+        guard let panel, let rows = model.menu?.submenu?.rows.count else { return }
+        let window = submenu ?? SpotSubmenuWindow.make(model: model)
+        submenu = window
+        window.show(rows: rows, beside: row, of: menu, in: panel)
+    }
+
+    func hideSubmenu() {
+        submenu?.hide()
     }
 
     /// Closes the panel and asks the person for files. Afterwards the app that was in front comes back.

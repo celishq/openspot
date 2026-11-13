@@ -61,9 +61,15 @@ struct SpotActionMenuView: View, @MainActor Equatable {
             HStack(spacing: SpotTokens.padding) {
                 title(of: row, isRunning: call != nil, isConfirming: isConfirming)
                 Spacer(minLength: 0)
-                Text(row.keyLabel)
-                    .font(SpotType.detail)
-                    .modifier(SpotSecondaryText())
+                if row.children.isEmpty {
+                    Text(row.keyLabel)
+                        .font(SpotType.detail)
+                        .modifier(SpotSecondaryText())
+                } else {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .modifier(SpotSecondaryText())
+                }
             }
             .padding(.horizontal, SpotTokens.padding - SpotTokens.menuPadding + 4)
             .frame(height: SpotTokens.menuRowHeight)

@@ -48,15 +48,16 @@ public struct ActionMenu: Equatable, Sendable {
     /// How many rows a menu needs to show a field to search them.
     private static let searchFrom = 3
 
-    /// The rows of the level that shows: the top, or the submenu of `parent`.
-    public private(set) var rows: [Row]
-    /// The row whose submenu shows, with the rows and the selection of the top. Nil at the top.
-    private var top: Top?
+    public let rows: [Row]
+    /// The submenu that shows beside the menu, which then takes the keys. Nil while none shows.
+    public private(set) var submenu: Submenu?
 
-    private struct Top: Equatable, Sendable {
-        let row: Row
-        let rows: [Row]
-        let selected: Int
+    /// The children of one row, which show beside it, with the selected one.
+    public struct Submenu: Equatable, Sendable {
+        /// The index of its row among the shown rows.
+        public let parent: Int
+        public let rows: [Row]
+        public fileprivate(set) var selected = 0
     }
     /// The rows that the search finds, best first. With no search, each row.
     public private(set) var shown: [Row]
@@ -97,38 +98,42 @@ public struct ActionMenu: Equatable, Sendable {
         return top
     }
 
-    /// The row whose submenu shows, or nil at the top.
+    /// The row whose submenu shows, or nil while none shows.
     public var parent: Row? {
-        top?.row
-    }
-
-    /// Shows the children of the selected row in its place.
-    private mutating func enter(_ row: Row) {
-        top = Top(row: row, rows: rows, selected: selected)
-        rows = row.children
-        shown = rows
-        query = ""
-        selected = 0
-        confirming = nil
-    }
-
-    /// Goes back from a submenu to the top, with its row selected. Returns false at the top.
-    public mutating func back() -> Bool {
-        guard let top else { return false }
-        self.top = nil
-        rows = top.rows
-        shown = rows
-        query = ""
-        selected = top.selected
-        confirming = nil
-        return true
+        submenu.map { shown[$0.parent] }
     }
 
     /// Opens the submenu of the selected row. Returns false for a row with none.
     public mutating func enterSelected() -> Bool {
-        guard let row = selectedRow, !row.children.isEmpty else { return false }
-        enter(row)
+        guard submenu == nil, shown.indices.contains(selected), !shown[selected].children.isEmpty else { return false }
+        submenu = Submenu(parent: selected, rows: shown[selected].children)
+        confirming = nil
         return true
+    }
+
+    /// Closes the submenu, and leaves its row selected. Returns false when none shows.
+    public mutating func back() -> Bool {
+        guard submenu != nil else { return false }
+        submenu = nil
+        confirming = nil
+        return true
+    }
+
+    /// Selects a shown row as the pointer reaches it: its submenu opens, and the submenu of another row closes.
+    public mutating func point(at index: Int) {
+        guard shown.indices.contains(index) else { return }
+        if submenu?.parent == index { return }
+        selected = index
+        submenu = nil
+        confirming = nil
+        _ = enterSelected()
+    }
+
+    /// Selects a row of the submenu.
+    public mutating func pointSubmenu(at index: Int) {
+        guard let rows = submenu?.rows, rows.indices.contains(index), submenu?.selected != index else { return }
+        submenu?.selected = index
+        confirming = nil
     }
 
     public var isSearchable: Bool {
@@ -165,8 +170,10 @@ public struct ActionMenu: Equatable, Sendable {
         return headers
     }
 
+    /// The selected row of the submenu while one shows, else of the menu.
     public var selectedRow: Row? {
-        shown.indices.contains(selected) ? shown[selected] : nil
+        if let submenu { return submenu.rows.indices.contains(submenu.selected) ? submenu.rows[submenu.selected] : nil }
+        return shown.indices.contains(selected) ? shown[selected] : nil
     }
 
     /// Shows the rows whose words match the text, as the lists match them, and selects the first.
@@ -176,6 +183,7 @@ public struct ActionMenu: Equatable, Sendable {
         let all = rows.flatMap { row in [row] + row.children.map { Row(title: "\(row.title) › \($0.title)", keyLabel: $0.keyLabel, action: $0.action, isQuiet: $0.isQuiet, owner: $0.owner, group: $0.group) } }
         let items = all.indices.map { SpotItem(title: all[$0].title, run: String($0)) }
         shown = text.isEmpty ? rows : SearchQuery(text: text).matching(items).compactMap { Int($0.run).map { all[$0] } }.filter { $0.children.isEmpty }
+        submenu = nil
         selected = 0
         confirming = nil
     }
@@ -196,14 +204,20 @@ public struct ActionMenu: Equatable, Sendable {
         return (keys + ["\(Self.key) Actions"]).joined(separator: "   ")
     }
 
+    /// Moves the selection of the submenu while one shows, else of the menu.
     public mutating func move(by step: Int) {
         guard step != 0 else { return }
-        selected = min(max(selected + step, 0), max(shown.count - 1, 0))
+        if let submenu {
+            self.submenu?.selected = min(max(submenu.selected + step, 0), max(submenu.rows.count - 1, 0))
+        } else {
+            selected = min(max(selected + step, 0), max(shown.count - 1, 0))
+        }
         confirming = nil
     }
 
     /// Selects the row of this action. A search that hides it ends first.
     public mutating func select(_ action: CommandAction) {
+        submenu = nil
         if !shown.contains(where: { $0.action == action }) { search("") }
         selected = shown.firstIndex { $0.action == action } ?? selected
     }
@@ -213,7 +227,7 @@ public struct ActionMenu: Equatable, Sendable {
     public mutating func press(isRunning: Bool = false) -> Row? {
         guard let row = selectedRow else { return nil }
         if !row.children.isEmpty {
-            enter(row)
+            _ = enterSelected()
             return nil
         }
         guard !isRunning, let action = row.action, action.confirm != nil, confirming != action.id else { return row }

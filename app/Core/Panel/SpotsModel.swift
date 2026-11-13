@@ -49,6 +49,8 @@ public final class SpotsModel {
     @ObservationIgnored var laidOutSizes: [SpotSize] = []
     /// Each offered action whose hook said yes to the card of the open menu, as `<owner> <action id>`.
     @ObservationIgnored var hookYes: Set<String> = []
+    /// The row of the open menu whose submenu the host shows beside it.
+    @ObservationIgnored var shownSubmenuRow: CGRect?
     /// The glyphs of the cards that the host last drew ahead.
     @ObservationIgnored private var cardGlyphs: [String] = []
     @ObservationIgnored var laidOutGrid = SpotGrid()

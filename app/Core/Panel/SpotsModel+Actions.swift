@@ -305,7 +305,34 @@ extension SpotsModel {
         set {
             guard let newValue, menu != nil else { return }
             menuSession?.menu = newValue
+            placeSubmenu()
         }
+    }
+
+    /// Shows the submenu of the open menu beside its row once the menu has a place, or hides it.
+    func placeSubmenu() {
+        var row: CGRect?
+        if let menu, let submenu = menu.submenu, let frame = menuFrame, menuSession?.phase != .closing {
+            row = frame.rowRect(submenu.parent, of: menu)
+        }
+        guard row != shownSubmenuRow else { return }
+        shownSubmenuRow = row
+        if let row, let menu, let frame = menuFrame {
+            host.showSubmenu(beside: row, of: frame.rect(of: menu))
+        } else {
+            host.hideSubmenu()
+        }
+    }
+
+    /// Selects a row of the open submenu, as the pointer reaches it.
+    public func pointSubmenu(row: Int) {
+        menu?.pointSubmenu(at: row)
+    }
+
+    /// Runs a row of the open submenu, as a click on it does.
+    public func pressSubmenu(row: Int) {
+        menu?.pointSubmenu(at: row)
+        pressMenu()
     }
 
     /// What the open menu acts on.
@@ -319,6 +346,7 @@ extension SpotsModel {
         guard menu != nil, frame != menuFrame else { return }
         menuFrame = frame
         if menuSession?.phase != .opening { growBackdrop() }
+        placeSubmenu()
     }
 
     /// Where the menu's item lies once its motion ends, from where it lies now: a focused card at its forward scale about the
@@ -482,10 +510,14 @@ extension SpotsModel {
         change(.sheet(isOpen: false), { menuSession?.phase = .closing }, completion: { [weak self] in
             if self?.menuSession?.phase == .closing { self?.menuSession = nil }
         })
+        placeSubmenu()
     }
 
+    /// Runs a shown row of the open menu, as a click on it does. A row with children opens them instead.
     public func pressMenu(row: Int) {
-        guard let menu else { return }
+        guard let menu, menu.shown.indices.contains(row) else { return }
+        guard menu.shown[row].children.isEmpty else { return point(at: .menuRow(row)) }
+        _ = self.menu?.back()
         self.menu?.move(by: row - menu.selected)
         pressMenu()
     }

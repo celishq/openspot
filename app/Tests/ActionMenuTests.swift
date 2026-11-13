@@ -289,23 +289,43 @@ final class ActionMenuTests: XCTestCase {
         XCTAssertEqual(menu.rows.last?.children.map(\.title), ["Draw…", "Choose File…", "Reset Icon"])
     }
 
-    func testAPressOfARowWithChildrenOpensThemAndBackReturnsToItsRow() throws {
+    func testAPressOfARowWithChildrenOpensThemBesideItAndBackClosesThem() throws {
         var menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, offered: icon()))
         menu.move(by: 2)
 
         XCTAssertNil(menu.press())
-        let inside = menu.shown.map(\.title)
+        let top = menu.shown.map(\.title)
+        let inside = menu.submenu?.rows.map(\.title)
         let parent = menu.parent?.title
         menu.move(by: 1)
         let file = menu.press()?.action?.id
         XCTAssertTrue(menu.back())
 
+        XCTAssertEqual(top, ["Open", "New", "Change Icon"])
         XCTAssertEqual(inside, ["Draw…", "Choose File…", "Reset Icon"])
         XCTAssertEqual(parent, "Change Icon")
         XCTAssertEqual(file, "change.file")
-        XCTAssertNil(menu.parent)
+        XCTAssertNil(menu.submenu)
         XCTAssertEqual(menu.selectedRow?.title, "Change Icon")
         XCTAssertFalse(menu.back())
+    }
+
+    func testThePointerOpensTheSubmenuOfItsRowAndClosesItOnAnotherRow() throws {
+        var menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, offered: icon()))
+
+        menu.point(at: 2)
+        let opened = menu.submenu?.parent
+        menu.pointSubmenu(at: 2)
+        let picked = menu.selectedRow?.title
+        menu.point(at: 2)
+        let kept = menu.selectedRow?.title
+        menu.point(at: 1)
+
+        XCTAssertEqual(opened, 2)
+        XCTAssertEqual(picked, "Reset Icon")
+        XCTAssertEqual(kept, "Reset Icon")
+        XCTAssertNil(menu.submenu)
+        XCTAssertEqual(menu.selectedRow?.title, "New")
     }
 
     func testASearchFindsAChildByItsWordsUnderItsParentsTitle() throws {

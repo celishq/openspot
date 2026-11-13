@@ -203,6 +203,29 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertFalse(first.contains("Late"))
     }
 
+    func testTheSubmenuShowsBesideItsRowUntilBackOrTheMenusClose() throws {
+        try script("weather", header: "title=Weather")
+        _ = try select("weather")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        let menu = try XCTUnwrap(model.menu)
+        let frame = ActionMenuFrame(item: CGRect(x: 20, y: 120, width: 60, height: 60), menu: menu, bounds: ActionMenuFrame.bounds(under: 80))
+        model.placeMenu(frame)
+        let parent = try XCTUnwrap(menu.shown.firstIndex { $0.title == "Change Icon" })
+        model.menu?.select(try XCTUnwrap(menu.shown[parent].action))
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "right")))
+        let shown = host.submenus
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+        let selected = model.menu?.selectedRow?.title
+        XCTAssertTrue(model.handleKey(ActionKey(name: "left")))
+        model.pressMenu(row: parent)
+        model.closeMenu()
+
+        XCTAssertEqual(shown, [frame.rowRect(parent, of: menu)])
+        XCTAssertEqual(selected, "Choose File…")
+        XCTAssertEqual(host.submenus, [frame.rowRect(parent, of: menu), nil, frame.rowRect(parent, of: menu), nil])
+    }
+
     func testTheIconSettingOfASpotWinsOverItsHeaderIconUntilItIsRemoved() throws {
         try script("weather", header: "title=Weather\nicon=cloud")
         let drawn = folder.appendingPathComponent("drawn.svg").path

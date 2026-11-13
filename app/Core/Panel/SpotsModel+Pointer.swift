@@ -14,8 +14,7 @@ extension SpotsModel {
     public func point(at target: PointerTarget) {
         switch target {
         case .menuRow(let row):
-            guard let menu else { return }
-            self.menu?.move(by: row - menu.selected)
+            menu?.point(at: row)
         case .card(let id):
             guard !menuOwnsPointer, !isEditing, let index = visible.firstIndex(where: { $0.id == id }) else { return }
             selected = index
