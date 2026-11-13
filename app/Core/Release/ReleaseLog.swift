@@ -65,7 +65,7 @@ public struct ReleaseLog: Equatable, Sendable {
 
     /// This log with a release of these files after its last one: the next version of its address when this key signed the
     /// last one, and else version 1 of a new address, since a changed copy of another person's spot is a new spot.
-    public func signing(_ files: [SpotFolder.File], readme: String, by key: AccountKey, at date: Date = Date()) throws -> ReleaseLog {
+    public func signing(_ files: [SpotPackage.File], readme: String, by key: AccountKey, at date: Date = Date()) throws -> ReleaseLog {
         let isOwn = last?.publicKey == key.publicKey
         let address = isOwn ? last?.address : nil
         let version = isOwn ? (last?.version ?? 0) + 1 : 1

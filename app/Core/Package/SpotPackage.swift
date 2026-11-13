@@ -3,7 +3,7 @@ import Foundation
 /// A spot as a person sends it: the files of its spot folders, and of each spot folder that it needs, by their paths in
 /// the spots folder. It travels as a zip of those folders. Each value of this type passed its checks, so it holds no path
 /// that leaves a spot folder and no text that hides its order.
-public struct SpotFolder: Equatable, Sendable {
+public struct SpotPackage: Equatable, Sendable {
     public struct File: Equatable, Sendable {
         public let path: String
         public let isExecutable: Bool
@@ -105,7 +105,7 @@ public struct SpotFolder: Equatable, Sendable {
 
     /// This spot with the program of each Swift script and the library of each view that has none, so that a Mac with no
     /// Swift tools can run it (protocol: Views).
-    public func compiled(by program: SwiftProgram = SwiftProgram(), views: ViewLibrary = .standard()) async throws -> SpotFolder {
+    public func compiled(by program: SwiftProgram = SwiftProgram(), views: ViewLibrary = .standard()) async throws -> SpotPackage {
         var all = files
         for (file, path) in uncompiled {
             all.append(File(path: path, isExecutable: true, contents: try await program.build(source: file.contents)))
@@ -114,7 +114,7 @@ public struct SpotFolder: Equatable, Sendable {
             let name = URL(fileURLWithPath: file.path).lastPathComponent
             all.append(File(path: path, isExecutable: false, contents: try await views.build(source: file.contents, named: name, kinds: SwiftProgram.kinds)))
         }
-        return try SpotFolder(files: all)
+        return try SpotPackage(files: all)
     }
 
     private var uncompiled: [(file: File, path: String)] {

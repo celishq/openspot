@@ -18,7 +18,7 @@ public struct SpotManifest: Hashable, Sendable {
         self.files = Set(files)
     }
 
-    public init(_ files: [SpotFolder.File]) {
+    public init(_ files: [SpotPackage.File]) {
         self.init(files.map { File(path: $0.path, sha256: Data(CryptoKit.SHA256.hash(data: $0.contents)).hex, size: $0.contents.count, isExecutable: $0.isExecutable) })
     }
 

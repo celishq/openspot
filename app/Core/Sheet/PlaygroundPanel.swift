@@ -36,7 +36,7 @@ public final class PlaygroundPanel {
         for old in (try? manager.contentsOfDirectory(at: spots, includingPropertiesForKeys: nil)) ?? [] {
             try? manager.removeItem(at: old)
         }
-        if let file, file.deletingLastPathComponent().pathExtension == SpotFolder.fileExtension {
+        if let file, file.deletingLastPathComponent().pathExtension == SpotPackage.fileExtension {
             try manager.copyItem(at: file.deletingLastPathComponent(), to: target.deletingLastPathComponent())
         }
         try manager.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)

@@ -20,14 +20,14 @@ extension SpotsModel {
         }
         let folder = files.folder
         do {
-            var shared = try SpotFolder(sharing: spot, from: SpotsFolder(url: folder.url).keptScan())
+            var shared = try SpotPackage(sharing: spot, from: SpotsFolder(url: folder.url).keptScan())
             guard Self.publication(of: shared, in: files.store) != .current else {
                 host.confirm("\(spot.name) has no change since its last publish.")
                 return .unchanged
             }
             if spot.previewsSample {
                 try await SpotListing.capturePreview(of: spot, runs: runs)
-                shared = try SpotFolder(sharing: spot, from: SpotsFolder(url: folder.url).scan())
+                shared = try SpotPackage(sharing: spot, from: SpotsFolder(url: folder.url).scan())
             }
             guard let released = try await release(shared, named: spot.name) else { return .failed }
             try released.write(to: files.store)
@@ -42,7 +42,7 @@ extension SpotsModel {
 
     /// A spot of the spots folder as a release, signed by the account after a compile that a toast names. Nil when the
     /// person has no account yet, which opens the spot that sets one up.
-    func release(_ package: SpotFolder, named name: String) async throws -> SpotFolder? {
+    func release(_ package: SpotPackage, named name: String) async throws -> SpotPackage? {
         guard let key = try await accountKey() else { return nil }
         if package.needsCompile { host.work("Compiling \(name)") }
         return try await package.release(by: key, keepingLogIn: files.folder.url)
@@ -54,10 +54,10 @@ extension SpotsModel {
     public func sharePackage(_ id: String) -> URL? {
         guard let item = dock.items.first(where: { $0.id == id }), item.publication != nil else { return nil }
         let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-shared/\(UUID().uuidString)", isDirectory: true)
-        let file = place.appendingPathComponent(SpotFolder.fileName(for: item.spot.name))
+        let file = place.appendingPathComponent(SpotPackage.fileName(for: item.spot.name))
         do {
             try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
-            try SpotFolder(contentsOf: files.store.appendingPathComponent(SpotID(file: item.spot.url).folderName)).zip(to: file)
+            try SpotPackage(contentsOf: files.store.appendingPathComponent(SpotID(file: item.spot.url).folderName)).zip(to: file)
         } catch {
             host.notify("\(item.spot.name) was not copied. \(Self.reason(error))")
             return nil
@@ -104,7 +104,7 @@ extension SpotsModel {
     nonisolated static func publications(of scan: ScanResult, in folder: SpotsFolder, store: URL) -> [String: SpotDock.Publication] {
         var result: [String: SpotDock.Publication] = [:]
         for spot in scan.spots where FileManager.default.fileExists(atPath: store.appendingPathComponent(SpotID(file: spot.url).folderName).path) {
-            guard let shared = try? SpotFolder(sharing: spot, from: scan) else { continue }
+            guard let shared = try? SpotPackage(sharing: spot, from: scan) else { continue }
             result[spot.id] = publication(of: shared, in: store)
         }
         return result
@@ -112,8 +112,8 @@ extension SpotsModel {
 
     /// Whether the store holds a copy of a spot's own spot folder with the files that a person writes as they are now, or
     /// older ones, or nil when it holds none. The programs and the views that a publish builds, and the release log, do not count.
-    nonisolated static func publication(of spot: SpotFolder, in store: URL) -> SpotDock.Publication? {
-        guard let root = spot.roots.first, let stored = try? SpotFolder(contentsOf: store.appendingPathComponent(root)) else { return nil }
+    nonisolated static func publication(of spot: SpotPackage, in store: URL) -> SpotDock.Publication? {
+        guard let root = spot.roots.first, let stored = try? SpotPackage(contentsOf: store.appendingPathComponent(root)) else { return nil }
         return stored.manifest(of: root).written == spot.manifest(of: root).written ? .current : .changed
     }
 }

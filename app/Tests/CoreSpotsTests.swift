@@ -152,7 +152,7 @@ final class CoreSpotsTests: XCTestCase {
         try "#!/bin/sh\n# title=Overview\n# grid.square=cpu\n".writeScript(to: core.appendingPathComponent("overview.spot/overview.sh"))
         let scan = try SpotsFolder(url: folder, core: core, enabled: ["overview"]).scan()
 
-        let spot = try SpotFolder(sharing: XCTUnwrap(scan.spots.first { $0.name == "Overview" }), from: scan)
+        let spot = try SpotPackage(sharing: XCTUnwrap(scan.spots.first { $0.name == "Overview" }), from: scan)
 
         XCTAssertEqual(spot.files.map(\.path), ["overview.spot/overview.sh", "cpu.spot/cpu.sh"])
         XCTAssertEqual(spot.files.last?.isExecutable, true)

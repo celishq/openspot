@@ -22,7 +22,7 @@ struct SpotGridDrop: DropDelegate {
     func validateDrop(info: DropInfo) -> Bool {
         model.followDrag()
         let paths = Self.paths
-        return SpotFolder.isFile(paths) || model.visible.contains { model.acceptsDrop(paths, on: $0.id) }
+        return SpotPackage.isFile(paths) || model.visible.contains { model.acceptsDrop(paths, on: $0.id) }
     }
 
     func dropEntered(info: DropInfo) {
@@ -34,7 +34,7 @@ struct SpotGridDrop: DropDelegate {
     func dropUpdated(info: DropInfo) -> DropProposal? {
         let taker = model.card(at: info.location).flatMap { model.takesDrag($0) ? $0 : nil }
         if target != taker { target = taker }
-        return DropProposal(operation: taker != nil || SpotFolder.isFile(model.dragPaths) ? .copy : .forbidden)
+        return DropProposal(operation: taker != nil || SpotPackage.isFile(model.dragPaths) ? .copy : .forbidden)
     }
 
     func dropExited(info: DropInfo) {
@@ -44,7 +44,7 @@ struct SpotGridDrop: DropDelegate {
     func performDrop(info: DropInfo) -> Bool {
         target = nil
         let paths = Self.paths
-        if SpotFolder.isFile(paths) {
+        if SpotPackage.isFile(paths) {
             model.review(paths.map { URL(fileURLWithPath: $0) })
             return true
         }

@@ -18,12 +18,12 @@ final class SpotMenuBarDrag: NSObject, NSWindowDelegate, NSDraggingDestination {
 
     func draggingEntered(_ sender: any NSDraggingInfo) -> NSDragOperation {
         onEnter()
-        return SpotFolder.isFile(SpotGridDrop.paths) ? .copy : []
+        return SpotPackage.isFile(SpotGridDrop.paths) ? .copy : []
     }
 
     func performDragOperation(_ sender: any NSDraggingInfo) -> Bool {
         let paths = SpotGridDrop.paths
-        guard SpotFolder.isFile(paths) else { return false }
+        guard SpotPackage.isFile(paths) else { return false }
         onDrop(paths.map { URL(fileURLWithPath: $0) })
         return true
     }

@@ -87,7 +87,7 @@ public struct SheetSandbox: Equatable, Sendable {
     public static func place(of file: URL?, text: String, spots: URL, scratch: URL) -> (url: URL, id: String) {
         guard let file else { return (scratch.appendingPathComponent("playground.\(fileExtension(of: text))"), "playground") }
         let folder = file.deletingLastPathComponent().resolvingSymlinksInPath()
-        if folder.pathExtension == SpotFolder.fileExtension, folder.deletingLastPathComponent().path == spots.resolvingSymlinksInPath().path {
+        if folder.pathExtension == SpotPackage.fileExtension, folder.deletingLastPathComponent().path == spots.resolvingSymlinksInPath().path {
             return (file, SpotID(file: file).description)
         }
         return (file, file.deletingPathExtension().lastPathComponent)

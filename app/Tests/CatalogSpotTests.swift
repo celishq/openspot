@@ -64,7 +64,7 @@ final class CatalogSpotTests: BuiltInCase {
 
     func testAReviewThatCannotAddShowsTheTextWithNoAddPart() throws {
         let scan = try SpotsFolder(url: spots, core: core, enabled: ["apps"]).scan()
-        let shared = try SpotFolder(sharing: XCTUnwrap(scan.spots.first { $0.id == "apps" }), from: scan)
+        let shared = try SpotPackage(sharing: XCTUnwrap(scan.spots.first { $0.id == "apps" }), from: scan)
 
         let review = try ReviewSpot(spot: shared, folder: spots, canAdd: false)
         let sheet = try review.answer(["read"])

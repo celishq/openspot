@@ -158,7 +158,7 @@ final class SwiftProgramTests: XCTestCase {
     }
 
     func testASharedSwiftScriptTravelsWithItsProgram() async throws {
-        let spot = try SpotFolder(files: [
+        let spot = try SpotPackage(files: [
             .init(path: "home.spot/hello.swift", isExecutable: true, contents: source),
             .init(path: "home.spot/shared.swift", isExecutable: false, contents: source),
             .init(path: "home.spot/other.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8))
@@ -175,7 +175,7 @@ final class SwiftProgramTests: XCTestCase {
     }
 
     func testAProgramThatAlreadyTravelsIsNotBuiltAgain() async throws {
-        let spot = try SpotFolder(files: [
+        let spot = try SpotPackage(files: [
             .init(path: "hello.spot/hello.swift", isExecutable: true, contents: source),
             .init(path: "hello.spot/hello.program", isExecutable: true, contents: Data("old".utf8))
         ])
@@ -192,7 +192,7 @@ final class SwiftProgramTests: XCTestCase {
         let place = SpotsFolder(url: folder)
         let scan = try place.scan()
 
-        let spot = try SpotFolder(sharing: try XCTUnwrap(scan.spots.first), from: scan)
+        let spot = try SpotPackage(sharing: try XCTUnwrap(scan.spots.first), from: scan)
 
         XCTAssertEqual(spot.files.map(\.path), ["hello.spot/hello.program", "hello.spot/hello.swift"])
     }
@@ -240,7 +240,7 @@ final class SwiftProgramTests: XCTestCase {
     }
 
     func testTheReviewSaysThatASourceMayNotMatchItsProgram() throws {
-        let spot = try SpotFolder(files: [
+        let spot = try SpotPackage(files: [
             .init(path: "hello.spot/hello.swift", isExecutable: true, contents: source),
             .init(path: "hello.spot/hello.program", isExecutable: true, contents: Data([0xCF, 0xFA, 0xED, 0xFE, 0x00]))
         ])

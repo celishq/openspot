@@ -33,7 +33,7 @@ public struct SpotID: Hashable, Sendable, CustomStringConvertible {
 
     /// The name of its spot folder, such as `home.spot`.
     public var folderName: String {
-        name + "." + SpotFolder.fileExtension
+        name + "." + SpotPackage.fileExtension
     }
 
     /// Whether another ID names a script of the same spot folder, which is one unit.

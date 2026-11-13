@@ -7,12 +7,12 @@ struct SpotAddDrop: DropDelegate {
 
     func validateDrop(info: DropInfo) -> Bool {
         model.followDrag()
-        return SpotFolder.isFile(SpotGridDrop.paths)
+        return SpotPackage.isFile(SpotGridDrop.paths)
     }
 
     func performDrop(info: DropInfo) -> Bool {
         let paths = SpotGridDrop.paths
-        guard SpotFolder.isFile(paths) else { return false }
+        guard SpotPackage.isFile(paths) else { return false }
         model.review(paths.map { URL(fileURLWithPath: $0) })
         return true
     }

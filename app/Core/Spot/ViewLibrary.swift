@@ -117,7 +117,7 @@ public struct ViewLibrary: Sendable {
     public func ship(in folder: URL) async throws -> String {
         var lines: [String] = []
         let folders = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? []
-        for spotFolder in folders.filter({ $0.pathExtension == SpotFolder.fileExtension }).sorted(by: { $0.path < $1.path }) {
+        for spotFolder in folders.filter({ $0.pathExtension == SpotPackage.fileExtension }).sorted(by: { $0.path < $1.path }) {
             let files = (try? FileManager.default.contentsOfDirectory(at: spotFolder, includingPropertiesForKeys: nil)) ?? []
             let views = Set(files.compactMap { file in (try? SpotFile(file: file, id: SpotID(file: file).description))?.spots.compactMap(\.view) }.joined())
             for view in views.sorted() {

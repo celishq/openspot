@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class SpotFolderTests: XCTestCase {
+final class SpotPackageTests: XCTestCase {
     private var spots: URL!
     private var target: URL!
 
@@ -32,28 +32,28 @@ final class SpotFolderTests: XCTestCase {
         try data.write(to: url)
     }
 
-    private func sharing(_ id: String) throws -> SpotFolder {
+    private func sharing(_ id: String) throws -> SpotPackage {
         let folder = SpotsFolder(url: spots)
         let scan = try folder.scan()
         let command = try XCTUnwrap(scan.files.flatMap(\.spots).first { $0.id == id })
-        return try SpotFolder(sharing: command, from: scan)
+        return try SpotPackage(sharing: command, from: scan)
     }
 
-    private func file(_ path: String, _ text: String = "#!/bin/sh\n", runs: Bool = true) -> SpotFolder.File {
-        SpotFolder.File(path: path, isExecutable: runs, contents: Data(text.utf8))
+    private func file(_ path: String, _ text: String = "#!/bin/sh\n", runs: Bool = true) -> SpotPackage.File {
+        SpotPackage.File(path: path, isExecutable: runs, contents: Data(text.utf8))
     }
 
-    private func assertRefused(_ files: [SpotFolder.File], says words: String, line: UInt = #line) {
-        XCTAssertThrowsError(try SpotFolder(files: files), line: line) { error in
+    private func assertRefused(_ files: [SpotPackage.File], says words: String, line: UInt = #line) {
+        XCTAssertThrowsError(try SpotPackage(files: files), line: line) { error in
             XCTAssertTrue((error as? SpotError)?.reason.contains(words) == true, "\(error)", line: line)
         }
     }
 
     /// The spot after a trip through a zip, as a chat carries it.
-    private func sent(_ spot: SpotFolder) throws -> SpotFolder {
+    private func sent(_ spot: SpotPackage) throws -> SpotPackage {
         let zip = target.deletingLastPathComponent().appendingPathComponent("sent-\(UUID().uuidString).spot")
         try spot.zip(to: zip)
-        return try SpotFolder(contentsOf: zip)
+        return try SpotPackage(contentsOf: zip)
     }
 
     func testAScriptKeepsItsBytesAndItsExecutableMarkThroughTheZip() throws {
@@ -114,7 +114,7 @@ final class SpotFolderTests: XCTestCase {
         let scan = try SpotsFolder(url: spots, core: core).scan()
         let widget = try XCTUnwrap(scan.spots.first { $0.id == "board" })
 
-        let spot = try SpotFolder(sharing: widget, from: scan)
+        let spot = try SpotPackage(sharing: widget, from: scan)
 
         XCTAssertEqual(spot.files.map(\.path).sorted(), ["board.spot/board.sh", "cpu.spot/cpu.sh"])
     }
@@ -135,12 +135,12 @@ final class SpotFolderTests: XCTestCase {
     func testASpotOfTheAppDoesNotTravel() throws {
         let shipped = Spot(id: "openspot/spots", name: "Spots", url: spots).builtIn()
 
-        XCTAssertThrowsError(try SpotFolder(sharing: shipped, from: ScanResult(files: [], refused: [])))
+        XCTAssertThrowsError(try SpotPackage(sharing: shipped, from: ScanResult(files: [], refused: [])))
     }
 
     func testAFolderOverTheSizeLimitDoesNotTravel() throws {
         try script("home.spot/coffee.sh")
-        try plain("home.spot/big.bin", Data(count: SpotFolder.sizeLimit + 1))
+        try plain("home.spot/big.bin", Data(count: SpotPackage.sizeLimit + 1))
 
         XCTAssertThrowsError(try sharing("home/coffee")) { error in
             XCTAssertEqual((error as? SpotError)?.reason, "This spot is over the 64 MB limit.")
@@ -151,7 +151,7 @@ final class SpotFolderTests: XCTestCase {
         let text = target.appendingPathComponent("Weather.spot")
         try Data(#"{"format":1,"files":[]}"#.utf8).write(to: text)
 
-        XCTAssertThrowsError(try SpotFolder(contentsOf: text)) { error in
+        XCTAssertThrowsError(try SpotPackage(contentsOf: text)) { error in
             XCTAssertEqual((error as? SpotError)?.reason, "This file is not a spot.")
         }
     }
@@ -162,7 +162,7 @@ final class SpotFolderTests: XCTestCase {
         let zip = target.appendingPathComponent("Loose.spot")
         _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/ditto"), arguments: ["-c", "-k", loose.path, zip.path])
 
-        XCTAssertThrowsError(try SpotFolder(contentsOf: zip)) { error in
+        XCTAssertThrowsError(try SpotPackage(contentsOf: zip)) { error in
             XCTAssertEqual((error as? SpotError)?.reason, "This file holds no spot.")
         }
     }
@@ -174,29 +174,29 @@ final class SpotFolderTests: XCTestCase {
         let zip = target.appendingPathComponent("Timer.spot")
         _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/ditto"), arguments: ["-c", "-k", place.path, zip.path])
 
-        XCTAssertThrowsError(try SpotFolder(contentsOf: zip))
+        XCTAssertThrowsError(try SpotPackage(contentsOf: zip))
     }
 
     func testAZipOverTheLimitIsRefusedBeforeItUnpacks() throws {
-        let spot = try SpotFolder(files: [file("timer.spot/timer.sh"), file("timer.spot/readme.md", String(repeating: "a", count: 10_000), runs: false)])
+        let spot = try SpotPackage(files: [file("timer.spot/timer.sh"), file("timer.spot/readme.md", String(repeating: "a", count: 10_000), runs: false)])
         let zip = target.appendingPathComponent("Timer.spot")
         try spot.zip(to: zip)
 
-        XCTAssertThrowsError(try SpotFolder(contentsOf: zip, limit: 5_000))
-        XCTAssertNoThrow(try SpotFolder(contentsOf: zip))
+        XCTAssertThrowsError(try SpotPackage(contentsOf: zip, limit: 5_000))
+        XCTAssertNoThrow(try SpotPackage(contentsOf: zip))
     }
 
     func testASpotFolderOnTheDiskOpensAsItIs() throws {
         try script("timer.spot/timer.sh")
 
-        XCTAssertEqual(try SpotFolder(contentsOf: spots.appendingPathComponent("timer.spot")).files.map(\.path), ["timer.spot/timer.sh"])
+        XCTAssertEqual(try SpotPackage(contentsOf: spots.appendingPathComponent("timer.spot")).files.map(\.path), ["timer.spot/timer.sh"])
     }
 
     func testAnEntryThatLeavesTheFolderIsUnsafe() {
-        XCTAssertTrue(SpotFolder.isSafe(entry: "timer.spot/timer.sh"))
-        XCTAssertFalse(SpotFolder.isSafe(entry: "../timer.sh"))
-        XCTAssertFalse(SpotFolder.isSafe(entry: "timer.spot/../../timer.sh"))
-        XCTAssertFalse(SpotFolder.isSafe(entry: "/etc/hosts"))
+        XCTAssertTrue(SpotPackage.isSafe(entry: "timer.spot/timer.sh"))
+        XCTAssertFalse(SpotPackage.isSafe(entry: "../timer.sh"))
+        XCTAssertFalse(SpotPackage.isSafe(entry: "timer.spot/../../timer.sh"))
+        XCTAssertFalse(SpotPackage.isSafe(entry: "/etc/hosts"))
     }
 
     func testAFileOutsideASpotFolderIsRefused() {
@@ -225,11 +225,11 @@ final class SpotFolderTests: XCTestCase {
     }
 
     func testAFileOverTheSizeLimitIsRefused() throws {
-        assertRefused([SpotFolder.File(path: "a.spot/a.sh", isExecutable: true, contents: Data(count: SpotFolder.sizeLimit + 1))], says: "64 MB")
+        assertRefused([SpotPackage.File(path: "a.spot/a.sh", isExecutable: true, contents: Data(count: SpotPackage.sizeLimit + 1))], says: "64 MB")
     }
 
     func testAddWritesEachFileWithItsMark() throws {
-        let spot = try SpotFolder(files: [file("home.spot/a.sh"), file("home.spot/b", "b", runs: false)])
+        let spot = try SpotPackage(files: [file("home.spot/a.sh"), file("home.spot/b", "b", runs: false)])
 
         try spot.add(to: target)
 
@@ -240,7 +240,7 @@ final class SpotFolderTests: XCTestCase {
 
     func testAddSendsAFileItReplacesToTheBin() throws {
         let old = try script("a.spot/a.sh", "old", in: target)
-        let spot = try SpotFolder(files: [file("a.spot/a.sh", "new")])
+        let spot = try SpotPackage(files: [file("a.spot/a.sh", "new")])
         var discarded: [String] = []
 
         try spot.add(to: target) { url in
@@ -254,7 +254,7 @@ final class SpotFolderTests: XCTestCase {
 
     func testAddLeavesAnEqualFileAlone() throws {
         try script("a.spot/a.sh", "same", in: target)
-        let spot = try SpotFolder(files: [file("a.spot/a.sh", "same")])
+        let spot = try SpotPackage(files: [file("a.spot/a.sh", "same")])
 
         try spot.add(to: target) { _ in XCTFail("An equal file is not replaced.") }
     }
@@ -265,25 +265,25 @@ final class SpotFolderTests: XCTestCase {
         try FileManager.default.createSymbolicLink(at: target.appendingPathComponent("home.spot"), withDestinationURL: outside)
         try FileManager.default.createDirectory(at: target.appendingPathComponent("taken.spot/taken"), withIntermediateDirectories: true)
 
-        let through = try SpotFolder(files: [file("home.spot/a.sh", "x")])
+        let through = try SpotPackage(files: [file("home.spot/a.sh", "x")])
         XCTAssertThrowsError(try through.add(to: target))
         XCTAssertFalse(FileManager.default.fileExists(atPath: outside.appendingPathComponent("a.sh").path))
 
-        let over = try SpotFolder(files: [file("taken.spot/taken", "x")])
+        let over = try SpotPackage(files: [file("taken.spot/taken", "x")])
         XCTAssertThrowsError(try over.add(to: target))
     }
 
     func testAFileNameComesFromTheNameOfTheSpot() {
-        XCTAssertEqual(SpotFolder.fileName(for: "Weather"), "Weather.spot")
-        XCTAssertEqual(SpotFolder.fileName(for: "../A/b:c"), "A-b-c.spot")
-        XCTAssertEqual(SpotFolder.fileName(for: "..."), "Spot.spot")
+        XCTAssertEqual(SpotPackage.fileName(for: "Weather"), "Weather.spot")
+        XCTAssertEqual(SpotPackage.fileName(for: "../A/b:c"), "A-b-c.spot")
+        XCTAssertEqual(SpotPackage.fileName(for: "..."), "Spot.spot")
     }
 
     func testOnlyADragOfASpotFileOrFolderAddsASpot() {
-        XCTAssertTrue(SpotFolder.isFile(["/a/Weather.spot"]))
-        XCTAssertTrue(SpotFolder.isFile(["/a/Weather.SPOT"]))
-        XCTAssertFalse(SpotFolder.isFile(["/a/Weather.spot", "/a/b.png"]))
-        XCTAssertFalse(SpotFolder.isFile([]))
+        XCTAssertTrue(SpotPackage.isFile(["/a/Weather.spot"]))
+        XCTAssertTrue(SpotPackage.isFile(["/a/Weather.SPOT"]))
+        XCTAssertFalse(SpotPackage.isFile(["/a/Weather.spot", "/a/b.png"]))
+        XCTAssertFalse(SpotPackage.isFile([]))
     }
 
     func testTextThatIsThePathOfASpotFileNamesIt() throws {
@@ -291,28 +291,28 @@ final class SpotFolderTests: XCTestCase {
         try Data("{}".utf8).write(to: file)
         let path = file.path
 
-        XCTAssertEqual(SpotFolder.file(in: path)?.path, path)
-        XCTAssertEqual(SpotFolder.file(in: "  \(path)\n")?.path, path)
-        XCTAssertEqual(SpotFolder.file(in: "'\(path)'")?.path, path)
-        XCTAssertEqual(SpotFolder.file(in: path.replacingOccurrences(of: " ", with: "\\ "))?.path, path)
-        XCTAssertEqual(SpotFolder.file(in: file.absoluteString)?.path, path)
+        XCTAssertEqual(SpotPackage.file(in: path)?.path, path)
+        XCTAssertEqual(SpotPackage.file(in: "  \(path)\n")?.path, path)
+        XCTAssertEqual(SpotPackage.file(in: "'\(path)'")?.path, path)
+        XCTAssertEqual(SpotPackage.file(in: path.replacingOccurrences(of: " ", with: "\\ "))?.path, path)
+        XCTAssertEqual(SpotPackage.file(in: file.absoluteString)?.path, path)
     }
 
     func testOtherTextNamesNoSpotFile() throws {
         let other = target.appendingPathComponent("notes.txt")
         try Data("x".utf8).write(to: other)
 
-        XCTAssertNil(SpotFolder.file(in: ""))
-        XCTAssertNil(SpotFolder.file(in: "weather.spot"))
-        XCTAssertNil(SpotFolder.file(in: other.path))
-        XCTAssertNil(SpotFolder.file(in: target.appendingPathComponent("gone.spot").path))
+        XCTAssertNil(SpotPackage.file(in: ""))
+        XCTAssertNil(SpotPackage.file(in: "weather.spot"))
+        XCTAssertNil(SpotPackage.file(in: other.path))
+        XCTAssertNil(SpotPackage.file(in: target.appendingPathComponent("gone.spot").path))
     }
 
     func testTextThatIsThePathOfASpotFolderNamesIt() throws {
         let folder = target.appendingPathComponent("weather.spot")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
 
-        XCTAssertEqual(SpotFolder.file(in: folder.path)?.path, folder.path)
+        XCTAssertEqual(SpotPackage.file(in: folder.path)?.path, folder.path)
     }
 
     func testTheNoticeWarnsTheSenderAboutSecrets() throws {

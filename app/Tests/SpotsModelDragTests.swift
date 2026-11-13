@@ -668,7 +668,7 @@ final class SpotsModelDragTests: XCTestCase {
         let file = try XCTUnwrap(model.sharePackage("a"))
 
         XCTAssertEqual(file.pathExtension, "spot")
-        XCTAssertEqual(try SpotFolder(contentsOf: file).files.first { $0.path == "a.spot/readme.md" }?.text, "Does a.")
+        XCTAssertEqual(try SpotPackage(contentsOf: file).files.first { $0.path == "a.spot/readme.md" }?.text, "Does a.")
     }
 
     func testAPublishWithNoAccountAsksToSetOneUpAndWritesNothing() async throws {

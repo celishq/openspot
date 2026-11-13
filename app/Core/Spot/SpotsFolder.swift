@@ -88,7 +88,7 @@ public struct SpotsFolder: Sendable {
         for file in ((try? Self.sorted(in: url)) ?? []).filter(Self.isScript) {
             let target = SpotID(Self.stem(of: file.lastPathComponent)).folderName
             let reason = FileManager.default.fileExists(atPath: url.appendingPathComponent(target).appendingPathComponent(file.lastPathComponent).path)
-                ? "\(file.lastPathComponent) is outside a spot folder, and \(target) has a file of that name. Move it into a spot folder of its own, such as \(Self.stem(of: file.lastPathComponent))-2.\(SpotFolder.fileExtension)."
+                ? "\(file.lastPathComponent) is outside a spot folder, and \(target) has a file of that name. Move it into a spot folder of its own, such as \(Self.stem(of: file.lastPathComponent))-2.\(SpotPackage.fileExtension)."
                 : "\(file.lastPathComponent) is outside a spot folder. Move it into \(target)."
             result.refused.append(ScanResult.Refusal(file: file.lastPathComponent, reason: reason))
         }
@@ -203,7 +203,7 @@ public struct SpotsFolder: Sendable {
         }
         let names = Set(own.map(\.lastPathComponent))
         let others = ((try? Self.sorted(in: folder)) ?? []).filter { !names.contains($0.lastPathComponent) && Self.isScript($0) }
-        guard others.isEmpty, folder.pathExtension == SpotFolder.fileExtension else { return try own.forEach(discard) }
+        guard others.isEmpty, folder.pathExtension == SpotPackage.fileExtension else { return try own.forEach(discard) }
         try discard(folder)
     }
 
@@ -214,8 +214,8 @@ public struct SpotsFolder: Sendable {
     public func wrap() throws {
         let entries = try Self.sorted(in: url)
         var loose = entries.filter { !Self.isFolder($0) }
-        for entry in entries where entry.pathExtension != SpotFolder.fileExtension && Self.isFolder(entry) && ((try? Self.sorted(in: entry)) ?? []).contains(where: Self.isScript) {
-            let target = url.appendingPathComponent(entry.lastPathComponent + "." + SpotFolder.fileExtension, isDirectory: true)
+        for entry in entries where entry.pathExtension != SpotPackage.fileExtension && Self.isFolder(entry) && ((try? Self.sorted(in: entry)) ?? []).contains(where: Self.isScript) {
+            let target = url.appendingPathComponent(entry.lastPathComponent + "." + SpotPackage.fileExtension, isDirectory: true)
             if !FileManager.default.fileExists(atPath: target.path) { try FileManager.default.moveItem(at: entry, to: target) }
         }
         let scripts = loose.filter(Self.isScript)
@@ -226,7 +226,7 @@ public struct SpotsFolder: Sendable {
                 let names = [view, (ViewLibrary.path(beside: view) as NSString).lastPathComponent]
                 group += loose.filter { names.contains($0.lastPathComponent) && !group.contains($0) }
             }
-            let target = url.appendingPathComponent(name + "." + SpotFolder.fileExtension, isDirectory: true)
+            let target = url.appendingPathComponent(name + "." + SpotPackage.fileExtension, isDirectory: true)
             try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
             for file in group {
                 loose.removeAll { $0 == file }
@@ -241,7 +241,7 @@ public struct SpotsFolder: Sendable {
     /// `home`. A file goes into the spot folder of `name` when one is given, such as the view of a script.
     static func wrapped(_ path: String, into name: String? = nil) -> String {
         let parts = path.split(separator: "/", maxSplits: 1).map(String.init)
-        guard let first = parts.first, (first as NSString).pathExtension != SpotFolder.fileExtension else { return path }
+        guard let first = parts.first, (first as NSString).pathExtension != SpotPackage.fileExtension else { return path }
         if parts.count > 1 { return SpotID(first).folderName + "/" + parts[1] }
         guard first.contains(".") || name != nil else { return SpotID(first).folderName }
         let stem = name ?? Self.stem(of: first)
@@ -319,7 +319,7 @@ public struct SpotsFolder: Sendable {
 
     /// The spot folders at the top of a folder.
     private static func spotFolders(in folder: URL) throws -> [URL] {
-        try sorted(in: folder).filter { $0.pathExtension == SpotFolder.fileExtension && isFolder($0) }
+        try sorted(in: folder).filter { $0.pathExtension == SpotPackage.fileExtension && isFolder($0) }
     }
 
     /// The files at the top of these spot folders, by their IDs. A folder inside one, such as of shared code, is no spot.

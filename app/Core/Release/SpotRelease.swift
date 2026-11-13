@@ -19,7 +19,7 @@ public struct SpotRelease: Equatable, Sendable {
 
     /// Signs a release of these files.
     public static func sign(
-        _ files: [SpotFolder.File],
+        _ files: [SpotPackage.File],
         address: String,
         version: Int,
         previous: String?,

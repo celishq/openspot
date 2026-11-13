@@ -1,7 +1,7 @@
 import Foundation
 
 /// The releases of a package: the files a release names, its release log, and a new release signed by a key.
-extension SpotFolder {
+extension SpotPackage {
     /// The files of a spot folder that a release names: each one but its release log.
     public func released(in root: String) -> [File] {
         files(in: root).filter { $0.path != "\(root)/\(ReleaseLog.fileName)" }
@@ -25,7 +25,7 @@ extension SpotFolder {
 
     /// This spot with a release of its own spot folder signed by the key, after the releases of its log. It is the same
     /// spot when its last release names its files already, as for a forward, which keeps the first author's signature.
-    public func signed(by key: AccountKey, at date: Date = Date()) throws -> SpotFolder {
+    public func signed(by key: AccountKey, at date: Date = Date()) throws -> SpotPackage {
         guard let root = roots.first else { return self }
         let path = "\(root)/\(ReleaseLog.fileName)"
         let current = try files.first { $0.path == path }.map { try ReleaseLog(text: $0.text ?? "") } ?? ReleaseLog(releases: [])
@@ -33,7 +33,7 @@ extension SpotFolder {
         guard !current.names(SpotManifest(released)) else { return self }
         let readme = text(of: SpotListing.readmeName, in: root) ?? ""
         let log = try current.signing(released, readme: readme, by: key, at: date)
-        return try SpotFolder(files: files.filter { $0.path != path } + [File(path: path, isExecutable: false, contents: Data(log.text.utf8))])
+        return try SpotPackage(files: files.filter { $0.path != path } + [File(path: path, isExecutable: false, contents: Data(log.text.utf8))])
     }
 
     /// Writes the release log of its own spot folder into that folder in the spots folder, so that the next release
@@ -45,7 +45,7 @@ extension SpotFolder {
 
     /// This spot as it goes out: compiled when it needs to be, signed by the key, with its release log kept in its own
     /// folder in the spots folder, so that the next release follows it.
-    public func release(by key: AccountKey, keepingLogIn spots: URL) async throws -> SpotFolder {
+    public func release(by key: AccountKey, keepingLogIn spots: URL) async throws -> SpotPackage {
         let built = needsCompile ? try await compiled() : self
         let signed = try built.signed(by: key)
         try signed.keepReleaseLog(in: spots)

@@ -6,7 +6,7 @@ extension SpotsModel {
     /// Whether a card, or a float, takes these dragged files. A card under an open sheet takes none (D2, W9).
     public func acceptsDrop(_ paths: [String], on id: String, in place: SheetPlace = .panel) -> Bool {
         let isOpenToDrops = place == .panel ? openList == nil : runs.floating.contains(id)
-        return isOpenToDrops && !SpotFolder.isFile(paths) && sheets[id]?.spot.accepts(paths) == true
+        return isOpenToDrops && !SpotPackage.isFile(paths) && sheets[id]?.spot.accepts(paths) == true
     }
 
     /// The card whose place on the grid holds this point of the grid. A point in a gap has none.
@@ -25,9 +25,9 @@ extension SpotsModel {
         let paths = host.draggedPaths
         guard paths != dragPaths else { return }
         dragPaths = paths
-        runs.draggedPaths = SpotFolder.isFile(paths) ? [] : paths
+        runs.draggedPaths = SpotPackage.isFile(paths) ? [] : paths
         isPointerOverDrop = host.isPointerOverDrop
-        draggedSpot = SpotFolder.isFile(paths) ? SpotDrop(paths: paths, folder: files.folder.url) : nil
+        draggedSpot = SpotPackage.isFile(paths) ? SpotDrop(paths: paths, folder: files.folder.url) : nil
         dragWatch?.cancel()
         dragWatch = Task { [weak self] in
             while self?.host.isMouseDown == true {
@@ -116,7 +116,7 @@ extension SpotsModel {
             let scan = try place.scan()
             guard let command = scan.spots.first(where: { place.isCore($0) && SpotsFolder.coreID(of: $0) == id }) else { return false }
             closeList(moving: isShown)
-            show(try ReviewSpot(spot: SpotFolder(sharing: command, from: scan), folder: folder.url, canAdd: false))
+            show(try ReviewSpot(spot: SpotPackage(sharing: command, from: scan), folder: folder.url, canAdd: false))
         } catch {
             host.notify(Self.reason(error))
         }
@@ -149,7 +149,7 @@ extension SpotsModel {
     /// Opens the review of a `.spot` file on the clipboard. Returns false when the clipboard holds other things, or a form is open.
     public func pasteSpot() -> Bool {
         let paths = host.pastedPaths
-        guard form == nil, SpotFolder.isFile(paths) else { return false }
+        guard form == nil, SpotPackage.isFile(paths) else { return false }
         review(paths.map { URL(fileURLWithPath: $0) })
         return true
     }
@@ -167,10 +167,10 @@ extension SpotsModel {
         if isShown { host.dismiss() }
         Task {
             do {
-                guard let spot = try await release(SpotFolder(sharing: entry.spot, from: files.folder.scan()), named: entry.spot.name) else { return }
+                guard let spot = try await release(SpotPackage(sharing: entry.spot, from: files.folder.scan()), named: entry.spot.name) else { return }
                 let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-shared/\(UUID().uuidString)", isDirectory: true)
                 try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
-                let file = place.appendingPathComponent(SpotFolder.fileName(for: entry.spot.name))
+                let file = place.appendingPathComponent(SpotPackage.fileName(for: entry.spot.name))
                 try spot.zip(to: file)
                 host.copy(file)
                 host.confirm(spot.notice(name: entry.spot.name))

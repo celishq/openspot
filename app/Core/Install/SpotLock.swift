@@ -113,14 +113,14 @@ public struct SpotLock: Equatable, Sendable {
         to folder: URL,
         isConfirmed: Bool = false,
         replaces: [String] = [],
-        expecting: SpotFolder? = nil,
+        expecting: SpotPackage? = nil,
         discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }
     ) async throws -> String {
         try await locked {
             let old = try entries().first { $0.source == source.text }
             var facts: Facts?
             let (commit, paths) = try await source.add(to: folder, at: nil, replacing: (old?.paths ?? []) + replaces, discard: discard) { work, paths in
-                if let expecting, try SpotFolder(paths: paths, in: work) != expecting {
+                if let expecting, try SpotPackage(paths: paths, in: work) != expecting {
                     throw SpotError.fault("The file changed after you looked at it, so Openspot added nothing. Open it again to see it.")
                 }
                 let new = try Self.facts(of: paths, in: work)
@@ -128,7 +128,7 @@ public struct SpotLock: Equatable, Sendable {
                     let confirm = "Openspot added nothing. Run `openspot spot add \(source.text) --yes` to add it."
                     let review: ReviewSpot
                     do {
-                        review = try ReviewSpot(spot: SpotFolder(paths: paths, in: work), folder: folder)
+                        review = try ReviewSpot(spot: SpotPackage(paths: paths, in: work), folder: folder)
                     } catch {
                         throw SpotError.fault("Openspot cannot review it: \((error as? SpotError)?.reason ?? error.localizedDescription)\n\(confirm)")
                     }
@@ -196,10 +196,10 @@ public struct SpotLock: Equatable, Sendable {
 
     /// The hash of the files under the paths in a folder, and the uses that their scripts name.
     private static func facts(of paths: [String], in folder: URL) throws -> Facts {
-        let spot: SpotFolder?
+        let spot: SpotPackage?
         let unread: Error?
         do {
-            spot = try SpotFolder(paths: paths, in: folder)
+            spot = try SpotPackage(paths: paths, in: folder)
             unread = nil
         } catch {
             spot = nil

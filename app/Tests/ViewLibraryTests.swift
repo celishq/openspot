@@ -123,9 +123,9 @@ final class ViewLibraryTests: XCTestCase {
         ])
     }
 
-    private var sharedCups: SpotFolder {
+    private var sharedCups: SpotPackage {
         get throws {
-            try SpotFolder(files: [
+            try SpotPackage(files: [
                 .init(path: "home.spot/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\n# view=cups.swift\n".utf8)),
                 .init(path: "home.spot/cups.swift", isExecutable: false, contents: Data(view.utf8))
             ])
@@ -148,7 +148,7 @@ final class ViewLibraryTests: XCTestCase {
         var files = try sharedCups.files
         files.append(.init(path: "home.spot/cups.view", isExecutable: false, contents: Data([0xCF, 0xFA, 0xED, 0xFE, 0x00])))
 
-        let review = try ReviewSpot(spot: try SpotFolder(files: files), folder: folder)
+        let review = try ReviewSpot(spot: try SpotPackage(files: files), folder: folder)
 
         XCTAssertEqual(review.subtitle, "Holds a program that you cannot read")
         let part = try XCTUnwrap(SpotOutput(text: try review.answer(["read"])).parts.first { $0.id == "review" })

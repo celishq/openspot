@@ -30,7 +30,7 @@ public enum SpotStarter: String, CaseIterable, Sendable {
         let slug = slug(of: name)
         guard !slug.isEmpty else { throw SpotError.fault("Use letters or digits in the name.") }
         guard !isTaken(slug, in: folder) else { throw SpotError.fault("A spot called \(slug) already exists. Choose another name.") }
-        let place = folder.appendingPathComponent("\(slug).\(SpotFolder.fileExtension)", isDirectory: true)
+        let place = folder.appendingPathComponent("\(slug).\(SpotPackage.fileExtension)", isDirectory: true)
         try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
         let file = place.appendingPathComponent("\(slug).sh")
         let title = name.components(separatedBy: .newlines).joined(separator: " ").trimmingCharacters(in: .whitespaces)
@@ -40,7 +40,7 @@ public enum SpotStarter: String, CaseIterable, Sendable {
     }
 
     private static func isTaken(_ slug: String, in folder: URL) -> Bool {
-        ["", ".\(SpotFolder.fileExtension)", ".sh"].contains { FileManager.default.fileExists(atPath: folder.appendingPathComponent(slug + $0).path) }
+        ["", ".\(SpotPackage.fileExtension)", ".sh"].contains { FileManager.default.fileExists(atPath: folder.appendingPathComponent(slug + $0).path) }
     }
 
     /// The words of a name in lowercase, joined by dashes, with only Latin letters and digits.

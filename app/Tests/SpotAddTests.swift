@@ -81,7 +81,7 @@ final class SpotAddTests: XCTestCase {
 
     func testASpotFileIsAdded() async throws {
         let file = root.appendingPathComponent("Cups.spot")
-        try SpotFolder(files: [.init(path: "cups.spot/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8))]).zip(to: file)
+        try SpotPackage(files: [.init(path: "cups.spot/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8))]).zip(to: file)
 
         let answer = try await answer(["spot", "add", file.path])
 
@@ -235,7 +235,7 @@ final class SpotAddTests: XCTestCase {
     func testTheLockKeepsTheSourceTheCommitAndThePathsOfEachAddedSpot() async throws {
         let repo = try repo()
         let file = root.appendingPathComponent("Cups.spot")
-        try SpotFolder(files: [.init(path: "cups.spot/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8))]).zip(to: file)
+        try SpotPackage(files: [.init(path: "cups.spot/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8))]).zip(to: file)
 
         _ = try await answer(["spot", "add", repo.url.path])
         _ = try await answer(["spot", "add", file.path])
@@ -301,7 +301,7 @@ final class SpotAddTests: XCTestCase {
 
     func testAnUpdateOfASpotFileFromAnEntryOfItsFolderKeepsItsEqualFiles() async throws {
         let file = root.appendingPathComponent("Foo.spot")
-        try SpotFolder(files: [
+        try SpotPackage(files: [
             .init(path: "foo.spot/a.sh", isExecutable: true, contents: Data("#!/bin/sh\necho two\n".utf8)),
             .init(path: "foo.spot/b.sh", isExecutable: true, contents: Data("#!/bin/sh\necho b\n".utf8))
         ]).zip(to: file)
@@ -343,7 +343,7 @@ final class SpotAddTests: XCTestCase {
     func testAnAddOfASignedSpotKeepsItsAddressAndKeyAndAnUpdateFromAnotherKeyNeedsYes() async throws {
         let file = root.appendingPathComponent("Cups.spot")
         let mine = try AccountKey.make()
-        let cups = try SpotFolder(files: [.init(path: "cups.spot/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8))]).signed(by: mine)
+        let cups = try SpotPackage(files: [.init(path: "cups.spot/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8))]).signed(by: mine)
         try cups.zip(to: file)
         let lock = SpotLock(url: root.appendingPathComponent("spots.lock"))
 
@@ -353,7 +353,7 @@ final class SpotAddTests: XCTestCase {
         XCTAssertEqual(try lock.entries().map(\.address), [release.address])
         XCTAssertEqual(try lock.entries().map(\.key), [mine.publicKey])
 
-        let changed = try SpotFolder(files: [.init(path: "cups.spot/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\necho two\n".utf8))]).signed(by: AccountKey.make())
+        let changed = try SpotPackage(files: [.init(path: "cups.spot/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\necho two\n".utf8))]).signed(by: AccountKey.make())
         try changed.zip(to: file)
         do {
             _ = try await lock.add(.file(file), to: spots)
@@ -472,7 +472,7 @@ final class SpotAddTests: XCTestCase {
     func testAnUpdateMovesTheOldCopyToTheTrashWithEachPathTheNewOneDrops() async throws {
         let tea = root.appendingPathComponent("sources/tea.spot")
         try FileManager.default.createDirectory(at: tea.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try SpotFolder(files: [.init(path: "tea.spot/tea.sh", isExecutable: true, contents: Data("#!/bin/sh\necho one\n".utf8)), .init(path: "tea.spot/old.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8))]).zip(to: tea)
+        try SpotPackage(files: [.init(path: "tea.spot/tea.sh", isExecutable: true, contents: Data("#!/bin/sh\necho one\n".utf8)), .init(path: "tea.spot/old.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8))]).zip(to: tea)
         let lock = SpotLock(url: root.appendingPathComponent("spots.lock"))
         var discarded: [String] = []
         let trash = root.appendingPathComponent("trash")
@@ -482,7 +482,7 @@ final class SpotAddTests: XCTestCase {
             try FileManager.default.moveItem(at: url, to: trash.appendingPathComponent(url.lastPathComponent))
         }
         _ = try await lock.add(SpotSource(text: tea.path, place: root), to: spots, discard: discard)
-        try SpotFolder(files: [.init(path: "tea.spot/tea.sh", isExecutable: true, contents: Data("#!/bin/sh\necho two\n".utf8))]).zip(to: tea)
+        try SpotPackage(files: [.init(path: "tea.spot/tea.sh", isExecutable: true, contents: Data("#!/bin/sh\necho two\n".utf8))]).zip(to: tea)
 
         _ = try await lock.add(SpotSource(text: tea.path, place: root), to: spots, discard: discard)
 
