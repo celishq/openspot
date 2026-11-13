@@ -32,7 +32,8 @@ public struct SpotDock: Equatable, Sendable {
         }
 
         public func keeps(_ item: Item) -> Bool {
-            switch self {
+            SpotDock.keepChecks += 1
+            return switch self {
             case .added: item.state != .off
             case .store: item.state == .off
             case .mine: item.isOwn
@@ -117,6 +118,8 @@ public struct SpotDock: Equatable, Sendable {
         }
     }
 
+    /// The number of times that a section checked whether it keeps a spot, in all docks. Only a test reads it.
+    nonisolated(unsafe) static var keepChecks = 0
     /// The number of times that a dock laid out its rows, in all docks. Only a test reads it.
     nonisolated(unsafe) static var layouts = 0
     public let items: [Item]

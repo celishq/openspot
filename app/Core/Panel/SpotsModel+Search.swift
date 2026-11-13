@@ -14,6 +14,11 @@ extension SpotsModel {
         entries.filter { $0.id != fieldSheet }
     }
 
+    /// The entry with a card that has this ID, found with no copy of the cards.
+    public func card(id: String) -> Entry? {
+        id == fieldSheet ? nil : entries.first { $0.id == id }
+    }
+
     /// The most rows that the main search shows from a list that the person never picked from.
     private static let unpickedRows = 3
 

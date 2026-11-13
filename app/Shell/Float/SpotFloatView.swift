@@ -11,7 +11,7 @@ struct SpotFloatView: View {
     @State private var dropWords: String?
 
     var body: some View {
-        let entry = id == model.fieldSheet ? nil : model.entries.first { $0.id == id }
+        let entry = model.card(id: id)
         let run = model.sheets[id]
         let size = size(entry, run)
         Group {
