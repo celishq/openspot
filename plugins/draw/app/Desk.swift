@@ -157,21 +157,35 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     /// Moves a board, its picture and its images to the Trash, and closes its tab. With no other tab open, another board
     /// shows first, or a new one.
-    func trash(_ file: URL) {
+    func trash(_ files: [URL]) {
         let shelf = Shelf(folder: studio.file.deletingLastPathComponent())
-        if let open = tabs.studio(for: file) {
+        let gone = Set(files.map(\.standardizedFileURL))
+        for file in files {
+            guard let open = tabs.studio(for: file) else { continue }
             if tabs.studios.count == 1 {
-                guard let next = shelf.entries.first(where: { $0.file.standardizedFileURL != file.standardizedFileURL })?.file ?? (try? shelf.make()) else { return }
+                guard let next = shelf.entries.first(where: { !gone.contains($0.file.standardizedFileURL) })?.file ?? (try? shelf.make()) else { return }
                 show(next)
             }
             close(open)
         }
-        try? shelf.discard(file) { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }
+        for file in files {
+            try? shelf.discard(file) { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }
+        }
+        drawer.picking.reset(to: studio.file)
         drawer.changes += 1
     }
 
+    func trash(_ file: URL) {
+        trash([file])
+    }
+
+    /// Trashes the boards picked in the list while it takes the keys, or else the board that shows.
     @objc func trashBoard(_ sender: Any?) {
-        trash(studio.file)
+        if drawer.open, drawer.focused, !drawer.picking.picked.isEmpty {
+            trash(Array(drawer.picking.picked))
+        } else {
+            trash(studio.file)
+        }
     }
 
     @objc func revealBoard(_ sender: Any?) {

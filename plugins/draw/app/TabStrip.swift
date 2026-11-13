@@ -92,9 +92,7 @@ struct TabChip: View {
         .onHover { inside in withAnimation(.easeOut(duration: 0.12)) { hovering = inside } }
         .onTapGesture(count: 2, perform: startNaming)
         .onTapGesture(perform: show)
-        .contextMenu {
-            BoardMenu(rename: startNaming, reveal: { NSWorkspace.shared.activateFileViewerSelecting([studio.file]) }, trash: trash)
-        }
+        .overlay(MenuSpot { BoardMenu(rename: startNaming, reveal: { NSWorkspace.shared.activateFileViewerSelecting([studio.file]) }, trash: trash).menu })
     }
 
     private func startNaming() {

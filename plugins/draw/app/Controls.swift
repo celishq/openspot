@@ -301,23 +301,10 @@ final class Drawer: ObservableObject {
     @Published var naming: URL?
     /// Counts the changes to the boards on disk, such as one moved to the Trash, so the list reads them again.
     @Published var changes = 0
-}
-
-/// The acts on one board in its menu: rename, show in Finder, and delete to the Trash in red, each with its icon and its key.
-struct BoardMenu: View {
-    let rename: () -> Void
-    let reveal: () -> Void
-    let trash: () -> Void
-
-    var body: some View {
-        Button(action: rename) { Label("Rename", systemImage: "pencil") }
-            .keyboardShortcut("r", modifiers: .command)
-        Button(action: reveal) { Label("Show in Finder", systemImage: "folder") }
-            .keyboardShortcut("r", modifiers: [.command, .option])
-        Divider()
-        Button(role: .destructive, action: trash) { Label("Delete", systemImage: "trash") }
-            .keyboardShortcut(.delete, modifiers: .command)
-    }
+    /// The boards picked in the list.
+    @Published var picking = Picking()
+    /// Whether the list takes the keys, after a click in it.
+    @Published var focused = false
 }
 
 /// The button beside the window buttons that shows the list of boards, on a small rounded back.
@@ -346,10 +333,11 @@ struct Sidebar: View {
     let shelf: Shelf
     let open: (URL) -> Void
     let make: () -> Void
-    let trash: (URL) -> Void
+    let trash: ([URL]) -> Void
     @State private var entries: [Shelf.Entry] = []
     @State private var name = ""
     @FocusState private var typing: Bool
+    @FocusState private var listening: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -366,6 +354,22 @@ struct Sidebar: View {
                     }
                 }
             }
+            .focusable()
+            .focusEffectDisabled()
+            .focused($listening)
+            .onChange(of: listening) { _, now in drawer.focused = now }
+            .onKeyPress(.upArrow, phases: .down) { press in walk(-1, extend: press.modifiers.contains(.shift)) }
+            .onKeyPress(.downArrow, phases: .down) { press in walk(1, extend: press.modifiers.contains(.shift)) }
+            .onKeyPress(.return) {
+                guard drawer.picking.picked.count == 1, let file = drawer.picking.picked.first, let entry = entries.first(where: { $0.file == file }) else { return .ignored }
+                startNaming(entry)
+                return .handled
+            }
+            .onKeyPress(.delete) {
+                guard !drawer.picking.picked.isEmpty else { return .ignored }
+                trash(Array(drawer.picking.picked))
+                return .handled
+            }
         }
         .padding(.horizontal, 10)
         .padding(.top, 58)
@@ -376,7 +380,10 @@ struct Sidebar: View {
         .offset(x: drawer.open ? 0 : -300)
         .onAppear(perform: reload)
         .onChange(of: drawer.open) { _, open in if open { reload() } }
-        .onReceive(tabs.$current) { _ in reload() }
+        .onReceive(tabs.$current) { studio in
+            reload()
+            if !drawer.picking.picked.contains(studio.file) || drawer.picking.picked.count == 1 { drawer.picking.reset(to: studio.file) }
+        }
         .onChange(of: drawer.changes) { _, _ in reload() }
         .onChange(of: drawer.naming) { _, file in
             if let file, let entry = entries.first(where: { $0.file == file }) { startNaming(entry) }
@@ -387,8 +394,33 @@ struct Sidebar: View {
         entries = shelf.entries
     }
 
+    /// Moves the pick with an arrow key, and shows the board it lands on when it picks one alone.
+    private func walk(_ offset: Int, extend: Bool) -> KeyPress.Result {
+        let order = entries.map(\.file)
+        guard let next = drawer.picking.step(offset, in: order, extend: extend) else { return .ignored }
+        if !extend { open(next) }
+        DispatchQueue.main.async { listening = true }
+        return .handled
+    }
+
+    /// Picks a board on a click: alone, with Command added or dropped, or with Shift the run to it. A plain click shows it.
+    private func click(_ entry: Shelf.Entry) {
+        let flags = NSEvent.modifierFlags
+        let mode: Picking.Mode = flags.contains(.command) ? .toggle : flags.contains(.shift) ? .range : .only
+        drawer.picking.click(entry.file, in: entries.map(\.file), mode: mode)
+        if mode == .only { open(entry.file) }
+        DispatchQueue.main.async { listening = true }
+    }
+
+    /// The menu of a row: for each picked board when the row is one of several picked, or else for the row alone.
+    private func menu(for entry: Shelf.Entry) -> NSMenu {
+        if !drawer.picking.picked.contains(entry.file) { drawer.picking.click(entry.file, in: entries.map(\.file), mode: .only) }
+        let files = Array(drawer.picking.picked)
+        return BoardMenu(count: files.count, rename: { startNaming(entry) }, reveal: { NSWorkspace.shared.activateFileViewerSelecting(files) }, trash: { trash(files) }).menu
+    }
+
     private func row(_ entry: Shelf.Entry) -> some View {
-        let current = entry.file.standardizedFileURL == tabs.current.file.standardizedFileURL
+        let picked = drawer.picking.picked.contains(entry.file)
         return HStack(spacing: 10) {
             Group {
                 if let picture = NSImage(contentsOf: entry.picture) {
@@ -417,13 +449,11 @@ struct Sidebar: View {
             Spacer(minLength: 0)
         }
         .padding(6)
-        .background(current ? Color.accentColor.opacity(0.14) : .clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(picked ? Color.accentColor.opacity(drawer.focused ? 0.2 : 0.12) : .clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .contentShape(Rectangle())
         .onTapGesture(count: 2) { startNaming(entry) }
-        .onTapGesture { if drawer.naming != entry.file { open(entry.file) } }
-        .contextMenu {
-            BoardMenu(rename: { startNaming(entry) }, reveal: { NSWorkspace.shared.activateFileViewerSelecting([entry.file]) }, trash: { trash(entry.file) })
-        }
+        .onTapGesture { if drawer.naming != entry.file { click(entry) } }
+        .overlay(MenuSpot { menu(for: entry) })
     }
 
     private func startNaming(_ entry: Shelf.Entry) {
