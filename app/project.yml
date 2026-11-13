@@ -181,6 +181,7 @@ targets:
     platform: macOS
     sources:
       - path: Tests
+      - path: ../spots/draw.spot/model
     dependencies:
       - target: OpenspotCore
       - package: secp256k1

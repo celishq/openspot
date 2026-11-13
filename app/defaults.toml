@@ -17,6 +17,11 @@ id = "confetti"
 letter = "k"
 
 [[spots]]
+id = "draw"
+size = "small"
+letter = "b"
+
+[[spots]]
 id = "emoji"
 size = "small"
 letter = "e"
