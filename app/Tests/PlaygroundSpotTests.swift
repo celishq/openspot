@@ -15,7 +15,7 @@ final class PlaygroundSpotTests: BuiltInCase {
 
     func testSearchFindsItAndItLeavesTheGrid() throws {
         let spot = try spot("playground")
-        let defaults = Config(text: try String(contentsOf: repoPlugins.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8))
+        let defaults = Config(text: try String(contentsOf: repoSpots.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8))
 
         XCTAssertEqual(spot.kind, .launch)
         XCTAssertEqual(spot.name, "Playground")

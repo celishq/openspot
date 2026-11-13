@@ -11,7 +11,7 @@ Openspot shows spots in three places: the **panel**, the window that the Openspo
 a grid of **cards**; the **card** of each spot on that grid; and the **sheet**, the view of one spot that opens over the
 panel.
 
-A spot is one file. Openspot runs it, and the spot prints what to show:
+A spot is a script. Openspot runs it, and the spot prints what to show:
 
 ```text
 event   ─ on= ─►  <spot> read           Openspot runs the spot
@@ -19,10 +19,14 @@ spot    ─ prints ─►  blocks             Openspot draws them
 press   ─ on a block ─►  <spot> <id>    the user or an agent acts
 ```
 
-- Put a spot in the plugins folder, or in a folder one level down. Its id is its path without the extension, such as
-  `home/coffee`.
-- A spot that needs several files goes in a folder of its own. The folder is shared as one unit, and its spots share
-  one data folder. A file in it that isn't executable can hold shared code.
+- A spot lives in a **spot folder**: a folder `<name>.spot` in the spots folder, such as `coffee.spot/coffee.sh`. The
+  folder holds its scripts, its `readme.md`, its `preview.txt` and any file that they need.
+- The id of a script is the name of its folder, such as `coffee`. A script with another name adds it, such as
+  `home/lights` for `home.spot/lights.sh`.
+- The folder is shared as one unit, and its scripts share one data folder. A file in it that isn't executable can hold
+  shared code.
+- Openspot moves a loose script into a spot folder of its name, with the files of the same name, such as `coffee.md`,
+  which becomes `readme.md`.
 - A spot only says what it has. The user decides where it shows and which key opens it.
 - An agent can do anything the user does, with `openspot spot run <id> <call>` and `openspot event emit`. A spot
   can't tell who called it.
@@ -182,6 +186,7 @@ confirm=Press again to forget
   default), which sends a whole number when the user lets go, and `hotkey` for a hotkey that a press records.
 - `type=multiple` lets a choice pick several options (see [Buttons and actions](#buttons-and-actions)).
 - Every kind also takes `title`, `detail`, `tone` and `icon`. Openspot skips a key that a kind doesn't take.
+- A `text` that covers two lines or more shows its `detail` under its `title`, on as many lines as the place holds.
 - `icon` draws according to its value:
   - a path of an image file, such as `cups.png`, draws the image;
   - an `https://` URL draws an image from the web, which Openspot downloads once and keeps;
@@ -592,10 +597,12 @@ struct SpotView: View {
 | `spot.secondary`  | The opacity of a second line.                                    |
 | `spot.accent`     | The accent colour.                                               |
 | `spot.font`       | The fonts of the cards: `title`, `detail`, `metric` and `value`. |
+| `spot.send(v)`    | Calls the spot with the view's id and `v`, as a field does.      |
 
 - The view fills its place, and the whole card when there's no card layout. It can't change the size of its place.
 - It gets the keys of its block in each frame. A new frame keeps its `@State`.
-- The view only draws. A press works as on any card.
+- On a card, the view only draws, and a press works as on any card. In a sheet, it takes clicks and keys, and
+  `spot.send(value)` calls the spot with `<id> <value>`, as a field does. A newer send stops the call of the older one.
 - Openspot compiles it when its card first shows, and again when the file changes. A view that doesn't compile shows its
   first error, and `openspot check` prints it.
 - A shared spot carries the compiled view as `<name>.view`, which Openspot uses instead of the source.
@@ -676,10 +683,11 @@ A spot asks the Mac and Openspot for things through one command, which works the
   - calls that change Openspot or its places: `app quit`, `update install`, and `setting set` of a key that Openspot
     keeps for the user (see [Settings](#settings));
   - calls that open a window or the panel: `spot show`, `spot open`, `spot review`, `spot store`, `setting change`,
-    `update check`, `calendar show` and `reminders show`.
+    `update check`, `calendar show` and `reminders show`;
+  - `account sync`, which only the user and the spots of Openspot can call.
 - `calendar add --dry-run` and `reminders add --dry-run` change nothing, so they work in a read.
 - `openspot batch` runs one call for each line of stdin, and prints `---` after each. It stops at the first failure.
-- `--frame` makes `app status`, `spot list` and `setting list` print blocks instead of JSON.
+- `--frame` makes `app status`, `account`, `spot list` and `setting list` print blocks instead of JSON.
 
 The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The others:
 
@@ -687,7 +695,7 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | `openspot guide`                                   | Prints the guide, then this protocol.                                                           |
 | `openspot spot show <id>`                          | Opens the panel with the spot selected.                                                         |
-| `openspot spot add <git url, folder or file.spot>` | Adds a spot, and records it in `spots.lock`. An update that needs a new use also needs `--yes`. |
+| `openspot spot add <git url, folder or .spot>`     | Adds a spot, and records it in `spots.lock`. An update that needs a new use also needs `--yes`. |
 | `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                                |
 | `openspot spot stats`                              | Prints what each spot cost and used. See [Stats](#stats).                                       |
 
@@ -761,6 +769,7 @@ openspot app quit
 | `calendar`  | each call of `calendar` and `reminders`                                                                                                                         |
 | `network`   | No call. The spot reaches the network.                                                                                                                          |
 | `files`     | No call. The spot writes outside its data folder.                                                                                                               |
+| `account`   | `account new`, `words`, `check`, `checked`, `phrase`, `sign-in`, `sign-out` and `sync`. Only a spot that ships inside Openspot can have it.                      |
 
 - A call that needs a use the header doesn't name still runs, and shows one toast for each spot, use and day.
   `openspot check` can't report it, because only a run shows it.
@@ -772,6 +781,12 @@ openspot app quit
   can also write to the Desktop, Movies and the screenshots folder. In Careful mode, a call that needs a use the header
   doesn't name fails.
 - Without Careful mode, the data folder is no boundary.
+- A spot folder can hold `releases.jsonl`, the signed releases of the spot. Openspot writes it when the user shares or
+  publishes the spot, and refuses a shared spot whose files don't match its last release. A spot reads nothing from it.
+- `openspot account` tells any spot the public facts: whether an account is signed in, its `npub`, whether its words are
+  backed up, and whether it syncs. Every other call of `account` reaches the key, so it answers only a spot that ships
+  inside Openspot and names `account` in its uses. `words` and `sign-out` ask for Touch ID first, which counts for 5
+  minutes. The calls of such a spot stay out of the call log and the playground.
 
 ## Messages
 

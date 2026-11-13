@@ -47,8 +47,8 @@ struct SpotCardView: View, @MainActor Equatable {
             .overlay(alignment: .topTrailing) { FailureMark(entry: entry, size: size) }
             .contentShape(shape)
             .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id, opening: NSEvent.modifierFlags.contains(.command)) } }
-            .animation(.easeInOut(duration: 0.2), value: isOn)
-            .scaleEffect(showsPress ? SpotMotion.pressedScale : 1)
+            .animation(SpotMotion.fade(isShown: isOn), value: isOn)
+            .scaleEffect(showsPress ? MotionTokens.pressedScale : 1)
             .animation(SpotMotion.press, value: showsPress)
             .modifier(CardViewLoad(source: ownView))
     }
@@ -77,12 +77,12 @@ struct SpotCardView: View, @MainActor Equatable {
         entry.kind == .widget ? { [model] in model.reading(of: $0) } : { _ in nil }
     }
 
-    /// The source of the plugin's own view, which fills the whole card in place of its glyph and words (protocol: Views).
+    /// The source of the spot's own view, which fills the whole card in place of its glyph and words (protocol: Views).
     private var ownView: String? {
         drawsOwnCard && entry.state.face.hasView ? entry.spot.view : nil
     }
 
-    /// The source of the plugin's own view once it is built or has failed. While it builds, the card is drawn as any card
+    /// The source of the spot's own view once it is built or has failed. While it builds, the card is drawn as any card
     /// with running work.
     private var drawnView: String? {
         guard let ownView else { return nil }
@@ -272,12 +272,12 @@ private struct CardReveal: ViewModifier {
     func body(content: Content) -> some View {
         content
             .opacity(isShown ? 1 : 0)
-            .scaleEffect(isShown ? 1 : SpotMotion.hiddenScale)
-            .animation(SpotMotion.surface(isShown: isShown), value: isShown)
+            .scaleEffect(isShown ? 1 : MotionTokens.hiddenScale)
+            .animation(SpotMotion.fade(isShown: isShown), value: isShown)
     }
 }
 
-/// Builds the plugin's own view of a card each time the panel shows (protocol: Views).
+/// Builds the spot's own view of a card each time the panel shows (protocol: Views).
 private struct CardViewLoad: ViewModifier {
     let source: String?
     @Environment(\.spotIsShown) private var isShown
@@ -328,7 +328,7 @@ private struct ChainKeycap: View {
             .overlay(RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous).strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
             .offset(x: -inset, y: inset)
             .opacity(model.showsChain ? 1 : 0)
-            .animation(SpotMotion.keycap, value: model.showsChain)
+            .animation(SpotMotion.fade(isShown: true), value: model.showsChain)
             .allowsHitTesting(false)
     }
 }

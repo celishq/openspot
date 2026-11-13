@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import OpenspotCore
 
@@ -9,8 +10,7 @@ struct SpotSheetView: View {
     /// The size that the grid gives its card, which can differ from the size it prefers.
     let cardSize: SpotSize
     let isOpen: Bool
-    /// Whether the header lies on the white fill of a card that is turned on. Its colours change with the fill, on the fill's
-    /// own curve.
+    /// Whether the card is on, so that the card's look of the header lies on its fill.
     let showsFill: Bool
     let rect: CGRect
     /// How far the close button lies from its place at the card's edge. Nil for a card with no arrow, where the frame cuts it.
@@ -19,6 +19,13 @@ struct SpotSheetView: View {
     let cardWidth: CGFloat
     /// Whether the card draws its own look over the closed sheet, so that the header keeps its open place and only fades.
     var hasCardLook = false
+    /// The sheet's shape between its card and its open place.
+    let morph: SheetMorph
+
+    /// How far the sheet is open, which the sheet's motion carries from 0 on its card to 1.
+    private var progress: Double {
+        isOpen ? 1 : 0
+    }
 
     /// The parts of the sheet, once they have landed.
     private var panel: SheetParts? {
@@ -54,7 +61,7 @@ struct SpotSheetView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             header
-                .offset(y: showsRowCard ? (SpotTokens.rowHeight - SpotTokens.glyphSize) / 2 - SpotTokens.padding : 0)
+                .morph(progress, offset: { [rowCardDrop] in SheetMorph.place(onCard: CGSize(width: 0, height: rowCardDrop), at: $0) })
             VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
                 if let panel {
                     if panel.showsRows { Color.clear.frame(height: SpotTokens.listRowHeight) }
@@ -73,8 +80,8 @@ struct SpotSheetView: View {
                         nudge: { model.sheets[entry.id]?.nudge ?? SheetParts.Nudge.rest },
                         menuOpening: { model.sheets[entry.id]?.menuOpening },
                         onFocus: { model.focusPart($0) },
-                        customView: { room in
-                            entry.spot.view.map { SpotCustomView(source: $0, values: entry.state.values, card: .square, room: room, views: SpotViews.shared) }
+                        customView: { room, values, send in
+                            entry.spot.view.map { AnyView(SpotCustomView(source: $0, values: values, card: .square, room: room, views: SpotViews.shared, send: send)) }
                         }
                     )
                     .task(id: panel.parts.contains { $0.kind == "view" } ? entry.spot.view : nil) {
@@ -100,7 +107,7 @@ struct SpotSheetView: View {
                     }
                 }
             }
-            .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(isOpen ? 1 : 0) }
+            .morph(progress, opacity: { [morph, firstRow] in morph.shown(firstRow, at: $0) })
         }
         .padding(SpotTokens.padding)
         .frame(width: rect.width, height: rect.height, alignment: .topLeading)
@@ -110,40 +117,66 @@ struct SpotSheetView: View {
             HStack(spacing: SpotTokens.padding - 5) {
                 glyph
                 ZStack(alignment: .topLeading) {
-                    words(subtitle: entry.shownState.subtitle)
-                        .frame(width: max(cardWordsWidth, 0), alignment: .leading)
-                        .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(liesOnCard ? 1 : 0) }
+                    if showsCardWords {
+                        words(subtitle: entry.shownState.subtitle, isOnSolid: showsFill)
+                            .frame(width: max(cardWordsWidth, 0), alignment: .leading)
+                            .morph(progress, opacity: SheetMorph.cardLook(at:))
+                    }
                     words(subtitle: list.perLine > 1 ? nil : entry.shownState.subtitle, selectedName: list.perLine > 1)
                         .frame(width: max(sheetWordsWidth, 0), alignment: .leading)
-                        .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: !isOpen)) { $0.opacity(liesOnCard ? 0 : 1) }
+                        .morph(progress, opacity: sheetWordsOpacity)
                 }
                 .frame(width: max(sheetWordsWidth, 0), alignment: .leading)
-                .offset(showsTallCard ? tallCardShift : .zero)
-                .opacity(showsSmallCard ? 0 : 1)
+                .morph(progress, offset: { [tallCardShift] in SheetMorph.place(onCard: tallCardShift, at: $0) })
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .overlay(alignment: .trailing) { closeButton }
     }
 
     /// The title and the second line of the header, in one copy of its words.
-    private func words(subtitle: String?, selectedName: Bool = false) -> some View {
+    private func words(subtitle: String?, selectedName: Bool = false, isOnSolid: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: SpotType.lineGap) {
             Text(form?.form.title ?? entry.shownState.title)
                 .font(SpotType.title)
                 .frame(height: SpotType.titleLine)
-                .foregroundStyle(showsFill ? SpotTheme.onSolid : SpotTheme.ink)
+                .foregroundStyle(isOnSolid ? SpotTheme.onSolid : SpotTheme.ink)
                 .lineLimit(1)
             if form == nil, selectedName {
-                SelectedName(list: list, selection: selection, fallback: entry.shownState.subtitle, isOnSolid: showsFill)
+                SelectedName(list: list, selection: selection, fallback: entry.shownState.subtitle, isOnSolid: isOnSolid)
             } else if form == nil, let subtitle {
                 Text(subtitle)
                     .font(SpotType.detail)
                     .frame(height: SpotType.detailLine)
-                    .modifier(SpotSecondaryText(isOnSolid: showsFill))
+                    .modifier(SpotSecondaryText(isOnSolid: isOnSolid))
                     .lineLimit(1)
             }
         }
-        .animation(fillFade, value: showsFill)
+    }
+
+    /// Whether the card shows the stock words, which give way to the sheet's words in the first half of the motion. A 1x1
+    /// card shows none, and a card with its own look draws its own.
+    private var showsCardWords: Bool {
+        !hasCardLook && cardSize != .small
+    }
+
+    /// How strongly the sheet's words show: in the second half of the motion where the card shows words, and once the
+    /// shape holds most of them where it shows none. Over a card's own look they stay, as the whole sheet fades.
+    private var sheetWordsOpacity: (Double) -> Double {
+        if hasCardLook { return { _ in 1 } }
+        if !isSmallCard { return SheetMorph.sheetLook(at:) }
+        let left = SpotTokens.padding + SpotTokens.glyphSize + Self.wordsGap
+        let words = CGRect(x: left, y: SpotTokens.padding, width: min(wordsWidth, max(sheetWordsWidth, 0)), height: SpotType.titleLine)
+        return { [morph] in morph.shown(words, at: $0) }
+    }
+
+    /// The width of the header's words as they are drawn, the longer of the title and the second line.
+    private var wordsWidth: CGFloat {
+        let title = (form?.form.title ?? entry.shownState.title) as NSString
+        let detail = (entry.shownState.subtitle ?? "") as NSString
+        return max(
+            title.size(withAttributes: [.font: NSFont.systemFont(ofSize: 13, weight: .medium)]).width,
+            detail.size(withAttributes: [.font: NSFont.systemFont(ofSize: 11)]).width
+        )
     }
 
     private static let wordsGap = SpotTokens.padding - 5
@@ -168,48 +201,57 @@ struct SpotSheetView: View {
         }
         if let closeShift {
             button
-                .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(isOpen ? 1 : 0) }
-                .offset(x: isOpen ? 0 : closeShift)
-        } else {
+                .morph(progress, offset: { SheetMorph.place(onCard: CGSize(width: closeShift, height: 0), at: $0) }, opacity: SheetMorph.sheetLook(at:))
+        } else if hasCardLook {
             button
+        } else {
+            let place = CGRect(x: rect.width - SpotTokens.padding - SpotTokens.glyphSize, y: SpotTokens.padding, width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
+            button
+                .morph(progress, opacity: { [morph] in morph.growth(of: place, at: $0) }, scale: { [morph] in morph.growth(of: place, at: $0) })
         }
     }
 
-    /// The card's glyph, placed as the card places it until the sheet opens.
+    /// The card's glyph, which moves from the card's place for it to the header's. Where the card draws it on its fill or
+    /// with no disc, the card's look of it gives way to the sheet's as the fill does.
     private var glyph: some View {
-        SpotGlyph(entry: entry, isOnSolid: showsFill, showsDisc: !(showsSmallCard || showsFill))
-            .animation(fillFade, value: showsFill)
-            .offset(x: showsSmallCard ? (SpotTokens.cell - SpotTokens.glyphSize) / 2 - SpotTokens.padding : 0)
-            .modifier(SpotFileDragSource(items: isOpen ? list.shown : [], onDrop: { model.dragOut($0, of: entry.id) }))
+        ZStack {
+            SpotGlyph(entry: entry)
+            if glyphDiffersOnCard {
+                SpotGlyph(entry: entry, isOnSolid: showsFill, showsDisc: !(isSmallCard || showsFill))
+                    .morph(progress, opacity: SheetMorph.cardLook(at:))
+            }
+        }
+        .morph(progress, offset: { [smallCardShift] in SheetMorph.place(onCard: CGSize(width: smallCardShift, height: 0), at: $0) })
+        .modifier(SpotFileDragSource(items: isOpen ? list.shown : [], onDrop: { model.dragOut($0, of: entry.id) }))
     }
 
-    /// The fade of the card's fill, which the colours on it follow.
-    private var fillFade: Animation {
-        SpotMotion.fillFade(isOpen: isOpen)
+    /// Whether the card draws its glyph unlike the header: on its fill, or alone with no disc on a 1x1 card.
+    private var glyphDiffersOnCard: Bool {
+        !hasCardLook && (showsFill || isSmallCard)
     }
 
-    /// Whether the sheet still lies on a card that shows the stock glyph and words in place of a look of its own.
-    private var liesOnCard: Bool {
-        !isOpen && !hasCardLook
+    /// How far the glyph of a 1x1 card lies from its place in the header: in the middle of the card.
+    private var smallCardShift: CGFloat {
+        isSmallCard ? (SpotTokens.cell - SpotTokens.glyphSize) / 2 - SpotTokens.padding : 0
     }
 
-    /// Whether the sheet still lies on a 1x1 card, which shows its glyph alone.
-    private var showsSmallCard: Bool {
-        liesOnCard && cardSize == .small
+    /// How far the header of a card one row high lies from its place in the sheet: in the middle of that row.
+    private var rowCardDrop: CGFloat {
+        !hasCardLook && cardSize.rows == 1 ? (SpotTokens.rowHeight - SpotTokens.glyphSize) / 2 - SpotTokens.padding : 0
     }
 
-    /// Whether the sheet still lies on a card one row high, which centres its glyph in that row.
-    private var showsRowCard: Bool {
-        liesOnCard && cardSize.rows == 1
+    /// The first row under the header, in the content: the body shows once most of it lies inside the shape.
+    private var firstRow: CGRect {
+        CGRect(x: SpotTokens.padding, y: SpotTokens.padding + SpotTokens.glyphSize + SpotTokens.rowGap, width: rect.width - 2 * SpotTokens.padding, height: SpotTokens.listRowHeight)
     }
 
-    /// Whether the sheet still lies on a card with room under its header, which shows only its glyph and its words.
-    private var showsTallCard: Bool {
-        liesOnCard && cardSize.rows > 1
+    private var isSmallCard: Bool {
+        !hasCardLook && cardSize == .small
     }
 
-    /// How far the words of the header lie from their place at the foot of a tall card.
+    /// How far the words of the header lie from their place at the foot of a tall card, and none on any other card.
     private var tallCardShift: CGSize {
+        guard !hasCardLook, cardSize.rows > 1 else { return .zero }
         let hasSubtitle = form == nil && (entry.shownState.subtitle != nil || (list.perLine > 1 && !list.shown.isEmpty))
         let wordsHeight = SpotType.titleLine + (hasSubtitle ? SpotType.lineGap + SpotType.detailLine : 0)
         let row = max(SpotTokens.glyphSize, wordsHeight)

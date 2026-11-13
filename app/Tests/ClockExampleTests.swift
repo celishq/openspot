@@ -3,7 +3,7 @@ import XCTest
 
 /// Proves the World clock example with its real script and a fake `date`: it shows the time of its zone in the menu bar,
 /// and prints it again when a new minute starts.
-final class ClockExampleTests: SamplePluginsCase {
+final class ClockExampleTests: SampleSpotsCase {
     func testItShowsTheTimeOfItsZoneAndPrintsItAgainAtTheNextMinute() async throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-clock-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

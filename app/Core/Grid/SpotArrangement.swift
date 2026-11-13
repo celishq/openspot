@@ -85,7 +85,7 @@ public struct SpotArrangement: Equatable, Sendable {
         Set(choices.filter { $0.isEnabled == true }.map(\.id))
     }
 
-    /// The IDs of the spots that the person turned off. A spot of the plugins folder loads unless it is here.
+    /// The IDs of the spots that the person turned off. A spot of the spots folder loads unless it is here.
     public var disabled: Set<String> {
         Set(choices.filter { $0.isEnabled == false }.map(\.id))
     }

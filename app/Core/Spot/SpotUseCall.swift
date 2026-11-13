@@ -12,7 +12,7 @@ public struct SpotUseCall: Equatable, Sendable {
     public let words: String
 
     /// The use that a call of this spot with these words needs, or nil for a call that needs none, such as a setting of its
-    /// own plugin.
+    /// own spot folder.
     public init?(arguments: [String], of spot: String) {
         let arguments = ReservedSetting.words(of: arguments, spot: spot)
         guard arguments.count >= 2, let (use, words) = Self.use(arguments, spot: spot) else { return nil }
@@ -33,6 +33,8 @@ public struct SpotUseCall: Equatable, Sendable {
         case ("menubar", "on"), ("menubar", "off"): (.app, "changed the menu bar")
         case ("update", "check"): (.app, "checked for an update")
         case ("update", "install"): (.app, "installed an update")
+        case ("account", "sync"), ("account", "new"), ("account", "words"), ("account", "check"), ("account", "checked"),
+             ("account", "phrase"), ("account", "sign-in"), ("account", "sign-out"): (.account, "reached your account key")
         case ("spot", "add"): (.spots, "added a spot")
         case ("spot", "remove"): (.spots, "removed a spot")
         case ("spot", "on"): (.spots, "turned on a spot")
@@ -63,8 +65,8 @@ public struct SpotUseCall: Equatable, Sendable {
         }
     }
 
-    /// Whether a spot is the caller or a script of the caller's plugin folder, which is one unit.
+    /// Whether a spot is the caller or a script of the caller's spot folder, which is one unit.
     private static func isOwn(_ other: String, of spot: String) -> Bool {
-        other == spot || (spot.contains("/") && other.split(separator: "/").first == spot.split(separator: "/").first)
+        SpotID(other).isSameFolder(as: SpotID(spot))
     }
 }

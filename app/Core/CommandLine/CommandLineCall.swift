@@ -3,7 +3,7 @@ import Foundation
 /// What the `openspot` command was asked to do: `openspot <noun> <verb>`. No arguments start the app.
 public enum CommandLineCall: Equatable, Sendable {
     case check(String?)
-    /// Reports the faults of a plugins folder as JSON, for an agent.
+    /// Reports the faults of a spots folder as JSON, for an agent.
     case checkJSON(String?)
     case guide
     /// Writes a working spot from a starter, with a name.
@@ -21,10 +21,10 @@ public enum CommandLineCall: Equatable, Sendable {
     case spotList(core: Bool, frame: Bool)
     /// Turns spots that come with the app on or off.
     case spotTurn(ids: [String], on: Bool)
-    /// Puts a spot from a git URL, a folder or a `.spot` file in the plugins folder, or with none each spot of `spots.lock`
+    /// Puts a spot from a git URL, a folder or a `.spot` file in the spots folder, or with none each spot of `spots.lock`
     /// that is missing (protocol: The openspot command). An update that adds a use applies only when it is confirmed (protocol: Trust).
     case spotAdd(String?, isConfirmed: Bool)
-    /// Takes a spot that `spot add` added out of the plugins folder.
+    /// Takes a spot that `spot add` added out of the spots folder.
     case spotRemove(String)
     /// Opens the panel on the sheet of a spot.
     case spotOpen(String)
@@ -39,7 +39,7 @@ public enum CommandLineCall: Equatable, Sendable {
     /// Draws the sheet of an installed spot, or its card at a size.
     case renderSpot(id: String, size: SpotSize?, path: String)
     case checkSheet
-    /// Draws the sheet on stdin, with the plugin's view from a Swift file when it names one.
+    /// Draws the sheet on stdin, with the spot's view from a Swift file when it names one.
     case render(String, view: String?)
     /// Draws the card of the output on stdin at a size, from its drawing for that size.
     case renderCard(SpotSize, String)
@@ -72,6 +72,8 @@ public enum CommandLineCall: Equatable, Sendable {
     case appCareful(Bool)
     case appQuit
     case updateCheck
+    /// A call of `openspot account`.
+    case account(AccountCall)
     /// Restarts the app into the downloaded update.
     case updateInstall
     /// A call that cannot run here, with the line that says why and how to fix it.
@@ -141,7 +143,7 @@ public enum CommandLineCall: Equatable, Sendable {
                                                  app, and whether it is on. --frame prints a spot=<id> block for each
                                                  spot, with a button=<id> or field=<id> block for each of its own.
     openspot spot add [git url | folder | file.spot] [--yes]
-                                                 Puts a spot in the plugins folder, a git one at its newest commit, and
+                                                 Puts a spot in the spots folder, a git one at its newest commit, and
                                                  records it in spots.lock. A source that spots.lock has already updates
                                                  its spot. With no source, it adds each spot of spots.lock that is
                                                  missing, at its commit. An update that adds a use needs --yes.
@@ -150,7 +152,7 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot spot review <id>                    Shows the whole text of a spot that comes with the app, and what of it
                                                  runs by itself.
     openspot spot store                          Opens the panel in Edit Spots with the store of spots.
-    openspot check [--json] [folder]             Reports the faults of a plugins folder.
+    openspot check [--json] [folder]             Reports the faults of a spots folder.
     openspot check --sheet                       Reports the faults of a sheet on stdin.
     openspot render [--view file] <file.png>     Draws the sheet on stdin to a picture, with its view from a Swift file.
     openspot render --card <size> <file.png>     Draws its card at a size, such as wide, to a picture.
@@ -180,6 +182,19 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot app quit                            Ends the running app.
     openspot update check                        Asks for a new version of the app now.
     openspot update install                      Restarts the app into the update that it downloaded.
+    openspot account [--frame]                   Prints the account that signs what you publish as JSON: signedIn,
+                                                 npub, backedUp and sync. --frame prints them as one block.
+    openspot account new                         Makes an account key when the Mac holds none. The calls from here
+                                                 to sign-out answer only Openspot's Account spot.
+    openspot account words                       Prints the 12 words, after Touch ID.
+    openspot account check <place> <place>       Prints 4 choices for each place of the words.
+    openspot account checked                     Takes a place and a word on each line of stdin, and marks the
+                                                 words backed up when each one is right.
+    openspot account phrase                      Reads a phrase on stdin, and prints its counter, its unknown
+                                                 words, a completion, a problem or the account it opens.
+    openspot account sign-in                     Keeps the key of the 12 words or the nsec on stdin.
+    openspot account sign-out                    Removes the account key, after Touch ID.
+    openspot account sync on|off                 Keeps your account in iCloud Keychain, or on this Mac only.
     openspot clipboard copy [file]               Copies the file as Finder does, or the text on stdin.
     openspot clipboard paste                     Pastes the clipboard into the front app.
     openspot clipboard read                      Prints the text on the clipboard, or nothing when it holds none.
@@ -290,8 +305,8 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("spot", "on") where rest.count > 1, ("spot", "off") where rest.count > 1:
             self = Self.changing(.spotTurn(ids: Array(rest.dropFirst()), on: rest[0] == "on"), "openspot setting set enabled", "turns a spot on or off", environment)
         case ("spot", "add") where rest.dropFirst().filter({ $0 != "--yes" }).count <= 1 && rest.filter({ $0 == "--yes" }).count <= 1:
-            self = Self.changing(.spotAdd(rest.dropFirst().first { $0 != "--yes" }, isConfirmed: rest.contains("--yes")), "openspot spot add", "changes your plugins folder", environment)
-        case ("spot", "remove") where rest.count == 2: self = Self.changing(.spotRemove(rest[1]), "openspot spot remove", "changes your plugins folder", environment)
+            self = Self.changing(.spotAdd(rest.dropFirst().first { $0 != "--yes" }, isConfirmed: rest.contains("--yes")), "openspot spot add", "changes your spots folder", environment)
+        case ("spot", "remove") where rest.count == 2: self = Self.changing(.spotRemove(rest[1]), "openspot spot remove", "changes your spots folder", environment)
         case ("setting", "list") where Self.flags(rest.dropFirst(), within: ["--frame"]): self = .settingList(frame: rest.contains("--frame"))
         case ("setting", "change"):
             self = Self.setting(Array(rest.dropFirst()), sets: false, environment).map { call in
@@ -315,6 +330,9 @@ public enum CommandLineCall: Equatable, Sendable {
             self = Self.changing(.appLink(rest[1] == "on"), "openspot setting set --spot openspot link", "changes your Mac", environment)
         case ("app", "quit") where rest.count == 1: self = Self.changing(.appQuit, "openspot app quit", "ends Openspot", environment)
         case ("update", "check") where rest.count == 1: self = Self.changing(.updateCheck, "openspot update check", "opens a window", environment)
+        case ("account", _):
+            guard let call = AccountCall(rest) else { self = .unknown(arguments.joined(separator: " ")); return }
+            self = call.change.map { Self.changing(.account(call), $0.name, $0.act, environment) } ?? .account(call)
         case ("update", "install") where rest.count == 1: self = Self.changing(.updateInstall, "openspot update install", "restarts Openspot", environment)
         case ("menubar", "on") where rest.count == 2, ("menubar", "off") where rest.count == 2:
             self = Self.changing(.menuBar(id: rest[1], isShown: rest[0] == "on"), "openspot setting set menubar", "changes the menu bar", environment)

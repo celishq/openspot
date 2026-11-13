@@ -18,8 +18,9 @@ public enum SpotStarter: String, CaseIterable, Sendable {
         }
     }
 
-    /// Writes this starter as a new script in the folder, and returns its file. The file takes the words of the name in
-    /// lowercase with dashes, and the spot takes the name as its title. A name that another spot has is refused.
+    /// Writes this starter as a new script in a new spot folder in the folder, and returns its file. The spot folder and the
+    /// file take the words of the name in lowercase with dashes, and the spot takes the name as its title. A name that another
+    /// spot has is refused.
     public func write(name: String, in folder: URL) throws -> URL {
         try Self.write(name: name, in: folder, text: text(title:))
     }
@@ -29,8 +30,9 @@ public enum SpotStarter: String, CaseIterable, Sendable {
         let slug = slug(of: name)
         guard !slug.isEmpty else { throw SpotError.fault("Use letters or digits in the name.") }
         guard !isTaken(slug, in: folder) else { throw SpotError.fault("A spot called \(slug) already exists. Choose another name.") }
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let file = folder.appendingPathComponent("\(slug).sh")
+        let place = folder.appendingPathComponent("\(slug).\(SpotPackage.fileExtension)", isDirectory: true)
+        try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
+        let file = place.appendingPathComponent("\(slug).sh")
         let title = name.components(separatedBy: .newlines).joined(separator: " ").trimmingCharacters(in: .whitespaces)
         try text(title).write(to: file, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: file.path)
@@ -38,7 +40,7 @@ public enum SpotStarter: String, CaseIterable, Sendable {
     }
 
     private static func isTaken(_ slug: String, in folder: URL) -> Bool {
-        SpotFolder(url: folder).file(of: slug) != nil || FileManager.default.fileExists(atPath: folder.appendingPathComponent(slug).path)
+        ["", ".\(SpotPackage.fileExtension)", ".sh"].contains { FileManager.default.fileExists(atPath: folder.appendingPathComponent(slug + $0).path) }
     }
 
     /// The words of a name in lowercase, joined by dashes, with only Latin letters and digits.

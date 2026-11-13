@@ -23,7 +23,7 @@ public struct SpotOutput: Equatable, Sendable {
     /// The block of the component that stands for the spot (protocol: The main block and the card): the one that `main=<id>` in the head names, or else the
     /// only `text`, `gauge`, `graph`, `switch` or `slider`.
     public private(set) var value: TextBlock?
-    /// The block of the first `view`, whose keys the plugin's view reads (protocol: Views).
+    /// The block of the first `view`, whose keys the spot's view reads (protocol: Views).
     public private(set) var view: TextBlock?
     /// The drawings of the spot's card and of the menu bar, with the components that they place (protocol: Layouts).
     public private(set) var face = CardFace.none

@@ -17,11 +17,11 @@ final class AppCallsSocketTests: XCTestCase {
     private var socket: CommandSocket?
 
     private var config: URL { folder.appendingPathComponent("config", isDirectory: true) }
-    private var plugins: URL { config.appendingPathComponent("plugins", isDirectory: true) }
+    private var spots: URL { config.appendingPathComponent("spots", isDirectory: true) }
 
     override func setUpWithError() throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("oa-\(UUID().uuidString.prefix(8))", isDirectory: true)
-        try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         let home = try XCTUnwrap(ProcessInfo.processInfo.environment["HOME"], "the test scheme gives a private home")
         outside = URL(fileURLWithPath: home, isDirectory: true).appendingPathComponent("oa-\(UUID().uuidString.prefix(8))", isDirectory: true).standardizedFileURL
         try FileManager.default.createDirectory(at: outside, withIntermediateDirectories: true)
@@ -42,7 +42,7 @@ final class AppCallsSocketTests: XCTestCase {
     }
 
     private func request(_ argv: [String], env: [String: String] = [:], cwd: URL? = nil, piped: Bool = false) -> [String: Any] {
-        let variables = ["OPENSPOT_CONFIG": config.path, "OPENSPOT_PLUGINS": plugins.path].merging(env) { _, new in new }
+        let variables = ["OPENSPOT_CONFIG": config.path, "OPENSPOT_SPOTS": spots.path].merging(env) { _, new in new }
         return ["jsonrpc": "2.0", "id": 1, "method": "ask", "params": ["argv": argv, "cwd": (cwd ?? folder).path, "env": variables, "piped": piped]]
     }
 
@@ -55,7 +55,7 @@ final class AppCallsSocketTests: XCTestCase {
 
     private func spot(_ name: String, header: String = "", _ body: String) throws {
         let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: plugins.appendingPathComponent("\(name).sh"))
+        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: spots.spotFile(name))
     }
 
     /// Waits for a fact, for 10 seconds at most.
@@ -120,7 +120,7 @@ final class AppCallsSocketTests: XCTestCase {
         let runs = await SpotRuns()
         await MainActor.run { runs.isCareful = true }
         listen(runs: runs)
-        let reader = try XCTUnwrap(SpotFolder(url: plugins).scan().scripts.first { $0.id == "reader" })
+        let reader = try XCTUnwrap(SpotsFolder(url: spots).scan().scripts.first { $0.id == "reader" })
         let token = runs.tokens.issue(for: reader)
 
         let person = try ask(["spot", "run", "writer", "person"])
@@ -139,9 +139,9 @@ final class AppCallsSocketTests: XCTestCase {
         await MainActor.run { runs.isCareful = true }
         listen(runs: runs)
 
-        let answer = try ask(["check", "plugins"], cwd: config)
+        let answer = try ask(["check", "spots"], cwd: config)
 
-        XCTAssertEqual(answer.stdout, "No faults in \(plugins.path).\n")
+        XCTAssertEqual(answer.stdout, "No faults in \(spots.path).\n")
         XCTAssertEqual(answer.code, 0)
         XCTAssertFalse(exists(leak))
     }

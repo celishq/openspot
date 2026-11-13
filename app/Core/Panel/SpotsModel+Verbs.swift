@@ -73,7 +73,7 @@ extension SpotsModel {
                 try FileManager.default.moveItem(at: move.to, to: move.from)
             }
         } catch {
-            host.notify("Openspot cannot put \(removal.words) back, because a file left the Trash. Find it in the Trash, and move it to the plugins folder.")
+            host.notify("Openspot cannot put \(removal.words) back, because a file left the Trash. Find it in the Trash, and move it to the spots folder.")
             return true
         }
         reload()

@@ -1,8 +1,8 @@
 import Foundation
 
-/// A run of each plugin in a folder that reports all faults, so that a person or an agent can fix them.
+/// A run of each spot in a folder that reports all faults, so that a person or an agent can fix them.
 public struct SpotCheck: Sendable {
-    public let folder: SpotFolder
+    public let folder: SpotsFolder
     public let timeout: TimeInterval
     public let views: ViewLibrary
     /// The most uses that Careful mode leaves each read, or nil to run each one as the person (protocol: Trust).
@@ -10,11 +10,11 @@ public struct SpotCheck: Sendable {
     /// The record of the app, which then knows each read's calls of `openspot` as its spot's (protocol: Trust), or nil for one of its own.
     let tokens: CallerTokens?
 
-    public init(folder: SpotFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard()) {
+    public init(folder: SpotsFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard()) {
         self.init(folder: folder, timeout: timeout, views: views, careful: nil, tokens: nil)
     }
 
-    init(folder: SpotFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard(), careful: Set<SpotUse>?, tokens: CallerTokens?) {
+    init(folder: SpotsFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard(), careful: Set<SpotUse>?, tokens: CallerTokens?) {
         self.folder = folder
         self.timeout = timeout
         self.views = views
@@ -40,12 +40,12 @@ public struct SpotCheck: Sendable {
         }
     }
 
-    /// Returns one line for each fault. No lines means that all plugins load and answer, and each view compiles.
+    /// Returns one line for each fault. No lines means that all spots load and answer, and each view compiles.
     public func faults() async -> [String] {
         await findings().map(\.line)
     }
 
-    /// Returns each fault with its spot and its file. None means that all plugins load and answer, and each view compiles.
+    /// Returns each fault with its spot and its file. None means that all spots load and answer, and each view compiles.
     /// Only the start of each read runs on the main thread. A stop of its task starts no more reads and compiles no more
     /// views.
     public func findings() async -> [Finding] {
@@ -55,7 +55,7 @@ public struct SpotCheck: Sendable {
         } catch {
             return [Finding(spot: nil, file: folder.url.path, fault: "Cannot read \(folder.url.path).")]
         }
-        var findings = scan.refused.map { Finding(spot: $0.file, file: folder.file(of: $0.file)?.path, fault: $0.reason) }
+        var findings = scan.refused.map { Finding(spot: $0.file, file: SpotID($0.file).file(in: folder.url)?.path, fault: $0.reason) }
         let known = Set(SpotEvent.known + scan.scripts.flatMap(\.emits))
         for script in scan.scripts {
             for event in script.read?.events ?? [] where !known.contains(event) {

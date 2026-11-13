@@ -29,7 +29,7 @@ struct SpotEditControls: ViewModifier {
                 if sizes.count > 1 {
                     SpotResizeHandle(size: size)
                         .opacity(showsHandle ? 1 : 0.001)
-                        .animation(SpotMotion.handleFade, value: showsHandle)
+                        .animation(SpotMotion.fade(isShown: showsHandle), value: showsHandle)
                         .background(SpotHandleArea(model: model, id: id, size: size, sizes: sizes))
                 }
             }

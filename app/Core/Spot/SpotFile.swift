@@ -1,6 +1,6 @@
 import Foundation
 
-/// What one file in the plugin folder gives: a spot of an executable, or of a JavaScript file with a header that runs inline
+/// What one file in the spots folder gives: a spot of an executable, or of a JavaScript file with a header that runs inline
 /// when it is not executable.
 public struct SpotFile: Equatable, Sendable {
     private static let widgetExtension = "toml"
@@ -83,9 +83,6 @@ public struct SpotFile: Equatable, Sendable {
         if let view, URL(fileURLWithPath: view).pathExtension != SwiftProgram.sourceExtension {
             throw SpotError.fault("\(name) needs a Swift file for its view, such as view=\(url.deletingPathExtension().lastPathComponent).swift")
         }
-        if let view, !id.contains("/") {
-            throw SpotError.fault("\(name) has a view, so it needs a folder of its own. Move \(url.lastPathComponent) and \(view) into a folder such as \(id)/")
-        }
         let preview = header.value("preview")
         guard preview == nil || preview == "sample" else {
             throw SpotError.fault("\(name) has an unknown preview: \(preview!). Use preview=sample, and print fake data while OPENSPOT_REASON is spot.preview")
@@ -106,7 +103,7 @@ public struct SpotFile: Equatable, Sendable {
             pressRuns: press == "open",
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
             offersFloat: kind == .list,
-            dataName: id.split(separator: "/").first.map(String.init),
+            dataName: SpotID(id).name,
             isOnGrid: offers.isEmpty && read?.seconds == nil && !answersOnly,
             headerSymbol: symbol,
             offers: offers,
@@ -124,7 +121,7 @@ public struct SpotFile: Equatable, Sendable {
     }
 
     /// Whether a file is a spot that runs: an executable, or a JavaScript file with a header.
-    private static func runs(_ url: URL) -> Bool {
+    static func runs(_ url: URL) -> Bool {
         if FileManager.default.isExecutableFile(atPath: url.path) { return true }
         return url.pathExtension == inlineExtension && !SpotHeader(url: url).block.fields.isEmpty
     }
@@ -260,12 +257,13 @@ public struct SpotFile: Equatable, Sendable {
         )
     }
 
-    /// The ID of a tool that a widget names: a script of the widget's own folder by its file name first, else the name as an
-    /// ID (protocol: A spot).
+    /// The ID of a tool that a widget names: a script of the widget's own spot folder by its file name first, else the name
+    /// as an ID (protocol: A spot).
     private static func tool(_ name: String, beside url: URL, id: String) -> String {
-        guard !name.contains("/"), let folder = id.split(separator: "/").first, id.contains("/") else { return name }
+        guard !name.contains("/") else { return name }
         let files = (try? FileManager.default.contentsOfDirectory(at: url.deletingLastPathComponent(), includingPropertiesForKeys: nil)) ?? []
-        let isOwn = files.contains { $0.deletingPathExtension().lastPathComponent == name && runs($0) }
-        return isOwn ? "\(folder)/\(name)" : name
+        let own = files.first { $0.deletingPathExtension().lastPathComponent == name && $0.lastPathComponent != url.lastPathComponent
+            && (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) != true && runs($0) }
+        return own.map { SpotID(file: $0).description } ?? name
     }
 }

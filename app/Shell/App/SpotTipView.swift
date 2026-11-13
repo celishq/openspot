@@ -34,7 +34,7 @@ struct SpotTipView: View {
             isShown = false
             guard model.tip != nil else { return }
             try? await Task.sleep(for: Self.delay)
-            if !Task.isCancelled { withAnimation(SpotMotion.handleFade) { isShown = true } }
+            if !Task.isCancelled { withAnimation(SpotMotion.fade(isShown: true)) { isShown = true } }
         }
     }
 

@@ -10,7 +10,7 @@ struct SpotSheetPreview: View {
     var onSet: (SpotPart, String) -> Void = { _, _ in }
     var onPress: (SpotPart) -> Void = { _ in }
     var list = ItemList()
-    var customView: (CGSize) -> SpotCustomView? = { _ in nil }
+    var customView: (CGSize, [String: [String]], @escaping (String) -> Void) -> AnyView? = { _, _, _ in nil }
     /// What places the wallpaper behind it, such as the name of the picture.
     var seed = ""
 

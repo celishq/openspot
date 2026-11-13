@@ -3,6 +3,14 @@ import Foundation
 /// A use that a spot names in the `uses` of its header, such as `screen` (protocol: Trust).
 public enum SpotUse: String, CaseIterable, Codable, Sendable {
     case app, spots, screen, clipboard, calendar, network, files
+    /// The account key, which only a spot shipped in the app reaches, so an error line does not offer it (protocol: Trust).
+    case account
+
+    /// Whether a spot with these uses reaches the account key: only one that ships inside the app and names `account`
+    /// (protocol: Trust).
+    static func reachesAccountKey(_ uses: Set<SpotUse>, isBuiltIn: Bool) -> Bool {
+        isBuiltIn && uses.contains(.account)
+    }
 
     /// The words that Openspot no longer reads, with the use that took each one.
     private static let merged: [String: SpotUse] = ["update": .app, "settings": .spots]
@@ -24,7 +32,7 @@ public enum SpotUse: String, CaseIterable, Codable, Sendable {
                 throw SpotError.fault("\(name) has \(word) in its uses, which Openspot no longer reads. Write \(use.rawValue)")
             }
             guard let use = SpotUse(rawValue: word) else {
-                let known = allCases.map(\.rawValue)
+                let known = allCases.filter { $0 != .account }.map(\.rawValue)
                 throw SpotError.fault("\(name) has an unknown use in its uses: \(word). Use \(known.dropLast().joined(separator: ", ")) or \(known.last ?? "")")
             }
             uses.insert(use)

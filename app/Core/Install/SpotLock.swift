@@ -1,7 +1,6 @@
-import CryptoKit
 import Foundation
 
-/// `spots.lock` in the config folder: the source of each spot that `openspot spot add` put in the plugins folder, the
+/// `spots.lock` in the config folder: the source of each spot that `openspot spot add` put in the spots folder, the
 /// commit of a git source, the paths that the spot took, a hash of its files, its uses and the lines of what it can also
 /// do and of what runs by itself (protocol: The openspot command, Trust). A first add of a spot that has a use, can do more or runs by itself, and an update that adds a use, change
 /// nothing until the person confirms them. Each read, change and write holds a lock beside the file, in the app and in
@@ -10,26 +9,56 @@ public struct SpotLock: Equatable, Sendable {
     public struct Entry: Codable, Equatable, Sendable {
         public let source: String
         public let commit: String?
+        /// The paths that it took in the spots folder, each in a spot folder. A path that an older Openspot kept outside
+        /// one, such as `coffee` or `notes.sh`, reads as the place where a wrap of the folder put it.
         public let paths: [String]
-        /// The SHA-256 of its files, their paths and whether each one runs.
+        /// The hash of the manifest of its files.
         public let hash: String?
         /// The uses that its scripts name, in the order of the set.
         public let uses: [SpotUse]?
         /// The lines of what it can also do and of what runs by itself, as its review shows them.
         public var canDo: [String]?
+        /// The address and the signing key of its last release, when it came signed.
+        public var address: String?
+        public var key: String?
 
-        /// The name of the spot: its first path with no extension.
+        /// The name of the spot: its first spot folder with no extension.
         public var name: String {
-            URL(fileURLWithPath: paths.first ?? source).deletingPathExtension().lastPathComponent
+            SpotID(path: paths.first ?? source).name
         }
 
-        /// Whether a spot of this ID came from this entry: a script at the top of the folder, or any script in its folder.
+        /// Whether a spot of this ID came from this entry: any script in one of its spot folders.
         func holds(_ id: String) -> Bool {
             paths.contains { path in
-                id == path || id == (path as NSString).deletingPathExtension || id.hasPrefix(path + "/")
-                    || (!path.contains("/") && id == URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent)
+                SpotID(id).isSameFolder(as: SpotID(path: path))
             }
         }
+
+        public init(source: String, commit: String?, paths: [String], hash: String?, uses: [SpotUse]?, canDo: [String]? = nil, address: String? = nil, key: String? = nil) {
+            self.source = source
+            self.commit = commit
+            self.paths = paths
+            self.hash = hash
+            self.uses = uses
+            self.canDo = canDo
+            self.address = address
+            self.key = key
+        }
+
+        public init(from decoder: Decoder) throws {
+            let values = try decoder.container(keyedBy: CodingKeys.self)
+            try self.init(
+                source: values.decode(String.self, forKey: .source),
+                commit: values.decodeIfPresent(String.self, forKey: .commit),
+                paths: values.decode([String].self, forKey: .paths).map { SpotsFolder.wrapped($0) },
+                hash: values.decodeIfPresent(String.self, forKey: .hash),
+                uses: values.decodeIfPresent([SpotUse].self, forKey: .uses),
+                canDo: values.decodeIfPresent([String].self, forKey: .canDo),
+                address: values.decodeIfPresent(String.self, forKey: .address),
+                key: values.decodeIfPresent(String.self, forKey: .key)
+            )
+        }
+
 
         /// The line that tells the person what came in.
         var added: String {
@@ -42,11 +71,13 @@ public struct SpotLock: Equatable, Sendable {
         }
     }
 
-    /// The hash, the uses and the lines of what it can also do and of what runs by itself, of a spot's paths in a folder.
+    /// The hash, the uses, the lines of what it can also do and of what runs by itself, and the last release, of a spot's
+    /// paths in a folder.
     private struct Facts {
         let hash: String
         let uses: [SpotUse]
         let canDo: [String]
+        let release: SpotRelease?
     }
 
     private static let name = "spots.lock"
@@ -59,7 +90,7 @@ public struct SpotLock: Equatable, Sendable {
     }
 
     public static func standard(environment: [String: String], home: URL = FileManager.default.homeDirectoryForCurrentUser) -> SpotLock {
-        SpotLock(url: SpotFolder.config(environment: environment, home: home).appendingPathComponent(name))
+        SpotLock(url: SpotsFolder.config(environment: environment, home: home).appendingPathComponent(name))
     }
 
     /// Each entry, in the order that the spots came in. No file has none.
@@ -82,14 +113,14 @@ public struct SpotLock: Equatable, Sendable {
         to folder: URL,
         isConfirmed: Bool = false,
         replaces: [String] = [],
-        expecting: SharedSpot? = nil,
+        expecting: SpotPackage? = nil,
         discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }
     ) async throws -> String {
         try await locked {
             let old = try entries().first { $0.source == source.text }
             var facts: Facts?
             let (commit, paths) = try await source.add(to: folder, at: nil, replacing: (old?.paths ?? []) + replaces, discard: discard) { work, paths in
-                if let expecting, try SharedSpot(paths: paths, in: work) != expecting {
+                if let expecting, try SpotPackage(paths: paths, in: work) != expecting {
                     throw SpotError.fault("The file changed after you looked at it, so Openspot added nothing. Open it again to see it.")
                 }
                 let new = try Self.facts(of: paths, in: work)
@@ -97,11 +128,14 @@ public struct SpotLock: Equatable, Sendable {
                     let confirm = "Openspot added nothing. Run `openspot spot add \(source.text) --yes` to add it."
                     let review: ReviewSpot
                     do {
-                        review = try ReviewSpot(spot: SharedSpot(paths: paths, in: work), folder: folder)
+                        review = try ReviewSpot(spot: SpotPackage(paths: paths, in: work), folder: folder)
                     } catch {
                         throw SpotError.fault("Openspot cannot review it: \((error as? SpotError)?.reason ?? error.localizedDescription)\n\(confirm)")
                     }
                     if !review.trust.isEmpty { throw SpotError.fault("\(review.name)\n\n\(review.trust)\(confirm)") }
+                }
+                if let old, !isConfirmed, let key = old.key, new.release?.publicKey != key {
+                    throw SpotError.fault("Another key signed this version than the one you have. Openspot kept the one you have. Run `openspot spot add \(source.text) --yes` to update it.")
                 }
                 if let old, !isConfirmed {
                     let before = old.uses == nil || old.canDo == nil ? try Self.facts(of: old.paths, in: folder) : nil
@@ -109,7 +143,7 @@ public struct SpotLock: Equatable, Sendable {
                 }
                 facts = new
             }
-            let entry = Entry(source: source.text, commit: commit, paths: paths, hash: facts?.hash, uses: facts?.uses, canDo: facts?.canDo)
+            let entry = Entry(source: source.text, commit: commit, paths: paths, hash: facts?.hash, uses: facts?.uses, canDo: facts?.canDo, address: facts?.release?.address, key: facts?.release?.publicKey)
             try write(try entries().filter { Set($0.paths).isDisjoint(with: paths) && $0.source != source.text } + [entry])
             return old == nil ? entry.added : entry.updated
         }
@@ -138,7 +172,7 @@ public struct SpotLock: Equatable, Sendable {
                     }
                     facts = new
                 })
-                entries[index] = Entry(source: entry.source, commit: entry.commit, paths: entry.paths, hash: facts?.hash, uses: facts?.uses, canDo: facts?.canDo)
+                entries[index] = Entry(source: entry.source, commit: entry.commit, paths: entry.paths, hash: facts?.hash, uses: facts?.uses, canDo: facts?.canDo, address: facts?.release?.address, key: facts?.release?.publicKey)
                 changed[entry.source] = entries[index]
                 added += entry.added
             } catch {
@@ -146,7 +180,7 @@ public struct SpotLock: Equatable, Sendable {
             }
         }
         if !changed.isEmpty { try write(try self.entries().map { changed[$0.source] ?? $0 }) }
-        if added.isEmpty, faults.isEmpty { added = "Each spot of spots.lock is in the plugins folder.\n" }
+        if added.isEmpty, faults.isEmpty { added = "Each spot of spots.lock is in the spots folder.\n" }
         return CommandAnswer(output: added, errors: faults, code: faults.isEmpty ? 0 : 1)
     }
 
@@ -162,36 +196,29 @@ public struct SpotLock: Equatable, Sendable {
 
     /// The hash of the files under the paths in a folder, and the uses that their scripts name.
     private static func facts(of paths: [String], in folder: URL) throws -> Facts {
-        var hash = SHA256()
-        var files: [(path: String, url: URL)] = []
-        for path in paths {
-            let top = folder.appendingPathComponent(path)
-            var isFolder: ObjCBool = false
-            guard FileManager.default.fileExists(atPath: top.path, isDirectory: &isFolder) else { continue }
-            guard isFolder.boolValue else {
-                files.append((path, top))
-                continue
-            }
-            for inner in FileManager.default.subpaths(atPath: top.path) ?? [] {
-                let url = top.appendingPathComponent(inner)
-                var isInner: ObjCBool = false
-                if FileManager.default.fileExists(atPath: url.path, isDirectory: &isInner), !isInner.boolValue { files.append(("\(path)/\(inner)", url)) }
-            }
+        let spot: SpotPackage?
+        let unread: Error?
+        do {
+            spot = try SpotPackage(paths: paths, in: folder)
+            unread = nil
+        } catch {
+            spot = nil
+            unread = error
         }
-        for file in files.sorted(by: { $0.path < $1.path }) {
-            hash.update(data: Data("\(file.path)\0\(FileManager.default.isExecutableFile(atPath: file.url.path))\0".utf8))
-            hash.update(data: try Data(contentsOf: file.url))
-        }
-        let scan = try SpotFolder(url: folder).scan()
-        let scripts = scan.scripts.filter { script in paths.contains { script.id == ($0 as NSString).deletingPathExtension || script.id.hasPrefix($0 + "/") } }
+        let scan = try SpotsFolder(url: folder).scan()
+        let names = Set(paths.map { SpotID(path: $0).name })
+        let scripts = scan.scripts.filter { script in names.contains(SpotID(script.id).name) }
         let uses = SpotUse.allCases.filter { use in scripts.contains { $0.uses.contains(use) } }
         let canDo: [String]
         do {
-            canDo = try ReviewSpot(spot: SharedSpot(paths: paths, in: folder), folder: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-none", isDirectory: true)).canDo
+            guard let spot else { throw unread ?? SpotError.fault("This file holds no spot.") }
+            canDo = try ReviewSpot(spot: spot, folder: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-none", isDirectory: true)).canDo
         } catch {
             canDo = ["Cannot review it: \((error as? SpotError)?.reason ?? error.localizedDescription)"]
         }
-        return Facts(hash: hash.finalize().map { String(format: "%02x", $0) }.joined(), uses: uses, canDo: canDo)
+        let release = try spot.flatMap { spot in try spot.roots.first.flatMap { try spot.releaseLog(in: $0)?.last } }
+        let manifest = try spot.map { SpotManifest($0.files) } ?? SpotManifest(walking: paths, in: folder)
+        return Facts(hash: manifest.hash, uses: uses, canDo: canDo, release: release)
     }
 
     /// Moves each path of the entry that holds this ID to the Trash, and drops the entry. A spot that `spot add` did not add

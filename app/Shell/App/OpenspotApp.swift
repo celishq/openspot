@@ -18,6 +18,9 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
 
     /// The seconds after a drop until the app that the drag came from has let go of the focus.
     private static let dropSettle = 0.2
+    /// The seconds that a passed Touch ID counts for, and when it last passed.
+    static let touchIDReuse: TimeInterval = 300
+    static var touchIDPassed: Date?
 
     private(set) var statusItem: NSStatusItem?
     private(set) lazy var model = SpotsModel(host: self)
@@ -34,7 +37,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var fileChooser: SpotFileChooser?
     private var motionProbe: SpotMotionProbe?
     private var update: AppUpdate?
-    private var folderWatch: SpotFolderWatch?
+    private var folderWatch: SpotsFolderWatch?
     private var showListener: NSObjectProtocol?
     private var commandSocket: CommandSocket?
     private let mac = SpotMac()
@@ -82,10 +85,10 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
                 .error("Openspot cannot listen for openspot calls for \(config.path, privacy: .public), so spots that ask the app fail.")
         }
         model.reload()
-        folderWatch = SpotFolderWatch(folder: model.files.folder.url) { [weak self] in self?.model.folderChanged() }
+        folderWatch = SpotsFolderWatch(folder: model.files.folder.url) { [weak self] in self?.model.folderChanged() }
         try? AgentNote(command: Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/openspot").path).write(in: model.files.folder.url)
         showListener = SpotShowLink.listen { [weak self] id in self?.model.reveal(id) ?? false }
-        let isFirstLaunch = SpotFolder.standard().isFirstLaunch(config: .standard())
+        let isFirstLaunch = SpotsFolder.standard().isFirstLaunch(config: .standard())
         panel?.warm { [weak self] in
             guard let self else { return }
             SpotSheetWarmth.draw()

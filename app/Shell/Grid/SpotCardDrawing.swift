@@ -8,7 +8,7 @@ struct SpotCardDrawing: View {
     let layout: WidgetLayout
     let face: CardFace
     let card: SpotSize
-    /// The plugin's own view at the size of its area, once it is built (protocol: Views).
+    /// The spot's own view at the size of its area, once it is built (protocol: Views).
     var view: (CGSize) -> SpotCustomView? = { _ in nil }
     let onSlot: (String, String?) -> Void
 

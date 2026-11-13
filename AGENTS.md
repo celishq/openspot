@@ -4,25 +4,25 @@
 
 - `app/` is the Mac app, built with XcodeGen from `app/project.yml`. Run `xcodegen generate` in `app/` after you
   add or move a file. Targets:
-  - `Core/` — the plugin contract and loading. Imports Foundation only.
+  - `Core/` — the spot contract and loading. Imports Foundation only.
   - `Shell/` — the menu bar app, the panel and the hotkey. Imports AppKit and SwiftUI.
   - `Client/` — the `openspot` command, which talks to the running app.
   - `StandIn/` — a small program for tests: a capability that needs no Mac feature. It does not ship.
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
-- `app/RULES.md` holds the rules of the app that no plugin author sees, by ID. Code and tests name a rule by its ID.
+- `app/RULES.md` holds the rules of the app that no spot author sees, by ID. Code and tests name a rule by its ID.
 - `app/Keywords/` holds the CLDR keywords of emoji and symbols, one xz file per language. `scripts/emoji-keywords.py` writes
   it from a pinned CLDR version, and the build copies it into the app.
 - `app/Help/` holds the guide of each `openspot` noun that has one, which `openspot help <noun>` prints. The build copies it
   into the app.
-- `plugins/` holds the source of the core spots. The build copies it into the app, and they run from there.
-  `plugins/openspot/` holds the spots of the app itself, such as Settings, which are always on and use only the `openspot`
+- `spots/` holds the source of the core spots, each a `<name>.spot` folder. The build copies it into the app, and they run
+  from there. `spots/openspot.spot/` holds the spots of the app itself, such as Settings, which are always on and use only the `openspot`
   API. No code outside that folder names one of them.
-- `examples/` holds plugins that show a feature, such as a view. The app does not ship them, and a test checks them.
-  `make examples` copies them into the plugins of a Debug build.
+- `examples/` holds spots that show a feature, such as a view. The app does not ship them, and a test checks them.
+  `make examples` copies them into the spots of a Debug build.
 - `plans/` holds design plans. It is git-ignored.
 - `.temp/` holds throwaway mock-ups and screenshots. It is git-ignored.
-- `.temp/openspot/` holds the plugins and the config of a Debug build, so that it never changes `plugins/` or
-  `~/.config/openspot`. The build fills it once from `plugins/`, and `make dev-state` resets it. `make dev-state EMPTY=1` leaves it empty, so that the core spots run from the app, as on a new Mac.
+- `.temp/openspot/` holds the spots and the config of a Debug build, so that it never changes `spots/` or
+  `~/.config/openspot`. The build fills it once from `spots/`, and `make dev-state` resets it. `make dev-state EMPTY=1` leaves it empty, so that the core spots run from the app, as on a new Mac.
 
 ## Writing
 
@@ -94,6 +94,11 @@ below is one a reviewer can check in a diff.
 
 ### Motion
 
+Each motion is one of five kinds, each with one curve in `Shell/Surface/SpotMotion.swift`: grow (and its way back), move,
+fade and press. Each duration, bounce and motion scale is in `Core/Panel/MotionTokens.swift`. A part of a surface that grows
+takes its look from the surface's progress, by `SheetMorph`, and keeps no curve of its own. `make verify` runs
+`scripts/check-motion.sh`, which fails on a curve written anywhere else.
+
 - Move a view with FLIP: lay it out at its last place, then animate only `offset`, `scaleEffect` and `opacity` from its
   first place. Do not animate a frame, a padding, a font, a text width or a blur radius.
 - Grow a surface with an animated shape that clips its content, masks its blur and places its rim. Do not scale a surface
@@ -150,9 +155,10 @@ below is one a reviewer can check in a diff.
 ## Verify
 
 ```sh
-make verify                # the Core and Tests checks, then the XCTest suite, with test classes in parallel
+make verify                # the Core, Tests and Motion checks, then the XCTest suite, with test classes in parallel
 make test T=SpotRunsTests  # one test class, while you work on it
 make perf N=3              # times a Release sheet that opens and closes 20 times, 3 runs; ACTION picks another motion
+make film SPOT=caffeinate  # films the open and close of a sheet 10x slower (SLOW=1 for real speed) into .temp/film
 make shots                 # saves pictures of the actions menu in the running panel into .temp/shots
 make docs-images           # draws the image under each GUIDE.md example; GuideImageTests fail when one is out of date
 make eval-agent N=1        # gives N tasks to claude -p with only `openspot guide`, and checks each spot; it costs money

@@ -105,7 +105,7 @@ public final class SpotRuns {
 
     nonisolated deinit {}
 
-    /// Takes a new look at the plugin folder, with the spots that the person put in the menu bar. Each script keeps its sheet,
+    /// Takes a new look at the spots folder, with the spots that the person put in the menu bar. Each script keeps its sheet,
     /// and a sheet whose script is gone stops its reads. A staying script that something wants starts. At most once a day, it
     /// prunes the builds of Swift scripts.
     public func take(_ scan: ScanResult, menuBar: Set<String> = []) {
@@ -326,8 +326,10 @@ public final class SpotRuns {
         return call
     }
 
-    /// Keeps the record of a call that ended in the call log, unless it is a quiet one.
+    /// Keeps the record of a call that ended in the call log, unless it is a quiet one or a call of a spot that uses the
+    /// account, whose frames can hold its words.
     func record(_ spot: Spot, _ action: SpotAction, input: String?, frames: [String], errors: String, end: ScriptCall.End, reason: ReadReason?, started: Date, begin: Date) {
+        guard !spot.reachesAccountKey else { return }
         let record = CallLog.Record(
             spot: spot.id,
             arguments: action.arguments,

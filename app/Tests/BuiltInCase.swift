@@ -1,8 +1,8 @@
 import XCTest
 @testable import OpenspotCore
 
-/// The spots of the app, as `plugins/openspot` holds them. Each one runs as the app runs it, and its `openspot` calls go
-/// through the real command to the socket of a test's API, with a config and a plugins folder of the test's own.
+/// The spots of the app, as `spots/openspot` holds them. Each one runs as the app runs it, and its `openspot` calls go
+/// through the real command to the socket of a test's API, with a config and a spots folder of the test's own.
 @MainActor
 class BuiltInCase: XCTestCase {
     private final class Host: Mac {
@@ -31,14 +31,16 @@ class BuiltInCase: XCTestCase {
         var elevated: [String] = []
     }
 
-    private static let names = ["PATH", "OPENSPOT_CONFIG", "OPENSPOT_PLUGINS", "OPENSPOT_CORE"]
+    private static let names = ["PATH", "OPENSPOT_CONFIG", "OPENSPOT_SPOTS", "OPENSPOT_CORE"]
 
     var root: URL!
-    var plugins: URL!
+    var spots: URL!
     var core: URL!
     /// The folder of the tools on the path, with `openspot` in it.
     var tools: URL!
     let app = FakeRunningApp()
+    /// The runs that start a spot when a test needs the API to know it as the caller, as the app does.
+    let runs = SpotRuns()
     let mac = MacSettings()
     private var socket: CommandSocket?
     private var before: [String: String] = [:]
@@ -48,8 +50,8 @@ class BuiltInCase: XCTestCase {
     }
 
     /// The folder of the repo's spots, which the app copies into its bundle.
-    var repoPlugins: URL {
-        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("plugins")
+    var repoSpots: URL {
+        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
     }
 
     /// The guide that `openspot guide` prints, which a test writes when it needs one.
@@ -97,10 +99,10 @@ class BuiltInCase: XCTestCase {
 
     override func setUp() async throws {
         root = FileManager.default.temporaryDirectory.appendingPathComponent("bi-\(UUID().uuidString.prefix(8))")
-        plugins = root.appendingPathComponent("plugins")
+        spots = root.appendingPathComponent("spots")
         core = root.appendingPathComponent("core")
         tools = root.appendingPathComponent("tools")
-        for folder in [plugins!, core!, tools!] {
+        for folder in [spots!, core!, tools!] {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         }
         let built = Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot")
@@ -109,9 +111,9 @@ class BuiltInCase: XCTestCase {
         before = environment.filter { Self.names.contains($0.key) }
         setenv("PATH", "\(tools.path):/usr/bin:/bin", 1)
         setenv("OPENSPOT_CONFIG", root.path, 1)
-        setenv("OPENSPOT_PLUGINS", plugins.path, 1)
+        setenv("OPENSPOT_SPOTS", spots.path, 1)
         setenv("OPENSPOT_CORE", core.path, 1)
-        socket = CommandSocket(folder: root, api: CommandAPI(mac: Host(mac: mac, guide: guide), app: app))
+        socket = CommandSocket(folder: root, api: CommandAPI(mac: Host(mac: mac, guide: guide), app: app, runs: runs))
     }
 
     override func tearDown() async throws {
@@ -122,15 +124,15 @@ class BuiltInCase: XCTestCase {
         try? FileManager.default.removeItem(at: root)
     }
 
-    /// The spot of the app in this file of `plugins/openspot`, as a scan of the core folder gives it.
+    /// The spot of the app in this file of `spots/openspot`, as a scan of the core folder gives it.
     func spot(_ name: String) throws -> Spot {
-        let place = SpotFolder(url: root.appendingPathComponent("none"), core: repoPlugins)
+        let place = SpotsFolder(url: root.appendingPathComponent("none"), core: repoSpots)
         return try XCTUnwrap(try place.scan().scripts.first { $0.id == "openspot/\(name)" })
     }
 
-    /// Writes a script with these header lines into the plugins folder of the test.
+    /// Writes a script with these header lines into the spots folder of the test.
     func script(_ name: String, _ header: String) throws {
         let lines = header.split(separator: "\n", omittingEmptySubsequences: false).map { "# \($0)\n" }.joined()
-        try "#!/bin/sh\n\(lines)".writeScript(to: plugins.appendingPathComponent(name))
+        try "#!/bin/sh\n\(lines)".writeScript(to: spots.appendingPathComponent(name))
     }
 }

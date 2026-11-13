@@ -49,7 +49,7 @@ public struct CardFace: Equatable, Sendable {
         [SpotSize.large, .strip].first { drawings[$0.name] != nil }
     }
 
-    /// Whether a `view` component places the plugin's view, which fills the card when no drawing places it (protocol: Views).
+    /// Whether a `view` component places the spot's view, which fills the card when no drawing places it (protocol: Views).
     public var hasView: Bool {
         parts.contains { $0.kind == "view" }
     }

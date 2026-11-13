@@ -12,7 +12,7 @@ cd "$(dirname "$0")/.."
 app=${OPENSPOT_APP:-.temp/dd/Build/Products/Debug/Openspot.app/Contents/MacOS/Openspot}
 work=$PWD/.temp/docs-images
 rm -rf "$work"
-mkdir -p "$work/plugins" "$work/config" "$work/core" "$work/examples" docs/images
+mkdir -p "$work/spots" "$work/config" "$work/core" "$work/examples" docs/images
 awk -v out="$work/examples" '
   /^```(sh|js)$/ { inside = 1; text = ""; kind = substr($0, 4); next }
   inside && /^```$/ { inside = 0; last = text; lastkind = kind; draw = ""; card = ""; next }
@@ -35,44 +35,44 @@ stub() {
     memory) title=Memory value="61%%" ;;
     *) title=$1 value="42" ;;
   esac
-  printf '#!/bin/sh\n# title=%s\n# on=clock.60\nprintf '"'"'text=v\\ntitle=%s\\n'"'"'\n' "$title" "$value" > "$work/plugins/$1.sh"
-  chmod +x "$work/plugins/$1.sh"
+  printf '#!/bin/sh\n# title=%s\n# on=clock.60\nprintf '"'"'text=v\\ntitle=%s\\n'"'"'\n' "$title" "$value" > "$work/spots/$1.sh"
+  chmod +x "$work/spots/$1.sh"
 }
 for example in "$work"/examples/*.example; do
   name=$(basename "$example" .example)
   kind=$(cat "$work/examples/$name.kind")
   draw=$(cat "$work/examples/$name.draw")
   card=$(cat "$work/examples/$name.card")
-  rm -rf "$work"/plugins/*
+  rm -rf "$work"/spots/*
   if [ -n "$draw" ]; then
-    cp "$example" "$work/plugins/$name.source"
+    cp "$example" "$work/spots/$name.source"
     {
       printf '#!/bin/sh\n'
       sed '1{/^#!/d;}' "$example" | sed -E -n '/^(#|\/\/)/!q; p' | sed 's|^//|#|'
-      printf 'EXAMPLE="%s"\n%s\n' "$work/plugins/$name.source" "$draw"
-    } > "$work/plugins/$name.sh"
-    chmod +x "$work/plugins/$name.sh"
+      printf 'EXAMPLE="%s"\n%s\n' "$work/spots/$name.source" "$draw"
+    } > "$work/spots/$name.sh"
+    chmod +x "$work/spots/$name.sh"
   else
-    cp "$example" "$work/plugins/$name.$kind"
-    [ "$kind" = js ] || chmod +x "$work/plugins/$name.$kind"
+    cp "$example" "$work/spots/$name.$kind"
+    [ "$kind" = js ] || chmod +x "$work/spots/$name.$kind"
   fi
   for word in $(sed -n -e 's/^# grid\.[a-z]*=//p' -e 's/^# to=//p' "$example"); do
-    [ -f "$work/plugins/$word.sh" ] || stub "$word"
+    [ -f "$work/spots/$word.sh" ] || stub "$word"
   done
   size=""
   [ -n "$card" ] && size="--card $card"
-  OPENSPOT_PLUGINS="$work/plugins" OPENSPOT_CONFIG="$work/config" OPENSPOT_CORE="$work/core" \
+  OPENSPOT_SPOTS="$work/spots" OPENSPOT_CONFIG="$work/config" OPENSPOT_CORE="$work/core" \
     "$app" render --spot "$name" $size "docs/images/$name.png"
   cp "$example" "docs/images/$name.example"
   echo "docs/images/$name.png"
 done
-rm -rf "$work/config"/* "$work/plugins"/*
-cp -R docs/sample/. "$work/plugins/"
-rm "$work/plugins/config.toml"
-for spot in system system-info battery cpu memory devices; do cp "plugins/$spot.sh" "$work/plugins/"; done
-cp -R examples/now-playing "$work/plugins/"
+rm -rf "$work/config"/* "$work/spots"/*
+cp -R docs/sample/. "$work/spots/"
+rm "$work/spots/config.toml"
+for spot in system system-info battery cpu memory devices; do cp -R "spots/$spot.spot" "$work/spots/"; done
+cp -R examples/now-playing.spot "$work/spots/"
 cp docs/sample/config.toml "$work/config/config.toml"
-OPENSPOT_PLUGINS="$work/plugins" OPENSPOT_CONFIG="$work/config" OPENSPOT_CORE="$work/core" "$app" check >/dev/null
-OPENSPOT_PLUGINS="$work/plugins" OPENSPOT_CONFIG="$work/config" OPENSPOT_CORE="$work/core" \
+OPENSPOT_SPOTS="$work/spots" OPENSPOT_CONFIG="$work/config" OPENSPOT_CORE="$work/core" "$app" check >/dev/null
+OPENSPOT_SPOTS="$work/spots" OPENSPOT_CONFIG="$work/config" OPENSPOT_CORE="$work/core" \
   "$app" render --panel docs/images/panel.png
 echo docs/images/panel.png

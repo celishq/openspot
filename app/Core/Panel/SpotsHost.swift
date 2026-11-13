@@ -10,6 +10,8 @@ public protocol SpotsHost: AnyObject {
     func show()
     /// Shows the panel and makes it key, as a review or a first launch does.
     func present()
+    /// Makes the shown panel key again, with none of the steps of a show.
+    func takeFocus()
     func notify(_ text: String)
     func notify(_ text: String, fix: URL)
     func confirm(_ text: String)
@@ -43,4 +45,14 @@ public protocol SpotsHost: AnyObject {
     func agentPrompt(for folder: URL) -> AgentPrompt
     /// Makes a change on a motion, or with none at all, and calls `completion` when its motion reaches its end.
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void)
+    /// Asks the person to prove who they are, with Touch ID or the Mac password, before an act such as showing the account
+    /// words. Returns whether they did.
+    func allows(_ reason: String) async -> Bool
+}
+
+extension SpotsHost {
+    /// A host with no Touch ID allows each act.
+    public func allows(_ reason: String) async -> Bool {
+        true
+    }
 }

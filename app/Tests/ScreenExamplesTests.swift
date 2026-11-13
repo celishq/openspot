@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 /// Proves the Shot and Record examples with their real scripts and a stand-in for the openspot command.
-final class ScreenExamplesTests: SamplePluginsCase {
+final class ScreenExamplesTests: SampleSpotsCase {
     /// A stand-in for the openspot command that logs each call to `calls`, keeps settings and a recording in files, lists two
     /// mics, a camera and the sound, and takes the shot that the file `shot` names.
     private func fakeScreen(in folder: URL) throws {
@@ -88,6 +88,6 @@ final class ScreenExamplesTests: SamplePluginsCase {
     }
 
     func testTheEditorOfShotTypeChecks() async throws {
-        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-typecheck", examples.appendingPathComponent("shot/edit.swift").path])
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-typecheck", examples.appendingPathComponent("shot.spot/edit.swift").path])
     }
 }

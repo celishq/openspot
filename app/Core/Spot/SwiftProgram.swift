@@ -39,7 +39,7 @@ public struct SwiftProgram: Sendable {
         self.now = now
         let environment = ProcessInfo.processInfo.environment
         let home = URL(fileURLWithPath: environment["HOME"] ?? NSHomeDirectory(), isDirectory: true)
-        self.cache = cache ?? Self.folder(of: SpotFolder.config(environment: environment, home: home), in: home.appendingPathComponent("Library/Caches/dev.openspot/swift", isDirectory: true))
+        self.cache = cache ?? Self.folder(of: SpotsFolder.config(environment: environment, home: home), in: home.appendingPathComponent("Library/Caches/dev.openspot/swift", isDirectory: true))
     }
 
     /// The cache of the builds of a config folder: a folder in `root` named by a short hash of the folder's path.

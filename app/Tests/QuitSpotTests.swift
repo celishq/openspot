@@ -14,7 +14,7 @@ final class QuitSpotTests: BuiltInCase {
 
     func testItRunsAtOnceAndLeavesTheGrid() throws {
         let spot = try spot("quit")
-        let defaults = Config(text: try String(contentsOf: repoPlugins.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8))
+        let defaults = Config(text: try String(contentsOf: repoSpots.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8))
 
         XCTAssertEqual(spot.kind, .launch)
         XCTAssertEqual(spot.name, "Quit")

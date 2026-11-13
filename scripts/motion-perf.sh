@@ -8,7 +8,7 @@ cd "$(dirname "$0")/.."
 out=.temp/perf
 rm -rf "$out/runs"
 mkdir -p "$out/runs"
-[ -d .temp/openspot/plugins ] || make dev-state >/dev/null
+[ -d .temp/openspot/spots ] || make dev-state >/dev/null
 (cd app && xcodegen generate >/dev/null)
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project app/Openspot.xcodeproj -scheme Openspot \
   -configuration Release -derivedDataPath "$out/build" build -quiet >"$out/build.log" 2>&1 || { grep error: "$out/build.log"; exit 1; }

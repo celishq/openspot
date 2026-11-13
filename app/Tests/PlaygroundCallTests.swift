@@ -21,6 +21,19 @@ final class PlaygroundCallTests: SpotRunsCase {
         XCTAssertTrue(calls[1].lines.contains("< search=rep"), "\(calls[1].lines)")
     }
 
+    func testTheCallsOfASpotThatUsesTheAccountStayOutOfTheLog() {
+        var calls: [PlaygroundCall] = []
+        runs.onCall = { calls.append(PlaygroundCall(record: $0, reason: $1)) }
+        let url = URL(fileURLWithPath: path("account.sh"))
+
+        for uses in [Set<SpotUse>([.account]), []] {
+            let spot = Spot(id: "account", name: "Account", url: url, dataName: "account", uses: uses).builtIn()
+            runs.record(spot, SpotAction(arguments: ["read"]), input: nil, frames: ["word=secret\n"], errors: "", end: .ended, reason: nil, started: Date(), begin: Date())
+        }
+
+        XCTAssertEqual(calls.map(\.lines.first), ["$ read"])
+    }
+
     func testTheRunsTellEachCallOfAStayingSpotOnceWhenItEnds() async throws {
         try script(header: "mode=stay", """
         while IFS= read -r line; do

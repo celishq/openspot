@@ -54,7 +54,7 @@ extension SpotsModel {
     }
 
     /// Ends the drag: the card lands at the place nearest the lifted card, and the order is saved. A release on the store
-    /// puts the card back and publishes a spot of the plugins folder. A release with the pointer off the grid, or where the
+    /// puts the card back and publishes a spot of the spots folder. A release with the pointer off the grid, or where the
     /// card started, puts every card back.
     public func dropSpot(by translation: CGSize) {
         guard let drag else { return }

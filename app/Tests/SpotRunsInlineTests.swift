@@ -16,7 +16,9 @@ final class SpotRunsInlineTests: SpotRunsCase {
     /// Writes a JavaScript spot with these header lines.
     private func inline(_ name: String = "script", header: String, _ body: String) throws {
         let lines = header.split(separator: "\n").map { "// \($0)\n" }.joined()
-        try "\(lines)\(body)\n".write(to: folder.appendingPathComponent("\(name).js"), atomically: true, encoding: .utf8)
+        let url = folder.spotFile(name, extension: "js")
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try "\(lines)\(body)\n".write(to: url, atomically: true, encoding: .utf8)
     }
 
     /// A spot that answers each text with one row of it, and works for 300 ms first on the text `slow`.
@@ -118,7 +120,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
         sheet.answer("123")
 
         try answering()
-        try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(60)], ofItemAtPath: path("script.js"))
+        try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(60)], ofItemAtPath: path("script.spot/script.js"))
         _ = try scanned()
 
         try await wait("the end of the dropped answer") { !sheet.isAnswering }
@@ -131,7 +133,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
         try await wait("the old answer") { sheet.answers.map(\.title) == ["Old"] }
 
         try inline(header: "on=search.text ^[0-9]", "function main() { return 'row=a\\ntitle=New' }")
-        try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(60)], ofItemAtPath: path("script.js"))
+        try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(60)], ofItemAtPath: path("script.spot/script.js"))
         sheet.answer("2")
 
         try await wait("the new answer") { sheet.answers.map(\.title) == ["New"] }

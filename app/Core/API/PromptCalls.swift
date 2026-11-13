@@ -7,7 +7,7 @@ struct PromptCalls {
 
     func new(_ words: String) -> CommandAPI.Work {
         CommandAnswer.work { [mac, environment] in
-            let folder = SpotFolder.standard(environment: environment).url
+            let folder = SpotsFolder.standard(environment: environment).url
             let guide = mac.guide ?? folder
             return AgentPrompt(folder: folder, guide: guide, app: AgentPrompt.command(of: Bundle.main.executablePath ?? "openspot")).building(words)
         }

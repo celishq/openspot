@@ -14,6 +14,10 @@ public final class CallerTokens: @unchecked Sendable {
         public var isBuiltIn = false
         /// The folder of its files inside the data of the app, or nil for a caller with none.
         public var dataName: String?
+
+        public var reachesAccountKey: Bool {
+            SpotUse.reachesAccountKey(uses, isBuiltIn: isBuiltIn)
+        }
     }
 
     /// One token: its spot, the reason of its call, and the process group that it stands for, with the start of the

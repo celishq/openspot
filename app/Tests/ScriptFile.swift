@@ -11,6 +11,7 @@ extension String {
     func writeScript(to url: URL) throws {
         let shared = Self.pool
         try FileManager.default.createDirectory(at: shared, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         let claim = url.path + ".\(UUID().uuidString)"
         while true {
             for name in try FileManager.default.contentsOfDirectory(atPath: shared.path) where !name.hasSuffix(".new") {

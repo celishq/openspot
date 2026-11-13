@@ -11,7 +11,7 @@ final class HintWordsTests: XCTestCase {
     func testAKeyStaysWithItsWords() {
         XCTAssertEqual(groups("Esc Close"), ["[Esc] Close"])
         XCTAssertEqual(groups("⌘K Actions"), ["[⌘K] Actions"])
-        XCTAssertEqual(groups("⌘N New plugin"), ["[⌘N] New plugin"])
+        XCTAssertEqual(groups("⌘N New spot"), ["[⌘N] New spot"])
     }
 
     func testEachGroupHasItsOwnKey() {
