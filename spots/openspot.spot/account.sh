@@ -57,9 +57,9 @@ short() {
   printf '%.12s…%s' "$1" "${1#"${1%??????}"}"
 }
 
-# Prints a line of words: its id, title, icon, tone and detail.
+# Prints a line of words in a tile: its id, title, icon, tone and detail. Over two lines, the detail shows under the title.
 line() {
-  printf '\ntext=%s\n' "$1"
+  printf '\ntext=%s\nlook=tile\n' "$1"
   openspot_kv title "$2"
   [ -z "$3" ] || printf 'icon=%s\n' "$3"
   [ -z "$4" ] || printf 'tone=%s\n' "$4"
@@ -157,10 +157,9 @@ check() {
   if [ -f "$data/mistake" ]; then
     line head "$(cat "$data/mistake")" exclamationmark.triangle bad
   else
-    line head 'Check your words' checkmark.circle
+    line head 'Pick each word you wrote' checkmark.circle
   fi
-  line first "Word $1"
-  line second "Word $2"
+  printf '\ntext=first\ntitle=Word %s\nicon=%s.circle\n\ntext=second\ntitle=Word %s\nicon=%s.circle\n' "$1" "$1" "$2" "$2"
   picked=$(cat "$data/pick" 2>/dev/null)
   shift 2
   for id in "$@"; do
@@ -177,36 +176,36 @@ sheet() {
   case $current in
     restore) restore; return ;;
     check) check; return ;;
-    choose) printf 'grid=head\ngrid=signs\ngrid=yours\ngrid=create\ngrid=sign_in\n' ;;
-    about) printf 'grid=head\ngrid=account\ngrid=server\ngrid=private\ngrid=reset\ngrid=show\n' ;;
+    choose) printf 'grid=head\ngrid=head\ngrid=create\ngrid=sign_in\n' ;;
+    about) printf 'grid=head\ngrid=head\ngrid=private\ngrid=reset\ngrid=show\n' ;;
     words) printf 'grid=head head\n'; word_grid 12; printf 'grid=wrote wrote\ngrid=later later\n' ;;
     account)
-      printf 'grid=head\ngrid=backup\n'
+      printf 'grid=head\ngrid=head\ngrid=backup\n'
       [ -z "$sync" ] || printf 'grid=sync\n'
       printf 'grid=done\ngrid=show\ngrid=leave\n'
       ;;
-    leave) printf 'grid=head\ngrid=where\ngrid=again\ngrid=sign_out\ngrid=cancel\n' ;;
+    leave)
+      printf 'grid=head\ngrid=head\n'
+      [ "$backed" = true ] || printf 'grid=again\n'
+      printf 'grid=sign_out\ngrid=cancel\n'
+      ;;
   esac
   [ -z "$toast" ] || openspot_kv toast "$toast"
   case $current in
     choose)
-      line head 'Set up your account' person.crop.circle.badge.plus
-      line signs 'Openspot signs what you publish' signature
-      line yours 'People can tell an update is yours' checkmark.seal
+      line head 'Set up your account' signature '' 'Openspot signs what you publish with it, so people can tell an update is yours.'
       button create 'Create account' main
       button sign_in 'Use existing account'
       ;;
     about)
-      line head 'Your account is 12 words' key
-      line account 'They are your account' person.crop.circle
-      line server 'No email, password or server' server.rack
-      line private 'Anyone with them can publish as you' eye.slash
+      line head 'Your account is 12 words' key '' 'No email, password or server. Write the words down: they are the only way back in.'
+      line private 'Anyone with them is you' eye.slash
       line reset 'Nobody can reset them' exclamationmark.triangle warn
       button show 'Show my words' main
       ;;
     words)
       if words=$(openspot account words 2>&1); then
-        line head 'Write down your words' pencil '' 'In this order'
+        line head 'Write them down' pencil '' 'In this order'
         i=1
         for each in $(printf '%s\n' "$words" | sed -n 's/^word=//p'); do
           word "$i" "$each"
@@ -219,29 +218,23 @@ sheet() {
       if [ "$backed" = true ]; then button later Done close; else button later Later close; fi
       ;;
     account)
-      line head 'Your account' person.crop.circle '' "$(short "$npub")"
+      line head 'Your account' person.crop.circle '' "$npub"
       if [ "$backed" = true ]; then
         line backup 'Your 12 words are backed up' checkmark.shield good
       else
         line backup 'Your 12 words are not backed up' exclamationmark.triangle warn
       fi
-      if [ -n "$sync" ]; then printf '\nswitch=sync\ntitle=Keep in iCloud Keychain\nicon=icloud\nvalue=%s\n' "$sync"; fi
-      button done Done close
+      if [ -n "$sync" ]; then printf '\nswitch=sync\ntitle=Keep in iCloud Keychain\nicon=icloud\nlook=tile\nvalue=%s\n' "$sync"; fi
+      button done Done main
+      printf 'close=true\n'
       button show 'Show my words'
       button leave 'Sign out…'
       ;;
     leave)
-      line head 'Sign out of your account?' rectangle.portrait.and.arrow.right
-      if [ "$sync" = true ]; then
-        line where 'Removes it from all your Macs' icloud.slash warn
-      else
-        line where 'Removes it from this Mac' desktopcomputer
-      fi
-      if [ "$backed" = true ]; then
-        line again 'Your 12 words sign you in again' key
-      else
-        line again "You haven't saved its words" exclamationmark.triangle bad
-      fi
+      if [ "$sync" = true ]; then where='all your Macs'; else where='this Mac'; fi
+      if [ "$backed" = true ]; then again=' Your 12 words sign you in again.'; else again=; fi
+      line head 'Sign out of your account?' rectangle.portrait.and.arrow.right '' "It leaves $where.$again"
+      [ "$backed" = true ] || line again "You haven't saved its words" exclamationmark.triangle bad
       button sign_out 'Sign out' main
       button cancel Cancel
       ;;

@@ -55,7 +55,7 @@ final class AccountSpotTests: BuiltInCase {
     func testWithNoAccountItOffersToSetOneUpWithTheMainButtonOnTop() async throws {
         let read = try await frame(["read"])
 
-        XCTAssertTrue(read.hasPrefix("grid=head\ngrid=signs\ngrid=yours\ngrid=create\ngrid=sign_in\n"), read)
+        XCTAssertTrue(read.hasPrefix("grid=head\ngrid=head\ngrid=create\ngrid=sign_in\n"), read)
         XCTAssertEqual(block("head", in: read)["title"], "Set up your account")
         XCTAssertEqual(block("create", in: read)["look"], "strong")
     }
