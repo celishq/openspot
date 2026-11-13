@@ -44,19 +44,15 @@ struct SpotActionMenuView: View {
             onPress(index)
         } label: {
             HStack(spacing: SpotTokens.padding) {
-                Text(menu.title(of: row, isRunning: work(row) != nil))
-                    .font(SpotType.body)
-                    .foregroundStyle(titleColor(of: row))
-                    .lineLimit(1)
+                title(of: row)
                 Spacer(minLength: 0)
                 Text(row.keyLabel)
                     .font(SpotType.detail)
                     .modifier(SpotSecondaryText())
-                    .environment(\.spotIsOnSolid, work(row) != nil)
             }
             .padding(.horizontal, SpotTokens.padding - SpotTokens.menuPadding + 4)
             .frame(height: SpotTokens.menuRowHeight)
-            .background(fill(of: row), in: shape)
+            .spotFill(isActive: work(row) != nil, otherwise: isConfirming(row) ? SpotTheme.confirm : .clear, in: shape)
             .modifier(SpotSelectionRing(isSelected: index == menu.selected && !isConfirming(row), shape: shape))
             .contentShape(shape)
         }
@@ -73,12 +69,14 @@ struct SpotActionMenuView: View {
         work(row) == nil && menu.confirming != nil && row.action?.id == menu.confirming
     }
 
-    /// The fill of a row: the solid fill while its work runs, or the colour of a confirm.
-    private func fill(of row: ActionMenu.Row) -> Color {
-        work(row) != nil ? SpotTheme.solid : isConfirming(row) ? SpotTheme.confirm : .clear
-    }
-
-    private func titleColor(of row: ActionMenu.Row) -> Color {
-        work(row) != nil ? SpotTheme.onSolid : isConfirming(row) ? SpotTheme.onConfirm : SpotTheme.ink
+    /// The words of a row, in the colour of a confirm while it asks for one.
+    @ViewBuilder
+    private func title(of row: ActionMenu.Row) -> some View {
+        let text = Text(menu.title(of: row, isRunning: work(row) != nil)).font(SpotType.body).lineLimit(1)
+        if isConfirming(row) {
+            text.foregroundStyle(SpotTheme.onConfirm)
+        } else {
+            text
+        }
     }
 }

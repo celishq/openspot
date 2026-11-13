@@ -29,8 +29,7 @@ struct SpotRoundButton: View {
                         .frame(width: size, height: size)
                 }
             }
-                .environment(\.spotIsOnSolid, work != nil || look == .strong)
-                .background(fill, in: Circle())
+                .spotFill(isActive: work != nil || look == .strong, otherwise: fill, in: Circle())
                 .background { if look == .floating { SpotFloatGlass(shape: Circle()) } }
                 .contentShape(Circle())
         }
@@ -38,13 +37,11 @@ struct SpotRoundButton: View {
         .accessibilityLabel(work == nil ? label : "Stop")
     }
 
-    private var fill: AnyShapeStyle {
-        if work != nil { return AnyShapeStyle(SpotTheme.solid) }
-        return switch look {
-        case .plain: AnyShapeStyle(SpotTheme.ink.opacity(SpotTheme.control))
-        case .floating: AnyShapeStyle(SpotTheme.ink.opacity(SpotTheme.control))
-        case .strong: AnyShapeStyle(SpotTheme.solid)
-        case .bare: AnyShapeStyle(Color.clear)
+    /// The fill of a button that is not active.
+    private var fill: Color {
+        switch look {
+        case .plain, .floating: SpotTheme.ink.opacity(SpotTheme.control)
+        case .strong, .bare: .clear
         }
     }
 }
