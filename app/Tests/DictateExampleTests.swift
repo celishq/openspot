@@ -181,6 +181,23 @@ final class DictateExampleTests: SampleSpotsCase {
         }
     }
 
+    func testACopyKeepsTextThatIsNotEnglishWhenTheAppHasNoLocale() async throws {
+        let dictate = try example("Dictate")
+        try await withPrivateHome { folder in
+            let data = try self.fakeHelper("true", in: folder)
+            try "1000\tПривіт, світе\n".write(to: data.appendingPathComponent("history"), atomically: true, encoding: .utf8)
+            try "#!/bin/sh\nif [ \"$(locale charmap)\" = UTF-8 ]; then cat; else iconv -f MACINTOSH -t UTF-8; fi > '\(folder.path)/clipboard'\n"
+                .writeScript(to: folder.appendingPathComponent("tools/pbcopy"))
+            let locale = ["LANG", "LC_ALL", "LC_CTYPE"].map { ($0, ProcessInfo.processInfo.environment[$0]) }
+            locale.forEach { unsetenv($0.0) }
+            defer { locale.forEach { name, value in if let value { setenv(name, value, 1) } } }
+
+            _ = try await dictate.perform(.item(SpotItem(title: "Привіт, світе", run: "1000")), timeout: 5)
+
+            XCTAssertEqual(try self.read("clipboard", in: folder), "Привіт, світе")
+        }
+    }
+
     func testWithNoModelTheSheetOffersTheDownloadAndThenShowsItsPercent() async throws {
         let dictate = try example("Dictate")
         try await withPrivateHome { folder in
