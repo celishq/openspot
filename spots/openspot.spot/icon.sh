@@ -13,9 +13,9 @@ name=$(printf '%s' "$target" | tr '/' '_')
 empty=$(printf '%81s' '' | tr ' ' '.')
 
 # Prints an SVG of 9 by 9 rounded squares from 81 palette characters, where a square is a digit and an empty place is a dot.
-# The squares fill the middle half of the picture, so the icon looks as big as a symbol.
+# The squares fill the middle two thirds of the picture, so the icon looks as big as a symbol.
 picture() {
-  printf '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-4.5 -4.5 18 18">'
+  printf '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-2.25 -2.25 13.5 13.5">'
   printf '%s\n' "$1" | fold -w 1 | awk '
     BEGIN { split("#1D1D1F #F5F5F7 #FF4A1C #FFC400 #34C759 #0A84FF", colour, " ") }
     $0 ~ /[0-5]/ { printf "<rect x=\"%.2f\" y=\"%.2f\" width=\"0.84\" height=\"0.84\" rx=\"0.22\" fill=\"%s\"/>", (NR - 1) % 9 + 0.08, int((NR - 1) / 9) + 0.08, colour[$0 + 1] }'
