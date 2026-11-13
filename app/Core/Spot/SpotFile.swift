@@ -98,7 +98,7 @@ public struct SpotFile: Equatable, Sendable {
                 throw SpotError.fault("\(name) has when=\(when) on the button \(id). Name a function of the spot, such as when=hasIcon")
             }
             let offered = CommandAction(id: action.id, title: action.title, key: action.key, scope: .spot, after: action.after, isForm: action.isForm, confirm: action.confirm)
-            offeredActions.append(OfferedAction(action: offered, origins: parent?.origins ?? Set(origins), when: when))
+            offeredActions.append(OfferedAction(action: offered, owner: id, group: name, origins: parent?.origins ?? Set(origins), when: when))
             offeredBlocks.insert(index)
         }
         let offers = try buttons.enumerated().filter { !offeredBlocks.contains($0.offset) }.map(\.element).map { block in

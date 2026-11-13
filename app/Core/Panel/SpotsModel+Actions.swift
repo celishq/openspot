@@ -405,7 +405,7 @@ extension SpotsModel {
     /// The actions that the spots offer to a selected card of the grid, each that fits the card's origin and whose hook
     /// says yes. A child of a hidden action hides too. A card of a file that does not load is the person's. A row of a list
     /// or an open sheet keeps its own actions.
-    private func offered(on target: Target, asks: Bool) -> [ActionMenu.Offer] {
+    private func offered(on target: Target, asks: Bool) -> [OfferedAction] {
         guard openList == nil, target.item == nil, let origin = origin(of: target.entry.spot) else { return [] }
         let word = OfferedAction.words.first { $0.value == origin }?.key ?? ""
         return sheets.values.map(\.spot).sorted { $0.id < $1.id }.flatMap { spot in
@@ -415,7 +415,7 @@ extension SpotsModel {
                 let shows = offer.fits(origin) && !hidden.contains { id.hasPrefix($0 + ".") } && says(offer, of: spot, on: target, origin: word, asks: asks)
                 if !shows { hidden.append(id) }
                 return shows
-            }.map { ActionMenu.Offer(owner: spot.id, name: spot.name, action: $0.action, isApp: spot.isBuiltIn) }
+            }
         }
     }
 

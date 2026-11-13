@@ -10,8 +10,8 @@ final class ActionMenuTests: XCTestCase {
     private let delete2 = CommandAction(id: "delete", title: "Delete", key: ActionKey(text: "cmd+backspace"), scope: .spot)
 
     /// The actions of the app's spot, as it offers them to a card.
-    private func app(_ actions: CommandAction...) -> [ActionMenu.Offer] {
-        actions.map { ActionMenu.Offer(owner: "openspot/actions", name: "Card actions", action: $0, isApp: true) }
+    private func app(_ actions: CommandAction...) -> [OfferedAction] {
+        actions.map { OfferedAction(action: $0, owner: "openspot/actions") }
     }
 
     private func command(kind: SpotKind = .list, openTitle: String? = "Copy") -> Spot {
@@ -249,7 +249,7 @@ final class ActionMenuTests: XCTestCase {
         let menu = try XCTUnwrap(ActionMenu(
             spot: command(),
             item: nil,
-            offered: [ActionMenu.Offer(owner: "z/Zoo", name: "Zoo", action: star), ActionMenu.Offer(owner: "i/Icon", name: "Icon", action: icon)] + app(edit)
+            offered: [OfferedAction(action: star, owner: "z/Zoo", group: "Zoo"), OfferedAction(action: icon, owner: "i/Icon", group: "Icon")] + app(edit)
         ))
 
         XCTAssertEqual(menu.rows.map(\.title), ["Open", "New", "Edit", "Change Icon", "Star"])
@@ -261,9 +261,9 @@ final class ActionMenuTests: XCTestCase {
 
     func testASearchDropsTheHeadersAndAMenuOfOneGroupHasNone() throws {
         let icon = CommandAction(id: "change", title: "Change Icon", scope: .spot)
-        var menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, offered: [ActionMenu.Offer(owner: "i/Icon", name: "Icon", action: icon)]))
+        var menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, offered: [OfferedAction(action: icon, owner: "i/Icon", group: "Icon")]))
         let bare = Spot(id: "b", name: "B", url: URL(fileURLWithPath: "/bin/true"))
-        let alone = try XCTUnwrap(ActionMenu(spot: bare, item: nil, showsOpen: false, offered: [ActionMenu.Offer(owner: "i/Icon", name: "Icon", action: icon)]))
+        let alone = try XCTUnwrap(ActionMenu(spot: bare, item: nil, showsOpen: false, offered: [OfferedAction(action: icon, owner: "i/Icon", group: "Icon")]))
 
         menu.search("icon")
 
@@ -275,9 +275,9 @@ final class ActionMenuTests: XCTestCase {
     }
 
     /// The Icon spot's Change Icon with its three children, by dot notation.
-    private func icon() -> [ActionMenu.Offer] {
+    private func icon() -> [OfferedAction] {
         [("change", "Change Icon"), ("change.draw", "Draw…"), ("change.file", "Choose File…"), ("change.reset", "Reset Icon")].map {
-            ActionMenu.Offer(owner: "openspot/icon", name: "Icon", action: CommandAction(id: $0.0, title: $0.1, scope: .spot), isApp: true)
+            OfferedAction(action: CommandAction(id: $0.0, title: $0.1, scope: .spot), owner: "openspot/icon")
         }
     }
 

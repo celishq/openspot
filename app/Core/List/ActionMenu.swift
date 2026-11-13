@@ -18,19 +18,6 @@ public struct ActionMenu: Equatable, Sendable {
         public var children: [Row] = []
     }
 
-    /// An action that a spot offers to the menu of the card, with the name of its group. A spot of the app has none.
-    public struct Offer: Equatable, Sendable {
-        public let owner: String
-        public let name: String?
-        public let action: CommandAction
-
-        public init(owner: String, name: String, action: CommandAction, isApp: Bool = false) {
-            self.owner = owner
-            self.name = isApp ? nil : name
-            self.action = action
-        }
-    }
-
     /// The title of a group, and the line it takes among the lines of the rows.
     public struct Header: Equatable, Sendable {
         public let title: String
@@ -67,7 +54,7 @@ public struct ActionMenu: Equatable, Sendable {
 
     /// Lists what Enter does, the actions that fit, then the actions that spots offer: the app's first, then each other
     /// spot's, A to Z. Returns nil when there is nothing to list.
-    public init?(spot: Spot, item: SpotItem?, showsOpen: Bool = true, offered: [Offer] = []) {
+    public init?(spot: Spot, item: SpotItem?, showsOpen: Bool = true, offered: [OfferedAction] = []) {
         var rows: [Row] = []
         let keyTitle = item.flatMap { $0.records ? ($0.shortcut == KeyList.unset ? Self.setTitle : Self.changeTitle) : nil }
         if showsOpen, let title = item?.openTitle ?? keyTitle ?? spot.openTitle(hasItem: item != nil) {
@@ -75,9 +62,9 @@ public struct ActionMenu: Equatable, Sendable {
         }
         rows += spot.actions(for: item).map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0) }
         let sorted = offered.enumerated().sorted {
-            ($0.element.name == nil ? 0 : 1, $0.element.name ?? "", $0.offset) < ($1.element.name == nil ? 0 : 1, $1.element.name ?? "", $1.offset)
+            ($0.element.group == nil ? 0 : 1, $0.element.group ?? "", $0.offset) < ($1.element.group == nil ? 0 : 1, $1.element.group ?? "", $1.offset)
         }.map(\.element)
-        rows += Self.nested(sorted.map { Row(title: $0.action.title, keyLabel: $0.action.key?.label ?? "", action: $0.action, isQuiet: true, owner: $0.owner, group: $0.name) })
+        rows += Self.nested(sorted.map { Row(title: $0.action.title, keyLabel: $0.action.key?.label ?? "", action: $0.action, isQuiet: true, owner: $0.owner, group: $0.group) })
         guard !rows.isEmpty else { return nil }
         self.rows = rows
         shown = rows
