@@ -1,16 +1,17 @@
 import SwiftUI
 
-/// A grid of 12 by 12 rounded squares that a drag paints with the chosen colour, with the palette under it. A stroke that
-/// starts on a square of that colour clears each square it passes instead. Each stroke's end sends the 144 squares to the
-/// spot.
+/// A grid of 9 by 9 rounded squares that a drag paints with the chosen colour, with the palette and an eraser under it. A
+/// stroke that starts on a square of that colour clears each square it passes instead. Each stroke's end sends the 81
+/// squares to the spot.
 struct SpotView: View {
     let spot: SpotInput
-    @State private var dots: [Character] = Array(repeating: ".", count: 144)
+    @State private var dots: [Character] = Array(repeating: ".", count: 81)
     @State private var sent = ""
     @State private var colour: Character = "0"
     @State private var stroke: Character?
 
-    private static let side = 12
+    private static let side = 9
+    private static let eraser: Character = "."
     private static let swatch: CGFloat = 20
     private static let palette: [(Character, Color)] = [
         ("0", Color(red: 0.11, green: 0.11, blue: 0.12)),
@@ -33,6 +34,7 @@ struct SpotView: View {
                 ForEach(Self.palette, id: \.0) { key, fill in
                     swatch(key, fill)
                 }
+                eraser
             }
         }
         .frame(width: spot.size.width, height: spot.size.height)
@@ -49,6 +51,18 @@ struct SpotView: View {
             .overlay(Circle().stroke(spot.ink.opacity(0.2), lineWidth: 0.5))
             .frame(width: Self.swatch, height: Self.swatch)
             .onTapGesture { colour = key }
+    }
+
+    private var eraser: some View {
+        let ring: CGFloat = colour == Self.eraser ? 2 : 0
+        return Image(systemName: "eraser")
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(spot.ink)
+            .frame(width: Self.swatch, height: Self.swatch)
+            .background(Circle().fill(spot.ink.opacity(0.08)))
+            .overlay(Circle().stroke(spot.accent, lineWidth: ring))
+            .contentShape(Circle())
+            .onTapGesture { colour = Self.eraser }
     }
 
     private var grid: some View {

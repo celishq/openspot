@@ -23,7 +23,7 @@ final class IconSpotTests: BuiltInCase {
         file.read().setting("icon", of: "weather")
     }
 
-    private let empty = String(repeating: ".", count: 144)
+    private let empty = String(repeating: ".", count: 81)
 
     func testItOffersChangeIconToEveryCardAndShowsNowhereElse() throws {
         let icon = try icon
@@ -42,11 +42,11 @@ final class IconSpotTests: BuiltInCase {
         XCTAssertEqual(opened, ["open openspot/icon"])
         XCTAssertEqual(output.summary?.value("title"), "weather")
         XCTAssertEqual(view.value("dots"), empty)
-        XCTAssertEqual(output.parts.filter { $0.kind == "button" }.map(\.id), ["reset", "save"])
+        XCTAssertEqual(output.parts.filter { $0.kind == "button" }.map(\.id), ["clear", "save"])
     }
 
     func testAStrokeKeepsADraftThatSaveDrawsAsTheIconAndResetRemoves() async throws {
-        let dots = "0" + String(repeating: ".", count: 142) + "2"
+        let dots = "0" + String(repeating: ".", count: 79) + "2"
         try await call(["change.draw", "weather"])
 
         try await call(["drawer", dots])
@@ -57,7 +57,7 @@ final class IconSpotTests: BuiltInCase {
         let picture = try String(contentsOfFile: path, encoding: .utf8)
         try await call(["change.draw", "weather"])
         let reopened = try await view().value("dots")
-        try await call(["reset"])
+        try await call(["change.reset", "weather"])
 
         XCTAssertEqual(draft, dots)
         XCTAssertEqual(changes.last, .spots(["weather"]))
@@ -70,7 +70,7 @@ final class IconSpotTests: BuiltInCase {
 
     func testResetIconInTheMenuGivesTheSpotItsOwnIconBackWithNoSheet() async throws {
         try await call(["change.draw", "weather"])
-        try await call(["drawer", "0" + String(repeating: ".", count: 143)])
+        try await call(["drawer", "0" + String(repeating: ".", count: 80)])
         try await call(["save"])
         let path = try XCTUnwrap(saved)
 
@@ -98,16 +98,18 @@ final class IconSpotTests: BuiltInCase {
         XCTAssertTrue(try icon.takesDrops)
     }
 
-    func testSaveOfAnEmptyDrawingGivesTheSpotItsOwnIconBack() async throws {
+    func testClearEmptiesTheDrawingAndSaveThenKeepsNoIcon() async throws {
         try await call(["change.draw", "weather"])
-        try await call(["drawer", "0" + String(repeating: ".", count: 143)])
+        try await call(["drawer", "0" + String(repeating: ".", count: 80)])
         try await call(["save"])
         XCTAssertNotNil(saved)
 
         try await call(["change.draw", "weather"])
-        try await call(["drawer", empty])
+        try await call(["clear"])
+        let cleared = try await view().value("dots")
         try await call(["save"])
 
+        XCTAssertEqual(cleared, empty)
         XCTAssertNil(saved)
     }
 }
