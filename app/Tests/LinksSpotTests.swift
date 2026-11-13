@@ -80,6 +80,45 @@ final class LinksSpotTests: SampleSpotsCase {
         }
     }
 
+    func testAReadStartsOnlyJqAndAsksTheWebNothing() async throws {
+        let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
+        try await withPrivateHome { folder in
+            let data = folder.appendingPathComponent(".config/openspot/data/links")
+            try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
+            try #"[{"id":"1","title":"Site","url":"https://icons.test"}]"#.write(to: data.appendingPathComponent("links.json"), atomically: true, encoding: .utf8)
+            for tool in ["cat", "ls"] {
+                try "#!/bin/sh\necho \(tool) >> '\(folder.path)/started'\nexec /bin/\(tool) \"$@\"\n".writeScript(to: folder.appendingPathComponent("tools/\(tool)"))
+            }
+
+            let items = try await links.items(timeout: 5).items
+            try await Task.sleep(nanoseconds: 500_000_000)
+
+            XCTAssertEqual(items.map(\.title), ["Site"])
+            XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("started").path))
+            XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("fetched").path))
+        }
+    }
+
+    func testAnEditFetchesTheIconOfItsSite() async throws {
+        let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
+        try await withPrivateHome { folder in
+            let edit = try await action("edit", of: links)
+            let data = folder.appendingPathComponent(".config/openspot/data/links")
+            try #"[{"id":"1","title":"Site","url":"https://none.test"}]"#.write(to: data.appendingPathComponent("links.json"), atomically: true, encoding: .utf8)
+            let row = SpotItem(title: "Site", run: "1")
+            var draft = FormDraft(form: try await links.form(edit, item: row, timeout: 5))
+            draft.set("https://icons.test", for: "url")
+            let expected = data.appendingPathComponent("icons/icons.test.png").path
+
+            _ = try await links.submit(edit, item: row, draft: draft, timeout: 5)
+            for _ in 0..<50 where !FileManager.default.fileExists(atPath: expected) {
+                try await Task.sleep(nanoseconds: 100_000_000)
+            }
+
+            XCTAssertTrue(FileManager.default.fileExists(atPath: expected))
+        }
+    }
+
     func testLinksCompletesALinkAndOpensAndCopiesIt() async throws {
         let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
         try await withPrivateHome { folder in
