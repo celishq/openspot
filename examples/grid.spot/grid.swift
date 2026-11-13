@@ -288,11 +288,12 @@ final class Grid: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard stays else { return show() }
-        signal(SIGUSR1, SIG_IGN)
         let press = DispatchSource.makeSignalSource(signal: SIGUSR1, queue: .main)
         press.setEventHandler { [unowned self] in show() }
         press.resume()
         sources.append(press)
+        let pidfile = URL(fileURLWithPath: CommandLine.arguments[0]).deletingLastPathComponent().appendingPathComponent("grid.pid")
+        try? String(getpid()).write(to: pidfile, atomically: true, encoding: .utf8)
         if let host {
             let end = DispatchSource.makeProcessSource(identifier: host, eventMask: .exit, queue: .main)
             end.setEventHandler { exit(0) }
@@ -464,11 +465,10 @@ if arguments.first == "pick" {
     exit(0)
 }
 if arguments.first == "stay" {
+    signal(SIGUSR1, SIG_IGN)
     let folder = URL(fileURLWithPath: CommandLine.arguments[0]).deletingLastPathComponent()
-    let pidfile = open(folder.appendingPathComponent("grid.pid").path, O_RDWR | O_CREAT | O_CLOEXEC, 0o644)
-    guard flock(pidfile, LOCK_EX | LOCK_NB) == 0 else { exit(0) }
-    ftruncate(pidfile, 0)
-    _ = String(getpid()).withCString { write(pidfile, $0, strlen($0)) }
+    let lock = open(folder.appendingPathComponent("grid.lock").path, O_RDWR | O_CREAT | O_CLOEXEC, 0o644)
+    guard flock(lock, LOCK_EX | LOCK_NB) == 0 else { exit(0) }
 }
 
 let app = NSApplication.shared

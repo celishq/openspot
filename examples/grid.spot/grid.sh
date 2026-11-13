@@ -17,9 +17,15 @@ waiting() {
   pid=$(cat "$pidfile" 2>/dev/null) && [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null && [ ! "$helper" -nt "$pidfile" ] && [ ! "$source" -nt "$helper" ]
 }
 
+ended() {
+  [ -n "$1" ] && kill "$1" 2>/dev/null || return 0
+  tries=0
+  while kill -0 "$1" 2>/dev/null && [ "$tries" -lt 40 ]; do sleep 0.05; tries=$((tries + 1)); done
+}
+
 wait_here() {
   build || return 1
-  [ -n "$pid" ] && kill "$pid" 2>/dev/null
+  ended "$pid"
   nohup "$helper" stay "$1" > /dev/null 2>&1 &
 }
 
