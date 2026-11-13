@@ -41,6 +41,18 @@ extension Spot {
         try await output(action, input: input, timeout: timeout).summary?.value("toast")
     }
 
+    /// The answer of a hook of this JavaScript spot about a card, however long it takes.
+    func hook(_ function: String, card: String, origin: String) async -> Bool {
+        let runs = SpotRuns()
+        let answer = await withCheckedContinuation { continuation in
+            if let now = runs.ask(function, of: self, card: card, origin: origin, later: { continuation.resume(returning: $0) }) {
+                continuation.resume(returning: now)
+            }
+        }
+        withExtendedLifetime(runs) {}
+        return answer
+    }
+
     func read(timeout: TimeInterval) async throws -> MetricValue {
         guard let value = MetricValue(output: try await output(.read, timeout: timeout)) else { throw SpotError.badMetric }
         return value

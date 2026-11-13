@@ -25,16 +25,17 @@ final class IconSpotTests: BuiltInCase {
 
     private let empty = String(repeating: ".", count: 81)
 
-    func testItOffersChangeIconToEveryCardAndShowsNowhereElse() throws {
+    func testItShowsNowhereAndTakesPictures() throws {
         let icon = try icon
 
-        XCTAssertEqual(icon.offeredActions.map(\.action.title), ["Change Icon", "Draw…", "Choose File…", "Reset Icon"])
+        XCTAssertEqual(icon.offeredActions, [])
         XCTAssertFalse(icon.offersFloat)
         XCTAssertFalse(icon.offersCard)
+        XCTAssertTrue(icon.takesDrops)
     }
 
     func testChangeIconOpensTheDrawerSheetOnThatCardsSpotWithItsButtons() async throws {
-        try await call(["change.draw", "weather"])
+        try await call(["draw", "weather"])
 
         let opened = await app.opened
         let output = try await icon.items(timeout: 5)
@@ -47,7 +48,7 @@ final class IconSpotTests: BuiltInCase {
 
     func testAStrokeKeepsADraftThatSaveDrawsAsTheIconAndResetRemoves() async throws {
         let dots = "0" + String(repeating: ".", count: 79) + "2"
-        try await call(["change.draw", "weather"])
+        try await call(["draw", "weather"])
 
         try await call(["drawer", dots])
         let draft = try await view().value("dots")
@@ -55,9 +56,9 @@ final class IconSpotTests: BuiltInCase {
         let changes = await app.changeList
         let path = try XCTUnwrap(saved)
         let picture = try String(contentsOfFile: path, encoding: .utf8)
-        try await call(["change.draw", "weather"])
+        try await call(["draw", "weather"])
         let reopened = try await view().value("dots")
-        try await call(["change.reset", "weather"])
+        try await call(["reset", "weather"])
 
         XCTAssertEqual(draft, dots)
         XCTAssertEqual(changes.last, .spots(["weather"]))
@@ -69,12 +70,12 @@ final class IconSpotTests: BuiltInCase {
     }
 
     func testResetIconInTheMenuGivesTheSpotItsOwnIconBackWithNoSheet() async throws {
-        try await call(["change.draw", "weather"])
+        try await call(["draw", "weather"])
         try await call(["drawer", "0" + String(repeating: ".", count: 80)])
         try await call(["save"])
         let path = try XCTUnwrap(saved)
 
-        try await call(["change.reset", "weather"])
+        try await call(["reset", "weather"])
 
         let opened = await app.opened
         XCTAssertEqual(opened, ["open openspot/icon"])
@@ -86,7 +87,7 @@ final class IconSpotTests: BuiltInCase {
         let picture = root.appendingPathComponent("face.png")
         try Data("png".utf8).write(to: picture)
 
-        try await call(["change.file", "weather"])
+        try await call(["file", "weather"])
         try await call(["drop", picture.path])
 
         let opened = await app.opened
@@ -95,16 +96,15 @@ final class IconSpotTests: BuiltInCase {
         XCTAssertTrue(path.hasSuffix(".png"), path)
         XCTAssertNotEqual(path, picture.path)
         XCTAssertEqual(try String(contentsOfFile: path, encoding: .utf8), "png")
-        XCTAssertTrue(try icon.takesDrops)
     }
 
     func testClearEmptiesTheDrawingAndSaveThenKeepsNoIcon() async throws {
-        try await call(["change.draw", "weather"])
+        try await call(["draw", "weather"])
         try await call(["drawer", "0" + String(repeating: ".", count: 80)])
         try await call(["save"])
         XCTAssertNotNil(saved)
 
-        try await call(["change.draw", "weather"])
+        try await call(["draw", "weather"])
         try await call(["clear"])
         let cleared = try await view().value("dots")
         try await call(["save"])

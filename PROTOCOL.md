@@ -499,6 +499,7 @@ The user decides where a spot shows. A spot only offers, with one `offers` line 
 | `menubar` | its main block in the menu bar.                                         | a `clock`, another event, or `mode=stay` or `always` |
 | `float`   | in a small window at the pointer, which a hotkey or a shake opens.      | a sheet                                             |
 | `actions` | a `button` of its header in the ⌘K menu of every card.                  | a line in the `button` block, not in the header     |
+| `none`    | nowhere, until another spot opens its sheet with `openspot spot open`.  | no other `offers` line                              |
 
 - A spot with no `offers` line, in its header or on a button, offers `card`. A spot with any `offers` line shows only in
   the places it names.

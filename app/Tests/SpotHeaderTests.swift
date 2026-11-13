@@ -28,6 +28,7 @@ final class SpotHeaderTests: XCTestCase {
         let clock = try spot("# on=clock.60\n# offers=card\n")
         let none = try spot("# on=sheet.open\n")
         let search = try spot("# on=panel.open\n# offers=search\n")
+        let nowhere = try spot("# on=sheet.open\n# offers=none\n")
 
         XCTAssertEqual([all.offersCard, all.headerState.isOnGrid, all.isGlobal, all.canShowInMenuBar, all.offersFloat], [true, true, true, true, false])
         XCTAssertEqual([float.offersCard, float.headerState.isOnGrid, float.isGlobal, float.canShowInMenuBar, float.offersFloat], [false, false, false, false, true])
@@ -35,6 +36,10 @@ final class SpotHeaderTests: XCTestCase {
         XCTAssertEqual([none.offersCard, none.headerState.isOnGrid, none.isGlobal, none.canShowInMenuBar, none.offersFloat], [true, true, false, false, false])
         XCTAssertEqual([search.offersCard, search.headerState.isOnGrid, search.isGlobal], [false, false, true])
         XCTAssertTrue(search.isFound)
+        XCTAssertEqual([nowhere.offersCard, nowhere.headerState.isOnGrid, nowhere.isGlobal, nowhere.canShowInMenuBar, nowhere.offersFloat], [false, false, false, false, false])
+        let both = folder.appendingPathComponent("both.sh")
+        try "#!/bin/sh\n# on=sheet.open\n# offers=none\n# offers=card\n".writeScript(to: both)
+        XCTAssertThrowsError(try SpotFile(file: both, id: "both"))
     }
 
     func testAButtonThatOffersActionsJoinsTheMenuOfEveryCardAndIsNoCommand() throws {
@@ -154,7 +159,7 @@ final class SpotHeaderTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: url) }
 
         XCTAssertThrowsError(try SpotFile(file: url, id: "script")) { error in
-            XCTAssertTrue((error as? SpotError)?.reason.contains("Use card, search, menubar or float") == true, "\(error)")
+            XCTAssertTrue((error as? SpotError)?.reason.contains("Use card, search, menubar, float or none") == true, "\(error)")
         }
     }
 

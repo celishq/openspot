@@ -1,6 +1,6 @@
 // title=Card actions
 // icon=ellipsis.circle
-// detail=Edit, share, delete or turn off a spot
+// detail=Edit, share, delete, turn off or change the icon of a spot
 // uses=spots
 //
 // button=edit
@@ -30,10 +30,39 @@
 // shortcut=cmd+backspace
 // close=true
 // offers=actions core
+//
+// button=icon
+// title=Change Icon
+// offers=actions
+//
+// button=icon.draw
+// title=Draw…
+//
+// button=icon.file
+// title=Choose File…
+//
+// button=icon.reset
+// title=Reset Icon
+// when=hasIcon
+const calls = {
+  edit: (id) => ["spot", "edit", id],
+  prompt: (id) => ["spot", "prompt", id],
+  share: (id) => ["spot", "share", id],
+  delete: (id) => ["spot", "delete", id],
+  off: (id) => ["setting", "set", "--spot", id, "enabled", "false"],
+  "icon.draw": (id) => ["spot", "run", "openspot/icon", "draw", id],
+  "icon.file": (id) => ["spot", "run", "openspot/icon", "file", id],
+  "icon.reset": (id) => ["spot", "run", "openspot/icon", "reset", id],
+};
+
 function main(args) {
   const [act, id] = args;
-  const call = act === "off" ? ["setting", "set", "--spot", id, "enabled", "false"] : ["spot", act, id];
-  if (!["edit", "prompt", "share", "delete", "off"].includes(act)) return "";
+  if (!calls[act]) return "";
+  const call = calls[act](id);
   if (openspot.call(call).code !== 0) throw new Error(`openspot ${call.join(" ")} failed.`);
   return "";
+}
+
+function hasIcon(id) {
+  return openspot.call(["setting", "get", "--spot", id, "icon"]).stdout.trim() !== "";
 }

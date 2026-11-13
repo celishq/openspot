@@ -6,19 +6,7 @@
 # view=icon.swift
 # uses=spots
 # drop=png,jpg,jpeg,heic,gif,tiff,svg,pdf,icns
-#
-# button=change
-# title=Change Icon
-# offers=actions
-#
-# button=change.draw
-# title=Draw…
-#
-# button=change.file
-# title=Choose File…
-#
-# button=change.reset
-# title=Reset Icon
+# offers=none
 data="$OPENSPOT_DATA/icons"
 target=$(cat "$data/target" 2>/dev/null)
 name=$(printf '%s' "$target" | tr '/' '_')
@@ -40,16 +28,16 @@ reset() {
 }
 
 case "$1" in
-  change.draw|change.file|change.reset)
+  draw|file|reset)
     mkdir -p "$data"
     printf '%s' "$2" > "$data/target"
     target=$2
     name=$(printf '%s' "$target" | tr '/' '_')
     rm -f "$data/$name.draft"
     case "$1" in
-      change.draw) openspot spot open "$OPENSPOT_ID" ;;
-      change.file) openspot spot choose "$OPENSPOT_ID" ;;
-      change.reset) reset ;;
+      draw) openspot spot open "$OPENSPOT_ID" ;;
+      file) openspot spot choose "$OPENSPOT_ID" ;;
+      reset) reset ;;
     esac
     ;;
   drop)
@@ -60,7 +48,7 @@ case "$1" in
     openspot setting set --spot "$target" icon "$file"
     ;;
   read)
-    [ -n "$target" ] || { printf 'text=none\ntitle=No spot\ndetail=Choose Change Icon in the menu of a card\n'; exit 0; }
+    [ -n "$target" ] || { printf 'text=none\ntitle=No spot\ndetail=Choose Change Icon › Draw… in the menu of a card\n'; exit 0; }
     dots=$(cat "$data/$name.draft" 2>/dev/null || cat "$data/$name.dots" 2>/dev/null)
     [ ${#dots} -eq 81 ] || dots=$empty
     printf 'title=%s\ngrid=drawer drawer\ngrid=clear save\n\n' "$target"
