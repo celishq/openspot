@@ -23,7 +23,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case menu([Option], value: String?)
         case text(String, placeholder: String?, isReadOnly: Bool)
         case list([Option], value: String?)
-        case number(String)
+        /// A big number as it shows, and the part of it that draws faint, such as its currency.
+        case number(String, unit: String?)
         case chart([Double])
         case image(String)
         case progress(level: Double)
@@ -71,8 +72,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let mark: MetricValue?
     /// Each key of its block with its values, which a spot's own view draws. Only a `view` block keeps them.
     public let values: [String: [String]]
-    /// The part of a number's shown value that draws faint, such as its currency.
-    public let unit: String?
 
     /// One run of a number's shown value, and whether it is the unit.
     public struct NumberPiece: Equatable, Sendable {
@@ -101,7 +100,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         file = icon?.file
         glyph = icon?.glyph
         tone = block.value("tone").flatMap(MetricValue.Tone.init)
-        unit = kind == "number" ? block.value("unit").flatMap { $0.isEmpty ? nil : $0 } : nil
         color = ["text", "number"].contains(kind) ? block.value("color").flatMap(Self.hex) : nil
         if kind == "button" {
             self.symbol = nil
@@ -133,7 +131,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
                 control = .menu(options, value: block.value("value"))
             }
         case "number":
-            control = .number(block.value("display") ?? block.value("value") ?? "")
+            control = .number(block.value("display") ?? block.value("value") ?? "", unit: block.value("unit").flatMap { $0.isEmpty ? nil : $0 })
         default:
             control = .none
         }
@@ -158,7 +156,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
 
     /// The shown value of a number in runs, with the last place of its unit apart. A value without its unit is one run.
     public var numberPieces: [NumberPiece] {
-        guard case .number(let number) = control else { return [] }
+        guard case .number(let number, let unit) = control else { return [] }
         guard let unit, let range = number.range(of: unit, options: .backwards) else { return [NumberPiece(text: number, isUnit: false)] }
         return [
             NumberPiece(text: String(number[..<range.lowerBound]), isUnit: false),

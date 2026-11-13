@@ -93,7 +93,7 @@ final class CardFaceTests: XCTestCase {
         XCTAssertEqual(answer.answers.map(\.run), ["1234.5"])
         XCTAssertEqual(answer.answers.first?.title, "1,234.5")
         XCTAssertEqual(answer.answers.first?.card?.face.answerSize, .large)
-        XCTAssertEqual(answer.answers.first?.card?.face.parts.last?.control, .number("1,234.5"))
+        XCTAssertEqual(answer.answers.first?.card?.face.parts.last?.control, .number("1,234.5", unit: nil))
     }
 
     func testAnAnswerCardTakesTheWordForEnterFromItsOpenButton() {

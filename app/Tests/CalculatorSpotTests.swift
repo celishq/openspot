@@ -45,7 +45,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
             XCTAssertEqual(answers.map(\.run), ["1234.5"])
             XCTAssertEqual(answers.first?.card?.face.answerSize, .large)
             XCTAssertEqual(answers.first?.card?.face.parts.map(\.detail), ["1000 + 234.5", nil])
-            XCTAssertEqual(answers.first?.card?.face.parts.last?.control, .number("1,234.5"))
+            XCTAssertEqual(answers.first?.card?.face.parts.last?.control, .number("1,234.5", unit: nil))
             XCTAssertEqual(answers.first?.openTitle, "Copy")
             XCTAssertEqual(try String(contentsOf: home.appendingPathComponent("calc-asked"), encoding: .utf8), "1000+234.5\n")
         }
