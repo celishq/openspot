@@ -13,6 +13,8 @@ public struct CalcAnswer: Equatable, Sendable {
     public let status: String?
     /// `warn` for an answer from old rates.
     public let tone: String?
+    /// The part of the title that names what the value counts, such as `€`, `mi` or `days`.
+    public let unit: String?
 
     /// Reads the text. `rates` gives the exchange rates, and is asked only for a currency.
     public init?(
@@ -35,16 +37,17 @@ public struct CalcAnswer: Equatable, Sendable {
         } else if !isDate, let expression = CalcExpression(text: text, locale: locale), !expression.isPlain {
             self.init(value: Self.plain(expression.value, digits: 15), title: Self.written(expression.value, locale: locale), detail: expression.detail)
         } else if let date = CalcDate(text: text, locale: locale, clock: clock, now: now) {
-            self.init(value: date.value, title: date.title, detail: date.detail)
+            self.init(value: date.value, title: date.title, detail: date.detail, unit: date.unit)
         } else {
             return nil
         }
     }
 
-    private init(value: String, title: String, detail: String, status: String? = nil, tone: String? = nil) {
+    private init(value: String, title: String, detail: String, unit: String? = nil, status: String? = nil, tone: String? = nil) {
         self.value = value
         self.title = title
         self.detail = detail
+        self.unit = unit
         self.status = status
         self.tone = tone
     }
@@ -53,7 +56,8 @@ public struct CalcAnswer: Equatable, Sendable {
     public var text: String {
         if let status { return TextBlock(fields: [.init(key: "status", value: status)]).text }
         let fields: [TextBlock.Field] = [.init(key: "row", value: value), .init(key: "title", value: title), .init(key: "detail", value: detail)]
-        return TextBlock(fields: fields + (tone.map { [.init(key: "tone", value: $0)] } ?? [])).text
+        let unit = unit.map { [TextBlock.Field(key: "unit", value: $0)] } ?? []
+        return TextBlock(fields: fields + unit + (tone.map { [.init(key: "tone", value: $0)] } ?? [])).text
     }
 
     /// The first split of the text whose names are two units of one kind, or two currencies that the rates know.
@@ -75,6 +79,7 @@ public struct CalcAnswer: Equatable, Sendable {
             formatter.locale = locale
             formatter.numberStyle = .currency
             formatter.currencyCode = to
+            formatter.currencySymbol = CalcCurrency.symbol(of: to, written: formatter.currencySymbol)
             if !CalcCurrency.isFiat(to) {
                 formatter.minimumFractionDigits = 0
                 formatter.maximumFractionDigits = 8
@@ -90,6 +95,7 @@ public struct CalcAnswer: Equatable, Sendable {
                 value: plain.string(from: NSNumber(value: value)) ?? Self.plain(value, digits: 15),
                 title: formatter.string(from: NSNumber(value: value)) ?? "",
                 detail: detail,
+                unit: formatter.currencySymbol,
                 tone: old.isEmpty ? nil : "warn"
             )
         }
@@ -106,7 +112,7 @@ public struct CalcAnswer: Equatable, Sendable {
         formatter.unitStyle = .medium
         formatter.numberFormatter = significant(6, locale: locale)
         let title = formatter.string(from: Measurement(value: value, unit: toUnit))
-        return CalcAnswer(value: plain(value, digits: 6), title: title, detail: "\(amount.detail) \(from) in \(to)")
+        return CalcAnswer(value: plain(value, digits: 6), title: title, detail: "\(amount.detail) \(from) in \(to)", unit: title.contains(toUnit.symbol) ? toUnit.symbol : nil)
     }
 
     /// The age in days from which an answer says that its rates are old. The file changes once a day.

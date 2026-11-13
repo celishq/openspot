@@ -43,7 +43,7 @@ final class CalcDateTests: XCTestCase {
     }
 
     func testACountRunsToOrFromADate() {
-        XCTAssertEqual(answer("days until 25 dec 2026")?.text, "row=44\ntitle=44 days\ndetail=Wed, Nov 11, 2026 to Fri, Dec 25, 2026\n")
+        XCTAssertEqual(answer("days until 25 dec 2026")?.text, "row=44\ntitle=44 days\ndetail=Wed, Nov 11, 2026 to Fri, Dec 25, 2026\nunit=days\n")
         check([
             ("weeks until 25 dec 2026", "6", "6 weeks"),
             ("days since 1 jan 2026", "314", "314 days"),
@@ -54,7 +54,7 @@ final class CalcDateTests: XCTestCase {
     }
 
     func testATimeShowsInAnotherZone() {
-        XCTAssertEqual(spaced(answer("3pm tokyo in berlin")?.text), "row=2026-11-11 07:00\ntitle=Wed 7:00 AM\ndetail=Wed 3:00 PM · Tokyo\n")
+        XCTAssertEqual(spaced(answer("3pm tokyo in berlin")?.text), "row=2026-11-11 07:00\ntitle=Wed 7:00 AM\ndetail=Wed 3:00 PM · Tokyo\nunit=AM\n")
         check([
             ("now in tokyo", "2026-11-11 22:05", "Wed 10:05 PM"),
             ("time in new york", "2026-11-11 08:05", "Wed 8:05 AM"),

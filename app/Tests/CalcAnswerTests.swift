@@ -54,6 +54,9 @@ final class CalcAnswerTests: XCTestCase {
 
     func testTheAnswerIsWrittenTheWayOfTheMac() {
         XCTAssertEqual(answer("2^20")?.title, "1,048,576")
+        XCTAssertEqual(answer("2^20")?.detail, "2²⁰")
+        XCTAssertEqual(answer("2^(1+1)")?.detail, "2^(1 + 1)")
+        XCTAssertNil(answer("2^20")?.unit)
         XCTAssertEqual(answer("2^64")?.title, "1.84467440737096E19")
         XCTAssertEqual(answer("1/2^40")?.title, "9.09494701772928E-13")
         XCTAssertEqual(answer("3,5*2", in: ukrainian)?.value, "7")
@@ -70,7 +73,7 @@ final class CalcAnswerTests: XCTestCase {
     }
 
     func testAUnitConvertsToAnotherOfItsKind() {
-        XCTAssertEqual(answer("5 km in mi")?.text, "row=3.10686\ntitle=3.10686 mi\ndetail=5 km in mi\n")
+        XCTAssertEqual(answer("5 km in mi")?.text, "row=3.10686\ntitle=3.10686 mi\ndetail=5 km in mi\nunit=mi\n")
         let cases: [(String, String, String)] = [
             ("20 c in f", "68", "68°F"), ("20°C to °F", "68", "68°F"), ("1 gb in mb", "1000", "1000 MB"), ("60 km/h in mph", "37.2823", "37.2823 mph"),
             ("5 in in cm", "12.7", "12.7 cm"), ("3 days in hours", "72", "72 hr"), ("5km to miles", "3.10686", "3.10686 mi"),
@@ -88,15 +91,16 @@ final class CalcAnswerTests: XCTestCase {
     }
 
     func testACurrencyConvertsWithTheRatesAndNamesTheirDay() {
-        XCTAssertEqual(answer("15 usd in eur", rates: rates())?.text, "row=13.46\ntitle=€13.46\ndetail=15 USD in EUR · rates of Nov 10\n")
-        XCTAssertEqual(spaced(answer("15 usd in eur", in: ukrainian, rates: rates())?.title), "13,46 EUR")
+        XCTAssertEqual(answer("15 usd in eur", rates: rates())?.text, "row=13.46\ntitle=€13.46\ndetail=15 USD in EUR · rates of Nov 10\nunit=€\n")
+        XCTAssertEqual(spaced(answer("15 usd in eur", in: ukrainian, rates: rates())?.title), "13,46 €")
         let cases: [(String, String)] = [
             ("$15 in eur", "13.46"), ("15$ to €", "13.46"), ("15 dollars in euros", "13.46"), ("100 eur in uah", "5068.23"),
             ("1 btc in usd", "73640.44"), ("100 usd in btc", "0.00135795"), ("1000 jpy in usd", "6.53"), ("(10+5) usd in eur", "13.46"),
         ]
         for (text, value) in cases { XCTAssertEqual(answer(text, rates: rates())?.value, value, text) }
         XCTAssertEqual(answer("1 btc in usd", rates: rates())?.title, "$73,640.44")
-        XCTAssertEqual(spaced(answer("100 usd in btc", rates: rates())?.title), "BTC 0.00135795")
+        XCTAssertEqual(spaced(answer("100 usd in btc", rates: rates())?.title), "₿0.00135795")
+        XCTAssertEqual(answer("1000 jpy in usd", in: ukrainian, rates: rates())?.unit, "$")
     }
 
     func testAnAmountInACurrencyAloneConvertsToTheCurrencyOfTheMac() {
@@ -117,8 +121,8 @@ final class CalcAnswerTests: XCTestCase {
         let old = try XCTUnwrap(CalcRates(exchangeAPI: Data(file.utf8), time: now))
         let yesterday = try XCTUnwrap(CalcRates(exchangeAPI: CalcRatesTests.file, time: now))
 
-        XCTAssertEqual(answer("15 usd in eur", rates: old)?.text, "row=13.46\ntitle=€13.46\ndetail=15 USD in EUR · rates of Nov 2, 9 days old\ntone=warn\n")
-        XCTAssertEqual(answer("15 usd in eur", rates: yesterday)?.text, "row=13.46\ntitle=€13.46\ndetail=15 USD in EUR · rates of Nov 10\n")
+        XCTAssertEqual(answer("15 usd in eur", rates: old)?.text, "row=13.46\ntitle=€13.46\ndetail=15 USD in EUR · rates of Nov 2, 9 days old\nunit=€\ntone=warn\n")
+        XCTAssertEqual(answer("15 usd in eur", rates: yesterday)?.text, "row=13.46\ntitle=€13.46\ndetail=15 USD in EUR · rates of Nov 10\nunit=€\n")
     }
 
     func testWithNoRatesAKnownCurrencySaysWhyAndAnUnknownOneSaysNothing() {

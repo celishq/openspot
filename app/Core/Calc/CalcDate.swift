@@ -8,6 +8,8 @@ struct CalcDate {
     let value: String
     let title: String
     let detail: String
+    /// The word of the title that names what the value counts, such as `days` or `AM`.
+    var unit: String?
 
     private static let units: [String: Calendar.Component] = [
         "d": .day, "day": .day, "days": .day, "w": .weekOfYear, "wk": .weekOfYear, "week": .weekOfYear, "weeks": .weekOfYear,
@@ -82,7 +84,10 @@ struct CalcDate {
         }
         guard let count = format.clock.dateComponents([unit], from: from.date, to: to.date).value(for: unit) else { return nil }
         let detail = "\(format.day(from.date, hasTime: from.hasTime && [.hour, .minute].contains(unit))) to \(format.day(to.date, hasTime: to.hasTime && [.hour, .minute].contains(unit)))"
-        return CalcDate(value: String(count), title: format.length(count, unit), detail: detail)
+        let title = format.length(count, unit)
+        var span = CalcDate(value: String(count), title: title, detail: detail)
+        span.unit = title.firstMatch(of: /^[-\d\s.,\u{00A0}\u{202F}]+(\D.*)$/).map { String($0.1) }
+        return span
     }
 
     /// `<time> [zone] in <zone>`, such as `3pm tokyo in kyiv`, or `now in <zone>`.
@@ -107,11 +112,10 @@ struct CalcDate {
             } else {
                 continue
             }
-            return CalcDate(
-                value: format.value(moment.date, hasTime: true, in: target),
-                title: format.time(moment.date, in: target),
-                detail: "\(format.time(moment.date, in: moment.zone)) · \(name(of: moment.zone))"
-            )
+            let title = format.time(moment.date, in: target)
+            var time = CalcDate(value: format.value(moment.date, hasTime: true, in: target), title: title, detail: "\(format.time(moment.date, in: moment.zone)) · \(name(of: moment.zone))")
+            time.unit = format.half(of: title)
+            return time
         }
         return nil
     }
@@ -166,6 +170,13 @@ struct CalcDate {
 
         func time(_ date: Date, in zone: TimeZone) -> String {
             written(date, "EEEjmm", in: zone)
+        }
+
+        /// The half of the day that ends a time, such as `AM`, on a Mac with a 12-hour clock.
+        func half(of time: String) -> String? {
+            let formatter = DateFormatter()
+            formatter.locale = locale
+            return [formatter.amSymbol, formatter.pmSymbol].compactMap { $0 }.first { time.hasSuffix($0) }
         }
 
         /// A date as `2026-12-02`, or `2026-12-02 15:00` with its time.
