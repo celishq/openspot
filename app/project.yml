@@ -22,6 +22,9 @@ settings:
     CURRENT_PROJECT_VERSION: "1"
     UPDATE_PUBLIC_KEY: ""
     OPENSPOT_DEV_STATE: ""
+  configs:
+    Release:
+      DEAD_CODE_STRIPPING: YES
 targets:
   OpenspotCore:
     type: library.static
