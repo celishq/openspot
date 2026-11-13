@@ -375,6 +375,14 @@ public final class SpotsModel {
         }
     }
 
+    /// Takes the config that the app itself just wrote as the one the cards come from, so that the watch's report of the
+    /// write reloads nothing.
+    func tookOwnWrite() {
+        let config = files.config.read()
+        loadedConfig = config
+        lastRead = (config, lastRead?.folder ?? files.folder(config))
+    }
+
     /// Builds the card of each spot that these IDs name again, by its ID or its core ID, and keeps each other card (A25).
     private func patchEntries(_ ids: Set<String>) {
         let named: (Spot) -> Bool = { ids.contains($0.id) || ids.contains(SpotsFolder.coreID(of: $0)) }

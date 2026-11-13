@@ -86,6 +86,18 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.config.fixKey, Config(text: "fix_key = \"cmd+shift+9\"").fixKey)
     }
 
+    func testAChoiceThatTheAppWritesBuildsNoGridWhenTheWatchReportsItsWrite() throws {
+        try script("one", header: "title=One", "")
+        model.reload()
+        model.prefer(.wide, for: "one")
+        let builds = model.gridBuilds
+
+        model.folderChanged()
+
+        XCTAssertEqual(model.gridBuilds, builds)
+        XCTAssertEqual(model.config.arrangement.size(of: "one"), .wide)
+    }
+
     func testAMenuBarPlaceAndAValueThatTheAPISetsBuildNoGridNowOrAtTheNextReload() throws {
         try script("cups", header: "title=Cups\non=clock.60", "printf 'text=c\\ntitle=3\\n'")
         try script("notes", header: "title=Notes", ":")

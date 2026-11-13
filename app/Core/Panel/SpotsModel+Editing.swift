@@ -364,6 +364,7 @@ extension SpotsModel {
     func saveArrangement(selecting id: String, ending: () -> Void = {}, landed: @escaping @MainActor () -> Void = {}) {
         do {
             try files.config.write(arrangement)
+            tookOwnWrite()
         } catch {
             host.notify("Openspot could not save the spots. \(Self.reason(error))")
         }
