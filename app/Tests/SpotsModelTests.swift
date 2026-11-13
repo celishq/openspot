@@ -147,7 +147,7 @@ final class SpotsModelTests: XCTestCase {
         model.isShown = true
         model.panelWillShow(holding: [])
         model.press("list")
-        try await wait("the open list") { model.openList == "list" && model.openItems?.shown.count == 2 }
+        try await wait("the open list") { model.transition.phase == .open && model.openList == "list" && model.openItems?.shown.count == 2 }
     }
 
     func testASheetTakesTheLookOfItsCardOnlyWhenItsScriptDrawsTheCard() async throws {
