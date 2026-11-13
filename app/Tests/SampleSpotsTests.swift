@@ -377,6 +377,12 @@ final class SampleSpotsTests: SampleSpotsCase {
         }
     }
 
+    func testDevicesReadsEveryFiveMinutes() throws {
+        let devices = try XCTUnwrap(try scan.spots.first { $0.id == "devices" })
+
+        XCTAssertEqual(devices.read?.seconds, 300)
+    }
+
     func testEmojiShowsTheSymbolsAndKeepsNothingWhenTheEmojiFail() async throws {
         try await withPrivateHome { folder in
             let emoji = try self.fakeEmoji(in: folder)
