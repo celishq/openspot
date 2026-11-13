@@ -2,8 +2,8 @@ import SwiftUI
 import OpenspotCore
 
 /// A spot: a glyph, then a title with a detail, then an accessory. A small card shows the glyph alone, and a widget shows
-/// its places. A kind differs only in what fills a slot: a slider has its track as its detail, and running work takes the
-/// place of the glyph.
+/// its places. A kind differs only in what fills a slot: a slider has its track as its detail. A card that is on or runs
+/// work draws a solid fill.
 struct SpotCardView: View, @MainActor Equatable {
     let entry: SpotsModel.Entry
     let size: SpotSize
@@ -36,6 +36,7 @@ struct SpotCardView: View, @MainActor Equatable {
 
     var body: some View {
         ZStack(alignment: .topLeading) { content }
+            .environment(\.spotIsOnSolid, isFilled)
             .padding(drawnView != nil && !isDrawn ? 0 : SpotTokens.cardPadding(for: size, isWidget: entry.kind == .widget || isDrawn))
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
             .background(shape.fill(SpotTheme.accent).opacity(dropFill))
@@ -47,7 +48,7 @@ struct SpotCardView: View, @MainActor Equatable {
             .overlay(alignment: .topTrailing) { FailureMark(entry: entry, size: size) }
             .contentShape(shape)
             .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id, opening: NSEvent.modifierFlags.contains(.command)) } }
-            .animation(SpotMotion.fade(isShown: isOn), value: isOn)
+            .animation(SpotMotion.fade(isShown: isFilled), value: isFilled)
             .scaleEffect(showsPress ? MotionTokens.pressedScale : 1)
             .animation(SpotMotion.press, value: showsPress)
             .modifier(CardViewLoad(source: ownView))
@@ -104,10 +105,6 @@ struct SpotCardView: View, @MainActor Equatable {
         ownView != nil && drawnView == nil
     }
 
-    private var isOn: Bool {
-        entry.state.on == true
-    }
-
     private var showsPress: Bool {
         isPressed && Self.showsPress(of: entry)
     }
@@ -126,9 +123,9 @@ struct SpotCardView: View, @MainActor Equatable {
         Self.isFilled(entry, takesDrag: takesDrag, isDropTarget: isDropTarget)
     }
 
-    /// Whether a card draws the solid fill of a spot that is on, which no drag or drop tints.
+    /// Whether a card draws the solid fill of a spot that is on or runs work, which no drag or drop tints.
     static func isFilled(_ entry: SpotsModel.Entry, takesDrag: Bool, isDropTarget: Bool) -> Bool {
-        entry.isOn && !takesDrag && !isDropTarget
+        entry.isActive && !takesDrag && !isDropTarget
     }
 
     private var row: some View {
@@ -157,14 +154,14 @@ struct SpotCardView: View, @MainActor Equatable {
     private var title: some View {
         Text(entry.shownState.title)
             .font(SpotType.title)
-            .foregroundStyle(isFilled ? SpotTheme.onSolid : SpotTheme.ink)
+            .modifier(SpotInk())
             .lineLimit(1)
     }
 
-    private func detail(_ text: String, isOnSolid: Bool) -> some View {
+    private func detail(_ text: String) -> some View {
         Text(text)
             .font(SpotType.detail)
-            .modifier(SpotSecondaryText(isOnSolid: isOnSolid))
+            .modifier(SpotSecondaryText())
             .lineLimit(1)
     }
 
@@ -174,9 +171,9 @@ struct SpotCardView: View, @MainActor Equatable {
             if entry.kind == .slider {
                 slider
             } else if isBuildingView {
-                detail("Building its view", isOnSolid: false)
+                detail("Building its view")
             } else if let subtitle = entry.shownState.subtitle {
-                detail(subtitle, isOnSolid: isFilled)
+                detail(subtitle)
             }
         }
     }
@@ -185,7 +182,7 @@ struct SpotCardView: View, @MainActor Equatable {
     private var accessory: some View {
         switch entry.kind {
         case .list:
-            SpotCardArrow(isOnSolid: isFilled)
+            SpotCardArrow()
         case .launch:
             if size != .wide, entry.item == nil, !entry.stopsOnPress {
                 Text("Run")
@@ -218,11 +215,7 @@ struct SpotCardView: View, @MainActor Equatable {
 
     @ViewBuilder
     private var glyph: some View {
-        if let call = entry.work {
-            SpotWorkMark(call: call, stops: entry.stopsOnPress, isOnSolid: isFilled)
-        } else if isBuildingView {
-            SpotWorkMark(call: nil, isOnSolid: isFilled)
-        } else if let item = entry.item, item.icon != nil {
+        if let item = entry.item, item.icon != nil {
             SpotItemIcon(item: item, size: SpotTokens.glyphSize)
         } else if entry.showsHeaderPicture {
             SpotItemIcon(icon: entry.spot.icon, glyph: entry.spot.glyph, symbol: nil, size: SpotTokens.glyphSize)

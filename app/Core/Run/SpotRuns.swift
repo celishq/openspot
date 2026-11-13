@@ -217,11 +217,12 @@ public final class SpotRuns {
         order.flatMap { id in (sheets[id]?.work ?? []).map { (id: id, call: $0) } }.sorted { $0.call.started < $1.call.started }
     }
 
-    /// What the Openspot item shows for running work, or nothing when none shows.
-    public var workMark: MenuBarMark? {
+    /// What runs, in words: the spot of the oldest call, and how many run when more than one does. Nothing when no work shows.
+    public var runningSummary: String? {
         let work = work
         guard let oldest = work.first else { return nil }
-        return MenuBarMark(workFill: oldest.call.fill, count: work.count, name: sheets[oldest.id]?.spot.name ?? oldest.id)
+        let name = sheets[oldest.id]?.spot.name ?? oldest.id
+        return work.count > 1 ? "\(work.count) running. \(name) is the oldest" : "\(name) is running"
     }
 
     /// The ID of the script of the oldest running work, whose spot a click on the Openspot item selects.

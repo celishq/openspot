@@ -281,7 +281,7 @@ struct SheetPartsView: View {
     private func pressLabel(_ part: SpotPart, words: String, font: Font) -> some View {
         if let call = work(part) {
             HStack(spacing: SpotTokens.placeGap / 2) {
-                SpotWorkMark(call: call, side: SpotTokens.workMark, isOnSolid: part.look == .strong)
+                SpotWorkMark(call: call, side: SpotTokens.workMark)
                 Text("Stop").font(font).lineLimit(1)
             }
         } else {
@@ -296,11 +296,10 @@ struct SheetPartsView: View {
             switch part.look {
             case .chip:
                 pressLabel(part, words: part.title ?? part.id, font: SpotType.action)
-                    .foregroundStyle(SpotTheme.ink)
                     .padding(.horizontal, SpotTokens.padding)
                     .padding(.vertical, 5)
                     .fixedSize()
-                    .background(SpotTheme.ink.opacity(frame.isOnTop ? SpotTheme.control : SpotTheme.selectedFill), in: Capsule())
+                    .spotFill(isActive: work(part) != nil, otherwise: SpotTheme.ink.opacity(frame.isOnTop ? SpotTheme.control : SpotTheme.selectedFill), in: Capsule())
                     .background { if frame.isOnTop { SpotFloatGlass(shape: Capsule()) } }
                     .contentShape(Capsule())
             case .bare:
@@ -313,30 +312,28 @@ struct SheetPartsView: View {
                 .contentShape(Rectangle())
             case .strong where frame.isOnTop:
                 pressLabel(part, words: part.title ?? part.id.capitalized, font: SpotType.action)
-                    .foregroundStyle(SpotTheme.onSolid)
                     .padding(.horizontal, SpotTokens.padding)
                     .padding(.vertical, 5)
                     .fixedSize()
-                    .background(SpotTheme.solid, in: Capsule())
+                    .spotFill(isActive: true, in: Capsule())
                     .contentShape(Capsule())
             case .strong:
-                centeredLine(part, text: SpotTheme.onSolid, fill: SpotTheme.solid)
+                centeredLine(part, isActive: true)
             case .tile:
                 labelled(part, frame)
                     .modifier(TileLook(isOn: true))
                     .contentShape(shape)
             default:
-                centeredLine(part, text: SpotTheme.ink, fill: SpotTheme.ink.opacity(SpotTheme.selectedFill))
+                centeredLine(part, isActive: work(part) != nil)
             }
         }
         .buttonStyle(.plain)
     }
 
-    private func centeredLine(_ part: SpotPart, text: Color, fill: Color) -> some View {
+    private func centeredLine(_ part: SpotPart, isActive: Bool) -> some View {
         pressLabel(part, words: part.title ?? part.id.capitalized, font: SpotType.body.weight(.medium))
-            .foregroundStyle(text)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(fill, in: shape)
+            .spotFill(isActive: isActive, otherwise: SpotTheme.ink.opacity(SpotTheme.selectedFill), in: shape)
             .contentShape(shape)
     }
 

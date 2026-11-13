@@ -29,9 +29,4 @@ final class MenuBarMarkItem {
         item.button?.toolTip = mark.summary
         item.button?.setAccessibilityLabel(mark.summary)
     }
-
-    /// Takes the mark out of the item, and leaves the item to its owner.
-    func remove() {
-        host.removeFromSuperview()
-    }
 }

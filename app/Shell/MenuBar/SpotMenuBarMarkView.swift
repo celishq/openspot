@@ -59,13 +59,6 @@ struct SpotMenuBarMarkView: View {
         case .status(let title):
             dot(markColour)
             Text(title)
-        case .work(let fill, let count):
-            if let fill {
-                ring(fill: fill)
-            } else {
-                ProgressView().progressViewStyle(.circular).controlSize(.small).frame(width: Self.ring, height: Self.ring)
-            }
-            if let count { Text("\(count)") }
         }
     }
 

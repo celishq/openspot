@@ -95,6 +95,11 @@ extension SpotsModel {
             run?.isOn ?? (fixedState.on == true)
         }
 
+        /// Whether its card draws the solid fill: it is on, or its work runs.
+        @MainActor public var isActive: Bool {
+            isOn || work != nil
+        }
+
         /// What the card shows: its own state, with the words of its running work over it.
         @MainActor public var shownState: SpotState {
             run?.shownState ?? fixedState

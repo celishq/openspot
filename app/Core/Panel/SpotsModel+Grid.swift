@@ -211,9 +211,9 @@ extension SpotsModel {
         runs.menuBarMarks
     }
 
-    /// What the Openspot item shows for running work.
-    public var workMark: MenuBarMark? {
-        runs.workMark
+    /// What runs, in words, which the Openspot item shows while work runs.
+    public var runningSummary: String? {
+        runs.runningSummary
     }
 
     /// Opens the panel with the spot of the oldest running work selected, or closes it when it already shows that. A search
