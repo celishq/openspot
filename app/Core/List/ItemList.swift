@@ -24,6 +24,8 @@ public struct ItemList: Equatable, Sendable {
     public private(set) var landedSearches = 0
     /// Whether the rows of the last search of the script have yet to land.
     private var awaitsLanding = false
+    /// Whether the rows of the newest text are being found away from the list, for `take` to bring.
+    private var isFinding = false
     public private(set) var isLoading = false
     public private(set) var hasFailed = false
     private(set) var all: [SpotItem]
@@ -38,7 +40,7 @@ public struct ItemList: Equatable, Sendable {
     private var narrowings: [Narrowing] = []
 
     /// A search and the indices of its matches, best first.
-    private struct Narrowing: Equatable, Sendable {
+    fileprivate struct Narrowing: Equatable, Sendable {
         let query: SearchQuery
         let matches: [Int]
     }
@@ -81,6 +83,54 @@ public struct ItemList: Equatable, Sendable {
         return true
     }
 
+    /// Takes new text in the search of a list that searches its rows itself, and keeps the rows until `take` brings those that
+    /// `found` ranks, so that the ranking can run away from the main thread. Returns false when the text is the same or the
+    /// list does not search its rows itself, and changes nothing.
+    public mutating func beginFinding(_ text: String) -> Bool {
+        guard text != query, search == .local else { return false }
+        query = text
+        selected = 0
+        isFinding = true
+        return true
+    }
+
+    /// The rows that the newest text finds, ranked without a change to the list, so that it can run on any thread.
+    public func found() -> Found {
+        Found(query: query, base: all, recent: recent, narrowings: narrowed())
+    }
+
+    /// Shows the rows that `found` ranked, and selects the first. Rows found for text that is no longer the newest are
+    /// dropped, and rows found among rows or picks that changed since are ranked again.
+    public mutating func take(_ found: Found) {
+        guard isFinding, found.query == query else { return }
+        isFinding = false
+        if found.base == all, found.recent == recent, search == .local {
+            narrowings = found.narrowings
+            show(narrowings.last?.matches ?? [])
+        } else {
+            refresh()
+        }
+        selected = 0
+        landedSearches += 1
+    }
+
+    /// The rows that one text found, as `found` ranks them.
+    public struct Found: Sendable {
+        fileprivate let query: String
+        fileprivate let base: [SpotItem]
+        fileprivate let recent: [String]
+        fileprivate let narrowings: [Narrowing]
+    }
+
+    /// Whether it differs from another list at most in its text and its selected row, while the rows of its text are found.
+    public func differsOnlyInText(from other: ItemList) -> Bool {
+        var same = self
+        same.query = other.query
+        same.selected = other.selected
+        same.isFinding = other.isFinding
+        return same == other
+    }
+
     /// Selects the first row, and keeps the search.
     public mutating func selectFirst() {
         selected = 0
@@ -89,6 +139,7 @@ public struct ItemList: Equatable, Sendable {
     private mutating func begin(_ text: String) {
         query = text
         selected = 0
+        isFinding = false
         isWaiting = search == .script
         refresh()
         awaitsLanding = isWaiting
@@ -262,13 +313,20 @@ public struct ItemList: Equatable, Sendable {
             narrowings = []
             return show(all.indices)
         }
+        narrowings = narrowed()
+        show(narrowings.last?.matches ?? [])
+    }
+
+    /// The searches of the text as it grew, with the newest text ranked at their end.
+    private func narrowed() -> [Narrowing] {
+        var narrowings = narrowings
         let next = SearchQuery(text: query)
         while let last = narrowings.last, !next.text.hasPrefix(last.query.text) { narrowings.removeLast() }
         if narrowings.last?.query.text != next.text {
             let among = narrowings.last.flatMap { $0.query.narrows(to: next) ? $0.matches : nil } ?? Array(all.indices)
             narrowings.append(Narrowing(query: next, matches: next.ranking(searchIndex, items: all, among: among, weights: weights)))
         }
-        show(narrowings.last?.matches ?? [])
+        return narrowings
     }
 
     /// Shows the found rows between the rows pinned at the top and those pinned at the bottom, so that a search never hides

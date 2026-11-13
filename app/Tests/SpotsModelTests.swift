@@ -343,7 +343,7 @@ final class SpotsModelTests: XCTestCase {
 
         model.searchText = "ban"
 
-        XCTAssertEqual(model.openItems?.shown.map(\.run), ["b"])
+        try await wait("the found rows") { model.openItems?.shown.map(\.run) == ["b"] }
         XCTAssertEqual(model.query, "")
     }
 
@@ -1028,7 +1028,7 @@ final class SpotsModelTests: XCTestCase {
 
         model.searchText = "ap"
 
-        XCTAssertEqual(model.openItems?.shown.count, 50)
+        try await wait("the found rows") { model.openItems?.shown.count == 50 }
         XCTAssertEqual(model.openSheet?.sheetRect, rect)
         XCTAssertEqual(model.openSheet?.showsField, true)
         XCTAssertFalse(told)
