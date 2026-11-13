@@ -2,6 +2,23 @@ import XCTest
 @testable import OpenspotCore
 
 final class ItemListTests: XCTestCase {
+    func testRowsFoundForOlderTextAreDroppedWhileNewerTextIsFound() {
+        var list = ItemList(items: [SpotItem(title: "Apple", run: "a"), SpotItem(title: "Banana", run: "b")])
+        let landed = list.landedSearches
+        list.beginFinding("a")
+        let older = list.found()
+        list.beginFinding("ap")
+        let newer = list.found()
+
+        list.take(older)
+
+        XCTAssertEqual(list.shown.map(\.run), ["a", "b"])
+        XCTAssertEqual(list.landedSearches, landed)
+        list.take(newer)
+        XCTAssertEqual(list.shown.map(\.run), ["a"])
+        XCTAssertEqual(list.landedSearches, landed + 1)
+    }
+
     func testEachNewSearchLandsOnceWhenItsRowsShow() {
         var local = ItemList(items: items("Safari", "Slack"))
         local.search("s")

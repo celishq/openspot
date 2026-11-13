@@ -3,6 +3,8 @@ import Foundation
 /// The items of one list, with the text that searches them, the selected row and the recent picks.
 public struct ItemList: Equatable, Sendable {
     public static let recentLimit = 100
+    /// Hears each ranking of `found`, with whether it runs on the main thread.
+    nonisolated(unsafe) static var findTap: (@Sendable (Bool) -> Void)?
 
     public private(set) var search: ItemSearch
     public private(set) var query = ""
@@ -25,7 +27,7 @@ public struct ItemList: Equatable, Sendable {
     /// Whether the rows of the last search of the script have yet to land.
     private var awaitsLanding = false
     /// Whether the rows of the newest text are being found away from the list, for `take` to bring.
-    private var isFinding = false
+    public private(set) var isFinding = false
     public private(set) var isLoading = false
     public private(set) var hasFailed = false
     private(set) var all: [SpotItem]
@@ -83,20 +85,31 @@ public struct ItemList: Equatable, Sendable {
         return true
     }
 
-    /// Takes new text in the search of a list that searches its rows itself, and keeps the rows until `take` brings those that
-    /// `found` ranks, so that the ranking can run away from the main thread. Returns false when the text is the same or the
-    /// list does not search its rows itself, and changes nothing.
+    /// Takes new text in the search of a list that searches its rows itself, and keeps the rows and the selection until `take`
+    /// brings those that `found` ranks, so that the ranking can run away from the main thread. Returns false when the text is
+    /// the same or the list does not search its rows itself, and changes nothing.
+    @discardableResult
     public mutating func beginFinding(_ text: String) -> Bool {
         guard text != query, search == .local else { return false }
         query = text
-        selected = 0
         isFinding = true
         return true
     }
 
+    /// Ranks the rows of the newest text at once while they are being found, and selects the first, so that a move or a read
+    /// of the selection acts on them. A result of `found` that comes later is dropped.
+    public mutating func landFinding() {
+        guard isFinding else { return }
+        isFinding = false
+        refresh()
+        selected = 0
+        landedSearches += 1
+    }
+
     /// The rows that the newest text finds, ranked without a change to the list, so that it can run on any thread.
     public func found() -> Found {
-        Found(query: query, base: all, recent: recent, narrowings: narrowed())
+        Self.findTap?(Thread.isMainThread)
+        return Found(query: query, base: all, recent: recent, narrowings: narrowed())
     }
 
     /// Shows the rows that `found` ranked, and selects the first. Rows found for text that is no longer the newest are
@@ -225,6 +238,7 @@ public struct ItemList: Equatable, Sendable {
     }
 
     public mutating func select(run: String) {
+        landFinding()
         selected = shown.firstIndex { $0.run == run } ?? selected
     }
 
@@ -250,10 +264,12 @@ public struct ItemList: Equatable, Sendable {
 
     /// Selects the first row, or the last, as ⌘↑ and ⌘↓ do.
     public mutating func moveToEdge(last: Bool) {
+        landFinding()
         selected = last ? max(shown.count - 1, 0) : 0
     }
 
     public mutating func move(by step: Int) {
+        landFinding()
         selected = min(max(selected + step, 0), max(shown.count - 1, 0))
     }
 
@@ -281,6 +297,7 @@ public struct ItemList: Equatable, Sendable {
     /// Moves to another line and keeps the place in the line. A shorter last line takes its last item, and the first and the
     /// last line stop the move.
     public mutating func moveLine(by lines: Int) {
+        landFinding()
         let target = selected + lines * perLine
         guard target >= 0, !shown.isEmpty else { return }
         let lastLine = (shown.count - 1) / perLine

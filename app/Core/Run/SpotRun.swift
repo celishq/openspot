@@ -123,6 +123,11 @@ public final class SpotRun {
         }
     }
 
+    /// Lands the rows of the newest text at once when they are still being found, for an action that reads them.
+    public func landRows() {
+        if rows.isFinding { list.landFinding() }
+    }
+
     /// The text of the search of the rows. New text tells its readers before the rows that it finds land.
     public var query: String {
         access(keyPath: \.query)
