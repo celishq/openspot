@@ -277,9 +277,20 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
             let alert = NSAlert()
             alert.messageText = folders.count == 1 ? "Delete “\(folders[0].lastPathComponent)”?" : "Delete \(folders.count) folders?"
             alert.informativeText = boards == 0 ? "The folder moves to the Trash." : "The folder and the \(boards) \(boards == 1 ? "board" : "boards") in it move to the Trash."
-            alert.addButton(withTitle: "Delete").hasDestructiveAction = true
-            alert.addButton(withTitle: "Cancel")
+            let delete = alert.addButton(withTitle: "Delete")
+            delete.hasDestructiveAction = true
+            let cancel = alert.addButton(withTitle: "Cancel")
+            delete.keyEquivalent = ""
+            cancel.keyEquivalent = "\r"
+            let arrows = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                guard event.window === alert.window, [123, 124].contains(event.keyCode) else { return event }
+                let toDelete = cancel.keyEquivalent == "\r"
+                delete.keyEquivalent = toDelete ? "\r" : ""
+                cancel.keyEquivalent = toDelete ? "" : "\r"
+                return nil
+            }
             alert.beginSheetModal(for: window) { [weak self] answer in
+                if let arrows { NSEvent.removeMonitor(arrows) }
                 guard answer == .alertFirstButtonReturn else { return }
                 MainActor.assumeIsolated { self?.discard(files) }
             }

@@ -33,8 +33,8 @@ struct Home: View {
                     if drawer.query.isEmpty {
                         Button(action: make) {
                             VStack(spacing: 8) {
-                                Lifted(dashed: true) {
-                                    Image(systemName: "plus").font(.system(size: 24, weight: .medium)).foregroundStyle(.secondary)
+                                Lifted {
+                                    Image(systemName: "plus").font(.system(size: 26, weight: .regular)).foregroundStyle(.secondary)
                                 }
                                 Text("New board").font(.system(size: 13, weight: .medium)).frame(maxWidth: .infinity, alignment: .leading)
                                 Text(" ").font(.system(size: 11))
@@ -103,9 +103,9 @@ struct Card: View {
     }
 }
 
-/// A raised white card of the start page, with layered shadows, that lifts and tilts toward the pointer.
+/// A raised white card of the start page, with one even edge and layered shadows, that lifts and tilts toward the
+/// pointer.
 struct Lifted<Content: View>: View {
-    var dashed = false
     @ViewBuilder let content: Content
     @State private var tilt = CGSize.zero
     @State private var hovering = false
@@ -113,22 +113,12 @@ struct Lifted<Content: View>: View {
     var body: some View {
         GeometryReader { place in
             ZStack {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(dashed ? Color.primary.opacity(hovering ? 0.035 : 0.015) : Color.white)
+                Color.white
                 content
             }
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay {
-                if dashed {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(Color.primary.opacity(hovering ? 0.3 : 0.16), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
-                } else {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(LinearGradient(colors: [.white, Color.black.opacity(0.08)], startPoint: .top, endPoint: .bottom), lineWidth: 1)
-                }
-            }
-            .shadow(color: .black.opacity(dashed ? 0 : 0.05), radius: 1, y: 1)
-            .shadow(color: .black.opacity(dashed ? 0 : hovering ? 0.16 : 0.08), radius: hovering ? 18 : 10, y: hovering ? 12 : 5)
+            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.black.opacity(hovering ? 0.1 : 0.07), lineWidth: 1))
+            .shadow(color: .black.opacity(hovering ? 0.14 : 0.07), radius: hovering ? 18 : 10, y: hovering ? 12 : 5)
             .rotation3DEffect(.degrees(Double(tilt.height) * 6), axis: (x: 1, y: 0, z: 0), perspective: 0.6)
             .rotation3DEffect(.degrees(Double(tilt.width) * -6), axis: (x: 0, y: 1, z: 0), perspective: 0.6)
             .scaleEffect(hovering ? 1.025 : 1)

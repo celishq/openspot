@@ -50,6 +50,8 @@ struct Knob: View {
     var quiet = false
     /// With no back: the symbol itself lightens on hover, as in a list's header.
     var bare = false
+    /// A round back, as in the pill of the toolbar.
+    var round = false
     let action: () -> Void
     @State private var hovering = false
 
@@ -67,7 +69,7 @@ struct Knob: View {
             .frame(width: 34, height: 34)
             .foregroundStyle(on ? (quiet ? Color.accentColor : .white) : .primary)
             .opacity(bare && hovering && enabled ? 0.55 : 1)
-            .background(on ? (quiet ? Color.accentColor.opacity(0.14) : Color.accentColor) : Color.primary.opacity(hovering && enabled && !bare ? 0.07 : 0), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .background(on ? (quiet ? Color.accentColor.opacity(0.14) : Color.accentColor) : Color.primary.opacity(hovering && enabled && !bare ? 0.07 : 0), in: RoundedRectangle(cornerRadius: round ? 17 : 9, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -129,15 +131,15 @@ struct Toolbar: View {
         HStack(spacing: 2) {
             ForEach(Tool.allCases) { tool in
                 if tool == .shape {
-                    Knob(symbol: "photo", help: "Image  ⇧⌘I", action: picture)
+                    Knob(symbol: "photo", help: "Image  ⇧⌘I", round: true, action: picture)
                 }
                 let title = tool == .shape ? studio.form.title : tool.title
-                Knob(symbol: tool.symbol, form: tool == .shape ? studio.form : nil, help: "\(title)  \(String(tool.key).uppercased())", on: studio.tool == tool) {
+                Knob(symbol: tool.symbol, form: tool == .shape ? studio.form : nil, help: "\(title)  \(String(tool.key).uppercased())", on: studio.tool == tool, round: true) {
                     studio.tool = tool
                     if tool != .select { studio.selection = [] }
                 }
                 if tool == .shape {
-                    Knob(symbol: "chevron.up", help: "More shapes", on: picking) { picking.toggle() }
+                    Knob(symbol: "chevron.up", help: "More shapes", on: picking, round: true) { picking.toggle() }
                         .popover(isPresented: $picking, arrowEdge: .top) {
                             Forms(studio: studio) { picking = false }
                         }
@@ -145,7 +147,8 @@ struct Toolbar: View {
             }
         }
         .padding(5)
-        .modifier(Raised())
+        .glassEffect(.regular, in: Capsule())
+        .shadow(color: .black.opacity(0.14), radius: 10, y: 3)
     }
 }
 
