@@ -247,12 +247,30 @@ final class SpotEventsTests: SpotRunsCase {
         XCTAssertFalse(runs.watchesClipboard)
     }
 
-    func testTheClipboardIsLookedAtHalfAsOftenWithThePanelClosed() {
-        XCTAssertEqual(runs.clipboardWait, .milliseconds(40))
+    func testWithThePanelClosedTheClipboardIsLookedAtAfterTwiceItsPause() async throws {
+        menuBar.insert("script")
+        try script(header: "on=clipboard.change", "printf 'text=t\\ntitle=T\\n'")
+        _ = try scanned()
+        let start = Date()
+
+        runs.listen(to: mac)
+        try await wait("six looks") { self.mac.looks >= 6 }
+
+        XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(start), 0.2)
+    }
+
+    func testOpeningThePanelLooksAtTheClipboardAtOnce() async throws {
+        runs = SpotRuns(now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50), clipboardPause: .seconds(4))
+        menuBar.insert("script")
+        try script(header: "on=clipboard.change", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
+        _ = try scanned()
+        runs.listen(to: mac)
+        try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isReading }
+        mac.count = 1
 
         runs.panelOpened()
 
-        XCTAssertEqual(runs.clipboardWait, .milliseconds(20))
+        try await wait("the clipboard read") { self.log("reasons").contains("clipboard.change none") }
     }
 
     func testNothingWatchesTheClipboardAfterAQuit() throws {

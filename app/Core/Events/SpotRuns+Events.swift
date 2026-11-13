@@ -44,22 +44,30 @@ extension SpotRuns {
 
     /// Looks at the count of the clipboard after each pause while something wants a spot that lists `clipboard.change`, and raises
     /// `clipboard.change` when it changes. Each change of what is wanted calls it, through `updateClock`. After a quit nothing looks.
-    func watchClipboard() {
+    /// With `looksNow` it looks before its first pause. A pause has a tolerance of half itself with the panel open, and of all of
+    /// itself with the panel closed.
+    func watchClipboard(looksNow: Bool = false) {
         let isWanted = sheets.values.contains { $0.isWanted && $0.spot.read?.has(.event(SpotEvent.clipboard)) == true }
         guard let source, isWanted, !hasQuit else {
             clipboardWatch?.cancel()
             clipboardWatch = nil
+            clipboardSeen = nil
             return
         }
         guard clipboardWatch == nil else { return }
-        var count = source.clipboardCount
+        if clipboardSeen == nil { clipboardSeen = source.clipboardCount }
         clipboardWatch = Task { [weak self, weak source] in
-            while !Task.isCancelled, let wait = self?.clipboardWait {
-                try? await Task.sleep(for: wait, tolerance: wait)
+            var looks = looksNow
+            while !Task.isCancelled {
+                if !looks, let self {
+                    let wait = clipboardWait
+                    try? await Task.sleep(for: wait, tolerance: isPanelOpen ? wait / 2 : wait)
+                }
+                looks = false
                 guard !Task.isCancelled, let self, let source else { return }
                 let next = source.clipboardCount
-                guard next != count else { continue }
-                count = next
+                guard next != clipboardSeen else { continue }
+                clipboardSeen = next
                 raise(.named(SpotEvent.clipboard, value: nil))
             }
         }
@@ -71,6 +79,11 @@ extension SpotRuns {
         let wasOpen = isPanelOpen
         isPanelOpen = true
         if !wasOpen { sheets.values.forEach { $0.panelOpened() } }
+        if !wasOpen, clipboardWatch != nil {
+            clipboardWatch?.cancel()
+            clipboardWatch = nil
+            watchClipboard(looksNow: true)
+        }
         raise(.clock)
         readPanel()
         for id in placed {

@@ -47,6 +47,8 @@ public final class SpotRuns {
     @ObservationIgnored var source: (any Mac)?
     /// The looks at the clipboard, which run only while a spot lists `clipboard`.
     @ObservationIgnored var clipboardWatch: Task<Void, Never>?
+    /// The count of the clipboard at the last look, or nil while nothing looks.
+    @ObservationIgnored var clipboardSeen: Int?
     /// Whether the app quit, after which nothing starts.
     @ObservationIgnored private(set) var hasQuit = false
     @ObservationIgnored private let recent: (String) -> [String]
