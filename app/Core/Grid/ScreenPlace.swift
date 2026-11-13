@@ -37,15 +37,17 @@ public struct ScreenPlace: Sendable {
         return CGPoint(x: x.rounded(.down), y: y.rounded(.down))
     }
 
-    /// The origin of a toast of this size: hung centred under the menu bar item and moved in to lie whole on the item's
-    /// screen, or with no item, at the top centre of the main screen's free area. Nil with no screen.
-    public func origin(ofToast size: CGSize, under item: CGRect?) -> CGPoint? {
+    /// The origin of a toast window of this size, whose surface lies this inset inside it: hung centred under the menu bar
+    /// item and moved in to lie whole on the item's screen, or with no item, at the top centre of the main screen's free area.
+    /// The surface's top lies `SpotTokens.toastGap` under the item or the free area. Nil with no screen.
+    public func origin(ofToast size: CGSize, inset: CGFloat, under item: CGRect?) -> CGPoint? {
+        let lift = inset - SpotTokens.toastGap
         if let item, let area = screens.first(where: { $0.frame.intersects(item) })?.area {
             let x = min(max(item.midX - size.width / 2, area.minX), area.maxX - size.width)
-            return CGPoint(x: x.rounded(.down), y: (item.minY - size.height).rounded(.down))
+            return CGPoint(x: x.rounded(.down), y: (item.minY - size.height + lift).rounded(.down))
         }
         guard let area = screens.first?.area else { return nil }
-        return CGPoint(x: (area.midX - size.width / 2).rounded(.down), y: area.maxY - size.height)
+        return CGPoint(x: (area.midX - size.width / 2).rounded(.down), y: area.maxY - size.height + lift)
     }
 
     /// How far Edit Spots lifts the panel, whose content is this rect from the window's top, so that the window's top meets

@@ -30,6 +30,8 @@ public enum SpotTokens {
     /// The widest the store of Edit Spots grows, twelve columns of the grid, and its gap to the edges of the screen.
     public static let dockWidth: CGFloat = 2 * padding + width(columns: 12)
     public static let dockMargin: CGFloat = 20
+    /// The gap from the menu bar to the top of a toast, the same as the system's volume and brightness HUD leaves.
+    public static let toastGap: CGFloat = 10
     /// The height of the button at the end of a store row, the width of its main part, which every step shares, and of its arrow.
     public static let storeButtonHeight: CGFloat = 28
     public static let storeStepWidth: CGFloat = 80

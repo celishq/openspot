@@ -33,7 +33,7 @@ final class ToastPanel: NSPanel {
         let width = min(measure.view.fittingSize.width.rounded(.up) + 1, Self.maxSize.width)
         let size = measure.sizeThatFits(in: NSSize(width: width, height: Self.maxSize.height))
         let place = ScreenPlace(screens: ScreenPlace.Screen.all)
-        if let origin = place.origin(ofToast: size, under: item?.frame) {
+        if let origin = place.origin(ofToast: size, inset: Self.margin, under: item?.frame) {
             setFrame(NSRect(origin: origin, size: size), display: true)
         }
         orderFrontRegardless()
