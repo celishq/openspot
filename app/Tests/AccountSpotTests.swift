@@ -130,6 +130,20 @@ final class AccountSpotTests: BuiltInCase {
         XCTAssertTrue(try store.isBackedUp())
     }
 
+    func testAReadAtLaunchNeverShowsTheWordsNorAsksForTouchID() async throws {
+        _ = try store.keyMadeOnce()
+        _ = try await frame(["show"])
+        let before = await app.asked
+
+        let launch = try await frame(["read"], reason: "app.launch")
+        let sheet = try await frame(["read"])
+
+        let after = await app.asked
+        XCTAssertEqual(after, before)
+        XCTAssertTrue(words(in: launch).isEmpty)
+        XCTAssertEqual(block("show", in: sheet)["title"], "Show my words")
+    }
+
     func testAReadAsTheSheetOpensNeverAsksForTouchID() async throws {
         _ = try store.keyMadeOnce()
         _ = try await frame(["show"])
