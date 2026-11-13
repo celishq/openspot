@@ -29,6 +29,7 @@ final class SpotTrayBar: NSObject {
     private var icon: Host<SpotTrayIconView>?
     private var work: Shown?
     private var shown: [String: Shown] = [:]
+    let look = TrayLook()
 
     init(model: SpotsModel, openspotItem: NSStatusItem) {
         self.model = model
@@ -39,11 +40,29 @@ final class SpotTrayBar: NSObject {
         update()
     }
 
+    /// Lights or darkens a capsule across the whole slot of the Openspot item, behind its button.
+    func light(_ isLit: Bool) {
+        guard let button = openspotItem.button, let box = button.superview, let slot = box.superview else { return }
+        let capsule = slot.subviews.first { $0.identifier?.rawValue == "capsule" } ?? {
+            let view = NSView()
+            view.identifier = NSUserInterfaceItemIdentifier("capsule")
+            view.wantsLayer = true
+            slot.addSubview(view, positioned: .below, relativeTo: box)
+            return view
+        }()
+        capsule.frame = NSRect(x: slot.bounds.minX, y: box.frame.minY, width: slot.bounds.width, height: box.frame.height)
+        capsule.layer?.cornerRadius = box.frame.height / 2
+        slot.effectiveAppearance.performAsCurrentDrawingAppearance {
+            capsule.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.2).cgColor
+        }
+        capsule.isHidden = !isLit
+    }
+
     /// Moves the image of the Openspot item into a SwiftUI view of the same width.
     private func makeIcon() -> Host<SpotTrayIconView>? {
         guard let button = openspotItem.button, let image = button.image else { return nil }
         button.image = nil
-        let host = Host(rootView: SpotTrayIconView(model: model, image: image))
+        let host = Host(rootView: SpotTrayIconView(model: model, image: image, look: look))
         host.frame = NSRect(x: 0, y: 0, width: iconWidth, height: button.bounds.height)
         host.autoresizingMask = [.width, .height]
         button.addSubview(host)

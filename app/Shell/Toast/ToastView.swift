@@ -7,6 +7,39 @@ struct ToastView: View {
     private static let markSide: CGFloat = 16
 
     var body: some View {
+        Group {
+            if toast.title != nil { card } else { line }
+        }
+        .modifier(SpotGlass(radius: toast.title != nil ? SpotTokens.rowHeight / 2 : SpotTokens.rowHeight / 3))
+        .contentShape(Rectangle())
+        .onTapGesture { toast.open?() }
+        .padding(ToastPanel.margin)
+        .environment(\.spotIsShown, toast.isShown)
+    }
+
+    private var card: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                if let symbol = toast.symbol {
+                    Image(systemName: symbol).font(.system(size: 12, weight: .semibold))
+                }
+                Text(toast.title ?? "").font(SpotType.title)
+            }
+            .foregroundStyle(SpotTheme.ink.opacity(0.6))
+            if let value = toast.value {
+                Text(value).font(SpotType.metric).foregroundStyle(SpotTheme.ink)
+            }
+            Self.styled(toast.message)
+                .font(SpotType.detail)
+                .foregroundStyle(SpotTheme.ink.opacity(0.6))
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(width: 240, alignment: .leading)
+        .padding(16)
+    }
+
+    private var line: some View {
         HStack(spacing: 8) {
             if toast.isWorking {
                 SpotWorkMark(call: nil, side: Self.markSide)
@@ -24,11 +57,6 @@ struct ToastView: View {
         }
         .padding(.horizontal, ToastPanel.margin)
         .padding(.vertical, 10)
-        .modifier(SpotGlass(radius: SpotTokens.rowHeight / 3))
-        .contentShape(Rectangle())
-        .onTapGesture { toast.open?() }
-        .padding(ToastPanel.margin)
-        .environment(\.spotIsShown, toast.isShown)
     }
 
     /// The message as text, with each span in backticks marked as a key. Spaces beside a key leave room for its fill.

@@ -67,7 +67,11 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         SpotKeyLayouts.start()
         panel = SpotsPanel.make(model: model)
         toast = ToastPanel.make()
+        toast?.anchor = { [weak item] in item?.button?.window?.frame }
         trayBar = SpotTrayBar(model: model, openspotItem: item)
+        #if DEBUG
+        if let out = ProcessInfo.processInfo.environment["OPENSPOT_TOAST_SPIKE"] { toastSpike(out: out) }
+        #endif
         if let panel, let probe = SpotMotionProbe(model: model, panel: panel) {
             motionProbe = probe
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) { probe.run(show: panel.show) }
@@ -285,3 +289,46 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
     }
 }
+
+#if DEBUG
+extension OpenspotApp {
+    /// Takes pictures of the Openspot item: a native press, a toast with the capsule and its symbol, our own press, idle.
+    /// Each phase writes `<name>.rect` for the capture and, for a press, `<name>.point`, and waits for `<name>.done`.
+    func toastSpike(out: String) {
+        guard let button = statusItem?.button, let look = trayBar?.look else { return }
+        let action = button.action
+        button.action = nil
+        print("spike button", button.bounds, "window", button.window?.frame ?? .zero, "subviews", button.subviews.map(\.frame))
+        func mark(_ name: String) {
+            guard let item = button.window?.frame, let main = NSScreen.screens.first else { return }
+            let top = main.frame.maxY
+            try? "\(Int(item.midX)),\(Int(top - item.midY))".write(toFile: "\(out)/\(name).point", atomically: true, encoding: .utf8)
+            try? "\(Int(item.midX - 300)),\(Int(top - item.maxY)),600,240".write(toFile: "\(out)/\(name).rect", atomically: true, encoding: .utf8)
+        }
+        func after(_ name: String, _ next: @escaping () -> Void) {
+            if FileManager.default.fileExists(atPath: "\(out)/\(name).done") { next() } else {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { after(name, next) }
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            mark("native")
+            after("native") {
+                look.symbol = ToastPanel.confirmSymbol
+                self.trayBar?.light(true)
+                self.toast?.show("Copied", symbol: ToastPanel.confirmSymbol)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) { mark("toast") }
+                after("toast") {
+                    look.symbol = nil
+                    self.trayBar?.light(false)
+                    self.toast?.hide()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) { mark("idle") }
+                    after("idle") {
+                        button.action = action
+                        NSApp.terminate(nil)
+                    }
+                }
+            }
+        }
+    }
+}
+#endif

@@ -6,6 +6,7 @@ import SwiftUI
 struct SpotTrayIconView: View {
     let model: SpotsModel
     let image: NSImage
+    let look: TrayLook
 
     private static let small = 0.5
     private static let leave = SpotMotion.fade(isShown: false)
@@ -14,7 +15,7 @@ struct SpotTrayIconView: View {
     var body: some View {
         ZStack {
             icon
-                .id(model.flashSymbol)
+                .id(look.symbol ?? model.flashSymbol)
                 .transition(.asymmetric(
                     insertion: .scale(scale: Self.small).combined(with: .opacity).animation(Self.arrive),
                     removal: .scale(scale: Self.small).combined(with: .opacity).animation(Self.leave)
@@ -26,7 +27,7 @@ struct SpotTrayIconView: View {
 
     @ViewBuilder
     private var icon: some View {
-        if let symbol = model.flashSymbol {
+        if let symbol = look.symbol ?? model.flashSymbol {
             Image(systemName: symbol).font(SpotType.tray)
         } else {
             Image(nsImage: image).renderingMode(.template)

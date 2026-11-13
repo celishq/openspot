@@ -15,20 +15,27 @@ final class ToastPanel: NSPanel {
     private let toast = Toast()
     private var shows = 0
     private var fixKey: HotKey.Registration?
+    /// The frame of the menu bar item that toasts drop from, on screen, or nil when it shows nowhere.
+    var anchor: (() -> NSRect?)?
 
     /// Shows a message, in place of any toast on screen, and hides it after a while, or keeps it with no duration. A fix opens
     /// on a click or on its key.
-    func show(_ message: String, symbol: String? = nil, isWorking: Bool = false, fix: (@MainActor @Sendable () -> Void)? = nil, key: Shortcut? = nil, for duration: TimeInterval? = ToastPanel.duration) {
+    func show(_ message: String, title: String? = nil, value: String? = nil, symbol: String? = nil, isWorking: Bool = false, fix: (@MainActor @Sendable () -> Void)? = nil, key: Shortcut? = nil, for duration: TimeInterval? = ToastPanel.duration) {
         shows += 1
         let current = shows
         toast.symbol = symbol
+        toast.title = title
+        toast.value = value
         toast.isWorking = isWorking
         let held = hold(fix: fix, key: key)
         toast.message = held.map { "\(message) Press `\($0.label)` to fix it." } ?? message
         let measure = NSHostingController(rootView: ToastView(toast: toast))
         let width = min(measure.view.fittingSize.width.rounded(.up) + 1, Self.maxSize.width)
         let size = measure.sizeThatFits(in: NSSize(width: width, height: Self.maxSize.height))
-        if let screen = NSScreen.main?.visibleFrame {
+        if let item = anchor?(), let screen = NSScreen.screens.first(where: { $0.frame.intersects(item) })?.visibleFrame {
+            let x = min(max(item.midX - size.width / 2, screen.minX), screen.maxX - size.width)
+            setFrame(NSRect(x: x, y: item.minY - size.height + Self.margin / 2, width: size.width, height: size.height), display: true)
+        } else if let screen = NSScreen.main?.visibleFrame {
             setFrame(NSRect(x: screen.midX - size.width / 2, y: screen.maxY - size.height, width: size.width, height: size.height), display: true)
         }
         orderFrontRegardless()
