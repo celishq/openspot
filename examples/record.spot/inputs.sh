@@ -4,6 +4,7 @@
 # detail=The sound and the camera of Record
 # on=sheet.open
 # uses=screen
+# offers=card
 kept=$(openspot setting get inputs)
 
 case "$1" in

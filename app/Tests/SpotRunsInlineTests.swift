@@ -251,7 +251,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
 
     func testATimedScriptKeepsItsContextPastItsIdleTimeUntilItsNextRead() async throws {
         runs(idle: 0.1)
-        try inline(header: "on=clock.60", "function main() { return 'text=n\\ntitle=3\\n' }")
+        try inline(header: "on=clock.60\noffers=card\noffers=menubar", "function main() { return 'text=n\\ntitle=3\\n' }")
         try inline("other", header: "on=sheet.open", "function main() { return 'text=n\\ntitle=4\\n' }")
         let sheet = try sheet()
         let other = try XCTUnwrap(runs.sheets["other"])

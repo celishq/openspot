@@ -21,7 +21,7 @@ final class SpotUsageTests: SpotRunsCase {
     }
 
     func testAStayingScriptCountsItsCPUTimeWhileItRuns() async throws {
-        try script(header: "mode=stay\non=sheet.open", """
+        try script(header: "mode=stay\non=sheet.open\noffers=card\noffers=menubar", """
         \(Self.busyLoop)
         touch '\(path("busy"))'
         while IFS= read -r line; do
@@ -44,7 +44,7 @@ final class SpotUsageTests: SpotRunsCase {
     func testAStayingProcessPutsItsCPUTimeOnTheDayItWasSpent() async throws {
         runs.quit()
         runs = SpotRuns(now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50), stats: folder.appendingPathComponent("stats"))
-        try script(header: "mode=stay\non=sheet.open", """
+        try script(header: "mode=stay\non=sheet.open\noffers=card\noffers=menubar", """
         \(Self.busyLoop)
         touch '\(path("busy"))'
         \(untilRelease)

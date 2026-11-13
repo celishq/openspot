@@ -3,6 +3,7 @@
 # icon=camera.viewfinder
 # detail=Take a picture of the screen and mark it
 # uses=screen,clipboard
+# offers=card
 file=$(openspot screen shot) || exit 1
 [ -n "$file" ] || exit 0
 editor="$OPENSPOT_DATA/edit"

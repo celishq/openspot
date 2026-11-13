@@ -35,7 +35,7 @@ final class PlaygroundCallTests: SpotRunsCase {
     }
 
     func testTheRunsTellEachCallOfAStayingSpotOnceWhenItEnds() async throws {
-        try script(header: "mode=stay", """
+        try script(header: "mode=stay\noffers=card\noffers=menubar", """
         while IFS= read -r line; do
           case "$line" in
             call=*) id=${line#call=}; name= ;;

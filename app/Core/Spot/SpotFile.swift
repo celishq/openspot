@@ -59,7 +59,7 @@ public struct SpotFile: Equatable, Sendable {
             throw SpotError.fault("\(name) is a .js file, which runs inline, so it takes no mode=\(modeName)")
         }
         let mode = isInline ? SpotMode.inline : named
-        let places = try Self.places(header.value("offers"), of: name)
+        let places = try Self.places(header.values("offers"), of: name)
         let isGlobal = places.contains("search")
         if isGlobal {
             guard read?.has(.panel) == true || read?.has(.sheet) == true || read?.seconds != nil else {
@@ -87,7 +87,14 @@ public struct SpotFile: Equatable, Sendable {
         guard preview == nil || preview == "sample" else {
             throw SpotError.fault("\(name) has an unknown preview: \(preview!). Use preview=sample, and print fake data while OPENSPOT_REASON is spot.preview")
         }
+        let offersCard = places.isEmpty ? !answersOnly : places.contains("card")
         let kind: SpotKind = mode.stays || isGlobal || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch
+        if places.contains("float"), kind != .list {
+            throw SpotError.fault("\(name) offers float, which needs a sheet. Add on=sheet.open, or remove offers=float")
+        }
+        if places.contains("menubar"), read?.seconds == nil, read?.hasEvent != true, !mode.stays {
+            throw SpotError.fault("\(name) offers menubar, which needs a clock, an event or mode=stay, such as on=clock.60")
+        }
         let command = Spot(
             id: id,
             name: name,
@@ -102,9 +109,11 @@ public struct SpotFile: Equatable, Sendable {
             mode: mode,
             pressRuns: press == "open",
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
-            offersFloat: kind == .list,
+            offersFloat: places.contains("float"),
+            offersCard: offersCard,
+            offersMenuBar: places.contains("menubar"),
             dataName: SpotID(id).name,
-            isOnGrid: offers.isEmpty && read?.seconds == nil && !answersOnly,
+            isOnGrid: offersCard && offers.isEmpty && read?.seconds == nil && !answersOnly,
             headerSymbol: symbol,
             offers: offers,
             settings: header.children.filter { $0.fields.first?.key == "field" }.compactMap { CommandOffer(setting: $0) },
@@ -127,21 +136,26 @@ public struct SpotFile: Equatable, Sendable {
         return url.pathExtension == inlineExtension && !SpotHeader(url: url).block.fields.isEmpty
     }
 
-    /// The places that `offers` names. Only `search` is a place, and `rows` and `float` name their fix.
-    private static func places(_ text: String?, of name: String) throws -> Set<String> {
-        guard let text else { return [] }
-        let words = text.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
-        if words.contains("rows") {
-            throw SpotError.fault("\(name) offers rows, which Openspot no longer reads. Use offers=search, and the person hides its card")
-        }
-        if words.contains("float") {
-            throw SpotError.fault("\(name) offers float, which Openspot no longer reads. The person floats any spot with a sheet in Settings, so remove it")
-        }
-        if let word = words.first(where: { $0 != "search" }) {
-            throw SpotError.fault("\(name) offers an unknown place: \(word). Use offers=search")
-        }
-        return Set(words)
+    /// The places of the header's `offers` lines, one place on each line (protocol: Places). With no line, a spot offers
+    /// its card.
+    private static func places(_ lines: [String], of name: String) throws -> Set<String> {
+        try Set(lines.map { line in
+            let word = line.trimmingCharacters(in: .whitespaces)
+            if word.contains(",") {
+                throw SpotError.fault("\(name) has offers=\(word). Write one place on each line, such as offers=card and offers=search")
+            }
+            if word == "rows" {
+                throw SpotError.fault("\(name) offers rows, which Openspot no longer reads. Use offers=search, and leave out offers=card")
+            }
+            guard places.contains(word) else {
+                throw SpotError.fault("\(name) offers an unknown place: \(word). Use card, search, menubar or float")
+            }
+            return word
+        })
     }
+
+    /// The places a spot's header can offer.
+    private static let places: Set<String> = ["card", "search", "menubar", "float"]
 
     /// Refuses a header that still has `global`, `float`, `tray`, `data`, `stay` or `shortcut`, and names the new way.
     private static func refuseOldKeys(_ header: TextBlock, of name: String) throws {
@@ -174,10 +188,10 @@ public struct SpotFile: Equatable, Sendable {
             throw SpotError.fault("\(name) has global=\(global), which Openspot no longer reads. Use offers=search")
         }
         if header.value("float") != nil {
-            throw SpotError.fault("\(name) has float, which Openspot no longer reads. The person floats any spot with a sheet in Settings, so remove it")
+            throw SpotError.fault("\(name) has float, which Openspot no longer reads. Write offers=float")
         }
         if header.value("tray") != nil {
-            throw SpotError.fault("\(name) has tray, which Openspot no longer reads. The person puts a spot in the menu bar in Settings")
+            throw SpotError.fault("\(name) has tray, which Openspot no longer reads. Write offers=menubar")
         }
         if header.value("data") != nil {
             throw SpotError.fault("\(name) has data, which Openspot no longer reads. The scripts of one folder share OPENSPOT_DATA, so move them into one folder")

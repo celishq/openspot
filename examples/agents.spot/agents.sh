@@ -1,6 +1,8 @@
 #!/bin/sh
 # icon=sparkles
 # on=clock.5
+# offers=card
+# offers=menubar
 export LC_ALL=en_US.UTF-8
 
 # Prints one line for each agent in a terminal: its tool, then the folder it works in.

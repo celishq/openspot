@@ -73,7 +73,7 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `keywords`    | More words that find the spot in the main search, split by commas, such as `keywords=coffee, cup`.                               |
 | `on`          | An event that makes Openspot ask the spot what to show. One line for each event. See [Events](#events).                          |
 | `emits`       | The events the spot raises, split by commas. See [Events](#events).                                                              |
-| `offers`      | `search`: its rows show in the main search. See [Places](#places).                                                               |
+| `offers`      | A place where the spot can show: `card`, `search`, `menubar` or `float`. One line for each place. See [Places](#places).          |
 | `drop`        | The files its card takes: extensions such as `mov,mkv`, `folder`, or `*`. See [The calls](#the-calls).                           |
 | `preview`     | `sample`: when `OPENSPOT_REASON` is `spot.preview`, the spot prints sample data for the store.                                   |
 | `view`        | A SwiftUI file next to the spot, such as `view=cups.swift`. See [Views](#views).                                                 |
@@ -455,17 +455,34 @@ start ──► frame ──► frame ──► ... ──► end        exit 0:
 
 ## Places
 
-The user decides where a spot shows. A spot only offers. See [Answer the main search](GUIDE.md#answer-the-main-search) for an
-example.
+The user decides where a spot shows. A spot only offers, with one `offers` line for each place. See
+[Show a value on a card](GUIDE.md#show-a-value-on-a-card) for an example.
 
+```sh
+#!/bin/sh
+# title=Shelf
+# on=sheet.open
+# offers=card
+# offers=float
+```
+
+| Place     | The spot can show                                                       | It needs                                            |
+| --------- | ----------------------------------------------------------------------- | --------------------------------------------------- |
+| `card`    | as a card on the grid.                                                  |                                                     |
+| `search`  | its rows in the main search.                                            | `on=panel.open`, `on=sheet.open` or a `clock`       |
+| `menubar` | its main block in the menu bar.                                         | a `clock`, another event, or `mode=stay` or `always` |
+| `float`   | in a small window at the pointer, which a hotkey or a shake opens.      | a sheet                                             |
+
+- A spot with no `offers` line offers `card`. A spot with any `offers` line shows only in the places it names.
+- A spot that offers a place without what it needs, or an unknown place, doesn't load.
 - The user gives each spot its hotkey, puts spots in the menu bar, floats them, and orders and sizes the cards. A spot
   can't claim a hotkey or a place.
 - `offers=search` shows the spot's rows in the main search. It needs `on=panel.open`, `on=sheet.open` or a `clock`. With
   only `on=sheet.open`, Openspot reads the rows when it loads the spots, as it starts or after a spot changes, after each
   change of the config, and at each open of the sheet. A panel open doesn't read them. Openspot ranks the
   rows by the user's picks.
-- The user can give any spot with a sheet a hotkey, or a shake of the pointer, in Settings. It shows the spot in a small
-  window at the pointer, which stays while the user works in other apps. The spot never learns where it shows.
+- The user can give a spot that offers `float` a hotkey, or a shake of the pointer, in Settings. It shows the spot in a
+  small window at the pointer, which stays while the user works in other apps. The spot never learns where it shows.
 - `on=search.text <pattern>` makes a spot answer the main search. Openspot asks it at each change of a text that the
   pattern matches, with no pause. A newer text stops the older call. The answer should be fast.
 - Its rows show first in the main search until the newest text has an answer, and go at once when the pattern no longer
@@ -474,8 +491,8 @@ example.
 - An answer can be one card instead of rows: its head has `grid.large=` or `grid.strip=` lines, and its main block has a
   `value`. A pick of the card sends `<spot> open <value>`.
 - `openspot calc solve <words>...` prints the answer to a sum, a conversion or a date as a row.
-- A spot with a `clock`, another event, or `mode=stay` or `always`, and a main `text`, `number` or `graph`, can show in
-  the menu bar when the user puts it there. A read that prints nothing hides it until the next read.
+- A spot that offers `menubar` shows its main `text`, `number` or `graph` in the menu bar when the user puts it there. A
+  read that prints nothing hides it until the next read.
 - A spot with a `clock` has no card on the grid until the user adds it.
 
 ## Modes
@@ -814,6 +831,7 @@ An old spot never sees a word it didn't ask for, and an old app skips a word it 
 | To add               | Add                                                              |
 | -------------------- | ---------------------------------------------------------------- |
 | A thing that happens | an event `<noun>.<verb>`                                         |
+| A place to show      | a value of `offers`                                              |
 | A thing to draw      | a kind `<kind>=`, which an old app skips and reports             |
 | A detail of a kind   | a key, or a `type` value                                         |
 | A power of the Mac   | a noun: `openspot <noun> <verb>`, its events and its `uses` word |

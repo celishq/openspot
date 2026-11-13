@@ -35,9 +35,9 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(SpotArrangement().spot(openedBy: ActionKey(name: ",", isCommand: true), over: defaults.arrangement), spot.id)
     }
 
-    func testTheSheetListsAMenuBarRowForEachSpotThatCanShowThereAndEnterTurnsItOnAndOff() async throws {
-        try script("cups.sh", "title=Cups\non=clock.60")
-        try script("relay.sh", "title=Relay\nmode=stay")
+    func testTheSheetListsAMenuBarRowForEachSpotThatOffersItAndEnterTurnsItOnAndOff() async throws {
+        try script("cups.sh", "title=Cups\non=clock.60\noffers=menubar")
+        try script("relay.sh", "title=Relay\nmode=stay\noffers=menubar")
         try script("notes.sh", "title=Notes\non=panel.open")
 
         let before = try await items()
@@ -112,8 +112,8 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(file.read().keys.map(\.act), [.command("right")])
     }
 
-    func testTheSheetListsAFloatRowForEachSpotWithASheetAndGivesItAKey() async throws {
-        try script("shelf.sh", "title=Shelf\nicon=tray.full\non=sheet.open")
+    func testTheSheetListsAFloatRowForEachSpotThatOffersItAndGivesItAKey() async throws {
+        try script("shelf.sh", "title=Shelf\nicon=tray.full\non=sheet.open\noffers=float")
         try script("notes.sh", "title=Notes")
         try script("move.sh", "title=Move\n\nbutton=left\ntitle=Left side")
 
@@ -139,8 +139,8 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     func testAShakeOnARowTakesTheShakeFromTheRowThatHadIt() async throws {
-        try script("shelf.sh", "title=Shelf\non=sheet.open")
-        try script("notes.sh", "title=Notes\non=sheet.open")
+        try script("shelf.sh", "title=Shelf\non=sheet.open\noffers=float")
+        try script("notes.sh", "title=Notes\non=sheet.open\noffers=float")
 
         try await call(["float:shelf", "shake"])
         XCTAssertEqual(file.read().keys, [GlobalKey(spot: "shelf", act: .float, trigger: .shake)])

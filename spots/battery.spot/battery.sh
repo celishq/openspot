@@ -1,6 +1,8 @@
 #!/bin/sh
 # on=clock.30
 # preview=sample
+# offers=card
+# offers=menubar
 if [ "$OPENSPOT_REASON" = spot.preview ]; then
   printf 'graph=battery\ntitle=84%%\ndetail=3:12 left\nicon=battery.75\nvalue=0.84\n'
   exit 0

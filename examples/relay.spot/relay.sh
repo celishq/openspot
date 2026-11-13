@@ -5,6 +5,8 @@
 # mode=always
 # on=panel.open
 # uses=network
+# offers=card
+# offers=menubar
 . "$OPENSPOT_SH"
 port=${RELAY_PORT:-47800}
 state=$(mktemp -d "${TMPDIR:-/tmp}/relay.XXXXXX") || exit 1

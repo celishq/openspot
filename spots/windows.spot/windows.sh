@@ -3,6 +3,7 @@
 # icon=macwindow
 # detail=Give each command a key
 # uses=screen
+# offers=card
 #
 # button=full
 # title=Full screen

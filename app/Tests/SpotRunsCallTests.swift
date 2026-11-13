@@ -51,7 +51,7 @@ final class SpotRunsCallTests: SpotRunsCase {
 
     func testAFailedTimerReadKeepsTheValueAndDimsWithNoToast() async throws {
         menuBar.insert("script")
-        try script(header: "on=clock.5", """
+        try script(header: "on=clock.5\noffers=card\noffers=menubar", """
         [ -f '\(path("second"))' ] && exit 1
         touch '\(path("second"))'
         printf 'text=m\\ntitle=3\\n'

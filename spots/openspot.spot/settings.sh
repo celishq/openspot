@@ -3,8 +3,9 @@
 # icon=gearshape
 # detail=Choose your key
 # on=sheet.open
-# offers=search
 # uses=app,spots
+# offers=card
+# offers=search
 
 # The spot and the key of a setting row, from setting:<spot>:<key>.
 setting() {

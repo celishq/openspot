@@ -3,6 +3,7 @@
 # icon=puzzlepiece.extension
 # detail=Edit Spots
 # keywords=edit spots
+# offers=card
 case "$1" in
   open) exec openspot spot store ;;
   *)

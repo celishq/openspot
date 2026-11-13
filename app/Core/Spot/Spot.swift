@@ -42,6 +42,10 @@ public struct Spot: Equatable, Sendable {
     public let drop: [String]
     /// Whether its header offers it as a float, which the person can give a key or a shake (protocol: Places).
     public let offersFloat: Bool
+    /// Whether its header offers it as a card, which the person can put on the grid (protocol: Places).
+    public let offersCard: Bool
+    /// Whether its header offers it to the menu bar (protocol: Places).
+    public let offersMenuBar: Bool
     /// The folder of its files inside the data of the app. A sheet of the app and a widget have none.
     public let dataName: String?
     /// Whether the grid shows its card before the person's choice. A script with commands, one that offers only its rows,
@@ -109,6 +113,8 @@ public struct Spot: Equatable, Sendable {
         pressRuns: Bool = false,
         drop: [String] = [],
         offersFloat: Bool = false,
+        offersCard: Bool = true,
+        offersMenuBar: Bool = true,
         dataName: String? = nil,
         isOnGrid: Bool = true,
         headerSymbol: String? = nil,
@@ -152,6 +158,8 @@ public struct Spot: Equatable, Sendable {
         self.pressRuns = pressRuns
         self.drop = drop
         self.offersFloat = offersFloat
+        self.offersCard = offersCard
+        self.offersMenuBar = offersMenuBar
         self.dataName = dataName
         self.isOnGrid = isOnGrid
         self.headerSymbol = headerSymbol
@@ -253,9 +261,10 @@ public struct Spot: Equatable, Sendable {
         return isGlobal && !read.has(.panel) && read.seconds == nil
     }
 
-    /// Whether the person can put it in the menu bar: it has a number or an event in its `read`, or it stays.
+    /// Whether the person can put it in the menu bar: it offers the menu bar, and has a clock or an event in its `read`, or
+    /// stays.
     public var canShowInMenuBar: Bool {
-        read?.seconds != nil || read?.hasEvent == true || mode.stays
+        offersMenuBar && (read?.seconds != nil || read?.hasEvent == true || mode.stays)
     }
 
     /// The call that a click on its card makes.

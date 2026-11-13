@@ -2,6 +2,7 @@
 # icon=cup.and.saucer.fill
 # detail=Keep the Mac awake
 # on=panel.open
+# offers=card
 record="${TMPDIR:-/tmp}/openspot-caffeinate"
 pid=""
 end=0

@@ -3,6 +3,7 @@
 # detail=Open a git repo
 # on=sheet.open
 # uses=clipboard
+# offers=card
 #
 # field=folder
 #

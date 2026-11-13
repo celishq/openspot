@@ -5,6 +5,7 @@
 # on=sheet.open
 # on=sheet.text
 # uses=spots,clipboard
+# offers=card
 folder="${OPENSPOT_SPOTS:-$OPENSPOT_CONFIG/spots}"
 
 # Prints a row with an id, a title, a detail and an icon.
