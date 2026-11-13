@@ -56,11 +56,6 @@ enum SpotMotion {
         return isLate ? .easeIn(duration: half).delay(half) : .easeOut(duration: half)
     }
 
-    /// The crossfade of the blur of the grid and the blur of the sheet.
-    static func blurFade(isSheetOpen: Bool) -> Animation {
-        .easeOut(duration: isSheetOpen ? openDuration : closeDuration)
-    }
-
     static func surface(isShown: Bool) -> Animation {
         isShown ? .easeOut(duration: fadeInDuration) : .easeOut(duration: fadeOutDuration)
     }

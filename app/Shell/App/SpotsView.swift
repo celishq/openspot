@@ -95,11 +95,15 @@ struct SpotsView: View {
         }
     }
 
-    /// The blur of the grid and the blur of the sheet, each with a fixed size, which crossfade as the sheet moves.
+    /// The blur of the grid and the blur of the sheet, each with a fixed size. While the sheet moves, the shorter one stays
+    /// whole and the taller one fades on the sheet's own motion, so that where they overlap the backdrop keeps one strength.
     private var softBlur: some View {
-        ZStack(alignment: .top) {
-            blur(height: gridHeight, isShown: !sheetOpen)
-            blur(height: max(sheetHeight, replacedHeight), isShown: sheetOpen)
+        let sheet = max(sheetHeight, replacedHeight)
+        let phase = model.transition.phase
+        let gridIsTaller = max(gridHeight, menuBackdropHeight) >= max(sheet, menuBackdropHeight)
+        return ZStack(alignment: .top) {
+            blur(height: gridHeight, isShown: gridIsTaller ? !sheetOpen : phase != .open, fades: gridIsTaller)
+            blur(height: sheet, isShown: gridIsTaller ? phase != .closed : sheetOpen, fades: !gridIsTaller)
         }
         .frame(maxHeight: .infinity, alignment: .top)
         .opacity(model.isShown ? 1 : 0)
@@ -107,15 +111,17 @@ struct SpotsView: View {
         .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
     }
 
+    /// One blur of a fixed height. It fades on the sheet's motion when it `fades`, and else shows or hides at once.
     @ViewBuilder
-    private func blur(height: CGFloat, isShown: Bool) -> some View {
+    private func blur(height: CGFloat, isShown: Bool, fades: Bool) -> some View {
         let height = max(height, menuBackdropHeight)
         Group {
             if drawsBlur { SpotSoftBlur(height: height) } else { Color.clear }
         }
             .frame(height: height)
             .transaction { $0.animation = nil }
-            .animation(SpotMotion.blurFade(isSheetOpen: sheetOpen)) { $0.opacity(isShown ? 1 : 0) }
+            .opacity(isShown ? 1 : 0)
+            .transaction { if !fades { $0.animation = nil } }
     }
 
     /// The shape of the sheet that is built, as the sheet layer draws it: on its card until it opens. Nil with no sheet with
