@@ -442,6 +442,29 @@ final class SampleSpotsTests: SampleSpotsCase {
         }
     }
 
+    func testEmojiKeepsItsRowsWhenAnotherPreferenceChangesAndMakesThemForANewLanguage() async throws {
+        try await withPrivateHome { folder in
+            let emoji = try self.fakeEmoji(in: folder)
+            let tool = folder.appendingPathComponent("tools/openspot")
+            let calls = folder.appendingPathComponent("calls").path
+            let fake = try String(contentsOf: tool, encoding: .utf8).replacingOccurrences(of: "case \"$1\" in", with: "echo \"$1\" >> '\(calls)'\ncase \"$1\" in")
+            try fake.writeScript(to: tool)
+            let preferences = folder.appendingPathComponent("Library/Preferences/.GlobalPreferences.plist")
+            try FileManager.default.createDirectory(at: preferences.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try "a".write(to: preferences, atomically: false, encoding: .utf8)
+
+            _ = try await emoji.items(timeout: 10)
+            try "b".write(to: preferences, atomically: false, encoding: .utf8)
+            _ = try await emoji.items(timeout: 10)
+            let callsWhenKept = try self.read("calls", in: folder)
+            try "(\n    \"uk-UA\"\n)".write(to: folder.appendingPathComponent("languages"), atomically: true, encoding: .utf8)
+            _ = try await emoji.items(timeout: 10)
+
+            XCTAssertEqual(callsWhenKept, "emoji\nsymbols\n")
+            XCTAssertEqual(try self.read("calls", in: folder), "emoji\nsymbols\nemoji\nsymbols\n")
+        }
+    }
+
     func testDevicesReadsEveryFiveMinutes() throws {
         let devices = try XCTUnwrap(try scan.spots.first { $0.id == "devices" })
 
