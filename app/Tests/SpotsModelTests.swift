@@ -387,6 +387,18 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(host.glyphLists, [Array(repeating: "😀", count: 100)])
     }
 
+    func testTheCardsAskForTheirGlyphsOnceWhenTheirSpotsLoad() throws {
+        try script("party", header: "title=Party\nicon=🎉", "")
+        try script("plain", header: "title=Plain", "")
+        model.reload()
+        let first = model.entries
+        try script("plain", header: "title=Plain again", "")
+        model.reload()
+
+        XCTAssertNotEqual(model.entries, first)
+        XCTAssertEqual(host.cardGlyphs, [["🎉"]])
+    }
+
     func testAReadOfTheSameRowsGivesTheGlyphsItCollectedBefore() async throws {
         let calls = folder.appendingPathComponent("calls").path
         try script("faces", header: "on=sheet.open", "echo x >> '\(calls)'; for i in $(seq 1 100); do printf 'row=f%s\\ntitle=Face %s\\nicon=😀\\n\\n' $i $i; done")

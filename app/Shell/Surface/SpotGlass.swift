@@ -16,26 +16,32 @@ struct SpotGlass: ViewModifier {
     func body(content: Content) -> some View {
         let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
         content
-            .opacity(isShown ? 1 : 0)
+            .opacity(isShown ? 1 : MotionTokens.hiddenOpacity)
             .animation(SpotMotion.fade(isShown: isShown), value: isShown)
+            .allowsHitTesting(isShown)
             .background {
                 if blursBehind {
-                    SpotBlur(radius: isShown ? SpotTheme.blur : 0)
+                    SpotBlur(radius: SpotTheme.blur)
                         .overlay(SpotTheme.glass)
                         .clipShape(shape)
-                        .opacity(isShown && !isSolid && !isBare ? 1 : 0)
+                        .opacity(isSolid || isBare ? 0 : shown)
                 }
-                shape.fill(SpotTheme.solid).opacity(isShown && isSolid ? 1 : 0)
+                shape.fill(SpotTheme.solid).opacity(isSolid ? shown : 0)
             }
             .animation(SpotMotion.fade(isShown: isShown), value: isShown)
             .overlay {
                 rim
-                    .opacity(isShown && !isSolid && !isBare ? 1 : 0)
+                    .opacity(isSolid || isBare ? 0 : shown)
                     .animation(SpotMotion.fade(isShown: isShown), value: isShown)
                     .allowsHitTesting(false)
             }
             .scaleEffect(isShown ? 1 : MotionTokens.hiddenScale)
             .animation(SpotMotion.fade(isShown: isShown), value: isShown)
+    }
+
+    /// The strength of the surface's look: whole while the panel shows, and hidden but still drawn while it hides.
+    private var shown: Double {
+        isShown ? 1 : MotionTokens.hiddenOpacity
     }
 
     @ViewBuilder

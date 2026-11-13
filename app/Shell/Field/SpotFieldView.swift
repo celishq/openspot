@@ -61,8 +61,7 @@ struct SpotFieldView: View {
             }
             .morph(progress, opacity: crossing)
             .opacity(model.showsFieldDrop || model.isEditing ? 0 : 1)
-            .opacity(model.isShown ? 1 : 0)
-            .animation(SpotMotion.fade(isShown: model.isShown), value: model.isShown)
+            .modifier(SpotShownFade(isShown: model.isShown))
             if let drop = model.fieldDrop {
                 SpotDropView(drop: drop)
                     .padding(.horizontal, SpotTokens.padding)
@@ -74,8 +73,9 @@ struct SpotFieldView: View {
         .font(SpotType.input)
         .foregroundStyle(SpotTheme.ink)
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
-        .scaleEffect(model.isShown ? 1 : MotionTokens.hiddenScale, anchor: UnitPoint(x: 0.5, y: Self.rect.midY / SpotTokens.panelHeight))
-        .animation(SpotMotion.fade(isShown: model.isShown), value: model.isShown)
+        .animation(SpotMotion.fade(isShown: model.isShown)) {
+            $0.scaleEffect(model.isShown ? 1 : MotionTokens.hiddenScale, anchor: UnitPoint(x: 0.5, y: Self.rect.midY / SpotTokens.panelHeight))
+        }
     }
 
     /// The words of Edit Spots and its Done button, on the field's glass in the place of the search.
@@ -184,9 +184,11 @@ struct SpotFieldView: View {
             .offset(x: left, y: top)
             .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
             .morph(showsField ? 1 : 0, opacity: { SheetMorph.sheetLook(at: $0) })
-            .opacity(model.isShown ? 1 : 0)
-            .scaleEffect(model.isShown ? 1 : MotionTokens.hiddenScale, anchor: UnitPoint(x: 0.5, y: (SpotTokens.halo + SpotTokens.rowHeight / 2) / SpotTokens.panelHeight))
-            .animation(SpotMotion.fade(isShown: model.isShown), value: model.isShown)
+            .modifier(SpotShownFade(
+                isShown: model.isShown,
+                hiddenScale: MotionTokens.hiddenScale,
+                anchor: UnitPoint(x: 0.5, y: (SpotTokens.halo + SpotTokens.rowHeight / 2) / SpotTokens.panelHeight)
+            ))
             .allowsHitTesting(false)
     }
 

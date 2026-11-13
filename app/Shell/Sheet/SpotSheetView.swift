@@ -200,7 +200,7 @@ struct SpotSheetView: View {
         } else {
             let place = CGRect(x: rect.width - SpotTokens.padding - SpotTokens.glyphSize, y: SpotTokens.padding, width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
             button
-                .morph(progress, opacity: { [morph] in morph.growth(of: place, at: $0) }, scale: { [morph] in morph.growth(of: place, at: $0) })
+                .morph(progress, opacity: { [morph] in morph.growth(of: place, at: $0) })
         }
     }
 

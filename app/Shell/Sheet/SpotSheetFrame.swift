@@ -29,8 +29,9 @@ struct SpotSheetFrame: ViewModifier {
             content
                 .frame(width: sheetRect.width, height: sheetRect.height, alignment: .topLeading)
                 .offset(x: sheetRect.minX + shift.width, y: sheetRect.minY + shift.height)
-                .opacity(isShown ? 1 : 0)
+                .opacity(isShown ? 1 : MotionTokens.hiddenOpacity)
                 .animation(SpotMotion.fade(isShown: isShown), value: isShown)
+                .allowsHitTesting(isShown)
             if let arrow {
                 arrow
                     .frame(width: arrowBox.width, height: arrowBox.height, alignment: .topTrailing)
