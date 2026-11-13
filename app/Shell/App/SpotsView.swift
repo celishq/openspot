@@ -50,7 +50,7 @@ struct SpotsView: View {
             .modifier(SpotScrollEdgeTracker(edges: Binding(get: { fade.edges }, set: { fade.edges = $0 })))
             .modifier(GridFadeMask(fade: fade, height: cardHeight))
             .morph(coversGrid ? 0 : 1, opacity: { SheetMorph.sheetLook(at: $0) })
-            SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: cardHeight, sheetHeight: max(sheetID == nil ? gridHeight : sheetHeight, menuBackdropHeight))
+            SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: max(gridHeight, model.menuBackdropHeight), sheetHeight: max(sheetID == nil ? gridHeight : sheetHeight, model.menuBackdropHeight))
                 .modifier(SpotShownFade(isShown: model.isShown))
             if let entry = model.entries.first(where: { $0.id == sheetID }) {
                 SpotSheetLayer(
@@ -95,7 +95,7 @@ struct SpotsView: View {
     /// The blur of the grid and the blur of the sheet, each with a fixed size. While the sheet moves, the shorter one stays
     /// whole and the taller one fades on the sheet's own motion, so that where they overlap the backdrop keeps one strength.
     private var softBlur: some View {
-        SpotBackdrop(model: model, gridHeight: gridHeight, sheetHeight: max(sheetHeight, replacedHeight), menuHeight: menuBackdropHeight, drawsBlur: drawsBlur)
+        SpotBackdrop(model: model, gridHeight: gridHeight, sheetHeight: max(sheetHeight, replacedHeight), menuHeight: menuHeight, drawsBlur: drawsBlur)
     }
 
     /// The sheet that is built, from its card to its open place, and its card's radius, for the field that joins it. Nil
@@ -181,11 +181,13 @@ struct SpotsView: View {
 
     /// The height of the shape that ends the cards. It follows only the grid, so that a sheet's motion swaps no image.
     private var cardHeight: CGFloat {
-        max(gridHeight, menuBackdropHeight)
+        max(gridHeight, menuHeight)
     }
 
-    private var menuBackdropHeight: CGFloat {
-        model.menuBackdropHeight
+    /// The height of the backdrop under the menu where it lies now, which the blur and the fades of the cards take at once.
+    /// The hint line takes the model's `menuBackdropHeight`, which moves on the menu's motion.
+    private var menuHeight: CGFloat {
+        model.menuFrame.map { $0.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock } ?? 0
     }
 
     /// Whether the install screen takes the place of the grid and the field.
