@@ -50,6 +50,8 @@ public final class SpotsModel {
     @ObservationIgnored var spotList = ItemList()
     /// Whether a card changed since `spotList` was built: its entry, or the state or the command that its run reports.
     @ObservationIgnored var spotListIsStale = true
+    /// The last frame of each sheet that sets keys. The config is read again only when a frame differs from it.
+    @ObservationIgnored var keyFrames: [String: String] = [:]
     /// The number of times that the cards were made into the items of `spotList`.
     @ObservationIgnored var spotListBuilds = 0
     /// Which `answers` patterns match the text of the main search.
@@ -418,11 +420,11 @@ public final class SpotsModel {
         case .failure(let text): host.notify(text)
         case .failureWithFix(let text, let fix): host.notify(text, fix: fix)
         case .listChange:
-            spotListIsStale = true
+            markFound(id)
             updateVisible()
-        case .frame:
-            spotListIsStale = true
-            if sheets[id]?.spot.setsKeys == true {
+        case .frame(let frame):
+            markFound(id)
+            if sheets[id]?.spot.setsKeys == true, keyFrames.updateValue(frame, forKey: id) != frame {
                 let config = files.config.read()
                 host.applyConfig(config)
                 holdAssignedKeys(config)

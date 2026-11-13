@@ -55,13 +55,25 @@ extension SpotsModel {
         if spotListIsStale {
             spotListIsStale = false
             spotListBuilds += 1
-            spotList.replace(cards.filter(\.spot.isFound).map { SpotItem(title: $0.state.title, subtitle: [$0.state.subtitle, $0.spot.name].compactMap { $0 }.joined(separator: " "), run: $0.id, keywords: $0.spot.keywords) })
+            spotList.replace(cards.filter(\.spot.isFound).map(Self.foundItem))
         }
         let sources = entries.filter { $0.spot.isGlobal && arrangement.isGlobal(of: $0.id) != false }
         let found = mainSearch.matching(SearchQuery(text: text), in: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() }, unpickedLimit: Self.unpickedRows, limit: Self.searchLimit - answers.count)
         return answers + found.compactMap { match in
             match.list == 0 ? spots[match.item.run] : Entry(spot: sources[match.list - 1].spot, item: match.item)
         }.filter { !ids.contains($0.id) }
+    }
+
+    /// The item that the main search finds for a card.
+    private static func foundItem(_ card: Entry) -> SpotItem {
+        SpotItem(title: card.state.title, subtitle: [card.state.subtitle, card.spot.name].compactMap { $0 }.joined(separator: " "), run: card.id, keywords: card.spot.keywords)
+    }
+
+    /// Marks `spotList` stale when the searched text of this card differs from its item there.
+    func markFound(_ id: String) {
+        guard !spotListIsStale else { return }
+        let card = cards.first { $0.id == id }.flatMap { $0.spot.isFound ? Self.foundItem($0) : nil }
+        if spotList.all.first(where: { $0.run == id }) != card { spotListIsStale = true }
     }
 
     /// The text of the field: the search of the open list, or else the search of the spots.
