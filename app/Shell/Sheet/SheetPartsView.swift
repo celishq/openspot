@@ -22,9 +22,9 @@ struct SheetPartsView: View {
     var menuOpening: () -> SheetParts.MenuOpening? = { nil }
     /// Takes a click into a field, which gives that part the focus.
     var onFocus: (SpotPart) -> Void = { _ in }
-    /// The spot's own view at the size of the area of a `view` component (protocol: Views).
-    /// A spot's own view in the place of a block, with the send that calls the spot with the block's id and a value.
-    var customView: (CGSize, [String: [String]], @escaping (String) -> Void) -> AnyView? = { _, _, _ in nil }
+    /// The source of the spot's own view, which a `view` component draws at the size of its area (protocol: Views).
+    var viewSource: String?
+    var views = SpotViews.shared
     @FocusState private var focus: String?
 
     private static let swatchSize: CGFloat = 22
@@ -137,7 +137,10 @@ struct SheetPartsView: View {
     @ViewBuilder
     private func drawn(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         if part.kind == "view" {
-            customView(frame.rect.size, part.values) { onSet(part, $0) }
+            if let viewSource {
+                SpotCustomView(source: viewSource, values: part.values, card: .square, room: frame.rect.size, views: views) { onSet(part, $0) }
+                    .equatable()
+            }
         } else {
             content(part, frame)
         }
@@ -425,10 +428,7 @@ struct SheetPartsView: View {
                 Image(systemName: symbol)
                     .foregroundStyle(SpotTheme.ink)
             }
-            Slider(value: Binding(get: { level }, set: { onSet(part, String(Int($0.rounded()))) }), in: low...max(high, low + 1))
-                .controlSize(.small)
-                .tint(SpotTheme.ink)
-                .labelsHidden()
+            SpotSlotSlider(level: level, range: low...max(high, low + 1)) { onSet(part, String(Int($0.rounded()))) }
         }
     }
 
@@ -499,23 +499,13 @@ struct SheetPartsView: View {
     }
 
     private func chart(_ points: [Double]) -> some View {
-        let top = max(points.max() ?? 1, 1)
-        return GeometryReader { room in
-            HStack(alignment: .bottom, spacing: Self.barGap) {
-                ForEach(Array(points.enumerated()), id: \.offset) { _, point in
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
-                        .frame(height: room.size.height * max(point, 0) / top)
-                }
-            }
-            .frame(maxHeight: .infinity, alignment: .bottom)
-        }
-        .padding(SpotTokens.padding)
-        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
+        SpotBars(points: points, gap: Self.barGap, radius: 2)
+            .padding(SpotTokens.padding)
+            .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
     }
 
     private func image(_ path: String) -> some View {
-        SheetPicture(key: SpotPictureStore.Key(path: path))
+        SheetPicture(arrived: SpotPictureStore.Key(path: path, changed: panel.pictureTimes[path]))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .clipShape(shape)
     }
@@ -632,12 +622,19 @@ private struct TileLook: ViewModifier {
 }
 
 /// The picture at a file path, which fills its area and is cut at its edges. It shows an empty tile until it is read, and
-/// stays empty for a file it cannot read.
+/// stays empty for a file it cannot read. It starts from the time its parts read, and follows the file's later changes off
+/// the main thread, so that a picture that a spot writes after its answer shows.
 private struct SheetPicture: View {
-    let key: SpotPictureStore.Key
+    let arrived: SpotPictureStore.Key
+    @State private var followed: (from: SpotPictureStore.Key, changed: Double?)?
     @State private var loaded: (key: SpotPictureStore.Key, image: CGImage)?
 
+    private var key: SpotPictureStore.Key {
+        followed.flatMap { $0.from == arrived ? SpotPictureStore.Key(path: arrived.path, changed: $0.changed) : nil } ?? arrived
+    }
+
     var body: some View {
+        let key = key
         Color.clear
             .overlay {
                 if let image = SpotPictureStore.shared.cached(key) ?? (loaded?.key == key ? loaded?.image : nil) {
@@ -648,6 +645,9 @@ private struct SheetPicture: View {
             }
             .task(id: key) {
                 if let image = await SpotPictureStore.shared.image(key) { loaded = (key, image) }
+            }
+            .task(id: arrived) {
+                for await changed in PictureFile(path: arrived.path).changes { followed = (arrived, changed) }
             }
     }
 }

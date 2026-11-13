@@ -25,12 +25,16 @@ public struct SpotListing: Equatable, Sendable {
     public let readme: String?
     public let preview: [SpotItem]
     public let release: Release?
+    /// The readme with its inline Markdown, or words that say it has none, parsed once.
+    public let shownReadme: AttributedString
 
     public init(description: String?, readme: String?, preview: [SpotItem], release: Release? = nil) {
         self.description = description
         self.readme = readme
         self.preview = preview
         self.release = release
+        shownReadme = readme.map { (try? AttributedString(markdown: $0, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString($0) }
+            ?? AttributedString("This spot has no readme yet.")
     }
 
     /// The listing that the files of this spot's folder give. It reads the readme and the preview alone, and the whole

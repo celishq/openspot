@@ -15,7 +15,7 @@ struct SpotRowsView: View {
     /// Takes the rows whose files a drag took out to another app (protocol: Files out).
     var onDragOut: ([SpotItem]) -> Void = { _ in }
     @State private var position = ScrollPosition(edge: .top)
-    @State private var reading = GridScrollReading()
+    @State private var reading = RowsScrollReading()
 
     private static let bottomFade = 2 * SpotTokens.padding
     /// How many cells of a new search draw their pictures ahead: more than a sheet shows.
@@ -48,12 +48,12 @@ struct SpotRowsView: View {
                 .modifier(SpotSecondaryText())
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .transition(.identity)
-        } else if isGrid || !list.shown.contains(where: \.isPinned) {
+        } else if isGrid || (list.pinnedTop.isEmpty && list.pinnedBottom.isEmpty) {
             scroll
         } else {
             VStack(spacing: SpotTokens.listRowGap) {
                 pinned(.top)
-                if list.shown.contains(where: { !$0.isPinned }) {
+                if !list.scrolling.isEmpty {
                     pinnedScroll
                 } else {
                     Spacer(minLength: 0)
@@ -71,7 +71,7 @@ struct SpotRowsView: View {
 
     /// The rows that stay above or under the rows that scroll, such as the key of a spot's command.
     private func pinned(_ pin: SpotItem.Pin) -> some View {
-        ForEach(list.shown.filter { $0.pin == pin }, id: \.run) { item in
+        ForEach(pin == .top ? list.pinnedTop : list.pinnedBottom, id: \.run) { item in
             Button { onRun(item) } label: { rowLabel(item) }
                 .buttonStyle(.plain)
         }
@@ -102,8 +102,8 @@ struct SpotRowsView: View {
         ScrollViewReader { proxy in
             ScrollView(showsIndicators: false) { lines }
                 .modifier(RowsFollow(selection: selected, items: list.shown, proxy: proxy))
-                .onChange(of: list.query) {
-                    guard let run = list.shown.first(where: { !$0.isPinned })?.run else { return }
+                .onChange(of: list.landedSearches) {
+                    guard let run = list.scrolling.first?.run else { return }
                     DispatchQueue.main.async { proxy.scrollTo(run, anchor: .top) }
                 }
         }
@@ -115,7 +115,7 @@ struct SpotRowsView: View {
                 .safeAreaPadding(.top, SpotTokens.padding)
                 .safeAreaPadding(.bottom, bottomInset)
                 .modifier(RowsFollow(selection: selected, items: list.shown, proxy: proxy))
-                .onChange(of: list.query) {
+                .onChange(of: list.landedSearches) {
                     guard let run = list.shown.first?.run else { return }
                     DispatchQueue.main.async { proxy.scrollTo(run, anchor: .top) }
                 }
@@ -138,16 +138,17 @@ struct SpotRowsView: View {
             if phase == .idle { reading.aim = context.geometry.contentOffset.y }
         }
         .modifier(GridFollow(selection: selected, items: list.shown, perLine: list.perLine, bottomFade: Self.bottomFade, position: $position, reading: reading))
-        .onChange(of: list.query, initial: true) {
+        .onChange(of: list.landedSearches, initial: true) {
             reading.aim = 0
             position.scrollTo(y: 0)
-            SpotItemIcon.prepare(list.shown.prefix(Self.drawnAhead), size: SpotTokens.listIconSize)
+            let ahead = list.shown.prefix(Self.drawnAhead)
+            if reading.newAhead(ahead) { SpotItemIcon.prepare(ahead, size: SpotTokens.listIconSize) }
         }
     }
 
     private var lines: some View {
         LazyVStack(spacing: SpotTokens.listRowGap) {
-            ForEach(list.shown.filter { !$0.isPinned }, id: \.run) { item in
+            ForEach(list.scrolling, id: \.run) { item in
                 Button {
                     onRun(item)
                 } label: {
@@ -155,7 +156,7 @@ struct SpotRowsView: View {
                 }
                 .buttonStyle(.plain)
                 .modifier(SpotPointerMove { onPoint(item) })
-                .modifier(SpotFileDragSource(items: [item], onDrop: onDragOut))
+                .modifier(SpotFileDragSource(items: [item], hasFiles: item.file != nil, onDrop: onDragOut))
             }
         }
     }
@@ -170,7 +171,7 @@ struct SpotRowsView: View {
                     .equatable()
                     .onTapGesture { onRun(item) }
                     .modifier(SpotPointerMove { onPoint(item) })
-                    .modifier(SpotFileDragSource(items: [item], onDrop: onDragOut))
+                    .modifier(SpotFileDragSource(items: [item], hasFiles: item.file != nil, onDrop: onDragOut))
             }
         }
         .overlay(alignment: .topLeading) { GridRing(selection: selected, count: list.shown.count, perLine: list.perLine, side: side) }
@@ -217,7 +218,7 @@ struct SpotRowsView: View {
         .contentShape(row)
         .onTapGesture { onRun(item) }
         .modifier(SpotPointerMove { onPoint(item) })
-        .modifier(SpotFileDragSource(items: [item], onDrop: onDragOut))
+        .modifier(SpotFileDragSource(items: [item], hasFiles: item.file != nil, onDrop: onDragOut))
         .accessibilityLabel(item.title)
         .accessibilityAddTraits(.isButton)
     }
@@ -359,12 +360,21 @@ private struct SpotGridCell: View, Equatable {
     }
 }
 
-/// What the grid last knew of its scroll view, kept out of observation so that a scroll redraws nothing.
+/// What the rows last knew of their scroll view, kept out of observation so that a scroll redraws nothing: the grid's
+/// sizes and aim, and the rows whose pictures it drew ahead.
 @MainActor
-private final class GridScrollReading {
+private final class RowsScrollReading {
     var viewHeight: CGFloat = 0
     var contentHeight: CGFloat = 0
     var aim: CGFloat = 0
+    private var ahead: [String] = []
+
+    /// Whether these rows differ from those whose pictures were last drawn ahead, and keeps them when they do.
+    func newAhead(_ rows: ArraySlice<SpotItem>) -> Bool {
+        guard !rows.elementsEqual(ahead, by: { $0.run == $1 }) else { return false }
+        ahead = rows.map(\.run)
+        return true
+    }
 }
 
 /// The one ring of the grid, over the selected cell. It alone reads the selection, so that a move redraws no cell.
@@ -401,7 +411,7 @@ private struct GridFollow: ViewModifier {
     let perLine: Int
     let bottomFade: CGFloat
     @Binding var position: ScrollPosition
-    let reading: GridScrollReading
+    let reading: RowsScrollReading
 
     func body(content: Content) -> some View {
         content.onChange(of: selection()) { _, index in show(index) }

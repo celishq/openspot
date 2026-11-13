@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 import OpenspotCore
 
@@ -80,9 +79,7 @@ struct SpotSheetView: View {
                         nudge: { model.sheets[entry.id]?.nudge ?? SheetParts.Nudge.rest },
                         menuOpening: { model.sheets[entry.id]?.menuOpening },
                         onFocus: { model.focusPart($0) },
-                        customView: { room, values, send in
-                            entry.spot.view.map { AnyView(SpotCustomView(source: $0, values: values, card: .square, room: room, views: SpotViews.shared, send: send)) }
-                        }
+                        viewSource: entry.spot.view
                     )
                     .task(id: panel.parts.contains { $0.kind == "view" } ? entry.spot.view : nil) {
                         if let view = entry.spot.view, panel.parts.contains(where: { $0.kind == "view" }) { await SpotViews.shared.load(view) }
@@ -111,6 +108,7 @@ struct SpotSheetView: View {
         }
         .padding(SpotTokens.padding)
         .frame(width: rect.width, height: rect.height, alignment: .topLeading)
+        .overlay(alignment: .topLeading) { fileDrag }
     }
 
     private var header: some View {
@@ -171,12 +169,7 @@ struct SpotSheetView: View {
 
     /// The width of the header's words as they are drawn, the longer of the title and the second line.
     private var wordsWidth: CGFloat {
-        let title = (form?.form.title ?? entry.shownState.title) as NSString
-        let detail = (entry.shownState.subtitle ?? "") as NSString
-        return max(
-            title.size(withAttributes: [.font: NSFont.systemFont(ofSize: 13, weight: .medium)]).width,
-            detail.size(withAttributes: [.font: NSFont.systemFont(ofSize: 11)]).width
-        )
+        SpotWordsWidth.of(title: form?.form.title ?? entry.shownState.title, detail: entry.shownState.subtitle)
     }
 
     private static let wordsGap = SpotTokens.padding - 5
@@ -222,7 +215,18 @@ struct SpotSheetView: View {
             }
         }
         .morph(progress, offset: { [smallCardShift] in SheetMorph.place(onCard: CGSize(width: smallCardShift, height: 0), at: $0) })
-        .modifier(SpotFileDragSource(items: isOpen ? list.shown : [], onDrop: { model.dragOut($0, of: entry.id) }))
+    }
+
+    /// Where a drag takes the files of the rows out, at the glyph's place in the open header. It does not move with the glyph.
+    @ViewBuilder
+    private var fileDrag: some View {
+        if isOpen, list.hasFiles {
+            Color.clear
+                .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
+                .contentShape(Rectangle())
+                .modifier(SpotFileDragSource(items: list.shown, hasFiles: true, onDrop: { model.dragOut($0, of: entry.id) }))
+                .padding(SpotTokens.padding)
+        }
     }
 
     /// Whether the card draws its glyph unlike the header: on its fill, or alone with no disc on a 1x1 card.

@@ -2,6 +2,25 @@ import XCTest
 @testable import OpenspotCore
 
 final class ItemListTests: XCTestCase {
+    func testEachNewSearchLandsOnceWhenItsRowsShow() {
+        var local = ItemList(items: items("Safari", "Slack"))
+        local.search("s")
+        local.search("sa")
+        local.search("sa")
+        local.search("")
+
+        var script = ItemList(search: .script)
+        script.search("s")
+        let waiting = script.landedSearches
+        script.answer(items("Safari"), to: "x")
+        script.answer(items("Safari"), to: "s")
+        script.answer(items("Safari", "Slack"), to: "s")
+
+        XCTAssertEqual(local.landedSearches, 3)
+        XCTAssertEqual(waiting, 0)
+        XCTAssertEqual(script.landedSearches, 1)
+    }
+
     func testTheSameItemsAgainTakeNoNewWork() {
         let rows = (0..<6000).map { SpotItem(title: "Ключ настройки \($0)", subtitle: "Системные настройки", run: "\($0)", keywords: ["громкость", "звук", "экран"]) }
         var list = ItemList(items: rows)

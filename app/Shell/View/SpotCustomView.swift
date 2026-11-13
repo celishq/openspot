@@ -5,8 +5,9 @@ import SwiftUI
 /// shape. It gets the block of its `view` component and its size, inset, corner and theme. In a sheet it takes clicks and
 /// keys, and its send calls the spot; on a card it draws only, and a press works as on any card (protocol: Views). A view
 /// that fails shows why, shrunk to fit.
-/// The view exists only while the panel shows, so a hidden panel runs none of its work.
-struct SpotCustomView: View {
+/// The view exists only while the panel shows, so a hidden panel runs none of its work. It equals another of the same
+/// values, so that a change of another part of its sheet does not draw it again.
+struct SpotCustomView: View, @MainActor Equatable {
     let source: String
     let values: [String: [String]]
     let card: SpotSize
@@ -16,6 +17,11 @@ struct SpotCustomView: View {
     /// Calls the spot with the view's id and a value, in a sheet. Nil on a card, which takes no input.
     var send: ((String) -> Void)?
     @Environment(\.spotIsShown) private var isShown
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.source == rhs.source && lhs.values == rhs.values && lhs.card == rhs.card && lhs.room == rhs.room && lhs.views === rhs.views
+            && (lhs.send == nil) == (rhs.send == nil)
+    }
 
     private var size: CGSize {
         room ?? CGSize(width: SpotTokens.width(columns: card.columns), height: SpotTokens.height(rows: card.rows))

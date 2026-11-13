@@ -1,8 +1,9 @@
 import OpenspotCore
 import SwiftUI
 
-/// The actions of the selected row or card, each with its key. The panel draws its surface.
-struct SpotActionMenuView: View {
+/// The actions of the selected row or card, each with its key. The panel draws its surface. It equals another menu of the
+/// same rows, so that a move of the selection reruns only the rings, which read it themselves.
+struct SpotActionMenuView: View, @MainActor Equatable {
     let menu: ActionMenu
     /// Where the menu and each of its lines lie.
     let frame: ActionMenuFrame
@@ -14,6 +15,8 @@ struct SpotActionMenuView: View {
     var onPoint: (Int) -> Void = { _ in }
     /// Takes the text of the field of a menu that searches its rows.
     var onSearch: @MainActor @Sendable (String) -> Void = { _ in }
+    /// Reads the selected row where it is called. Nil reads it from the menu.
+    var selection: (() -> Int)?
 
     static let radius = SpotTokens.radius - SpotTokens.padding + SpotTokens.menuPadding
 
@@ -40,16 +43,18 @@ struct SpotActionMenuView: View {
     }
 
     private func button(_ row: ActionMenu.Row, at index: Int) -> some View {
-        Button {
+        let call = work(row)
+        let isConfirming = call == nil && menu.confirming != nil && row.action?.id == menu.confirming
+        return Button {
             onPress(index)
         } label: {
             HStack(spacing: SpotTokens.padding) {
-                Text(menu.title(of: row, isRunning: work(row) != nil))
+                Text(menu.title(of: row, isRunning: call != nil))
                     .font(SpotType.body)
-                    .foregroundStyle(titleColor(of: row))
+                    .foregroundStyle(isConfirming ? SpotTheme.onConfirm : SpotTheme.ink)
                     .lineLimit(1)
                 Spacer(minLength: 0)
-                if let call = work(row) {
+                if let call {
                     SpotWorkMark(call: call, side: SpotTokens.workMark)
                 }
                 Text(row.keyLabel)
@@ -58,8 +63,8 @@ struct SpotActionMenuView: View {
             }
             .padding(.horizontal, SpotTokens.padding - SpotTokens.menuPadding + 4)
             .frame(height: SpotTokens.menuRowHeight)
-            .background(fill(of: row), in: shape)
-            .modifier(SpotSelectionRing(isSelected: index == menu.selected && !isConfirming(row), shape: shape))
+            .background(isConfirming ? SpotTheme.confirm : .clear, in: shape)
+            .modifier(MenuRing(index: index, selection: selection ?? { [menu] in menu.selected }, isConfirming: isConfirming, shape: shape))
             .contentShape(shape)
         }
         .buttonStyle(.plain)
@@ -71,15 +76,22 @@ struct SpotActionMenuView: View {
         SpotSteadyField(prompt: "Search actions", text: menu.query, isSettled: isSettled, onSearch: onSearch)
     }
 
-    private func isConfirming(_ row: ActionMenu.Row) -> Bool {
-        work(row) == nil && menu.confirming != nil && row.action?.id == menu.confirming
+    /// Whether two menus show the same rows. The selection counts only where the menu reads it from its own value.
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.menu.rows == rhs.menu.rows && lhs.menu.shown == rhs.menu.shown && lhs.menu.query == rhs.menu.query
+            && lhs.menu.confirming == rhs.menu.confirming && lhs.frame == rhs.frame && lhs.isSettled == rhs.isSettled
+            && (lhs.selection == nil) == (rhs.selection == nil) && (lhs.selection != nil || lhs.menu.selected == rhs.menu.selected)
     }
+}
 
-    private func fill(of row: ActionMenu.Row) -> Color {
-        isConfirming(row) ? SpotTheme.confirm : .clear
-    }
+/// The ring of one row of the menu. It reads the selection itself, so that a move reruns the rings and no row.
+private struct MenuRing: ViewModifier {
+    let index: Int
+    let selection: () -> Int
+    let isConfirming: Bool
+    let shape: RoundedRectangle
 
-    private func titleColor(of row: ActionMenu.Row) -> Color {
-        isConfirming(row) ? SpotTheme.onConfirm : SpotTheme.ink
+    func body(content: Content) -> some View {
+        content.modifier(SpotSelectionRing(isSelected: index == selection() && !isConfirming, shape: shape))
     }
 }

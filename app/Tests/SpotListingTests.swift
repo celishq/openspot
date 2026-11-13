@@ -19,6 +19,13 @@ final class SpotListingTests: XCTestCase {
         return try XCTUnwrap(try SpotFile(file: url, id: name)?.spots.first)
     }
 
+    func testTheListingKeepsItsReadmeWithItsInlineMarkdownOrWordsThatSayItHasNone() {
+        let listing = SpotListing(description: nil, readme: "Counts **down**", preview: [])
+
+        XCTAssertEqual(String(listing.shownReadme.characters), "Counts down")
+        XCTAssertEqual(String(SpotListing(description: nil, readme: nil, preview: []).shownReadme.characters), "This spot has no readme yet.")
+    }
+
     func testTheListingReadsTheReadmeAndThePreviewBesideTheSpot() throws {
         let spot = try self.spot("# title=Timer\n# detail=Counts down")
         try "Counts down from a time you pick.".write(to: folder.appendingPathComponent("timer.spot/readme.md"), atomically: true, encoding: .utf8)

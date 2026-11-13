@@ -49,6 +49,15 @@ final class SpotsModelTests: XCTestCase {
         XCTFail("waited for \(what)")
     }
 
+    func testACardIsFoundByItsIDAndAnUnknownIDFindsNone() throws {
+        try script("one", header: "title=One", "")
+        try script("two", header: "title=Two", "")
+        model.reload()
+
+        XCTAssertEqual(model.card(id: "two")?.spot.name, "Two")
+        XCTAssertNil(model.card(id: "three"))
+    }
+
     func testThePanelKeepsItsFocusWhileTouchIDAsksAndTakesItBackAfter() async throws {
         host.show()
         try await wait("the panel to show") { model.isShown }

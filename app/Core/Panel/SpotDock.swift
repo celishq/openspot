@@ -32,7 +32,8 @@ public struct SpotDock: Equatable, Sendable {
         }
 
         public func keeps(_ item: Item) -> Bool {
-            switch self {
+            SpotDock.keepChecks += 1
+            return switch self {
             case .added: item.state != .off
             case .store: item.state == .off
             case .mine: item.isOwn
@@ -117,9 +118,13 @@ public struct SpotDock: Equatable, Sendable {
         }
     }
 
+    /// The number of times that a section checked whether it keeps a spot, in all docks. Only a test reads it.
+    nonisolated(unsafe) static var keepChecks = 0
     /// The number of times that a dock laid out its rows, in all docks. Only a test reads it.
     nonisolated(unsafe) static var layouts = 0
     public let items: [Item]
+    /// How many spots each section keeps, counted once.
+    private let counts: [Section: Int]
     public var query = "" {
         didSet { if query != oldValue { arrange() } }
     }
@@ -150,6 +155,7 @@ public struct SpotDock: Equatable, Sendable {
 
     public init(items: [Item], query: String = "", section: Section = .added, opened: String? = nil, isSheetOut: Bool = false) {
         self.items = items.sorted { $0.spot.name.localizedCaseInsensitiveCompare($1.spot.name) == .orderedAscending }
+        counts = Dictionary(uniqueKeysWithValues: Section.allCases.map { section in (section, items.count { section.keeps($0) }) })
         self.query = query
         self.section = section
         self.opened = opened
@@ -161,7 +167,7 @@ public struct SpotDock: Equatable, Sendable {
     public static let rowsOrigin = CGPoint(x: SpotTokens.padding + SpotTokens.gridWidth + SpotTokens.columnGap, y: SpotTokens.dockRowsTop)
 
     public func count(of section: Section) -> Int {
-        items.filter(section.keeps).count
+        counts[section] ?? 0
     }
 
     /// The titled groups of the shown spots, each with its spots in order.

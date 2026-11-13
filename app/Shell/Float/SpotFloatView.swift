@@ -10,21 +10,20 @@ struct SpotFloatView: View {
     @State private var dropTarget: String?
     @State private var dropWords: String?
 
-    private var entry: SpotsModel.Entry? {
-        model.cards.first { $0.id == id }
-    }
-
     var body: some View {
+        let entry = model.card(id: id)
+        let run = model.sheets[id]
+        let size = size(entry, run)
         Group {
-            if let entry, let run = model.sheets[id] {
+            if let entry, let run {
                 if entry.kind.opensSheet {
-                    sheet(entry, run)
+                    sheet(entry, run, size: size)
                 } else {
                     card(entry)
                 }
             }
         }
-        .overlay { drop }
+        .overlay { drop(on: entry) }
         .onDrop(of: [.fileURL], delegate: SpotFloatDrop(id: id, model: model, target: $dropTarget))
         .onChange(of: dropTarget) { dropWords = dropTarget.flatMap { model.dropWords(SpotGridDrop.paths, on: $0) } }
         .onChange(of: size, initial: true) { onSize(size) }
@@ -32,17 +31,17 @@ struct SpotFloatView: View {
     }
 
     /// The size of the sheet or the card.
-    private var size: CGSize {
-        guard let entry, let run = model.sheets[id] else { return CGSize(width: SpotTokens.gridWidth, height: SpotTokens.rowHeight) }
+    private func size(_ entry: SpotsModel.Entry?, _ run: SpotRun?) -> CGSize {
+        guard let entry, let run else { return CGSize(width: SpotTokens.gridWidth, height: SpotTokens.rowHeight) }
         guard entry.kind.opensSheet else {
             return CGSize(width: SpotTokens.width(columns: entry.size.columns), height: SpotTokens.height(rows: entry.size.rows))
         }
         return SpotTokens.floatSize(rows: run.shape.rows, perLine: run.shape.perLine, parts: run.panel)
     }
 
-    private func sheet(_ entry: SpotsModel.Entry, _ run: SpotRun) -> some View {
+    private func sheet(_ entry: SpotsModel.Entry, _ run: SpotRun, size: CGSize) -> some View {
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
-            header(entry)
+            header(entry, run)
             if let parts = run.panel {
                 SheetPartsView(
                     panel: parts,
@@ -58,9 +57,7 @@ struct SpotFloatView: View {
                     selection: { run.selection },
                     selectedPart: { run.selectedPart?.id },
                     nudge: { run.nudge },
-                    customView: { room, values, send in
-                        entry.spot.view.map { AnyView(SpotCustomView(source: $0, values: values, card: .square, room: room, views: SpotViews.shared, send: send)) }
-                    }
+                    viewSource: entry.spot.view
                 )
                 .task(id: parts.parts.contains { $0.kind == "view" } ? entry.spot.view : nil) {
                     if let view = entry.spot.view, parts.parts.contains(where: { $0.kind == "view" }) { await SpotViews.shared.load(view) }
@@ -79,10 +76,10 @@ struct SpotFloatView: View {
         .modifier(SpotGlass())
     }
 
-    private func header(_ entry: SpotsModel.Entry) -> some View {
+    private func header(_ entry: SpotsModel.Entry, _ run: SpotRun) -> some View {
         HStack(spacing: SpotTokens.padding - 5) {
             SpotGlyph(entry: entry)
-                .modifier(SpotFileDragSource(items: model.sheets[id]?.list.shown ?? [], onDrop: { model.dragOut($0, of: id) }))
+                .modifier(SpotFileDragSource(items: run.list.shown, hasFiles: run.list.hasFiles, onDrop: { model.dragOut($0, of: id) }))
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
                 Text(entry.shownState.title)
                     .font(SpotType.title)
@@ -120,7 +117,7 @@ struct SpotFloatView: View {
 
     /// What a drop adds, over the float, only while a drag that it takes lies over it (W9).
     @ViewBuilder
-    private var drop: some View {
+    private func drop(on entry: SpotsModel.Entry?) -> some View {
         if let dropWords, entry?.kind.opensSheet == true {
             Text(dropWords)
                 .font(SpotType.body)

@@ -12,8 +12,8 @@ struct SpotSheetFrame: ViewModifier {
     let sheetRect: CGRect
     /// How far the content lies from its open place: as far as the card lies from the sheet's corner, and none when open.
     let shift: CGSize
-    /// Whether the card is selected, which shows its ring as the card's look until the sheet opens.
-    let showsRing: Bool
+    /// Reads whether the card is selected where it is called, which shows its ring as the card's look until the sheet opens.
+    let isSelected: () -> Bool
     /// How far the sheet is open, from 0 on its card to 1.
     let progress: Double
     /// The arrow of the card, which stays at the moving trailing edge as the sheet grows out of the card.
@@ -39,8 +39,19 @@ struct SpotSheetFrame: ViewModifier {
         }
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
         .clipShape(shape)
-        .modifier(SpotSelectionRing(isSelected: showsRing, shape: shape, progress: progress))
+        .modifier(SheetRing(isSelected: isSelected, shape: shape, progress: progress))
         .scaleEffect(isShown ? 1 : MotionTokens.hiddenScale, anchor: UnitPoint(x: rect.midX / SpotTokens.panelWidth, y: rect.midY / SpotTokens.panelHeight))
         .animation(SpotMotion.fade(isShown: isShown), value: isShown)
+    }
+}
+
+/// The ring of the card under the sheet. It reads the selection itself, so that a move of the selection reruns only it.
+private struct SheetRing: ViewModifier {
+    let isSelected: () -> Bool
+    let shape: SpotSurfaceShape
+    let progress: Double
+
+    func body(content: Content) -> some View {
+        content.modifier(SpotSelectionRing(isSelected: isSelected(), shape: shape, progress: progress))
     }
 }

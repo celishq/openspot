@@ -30,7 +30,7 @@ struct SpotSlotView: View {
                 toggle
             }
         case .slider(let level, let low, let high):
-            SpotSlotSlider(level: level, low: low, high: high) { onSlot(part.id, String(Int($0.rounded()))) }
+            SpotSlotSlider(level: level, range: low...high) { onSlot(part.id, String(Int($0.rounded()))) }
         case .menu(let options, let value), .list(let options, let value):
             Menu(options.first { $0.id == value }?.title ?? part.title ?? "") {
                 ForEach(options, id: \.id) { option in
@@ -47,7 +47,7 @@ struct SpotSlotView: View {
         case .chart(let points):
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
                 if part.title != nil || part.detail != nil { words.fixedSize(horizontal: false, vertical: true) }
-                SpotSlotBars(points: points)
+                SpotBars(points: points, gap: 2, radius: 1.5)
             }
         case .shortcut(let text):
             SpotKeyLabel(text: text, isRecording: false)
@@ -145,41 +145,5 @@ private struct SpotSlotField: View {
                 if let typed { onSubmit(typed) }
                 typed = nil
             }
-    }
-}
-
-/// A slider in a row, which sends its value once the person lets go.
-private struct SpotSlotSlider: View {
-    let level: Double
-    let low: Double
-    let high: Double
-    let onEnd: (Double) -> Void
-    @State private var dragged: Double?
-
-    var body: some View {
-        Slider(value: Binding(get: { dragged ?? level }, set: { dragged = $0 }), in: low...high) { editing in
-            if !editing, let dragged { onEnd(dragged); self.dragged = nil }
-        }
-        .controlSize(.small)
-        .tint(SpotTheme.ink)
-    }
-}
-
-/// Bars in a row. The last bar is the newest.
-private struct SpotSlotBars: View {
-    let points: [Double]
-
-    var body: some View {
-        let top = max(points.max() ?? 1, 1)
-        GeometryReader { room in
-            HStack(alignment: .bottom, spacing: 2) {
-                ForEach(Array(points.enumerated()), id: \.offset) { _, point in
-                    RoundedRectangle(cornerRadius: 1.5)
-                        .fill(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
-                        .frame(height: room.size.height * max(point, 0) / top)
-                }
-            }
-            .frame(maxHeight: .infinity, alignment: .bottom)
-        }
     }
 }
