@@ -1,11 +1,13 @@
 import AppKit
 import SwiftUI
 
-/// The app of the board window: the tabs of the open boards, the list of boards, and the canvas and bars of the board
-/// that shows. A second open of Draw, such as from Openspot, asks this one to show its board in a tab.
+/// The app of the board window: the tabs, the list of boards, and the canvas and bars of the board that shows, or the
+/// start page on a New Tab. A second open of Draw, such as from Openspot, asks this one to show its board in a tab.
 @MainActor
 final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let tabs: Tabs
+    /// The folder of the boards.
+    let folder: URL
     private let lock: Lock
     private let drawer = Drawer()
     private var side: NSView?
@@ -15,12 +17,14 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var middle: CGFloat = 26
     private var stage = NSView()
     var window: NSWindow!
-    var canvas: Canvas!
+    var canvas: Canvas?
 
-    var studio: Studio { tabs.current }
+    /// The board that shows, or nil on a New Tab.
+    var studio: Studio? { tabs.studio }
 
     init(file: URL, lock: Lock) {
         tabs = Tabs(Studio(file: file))
+        folder = file.deletingLastPathComponent()
         self.lock = lock
     }
 
@@ -47,17 +51,16 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         DistributedNotificationCenter.default().addObserver(self, selector: #selector(asked(_:)), name: Desk.openName, object: nil)
     }
 
-    /// Lays the parts that stay while tabs change: the stage of the board, the list of boards, its button and the tabs.
+    /// Lays the parts that stay while tabs change: the stage, the list of boards, its button and the tabs.
     private func mount() {
         let root = NSView()
         stage.translatesAutoresizingMaskIntoConstraints = false
         root.addSubview(stage)
-        let shelf = Shelf(folder: studio.file.deletingLastPathComponent())
-        let side = bar(Sidebar(drawer: drawer, tabs: tabs, shelf: shelf, open: { [weak self] in self?.show($0) }, make: { [weak self] in self?.make() }, trash: { [weak self] in self?.trash($0) }), in: root)
+        let side = bar(Sidebar(drawer: drawer, tabs: tabs, shelf: Shelf(folder: folder), open: { [weak self] in self?.show($0) }, make: { [weak self] in self?.make() }, trash: { [weak self] in self?.trash($0) }), in: root)
         side.isHidden = !drawer.open
         self.side = side
         let latch = bar(Latch(drawer: drawer) { [weak self] in self?.toggleBoards(nil) }, in: root)
-        let strip = bar(TabStrip(tabs: tabs, show: { [weak self] in self?.show($0.file) }, close: { [weak self] in self?.close($0) }, home: { [weak self] in self?.goHome(nil) }, trash: { [weak self] in self?.trash($0) }), in: root)
+        let strip = bar(TabStrip(tabs: tabs, select: { [weak self] in self?.select($0) }, close: { [weak self] in self?.close(page: $0) }, home: { [weak self] in self?.goHome(nil) }, trash: { [weak self] in self?.trash($0) }), in: root)
         let lights = window.standardWindowButton(.zoomButton).map { $0.convert($0.bounds, to: nil) } ?? CGRect(x: 60, y: window.frame.height - 26, width: 14, height: 14)
         latchLeading = lights.maxX + 16
         middle = window.frame.height - lights.midY
@@ -70,17 +73,18 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
             side.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -8),
             latch.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: latchLeading),
             latch.centerYAnchor.constraint(equalTo: root.topAnchor, constant: middle),
-            stripLeading, strip.trailingAnchor.constraint(lessThanOrEqualTo: root.trailingAnchor, constant: -236),
+            stripLeading, strip.trailingAnchor.constraint(lessThanOrEqualTo: root.trailingAnchor, constant: -170),
             strip.centerYAnchor.constraint(equalTo: root.topAnchor, constant: middle)
         ])
         window.contentView = root
     }
 
-    /// Lays the canvas and the bars of the board that shows, or the start page with no tab open.
+    /// Lays the canvas and the bars of the board that shows, or the start page on a New Tab.
     private func stageUp() {
         stage.subviews.forEach { $0.removeFromSuperview() }
-        if tabs.home {
-            let home = bar(Home(drawer: drawer, shelf: Shelf(folder: studio.file.deletingLastPathComponent()), open: { [weak self] in self?.show($0) }, make: { [weak self] in self?.make() }, trash: { [weak self] in self?.trash($0) }, rename: { [weak self] file in
+        guard let studio else {
+            canvas = nil
+            let home = bar(Home(drawer: drawer, shelf: Shelf(folder: folder), open: { [weak self] in self?.show($0) }, make: { [weak self] in self?.make() }, trash: { [weak self] in self?.trash($0) }, rename: { [weak self] file in
                 self?.show(file)
                 self?.renameBoard(nil)
             }), in: stage)
@@ -88,20 +92,19 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 home.leadingAnchor.constraint(equalTo: stage.leadingAnchor), home.trailingAnchor.constraint(equalTo: stage.trailingAnchor),
                 home.topAnchor.constraint(equalTo: stage.topAnchor, constant: 56), home.bottomAnchor.constraint(equalTo: stage.bottomAnchor)
             ])
-            window.title = "Draw"
+            window.title = "New Tab"
             return
         }
-        let studio = studio
         studio.gone = { [weak self, weak studio] in
-            guard let self, let studio else { return }
-            self.close(studio)
+            guard let self, let studio, let page = self.tabs.page(of: studio) else { return }
+            self.close(page: page)
         }
-        canvas = Canvas(studio: studio)
+        let canvas = Canvas(studio: studio)
+        self.canvas = canvas
         canvas.translatesAutoresizingMaskIntoConstraints = false
         stage.addSubview(canvas)
-        let canvas = canvas!
         let tools = bar(Toolbar(studio: studio, picture: { canvas.insertPicture(nil) }), in: stage)
-        let corner = bar(Corner(studio: studio, zoom: { canvas.zoom(to: $0) }, fit: { canvas.fit() }), in: stage)
+        let corner = bar(Corner(studio: studio, fit: { canvas.fit() }), in: stage)
         let style = bar(StyleSlot(studio: studio), in: stage)
         NSLayoutConstraint.activate([
             canvas.leadingAnchor.constraint(equalTo: stage.leadingAnchor), canvas.trailingAnchor.constraint(equalTo: stage.trailingAnchor),
@@ -116,29 +119,42 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         canvas.fit()
     }
 
-    /// Shows a board in its tab, or in a new tab when it is not open.
+    /// Saves the board that shows before another tab shows.
+    private func leave() {
+        canvas?.endEditing()
+        studio?.save()
+    }
+
+    /// Shows a board in its tab, or in the New Tab that shows, or in a new tab.
     func show(_ file: URL) {
         guard !tabs.shows(file) else { return }
-        if !tabs.home {
-            canvas.endEditing()
-            studio.save()
-        }
+        leave()
         withAnimation(.spring(duration: 0.3, bounce: 0.12)) { tabs.show(file) }
         stageUp()
     }
 
-    /// Closes a board's tab. After the last tab, the start page shows.
-    func close(_ studio: Studio) {
-        if studio === self.studio, !tabs.home { canvas.endEditing() }
-        if FileManager.default.fileExists(atPath: studio.file.path) { studio.save() }
-        let shown = self.studio
-        withAnimation(.spring(duration: 0.3, bounce: 0.12)) { tabs.close(studio) }
-        if tabs.home || tabs.current !== shown { stageUp() }
+    func select(_ id: UUID) {
+        guard id != tabs.currentID else { return }
+        leave()
+        tabs.select(id)
+        stageUp()
     }
 
-    /// Makes a new board beside the others and shows it in a new tab.
+    /// Closes a tab. The last tab becomes a New Tab.
+    func close(page id: UUID) {
+        let shown = tabs.currentID
+        if let closing = tabs.pages.first(where: { $0.id == id })?.studio {
+            if id == shown { canvas?.endEditing() }
+            if FileManager.default.fileExists(atPath: closing.file.path) { closing.save() }
+        }
+        withAnimation(.spring(duration: 0.3, bounce: 0.12)) { tabs.close(id) }
+        if tabs.currentID != shown || id == shown { stageUp() }
+    }
+
+    /// Makes a new board and shows it, in the New Tab that shows or in a new tab.
     func make() {
-        guard let file = try? Shelf(folder: studio.file.deletingLastPathComponent()).make() else { return }
+        guard let file = try? Shelf(folder: folder).make() else { return }
+        drawer.changes += 1
         show(file)
     }
 
@@ -166,14 +182,14 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     /// Moves boards, their pictures and their images to the Trash, and closes their tabs.
     func trash(_ files: [URL]) {
-        let shelf = Shelf(folder: studio.file.deletingLastPathComponent())
         for file in files {
-            if let open = tabs.studio(for: file) { close(open) }
+            if let open = tabs.studio(for: file), let page = tabs.page(of: open) { close(page: page) }
         }
+        let shelf = Shelf(folder: folder)
         for file in files {
             try? shelf.discard(file) { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }
         }
-        if !tabs.home { drawer.picking.reset(to: studio.file) }
+        drawer.picking.clear()
         drawer.changes += 1
     }
 
@@ -183,32 +199,30 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     /// Trashes the boards picked in the list or on the start page while it takes the keys, or else the board that shows.
     @objc func trashBoard(_ sender: Any?) {
-        if drawer.open || tabs.home, drawer.focused, !drawer.picking.picked.isEmpty {
+        if drawer.focused, !drawer.picking.picked.isEmpty {
             trash(Array(drawer.picking.picked))
-        } else if !tabs.home {
+        } else if let studio {
             trash(studio.file)
         }
     }
 
     @objc func revealBoard(_ sender: Any?) {
-        NSWorkspace.shared.activateFileViewerSelecting([tabs.home ? studio.file.deletingLastPathComponent() : studio.file])
+        NSWorkspace.shared.activateFileViewerSelecting([studio?.file ?? folder])
     }
 
     @objc func newBoard(_ sender: Any?) {
         make()
     }
 
-    /// Shows the start page of all boards, and keeps the open tabs.
+    /// Adds a New Tab with the start page of all boards.
     @objc func goHome(_ sender: Any?) {
-        guard !tabs.home else { return }
-        canvas.endEditing()
-        studio.save()
-        withAnimation(.easeOut(duration: 0.2)) { tabs.goHome() }
+        leave()
+        withAnimation(.spring(duration: 0.3, bounce: 0.12)) { tabs.openStart() }
         stageUp()
     }
 
     @objc func closeBoard(_ sender: Any?) {
-        if !tabs.home { close(studio) }
+        close(page: tabs.currentID)
     }
 
     /// Puts the caret in the search field: the start page's, or else the list's, which slides in.
@@ -220,9 +234,10 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     /// Shows the list of boards with the name of this board ready to change.
     @objc func renameBoard(_ sender: Any?) {
+        guard let file = studio?.file else { return }
         if !drawer.open { toggleBoards(nil) }
         drawer.naming = nil
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [self] in drawer.naming = studio.file }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [self] in drawer.naming = file }
     }
 
     /// Floats a SwiftUI bar over the canvas at its own size.
@@ -245,17 +260,17 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func windowDidBecomeKey(_ notification: Notification) {
-        studio.reloadTitle()
+        studio?.reloadTitle()
     }
 
     func windowWillClose(_ notification: Notification) {
-        if !tabs.home { canvas.endEditing() }
+        canvas?.endEditing()
         for studio in tabs.studios where FileManager.default.fileExists(atPath: studio.file.path) { studio.save() }
         NSApp.terminate(nil)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        if !tabs.home { canvas.endEditing() }
+        canvas?.endEditing()
         for studio in tabs.studios where FileManager.default.fileExists(atPath: studio.file.path) { studio.save() }
     }
 
@@ -295,7 +310,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         ])
         add("File", [
             item("New Board", #selector(Desk.newBoard(_:)), "n"),
-            item("Start Page", #selector(Desk.goHome(_:)), "t"),
+            item("New Tab", #selector(Desk.goHome(_:)), "t"),
             item("Rename Board…", #selector(Desk.renameBoard(_:)), "r"),
             item("Show in Finder", #selector(Desk.revealBoard(_:)), "r", [.command, .option]),
             item("Find Board…", #selector(Desk.findBoards(_:)), "f"),

@@ -167,18 +167,15 @@ struct Forms: View {
     }
 }
 
-/// Zoom and undo, at the bottom left of the board.
+/// Undo, redo and the zoom, at the top right of the board. A click on the zoom shows the whole board.
 struct Corner: View {
     @ObservedObject var studio: Studio
-    let zoom: (CGFloat) -> Void
     let fit: () -> Void
 
     var body: some View {
         HStack(spacing: 2) {
-            Knob(symbol: "arrow.uturn.backward", help: "Undo  ⌘Z", enabled: studio.canUndo) { studio.undo() }
-            Knob(symbol: "arrow.uturn.forward", help: "Redo  ⇧⌘Z", enabled: studio.canRedo) { studio.redo() }
-            Divider().frame(height: 22).padding(.horizontal, 4)
-            Knob(symbol: "minus", help: "Zoom out  ⌘−") { zoom(studio.zoom / 1.25) }
+            Knob(symbol: "arrow.uturn.backward", help: "Undo  ⌘Z", enabled: studio.canUndo, below: true) { studio.undo() }
+            Knob(symbol: "arrow.uturn.forward", help: "Redo  ⇧⌘Z", enabled: studio.canRedo, below: true) { studio.redo() }
             Button(action: fit) {
                 Text("\(Int((studio.zoom * 100).rounded()))%")
                     .font(.system(size: 12, weight: .medium).monospacedDigit())
@@ -186,8 +183,7 @@ struct Corner: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .tip("Show the whole board  ⇧1")
-            Knob(symbol: "plus", help: "Zoom in  ⌘=") { zoom(studio.zoom * 1.25) }
+            .tip("Show the whole board  ⇧1", below: true)
         }
         .padding(5)
         .modifier(Raised())
@@ -403,6 +399,12 @@ struct Sidebar: View {
                             })
                     }
                 }
+                .frame(maxWidth: .infinity, minHeight: 400, alignment: .top)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    drawer.picking.clear()
+                    listening = true
+                }
                 .coordinateSpace(name: "list")
                 .onPreferenceChange(RowFrames.self) { frames = $0 }
                 .gesture(DragGesture(minimumDistance: 4, coordinateSpace: .named("list"))
@@ -440,10 +442,7 @@ struct Sidebar: View {
         .offset(x: drawer.open ? 0 : -300)
         .onAppear(perform: reload)
         .onChange(of: drawer.open) { _, open in if open { reload() } }
-        .onReceive(tabs.$current) { studio in
-            reload()
-            if !drawer.picking.picked.contains(studio.file) || drawer.picking.picked.count == 1 { drawer.picking.reset(to: studio.file) }
-        }
+        .onReceive(tabs.$currentID) { _ in reload() }
         .onChange(of: drawer.changes) { _, _ in reload() }
         .onChange(of: drawer.query) { _, _ in reload() }
         .onChange(of: drawer.naming) { _, file in
@@ -466,13 +465,13 @@ struct Sidebar: View {
         frames.first { $0.value.insetBy(dx: -2, dy: -1).contains(CGPoint(x: $0.value.midX, y: point.y)) }?.key
     }
 
-    /// Picks a board on a click: alone, with Command added or dropped, or with Shift the run to it. A plain click shows it.
+    /// Picks a board on a click: alone, with Command added or dropped, or with Shift the run to it. A double-click or
+    /// Return opens it.
     private func click(_ entry: Shelf.Entry) {
         let flags = NSEvent.modifierFlags
         let mode: Picking.Mode = flags.contains(.command) ? .toggle : flags.contains(.shift) ? .range : .only
         drawer.picking.click(entry.file, in: entries.map(\.file), mode: mode)
-        if mode == .only { open(entry.file) }
-        DispatchQueue.main.async { listening = true }
+        listening = true
     }
 
     /// The menu of a row: for each picked board when the row is one of several picked, or else for the row alone.
@@ -483,7 +482,8 @@ struct Sidebar: View {
     }
 
     private func row(_ entry: Shelf.Entry) -> some View {
-        let picked = drawer.picking.picked.contains(entry.file) && (!tabs.home || drawer.focused)
+        let picked = drawer.picking.picked.contains(entry.file)
+        let shown = tabs.shows(entry.file)
         return HStack(spacing: 10) {
             Group {
                 if let picture = NSImage(contentsOf: entry.picture) {
@@ -512,11 +512,11 @@ struct Sidebar: View {
             Spacer(minLength: 0)
         }
         .padding(6)
-        .background(picked ? Color.accentColor.opacity(drawer.focused ? 0.2 : 0.12) : .clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(picked ? Color.accentColor.opacity(drawer.focused ? 0.2 : 0.12) : Color.primary.opacity(shown ? 0.05 : 0), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .contentShape(Rectangle())
         .onTapGesture {
             guard drawer.naming != entry.file else { return }
-            if (NSApp.currentEvent?.clickCount ?? 1) > 1 { startNaming(entry) } else { click(entry) }
+            if (NSApp.currentEvent?.clickCount ?? 1) > 1 { open(entry.file) } else { click(entry) }
         }
         .overlay(MenuSpot { menu(for: entry) })
     }

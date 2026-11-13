@@ -61,4 +61,15 @@ final class DrawPickingTests: XCTestCase {
         picking.sweep(from: order[4], to: order[3], in: order, adding: true)
         XCTAssertEqual(names(picking), ["a", "d", "e"])
     }
+
+    func testAClickOnEmptySpaceClearsThePick() {
+        var picking = Picking()
+        picking.click(order[0], in: order, mode: .only)
+        picking.click(order[2], in: order, mode: .toggle)
+
+        picking.clear()
+
+        XCTAssertEqual(names(picking), [])
+        XCTAssertEqual(picking.step(1, in: order, extend: false), order[0])
+    }
 }

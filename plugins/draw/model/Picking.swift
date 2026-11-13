@@ -59,6 +59,14 @@ struct Picking: Equatable {
         sweepBase = nil
     }
 
+    /// Picks nothing, as after a click on empty space.
+    mutating func clear() {
+        picked = []
+        anchor = nil
+        focus = nil
+        sweepBase = nil
+    }
+
     /// Picks only this board, such as the one a tab shows.
     mutating func reset(to item: URL) {
         picked = [item]

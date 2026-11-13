@@ -1,16 +1,36 @@
 import Foundation
 
-/// The boards open in the window, in the order of their tabs, and the one that shows. With no tab open, the window shows
-/// the start page of all boards, and `current` keeps the last board that showed.
+/// The tabs of the window, in order, and the one that shows. A tab shows a board, or the start page as a New Tab, as a
+/// browser does. The window always has a tab, so the last one to close becomes a New Tab.
 @MainActor
 final class Tabs: ObservableObject {
-    @Published private(set) var studios: [Studio]
-    @Published private(set) var current: Studio
-    @Published private(set) var home = false
+    /// One tab: its board, or none for a New Tab.
+    struct Page: Identifiable {
+        let id = UUID()
+        var studio: Studio?
+    }
+
+    @Published private(set) var pages: [Page]
+    @Published private(set) var currentID: UUID
 
     init(_ studio: Studio) {
-        studios = [studio]
-        current = studio
+        let page = Page(studio: studio)
+        pages = [page]
+        currentID = page.id
+    }
+
+    /// The board that shows, or nil on a New Tab.
+    var studio: Studio? {
+        pages.first { $0.id == currentID }?.studio
+    }
+
+    var studios: [Studio] {
+        pages.compactMap(\.studio)
+    }
+
+    /// Whether the start page shows.
+    var home: Bool {
+        studio == nil
     }
 
     /// The open board with this file.
@@ -18,37 +38,55 @@ final class Tabs: ObservableObject {
         studios.first { $0.file.standardizedFileURL == file.standardizedFileURL }
     }
 
-    /// Shows a board that is open, or opens it in a new tab after the current one.
+    /// Whether this board shows now.
+    func shows(_ file: URL) -> Bool {
+        studio?.file.standardizedFileURL == file.standardizedFileURL
+    }
+
+    func select(_ id: UUID) {
+        currentID = id
+    }
+
+    /// Shows a board in its tab. A board that is not open takes the New Tab that shows, or a new tab after this one.
     func show(_ file: URL) {
-        home = false
-        if let open = studio(for: file) {
-            current = open
+        if let page = pages.first(where: { $0.studio?.file.standardizedFileURL == file.standardizedFileURL }) {
+            currentID = page.id
             return
         }
         let studio = Studio(file: file)
-        let place = studios.firstIndex { $0 === current }.map { $0 + 1 } ?? studios.count
-        studios.insert(studio, at: place)
-        current = studio
-    }
-
-    /// Closes a tab, and shows its neighbour when it was the current one, or the start page after the last tab.
-    func close(_ studio: Studio) {
-        guard let index = studios.firstIndex(where: { $0 === studio }) else { return }
-        studios.remove(at: index)
-        if studios.isEmpty {
-            home = true
-        } else if current === studio {
-            current = studios[min(index, studios.count - 1)]
+        if let index = pages.firstIndex(where: { $0.id == currentID }), pages[index].studio == nil {
+            pages[index].studio = studio
+        } else {
+            insert(Page(studio: studio))
         }
     }
 
-    /// Shows the start page, as a new tab in a browser, and keeps the open tabs.
-    func goHome() {
-        home = true
+    /// Adds a New Tab after this one and shows it.
+    func openStart() {
+        insert(Page())
     }
 
-    /// Whether this board shows now.
-    func shows(_ file: URL) -> Bool {
-        !home && current.file.standardizedFileURL == file.standardizedFileURL
+    /// Closes a tab and shows its neighbour. The last tab becomes a New Tab.
+    func close(_ id: UUID) {
+        guard let index = pages.firstIndex(where: { $0.id == id }) else { return }
+        pages.remove(at: index)
+        if pages.isEmpty {
+            let page = Page()
+            pages = [page]
+            currentID = page.id
+        } else if currentID == id {
+            currentID = pages[min(index, pages.count - 1)].id
+        }
+    }
+
+    /// The tab of a board.
+    func page(of studio: Studio) -> UUID? {
+        pages.first { $0.studio === studio }?.id
+    }
+
+    private func insert(_ page: Page) {
+        let place = pages.firstIndex { $0.id == currentID }.map { $0 + 1 } ?? pages.count
+        pages.insert(page, at: place)
+        currentID = page.id
     }
 }
