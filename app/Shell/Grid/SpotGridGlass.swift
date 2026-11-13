@@ -48,7 +48,7 @@ struct SpotGridGlass: View {
     /// One blur seen through the shapes of the cards: each card that no fill covers, or with `isPress` only the pressed one.
     private func glass(radius: CGFloat, isPress: Bool) -> some View {
         let reach = Self.reach
-        return SpotBlur(radius: isShown ? radius : 0)
+        return SpotBlur(radius: radius)
             .overlay(SpotTheme.glass)
             .frame(width: size.width + 2 * reach, height: size.height + 2 * reach)
             .mask(alignment: .topLeading) {

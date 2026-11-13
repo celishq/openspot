@@ -20,7 +20,7 @@ struct SpotGlass: ViewModifier {
             .animation(SpotMotion.fade(isShown: isShown), value: isShown)
             .background {
                 if blursBehind {
-                    SpotBlur(radius: isShown ? SpotTheme.blur : 0)
+                    SpotBlur(radius: SpotTheme.blur)
                         .overlay(SpotTheme.glass)
                         .clipShape(shape)
                         .opacity(isShown && !isSolid && !isBare ? 1 : 0)

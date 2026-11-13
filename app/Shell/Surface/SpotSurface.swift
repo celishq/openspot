@@ -15,7 +15,7 @@ struct SpotSurface: View {
     var body: some View {
         let shape = SpotSurfaceShape(rect: rect, radius: radius)
         ZStack(alignment: .topLeading) {
-            SpotBlur(radius: isShown ? SpotTheme.blur : 0)
+            SpotBlur(radius: SpotTheme.blur)
                 .overlay(SpotTheme.glass)
                 .mask(shape)
                 .opacity(isShown ? glass : 0)
