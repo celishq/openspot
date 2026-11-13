@@ -119,6 +119,17 @@ final class SpotEventsTests: SpotRunsCase {
         try await wait("the read of the unwanted spot") { self.log("unwanted") == ["read"] }
     }
 
+    func testTheLaunchReadsEachSpotThatListsItWantedOrNot() async throws {
+        try script("news", header: "on=app.launch", log: "news", "\(reasons)\nprintf 'title=N\\n'")
+        try script("other", header: "on=app.update", log: "other", "printf 'title=O\\n'")
+        _ = try scanned()
+
+        runs.launched()
+
+        try await wait("the launch read") { self.log("reasons") == ["app.launch none"] && !self.runs.isReading }
+        XCTAssertEqual(log("other"), [])
+    }
+
     func testAFailedReadOfAnEventForEachSpotIsTold() async throws {
         try script("unwanted", header: "on=app.update", log: "unwanted", "echo 'No news.' >&2\nexit 1")
         let (_, told) = try toldSheet()

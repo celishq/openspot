@@ -19,6 +19,8 @@ public enum SpotEvent: Equatable, Sendable {
     public static let screenWake = "screen.wake"
     /// The event that the app raises when it has downloaded an update, with its version as the value (protocol: Events).
     public static let appUpdate = "app.update"
+    /// The event that the app raises once when it starts (protocol: Events).
+    public static let appLaunch = "app.launch"
 
     /// The event of the open of a script's sheet.
     public static let sheetOpen = "sheet.open"
@@ -31,7 +33,7 @@ public enum SpotEvent: Equatable, Sendable {
     /// The start of the name of a clock, such as `clock.60`.
     public static let clockPrefix = "clock."
     /// The events that Openspot raises.
-    public static let known = [sheetOpen, panelOpen, searchText, sheetText, clipboard, frontApp, appUpdate, screenWake]
+    public static let known = [sheetOpen, panelOpen, searchText, sheetText, clipboard, frontApp, appUpdate, appLaunch, screenWake]
 
     /// Whether a word names an event: words of letters, digits, `-` and `_` joined by dots, such as `music.track`, that
     /// start with a letter.

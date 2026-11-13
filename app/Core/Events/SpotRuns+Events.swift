@@ -18,6 +18,13 @@ extension SpotRuns {
         raise(.panel)
     }
 
+    /// The app started: reads each spot that reads at launch, wanted or not, as a change does, which tells its failure.
+    public func launched() {
+        for sheet in sheets.values where sheet.spot.readsAtLaunch {
+            sheet.read(need: .change, reason: ReadReason(event: SpotEvent.appLaunch, value: nil))
+        }
+    }
+
     /// The Mac woke: each wanted script with a number in its `read` reads at once, and its clock starts again from now. A
     /// staying script that something wants and that ended starts again.
     public func woke() {
