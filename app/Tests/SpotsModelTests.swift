@@ -1143,6 +1143,27 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(host.motions.count, grown)
     }
 
+    func testTheGrowOfTheFocusedCardMovesNoPlaceOfItsMenu() throws {
+        _ = try openWeatherMenu()
+        let menu = try XCTUnwrap(model.menu)
+        let size = try XCTUnwrap(model.placements.first { $0.index == model.selected }).size
+        let card = CGRect(x: 16, y: 200, width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))
+        let bounds = ActionMenuFrame.bounds(under: SpotTokens.gridTop)
+        func place(at scale: CGFloat) {
+            let grown = card.insetBy(dx: card.width * (1 - scale) / 2, dy: card.height * (1 - scale) / 2)
+            model.placeMenu(ActionMenuFrame(item: model.menuItemAtRest(grown), menu: menu, bounds: bounds))
+        }
+        place(at: 1)
+        nonisolated(unsafe) var told = 0
+        withObservationTracking { _ = (model.menuFrame, model.menuBackdropHeight) } onChange: { told += 1 }
+
+        for step in 1...8 { place(at: 1 + (MotionTokens.focusedScale - 1) * CGFloat(step) / 8) }
+
+        XCTAssertEqual(told, 0)
+        let rest = card.insetBy(dx: -card.width * (MotionTokens.focusedScale - 1) / 2, dy: -card.height * (MotionTokens.focusedScale - 1) / 2)
+        XCTAssertEqual(try XCTUnwrap(model.menuFrame).rect.maxY, ActionMenuFrame(item: rest, menu: menu, bounds: bounds).rect.maxY, accuracy: 1e-9)
+    }
+
     func testTheBackdropUnderTheMenuGoesWhenItsCloseEnds() async throws {
         let frame = try openWeatherMenu()
         model.placeMenu(frame)

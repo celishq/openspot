@@ -16,6 +16,7 @@ struct SpotMenuLayer: View {
                 let rect = item.map { proxy[$0.bounds] } ?? SpotFieldView.rect
                 let isClosing = session.phase == .closing
                 let fresh = ActionMenuFrame(item: rect, menu: menu, bounds: bounds)
+                let resting = ActionMenuFrame(item: model.menuItemAtRest(rect), menu: menu, bounds: bounds)
                 let frame = isClosing ? model.menuFrame ?? fresh : fresh
                 let shown = frame.rect(of: menu)
                 let isGrown = session.isGrown
@@ -31,7 +32,7 @@ struct SpotMenuLayer: View {
                 }
                 .allowsHitTesting(!isClosing)
                 .transition(.opacity)
-                .onChange(of: frame, initial: true) { model.placeMenu(frame) }
+                .onChange(of: resting, initial: true) { model.placeMenu(resting) }
             }
         }
     }
