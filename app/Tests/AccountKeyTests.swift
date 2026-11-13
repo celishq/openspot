@@ -108,4 +108,16 @@ final class AccountKeyTests: XCTestCase {
         XCTAssertThrowsError(try AccountKey(nsec: npub))
         XCTAssertThrowsError(try AccountKey(nsec: String(key.nsec.dropLast()) + "q"))
     }
+
+    func testTheChoicesOfAPlaceHoldItsWordAndAreTheSameEachTime() throws {
+        let key = try AccountKey.make()
+        let words = try XCTUnwrap(key.words)
+
+        for place in 1...12 {
+            let choices = key.choices(at: place)
+            XCTAssertEqual(Set(choices).count, 4)
+            XCTAssertTrue(choices.contains(words[place - 1]))
+            XCTAssertEqual(key.choices(at: place), choices)
+        }
+    }
 }

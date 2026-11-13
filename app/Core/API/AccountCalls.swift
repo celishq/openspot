@@ -63,7 +63,7 @@ struct AccountCalls {
         CommandAnswer.work { [store] in
             guard let key = try store.key(), key.words != nil else { throw SpotError.failed(1, "This Mac holds no account words.") }
             return places.map { place in
-                TextBlock(fields: [.init(key: "check", value: String(place))] + AccountPhrase.choices(at: place, of: key).map { .init(key: "choice", value: $0) }).text
+                TextBlock(fields: [.init(key: "check", value: String(place))] + key.choices(at: place).map { .init(key: "choice", value: $0) }).text
             }.joined(separator: "\n")
         }
     }

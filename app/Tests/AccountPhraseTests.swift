@@ -52,18 +52,6 @@ final class AccountPhraseTests: XCTestCase {
         XCTAssertEqual(AccountPhrase("abandon abuot abso").facts, "counter=3 of 12\nunknown=2\ncompletion=absorb\n")
     }
 
-    func testTheChoicesOfAPlaceHoldItsWordAndAreTheSameEachTime() throws {
-        let key = try AccountKey.make()
-        let words = try XCTUnwrap(key.words)
-
-        for place in 1...12 {
-            let choices = AccountPhrase.choices(at: place, of: key)
-            XCTAssertEqual(Set(choices).count, 4)
-            XCTAssertTrue(choices.contains(words[place - 1]))
-            XCTAssertEqual(AccountPhrase.choices(at: place, of: key), choices)
-        }
-    }
-
     func testABoxSuggestsTheWordsThatStartWithItsLetters() {
         XCTAssertEqual(AccountPhrase.suggestions(for: "abs"), ["absent", "absorb", "abstract", "absurd"])
         XCTAssertEqual(AccountPhrase.suggestions(for: ""), [])

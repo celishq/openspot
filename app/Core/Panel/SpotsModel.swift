@@ -390,6 +390,11 @@ public final class SpotsModel {
         runs.raise(.named(SpotEvent.appUpdate, value: version, readsEachSpot: true))
     }
 
+    /// Asks for Touch ID or the Mac password, and returns whether the person passed.
+    public func allows(_ reason: String) async -> Bool {
+        await host.allows(reason)
+    }
+
     /// Stops each call as the app quits.
     public func quit() {
         runs.quit()

@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 
 /// What a person typed or pasted to sign in, the 12 words or an `nsec`, and how far it is from an account: each word with
@@ -78,23 +77,6 @@ public struct AccountPhrase: Sendable {
     /// The key of the phrase.
     public func key() throws -> AccountKey {
         isNsec ? try AccountKey(nsec: trimmed) : try AccountKey(words: typed.map(\.text))
-    }
-
-    /// The 4 words to pick from for one place of a key's words: the right one and 3 others, in an order that the key and
-    /// the place fix, so that each read gives the same choices.
-    public static func choices(at place: Int, of key: AccountKey) -> [String] {
-        guard let words = key.words, words.indices.contains(place - 1) else { return [] }
-        let seed = "\(key.publicKey):\(place)"
-        let digest = { (text: String) in Array(SHA256.hash(data: Data(text.utf8))) }
-        var picked = [words[place - 1]]
-        var round = 0
-        while picked.count < 4 {
-            let bytes = digest("\(seed):\(round)")
-            let word = AccountWords.all[(Int(bytes[0]) << 8 | Int(bytes[1])) % AccountWords.all.count]
-            if !picked.contains(word) { picked.append(word) }
-            round += 1
-        }
-        return picked.sorted { digest("\(seed):\($0)").lexicographicallyPrecedes(digest("\(seed):\($1)")) }
     }
 
     /// The words of the list that start with these letters.

@@ -48,6 +48,18 @@ extension SpotsModel {
         return try await package.release(by: key, keepingLogIn: files.folder.url)
     }
 
+    /// The account key. With none, it opens the sheet of the spot that reaches the account key, so the person can set one
+    /// up, and returns nil.
+    func accountKey() async throws -> AccountKey? {
+        if let key = try files.account.key() { return key }
+        if let account = entries.first(where: { $0.spot.reachesAccountKey }) {
+            host.present()
+            _ = openSheet(account.id)
+        }
+        host.notify("Set up your account, then publish again.")
+        return nil
+    }
+
     /// Copies the store's copy of a spot as one `.spot` file, a zip that a chat can carry, and returns the file. A spot that
     /// the store lacks copies nothing. The zip holds only its own spot folder.
     @discardableResult
