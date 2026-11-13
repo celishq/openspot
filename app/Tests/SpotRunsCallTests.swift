@@ -232,10 +232,10 @@ final class SpotRunsCallTests: SpotRunsCase {
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 && sheet.calls.isEmpty }
         sheet.read(need: .change)
-        XCTAssertTrue(sheet.list.isLoading)
+        XCTAssertFalse(sheet.calls.isEmpty)
 
         sheet.close()
-        try await wait("the end of the read") { !sheet.list.isLoading }
+        try await wait("the end of the read") { sheet.calls.isEmpty }
         try await pause(0.1)
 
         XCTAssertEqual(sheet.list.shown.count, 1)
