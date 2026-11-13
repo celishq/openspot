@@ -130,7 +130,7 @@ struct SpotDockView: View {
         guard let id, let index = dock.shown.firstIndex(where: { $0.id == id }), let sheet = dock.sheetRect else { return }
         let bottom = sheet.maxY + 2 * SpotDock.rowsOrigin.y - size.height
         guard bottom > model.dockScroll else { return }
-        withAnimation(SpotMotion.edit) { scroll.scrollTo(y: min(dock.rects[index].minY, bottom)) }
+        withAnimation(SpotMotion.move) { scroll.scrollTo(y: min(dock.rects[index].minY, bottom)) }
     }
 
     /// Acts on a click in the rows: the button does the next step, its arrow opens the menu, and the rest of a row opens its

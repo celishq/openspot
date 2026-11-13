@@ -19,7 +19,7 @@ struct SpotArrowScroll: ViewModifier {
             .onChange(of: nudge()) { _, nudge in
                 let row = SheetPlacement.rowHeight + SheetPlacement.gap
                 aim = min(max(aim + CGFloat(nudge.step) * row, 0), limit)
-                withAnimation(SpotMotion.arrowScroll) { position.scrollTo(y: aim) }
+                withAnimation(SpotMotion.move) { position.scrollTo(y: aim) }
             }
     }
 }

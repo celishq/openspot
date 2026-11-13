@@ -21,7 +21,7 @@ struct SpotHintLine: View {
         }
         .background {
             SpotHintWatch(model: model) { hint in
-                let motion = model.isEditing || hintIsForEdit || model.fieldDrop != nil ? SpotMotion.hintFade : nil
+                let motion = model.isEditing || hintIsForEdit || model.fieldDrop != nil ? SpotMotion.fade(isShown: true) : nil
                 hintIsForEdit = model.isEditing
                 withAnimation(motion) {
                     if model.openList == nil, model.spotDrop == nil { gridHint = hint } else { sheetHint = hint }
@@ -43,7 +43,7 @@ struct SpotHintLine: View {
         .frame(width: SpotTokens.panelWidth)
         .allowsHitTesting(isShown)
         .offset(y: height - SpotTokens.halo - SpotTokens.hintPillHeight)
-        .animation(SpotMotion.sheetFade(isOpen: surfaceIsOut, isLate: isShown)) { $0.opacity(isShown ? 1 : 0) }
+        .morph(isShown ? 1 : 0, opacity: { SheetMorph.sheetLook(at: $0) })
     }
 
     /// What the hint says while a sheet shows: a form has its own keys.

@@ -56,6 +56,11 @@ Write a doc that people read, such as `GUIDE.md` and `PROTOCOL.md`, the way Appl
 
 ## Motion
 
+Each motion is one of five kinds, each with one curve in `Shell/Surface/SpotMotion.swift`: grow (and its way back), move,
+fade and press. Each duration, bounce and motion scale is in `Core/Panel/MotionTokens.swift`. A part of a surface that grows
+takes its look from the surface's progress, by `SheetMorph`, and keeps no curve of its own. `make verify` runs
+`scripts/check-motion.sh`, which fails on a curve written anywhere else.
+
 A frame has 8.3 ms at 120 Hz. During a motion, the main thread uses no more than 4 ms of each frame, the frame of the press
 too. `make perf` checks it: p99 must stay under 8.3 ms.
 
@@ -94,6 +99,7 @@ too. `make perf` checks it: p99 must stay under 8.3 ms.
 make verify                # the Core and Tests checks, then the XCTest suite, with test classes in parallel
 make test T=SpotRunsTests  # one test class, while you work on it
 make perf N=3              # times a sheet that opens and closes 20 times, 3 runs; fails over the dropped-frame budget
+make film SPOT=caffeinate  # films the open and close of a sheet 10x slower (SLOW=1 for real speed) into .temp/film
 make shots                 # saves pictures of the actions menu in the running panel into .temp/shots
 make docs-images           # draws the image under each GUIDE.md example; GuideImageTests fail when one is out of date
 make eval-agent N=1        # gives N tasks to claude -p with only `openspot guide`, and checks each spot; it costs money

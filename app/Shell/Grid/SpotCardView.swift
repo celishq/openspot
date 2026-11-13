@@ -47,8 +47,8 @@ struct SpotCardView: View, @MainActor Equatable {
             .overlay(alignment: .topTrailing) { FailureMark(entry: entry, size: size) }
             .contentShape(shape)
             .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id, opening: NSEvent.modifierFlags.contains(.command)) } }
-            .animation(.easeInOut(duration: 0.2), value: isOn)
-            .scaleEffect(showsPress ? SpotMotion.pressedScale : 1)
+            .animation(SpotMotion.fade(isShown: isOn), value: isOn)
+            .scaleEffect(showsPress ? MotionTokens.pressedScale : 1)
             .animation(SpotMotion.press, value: showsPress)
             .modifier(CardViewLoad(source: ownView))
     }
@@ -272,8 +272,8 @@ private struct CardReveal: ViewModifier {
     func body(content: Content) -> some View {
         content
             .opacity(isShown ? 1 : 0)
-            .scaleEffect(isShown ? 1 : SpotMotion.hiddenScale)
-            .animation(SpotMotion.surface(isShown: isShown), value: isShown)
+            .scaleEffect(isShown ? 1 : MotionTokens.hiddenScale)
+            .animation(SpotMotion.fade(isShown: isShown), value: isShown)
     }
 }
 
@@ -328,7 +328,7 @@ private struct ChainKeycap: View {
             .overlay(RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous).strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
             .offset(x: -inset, y: inset)
             .opacity(model.showsChain ? 1 : 0)
-            .animation(SpotMotion.keycap, value: model.showsChain)
+            .animation(SpotMotion.fade(isShown: true), value: model.showsChain)
             .allowsHitTesting(false)
     }
 }

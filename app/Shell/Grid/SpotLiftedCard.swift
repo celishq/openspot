@@ -16,8 +16,8 @@ struct SpotLiftedCard: ViewModifier {
                 shape.fill(SpotTheme.window)
                     .shadow(color: .black.opacity(SpotTheme.liftShadowStrength), radius: SpotTheme.liftShadow, y: 4)
                     .opacity(isSolid ? 1 : 0)
-                    .animation(isSolid ? nil : SpotMotion.liftFade, value: isSolid)
+                    .animation(isSolid ? nil : SpotMotion.fade(isShown: true), value: isSolid)
             }
-            .scaleEffect(isLifted ? SpotMotion.liftedScale : 1)
+            .scaleEffect(isLifted ? MotionTokens.liftedScale : 1)
     }
 }

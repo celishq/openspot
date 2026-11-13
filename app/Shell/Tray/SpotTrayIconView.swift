@@ -8,8 +8,8 @@ struct SpotTrayIconView: View {
     let image: NSImage
 
     private static let small = 0.5
-    private static let leave = Animation.easeIn(duration: 0.12)
-    private static let arrive = Animation.spring(duration: 0.3, bounce: 0.3).delay(0.06)
+    private static let leave = SpotMotion.fade(isShown: false)
+    private static let arrive = SpotMotion.press
 
     var body: some View {
         ZStack {
