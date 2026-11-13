@@ -50,12 +50,13 @@ public struct ScreenPlace: Sendable {
         return CGPoint(x: (area.midX - size.width / 2).rounded(.down), y: area.maxY - size.height + lift)
     }
 
-    /// How far Edit Spots lifts the panel, whose content is this rect from the window's top, so that the window's top meets
-    /// the top of the free area, and where the store lies then: centred under the content, whole on the screen, and from
-    /// the bottom of the free area up to a margin under the lifted content, one line of rows high at least.
+    /// How far Edit Spots lifts the panel, whose content is this rect from the window's top, and where the store lies then:
+    /// centred under the content, whole on the screen, and from the bottom of the free area up to a margin under the content,
+    /// one line of rows high at least. The panel stays still, and lifts only as far as that line needs, up to the area's top.
     public static func edit(under content: CGRect, in area: CGRect) -> (lift: CGFloat, dock: CGRect) {
         let margin = SpotTokens.dockMargin
-        let lift = area.maxY - content.maxY
+        let need = area.minY + 2 * margin + SpotTokens.dockHeight(rows: 1) - content.minY
+        let lift = min(max(need, 0), max(area.maxY - content.maxY, 0))
         let width = min(SpotTokens.dockWidth, area.width - 2 * margin)
         let x = min(max(content.midX - width / 2, area.minX + margin), area.maxX - margin - width).rounded(.down)
         let height = max(content.minY + lift - area.minY - 2 * margin, SpotTokens.dockHeight(rows: 1))

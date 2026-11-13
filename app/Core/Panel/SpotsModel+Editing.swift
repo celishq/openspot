@@ -20,8 +20,10 @@ extension SpotsModel {
             query = ""
             isEditing = true
             updateVisible()
-            if dockStamp == folder.stamp() { composeDock() } else { refreshDock(in: folder) }
+            composeDock()
         }
+        dockRead?.cancel()
+        dockRead = Task { [weak self] in await self?.refreshDockIfChanged(in: folder) }
     }
 
     /// Shows the panel in Edit Spots with the store, from the grid, a search or a sheet.
@@ -132,6 +134,19 @@ extension SpotsModel {
         let read = await Task.detached(priority: .userInitiated) { (folder.stamp(), Self.readDock(in: folder, store: store)) }.value
         dockStamp = read.0
         (dockOff, dockPublications) = read.1
+        composeDock()
+    }
+
+    /// Checks the folder's stamp off the main thread, and reads the store again only when the folder changed since its last
+    /// read.
+    func refreshDockIfChanged(in folder: SpotsFolder) async {
+        let stamp = await Task.detached(priority: .userInitiated) { folder.stamp() }.value
+        guard !Task.isCancelled, stamp != dockStamp else { return }
+        let store = files.store
+        let read = await Task.detached(priority: .userInitiated) { Self.readDock(in: folder, store: store) }.value
+        guard !Task.isCancelled else { return }
+        dockStamp = stamp
+        (dockOff, dockPublications) = read
         composeDock()
     }
 

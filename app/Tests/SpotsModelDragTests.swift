@@ -548,13 +548,17 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertNil(model.resize)
     }
 
-    func testTheStoreShowsEverySpotWithItsStateAndOrigin() throws {
+    func testTheStoreShowsEverySpotWithItsStateAndOrigin() async throws {
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("coin.spot/coin.sh"))
         model.setOnGrid(false, for: "d")
 
         model.endEditing()
         model.beginEditing()
+        XCTAssertFalse(model.dock.items.contains { $0.id == "coin" })
+        for _ in 0..<500 where !model.dock.items.contains(where: { $0.id == "coin" }) {
+            try await Task.sleep(for: .milliseconds(10))
+        }
         let states = Dictionary(uniqueKeysWithValues: model.dock.items.map { ($0.id, $0.state) })
         XCTAssertEqual(states, ["a": .onGrid, "b": .onGrid, "c": .onGrid, "d": .searchOnly, "coin": .off, "timer": .off])
         XCTAssertEqual(model.dock.items.first { $0.id == "a" }?.origin, .mine)
