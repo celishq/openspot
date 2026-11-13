@@ -39,7 +39,7 @@ public final class CommandAPI: @unchecked Sendable {
         case .refused, .unknown: return call
         default: break
         }
-        if call.reachesAccountKey {
+        if case .account(let account) = call, account.reachesKey {
             let caller = runs?.tokens.caller(of: environment)
             guard caller?.reachesAccountKey == true else { return .refused("Only Openspot's Account spot can reach your account key.") }
             return call
@@ -115,15 +115,7 @@ public final class CommandAPI: @unchecked Sendable {
         case .appQuit: return apps.quit()
         case .updateCheck: return UpdateCalls(app: app).check()
         case .updateInstall: return UpdateCalls(app: app).install()
-        case .accountStatus(let frame): return AccountCalls(environment: environment, app: app).status(frame: frame)
-        case .accountSync(let isOn): return AccountCalls(environment: environment, app: app).sync(isOn)
-        case .accountNew: return AccountCalls(environment: environment, app: app).new()
-        case .accountWords: return AccountCalls(environment: environment, app: app).words()
-        case .accountCheck(let places): return AccountCalls(environment: environment, app: app).check(places)
-        case .accountChecked: return AccountCalls(environment: environment, app: app).checked(input)
-        case .accountPhrase: return AccountCalls(environment: environment, app: app).phrase(input)
-        case .accountSignIn: return AccountCalls(environment: environment, app: app).signIn(input)
-        case .accountSignOut: return AccountCalls(environment: environment, app: app).signOut()
+        case .account(let call): return AccountCalls(environment: environment, app: app).work(for: call, input: input)
         case .eventEmit(let name, let value): return EventCalls(raise: raise).emit(name, value: value)
         case .calcSolve(let words): return CalcCalls().solve(words)
         case .emoji(let tone): return EmojiCalls(keywords: keywords).rows(tone: tone)

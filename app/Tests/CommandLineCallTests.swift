@@ -28,12 +28,12 @@ final class CommandLineCallTests: XCTestCase {
     }
 
     func testAccountPrintsItsFactsAndReachesTheKey() {
-        XCTAssertEqual(CommandLineCall(arguments: ["account"]), .accountStatus(frame: false))
-        XCTAssertEqual(CommandLineCall(arguments: ["account", "--frame"], environment: ["OPENSPOT_REASON": "sheet.open"]), .accountStatus(frame: true))
+        XCTAssertEqual(CommandLineCall(arguments: ["account"]), .account(.status(frame: false)))
+        XCTAssertEqual(CommandLineCall(arguments: ["account", "--frame"], environment: ["OPENSPOT_REASON": "sheet.open"]), .account(.status(frame: true)))
         XCTAssertEqual(CommandLineCall(arguments: ["account", "open"]), .unknown("account open"))
-        XCTAssertEqual(CommandLineCall(arguments: ["account", "sync", "off"]), .accountSync(false))
+        XCTAssertEqual(CommandLineCall(arguments: ["account", "sync", "off"]), .account(.sync(false)))
         XCTAssertEqual(CommandLineCall(arguments: ["account", "sign-out"], environment: ["OPENSPOT_REASON": "sheet.open"]), .refused("`openspot account sign-out` changes your account, so it cannot run in a read. Run it from a pick or an action."))
-        XCTAssertEqual(CommandLineCall(arguments: ["account", "words"], environment: ["OPENSPOT_REASON": "sheet.open"]), .accountWords)
+        XCTAssertEqual(CommandLineCall(arguments: ["account", "words"], environment: ["OPENSPOT_REASON": "sheet.open"]), .account(.words))
         XCTAssertEqual(CommandLineCall(arguments: ["account", "check", "4", "13"]), .unknown("account check 4 13"))
         XCTAssertEqual(CommandLineCall(arguments: ["account", "sync", "maybe"]), .unknown("account sync maybe"))
         XCTAssertTrue(CommandLineCall.usage.contains("openspot account words"))

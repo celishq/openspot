@@ -9,6 +9,20 @@ struct AccountCalls {
         .standard(environment: environment)
     }
 
+    func work(for call: AccountCall, input: @escaping @Sendable () async -> String) -> CommandAPI.Work {
+        switch call {
+        case .status(let frame): status(frame: frame)
+        case .sync(let isOn): sync(isOn)
+        case .new: new()
+        case .words: words()
+        case .check(let places): check(places)
+        case .checked: checked(input)
+        case .phrase: phrase(input)
+        case .signIn: signIn(input)
+        case .signOut: signOut()
+        }
+    }
+
     func status(frame: Bool) -> CommandAPI.Work {
         guard app != nil else { return CommandAnswer.notRunning("account") }
         return CommandAnswer.work { [store] in

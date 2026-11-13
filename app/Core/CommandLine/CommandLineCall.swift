@@ -72,24 +72,8 @@ public enum CommandLineCall: Equatable, Sendable {
     case appCareful(Bool)
     case appQuit
     case updateCheck
-    /// Prints the account as JSON, or with `frame` as one block.
-    case accountStatus(frame: Bool)
-    /// Makes the account sync through iCloud Keychain, or stay on this Mac.
-    case accountSync(Bool)
-    /// Makes a key when the Mac holds none.
-    case accountNew
-    /// Prints the 12 words of the key, after Touch ID.
-    case accountWords
-    /// Prints 4 choices for each of these places of the words, the same each time.
-    case accountCheck([Int])
-    /// Takes a place and a word on each line of stdin, and marks the words backed up when each is right.
-    case accountChecked
-    /// Reads a phrase on stdin, and prints how far it is from an account.
-    case accountPhrase
-    /// Keeps the key of the phrase or the nsec on stdin.
-    case accountSignIn
-    /// Removes the key, after Touch ID.
-    case accountSignOut
+    /// A call of `openspot account`.
+    case account(AccountCall)
     /// Restarts the app into the downloaded update.
     case updateInstall
     /// A call that cannot run here, with the line that says why and how to fix it.
@@ -346,19 +330,9 @@ public enum CommandLineCall: Equatable, Sendable {
             self = Self.changing(.appLink(rest[1] == "on"), "openspot setting set --spot openspot link", "changes your Mac", environment)
         case ("app", "quit") where rest.count == 1: self = Self.changing(.appQuit, "openspot app quit", "ends Openspot", environment)
         case ("update", "check") where rest.count == 1: self = Self.changing(.updateCheck, "openspot update check", "opens a window", environment)
-        case ("account", nil): self = .accountStatus(frame: false)
-        case ("account", "--frame") where rest.count == 1: self = .accountStatus(frame: true)
-        case ("account", "new") where rest.count == 1: self = Self.changing(.accountNew, "openspot account new", "makes an account", environment)
-        case ("account", "words") where rest.count == 1: self = .accountWords
-        case ("account", "check") where rest.count >= 2:
-            let places = rest.dropFirst().compactMap { Int($0) }.filter { (1...AccountPhrase.wordCount).contains($0) }
-            self = places.count == rest.count - 1 ? .accountCheck(places) : .unknown(arguments.joined(separator: " "))
-        case ("account", "checked") where rest.count == 1: self = Self.changing(.accountChecked, "openspot account checked", "changes your account", environment)
-        case ("account", "phrase") where rest.count == 1: self = .accountPhrase
-        case ("account", "sign-in") where rest.count == 1: self = Self.changing(.accountSignIn, "openspot account sign-in", "changes your account", environment)
-        case ("account", "sign-out") where rest.count == 1: self = Self.changing(.accountSignOut, "openspot account sign-out", "changes your account", environment)
-        case ("account", "sync") where rest == ["sync", "on"] || rest == ["sync", "off"]:
-            self = Self.changing(.accountSync(rest[1] == "on"), "openspot account sync", "changes where your account is kept", environment)
+        case ("account", _):
+            guard let call = AccountCall(rest) else { self = .unknown(arguments.joined(separator: " ")); return }
+            self = call.change.map { Self.changing(.account(call), $0.name, $0.act, environment) } ?? .account(call)
         case ("update", "install") where rest.count == 1: self = Self.changing(.updateInstall, "openspot update install", "restarts Openspot", environment)
         case ("menubar", "on") where rest.count == 2, ("menubar", "off") where rest.count == 2:
             self = Self.changing(.menuBar(id: rest[1], isShown: rest[0] == "on"), "openspot setting set menubar", "changes the menu bar", environment)
@@ -590,15 +564,5 @@ public enum CommandLineCall: Equatable, Sendable {
             options[words[index]] = words[index + 1]
         }
         return options
-    }
-}
-
-extension CommandLineCall {
-    /// Whether the call reaches the account key, which only Openspot's Account spot may do (protocol: Trust).
-    var reachesAccountKey: Bool {
-        switch self {
-        case .accountSync, .accountNew, .accountWords, .accountCheck, .accountChecked, .accountPhrase, .accountSignIn, .accountSignOut: true
-        default: false
-        }
     }
 }
