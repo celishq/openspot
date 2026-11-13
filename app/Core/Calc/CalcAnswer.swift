@@ -36,14 +36,14 @@ public struct CalcAnswer: Equatable, Sendable {
             self = answer
         } else if !isDate, let expression = CalcExpression(text: text, locale: locale), !expression.isPlain {
             self.init(value: Self.plain(expression.value, digits: 15), title: Self.written(expression.value, locale: locale), detail: expression.detail)
-        } else if let date = CalcDate(text: text, locale: locale, clock: clock, now: now) {
-            self.init(value: date.value, title: date.title, detail: date.detail, unit: date.unit)
+        } else if let date = CalcDate.answer(to: text, locale: locale, clock: clock, now: now) {
+            self = date
         } else {
             return nil
         }
     }
 
-    private init(value: String, title: String, detail: String, unit: String? = nil, status: String? = nil, tone: String? = nil) {
+    init(value: String, title: String, detail: String, unit: String? = nil, status: String? = nil, tone: String? = nil) {
         self.value = value
         self.title = title
         self.detail = detail

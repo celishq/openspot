@@ -1,16 +1,10 @@
 import Foundation
 
-/// A typed sum of dates and times: a date moved by lengths, such as `today + 3 weeks`; a count to or from a date, such as
+/// The reader of a typed sum of dates and times: a date moved by lengths, such as `today + 3 weeks`; a count to or from a date, such as
 /// `days until 25 dec`; the days between two dates; a time in another zone, such as `3pm tokyo in kyiv`; or a date alone,
 /// such as `next friday`. `now`, `today`, `tomorrow` and `yesterday` read from the clock, and other dates from the date
 /// finder of macOS. A count since a date with no year counts from its last time, not its next.
-struct CalcDate {
-    let value: String
-    let title: String
-    let detail: String
-    /// The word of the title that names what the value counts, such as `days` or `AM`.
-    var unit: String?
-
+enum CalcDate {
     private static let units: [String: Calendar.Component] = [
         "d": .day, "day": .day, "days": .day, "w": .weekOfYear, "wk": .weekOfYear, "week": .weekOfYear, "weeks": .weekOfYear,
         "mo": .month, "month": .month, "months": .month, "y": .year, "yr": .year, "year": .year, "years": .year,
@@ -18,30 +12,15 @@ struct CalcDate {
     ]
     private static let relative = ["today", "tomorrow", "yesterday", "now", "next", "last", "in", "ago"]
 
-    init?(text: String, locale: Locale, clock: Calendar, now: Date) {
+    /// The answer to a text, or nil when it is no sum of dates.
+    static func answer(to text: String, locale: Locale, clock: Calendar, now: Date) -> CalcAnswer? {
         let text = text.lowercased().trimmingCharacters(in: .whitespaces)
         let format = Format(locale: locale, clock: clock)
-        if let moved = Self.moved(text, format, now) {
-            self = moved
-        } else if let count = Self.count(text, format, now) {
-            self = count
-        } else if let zoned = Self.zoned(text, format, now) {
-            self = zoned
-        } else if let alone = Self.alone(text, format, now) {
-            self = alone
-        } else {
-            return nil
-        }
-    }
-
-    private init(value: String, title: String, detail: String) {
-        self.value = value
-        self.title = title
-        self.detail = detail
+        return moved(text, format, now) ?? count(text, format, now) ?? zoned(text, format, now) ?? alone(text, format, now)
     }
 
     /// `<date> + <n> <unit>`, with as many lengths as it has.
-    private static func moved(_ text: String, _ format: Format, _ now: Date) -> CalcDate? {
+    private static func moved(_ text: String, _ format: Format, _ now: Date) -> CalcAnswer? {
         guard let match = text.firstMatch(of: /^(.+?)\s*((?:[+-]\s*\d+\s*[a-z]+\s*)+)$/),
               let start = moment(String(match.1), format.clock, now) else { return nil }
         var date = start.date
@@ -53,11 +32,11 @@ struct CalcDate {
             hasTime = hasTime || unit == .hour || unit == .minute
         }
         let lengths = match.2.trimmingCharacters(in: .whitespaces).replacing(/([+-])\s*/) { "\($0.1) " }
-        return CalcDate(value: format.value(date, hasTime: hasTime), title: format.day(date, hasTime: hasTime), detail: "\(format.day(start.date, hasTime: start.hasTime)) \(lengths)")
+        return CalcAnswer(value: format.value(date, hasTime: hasTime), title: format.day(date, hasTime: hasTime), detail: "\(format.day(start.date, hasTime: start.hasTime)) \(lengths)")
     }
 
     /// `<unit> until <date>` or `<unit> since <date>`, and `<date> - <date>` in days.
-    private static func count(_ text: String, _ format: Format, _ now: Date) -> CalcDate? {
+    private static func count(_ text: String, _ format: Format, _ now: Date) -> CalcAnswer? {
         let unit: Calendar.Component
         var from: (date: Date, hasTime: Bool)
         var to: (date: Date, hasTime: Bool)
@@ -85,13 +64,11 @@ struct CalcDate {
         guard let count = format.clock.dateComponents([unit], from: from.date, to: to.date).value(for: unit) else { return nil }
         let detail = "\(format.day(from.date, hasTime: from.hasTime && [.hour, .minute].contains(unit))) to \(format.day(to.date, hasTime: to.hasTime && [.hour, .minute].contains(unit)))"
         let title = format.length(count, unit)
-        var span = CalcDate(value: String(count), title: title, detail: detail)
-        span.unit = title.firstMatch(of: /^[-\d\s.,\u{00A0}\u{202F}]+(\D.*)$/).map { String($0.1) }
-        return span
+        return CalcAnswer(value: String(count), title: title, detail: detail, unit: title.firstMatch(of: /^[-\d\s.,\u{00A0}\u{202F}]+(\D.*)$/).map { String($0.1) })
     }
 
     /// `<time> [zone] in <zone>`, such as `3pm tokyo in kyiv`, or `now in <zone>`.
-    private static func zoned(_ text: String, _ format: Format, _ now: Date) -> CalcDate? {
+    private static func zoned(_ text: String, _ format: Format, _ now: Date) -> CalcAnswer? {
         for match in text.matches(of: /\s+in\s+/).reversed() {
             guard let target = zone(String(text[match.range.upperBound...])) else { continue }
             let source = String(text[..<match.range.lowerBound])
@@ -113,20 +90,19 @@ struct CalcDate {
                 continue
             }
             let title = format.time(moment.date, in: target)
-            var time = CalcDate(value: format.value(moment.date, hasTime: true, in: target), title: title, detail: "\(format.time(moment.date, in: moment.zone)) · \(name(of: moment.zone))")
-            time.unit = format.half(of: title)
-            return time
+            let detail = "\(format.time(moment.date, in: moment.zone)) · \(name(of: moment.zone))"
+            return CalcAnswer(value: format.value(moment.date, hasTime: true, in: target), title: title, detail: detail, unit: format.half(of: title))
         }
         return nil
     }
 
     /// A date with nothing else, when it holds a digit or a word such as `next`, so that a word such as `may` is no date.
-    private static func alone(_ text: String, _ format: Format, _ now: Date) -> CalcDate? {
+    private static func alone(_ text: String, _ format: Format, _ now: Date) -> CalcAnswer? {
         let words = text.split(separator: " ").map(String.init)
         guard text.contains(where: \.isNumber) || words.contains(where: relative.contains),
               text.firstMatch(of: /^\d{1,2}(:\d{2})?\s*(am|pm)?$/) == nil,
               let date = moment(text, format.clock, now) else { return nil }
-        return CalcDate(value: format.value(date.date, hasTime: date.hasTime), title: format.day(date.date, hasTime: date.hasTime), detail: text)
+        return CalcAnswer(value: format.value(date.date, hasTime: date.hasTime), title: format.day(date.date, hasTime: date.hasTime), detail: text)
     }
 
     /// The moment of a whole text: a word of the clock, or a date that the finder reads from all of it.
