@@ -30,7 +30,7 @@ struct SpotSlotView: View {
                 toggle
             }
         case .slider(let level, let low, let high):
-            SpotSlotSlider(level: level, low: low, high: high) { onSlot(part.id, String(Int($0.rounded()))) }
+            SpotSlotSlider(level: level, range: low...high) { onSlot(part.id, String(Int($0.rounded()))) }
         case .menu(let options, let value), .list(let options, let value):
             Menu(options.first { $0.id == value }?.title ?? part.title ?? "") {
                 ForEach(options, id: \.id) { option in
@@ -145,23 +145,6 @@ private struct SpotSlotField: View {
                 if let typed { onSubmit(typed) }
                 typed = nil
             }
-    }
-}
-
-/// A slider in a row, which sends its value once the person lets go.
-private struct SpotSlotSlider: View {
-    let level: Double
-    let low: Double
-    let high: Double
-    let onEnd: (Double) -> Void
-    @State private var dragged: Double?
-
-    var body: some View {
-        Slider(value: Binding(get: { dragged ?? level }, set: { dragged = $0 }), in: low...high) { editing in
-            if !editing, let dragged { onEnd(dragged); self.dragged = nil }
-        }
-        .controlSize(.small)
-        .tint(SpotTheme.ink)
     }
 }
 

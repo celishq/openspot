@@ -425,10 +425,7 @@ struct SheetPartsView: View {
                 Image(systemName: symbol)
                     .foregroundStyle(SpotTheme.ink)
             }
-            Slider(value: Binding(get: { level }, set: { onSet(part, String(Int($0.rounded()))) }), in: low...max(high, low + 1))
-                .controlSize(.small)
-                .tint(SpotTheme.ink)
-                .labelsHidden()
+            SpotSlotSlider(level: level, range: low...max(high, low + 1)) { onSet(part, String(Int($0.rounded()))) }
         }
     }
 
