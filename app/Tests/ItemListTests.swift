@@ -387,4 +387,21 @@ final class ItemListTests: XCTestCase {
 
         XCTAssertEqual(list.shown.map(\.title), ["Safari", "Notes"])
     }
+
+    func testASearchKeepsThePinnedRowsAroundTheRowsThatScroll() {
+        var list = ItemList(items: [
+            SpotItem(title: "Key", run: "key", pin: .top), SpotItem(title: "Apple", run: "apple", file: "/apple.txt"),
+            SpotItem(title: "Bell", run: "bell"), SpotItem(title: "Quit", run: "quit", pin: .bottom)
+        ])
+
+        list.search("be")
+
+        XCTAssertEqual(list.pinnedTop.map(\.run), ["key"])
+        XCTAssertEqual(list.scrolling.map(\.run), ["bell"])
+        XCTAssertEqual(list.pinnedBottom.map(\.run), ["quit"])
+        XCTAssertFalse(list.hasFiles)
+        XCTAssertTrue(list.setsApart)
+        list.search("ap")
+        XCTAssertTrue(list.hasFiles)
+    }
 }

@@ -172,11 +172,14 @@ struct CalcExpression: Sendable {
 
         /// A number written the way of the Mac, with no grouping, so that the detail reads like the typed text.
         private static func written(_ number: Double, _ locale: Locale) -> String {
-            let formatter = NumberFormatter()
-            formatter.locale = locale
-            formatter.usesGroupingSeparator = false
-            formatter.usesSignificantDigits = true
-            formatter.maximumSignificantDigits = 15
+            let formatter = CalcFormats.formatter(NumberFormatter.self, "typed|\(CalcFormats.key(locale))") {
+                let formatter = NumberFormatter()
+                formatter.locale = locale
+                formatter.usesGroupingSeparator = false
+                formatter.usesSignificantDigits = true
+                formatter.maximumSignificantDigits = 15
+                return formatter
+            }
             return formatter.string(from: NSNumber(value: number)) ?? String(number)
         }
     }

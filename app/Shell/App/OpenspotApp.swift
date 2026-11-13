@@ -85,7 +85,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
                 .error("Openspot cannot listen for openspot calls for \(config.path, privacy: .public), so spots that ask the app fail.")
         }
         model.reload()
-        folderWatch = SpotsFolderWatch(folder: model.files.folder.url) { [weak self] in self?.model.folderChanged() }
+        folderWatch = SpotsFolderWatch(folder: model.files.folder.url, config: model.files.config.url) { [weak self] in self?.model.folderChanged() }
         try? AgentNote(command: Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/openspot").path).write(in: model.files.folder.url)
         showListener = SpotShowLink.listen { [weak self] id in self?.model.reveal(id) ?? false }
         let isFirstLaunch = SpotsFolder.standard().isFirstLaunch(config: .standard())
@@ -93,6 +93,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
             guard let self else { return }
             SpotSheetWarmth.draw()
             SpotSoftBlur.warm(SpotsView.blurHeights(of: model))
+            update?.start()
             if isFirstLaunch {
                 model.beginFirstLaunch()
             } else {
@@ -202,7 +203,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
 
     private func register(_ key: Shortcut) -> HotKey.Registration? {
         HotKey.register(key) { [weak self] in
-            Task { @MainActor in self?.togglePanel() }
+            MainActor.assumeIsolated { self?.togglePanel() }
         }
     }
 

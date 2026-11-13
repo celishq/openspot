@@ -107,7 +107,7 @@ final class SpotTrayBar: NSObject {
         shown.mark = mark
         shown.host.rootView = SpotTrayMarkView(mark: mark)
         let width = ceil(shown.host.fittingSize.width)
-        shown.item.length = width
+        if shown.item.length != width { shown.item.length = width }
         shown.host.frame = NSRect(x: 0, y: 0, width: width, height: shown.item.button?.bounds.height ?? 0)
         shown.item.button?.toolTip = mark.summary
         shown.item.button?.setAccessibilityLabel(mark.summary)

@@ -112,11 +112,8 @@ final class GridExampleTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let shown = folder.appendingPathComponent("shown")
             let data = try self.fakeGrid("echo '0 0 1 1'", in: folder)
-            let waiting = Process()
-            waiting.executableURL = URL(fileURLWithPath: "/bin/sh")
-            waiting.arguments = ["-c", "trap 'touch \(shown.path)' USR1; while [ ! -f \(shown.path) ]; do sleep 0.05; done"]
-            try waiting.run()
-            defer { waiting.terminate(); waiting.waitUntilExit() }
+            let waiting = try TestChild("/bin/sh", ["-c", "trap 'touch \(shown.path)' USR1; while [ ! -f \(shown.path) ]; do sleep 0.05; done"])
+            defer { waiting.stop() }
             try String(waiting.processIdentifier).write(to: data.appendingPathComponent("grid.pid"), atomically: true, encoding: .utf8)
 
             _ = try await grid.perform(.open, timeout: 5)
@@ -127,6 +124,86 @@ final class GridExampleTests: SampleSpotsCase {
             XCTAssertTrue(FileManager.default.fileExists(atPath: shown.path))
             XCTAssertEqual(self.calls(in: folder), "")
         }
+    }
+
+    func testASecondGridThatWouldWaitEndsAtOnceAndLeavesTheOneThatWaits() async throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-grid-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let grid = folder.appendingPathComponent("grid")
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-o", grid.path, examples.appendingPathComponent("grid.spot/grid.swift").path])
+        let pidfile = folder.appendingPathComponent("grid.pid")
+        try "1".write(to: pidfile, atomically: true, encoding: .utf8)
+        let held = open(folder.appendingPathComponent("grid.lock").path, O_RDWR | O_CREAT, 0o644)
+        defer { close(held) }
+        XCTAssertEqual(flock(held, LOCK_EX), 0)
+        let parent = Process()
+        parent.executableURL = URL(fileURLWithPath: "/bin/sleep")
+        parent.arguments = ["600"]
+        try parent.run()
+        defer { parent.terminate() }
+
+        let second = Process()
+        second.executableURL = grid
+        second.arguments = ["stay", String(parent.processIdentifier)]
+        try second.run()
+        defer { kill(second.processIdentifier, SIGKILL) }
+        for _ in 0..<200 where second.isRunning {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+
+        XCTAssertFalse(second.isRunning)
+        XCTAssertEqual(try String(contentsOf: pidfile, encoding: .utf8), "1")
+    }
+
+    func testAReadAfterARebuildStartsTheNewGridOnceTheOldOneHasEnded() async throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-grid-\(UUID().uuidString)")
+        let data = folder.appendingPathComponent("data")
+        try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let built = folder.appendingPathComponent("grid")
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-o", built.path, examples.appendingPathComponent("grid.spot/grid.swift").path])
+        let holder = folder.appendingPathComponent("holder.py")
+        try """
+        import fcntl, os, signal, sys, time
+        lock = open(sys.argv[1] + '/grid.lock', 'a')
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        pidfile = open(sys.argv[1] + '/grid.pid', 'w')
+        fcntl.flock(pidfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        signal.signal(signal.SIGTERM, lambda *_: (time.sleep(0.5), os._exit(0)))
+        pidfile.write(str(os.getpid()))
+        pidfile.flush()
+        while True:
+            signal.pause()
+        """.write(to: holder, atomically: true, encoding: .utf8)
+        let old = Process()
+        old.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
+        old.arguments = [holder.path, data.path]
+        try old.run()
+        defer { old.terminate() }
+        let pidfile = data.appendingPathComponent("grid.pid")
+        func named() -> pid_t? { pid_t((try? String(contentsOf: pidfile, encoding: .utf8)) ?? "") }
+        for _ in 0..<200 where named() == nil {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        let copy = data.appendingPathComponent("grid")
+        try FileManager.default.copyItem(at: built, to: copy)
+        try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(5)], ofItemAtPath: copy.path)
+
+        let read = Process()
+        read.executableURL = URL(fileURLWithPath: "/bin/sh")
+        read.arguments = [examples.appendingPathComponent("grid.spot/grid.sh").path, "read"]
+        read.environment = ["PATH": "/usr/bin:/bin", "OPENSPOT_DATA": data.path, "OPENSPOT_REASON": "panel.open"]
+        try read.run()
+        defer { read.terminate() }
+        for _ in 0..<200 where old.isRunning || named().map({ $0 == old.processIdentifier || kill($0, 0) != 0 }) != false {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        defer { if let new = named() { kill(new, SIGKILL) } }
+
+        XCTAssertFalse(old.isRunning)
+        XCTAssertNotEqual(named(), old.processIdentifier)
+        XCTAssertEqual(named().map { kill($0, 0) }, 0)
     }
 
     func testAReadWithNoReasonStartsNoGrid() async throws {

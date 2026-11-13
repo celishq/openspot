@@ -20,6 +20,7 @@ extension SpotsModel {
     /// Shows the spots that the search finds and the items it finds in the lists that offer them, in one ranking. While the
     /// search has text, each one is a full-width row, and an answer card keeps its own full-width size (protocol: Places).
     public func updateVisible() {
+        visibleUpdates += 1
         let next = found()
         if next != visible { visible = next }
         let sizes = query.isEmpty ? visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size } : visible.map { $0.isAnswer ? $0.size : SpotSize.strip }
@@ -31,6 +32,14 @@ extension SpotsModel {
             placements = grid.place(sizes)
         }
         if transition.phase == .closing, !hasPlace(transition.id) { cutSheet(to: nil) }
+    }
+
+    /// Whether a change of the rows or the state of a spot can change the cards that show: with no search, when it moves its
+    /// card on or off the grid, and with a search, when the search finds the spot, its rows or its answers.
+    func mayMove(_ id: String) -> Bool {
+        guard let entry = entries.first(where: { $0.id == id }) else { return false }
+        guard !query.trimmingCharacters(in: .whitespaces).isEmpty else { return entry.isOnGrid != visible.contains { $0.id == id } }
+        return entry.spot.isFound || entry.spot.isGlobal || entry.spot.answers != nil
     }
 
     /// Raises the text of the main search, which each spot whose `answers` pattern matches answers (protocol: Places).

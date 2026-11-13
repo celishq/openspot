@@ -3,7 +3,8 @@ import AppKit
 import OpenspotCore
 
 /// Keeps the app current: it checks GitHub each day, downloads a new version silently and installs it on quit, or at once
-/// from the Updates spot. A build with no update key has none of this.
+/// from the Updates spot. It waits for `start()`, so that the launch shows the panel first. A build with no update key has
+/// none of this.
 @MainActor
 final class AppUpdate: NSObject, SPUUpdaterDelegate, SPUStandardUserDriverDelegate {
     /// The version of the downloaded update that waits to install.
@@ -18,7 +19,12 @@ final class AppUpdate: NSObject, SPUUpdaterDelegate, SPUStandardUserDriverDelega
         guard let key = Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") as? String, !key.isEmpty else { return nil }
         self.onReady = onReady
         super.init()
-        controller = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: self, userDriverDelegate: self)
+        controller = SPUStandardUpdaterController(startingUpdater: false, updaterDelegate: self, userDriverDelegate: self)
+    }
+
+    /// Starts the daily check, which checks at once when the last check is a day old.
+    func start() {
+        controller?.startUpdater()
     }
 
     nonisolated var supportsGentleScheduledUpdateReminders: Bool {
@@ -64,6 +70,7 @@ final class AppUpdate: NSObject, SPUUpdaterDelegate, SPUStandardUserDriverDelega
 
     func check() {
         NSApp.activate(ignoringOtherApps: true)
+        start()
         controller?.checkForUpdates(nil)
     }
 
