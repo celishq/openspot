@@ -58,7 +58,7 @@ struct SpotActionMenuView: View, @MainActor Equatable {
             .padding(.horizontal, SpotTokens.padding - SpotTokens.menuPadding + 4)
             .frame(height: SpotTokens.menuRowHeight)
             .spotFill(isActive: call != nil, otherwise: isConfirming ? SpotTheme.confirm : .clear, in: shape)
-            .modifier(MenuRing(index: index, selection: selection ?? { [menu] in menu.selected }, isConfirming: isConfirming, shape: shape))
+            .modifier(SpotLiveSelectionRing(isSelected: { [selection, menu] in index == (selection ?? { menu.selected })() && !isConfirming }, shape: shape))
             .contentShape(shape)
         }
         .buttonStyle(.plain)
@@ -86,17 +86,5 @@ struct SpotActionMenuView: View, @MainActor Equatable {
         lhs.menu.rows == rhs.menu.rows && lhs.menu.shown == rhs.menu.shown && lhs.menu.query == rhs.menu.query
             && lhs.menu.confirming == rhs.menu.confirming && lhs.frame == rhs.frame && lhs.isSettled == rhs.isSettled
             && (lhs.selection == nil) == (rhs.selection == nil) && (lhs.selection != nil || lhs.menu.selected == rhs.menu.selected)
-    }
-}
-
-/// The ring of one row of the menu. It reads the selection itself, so that a move reruns the rings and no row.
-private struct MenuRing: ViewModifier {
-    let index: Int
-    let selection: () -> Int
-    let isConfirming: Bool
-    let shape: RoundedRectangle
-
-    func body(content: Content) -> some View {
-        content.modifier(SpotSelectionRing(isSelected: index == selection() && !isConfirming, shape: shape))
     }
 }

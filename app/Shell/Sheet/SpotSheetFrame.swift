@@ -40,19 +40,8 @@ struct SpotSheetFrame: ViewModifier {
         }
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
         .clipShape(shape)
-        .modifier(SheetRing(isSelected: isSelected, shape: shape, progress: progress))
+        .modifier(SpotLiveSelectionRing(isSelected: isSelected, shape: shape, progress: progress))
         .scaleEffect(isShown ? 1 : MotionTokens.hiddenScale, anchor: UnitPoint(x: rect.midX / SpotTokens.panelWidth, y: rect.midY / SpotTokens.panelHeight))
         .animation(SpotMotion.fade(isShown: isShown), value: isShown)
-    }
-}
-
-/// The ring of the card under the sheet. It reads the selection itself, so that a move of the selection reruns only it.
-private struct SheetRing: ViewModifier {
-    let isSelected: () -> Bool
-    let shape: SpotSurfaceShape
-    let progress: Double
-
-    func body(content: Content) -> some View {
-        content.modifier(SpotSelectionRing(isSelected: isSelected(), shape: shape, progress: progress))
     }
 }

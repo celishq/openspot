@@ -215,7 +215,7 @@ struct SpotRowsView: View {
         .padding(.horizontal, SpotTokens.padding)
         .frame(height: SpotTokens.listRowHeight)
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
-        .modifier(RowRing(run: item.run, selectedRun: selectedRun, shape: row))
+        .modifier(SpotLiveSelectionRing(isSelected: { [selectedRun, run = item.run] in selectedRun() == run }, shape: row, marksMenu: true))
         .contentShape(row)
     }
 }
@@ -254,17 +254,6 @@ private struct RowsFade: ViewModifier {
                         .frame(height: bottom)
                 }
             }
-    }
-}
-
-/// The ring of one row. It reads the selection itself, so that a move reruns the rings and no row.
-private struct RowRing: ViewModifier {
-    let run: String
-    let selectedRun: () -> String?
-    let shape: RoundedRectangle
-
-    func body(content: Content) -> some View {
-        content.modifier(SpotSelectionRing(isSelected: selectedRun() == run, shape: shape, marksMenu: true))
     }
 }
 
