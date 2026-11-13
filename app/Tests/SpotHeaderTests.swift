@@ -50,6 +50,8 @@ final class SpotHeaderTests: XCTestCase {
         let spot = try XCTUnwrap(try SpotFile(file: url, id: "icon")?.spots.first)
 
         XCTAssertEqual(spot.offeredActions.map(\.action.id), ["change"])
+        XCTAssertEqual(spot.offeredActions.first?.owner, "icon")
+        XCTAssertEqual(spot.offeredActions.first?.group, "Icon")
         XCTAssertEqual(spot.offeredActions.first?.action.title, "Change Icon")
         XCTAssertEqual(spot.offeredActions.first?.origins, [])
         XCTAssertEqual(spot.offers.map(\.id), ["reset"])

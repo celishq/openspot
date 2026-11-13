@@ -66,42 +66,9 @@ public struct SpotFile: Equatable, Sendable {
             throw SpotError.fault("\(name) has field=\(field), a key that Openspot keeps for the person. Give the field another name.")
         }
         let buttons = header.children.filter { $0.fields.first?.key == "button" }
-        for block in buttons {
-            if let word = block.values("offers").first(where: { $0.split(separator: " ").first != "actions" }) {
-                throw SpotError.fault("\(name) has offers=\(word) on the button \(block.value("button") ?? ""). A button offers only offers=actions")
-            }
-        }
-        var offeredActions: [OfferedAction] = []
-        var offeredBlocks: Set<Int> = []
-        for (index, block) in buttons.enumerated() {
-            let id = block.value("button") ?? ""
-            let parent = id.lastIndex(of: ".").flatMap { dot in offeredActions.first { $0.action.id == String(id[..<dot]) } }
-            guard !block.values("offers").isEmpty || parent != nil else { continue }
-            guard let action = CommandAction(id: id, block: block) else {
-                throw SpotError.fault("\(name) cannot read the button \(id). Give it an ID with no space and a title, such as button=change with title=Change Icon")
-            }
-            if let parent, !block.values("offers").isEmpty {
-                throw SpotError.fault("\(name) offers the button \(id), which shows in the submenu of \(parent.action.id) and takes its place. Remove its offers line")
-            }
-            let filter = block.values("offers").first.map { String($0.dropFirst("actions".count)) } ?? ""
-            let origins = try filter.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }.map { word in
-                guard let origin = OfferedAction.words[word] else {
-                    throw SpotError.fault("\(name) offers actions to an unknown card: \(word). Use mine, core or builtin")
-                }
-                return origin
-            }
-            let when = block.value("when")
-            if let when, mode != .inline {
-                throw SpotError.fault("\(name) has when=\(when) on the button \(id), which only a JavaScript spot can answer. Remove it, or write the spot as a .js file")
-            }
-            if let when, when.range(of: "^[A-Za-z_$][A-Za-z0-9_$]*$", options: .regularExpression) == nil {
-                throw SpotError.fault("\(name) has when=\(when) on the button \(id). Name a function of the spot, such as when=hasIcon")
-            }
-            let offered = CommandAction(id: action.id, title: action.title, key: action.key, scope: .spot, after: action.after, isForm: action.isForm, confirm: action.confirm)
-            offeredActions.append(OfferedAction(action: offered, owner: id, group: name, origins: parent?.origins ?? Set(origins), when: when))
-            offeredBlocks.insert(index)
-        }
-        let offers = try buttons.enumerated().filter { !offeredBlocks.contains($0.offset) }.map(\.element).map { block in
+        let offeredActions = try OfferedAction.read(buttons, owner: id, of: name, isInline: mode == .inline)
+        let offeredIDs = Set(offeredActions.map(\.action.id))
+        let offers = try buttons.filter { !offeredIDs.contains($0.value("button") ?? "") }.map { block in
             guard let offer = CommandOffer(block: block) else {
                 throw SpotError.fault("\(name) cannot read the button \(block.value("button") ?? ""). Give it an ID with no space and a title, such as button=left with title=Left side")
             }
