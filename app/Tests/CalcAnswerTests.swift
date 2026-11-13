@@ -91,7 +91,7 @@ final class CalcAnswerTests: XCTestCase {
     }
 
     func testACurrencyConvertsWithTheRatesAndNamesTheirDay() {
-        XCTAssertEqual(answer("15 usd in eur", rates: rates())?.text, "row=13.46\ntitle=€13.46\ndetail=15 USD in EUR · rates of Nov 10\nunit=€\n")
+        XCTAssertEqual(answer("15 usd in eur", rates: rates())?.text, "row=13.46\ntitle=€13.46\ndetail=15 USD in EUR\nunit=€\nrates=Nov 10\n")
         XCTAssertEqual(spaced(answer("15 usd in eur", in: ukrainian, rates: rates())?.title), "13,46 €")
         let cases: [(String, String)] = [
             ("$15 in eur", "13.46"), ("15$ to €", "13.46"), ("15 dollars in euros", "13.46"), ("100 eur in uah", "5068.23"),
@@ -121,8 +121,8 @@ final class CalcAnswerTests: XCTestCase {
         let old = try XCTUnwrap(CalcRates(exchangeAPI: Data(file.utf8), time: now))
         let yesterday = try XCTUnwrap(CalcRates(exchangeAPI: CalcRatesTests.file, time: now))
 
-        XCTAssertEqual(answer("15 usd in eur", rates: old)?.text, "row=13.46\ntitle=€13.46\ndetail=15 USD in EUR · rates of Nov 2, 9 days old\nunit=€\ntone=warn\n")
-        XCTAssertEqual(answer("15 usd in eur", rates: yesterday)?.text, "row=13.46\ntitle=€13.46\ndetail=15 USD in EUR · rates of Nov 10\nunit=€\n")
+        XCTAssertEqual(answer("15 usd in eur", rates: old)?.text, "row=13.46\ntitle=€13.46\ndetail=15 USD in EUR\nunit=€\nrates=Nov 2, 9 days old\ntone=warn\n")
+        XCTAssertEqual(answer("15 usd in eur", rates: yesterday)?.text, "row=13.46\ntitle=€13.46\ndetail=15 USD in EUR\nunit=€\nrates=Nov 10\n")
     }
 
     func testWithNoRatesAKnownCurrencySaysWhyAndAnUnknownOneSaysNothing() {
@@ -134,7 +134,7 @@ final class CalcAnswerTests: XCTestCase {
 
     func testOnlyAConversionWithAKnownCurrencyUsesTheRates() {
         XCTAssertEqual(answer("15 apr in usd", rates: rates())?.value, "0.51")
-        XCTAssertFalse(answer("15 apr", rates: rates())?.detail.contains("rates of") ?? false)
+        XCTAssertNil(answer("15 apr", rates: rates())?.rates)
         XCTAssertEqual(answer("0.5 eth in btc", rates: rates()), nil, "the rates of the test know no ETH")
     }
 

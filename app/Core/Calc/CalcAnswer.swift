@@ -15,6 +15,8 @@ public struct CalcAnswer: Equatable, Sendable {
     public let tone: String?
     /// The part of the title that names what the value counts, such as `€`, `mi` or `days`.
     public let unit: String?
+    /// The day of the exchange rates of a currency, with their age when they are old, such as `Nov 2, 9 days old`.
+    public let rates: String?
 
     /// Reads the text. `rates` gives the exchange rates, and is asked only for a currency.
     public init?(
@@ -43,11 +45,12 @@ public struct CalcAnswer: Equatable, Sendable {
         }
     }
 
-    init(value: String, title: String, detail: String, unit: String? = nil, status: String? = nil, tone: String? = nil) {
+    init(value: String, title: String, detail: String, unit: String? = nil, rates: String? = nil, status: String? = nil, tone: String? = nil) {
         self.value = value
         self.title = title
         self.detail = detail
         self.unit = unit
+        self.rates = rates
         self.status = status
         self.tone = tone
     }
@@ -56,8 +59,8 @@ public struct CalcAnswer: Equatable, Sendable {
     public var text: String {
         if let status { return TextBlock(fields: [.init(key: "status", value: status)]).text }
         let fields: [TextBlock.Field] = [.init(key: "row", value: value), .init(key: "title", value: title), .init(key: "detail", value: detail)]
-        let unit = unit.map { [TextBlock.Field(key: "unit", value: $0)] } ?? []
-        return TextBlock(fields: fields + unit + (tone.map { [.init(key: "tone", value: $0)] } ?? [])).text
+        let more = [("unit", unit), ("rates", rates), ("tone", tone)].compactMap { key, value in value.map { TextBlock.Field(key: key, value: $0) } }
+        return TextBlock(fields: fields + more).text
     }
 
     /// The first split of the text whose names are two units of one kind, or two currencies that the rates know.
@@ -90,12 +93,12 @@ public struct CalcAnswer: Equatable, Sendable {
             plain.maximumFractionDigits = formatter.maximumFractionDigits
             let age = days(of: rates, clock: clock, now: now)
             let old = age.map { $0 >= oldDays ? ", \(daysWritten($0, clock: clock, locale: locale)) old" : "" } ?? ""
-            let detail = "\(split.amount.detail) \(from) in \(to) · rates of \(day(of: rates, clock: clock, now: now, locale: locale))\(old)"
             return CalcAnswer(
                 value: plain.string(from: NSNumber(value: value)) ?? Self.plain(value, digits: 15),
                 title: formatter.string(from: NSNumber(value: value)) ?? "",
-                detail: detail,
+                detail: "\(split.amount.detail) \(from) in \(to)",
                 unit: formatter.currencySymbol,
+                rates: "\(day(of: rates, clock: clock, now: now, locale: locale))\(old)",
                 tone: old.isEmpty ? nil : "warn"
             )
         }

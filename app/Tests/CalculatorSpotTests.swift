@@ -53,7 +53,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
 
     func testACardOfFreshRatesShowsTheSumWithNoDayOfItsRatesAndItsSymbolFaint() async throws {
         try await withPrivateHome { home in
-            try "row=13.46\ntitle=13,46 €\ndetail=15 USD in EUR · rates of Nov 10\nunit=€\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
+            try "row=13.46\ntitle=13,46 €\ndetail=15 USD in EUR\nunit=€\nrates=Nov 10\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
             let answers = try await self.calculator.items(query: "15 usd in eur", timeout: 5).answers
 
@@ -74,7 +74,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
 
     func testAnAnswerFromOldRatesIsACardWhoseSumWarnsWithTheAgeOfItsRates() async throws {
         try await withPrivateHome { home in
-            try "row=13.46\ntitle=13,46 €\ndetail=15 USD in EUR · rates of Nov 2, 9 days old\nunit=€\ntone=warn\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
+            try "row=13.46\ntitle=13,46 €\ndetail=15 USD in EUR\nunit=€\nrates=Nov 2, 9 days old\ntone=warn\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
             let answers = try await self.calculator.items(query: "15 usd in eur", timeout: 5).answers
 
