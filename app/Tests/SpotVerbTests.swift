@@ -112,6 +112,33 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertEqual(saved("calls"), "change weather\n")
     }
 
+    func testTheIconSettingOfASpotWinsOverItsHeaderIconUntilItIsRemoved() throws {
+        try script("weather", header: "title=Weather\nicon=cloud")
+        let drawn = folder.appendingPathComponent("drawn.svg").path
+
+        try model.files.config.set(setting: "icon", of: "weather", to: drawn)
+        model.reload()
+        let changed = try XCTUnwrap(model.entries.first { $0.id == "weather" }?.spot)
+        try model.files.config.set(setting: "icon", of: "weather", to: nil)
+        model.reload()
+        let back = try XCTUnwrap(model.entries.first { $0.id == "weather" }?.spot)
+
+        XCTAssertEqual([changed.image, changed.headerSymbol], [drawn, nil])
+        XCTAssertEqual([back.image, back.headerSymbol], [nil, "cloud"])
+    }
+
+    func testAFloatCallFloatsOnlyASpotThatOffersFloatAndKeepsItFloating() throws {
+        try "#!/bin/sh\n# title=Drawer\n# on=sheet.open\n# offers=float\n".writeScript(to: spots.spotFile("drawer"))
+        try script("weather", header: "title=Weather\non=sheet.open")
+        model.reload()
+
+        XCTAssertTrue(model.showFloat("drawer"))
+        XCTAssertTrue(model.showFloat("drawer"))
+        XCTAssertFalse(model.showFloat("weather"))
+        XCTAssertFalse(model.showFloat("gone"))
+        XCTAssertEqual(model.runs.floating, ["drawer"])
+    }
+
     func testARightOrForceClickOnACardOpensItsMenuAndTheClickThatEndsItRunsNothing() throws {
         try script("weather", header: "title=Weather")
         try script("clock", header: "title=Clock")

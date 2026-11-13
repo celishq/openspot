@@ -10,7 +10,7 @@ public struct Spot: Equatable, Sendable {
     public let url: URL
     public private(set) var kind: SpotKind
     public let size: SpotSize
-    public let symbol: String
+    public private(set) var symbol: String
     public let subtitle: String?
     public private(set) var read: SpotRead?
     public private(set) var pick: ItemPick
@@ -52,13 +52,13 @@ public struct Spot: Equatable, Sendable {
     /// one with a number in its `read` (protocol: Places), or one that a widget opens, has no card on the grid.
     public private(set) var isOnGrid: Bool
     /// The `symbol` its header names, if any.
-    public let headerSymbol: String?
+    public private(set) var headerSymbol: String?
     /// The file whose icon its header names, as a full path.
-    public let file: String?
+    public private(set) var file: String?
     /// The image its header names, as a full path.
-    public let image: String?
+    public private(set) var image: String?
     /// The short text, such as an emoji, that its header names as its picture.
-    public let glyph: String?
+    public private(set) var glyph: String?
     /// The Swift file of the view that its card draws, as a full path (protocol: Views).
     public let view: String?
     /// When the files of its view last changed, so that an edit of the view changes the spot. Nil when the scan does not
@@ -221,6 +221,18 @@ public struct Spot: Equatable, Sendable {
     func added(at date: Date) -> Spot {
         var spot = self
         spot.order = -Int(date.timeIntervalSince1970)
+        return spot
+    }
+
+    /// The same spot with the icon that the person chose in place of its header's, or as it is with none.
+    func withIcon(_ text: String?) -> Spot {
+        guard let icon = Icon(text: text) else { return self }
+        var spot = self
+        spot.headerSymbol = icon.symbol
+        spot.symbol = icon.symbol ?? symbol
+        spot.file = icon.file
+        spot.image = icon.image
+        spot.glyph = icon.glyph
         return spot
     }
 

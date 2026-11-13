@@ -28,6 +28,7 @@ public enum CommandLineCall: Equatable, Sendable {
     case spotRemove(String)
     /// Opens the panel on the sheet of a spot.
     case spotOpen(String)
+    case spotFloat(String)
     /// Shows the whole text of a spot that comes with the app.
     case spotReview(String)
     /// Opens the panel in Edit Spots with the store.
@@ -149,6 +150,7 @@ public enum CommandLineCall: Equatable, Sendable {
                                                  missing, at its commit. An update that adds a use needs --yes.
     openspot spot remove <id>                    Moves a spot that spot add added to the Trash, and drops it from spots.lock.
     openspot spot open <id>                      Opens the panel on the sheet of a spot.
+    openspot spot float <id>                     Floats a spot that offers float.
     openspot spot review <id>                    Shows the whole text of a spot that comes with the app, and what of it
                                                  runs by itself.
     openspot spot store                          Opens the panel in Edit Spots with the store of spots.
@@ -314,6 +316,7 @@ public enum CommandLineCall: Equatable, Sendable {
                 return Self.changing(.settingChange(spot: spot, key: key), "openspot setting change", "opens a form", environment)
             } ?? .unknown(arguments.joined(separator: " "))
         case ("spot", "open") where rest.count == 2: self = Self.changing(.spotOpen(rest[1]), "openspot spot open", "opens the panel", environment)
+        case ("spot", "float") where rest.count == 2: self = Self.changing(.spotFloat(rest[1]), "openspot spot float", "opens a window", environment)
         case ("spot", "review") where rest.count == 2: self = Self.changing(.spotReview(rest[1]), "openspot spot review", "opens the panel", environment)
         case ("spot", "store") where rest.count == 1: self = Self.changing(.spotStore, "openspot spot store", "opens the panel", environment)
         case ("prompt", "new") where rest.count > 1: self = .promptNew(rest.dropFirst().joined(separator: " "))

@@ -158,10 +158,11 @@ final class SettingsSpotTests: BuiltInCase {
         }
     }
 
-    func testTheSheetListsEachSettingThatAScriptNamesOrKeepsAndRemovesIt() async throws {
+    func testTheSheetListsEachSettingThatAScriptNamesOrKeepsButNotItsIconAndRemovesIt() async throws {
         try script("repos.sh", "title=Repos\nicon=folder\n\nfield=folder\n\nfield=editor\ntitle=Default app\nicon=app.badge")
         try file.set(setting: "folder", of: "repos", to: "~/Code")
         try file.set(setting: "editor", of: "gone", to: "Zed")
+        try file.set(setting: "icon", of: "repos", to: "/drawn.svg")
 
         let items = try await items().dropFirst(3)
 

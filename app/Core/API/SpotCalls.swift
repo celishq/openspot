@@ -61,6 +61,15 @@ struct SpotCalls {
         }
     }
 
+    /// Floats a spot that offers a float, and leaves one that floats as it is.
+    func float(_ id: String) -> CommandAPI.Work {
+        guard let app else { return CommandAnswer.notRunning("spot float \(id)") }
+        return CommandAnswer.work {
+            guard await app.float(id) else { throw SpotError.failed(1, "Openspot has no spot `\(id)` that offers float. Add offers=float to its header.") }
+            return ""
+        }
+    }
+
     func store() -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot store") }
         return CommandAnswer.work {

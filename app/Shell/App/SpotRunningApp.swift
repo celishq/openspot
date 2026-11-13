@@ -34,6 +34,10 @@ struct SpotRunningApp: RunningApp {
         await model.openSheet(id)
     }
 
+    func float(_ id: String) async -> Bool {
+        await model.showFloat(id)
+    }
+
     func review(_ id: String) async -> Bool {
         await model.reviewCore(id)
     }
