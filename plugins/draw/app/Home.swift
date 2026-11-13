@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// The start page with no tab open: a search field over a grid of cards, one for each board and one for a new board.
-/// A click opens a board in a tab, and a right-click gives the menu of a board. It moves aside for the list of boards.
+/// A click opens a board in a tab, and a right-click gives the menu of a board. The search field keeps its height
+/// whatever a search finds, and the page moves aside for the list of boards.
 struct Home: View {
     @ObservedObject var drawer: Drawer
     let shelf: Shelf
@@ -26,7 +27,6 @@ struct Home: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 28) {
-                Spacer(minLength: 0)
                 Search(drawer: drawer, wide: true)
                     .frame(maxWidth: 460)
                 LazyVGrid(columns: Array(repeating: GridItem(.fixed(Home.card), spacing: 20), count: columns), spacing: 24) {
@@ -50,9 +50,8 @@ struct Home: View {
                         })
                     }
                 }
-                Spacer(minLength: 0)
             }
-            .frame(minHeight: max(0, height - 80))
+            .padding(.top, max(24, height * 0.18))
             .padding(.leading, drawer.open ? 300 : 40)
             .padding(.trailing, 40)
             .padding(.vertical, 24)

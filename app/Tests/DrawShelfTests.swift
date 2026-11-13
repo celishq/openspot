@@ -146,4 +146,46 @@ final class DrawShelfTests: XCTestCase {
         try shelf.move(again, into: inner)
         XCTAssertEqual(try shelf.move(shelf.makeFolder(in: nil), into: inner).lastPathComponent, "New Folder 3")
     }
+
+    private func board(_ title: String, in place: URL? = nil, age: TimeInterval) throws -> URL {
+        let file = (place ?? folder).appendingPathComponent("\(title.lowercased()).json")
+        try Board(title: title).save(to: file)
+        try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(-age)], ofItemAtPath: file.path)
+        return file
+    }
+
+    func testABoardDroppedBeforeAnotherTakesItsPlace() throws {
+        let shelf = Shelf(folder: folder)
+        let a = try board("A", age: 30)
+        _ = try board("B", age: 20)
+        let c = try board("C", age: 10)
+        XCTAssertEqual(shelf.tree.map(\.title), ["C", "B", "A"])
+
+        try shelf.arrange([a], into: URL(fileURLWithPath: folder.path), before: c)
+        XCTAssertEqual(shelf.tree.map(\.title), ["A", "C", "B"])
+
+        try shelf.arrange([c], into: folder, before: nil)
+        XCTAssertEqual(shelf.tree.map(\.title), ["A", "B", "C"])
+
+        let d = try board("D", age: 0)
+        XCTAssertEqual(shelf.tree.map(\.title), ["D", "A", "B", "C"], "a new board comes first")
+        _ = d
+    }
+
+    func testADropIntoAnotherFolderPlacesItThereAndARenameKeepsTheOrder() throws {
+        let shelf = Shelf(folder: folder)
+        let work = try shelf.makeFolder(in: nil)
+        let x = try board("X", in: work, age: 10)
+        let a = try board("A", age: 20)
+
+        let moved = try shelf.arrange([a], into: work, before: x)
+        XCTAssertEqual(shelf.tree.first?.children.map(\.title), ["A", "X"])
+        XCTAssertEqual(moved.first?.deletingLastPathComponent().standardizedFileURL, work.standardizedFileURL)
+
+        let other = try shelf.makeFolder(in: nil)
+        try shelf.arrange([other], into: folder, before: work)
+        let renamed = try shelf.rename(work, to: "Plans")
+        XCTAssertEqual(shelf.tree.map(\.title), ["New Folder 2", "Plans"])
+        _ = renamed
+    }
 }

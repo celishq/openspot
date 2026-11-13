@@ -30,7 +30,8 @@ struct Shelf {
 
     let folder: URL
 
-    /// The folders and boards at the top, folders first by name, then boards newest first.
+    /// The folders and boards at the top, in the order a person set by dragging, with what is new first. With no order
+    /// set, folders come first by name, then boards newest first.
     var tree: [Node] {
         nodes(in: folder)
     }
@@ -64,6 +65,8 @@ struct Shelf {
             let moved = url.deletingLastPathComponent().appendingPathComponent(name, isDirectory: true)
             guard moved.standardizedFileURL != url.standardizedFileURL else { return url }
             try FileManager.default.moveItem(at: url, to: moved)
+            let parent = url.deletingLastPathComponent()
+            writeOrder(order(of: parent).map { $0 == url.lastPathComponent ? name : $0 }, in: parent)
             return moved
         }
         var board = try Board.load(from: url)
@@ -104,8 +107,8 @@ struct Shelf {
     /// never moves into itself, and a folder whose name is taken there takes a free one.
     @discardableResult
     func move(_ url: URL, into target: URL) throws -> URL {
-        let target = target.standardizedFileURL
-        if url.deletingLastPathComponent().standardizedFileURL == target { return url }
+        let target = URL(fileURLWithPath: target.standardizedFileURL.path, isDirectory: true)
+        if url.deletingLastPathComponent().standardizedFileURL.path == target.path { return url }
         if Self.isFolder(url) {
             guard !(target.path + "/").hasPrefix(url.standardizedFileURL.path + "/") else {
                 throw CocoaError(.fileWriteInvalidFileName)
@@ -122,6 +125,30 @@ struct Shelf {
             try FileManager.default.moveItem(at: base.appendingPathExtension(ending), to: moved.deletingPathExtension().appendingPathExtension(ending))
         }
         return moved
+    }
+
+    /// Moves boards and folders into a folder and puts them, in their order, before `before`, or at the end. Returns
+    /// where each now is.
+    @discardableResult
+    func arrange(_ urls: [URL], into target: URL, before: URL?) throws -> [URL] {
+        let moved = try urls.map { try move($0, into: target) }
+        let names = moved.map(\.lastPathComponent)
+        var order = nodes(in: target).map(\.url.lastPathComponent).filter { !names.contains($0) }
+        let place = before.flatMap { order.firstIndex(of: $0.lastPathComponent) } ?? order.count
+        order.insert(contentsOf: names, at: place)
+        writeOrder(order, in: target)
+        return moved
+    }
+
+    /// The names in a folder in the order a person set, kept in a hidden file there.
+    private func order(of place: URL) -> [String] {
+        guard let data = try? Data(contentsOf: place.appendingPathComponent(".order")) else { return [] }
+        return (try? JSONDecoder().decode([String].self, from: data)) ?? []
+    }
+
+    private func writeOrder(_ names: [String], in place: URL) {
+        guard let data = try? JSONEncoder().encode(names) else { return }
+        try? data.write(to: place.appendingPathComponent(".order"), options: .atomic)
     }
 
     /// A name for a folder that nothing in `parent` takes yet: the name itself, or with 2, 3 and on after it.
@@ -160,7 +187,12 @@ struct Shelf {
         let boards = items.filter { !Self.isFolder($0) }
             .map { Node(url: $0, title: (try? Board.load(from: $0).title) ?? "Untitled board", edited: Self.edited($0), isFolder: false) }
             .sorted { $0.edited > $1.edited }
-        return folders + boards
+        let natural = folders + boards
+        let order = order(of: place)
+        guard !order.isEmpty else { return natural }
+        let set = natural.filter { order.contains($0.url.lastPathComponent) }
+            .sorted { order.firstIndex(of: $0.url.lastPathComponent)! < order.firstIndex(of: $1.url.lastPathComponent)! }
+        return natural.filter { !order.contains($0.url.lastPathComponent) } + set
     }
 
     private func boards(in place: URL) -> [Entry] {

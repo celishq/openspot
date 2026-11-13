@@ -63,6 +63,8 @@ struct Knob: View {
     var enabled = true
     var below = false
     var quiet = false
+    /// Round, as the pills of the title row are, instead of a rounded square.
+    var round = false
     let action: () -> Void
     @State private var hovering = false
 
@@ -79,7 +81,7 @@ struct Knob: View {
             }
             .frame(width: 34, height: 34)
             .foregroundStyle(on ? (quiet ? Color.accentColor : .white) : .primary)
-            .background(on ? (quiet ? Color.accentColor.opacity(0.14) : Color.accentColor) : Color.primary.opacity(hovering && enabled ? 0.07 : 0), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .background(on ? (quiet ? Color.accentColor.opacity(0.14) : Color.accentColor) : Color.primary.opacity(hovering && enabled ? 0.07 : 0), in: RoundedRectangle(cornerRadius: round ? 17 : 9, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

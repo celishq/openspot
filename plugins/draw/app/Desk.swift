@@ -67,7 +67,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         root.addSubview(stage)
         let side = bar(Sidebar(drawer: drawer, tabs: tabs, shelf: Shelf(folder: folder), open: { [weak self] in self?.show($0) }, make: { [weak self] in self?.make(in: $0) },
                                makeFolder: { [weak self] in self?.makeFolder(in: $0) }, rename: { [weak self] in self?.rename($0, to: $1) }, trash: { [weak self] in self?.trash($0) },
-                               move: { [weak self] in self?.move($0, into: $1) }), in: root)
+                               arrange: { [weak self] in self?.arrange($0, into: $1, before: $2) }), in: root)
         side.isHidden = !drawer.open
         self.side = side
         let latch = bar(Latch(drawer: drawer) { [weak self] in self?.toggleBoards(nil) }, in: root)
@@ -204,12 +204,24 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         relocate(url) { try Shelf(folder: folder).rename(url, to: name) }
     }
 
-    /// Moves boards and folders into a folder, and keeps their open tabs.
-    func move(_ urls: [URL], into target: URL) {
-        for url in urls {
-            relocate(url) { try Shelf(folder: folder).move(url, into: target) }
+    /// Moves boards and folders into a folder before a row, or at its end, and keeps their open tabs.
+    func arrange(_ urls: [URL], into target: URL, before: URL?) {
+        let inside = tabs.studios.filter { studio in urls.contains { studio.file.standardizedFileURL == $0.standardizedFileURL || studio.file.path.hasPrefix($0.path + "/") } }
+        if let shown = studio, inside.contains(where: { $0 === shown }) { canvas?.endEditing() }
+        inside.forEach { $0.save() }
+        guard let moved = try? Shelf(folder: folder).arrange(urls, into: target, before: before) else { return }
+        let current = tabs.currentID
+        var changed = false
+        for (old, new) in zip(urls, moved) where old != new {
+            for studio in inside where studio.file == old || studio.file.path.hasPrefix(old.path + "/") {
+                guard let page = tabs.page(of: studio) else { continue }
+                tabs.replace(page, with: URL(fileURLWithPath: new.path + studio.file.path.dropFirst(old.path.count)))
+                if page == current { changed = true }
+            }
         }
-        drawer.expanded.insert(target)
+        if target.path != folder.path { drawer.expanded.insert(target) }
+        if changed { stageUp() }
+        drawer.changes += 1
     }
 
     /// Moves a board or a folder with `change`, and shows each open board from where it now is.
