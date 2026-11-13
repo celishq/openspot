@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 import OpenspotCore
 
@@ -170,12 +169,7 @@ struct SpotSheetView: View {
 
     /// The width of the header's words as they are drawn, the longer of the title and the second line.
     private var wordsWidth: CGFloat {
-        let title = (form?.form.title ?? entry.shownState.title) as NSString
-        let detail = (entry.shownState.subtitle ?? "") as NSString
-        return max(
-            title.size(withAttributes: [.font: NSFont.systemFont(ofSize: 13, weight: .medium)]).width,
-            detail.size(withAttributes: [.font: NSFont.systemFont(ofSize: 11)]).width
-        )
+        SpotWordsWidth.of(title: form?.form.title ?? entry.shownState.title, detail: entry.shownState.subtitle)
     }
 
     private static let wordsGap = SpotTokens.padding - 5
