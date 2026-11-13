@@ -952,6 +952,135 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(changed)
     }
 
+    /// Reads what the body of the panel's root view, SpotsView, reads of the model, and what the body of the search field,
+    /// SpotFieldView, reads, and calls `told` when a later change tells any of them.
+    private func trackPanelAndField(_ told: @escaping @Sendable () -> Void) {
+        withObservationTracking {
+            let id = model.transition.id
+            _ = (model.transition, model.fieldSheet, model.showsFieldDrop, model.isShown, model.isMenuOpen, model.menuBackdropHeight)
+            _ = (model.gridHeight, model.formRect, model.formHasChoices, model.entries.first { $0.id == id })
+            _ = SpotSheetCard.of(id, in: model)
+            _ = model.sheets[id ?? ""].map { ($0.sheetRect, $0.showsField) }
+            _ = model.transition.replaced.map { model.sheets[$0]?.sheetRect }
+            _ = (model.isEditing, model.fieldDrop, model.entries.first { $0.id == id }?.state.title)
+        } onChange: {
+            told()
+        }
+    }
+
+    func testAKeyInAFormTellsNeitherThePanelNorTheField() async throws {
+        try script("list", header: "on=sheet.open", """
+        case "$1" in
+          pick) printf 'title=Pick\n\nchoice=shown\ntitle=Shown\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n' ;;
+          *) printf 'button=pick\ntitle=Pick\nscope=spot\nform=true\n\nrow=a\ntitle=Apple\n' ;;
+        esac
+        """)
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.press("list")
+        try await wait("the open list") { model.openList == "list" && model.openEntry?.spot.actions.contains(where: \.isForm) == true }
+        let entry = try XCTUnwrap(model.openEntry)
+        model.openForm(try XCTUnwrap(entry.spot.actions.first { $0.id == "pick" }), on: (entry, nil))
+        try await wait("the form") { model.form != nil }
+        nonisolated(unsafe) var told = false
+        trackPanelAndField { told = true }
+
+        model.searchText = "b"
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+
+        XCTAssertEqual(model.form?.draft.choices?.query, "b")
+        XCTAssertFalse(told)
+    }
+
+    func testAKeyInTheSearchOfALongSheetTellsNeitherThePanelNorTheField() async throws {
+        try script("fruit", header: "on=sheet.open", "for i in $(seq 1 50); do printf 'row=a%s\\ntitle=Apple %s\\n\\nrow=p%s\\ntitle=Pear %s\\n\\n' $i $i $i $i; done")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.press("fruit")
+        try await wait("the open list") { model.openList == "fruit" && model.openItems?.shown.count == 100 }
+        let rect = try XCTUnwrap(model.openSheet?.sheetRect)
+        nonisolated(unsafe) var told = false
+        trackPanelAndField { told = true }
+
+        model.searchText = "ap"
+
+        XCTAssertEqual(model.openItems?.shown.count, 50)
+        XCTAssertEqual(model.openSheet?.sheetRect, rect)
+        XCTAssertEqual(model.openSheet?.showsField, true)
+        XCTAssertFalse(told)
+    }
+
+    func testAKeyInTheActionsMenuTellsNeitherThePanelNorTheField() throws {
+        try script("weather", header: "title=Weather", ":")
+        model.reload()
+        model.isShown = true
+        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "weather" })
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        let menu = try XCTUnwrap(model.menu)
+        model.placeMenu(ActionMenuFrame(item: CGRect(x: 16, y: 80, width: 80, height: 80), menu: menu, bounds: ActionMenuFrame.bounds(under: SpotTokens.gridTop)))
+        XCTAssertGreaterThan(model.menuBackdropHeight, 0)
+        nonisolated(unsafe) var told = false
+        trackPanelAndField { told = true }
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+        model.searchMenu("e")
+
+        XCTAssertFalse(told)
+    }
+
+    func testTheBackdropUnderTheMenuGrowsOnTheMenusMotionAndGoesWhenItsCloseEnds() throws {
+        try script("weather", header: "title=Weather", ":")
+        model.reload()
+        model.isShown = true
+        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "weather" })
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        let menu = try XCTUnwrap(model.menu)
+        let frame = ActionMenuFrame(item: CGRect(x: 16, y: 80, width: 80, height: 80), menu: menu, bounds: ActionMenuFrame.bounds(under: SpotTokens.gridTop))
+
+        model.placeMenu(frame)
+
+        XCTAssertEqual(model.menuFrame, frame)
+        XCTAssertEqual(model.menuBackdropHeight, frame.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock)
+        XCTAssertEqual(host.motions.last, .sheet(isOpen: true))
+        model.closeMenu()
+        XCTAssertNil(model.menuFrame)
+        XCTAssertEqual(model.menuBackdropHeight, 0)
+        XCTAssertEqual(host.motions.last, .sheet(isOpen: false))
+    }
+
+    func testTheHintOfTheGridKeepsItsWordsAndTellsNoReaderWhileTheyStayTheSame() async throws {
+        try script("notes", header: "title=Notes", "true")
+        try script("mail", header: "title=Mail", "true")
+        model.reload()
+        model.isShown = true
+        model.followHint()
+        XCTAssertEqual(model.gridHint, HintWords(model.hint))
+        XCTAssertFalse(model.gridHint.groups.isEmpty)
+        nonisolated(unsafe) var told = false
+        withObservationTracking { _ = (model.gridHint, model.sheetHint) } onChange: { told = true }
+
+        model.selected = 1
+        try await Task.sleep(for: .milliseconds(50))
+
+        XCTAssertEqual(model.gridHint, HintWords(model.hint))
+        XCTAssertFalse(told)
+    }
+
+    func testTheHintOfTheGridFadesToTheWordsOfEditSpots() async throws {
+        try script("notes", header: "title=Notes", "true")
+        model.reload()
+        model.isShown = true
+        model.followHint()
+        let grid = model.gridHint
+
+        model.beginEditing()
+
+        try await wait("the words of Edit Spots") { model.gridHint == HintWords(model.hint) && model.gridHint != grid }
+        XCTAssertEqual(host.motions.last, .fade)
+    }
+
     func testTheSameTextOfTheSearchFindsNothingAgain() throws {
         try script("notes", header: "title=Notes", "true")
         model.reload()

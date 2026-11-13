@@ -79,7 +79,10 @@ public final class SpotsModel {
     public internal(set) var transition = SheetTransition() {
         didSet {
             let shown = transition.shown
-            if shown != openList { openList = shown }
+            if shown != openList {
+                openList = shown
+                if shown != nil, followsHint { takeSheetHint(HintWords(hint)) }
+            }
             let opening = transition.phase == .opening ? transition.id : nil
             if opening != (oldValue.phase == .opening ? oldValue.id : nil) { runs.opening.moving = opening }
         }
@@ -123,10 +126,24 @@ public final class SpotsModel {
         didSet {
             let isOpen = menuSession != nil && menuSession?.phase != .closing
             if isOpen != isMenuOpen { isMenuOpen = isOpen }
+            if menuSession == nil, menuFrame != nil { menuFrame = nil }
         }
     }
     /// Whether the actions menu is open and not closing. A search or a move in the menu tells no reader of it.
     public private(set) var isMenuOpen = false
+    /// Where the menu lies, once its view has placed it, until its close ends. A search or a move in the menu tells no
+    /// reader of it.
+    public internal(set) var menuFrame: ActionMenuFrame?
+    /// How tall the backdrop under the menu is, from the panel's top: 0 with no menu. It grows as the menu opens and shrinks
+    /// when its close ends, each on the menu's motion.
+    public internal(set) var menuBackdropHeight: CGFloat = 0
+    /// The words of the hint under the grid and of the hint under a sheet, each kept from `hint` while it is followed. Each
+    /// keeps the words it last showed, and changes only when its words do.
+    public internal(set) var gridHint = HintWords("")
+    public internal(set) var sheetHint = HintWords("")
+    /// Whether the hint under the grid last showed the keys of Edit Spots, so that its next words fade in as well.
+    @ObservationIgnored var hintIsForEdit = false
+    @ObservationIgnored var followsHint = false
     public var form: FormSession? {
         didSet {
             let rect = form.map { SpotTokens.formRect($0.draft.form) }

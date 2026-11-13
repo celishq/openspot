@@ -278,7 +278,7 @@ extension SpotsModel {
     }
 
     private func menuRow(at point: CGPoint) -> Int? {
-        guard let menu, let frame = menuSession?.frame else { return nil }
+        guard let menu, let frame = menuFrame else { return nil }
         return frame.row(at: point, of: menu)
     }
 
@@ -296,10 +296,12 @@ extension SpotsModel {
         menu == nil ? nil : menuSession?.target
     }
 
-    /// Keeps where the view placed the open menu.
+    /// Keeps where the view placed the open menu, and grows the backdrop under it on the menu's motion.
     public func placeMenu(_ frame: ActionMenuFrame) {
-        guard menu != nil else { return }
-        menuSession?.frame = frame
+        guard menu != nil, frame != menuFrame else { return }
+        menuFrame = frame
+        let height = frame.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock
+        if height != menuBackdropHeight { change(.sheet(isOpen: true), { menuBackdropHeight = height }) }
     }
 
     public func searchMenu(_ text: String) {
@@ -370,6 +372,31 @@ extension SpotsModel {
         return selectedGlyphTitle.map { "\($0)  \(keys)" } ?? keys
     }
 
+    /// Keeps `gridHint` and `sheetHint` with the words of `hint` from now on: the hint of the grid while no sheet or dragged
+    /// spot shows, and else the hint of the sheet. New words fade in while Edit Spots or a dropped file shows.
+    public func followHint() {
+        guard !followsHint else { return }
+        followsHint = true
+        takeHint()
+    }
+
+    private func takeHint() {
+        let words = HintWords(withObservationTracking { hint } onChange: { [weak self] in
+            Task { @MainActor in self?.takeHint() }
+        })
+        let motion: PanelMotion? = isEditing || hintIsForEdit || fieldDrop != nil ? .fade : nil
+        hintIsForEdit = isEditing
+        if openList == nil, spotDrop == nil {
+            if words != gridHint { change(motion, { gridHint = words }) }
+        } else {
+            takeSheetHint(words, motion: motion)
+        }
+    }
+
+    func takeSheetHint(_ words: HintWords, motion: PanelMotion? = nil) {
+        if words != sheetHint { change(motion, { sheetHint = words }) }
+    }
+
     /// The name of the selected spot when it shows only a glyph.
     private var selectedGlyphTitle: String? {
         guard openList == nil, let entry = selectedEntry, entry.kind != .widget,
@@ -382,7 +409,9 @@ extension SpotsModel {
     public func closeMenu() {
         guard menu != nil else { return }
         change(.sheet(isOpen: false), { menuSession?.phase = .closing }, completion: { [weak self] in
-            if self?.menuSession?.phase == .closing { self?.menuSession = nil }
+            guard let self, menuSession?.phase == .closing else { return }
+            menuSession = nil
+            if menuBackdropHeight != 0 { change(.sheet(isOpen: false), { self.menuBackdropHeight = 0 }) }
         })
     }
 

@@ -191,6 +191,11 @@ public final class SpotRun {
     /// part reaches no view that reads only these.
     public private(set) var partsRect: CGRect?
     public private(set) var partsKind: SheetKind?
+    /// The rect of its sheet in the panel: of its parts, or else of its rows up to the tallest sheet, and whether its search
+    /// field shows. They change only when they do, so that a search that leaves a long list long reaches no view that reads
+    /// only these.
+    public private(set) var sheetRect = SpotTokens.sheetRect(rows: 0)
+    public private(set) var showsField = true
     /// The kind of the first answer while it waits for the open motion, or nil when no such answer waits.
     @ObservationIgnored var heardKind: SheetKind? {
         didSet { settle() }
@@ -322,6 +327,10 @@ public final class SpotRun {
         if rect != partsRect { partsRect = rect }
         let parts = panel?.kind
         if parts != partsKind { partsKind = parts }
+        let sheet = rect ?? SpotTokens.sheetRect(rows: next.rows, perLine: next.perLine, hasField: next.hasField, setsApart: next.setsApart)
+        if sheet != sheetRect { sheetRect = sheet }
+        let field = nextKind.showsField && rows.search != .off
+        if field != showsField { showsField = field }
     }
 
     /// Hears a frame that waits for the open motion, or nil when the wait ends. A sheet that waits for its first answer
