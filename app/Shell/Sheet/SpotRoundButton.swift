@@ -21,14 +21,15 @@ struct SpotRoundButton: View {
         Button(action: action) {
             Group {
                 if let work {
-                    SpotWorkMark(call: work, side: size, stops: true, isOnSolid: true)
+                    SpotWorkMark(call: work, side: size, stops: true)
                 } else {
                     Image(systemName: symbol)
                         .font(.system(size: max(size * Self.symbolRatio, 10), weight: .semibold))
-                        .foregroundStyle(look == .strong ? SpotTheme.onSolid : SpotTheme.ink)
+                        .modifier(SpotInk())
                         .frame(width: size, height: size)
                 }
             }
+                .environment(\.spotIsOnSolid, work != nil || look == .strong)
                 .background(fill, in: Circle())
                 .background { if look == .floating { SpotFloatGlass(shape: Circle()) } }
                 .contentShape(Circle())

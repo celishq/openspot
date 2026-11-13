@@ -36,6 +36,7 @@ struct SpotCardView: View, @MainActor Equatable {
 
     var body: some View {
         ZStack(alignment: .topLeading) { content }
+            .environment(\.spotIsOnSolid, isFilled)
             .padding(drawnView != nil && !isDrawn ? 0 : SpotTokens.cardPadding(for: size, isWidget: entry.kind == .widget || isDrawn))
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
             .background(shape.fill(SpotTheme.accent).opacity(dropFill))
@@ -153,14 +154,14 @@ struct SpotCardView: View, @MainActor Equatable {
     private var title: some View {
         Text(entry.shownState.title)
             .font(SpotType.title)
-            .foregroundStyle(isFilled ? SpotTheme.onSolid : SpotTheme.ink)
+            .modifier(SpotInk())
             .lineLimit(1)
     }
 
-    private func detail(_ text: String, isOnSolid: Bool) -> some View {
+    private func detail(_ text: String) -> some View {
         Text(text)
             .font(SpotType.detail)
-            .modifier(SpotSecondaryText(isOnSolid: isOnSolid))
+            .modifier(SpotSecondaryText())
             .lineLimit(1)
     }
 
@@ -170,9 +171,9 @@ struct SpotCardView: View, @MainActor Equatable {
             if entry.kind == .slider {
                 slider
             } else if isBuildingView {
-                detail("Building its view", isOnSolid: false)
+                detail("Building its view")
             } else if let subtitle = entry.shownState.subtitle {
-                detail(subtitle, isOnSolid: isFilled)
+                detail(subtitle)
             }
         }
     }
@@ -181,7 +182,7 @@ struct SpotCardView: View, @MainActor Equatable {
     private var accessory: some View {
         switch entry.kind {
         case .list:
-            SpotCardArrow(isOnSolid: isFilled)
+            SpotCardArrow()
         case .launch:
             if size != .wide, entry.item == nil, !entry.stopsOnPress {
                 Text("Run")

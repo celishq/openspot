@@ -51,7 +51,8 @@ struct SpotActionMenuView: View {
                 Spacer(minLength: 0)
                 Text(row.keyLabel)
                     .font(SpotType.detail)
-                    .modifier(SpotSecondaryText(isOnSolid: work(row) != nil))
+                    .modifier(SpotSecondaryText())
+                    .environment(\.spotIsOnSolid, work(row) != nil)
             }
             .padding(.horizontal, SpotTokens.padding - SpotTokens.menuPadding + 4)
             .frame(height: SpotTokens.menuRowHeight)

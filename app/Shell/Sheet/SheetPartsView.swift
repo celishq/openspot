@@ -282,7 +282,8 @@ struct SheetPartsView: View {
     private func pressLabel(_ part: SpotPart, words: String, font: Font) -> some View {
         if let call = work(part) {
             HStack(spacing: SpotTokens.placeGap / 2) {
-                SpotWorkMark(call: call, side: SpotTokens.workMark, isOnSolid: true)
+                SpotWorkMark(call: call, side: SpotTokens.workMark)
+                    .environment(\.spotIsOnSolid, true)
                 Text("Stop").font(font).lineLimit(1)
             }
         } else {

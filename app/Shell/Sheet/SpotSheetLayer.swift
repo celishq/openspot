@@ -88,8 +88,9 @@ struct SpotSheetLayer: View {
 
     /// The arrow of the card while its sheet moves. It stays in view until the close button takes its place at the edge.
     private var arrow: some View {
-        SpotCardArrow(isOnSolid: entry.isActive)
+        SpotCardArrow()
             .placed(isTall: (frame?.height ?? 0) > SpotTokens.rowHeight)
+            .environment(\.spotIsOnSolid, entry.isActive)
             .morph(progress, opacity: SheetMorph.cardLook(at:))
             .allowsHitTesting(false)
     }

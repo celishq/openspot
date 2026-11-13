@@ -4,10 +4,9 @@ import SwiftUI
 /// The picture at the head of a spot's sheet: the picture that its header names, or its symbol on a disc.
 struct SpotGlyph: View {
     let entry: SpotsModel.Entry
-    /// Whether it lies on the solid fill of a card that is on.
-    var isOnSolid = false
     /// Whether its symbol lies on a disc.
     var showsDisc = true
+    @Environment(\.spotIsOnSolid) private var isOnSolid
 
     var body: some View {
         if entry.showsHeaderPicture {
