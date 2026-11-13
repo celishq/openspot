@@ -2216,6 +2216,7 @@
 				483CB758F22DD0EEA8575ACE /* Copy the core spots and their defaults */,
 				A5068AFF8D453D11CC2A8674 /* Copy the emoji keywords */,
 				0D4FDAB32F3B0E2B15E19EB2 /* Fill the dev state */,
+				E7D762305E01C1962B81C6F8 /* Strip Sparkle's localizations */,
 			);
 			buildRules = (
 			);
@@ -2492,6 +2493,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "keywords=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Keywords\"\nrm -rf \"$keywords\"\ncp -R \"$SRCROOT/Keywords\" \"$keywords\"\n";
+		};
+		E7D762305E01C1962B81C6F8 /* Strip Sparkle's localizations */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Strip Sparkle's localizations";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "sparkle=\"$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH/Sparkle.framework/Versions/B\"\nif [ -d \"$sparkle/Resources\" ]; then\n  find \"$sparkle/Resources\" -maxdepth 1 -name \"*.lproj\" ! -name Base.lproj -exec rm -rf {} +\n  codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY:--}\" -o runtime --preserve-metadata=identifier,entitlements $OTHER_CODE_SIGN_FLAGS \"$sparkle\"\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

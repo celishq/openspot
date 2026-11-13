@@ -134,6 +134,14 @@ targets:
             cp -R "$SRCROOT/../spots" "$OPENSPOT_DEV_STATE/spots"
             rm -rf "$OPENSPOT_DEV_STATE/spots/openspot.spot"
           fi
+      - name: Strip Sparkle's localizations
+        basedOnDependencyAnalysis: false
+        script: |
+          sparkle="$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH/Sparkle.framework/Versions/B"
+          if [ -d "$sparkle/Resources" ]; then
+            find "$sparkle/Resources" -maxdepth 1 -name "*.lproj" ! -name Base.lproj -exec rm -rf {} +
+            codesign --force --sign "${EXPANDED_CODE_SIGN_IDENTITY:--}" -o runtime --preserve-metadata=identifier,entitlements $OTHER_CODE_SIGN_FLAGS "$sparkle"
+          fi
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: openspot.celis.ai
