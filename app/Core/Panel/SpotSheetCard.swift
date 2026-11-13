@@ -22,7 +22,7 @@ public struct SpotSheetCard {
         let entry = visible[index]
         let face = entry.state.face
         let isDrawn = entry.item == nil && (face.layout(for: placement.size) != nil || face.hasView && entry.spot.view != nil)
-        return SpotSheetCard(id: entry.id, placement: placement, look: entry.id != sheetID || isDrawn ? entry : nil, left: model.sides.leftExtent)
+        return SpotSheetCard(id: entry.id, placement: placement, look: entry.id != sheetID || isDrawn ? entry : nil, left: model.panels.leftExtent)
     }
 
     /// Where the card lies in the panel, with the grid scrolled this far.

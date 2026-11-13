@@ -6,14 +6,14 @@ extension SpotsModel {
     /// the store.
     var grid: SpotGrid {
         let arriving = carry?.tile == nil ? nil : carry?.entry.id
-        var placed: [Int: SpotSide] = [:]
+        var placed: [Int: GridPanel] = [:]
         if query.isEmpty {
             for index in visible.indices {
-                let panel = visible[index].id == drag?.id ? drag?.target.side ?? .center : side(of: visible[index])
+                let panel = visible[index].id == drag?.id ? drag?.target.panel ?? .center : panel(of: visible[index])
                 if panel != .center { placed[index] = panel }
             }
         }
-        return SpotGrid(kept: Set(visible.indices.filter { visible[$0].isSizeChosen || visible[$0].id == arriving }), placed: placed, sides: sides)
+        return SpotGrid(kept: Set(visible.indices.filter { visible[$0].isSizeChosen || visible[$0].id == arriving }), placed: placed, panels: panels)
     }
 
     /// The entries that have a card. A sheet that grows out of the field, such as the install screen, has none.

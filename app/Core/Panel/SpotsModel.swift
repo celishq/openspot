@@ -38,7 +38,7 @@ public final class SpotsModel {
         didSet {
             guard query != oldValue else { return }
             selected = 0
-            showSides()
+            showPanels()
             askAnswers()
             updateVisible()
         }
@@ -75,21 +75,16 @@ public final class SpotsModel {
         }
     }
     /// The side panels beside the grid's center panel.
-    public internal(set) var sides = GridSides() {
-        didSet { showSides() }
+    public internal(set) var panels = GridPanels() {
+        didSet { showPanels() }
     }
     /// The side panels that the panel's backdrop covers: none while a search shows its answers.
-    public private(set) var shownSides = GridSides()
+    public private(set) var shownPanels = GridPanels()
     /// The side panel that hides once its cards have landed in the center.
-    @ObservationIgnored var sideLeaving: SpotSide?
-    private func showSides() {
-        let shown = query.isEmpty ? sides : GridSides()
-        if shownSides != shown { shownSides = shown }
-    }
-
-    /// How many columns the grid has.
-    public var columns: Int {
-        sides.columns
+    @ObservationIgnored var panelLeaving: GridPanel?
+    private func showPanels() {
+        let shown = query.isEmpty ? panels : GridPanels()
+        if shownPanels != shown { shownPanels = shown }
     }
     /// The height of the backdrop of the grid's cards, which changes only when the placements change it.
     public private(set) var gridHeight = SpotTokens.backdropHeight(gridHeight: 0)
@@ -343,7 +338,7 @@ public final class SpotsModel {
         fileStamps = stamps
         holdAssignedKeys(config)
         arrangement = config.arrangement
-        if sides != config.sides { sides = config.sides }
+        if panels != config.panels { panels = config.panels }
         scanned = scan.spots
         if let ids, isOnlyNamed { patchEntries(ids) } else { rebuildEntries() }
         if isEditing { refreshDock(in: folder) } else { readDockLater(in: folder) }

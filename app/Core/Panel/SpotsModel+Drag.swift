@@ -14,7 +14,7 @@ extension SpotsModel {
             let others = visible.filter(\.isOnGrid).count - (entry.isOnGrid ? 1 : 0)
             let hasHidden = !entry.isOnGrid || others < visible.count - 1
             let targets = gridTargets(0...others) + (hasHidden ? (others...(visible.count - 1)).map(SpotDrag.Target.hidden) : [])
-            let home = SpotDrag.Target(place: start, isOnGrid: entry.isOnGrid, side: entry.isOnGrid ? side(of: entry) : .center)
+            let home = SpotDrag.Target(place: start, isOnGrid: entry.isOnGrid, panel: entry.isOnGrid ? panel(of: entry) : .center)
             let lifted = SpotDrag(id: id, home: home, sizes: visible.map(\.size), targets: targets, grid: grid)
             stopDragWait()
             scrollAtPress = gridScroll
@@ -77,7 +77,7 @@ extension SpotsModel {
         order.insert(drag.id, at: target.place)
         arrangement.arrange(order)
         if target.isOnGrid != drag.home.isOnGrid { arrangement.set(isOnGrid: target.isOnGrid, of: drag.id) }
-        arrangement.set(side: target.side, of: drag.id)
+        arrangement.set(panel: target.panel, of: drag.id)
         saveArrangement(selecting: drag.id, ending: {
             self.drag = nil
             landing = drag.id
@@ -102,8 +102,8 @@ extension SpotsModel {
             var sizes = visible.map(\.size)
             sizes.insert(item.size, at: start)
             let kept = Set(grid.kept.map { $0 >= start ? $0 + 1 : $0 }).union([start])
-            let placed = grid.placed.reduce(into: [Int: SpotSide]()) { $0[$1.key >= start ? $1.key + 1 : $1.key] = $1.value }
-            arrival = SpotDrag(id: id, home: .onGrid(start), sizes: sizes, targets: gridTargets(0...start), grid: SpotGrid(kept: kept, placed: placed, sides: sides))
+            let placed = grid.placed.reduce(into: [Int: GridPanel]()) { $0[$1.key >= start ? $1.key + 1 : $1.key] = $1.value }
+            arrival = SpotDrag(id: id, home: .onGrid(start), sizes: sizes, targets: gridTargets(0...start), grid: SpotGrid(kept: kept, placed: placed, panels: panels))
             stopDragWait()
             lift.origin = tile.origin
             change(.edit) { carry = SpotCarry(entry: entry, size: item.size, tile: tile) }
@@ -113,7 +113,7 @@ extension SpotsModel {
         let centre = CGPoint(x: tile.midX + translation.width, y: tile.midY + translation.height)
         let grid = gridOrigin
         let point = CGPoint(x: centre.x - grid.x, y: centre.y - grid.y)
-        let panel = panelRect
+        let panel = panels.frame
         let isOverGrid = panel.contains(centre) && dockFrame?.contains(centre) != true && arrival.holds(point)
         let size = isOverGrid ? arrival.placement(at: arrival.home)?.size ?? carry.entry.size : dock.items.first { $0.id == id }?.size ?? carry.size
         if carry.size != size { self.carry?.size = size }
@@ -164,7 +164,7 @@ extension SpotsModel {
         next.arrange(order)
         next.set(isEnabled: true, of: folder.fileID(of: entry.spot))
         next.set(isOnGrid: true, of: entry.id)
-        next.set(side: target.side, of: entry.id)
+        next.set(panel: target.panel, of: entry.id)
         if let size = dock.items.first(where: { $0.id == entry.id })?.size { next.set(size: size, of: entry.id) }
         do {
             try files.config.write(next)
@@ -272,7 +272,7 @@ extension SpotsModel {
 
     /// The panel's window in the panel's space, a padding inside its edges. In Edit Spots it holds the dock too.
     private var windowInPanel: CGRect {
-        let panel = panelRect
+        let panel = panels.frame
         return panel.union(dockFrame ?? panel).insetBy(dx: SpotTokens.padding, dy: SpotTokens.padding)
     }
 
@@ -319,22 +319,17 @@ extension SpotsModel {
     }
 
     /// The panel that a card lies in: its side, while the grid has that side, and else the center.
-    func side(of entry: Entry) -> SpotSide {
-        sides.has(entry.side) ? entry.side : .center
+    func panel(of entry: Entry) -> GridPanel {
+        panels.holding(entry.panel)
     }
 
     /// The places on the grid that a dragged card may take, in each panel that the grid has.
     private func gridTargets(_ places: ClosedRange<Int>) -> [SpotDrag.Target] {
-        SpotSide.allCases.filter(sides.has).flatMap { side in places.map { SpotDrag.Target.onGrid($0, side: side) } }
-    }
-
-    /// The panel with its side panels, in the panel's space.
-    var panelRect: CGRect {
-        CGRect(x: -sides.leftExtent, y: 0, width: SpotTokens.panelWidth + sides.leftExtent + sides.rightExtent, height: SpotTokens.panelHeight)
+        GridPanel.allCases.filter { panels[$0] }.flatMap { panel in places.map { SpotDrag.Target.onGrid($0, panel: panel) } }
     }
 
     /// Where the grid's top left corner lies in the panel, as the grid has scrolled.
     var gridOrigin: CGPoint {
-        SpotTokens.gridOrigin(scrollOffset: gridScroll, left: sides.leftExtent)
+        SpotTokens.gridOrigin(scrollOffset: gridScroll, left: panels.leftExtent)
     }
 }

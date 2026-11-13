@@ -51,7 +51,7 @@ struct SpotsView: View {
             .modifier(GridFadeMask(fade: fade, height: cardHeight))
             .morph(coversGrid ? 0 : 1, opacity: { SheetMorph.sheetLook(at: $0) })
             .frame(width: wideWidth, height: SpotTokens.panelHeight)
-            .offset(x: -model.sides.leftExtent)
+            .offset(x: -model.panels.leftExtent)
             SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: max(gridHeight, model.menuBackdropHeight), sheetHeight: max(sheetID == nil ? gridHeight : sheetHeight, model.menuBackdropHeight))
                 .modifier(SpotShownFade(isShown: model.isShown))
             if let entry = model.entries.first(where: { $0.id == sheetID }) {
@@ -79,7 +79,7 @@ struct SpotsView: View {
                 Color.clear
                     .contentShape(Rectangle())
                     .frame(width: wideWidth, height: SpotTokens.panelHeight)
-                    .offset(x: -model.sides.leftExtent)
+                    .offset(x: -model.panels.leftExtent)
                     .onTapGesture { model.closeMenu() }
             }
         }
@@ -94,7 +94,7 @@ struct SpotsView: View {
         }
         .environment(\.spotIsShown, model.isShown)
         .environment(\.spotPanelWidth, wideWidth)
-        .environment(\.spotPanelLeft, model.sides.leftExtent)
+        .environment(\.spotPanelLeft, model.panels.leftExtent)
         .onChange(of: model.isShown) { _, isShown in
             if !isShown { dropTarget = nil }
         }
@@ -104,12 +104,12 @@ struct SpotsView: View {
     /// the sheet moves, the shorter one stays whole and the taller one fades on the sheet's own motion, so that where they
     /// overlap the backdrop keeps one strength.
     private var softBlur: some View {
-        let sides = model.shownSides
-        let width = SpotTokens.panelWidth + sides.leftExtent + sides.rightExtent
+        let panels = model.shownPanels
+        let width = SpotTokens.panelWidth + panels.leftExtent + panels.rightExtent
         return SpotBackdrop(model: model, gridHeight: gridHeight, sheetHeight: max(sheetHeight, replacedHeight), menuHeight: menuHeight, drawsBlur: drawsBlur)
             .environment(\.spotPanelWidth, width)
             .frame(width: width, height: SpotTokens.panelHeight)
-            .offset(x: -sides.leftExtent)
+            .offset(x: -panels.leftExtent)
     }
 
     /// The sheet that is built, from its card to its open place, and its card's radius, for the field that joins it. Nil
@@ -122,8 +122,8 @@ struct SpotsView: View {
     /// How the open sheet pushes the cards of the grid, with the sheet's rect taken into the grid. Its window starts at the
     /// top of the search field, so a card that moves up is gone there.
     private func push(from card: SpotSheetCard) -> SheetPush {
-        let origin = SpotTokens.gridOrigin(scrollOffset: scrollOffset, left: model.sides.leftExtent)
-        let window = CGRect(x: -model.sides.leftExtent - origin.x, y: SpotTokens.halo - origin.y, width: wideWidth, height: SpotTokens.panelHeight - SpotTokens.halo)
+        let origin = SpotTokens.gridOrigin(scrollOffset: scrollOffset, left: model.panels.leftExtent)
+        let window = CGRect(x: -model.panels.leftExtent - origin.x, y: SpotTokens.halo - origin.y, width: wideWidth, height: SpotTokens.panelHeight - SpotTokens.halo)
         return SheetPush(open: card.placement, sheet: sheetRect.offsetBy(dx: -origin.x, dy: -origin.y), window: window)
     }
 
@@ -133,7 +133,7 @@ struct SpotsView: View {
 
     /// The width of the panel with its side panels.
     private var wideWidth: CGFloat {
-        SpotTokens.panelWidth + model.sides.leftExtent + model.sides.rightExtent
+        SpotTokens.panelWidth + model.panels.leftExtent + model.panels.rightExtent
     }
 
     private func rect(of id: String?) -> CGRect {

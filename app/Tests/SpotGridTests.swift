@@ -3,7 +3,7 @@ import XCTest
 
 final class SpotGridTests: XCTestCase {
     func testASpotOnASidePanelLiesInThatPanelsShelvesFromTheTop() {
-        let grid = SpotGrid(placed: [1: .left, 3: .right], sides: GridSides(hasLeft: true, hasRight: true))
+        let grid = SpotGrid(placed: [1: .left, 3: .right], panels: GridPanels(hasLeft: true, hasRight: true))
         XCTAssertEqual(grid.place([.strip, .strip, .strip, .strip]), [
             SpotPlacement(index: 0, row: 0, column: 4, size: .strip),
             SpotPlacement(index: 1, row: 0, column: 0, size: .strip),
@@ -13,19 +13,19 @@ final class SpotGridTests: XCTestCase {
     }
 
     func testASpotOfASideThatTheGridDoesNotHaveLiesInTheCenter() {
-        let grid = SpotGrid(placed: [0: .left], sides: GridSides(hasRight: true))
+        let grid = SpotGrid(placed: [0: .left], panels: GridPanels(hasRight: true))
         XCTAssertEqual(grid.place([.strip]), [SpotPlacement(index: 0, row: 0, column: 0, size: .strip)])
-        XCTAssertEqual(grid.columns, 8)
+        XCTAssertEqual(grid.panels.columns, 8)
     }
 
     func testAMovedSpotTakesItsSideAlong() {
-        let grid = SpotGrid(placed: [0: .right], sides: GridSides(hasRight: true)).moving(0, to: 1, split: nil)
+        let grid = SpotGrid(placed: [0: .right], panels: GridPanels(hasRight: true)).moving(0, to: 1, split: nil)
         XCTAssertEqual(grid.placed, [1: .right])
-        XCTAssertEqual(grid.sides, GridSides(hasRight: true))
+        XCTAssertEqual(grid.panels, GridPanels(hasRight: true))
     }
 
     func testTheHiddenGroupLiesInTheCenterUnderEveryPanel() {
-        let grid = SpotGrid(split: 2, placed: [0: .left], sides: GridSides(hasLeft: true))
+        let grid = SpotGrid(split: 2, placed: [0: .left], panels: GridPanels(hasLeft: true))
         XCTAssertEqual(grid.place([.large, .strip, .strip]).map { [$0.row, $0.column] }, [[0, 0], [0, 4], [2, 4]])
     }
 

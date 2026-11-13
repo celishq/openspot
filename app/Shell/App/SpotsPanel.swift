@@ -146,23 +146,23 @@ final class SpotsPanel: NSPanel {
     /// ahead.
     private func followSides() {
         guard let model else { return }
-        let sides = withObservationTracking { model.sides } onChange: { [weak self] in
+        let panels = withObservationTracking { model.panels } onChange: { [weak self] in
             Task { @MainActor in self?.followSides() }
         }
-        let grown = (left: sides.leftExtent - place.left, right: sides.rightExtent - appliedRight)
+        let grown = (left: panels.leftExtent - place.left, right: panels.rightExtent - appliedRight)
         guard grown.left != 0 || grown.right != 0 else { return }
         let widened = { (frame: NSRect) in
             NSRect(x: frame.minX - grown.left, y: frame.minY, width: frame.width + grown.left + grown.right, height: frame.height)
         }
-        place.left = sides.leftExtent
-        appliedRight = sides.rightExtent
+        place.left = panels.leftExtent
+        appliedRight = panels.rightExtent
         if let rest = restFrame, let area = screen?.visibleFrame {
             restFrame = widened(rest)
             layOutEditing(in: area, isSettled: true)
         } else {
             resize(to: widened(frame))
         }
-        SpotSoftBlur.warm(SpotsView.blurHeights(of: model), width: SpotTokens.panelWidth + sides.leftExtent + sides.rightExtent)
+        SpotSoftBlur.warm(SpotsView.blurHeights(of: model), width: SpotTokens.panelWidth + panels.leftExtent + panels.rightExtent)
         SpotSoftBlur.warm(SpotsView.blurHeights(of: model), width: SpotTokens.panelWidth)
     }
 

@@ -532,8 +532,8 @@ final class SpotsModelDragTests: XCTestCase {
 
         model.show(.left, true)
 
-        XCTAssertEqual(model.sides, GridSides(hasLeft: true))
-        XCTAssertEqual(files.config.read().sides, GridSides(hasLeft: true))
+        XCTAssertEqual(model.panels, GridPanels(hasLeft: true))
+        XCTAssertEqual(files.config.read().panels, GridPanels(hasLeft: true))
         let shift = CGFloat(SpotTokens.columns) * (SpotTokens.cell + SpotTokens.columnGap)
         XCTAssertEqual(model.placements.map { $0.rect.offsetBy(dx: -shift, dy: 0) }, before)
         XCTAssertEqual(model.gridOrigin.x, SpotTokens.halo - shift)
@@ -541,36 +541,36 @@ final class SpotsModelDragTests: XCTestCase {
 
     func testASearchShowsNoSidePanelAndAnEmptyFieldShowsThemAgain() {
         model.show(.left, true)
-        XCTAssertEqual(model.shownSides, GridSides(hasLeft: true))
+        XCTAssertEqual(model.shownPanels, GridPanels(hasLeft: true))
 
         model.query = "a"
-        XCTAssertEqual(model.shownSides, GridSides())
+        XCTAssertEqual(model.shownPanels, GridPanels())
 
         model.query = ""
-        XCTAssertEqual(model.shownSides, GridSides(hasLeft: true))
+        XCTAssertEqual(model.shownPanels, GridPanels(hasLeft: true))
     }
 
     func testACardDroppedOnASidePanelStaysThereAndHidingThePanelMovesItBackToTheEnd() async throws {
         model.show(.right, true)
-        let column = model.sides.firstColumn(of: .right)
+        let column = model.panels.firstColumn(of: .right)
         let point = CGPoint(x: SpotPlacement(index: 0, row: 0, column: column, size: .small).rect.midX, y: model.placements[0].rect.midY)
 
         let translation = move("a", to: point)
         model.dragSpot("a", by: translation)
         model.dropSpot(by: translation)
 
-        XCTAssertEqual(model.visible.first { $0.id == "a" }?.side, .right)
-        XCTAssertEqual(files.config.read().arrangement.side(of: "a"), .right)
+        XCTAssertEqual(model.visible.first { $0.id == "a" }?.panel, .right)
+        XCTAssertEqual(files.config.read().arrangement.panel(of: "a"), .right)
         model.show(.right, false)
-        for _ in 0..<500 where model.sides.hasRight { try await Task.sleep(for: .milliseconds(10)) }
-        XCTAssertFalse(model.sides.hasRight)
-        XCTAssertEqual(model.visible.first { $0.id == "a" }?.side, .center)
+        for _ in 0..<500 where model.panels.hasRight { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertFalse(model.panels.hasRight)
+        XCTAssertEqual(model.visible.first { $0.id == "a" }?.panel, .center)
         XCTAssertEqual(model.visible.filter(\.isOnGrid).last?.id, "a")
     }
 
     func testADraggedCardMakesItsRoomInThePanelItWouldLandIn() {
         model.show(.right, true)
-        let column = model.sides.firstColumn(of: .right)
+        let column = model.panels.firstColumn(of: .right)
         let point = CGPoint(x: SpotPlacement(index: 0, row: 0, column: column, size: .small).rect.midX, y: model.placements[0].rect.midY)
 
         model.dragSpot("a", by: move("a", to: point))
@@ -581,7 +581,7 @@ final class SpotsModelDragTests: XCTestCase {
 
     func testAPanelThatShowsIsEmptyEvenWhenAnOldChoiceNamedIt() throws {
         var arrangement = files.config.read().arrangement
-        arrangement.set(side: .right, of: "b")
+        arrangement.set(panel: .right, of: "b")
         try files.config.write(arrangement)
         model.reload()
         XCTAssertLessThan(model.placements.map(\.column).max() ?? 0, SpotTokens.columns)
@@ -589,7 +589,7 @@ final class SpotsModelDragTests: XCTestCase {
         model.show(.right, true)
 
         XCTAssertLessThan(model.placements.map(\.column).max() ?? 0, SpotTokens.columns)
-        XCTAssertNil(files.config.read().arrangement.side(of: "b"))
+        XCTAssertNil(files.config.read().arrangement.panel(of: "b"))
     }
 
     func testTheGridTakesTheSidePanelsOfTheConfig() throws {
@@ -597,7 +597,7 @@ final class SpotsModelDragTests: XCTestCase {
 
         model.reload()
 
-        XCTAssertEqual(model.sides, GridSides(hasRight: true))
+        XCTAssertEqual(model.panels, GridPanels(hasRight: true))
     }
 
     func testTheGridGrowsDownPastTheRowsThePanelShows() throws {

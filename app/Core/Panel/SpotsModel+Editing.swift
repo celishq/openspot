@@ -362,32 +362,30 @@ extension SpotsModel {
     /// Shows or hides a side panel of the grid, and saves it. A panel that shows is empty, and no card moves. The cards of a
     /// panel that hides first move to the end of the center's cards, and the panel goes when they land. A panel that is
     /// on its way out takes no other change until it is gone.
-    public func show(_ side: SpotSide, _ isShown: Bool) {
-        guard side != .center, sides.has(side) != isShown, sideLeaving != side else { return }
+    public func show(_ panel: GridPanel, _ isShown: Bool) {
+        guard let key = panel.configKey, panels[panel] != isShown, panelLeaving != panel else { return }
         let apply: @MainActor () -> Void = { [self] in
-            sideLeaving = nil
+            panelLeaving = nil
             do {
-                try files.config.set(side == .left ? "left_panel" : "right_panel", to: isShown)
+                try files.config.set(key, to: isShown)
                 tookOwnWrite()
             } catch {
                 host.notify("Openspot could not save the panels. \(Self.reason(error))")
             }
-            var next = sides
-            if side == .left { next.hasLeft = isShown } else { next.hasRight = isShown }
-            sides = next
+            panels[panel] = isShown
             updateVisible()
         }
-        let kept = cards.filter { $0.side == side }.map(\.id)
+        let kept = cards.filter { $0.panel == panel }.map(\.id)
         guard !kept.isEmpty else { return apply() }
-        let leaving = isShown ? [] : cards.filter { $0.isOnGrid && $0.side == side }.map(\.id)
-        kept.forEach { arrangement.set(side: .center, of: $0) }
+        let leaving = isShown ? [] : cards.filter { $0.isOnGrid && $0.panel == panel }.map(\.id)
+        kept.forEach { arrangement.set(panel: .center, of: $0) }
         guard let first = leaving.first else {
             try? files.config.write(arrangement)
             tookOwnWrite()
             rebuildEntries()
             return apply()
         }
-        sideLeaving = side
+        panelLeaving = panel
         let onGrid = cards.filter(\.isOnGrid).map(\.id).filter { !leaving.contains($0) }
         arrangement.arrange(onGrid + leaving + cards.filter { !$0.isOnGrid }.map(\.id))
         saveArrangement(selecting: first, landed: apply)
