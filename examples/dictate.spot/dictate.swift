@@ -273,8 +273,9 @@ final class Clipboard {
     private var mark = 0
     private var timer: Timer?
 
-    /// Puts the text on the clipboard and pastes it into the front app. It is false when the paste needs Accessibility.
-    func paste(_ text: String) -> Bool {
+    /// Puts the text on the clipboard and pastes it into the front app. It gives the fault of a paste that failed, such as
+    /// one that needs Accessibility, and nothing when the paste ran.
+    func paste(_ text: String) -> String? {
         let board = NSPasteboard.general
         if timer == nil {
             kept = (board.pasteboardItems ?? []).map { item in
@@ -289,11 +290,13 @@ final class Clipboard {
         let paste = Process()
         paste.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         paste.arguments = ["openspot", "clipboard", "paste"]
+        let fault = Pipe()
         paste.standardOutput = FileHandle.nullDevice
-        paste.standardError = FileHandle.nullDevice
-        guard (try? paste.run()) != nil else { return false }
+        paste.standardError = fault
+        guard (try? paste.run()) != nil else { return "Openspot cannot find its openspot command." }
+        let words = String(decoding: fault.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
         paste.waitUntilExit()
-        return paste.terminationStatus == 0
+        return paste.terminationStatus == 0 ? nil : words
     }
 
     private func giveBack() {
@@ -921,7 +924,7 @@ final class Pill {
     }
 
     private static func downloadWords(_ share: Double) -> String {
-        "Downloading speech model · \(Int(share * 100))%"
+        "Downloading \(Int(share * 100))%"
     }
 
     private func lay(fill share: Double) {
@@ -947,14 +950,14 @@ final class Pill {
         note.stringValue = text
         note.isHidden = false
         note.stringValue = share.map(Self.downloadWords) ?? text
-        let width = min(max(note.intrinsicContentSize.width + 32, long), 420)
+        let width = long
         let area = Self.area(at: CGPoint(x: panel.frame.midX, y: panel.frame.midY))
         let centre = CGPoint(x: panel.frame.midX, y: panel.frame.midY)
         var frame = CGRect(x: centre.x - width / 2, y: centre.y - short / 2, width: width, height: short)
         if place.edge == .left { frame.origin.x = area.minX + PillPlace.gap }
         if place.edge == .right { frame.origin.x = area.maxX - width - PillPlace.gap }
         apply(frame, turn: 0)
-        note.frame = CGRect(x: 12, y: (short - 16) / 2, width: width - 24, height: 16)
+        note.frame = CGRect(x: 10, y: (short - 16) / 2, width: width - 20, height: 16)
         fill.isHidden = share == nil
         lay(fill: share ?? 0)
         show(keeping: true)
@@ -1210,14 +1213,14 @@ final class Dictation {
             return
         case .authorized: break
         default:
-            pill.say("Allow Openspot to use the microphone in Settings.")
+            pill.say("Microphone is off")
             NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")!)
             return
         }
         do {
             try recording.start { [weak self] level in self?.pill.bars.take(level) }
         } catch {
-            pill.say("Openspot cannot open the microphone.")
+            pill.say("No microphone")
             return
         }
         phase = .recording
@@ -1230,7 +1233,7 @@ final class Dictation {
     /// reads, and the pill says when Whisper is ready.
     func fetch() {
         if let download { return pill.download(download.share) }
-        guard !FileManager.default.fileExists(atPath: model.path) else { return pill.say("Dictate is ready. Press your key to speak.") }
+        guard !FileManager.default.fileExists(atPath: model.path) else { return pill.say("Dictate is ready") }
         let percent = model.deletingLastPathComponent().appendingPathComponent("download")
         var shown = -1
         download = ModelDownload(to: model, progress: { [weak self] share in
@@ -1243,9 +1246,9 @@ final class Dictation {
             try? FileManager.default.removeItem(at: percent)
             self?.download = nil
             if landed {
-                self?.pill.say("Dictate is ready. Press your key to speak.", for: 5)
+                self?.pill.say("Dictate is ready", for: 5)
             } else {
-                self?.pill.say("Openspot could not download the speech model. Check the internet, then press your key again.", for: 5)
+                self?.pill.say("Download failed", for: 5)
             }
         })
         let start = download?.share ?? 0
@@ -1302,18 +1305,21 @@ final class Dictation {
         Task { @MainActor in
             defer { phase = .idle }
             guard let heard = try? await whisper.transcribe(wave) else {
-                pill.say("Openspot could not turn the speech into text. Try again.")
+                pill.say("Try again")
                 return
             }
             let text = Transcript(whisper: heard).text
             guard !text.isEmpty else {
-                pill.say("Openspot heard no words.")
+                pill.say("No words heard")
                 return
             }
             history.add(text)
             pill.hide()
-            if !clipboard.paste(text) {
-                pill.say("Copied, but Openspot cannot paste. Press ⌘V.")
+            guard let fault = clipboard.paste(text) else { return }
+            if fault.contains("Accessibility") {
+                NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
+            } else {
+                pill.say("Press ⌘V to paste")
             }
         }
     }
