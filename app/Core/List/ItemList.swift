@@ -20,6 +20,10 @@ public struct ItemList: Equatable, Sendable {
     /// The drawing that the rows flow through.
     public private(set) var drawing = RepeatDrawing.list
     public private(set) var isWaiting = false
+    /// How many searches have shown their rows: a search of the list at once, and a search of its script with its answer.
+    public private(set) var landedSearches = 0
+    /// Whether the rows of the last search of the script have yet to land.
+    private var awaitsLanding = false
     public private(set) var isLoading = false
     public private(set) var hasFailed = false
     private(set) var all: [SpotItem]
@@ -87,6 +91,8 @@ public struct ItemList: Equatable, Sendable {
         selected = 0
         isWaiting = search == .script
         refresh()
+        awaitsLanding = isWaiting
+        if !isWaiting { landedSearches += 1 }
     }
 
     /// Takes who searches this list, as the script printed it. A list that the script now searches waits for its answer.
@@ -103,6 +109,8 @@ public struct ItemList: Equatable, Sendable {
         guard text == query else { return }
         isWaiting = false
         replace(items)
+        if awaitsLanding { landedSearches += 1 }
+        awaitsLanding = false
     }
 
     /// Stops waiting for the answer to a search, and keeps the rows.

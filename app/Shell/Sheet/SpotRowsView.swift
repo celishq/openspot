@@ -102,8 +102,8 @@ struct SpotRowsView: View {
         ScrollViewReader { proxy in
             ScrollView(showsIndicators: false) { lines }
                 .modifier(RowsFollow(selection: selected, items: list.shown, proxy: proxy))
-                .onChange(of: list.query) {
-                    guard let run = reading.newTop(list.scrolling.first?.run) else { return }
+                .onChange(of: list.landedSearches) {
+                    guard let run = list.scrolling.first?.run else { return }
                     DispatchQueue.main.async { proxy.scrollTo(run, anchor: .top) }
                 }
         }
@@ -115,8 +115,8 @@ struct SpotRowsView: View {
                 .safeAreaPadding(.top, SpotTokens.padding)
                 .safeAreaPadding(.bottom, bottomInset)
                 .modifier(RowsFollow(selection: selected, items: list.shown, proxy: proxy))
-                .onChange(of: list.query) {
-                    guard let run = reading.newTop(list.shown.first?.run) else { return }
+                .onChange(of: list.landedSearches) {
+                    guard let run = list.shown.first?.run else { return }
                     DispatchQueue.main.async { proxy.scrollTo(run, anchor: .top) }
                 }
         }
@@ -138,11 +138,9 @@ struct SpotRowsView: View {
             if phase == .idle { reading.aim = context.geometry.contentOffset.y }
         }
         .modifier(GridFollow(selection: selected, items: list.shown, perLine: list.perLine, bottomFade: Self.bottomFade, position: $position, reading: reading))
-        .onChange(of: list.query, initial: true) {
-            if reading.newTop(list.shown.first?.run) != nil {
-                reading.aim = 0
-                position.scrollTo(y: 0)
-            }
+        .onChange(of: list.landedSearches, initial: true) {
+            reading.aim = 0
+            position.scrollTo(y: 0)
             let ahead = list.shown.prefix(Self.drawnAhead)
             if reading.newAhead(ahead) { SpotItemIcon.prepare(ahead, size: SpotTokens.listIconSize) }
         }
@@ -363,21 +361,13 @@ private struct SpotGridCell: View, Equatable {
 }
 
 /// What the rows last knew of their scroll view, kept out of observation so that a scroll redraws nothing: the grid's
-/// sizes and aim, the first row that a search scrolled to, and the rows whose pictures it drew ahead.
+/// sizes and aim, and the rows whose pictures it drew ahead.
 @MainActor
 private final class RowsScrollReading {
     var viewHeight: CGFloat = 0
     var contentHeight: CGFloat = 0
     var aim: CGFloat = 0
-    private var top: String?
     private var ahead: [String] = []
-
-    /// The first row of a new search when it differs from the last one, which the rows scroll to; nil when it is the same.
-    func newTop(_ run: String?) -> String? {
-        guard run != top else { return nil }
-        top = run
-        return run
-    }
 
     /// Whether these rows differ from those whose pictures were last drawn ahead, and keeps them when they do.
     func newAhead(_ rows: ArraySlice<SpotItem>) -> Bool {
