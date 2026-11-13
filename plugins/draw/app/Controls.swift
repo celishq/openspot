@@ -63,8 +63,8 @@ struct Knob: View {
     var enabled = true
     var below = false
     var quiet = false
-    /// Round, as the pills of the title row are, instead of a rounded square.
-    var round = false
+    /// With no back: the symbol itself lightens on hover, as in a list's header.
+    var bare = false
     let action: () -> Void
     @State private var hovering = false
 
@@ -81,7 +81,8 @@ struct Knob: View {
             }
             .frame(width: 34, height: 34)
             .foregroundStyle(on ? (quiet ? Color.accentColor : .white) : .primary)
-            .background(on ? (quiet ? Color.accentColor.opacity(0.14) : Color.accentColor) : Color.primary.opacity(hovering && enabled ? 0.07 : 0), in: RoundedRectangle(cornerRadius: round ? 17 : 9, style: .continuous))
+            .opacity(bare && hovering && enabled ? 0.55 : 1)
+            .background(on ? (quiet ? Color.accentColor.opacity(0.14) : Color.accentColor) : Color.primary.opacity(hovering && enabled && !bare ? 0.07 : 0), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -321,8 +322,8 @@ final class Drawer: ObservableObject {
     @Published var picking = Picking()
     /// Whether the list takes the keys, after a click in it.
     @Published var focused = false
-    /// The folders of the list that show what they hold.
-    @Published var expanded: Set<URL> = []
+    /// The folders of the list that show what they hold, by path.
+    @Published var expanded: Set<String> = []
     /// Whether the search field shows, and its words.
     @Published var searching = false
     @Published var query = ""

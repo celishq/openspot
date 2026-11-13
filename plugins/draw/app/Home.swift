@@ -73,8 +73,10 @@ struct Home: View {
         .onChange(of: drawer.changes) { _, _ in reload() }
     }
 
+    /// The boards that a search finds, or else the seven newest, so the page holds eight cards with New board.
     private func reload() {
-        entries = shelf.entries(matching: drawer.query)
+        let found = shelf.entries(matching: drawer.query)
+        entries = drawer.query.trimmingCharacters(in: .whitespaces).isEmpty ? Array(found.prefix(7)) : found
     }
 }
 

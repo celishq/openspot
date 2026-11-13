@@ -67,7 +67,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         root.addSubview(stage)
         let side = bar(Sidebar(drawer: drawer, tabs: tabs, shelf: Shelf(folder: folder), open: { [weak self] in self?.show($0) }, make: { [weak self] in self?.make(in: $0) },
                                makeFolder: { [weak self] in self?.makeFolder(in: $0) }, rename: { [weak self] in self?.rename($0, to: $1) }, trash: { [weak self] in self?.trash($0) },
-                               arrange: { [weak self] in self?.arrange($0, into: $1, before: $2) }), in: root)
+                               move: { [weak self] in self?.move($0, into: $1) }), in: root)
         side.isHidden = !drawer.open
         self.side = side
         let latch = bar(Latch(drawer: drawer) { [weak self] in self?.toggleBoards(nil) }, in: root)
@@ -178,7 +178,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// Makes a new board in a folder, or at the top, and shows it in the New Tab that shows or in a new tab.
     func make(in place: URL?) {
         guard let file = try? Shelf(folder: folder).make(in: place) else { return }
-        if let place { drawer.expanded.insert(place) }
+        if let place { drawer.expanded.insert(place.path) }
         drawer.changes += 1
         show(file)
     }
@@ -186,7 +186,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// Makes a new folder in a folder, or at the top, with its name ready to change.
     func makeFolder(in place: URL?) {
         guard let made = try? Shelf(folder: folder).makeFolder(in: place) else { return }
-        if let place { drawer.expanded.insert(place) }
+        if let place { drawer.expanded.insert(place.path) }
         if !drawer.open { toggleBoards(nil) }
         drawer.changes += 1
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [self] in
@@ -204,12 +204,13 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         relocate(url) { try Shelf(folder: folder).rename(url, to: name) }
     }
 
-    /// Moves boards and folders into a folder before a row, or at its end, and keeps their open tabs.
-    func arrange(_ urls: [URL], into target: URL, before: URL?) {
+    /// Moves boards and folders into a folder, and keeps their open tabs.
+    func move(_ urls: [URL], into target: URL) {
         let inside = tabs.studios.filter { studio in urls.contains { studio.file.standardizedFileURL == $0.standardizedFileURL || studio.file.path.hasPrefix($0.path + "/") } }
         if let shown = studio, inside.contains(where: { $0 === shown }) { canvas?.endEditing() }
         inside.forEach { $0.save() }
-        guard let moved = try? Shelf(folder: folder).arrange(urls, into: target, before: before) else { return }
+        let shelf = Shelf(folder: folder)
+        let moved = urls.map { (try? shelf.move($0, into: target)) ?? $0 }
         let current = tabs.currentID
         var changed = false
         for (old, new) in zip(urls, moved) where old != new {
@@ -219,7 +220,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 if page == current { changed = true }
             }
         }
-        if target.path != folder.path { drawer.expanded.insert(target) }
+        if target.path != folder.path { drawer.expanded.insert(target.path) }
         if changed { stageUp() }
         drawer.changes += 1
     }
@@ -231,7 +232,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if shown { canvas?.endEditing() }
         inside.forEach { $0.save() }
         guard let moved = try? change(), moved != url else { return }
-        if drawer.expanded.remove(url) != nil { drawer.expanded.insert(moved) }
+        if drawer.expanded.remove(url.path) != nil { drawer.expanded.insert(moved.path) }
         let current = tabs.currentID
         for studio in inside {
             let next = URL(fileURLWithPath: moved.path + studio.file.path.dropFirst(url.path.count))

@@ -30,8 +30,7 @@ struct Shelf {
 
     let folder: URL
 
-    /// The folders and boards at the top, in the order a person set by dragging, with what is new first. With no order
-    /// set, folders come first by name, then boards newest first.
+    /// The folders and boards at the top, folders first by name, then boards newest first.
     var tree: [Node] {
         nodes(in: folder)
     }
@@ -41,11 +40,24 @@ struct Shelf {
         boards(in: folder).sorted { $0.edited > $1.edited }
     }
 
-    /// The boards whose title holds the words, ignoring case and accents. Empty words match each board.
+    /// The boards whose title holds the words, ignoring case and accents, also when the words were typed with the other
+    /// keyboard layout, such as еуіе for test. Empty words match each board.
     func entries(matching words: String) -> [Entry] {
         let words = words.trimmingCharacters(in: .whitespaces)
         guard !words.isEmpty else { return entries }
-        return entries.filter { $0.title.range(of: words, options: [.caseInsensitive, .diacriticInsensitive]) != nil }
+        let forms = [words, Self.retyped(words, from: Self.cyrillic, to: Self.latin), Self.retyped(words, from: Self.latin, to: Self.cyrillic)]
+        return entries.filter { entry in
+            forms.contains { entry.title.range(of: $0, options: [.caseInsensitive, .diacriticInsensitive]) != nil }
+        }
+    }
+
+    /// The keys of a Mac keyboard in the Ukrainian and Russian layouts, and the same keys in the English one.
+    private static let cyrillic = Array("йцукенгшщзхїфівапролджєячсмитьбюыэъё")
+    private static let latin = Array("qwertyuiop[]asdfghjkl;'zxcvbnm,.s']`")
+
+    /// The words as the same keys give them in the other layout.
+    private static func retyped(_ words: String, from: [Character], to: [Character]) -> String {
+        String(words.lowercased().map { key in from.firstIndex(of: key).map { to[$0] } ?? key })
     }
 
     /// The folder where a new board or folder goes: the picked folder, the folder of the picked board, or the top.
@@ -65,8 +77,6 @@ struct Shelf {
             let moved = url.deletingLastPathComponent().appendingPathComponent(name, isDirectory: true)
             guard moved.standardizedFileURL != url.standardizedFileURL else { return url }
             try FileManager.default.moveItem(at: url, to: moved)
-            let parent = url.deletingLastPathComponent()
-            writeOrder(order(of: parent).map { $0 == url.lastPathComponent ? name : $0 }, in: parent)
             return moved
         }
         var board = try Board.load(from: url)
@@ -127,30 +137,6 @@ struct Shelf {
         return moved
     }
 
-    /// Moves boards and folders into a folder and puts them, in their order, before `before`, or at the end. Returns
-    /// where each now is.
-    @discardableResult
-    func arrange(_ urls: [URL], into target: URL, before: URL?) throws -> [URL] {
-        let moved = try urls.map { try move($0, into: target) }
-        let names = moved.map(\.lastPathComponent)
-        var order = nodes(in: target).map(\.url.lastPathComponent).filter { !names.contains($0) }
-        let place = before.flatMap { order.firstIndex(of: $0.lastPathComponent) } ?? order.count
-        order.insert(contentsOf: names, at: place)
-        writeOrder(order, in: target)
-        return moved
-    }
-
-    /// The names in a folder in the order a person set, kept in a hidden file there.
-    private func order(of place: URL) -> [String] {
-        guard let data = try? Data(contentsOf: place.appendingPathComponent(".order")) else { return [] }
-        return (try? JSONDecoder().decode([String].self, from: data)) ?? []
-    }
-
-    private func writeOrder(_ names: [String], in place: URL) {
-        guard let data = try? JSONEncoder().encode(names) else { return }
-        try? data.write(to: place.appendingPathComponent(".order"), options: .atomic)
-    }
-
     /// A name for a folder that nothing in `parent` takes yet: the name itself, or with 2, 3 and on after it.
     private func free(_ name: String, in parent: URL) -> String {
         let stem = name.replacingOccurrences(of: #" \d+$"#, with: "", options: .regularExpression)
@@ -187,12 +173,7 @@ struct Shelf {
         let boards = items.filter { !Self.isFolder($0) }
             .map { Node(url: $0, title: (try? Board.load(from: $0).title) ?? "Untitled board", edited: Self.edited($0), isFolder: false) }
             .sorted { $0.edited > $1.edited }
-        let natural = folders + boards
-        let order = order(of: place)
-        guard !order.isEmpty else { return natural }
-        let set = natural.filter { order.contains($0.url.lastPathComponent) }
-            .sorted { order.firstIndex(of: $0.url.lastPathComponent)! < order.firstIndex(of: $1.url.lastPathComponent)! }
-        return natural.filter { !order.contains($0.url.lastPathComponent) } + set
+        return folders + boards
     }
 
     private func boards(in place: URL) -> [Entry] {

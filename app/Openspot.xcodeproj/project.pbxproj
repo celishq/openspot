@@ -57,7 +57,6 @@
 		1AF288D17915813C4D184E1C /* Picking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36E49BCD2C59079CDEECB42F /* Picking.swift */; };
 		1B0D0D7FE2A03FBA2458A139 /* SpotRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70A41B43814742034E568CF4 /* SpotRing.swift */; };
 		1B2CDB90B88E5511523F2326 /* SheetLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48B0DA6204425E910C82D1D7 /* SheetLayoutTests.swift */; };
-		1C5853AFE80E94C4229F9E72 /* DrawLineupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6B854E18658247E2C9B76D /* DrawLineupTests.swift */; };
 		1E09F812834627CC3049BFF5 /* CalcConversion.swift in Sources */ = {isa = PBXBuildFile; fileRef = D17373A98AFFC41917BE455D /* CalcConversion.swift */; };
 		1E49D0C6D845A360914F704E /* Icon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B34F0EE9609556532E5F215 /* Icon.swift */; };
 		1E8CCC745215AAA57523CB43 /* SpotFieldCrossing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110EB03D42951E7149FF236E /* SpotFieldCrossing.swift */; };
@@ -412,7 +411,6 @@
 		E3CE23C3968D0E9EAE8534B1 /* SpotFloatDrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19883A7AAB2F62EE114C6EF9 /* SpotFloatDrop.swift */; };
 		E3FEB2AB29DCC5397EFA91ED /* SpotQuietHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E10D0D4E9FD293850271AC5 /* SpotQuietHost.swift */; };
 		E545EA02D131BEDD3B4697B5 /* SpotIconStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6077094CBAB36A423024B24A /* SpotIconStore.swift */; };
-		E5CEE20B070F94CE59A2BA4E /* Lineup.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF72994859E40C00BD4345B9 /* Lineup.swift */; };
 		E5F083757AEFB63BAE8D9A7B /* SpotFloatGlass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BE566EA52FD95472C996740 /* SpotFloatGlass.swift */; };
 		E6372BF43939AB90E0658814 /* ScanResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC85E9DD5BE72E7BDD0BF16 /* ScanResult.swift */; };
 		E6F6187CC47B3FBA87972B32 /* SpotHint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72BD7DADB263F55E1F52EABD /* SpotHint.swift */; };
@@ -697,7 +695,6 @@
 		88B9FA4F7FBE192C0F3F809B /* CalcExpression.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalcExpression.swift; sourceTree = "<group>"; };
 		8907E98F00C0A89599F148E6 /* RepeatDrawing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepeatDrawing.swift; sourceTree = "<group>"; };
 		8975CD677A24BB55FD2AD7CC /* SpotDropView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotDropView.swift; sourceTree = "<group>"; };
-		8A6B854E18658247E2C9B76D /* DrawLineupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawLineupTests.swift; sourceTree = "<group>"; };
 		8AE7333AFB1BE8B127EE7D7B /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
 		8AFFAE1292EF44932A4115BD /* SpotRecording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotRecording.swift; sourceTree = "<group>"; };
 		8B5F882885A479C9009CCF7E /* LoginItemTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItemTests.swift; sourceTree = "<group>"; };
@@ -806,7 +803,6 @@
 		BE269E08E251D3B432156C6C /* SpotActionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotActionTests.swift; sourceTree = "<group>"; };
 		BE349937DD8063F00D305FDA /* SpotSurfaceShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSurfaceShape.swift; sourceTree = "<group>"; };
 		BF421A090C2683C4F43ED44E /* SpotCustomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotCustomView.swift; sourceTree = "<group>"; };
-		BF72994859E40C00BD4345B9 /* Lineup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Lineup.swift; sourceTree = "<group>"; };
 		BFE0D97BF215501DD2299A0F /* ItemSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemSearch.swift; sourceTree = "<group>"; };
 		BFF264B9C03AA68F80541F4F /* IconBodyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconBodyTests.swift; sourceTree = "<group>"; };
 		C0ABD4DC3959E204822BE5FD /* CalendarAddTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarAddTests.swift; sourceTree = "<group>"; };
@@ -987,7 +983,6 @@
 				D0E234C452D756D5F987C3FD /* CGPoint+Vector.swift */,
 				D9200A955E4880356354300F /* Figure.swift */,
 				B447E2DCEC0DBCB0EF4D3536 /* Figure+Form.swift */,
-				BF72994859E40C00BD4345B9 /* Lineup.swift */,
 				36E49BCD2C59079CDEECB42F /* Picking.swift */,
 				A0298943663F25A97E555456 /* Shelf.swift */,
 			);
@@ -1249,7 +1244,6 @@
 				BA6B0D4E912ED2F8DDF8428A /* CoreSpotsTests.swift */,
 				DEA51B4D1510652701D2C7AD /* DoomExampleTests.swift */,
 				6532AF1159E5EE1566D78EA7 /* DrawBoardTests.swift */,
-				8A6B854E18658247E2C9B76D /* DrawLineupTests.swift */,
 				DDFDA61D89107A7B94804906 /* DrawPickingTests.swift */,
 				7B0C97E0F2064A7063B977E7 /* DrawPluginTests.swift */,
 				D3858F278EB4D31264E7B860 /* DrawShelfTests.swift */,
@@ -2357,7 +2351,6 @@
 				6B08DAE4383D074596964CA5 /* CoreSpotsTests.swift in Sources */,
 				C69DB272404DB383002E5EB0 /* DoomExampleTests.swift in Sources */,
 				D240CD8B2C06668E12B7F5E5 /* DrawBoardTests.swift in Sources */,
-				1C5853AFE80E94C4229F9E72 /* DrawLineupTests.swift in Sources */,
 				9B20DF36DD573D893A7B2A6A /* DrawPickingTests.swift in Sources */,
 				B0C265112CC26EECA0E99579 /* DrawPluginTests.swift in Sources */,
 				6419BACB9BF11F2AC9A219B3 /* DrawShelfTests.swift in Sources */,
@@ -2381,7 +2374,6 @@
 				6E3C0E7493824BFF6ACE1896 /* IconTests.swift in Sources */,
 				8716B0C596D1866071EDD75D /* ItemListTests.swift in Sources */,
 				72D987DE616D7C9922D27BC2 /* KeyLayoutTests.swift in Sources */,
-				E5CEE20B070F94CE59A2BA4E /* Lineup.swift in Sources */,
 				A95ABD5DF54F4768F87F5C21 /* LinksPluginTests.swift in Sources */,
 				832089DA2A57BF0AC19E40CA /* LoginItemTests.swift in Sources */,
 				29EE13B662BAD186D221A43A /* NewSpotTests.swift in Sources */,

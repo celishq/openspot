@@ -13,46 +13,35 @@ struct Sidebar: View {
     let makeFolder: (URL?) -> Void
     let rename: (URL, String) -> Void
     let trash: ([URL]) -> Void
-    let arrange: ([URL], URL, URL?) -> Void
+    let move: ([URL], URL) -> Void
     @State private var tree: [Shelf.Node] = []
     @State private var name = ""
     @FocusState private var typing: Bool
     @FocusState private var listening: Bool
     @State private var frames: [URL: CGRect] = [:]
-    /// The rows that a drag carries, where the pointer is, how far below the top of its row it took the row, and where
-    /// the rows would land.
+    /// The rows that a drag carries, where the pointer is, and the folder it would move them into.
     @State private var carried: [URL] = []
     @State private var pointer: CGPoint?
-    @State private var grab: CGFloat = 0
-    @State private var landing: Lineup.Landing?
+    @State private var landing: URL?
     @State private var opening: Task<Void, Never>?
     @State private var hovered: URL?
 
     private static let folderHeight: CGFloat = 36
     private static let boardHeight: CGFloat = 52
-    private static let gapBetween: CGFloat = 2
 
     private func height(_ node: Shelf.Node) -> CGFloat {
         node.isFolder ? Self.folderHeight : Self.boardHeight
     }
 
-    /// The rows that show while a drag carries some: the others, which close up where the carried ones were.
-    private var staying: [(node: Shelf.Node, depth: Int)] {
-        rows.filter { row in !carried.contains { row.node.url == $0 || row.node.url.path.hasPrefix($0.path + "/") } }
+    /// The folder that holds a place, written the same way as a folder's own place.
+    private func parent(of url: URL) -> URL {
+        URL(fileURLWithPath: url.deletingLastPathComponent().path)
     }
 
-    /// The height of the gap that opens where carried rows would land.
-    private var gapHeight: CGFloat {
-        rows.filter { carried.contains($0.node.url) }.reduce(0) { $0 + height($1.node) + Self.gapBetween }
-    }
-
-    /// The row that the gap opens before, or nil for the end of the list, while the carried rows land between rows.
-    private var gapBefore: URL?? {
-        guard case .before(let row, let parent)? = landing else { return nil }
-        if let row { return .some(row) }
-        let inside = staying.filter { Lineup.parent(of: $0.node.url) == parent || $0.node.url.path.hasPrefix(parent.path + "/") }
-        guard let last = inside.last, let index = staying.firstIndex(where: { $0.node.url == last.node.url }), index + 1 < staying.count else { return .some(nil) }
-        return .some(staying[index + 1].node.url)
+    /// Whether a row lies inside the folder that a drag would move rows into, which lights with it.
+    private func lit(_ url: URL) -> Bool {
+        guard let landing, landing.path != shelf.folder.path else { return false }
+        return url.path.hasPrefix(landing.path + "/")
     }
 
     /// The rows that show, each with how deep it lies: the open folders' tree, or the boards that a search finds.
@@ -61,7 +50,7 @@ struct Sidebar: View {
             return shelf.entries(matching: drawer.query).map { (Shelf.Node(url: $0.file, title: $0.title, edited: $0.edited, isFolder: false), 0) }
         }
         func walk(_ nodes: [Shelf.Node], _ depth: Int) -> [(node: Shelf.Node, depth: Int)] {
-            nodes.flatMap { node in [(node, depth)] + (node.isFolder && drawer.expanded.contains(node.url) ? walk(node.children, depth + 1) : []) }
+            nodes.flatMap { node in [(node, depth)] + (node.isFolder && drawer.expanded.contains(node.url.path) ? walk(node.children, depth + 1) : []) }
         }
         return walk(tree, 0)
     }
@@ -80,20 +69,18 @@ struct Sidebar: View {
             HStack(spacing: 0) {
                 Search(drawer: drawer, takesFocus: false)
                     .padding(.trailing, 4)
-                Knob(symbol: "doc.badge.plus", help: "New board  ⌘N", below: true, round: true) { make(place) }
-                Knob(symbol: "folder.badge.plus", help: "New folder  ⇧⌘N", below: true, round: true) { makeFolder(place) }
+                Knob(symbol: "doc.badge.plus", help: "New board  ⌘N", below: true, bare: true) { make(place) }
+                Knob(symbol: "folder.badge.plus", help: "New folder  ⇧⌘N", below: true, bare: true) { makeFolder(place) }
             }
             .frame(height: 34)
             ScrollView {
-                VStack(spacing: Self.gapBetween) {
-                    ForEach(carried.isEmpty ? rows : staying, id: \.node.url) { row in
-                        if gapBefore == .some(row.node.url) { Color.clear.frame(height: gapHeight - Self.gapBetween) }
+                VStack(spacing: 2) {
+                    ForEach(rows, id: \.node.url) { row in
                         line(row.node, depth: row.depth)
                             .background(GeometryReader { place in
                                 Color.clear.preference(key: RowFrames.self, value: [row.node.url: place.frame(in: .named("list"))])
                             })
                     }
-                    if gapBefore == .some(nil) { Color.clear.frame(height: gapHeight) }
                 }
                 .overlay(alignment: .topLeading) { floating }
                 .frame(maxWidth: .infinity, minHeight: 400, alignment: .top)
@@ -152,7 +139,7 @@ struct Sidebar: View {
     private func activate(_ url: URL) {
         if Shelf.isFolder(url) {
             withAnimation(.easeOut(duration: 0.15)) {
-                if drawer.expanded.contains(url) { drawer.expanded.remove(url) } else { drawer.expanded.insert(url) }
+                if drawer.expanded.contains(url.path) { drawer.expanded.remove(url.path) } else { drawer.expanded.insert(url.path) }
             }
         } else {
             open(url)
@@ -163,7 +150,7 @@ struct Sidebar: View {
     private func fold(open: Bool) -> KeyPress.Result {
         guard let focus = drawer.picking.focus, Shelf.isFolder(focus) else { return .ignored }
         withAnimation(.easeOut(duration: 0.15)) {
-            if open { drawer.expanded.insert(focus) } else { drawer.expanded.remove(focus) }
+            if open { drawer.expanded.insert(focus.path) } else { drawer.expanded.remove(focus.path) }
         }
         return .handled
     }
@@ -174,8 +161,9 @@ struct Sidebar: View {
         return .handled
     }
 
-    /// A Command-drag picks the rows it passes. A plain drag lifts the picked rows, or the row it began on, above the
-    /// list: the others close up, and part where the rows would land, or a folder lights and opens to take them.
+    /// A Command-drag picks the rows it passes. A plain drag carries the picked rows, or the row it began on, as Finder
+    /// and Obsidian do: a label follows the pointer, and the folder it would move them into lights with its rows and
+    /// opens after a moment. The rows stay where they are.
     private func dragged(_ drag: DragGesture.Value) {
         guard let start = row(at: drag.startLocation) else { return }
         if carried.isEmpty, NSEvent.modifierFlags.contains(.command) || drawer.picking.isSweeping {
@@ -187,54 +175,44 @@ struct Sidebar: View {
         }
         if carried.isEmpty {
             if !drawer.picking.picked.contains(start) { drawer.picking.click(start, in: order, mode: .only) }
-            grab = drag.startLocation.y - (frames[start]?.minY ?? drag.startLocation.y)
-            withAnimation(.spring(duration: 0.25, bounce: 0.15)) {
-                carried = order.filter(drawer.picking.picked.contains)
-                landing = place(at: drag.location.y)
-            }
+            carried = order.filter(drawer.picking.picked.contains)
         }
         pointer = drag.location
-        let next = place(at: drag.location.y)
-        guard next != landing else { return }
-        withAnimation(.spring(duration: 0.25, bounce: 0.15)) { landing = next }
+        let under = row(at: drag.location)
+        var target = under.map { Shelf.isFolder($0) ? URL(fileURLWithPath: $0.path) : parent(of: $0) } ?? URL(fileURLWithPath: shelf.folder.path)
+        if carried.contains(where: { target.path == $0.path || target.path.hasPrefix($0.path + "/") }) { target = parent(of: carried[0]) }
+        guard target != landing else { return }
+        withAnimation(.easeOut(duration: 0.12)) { landing = target }
         opening?.cancel()
-        if case .into(let folder) = next, !drawer.expanded.contains(folder) {
+        if Shelf.isFolder(target), !drawer.expanded.contains(target.path) {
             opening = Task {
-                try? await Task.sleep(for: .seconds(0.6))
-                guard !Task.isCancelled, landing == .into(folder) else { return }
-                withAnimation(.easeOut(duration: 0.15)) { _ = drawer.expanded.insert(folder) }
+                try? await Task.sleep(for: .seconds(0.7))
+                guard !Task.isCancelled, landing == target else { return }
+                withAnimation(.easeOut(duration: 0.15)) { _ = drawer.expanded.insert(target.path) }
             }
         }
     }
 
-    /// Where carried rows would land for a pointer this far down the list.
-    private func place(at y: CGFloat) -> Lineup.Landing {
-        let lineup = Lineup(rows: staying.map { row in
-            Lineup.Row(url: row.node.url, isFolder: row.node.isFolder, open: drawer.expanded.contains(row.node.url), first: row.node.children.first?.url, height: height(row.node))
-        }, top: URL(fileURLWithPath: shelf.folder.path), spacing: Self.gapBetween)
-        return lineup.landing(at: y, gap: carried.isEmpty ? nil : gapBefore, gapHeight: gapHeight)
-    }
-
-    /// The carried rows, raised above the list at the pointer, with a count when there are several.
+    /// The label that follows the pointer while rows move: what moves, and where to.
     @ViewBuilder private var floating: some View {
-        if let pointer, let first = rows.first(where: { $0.node.url == carried.first }) {
-            line(first.node, depth: 0)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .shadow(color: .black.opacity(0.18), radius: 12, y: 6)
-                .overlay(alignment: .topTrailing) {
-                    if carried.count > 1 {
-                        Text("\(carried.count)")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 6)
-                            .frame(height: 18)
-                            .background(Color.accentColor, in: Capsule())
-                            .offset(x: 4, y: -6)
-                    }
+        if let pointer, let first = carried.first, let node = rows.first(where: { $0.node.url == first })?.node {
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Image(systemName: node.isFolder ? "folder" : "doc").font(.system(size: 11, weight: .semibold))
+                    Text(carried.count > 1 ? "\(node.title) and \(carried.count - 1) more" : node.title)
+                        .font(.system(size: 12, weight: .semibold)).lineLimit(1)
                 }
-                .scaleEffect(1.03)
-                .offset(y: pointer.y - grab)
-                .allowsHitTesting(false)
+                Text(landing.map { $0.path == shelf.folder.path ? "Move to the top" : "Move into “\($0.lastPathComponent)”" } ?? "")
+                    .font(.system(size: 11)).opacity(0.75)
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Color.black.opacity(0.82), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .shadow(color: .black.opacity(0.2), radius: 8, y: 3)
+            .fixedSize()
+            .offset(x: pointer.x + 14, y: pointer.y + 12)
+            .allowsHitTesting(false)
         }
     }
 
@@ -242,16 +220,12 @@ struct Sidebar: View {
         drawer.picking.endSweep()
         opening?.cancel()
         if let landing, !carried.isEmpty {
-            switch landing {
-            case .into(let folder): arrange(carried, folder, nil)
-            case .before(let row, let parent): arrange(carried, parent, row)
-            }
+            let moving = carried.filter { parent(of: $0).path != landing.path }
+            if !moving.isEmpty { move(moving, landing) }
         }
-        withAnimation(.spring(duration: 0.25, bounce: 0.1)) {
-            carried = []
-            landing = nil
-            pointer = nil
-        }
+        carried = []
+        landing = nil
+        pointer = nil
     }
 
     /// The row that lies under a point of the list.
@@ -282,11 +256,11 @@ struct Sidebar: View {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(.secondary)
-                    .rotationEffect(.degrees(drawer.expanded.contains(node.url) ? 90 : 0))
+                    .rotationEffect(.degrees(drawer.expanded.contains(node.url.path) ? 90 : 0))
                     .frame(width: 14)
                     .contentShape(Rectangle())
                     .onTapGesture { activate(node.url) }
-                Image(systemName: drawer.expanded.contains(node.url) ? "folder.fill" : "folder")
+                Image(systemName: drawer.expanded.contains(node.url.path) ? "folder.fill" : "folder")
                     .font(.system(size: 14))
                     .foregroundStyle(.secondary)
                     .frame(width: 22)
@@ -323,8 +297,10 @@ struct Sidebar: View {
         .padding(.leading, CGFloat(depth) * 16)
         .padding(.horizontal, 6)
         .frame(height: height(node))
-        .background(landing == .into(node.url) ? Color.accentColor.opacity(0.25) : picked ? Color.accentColor.opacity(drawer.focused ? 0.2 : 0.12)
+        .background(landing?.path == node.url.path ? Color.accentColor.opacity(0.22) : lit(node.url) ? Color.accentColor.opacity(0.08)
+                    : picked ? Color.accentColor.opacity(drawer.focused ? 0.2 : 0.12)
                     : Color.primary.opacity(shown ? 0.05 : hovered == node.url && carried.isEmpty ? 0.04 : 0), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+        .opacity(carried.contains(node.url) ? 0.5 : 1)
         .onHover { inside in hovered = inside ? node.url : (hovered == node.url ? nil : hovered) }
         .contentShape(Rectangle())
         .onTapGesture {
