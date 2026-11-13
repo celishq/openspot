@@ -110,10 +110,11 @@ public final class CommandSocket: @unchecked Sendable {
     private static func receive(_ connection: Int32) -> (Data, Data) {
         var data = Data()
         var buffer = [UInt8](repeating: 0, count: chunk)
-        while !data.contains(UInt8(ascii: "\n")) {
+        while true {
             let count = read(connection, &buffer, buffer.count)
             if count > 0 {
                 data.append(contentsOf: buffer[..<count])
+                if buffer[..<count].contains(UInt8(ascii: "\n")) { break }
             } else if count == 0 || errno != EINTR {
                 break
             }
