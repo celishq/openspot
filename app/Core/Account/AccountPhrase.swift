@@ -62,10 +62,10 @@ public struct AccountPhrase: Sendable {
         (isNsec ? trimmed.count >= Self.nsecLength : typed.count == Self.wordCount) && problem == nil
     }
 
-    /// What the phrase is so far, as one block: its counter, the places of its unknown words, a completion, a problem, or
-    /// the account it opens.
+    /// What the phrase is so far, as one block: its counter, each word, the places of its unknown words, a completion, a
+    /// problem, or the account it opens.
     public var facts: String {
-        var fields = [TextBlock.Field(key: "counter", value: counter)]
+        var fields = [TextBlock.Field(key: "counter", value: counter)] + typed.map { TextBlock.Field(key: "word", value: $0.text) }
         let unknown = typed.indices.filter { !typed[$0].isKnown }.map { String($0 + 1) }
         if !unknown.isEmpty { fields.append(.init(key: "unknown", value: unknown.joined(separator: " "))) }
         if let completion { fields.append(.init(key: "completion", value: completion)) }

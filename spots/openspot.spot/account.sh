@@ -6,7 +6,7 @@
 # on=sheet.open
 # offers=search
 # uses=app,account
-# view=account.swift
+. "$OPENSPOT_SH"
 
 data=${OPENSPOT_DATA:-${TMPDIR:-/tmp}/openspot-account}
 mkdir -p "$data"
@@ -32,7 +32,7 @@ step() {
   saved=$(cat "$data/step" 2>/dev/null)
   case "$saved:$signed:$backed" in
     choose:false:* | restore:false:* | about:false:*) echo "$saved"; return ;;
-    about:true:false | words:true:* | check:true:false) echo "$saved"; return ;;
+    about:true:false | words:true:* | check:true:false | restore:true:*) echo "$saved"; return ;;
     account:true:true | leave:true:*) echo "$saved"; return ;;
   esac
   if [ "$signed" != true ]; then
@@ -47,86 +47,205 @@ step() {
 # Keeps the step, and forgets what belonged to the one before.
 go() {
   printf '%s' "$1" > "$data/step"
-  rm -f "$data/mistake"
+  rm -f "$data/mistake" "$data/pick"
 }
 
-# Prints a button: its id, its title and whether it is the main one.
+# Prints an npub as its first 12 and last 6 letters.
+short() {
+  printf '%.12s…%s' "$1" "${1#"${1%??????}"}"
+}
+
+# Prints a line of words: its id, title, icon, tone and detail.
+line() {
+  printf '\ntext=%s\n' "$1"
+  openspot_kv title "$2"
+  [ -z "$3" ] || printf 'icon=%s\n' "$3"
+  [ -z "$4" ] || printf 'tone=%s\n' "$4"
+  if [ -n "$5" ]; then openspot_kv detail "$5"; fi
+}
+
+# Prints a button: its id, its title and whether it is the main one, which Command-Return presses.
 button() {
-  printf '\nbutton=%s\ntitle=%s\n' "$1" "$2"
+  printf '\nbutton=%s\n' "$1"
+  openspot_kv title "$2"
   case $3 in
     main) printf 'shortcut=cmd+return\nlook=strong\n' ;;
     close) printf 'close=true\n' ;;
+    picked) printf 'look=strong\n' ;;
   esac
 }
 
-# Prints the frame of the step: the layout, the view with what it draws, and the buttons. $1 is a toast, and $2 the
-# facts of a phrase that the person is typing.
+# Prints a numbered word: its place, the word and its tone.
+word() {
+  line "w$1" "$2" "$1.circle" "$3"
+}
+
+# Prints the layout of this many numbered words, 2 to a line.
+word_grid() {
+  i=1
+  while [ "$i" -le "$1" ]; do
+    if [ $((i + 1)) -le "$1" ]; then printf 'grid=w%s w%s\n' "$i" $((i + 1)); else printf 'grid=w%s .\n' "$i"; fi
+    i=$((i + 2))
+  done
+}
+
+# Prints the sign-in step: the field, each typed word, and a line that says how far it is.
+restore() {
+  facts_of_phrase=
+  [ -z "$phrase" ] || facts_of_phrase=$(printf '%s' "$phrase" | openspot account phrase)
+  words= unknown= counter= completion= problem= account=
+  while IFS='=' read -r key value; do
+    case $key in
+      word) words="$words$value " ;;
+      unknown) unknown=" $value " ;;
+      counter) counter=$value ;;
+      completion) completion=$value ;;
+      problem) problem=$value ;;
+      account) account=$value ;;
+    esac
+  done <<EOF
+$facts_of_phrase
+EOF
+  set -- $words
+  printf 'grid=phrase phrase\n'
+  word_grid $#
+  printf 'grid=status status\ngrid=sign_in back\n'
+  [ -z "$toast" ] || openspot_kv toast "$toast"
+  printf '\nfield=phrase\ntype=multiline\nplaceholder=Your 12 words, or an nsec\n'
+  openspot_kv value "$phrase"
+  i=1
+  for each in "$@"; do
+    case "$unknown" in *" $i "*) word "$i" "$each" bad ;; *) word "$i" "$each" ;; esac
+    i=$((i + 1))
+  done
+  if [ -n "$problem" ]; then
+    line status "$problem" exclamationmark.triangle bad
+  elif [ -n "$account" ] && [ "$signed" = true ]; then
+    line status 'Replaces the account on this Mac' exclamationmark.triangle warn "$(short "$account")"
+  elif [ -n "$account" ]; then
+    line status 'Signs in as' checkmark.circle good "$(short "$account")"
+  elif [ -n "$completion" ]; then
+    line status "Did you mean $completion?" questionmark.circle
+  else
+    line status "${counter:-0 of 12}" textformat.123
+  fi
+  button sign_in 'Sign in' main
+  button back Back
+}
+
+# Prints the check step: 4 choices for each of 2 places, each a button whose id holds its place and word.
+check() {
+  places=$(cat "$data/places" 2>/dev/null)
+  set -- $places
+  [ $# -eq 2 ] || set -- 1 12
+  choices=
+  [ "$OPENSPOT_REASON" = panel.open ] || choices=$(openspot account check "$1" "$2" | sed -n 's/^choice=//p')
+  ids= n=0
+  for each in $choices; do
+    n=$((n + 1))
+    if [ "$n" -le 4 ]; then place=$1; else place=$2; fi
+    ids="$ids pick-$place-$each"
+  done
+  set -- "$1" "$2" $ids
+  printf 'grid=head head\ngrid=first first\n'
+  [ $# -lt 6 ] || printf 'grid=%s %s\ngrid=%s %s\n' "$3" "$4" "$5" "$6"
+  printf 'grid=second second\n'
+  [ $# -lt 10 ] || printf 'grid=%s %s\ngrid=%s %s\n' "$7" "$8" "$9" "${10}"
+  printf 'grid=again again\n'
+  [ -z "$toast" ] || openspot_kv toast "$toast"
+  if [ -f "$data/mistake" ]; then
+    line head "$(cat "$data/mistake")" exclamationmark.triangle bad
+  else
+    line head 'Check your words' checkmark.circle
+  fi
+  line first "Word $1"
+  line second "Word $2"
+  picked=$(cat "$data/pick" 2>/dev/null)
+  shift 2
+  for id in "$@"; do
+    rest=${id#pick-}
+    if [ "$picked" = "${rest%%-*} ${rest#*-}" ]; then button "$id" "${rest#*-}" picked; else button "$id" "${rest#*-}"; fi
+  done
+  button again 'Show the words again'
+}
+
+# Prints the frame of the step that shows. $toast is said once, and $phrase is the text of the sign-in field.
 sheet() {
   facts
   current=$(step)
-  buttons=
   case $current in
-    choose) buttons="create sign_in" ;;
-    about) buttons=show ;;
-    words) buttons="wrote later" ;;
-    check) buttons=again ;;
-    restore) buttons="nsec back" ;;
-    account) buttons="done show leave" ;;
-    leave) buttons="sign_out cancel" ;;
-  esac
-  printf 'grid=steps\n'
-  [ "$current" != account ] || [ -z "$sync" ] || printf 'grid=sync\n'
-  for id in $buttons; do printf 'grid=%s\n' "$id"; done
-  [ -z "$1" ] || printf 'toast=%s\n' "$1"
-  printf '\nview=steps\nstep=%s\n' "$current"
-  [ ! -f "$data/mistake" ] || printf 'mistake=%s\n' "$(cat "$data/mistake")"
-  case $current in
-    words)
-      if [ "$OPENSPOT_REASON" != panel.open ]; then
-        words=$(openspot account words 2>&1) && printf '%s\n' "$words" || printf 'mistake=%s\n' "$words"
-      fi
-      ;;
-    check)
-      places=$(cat "$data/places" 2>/dev/null)
-      [ -n "$places" ] || places="1 12"
-      if [ "$OPENSPOT_REASON" != panel.open ]; then
-        openspot account check $places | grep -E '^(check|choice)='
-      fi
-      ;;
-    restore)
-      [ ! -f "$data/nsec" ] || printf 'mode=nsec\n'
-      [ -z "$2" ] || printf '%s\n' "$2"
-      ;;
+    restore) restore; return ;;
+    check) check; return ;;
+    choose) printf 'grid=head\ngrid=signs\ngrid=yours\ngrid=create\ngrid=sign_in\n' ;;
+    about) printf 'grid=head\ngrid=account\ngrid=server\ngrid=private\ngrid=reset\ngrid=show\n' ;;
+    words) printf 'grid=head head\n'; word_grid 12; printf 'grid=wrote wrote\ngrid=later later\n' ;;
     account)
-      printf 'npub=%s\nbacked=%s\n' "$npub" "$backed"
+      printf 'grid=head\ngrid=backup\n'
+      [ -z "$sync" ] || printf 'grid=sync\n'
+      printf 'grid=done\ngrid=show\ngrid=leave\n'
       ;;
-    leave)
-      if [ "$sync" = true ]; then
-        printf 'place=this Mac and from your other Macs that use iCloud Keychain\n'
-      else
-        printf 'place=this Mac\n'
-      fi
-      ;;
+    leave) printf 'grid=head\ngrid=where\ngrid=again\ngrid=sign_out\ngrid=cancel\n' ;;
   esac
+  [ -z "$toast" ] || openspot_kv toast "$toast"
   case $current in
-    choose) button create 'Create account' main; button sign_in 'Use existing account' ;;
-    about) button show 'Show my words' main ;;
+    choose)
+      line head 'Set up your account' person.crop.circle.badge.plus
+      line signs 'Openspot signs what you publish' signature
+      line yours 'People can tell an update is yours' checkmark.seal
+      button create 'Create account' main
+      button sign_in 'Use existing account'
+      ;;
+    about)
+      line head 'Your account is 12 words' key
+      line account 'They are your account' person.crop.circle
+      line server 'No email, password or server' server.rack
+      line private 'Anyone with them can publish as you' eye.slash
+      line reset 'Nobody can reset them' exclamationmark.triangle warn
+      button show 'Show my words' main
+      ;;
     words)
+      if [ "$OPENSPOT_REASON" = panel.open ]; then
+        line head 'Write down your words' pencil
+      elif words=$(openspot account words 2>&1); then
+        line head 'Write down your words' pencil '' 'In this order'
+        i=1
+        for each in $(printf '%s\n' "$words" | sed -n 's/^word=//p'); do
+          word "$i" "$each"
+          i=$((i + 1))
+        done
+      else
+        line head "$words" exclamationmark.triangle bad
+      fi
       button wrote 'I wrote them down' main
       if [ "$backed" = true ]; then button later Done close; else button later Later close; fi
       ;;
-    check) button again 'Show the words again' ;;
-    restore)
-      if [ -f "$data/nsec" ]; then button nsec 'Use your 12 words'; else button nsec 'Use an nsec instead'; fi
-      button back Back
-      ;;
     account)
-      if [ -n "$sync" ]; then printf '\nswitch=sync\ntitle=Keep in iCloud Keychain\nvalue=%s\n' "$sync"; fi
+      line head 'Your account' person.crop.circle '' "$(short "$npub")"
+      if [ "$backed" = true ]; then
+        line backup 'Your 12 words are backed up' checkmark.shield good
+      else
+        line backup 'Your 12 words are not backed up' exclamationmark.triangle warn
+      fi
+      if [ -n "$sync" ]; then printf '\nswitch=sync\ntitle=Keep in iCloud Keychain\nicon=icloud\nvalue=%s\n' "$sync"; fi
       button done Done close
       button show 'Show my words'
       button leave 'Sign out…'
       ;;
-    leave) button sign_out 'Sign out' main; button cancel Cancel ;;
+    leave)
+      line head 'Sign out of your account?' rectangle.portrait.and.arrow.right
+      if [ "$sync" = true ]; then
+        line where 'Removes it from all your Macs' icloud.slash warn
+      else
+        line where 'Removes it from this Mac' desktopcomputer
+      fi
+      if [ "$backed" = true ]; then
+        line again 'Your 12 words sign you in again' key
+      else
+        line again "You haven't saved its words" exclamationmark.triangle bad
+      fi
+      button sign_out 'Sign out' main
+      button cancel Cancel
+      ;;
   esac
 }
 
@@ -135,59 +254,62 @@ places() {
   awk 'BEGIN { srand(); a = int(rand() * 12) + 1; do { b = int(rand() * 12) + 1 } while (b == a); if (a > b) { t = a; a = b; b = t }; print a, b }'
 }
 
+toast= phrase=
 case "$1" in
   read) sheet ;;
   create) go about; sheet ;;
-  sign_in) rm -f "$data/nsec"; go restore; sheet ;;
+  sign_in)
+    facts
+    if [ "$(step)" = restore ]; then
+      phrase=$(value phrase)
+      if printf '%s' "$phrase" | openspot account sign-in 2>/dev/null; then
+        go account
+        phrase= toast='Signed in'
+      fi
+    else
+      go restore
+    fi
+    sheet
+    ;;
+  phrase) phrase=$2; sheet ;;
   show)
     facts
     if [ "$signed" != true ]; then openspot account new || exit 1; fi
     go words
     sheet
     ;;
-  wrote) places > "$data/places"; go check; sheet ;;
+  wrote) go check; places > "$data/places"; sheet ;;
   again) go words; sheet ;;
-  nsec)
-    if [ -f "$data/nsec" ]; then rm -f "$data/nsec"; else : > "$data/nsec"; fi
-    sheet
-    ;;
   back) go choose; sheet ;;
   leave) go leave; sheet ;;
-  cancel | done | later) go account; rm -f "$data/step"; sheet ;;
+  cancel | done | later) rm -f "$data/step"; sheet ;;
   sign_out)
-    if openspot account sign-out; then
-      rm -f "$data/step"
-      sheet 'Signed out'
-    else
-      exit 1
-    fi
+    openspot account sign-out || exit 1
+    rm -f "$data/step"
+    toast='Signed out'
+    sheet
     ;;
   sync)
     if [ "$2" = true ]; then openspot account sync on || exit 1; else openspot account sync off || exit 1; fi
     sheet
     ;;
-  steps)
-    case $2 in
-      phrase\ *) sheet '' "$(printf '%s' "${2#phrase }" | openspot account phrase)" ;;
-      sign-in\ *)
-        if failure=$(printf '%s' "${2#sign-in }" | openspot account sign-in 2>&1); then
+  pick-*)
+    rest=${1#pick-}
+    place=${rest%%-*} chosen=${rest#*-}
+    first=$(cat "$data/pick" 2>/dev/null)
+    case "$first" in
+      '' | "$place "*) printf '%s %s' "$place" "$chosen" > "$data/pick" ;;
+      *)
+        if failure=$(printf '%s\n%s %s\n' "$first" "$place" "$chosen" | openspot account checked 2>&1); then
           go account
-          sheet 'Signed in'
+          toast='Your words are backed up'
         else
-          sheet '' "problem=$failure"
-        fi
-        ;;
-      checked\ *)
-        set -- ${2#checked }
-        if failure=$(printf '%s %s\n%s %s\n' "$1" "$2" "$3" "$4" | openspot account checked 2>&1); then
-          go account
-          sheet 'Your words are backed up'
-        else
+          rm -f "$data/pick"
           printf '%s' "$failure" > "$data/mistake"
-          sheet
         fi
         ;;
     esac
+    sheet
     ;;
   *)
     echo 'Account cannot do that.' >&2

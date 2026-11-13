@@ -49,7 +49,7 @@ final class AccountPhraseTests: XCTestCase {
     }
 
     func testTheFactsSayHowFarThePhraseIs() {
-        XCTAssertEqual(AccountPhrase("abandon abuot abso").facts, "counter=3 of 12\nunknown=2\ncompletion=absorb\n")
+        XCTAssertEqual(AccountPhrase("abandon abuot abso").facts, "counter=3 of 12\nword=abandon\nword=abuot\nword=abso\nunknown=2\ncompletion=absorb\n")
     }
 
     func testABoxSuggestsTheWordsThatStartWithItsLetters() {

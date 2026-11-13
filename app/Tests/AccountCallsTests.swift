@@ -123,8 +123,8 @@ final class AccountCallsTests: XCTestCase {
         let ready = try await call(["account", "phrase"], from: account, input: phrase)
         let signedIn = try await call(["account", "sign-in"], from: account, input: phrase)
 
-        XCTAssertEqual(typing.output, "counter=3 of 12\nunknown=2\ncompletion=absorb\n")
-        XCTAssertEqual(ready.output, "counter=12 of 12\naccount=\(try AccountKey(words: phrase.split(separator: " ").map(String.init)).npub)\n")
+        XCTAssertEqual(typing.output, "counter=3 of 12\nword=abandon\nword=abuot\nword=abso\nunknown=2\ncompletion=absorb\n")
+        XCTAssertEqual(ready.output, "counter=12 of 12\n" + Array(repeating: "word=abandon\n", count: 11).joined() + "word=about\naccount=\(try AccountKey(words: phrase.split(separator: " ").map(String.init)).npub)\n")
         XCTAssertEqual(signedIn.code, 0, signedIn.errors)
         XCTAssertTrue(try store.isBackedUp())
     }
