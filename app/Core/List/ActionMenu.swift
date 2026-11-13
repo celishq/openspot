@@ -1,6 +1,8 @@
 import Foundation
 
-/// The rows of the actions menu for one command and its selected item, with the selected row.
+/// The rows of the actions menu for one command and its selected item, with the selected row. Its rows come in groups:
+/// the spot's own, then Openspot's, then those that each other spot offers, A to Z by its name. Each group after the first
+/// has a header line, unless a search shows the rows.
 public struct ActionMenu: Equatable, Sendable {
     public struct Row: Equatable, Sendable {
         public let title: String
@@ -8,7 +10,33 @@ public struct ActionMenu: Equatable, Sendable {
         public let action: CommandAction?
         /// Whether the hint leaves it out, as a row that each spot has.
         var isQuiet = false
+        /// The ID of the spot that offers the action, which a press runs. Nil for an action of the menu's own spot or of the app.
+        public var owner: String?
+        /// The title of its group, which its header shows. Nil for the group of the menu's own spot.
+        var group: String?
     }
+
+    /// An action that another spot offers to the menu of every card.
+    public struct Offer: Equatable, Sendable {
+        public let owner: String
+        public let name: String
+        public let action: CommandAction
+
+        public init(owner: String, name: String, action: CommandAction) {
+            self.owner = owner
+            self.name = name
+            self.action = action
+        }
+    }
+
+    /// The title of a group, and the line it takes among the lines of the rows.
+    public struct Header: Equatable, Sendable {
+        public let title: String
+        public let line: Int
+    }
+
+    /// The title of the group of the app's own rows.
+    static let appGroup = "Openspot"
 
     /// What Enter does on a row that shows a key: it records a new one.
     static let changeTitle = "Change"
@@ -30,14 +58,17 @@ public struct ActionMenu: Equatable, Sendable {
 
     /// Lists what Enter does, the actions that fit, then the rows that the app adds, each of them on this spot or item.
     /// Returns nil when there is nothing to list.
-    public init?(spot: Spot, item: SpotItem?, showsOpen: Bool = true, extras: [CommandAction] = []) {
+    public init?(spot: Spot, item: SpotItem?, showsOpen: Bool = true, extras: [CommandAction] = [], offered: [Offer] = []) {
         var rows: [Row] = []
         let keyTitle = item.flatMap { $0.records ? ($0.shortcut == KeyList.unset ? Self.setTitle : Self.changeTitle) : nil }
         if showsOpen, let title = item?.openTitle ?? keyTitle ?? spot.openTitle(hasItem: item != nil) {
             rows.append(Row(title: title, keyLabel: "⏎", action: nil))
         }
         rows += spot.actions(for: item).map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0) }
-        rows += extras.map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0, isQuiet: true) }
+        let hasOwnRows = !rows.isEmpty
+        rows += extras.map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0, isQuiet: true, group: hasOwnRows ? Self.appGroup : nil) }
+        let sorted = offered.enumerated().sorted { ($0.element.name, $0.offset) < ($1.element.name, $1.offset) }.map(\.element)
+        rows += sorted.map { Row(title: $0.action.title, keyLabel: $0.action.key?.label ?? "", action: $0.action, isQuiet: true, owner: $0.owner, group: $0.name) }
         guard !rows.isEmpty else { return nil }
         self.rows = rows
         shown = rows
@@ -47,14 +78,34 @@ public struct ActionMenu: Equatable, Sendable {
         rows.count >= Self.searchFrom
     }
 
-    /// How many lines it draws: one for each row that it shows, and one for the field of a menu that searches.
+    /// How many lines it draws: one for each row that it shows, one for each header, and one for the field of a menu that
+    /// searches.
     public var lines: Int {
-        isSearchable ? shown.count + 1 : rows.count
+        shown.count + headers.count + (isSearchable ? 1 : 0)
     }
 
     /// How many lines it draws with no search, which sets its place.
     public var fullLines: Int {
-        isSearchable ? rows.count + 1 : rows.count
+        rows.count + Self.headers(of: rows).count + (isSearchable ? 1 : 0)
+    }
+
+    /// The header of each group after the first, with no search. A menu of one group has none.
+    public var headers: [Header] {
+        query.isEmpty ? Self.headers(of: shown) : []
+    }
+
+    /// The line of the shown row at this index among the lines of the rows and the headers.
+    public func line(ofShown index: Int) -> Int {
+        index + headers.enumerated().filter { $0.element.line - $0.offset <= index }.count
+    }
+
+    private static func headers(of rows: [Row]) -> [Header] {
+        guard Set(rows.map(\.group)).count > 1 else { return [] }
+        var headers: [Header] = []
+        for (index, row) in rows.enumerated() where index > 0 && row.group != rows[index - 1].group {
+            headers.append(Header(title: row.group ?? "", line: index + headers.count))
+        }
+        return headers
     }
 
     public var selectedRow: Row? {

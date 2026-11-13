@@ -62,12 +62,17 @@ public struct ActionMenuFrame: Equatable, Sendable {
     /// The field of a menu that searches, on its still edge.
     public func fieldRect(of menu: ActionMenu) -> CGRect? {
         guard menu.isSearchable else { return nil }
-        return line(stillEdge == .top ? 0 : menu.shown.count, of: menu)
+        return line(stillEdge == .top ? 0 : menu.shown.count + menu.headers.count, of: menu)
     }
 
     /// The shown row at this index.
     public func rowRect(_ index: Int, of menu: ActionMenu) -> CGRect {
-        line(index + (menu.isSearchable && stillEdge == .top ? 1 : 0), of: menu)
+        line(menu.line(ofShown: index) + (menu.isSearchable && stillEdge == .top ? 1 : 0), of: menu)
+    }
+
+    /// The header of a group.
+    public func headerRect(_ header: ActionMenu.Header, of menu: ActionMenu) -> CGRect {
+        line(header.line + (menu.isSearchable && stillEdge == .top ? 1 : 0), of: menu)
     }
 
     /// The index of the shown row at a point, or nil off its rows.

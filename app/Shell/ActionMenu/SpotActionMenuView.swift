@@ -32,6 +32,16 @@ struct SpotActionMenuView: View, @MainActor Equatable {
                     .frame(width: line.width)
                     .offset(x: line.minX - rect.minX, y: line.minY - rect.minY)
             }
+            ForEach(menu.headers, id: \.line) { header in
+                let line = frame.headerRect(header, of: menu)
+                Text(header.title)
+                    .font(SpotType.detail)
+                    .lineLimit(1)
+                    .modifier(SpotSecondaryText())
+                    .padding(.horizontal, SpotTokens.padding - SpotTokens.menuPadding + 4)
+                    .frame(width: line.width, height: line.height, alignment: .bottomLeading)
+                    .offset(x: line.minX - rect.minX, y: line.minY - rect.minY)
+            }
             ForEach(Array(menu.shown.enumerated()), id: \.offset) { index, row in
                 let line = frame.rowRect(index, of: menu)
                 button(row, at: index)

@@ -238,4 +238,36 @@ final class ActionMenuTests: XCTestCase {
         XCTAssertEqual(menu.title(of: menu.rows[0]), "Wipe all?")
         XCTAssertEqual(menu.title(of: menu.rows[0], isRunning: true), "Stop Wipe")
     }
+
+    func testOpenspotsGroupComesFirstThenEachOwnersGroupAToZWithAHeaderEach() throws {
+        let icon = CommandAction(id: "change", title: "Change Icon", scope: .spot)
+        let star = CommandAction(id: "star", title: "Star", scope: .spot)
+        let menu = try XCTUnwrap(ActionMenu(
+            spot: command(),
+            item: nil,
+            extras: [.edit],
+            offered: [ActionMenu.Offer(owner: "z/Zoo", name: "Zoo", action: star), ActionMenu.Offer(owner: "i/Icon", name: "Icon", action: icon)]
+        ))
+
+        XCTAssertEqual(menu.rows.map(\.title), ["Open", "New", "Edit", "Change Icon", "Star"])
+        XCTAssertEqual(menu.rows.map(\.owner), [nil, nil, nil, "i/Icon", "z/Zoo"])
+        XCTAssertEqual(menu.headers, [ActionMenu.Header(title: "Openspot", line: 2), ActionMenu.Header(title: "Icon", line: 4), ActionMenu.Header(title: "Zoo", line: 6)])
+        XCTAssertEqual(menu.line(ofShown: 3), 5)
+        XCTAssertEqual(menu.fullLines, 9)
+    }
+
+    func testASearchDropsTheHeadersAndAMenuOfOneGroupHasNone() throws {
+        let icon = CommandAction(id: "change", title: "Change Icon", scope: .spot)
+        var menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, offered: [ActionMenu.Offer(owner: "i/Icon", name: "Icon", action: icon)]))
+        let bare = Spot(id: "b", name: "B", url: URL(fileURLWithPath: "/bin/true"))
+        let alone = try XCTUnwrap(ActionMenu(spot: bare, item: nil, showsOpen: false, offered: [ActionMenu.Offer(owner: "i/Icon", name: "Icon", action: icon)]))
+
+        menu.search("icon")
+
+        XCTAssertEqual(menu.shown.map(\.title), ["Change Icon"])
+        XCTAssertEqual(menu.headers, [])
+        XCTAssertEqual(menu.line(ofShown: 0), 0)
+        XCTAssertEqual(alone.rows.map(\.title), ["Change Icon"])
+        XCTAssertEqual(alone.headers, [])
+    }
 }

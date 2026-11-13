@@ -95,6 +95,23 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertEqual(rows.map(\.keyLabel), ["⌘E", "", "⌘⇧C", "⌘⌫"])
     }
 
+    func testAnActionThatASpotOffersShowsInEachCardsMenuAndRunsThatSpotWithTheCardsID() async throws {
+        let calls = folder.appendingPathComponent("calls").path
+        try script("weather", header: "title=Weather")
+        try "#!/bin/sh\n# title=Icon\n#\n# button=change\n# title=Change Icon\n# offers=actions\necho \"$@\" >> '\(calls)'\n".writeScript(to: spots.spotFile("icon"))
+        _ = try select("weather")
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        let menu = try XCTUnwrap(model.menu)
+        XCTAssertEqual(menu.rows.dropFirst().map(\.title), ["Edit", "Copy prompt for AI", "Share", "Delete", "Change Icon"])
+        XCTAssertEqual(menu.headers.map(\.title), ["Openspot", "Icon"])
+        model.menu?.select(try XCTUnwrap(menu.rows.last?.action))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+
+        try await wait("the call of the icon spot") { saved("calls") != nil }
+        XCTAssertEqual(saved("calls"), "change weather\n")
+    }
+
     func testARightOrForceClickOnACardOpensItsMenuAndTheClickThatEndsItRunsNothing() throws {
         try script("weather", header: "title=Weather")
         try script("clock", header: "title=Clock")

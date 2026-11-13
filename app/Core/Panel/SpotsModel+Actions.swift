@@ -355,8 +355,22 @@ extension SpotsModel {
             spot: target.entry.spot,
             item: target.item,
             showsOpen: !isOpenList || target.item != nil,
-            extras: extras(on: target)
+            extras: extras(on: target),
+            offered: target.item == nil ? offeredActions : []
         )
+    }
+
+    /// The actions that each spot offers to the menu of every card.
+    private var offeredActions: [ActionMenu.Offer] {
+        sheets.values.map(\.spot).flatMap { spot in
+            spot.offeredActions.map { ActionMenu.Offer(owner: spot.id, name: spot.name, action: $0) }
+        }.sorted { ($0.name, $0.owner) < ($1.name, $1.owner) }
+    }
+
+    /// Runs an action that another spot offers, with the ID of the card that it acts on as the action's second argument.
+    public func run(_ action: CommandAction, offeredBy owner: String, on target: Target) {
+        if action.after == .close, isShown { host.dismiss() }
+        sheets[owner]?.run(action, item: SpotItem(title: target.entry.state.title, run: target.entry.id))
     }
 
     /// The rows that the app adds for a selected card of the grid: the acts on the file of a spot of the person, and on a
@@ -450,7 +464,9 @@ extension SpotsModel {
             return
         }
         closeMenu()
-        if let action = row.action {
+        if let action = row.action, let owner = row.owner {
+            run(action, offeredBy: owner, on: target)
+        } else if let action = row.action {
             run(action, on: target)
         } else if let item = target.item {
             pick(item, of: target.entry)

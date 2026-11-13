@@ -71,7 +71,19 @@ public struct SpotFile: Equatable, Sendable {
         if let field = header.children.compactMap({ $0.value("field") }).first(where: ReservedSetting.isReserved) {
             throw SpotError.fault("\(name) has field=\(field), a key that Openspot keeps for the person. Give the field another name.")
         }
-        let offers = try header.children.filter { $0.fields.first?.key == "button" }.map { block in
+        let buttons = header.children.filter { $0.fields.first?.key == "button" }
+        for block in buttons {
+            if let word = block.values("offers").first(where: { $0 != "actions" }) {
+                throw SpotError.fault("\(name) has offers=\(word) on the button \(block.value("button") ?? ""). A button offers only offers=actions")
+            }
+        }
+        let offeredActions = try buttons.filter { !$0.values("offers").isEmpty }.map { block in
+            guard let id = block.value("button"), let action = CommandAction(id: id, block: block) else {
+                throw SpotError.fault("\(name) cannot read the button \(block.value("button") ?? ""). Give it an ID with no space and a title, such as button=change with title=Change Icon")
+            }
+            return CommandAction(id: action.id, title: action.title, key: action.key, scope: .spot, after: action.after, isForm: action.isForm, confirm: action.confirm)
+        }
+        let offers = try buttons.filter { $0.values("offers").isEmpty }.map { block in
             guard let offer = CommandOffer(block: block) else {
                 throw SpotError.fault("\(name) cannot read the button \(block.value("button") ?? ""). Give it an ID with no space and a title, such as button=left with title=Left side")
             }
@@ -87,7 +99,7 @@ public struct SpotFile: Equatable, Sendable {
         guard preview == nil || preview == "sample" else {
             throw SpotError.fault("\(name) has an unknown preview: \(preview!). Use preview=sample, and print fake data while OPENSPOT_REASON is spot.preview")
         }
-        let offersCard = places.isEmpty ? !answersOnly : places.contains("card")
+        let offersCard = places.isEmpty && offeredActions.isEmpty ? !answersOnly : places.contains("card")
         let kind: SpotKind = mode.stays || isGlobal || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch
         if places.contains("float"), kind != .list {
             throw SpotError.fault("\(name) offers float, which needs a sheet. Add on=sheet.open, or remove offers=float")
@@ -116,6 +128,7 @@ public struct SpotFile: Equatable, Sendable {
             isOnGrid: offersCard && offers.isEmpty && read?.seconds == nil && !answersOnly,
             headerSymbol: symbol,
             offers: offers,
+            offeredActions: offeredActions,
             settings: header.children.filter { $0.fields.first?.key == "field" }.compactMap { CommandOffer(setting: $0) },
             file: icon?.file.map { Self.path($0, beside: url) },
             image: icon?.image.map { Self.path($0, beside: url) },
@@ -143,6 +156,9 @@ public struct SpotFile: Equatable, Sendable {
             let word = line.trimmingCharacters(in: .whitespaces)
             if word.contains(",") {
                 throw SpotError.fault("\(name) has offers=\(word). Write one place on each line, such as offers=card and offers=search")
+            }
+            if word == "actions" {
+                throw SpotError.fault("\(name) offers actions in its header. Write offers=actions on a button, such as after button=change")
             }
             if word == "rows" {
                 throw SpotError.fault("\(name) offers rows, which Openspot no longer reads. Use offers=search, and leave out offers=card")

@@ -237,6 +237,21 @@ A button is a verb. If the layout places it, the sheet draws it. If not, it's an
 - An action sends `<spot> <id> <row id>` while a row is selected, and `<spot> <id>` when none is.
 - `scope` says when the ⌘K menu shows an action: `scope=item`, the default, only while a row is selected, and
   `scope=spot` always.
+- A `button` of the header with `offers=actions` shows in the ⌘K menu of every card, under the spot's name, while no row
+  is selected. Its press sends `<spot> <id> <card spot id>`. It isn't a command of the spot, so it gets no hotkey.
+
+```sh
+#!/bin/sh
+# title=Stars
+#
+# button=star
+# title=Star
+# offers=actions
+[ "$1" = star ] && echo "$2" >> "$OPENSPOT_DATA/starred"
+```
+
+- The ⌘K menu lists the spot's own actions first, then Openspot's, then the actions of other spots, grouped by spot, A
+  to Z by its name. Each group after the first has a header, which a search hides.
 - `close=true` closes the panel after the call. `confirm` asks for a second press.
 - A button `shortcut` is a letter, a digit, `return`, `backspace` or `,`, after `cmd+`, `shift+`, both or neither, such as
   `cmd+shift+n`, or `escape` alone. A row `shortcut` is any text (see [Rows](#rows)). The user gives hotkeys in
@@ -472,8 +487,10 @@ The user decides where a spot shows. A spot only offers, with one `offers` line 
 | `search`  | its rows in the main search.                                            | `on=panel.open`, `on=sheet.open` or a `clock`       |
 | `menubar` | its main block in the menu bar.                                         | a `clock`, another event, or `mode=stay` or `always` |
 | `float`   | in a small window at the pointer, which a hotkey or a shake opens.      | a sheet                                             |
+| `actions` | a `button` of its header in the ⌘K menu of every card.                  | a line in the `button` block, not in the header     |
 
-- A spot with no `offers` line offers `card`. A spot with any `offers` line shows only in the places it names.
+- A spot with no `offers` line, in its header or on a button, offers `card`. A spot with any `offers` line shows only in
+  the places it names.
 - A spot that offers a place without what it needs, or an unknown place, doesn't load.
 - The user gives each spot its hotkey, puts spots in the menu bar, floats them, and orders and sizes the cards. A spot
   can't claim a hotkey or a place.
