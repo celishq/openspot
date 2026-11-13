@@ -522,8 +522,16 @@ public final class SpotsModel {
         case .closed:
             if let shown = openList, runs.sheets[shown]?.isOpen != true { showSheet(nil, moving: false) }
         case .chooseFiles:
-            if let sheet = sheets[id] { host.chooseFiles(for: sheet.spot) { sheet.drop($0) } }
+            _ = chooseFiles(for: id)
         }
+    }
+
+    /// Asks the person for files for a spot that takes them, and drops the chosen ones on it. Returns false for a spot that
+    /// takes none or does not exist.
+    public func chooseFiles(for id: String) -> Bool {
+        guard let sheet = sheets[id], sheet.spot.takesDrops else { return false }
+        host.chooseFiles(for: sheet.spot) { sheet.drop($0) }
+        return true
     }
 
     public static func reason(_ error: Error) -> String {

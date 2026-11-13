@@ -7,7 +7,9 @@ enum ReservedSetting {
     /// The spot that stands for the app.
     static let app = "openspot"
     private static let commandKey = "key."
-    private static let spotKeys: Set<String> = ["enabled", "menubar", "float"]
+    /// The icon that the person chose for a spot, which wins over the icon of its header.
+    static let icon = "icon"
+    private static let spotKeys: Set<String> = ["enabled", "menubar", "float", icon]
     private static let appKeys: Set<String> = ["login", "link", "careful", "panel-key", "fix-key"]
 
     /// Whether a spot cannot name this key as a value of its own.

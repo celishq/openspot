@@ -6,6 +6,13 @@ final class ActionMenuTests: XCTestCase {
     private let delete = CommandAction(id: "delete", title: "Delete", confirm: "Delete this?")
     private let new = CommandAction(id: "new", title: "New", scope: .spot, isForm: true)
     private let item = SpotItem(title: "One", run: "1")
+    private let share = CommandAction(id: "share", title: "Share", key: ActionKey(text: "cmd+shift+c"), scope: .spot, after: .close)
+    private let delete2 = CommandAction(id: "delete", title: "Delete", key: ActionKey(text: "cmd+backspace"), scope: .spot)
+
+    /// The actions of the app's spot, as it offers them to a card.
+    private func app(_ actions: CommandAction...) -> [OfferedAction] {
+        actions.map { OfferedAction(action: $0, owner: "openspot/actions") }
+    }
 
     private func command(kind: SpotKind = .list, openTitle: String? = "Copy") -> Spot {
         Spot(id: "a/A", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: kind, openTitle: openTitle, actions: [paste, delete, new])
@@ -66,7 +73,7 @@ final class ActionMenuTests: XCTestCase {
     }
 
     func testEachRowOfAGridCardsMenuActsOnThatCard() throws {
-        let menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, extras: [.share]))
+        let menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, offered: app(share)))
 
         XCTAssertEqual(menu.rows.dropFirst().filter { $0.action == nil }.map(\.title), [])
         XCTAssertFalse(menu.rows.map(\.title).contains("Edit Spots"))
@@ -86,24 +93,25 @@ final class ActionMenuTests: XCTestCase {
     }
 
     func testAMenuThatOffersSharingEndsWithIt() throws {
-        let menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, extras: [.share, .remove()]))
+        let menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, offered: app(share, delete2)))
 
         XCTAssertEqual(menu.rows.map(\.title), ["Open", "New", "Share", "Delete"])
-        XCTAssertEqual(menu.rows[2].action, .share)
+        XCTAssertEqual(menu.rows[2].action, share)
+        XCTAssertEqual(menu.rows[2].owner, "openspot/actions")
     }
 
     func testAMenuWithOnlySharingStillOpens() throws {
         let slider = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .slider)
 
         XCTAssertNil(ActionMenu(spot: slider, item: nil))
-        XCTAssertEqual(ActionMenu(spot: slider, item: nil, extras: [.share])?.rows.map(\.title), ["Share"])
+        XCTAssertEqual(ActionMenu(spot: slider, item: nil, offered: app(share))?.rows.map(\.title), ["Share"])
     }
 
     /// An action of a script that asks for a second press, such as a forget of a network.
     private let forget = CommandAction(id: "forget", title: "Forget", scope: .spot, confirm: "Press again to forget")
 
     func testAnActionWithAConfirmAsksForASecondPress() throws {
-        var menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, extras: [forget]))
+        var menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, offered: app(forget)))
         menu.select(forget)
 
         XCTAssertNil(menu.press())
@@ -111,19 +119,14 @@ final class ActionMenuTests: XCTestCase {
         XCTAssertEqual(menu.press()?.action, forget)
     }
 
-    func testDeleteAsksForNoSecondPressBecauseUndoTakesItBack() {
-        XCTAssertNil(CommandAction.remove().confirm)
-        XCTAssertNil(CommandAction.remove(widgets: 3).confirm)
-    }
-
     func testTheRowsOfTheAppStayOutOfTheHint() throws {
         let plain = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .list)
 
-        XCTAssertEqual(ActionMenu(spot: plain, item: nil, extras: [.share, .remove()])?.hint, "⏎ Open   ⌘K Actions")
+        XCTAssertEqual(ActionMenu(spot: plain, item: nil, offered: app(share, delete2))?.hint, "⏎ Open   ⌘K Actions")
     }
 
     func testAMoveToTheSameRowKeepsItsQuestion() throws {
-        var menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, extras: [forget]))
+        var menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, offered: app(forget)))
         menu.select(forget)
         XCTAssertNil(menu.press())
 
@@ -237,5 +240,101 @@ final class ActionMenuTests: XCTestCase {
         XCTAssertNil(menu.press())
         XCTAssertEqual(menu.title(of: menu.rows[0]), "Wipe all?")
         XCTAssertEqual(menu.title(of: menu.rows[0], isRunning: true), "Stop Wipe")
+    }
+
+    func testOpenspotsActionsComeFirstWithNoHeaderThenEachOwnersGroupAToZWithAHeaderEach() throws {
+        let icon = CommandAction(id: "change", title: "Change Icon", scope: .spot)
+        let star = CommandAction(id: "star", title: "Star", scope: .spot)
+        let edit = CommandAction(id: "edit", title: "Edit", scope: .spot)
+        let menu = try XCTUnwrap(ActionMenu(
+            spot: command(),
+            item: nil,
+            offered: [OfferedAction(action: star, owner: "z/Zoo", group: "Zoo"), OfferedAction(action: icon, owner: "i/Icon", group: "Icon")] + app(edit)
+        ))
+
+        XCTAssertEqual(menu.rows.map(\.title), ["Open", "New", "Edit", "Change Icon", "Star"])
+        XCTAssertEqual(menu.rows.map(\.owner), [nil, nil, "openspot/actions", "i/Icon", "z/Zoo"])
+        XCTAssertEqual(menu.headers, [ActionMenu.Header(title: "Icon", line: 3), ActionMenu.Header(title: "Zoo", line: 5)])
+        XCTAssertEqual(menu.line(ofShown: 3), 4)
+        XCTAssertEqual(menu.fullLines, 8)
+    }
+
+    func testASearchDropsTheHeadersAndAMenuOfOneGroupHasNone() throws {
+        let icon = CommandAction(id: "change", title: "Change Icon", scope: .spot)
+        var menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, offered: [OfferedAction(action: icon, owner: "i/Icon", group: "Icon")]))
+        let bare = Spot(id: "b", name: "B", url: URL(fileURLWithPath: "/bin/true"))
+        let alone = try XCTUnwrap(ActionMenu(spot: bare, item: nil, showsOpen: false, offered: [OfferedAction(action: icon, owner: "i/Icon", group: "Icon")]))
+
+        menu.search("icon")
+
+        XCTAssertEqual(menu.shown.map(\.title), ["Change Icon"])
+        XCTAssertEqual(menu.headers, [])
+        XCTAssertEqual(menu.line(ofShown: 0), 0)
+        XCTAssertEqual(alone.rows.map(\.title), ["Change Icon"])
+        XCTAssertEqual(alone.headers, [])
+    }
+
+    /// The Icon spot's Change Icon with its three children, by dot notation.
+    private func icon() -> [OfferedAction] {
+        [("change", "Change Icon"), ("change.draw", "Draw…"), ("change.file", "Choose File…"), ("change.reset", "Reset Icon")].map {
+            OfferedAction(action: CommandAction(id: $0.0, title: $0.1, scope: .spot), owner: "openspot/icon")
+        }
+    }
+
+    func testAnActionWhoseIDStartsWithAnotherOfItsSpotIsInItsSubmenu() throws {
+        let menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, offered: icon()))
+
+        XCTAssertEqual(menu.rows.map(\.title), ["Open", "New", "Change Icon"])
+        XCTAssertEqual(menu.rows.last?.keyLabel, "›")
+        XCTAssertEqual(menu.rows.last?.children.map(\.title), ["Draw…", "Choose File…", "Reset Icon"])
+    }
+
+    func testAPressOfARowWithChildrenOpensThemBesideItAndBackClosesThem() throws {
+        var menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, offered: icon()))
+        menu.move(by: 2)
+
+        XCTAssertNil(menu.press())
+        let top = menu.shown.map(\.title)
+        let inside = menu.submenu?.rows.map(\.title)
+        let parent = menu.parent?.title
+        menu.move(by: 1)
+        let file = menu.press()?.action?.id
+        XCTAssertTrue(menu.back())
+
+        XCTAssertEqual(top, ["Open", "New", "Change Icon"])
+        XCTAssertEqual(inside, ["Draw…", "Choose File…", "Reset Icon"])
+        XCTAssertEqual(parent, "Change Icon")
+        XCTAssertEqual(file, "change.file")
+        XCTAssertNil(menu.submenu)
+        XCTAssertEqual(menu.selectedRow?.title, "Change Icon")
+        XCTAssertFalse(menu.back())
+    }
+
+    func testThePointerOpensTheSubmenuOfItsRowAndClosesItOnAnotherRow() throws {
+        var menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, offered: icon()))
+
+        menu.point(at: 2)
+        let opened = menu.submenu?.parent
+        menu.pointSubmenu(at: 2)
+        let picked = menu.selectedRow?.title
+        menu.point(at: 2)
+        let kept = menu.selectedRow?.title
+        menu.point(at: 1)
+
+        XCTAssertEqual(opened, 2)
+        XCTAssertEqual(picked, "Reset Icon")
+        XCTAssertEqual(kept, "Reset Icon")
+        XCTAssertNil(menu.submenu)
+        XCTAssertEqual(menu.selectedRow?.title, "New")
+    }
+
+    func testASearchFindsAChildByItsWordsUnderItsParentsTitle() throws {
+        var menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, offered: icon()))
+
+        menu.search("draw")
+
+        XCTAssertEqual(menu.shown.map(\.title), ["Change Icon › Draw…"])
+        XCTAssertEqual(menu.selectedRow?.action?.id, "change.draw")
+        XCTAssertEqual(menu.selectedRow?.owner, "openspot/icon")
     }
 }

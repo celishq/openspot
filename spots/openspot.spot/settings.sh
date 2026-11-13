@@ -3,8 +3,9 @@
 # icon=gearshape
 # detail=Choose your key
 # on=sheet.open
-# offers=search
 # uses=app,spots
+# offers=card
+# offers=search
 
 # The spot and the key of a setting row, from setting:<spot>:<key>.
 setting() {
@@ -120,7 +121,7 @@ EOF
   [ -z "$link" ] || printf '\nrow=command_link\ntitle=Use openspot in Terminal\ndetail=The command line tool\nicon=terminal\nvalue=%s\n' "$link"
   printf '%s%s%s%s' "$menubars" "$floats" "$keys" "$settings"
   while IFS= read -r value_spot && IFS= read -r value_key && IFS= read -r value; do
-    case $value_key in '' | *[[:space:]]*) continue ;; esac
+    case $value_key in '' | *[[:space:]]* | icon) continue ;; esac
     case "$nl$named" in *"$nl$value_spot $value_key$nl"*) continue ;; esac
     name=$value_spot icon=gearshape
     while IFS= read -r known && IFS= read -r known_name && IFS= read -r known_icon; do

@@ -13,24 +13,124 @@ final class SpotHeaderTests: XCTestCase {
         XCTAssertFalse(command.headerState.isOnGrid)
     }
 
-    func testOffersSearchJoinsTheMainSearchAndASpotWithASheetCanFloat() throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-grid-\(UUID().uuidString)")
+    func testEachOffersLineNamesOnePlaceAndASpotWithNoLineOffersItsCard() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-places-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
-        let searching = folder.appendingPathComponent("search.sh"), sheet = folder.appendingPathComponent("sheet.sh"), click = folder.appendingPathComponent("click.sh")
-        try "#!/bin/sh\n# on=panel.open\n# offers=search\n".writeScript(to: searching)
-        try "#!/bin/sh\n# on=sheet.open\n".writeScript(to: sheet)
-        try "#!/bin/sh\n".writeScript(to: click)
+        func spot(_ header: String) throws -> Spot {
+            let url = folder.appendingPathComponent("\(UUID().uuidString).sh")
+            try "#!/bin/sh\n\(header)".writeScript(to: url)
+            return try XCTUnwrap(try SpotFile(file: url, id: url.lastPathComponent)?.spots.first)
+        }
 
-        let search = try XCTUnwrap(try SpotFile(file: searching, id: "search")?.spots.first)
-        let float = try XCTUnwrap(try SpotFile(file: sheet, id: "sheet")?.spots.first)
-        let launch = try XCTUnwrap(try SpotFile(file: click, id: "click")?.spots.first)
-        XCTAssertTrue(search.headerState.isOnGrid)
-        XCTAssertTrue(search.isGlobal)
+        let all = try spot("# on=panel.open\n# on=app.front\n# offers=card\n# offers=search\n# offers=menubar\n")
+        let float = try spot("# on=sheet.open\n# offers=float\n")
+        let clock = try spot("# on=clock.60\n# offers=card\n")
+        let none = try spot("# on=sheet.open\n")
+        let search = try spot("# on=panel.open\n# offers=search\n")
+        let nowhere = try spot("# on=sheet.open\n# offers=none\n")
+
+        XCTAssertEqual([all.offersCard, all.headerState.isOnGrid, all.isGlobal, all.canShowInMenuBar, all.offersFloat], [true, true, true, true, false])
+        XCTAssertEqual([float.offersCard, float.headerState.isOnGrid, float.isGlobal, float.canShowInMenuBar, float.offersFloat], [false, false, false, false, true])
+        XCTAssertEqual([clock.offersCard, clock.headerState.isOnGrid], [true, false])
+        XCTAssertEqual([none.offersCard, none.headerState.isOnGrid, none.isGlobal, none.canShowInMenuBar, none.offersFloat], [true, true, false, false, false])
+        XCTAssertEqual([search.offersCard, search.headerState.isOnGrid, search.isGlobal], [false, false, true])
         XCTAssertTrue(search.isFound)
-        XCTAssertTrue(float.offersFloat)
-        XCTAssertFalse(float.isGlobal)
-        XCTAssertFalse(launch.offersFloat)
+        XCTAssertEqual([nowhere.offersCard, nowhere.headerState.isOnGrid, nowhere.isGlobal, nowhere.canShowInMenuBar, nowhere.offersFloat], [false, false, false, false, false])
+        let both = folder.appendingPathComponent("both.sh")
+        try "#!/bin/sh\n# on=sheet.open\n# offers=none\n# offers=card\n".writeScript(to: both)
+        XCTAssertThrowsError(try SpotFile(file: both, id: "both"))
+    }
+
+    func testAButtonThatOffersActionsJoinsTheMenuOfEveryCardAndIsNoCommand() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-actions-\(UUID().uuidString)")
+        try "#!/bin/sh\n# title=Icon\n#\n# button=change\n# title=Change Icon\n# offers=actions\n#\n# button=reset\n# title=Reset\n".writeScript(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let spot = try XCTUnwrap(try SpotFile(file: url, id: "icon")?.spots.first)
+
+        XCTAssertEqual(spot.offeredActions.map(\.action.id), ["change"])
+        XCTAssertEqual(spot.offeredActions.first?.owner, "icon")
+        XCTAssertEqual(spot.offeredActions.first?.group, "Icon")
+        XCTAssertEqual(spot.offeredActions.first?.action.title, "Change Icon")
+        XCTAssertEqual(spot.offeredActions.first?.origins, [])
+        XCTAssertEqual(spot.offers.map(\.id), ["reset"])
+        XCTAssertFalse(spot.offersCard)
+    }
+
+    func testAButtonWhoseIDStartsWithAnOfferedButtonAndADotJoinsItsPlace() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-actions-\(UUID().uuidString)")
+        try "#!/bin/sh\n#\n# button=change\n# title=Change Icon\n# offers=actions mine\n#\n# button=change.draw\n# title=Draw…\n#\n# button=other.go\n# title=Go\n".writeScript(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let spot = try XCTUnwrap(try SpotFile(file: url, id: "icon")?.spots.first)
+
+        XCTAssertEqual(spot.offeredActions.map(\.action.id), ["change", "change.draw"])
+        XCTAssertEqual(spot.offeredActions.last?.origins, [.mine])
+        XCTAssertEqual(spot.offers.map(\.id), ["other.go"])
+    }
+
+    func testAJavaScriptSpotNamesTheFunctionThatSaysWhetherAnActionShows() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-when-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let js = folder.appendingPathComponent("icon.js")
+        try "// title=Icon\n//\n// button=reset\n// title=Reset Icon\n// offers=actions\n// when=hasIcon\nfunction hasIcon(id) { return true }\n".write(to: js, atomically: true, encoding: .utf8)
+        let shell = folder.appendingPathComponent("icon.sh")
+        try "#!/bin/sh\n#\n# button=reset\n# title=Reset Icon\n# offers=actions\n# when=hasIcon\n".writeScript(to: shell)
+        let wrong = folder.appendingPathComponent("wrong.js")
+        try "// title=Icon\n//\n// button=reset\n// title=Reset Icon\n// offers=actions\n// when=has icon()\n".write(to: wrong, atomically: true, encoding: .utf8)
+
+        let spot = try XCTUnwrap(try SpotFile(file: js, id: "icon")?.spots.first)
+
+        XCTAssertEqual(spot.offeredActions.first?.when, "hasIcon")
+        XCTAssertThrowsError(try SpotFile(file: shell, id: "shell")) { XCTAssertTrue((($0 as? SpotError)?.reason ?? "").contains("only a JavaScript spot"), "\($0)") }
+        XCTAssertThrowsError(try SpotFile(file: wrong, id: "wrong")) { XCTAssertTrue((($0 as? SpotError)?.reason ?? "").contains("such as when=hasIcon"), "\($0)") }
+    }
+
+    func testAnActionsFilterNamesTheOriginsOfTheCardsItFits() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-actions-\(UUID().uuidString)")
+        try "#!/bin/sh\n#\n# button=off\n# title=Turn off\n# offers=actions core, builtin\n".writeScript(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let spot = try XCTUnwrap(try SpotFile(file: url, id: "tools")?.spots.first)
+
+        XCTAssertEqual(spot.offeredActions.first?.origins, [.core, .builtIn])
+    }
+
+    func testActionsIsAPlaceOfAButtonOnly() throws {
+        let cases = [
+            ("# offers=actions\n", "a button"),
+            ("#\n# button=go\n# title=Go\n# offers=card\n", "offers=actions"),
+            ("#\n# button=go\n# title=Go\n# offers=actions planets\n", "mine, core or builtin"),
+            ("#\n# button=go\n# title=Go\n# offers=actions\n#\n# button=go.far\n# title=Far\n# offers=actions\n", "submenu of go")
+        ]
+        for (header, hint) in cases {
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-actions-\(UUID().uuidString)")
+            try "#!/bin/sh\n\(header)".writeScript(to: url)
+            defer { try? FileManager.default.removeItem(at: url) }
+
+            XCTAssertThrowsError(try SpotFile(file: url, id: "script"), header) { error in
+                XCTAssertTrue((error as? SpotError)?.reason.contains(hint) == true, "\(header): \(error)")
+            }
+        }
+    }
+
+    func testAPlaceThatTheSpotCannotFillRefusesIt() throws {
+        let cases = [
+            ("# offers=float\n", "a sheet"),
+            ("# on=sheet.open\n# offers=menubar\n", "a clock"),
+            ("# offers=card, search\n", "one place on each line")
+        ]
+        for (header, hint) in cases {
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-place-\(UUID().uuidString)")
+            try "#!/bin/sh\n\(header)".writeScript(to: url)
+            defer { try? FileManager.default.removeItem(at: url) }
+
+            XCTAssertThrowsError(try SpotFile(file: url, id: "script"), header) { error in
+                XCTAssertTrue((error as? SpotError)?.reason.contains(hint) == true, "\(header): \(error)")
+            }
+        }
     }
 
     func testPressOpenMakesAPressOfASpotWithASheetRunIt() throws {
@@ -61,7 +161,7 @@ final class SpotHeaderTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: url) }
 
         XCTAssertThrowsError(try SpotFile(file: url, id: "script")) { error in
-            XCTAssertTrue((error as? SpotError)?.reason.contains("Use offers=search") == true, "\(error)")
+            XCTAssertTrue((error as? SpotError)?.reason.contains("Use card, search, menubar, float or none") == true, "\(error)")
         }
     }
 
@@ -69,8 +169,8 @@ final class SpotHeaderTests: XCTestCase {
         let cases = [
             ("on=panel.open\n# global=true", "offers=search"),
             ("on=panel.open\n# global=rows", "offers=search"),
-            ("on=sheet.open\n# float=true", "floats any spot with a sheet"),
-            ("on=clock.60\n# tray=true", "menu bar")
+            ("on=sheet.open\n# float=true", "offers=float"),
+            ("on=clock.60\n# tray=true", "offers=menubar")
         ]
         for (header, hint) in cases {
             let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-old-\(UUID().uuidString)")

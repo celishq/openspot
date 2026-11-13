@@ -2,8 +2,9 @@
 # icon=text.quote
 # detail=Copy text
 # on=panel.open
-# offers=search
 # uses=clipboard
+# offers=card
+# offers=search
 export LC_ALL=en_US.UTF-8
 data="$OPENSPOT_DATA/snippets.json"
 . "$OPENSPOT_SH"

@@ -82,6 +82,10 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "run", "weather"]), .spotRun(id: "weather", arguments: []))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "run", "weather", "open", "today"]), .spotRun(id: "weather", arguments: ["open", "today"]))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "show", "weather"]), .spotShow("weather"))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "edit", "weather"]), .spotAct(.edit, "weather"))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "prompt", "weather"]), .spotAct(.prompt, "weather"))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "share", "weather"]), .spotAct(.share, "weather"))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "delete", "weather"]), .spotAct(.delete, "weather"))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "log", "weather"]), .spotLog("weather"))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "stats"]), .spotStats(days: 1, spot: nil, format: .text))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "stats", "--days", "7", "--spot", "home/coffee", "--json"]), .spotStats(days: 7, spot: "home/coffee", format: .json))
@@ -195,6 +199,7 @@ final class CommandLineCallTests: XCTestCase {
             (["clipboard", "copy", "hi"], "`openspot clipboard copy` changes the clipboard"),
             (["clipboard", "paste"], "`openspot clipboard paste` types in the front app"),
             (["spot", "show", "notes"], "`openspot spot show` opens the panel"),
+            (["spot", "delete", "notes"], "`openspot spot delete` changes your spots folder"),
             (["setting", "set", "key.go", "ctrl+k"], "`openspot setting set key.go` sets a key of your Mac"),
             (["setting", "set", "float", "shake"], "`openspot setting set float` sets a key of your Mac"),
             (["setting", "set", "--spot", "openspot", "panel-key", "ctrl+space"], "`openspot setting set --spot openspot panel-key` sets a key of your Mac"),

@@ -108,6 +108,24 @@ public struct ViewLibrary: Sendable {
         return built
     }
 
+    /// Builds the library of each view that a script under the folder names, for each kind of Mac, and writes it beside
+    /// its source, where `library(of:)` finds it first. Returns the libraries it wrote.
+    public func buildViews(under folder: URL) async throws -> [URL] {
+        var built: [URL] = []
+        let scripts = (FileManager.default.enumerator(at: folder, includingPropertiesForKeys: nil)?.allObjects as? [URL] ?? [])
+            .filter { FileManager.default.isExecutableFile(atPath: $0.path) && !$0.hasDirectoryPath }
+            .sorted { $0.path < $1.path }
+        for script in scripts {
+            guard let text = try? String(contentsOf: script, encoding: .utf8), let name = SpotHeader(text: text).block.value("view"), !name.hasPrefix("/") else { continue }
+            let source = script.deletingLastPathComponent().appendingPathComponent(name)
+            guard let data = try? Data(contentsOf: source) else { continue }
+            let library = URL(fileURLWithPath: Self.path(beside: source.path))
+            try await build(source: data, named: name, kinds: SwiftProgram.kinds).write(to: library)
+            built.append(library)
+        }
+        return built
+    }
+
     /// Compiles a view for these kinds of Mac, such as `arm64` and `x86_64`, and returns the library. `name` is the name of
     /// its file, which an error line shows.
     public func build(source: Data, named name: String, kinds: [String]) async throws -> Data {

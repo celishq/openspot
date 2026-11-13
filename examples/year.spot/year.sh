@@ -4,6 +4,7 @@
 # detail=The months of this year
 # on=panel.open
 # view=year.swift
+# offers=card
 [ "$1" = read ] || exit 0
 year=$(date +%Y)
 day=$(date +%j | sed 's/^0*//')

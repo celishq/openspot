@@ -22,6 +22,8 @@ final class SpotQuietHost: SpotsHost {
     func setEntryKey(on isOn: Bool) {}
     func hold(_ keys: [GlobalKey]) {}
     func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void) {}
+    func showSubmenu(beside row: CGRect, of menu: CGRect) {}
+    func hideSubmenu() {}
     func float(_ entry: SpotsModel.Entry, followsDrag: Bool) {}
     func land(_ id: String) {}
     var isPointerOverDrop: Bool { false }

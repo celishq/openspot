@@ -3,8 +3,9 @@
 # detail=Open a link
 # on=panel.open
 # on=app.launch
-# offers=search
 # uses=network,clipboard
+# offers=card
+# offers=search
 export LC_ALL=en_US.UTF-8
 data="$OPENSPOT_DATA/links.json"
 icons="$OPENSPOT_DATA/icons"

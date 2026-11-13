@@ -3,6 +3,7 @@
 # icon=gearshape
 # detail=Open a setting
 # on=panel.open
+# offers=card
 # offers=search
 export LC_ALL=en_US.UTF-8
 panes="${SETTINGS_PANES:-/System/Library/ExtensionKit/Extensions}"

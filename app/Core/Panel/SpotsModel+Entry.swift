@@ -68,9 +68,9 @@ extension SpotsModel {
             run?.failure
         }
 
-        /// Whether the grid shows it: the person's choice, or else what the spot says.
+        /// Whether the grid shows it: never when its spot offers no card, else the person's choice, or else what the spot says.
         @MainActor public var isOnGrid: Bool {
-            gridChoice ?? state.isOnGrid
+            spot.offersCard && (gridChoice ?? state.isOnGrid)
         }
 
         @MainActor public var kind: SpotKind {

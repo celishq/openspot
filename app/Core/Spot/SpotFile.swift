@@ -59,19 +59,16 @@ public struct SpotFile: Equatable, Sendable {
             throw SpotError.fault("\(name) is a .js file, which runs inline, so it takes no mode=\(modeName)")
         }
         let mode = isInline ? SpotMode.inline : named
-        let places = try Self.places(header.value("offers"), of: name)
-        let isGlobal = places.contains("search")
-        if isGlobal {
-            guard read?.has(.panel) == true || read?.has(.sheet) == true || read?.seconds != nil else {
-                throw SpotError.fault("\(name) needs on=panel.open, on=sheet.open or a clock, such as on=clock.60, to join the main search")
-            }
-        }
+        let namedPlaces = try Place.read(header.values("offers"), of: name)
         let answers = on?.answers
         let answersOnly = answers != nil && read == nil
         if let field = header.children.compactMap({ $0.value("field") }).first(where: ReservedSetting.isReserved) {
             throw SpotError.fault("\(name) has field=\(field), a key that Openspot keeps for the person. Give the field another name.")
         }
-        let offers = try header.children.filter { $0.fields.first?.key == "button" }.map { block in
+        let buttons = header.children.filter { $0.fields.first?.key == "button" }
+        let offeredActions = try OfferedAction.read(buttons, owner: id, of: name, isInline: mode == .inline)
+        let offeredIDs = Set(offeredActions.map(\.action.id))
+        let offers = try buttons.filter { !offeredIDs.contains($0.value("button") ?? "") }.map { block in
             guard let offer = CommandOffer(block: block) else {
                 throw SpotError.fault("\(name) cannot read the button \(block.value("button") ?? ""). Give it an ID with no space and a title, such as button=left with title=Left side")
             }
@@ -87,7 +84,9 @@ public struct SpotFile: Equatable, Sendable {
         guard preview == nil || preview == "sample" else {
             throw SpotError.fault("\(name) has an unknown preview: \(preview!). Use preview=sample, and print fake data while OPENSPOT_REASON is spot.preview")
         }
-        let kind: SpotKind = mode.stays || isGlobal || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch
+        let places: Set<Place> = namedPlaces ?? (offeredActions.isEmpty && !answersOnly ? [.card] : [])
+        let kind: SpotKind = mode.stays || places.contains(.search) || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch
+        try Place.check(places, read: read, mode: mode, kind: kind, of: name)
         let command = Spot(
             id: id,
             name: name,
@@ -96,17 +95,17 @@ public struct SpotFile: Equatable, Sendable {
             symbol: symbol ?? "app",
             subtitle: header.value("detail"),
             read: read,
-            isGlobal: isGlobal,
             isFound: !answersOnly,
             answers: answers,
             mode: mode,
             pressRuns: press == "open",
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
-            offersFloat: kind == .list,
+            offeredPlaces: places,
             dataName: SpotID(id).name,
-            isOnGrid: offers.isEmpty && read?.seconds == nil && !answersOnly,
+            isOnGrid: places.contains(.card) && offers.isEmpty && read?.seconds == nil && !answersOnly,
             headerSymbol: symbol,
             offers: offers,
+            offeredActions: offeredActions,
             settings: header.children.filter { $0.fields.first?.key == "field" }.compactMap { CommandOffer(setting: $0) },
             file: icon?.file.map { Self.path($0, beside: url) },
             image: icon?.image.map { Self.path($0, beside: url) },
@@ -125,22 +124,6 @@ public struct SpotFile: Equatable, Sendable {
     static func runs(_ url: URL) -> Bool {
         if FileManager.default.isExecutableFile(atPath: url.path) { return true }
         return url.pathExtension == inlineExtension && !SpotHeader(url: url).block.fields.isEmpty
-    }
-
-    /// The places that `offers` names. Only `search` is a place, and `rows` and `float` name their fix.
-    private static func places(_ text: String?, of name: String) throws -> Set<String> {
-        guard let text else { return [] }
-        let words = text.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
-        if words.contains("rows") {
-            throw SpotError.fault("\(name) offers rows, which Openspot no longer reads. Use offers=search, and the person hides its card")
-        }
-        if words.contains("float") {
-            throw SpotError.fault("\(name) offers float, which Openspot no longer reads. The person floats any spot with a sheet in Settings, so remove it")
-        }
-        if let word = words.first(where: { $0 != "search" }) {
-            throw SpotError.fault("\(name) offers an unknown place: \(word). Use offers=search")
-        }
-        return Set(words)
     }
 
     /// Refuses a header that still has `global`, `float`, `tray`, `data`, `stay` or `shortcut`, and names the new way.
@@ -174,10 +157,10 @@ public struct SpotFile: Equatable, Sendable {
             throw SpotError.fault("\(name) has global=\(global), which Openspot no longer reads. Use offers=search")
         }
         if header.value("float") != nil {
-            throw SpotError.fault("\(name) has float, which Openspot no longer reads. The person floats any spot with a sheet in Settings, so remove it")
+            throw SpotError.fault("\(name) has float, which Openspot no longer reads. Write offers=float")
         }
         if header.value("tray") != nil {
-            throw SpotError.fault("\(name) has tray, which Openspot no longer reads. The person puts a spot in the menu bar in Settings")
+            throw SpotError.fault("\(name) has tray, which Openspot no longer reads. Write offers=menubar")
         }
         if header.value("data") != nil {
             throw SpotError.fault("\(name) has data, which Openspot no longer reads. The scripts of one folder share OPENSPOT_DATA, so move them into one folder")

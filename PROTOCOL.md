@@ -73,7 +73,7 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `keywords`    | More words that find the spot in the main search, split by commas, such as `keywords=coffee, cup`.                               |
 | `on`          | An event that makes Openspot ask the spot what to show. One line for each event. See [Events](#events).                          |
 | `emits`       | The events the spot raises, split by commas. See [Events](#events).                                                              |
-| `offers`      | `search`: its rows show in the main search. See [Places](#places).                                                               |
+| `offers`      | A place where the spot can show: `card`, `search`, `menubar` or `float`. One line for each place. See [Places](#places).          |
 | `drop`        | The files its card takes: extensions such as `mov,mkv`, `folder`, or `*`. See [The calls](#the-calls).                           |
 | `preview`     | `sample`: when `OPENSPOT_REASON` is `spot.preview`, the spot prints sample data for the store.                                   |
 | `view`        | A SwiftUI file next to the spot, such as `view=cups.swift`. See [Views](#views).                                                 |
@@ -237,6 +237,32 @@ A button is a verb. If the layout places it, the sheet draws it. If not, it's an
 - An action sends `<spot> <id> <row id>` while a row is selected, and `<spot> <id>` when none is.
 - `scope` says when the ⌘K menu shows an action: `scope=item`, the default, only while a row is selected, and
   `scope=spot` always.
+- A `button` of the header with `offers=actions` shows in the ⌘K menu of every card, under the spot's name, while no row
+  is selected. Its press sends `<spot> <id> <card spot id>`. It isn't a command of the spot, so it gets no hotkey.
+- A button whose ID is the ID of an offered button, a dot and a name, such as `button=change.draw` after
+  `button=change`, shows in the submenu of that action and fits the same cards. It takes no `offers` line. → or a press
+  opens the submenu, and ← goes back. A search finds its rows too.
+- A filter after `actions`, a comma list, names the cards it fits by where their spot comes from: `mine`, a spot in the
+  user's folder or a file of it that doesn't load; `core`, a spot that comes with Openspot and can be turned off; and
+  `builtin`, a spot of Openspot itself, such as Settings. With no filter, it fits every card.
+
+```sh
+#!/bin/sh
+# title=Stars
+#
+# button=star
+# title=Star
+# offers=actions
+[ "$1" = star ] && echo "$2" >> "$OPENSPOT_DATA/starred"
+```
+
+- In a JavaScript spot, `when=<function>` on an offered button names a function that says whether the action shows on a
+  card. ⌘K calls it with the card's spot ID and its origin, `mine`, `core` or `builtin`, and shows the action when it
+  returns `true`. Keep it fast: the menu waits 2 ms for it, and an answer that comes later joins the open menu. A
+  function that throws says no, and an action that its function hides hides its submenu too.
+- The ⌘K menu lists the spot's own actions first, then Openspot's under them, then the actions of other spots, grouped
+  by spot, A to Z by its name. Each group of another spot has a header, which a search hides. Openspot's own actions, such as Edit,
+  Delete and Change Icon, come from its built-in spots in the same way.
 - `close=true` closes the panel after the call. `confirm` asks for a second press.
 - A button `shortcut` is a letter, a digit, `return`, `backspace` or `,`, after `cmd+`, `shift+`, both or neither, such as
   `cmd+shift+n`, or `escape` alone. A row `shortcut` is any text (see [Rows](#rows)). The user gives hotkeys in
@@ -455,17 +481,37 @@ start ──► frame ──► frame ──► ... ──► end        exit 0:
 
 ## Places
 
-The user decides where a spot shows. A spot only offers. See [Answer the main search](GUIDE.md#answer-the-main-search) for an
-example.
+The user decides where a spot shows. A spot only offers, with one `offers` line for each place. See
+[Show a value on a card](GUIDE.md#show-a-value-on-a-card) for an example.
 
+```sh
+#!/bin/sh
+# title=Shelf
+# on=sheet.open
+# offers=card
+# offers=float
+```
+
+| Place     | The spot can show                                                       | It needs                                            |
+| --------- | ----------------------------------------------------------------------- | --------------------------------------------------- |
+| `card`    | as a card on the grid.                                                  |                                                     |
+| `search`  | its rows in the main search.                                            | `on=panel.open`, `on=sheet.open` or a `clock`       |
+| `menubar` | its main block in the menu bar.                                         | a `clock`, another event, or `mode=stay` or `always` |
+| `float`   | in a small window at the pointer, which a hotkey or a shake opens.      | a sheet                                             |
+| `actions` | a `button` of its header in the ⌘K menu of every card.                  | a line in the `button` block, not in the header     |
+| `none`    | nowhere, until another spot opens its sheet with `openspot spot open`.  | no other `offers` line                              |
+
+- A spot with no `offers` line, in its header or on a button, offers `card`. A spot with any `offers` line shows only in
+  the places it names.
+- A spot that offers a place without what it needs, or an unknown place, doesn't load.
 - The user gives each spot its hotkey, puts spots in the menu bar, floats them, and orders and sizes the cards. A spot
   can't claim a hotkey or a place.
 - `offers=search` shows the spot's rows in the main search. It needs `on=panel.open`, `on=sheet.open` or a `clock`. With
   only `on=sheet.open`, Openspot reads the rows when it loads the spots, as it starts or after a spot changes, after each
   change of the config, and at each open of the sheet. A panel open doesn't read them. Openspot ranks the
   rows by the user's picks.
-- The user can give any spot with a sheet a hotkey, or a shake of the pointer, in Settings. It shows the spot in a small
-  window at the pointer, which stays while the user works in other apps. The spot never learns where it shows.
+- The user can give a spot that offers `float` a hotkey, or a shake of the pointer, in Settings. It shows the spot in a
+  small window at the pointer, which stays while the user works in other apps. The spot never learns where it shows.
 - `on=search.text <pattern>` makes a spot answer the main search. Openspot asks it at each change of a text that the
   pattern matches, with no pause. A newer text stops the older call. The answer should be fast.
 - Its rows show first in the main search until the newest text has an answer, and go at once when the pattern no longer
@@ -474,8 +520,8 @@ example.
 - An answer can be one card instead of rows: its head has `grid.large=` or `grid.strip=` lines, and its main block has a
   `value`. A pick of the card sends `<spot> open <value>`.
 - `openspot calc solve <words>...` prints the answer to a sum, a conversion or a date as a row.
-- A spot with a `clock`, another event, or `mode=stay` or `always`, and a main `text`, `number` or `graph`, can show in
-  the menu bar when the user puts it there. A read that prints nothing hides it until the next read.
+- A spot that offers `menubar` shows its main `text`, `number` or `graph` in the menu bar when the user puts it there. A
+  read that prints nothing hides it until the next read.
 - A spot with a `clock` has no card on the grid until the user adds it.
 
 ## Modes
@@ -682,10 +728,10 @@ A spot asks the Mac and Openspot for things through one command, which works the
   - calls that wait for the user: `color pick` and `folder pick`;
   - calls that capture the screen: `screen shot`, `screen record start` and `screen record stop`;
   - calls that change the Mac or the user's data: `window move`, `clipboard copy`, `clipboard paste`, `calendar add`,
-    `reminders add`, `reminders done`, `spot add` and `spot remove`;
+    `reminders add`, `reminders done`, `spot add`, `spot remove` and `spot delete`;
   - calls that change Openspot or its places: `app quit`, `update install`, and `setting set` of a key that Openspot
     keeps for the user (see [Settings](#settings));
-  - calls that open a window or the panel: `spot show`, `spot open`, `spot review`, `spot store`, `setting change`,
+  - calls that open a window or the panel: `spot show`, `spot open`, `spot choose`, `spot edit`, `spot prompt`, `spot share`, `spot review`, `spot store`, `setting change`,
     `update check`, `calendar show` and `reminders show`;
   - `account sync`, which only the user and the spots of Openspot can call.
 - `calendar add --dry-run` and `reminders add --dry-run` change nothing, so they work in a read.
@@ -698,6 +744,11 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | `openspot guide`                                   | Prints the guide, then this protocol.                                                           |
 | `openspot spot show <id>`                          | Opens the panel with the spot selected.                                                         |
+| `openspot spot choose <id>`                        | Asks for files, and drops the chosen ones on a spot that takes them, as a press of its card does. |
+| `openspot spot edit <id>`                          | Opens the file of a spot in the text editor, as Edit in its ⌘K menu does.                       |
+| `openspot spot prompt <id>`                        | Copies a prompt that asks a coding agent to change a spot.                                      |
+| `openspot spot share <id>`                         | Shares a spot, as Share in its ⌘K menu does.                                                    |
+| `openspot spot delete <id>`                        | Moves a spot to the Trash, and `⌘Z` in the panel puts it back.                                  |
 | `openspot spot add <git url, folder or .spot>`     | Adds a spot, and records it in `spots.lock`. An update that needs a new use also needs `--yes`. |
 | `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                                |
 | `openspot spot stats`                              | Prints what each spot cost and used. See [Stats](#stats).                                       |
@@ -713,7 +764,8 @@ example.
   removes it when there's no value. In a terminal, `--spot <id>` names the spot.
 - Keep a choice of the user in a setting. Keep what the spot makes, such as a cache, in `OPENSPOT_DATA`.
 - Openspot keeps some keys for the user, and a `field` can't use them:
-  - of any spot: `enabled` and `menubar`, `true` or `false`, and `float` and `key.<command>`, a hotkey such as
+  - of any spot: `icon`, the path of a picture that draws in place of the header's icon, which Change Icon in the menu
+    of a card keeps; `enabled` and `menubar`, `true` or `false`, and `float` and `key.<command>`, a hotkey such as
     `ctrl+option+k`, `shake`, or one modifier alone, such as `option`, which a tap of that key presses, or no value to
     remove it;
   - of the spot `openspot`, which is the app: `login`, `link` and `careful`, `true` or `false`, and `panel-key` and
@@ -766,7 +818,7 @@ openspot app quit
 | Use         | The calls that need it                                                                                                                                          |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `app`       | `app quit`, `update check`, `update install`, and `setting set` of `menubar`, `float`, `key.<command>` or of the spot `openspot`                                |
-| `spots`     | `spot add`, `spot remove`, `spot new`, `spot run`, `spot log`, `setting list`, `setting set` of `enabled`, and `setting get`, `set` or `change` of another spot |
+| `spots`     | `spot add`, `spot remove`, `spot edit`, `spot prompt`, `spot share`, `spot delete`, `spot new`, `spot run`, `spot log`, `setting list`, `setting set` of `enabled`, and `setting get`, `set` or `change` of another spot |
 | `screen`    | `screen sources`, `screen shot`, `screen record`, `window frame`, `window move` and `color pick`                                                                |
 | `clipboard` | `clipboard copy`, `clipboard paste` and `clipboard read`                                                                                                        |
 | `calendar`  | each call of `calendar` and `reminders`                                                                                                                         |
@@ -814,6 +866,7 @@ An old spot never sees a word it didn't ask for, and an old app skips a word it 
 | To add               | Add                                                              |
 | -------------------- | ---------------------------------------------------------------- |
 | A thing that happens | an event `<noun>.<verb>`                                         |
+| A place to show      | a value of `offers`                                              |
 | A thing to draw      | a kind `<kind>=`, which an old app skips and reports             |
 | A detail of a kind   | a key, or a `type` value                                         |
 | A power of the Mac   | a noun: `openspot <noun> <verb>`, its events and its `uses` word |

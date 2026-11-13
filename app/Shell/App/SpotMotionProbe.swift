@@ -189,7 +189,7 @@ final class SpotMotionProbe: NSObject {
     }
 
     private func shootMenu(_ shots: [(String, Int)], into folder: String) {
-        guard let (name, index) = shots.first else { return shootSearch(into: folder) }
+        guard let (name, index) = shots.first else { return shootSubmenu(into: folder) }
         model.selected = index
         _ = model.handleKey(ActionKey(name: "k", isCommand: true))
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
@@ -197,6 +197,37 @@ final class SpotMotionProbe: NSObject {
             self.model.closeMenu()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { self.shootMenu(Array(shots.dropFirst()), into: folder) }
         }
+    }
+
+    /// Saves a picture of the first card's menu with the first submenu open beside it, then goes on to the search.
+    private func shootSubmenu(into folder: String) {
+        model.selected = model.placements.first { $0.size == .small && $0.column == 0 }?.index ?? 0
+        _ = model.handleKey(ActionKey(name: "k", isCommand: true))
+        if let action = model.menu?.shown.first(where: { !$0.children.isEmpty })?.action { model.menu?.select(action) }
+        _ = model.handleKey(ActionKey(name: "right"))
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            self.saveWithChildren(to: "\(folder)/submenu.png")
+            self.model.closeMenu()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { self.shootSearch(into: folder) }
+        }
+    }
+
+    /// Saves a picture of the panel with each child window drawn at its place, on a canvas that holds them all.
+    private func saveWithChildren(to path: String) {
+        let windows = [panel as NSWindow] + (panel.childWindows ?? []).filter(\.isVisible)
+        let whole = windows.map(\.frame).reduce(panel.frame) { $0.union($1) }
+        let image = NSImage(size: whole.size, flipped: false) { bounds in
+            NSColor(SpotTheme.window).setFill()
+            bounds.fill()
+            for window in windows {
+                guard let view = window.contentView, let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { continue }
+                view.cacheDisplay(in: view.bounds, to: bitmap)
+                bitmap.draw(in: window.frame.offsetBy(dx: -whole.minX, dy: -whole.minY))
+            }
+            return true
+        }
+        guard let tiff = image.tiffRepresentation, let data = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) else { return }
+        FileManager.default.createFile(atPath: path, contents: data)
     }
 
     private func shootSearch(into folder: String) {

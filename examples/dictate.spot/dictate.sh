@@ -4,6 +4,8 @@
 # detail=Convert speech to text
 # on=sheet.open
 # on=clock.1
+# offers=card
+# offers=menubar
 #
 # button=dictate
 # title=Dictate

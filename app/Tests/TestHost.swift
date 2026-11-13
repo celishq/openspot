@@ -93,6 +93,17 @@ final class TestHost: SpotsHost {
 
     func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void) {}
 
+    /// The row of each submenu that showed, and nil for each hide.
+    var submenus: [CGRect?] = []
+
+    func showSubmenu(beside row: CGRect, of menu: CGRect) {
+        submenus.append(row)
+    }
+
+    func hideSubmenu() {
+        submenus.append(nil)
+    }
+
     func float(_ entry: SpotsModel.Entry, followsDrag: Bool) {
         floats.append(entry.id)
     }

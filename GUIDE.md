@@ -104,6 +104,8 @@ A card can show one live value, such as free disk space. `on=panel.open` asks yo
 # icon=internaldrive
 # on=panel.open
 # on=clock.300
+# offers=card
+# offers=menubar
 free=$(df -h / | awk 'NR==2 {print $4}')
 printf 'detail=%s free\n\ntext=free\ntitle=%s free\n' "$free" "$free"
 ```
@@ -113,8 +115,8 @@ printf 'detail=%s free\n\ntext=free\ntitle=%s free\n' "$free" "$free"
 ![The card of Disk, with the free space under its title](docs/images/show-a-value.png)
 
 The first block, `detail=…`, is the **head**: it isn't drawn, and its `detail` becomes the line under the card's title.
-The `text` block is the spot's **main block**. The user can put the spot in the menu bar, where the main block shows
-next to the clock.
+The `text` block is the spot's **main block**. `offers=card` and `offers=menubar` name the places the spot can show: a
+card on the grid, and the menu bar, where the main block shows next to the clock. The user decides which ones it takes.
 
 A spot with a clock stays off the grid until the user adds it, so that a new spot doesn't fill the panel.
 

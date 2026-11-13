@@ -305,7 +305,7 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     func testReadIsAListOfPlacesBesideItsSeconds() throws {
-        try write("a.sh", header: "on=panel.open\non=sheet.open\non=clock.30")
+        try write("a.sh", header: "on=panel.open\non=sheet.open\non=clock.30\noffers=card\noffers=menubar")
 
         let read = try XCTUnwrap(try scan.spots.first?.read)
 
@@ -329,8 +329,8 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     func testModeIsOnceStayOrAlways() throws {
-        try write("a.sh", header: "mode=stay")
-        try write("b.sh", header: "mode=always")
+        try write("a.sh", header: "mode=stay\noffers=card\noffers=menubar")
+        try write("b.sh", header: "mode=always\noffers=card\noffers=menubar")
         try write("c.sh", header: "mode=once")
         try write("d.sh", header: "mode=sometimes")
 
@@ -380,7 +380,7 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     func testANumberInAListOfMomentsStartsTheSpotOffTheGrid() throws {
-        try write("a.sh", header: "on=panel.open\non=clock.30")
+        try write("a.sh", header: "on=panel.open\non=clock.30\noffers=card\noffers=menubar")
 
         let scan = try scan
 
@@ -402,12 +402,12 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertFalse(command.isGlobal)
     }
 
-    func testASpotThatOffersSearchHasACardAndOffersRowsIsRefusedWithItsFix() throws {
-        try write("a.sh", header: "on=panel.open\noffers=search")
+    func testASpotThatOffersSearchAndCardHasACardAndOffersRowsIsRefusedWithItsFix() throws {
+        try write("a.sh", header: "on=panel.open\noffers=card\noffers=search")
         try write("b.sh", header: "on=panel.open\noffers=rows")
 
         XCTAssertEqual(try scan.spots.map(\.headerState.isOnGrid), [true])
-        XCTAssertEqual(try scan.refused, [ScanResult.Refusal(file: "b", reason: "B offers rows, which Openspot no longer reads. Use offers=search, and the person hides its card")])
+        XCTAssertEqual(try scan.refused, [ScanResult.Refusal(file: "b", reason: "B offers rows, which Openspot no longer reads. Use offers=search, and leave out offers=card")])
     }
 
     func testTheMainSearchNeedsAMomentOutsideTheSheet() throws {
@@ -420,7 +420,7 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     func testANumberAsTheReadIsAMetricWhoseCardStartsOffTheGrid() throws {
-        try write("cups.sh", header: "title=Cups\nicon=cup.and.saucer\non=clock.30")
+        try write("cups.sh", header: "title=Cups\nicon=cup.and.saucer\non=clock.30\noffers=card\noffers=menubar")
 
         let scan = try scan
         let metric = try XCTUnwrap(scan.metrics.first)
@@ -434,7 +434,7 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     func testAMetricIsAlsoAList() throws {
-        try write("pulls.sh", header: "on=clock.120")
+        try write("pulls.sh", header: "on=clock.120\noffers=card\noffers=menubar")
 
         let scan = try scan
 
@@ -456,7 +456,7 @@ final class SpotsFolderTests: XCTestCase {
     func testAScriptThatAWidgetOpensHasNoCardOnTheGrid() throws {
         try write("details.sh", header: "on=panel.open")
         try write("other.sh", header: "on=panel.open")
-        try write("cpu.sh", header: "on=clock.60")
+        try write("cpu.sh", header: "on=clock.60\noffers=card\noffers=menubar")
         try "#!/bin/sh\n# title=Box\n# grid.square=cpu\n# to=details\n".writeScript(to: folder.spotFile("box"))
 
         let commands = try scan.spots
@@ -488,8 +488,8 @@ final class SpotsFolderTests: XCTestCase {
 
     func testRefusesAnAnswersPatternThatIsNoneAndTakesOneThatStays() throws {
         try write("m.sh", header: "on=search.text [0-9")
-        try write("n.sh", header: "on=search.text ^[0-9]\nmode=stay")
-        try write("o.sh", header: "on=search.text ^[0-9]\nmode=always")
+        try write("n.sh", header: "on=search.text ^[0-9]\nmode=stay\noffers=card\noffers=menubar")
+        try write("o.sh", header: "on=search.text ^[0-9]\nmode=always\noffers=card\noffers=menubar")
 
         XCTAssertEqual(try scan.spots.map(\.id), ["n", "o"])
         XCTAssertEqual(try scan.refused, [

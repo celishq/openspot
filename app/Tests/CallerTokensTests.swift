@@ -49,7 +49,7 @@ final class CallerTokensTests: SpotRunsCase {
     }
 
     func testAStayingProcessKeepsItsTokenBetweenCalls() async throws {
-        try script(header: "mode=stay\non=sheet.open", """
+        try script(header: "mode=stay\non=sheet.open\noffers=card\noffers=menubar", """
         echo "$OPENSPOT_TOKEN" > '\(path("token"))'
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac

@@ -65,8 +65,8 @@ final class SpotAPITests: XCTestCase {
     }
 
     func testTheListHoldsEachScriptWithItsCommandsSettingsAndKeys() async throws {
-        try "#!/bin/sh\n# title=Move\n# icon=macwindow\n# on=sheet.open\n#\n# button=left\n# title=Left side\n#\n# field=folder\n".writeScript(to: spots.spotFile("move"))
-        try "#!/bin/sh\n# title=Cups\n# on=clock.60\n".writeScript(to: spots.spotFile("cups"))
+        try "#!/bin/sh\n# title=Move\n# icon=macwindow\n# on=sheet.open\n# offers=card\n# offers=float\n#\n# button=left\n# title=Left side\n#\n# field=folder\n".writeScript(to: spots.spotFile("move"))
+        try "#!/bin/sh\n# title=Cups\n# on=clock.60\n# offers=card\n# offers=menubar\n".writeScript(to: spots.spotFile("cups"))
         try file.write(keys: [
             GlobalKey(spot: "move", act: .command("left"), trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+left")))),
             GlobalKey(spot: "move", act: .float, trigger: .shake)
@@ -302,6 +302,17 @@ final class SpotAPITests: XCTestCase {
             XCTAssertEqual(answer.code, 1, arguments.joined(separator: " "))
         }
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "open", "notes"], environment: ["OPENSPOT_REASON": "panel"]), .refused("`openspot spot open` opens the panel, so it cannot run in a read. Run it from a pick or an action."))
+    }
+
+    func testTheRunningAppAsksForFilesForASpotThatTakesThem() async throws {
+        let chose = try await answer(["spot", "choose", "shelf"])
+        let gone = try await answer(["spot", "choose", "gone"])
+
+        let opened = await app.opened
+        XCTAssertEqual(chose, CommandAnswer())
+        XCTAssertEqual(opened, ["choose shelf", "choose gone"])
+        XCTAssertEqual(gone.errors, "Openspot has no spot `gone` that takes files. Add drop= to its header.\n")
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "choose", "shelf"], environment: ["OPENSPOT_REASON": "panel"]), .refused("`openspot spot choose` opens a window, so it cannot run in a read. Run it from a pick or an action."))
     }
 
     func testThePromptAsksForASpotInTheSpotsFolder() async throws {

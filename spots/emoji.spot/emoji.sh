@@ -4,6 +4,7 @@
 # detail=Copy an emoji or a symbol
 # on=sheet.open
 # uses=clipboard
+# offers=card
 export LC_ALL=en_US.UTF-8
 saved="$OPENSPOT_DATA/tone"
 tones="none light medium-light medium medium-dark dark"

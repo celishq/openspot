@@ -100,6 +100,8 @@ public final class CommandAPI: @unchecked Sendable {
         case .spotAdd(nil, let isConfirmed): return spots.restore(isConfirmed: isConfirmed)
         case .spotRemove(let id): return spots.remove(id)
         case .spotOpen(let id): return spots.open(id)
+        case .spotChoose(let id): return spots.choose(for: id)
+        case .spotAct(let act, let id): return spots.act(act, id)
         case .spotReview(let id): return spots.review(id)
         case .spotStore: return spots.store()
         case .spotNew(let name, let starter): return spots.new(name, from: starter)

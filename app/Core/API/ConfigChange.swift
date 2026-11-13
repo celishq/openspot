@@ -4,7 +4,7 @@ import Foundation
 public enum ConfigChange: Equatable, Sendable {
     /// The key of the panel or of a fix, or a key or a shake of a command or a float.
     case keys
-    /// Spots that turned on or off, or that went into the menu bar or out of it.
+    /// Spots that turned on or off, went into the menu bar or out of it, or got a new icon.
     case spots([String])
     /// Careful mode turned on or off (protocol: Trust).
     case careful

@@ -10,14 +10,16 @@ public struct Spot: Equatable, Sendable {
     public let url: URL
     public private(set) var kind: SpotKind
     public let size: SpotSize
-    public let symbol: String
+    public private(set) var symbol: String
     public let subtitle: String?
     public private(set) var read: SpotRead?
     public private(set) var pick: ItemPick
     /// The form that Enter on a row asks with first, from the last output of its script.
     public private(set) var pickForm: CommandAction?
+    /// The places its header offers, where the person can show it (protocol: Places).
+    public let offeredPlaces: Set<Place>
     /// Whether its rows join the main search.
-    public let isGlobal: Bool
+    public var isGlobal: Bool { offeredPlaces.contains(.search) }
     /// Whether the main search finds the spot itself. A header with `offers=rows` offers only its rows.
     public let isFound: Bool
     /// The text of the main search that its script answers with rows (protocol: Places).
@@ -40,21 +42,24 @@ public struct Spot: Equatable, Sendable {
     public let pressRuns: Bool
     /// The file extensions that its card takes, with `folder` and `*`.
     public let drop: [String]
-    /// Whether its header offers it as a float, which the person can give a key or a shake (protocol: Places).
-    public let offersFloat: Bool
+    /// Whether the person can float it, with a key or a shake.
+    public var offersFloat: Bool { offeredPlaces.contains(.float) }
+    /// Whether the person can put its card on the grid.
+    public var offersCard: Bool { offeredPlaces.contains(.card) }
+    public var offersMenuBar: Bool { offeredPlaces.contains(.menubar) }
     /// The folder of its files inside the data of the app. A sheet of the app and a widget have none.
     public let dataName: String?
     /// Whether the grid shows its card before the person's choice. A script with commands, one that offers only its rows,
     /// one with a number in its `read` (protocol: Places), or one that a widget opens, has no card on the grid.
     public private(set) var isOnGrid: Bool
     /// The `symbol` its header names, if any.
-    public let headerSymbol: String?
+    public private(set) var headerSymbol: String?
     /// The file whose icon its header names, as a full path.
-    public let file: String?
+    public private(set) var file: String?
     /// The image its header names, as a full path.
-    public let image: String?
+    public private(set) var image: String?
     /// The short text, such as an emoji, that its header names as its picture.
-    public let glyph: String?
+    public private(set) var glyph: String?
     /// The Swift file of the view that its card draws, as a full path (protocol: Views).
     public let view: String?
     /// When the files of its view last changed, so that an edit of the view changes the spot. Nil when the scan does not
@@ -66,6 +71,8 @@ public struct Spot: Equatable, Sendable {
     public internal(set) var uses: Set<SpotUse>
     /// The commands its header lists, which a person can give keys.
     public let offers: [CommandOffer]
+    /// The actions it adds to the actions menu of every card, from the buttons of its header with `offers=actions`.
+    public private(set) var offeredActions: [OfferedAction]
     /// The values that it keeps with `openspot setting`, each with its title, which Settings lists.
     public let settings: [CommandOffer]
     /// The Settings rows of its own commands, which its sheet shows. Nil for a spot that draws its own sheet.
@@ -94,7 +101,6 @@ public struct Spot: Equatable, Sendable {
         subtitle: String? = nil,
         read: SpotRead? = nil,
         pick: ItemPick = .close,
-        isGlobal: Bool = false,
         isFound: Bool = true,
         answers: AnswerPattern? = nil,
         order: Int = 0,
@@ -108,11 +114,12 @@ public struct Spot: Equatable, Sendable {
         mode: SpotMode = .once,
         pressRuns: Bool = false,
         drop: [String] = [],
-        offersFloat: Bool = false,
+        offeredPlaces: Set<Place> = [.card, .menubar],
         dataName: String? = nil,
         isOnGrid: Bool = true,
         headerSymbol: String? = nil,
         offers: [CommandOffer] = [],
+        offeredActions: [OfferedAction] = [],
         settings: [CommandOffer] = [],
         file: String? = nil,
         image: String? = nil,
@@ -137,7 +144,6 @@ public struct Spot: Equatable, Sendable {
         self.subtitle = subtitle
         self.read = read
         self.pick = pick
-        self.isGlobal = isGlobal
         self.isFound = isFound
         self.answers = answers
         self.order = order
@@ -151,11 +157,12 @@ public struct Spot: Equatable, Sendable {
         self.mode = mode
         self.pressRuns = pressRuns
         self.drop = drop
-        self.offersFloat = offersFloat
+        self.offeredPlaces = offeredPlaces
         self.dataName = dataName
         self.isOnGrid = isOnGrid
         self.headerSymbol = headerSymbol
         self.offers = offers
+        self.offeredActions = offeredActions
         self.settings = settings
         self.file = file
         self.image = image
@@ -212,10 +219,23 @@ public struct Spot: Equatable, Sendable {
         return spot
     }
 
+    /// The same spot with the icon that the person chose in place of its header's, or as it is with none.
+    func withIcon(_ text: String?) -> Spot {
+        guard let icon = Icon(text: text) else { return self }
+        var spot = self
+        spot.headerSymbol = icon.symbol
+        spot.symbol = icon.symbol ?? symbol
+        spot.file = icon.file
+        spot.image = icon.image
+        spot.glyph = icon.glyph
+        return spot
+    }
+
     /// The same spot, as a part of the app.
     func builtIn() -> Spot {
         var spot = self
         spot.isBuiltIn = true
+        spot.offeredActions = offeredActions.map { $0.ofTheApp() }
         return spot
     }
 
@@ -253,9 +273,10 @@ public struct Spot: Equatable, Sendable {
         return isGlobal && !read.has(.panel) && read.seconds == nil
     }
 
-    /// Whether the person can put it in the menu bar: it has a number or an event in its `read`, or it stays.
+    /// Whether the person can put it in the menu bar: it offers the menu bar, and has a clock or an event in its `read`, or
+    /// stays.
     public var canShowInMenuBar: Bool {
-        read?.seconds != nil || read?.hasEvent == true || mode.stays
+        offersMenuBar && (read?.seconds != nil || read?.hasEvent == true || mode.stays)
     }
 
     /// The call that a click on its card makes.

@@ -121,7 +121,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAMenuBarPlaceAndAValueThatTheAPISetsBuildNoGridNowOrAtTheNextReload() throws {
-        try script("cups", header: "title=Cups\non=clock.60", "printf 'text=c\\ntitle=3\\n'")
+        try script("cups", header: "title=Cups\non=clock.60\noffers=card\noffers=menubar", "printf 'text=c\\ntitle=3\\n'")
         try script("notes", header: "title=Notes", ":")
         model.reload()
         let builds = model.gridBuilds
@@ -138,10 +138,10 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAFileThatChangesBesideASpotThatTheAPITurnsOnStillShowsItsCard() throws {
-        try script("cups", header: "title=Cups\non=clock.60", "printf 'text=c\\ntitle=3\\n'")
+        try script("cups", header: "title=Cups\non=clock.60\noffers=card\noffers=menubar", "printf 'text=c\\ntitle=3\\n'")
         model.reload()
         try script("notes", header: "title=Notes", ":")
-        try script("cups", header: "title=Mugs\non=clock.60", "printf 'text=c\\ntitle=3\\n'")
+        try script("cups", header: "title=Mugs\non=clock.60\noffers=card\noffers=menubar", "printf 'text=c\\ntitle=3\\n'")
 
         model.configChanged(.spots(["other"]))
         model.spotsChanged()
@@ -212,8 +212,8 @@ final class SpotsModelTests: XCTestCase {
 
     func testADownloadedUpdateReadsEachSpotThatListsItWhileThePanelIsHidden() async throws {
         let seen = folder.appendingPathComponent("seen").path
-        try script("news", header: "on=panel.open\non=app.update", "[ \"$OPENSPOT_REASON\" = app.update ] && printf '%s' \"$OPENSPOT_VALUE\" > '\(seen)'; printf 'title=News\n'")
-        try script("other", header: "on=panel.open\non=app.front", "printf 'title=Other\n'")
+        try script("news", header: "on=panel.open\non=app.update\noffers=card\noffers=menubar", "[ \"$OPENSPOT_REASON\" = app.update ] && printf '%s' \"$OPENSPOT_VALUE\" > '\(seen)'; printf 'title=News\n'")
+        try script("other", header: "on=panel.open\non=app.front\noffers=card\noffers=menubar", "printf 'title=Other\n'")
         model.reload()
 
         model.updateIsReady("0.3.0")
@@ -1434,7 +1434,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAStayingSpotAnswersTheKeptTextWhenThePanelShowsAgain() async throws {
-        try script("calc", header: "title=Calc\nmode=stay\non=search.text ^[0-9]", """
+        try script("calc", header: "title=Calc\nmode=stay\non=search.text ^[0-9]\noffers=card\noffers=menubar", """
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=}; text= ;; env.OPENSPOT_VALUE=*) text=${line#env.OPENSPOT_VALUE=} ;; esac
           [ -n "$line" ] || { [ -n "$text" ] && printf 'end=%s\\n\\nrow=%s\\ntitle=%s\\n---\\n' "$call" "$text" "$text" || printf 'end=%s\\n---\\n' "$call"; }

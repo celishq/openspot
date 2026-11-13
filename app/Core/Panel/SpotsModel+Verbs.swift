@@ -17,6 +17,20 @@ extension SpotsModel {
         entry.spot.fault?.file ?? entry.spot.url
     }
 
+    /// Does an act of the API on the card of a spot. Returns false when no card has that ID.
+    public func act(_ act: CardAct, on id: String) -> Bool {
+        guard let entry = cards.first(where: { $0.id == id && $0.item == nil }) else { return false }
+        switch act {
+        case .edit:
+            if isShown { host.dismiss() }
+            edit(entry)
+        case .prompt: copyPrompt(changing: entry)
+        case .share: share(entry)
+        case .delete: remove(entry)
+        }
+        return true
+    }
+
     /// Opens the file of a spot in the text editor.
     func edit(_ entry: Entry) {
         let path = file(of: entry).path

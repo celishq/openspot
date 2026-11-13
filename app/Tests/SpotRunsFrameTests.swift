@@ -111,7 +111,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     }
 
     func testAFrameOfAStayingScriptWithABlockReplacesAll() async throws {
-        try script(header: "mode=stay", """
+        try script(header: "mode=stay\noffers=card\noffers=menubar", """
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=} ;;
@@ -132,7 +132,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     }
 
     func testAStayingReadThatEndsWithOnlyAHeadKeepsThePictureThatCameBeforeIt() async throws {
-        try script(header: "mode=stay", """
+        try script(header: "mode=stay\noffers=card\noffers=menubar", """
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=} ;;

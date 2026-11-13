@@ -5,6 +5,7 @@
 # on=panel.open
 # on=sheet.open
 # press=open
+# offers=card
 dir=$(cd "${0%/*}" && pwd)/confetti
 . "$dir/shared.sh"
 

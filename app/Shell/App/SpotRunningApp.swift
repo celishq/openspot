@@ -34,6 +34,14 @@ struct SpotRunningApp: RunningApp {
         await model.openSheet(id)
     }
 
+    func choose(for id: String) async -> Bool {
+        await model.chooseFiles(for: id)
+    }
+
+    func act(_ act: CardAct, on id: String) async -> Bool {
+        await model.act(act, on: id)
+    }
+
     func review(_ id: String) async -> Bool {
         await model.reviewCore(id)
     }

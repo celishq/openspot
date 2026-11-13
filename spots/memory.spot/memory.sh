@@ -3,6 +3,8 @@
 # icon=memorychip
 # on=clock.5
 # preview=sample
+# offers=card
+# offers=menubar
 if [ "$OPENSPOT_REASON" = spot.preview ]; then
   printf 'graph=memory\ntitle=61%%\ndetail=Pressure normal\nvalue=0.61\n'
   exit 0

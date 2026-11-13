@@ -8,6 +8,8 @@
   - `Shell/` — the menu bar app, the panel and the hotkey. Imports AppKit and SwiftUI.
   - `Client/` — the `openspot` command, which talks to the running app.
   - `StandIn/` — a small program for tests: a capability that needs no Mac feature. It does not ship.
+  - `Views/` — `openspot-views`, which a Release build runs to compile each view of the core spots into a `.view` beside
+    its source, so that it draws on a Mac with no developer tools. It does not ship. Debug compiles a view at its first use.
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
 - `app/RULES.md` holds the rules of the app that no spot author sees, by ID. Code and tests name a rule by its ID.
 - `app/Keywords/` holds the CLDR keywords of emoji and symbols, one xz file per language. `scripts/emoji-keywords.py` writes

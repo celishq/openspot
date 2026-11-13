@@ -61,6 +61,24 @@ struct SpotCalls {
         }
     }
 
+    /// Asks the person for files for a spot that takes them, as a press of its card does.
+    func choose(for id: String) -> CommandAPI.Work {
+        guard let app else { return CommandAnswer.notRunning("spot choose \(id)") }
+        return CommandAnswer.work {
+            guard await app.choose(for: id) else { throw SpotError.failed(1, "Openspot has no spot `\(id)` that takes files. Add drop= to its header.") }
+            return ""
+        }
+    }
+
+    /// Does what the row of a card's actions menu does to a spot, in the running app.
+    func act(_ act: CardAct, _ id: String) -> CommandAPI.Work {
+        guard let app else { return CommandAnswer.notRunning("spot \(act.rawValue) \(id)") }
+        return CommandAnswer.work {
+            guard await app.act(act, on: id) else { throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.") }
+            return ""
+        }
+    }
+
     func store() -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot store") }
         return CommandAnswer.work {
