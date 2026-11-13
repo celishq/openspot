@@ -296,12 +296,18 @@ extension SpotsModel {
         menu == nil ? nil : menuSession?.target
     }
 
-    /// Keeps where the view placed the open menu, and grows the backdrop under it on the menu's motion.
+    /// Keeps where the view placed the open menu. Once the menu has grown, the backdrop under it follows the new place with no
+    /// motion.
     public func placeMenu(_ frame: ActionMenuFrame) {
         guard menu != nil, frame != menuFrame else { return }
         menuFrame = frame
-        let height = frame.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock
-        if height != menuBackdropHeight { change(.sheet(isOpen: true), { menuBackdropHeight = height }) }
+        if menuSession?.phase != .opening { growBackdrop() }
+    }
+
+    /// Sets the backdrop under the menu to the height that the menu's place asks for.
+    private func growBackdrop() {
+        let height = menuFrame.map { $0.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock } ?? 0
+        if height != menuBackdropHeight { menuBackdropHeight = height }
     }
 
     public func searchMenu(_ text: String) {
@@ -321,7 +327,10 @@ extension SpotsModel {
         menuSession = actionMenu(on: target).map { ActionMenuSession(menu: $0, target: target) }
         DispatchQueue.main.async { [weak self] in
             guard let self, menuSession?.phase == .opening else { return }
-            change(.sheet(isOpen: true), { self.menuSession?.phase = .open }, completion: { [weak self] in
+            change(.sheet(isOpen: true), {
+                self.menuSession?.phase = .open
+                self.growBackdrop()
+            }, completion: { [weak self] in
                 if self?.menuSession?.phase == .open { self?.menuSession?.phase = .settled }
             })
         }
@@ -381,6 +390,7 @@ extension SpotsModel {
     }
 
     private func takeHint() {
+        hintTakes += 1
         let words = HintWords(withObservationTracking { hint } onChange: { [weak self] in
             Task { @MainActor in self?.takeHint() }
         })
@@ -409,9 +419,7 @@ extension SpotsModel {
     public func closeMenu() {
         guard menu != nil else { return }
         change(.sheet(isOpen: false), { menuSession?.phase = .closing }, completion: { [weak self] in
-            guard let self, menuSession?.phase == .closing else { return }
-            menuSession = nil
-            if menuBackdropHeight != 0 { change(.sheet(isOpen: false), { self.menuBackdropHeight = 0 }) }
+            if self?.menuSession?.phase == .closing { self?.menuSession = nil }
         })
     }
 

@@ -957,7 +957,7 @@ final class SpotsModelTests: XCTestCase {
     private func trackPanelAndField(_ told: @escaping @Sendable () -> Void) {
         withObservationTracking {
             let id = model.transition.id
-            _ = (model.transition, model.fieldSheet, model.showsFieldDrop, model.isShown, model.isMenuOpen, model.menuBackdropHeight)
+            _ = (model.transition, model.fieldSheet, model.showsFieldDrop, model.isShown, model.isMenuOpen, model.menuBackdropHeight, model.menuFrame)
             _ = (model.gridHeight, model.formRect, model.formHasChoices, model.entries.first { $0.id == id })
             _ = SpotSheetCard.of(id, in: model)
             _ = model.sheets[id ?? ""].map { ($0.sheetRect, $0.showsField) }
@@ -1012,14 +1012,9 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(told)
     }
 
-    func testAKeyInTheActionsMenuTellsNeitherThePanelNorTheField() throws {
-        try script("weather", header: "title=Weather", ":")
-        model.reload()
-        model.isShown = true
-        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "weather" })
-        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
-        let menu = try XCTUnwrap(model.menu)
-        model.placeMenu(ActionMenuFrame(item: CGRect(x: 16, y: 80, width: 80, height: 80), menu: menu, bounds: ActionMenuFrame.bounds(under: SpotTokens.gridTop)))
+    func testAKeyInTheActionsMenuTellsNeitherThePanelNorTheField() async throws {
+        model.placeMenu(try openWeatherMenu())
+        try await wait("the grow") { model.menuSession?.phase != .opening }
         XCTAssertGreaterThan(model.menuBackdropHeight, 0)
         nonisolated(unsafe) var told = false
         trackPanelAndField { told = true }
@@ -1030,24 +1025,60 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(told)
     }
 
-    func testTheBackdropUnderTheMenuGrowsOnTheMenusMotionAndGoesWhenItsCloseEnds() throws {
+    /// Opens the actions menu of the weather card, and returns where a view would place it.
+    private func openWeatherMenu() throws -> ActionMenuFrame {
         try script("weather", header: "title=Weather", ":")
         model.reload()
         model.isShown = true
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "weather" })
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
         let menu = try XCTUnwrap(model.menu)
-        let frame = ActionMenuFrame(item: CGRect(x: 16, y: 80, width: 80, height: 80), menu: menu, bounds: ActionMenuFrame.bounds(under: SpotTokens.gridTop))
+        return ActionMenuFrame(item: CGRect(x: 16, y: 80, width: 80, height: 80), menu: menu, bounds: ActionMenuFrame.bounds(under: SpotTokens.gridTop))
+    }
 
+    func testTheBackdropUnderTheMenuGrowsOnTheOpenPressMotionAndALaterPlaceMovesNothing() async throws {
+        let frame = try openWeatherMenu()
         model.placeMenu(frame)
-
         XCTAssertEqual(model.menuFrame, frame)
+        XCTAssertEqual(model.menuBackdropHeight, 0)
+        let motions = host.motions.count
+
+        try await wait("the grow") { model.menuSession?.phase != .opening }
+
+        XCTAssertEqual(Array(host.motions.dropFirst(motions)).first, .sheet(isOpen: true))
         XCTAssertEqual(model.menuBackdropHeight, frame.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock)
-        XCTAssertEqual(host.motions.last, .sheet(isOpen: true))
+        let grown = host.motions.count
+        let scrolled = ActionMenuFrame(item: CGRect(x: 16, y: 40, width: 80, height: 80), menu: try XCTUnwrap(model.menu), bounds: ActionMenuFrame.bounds(under: SpotTokens.gridTop))
+        model.placeMenu(scrolled)
+        XCTAssertEqual(model.menuBackdropHeight, scrolled.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock)
+        XCTAssertEqual(host.motions.count, grown)
+    }
+
+    func testTheBackdropUnderTheMenuGoesWhenItsCloseEnds() async throws {
+        let frame = try openWeatherMenu()
+        model.placeMenu(frame)
+        try await wait("the grow") { model.menuSession?.phase != .opening }
+
         model.closeMenu()
+
         XCTAssertNil(model.menuFrame)
         XCTAssertEqual(model.menuBackdropHeight, 0)
         XCTAssertEqual(host.motions.last, .sheet(isOpen: false))
+    }
+
+    func testTheBackdropUnderTheMenuGoesWhenAMenuWithNoRowsTakesThePlaceOfAClosingOne() async throws {
+        let frame = try openWeatherMenu()
+        model.placeMenu(frame)
+        try await wait("the grow") { model.menuSession?.phase != .opening }
+        host.heldEnds = []
+        model.closeMenu()
+        XCTAssertGreaterThan(model.menuBackdropHeight, 0)
+
+        model.menuSession = nil
+        host.heldEnds?.forEach { $0() }
+
+        XCTAssertNil(model.menuFrame)
+        XCTAssertEqual(model.menuBackdropHeight, 0)
     }
 
     func testTheHintOfTheGridKeepsItsWordsAndTellsNoReaderWhileTheyStayTheSame() async throws {
@@ -1061,8 +1092,9 @@ final class SpotsModelTests: XCTestCase {
         nonisolated(unsafe) var told = false
         withObservationTracking { _ = (model.gridHint, model.sheetHint) } onChange: { told = true }
 
+        let takes = model.hintTakes
         model.selected = 1
-        try await Task.sleep(for: .milliseconds(50))
+        try await wait("the hint taken again") { model.hintTakes > takes }
 
         XCTAssertEqual(model.gridHint, HintWords(model.hint))
         XCTAssertFalse(told)
