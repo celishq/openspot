@@ -336,7 +336,7 @@ public final class SpotsModel {
 
     /// Takes a change of the spots folder or the config file, such as an agent that writes a spot: the cards change at once,
     /// with no motion, the selected card stays selected, and a changed script that the open panel reads at `panel` reads again.
-    public func folderChanged() {
+    public func spotsChanged() {
         let stamps = fileStamps
         let id = selectedEntry?.id
         reload()

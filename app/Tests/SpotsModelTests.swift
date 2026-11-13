@@ -104,7 +104,7 @@ final class SpotsModelTests: XCTestCase {
         try model.files.config.set("fix_key", to: "cmd+shift+9")
 
         XCTAssertEqual(model.config.fixKey, Config(text: "").fixKey)
-        model.folderChanged()
+        model.spotsChanged()
         XCTAssertEqual(model.config.fixKey, Config(text: "fix_key = \"cmd+shift+9\"").fixKey)
     }
 
@@ -114,7 +114,7 @@ final class SpotsModelTests: XCTestCase {
         model.prefer(.wide, for: "one")
         let builds = model.gridBuilds
 
-        model.folderChanged()
+        model.spotsChanged()
 
         XCTAssertEqual(model.gridBuilds, builds)
         XCTAssertEqual(model.config.arrangement.size(of: "one"), .wide)
@@ -144,7 +144,7 @@ final class SpotsModelTests: XCTestCase {
         try script("cups", header: "title=Mugs\non=clock.60", "printf 'text=c\\ntitle=3\\n'")
 
         model.configChanged(.spots(["other"]))
-        model.folderChanged()
+        model.spotsChanged()
 
         XCTAssertEqual(Set(model.entries.map { $0.spot.name }), ["Mugs", "Notes"])
     }
@@ -257,7 +257,7 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(model.entries.contains { $0.id == "late" })
 
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: late.path)
-        model.folderChanged()
+        model.spotsChanged()
 
         XCTAssertTrue(model.entries.contains { $0.id == "late" })
     }
@@ -298,7 +298,7 @@ final class SpotsModelTests: XCTestCase {
         arrangement.set(isOnGrid: false, of: "two")
 
         try model.files.config.write(arrangement)
-        model.folderChanged()
+        model.spotsChanged()
 
         XCTAssertEqual(model.visible.map(\.id), ["one"])
     }
@@ -311,7 +311,7 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the first read") { model.entries.first { $0.id == "cups" }?.state.title == "One cup" }
 
         try "#!/bin/sh\n# on=panel.open\nprintf 'title=Two cups\\n'\n".write(to: spots.spotFile("cups"), atomically: false, encoding: .utf8)
-        model.folderChanged()
+        model.spotsChanged()
 
         try await wait("the read of the changed body") { model.entries.first { $0.id == "cups" }?.state.title == "Two cups" }
     }

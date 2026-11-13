@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// A slider that keeps its value while the person drags it, and sends it once they let go, so that a tick redraws only it.
-struct SpotSlotSlider: View {
+struct SpotSlider: View {
     let level: Double
     let range: ClosedRange<Double>
     let onEnd: (Double) -> Void

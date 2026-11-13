@@ -6,7 +6,7 @@ import OpenspotCore
 /// after a change that a scan or a reload reads settles, such as an agent that writes a spot or a person who edits the config.
 /// It takes each event on a utility queue, so that a write beside them, such as a log, never wakes the main thread.
 @MainActor
-final class SpotsFolderWatch {
+final class SpotsWatch {
     private static let settle: CFTimeInterval = 0.3
 
     private var stream: FSEventStreamRef?
@@ -21,7 +21,7 @@ final class SpotsFolderWatch {
         var context = FSEventStreamContext(version: 0, info: Unmanaged.passUnretained(self).toOpaque(), retain: nil, release: nil, copyDescription: nil)
         let callback: FSEventStreamCallback = { _, info, _, paths, _, _ in
             guard let info else { return }
-            let watch = Unmanaged<SpotsFolderWatch>.fromOpaque(info).takeUnretainedValue()
+            let watch = Unmanaged<SpotsWatch>.fromOpaque(info).takeUnretainedValue()
             let changed = (Unmanaged<CFArray>.fromOpaque(paths).takeUnretainedValue() as? [String]) ?? []
             guard changed.contains(where: watch.paths.reports) else { return }
             let onChange = watch.onChange

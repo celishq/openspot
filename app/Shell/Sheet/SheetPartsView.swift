@@ -425,7 +425,7 @@ struct SheetPartsView: View {
                 Image(systemName: symbol)
                     .foregroundStyle(SpotTheme.ink)
             }
-            SpotSlotSlider(level: level, range: low...max(high, low + 1)) { onSet(part, String(Int($0.rounded()))) }
+            SpotSlider(level: level, range: low...max(high, low + 1)) { onSet(part, String(Int($0.rounded()))) }
         }
     }
 

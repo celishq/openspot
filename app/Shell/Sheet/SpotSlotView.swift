@@ -30,7 +30,7 @@ struct SpotSlotView: View {
                 toggle
             }
         case .slider(let level, let low, let high):
-            SpotSlotSlider(level: level, range: low...high) { onSlot(part.id, String(Int($0.rounded()))) }
+            SpotSlider(level: level, range: low...high) { onSlot(part.id, String(Int($0.rounded()))) }
         case .menu(let options, let value), .list(let options, let value):
             Menu(options.first { $0.id == value }?.title ?? part.title ?? "") {
                 ForEach(options, id: \.id) { option in
