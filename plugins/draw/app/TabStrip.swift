@@ -1,25 +1,25 @@
 import SwiftUI
 
-/// The tabs of the open boards beside the window buttons, and a + for a new board. A tab grows in when it opens and folds
+/// The tabs of the open boards beside the window buttons, and a + for the start page. A tab grows in when it opens and folds
 /// away when it closes.
 struct TabStrip: View {
     @ObservedObject var tabs: Tabs
     let show: (Studio) -> Void
     let close: (Studio) -> Void
-    let make: () -> Void
+    let home: () -> Void
     let trash: (URL) -> Void
     @State private var adding = false
 
     var body: some View {
         HStack(spacing: 4) {
             ForEach(tabs.studios, id: \.file) { studio in
-                TabChip(studio: studio, current: studio === tabs.current, show: { show(studio) }, close: { close(studio) }, trash: { trash(studio.file) })
+                TabChip(studio: studio, current: studio === tabs.current && !tabs.home, show: { show(studio) }, close: { close(studio) }, trash: { trash(studio.file) })
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.4, anchor: .leading).combined(with: .opacity),
                         removal: .scale(scale: 0.2, anchor: .leading).combined(with: .opacity)
                     ))
             }
-            Button(action: make) {
+            Button(action: home) {
                 Image(systemName: "plus")
                     .font(.system(size: 14, weight: .medium))
                     .frame(width: 30, height: 28)
@@ -28,7 +28,7 @@ struct TabStrip: View {
             }
             .buttonStyle(.plain)
             .onHover { inside in withAnimation(.easeOut(duration: 0.12)) { adding = inside } }
-            .tip("New board  ⌘N", below: true)
+            .tip("Start page  ⌘T", below: true)
         }
         .frame(height: 34)
     }

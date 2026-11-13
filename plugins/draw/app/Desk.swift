@@ -57,7 +57,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         side.isHidden = !drawer.open
         self.side = side
         let latch = bar(Latch(drawer: drawer) { [weak self] in self?.toggleBoards(nil) }, in: root)
-        let strip = bar(TabStrip(tabs: tabs, show: { [weak self] in self?.show($0.file) }, close: { [weak self] in self?.close($0) }, make: { [weak self] in self?.make() }, trash: { [weak self] in self?.trash($0) }), in: root)
+        let strip = bar(TabStrip(tabs: tabs, show: { [weak self] in self?.show($0.file) }, close: { [weak self] in self?.close($0) }, home: { [weak self] in self?.goHome(nil) }, trash: { [weak self] in self?.trash($0) }), in: root)
         let lights = window.standardWindowButton(.zoomButton).map { $0.convert($0.bounds, to: nil) } ?? CGRect(x: 60, y: window.frame.height - 26, width: 14, height: 14)
         latchLeading = lights.maxX + 16
         middle = window.frame.height - lights.midY
@@ -198,15 +198,24 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         make()
     }
 
+    /// Shows the start page of all boards, and keeps the open tabs.
+    @objc func goHome(_ sender: Any?) {
+        guard !tabs.home else { return }
+        canvas.endEditing()
+        studio.save()
+        withAnimation(.easeOut(duration: 0.2)) { tabs.goHome() }
+        stageUp()
+    }
+
     @objc func closeBoard(_ sender: Any?) {
         if !tabs.home { close(studio) }
     }
 
-    /// Opens the search: on the start page its field, or else the list of boards with its field.
+    /// Puts the caret in the search field: the start page's, or else the list's, which slides in.
     @objc func findBoards(_ sender: Any?) {
         if !tabs.home, !drawer.open { toggleBoards(nil) }
         drawer.searching = false
-        DispatchQueue.main.async { [self] in withAnimation(.spring(duration: 0.3, bounce: 0.1)) { drawer.searching = true } }
+        DispatchQueue.main.async { [self] in drawer.searching = true }
     }
 
     /// Shows the list of boards with the name of this board ready to change.
@@ -286,6 +295,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         ])
         add("File", [
             item("New Board", #selector(Desk.newBoard(_:)), "n"),
+            item("Start Page", #selector(Desk.goHome(_:)), "t"),
             item("Rename Board…", #selector(Desk.renameBoard(_:)), "r"),
             item("Show in Finder", #selector(Desk.revealBoard(_:)), "r", [.command, .option]),
             item("Find Board…", #selector(Desk.findBoards(_:)), "f"),

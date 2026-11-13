@@ -42,6 +42,11 @@ final class Tabs: ObservableObject {
         }
     }
 
+    /// Shows the start page, as a new tab in a browser, and keeps the open tabs.
+    func goHome() {
+        home = true
+    }
+
     /// Whether this board shows now.
     func shows(_ file: URL) -> Bool {
         !home && current.file.standardizedFileURL == file.standardizedFileURL

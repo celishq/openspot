@@ -12,8 +12,11 @@ struct Picking: Equatable {
     private(set) var anchor: URL?
     /// The board that the arrows move from.
     private(set) var focus: URL?
+    /// The pick that a sweep began with.
+    private var sweepBase: Set<URL>?
 
     mutating func click(_ item: URL, in order: [URL], mode: Mode) {
+        sweepBase = nil
         switch mode {
         case .only:
             picked = [item]
@@ -40,6 +43,20 @@ struct Picking: Equatable {
             click(next, in: order, mode: .only)
         }
         return next
+    }
+
+    /// Picks the run of rows that a drag passes, from where it began to where it is, beside the pick it began with when
+    /// `adding`, as with Command held.
+    mutating func sweep(from start: URL, to end: URL, in order: [URL], adding: Bool) {
+        if sweepBase == nil { sweepBase = adding ? picked : [] }
+        picked = (sweepBase ?? []).union(run(from: start, to: end, in: order))
+        anchor = start
+        focus = end
+    }
+
+    /// Ends a sweep, so the next one starts from the pick as it is.
+    mutating func endSweep() {
+        sweepBase = nil
     }
 
     /// Picks only this board, such as the one a tab shows.

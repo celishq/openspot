@@ -49,4 +49,16 @@ final class DrawPickingTests: XCTestCase {
         XCTAssertEqual(picking.step(1, in: order, extend: false), order[4])
         XCTAssertEqual(names(picking), ["e"])
     }
+
+    func testASweepPicksTheRowsItPassesAndWithCommandAddsThem() {
+        var picking = Picking()
+        picking.click(order[0], in: order, mode: .only)
+
+        picking.sweep(from: order[2], to: order[3], in: order, adding: false)
+        XCTAssertEqual(names(picking), ["c", "d"])
+
+        picking.click(order[0], in: order, mode: .only)
+        picking.sweep(from: order[4], to: order[3], in: order, adding: true)
+        XCTAssertEqual(names(picking), ["a", "d", "e"])
+    }
 }

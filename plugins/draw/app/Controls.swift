@@ -310,10 +310,12 @@ final class Drawer: ObservableObject {
     @Published var query = ""
 }
 
-/// The search field of the boards, which takes the keys when it shows. Escape clears it and closes it.
+/// The search field of the boards. It takes the keys when it shows on the start page, and when Command-F asks for it.
+/// Escape clears it.
 struct Search: View {
     @ObservedObject var drawer: Drawer
     var wide = false
+    var takesFocus = true
     @FocusState private var typing: Bool
 
     var body: some View {
@@ -324,7 +326,7 @@ struct Search: View {
                 .focused($typing)
                 .onKeyPress(.escape) {
                     drawer.query = ""
-                    withAnimation(.spring(duration: 0.3, bounce: 0.1)) { drawer.searching = wide }
+                    typing = false
                     return .handled
                 }
             if !drawer.query.isEmpty {
@@ -338,8 +340,17 @@ struct Search: View {
         .padding(.horizontal, wide ? 14 : 9)
         .frame(height: wide ? 40 : 30)
         .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: wide ? 12 : 8, style: .continuous))
-        .onAppear { typing = true }
+        .onAppear { if takesFocus { typing = true } }
         .onChange(of: drawer.searching) { _, now in if now { typing = true } }
+    }
+}
+
+/// The frames of the rows of the list, by board, so a drag knows which rows it passes.
+struct RowFrames: PreferenceKey {
+    static let defaultValue: [URL: CGRect] = [:]
+
+    static func reduce(value: inout [URL: CGRect], nextValue: () -> [URL: CGRect]) {
+        value.merge(nextValue()) { $1 }
     }
 }
 
@@ -374,22 +385,12 @@ struct Sidebar: View {
     @State private var name = ""
     @FocusState private var typing: Bool
     @FocusState private var listening: Bool
+    @State private var frames: [URL: CGRect] = [:]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 2) {
-                if drawer.searching {
-                    Search(drawer: drawer)
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
-                } else {
-                    Text("Boards").font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
-                        .padding(.leading, 8)
-                        .transition(.opacity)
-                    Spacer()
-                    Knob(symbol: "magnifyingglass", help: "Search  ⌘F", below: true) {
-                        withAnimation(.spring(duration: 0.3, bounce: 0.1)) { drawer.searching = true }
-                    }
-                }
+                Search(drawer: drawer, takesFocus: false)
                 Knob(symbol: "plus", help: "New board  ⌘N", below: true, action: make)
             }
             .frame(height: 34)
@@ -397,8 +398,20 @@ struct Sidebar: View {
                 VStack(spacing: 2) {
                     ForEach(entries) { entry in
                         row(entry)
+                            .background(GeometryReader { place in
+                                Color.clear.preference(key: RowFrames.self, value: [entry.file: place.frame(in: .named("list"))])
+                            })
                     }
                 }
+                .coordinateSpace(name: "list")
+                .onPreferenceChange(RowFrames.self) { frames = $0 }
+                .gesture(DragGesture(minimumDistance: 4, coordinateSpace: .named("list"))
+                    .onChanged { drag in
+                        guard let start = row(at: drag.startLocation), let end = row(at: drag.location) else { return }
+                        drawer.picking.sweep(from: start, to: end, in: entries.map(\.file), adding: NSEvent.modifierFlags.contains(.command))
+                        listening = true
+                    }
+                    .onEnded { _ in drawer.picking.endSweep() })
             }
             .focusable()
             .focusEffectDisabled()
@@ -407,8 +420,9 @@ struct Sidebar: View {
             .onKeyPress(.upArrow, phases: .down) { press in walk(-1, extend: press.modifiers.contains(.shift)) }
             .onKeyPress(.downArrow, phases: .down) { press in walk(1, extend: press.modifiers.contains(.shift)) }
             .onKeyPress(.return) {
-                guard drawer.picking.picked.count == 1, let file = drawer.picking.picked.first, let entry = entries.first(where: { $0.file == file }) else { return .ignored }
-                startNaming(entry)
+                let picked = entries.map(\.file).filter(drawer.picking.picked.contains)
+                guard !picked.isEmpty else { return .ignored }
+                picked.forEach(open)
                 return .handled
             }
             .onKeyPress(.delete) {
@@ -441,13 +455,15 @@ struct Sidebar: View {
         entries = shelf.entries(matching: drawer.query)
     }
 
-    /// Moves the pick with an arrow key, and shows the board it lands on when it picks one alone.
+    /// Moves the pick with an arrow key. Return opens what it picks.
     private func walk(_ offset: Int, extend: Bool) -> KeyPress.Result {
-        let order = entries.map(\.file)
-        guard let next = drawer.picking.step(offset, in: order, extend: extend) else { return .ignored }
-        if !extend { open(next) }
-        DispatchQueue.main.async { listening = true }
+        guard drawer.picking.step(offset, in: entries.map(\.file), extend: extend) != nil else { return .ignored }
         return .handled
+    }
+
+    /// The board whose row lies under a point of the list.
+    private func row(at point: CGPoint) -> URL? {
+        frames.first { $0.value.insetBy(dx: -2, dy: -1).contains(CGPoint(x: $0.value.midX, y: point.y)) }?.key
     }
 
     /// Picks a board on a click: alone, with Command added or dropped, or with Shift the run to it. A plain click shows it.
@@ -498,8 +514,10 @@ struct Sidebar: View {
         .padding(6)
         .background(picked ? Color.accentColor.opacity(drawer.focused ? 0.2 : 0.12) : .clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .contentShape(Rectangle())
-        .onTapGesture(count: 2) { startNaming(entry) }
-        .onTapGesture { if drawer.naming != entry.file { click(entry) } }
+        .onTapGesture {
+            guard drawer.naming != entry.file else { return }
+            if (NSApp.currentEvent?.clickCount ?? 1) > 1 { startNaming(entry) } else { click(entry) }
+        }
         .overlay(MenuSpot { menu(for: entry) })
     }
 
