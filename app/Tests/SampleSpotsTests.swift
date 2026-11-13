@@ -73,7 +73,7 @@ final class SampleSpotsTests: SampleSpotsCase {
         let log = data.appendingPathComponent("started")
         try "#!/bin/sh\nprintf '%s\\n' \"$*\" >> '\(log.path)'\nexec /bin/sleep 300\n".writeScript(to: data.appendingPathComponent("confetti"))
         defer {
-            if let pid = try? String(contentsOf: data.appendingPathComponent("listen.pid"), encoding: .utf8), let id = pid_t(pid) { kill(id, SIGTERM) }
+            if let pid = try? String(contentsOf: data.appendingPathComponent("listen.pid"), encoding: .utf8), let id = pid.split(separator: " ").first.flatMap({ pid_t($0) }) { kill(id, SIGTERM) }
         }
 
         for _ in 0..<2 {
@@ -92,6 +92,45 @@ final class SampleSpotsTests: SampleSpotsCase {
             while !FileManager.default.fileExists(atPath: data.appendingPathComponent("listen.pid").path), Date() < end {
                 RunLoop.current.run(until: Date().addingTimeInterval(0.02))
             }
+        }
+
+        let started = try String(contentsOf: log, encoding: .utf8).split(separator: "\n")
+        XCTAssertEqual(started.count, 1)
+        XCTAssertEqual(started.first?.split(separator: " ").last.map(String.init), String(ProcessInfo.processInfo.processIdentifier))
+    }
+
+    func testAConfettiReadRestartsAListenerThatNoParentEnds() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let data = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-old-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: data) }
+        let log = data.appendingPathComponent("started")
+        try "#!/bin/sh\nprintf '%s\\n' \"$*\" >> '\(log.path)'\nexec /bin/sleep 300\n".writeScript(to: data.appendingPathComponent("confetti"))
+        try "option+c".write(to: data.appendingPathComponent("key"), atomically: true, encoding: .utf8)
+        let old = Process()
+        old.executableURL = URL(fileURLWithPath: "/bin/sleep")
+        old.arguments = ["300"]
+        try old.run()
+        defer { old.terminate() }
+        try String(old.processIdentifier).write(to: data.appendingPathComponent("listen.pid"), atomically: true, encoding: .utf8)
+        defer {
+            if let pid = try? String(contentsOf: data.appendingPathComponent("listen.pid"), encoding: .utf8), let id = pid.split(separator: " ").first.flatMap({ pid_t($0) }), id != old.processIdentifier { kill(id, SIGTERM) }
+        }
+
+        let process = Process()
+        process.executableURL = root.appendingPathComponent("spots/confetti.spot/confetti.sh")
+        process.arguments = ["read"]
+        process.environment = [
+            "PATH": "/usr/bin:/bin", "OPENSPOT_DATA": data.path, "HOME": data.path, "OPENSPOT_REASON": "panel.open",
+            "OPENSPOT_SH": root.appendingPathComponent("app/Shell/openspot.sh").path
+        ]
+        process.standardOutput = FileHandle.nullDevice
+        process.standardInput = FileHandle.nullDevice
+        try process.run()
+        process.waitUntilExit()
+        let end = Date().addingTimeInterval(10)
+        while !FileManager.default.fileExists(atPath: log.path), Date() < end {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.02))
         }
 
         let started = try String(contentsOf: log, encoding: .utf8).split(separator: "\n")

@@ -70,7 +70,7 @@ case "$1" in
       printf 'button=delete\ntitle=Delete %s\nshortcut=cmd+backspace\nconfirm=Press again to move it to the Trash\n\n' "$(esc "$(look_title "$chosen")")"
     fi
     printf 'button=mine\ntitle=Show my looks in Finder\nshortcut=cmd+o\n'
-    [ -z "${OPENSPOT_REASON-}" ] || listening || (listen > /dev/null 2>&1 &)
+    [ -z "${OPENSPOT_REASON-}" ] || current || (listen > /dev/null 2>&1 &)
     ;;
   open | play)
     play "$(default_look)"
@@ -85,10 +85,10 @@ case "$1" in
       fail "$(key_name "$2") belongs to the apps on your Mac, such as Copy or Paste. Hold ⌃ or ⌥ with a letter. $(key_name "$old") still plays it."
     fi
     printf %s "$2" > "$data/key.$$" && mv "$data/key.$$" "$data/key"
-    if ! listen; then
+    if ! listen again; then
       reason=$(tail -n 1 "$data/listen.log" 2>/dev/null)
       printf %s "$old" > "$data/key.$$" && mv "$data/key.$$" "$data/key"
-      listen > /dev/null 2>&1
+      listen again > /dev/null 2>&1
       fail "${reason:-Openspot cannot use that key.} $(key_name "$old") still plays it."
     fi
     printf 'toast=%s\n' "$(esc "$(key_name "$2") now plays confetti anywhere.")"
