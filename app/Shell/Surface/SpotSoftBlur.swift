@@ -130,33 +130,33 @@ struct SpotSoftBlur: NSViewRepresentable {
         surface.masks = Self.masks(height: height)
     }
 
-    private static let byteLimit = 8 << 20
-    private static var kept: [CGFloat: Masks] = [:]
-    private static var keptBytes = 0
+    /// The masks of each height, 8 MB beside two of the largest pairs. Each surface asks for its height on each update, so the
+    /// heights in use are the last to go.
+    private static var kept = RecentCache<CGFloat, Masks>(base: 8 << 20)
 
-    /// Draws the masks of these heights ahead, one in each turn of the main queue, so that an open of a sheet finds them. It
-    /// stops at the limit of the kept masks.
+    /// Draws the masks of these heights ahead in their order, one in each turn of the main queue, so that an open of a sheet
+    /// finds them. It stops where the next pair would push out a kept one.
     static func warm(_ heights: [CGFloat]) {
-        var left = Set(heights).subtracting(kept.keys)
-        guard keptBytes < byteLimit, let height = left.popFirst() else { return }
+        var left = heights[...]
+        while let height = left.first, kept.value(for: height) != nil { left = left.dropFirst() }
+        guard let height = left.first, cost(of: height) <= kept.room else { return }
         _ = masks(height: height)
-        DispatchQueue.main.async { warm(Array(left)) }
+        DispatchQueue.main.async { warm(Array(left.dropFirst())) }
     }
 
-    /// The masks of this height, kept for each height up to 8 MB of masks, after which it starts again.
+    /// The most bytes that the pair of masks of this height can take, with room for the padding of its rows.
+    private static func cost(of height: CGFloat) -> Int {
+        2 * (Int(SpotTokens.panelWidth.rounded(.up)) + 64) * Int(height.rounded(.up))
+    }
+
+    /// The masks of this height.
     private static func masks(height: CGFloat) -> Masks {
-        if let masks = kept[height] { return masks }
+        if let masks = kept.value(for: height) { return masks }
         let masks = Masks(
             blur: mask(height: height, inset: blurInset, softness: blurSoftness),
             tint: mask(height: height, inset: tintInset, softness: tintSoftness)
         )
-        let cost = [masks.blur, masks.tint].reduce(0) { $0 + ($1.map { $0.bytesPerRow * $0.height } ?? 0) }
-        if keptBytes + cost > byteLimit {
-            kept = [:]
-            keptBytes = 0
-        }
-        kept[height] = masks
-        keptBytes += cost
+        kept.keep(masks, for: height, cost: [masks.blur, masks.tint].reduce(0) { $0 + ($1.map { $0.bytesPerRow * $0.height } ?? 0) })
         return masks
     }
 
