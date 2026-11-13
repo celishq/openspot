@@ -11,6 +11,7 @@ struct Home: View {
     let rename: (URL) -> Void
     @State private var entries: [Shelf.Entry] = []
     @State private var width: CGFloat = 900
+    @State private var height: CGFloat = 600
 
     /// The width of a card.
     static let card: CGFloat = 220
@@ -25,6 +26,7 @@ struct Home: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 28) {
+                Spacer(minLength: 0)
                 Search(drawer: drawer, wide: true)
                     .frame(maxWidth: 460)
                 LazyVGrid(columns: Array(repeating: GridItem(.fixed(Home.card), spacing: 20), count: columns), spacing: 24) {
@@ -49,6 +51,7 @@ struct Home: View {
                     }
                 }
             }
+            .frame(minHeight: max(0, height - 80))
             .padding(.leading, drawer.open ? 300 : 40)
             .padding(.trailing, 40)
             .padding(.vertical, 24)
@@ -56,8 +59,14 @@ struct Home: View {
         }
         .background(GeometryReader { place in
             Color.clear
-                .onAppear { width = place.size.width }
-                .onChange(of: place.size.width) { _, now in width = now }
+                .onAppear {
+                    width = place.size.width
+                    height = place.size.height
+                }
+                .onChange(of: place.size) { _, now in
+                    width = now.width
+                    height = now.height
+                }
         })
         .onAppear(perform: reload)
         .onChange(of: drawer.query) { _, _ in reload() }

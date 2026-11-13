@@ -19,7 +19,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     /// How far down the content of a tab starts, under the title row and the row of tabs when it shows.
     private var top: CGFloat {
-        tabs.pages.count > 1 ? middle + 56 : middle + 24
+        middle + 26
     }
     private var latchLeading: CGFloat = 0
     /// How far down the window the middle of the window buttons lies, where the tab row lines up.
@@ -65,7 +65,8 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let root = NSView()
         stage.translatesAutoresizingMaskIntoConstraints = false
         root.addSubview(stage)
-        let side = bar(Sidebar(drawer: drawer, tabs: tabs, shelf: Shelf(folder: folder), open: { [weak self] in self?.show($0) }, make: { [weak self] in self?.make() }, trash: { [weak self] in self?.trash($0) }), in: root)
+        let side = bar(Sidebar(drawer: drawer, tabs: tabs, shelf: Shelf(folder: folder), open: { [weak self] in self?.show($0) }, make: { [weak self] in self?.make(in: $0) },
+                               makeFolder: { [weak self] in self?.makeFolder(in: $0) }, rename: { [weak self] in self?.rename($0, to: $1) }, trash: { [weak self] in self?.trash($0) }), in: root)
         side.isHidden = !drawer.open
         self.side = side
         let latch = bar(Latch(drawer: drawer) { [weak self] in self?.toggleBoards(nil) }, in: root)
@@ -76,7 +77,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         middle = window.frame.height - lights.midY
         let latchConstraint = latch.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: drawer.open ? 222 : latchLeading)
         self.latchConstraint = latchConstraint
-        let stripLeading = strip.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: drawer.open ? Desk.besideList : 12)
+        let stripLeading = strip.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: (drawer.open ? Desk.besideList : latchLeading + 56) + 96)
         self.stripLeading = stripLeading
         NSLayoutConstraint.activate([
             stage.leadingAnchor.constraint(equalTo: root.leadingAnchor), stage.trailingAnchor.constraint(equalTo: root.trailingAnchor),
@@ -85,8 +86,8 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
             side.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -8),
             latchConstraint,
             latch.centerYAnchor.constraint(equalTo: root.topAnchor, constant: middle),
-            stripLeading, strip.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -12),
-            strip.topAnchor.constraint(equalTo: root.topAnchor, constant: middle + 22), strip.heightAnchor.constraint(equalToConstant: 32),
+            stripLeading, strip.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -58),
+            strip.centerYAnchor.constraint(equalTo: root.topAnchor, constant: middle), strip.heightAnchor.constraint(equalToConstant: 30),
             plus.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -12),
             plus.centerYAnchor.constraint(equalTo: root.topAnchor, constant: middle)
         ])
@@ -98,7 +99,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         stage.subviews.forEach { $0.removeFromSuperview() }
         guard let studio else {
             canvas = nil
-            let home = bar(Home(drawer: drawer, shelf: Shelf(folder: folder), open: { [weak self] in self?.show($0) }, make: { [weak self] in self?.make() }, trash: { [weak self] in self?.trash($0) }, rename: { [weak self] file in
+            let home = bar(Home(drawer: drawer, shelf: Shelf(folder: folder), open: { [weak self] in self?.show($0) }, make: { [weak self] in self?.make(in: nil) }, trash: { [weak self] in self?.trash($0) }, rename: { [weak self] file in
                 self?.show(file)
                 self?.renameBoard(nil)
             }), in: stage)
@@ -167,11 +168,45 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if tabs.currentID != shown || id == shown { stageUp() }
     }
 
-    /// Makes a new board and shows it, in the New Tab that shows or in a new tab.
-    func make() {
-        guard let file = try? Shelf(folder: folder).make() else { return }
+    /// Makes a new board in a folder, or at the top, and shows it in the New Tab that shows or in a new tab.
+    func make(in place: URL?) {
+        guard let file = try? Shelf(folder: folder).make(in: place) else { return }
+        if let place { drawer.expanded.insert(place) }
         drawer.changes += 1
         show(file)
+    }
+
+    /// Makes a new folder in a folder, or at the top, with its name ready to change.
+    func makeFolder(in place: URL?) {
+        guard let made = try? Shelf(folder: folder).makeFolder(in: place) else { return }
+        if let place { drawer.expanded.insert(place) }
+        if !drawer.open { toggleBoards(nil) }
+        drawer.changes += 1
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [self] in
+            drawer.picking.reset(to: made)
+            drawer.naming = made
+        }
+    }
+
+    /// Renames a board, or a folder, and shows the open boards inside a renamed folder from where they now are.
+    func rename(_ url: URL, to name: String) {
+        if !Shelf.isFolder(url) {
+            if let open = tabs.studio(for: url) { open.rename(name) } else { try? Shelf(folder: folder).rename(url, to: name) }
+            return
+        }
+        let inside = tabs.studios.filter { $0.file.path.hasPrefix(url.path + "/") }
+        inside.forEach { $0.save() }
+        guard let moved = try? Shelf(folder: folder).rename(url, to: name), moved != url else { return }
+        if drawer.expanded.remove(url) != nil { drawer.expanded.insert(moved) }
+        for studio in inside {
+            let next = URL(fileURLWithPath: moved.path + studio.file.path.dropFirst(url.path.count))
+            if let page = tabs.page(of: studio) {
+                withAnimation(nil) { tabs.close(page) }
+            }
+            tabs.show(next)
+        }
+        if !inside.isEmpty { stageUp() }
+        drawer.changes += 1
     }
 
     /// Slides the list of boards in or out, and moves the tabs beside it. The list leaves the window when it is out, so
@@ -181,7 +216,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.3
             context.allowsImplicitAnimation = true
-            stripLeading?.animator().constant = opening ? Desk.besideList : 12
+            stripLeading?.animator().constant = (opening ? Desk.besideList : latchLeading + 56) + 96
             latchConstraint?.animator().constant = opening ? 222 : latchLeading
             cornerLeading?.animator().constant = opening ? Desk.besideList : latchLeading + 56
         }
@@ -201,7 +236,9 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// Moves boards, their pictures and their images to the Trash, and closes their tabs.
     func trash(_ files: [URL]) {
         for file in files {
-            if let open = tabs.studio(for: file), let page = tabs.page(of: open) { close(page: page) }
+            for open in tabs.studios where open.file.standardizedFileURL == file.standardizedFileURL || open.file.path.hasPrefix(file.path + "/") {
+                if let page = tabs.page(of: open) { close(page: page) }
+            }
         }
         let shelf = Shelf(folder: folder)
         for file in files {
@@ -229,7 +266,11 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     @objc func newBoard(_ sender: Any?) {
-        make()
+        make(in: drawer.focused ? drawer.picking.focus.map(Shelf(folder: folder).place(for:)) : nil)
+    }
+
+    @objc func newFolder(_ sender: Any?) {
+        makeFolder(in: drawer.focused ? drawer.picking.focus.map(Shelf(folder: folder).place(for:)) : nil)
     }
 
     /// Adds a New Tab with the start page of all boards.
@@ -329,6 +370,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         ])
         add("File", [
             item("New Board", #selector(Desk.newBoard(_:)), "n"),
+            item("New Folder", #selector(Desk.newFolder(_:)), "n", [.command, .shift]),
             item("New Tab", #selector(Desk.goHome(_:)), "t"),
             item("Rename Board…", #selector(Desk.renameBoard(_:)), "r"),
             item("Show in Finder", #selector(Desk.revealBoard(_:)), "r", [.command, .option]),

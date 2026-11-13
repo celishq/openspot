@@ -40,6 +40,20 @@ final class DrawPluginTests: SamplePluginsCase {
         }
     }
 
+    func testTheSheetListsBoardsInFoldersWithTheirFolder() async throws {
+        let spot = try draw()
+        try await withBoards { _, boards in
+            let work = boards.appendingPathComponent("Work")
+            try FileManager.default.createDirectory(at: work.appendingPathComponent("plan.assets"), withIntermediateDirectories: true)
+            try write("Plan", id: "plan", in: work, age: 60)
+
+            let rows = try await spot.items(timeout: 5).items
+
+            XCTAssertEqual(rows.map(\.run), ["new", "Work/plan"])
+            XCTAssertEqual(rows[1].subtitle, "Work · Edited 1 min ago")
+        }
+    }
+
     func testARenameKeepsTheFiguresAndChangesTheTitle() async throws {
         let spot = try draw()
         try await withBoards { _, boards in

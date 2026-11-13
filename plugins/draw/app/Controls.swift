@@ -177,20 +177,32 @@ struct Forms: View {
     }
 }
 
-/// Undo and redo, at the top right of the board, in a round glass pill.
+/// Undo and redo beside the sidebar button, in a round glass pill of the same height.
 struct Corner: View {
     @ObservedObject var studio: Studio
 
     var body: some View {
         HStack(spacing: 0) {
-            Knob(symbol: "arrow.uturn.backward", help: "Undo  ⌘Z", enabled: studio.canUndo, below: true) { studio.undo() }
-            Divider().frame(height: 16)
-            Knob(symbol: "arrow.uturn.forward", help: "Redo  ⇧⌘Z", enabled: studio.canRedo, below: true) { studio.redo() }
+            step("arrow.uturn.backward", "Undo  ⌘Z", enabled: studio.canUndo) { studio.undo() }
+            Divider().frame(height: 14)
+            step("arrow.uturn.forward", "Redo  ⇧⌘Z", enabled: studio.canRedo) { studio.redo() }
         }
-        .padding(.horizontal, 4)
-        .padding(.vertical, 1)
+        .padding(.horizontal, 3)
         .glassEffect(.regular.interactive(), in: Capsule())
-        .shadow(color: .black.opacity(0.1), radius: 8, y: 2)
+        .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
+    }
+
+    private func step(_ symbol: String, _ help: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 14, weight: .medium))
+                .frame(width: 38, height: 30)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+        .opacity(enabled ? 1 : 0.35)
+        .tip(help, below: true)
     }
 }
 
@@ -305,6 +317,8 @@ final class Drawer: ObservableObject {
     @Published var picking = Picking()
     /// Whether the list takes the keys, after a click in it.
     @Published var focused = false
+    /// The folders of the list that show what they hold.
+    @Published var expanded: Set<URL> = []
     /// Whether the search field shows, and its words.
     @Published var searching = false
     @Published var query = ""
@@ -339,8 +353,7 @@ struct Search: View {
         .font(.system(size: wide ? 15 : 13))
         .padding(.horizontal, wide ? 16 : 11)
         .frame(height: wide ? 42 : 32)
-        .background(Capsule().fill(wide ? Color(white: 0.97) : Color.white))
-        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.1), lineWidth: 1))
+        .background(Capsule().fill(wide ? Color(white: 0.955) : Color.white))
         .overlay(Capsule().strokeBorder(Color.accentColor.opacity(typing ? 0.85 : 0), lineWidth: 2.5).padding(-1))
         .shadow(color: .black.opacity(0.07), radius: 5, y: 2)
         .animation(.easeOut(duration: 0.15), value: typing)
@@ -376,177 +389,6 @@ struct Latch: View {
         .glassEffect(drawer.open ? .identity : .regular.interactive(), in: Capsule())
         .shadow(color: .black.opacity(drawer.open ? 0 : 0.08), radius: 6, y: 2)
         .tip(drawer.open ? "Hide boards  ⌃⌘S" : "Show boards  ⌃⌘S", below: true)
-    }
-}
-
-/// The list of boards that slides in from the left: each board, newest first, opens on a click and takes a new name on a
-/// double-click, and the + makes a new board.
-struct Sidebar: View {
-    @ObservedObject var drawer: Drawer
-    @ObservedObject var tabs: Tabs
-    let shelf: Shelf
-    let open: (URL) -> Void
-    let make: () -> Void
-    let trash: ([URL]) -> Void
-    @State private var entries: [Shelf.Entry] = []
-    @State private var name = ""
-    @FocusState private var typing: Bool
-    @FocusState private var listening: Bool
-    @State private var frames: [URL: CGRect] = [:]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 2) {
-                Search(drawer: drawer, takesFocus: false)
-                Knob(symbol: "plus", help: "New board  ⌘N", below: true, action: make)
-            }
-            .frame(height: 34)
-            ScrollView {
-                VStack(spacing: 2) {
-                    ForEach(entries) { entry in
-                        row(entry)
-                            .background(GeometryReader { place in
-                                Color.clear.preference(key: RowFrames.self, value: [entry.file: place.frame(in: .named("list"))])
-                            })
-                    }
-                }
-                .frame(maxWidth: .infinity, minHeight: 400, alignment: .top)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    drawer.picking.clear()
-                    listening = true
-                }
-                .coordinateSpace(name: "list")
-                .onPreferenceChange(RowFrames.self) { frames = $0 }
-                .gesture(DragGesture(minimumDistance: 4, coordinateSpace: .named("list"))
-                    .onChanged { drag in
-                        guard let start = row(at: drag.startLocation), let end = row(at: drag.location) else { return }
-                        drawer.picking.sweep(from: start, to: end, in: entries.map(\.file), adding: NSEvent.modifierFlags.contains(.command))
-                        listening = true
-                    }
-                    .onEnded { _ in drawer.picking.endSweep() })
-            }
-            .focusable()
-            .focusEffectDisabled()
-            .focused($listening)
-            .onChange(of: listening) { _, now in drawer.focused = now }
-            .onKeyPress(.upArrow, phases: .down) { press in walk(-1, extend: press.modifiers.contains(.shift)) }
-            .onKeyPress(.downArrow, phases: .down) { press in walk(1, extend: press.modifiers.contains(.shift)) }
-            .onKeyPress(.return) {
-                let picked = entries.map(\.file).filter(drawer.picking.picked.contains)
-                guard !picked.isEmpty else { return .ignored }
-                picked.forEach(open)
-                return .handled
-            }
-            .onKeyPress(.delete) {
-                guard !drawer.picking.picked.isEmpty else { return .ignored }
-                trash(Array(drawer.picking.picked))
-                return .handled
-            }
-        }
-        .padding(.horizontal, 10)
-        .padding(.top, 58)
-        .padding(.bottom, 10)
-        .frame(width: 270)
-        .frame(maxHeight: .infinity, alignment: .top)
-        .modifier(Raised())
-        .offset(x: drawer.open ? 0 : -300)
-        .onAppear(perform: reload)
-        .onChange(of: drawer.open) { _, open in if open { reload() } }
-        .onReceive(tabs.$currentID) { _ in reload() }
-        .onChange(of: drawer.changes) { _, _ in reload() }
-        .onChange(of: drawer.query) { _, _ in reload() }
-        .onChange(of: drawer.naming) { _, file in
-            if let file, let entry = entries.first(where: { $0.file == file }) { startNaming(entry) }
-        }
-    }
-
-    private func reload() {
-        entries = shelf.entries(matching: drawer.query)
-    }
-
-    /// Moves the pick with an arrow key. Return opens what it picks.
-    private func walk(_ offset: Int, extend: Bool) -> KeyPress.Result {
-        guard drawer.picking.step(offset, in: entries.map(\.file), extend: extend) != nil else { return .ignored }
-        return .handled
-    }
-
-    /// The board whose row lies under a point of the list.
-    private func row(at point: CGPoint) -> URL? {
-        frames.first { $0.value.insetBy(dx: -2, dy: -1).contains(CGPoint(x: $0.value.midX, y: point.y)) }?.key
-    }
-
-    /// Picks a board on a click: alone, with Command added or dropped, or with Shift the run to it. A double-click or
-    /// Return opens it.
-    private func click(_ entry: Shelf.Entry) {
-        let flags = NSEvent.modifierFlags
-        let mode: Picking.Mode = flags.contains(.command) ? .toggle : flags.contains(.shift) ? .range : .only
-        drawer.picking.click(entry.file, in: entries.map(\.file), mode: mode)
-        listening = true
-    }
-
-    /// The menu of a row: for each picked board when the row is one of several picked, or else for the row alone.
-    private func menu(for entry: Shelf.Entry) -> NSMenu {
-        if !drawer.picking.picked.contains(entry.file) { drawer.picking.click(entry.file, in: entries.map(\.file), mode: .only) }
-        let files = Array(drawer.picking.picked)
-        return BoardMenu(count: files.count, rename: { startNaming(entry) }, reveal: { NSWorkspace.shared.activateFileViewerSelecting(files) }, trash: { trash(files) }).menu
-    }
-
-    private func row(_ entry: Shelf.Entry) -> some View {
-        let picked = drawer.picking.picked.contains(entry.file)
-        let shown = tabs.shows(entry.file)
-        return HStack(spacing: 10) {
-            Group {
-                if let picture = NSImage(contentsOf: entry.picture) {
-                    Image(nsImage: picture).resizable().aspectRatio(contentMode: .fill)
-                } else {
-                    Color.white
-                }
-            }
-            .frame(width: 48, height: 32)
-            .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 5, style: .continuous).strokeBorder(Color.primary.opacity(0.12)))
-            VStack(alignment: .leading, spacing: 1) {
-                if drawer.naming == entry.file {
-                    TextField("Name", text: $name)
-                        .textFieldStyle(.plain)
-                        .font(.system(size: 13, weight: .medium))
-                        .focused($typing)
-                        .onSubmit { finish(entry) }
-                        .onChange(of: typing) { _, now in if !now { finish(entry) } }
-                } else {
-                    Text(entry.title).font(.system(size: 13, weight: .medium)).lineLimit(1)
-                }
-                Text(entry.edited.formatted(.relative(presentation: .named)).capitalized(with: nil))
-                    .font(.system(size: 11)).foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(6)
-        .background(picked ? Color.accentColor.opacity(drawer.focused ? 0.2 : 0.12) : Color.primary.opacity(shown ? 0.05 : 0), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .contentShape(Rectangle())
-        .onTapGesture {
-            guard drawer.naming != entry.file else { return }
-            if (NSApp.currentEvent?.clickCount ?? 1) > 1 { open(entry.file) } else { click(entry) }
-        }
-        .overlay(MenuSpot { menu(for: entry) })
-    }
-
-    private func startNaming(_ entry: Shelf.Entry) {
-        name = entry.title
-        drawer.naming = entry.file
-        typing = true
-    }
-
-    private func finish(_ entry: Shelf.Entry) {
-        guard drawer.naming == entry.file else { return }
-        drawer.naming = nil
-        if let open = tabs.studio(for: entry.file) {
-            open.rename(name)
-        } else {
-            try? shelf.rename(entry.file, to: name)
-        }
-        reload()
     }
 }
 

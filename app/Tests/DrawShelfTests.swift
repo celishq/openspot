@@ -33,7 +33,7 @@ final class DrawShelfTests: XCTestCase {
         let file = folder.appendingPathComponent("a.json")
         try board.save(to: file)
 
-        try Shelf(folder: folder).rename(file, to: "  Launch flow ")
+        _ = try Shelf(folder: folder).rename(file, to: "  Launch flow ")
 
         let renamed = try Board.load(from: file)
         XCTAssertEqual(renamed.title, "Launch flow")
@@ -67,9 +67,50 @@ final class DrawShelfTests: XCTestCase {
     func testANewBoardIsAnEmptyUntitledBoardOnTheShelf() throws {
         let shelf = Shelf(folder: folder)
 
-        let file = try shelf.make()
+        let file = try shelf.make(in: nil)
 
         XCTAssertEqual(try Board.load(from: file), Board())
         XCTAssertEqual(shelf.entries.map(\.file.lastPathComponent), [file.lastPathComponent])
+    }
+
+    func testTheTreeHoldsFoldersFirstThenBoardsAndSkipsImageFolders() throws {
+        try Board(title: "Top").save(to: folder.appendingPathComponent("top.json"))
+        try FileManager.default.createDirectory(at: folder.appendingPathComponent("top.assets"), withIntermediateDirectories: true)
+        let work = folder.appendingPathComponent("Work")
+        try FileManager.default.createDirectory(at: work, withIntermediateDirectories: true)
+        try Board(title: "Inside").save(to: work.appendingPathComponent("inside.json"))
+
+        let tree = Shelf(folder: folder).tree
+
+        XCTAssertEqual(tree.map(\.title), ["Work", "Top"])
+        XCTAssertEqual(tree.map(\.isFolder), [true, false])
+        XCTAssertEqual(tree[0].children.map(\.title), ["Inside"])
+        XCTAssertEqual(Set(Shelf(folder: folder).entries.map(\.title)), ["Top", "Inside"])
+    }
+
+    func testNewThingsGoWhereThePickIs() throws {
+        let shelf = Shelf(folder: folder)
+        let work = try shelf.makeFolder(in: nil)
+        let again = try shelf.makeFolder(in: nil)
+        XCTAssertEqual([work, again].map(\.lastPathComponent), ["New Folder", "New Folder 2"])
+
+        let board = try shelf.make(in: shelf.place(for: work))
+        XCTAssertEqual(board.deletingLastPathComponent().standardizedFileURL, work.standardizedFileURL)
+        XCTAssertEqual(shelf.place(for: board).standardizedFileURL, work.standardizedFileURL)
+        XCTAssertEqual(shelf.place(for: nil).standardizedFileURL, folder.standardizedFileURL)
+    }
+
+    func testAFolderRenamesAndGoesToTheTrashWhole() throws {
+        let shelf = Shelf(folder: folder)
+        let work = try shelf.makeFolder(in: nil)
+        try shelf.make(in: work)
+
+        let renamed = try shelf.rename(work, to: "Plans/2026")
+        XCTAssertEqual(renamed.lastPathComponent, "Plans-2026")
+        XCTAssertEqual(shelf.tree.first?.children.count, 1)
+
+        var trashed: [String] = []
+        try shelf.discard(renamed) { trashed.append($0.lastPathComponent) }
+        XCTAssertEqual(trashed, ["Plans-2026"])
     }
 }

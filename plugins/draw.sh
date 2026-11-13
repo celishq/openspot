@@ -65,13 +65,14 @@ case "$1" in
     printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to move it to the Trash\n\n'
     printf 'button=reveal\ntitle=Show boards in Finder\nshortcut=cmd+o\nscope=command\n\n'
     printf 'row=new\ntitle=New board\ndetail=A blank board\nicon=plus.square.dashed\nhides=rename\nhides=delete\n\n'
-    ls -t "$boards" | while IFS= read -r name; do
-      case "$name" in *.json) ;; *) continue ;; esac
-      id=${name%.json}
-      file="$boards/$name"
+    find "$boards" -name '*.json' -not -path '*/.*' -exec stat -f '%m %N' {} + 2>/dev/null | sort -rn | while read -r _ file; do
+      rel=${file#"$boards"/}
+      id=${rel%.json}
       icon=scribble.variable
       [ -f "$boards/$id.png" ] && icon="$boards/$id.png"
-      printf 'row=%s\ntitle=%s\ndetail=%s\nicon=%s\n\n' "$id" "$(esc "$(title_of "$file")")" "$(edited "$file")" "$(esc "$icon")"
+      detail=$(edited "$file")
+      case "$rel" in */*) detail="${rel%/*} · $detail" ;; esac
+      printf 'row=%s\ntitle=%s\ndetail=%s\nicon=%s\n\n' "$(esc "$id")" "$(esc "$(title_of "$file")")" "$(esc "$detail")" "$(esc "$icon")"
     done
     ;;
   open)

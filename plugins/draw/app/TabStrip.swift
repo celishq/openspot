@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The row of tabs under the title row, as Safari draws it: equal tabs on a grey track, the current one raised in white.
+/// The row of tabs in the title row, between undo and redo and the +, as Safari draws it: equal tabs on a grey track, the current one raised in white.
 /// It shows only with two tabs or more. A tab grows in when it opens and folds away when it closes.
 struct TabStrip: View {
     @ObservedObject var tabs: Tabs
@@ -28,7 +28,7 @@ struct TabStrip: View {
             }
             .padding(2)
             .background(Color.primary.opacity(0.07), in: Capsule())
-            .frame(height: 32)
+            .frame(height: 30)
             .transition(.opacity)
         }
     }
@@ -54,7 +54,7 @@ struct NewTabButton: View {
 }
 
 /// One tab: the board's name, centred, which a double-click renames, or New Tab; and, while the pointer rests on it, a
-/// close button on the left.
+/// close button on the right.
 struct TabChip: View {
     let page: Tabs.Page
     let current: Bool
@@ -77,8 +77,8 @@ struct TabChip: View {
         .font(.system(size: 12.5, weight: .medium))
         .foregroundStyle(current ? Color.primary : Color.secondary)
         .padding(.horizontal, 28)
-        .frame(maxWidth: .infinity, minHeight: 28, maxHeight: 28)
-        .overlay(alignment: .leading) {
+        .frame(maxWidth: .infinity, minHeight: 26, maxHeight: 26)
+        .overlay(alignment: .trailing) {
             if hovering {
                 Button(action: close) {
                     Image(systemName: "xmark")
@@ -89,7 +89,7 @@ struct TabChip: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
-                .padding(.leading, 6)
+                .padding(.trailing, 6)
                 .help("Close tab  ⌘W")
             }
         }
