@@ -50,7 +50,7 @@ struct SpotCardView: View, @MainActor Equatable {
             .animation(SpotMotion.fade(isShown: isOn), value: isOn)
             .scaleEffect(showsPress ? MotionTokens.pressedScale : 1)
             .animation(SpotMotion.press, value: showsPress)
-            .modifier(CardViewLoad(source: ownView))
+            .modifier(CardViewLoad(source: ownView, date: entry.spot.viewDate))
     }
 
     @ViewBuilder
@@ -277,13 +277,13 @@ private struct CardReveal: ViewModifier {
     }
 }
 
-/// Builds the spot's own view of a card each time the panel shows (protocol: Views).
+/// Builds the spot's own view of a card when the card first shows, and again when its file changes (protocol: Views).
 private struct CardViewLoad: ViewModifier {
     let source: String?
-    @Environment(\.spotIsShown) private var isShown
+    let date: Date?
 
     func body(content: Content) -> some View {
-        content.task(id: source.map { "\($0)\n\(isShown)" }) {
+        content.task(id: source.map { "\($0)\n\(date?.timeIntervalSince1970 ?? 0)" }) {
             if let source { await SpotViews.shared.load(source) }
         }
     }

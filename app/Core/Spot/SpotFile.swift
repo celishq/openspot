@@ -112,6 +112,7 @@ public struct SpotFile: Equatable, Sendable {
             image: icon?.image.map { Self.path($0, beside: url) },
             glyph: icon?.glyph,
             view: view.map { Self.path($0, beside: url) },
+            viewDate: view.flatMap { try? FileManager.default.attributesOfItem(atPath: Self.path($0, beside: url))[.modificationDate] as? Date },
             emits: emits,
             uses: uses,
             keywords: header.list("keywords"),

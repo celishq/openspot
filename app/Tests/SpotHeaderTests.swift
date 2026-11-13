@@ -147,6 +147,22 @@ final class SpotHeaderTests: XCTestCase {
         XCTAssertEqual(spot.view, "/spots/home/cups.swift")
     }
 
+    func testAnEditOfAViewChangesItsSpot() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-view-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let view = folder.appendingPathComponent("cups.swift")
+        try "".write(to: view, atomically: true, encoding: .utf8)
+        let header = SpotHeader(text: "#!/bin/sh\n# view=cups.swift\n").block
+        let script = folder.appendingPathComponent("cups.sh")
+        let before = try SpotFile(script: script, header: header, id: "cups").spots.first
+
+        try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSince1970: 1_000_000)], ofItemAtPath: view.path)
+        let after = try SpotFile(script: script, header: header, id: "cups").spots.first
+
+        XCTAssertNotEqual(before, after)
+    }
+
     func testAnAnswersPatternIsTheWholeRestOfItsLine() throws {
         let header = SpotHeader(text: "#!/bin/sh\n# on=search.text ^\\s*([0-9,.]|(?i:today|now)\\b)\n").block
 
