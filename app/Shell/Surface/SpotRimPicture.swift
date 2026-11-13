@@ -1,18 +1,17 @@
 import AppKit
+import OpenspotCore
 import SwiftUI
 
 /// The rim of a surface of a fixed size, drawn once into a picture for each size and theme. A card moves and shrinks this
 /// picture on each frame of a push, which costs nothing, where a drawn or a layer rim is made again on each frame. It keeps
-/// at most 8 MB of pictures, and starts again when it would hold more.
+/// 8 MB of pictures beside two of its largest, such as the dock's, and lets the least recently used go first.
 struct SpotRimPicture: View {
     let size: CGSize
     let radius: CGFloat
     @Environment(\.colorScheme) private var scheme
     @Environment(\.displayScale) private var scale
 
-    private static let byteLimit = 8 << 20
-    @MainActor private static var pictures: [Key: NSImage] = [:]
-    @MainActor private static var bytes = 0
+    @MainActor private static var pictures = RecentCache<Key, NSImage>(base: 8 << 20)
 
     var body: some View {
         let theme: SpotTheme = scheme == .dark ? .dark : .light
@@ -29,17 +28,11 @@ struct SpotRimPicture: View {
 
     @MainActor private static func picture(of part: Part, size: CGSize, radius: CGFloat, theme: SpotTheme, scale: CGFloat) -> NSImage {
         let key = Key(part: part, width: size.width, height: size.height, radius: radius, ends: theme.rimEnds, scale: scale)
-        if let picture = pictures[key] { return picture }
+        if let picture = pictures.value(for: key) { return picture }
         let renderer = ImageRenderer(content: Drawing(part: part, radius: radius, theme: theme).frame(width: size.width, height: size.height))
         renderer.scale = scale
         let picture = renderer.nsImage ?? NSImage(size: size)
-        let cost = Int(size.width * scale) * Int(size.height * scale) * 4
-        if bytes + cost > byteLimit {
-            pictures = [:]
-            bytes = 0
-        }
-        pictures[key] = picture
-        bytes += cost
+        pictures.keep(picture, for: key, cost: Int(size.width * scale) * Int(size.height * scale) * 4)
         return picture
     }
 
