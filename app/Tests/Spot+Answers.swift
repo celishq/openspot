@@ -19,8 +19,8 @@ extension Spot {
         return (taking(output), try state(of: output))
     }
 
-    func items(query: String = "", input: String? = nil, timeout: TimeInterval) async throws -> PluginOutput {
-        try await output(.items(query: query), input: input, timeout: timeout)
+    func items(query: String = "", forms: [String] = [], input: String? = nil, timeout: TimeInterval) async throws -> PluginOutput {
+        try await output(.items(query: query, forms: forms), input: input, timeout: timeout)
     }
 
     func form(_ action: CommandAction, item: SpotItem?, timeout: TimeInterval) async throws -> ItemForm {

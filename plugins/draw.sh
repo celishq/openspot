@@ -58,21 +58,33 @@ board() {
 
 case "$1" in
   read)
-    printf 'recents=false\n\n'
+    shift
+    printf 'recents=false\nsearch=script\n\n'
     printf 'button=open\ntitle=Open\nclose=true\n\n'
     printf 'button=new\ntitle=New board\nshortcut=cmd+n\nscope=command\nclose=true\n\n'
     printf 'button=rename\ntitle=Rename\nshortcut=cmd+r\nform=true\n\n'
     printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to move it to the Trash\n\n'
     printf 'button=reveal\ntitle=Show boards in Finder\nshortcut=cmd+o\nscope=command\n\n'
-    printf 'row=new\ntitle=New board\ndetail=A blank board\nicon=plus.square.dashed\nhides=rename\nhides=delete\n\n'
-    find "$boards" -name '*.json' -not -path '*/.*' -exec stat -f '%m %N' {} + 2>/dev/null | sort -rn | while read -r _ file; do
+    words=$(printf '%s\n' "$@" | grep -v '^[[:space:]]*$')
+    [ -n "$words" ] || printf 'row=new\ntitle=New board\ndetail=A blank board\nicon=plus.square.dashed\nhides=rename\nhides=delete\n\n'
+    shown=0
+    find "$boards" -mindepth 1 -name '.*' -prune -o -name '*.json' -exec stat -f '%m %N' {} + 2>/dev/null | sort -rn | while read -r _ file; do
+      title=$(title_of "$file")
+      if [ -n "$words" ]; then
+        printf '%s\n' "$words" | while IFS= read -r word; do
+          printf '%s' "$title" | LC_ALL=en_US.UTF-8 grep -qiF -e "$word" && echo yes && break
+        done | grep -q yes || continue
+      elif [ "$shown" -ge 8 ]; then
+        break
+      fi
+      shown=$((shown + 1))
       rel=${file#"$boards"/}
       id=${rel%.json}
       icon=scribble.variable
       [ -f "$boards/$id.png" ] && icon="$boards/$id.png"
       detail=$(edited "$file")
       case "$rel" in */*) detail="${rel%/*} · $detail" ;; esac
-      printf 'row=%s\ntitle=%s\ndetail=%s\nicon=%s\n\n' "$(esc "$id")" "$(esc "$(title_of "$file")")" "$(esc "$detail")" "$(esc "$icon")"
+      printf 'row=%s\ntitle=%s\ndetail=%s\nicon=%s\n\n' "$(esc "$id")" "$(esc "$title")" "$(esc "$detail")" "$(esc "$icon")"
     done
     ;;
   open)

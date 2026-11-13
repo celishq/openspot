@@ -11,6 +11,7 @@ struct Home: View {
     let trash: ([URL]) -> Void
     let rename: (URL) -> Void
     @State private var entries: [Shelf.Entry] = []
+    @State private var adding = false
     @State private var width: CGFloat = 900
     @State private var height: CGFloat = 600
 
@@ -34,8 +35,10 @@ struct Home: View {
                         Button(action: make) {
                             VStack(spacing: 8) {
                                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .strokeBorder(Color.primary.opacity(0.18), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
-                                    .overlay(Image(systemName: "plus").font(.system(size: 24, weight: .medium)).foregroundStyle(.secondary))
+                                    .fill(Color.primary.opacity(adding ? 0.04 : 0))
+                                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .strokeBorder(Color.primary.opacity(adding ? 0.32 : 0.18), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
+                                    .overlay(Image(systemName: "plus").font(.system(size: 24, weight: .medium)).foregroundStyle(adding ? .primary : .secondary))
                                     .aspectRatio(1.5, contentMode: .fit)
                                 Text("New board").font(.system(size: 13, weight: .medium)).frame(maxWidth: .infinity, alignment: .leading)
                                 Text(" ").font(.system(size: 11))
@@ -43,6 +46,7 @@ struct Home: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
+                        .onHover { inside in withAnimation(.easeOut(duration: 0.15)) { adding = inside } }
                     }
                     ForEach(entries) { entry in
                         Card(entry: entry, open: { open(entry.file) }, menu: {

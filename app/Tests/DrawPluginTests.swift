@@ -10,7 +10,7 @@ final class DrawPluginTests: SamplePluginsCase {
     /// Runs the body with the data folder of Draw under a private config.
     private func withBoards(_ body: (URL, URL) async throws -> Void) async throws {
         try await withPrivateHome { folder in
-            let config = folder.appendingPathComponent("config")
+            let config = folder.appendingPathComponent(".config/openspot")
             setenv("OPENSPOT_CONFIG", config.path, 1)
             defer { unsetenv("OPENSPOT_CONFIG") }
             let boards = config.appendingPathComponent("data/draw/boards")
@@ -51,6 +51,24 @@ final class DrawPluginTests: SamplePluginsCase {
 
             XCTAssertEqual(rows.map(\.run), ["new", "Work/plan"])
             XCTAssertEqual(rows[1].subtitle, "Work · Edited 1 min ago")
+        }
+    }
+
+    func testTheSheetShowsTheEightNewestBoardsAndASearchFindsAnyBoard() async throws {
+        let spot = try draw()
+        try await withBoards { _, boards in
+            for index in 1...10 {
+                try write("Board \(index)", id: "b\(index)", in: boards, age: TimeInterval(index * 60))
+            }
+
+            let rows = try await spot.items(timeout: 5).items
+            XCTAssertEqual(rows.map(\.title), ["New board"] + (1...8).map { "Board \($0)" })
+
+            let found = try await spot.items(query: "board 10", timeout: 5).items
+            XCTAssertEqual(found.map(\.title), ["Board 10"])
+
+            let typed = try await spot.items(query: "ищфкв", forms: ["board"], timeout: 5).items
+            XCTAssertEqual(typed.count, 10)
         }
     }
 

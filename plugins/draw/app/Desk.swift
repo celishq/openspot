@@ -268,8 +268,19 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
-    /// Moves boards, their pictures and their images to the Trash, and closes their tabs.
+    /// Moves boards, their pictures and their images to the Trash, and closes their tabs. A folder goes only after the
+    /// person says yes, since it takes its boards with it.
     func trash(_ files: [URL]) {
+        let folders = files.filter(Shelf.isFolder)
+        if !folders.isEmpty {
+            let boards = folders.reduce(0) { $0 + Shelf(folder: $1).entries.count }
+            let alert = NSAlert()
+            alert.messageText = folders.count == 1 ? "Delete “\(folders[0].lastPathComponent)”?" : "Delete \(folders.count) folders?"
+            alert.informativeText = boards == 0 ? "The folder moves to the Trash." : "The folder and the \(boards) \(boards == 1 ? "board" : "boards") in it move to the Trash."
+            alert.addButton(withTitle: "Delete").hasDestructiveAction = true
+            alert.addButton(withTitle: "Cancel")
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+        }
         for file in files {
             for open in tabs.studios where open.file.standardizedFileURL == file.standardizedFileURL || open.file.path.hasPrefix(file.path + "/") {
                 if let page = tabs.page(of: open) { close(page: page) }
