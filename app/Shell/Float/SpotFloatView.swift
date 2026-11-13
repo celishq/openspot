@@ -82,7 +82,7 @@ struct SpotFloatView: View {
     private func header(_ entry: SpotsModel.Entry) -> some View {
         HStack(spacing: SpotTokens.padding - 5) {
             SpotGlyph(entry: entry)
-                .modifier(SpotFileDragSource(items: model.sheets[id]?.list.shown ?? [], onDrop: { model.dragOut($0, of: id) }))
+                .modifier(SpotFileDragSource(items: model.sheets[id]?.list.shown ?? [], hasFiles: model.sheets[id]?.list.hasFiles == true, onDrop: { model.dragOut($0, of: id) }))
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
                 Text(entry.shownState.title)
                     .font(SpotType.title)

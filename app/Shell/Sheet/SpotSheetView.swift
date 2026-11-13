@@ -111,6 +111,7 @@ struct SpotSheetView: View {
         }
         .padding(SpotTokens.padding)
         .frame(width: rect.width, height: rect.height, alignment: .topLeading)
+        .overlay(alignment: .topLeading) { fileDrag }
     }
 
     private var header: some View {
@@ -222,7 +223,18 @@ struct SpotSheetView: View {
             }
         }
         .morph(progress, offset: { [smallCardShift] in SheetMorph.place(onCard: CGSize(width: smallCardShift, height: 0), at: $0) })
-        .modifier(SpotFileDragSource(items: isOpen ? list.shown : [], onDrop: { model.dragOut($0, of: entry.id) }))
+    }
+
+    /// Where a drag takes the files of the rows out, at the glyph's place in the open header. It does not move with the glyph.
+    @ViewBuilder
+    private var fileDrag: some View {
+        if isOpen, list.hasFiles {
+            Color.clear
+                .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
+                .contentShape(Rectangle())
+                .modifier(SpotFileDragSource(items: list.shown, hasFiles: true, onDrop: { model.dragOut($0, of: entry.id) }))
+                .padding(SpotTokens.padding)
+        }
     }
 
     /// Whether the card draws its glyph unlike the header: on its fill, or alone with no disc on a 1x1 card.

@@ -48,12 +48,12 @@ struct SpotRowsView: View {
                 .modifier(SpotSecondaryText())
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .transition(.identity)
-        } else if isGrid || !list.shown.contains(where: \.isPinned) {
+        } else if isGrid || (list.pinnedTop.isEmpty && list.pinnedBottom.isEmpty) {
             scroll
         } else {
             VStack(spacing: SpotTokens.listRowGap) {
                 pinned(.top)
-                if list.shown.contains(where: { !$0.isPinned }) {
+                if !list.scrolling.isEmpty {
                     pinnedScroll
                 } else {
                     Spacer(minLength: 0)
@@ -71,7 +71,7 @@ struct SpotRowsView: View {
 
     /// The rows that stay above or under the rows that scroll, such as the key of a spot's command.
     private func pinned(_ pin: SpotItem.Pin) -> some View {
-        ForEach(list.shown.filter { $0.pin == pin }, id: \.run) { item in
+        ForEach(pin == .top ? list.pinnedTop : list.pinnedBottom, id: \.run) { item in
             Button { onRun(item) } label: { rowLabel(item) }
                 .buttonStyle(.plain)
         }
@@ -103,7 +103,7 @@ struct SpotRowsView: View {
             ScrollView(showsIndicators: false) { lines }
                 .modifier(RowsFollow(selection: selected, items: list.shown, proxy: proxy))
                 .onChange(of: list.query) {
-                    guard let run = list.shown.first(where: { !$0.isPinned })?.run else { return }
+                    guard let run = list.scrolling.first?.run else { return }
                     DispatchQueue.main.async { proxy.scrollTo(run, anchor: .top) }
                 }
         }
@@ -147,7 +147,7 @@ struct SpotRowsView: View {
 
     private var lines: some View {
         LazyVStack(spacing: SpotTokens.listRowGap) {
-            ForEach(list.shown.filter { !$0.isPinned }, id: \.run) { item in
+            ForEach(list.scrolling, id: \.run) { item in
                 Button {
                     onRun(item)
                 } label: {
@@ -155,7 +155,7 @@ struct SpotRowsView: View {
                 }
                 .buttonStyle(.plain)
                 .modifier(SpotPointerMove { onPoint(item) })
-                .modifier(SpotFileDragSource(items: [item], onDrop: onDragOut))
+                .modifier(SpotFileDragSource(items: [item], hasFiles: item.file != nil, onDrop: onDragOut))
             }
         }
     }
@@ -170,7 +170,7 @@ struct SpotRowsView: View {
                     .equatable()
                     .onTapGesture { onRun(item) }
                     .modifier(SpotPointerMove { onPoint(item) })
-                    .modifier(SpotFileDragSource(items: [item], onDrop: onDragOut))
+                    .modifier(SpotFileDragSource(items: [item], hasFiles: item.file != nil, onDrop: onDragOut))
             }
         }
         .overlay(alignment: .topLeading) { GridRing(selection: selected, count: list.shown.count, perLine: list.perLine, side: side) }
@@ -217,7 +217,7 @@ struct SpotRowsView: View {
         .contentShape(row)
         .onTapGesture { onRun(item) }
         .modifier(SpotPointerMove { onPoint(item) })
-        .modifier(SpotFileDragSource(items: [item], onDrop: onDragOut))
+        .modifier(SpotFileDragSource(items: [item], hasFiles: item.file != nil, onDrop: onDragOut))
         .accessibilityLabel(item.title)
         .accessibilityAddTraits(.isButton)
     }
