@@ -140,6 +140,21 @@ final class AccountSpotTests: BuiltInCase {
         XCTAssertEqual(after, before)
     }
 
+    func testAPanelThatOpensAgainOffersTheWordsAgainAndKeepsTheCheckWhole() async throws {
+        _ = try store.keyMadeOnce()
+        _ = try await frame(["show"])
+
+        let reopened = try await frame(["read"], reason: "panel.open")
+        let sheet = try await frame(["read"])
+        _ = try await frame(["wrote"])
+        let check = try await frame(["read"], reason: "panel.open")
+
+        XCTAssertEqual(block("show", in: reopened)["title"], "Show my words")
+        XCTAssertTrue(words(in: sheet).isEmpty)
+        XCTAssertEqual(block("show", in: sheet)["title"], "Show my words")
+        XCTAssertEqual(picks(in: check).count, 8)
+    }
+
     func testSignOutAsksForTouchIDAndRemovesTheKey() async throws {
         _ = try store.keyMadeOnce()
         try store.markBackedUp()

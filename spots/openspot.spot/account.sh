@@ -27,8 +27,10 @@ $state
 EOF
 }
 
-# Prints the step to show: the kept one while the account allows it, else the one its state calls for.
+# Prints the step to show: the kept one while the account allows it, else the one its state calls for. The words show
+# only after a press, so a panel that opens again forgets them.
 step() {
+  [ "$OPENSPOT_REASON" != panel.open ] || [ "$(cat "$data/step" 2>/dev/null)" != words ] || rm -f "$data/step"
   saved=$(cat "$data/step" 2>/dev/null)
   case "$saved:$signed:$backed" in
     choose:false:* | restore:false:* | about:false:*) echo "$saved"; return ;;
@@ -138,8 +140,7 @@ check() {
   places=$(cat "$data/places" 2>/dev/null)
   set -- $places
   [ $# -eq 2 ] || set -- 1 12
-  choices=
-  [ "$OPENSPOT_REASON" = panel.open ] || choices=$(openspot account check "$1" "$2" | sed -n 's/^choice=//p')
+  choices=$(openspot account check "$1" "$2" | sed -n 's/^choice=//p')
   ids= n=0
   for each in $choices; do
     n=$((n + 1))
@@ -204,9 +205,7 @@ sheet() {
       button show 'Show my words' main
       ;;
     words)
-      if [ "$OPENSPOT_REASON" = panel.open ]; then
-        line head 'Write down your words' pencil
-      elif words=$(openspot account words 2>&1); then
+      if words=$(openspot account words 2>&1); then
         line head 'Write down your words' pencil '' 'In this order'
         i=1
         for each in $(printf '%s\n' "$words" | sed -n 's/^word=//p'); do
