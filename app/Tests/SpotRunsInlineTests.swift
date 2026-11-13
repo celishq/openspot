@@ -212,6 +212,19 @@ final class SpotRunsInlineTests: SpotRunsCase {
         try await wait("the answer after the idle end") { sheet.answers.map(\.run) == ["7"] }
     }
 
+    func testATimedScriptKeepsItsContextPastItsIdleTimeUntilItsNextRead() async throws {
+        runs(idle: 0.1)
+        try inline(header: "on=clock.60", "function main() { return 'text=n\\ntitle=3\\n' }")
+        let sheet = try sheet()
+        let link = try XCTUnwrap(sheet.link as? InlineLink)
+
+        sheet.read(need: .change)
+        try await wait("the value") { sheet.reading.value?.title == "3" }
+        try await Task.sleep(for: .seconds(1))
+
+        XCTAssertTrue(link.isLoaded)
+    }
+
     func testEachCallGoesInTheCallLogWithItsArgumentsStdinAndFailure() async throws {
         let log = CallLog(folder: folder.appendingPathComponent("logs"))
         runs(log: log)

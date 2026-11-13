@@ -103,6 +103,9 @@ final class SpotMac: Mac {
             center.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { _ in
                 MainActor.assumeIsolated { heard(.wake) }
             },
+            center.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { _ in
+                MainActor.assumeIsolated { heard(.sleep) }
+            },
             center.addObserver(forName: NSWorkspace.screensDidWakeNotification, object: nil, queue: .main) { _ in
                 MainActor.assumeIsolated { heard(.named(SpotEvent.screenWake, value: nil)) }
             },

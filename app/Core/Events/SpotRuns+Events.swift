@@ -7,6 +7,7 @@ extension SpotRuns {
         switch event {
         case .panel: openPanel()
         case .wake: wake()
+        case .sleep: usage.flush()
         case .clock: tick()
         case .query(let text): ask(text)
         case .named(let name, let value, let readsEachSpot): read(name, value, readsEachSpot: readsEachSpot)
@@ -31,6 +32,11 @@ extension SpotRuns {
         watchClipboard()
     }
 
+    /// The time between two looks at the clipboard: its pause with the panel open, and twice that with the panel closed.
+    var clipboardWait: Duration {
+        isPanelOpen ? clipboardPause : clipboardPause * 2
+    }
+
     /// Whether the clipboard is looked at.
     var watchesClipboard: Bool {
         clipboardWatch != nil
@@ -47,9 +53,9 @@ extension SpotRuns {
         }
         guard clipboardWatch == nil else { return }
         var count = source.clipboardCount
-        clipboardWatch = Task { [weak self, weak source, clipboardPause] in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: clipboardPause, tolerance: clipboardPause / 2)
+        clipboardWatch = Task { [weak self, weak source] in
+            while !Task.isCancelled, let wait = self?.clipboardWait {
+                try? await Task.sleep(for: wait, tolerance: wait)
                 guard !Task.isCancelled, let self, let source else { return }
                 let next = source.clipboardCount
                 guard next != count else { continue }

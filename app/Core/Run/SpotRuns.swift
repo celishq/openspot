@@ -39,7 +39,7 @@ public final class SpotRuns {
     @ObservationIgnored let now: () -> Date
     @ObservationIgnored private let stopPause: TimeInterval
     @ObservationIgnored let tickPause: Duration
-    /// The time between two looks at the clipboard, while a spot lists `clipboard`.
+    /// The time between two looks at the clipboard with the panel open, while a spot lists `clipboard`.
     @ObservationIgnored let clipboardPause: Duration
     /// What raises the events of the Mac, once the app gives it.
     @ObservationIgnored var source: (any Mac)?
@@ -352,10 +352,12 @@ public final class SpotRuns {
         log.write(record)
     }
 
-    /// A JavaScript spot of these runs, which loads at its first call and counts the CPU time of its thread (A26).
+    /// A JavaScript spot of these runs, which loads at its first call and counts the CPU time of its thread (A26). A timed
+    /// spot keeps its context for one and a half times its read interval.
     func inline(_ spot: Spot, limit: TimeInterval? = nil) -> InlineScript {
         let id = spot.id
-        return InlineScript(spot: spot, api: api, tokens: tokens, careful: isCareful ? spot.uses : nil, limit: limit ?? readLimit, idle: inlineIdle) { [usage] seconds in
+        let idle = max(inlineIdle, (spot.read?.seconds ?? 0) * 1.5)
+        return InlineScript(spot: spot, api: api, tokens: tokens, careful: isCareful ? spot.uses : nil, limit: limit ?? readLimit, idle: idle) { [usage] seconds in
             usage.add(ProcessTime(cpu: seconds, wakeups: 0), to: id, at: usage.now())
         }
     }

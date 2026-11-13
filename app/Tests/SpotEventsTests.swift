@@ -247,6 +247,14 @@ final class SpotEventsTests: SpotRunsCase {
         XCTAssertFalse(runs.watchesClipboard)
     }
 
+    func testTheClipboardIsLookedAtHalfAsOftenWithThePanelClosed() {
+        XCTAssertEqual(runs.clipboardWait, .milliseconds(40))
+
+        runs.panelOpened()
+
+        XCTAssertEqual(runs.clipboardWait, .milliseconds(20))
+    }
+
     func testNothingWatchesTheClipboardAfterAQuit() throws {
         menuBar.insert("script")
         try script(header: "on=clipboard.change", "printf 'text=t\\ntitle=T\\n'")
