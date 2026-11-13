@@ -45,17 +45,6 @@ final class MenuBarMarkTests: XCTestCase {
         XCTAssertEqual(MenuBarMark(reading: reading)?.isStale, true)
     }
 
-    func testRunningWorkIsARingOrASpinnerAndCountsOnlyMoreThanOne() {
-        XCTAssertEqual(MenuBarMark(workFill: 0.5, count: 1, name: "Encode").content, .work(fill: 0.5, count: nil))
-        XCTAssertEqual(MenuBarMark(workFill: nil, count: 1, name: "Encode").content, .work(fill: nil, count: nil))
-        XCTAssertEqual(MenuBarMark(workFill: nil, count: 3, name: "Encode").content, .work(fill: nil, count: 3))
-    }
-
-    func testTheSummaryOfWorkNamesTheOldestCallAndHowManyRun() {
-        XCTAssertEqual(MenuBarMark(workFill: nil, count: 1, name: "Encode").summary, "Encode is running")
-        XCTAssertEqual(MenuBarMark(workFill: nil, count: 3, name: "Encode").summary, "3 running. Encode is the oldest")
-    }
-
     func testTheSummaryNamesTheMetricAndItsValue() {
         XCTAssertEqual(mark(MetricValue(title: "3 open"), label: "Pull requests")?.summary, "Pull requests: 3 open")
     }

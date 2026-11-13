@@ -40,13 +40,13 @@ final class SpotRunsWorkTests: SpotRunsCase {
         time += 0.9
         XCTAssertTrue(sheet.work.isEmpty)
         XCTAssertNil(sheet.cardWork)
-        XCTAssertNil(runs.workMark)
+        XCTAssertNil(runs.runningSummary)
         XCTAssertNil(runs.workSpot)
         XCTAssertEqual(sheet.shownState, sheet.state)
 
         time += 0.1
         XCTAssertEqual(sheet.work.map(\.id), sheet.calls.map(\.id))
-        XCTAssertNotNil(runs.workMark)
+        XCTAssertNotNil(runs.runningSummary)
         XCTAssertEqual(runs.workSpot, "script")
     }
 
@@ -76,7 +76,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         time += 5
 
         XCTAssertTrue(sheet.work.isEmpty)
-        XCTAssertNil(runs.workMark)
+        XCTAssertNil(runs.runningSummary)
     }
 
     func testAReadNeverShowsAsWork() async throws {
@@ -88,7 +88,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
 
         XCTAssertEqual(sheet.calls.count, 1)
         XCTAssertTrue(sheet.work.isEmpty)
-        XCTAssertNil(runs.workMark)
+        XCTAssertNil(runs.runningSummary)
         XCTAssertNil(runs.workSpot)
     }
 
@@ -107,7 +107,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
 
         XCTAssertTrue(sheet.calls.isEmpty)
         XCTAssertTrue(sheet.work.isEmpty)
-        XCTAssertNil(runs.workMark)
+        XCTAssertNil(runs.runningSummary)
         XCTAssertNil(runs.workSpot)
         XCTAssertEqual(sheet.shownState, before)
     }
@@ -121,10 +121,10 @@ final class SpotRunsWorkTests: SpotRunsCase {
         sheet.pressCard()
         let changes = expectation(description: "the second has passed")
 
-        XCTAssertNil(withObservationTracking { live.workMark } onChange: { changes.fulfill() })
+        XCTAssertNil(withObservationTracking { live.runningSummary } onChange: { changes.fulfill() })
         await fulfillment(of: [changes], timeout: 5)
 
-        XCTAssertNotNil(live.workMark)
+        XCTAssertNotNil(live.runningSummary)
     }
 
     func testTheSpotShowsASpinnerWithNoValueAndARingFromValue() async throws {
@@ -194,7 +194,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertTrue(sheet.work.isEmpty)
         XCTAssertEqual(sheet.shownState.title, "Encode")
         XCTAssertNil(sheet.shownState.subtitle)
-        XCTAssertNil(runs.workMark)
+        XCTAssertNil(runs.runningSummary)
         XCTAssertNil(runs.workSpot)
         try await pause()
         XCTAssertEqual(log(), ["open"])
@@ -211,15 +211,15 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try await wait("the frame") { z.calls.first?.status != nil }
         time += 1
         a.pressCard()
-        XCTAssertEqual(runs.workMark?.content, .work(fill: 0.25, count: nil))
+        XCTAssertEqual(runs.runningSummary, "\(z.spot.name) is running")
         XCTAssertEqual(runs.workSpot, "z")
 
         time += 1
-        XCTAssertEqual(runs.workMark?.content, .work(fill: 0.25, count: 2))
+        XCTAssertEqual(runs.runningSummary, "2 running. \(z.spot.name) is the oldest")
         XCTAssertEqual(runs.workSpot, "z")
 
         z.stop(try XCTUnwrap(z.calls.first))
-        XCTAssertEqual(runs.workMark?.content, .work(fill: nil, count: nil))
+        XCTAssertEqual(runs.runningSummary, "\(a.spot.name) is running")
         XCTAssertEqual(runs.workSpot, "a")
     }
 

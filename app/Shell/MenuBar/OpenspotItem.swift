@@ -35,11 +35,11 @@ final class OpenspotItem {
         item.button?.window?.frame.contains(point) == true
     }
 
-    /// Shows the icon in a pill while work runs, with the work's summary as its tooltip, or the plain icon with no work.
-    func show(work mark: MenuBarMark?) {
-        icon?.rootView.isWorking = mark != nil
-        item.button?.toolTip = mark?.summary
-        item.button?.setAccessibilityLabel(mark?.summary ?? Self.name)
+    /// Shows the icon in a pill while work runs, with the summary of that work as its tooltip, or the plain icon with none.
+    func show(running summary: String?) {
+        icon?.rootView.isWorking = summary != nil
+        item.button?.toolTip = summary
+        item.button?.setAccessibilityLabel(summary ?? Self.name)
     }
 
     /// Moves the image of the item into a SwiftUI view of the same width.
