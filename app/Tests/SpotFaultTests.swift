@@ -134,7 +134,7 @@ final class SpotFaultTests: XCTestCase {
         model.reload()
 
         try script("weather", header: "mode=once", "echo")
-        model.folderChanged()
+        model.spotsChanged()
 
         XCTAssertEqual(entry("weather")?.state.title, "Weather")
         XCTAssertNil(entry("weather")?.spot.fault)
@@ -149,7 +149,7 @@ final class SpotFaultTests: XCTestCase {
         XCTAssertEqual(entry("ping")?.failure, "Openspot cannot reach the server. Try again when the Mac is online.")
 
         try script("ping", "exit 0")
-        model.folderChanged()
+        model.spotsChanged()
         model.tap("ping")
         try await wait("the success") { entry("ping")?.failure == nil }
     }
@@ -158,7 +158,7 @@ final class SpotFaultTests: XCTestCase {
         model.reload()
 
         try script("hello", "echo")
-        model.folderChanged()
+        model.spotsChanged()
 
         XCTAssertTrue(model.visible.contains { $0.id == "hello" })
     }
@@ -171,7 +171,7 @@ final class SpotFaultTests: XCTestCase {
         try await wait("the first read") { entry("cups")?.state.title == "One cup" }
 
         try script("cups", header: "on=panel.open", "printf 'title=Two cups\\n'")
-        model.folderChanged()
+        model.spotsChanged()
 
         try await wait("the read of the changed script") { entry("cups")?.state.title == "Two cups" }
     }

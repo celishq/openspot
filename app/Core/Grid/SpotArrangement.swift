@@ -27,28 +27,41 @@ public struct SpotArrangement: Equatable, Sendable {
         }
     }
 
-    public private(set) var choices: [Choice]
+    public private(set) var choices: [Choice] {
+        didSet { places = Self.places(of: choices) }
+    }
+    /// The offset of the first choice of each spot.
+    private var places: [String: Int]
 
     public init(choices: [Choice] = []) {
         self.choices = choices
+        places = Self.places(of: choices)
+    }
+
+    private static func places(of choices: [Choice]) -> [String: Int] {
+        Dictionary(choices.enumerated().map { ($0.element.id, $0.offset) }, uniquingKeysWith: { first, _ in first })
+    }
+
+    private func choice(of id: String) -> Choice? {
+        places[id].map { choices[$0] }
     }
 
     /// The spot whose sheet a key of the panel opens: the person's choice, or else the default config's.
     public func spot(openedBy key: ActionKey, over defaults: SpotArrangement) -> String? {
         if let own = choices.first(where: { $0.key == key }) { return own.id }
-        return defaults.choices.first { choice in choice.key == key && choices.first { $0.id == choice.id }?.key == nil }?.id
+        return defaults.choices.first { choice in choice.key == key && self.choice(of: choice.id)?.key == nil }?.id
     }
 
     public func size(of id: String) -> SpotSize? {
-        choices.first { $0.id == id }?.size
+        choice(of: id)?.size
     }
 
     public func isOnGrid(of id: String) -> Bool? {
-        choices.first { $0.id == id }?.isOnGrid
+        choice(of: id)?.isOnGrid
     }
 
     public func isGlobal(of id: String) -> Bool? {
-        choices.first { $0.id == id }?.isGlobal
+        choice(of: id)?.isGlobal
     }
 
     /// The letter of each spot: each letter of these choices first, then each letter of the defaults for a spot that these
@@ -60,7 +73,7 @@ public struct SpotArrangement: Equatable, Sendable {
             guard let key = choice.letter.flatMap(CommandKey.init(name:)), taken.insert(key.name).inserted else { continue }
             letters[choice.id] = key
         }
-        for choice in defaults.choices where letters[choice.id] == nil && self.choices.first(where: { $0.id == choice.id })?.letter == nil {
+        for choice in defaults.choices where letters[choice.id] == nil && self.choice(of: choice.id)?.letter == nil {
             guard let key = choice.letter.flatMap(CommandKey.init(name:)), taken.insert(key.name).inserted else { continue }
             letters[choice.id] = key
         }
@@ -93,15 +106,15 @@ public struct SpotArrangement: Equatable, Sendable {
     /// The commands in the order of the grid: each listed one takes a place that a listed one holds, in the order of the
     /// list, and each other one stays where it is.
     public func ordered(_ spots: [Spot]) -> [Spot] {
-        let places = Dictionary(choices.enumerated().map { ($0.element.id, $0.offset) }, uniquingKeysWith: { first, _ in first })
         var listed = spots.filter { places[$0.id] != nil }.sorted { places[$0.id]! < places[$1.id]! }.makeIterator()
         return spots.map { places[$0.id] != nil ? listed.next()! : $0 }
     }
 
     /// Lists these spots in this order, with their choices. A choice for a spot that is gone stays after them.
     public mutating func arrange(_ ids: [String]) {
-        let kept = choices.filter { !ids.contains($0.id) }
-        choices = ids.map { id in choices.first { $0.id == id } ?? Choice(id: id) } + kept
+        let listed = Set(ids)
+        let kept = choices.filter { !listed.contains($0.id) }
+        choices = ids.map { id in choice(of: id) ?? Choice(id: id) } + kept
     }
 
     public mutating func set(size: SpotSize, of id: String) {
@@ -121,7 +134,7 @@ public struct SpotArrangement: Equatable, Sendable {
     }
 
     private mutating func change(_ id: String, _ work: (inout Choice) -> Void) {
-        if !choices.contains(where: { $0.id == id }) { choices.append(Choice(id: id)) }
+        if places[id] == nil { choices.append(Choice(id: id)) }
         choices.indices.filter { choices[$0].id == id }.forEach { work(&choices[$0]) }
     }
 

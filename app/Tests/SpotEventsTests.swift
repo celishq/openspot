@@ -119,6 +119,44 @@ final class SpotEventsTests: SpotRunsCase {
         try await wait("the read of the unwanted spot") { self.log("unwanted") == ["read"] }
     }
 
+    func testTheLaunchReadsEachSpotThatListsItWantedOrNot() async throws {
+        try script("news", header: "on=app.launch", log: "news", "\(reasons)\nprintf 'title=N\\n'")
+        try script("other", header: "on=app.update", log: "other", "printf 'title=O\\n'")
+        _ = try scanned()
+
+        runs.launched()
+
+        try await wait("the launch read") { self.log("reasons") == ["app.launch none"] && !self.runs.isReading }
+        XCTAssertEqual(log("other"), [])
+    }
+
+    func testASpotThatOffersRowsAndReadsOnlyAsItsSheetOpensReadsAsTheSpotsLoadAndNotAtAPanelOpen() async throws {
+        try script("offer", header: "on=sheet.open\noffers=search", log: "offer", "\(reasons)\nprintf 'row=a\\ntitle=A\\n'")
+        _ = try scanned()
+        try await wait("the rows of the first load") { self.runs.sheets["offer"]?.list.all.map(\.title) == ["A"] }
+        try script("offer", header: "on=sheet.open\noffers=search", log: "offer", "\(reasons)\nprintf 'row=b\\ntitle=B\\n'")
+
+        runs.panelOpened()
+        runs.panelClosed()
+        try await allEnded()
+        let afterPanel = log("offer")
+        _ = try scanned()
+
+        try await wait("the rows of the second load") { self.runs.sheets["offer"]?.list.all.map(\.title) == ["B"] }
+        XCTAssertEqual(afterPanel, ["read"])
+    }
+
+    func testAPanelThatHidesLetsALaunchReadFinish() async throws {
+        try script("news", header: "on=app.launch", log: "news", "sleep 0.3\necho done >> '\(path("done"))'\nprintf 'title=N\\n'")
+        _ = try scanned()
+
+        runs.launched()
+        runs.panelOpened()
+        runs.panelClosed()
+
+        try await wait("the end of the launch read") { self.exists("done") }
+    }
+
     func testAFailedReadOfAnEventForEachSpotIsTold() async throws {
         try script("unwanted", header: "on=app.update", log: "unwanted", "echo 'No news.' >&2\nexit 1")
         let (_, told) = try toldSheet()
@@ -245,6 +283,32 @@ final class SpotEventsTests: SpotRunsCase {
 
         runs.panelClosed()
         XCTAssertFalse(runs.watchesClipboard)
+    }
+
+    func testWithThePanelClosedTheClipboardIsLookedAtAfterTwiceItsPause() async throws {
+        menuBar.insert("script")
+        try script(header: "on=clipboard.change", "printf 'text=t\\ntitle=T\\n'")
+        _ = try scanned()
+        let start = Date()
+
+        runs.listen(to: mac)
+        try await wait("six looks") { self.mac.looks >= 6 }
+
+        XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(start), 0.2)
+    }
+
+    func testOpeningThePanelLooksAtTheClipboardAtOnce() async throws {
+        runs = SpotRuns(now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50), clipboardPause: .seconds(4))
+        menuBar.insert("script")
+        try script(header: "on=clipboard.change", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
+        _ = try scanned()
+        runs.listen(to: mac)
+        try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isReading }
+        mac.count = 1
+
+        runs.panelOpened()
+
+        try await wait("the clipboard read") { self.log("reasons").contains("clipboard.change none") }
     }
 
     func testNothingWatchesTheClipboardAfterAQuit() throws {

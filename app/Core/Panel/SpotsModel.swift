@@ -31,11 +31,13 @@ public final class SpotsModel {
             spotListIsStale = true
             askAnswers()
             updateVisible()
+            prepareCardGlyphs()
         }
     }
     public var query = "" {
         didSet {
-            if query != oldValue { selected = 0 }
+            guard query != oldValue else { return }
+            selected = 0
             askAnswers()
             updateVisible()
         }
@@ -45,13 +47,19 @@ public final class SpotsModel {
     public internal(set) var visible: [Entry] = []
     /// The sizes that `placements` were laid out from.
     @ObservationIgnored var laidOutSizes: [SpotSize] = []
+    /// The glyphs of the cards that the host last drew ahead.
+    @ObservationIgnored private var cardGlyphs: [String] = []
     @ObservationIgnored var laidOutGrid = SpotGrid()
     /// The cards as the items that the main search finds. It folds them again only when they change.
     @ObservationIgnored var spotList = ItemList()
     /// Whether a card changed since `spotList` was built: its entry, or the state or the command that its run reports.
     @ObservationIgnored var spotListIsStale = true
+    /// The last frame of each sheet that sets keys. The config is read again only when a frame differs from it.
+    @ObservationIgnored var keyFrames: [String: String] = [:]
     /// The number of times that the cards were made into the items of `spotList`.
     @ObservationIgnored var spotListBuilds = 0
+    /// The number of times that the search found the cards that show.
+    @ObservationIgnored var visibleUpdates = 0
     /// Which `answers` patterns match the text of the main search.
     var answerMatches: AnswerMatches {
         runs.answerMatches
@@ -59,7 +67,14 @@ public final class SpotsModel {
     /// The search of the cards and the lists that offer their rows, which keeps the matches of the last text.
     @ObservationIgnored var mainSearch = MainSearch()
     /// Where each visible spot lies on the grid, in the order of `visible`.
-    public internal(set) var placements: [SpotPlacement] = []
+    public internal(set) var placements: [SpotPlacement] = [] {
+        didSet {
+            let height = SpotTokens.backdropHeight(gridHeight: SpotGrid.height(of: placements))
+            if height != gridHeight { gridHeight = height }
+        }
+    }
+    /// The height of the backdrop of the grid's cards, which changes only when the placements change it.
+    public private(set) var gridHeight = SpotTokens.backdropHeight(gridHeight: 0)
     public var selected = 0
     /// The sheet that shows: the transition's sheet, from its first frame on its card until its close starts. It follows the
     /// open run: a run's first answer shows its sheet, and a close or a hidden panel takes it away. It changes only with the
@@ -69,14 +84,17 @@ public final class SpotsModel {
     public internal(set) var transition = SheetTransition() {
         didSet {
             let shown = transition.shown
-            if shown != openList { openList = shown }
+            if shown != openList {
+                openList = shown
+                if shown != nil, followsHint { takeSheetHint(HintWords(hint)) }
+            }
             let opening = transition.phase == .opening ? transition.id : nil
             if opening != (oldValue.phase == .opening ? oldValue.id : nil) { runs.opening.moving = opening }
         }
     }
-    public var closingPick: (item: SpotItem, entry: Entry)?
+    @ObservationIgnored public var closingPick: (item: SpotItem, entry: Entry)?
     public let runs: SpotRuns
-    public var dragWatch: Task<Void, Never>?
+    @ObservationIgnored public var dragWatch: Task<Void, Never>?
     public var dragPaths: [String] = []
     public var draggedSpot: SpotDrop? {
         didSet { followSpotDrop(from: isPointerOverDrop ? oldValue : nil) }
@@ -105,12 +123,51 @@ public final class SpotsModel {
 
     public var entryKey = Shortcut.standard
     var isChainHeld = false
-    var chainWatch: Task<Void, Never>?
+    @ObservationIgnored var chainWatch: Task<Void, Never>?
     public var recording: String?
-    private var problems: [String] = []
+    @ObservationIgnored private var problems: [String] = []
     /// The actions menu from its open to the end of its close.
-    public internal(set) var menuSession: ActionMenuSession?
-    public var form: FormSession?
+    public internal(set) var menuSession: ActionMenuSession? {
+        didSet {
+            let isOpen = menuSession != nil && menuSession?.phase != .closing
+            if isOpen != isMenuOpen { isMenuOpen = isOpen }
+            guard menuSession == nil else { return }
+            if menuFrame != nil { menuFrame = nil }
+            if menuBackdropHeight != 0 { change(.sheet(isOpen: false), { menuBackdropHeight = 0 }) }
+        }
+    }
+    /// Whether the actions menu is open and not closing. A search or a move in the menu tells no reader of it.
+    public private(set) var isMenuOpen = false
+    /// Where the menu lies, once its view has placed it, until its close ends. A search or a move in the menu tells no
+    /// reader of it.
+    public internal(set) var menuFrame: ActionMenuFrame?
+    /// How tall the backdrop under the menu is, from the panel's top: 0 with no menu. It grows on the open motion of the menu
+    /// and shrinks when the menu is gone, and a later place of the menu moves it with no motion.
+    public internal(set) var menuBackdropHeight: CGFloat = 0
+    /// The words of the hint under the grid and of the hint under a sheet, each kept from `hint` while it is followed. Each
+    /// keeps the words it last showed, and changes only when its words do.
+    public internal(set) var gridHint = HintWords("")
+    public internal(set) var sheetHint = HintWords("")
+    /// Whether the hint under the grid last showed the keys of Edit Spots, so that its next words fade in as well.
+    @ObservationIgnored var hintIsForEdit = false
+    @ObservationIgnored var followsHint = false
+    /// The number of times that the followed hint was read again after a change of what it reads.
+    @ObservationIgnored var hintTakes = 0
+    public var form: FormSession? {
+        didSet {
+            let rect = form.map { SpotTokens.formRect($0.draft.form) }
+            if rect != formRect { formRect = rect }
+            let hasChoices = form?.draft.choices != nil
+            if hasChoices != formHasChoices { formHasChoices = hasChoices }
+            let isMultiple = form?.draft.isMultiple == true
+            if isMultiple != formIsMultiple { formIsMultiple = isMultiple }
+        }
+    }
+    /// Where the open form lies, whether it is a form of one choice whose options the field searches, and whether that
+    /// choice takes many options. A key in the form tells no reader of them.
+    public private(set) var formRect: CGRect?
+    public private(set) var formHasChoices = false
+    public private(set) var formIsMultiple = false
     /// The ask for a form that waits for its script. A newer ask, a cancel, a close or a hidden panel replaces it.
     @ObservationIgnored var formAsk: UUID?
     /// Whether the grid is in Edit Spots, where it also shows the spots that are off the grid, and a press only selects.
@@ -164,9 +221,11 @@ public final class SpotsModel {
     public internal(set) var flashSymbol: String?
     @ObservationIgnored public var flashPause: Duration = .milliseconds(1500)
     @ObservationIgnored var flashWatch: Task<Void, Never>?
-    private var scanned: [Spot] = []
-    private var spotScan = SpotScan()
-    private var lastScan = ScanResult(files: [], refused: [])
+    @ObservationIgnored private var scanned: [Spot] = []
+    @ObservationIgnored private var spotScan = SpotScan()
+    @ObservationIgnored private var lastScan = ScanResult(files: [], refused: [])
+    /// The config that the app read last, and the spots folder that it turns on, which `config` and `folder` give.
+    @ObservationIgnored private var lastRead: (config: Config, folder: SpotsFolder)?
     /// The stamp of the folder and the config that the cards were last built from.
     @ObservationIgnored private var loadedStamp: SpotsFolder.Stamp?
     @ObservationIgnored private var loadedConfig: Config?
@@ -182,7 +241,7 @@ public final class SpotsModel {
     /// Where the spots, the config and the recent rows live.
     @ObservationIgnored public let files: AppPlaces
     /// The global keys that the person gave and that a spot still offers, as the app holds them.
-    private(set) var assignedKeys: [GlobalKey] = []
+    @ObservationIgnored private(set) var assignedKeys: [GlobalKey] = []
 
     public init(host: SpotsHost, files: AppPlaces = .standard, runs: SpotRuns? = nil) {
         self.host = host
@@ -199,6 +258,16 @@ public final class SpotsModel {
             guard let self else { return bring() }
             bringParts(of: id, bring)
         }
+    }
+
+    /// The config as the last reload or change through the API read it, so that a press reads no disk.
+    public var config: Config {
+        lastRead?.config ?? files.config.read()
+    }
+
+    /// The spots folder with the core spots that `config` turns on.
+    public var folder: SpotsFolder {
+        lastRead?.folder ?? files.folder
     }
 
     public var sheets: [String: SpotRun] {
@@ -219,7 +288,7 @@ public final class SpotsModel {
     /// close.
     public func beginFirstLaunch() {
         isFirstLaunch = true
-        try? files.config.begin(enabling: files.folder.startingSpots())
+        try? files.config.begin(enabling: folder.startingSpots())
         reload()
         host.present()
     }
@@ -237,6 +306,7 @@ public final class SpotsModel {
         let config = files.config.read()
         host.applyConfig(config)
         let folder = files.folder(config)
+        lastRead = (config, folder)
         var scan = spotScan.look(at: folder, hosted: reviewed.map { [$0.spot] } ?? [])
         let faults = folder.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
         if !faults.isEmpty { scan.files.append(SpotFile(id: FaultSpot.fileID, spots: faults)) }
@@ -264,9 +334,9 @@ public final class SpotsModel {
         self.problems = problems
     }
 
-    /// Takes a change of the spots folder, such as an agent that writes a spot: the cards change at once, with no motion,
-    /// the selected card stays selected, and a changed script that the open panel reads at `panel` reads again.
-    public func folderChanged() {
+    /// Takes a change of the spots folder or the config file, such as an agent that writes a spot: the cards change at once,
+    /// with no motion, the selected card stays selected, and a changed script that the open panel reads at `panel` reads again.
+    public func spotsChanged() {
         let stamps = fileStamps
         let id = selectedEntry?.id
         reload()
@@ -308,6 +378,9 @@ public final class SpotsModel {
     /// its spot again when something wants it and another caller set it.
     public func configChanged(_ change: ConfigChange) {
         let config = files.config.read()
+        let arrangement = lastRead?.config.arrangement
+        let isSameFolder = arrangement?.enabled == config.arrangement.enabled && arrangement?.disabled == config.arrangement.disabled
+        lastRead = (config, lastRead.flatMap { isSameFolder ? $0.folder : nil } ?? files.folder(config))
         switch change {
         case .keys:
             host.applyConfig(config)
@@ -326,6 +399,16 @@ public final class SpotsModel {
             }
             if caller != spot, let sheet = sheets[spot], sheet.isWanted { sheet.read(need: .change) }
         }
+        if case .spots = change { return }
+        runs.readOfferedRows()
+    }
+
+    /// Takes the config that the app itself just wrote as the one the cards come from, so that the watch's report of the
+    /// write reloads nothing.
+    func tookOwnWrite() {
+        let config = files.config.read()
+        loadedConfig = config
+        lastRead = (config, lastRead?.folder ?? files.folder(config))
     }
 
     /// Builds the card of each spot that these IDs name again, by its ID or its core ID, and keeps each other card (A25).
@@ -337,6 +420,14 @@ public final class SpotsModel {
             next.insert(Entry(spot: spot, run: runs.sheets[spot.id], choice: arrangement, defaults: defaultArrangement, letter: letters[spot.id]), at: min(index, next.count))
         }
         if next != entries { entries = next }
+    }
+
+    /// Asks the host to draw the glyphs of the cards ahead when they change.
+    private func prepareCardGlyphs() {
+        let glyphs = entries.compactMap(\.spot.glyph)
+        guard glyphs != cardGlyphs else { return }
+        cardGlyphs = glyphs
+        host.prepareCards(glyphs: glyphs)
     }
 
     public func rebuildEntries() {
@@ -354,14 +445,13 @@ public final class SpotsModel {
         return arrangement.ordered(defaultArrangement.ordered(sorted))
     }
 
-    /// The panel starts to show: a pick that its fade left finishes, the first card is selected, the held keys count, the
-    /// spots folder is read again if it changed, and each script that the panel shows reads. The panel says it shows on the
-    /// next turn, so that its fade starts from hidden.
+    /// The panel starts to show: a pick that its fade left finishes, the first card is selected, the held keys count, and
+    /// each script that the panel shows reads. It reads no disk: the watch of the folder and the config reloads them. The
+    /// panel says it shows on the next turn, so that its fade starts from hidden.
     public func panelWillShow(holding modifiers: Shortcut.Modifiers) {
         finishPick()
         selected = 0
         takeHeld(modifiers)
-        reload()
         runs.panelOpened()
         askAnswers()
         DispatchQueue.main.async { [weak self] in self?.isShown = true }
@@ -418,11 +508,11 @@ public final class SpotsModel {
         case .failure(let text): host.notify(text)
         case .failureWithFix(let text, let fix): host.notify(text, fix: fix)
         case .listChange:
-            spotListIsStale = true
-            updateVisible()
-        case .frame:
-            spotListIsStale = true
-            if sheets[id]?.spot.setsKeys == true {
+            markFound(id)
+            if mayMove(id) { updateVisible() }
+        case .frame(let frame):
+            markFound(id)
+            if sheets[id]?.spot.setsKeys == true, keyFrames.updateValue(frame, forKey: id) != frame {
                 let config = files.config.read()
                 host.applyConfig(config)
                 holdAssignedKeys(config)

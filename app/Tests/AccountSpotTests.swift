@@ -48,6 +48,7 @@ final class AccountSpotTests: BuiltInCase {
 
         XCTAssertEqual(spot.name, "Account")
         XCTAssertTrue(spot.isFound)
+        XCTAssertFalse(spot.read?.has(.panel) == true)
         XCTAssertTrue(spot.reachesAccountKey)
         XCTAssertNil(spot.view)
     }
@@ -129,29 +130,41 @@ final class AccountSpotTests: BuiltInCase {
         XCTAssertTrue(try store.isBackedUp())
     }
 
-    func testAReadAsThePanelOpensNeverAsksForTouchID() async throws {
+    func testAReadAtLaunchNeverShowsTheWordsNorAsksForTouchID() async throws {
         _ = try store.keyMadeOnce()
         _ = try await frame(["show"])
         let before = await app.asked
 
-        _ = try await frame(["read"], reason: "panel.open")
+        let launch = try await frame(["read"], reason: "app.launch")
+        let sheet = try await frame(["read"])
+
+        let after = await app.asked
+        XCTAssertEqual(after, before)
+        XCTAssertTrue(words(in: launch).isEmpty)
+        XCTAssertEqual(block("show", in: sheet)["title"], "Show my words")
+    }
+
+    func testAReadAsTheSheetOpensNeverAsksForTouchID() async throws {
+        _ = try store.keyMadeOnce()
+        _ = try await frame(["show"])
+        let before = await app.asked
+
+        _ = try await frame(["read"])
 
         let after = await app.asked
         XCTAssertEqual(after, before)
     }
 
-    func testAPanelThatOpensAgainOffersTheWordsAgainAndKeepsTheCheckWhole() async throws {
+    func testASheetThatOpensAgainOffersTheWordsAgainAndKeepsTheCheckWhole() async throws {
         _ = try store.keyMadeOnce()
         _ = try await frame(["show"])
 
-        let reopened = try await frame(["read"], reason: "panel.open")
-        let sheet = try await frame(["read"])
+        let reopened = try await frame(["read"])
         _ = try await frame(["wrote"])
-        let check = try await frame(["read"], reason: "panel.open")
+        let check = try await frame(["read"])
 
+        XCTAssertTrue(words(in: reopened).isEmpty)
         XCTAssertEqual(block("show", in: reopened)["title"], "Show my words")
-        XCTAssertTrue(words(in: sheet).isEmpty)
-        XCTAssertEqual(block("show", in: sheet)["title"], "Show my words")
         XCTAssertEqual(picks(in: check).count, 8)
     }
 

@@ -50,9 +50,9 @@ final class InlineCall: @unchecked Sendable {
         arrival.signal()
     }
 
-    /// Returns the outcome when it comes within the limit, or else nil, and the outcome goes to `later` when it comes.
-    func wait(_ limit: DispatchTimeInterval, later: @escaping @Sendable (Outcome) -> Void) -> Outcome? {
-        _ = arrival.wait(timeout: .now() + limit)
+    /// Returns the outcome when it comes by the deadline, or else nil, and the outcome goes to `later` when it comes.
+    func wait(until deadline: DispatchTime, later: @escaping @Sendable (Outcome) -> Void) -> Outcome? {
+        _ = arrival.wait(timeout: deadline)
         return lock.withLock {
             if let outcome { return outcome }
             self.later = later
@@ -66,7 +66,7 @@ final class InlineCall: @unchecked Sendable {
             DispatchQueue.global().asyncAfter(deadline: .now() + limit) { [self] in finish(.failed(SpotError.timedOut)) }
         }
         return await withCheckedContinuation { continuation in
-            if let outcome = wait(.seconds(0), later: { continuation.resume(returning: $0) }) { continuation.resume(returning: outcome) }
+            if let outcome = wait(until: .now(), later: { continuation.resume(returning: $0) }) { continuation.resume(returning: outcome) }
         }
     }
 }

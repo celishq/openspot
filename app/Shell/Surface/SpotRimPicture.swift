@@ -1,15 +1,17 @@
 import AppKit
+import OpenspotCore
 import SwiftUI
 
 /// The rim of a surface of a fixed size, drawn once into a picture for each size and theme. A card moves and shrinks this
-/// picture on each frame of a push, which costs nothing, where a drawn or a layer rim is made again on each frame.
+/// picture on each frame of a push, which costs nothing, where a drawn or a layer rim is made again on each frame. It keeps
+/// 8 MB of pictures beside two of its largest, such as the dock's, and lets the least recently used go first.
 struct SpotRimPicture: View {
     let size: CGSize
     let radius: CGFloat
     @Environment(\.colorScheme) private var scheme
     @Environment(\.displayScale) private var scale
 
-    @MainActor private static var pictures: [String: NSImage] = [:]
+    @MainActor private static var pictures = RecentCache<Key, NSImage>(base: 8 << 20)
 
     var body: some View {
         let theme: SpotTheme = scheme == .dark ? .dark : .light
@@ -25,13 +27,22 @@ struct SpotRimPicture: View {
     }
 
     @MainActor private static func picture(of part: Part, size: CGSize, radius: CGFloat, theme: SpotTheme, scale: CGFloat) -> NSImage {
-        let key = "\(part) \(size.width)x\(size.height) \(radius) \(theme.rimEnds) \(scale)"
-        if let picture = pictures[key] { return picture }
+        let key = Key(part: part, width: size.width, height: size.height, radius: radius, ends: theme.rimEnds, scale: scale)
+        if let picture = pictures.value(for: key) { return picture }
         let renderer = ImageRenderer(content: Drawing(part: part, radius: radius, theme: theme).frame(width: size.width, height: size.height))
         renderer.scale = scale
         let picture = renderer.nsImage ?? NSImage(size: size)
-        pictures[key] = picture
+        pictures.keep(picture, for: key, cost: Int(size.width * scale) * Int(size.height * scale) * 4)
         return picture
+    }
+
+    private struct Key: Hashable {
+        let part: Part
+        let width: CGFloat
+        let height: CGFloat
+        let radius: CGFloat
+        let ends: NSColor
+        let scale: CGFloat
     }
 
     /// The two parts of the rim: the dark lines down the sides, and the light that is added at the top and foot.

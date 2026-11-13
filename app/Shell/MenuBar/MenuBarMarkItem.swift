@@ -24,7 +24,7 @@ final class MenuBarMarkItem {
         self.mark = mark
         host.rootView = SpotMenuBarMarkView(mark: mark)
         let width = ceil(host.fittingSize.width)
-        item.length = width
+        if item.length != width { item.length = width }
         host.frame = NSRect(x: 0, y: 0, width: width, height: item.button?.bounds.height ?? 0)
         item.button?.toolTip = mark.summary
         item.button?.setAccessibilityLabel(mark.summary)

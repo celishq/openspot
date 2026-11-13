@@ -354,6 +354,7 @@ An event makes Openspot ask a spot what to show. The header lists the events whe
 | `clipboard.change` | When the clipboard changes.                                               |               |
 | `app.front`        | When another app comes to the front.                                      | its bundle ID |
 | `app.update`       | When Openspot has downloaded an update.                                   | its version   |
+| `app.launch`       | Once when Openspot starts.                                                |               |
 | `screen.wake`      | When the screen wakes.                                                    |               |
 
 - Openspot also asks a spot for these reasons, which aren't events:
@@ -368,7 +369,7 @@ An event makes Openspot ask a spot what to show. The header lists the events whe
 - A spot is **wanted** while its sheet, the menu bar or a card of other spots shows it, and while the open panel asks it
   at `panel.open`.
 - A `clock`, and events other than `sheet.open`, `sheet.text` and `search.text`, ask a spot only while it's wanted.
-  `app.update` asks each spot that lists it, wanted or not.
+  `app.update` and `app.launch` ask each spot that lists them, wanted or not.
 - A read must be safe at each event its header lists. Only you can make sure of that. A spot has one read at a time.
 
 ## The calls
@@ -459,7 +460,9 @@ example.
 
 - The user gives each spot its hotkey, puts spots in the menu bar, floats them, and orders and sizes the cards. A spot
   can't claim a hotkey or a place.
-- `offers=search` shows the spot's rows in the main search. It needs `on=panel.open` or a `clock`. Openspot ranks the
+- `offers=search` shows the spot's rows in the main search. It needs `on=panel.open`, `on=sheet.open` or a `clock`. With
+  only `on=sheet.open`, Openspot reads the rows when it loads the spots, as it starts or after a spot changes, after each
+  change of the config, and at each open of the sheet. A panel open doesn't read them. Openspot ranks the
   rows by the user's picks.
 - The user can give any spot with a sheet a hotkey, or a shake of the pointer, in Settings. It shows the spot in a small
   window at the pointer, which stays while the user works in other apps. The spot never learns where it shows.

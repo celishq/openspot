@@ -19,12 +19,12 @@ extension OpenspotApp: SpotsHost {
     }
 
     func notify(_ text: String, fix: URL) {
-        toast?.show(text, kind: .failure, fix: { NSWorkspace.shared.open(fix) }, key: model.files.config.read().fixKey)
+        toast?.show(text, kind: .failure, fix: { NSWorkspace.shared.open(fix) }, key: model.config.fixKey)
     }
 
     /// Tells the person of a key that macOS refused, with Settings as the fix.
     func notifyKeyFault(_ text: String) {
-        toast?.show(text, kind: .failure, fix: { [weak self] in self?.openSettings() }, key: model.files.config.read().fixKey)
+        toast?.show(text, kind: .failure, fix: { [weak self] in self?.openSettings() }, key: model.config.fixKey)
     }
 
     func confirm(_ text: String) {
@@ -116,6 +116,10 @@ extension OpenspotApp: SpotsHost {
     func prepare(_ items: [SpotItem], glyphs: [String]) async {
         if !glyphs.isEmpty { SpotItemIcon.bind(glyphs: glyphs) }
         await SpotIconStore.shared.prepare(items)
+    }
+
+    func prepareCards(glyphs: [String]) {
+        SpotItemIcon.prepare(glyphs: glyphs, size: SpotTokens.glyphSize)
     }
 
     func agentPrompt(for folder: URL) -> AgentPrompt {

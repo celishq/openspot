@@ -11,6 +11,8 @@ final class ToastPanel: NSPanel {
     private static let duration: TimeInterval = 5
 
     let toast = Toast()
+    /// The view that sizes the window to a message, made once and given a copy of each toast.
+    private lazy var measure = NSHostingController(rootView: ToastView(toast: Toast()))
     private var shows = 0
     private var fixKey: HotKey.Registration?
     /// The menu bar item that toasts hang from.
@@ -24,7 +26,10 @@ final class ToastPanel: NSPanel {
         toast.kind = kind
         let held = hold(fix: fix, key: key)
         toast.message = held.map { "\(message) Press `\($0.label)` to fix it." } ?? message
-        let measure = NSHostingController(rootView: ToastView(toast: toast))
+        let copy = Toast()
+        copy.message = toast.message
+        copy.kind = kind
+        measure.rootView = ToastView(toast: copy)
         let width = min(measure.view.fittingSize.width.rounded(.up) + 1, Self.maxSize.width)
         let size = measure.sizeThatFits(in: NSSize(width: width, height: Self.maxSize.height))
         let place = ScreenPlace(screens: ScreenPlace.Screen.all)

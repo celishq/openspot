@@ -74,19 +74,25 @@ public struct CalcAnswer: Equatable, Sendable {
             }
             guard let rate = rates.rate(from: from, to: to) else { continue }
             let value = split.amount.value * rate
-            let formatter = NumberFormatter()
-            formatter.locale = locale
-            formatter.numberStyle = .currency
-            formatter.currencyCode = to
-            formatter.currencySymbol = CalcCurrency.symbol(of: to, written: formatter.currencySymbol)
-            if !CalcCurrency.isFiat(to) {
-                formatter.minimumFractionDigits = 0
-                formatter.maximumFractionDigits = 8
+            let formatter = CalcFormats.formatter(NumberFormatter.self, "currency|\(to)|\(CalcFormats.key(locale))") {
+                let formatter = NumberFormatter()
+                formatter.locale = locale
+                formatter.numberStyle = .currency
+                formatter.currencyCode = to
+                formatter.currencySymbol = CalcCurrency.symbol(of: to, written: formatter.currencySymbol)
+                if !CalcCurrency.isFiat(to) {
+                    formatter.minimumFractionDigits = 0
+                    formatter.maximumFractionDigits = 8
+                }
+                return formatter
             }
-            let plain = NumberFormatter()
-            plain.locale = Locale(identifier: "en_US_POSIX")
-            plain.usesGroupingSeparator = false
-            plain.maximumFractionDigits = formatter.maximumFractionDigits
+            let plain = CalcFormats.formatter(NumberFormatter.self, "plain|\(formatter.maximumFractionDigits)") {
+                let plain = NumberFormatter()
+                plain.locale = Locale(identifier: "en_US_POSIX")
+                plain.usesGroupingSeparator = false
+                plain.maximumFractionDigits = formatter.maximumFractionDigits
+                return plain
+            }
             let age = days(of: rates, clock: clock, now: now)
             let old = age.map { $0 >= oldDays ? ", \(daysWritten($0, clock: clock, locale: locale)) old" : "" } ?? ""
             return CalcAnswer(
@@ -105,11 +111,14 @@ public struct CalcAnswer: Equatable, Sendable {
         guard let fromUnit = CalcUnit.named(from), let toUnit = CalcUnit.named(to), CalcUnit.areAlike(fromUnit, toUnit) else { return nil }
         let value = Measurement(value: amount.value, unit: fromUnit).converted(to: toUnit).value
         guard value.isFinite else { return nil }
-        let formatter = MeasurementFormatter()
-        formatter.locale = locale
-        formatter.unitOptions = .providedUnit
-        formatter.unitStyle = .medium
-        formatter.numberFormatter = significant(6, locale: locale)
+        let formatter = CalcFormats.formatter(MeasurementFormatter.self, "units|\(CalcFormats.key(locale))") {
+            let formatter = MeasurementFormatter()
+            formatter.locale = locale
+            formatter.unitOptions = .providedUnit
+            formatter.unitStyle = .medium
+            formatter.numberFormatter = significant(6, locale: locale)
+            return formatter
+        }
         let title = formatter.string(from: Measurement(value: value, unit: toUnit))
         return CalcAnswer(value: plain(value, digits: 6), title: title, detail: "\(amount.detail) \(from) in \(to)", unit: unit(of: title, number: formatter.numberFormatter.string(from: NSNumber(value: value)) ?? ""))
     }
@@ -124,10 +133,13 @@ public struct CalcAnswer: Equatable, Sendable {
     private static let oldDays = 3
 
     private static func date(of rates: CalcRates, clock: Calendar) -> Date? {
-        let parser = DateFormatter()
-        parser.locale = Locale(identifier: "en_US_POSIX")
-        parser.timeZone = clock.timeZone
-        parser.dateFormat = "yyyy-MM-dd"
+        let parser = CalcFormats.formatter(DateFormatter.self, "day|\(clock.timeZone.identifier)") {
+            let parser = DateFormatter()
+            parser.locale = Locale(identifier: "en_US_POSIX")
+            parser.timeZone = clock.timeZone
+            parser.dateFormat = "yyyy-MM-dd"
+            return parser
+        }
         return parser.date(from: rates.day)
     }
 
@@ -138,23 +150,30 @@ public struct CalcAnswer: Equatable, Sendable {
 
     /// A count of days in the words of the Mac, such as `9 days`.
     private static func daysWritten(_ count: Int, clock: Calendar, locale: Locale) -> String {
-        let formatter = DateComponentsFormatter()
-        formatter.unitsStyle = .full
-        formatter.allowedUnits = [.day]
-        var calendar = clock
-        calendar.locale = locale
-        formatter.calendar = calendar
+        let formatter = CalcFormats.formatter(DateComponentsFormatter.self, "days|\(CalcFormats.key(locale, clock))") {
+            let formatter = DateComponentsFormatter()
+            formatter.unitsStyle = .full
+            formatter.allowedUnits = [.day]
+            var calendar = clock
+            calendar.locale = locale
+            formatter.calendar = calendar
+            return formatter
+        }
         return formatter.string(from: DateComponents(day: count)) ?? "\(count) days"
     }
 
     /// The day that the rates are of, such as `Nov 10`, with its year when it is not the year of now.
     private static func day(of rates: CalcRates, clock: Calendar, now: Date, locale: Locale) -> String {
         guard let date = date(of: rates, clock: clock) else { return rates.day }
-        let formatter = DateFormatter()
-        formatter.locale = locale
-        formatter.calendar = clock
-        formatter.timeZone = clock.timeZone
-        formatter.setLocalizedDateFormatFromTemplate(clock.isDate(date, equalTo: now, toGranularity: .year) ? "MMMd" : "yMMMd")
+        let template = clock.isDate(date, equalTo: now, toGranularity: .year) ? "MMMd" : "yMMMd"
+        let formatter = CalcFormats.formatter(DateFormatter.self, "rates|\(template)|\(CalcFormats.key(locale, clock))") {
+            let formatter = DateFormatter()
+            formatter.locale = locale
+            formatter.calendar = clock
+            formatter.timeZone = clock.timeZone
+            formatter.setLocalizedDateFormatFromTemplate(template)
+            return formatter
+        }
         return formatter.string(from: date)
     }
 
@@ -163,21 +182,26 @@ public struct CalcAnswer: Equatable, Sendable {
     private static func plain(_ value: Double, digits: Int) -> String {
         let fallback = String(format: "%.\(digits)g", value)
         guard abs(value) < 1e15 else { return fallback }
-        let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.numberStyle = .decimal
-        formatter.usesGroupingSeparator = false
-        formatter.usesSignificantDigits = true
-        formatter.maximumSignificantDigits = digits
+        let formatter = CalcFormats.formatter(NumberFormatter.self, "plain digits|\(digits)") {
+            let formatter = NumberFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.numberStyle = .decimal
+            formatter.usesGroupingSeparator = false
+            formatter.usesSignificantDigits = true
+            formatter.maximumSignificantDigits = digits
+            return formatter
+        }
         return formatter.string(from: NSNumber(value: value)) ?? fallback
     }
 
     /// A value written the way of the Mac, and in scientific notation when it is too large or too small for its digits.
     private static func written(_ value: Double, locale: Locale) -> String {
-        let formatter = significant(15, locale: locale)
-        formatter.numberStyle = abs(value) >= 1e15 || (value != 0 && abs(value) < 1e-9) ? .scientific : .decimal
-        formatter.usesSignificantDigits = true
-        formatter.maximumSignificantDigits = 15
+        let style: NumberFormatter.Style = abs(value) >= 1e15 || (value != 0 && abs(value) < 1e-9) ? .scientific : .decimal
+        let formatter = CalcFormats.formatter(NumberFormatter.self, "number|\(style.rawValue)|\(CalcFormats.key(locale))") {
+            let formatter = significant(15, locale: locale)
+            formatter.numberStyle = style
+            return formatter
+        }
         return formatter.string(from: NSNumber(value: value)) ?? plain(value, digits: 15)
     }
 
