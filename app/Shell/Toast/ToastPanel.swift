@@ -9,8 +9,6 @@ final class ToastPanel: NSPanel {
     static let margin: CGFloat = 16
     private static let maxSize = NSSize(width: 560, height: 120)
     private static let duration: TimeInterval = 5
-    static let failureSymbol = "exclamationmark.triangle.fill"
-    static let confirmSymbol = "checkmark.circle.fill"
 
     let toast = Toast()
     private var shows = 0
@@ -20,11 +18,10 @@ final class ToastPanel: NSPanel {
 
     /// Shows a message, in place of any toast on screen, and hides it after a while, or keeps it with no duration. A fix opens
     /// on a click or on its key.
-    func show(_ message: String, symbol: String? = nil, isWorking: Bool = false, fix: (@MainActor @Sendable () -> Void)? = nil, key: Shortcut? = nil, for duration: TimeInterval? = ToastPanel.duration) {
+    func show(_ message: String, kind: ToastKind, fix: (@MainActor @Sendable () -> Void)? = nil, key: Shortcut? = nil, for duration: TimeInterval? = ToastPanel.duration) {
         shows += 1
         let current = shows
-        toast.symbol = symbol
-        toast.isWorking = isWorking
+        toast.kind = kind
         let held = hold(fix: fix, key: key)
         toast.message = held.map { "\(message) Press `\($0.label)` to fix it." } ?? message
         let measure = NSHostingController(rootView: ToastView(toast: toast))

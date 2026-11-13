@@ -26,7 +26,7 @@ struct SpotTrayIconView: View {
     }
 
     private var symbol: String? {
-        model.flashSymbol ?? toast.flatMap { $0.isShown ? $0.symbol : nil }
+        model.menuBarSymbol(during: toast.flatMap { $0.isShown ? $0.kind : nil })
     }
 
     @ViewBuilder
