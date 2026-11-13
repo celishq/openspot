@@ -100,6 +100,8 @@ public final class SpotsModel {
     public var isOpenForDrag = false
     /// Whether a drop just opened a sheet, which holds the focus while the app that the drag came from lets go of it (D8).
     public var isSettlingDrop = false
+    /// Whether Touch ID or the Mac password is being asked for.
+    public var isAsking = false
 
     public var entryKey = Shortcut.standard
     var isChainHeld = false
@@ -390,9 +392,14 @@ public final class SpotsModel {
         runs.raise(.named(SpotEvent.appUpdate, value: version, readsEachSpot: true))
     }
 
-    /// Asks for Touch ID or the Mac password, and returns whether the person passed.
+    /// Asks for Touch ID or the Mac password, and returns whether the person passed. The prompt takes the focus, so the
+    /// panel stays open while it asks, and takes the focus back after.
     public func allows(_ reason: String) async -> Bool {
-        await host.allows(reason)
+        isAsking = true
+        let allowed = await host.allows(reason)
+        isAsking = false
+        if isShown { host.present() }
+        return allowed
     }
 
     /// Stops each call as the app quits.

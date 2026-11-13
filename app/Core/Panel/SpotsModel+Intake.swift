@@ -136,9 +136,9 @@ extension SpotsModel {
     }
 
     /// Whether the panel stays open when it loses the focus: for a review, for a first launch, because the Mac can keep
-    /// another app in front of an app that just started, and for a sheet that a drop just opened (D8).
+    /// another app in front of an app that just started, for a sheet that a drop just opened (D8), and while Touch ID asks.
     public var holdsFocus: Bool {
-        isReviewing || isFirstLaunch || isSettlingDrop
+        isReviewing || isFirstLaunch || isSettlingDrop || isAsking
     }
 
     /// Whether a review shows, which stays open when the panel loses the focus.
