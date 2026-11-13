@@ -167,15 +167,7 @@ extension SpotsModel {
         if isShown { host.dismiss() }
         Task {
             do {
-                guard let key = try await accountKey() else { return }
-                let folder = files.folder
-                var spot = try SpotFolder(sharing: entry.spot, from: folder.scan())
-                if spot.needsCompile {
-                    host.work("Compiling \(entry.spot.name)")
-                    spot = try await spot.compiled()
-                }
-                spot = try spot.signed(by: key)
-                try spot.keepReleaseLog(in: folder.url)
+                guard let spot = try await release(SpotFolder(sharing: entry.spot, from: files.folder.scan()), named: entry.spot.name) else { return }
                 let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-shared/\(UUID().uuidString)", isDirectory: true)
                 try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
                 let file = place.appendingPathComponent(SpotFolder.fileName(for: entry.spot.name))

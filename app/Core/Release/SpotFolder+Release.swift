@@ -42,4 +42,13 @@ extension SpotFolder {
         guard let root = roots.first, let file = files.first(where: { $0.path == "\(root)/\(ReleaseLog.fileName)" }) else { return }
         try file.contents.write(to: folder.appendingPathComponent(file.path), options: .atomic)
     }
+
+    /// This spot as it goes out: compiled when it needs to be, signed by the key, with its release log kept in its own
+    /// folder in the spots folder, so that the next release follows it.
+    public func release(by key: AccountKey, keepingLogIn spots: URL) async throws -> SpotFolder {
+        let built = needsCompile ? try await compiled() : self
+        let signed = try built.signed(by: key)
+        try signed.keepReleaseLog(in: spots)
+        return signed
+    }
 }

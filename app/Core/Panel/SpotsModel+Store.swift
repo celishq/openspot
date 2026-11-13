@@ -25,18 +25,12 @@ extension SpotsModel {
                 host.confirm("\(spot.name) has no change since its last publish.")
                 return .unchanged
             }
-            guard let key = try await accountKey() else { return .failed }
             if spot.previewsSample {
                 try await SpotListing.capturePreview(of: spot, runs: runs)
                 shared = try SpotFolder(sharing: spot, from: SpotsFolder(url: folder.url).scan())
             }
-            if shared.needsCompile {
-                host.work("Compiling \(spot.name)")
-                shared = try await shared.compiled()
-            }
-            shared = try shared.signed(by: key)
-            try shared.keepReleaseLog(in: folder.url)
-            try shared.write(to: files.store)
+            guard let released = try await release(shared, named: spot.name) else { return .failed }
+            try released.write(to: files.store)
         } catch {
             host.notify("\(spot.name) was not published. \(Self.reason(error))")
             return .failed
@@ -44,6 +38,14 @@ extension SpotsModel {
         refreshDock(in: files.folder)
         host.confirm("Published \(spot.name) to your store. Its files travel as they are, so check them for secrets before you share it.")
         return .published
+    }
+
+    /// A spot of the spots folder as a release, signed by the account after a compile that a toast names. Nil when the
+    /// person has no account yet, which opens the spot that sets one up.
+    func release(_ package: SpotFolder, named name: String) async throws -> SpotFolder? {
+        guard let key = try await accountKey() else { return nil }
+        if package.needsCompile { host.work("Compiling \(name)") }
+        return try await package.release(by: key, keepingLogIn: files.folder.url)
     }
 
     /// Copies the store's copy of a spot as one `.spot` file, a zip that a chat can carry, and returns the file. A spot that
