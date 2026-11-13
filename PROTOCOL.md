@@ -253,8 +253,8 @@ A button is a verb. If the layout places it, the sheet draws it. If not, it's an
 [ "$1" = star ] && echo "$2" >> "$OPENSPOT_DATA/starred"
 ```
 
-- The ⌘K menu lists the spot's own actions first, then Openspot's, then the actions of other spots, grouped by spot, A
-  to Z by its name. Each group after the first has a header, which a search hides. Openspot's own actions, such as Edit,
+- The ⌘K menu lists the spot's own actions first, then Openspot's under them, then the actions of other spots, grouped
+  by spot, A to Z by its name. Each group of another spot has a header, which a search hides. Openspot's own actions, such as Edit,
   Delete and Change Icon, come from its built-in spots in the same way.
 - `close=true` closes the panel after the call. `confirm` asks for a second press.
 - A button `shortcut` is a letter, a digit, `return`, `backspace` or `,`, after `cmd+`, `shift+`, both or neither, such as

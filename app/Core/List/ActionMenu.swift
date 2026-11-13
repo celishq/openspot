@@ -1,8 +1,8 @@
 import Foundation
 
 /// The rows of the actions menu for one command and its selected item, with the selected row. Its rows come in groups:
-/// the spot's own, then Openspot's, then those that each other spot offers, A to Z by its name. Each group after the first
-/// has a header line, unless a search shows the rows.
+/// the spot's own with Openspot's after them, then those that each other spot offers, A to Z by its name. Each group after
+/// the first has a header line, unless a search shows the rows.
 public struct ActionMenu: Equatable, Sendable {
     public struct Row: Equatable, Sendable {
         public let title: String
@@ -12,22 +12,20 @@ public struct ActionMenu: Equatable, Sendable {
         var isQuiet = false
         /// The ID of the spot that offers the action, which a press runs. Nil for an action of the menu's own spot or of the app.
         public var owner: String?
-        /// The title of its group, which its header shows. Nil for the group of the menu's own spot.
+        /// The title of its group, which its header shows. Nil for the first group: the menu's own spot and the app.
         var group: String?
     }
 
-    /// An action that a spot offers to the menu of the card, with the name of its group: Openspot for a spot of the app.
+    /// An action that a spot offers to the menu of the card, with the name of its group. A spot of the app has none.
     public struct Offer: Equatable, Sendable {
         public let owner: String
-        public let name: String
+        public let name: String?
         public let action: CommandAction
-        public let isApp: Bool
 
         public init(owner: String, name: String, action: CommandAction, isApp: Bool = false) {
             self.owner = owner
-            self.name = isApp ? ActionMenu.appGroup : name
+            self.name = isApp ? nil : name
             self.action = action
-            self.isApp = isApp
         }
     }
 
@@ -36,9 +34,6 @@ public struct ActionMenu: Equatable, Sendable {
         public let title: String
         public let line: Int
     }
-
-    /// The title of the group of the app's own rows.
-    static let appGroup = "Openspot"
 
     /// What Enter does on a row that shows a key: it records a new one.
     static let changeTitle = "Change"
@@ -68,7 +63,7 @@ public struct ActionMenu: Equatable, Sendable {
         }
         rows += spot.actions(for: item).map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0) }
         let sorted = offered.enumerated().sorted {
-            ($0.element.isApp ? 0 : 1, $0.element.name, $0.offset) < ($1.element.isApp ? 0 : 1, $1.element.name, $1.offset)
+            ($0.element.name == nil ? 0 : 1, $0.element.name ?? "", $0.offset) < ($1.element.name == nil ? 0 : 1, $1.element.name ?? "", $1.offset)
         }.map(\.element)
         rows += sorted.map { Row(title: $0.action.title, keyLabel: $0.action.key?.label ?? "", action: $0.action, isQuiet: true, owner: $0.owner, group: $0.name) }
         guard !rows.isEmpty else { return nil }

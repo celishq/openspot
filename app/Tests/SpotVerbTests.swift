@@ -126,7 +126,7 @@ final class SpotVerbTests: XCTestCase {
         let rows = menu.rows.filter { $0.action != nil }
         XCTAssertEqual(rows.map(\.title), ["Edit", "Copy prompt for AI", "Share", "Delete", "Change Icon"])
         XCTAssertEqual(rows.map(\.keyLabel), ["⌘E", "", "⌘⇧C", "⌘⌫", ""])
-        XCTAssertEqual(menu.headers.map(\.title), ["Openspot"])
+        XCTAssertEqual(menu.headers.map(\.title), [])
     }
 
     func testAnActionThatASpotOffersShowsInEachCardsMenuAndRunsThatSpotWithTheCardsID() async throws {
@@ -138,7 +138,7 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
         let menu = try XCTUnwrap(model.menu)
         XCTAssertEqual(menu.rows.dropFirst().map(\.title), ["Edit", "Copy prompt for AI", "Share", "Delete", "Change Icon", "Star"])
-        XCTAssertEqual(menu.headers.map(\.title), ["Openspot", "Stars"])
+        XCTAssertEqual(menu.headers.map(\.title), ["Stars"])
         model.menu?.select(try XCTUnwrap(menu.rows.last?.action))
         XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
 

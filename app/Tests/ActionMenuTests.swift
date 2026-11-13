@@ -242,7 +242,7 @@ final class ActionMenuTests: XCTestCase {
         XCTAssertEqual(menu.title(of: menu.rows[0], isRunning: true), "Stop Wipe")
     }
 
-    func testOpenspotsGroupComesFirstThenEachOwnersGroupAToZWithAHeaderEach() throws {
+    func testOpenspotsActionsComeFirstWithNoHeaderThenEachOwnersGroupAToZWithAHeaderEach() throws {
         let icon = CommandAction(id: "change", title: "Change Icon", scope: .spot)
         let star = CommandAction(id: "star", title: "Star", scope: .spot)
         let edit = CommandAction(id: "edit", title: "Edit", scope: .spot)
@@ -254,9 +254,9 @@ final class ActionMenuTests: XCTestCase {
 
         XCTAssertEqual(menu.rows.map(\.title), ["Open", "New", "Edit", "Change Icon", "Star"])
         XCTAssertEqual(menu.rows.map(\.owner), [nil, nil, "openspot/actions", "i/Icon", "z/Zoo"])
-        XCTAssertEqual(menu.headers, [ActionMenu.Header(title: "Openspot", line: 2), ActionMenu.Header(title: "Icon", line: 4), ActionMenu.Header(title: "Zoo", line: 6)])
-        XCTAssertEqual(menu.line(ofShown: 3), 5)
-        XCTAssertEqual(menu.fullLines, 9)
+        XCTAssertEqual(menu.headers, [ActionMenu.Header(title: "Icon", line: 3), ActionMenu.Header(title: "Zoo", line: 5)])
+        XCTAssertEqual(menu.line(ofShown: 3), 4)
+        XCTAssertEqual(menu.fullLines, 8)
     }
 
     func testASearchDropsTheHeadersAndAMenuOfOneGroupHasNone() throws {
