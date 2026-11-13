@@ -41,6 +41,8 @@ public protocol SpotsHost: AnyObject {
     /// glyphs of the whole list once, so that its rows find their pictures with no drawing in the app. No glyphs leave the
     /// glyphs drawn before as they are.
     func prepare(_ items: [SpotItem], glyphs: [String]) async
+    /// Draws the colour glyphs of the cards ahead, so that a card finds its glyph with no drawing on the main thread.
+    func prepareCards(glyphs: [String])
     /// The prompt that asks an agent to write or fix a spot in this folder, with the `openspot` command of the app.
     func agentPrompt(for folder: URL) -> AgentPrompt
     /// Makes a change on a motion, or with none at all, and calls `completion` when its motion reaches its end.

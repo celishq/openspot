@@ -31,6 +31,7 @@ public final class SpotsModel {
             spotListIsStale = true
             askAnswers()
             updateVisible()
+            prepareCardGlyphs()
         }
     }
     public var query = "" {
@@ -46,6 +47,8 @@ public final class SpotsModel {
     public internal(set) var visible: [Entry] = []
     /// The sizes that `placements` were laid out from.
     @ObservationIgnored var laidOutSizes: [SpotSize] = []
+    /// The glyphs of the cards that the host last drew ahead.
+    @ObservationIgnored private var cardGlyphs: [String] = []
     @ObservationIgnored var laidOutGrid = SpotGrid()
     /// The cards as the items that the main search finds. It folds them again only when they change.
     @ObservationIgnored var spotList = ItemList()
@@ -417,6 +420,14 @@ public final class SpotsModel {
             next.insert(Entry(spot: spot, run: runs.sheets[spot.id], choice: arrangement, defaults: defaultArrangement, letter: letters[spot.id]), at: min(index, next.count))
         }
         if next != entries { entries = next }
+    }
+
+    /// Asks the host to draw the glyphs of the cards ahead when they change.
+    private func prepareCardGlyphs() {
+        let glyphs = entries.compactMap(\.spot.glyph)
+        guard glyphs != cardGlyphs else { return }
+        cardGlyphs = glyphs
+        host.prepareCards(glyphs: glyphs)
     }
 
     public func rebuildEntries() {

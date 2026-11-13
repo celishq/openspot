@@ -118,6 +118,10 @@ extension OpenspotApp: SpotsHost {
         await SpotIconStore.shared.prepare(items)
     }
 
+    func prepareCards(glyphs: [String]) {
+        SpotItemIcon.prepare(glyphs: glyphs, size: SpotTokens.glyphSize)
+    }
+
     func agentPrompt(for folder: URL) -> AgentPrompt {
         AgentPrompt(folder: folder, guide: Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder, app: AgentPrompt.command(of: Bundle.main.executablePath ?? ""))
     }
