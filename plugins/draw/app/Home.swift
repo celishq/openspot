@@ -10,13 +10,24 @@ struct Home: View {
     let trash: ([URL]) -> Void
     let rename: (URL) -> Void
     @State private var entries: [Shelf.Entry] = []
+    @State private var width: CGFloat = 900
+
+    /// The width of a card.
+    static let card: CGFloat = 220
+
+    /// As many columns as fit, and no more than the cards, so a few cards sit in the middle.
+    private var columns: Int {
+        let room = width - (drawer.open ? 340 : 80)
+        let fit = max(1, Int((room + 20) / (Home.card + 20)))
+        return max(1, min(fit, entries.count + (drawer.query.isEmpty ? 1 : 0), 5))
+    }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 28) {
                 Search(drawer: drawer, wide: true)
                     .frame(maxWidth: 460)
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 200, maximum: 260), spacing: 20)], spacing: 22) {
+                LazyVGrid(columns: Array(repeating: GridItem(.fixed(Home.card), spacing: 20), count: columns), spacing: 24) {
                     if drawer.query.isEmpty {
                         Button(action: make) {
                             VStack(spacing: 8) {
@@ -37,13 +48,17 @@ struct Home: View {
                         })
                     }
                 }
-                .frame(maxWidth: 1100)
             }
             .padding(.leading, drawer.open ? 300 : 40)
             .padding(.trailing, 40)
             .padding(.vertical, 24)
             .frame(maxWidth: .infinity)
         }
+        .background(GeometryReader { place in
+            Color.clear
+                .onAppear { width = place.size.width }
+                .onChange(of: place.size.width) { _, now in width = now }
+        })
         .onAppear(perform: reload)
         .onChange(of: drawer.query) { _, _ in reload() }
         .onChange(of: drawer.changes) { _, _ in reload() }

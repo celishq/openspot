@@ -12,6 +12,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let drawer = Drawer()
     private var side: NSView?
     private var stripLeading: NSLayoutConstraint?
+    private var latchConstraint: NSLayoutConstraint?
     private var latchLeading: CGFloat = 0
     /// How far down the window the middle of the window buttons lies, where the tab row lines up.
     private var middle: CGFloat = 26
@@ -64,16 +65,18 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let lights = window.standardWindowButton(.zoomButton).map { $0.convert($0.bounds, to: nil) } ?? CGRect(x: 60, y: window.frame.height - 26, width: 14, height: 14)
         latchLeading = lights.maxX + 16
         middle = window.frame.height - lights.midY
-        let stripLeading = strip.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: latchLeading + 46)
+        let latchConstraint = latch.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: drawer.open ? 222 : latchLeading)
+        self.latchConstraint = latchConstraint
+        let stripLeading = strip.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: latchLeading + 56)
         self.stripLeading = stripLeading
         NSLayoutConstraint.activate([
             stage.leadingAnchor.constraint(equalTo: root.leadingAnchor), stage.trailingAnchor.constraint(equalTo: root.trailingAnchor),
             stage.topAnchor.constraint(equalTo: root.topAnchor), stage.bottomAnchor.constraint(equalTo: root.bottomAnchor),
             side.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 8), side.topAnchor.constraint(equalTo: root.topAnchor, constant: 8),
             side.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -8),
-            latch.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: latchLeading),
+            latchConstraint,
             latch.centerYAnchor.constraint(equalTo: root.topAnchor, constant: middle),
-            stripLeading, strip.trailingAnchor.constraint(lessThanOrEqualTo: root.trailingAnchor, constant: -170),
+            stripLeading, strip.trailingAnchor.constraint(lessThanOrEqualTo: root.trailingAnchor, constant: -110),
             strip.centerYAnchor.constraint(equalTo: root.topAnchor, constant: middle)
         ])
         window.contentView = root
@@ -104,7 +107,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         canvas.translatesAutoresizingMaskIntoConstraints = false
         stage.addSubview(canvas)
         let tools = bar(Toolbar(studio: studio, picture: { canvas.insertPicture(nil) }), in: stage)
-        let corner = bar(Corner(studio: studio, fit: { canvas.fit() }), in: stage)
+        let corner = bar(Corner(studio: studio), in: stage)
         let style = bar(StyleSlot(studio: studio), in: stage)
         NSLayoutConstraint.activate([
             canvas.leadingAnchor.constraint(equalTo: stage.leadingAnchor), canvas.trailingAnchor.constraint(equalTo: stage.trailingAnchor),
@@ -165,7 +168,8 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.3
             context.allowsImplicitAnimation = true
-            stripLeading?.animator().constant = opening ? 290 : latchLeading + 46
+            stripLeading?.animator().constant = opening ? 290 : latchLeading + 56
+            latchConstraint?.animator().constant = opening ? 222 : latchLeading
         }
         if opening {
             side?.isHidden = false

@@ -236,9 +236,22 @@ struct Board: Codable, Equatable {
         figures.last { !except.contains($0.id) && $0.isBox && $0.holds(point) }?.id
     }
 
-    /// The figures that lie wholly inside a rectangle.
+    /// The figures that a rectangle touches: a box it overlaps, or a line that passes through it.
     func figures(in rect: CGRect) -> [UUID] {
-        figures.filter { rect.contains(bounds(of: $0)) }.map(\.id)
+        figures.filter { figure in
+            switch figure.kind {
+            case .shape, .text, .image:
+                return rect.intersects(figure.frame)
+            case .tie:
+                return rect.intersects(bounds(of: figure))
+            case .arrow, .pen:
+                let line = path(of: figure)
+                if line.contains(where: rect.contains) { return true }
+                let sides = [(CGPoint(x: rect.minX, y: rect.minY), CGPoint(x: rect.maxX, y: rect.minY)), (CGPoint(x: rect.maxX, y: rect.minY), CGPoint(x: rect.maxX, y: rect.maxY)),
+                             (CGPoint(x: rect.maxX, y: rect.maxY), CGPoint(x: rect.minX, y: rect.maxY)), (CGPoint(x: rect.minX, y: rect.maxY), CGPoint(x: rect.minX, y: rect.minY))]
+                return zip(line, line.dropFirst()).contains { a, b in sides.contains { CGPoint.crossing(a, b, $0.0, $0.1) != nil } }
+            }
+        }.map(\.id)
     }
 
     // MARK: Changing

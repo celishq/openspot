@@ -305,6 +305,15 @@ final class DrawBoardTests: XCTestCase {
         XCTAssertEqual(arrows.prefix(2).map(\.ties), [[tie.id], [tie.id]])
     }
 
+    func testAMarqueePicksEachFigureItTouches() {
+        let (board, target, arrows) = fan()
+        let corner = CGRect(x: 480, y: 150, width: 40, height: 40)
+
+        XCTAssertEqual(Set(board.figures(in: corner)), [target.id])
+        XCTAssertTrue(board.figures(in: CGRect(x: 250, y: 0, width: 20, height: 300)).contains(arrows[0].id))
+        XCTAssertEqual(board.figures(in: CGRect(x: 600, y: 600, width: 10, height: 10)), [])
+    }
+
     func testAPressFindsTheTopFigureAndTheLineOfAnArrow() throws {
         let (board, target, arrows) = fan()
         let middle = board.path(of: arrows[0])[24]

@@ -1,14 +1,24 @@
 import SwiftUI
 
-/// The name and key of a control, which fades in after the pointer rests on it for a moment.
+/// The name and key of a control, which fades in after the pointer rests on it for a moment. Near an edge of the window
+/// it lines up with that side of the control, so it stays whole.
 struct Tip: ViewModifier {
     let text: String
     var below = false
     @State private var resting = false
     @State private var shown = false
+    @State private var side = HorizontalAlignment.center
 
     func body(content: Content) -> some View {
         content
+            .background(GeometryReader { place in
+                Color.clear.onChange(of: shown) { _, now in
+                    guard now else { return }
+                    let frame = place.frame(in: .global)
+                    let width = NSApp.keyWindow?.frame.width ?? .greatestFiniteMagnitude
+                    side = frame.midX + 90 > width ? .trailing : frame.midX < 90 ? .leading : .center
+                }
+            })
             .onHover { inside in
                 resting = inside
                 if inside {
@@ -20,7 +30,7 @@ struct Tip: ViewModifier {
                     withAnimation(.easeIn(duration: 0.1)) { shown = false }
                 }
             }
-            .overlay(alignment: below ? .bottom : .top) {
+            .overlay(alignment: Alignment(horizontal: side, vertical: below ? .bottom : .top)) {
                 if shown {
                     Text(text)
                         .font(.system(size: 12, weight: .medium))
@@ -167,26 +177,20 @@ struct Forms: View {
     }
 }
 
-/// Undo, redo and the zoom, at the top right of the board. A click on the zoom shows the whole board.
+/// Undo and redo, at the top right of the board, in a round glass pill.
 struct Corner: View {
     @ObservedObject var studio: Studio
-    let fit: () -> Void
 
     var body: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 0) {
             Knob(symbol: "arrow.uturn.backward", help: "Undo  ⌘Z", enabled: studio.canUndo, below: true) { studio.undo() }
+            Divider().frame(height: 16)
             Knob(symbol: "arrow.uturn.forward", help: "Redo  ⇧⌘Z", enabled: studio.canRedo, below: true) { studio.redo() }
-            Button(action: fit) {
-                Text("\(Int((studio.zoom * 100).rounded()))%")
-                    .font(.system(size: 12, weight: .medium).monospacedDigit())
-                    .frame(width: 46, height: 34)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .tip("Show the whole board  ⇧1", below: true)
         }
-        .padding(5)
-        .modifier(Raised())
+        .padding(.horizontal, 4)
+        .padding(.vertical, 1)
+        .glassEffect(.regular.interactive(), in: Capsule())
+        .shadow(color: .black.opacity(0.1), radius: 8, y: 2)
     }
 }
 
@@ -333,9 +337,12 @@ struct Search: View {
             }
         }
         .font(.system(size: wide ? 15 : 13))
-        .padding(.horizontal, wide ? 14 : 9)
-        .frame(height: wide ? 40 : 30)
-        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: wide ? 12 : 8, style: .continuous))
+        .padding(.horizontal, wide ? 16 : 11)
+        .frame(height: wide ? 42 : 32)
+        .glassEffect(.regular.interactive(), in: Capsule())
+        .overlay(Capsule().strokeBorder(Color.accentColor.opacity(typing ? 0.85 : 0), lineWidth: 2.5).padding(-1))
+        .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
+        .animation(.easeOut(duration: 0.15), value: typing)
         .onAppear { if takesFocus { typing = true } }
         .onChange(of: drawer.searching) { _, now in if now { typing = true } }
     }
@@ -350,7 +357,8 @@ struct RowFrames: PreferenceKey {
     }
 }
 
-/// The button beside the window buttons that shows the list of boards, on a small rounded back.
+/// The button that shows the list of boards, in a round glass pill beside the window buttons. While the list shows, it
+/// sits in the list's top right corner.
 struct Latch: View {
     @ObservedObject var drawer: Drawer
     let action: () -> Void
@@ -358,13 +366,15 @@ struct Latch: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: "sidebar.left")
-                .font(.system(size: 14, weight: .medium))
-                .frame(width: 34, height: 24)
-                .background(Color.primary.opacity(drawer.open ? 0.08 : 0.05), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-                .contentShape(Rectangle())
+                .font(.system(size: 15, weight: .regular))
+                .foregroundStyle(.primary)
+                .frame(width: 44, height: 30)
+                .contentShape(Capsule())
         }
         .buttonStyle(.plain)
-        .tip("Boards  ⌃⌘S", below: true)
+        .glassEffect(.regular.interactive(), in: Capsule())
+        .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
+        .tip(drawer.open ? "Hide boards  ⌃⌘S" : "Show boards  ⌃⌘S", below: true)
     }
 }
 
