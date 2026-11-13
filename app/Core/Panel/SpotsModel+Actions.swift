@@ -60,8 +60,9 @@ extension SpotsModel {
             openMenu(on: target)
             return menu != nil
         }
+        var noHooks: Set<String> = []
         if searchText.isEmpty, !target.entry.spot.actions(for: target.item).contains(where: { $0.key == key }),
-           let offer = offered(on: target, asks: false).first(where: { $0.action.key == key }) {
+           let offer = offered(on: target, yes: &noHooks, asks: false).first(where: { $0.action.key == key }) {
             if offer.action.confirm != nil {
                 openMenu(on: target)
                 menu?.select(offer.action)
@@ -315,8 +316,8 @@ extension SpotsModel {
         if let menu, let submenu = menu.submenu, let frame = menuFrame, menuSession?.phase != .closing {
             row = frame.rowRect(submenu.parent, of: menu)
         }
-        guard row != shownSubmenuRow else { return }
-        shownSubmenuRow = row
+        guard row != menuSession?.submenuRow else { return }
+        menuSession?.submenuRow = row
         if let row, let menu, let frame = menuFrame {
             host.showSubmenu(beside: row, of: frame.rect(of: menu))
         } else {
@@ -378,8 +379,8 @@ extension SpotsModel {
     }
 
     private func openMenu(on target: Target) {
-        hookYes = []
-        menuSession = actionMenu(on: target, asks: true).map { ActionMenuSession(menu: $0, target: target) }
+        var yes: Set<String> = []
+        menuSession = actionMenu(on: target, yes: &yes, asks: true).map { ActionMenuSession(menu: $0, target: target, hookYes: yes) }
         DispatchQueue.main.async { [weak self] in
             guard let self, menuSession?.phase == .opening else { return }
             change(.sheet(isOpen: true), {
@@ -391,50 +392,60 @@ extension SpotsModel {
         }
     }
 
-    /// The menu of a target. With `asks`, each hook that has not said yes yet is asked; without, only a yes counts.
-    private func actionMenu(on target: Target, asks: Bool = false) -> ActionMenu? {
+    /// The menu of a target with only the offered actions that need no hook.
+    private func actionMenu(on target: Target) -> ActionMenu? {
+        var none: Set<String> = []
+        return actionMenu(on: target, yes: &none, asks: false)
+    }
+
+    /// The menu of a target with the offered actions whose hooks said yes. With `asks`, each other hook is asked, and its
+    /// yes joins `yes`.
+    private func actionMenu(on target: Target, yes: inout Set<String>, asks: Bool) -> ActionMenu? {
         let isOpenList = openList == target.entry.id
         return ActionMenu(
             spot: target.entry.spot,
             item: target.item,
             showsOpen: !isOpenList || target.item != nil,
-            offered: offered(on: target, asks: asks)
+            offered: offered(on: target, yes: &yes, asks: asks)
         )
     }
 
     /// The actions that the spots offer to a selected card of the grid, each that fits the card's origin and whose hook
     /// says yes. A child of a hidden action hides too. A card of a file that does not load is the person's. A row of a list
     /// or an open sheet keeps its own actions.
-    private func offered(on target: Target, asks: Bool) -> [OfferedAction] {
+    private func offered(on target: Target, yes: inout Set<String>, asks: Bool) -> [OfferedAction] {
         guard openList == nil, target.item == nil, let origin = origin(of: target.entry.spot) else { return [] }
         let word = OfferedAction.words.first { $0.value == origin }?.key ?? ""
-        return sheets.values.map(\.spot).sorted { $0.id < $1.id }.flatMap { spot in
+        var shown: [OfferedAction] = []
+        for spot in sheets.values.map(\.spot).sorted(by: { $0.id < $1.id }) {
             var hidden: [String] = []
-            return spot.offeredActions.filter { offer in
+            for offer in spot.offeredActions {
                 let id = offer.action.id
-                let shows = offer.fits(origin) && !hidden.contains { id.hasPrefix($0 + ".") } && says(offer, of: spot, on: target, origin: word, asks: asks)
-                if !shows { hidden.append(id) }
-                return shows
+                let shows = offer.fits(origin) && !hidden.contains { id.hasPrefix($0 + ".") } && says(offer, of: spot, on: target, origin: word, yes: &yes, asks: asks)
+                if shows { shown.append(offer) } else { hidden.append(id) }
             }
         }
+        return shown
     }
 
     /// Whether the hook of an action says yes to the card. A late yes puts the action in the menu that is still open on it.
-    private func says(_ offer: OfferedAction, of spot: Spot, on target: Target, origin: String, asks: Bool) -> Bool {
+    private func says(_ offer: OfferedAction, of spot: Spot, on target: Target, origin: String, yes: inout Set<String>, asks: Bool) -> Bool {
         guard let when = offer.when else { return true }
         let key = "\(spot.id) \(offer.action.id)"
-        if hookYes.contains(key) { return true }
+        if yes.contains(key) { return true }
         guard asks else { return false }
         let card = target.entry.id
-        let answer = runs.ask(when, of: spot, card: card, origin: origin) { [weak self] yes in
-            guard yes, let self, let session = menuSession, session.phase != .closing, session.target.entry.id == card, session.menu.parent == nil else { return }
-            hookYes.insert(key)
-            guard var menu = actionMenu(on: session.target) else { return }
+        let answer = runs.ask(when, of: spot, card: card, origin: origin) { [weak self] said in
+            guard said, let self, let session = menuSession, session.phase != .closing, session.target.entry.id == card, session.menu.parent == nil else { return }
+            var answers = session.hookYes
+            answers.insert(key)
+            guard var menu = actionMenu(on: session.target, yes: &answers, asks: false) else { return }
             menu.search(session.menu.query)
             if let action = session.menu.selectedRow?.action { menu.select(action) }
+            menuSession?.hookYes = answers
             menuSession?.menu = menu
         }
-        if answer == true { hookYes.insert(key) }
+        if answer == true { yes.insert(key) }
         return answer == true
     }
 
@@ -507,10 +518,13 @@ extension SpotsModel {
     /// Closes the menu at once for keys and the focus, and leaves its look to fade back into its item, then lets it go.
     public func closeMenu() {
         guard menu != nil else { return }
+        if menuSession?.submenuRow != nil {
+            menuSession?.submenuRow = nil
+            host.hideSubmenu()
+        }
         change(.sheet(isOpen: false), { menuSession?.phase = .closing }, completion: { [weak self] in
             if self?.menuSession?.phase == .closing { self?.menuSession = nil }
         })
-        placeSubmenu()
     }
 
     /// Runs a shown row of the open menu, as a click on it does. A row with children opens them instead.
