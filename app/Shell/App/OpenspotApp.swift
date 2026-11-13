@@ -22,7 +22,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     static let touchIDReuse: TimeInterval = 300
     static var touchIDPassed: Date?
 
-    private(set) var statusItem: NSStatusItem?
+    private(set) var item: OpenspotItem?
     private(set) lazy var model = SpotsModel(host: self)
     private(set) var panel: SpotsPanel?
     private(set) var toast: ToastPanel?
@@ -33,7 +33,6 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var keyFaults: [String] = []
     private var trayBar: SpotTrayBar?
     private var configFaults: [String] = []
-    private var menuBarDrag: SpotMenuBarDrag?
     private var fileChooser: SpotFileChooser?
     private var motionProbe: SpotMotionProbe?
     private var update: AppUpdate?
@@ -50,27 +49,17 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var tapWatch: SpotTapWatch?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        #if DEBUG
-        item.button?.image = NSImage(named: "TrayMarkNightly")
-        #else
-        item.button?.image = NSImage(named: "TrayMark")
-        #endif
-        item.button?.setAccessibilityLabel("Openspot")
-        item.button?.target = self
-        item.button?.action = #selector(pressItem)
-        statusItem = item
-        menuBarDrag = item.button.map { button in
-            SpotMenuBarDrag(button: button, onEnter: { [weak self] in self?.showPanelForDrag() }, onDrop: { [weak self] in self?.model.review($0) })
-        }
+        toast = ToastPanel.make()
+        let item = OpenspotItem(
+            model: model, toast: toast?.toast, target: self, action: #selector(pressItem),
+            onDragEnter: { [weak self] in self?.showPanelForDrag() }, onDrop: { [weak self] in self?.model.review($0) }
+        )
+        self.item = item
+        toast?.item = item
         EditMenu.install()
         SpotKeyLayouts.start()
         panel = SpotsPanel.make(model: model)
-        toast = ToastPanel.make()
-        toast?.anchor = { [weak item] in
-            item?.button?.window.flatMap { $0.occlusionState.contains(.visible) ? $0.frame : nil }
-        }
-        trayBar = SpotTrayBar(model: model, openspotItem: item, toast: toast?.toast)
+        trayBar = SpotTrayBar(model: model, openspotItem: item)
         if let panel, let probe = SpotMotionProbe(model: model, panel: panel) {
             motionProbe = probe
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) { probe.run(show: panel.show) }

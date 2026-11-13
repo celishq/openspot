@@ -15,8 +15,8 @@ final class ToastPanel: NSPanel {
     let toast = Toast()
     private var shows = 0
     private var fixKey: HotKey.Registration?
-    /// The frame of the menu bar item that toasts hang from, or nil when it shows nowhere.
-    var anchor: (() -> NSRect?)?
+    /// The menu bar item that toasts hang from.
+    weak var item: OpenspotItem?
 
     /// Shows a message, in place of any toast on screen, and hides it after a while, or keeps it with no duration. A fix opens
     /// on a click or on its key.
@@ -31,7 +31,7 @@ final class ToastPanel: NSPanel {
         let width = min(measure.view.fittingSize.width.rounded(.up) + 1, Self.maxSize.width)
         let size = measure.sizeThatFits(in: NSSize(width: width, height: Self.maxSize.height))
         let place = ScreenPlace(screens: NSScreen.screens.map { ScreenPlace.Screen(frame: $0.frame, area: $0.visibleFrame) })
-        if let origin = place.origin(ofToast: size, under: anchor?()) {
+        if let origin = place.origin(ofToast: size, under: item?.frame) {
             setFrame(NSRect(origin: origin, size: size), display: true)
         }
         orderFrontRegardless()

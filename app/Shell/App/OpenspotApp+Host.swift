@@ -77,7 +77,7 @@ extension OpenspotApp: SpotsHost {
 
     /// Whether a point on the screen lies on the cards of the panel or on the menu bar item.
     private func liesOnPanelDrop(_ point: NSPoint) -> Bool {
-        panel?.showsDrop(at: point) == true || statusItem?.button?.window?.frame.contains(point) == true
+        panel?.showsDrop(at: point) == true || item?.contains(point) == true
     }
 
     var draggedPaths: [String] {
