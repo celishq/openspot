@@ -163,6 +163,7 @@ final class SpotsPanel: NSPanel {
             resize(to: widened(frame))
         }
         SpotSoftBlur.warm(SpotsView.blurHeights(of: model), width: SpotTokens.panelWidth + sides.leftExtent + sides.rightExtent)
+        SpotSoftBlur.warm(SpotsView.blurHeights(of: model), width: SpotTokens.panelWidth)
     }
 
     /// Shows the wallpaper over the other apps while the panel shows in Edit Spots, and takes it away when either ends. The

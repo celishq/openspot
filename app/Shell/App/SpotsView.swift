@@ -91,8 +91,6 @@ struct SpotsView: View {
         }
         .background(alignment: .topLeading) {
             softBlur
-                .frame(width: wideWidth, height: SpotTokens.panelHeight)
-                .offset(x: -model.sides.leftExtent)
         }
         .environment(\.spotIsShown, model.isShown)
         .environment(\.spotPanelWidth, wideWidth)
@@ -102,10 +100,16 @@ struct SpotsView: View {
         }
     }
 
-    /// The blur of the grid and the blur of the sheet, each with a fixed size. While the sheet moves, the shorter one stays
-    /// whole and the taller one fades on the sheet's own motion, so that where they overlap the backdrop keeps one strength.
+    /// The blur of the grid and the blur of the sheet, each with a fixed size and as wide as the side panels that show. While
+    /// the sheet moves, the shorter one stays whole and the taller one fades on the sheet's own motion, so that where they
+    /// overlap the backdrop keeps one strength.
     private var softBlur: some View {
-        SpotBackdrop(model: model, gridHeight: gridHeight, sheetHeight: max(sheetHeight, replacedHeight), menuHeight: menuHeight, drawsBlur: drawsBlur)
+        let sides = model.shownSides
+        let width = SpotTokens.panelWidth + sides.leftExtent + sides.rightExtent
+        return SpotBackdrop(model: model, gridHeight: gridHeight, sheetHeight: max(sheetHeight, replacedHeight), menuHeight: menuHeight, drawsBlur: drawsBlur)
+            .environment(\.spotPanelWidth, width)
+            .frame(width: width, height: SpotTokens.panelHeight)
+            .offset(x: -sides.leftExtent)
     }
 
     /// The sheet that is built, from its card to its open place, and its card's radius, for the field that joins it. Nil

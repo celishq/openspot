@@ -38,6 +38,7 @@ public final class SpotsModel {
         didSet {
             guard query != oldValue else { return }
             selected = 0
+            showSides()
             askAnswers()
             updateVisible()
         }
@@ -74,9 +75,18 @@ public final class SpotsModel {
         }
     }
     /// The side panels beside the grid's center panel.
-    public internal(set) var sides = GridSides()
+    public internal(set) var sides = GridSides() {
+        didSet { showSides() }
+    }
+    /// The side panels that the panel's backdrop covers: none while a search shows its answers.
+    public private(set) var shownSides = GridSides()
     /// The side panel that hides once its cards have landed in the center.
     @ObservationIgnored var sideLeaving: SpotSide?
+    private func showSides() {
+        let shown = query.isEmpty ? sides : GridSides()
+        if shownSides != shown { shownSides = shown }
+    }
+
     /// How many columns the grid has.
     public var columns: Int {
         sides.columns
