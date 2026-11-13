@@ -130,6 +130,16 @@ final class SpotEventsTests: SpotRunsCase {
         XCTAssertEqual(log("other"), [])
     }
 
+    func testASpotThatOffersRowsAndReadsOnlyAsItsSheetOpensReadsAtLaunch() async throws {
+        try script("offer", header: "on=sheet.open\noffers=search", log: "offer", "\(reasons)\nprintf 'row=a\\ntitle=A\\n'")
+        _ = try scanned()
+
+        runs.launched()
+
+        try await wait("the rows of the launch read") { self.runs.sheets["offer"]?.list.all.map(\.title) == ["A"] }
+        XCTAssertEqual(log("reasons"), ["app.launch none"])
+    }
+
     func testAFailedReadOfAnEventForEachSpotIsTold() async throws {
         try script("unwanted", header: "on=app.update", log: "unwanted", "echo 'No news.' >&2\nexit 1")
         let (_, told) = try toldSheet()

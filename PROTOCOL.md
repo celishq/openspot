@@ -460,7 +460,8 @@ example.
 
 - The user gives each spot its hotkey, puts spots in the menu bar, floats them, and orders and sizes the cards. A spot
   can't claim a hotkey or a place.
-- `offers=search` shows the spot's rows in the main search. It needs `on=panel.open` or a `clock`. Openspot ranks the
+- `offers=search` shows the spot's rows in the main search. It needs `on=panel.open`, `on=sheet.open` or a `clock`. With
+  only `on=sheet.open`, Openspot reads the rows once as it starts and again at each open of the sheet. Openspot ranks the
   rows by the user's picks.
 - The user can give any spot with a sheet a hotkey, or a shake of the pointer, in Settings. It shows the spot in a small
   window at the pointer, which stays while the user works in other apps. The spot never learns where it shows.

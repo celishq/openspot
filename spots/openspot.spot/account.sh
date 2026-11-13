@@ -2,7 +2,6 @@
 # title=Account
 # icon=person.crop.circle
 # detail=12 words that are your account
-# on=panel.open
 # on=sheet.open
 # offers=search
 # uses=app,account
@@ -28,9 +27,9 @@ EOF
 }
 
 # Prints the step to show: the kept one while the account allows it, else the one its state calls for. The words show
-# only after a press, so a panel that opens again forgets them.
+# only after a press, so a sheet that opens again forgets them.
 step() {
-  [ "$OPENSPOT_REASON" != panel.open ] || [ "$(cat "$data/step" 2>/dev/null)" != words ] || rm -f "$data/step"
+  [ "$OPENSPOT_REASON" != sheet.open ] || [ "$(cat "$data/step" 2>/dev/null)" != words ] || rm -f "$data/step"
   saved=$(cat "$data/step" 2>/dev/null)
   case "$saved:$signed:$backed" in
     choose:false:* | restore:false:* | about:false:*) echo "$saved"; return ;;
