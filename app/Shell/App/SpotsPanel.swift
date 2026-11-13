@@ -7,6 +7,7 @@ import SwiftUI
 final class SpotsPanel: NSPanel {
     private var model: SpotsModel?
     let place = SpotsWindowPlace()
+    private let frontWindow = SpotFrontWindow()
     /// The frame that the window had before Edit Spots grew it.
     private var restFrame: NSRect?
     private var pressWatch: Task<Void, Never>?
@@ -51,18 +52,9 @@ final class SpotsPanel: NSPanel {
         guard model?.isShown != true || model?.isWarming == true else { return }
         let screens = NSScreen.screens.map { ScreenPlace.Screen(frame: $0.frame, area: $0.visibleFrame) }
         let mainHeight = NSScreen.screens.first?.frame.maxY ?? 0
-        let window = screens.count < 2 ? nil : app.flatMap(Self.frontWindow).map { ScreenPlace.frame(ofBounds: $0, mainHeight: mainHeight) }
+        let window = screens.count < 2 ? nil : app.flatMap(frontWindow.bounds).map { ScreenPlace.frame(ofBounds: $0, mainHeight: mainHeight) }
         guard let origin = ScreenPlace(screens: screens).origin(of: frame.size, window: window, pointer: NSEvent.mouseLocation) else { return }
         setFrameOrigin(origin)
-    }
-
-    /// The bounds of the app's front window, as Core Graphics gives them, or nil when it shows none. They need no permission.
-    private static func frontWindow(of app: NSRunningApplication) -> CGRect? {
-        let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
-        let front = windows.first {
-            ($0[kCGWindowOwnerPID as String] as? pid_t) == app.processIdentifier && ($0[kCGWindowLayer as String] as? Int) == 0
-        }
-        return (front?[kCGWindowBounds as String] as? NSDictionary).flatMap { CGRect(dictionaryRepresentation: $0) }
     }
 
     /// Brings the panel to the front and starts its open motion.
@@ -354,6 +346,7 @@ final class SpotsPanel: NSPanel {
         panel.watchPaste(model: model)
         panel.center()
         panel.followEditing()
+        panel.frontWindow.start()
         return panel
     }
 }
