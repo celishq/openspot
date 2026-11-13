@@ -30,6 +30,132 @@ final class DictateExampleTests: SampleSpotsCase {
         }
     }
 
+    /// Waits up to ten seconds for a fact.
+    private func waitUntil(_ fact: () -> Bool) async throws {
+        for _ in 0..<200 where !fact() {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+    }
+
+    /// A process that only sleeps, which stands in for the app that a helper watches.
+    private func sleeping() throws -> Process {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/sleep")
+        process.arguments = ["600"]
+        try process.run()
+        return process
+    }
+
+    /// The helper in `folder`, waiting as the script starts it, with a stand-in Whisper server on its `PATH` that writes
+    /// its process ID to `server` in the folder and sleeps.
+    private func stay(_ helper: URL, watching parent: Process, action: String? = nil, rest: String = "600", in folder: URL) throws -> Process {
+        try "#!/bin/sh\necho $$ > '\(folder.path)/server.new'\nmv '\(folder.path)/server.new' '\(folder.path)/server'\nexec /bin/sleep 600\n".writeScript(to: folder.appendingPathComponent("tools/whisper-server"))
+        let process = Process()
+        process.executableURL = helper
+        process.arguments = ["stay", String(parent.processIdentifier), folder.appendingPathComponent(Self.model).path] + (action.map { [$0] } ?? [])
+        process.environment = ["PATH": "\(folder.path)/tools:/usr/bin:/bin", "HOME": folder.path, "DICTATE_REST": rest]
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        try process.run()
+        return process
+    }
+
+    /// The process ID of the stand-in Whisper server, once it runs.
+    private func server(in folder: URL) async throws -> pid_t {
+        let file = folder.appendingPathComponent("server")
+        try await waitUntil { FileManager.default.fileExists(atPath: file.path) }
+        return try XCTUnwrap(pid_t(try String(contentsOf: file, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
+    }
+
+    func testAHelperEndedByForceTakesItsWhisperServerWithIt() async throws {
+        let (folder, helper) = try await helper()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let parent = try sleeping()
+        defer { parent.terminate() }
+        let staying = try stay(helper, watching: parent, action: "serve", in: folder)
+        defer { kill(staying.processIdentifier, SIGKILL) }
+        let server = try await server(in: folder)
+        defer { kill(server, SIGKILL) }
+
+        kill(staying.processIdentifier, SIGKILL)
+        try await waitUntil { kill(server, 0) != 0 }
+
+        XCTAssertNotEqual(kill(server, 0), 0)
+    }
+
+    func testTheEndOfTheAppEndsTheHelperAndItsWhisperServer() async throws {
+        let (folder, helper) = try await helper()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let parent = try sleeping()
+        defer { parent.terminate() }
+        let staying = try stay(helper, watching: parent, action: "serve", in: folder)
+        defer { kill(staying.processIdentifier, SIGKILL) }
+        let server = try await server(in: folder)
+        defer { kill(server, SIGKILL) }
+
+        parent.terminate()
+        try await waitUntil { !staying.isRunning && kill(server, 0) != 0 }
+
+        XCTAssertFalse(staying.isRunning)
+        XCTAssertNotEqual(kill(server, 0), 0)
+    }
+
+    func testAWhisperServerThatHeardNoRecordingStopsAfterItsRest() async throws {
+        let (folder, helper) = try await helper()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let parent = try sleeping()
+        defer { parent.terminate() }
+        let staying = try stay(helper, watching: parent, action: "serve", rest: "0.3", in: folder)
+        defer { kill(staying.processIdentifier, SIGKILL) }
+        let server = try await server(in: folder)
+        defer { kill(server, SIGKILL) }
+
+        try await waitUntil { kill(server, 0) != 0 }
+
+        XCTAssertNotEqual(kill(server, 0), 0)
+        XCTAssertTrue(staying.isRunning)
+    }
+
+    func testTheHelperKeepsItsProcessIDInThePidFile() async throws {
+        let (folder, helper) = try await helper()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let parent = try sleeping()
+        defer { parent.terminate() }
+        let pidfile = folder.appendingPathComponent("dictate.pid")
+
+        let staying = try stay(helper, watching: parent, in: folder)
+        defer { kill(staying.processIdentifier, SIGKILL) }
+        try await waitUntil { (try? String(contentsOf: pidfile, encoding: .utf8)) == String(staying.processIdentifier) }
+
+        XCTAssertEqual(try String(contentsOf: pidfile, encoding: .utf8), String(staying.processIdentifier))
+    }
+
+    func testASecondHelperHandsItsActionToTheOneThatWaitsAndEnds() async throws {
+        let (folder, helper) = try await helper()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let parent = try sleeping()
+        defer { parent.terminate() }
+        let fetched = folder.appendingPathComponent("fetched")
+        try Data().write(to: folder.appendingPathComponent(Self.model))
+        let waiting = Process()
+        waiting.executableURL = URL(fileURLWithPath: "/bin/sh")
+        waiting.arguments = ["-c", "trap 'touch \(fetched.path)' USR2; while true; do sleep 0.05; done"]
+        try waiting.run()
+        defer { waiting.terminate() }
+        let pidfile = folder.appendingPathComponent("dictate.pid")
+        try String(waiting.processIdentifier).write(to: pidfile, atomically: true, encoding: .utf8)
+        let held = open(pidfile.path, O_RDONLY)
+        defer { close(held) }
+        XCTAssertEqual(flock(held, LOCK_EX), 0)
+
+        let second = try stay(helper, watching: parent, action: "fetch", in: folder)
+        defer { kill(second.processIdentifier, SIGKILL) }
+        try await waitUntil { !second.isRunning && FileManager.default.fileExists(atPath: fetched.path) }
+
+        XCTAssertFalse(second.isRunning)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: fetched.path))
+    }
+
     func testTheHelperKeepsTheWordsAndDropsTheTagsOfSounds() async throws {
         let (folder, helper) = try await helper()
         defer { try? FileManager.default.removeItem(at: folder) }

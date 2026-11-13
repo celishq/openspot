@@ -186,33 +186,44 @@ final class ModelDownload: NSObject, URLSessionDataDelegate {
 
 /// One Whisper server that keeps the model loaded, so a phrase takes about a second and not the load of 1.6 GB.
 /// It starts with the first recording, which hides its load, and stops after `rest` without use to free its memory.
+/// It never outlives the helper, however the helper ends.
 final class Whisper {
+    /// Runs the server until the helper's end of its input closes, and ends when the server ends.
+    private static let watch = """
+        exec 3<&0 </dev/null
+        whisper-server "$@" & server=$!
+        { read -r line <&3; kill $server; } & link=$!
+        wait $server
+        kill $link
+        """
     private let model: String
-    private let pidfile: URL
-    private let rest: TimeInterval = 600
+    /// The time without use after which the server stops: 600 seconds, or `DICTATE_REST`.
+    private let rest = TimeInterval(ProcessInfo.processInfo.environment["DICTATE_REST"] ?? "") ?? 600
     private var process: Process?
+    /// The input of the server's watch, whose end only the helper holds.
+    private var link: Pipe?
     private var port = 0
     private var restTimer: Timer?
 
-    init(model: String, folder: URL) {
+    init(model: String) {
         self.model = model
-        pidfile = folder.appendingPathComponent("whisper.pid")
-        if let old = try? String(contentsOf: pidfile, encoding: .utf8), let pid = pid_t(old) { kill(pid, SIGTERM) }
     }
 
-    /// Starts the server if it is not running.
+    /// Starts the server if it is not running, and its rest.
     func start() {
-        restTimer?.invalidate()
+        rested()
         guard process?.isRunning != true else { return }
         port = Self.freePort()
+        let link = Pipe()
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        process.arguments = ["whisper-server", "-m", model, "--host", "127.0.0.1", "--port", String(port), "-l", "auto"]
+        process.executableURL = URL(fileURLWithPath: "/bin/sh")
+        process.arguments = ["-c", Self.watch, "sh", "-m", model, "--host", "127.0.0.1", "--port", String(port), "-l", "auto"]
+        process.standardInput = link
         process.standardOutput = FileHandle.nullDevice
         process.standardError = FileHandle.nullDevice
         try? process.run()
-        try? String(process.processIdentifier).write(to: pidfile, atomically: true, encoding: .utf8)
         self.process = process
+        self.link = link
     }
 
     /// The words in this sound. It waits up to a minute for the model to load.
@@ -242,9 +253,9 @@ final class Whisper {
     }
 
     func stop() {
-        process?.terminate()
+        try? link?.fileHandleForWriting.close()
+        link = nil
         process = nil
-        try? FileManager.default.removeItem(at: pidfile)
     }
 
     private func rested() {
@@ -269,12 +280,15 @@ final class Whisper {
 /// unless the person copied something new meanwhile.
 final class Clipboard {
     private let hold: TimeInterval = 10
+    /// The time the paste has before it stops.
+    private let pasteLimit: TimeInterval = 5
     private var kept: [[NSPasteboard.PasteboardType: Data]] = []
     private var mark = 0
     private var timer: Timer?
 
-    /// Puts the text on the clipboard and pastes it into the front app. It is false when the paste needs Accessibility.
-    func paste(_ text: String) -> Bool {
+    /// Puts the text on the clipboard and pastes it into the front app. `done` gets false on the main thread when the
+    /// paste needs Accessibility or takes longer than `pasteLimit`.
+    func paste(_ text: String, done: @escaping (Bool) -> Void) {
         let board = NSPasteboard.general
         if timer == nil {
             kept = (board.pasteboardItems ?? []).map { item in
@@ -291,9 +305,13 @@ final class Clipboard {
         paste.arguments = ["openspot", "clipboard", "paste"]
         paste.standardOutput = FileHandle.nullDevice
         paste.standardError = FileHandle.nullDevice
-        guard (try? paste.run()) != nil else { return false }
-        paste.waitUntilExit()
-        return paste.terminationStatus == 0
+        paste.terminationHandler = { ended in
+            DispatchQueue.main.async { done(ended.terminationStatus == 0) }
+        }
+        guard (try? paste.run()) != nil else { return done(false) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + pasteLimit) {
+            if paste.isRunning { paste.terminate() }
+        }
     }
 
     private func giveBack() {
@@ -1177,7 +1195,7 @@ final class Dictation {
 
     init(model: String, folder: URL) {
         self.model = URL(fileURLWithPath: model)
-        whisper = Whisper(model: model, folder: folder)
+        whisper = Whisper(model: model)
         history = History(file: folder.appendingPathComponent("history"))
         pill = Pill(folder: folder, discard: { [weak self] in self?.discard() }, finish: { [weak self] in self?.finish() })
         escape = EscapeKey { [weak self] in
@@ -1196,8 +1214,9 @@ final class Dictation {
         }
     }
 
-    func stop() {
-        whisper.stop()
+    /// Starts Whisper with no recording, as a recording does.
+    func serve() {
+        whisper.start()
     }
 
     private func start() {
@@ -1312,8 +1331,8 @@ final class Dictation {
             }
             history.add(text)
             pill.hide()
-            if !clipboard.paste(text) {
-                pill.say("Copied, but Openspot cannot paste. Press ⌘V.")
+            clipboard.paste(text) { pasted in
+                if !pasted { self.pill.say("Copied, but Openspot cannot paste. Press ⌘V.") }
             }
         }
     }
@@ -1381,9 +1400,18 @@ case "preview":
     app.run()
 case "stay":
     guard arguments.count >= 4, let parent = pid_t(arguments[2]) else { exit(2) }
+    let folder = URL(fileURLWithPath: arguments[0]).deletingLastPathComponent()
+    let action = arguments.count > 4 ? arguments[4] : ""
+    let pidfile = open(folder.appendingPathComponent("dictate.pid").path, O_RDWR | O_CREAT | O_CLOEXEC, 0o644)
+    guard flock(pidfile, LOCK_EX | LOCK_NB) == 0 else {
+        let holder = pid_t(String(decoding: FileHandle(fileDescriptor: pidfile).readDataToEndOfFile(), as: UTF8.self)) ?? 0
+        if holder > 0, let wake = ["start": SIGUSR1, "fetch": SIGUSR2][action] { kill(holder, wake) }
+        exit(0)
+    }
+    ftruncate(pidfile, 0)
+    _ = String(getpid()).withCString { write(pidfile, $0, strlen($0)) }
     let app = NSApplication.shared
     app.setActivationPolicy(.accessory)
-    let folder = URL(fileURLWithPath: arguments[0]).deletingLastPathComponent()
     let dictation = Dictation(model: arguments[3], folder: folder)
     signal(SIGUSR1, SIG_IGN)
     signal(SIGTERM, SIG_IGN)
@@ -1394,15 +1422,16 @@ case "stay":
     let fetch = DispatchSource.makeSignalSource(signal: SIGUSR2, queue: .main)
     fetch.setEventHandler { dictation.fetch() }
     fetch.resume()
-    let end = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
-    end.setEventHandler { dictation.stop(); exit(0) }
+    let end = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .global())
+    end.setEventHandler { exit(0) }
     end.resume()
-    let watch = DispatchSource.makeProcessSource(identifier: parent, eventMask: .exit, queue: .main)
-    watch.setEventHandler { dictation.stop(); exit(0) }
+    let watch = DispatchSource.makeProcessSource(identifier: parent, eventMask: .exit, queue: .global())
+    watch.setEventHandler { exit(0) }
     watch.resume()
-    if kill(parent, 0) != 0 { dictation.stop(); exit(0) }
-    if arguments.count > 4, arguments[4] == "start" { DispatchQueue.main.async { dictation.toggle() } }
-    if arguments.count > 4, arguments[4] == "fetch" { DispatchQueue.main.async { dictation.fetch() } }
+    if kill(parent, 0) != 0 { exit(0) }
+    if action == "start" { DispatchQueue.main.async { dictation.toggle() } }
+    if action == "fetch" { DispatchQueue.main.async { dictation.fetch() } }
+    if action == "serve" { DispatchQueue.main.async { dictation.serve() } }
     app.run()
 default:
     exit(2)

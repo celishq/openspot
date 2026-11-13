@@ -29,7 +29,6 @@ wait_here() {
   build || return 1
   [ -n "$pid" ] && kill "$pid" 2>/dev/null
   nohup "$helper" stay "$1" "$model" $2 > /dev/null 2>&1 &
-  printf %s "$!" > "$pidfile"
 }
 
 age() {
