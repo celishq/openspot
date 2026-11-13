@@ -70,6 +70,15 @@ struct SpotCalls {
         }
     }
 
+    /// Does what the row of a card's actions menu does to a spot, in the running app.
+    func act(_ act: CardAct, _ id: String) -> CommandAPI.Work {
+        guard let app else { return CommandAnswer.notRunning("spot \(act.rawValue) \(id)") }
+        return CommandAnswer.work {
+            guard await app.act(act, on: id) else { throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.") }
+            return ""
+        }
+    }
+
     func store() -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot store") }
         return CommandAnswer.work {

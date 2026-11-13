@@ -16,16 +16,18 @@ public struct ActionMenu: Equatable, Sendable {
         var group: String?
     }
 
-    /// An action that another spot offers to the menu of every card.
+    /// An action that a spot offers to the menu of the card, with the name of its group: Openspot for a spot of the app.
     public struct Offer: Equatable, Sendable {
         public let owner: String
         public let name: String
         public let action: CommandAction
+        public let isApp: Bool
 
-        public init(owner: String, name: String, action: CommandAction) {
+        public init(owner: String, name: String, action: CommandAction, isApp: Bool = false) {
             self.owner = owner
-            self.name = name
+            self.name = isApp ? ActionMenu.appGroup : name
             self.action = action
+            self.isApp = isApp
         }
     }
 
@@ -56,18 +58,18 @@ public struct ActionMenu: Equatable, Sendable {
     public private(set) var selected = 0
     public private(set) var confirming: String?
 
-    /// Lists what Enter does, the actions that fit, then the rows that the app adds, each of them on this spot or item.
-    /// Returns nil when there is nothing to list.
-    public init?(spot: Spot, item: SpotItem?, showsOpen: Bool = true, extras: [CommandAction] = [], offered: [Offer] = []) {
+    /// Lists what Enter does, the actions that fit, then the actions that spots offer: the app's first, then each other
+    /// spot's, A to Z. Returns nil when there is nothing to list.
+    public init?(spot: Spot, item: SpotItem?, showsOpen: Bool = true, offered: [Offer] = []) {
         var rows: [Row] = []
         let keyTitle = item.flatMap { $0.records ? ($0.shortcut == KeyList.unset ? Self.setTitle : Self.changeTitle) : nil }
         if showsOpen, let title = item?.openTitle ?? keyTitle ?? spot.openTitle(hasItem: item != nil) {
             rows.append(Row(title: title, keyLabel: "⏎", action: nil))
         }
         rows += spot.actions(for: item).map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0) }
-        let hasOwnRows = !rows.isEmpty
-        rows += extras.map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0, isQuiet: true, group: hasOwnRows ? Self.appGroup : nil) }
-        let sorted = offered.enumerated().sorted { ($0.element.name, $0.offset) < ($1.element.name, $1.offset) }.map(\.element)
+        let sorted = offered.enumerated().sorted {
+            ($0.element.isApp ? 0 : 1, $0.element.name, $0.offset) < ($1.element.isApp ? 0 : 1, $1.element.name, $1.offset)
+        }.map(\.element)
         rows += sorted.map { Row(title: $0.action.title, keyLabel: $0.action.key?.label ?? "", action: $0.action, isQuiet: true, owner: $0.owner, group: $0.name) }
         guard !rows.isEmpty else { return nil }
         self.rows = rows

@@ -73,7 +73,7 @@ public struct SpotFile: Equatable, Sendable {
         }
         let buttons = header.children.filter { $0.fields.first?.key == "button" }
         for block in buttons {
-            if let word = block.values("offers").first(where: { $0 != "actions" }) {
+            if let word = block.values("offers").first(where: { $0.split(separator: " ").first != "actions" }) {
                 throw SpotError.fault("\(name) has offers=\(word) on the button \(block.value("button") ?? ""). A button offers only offers=actions")
             }
         }
@@ -81,7 +81,15 @@ public struct SpotFile: Equatable, Sendable {
             guard let id = block.value("button"), let action = CommandAction(id: id, block: block) else {
                 throw SpotError.fault("\(name) cannot read the button \(block.value("button") ?? ""). Give it an ID with no space and a title, such as button=change with title=Change Icon")
             }
-            return CommandAction(id: action.id, title: action.title, key: action.key, scope: .spot, after: action.after, isForm: action.isForm, confirm: action.confirm)
+            let filter = block.values("offers").first.map { String($0.dropFirst("actions".count)) } ?? ""
+            let origins = try filter.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }.map { word in
+                guard let origin = OfferedAction.words[word] else {
+                    throw SpotError.fault("\(name) offers actions to an unknown card: \(word). Use mine, core or builtin")
+                }
+                return origin
+            }
+            let offered = CommandAction(id: action.id, title: action.title, key: action.key, scope: .spot, after: action.after, isForm: action.isForm, confirm: action.confirm)
+            return OfferedAction(action: offered, origins: Set(origins))
         }
         let offers = try buttons.filter { $0.values("offers").isEmpty }.map { block in
             guard let offer = CommandOffer(block: block) else {

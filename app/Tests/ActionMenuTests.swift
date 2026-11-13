@@ -6,6 +6,13 @@ final class ActionMenuTests: XCTestCase {
     private let delete = CommandAction(id: "delete", title: "Delete", confirm: "Delete this?")
     private let new = CommandAction(id: "new", title: "New", scope: .spot, isForm: true)
     private let item = SpotItem(title: "One", run: "1")
+    private let share = CommandAction(id: "share", title: "Share", key: ActionKey(text: "cmd+shift+c"), scope: .spot, after: .close)
+    private let delete2 = CommandAction(id: "delete", title: "Delete", key: ActionKey(text: "cmd+backspace"), scope: .spot)
+
+    /// The actions of the app's spot, as it offers them to a card.
+    private func app(_ actions: CommandAction...) -> [ActionMenu.Offer] {
+        actions.map { ActionMenu.Offer(owner: "openspot/actions", name: "Card actions", action: $0, isApp: true) }
+    }
 
     private func command(kind: SpotKind = .list, openTitle: String? = "Copy") -> Spot {
         Spot(id: "a/A", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: kind, openTitle: openTitle, actions: [paste, delete, new])
@@ -66,7 +73,7 @@ final class ActionMenuTests: XCTestCase {
     }
 
     func testEachRowOfAGridCardsMenuActsOnThatCard() throws {
-        let menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, extras: [.share]))
+        let menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, offered: app(share)))
 
         XCTAssertEqual(menu.rows.dropFirst().filter { $0.action == nil }.map(\.title), [])
         XCTAssertFalse(menu.rows.map(\.title).contains("Edit Spots"))
@@ -86,24 +93,25 @@ final class ActionMenuTests: XCTestCase {
     }
 
     func testAMenuThatOffersSharingEndsWithIt() throws {
-        let menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, extras: [.share, .remove()]))
+        let menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, offered: app(share, delete2)))
 
         XCTAssertEqual(menu.rows.map(\.title), ["Open", "New", "Share", "Delete"])
-        XCTAssertEqual(menu.rows[2].action, .share)
+        XCTAssertEqual(menu.rows[2].action, share)
+        XCTAssertEqual(menu.rows[2].owner, "openspot/actions")
     }
 
     func testAMenuWithOnlySharingStillOpens() throws {
         let slider = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .slider)
 
         XCTAssertNil(ActionMenu(spot: slider, item: nil))
-        XCTAssertEqual(ActionMenu(spot: slider, item: nil, extras: [.share])?.rows.map(\.title), ["Share"])
+        XCTAssertEqual(ActionMenu(spot: slider, item: nil, offered: app(share))?.rows.map(\.title), ["Share"])
     }
 
     /// An action of a script that asks for a second press, such as a forget of a network.
     private let forget = CommandAction(id: "forget", title: "Forget", scope: .spot, confirm: "Press again to forget")
 
     func testAnActionWithAConfirmAsksForASecondPress() throws {
-        var menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, extras: [forget]))
+        var menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, offered: app(forget)))
         menu.select(forget)
 
         XCTAssertNil(menu.press())
@@ -111,19 +119,14 @@ final class ActionMenuTests: XCTestCase {
         XCTAssertEqual(menu.press()?.action, forget)
     }
 
-    func testDeleteAsksForNoSecondPressBecauseUndoTakesItBack() {
-        XCTAssertNil(CommandAction.remove().confirm)
-        XCTAssertNil(CommandAction.remove(widgets: 3).confirm)
-    }
-
     func testTheRowsOfTheAppStayOutOfTheHint() throws {
         let plain = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .list)
 
-        XCTAssertEqual(ActionMenu(spot: plain, item: nil, extras: [.share, .remove()])?.hint, "⏎ Open   ⌘K Actions")
+        XCTAssertEqual(ActionMenu(spot: plain, item: nil, offered: app(share, delete2))?.hint, "⏎ Open   ⌘K Actions")
     }
 
     func testAMoveToTheSameRowKeepsItsQuestion() throws {
-        var menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, extras: [forget]))
+        var menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, offered: app(forget)))
         menu.select(forget)
         XCTAssertNil(menu.press())
 
@@ -242,15 +245,15 @@ final class ActionMenuTests: XCTestCase {
     func testOpenspotsGroupComesFirstThenEachOwnersGroupAToZWithAHeaderEach() throws {
         let icon = CommandAction(id: "change", title: "Change Icon", scope: .spot)
         let star = CommandAction(id: "star", title: "Star", scope: .spot)
+        let edit = CommandAction(id: "edit", title: "Edit", scope: .spot)
         let menu = try XCTUnwrap(ActionMenu(
             spot: command(),
             item: nil,
-            extras: [.edit],
-            offered: [ActionMenu.Offer(owner: "z/Zoo", name: "Zoo", action: star), ActionMenu.Offer(owner: "i/Icon", name: "Icon", action: icon)]
+            offered: [ActionMenu.Offer(owner: "z/Zoo", name: "Zoo", action: star), ActionMenu.Offer(owner: "i/Icon", name: "Icon", action: icon)] + app(edit)
         ))
 
         XCTAssertEqual(menu.rows.map(\.title), ["Open", "New", "Edit", "Change Icon", "Star"])
-        XCTAssertEqual(menu.rows.map(\.owner), [nil, nil, nil, "i/Icon", "z/Zoo"])
+        XCTAssertEqual(menu.rows.map(\.owner), [nil, nil, "openspot/actions", "i/Icon", "z/Zoo"])
         XCTAssertEqual(menu.headers, [ActionMenu.Header(title: "Openspot", line: 2), ActionMenu.Header(title: "Icon", line: 4), ActionMenu.Header(title: "Zoo", line: 6)])
         XCTAssertEqual(menu.line(ofShown: 3), 5)
         XCTAssertEqual(menu.fullLines, 9)

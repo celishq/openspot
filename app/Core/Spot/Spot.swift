@@ -71,7 +71,7 @@ public struct Spot: Equatable, Sendable {
     /// The commands its header lists, which a person can give keys.
     public let offers: [CommandOffer]
     /// The actions it adds to the actions menu of every card, from the buttons of its header with `offers=actions`.
-    public let offeredActions: [CommandAction]
+    public let offeredActions: [OfferedAction]
     /// The values that it keeps with `openspot setting`, each with its title, which Settings lists.
     public let settings: [CommandOffer]
     /// The Settings rows of its own commands, which its sheet shows. Nil for a spot that draws its own sheet.
@@ -121,7 +121,7 @@ public struct Spot: Equatable, Sendable {
         isOnGrid: Bool = true,
         headerSymbol: String? = nil,
         offers: [CommandOffer] = [],
-        offeredActions: [CommandAction] = [],
+        offeredActions: [OfferedAction] = [],
         settings: [CommandOffer] = [],
         file: String? = nil,
         image: String? = nil,

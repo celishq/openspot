@@ -239,6 +239,9 @@ A button is a verb. If the layout places it, the sheet draws it. If not, it's an
   `scope=spot` always.
 - A `button` of the header with `offers=actions` shows in the ⌘K menu of every card, under the spot's name, while no row
   is selected. Its press sends `<spot> <id> <card spot id>`. It isn't a command of the spot, so it gets no hotkey.
+- A filter after `actions`, a comma list, names the cards it fits by where their spot comes from: `mine`, a spot in the
+  user's folder or a file of it that doesn't load; `core`, a spot that comes with Openspot and can be turned off; and
+  `builtin`, a spot of Openspot itself, such as Settings. With no filter, it fits every card.
 
 ```sh
 #!/bin/sh
@@ -251,7 +254,8 @@ A button is a verb. If the layout places it, the sheet draws it. If not, it's an
 ```
 
 - The ⌘K menu lists the spot's own actions first, then Openspot's, then the actions of other spots, grouped by spot, A
-  to Z by its name. Each group after the first has a header, which a search hides.
+  to Z by its name. Each group after the first has a header, which a search hides. Openspot's own actions, such as Edit,
+  Delete and Change Icon, come from its built-in spots in the same way.
 - `close=true` closes the panel after the call. `confirm` asks for a second press.
 - A button `shortcut` is a letter, a digit, `return`, `backspace` or `,`, after `cmd+`, `shift+`, both or neither, such as
   `cmd+shift+n`, or `escape` alone. A row `shortcut` is any text (see [Rows](#rows)). The user gives hotkeys in
@@ -716,10 +720,10 @@ A spot asks the Mac and Openspot for things through one command, which works the
   - calls that wait for the user: `color pick` and `folder pick`;
   - calls that capture the screen: `screen shot`, `screen record start` and `screen record stop`;
   - calls that change the Mac or the user's data: `window move`, `clipboard copy`, `clipboard paste`, `calendar add`,
-    `reminders add`, `reminders done`, `spot add` and `spot remove`;
+    `reminders add`, `reminders done`, `spot add`, `spot remove` and `spot delete`;
   - calls that change Openspot or its places: `app quit`, `update install`, and `setting set` of a key that Openspot
     keeps for the user (see [Settings](#settings));
-  - calls that open a window or the panel: `spot show`, `spot open`, `spot float`, `spot review`, `spot store`, `setting change`,
+  - calls that open a window or the panel: `spot show`, `spot open`, `spot float`, `spot edit`, `spot prompt`, `spot share`, `spot review`, `spot store`, `setting change`,
     `update check`, `calendar show` and `reminders show`;
   - `account sync`, which only the user and the spots of Openspot can call.
 - `calendar add --dry-run` and `reminders add --dry-run` change nothing, so they work in a read.
@@ -733,6 +737,10 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot guide`                                   | Prints the guide, then this protocol.                                                           |
 | `openspot spot show <id>`                          | Opens the panel with the spot selected.                                                         |
 | `openspot spot float <id>`                         | Floats a spot that offers `float`, such as the spot itself from an action.                      |
+| `openspot spot edit <id>`                          | Opens the file of a spot in the text editor, as Edit in its ⌘K menu does.                       |
+| `openspot spot prompt <id>`                        | Copies a prompt that asks a coding agent to change a spot.                                      |
+| `openspot spot share <id>`                         | Shares a spot, as Share in its ⌘K menu does.                                                    |
+| `openspot spot delete <id>`                        | Moves a spot to the Trash, and `⌘Z` in the panel puts it back.                                  |
 | `openspot spot add <git url, folder or .spot>`     | Adds a spot, and records it in `spots.lock`. An update that needs a new use also needs `--yes`. |
 | `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                                |
 | `openspot spot stats`                              | Prints what each spot cost and used. See [Stats](#stats).                                       |
@@ -802,7 +810,7 @@ openspot app quit
 | Use         | The calls that need it                                                                                                                                          |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `app`       | `app quit`, `update check`, `update install`, and `setting set` of `menubar`, `float`, `key.<command>` or of the spot `openspot`                                |
-| `spots`     | `spot add`, `spot remove`, `spot new`, `spot run`, `spot log`, `setting list`, `setting set` of `enabled`, and `setting get`, `set` or `change` of another spot |
+| `spots`     | `spot add`, `spot remove`, `spot edit`, `spot prompt`, `spot share`, `spot delete`, `spot new`, `spot run`, `spot log`, `setting list`, `setting set` of `enabled`, and `setting get`, `set` or `change` of another spot |
 | `screen`    | `screen sources`, `screen shot`, `screen record`, `window frame`, `window move` and `color pick`                                                                |
 | `clipboard` | `clipboard copy`, `clipboard paste` and `clipboard read`                                                                                                        |
 | `calendar`  | each call of `calendar` and `reminders`                                                                                                                         |

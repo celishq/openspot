@@ -20,6 +20,8 @@ public protocol RunningApp: Sendable {
     func review(_ id: String) async -> Bool
     /// Floats a spot that offers a float. Returns false when no such spot has that ID.
     func float(_ id: String) async -> Bool
+    /// Does what the row of a card's actions menu does to a spot. Returns false when no card has that ID.
+    func act(_ act: CardAct, on id: String) async -> Bool
     /// Opens the panel in Edit Spots with the store.
     func openStore() async
     /// Opens the panel with the card of a spot selected. Returns false when no card has that ID.

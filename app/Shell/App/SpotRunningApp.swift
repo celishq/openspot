@@ -38,6 +38,10 @@ struct SpotRunningApp: RunningApp {
         await model.showFloat(id)
     }
 
+    func act(_ act: CardAct, on id: String) async -> Bool {
+        await model.act(act, on: id)
+    }
+
     func review(_ id: String) async -> Bool {
         await model.reviewCore(id)
     }

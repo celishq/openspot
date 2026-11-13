@@ -49,6 +49,11 @@ actor FakeRunningApp: RunningApp {
         return id != "gone"
     }
 
+    func act(_ act: CardAct, on id: String) -> Bool {
+        opened.append("\(act.rawValue) \(id)")
+        return id != "gone"
+    }
+
     func float(_ id: String) -> Bool {
         opened.append("float \(id)")
         return id != "gone"

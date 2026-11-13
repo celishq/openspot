@@ -21,7 +21,7 @@ final class IconSpotTests: BuiltInCase {
     func testItOffersChangeIconToEveryCardAndFloatsWithNoCard() throws {
         let icon = try icon
 
-        XCTAssertEqual(icon.offeredActions.map(\.title), ["Change Icon"])
+        XCTAssertEqual(icon.offeredActions.map(\.action.title), ["Change Icon"])
         XCTAssertTrue(icon.offersFloat)
         XCTAssertFalse(icon.offersCard)
     }

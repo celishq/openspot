@@ -179,17 +179,4 @@ extension SpotsModel {
             }
         }
     }
-
-    /// Turns a core spot off. Its data stays, and it can come back from the Spots list.
-    public func turnOff(_ entry: Entry) {
-        closeList(moving: isShown)
-        if isShown { host.dismiss() }
-        do {
-            try files.config.turn(SpotsFolder.coreID(of: entry.spot), on: false)
-            host.confirm("\(entry.spot.name) is off")
-            reload()
-        } catch {
-            host.notify("\(entry.spot.name) was not turned off. \(Self.reason(error))")
-        }
-    }
 }

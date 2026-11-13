@@ -44,16 +44,28 @@ final class SpotHeaderTests: XCTestCase {
 
         let spot = try XCTUnwrap(try SpotFile(file: url, id: "icon")?.spots.first)
 
-        XCTAssertEqual(spot.offeredActions.map(\.id), ["change"])
-        XCTAssertEqual(spot.offeredActions.first?.title, "Change Icon")
+        XCTAssertEqual(spot.offeredActions.map(\.action.id), ["change"])
+        XCTAssertEqual(spot.offeredActions.first?.action.title, "Change Icon")
+        XCTAssertEqual(spot.offeredActions.first?.origins, [])
         XCTAssertEqual(spot.offers.map(\.id), ["reset"])
         XCTAssertFalse(spot.offersCard)
+    }
+
+    func testAnActionsFilterNamesTheOriginsOfTheCardsItFits() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-actions-\(UUID().uuidString)")
+        try "#!/bin/sh\n#\n# button=off\n# title=Turn off\n# offers=actions core, builtin\n".writeScript(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let spot = try XCTUnwrap(try SpotFile(file: url, id: "tools")?.spots.first)
+
+        XCTAssertEqual(spot.offeredActions.first?.origins, [.core, .builtIn])
     }
 
     func testActionsIsAPlaceOfAButtonOnly() throws {
         let cases = [
             ("# offers=actions\n", "a button"),
-            ("#\n# button=go\n# title=Go\n# offers=card\n", "offers=actions")
+            ("#\n# button=go\n# title=Go\n# offers=card\n", "offers=actions"),
+            ("#\n# button=go\n# title=Go\n# offers=actions planets\n", "mine, core or builtin")
         ]
         for (header, hint) in cases {
             let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-actions-\(UUID().uuidString)")

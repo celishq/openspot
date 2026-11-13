@@ -60,8 +60,18 @@ extension SpotsModel {
             openMenu(on: target)
             return menu != nil
         }
-        let quiet = searchText.isEmpty ? extras(on: target) : []
-        guard let action = (target.entry.spot.actions(for: target.item) + quiet).first(where: { $0.key == key }) else { return openSheet(on: key) }
+        if searchText.isEmpty, !target.entry.spot.actions(for: target.item).contains(where: { $0.key == key }),
+           let offer = offered(on: target).first(where: { $0.action.key == key }) {
+            if offer.action.confirm != nil {
+                openMenu(on: target)
+                menu?.select(offer.action)
+                pressMenu()
+            } else {
+                run(offer.action, offeredBy: offer.owner, on: target)
+            }
+            return true
+        }
+        guard let action = target.entry.spot.actions(for: target.item).first(where: { $0.key == key }) else { return openSheet(on: key) }
         if action.confirm != nil {
             openMenu(on: target)
             menu?.select(action)
@@ -355,39 +365,31 @@ extension SpotsModel {
             spot: target.entry.spot,
             item: target.item,
             showsOpen: !isOpenList || target.item != nil,
-            extras: extras(on: target),
-            offered: target.item == nil ? offeredActions : []
+            offered: offered(on: target)
         )
     }
 
-    /// The actions that each spot offers to the menu of every card.
-    private var offeredActions: [ActionMenu.Offer] {
-        sheets.values.map(\.spot).flatMap { spot in
-            spot.offeredActions.map { ActionMenu.Offer(owner: spot.id, name: spot.name, action: $0) }
-        }.sorted { ($0.name, $0.owner) < ($1.name, $1.owner) }
+    /// The actions that the spots offer to a selected card of the grid, each that fits the card's origin. A card of a file
+    /// that does not load is the person's. A row of a list or an open sheet keeps its own actions.
+    private func offered(on target: Target) -> [ActionMenu.Offer] {
+        guard openList == nil, target.item == nil, let origin = origin(of: target.entry.spot) else { return [] }
+        return sheets.values.map(\.spot).sorted { $0.id < $1.id }.flatMap { spot in
+            spot.offeredActions.filter { $0.fits(origin) }.map { ActionMenu.Offer(owner: spot.id, name: spot.name, action: $0.action, isApp: spot.isBuiltIn) }
+        }
+    }
+
+    /// Where a spot comes from, or nil for a sheet that the app draws, such as a review.
+    private func origin(of spot: Spot) -> SpotDock.Origin? {
+        if spot.fault != nil { return .mine }
+        guard spot.host == nil else { return nil }
+        if spot.isBuiltIn { return .builtIn }
+        return files.folder(Config(text: "")).isCore(spot) ? .core : .mine
     }
 
     /// Runs an action that another spot offers, with the ID of the card that it acts on as the action's second argument.
     public func run(_ action: CommandAction, offeredBy owner: String, on target: Target) {
         if action.after == .close, isShown { host.dismiss() }
         sheets[owner]?.run(action, item: SpotItem(title: target.entry.state.title, run: target.entry.id))
-    }
-
-    /// The rows that the app adds for a selected card of the grid: the acts on the file of a spot of the person, and on a
-    /// card of a file that does not load. A core spot can be shared and turned off. A row of a list or an open sheet keeps its
-    /// own Delete.
-    private func extras(on target: Target) -> [CommandAction] {
-        guard openList == nil, target.item == nil else { return [] }
-        let command = target.entry.spot
-        if command.fault != nil { return [.edit, .remove()] }
-        guard command.host == nil, !command.isBuiltIn else { return [] }
-        guard !files.folder(Config(text: "")).isCore(command) else { return [.share, .turnOff] }
-        return [.edit, .copyPrompt, .share, .remove(widgets: widgets(sharingFileWith: target.entry))]
-    }
-
-    /// How many widgets the file of a widget holds, which go together when it is removed.
-    private func widgets(sharingFileWith entry: Entry) -> Int {
-        entry.kind == .widget ? entries.filter { $0.spot.url == entry.spot.url }.count : 1
     }
 
     /// The keys that work on the selected row or card, in words for the bottom of the panel.
@@ -484,17 +486,6 @@ extension SpotsModel {
             } else {
                 sheets[target.entry.id]?.run(action, item: target.item)
             }
-        } else if action == .share {
-            share(target.entry)
-        } else if action.id == CommandAction.removeID {
-            remove(target.entry)
-        } else if action == .edit {
-            if isShown { host.dismiss() }
-            edit(target.entry)
-        } else if action == .copyPrompt {
-            copyPrompt(changing: target.entry)
-        } else if action == .turnOff {
-            turnOff(target.entry)
         } else if action.isForm {
             openForm(action, on: target)
         } else if action.after == .stay {
