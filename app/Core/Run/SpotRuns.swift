@@ -23,6 +23,8 @@ public final class SpotRuns {
     public let readLimit: TimeInterval
     /// The time with no call after which an inline spot lets go of its context and its thread (A26).
     let inlineIdle: TimeInterval
+    /// The most time that the main thread waits for the frames of JavaScript spots (protocol: Modes).
+    let frameWait: DispatchTimeInterval
     /// What each spot cost and used, day by day (protocol: Stats).
     public nonisolated let usage: SpotUsage
     /// Whether each process of a spot runs in Careful mode, with only what its uses name (protocol: Trust). A change starts each staying
@@ -70,7 +72,7 @@ public final class SpotRuns {
     @ObservationIgnored private let log: CallLog?
     /// Hears each call that ends, quiet ones too, with the reason of a read, such as the playground that shows each call.
     @ObservationIgnored public var onCall: ((CallLog.Record, ReadReason?) -> Void)?
-    /// The number of times that the main thread waited for the frames of JavaScript spots.
+    /// The number of waits for the frame of a JavaScript spot that began before their deadline, so that they could block.
     @ObservationIgnored var frameWaits = 0
     /// The waits for the answers of JavaScript spots to a text of the main search, which `ask` sends to each spot first and
     /// then waits for together, or nil outside of it.
@@ -88,6 +90,7 @@ public final class SpotRuns {
         recent: @escaping (String) -> [String] = { _ in [] },
         prepare: @escaping ([SpotItem], [String]) async -> Void = { _, _ in },
         inlineIdle: TimeInterval = 30,
+        frameWait: DispatchTimeInterval = .milliseconds(2),
         log: CallLog? = nil,
         stats: URL? = nil,
         swift: SwiftProgram = SwiftProgram(),
@@ -98,6 +101,7 @@ public final class SpotRuns {
         self.swift = swift
         usage = SpotUsage(folder: stats, at: now(), now: now)
         self.inlineIdle = inlineIdle
+        self.frameWait = frameWait
         self.readLimit = readLimit
         self.opening = opening
         self.now = now

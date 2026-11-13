@@ -110,7 +110,6 @@ extension SpotRuns {
     /// answers (protocol: Places). The answers of JavaScript spots share one wait of 2 ms, after the text reaches each spot.
     private func ask(_ query: String) {
         let text = query.trimmingCharacters(in: .whitespaces)
-        let deadline = DispatchTime.now() + InlineLink.frameWait
         answerWaits = []
         for sheet in sheets.values {
             guard let pattern = sheet.spot.answers else { continue }
@@ -118,7 +117,7 @@ extension SpotRuns {
         }
         let waits = answerWaits ?? []
         answerWaits = nil
-        if !waits.isEmpty { frameWaits += 1 }
+        let deadline = DispatchTime.now() + frameWait
         waits.forEach { $0(deadline) }
     }
 }

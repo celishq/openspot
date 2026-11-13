@@ -7,8 +7,6 @@ import Foundation
 /// file loads it again at the next call or scan.
 @MainActor
 final class InlineLink: ScriptLink {
-    static let frameWait: DispatchTimeInterval = .milliseconds(2)
-
     weak var run: SpotRun?
     let holdsScript = false
     let keepsState = false
@@ -44,6 +42,7 @@ final class InlineLink: ScriptLink {
         let begin = Date()
         current(for: run).send(inline)
         let wait = { (deadline: DispatchTime) in
+            if DispatchTime.now() < deadline { self.runs.frameWaits += 1 }
             let outcome = inline.wait(until: deadline) { outcome in
                 Task { @MainActor in self.take(outcome, of: call, made, begin: begin) }
             }
@@ -52,8 +51,7 @@ final class InlineLink: ScriptLink {
         if case .ask(.answer) = call.purpose, runs.answerWaits != nil {
             runs.answerWaits?.append(wait)
         } else {
-            runs.frameWaits += 1
-            wait(.now() + Self.frameWait)
+            wait(.now() + runs.frameWait)
         }
         return true
     }
