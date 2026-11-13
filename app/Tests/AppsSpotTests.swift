@@ -134,6 +134,31 @@ final class AppsSpotTests: SampleSpotsCase {
         }
     }
 
+    func testAReadWithKeptAppsStartsNoSortAndNoRm() async throws {
+        let apps = try apps()
+        try await withPrivateHome { folder in
+            let app = try Self.fakeApp(in: folder, running: true)
+            try """
+            #!/bin/sh
+            case " $* " in
+              *' -newer '*) ;;
+              *) printf '%s\\n' '\(app.path)' /System/Applications/Notes.app ;;
+            esac
+
+            """.writeScript(to: folder.appendingPathComponent("tools/find"))
+            _ = try await apps.items(timeout: 10)
+            for tool in ["sort", "rm"] {
+                try "#!/bin/sh\necho \(tool) >> '\(folder.path)/started'\nexec /usr/bin/\(tool) \"$@\"\n".writeScript(to: folder.appendingPathComponent("tools/\(tool)"))
+            }
+
+            let lines = try await apps.items(timeout: 10)
+
+            XCTAssertEqual(lines.items.map(\.title), ["Finder", "Notes", "Zed"])
+            XCTAssertEqual(lines.items.filter(\.isOn).map(\.title), ["Zed"])
+            XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("started").path))
+        }
+    }
+
     func testASystemAppIsNeverDeleted() async throws {
         let apps = try apps()
         try await withPrivateHome { folder in
