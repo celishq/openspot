@@ -61,10 +61,17 @@ final class SheetMorphTests: XCTestCase {
         XCTAssertEqual(morph.growth(of: button, at: 1), 1)
     }
 
-    func testTheWordsThatCrossTheHeaderAreGoneWhileTheyPassIt() {
-        XCTAssertEqual(SheetMorph.crossing(at: 0), 1)
-        XCTAssertEqual(SheetMorph.crossing(at: 0.25), 0)
-        XCTAssertEqual(SheetMorph.crossing(at: 0.5), 0)
-        XCTAssertEqual(SheetMorph.crossing(at: 1), 1)
+    func testWordsThatCrossTheHeaderAreGoneWhileTheyLieAcrossIt() {
+        let header = CGRect(x: 57, y: 13, width: 180, height: 36)
+        let words = { (progress: Double) in CGRect(x: 120, y: 113 + 61 * CGFloat(progress), width: 150, height: 18) }
+        for step in 0...100 {
+            let progress = Double(step) / 100
+            let corner = morph.origin(at: progress)
+            let placed = header.offsetBy(dx: corner.x, dy: corner.y)
+            if words(progress).minY < placed.maxY, words(progress).maxY > placed.minY {
+                XCTAssertEqual(morph.crossing(of: words(progress), header: header, at: progress), 0, "at \(progress)")
+            }
+        }
+        XCTAssertEqual(morph.crossing(of: words(0), header: header, at: 0), 1)
     }
 }

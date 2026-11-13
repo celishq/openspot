@@ -35,10 +35,19 @@ public struct SheetMorph: Equatable, Sendable {
         ease((progress - cardShare) / (1 - cardShare))
     }
 
-    /// How strongly the words of a part that travels past the sheet's header show, such as the search field's: they leave
-    /// in the first quarter of the motion and come back in its second half, so that they never lie on the header's words.
-    public static func crossing(at progress: Double) -> Double {
-        max(1 - ease(progress / 0.25), ease((progress - 0.5) / 0.5))
+    /// Where the content's corner lies at this progress, in the panel.
+    public func origin(at progress: Double) -> CGPoint {
+        let t = CGFloat(progress)
+        return CGPoint(x: card.minX + (sheet.minX - card.minX) * t, y: card.minY + (sheet.minY - card.minY) * t)
+    }
+
+    /// How strongly words that travel past the sheet's header show, such as the search field's: none while they lie
+    /// across the header, and whole once `clearance` lies between them. `words` lies in the panel, `header` in the content.
+    public func crossing(of words: CGRect, header: CGRect, at progress: Double) -> Double {
+        let corner = origin(at: progress)
+        let placed = header.offsetBy(dx: corner.x, dy: corner.y)
+        let gap = max(words.minY - placed.maxY, placed.minY - words.maxY)
+        return Self.ease(Double(gap / Self.clearance))
     }
 
     /// A place between a part's place on the card and its place in the sheet, as offsets from its place in the sheet.

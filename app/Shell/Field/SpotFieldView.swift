@@ -20,9 +20,9 @@ struct SpotFieldView: View {
     let showsField: Bool
     /// Whether a sheet is out or a drop is taken, which sets the time of each fade.
     let surfaceIsOut: Bool
-    /// The shape of the sheet that is built, which holds the field's row while the field lies in it. Nil with no sheet, or
-    /// for the install screen, which grows out of the field.
-    var sheetShape: SpotSurfaceShape?
+    /// The sheet that is built, from its card to its open place, which holds the field's row while the field lies in it,
+    /// and the radius of its card. Nil with no sheet with a card, or for the install screen, which grows out of the field.
+    var sheet: (morph: SheetMorph, cardRadius: CGFloat)?
     @FocusState private var isFocused: Bool
 
     var body: some View {
@@ -234,10 +234,23 @@ struct SpotFieldView: View {
         isOpen ? 1 : 0
     }
 
-    /// How strongly the field's words show as they pass the sheet's header. The install screen has no header to pass.
+    /// How strongly the field's words show as they pass the sheet's header: none while they lie across it. With no sheet,
+    /// as for the install screen, they pass no header.
     private var crossing: (Double) -> Double {
-        if isInstall { return { _ in 1 } }
-        return { SheetMorph.crossing(at: $0) }
+        guard let morph = sheet?.morph else { return { _ in 1 } }
+        let header = CGRect(x: SpotTokens.padding, y: SpotTokens.padding, width: SpotTokens.gridWidth - 2 * SpotTokens.padding, height: SpotTokens.glyphSize)
+        let line = SpotType.inputLine
+        let rest = SpotTokens.halo + (SpotTokens.rowHeight - line) / 2
+        let drop = SpotTokens.sheetFieldDrop - (SpotTokens.rowHeight - SpotTokens.listRowHeight) / 2
+        return { progress in
+            let words = CGRect(x: SpotTokens.halo, y: rest + drop * CGFloat(progress), width: SpotTokens.gridWidth, height: line)
+            return morph.crossing(of: words, header: header, at: progress)
+        }
+    }
+
+    /// The sheet's shape now: on its card until it opens.
+    private var sheetShape: SpotSurfaceShape? {
+        sheet.map { isOpen ? SpotSurfaceShape(rect: $0.morph.sheet, radius: SpotTokens.radius) : SpotSurfaceShape(rect: $0.morph.card, radius: $0.cardRadius) }
     }
 
     /// The panel but the sheet, where the field's glass shows, so that one glass lies under the field where it meets the sheet.
