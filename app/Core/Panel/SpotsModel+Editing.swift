@@ -15,7 +15,7 @@ extension SpotsModel {
     public func beginEditing() {
         guard openList == nil else { return }
         closeMenu()
-        let folder = files.folder
+        let folder = self.folder
         change(.edit) {
             query = ""
             isEditing = true
@@ -102,7 +102,7 @@ extension SpotsModel {
     public func copyListingPrompt(_ id: String) {
         guard let item = dock.items.first(where: { $0.id == id }) else { return }
         guard !item.isOwn else { return copyPrompt(changing: Entry(spot: item.spot, run: nil)) }
-        let prompt = host.agentPrompt(for: files.folder.url)
+        let prompt = host.agentPrompt(for: folder.url)
         Task {
             do {
                 host.confirm(try await prompt.copy(prompt.reviewing(item.spot.url)))
@@ -146,7 +146,7 @@ extension SpotsModel {
     /// Makes the store from each card of the panel and each spot that is off, and keeps its filter and its search. A part of
     /// a widget, such as a metric that it places or a sheet that it opens, is not one.
     func composeDock() {
-        let folder = files.folder
+        let folder = self.folder
         let choice = arrangement
         let spots = cards.filter { $0.item == nil && $0.spot.fault == nil }
         let parts = Set(spots.flatMap { $0.spot.places + ($0.spot.opens.map { [$0] } ?? []) })
@@ -209,7 +209,7 @@ extension SpotsModel {
         let off = dock.items.filter { $0.state == .off }
         guard !off.isEmpty else { return }
         do {
-            for item in off { try files.config.turn(files.folder.fileID(of: item.spot), on: true) }
+            for item in off { try files.config.turn(folder.fileID(of: item.spot), on: true) }
         } catch {
             host.notify("Some spots were not turned on. \(Self.reason(error))")
         }
@@ -227,7 +227,7 @@ extension SpotsModel {
     @discardableResult
     func turn(_ spot: Spot, on isOn: Bool, ending: () -> Void = {}) -> Bool {
         do {
-            try files.config.turn(files.folder.fileID(of: spot), on: isOn)
+            try files.config.turn(folder.fileID(of: spot), on: isOn)
         } catch {
             host.notify("\(spot.name) was not turned \(isOn ? "on" : "off"). \(Self.reason(error))")
             return false

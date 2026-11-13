@@ -77,6 +77,15 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(host.held.last, [GlobalKey(spot: "move", act: .command("left"), trigger: trigger)])
     }
 
+    func testAPressReadsTheConfigOfTheLastReloadAndNotTheFile() throws {
+        model.reload()
+        try model.files.config.set("fix_key", to: "cmd+shift+9")
+
+        XCTAssertEqual(model.config.fixKey, Config(text: "").fixKey)
+        model.folderChanged()
+        XCTAssertEqual(model.config.fixKey, Config(text: "fix_key = \"cmd+shift+9\"").fixKey)
+    }
+
     func testAMenuBarPlaceAndAValueThatTheAPISetsBuildNoGridNowOrAtTheNextReload() throws {
         try script("cups", header: "title=Cups\non=clock.60", "printf 'text=c\\ntitle=3\\n'")
         try script("notes", header: "title=Notes", ":")

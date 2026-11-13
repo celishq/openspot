@@ -18,7 +18,7 @@ extension SpotsModel {
             if dock.opened != id { openListing(id) }
             return .needsReadme
         }
-        let folder = files.folder
+        let folder = self.folder
         do {
             var shared = try SpotPackage(sharing: spot, from: SpotsFolder(url: folder.url).keptScan())
             guard Self.publication(of: shared, in: files.store) != .current else {
@@ -35,7 +35,7 @@ extension SpotsModel {
             host.notify("\(spot.name) was not published. \(Self.reason(error))")
             return .failed
         }
-        refreshDock(in: files.folder)
+        refreshDock(in: folder)
         host.confirm("Published \(spot.name) to your store. Its files travel as they are, so check them for secrets before you share it.")
         return .published
     }
@@ -45,7 +45,7 @@ extension SpotsModel {
     func release(_ package: SpotPackage, named name: String) async throws -> SpotPackage? {
         guard let key = try await accountKey() else { return nil }
         if package.needsCompile { host.work("Compiling \(name)") }
-        return try await package.release(by: key, keepingLogIn: files.folder.url)
+        return try await package.release(by: key, keepingLogIn: folder.url)
     }
 
     /// The account key. With none, it opens the sheet of the spot that reaches the account key, so the person can set one
@@ -82,7 +82,7 @@ extension SpotsModel {
     /// Copies a prompt that asks the person's agent to write the listing of a spot of the spots folder.
     public func copyListingWritePrompt(_ id: String) {
         guard let item = dock.items.first(where: { $0.id == id }), item.isOwn else { return }
-        let prompt = host.agentPrompt(for: files.folder.url)
+        let prompt = host.agentPrompt(for: folder.url)
         Task {
             do {
                 host.confirm(try await prompt.copy(prompt.listing(item.spot.url)))

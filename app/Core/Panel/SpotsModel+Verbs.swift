@@ -31,7 +31,7 @@ extension SpotsModel {
 
     /// Copies a prompt that asks an agent to change the file of a spot, with the words of its last failed call.
     func copyPrompt(changing entry: Entry) {
-        let prompt = host.agentPrompt(for: files.folder.url)
+        let prompt = host.agentPrompt(for: folder.url)
         let text = prompt.changing(file(of: entry), failure: entry.failure)
         Task {
             do {
@@ -51,7 +51,7 @@ extension SpotsModel {
         let words = count > 1 ? "\(count) widgets" : command.name
         var moves: [(from: URL, to: URL)] = []
         do {
-            try files.folder.remove(command) { url in moves.append((url, try files.trash(url))) }
+            try folder.remove(command) { url in moves.append((url, try files.trash(url))) }
             removal = Removal(id: entry.id, words: words, moves: moves)
             files.log.remove(entry.id)
             reload()

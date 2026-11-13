@@ -170,6 +170,8 @@ public final class SpotsModel {
     @ObservationIgnored private var scanned: [Spot] = []
     @ObservationIgnored private var spotScan = SpotScan()
     @ObservationIgnored private var lastScan = ScanResult(files: [], refused: [])
+    /// The config that the app read last, and the spots folder that it turns on, which `config` and `folder` give.
+    @ObservationIgnored private var lastRead: (config: Config, folder: SpotsFolder)?
     /// The stamp of the folder and the config that the cards were last built from.
     @ObservationIgnored private var loadedStamp: SpotsFolder.Stamp?
     @ObservationIgnored private var loadedConfig: Config?
@@ -204,6 +206,16 @@ public final class SpotsModel {
         }
     }
 
+    /// The config as the last reload or change through the API read it, so that a press reads no disk.
+    public var config: Config {
+        lastRead?.config ?? files.config.read()
+    }
+
+    /// The spots folder with the core spots that `config` turns on.
+    public var folder: SpotsFolder {
+        lastRead?.folder ?? files.folder
+    }
+
     public var sheets: [String: SpotRun] {
         runs.sheets
     }
@@ -222,7 +234,7 @@ public final class SpotsModel {
     /// close.
     public func beginFirstLaunch() {
         isFirstLaunch = true
-        try? files.config.begin(enabling: files.folder.startingSpots())
+        try? files.config.begin(enabling: folder.startingSpots())
         reload()
         host.present()
     }
@@ -240,6 +252,7 @@ public final class SpotsModel {
         let config = files.config.read()
         host.applyConfig(config)
         let folder = files.folder(config)
+        lastRead = (config, folder)
         var scan = spotScan.look(at: folder, hosted: reviewed.map { [$0.spot] } ?? [])
         let faults = folder.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
         if !faults.isEmpty { scan.files.append(SpotFile(id: FaultSpot.fileID, spots: faults)) }
@@ -311,6 +324,9 @@ public final class SpotsModel {
     /// its spot again when something wants it and another caller set it.
     public func configChanged(_ change: ConfigChange) {
         let config = files.config.read()
+        let arrangement = lastRead?.config.arrangement
+        let isSameFolder = arrangement?.enabled == config.arrangement.enabled && arrangement?.disabled == config.arrangement.disabled
+        lastRead = (config, lastRead.flatMap { isSameFolder ? $0.folder : nil } ?? files.folder(config))
         switch change {
         case .keys:
             host.applyConfig(config)

@@ -158,7 +158,7 @@ extension SpotsModel {
         order.insert(entry.id, at: min(place, order.count))
         var next = arrangement
         next.arrange(order)
-        next.set(isEnabled: true, of: files.folder.fileID(of: entry.spot))
+        next.set(isEnabled: true, of: folder.fileID(of: entry.spot))
         next.set(isOnGrid: true, of: entry.id)
         if let size = dock.items.first(where: { $0.id == entry.id })?.size { next.set(size: size, of: entry.id) }
         do {
