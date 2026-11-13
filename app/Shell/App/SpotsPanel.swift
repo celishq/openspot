@@ -7,6 +7,7 @@ import SwiftUI
 final class SpotsPanel: NSPanel {
     private var model: SpotsModel?
     let place = SpotsWindowPlace()
+    private let cover = SpotsCover()
     /// The frame that the window had before Edit Spots grew it.
     private var restFrame: NSRect?
     private var pressWatch: Task<Void, Never>?
@@ -127,6 +128,19 @@ final class SpotsPanel: NSPanel {
             } completion: { [weak self] in
                 if self?.model?.isEditing == false { self?.restoreFrame() }
             }
+        }
+    }
+
+    /// Shows the wallpaper over the other apps while the panel shows in Edit Spots, and takes it away when either ends.
+    private func followCover() {
+        guard let model else { return }
+        let covers = withObservationTracking { model.isEditing && model.isShown } onChange: { [weak self] in
+            Task { @MainActor in self?.followCover() }
+        }
+        if covers {
+            cover.show(under: self) { [weak model] in model?.endEditing() }
+        } else {
+            cover.hide()
         }
     }
 
@@ -354,6 +368,7 @@ final class SpotsPanel: NSPanel {
         panel.watchPaste(model: model)
         panel.center()
         panel.followEditing()
+        panel.followCover()
         return panel
     }
 }
