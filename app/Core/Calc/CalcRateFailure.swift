@@ -6,6 +6,11 @@ public enum CalcRateFailure: String, Error, Equatable, Sendable {
     case offline
     case unavailable
 
+    /// The line that `openspot calc solve` prints for it.
+    public var text: String {
+        TextBlock(fields: [.init(key: "status", value: rawValue)]).text
+    }
+
     /// The failure that an error of a download says: no internet for a Mac with no connection, and else a source that is down.
     init(_ error: Error) {
         let offline: [URLError.Code] = [.notConnectedToInternet, .networkConnectionLost, .dataNotAllowed, .internationalRoamingOff]

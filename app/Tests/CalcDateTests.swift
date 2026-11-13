@@ -14,7 +14,7 @@ final class CalcDateTests: XCTestCase {
     private let now = Date(timeIntervalSince1970: 1_794_402_300)
 
     private func answer(_ text: String) -> CalcAnswer? {
-        CalcAnswer(text: text, locale: english, clock: berlin, now: now)
+        try? CalcAnswer(text: text, locale: english, clock: berlin, now: now)
     }
 
     /// The text with the narrow space that macOS writes before AM and PM as a plain space.

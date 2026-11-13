@@ -14,7 +14,17 @@ final class CalcAnswerTests: XCTestCase {
     private let now = Date(timeIntervalSince1970: 1_794_402_300)
 
     private func answer(_ text: String, in locale: Locale? = nil, rates: CalcRates? = nil, failure: CalcRateFailure = .offline) -> CalcAnswer? {
-        CalcAnswer(text: text, locale: locale ?? english, clock: berlin, now: now, rates: { rates.map { .success($0) } ?? .failure(failure) })
+        try? CalcAnswer(text: text, locale: locale ?? english, clock: berlin, now: now, rates: { rates.map { .success($0) } ?? .failure(failure) })
+    }
+
+    /// Why a text has no answer when the rates fail, or nil when it has one or none.
+    private func failure(_ text: String, _ failure: CalcRateFailure = .offline) -> CalcRateFailure? {
+        do throws(CalcRateFailure) {
+            _ = try CalcAnswer(text: text, locale: english, clock: berlin, now: now, rates: { .failure(failure) })
+            return nil
+        } catch {
+            return error
+        }
     }
 
     /// The text with the narrow and the no-break spaces that macOS writes in times and amounts as plain spaces.
@@ -126,9 +136,10 @@ final class CalcAnswerTests: XCTestCase {
     }
 
     func testWithNoRatesAKnownCurrencySaysWhyAndAnUnknownOneSaysNothing() {
-        XCTAssertEqual(answer("15 usd in eur", failure: .unavailable)?.text, "status=unavailable\n")
-        XCTAssertEqual(answer("15 usd in eur")?.text, "status=offline\n")
-        XCTAssertEqual(answer("1 btc in usd")?.text, "status=offline\n")
+        XCTAssertEqual(failure("15 usd in eur", .unavailable)?.text, "status=unavailable\n")
+        XCTAssertEqual(failure("15 usd in eur")?.text, "status=offline\n")
+        XCTAssertEqual(failure("1 btc in usd"), .offline)
+        XCTAssertNil(failure("1 xyz in abc"))
         XCTAssertNil(answer("1 xyz in abc"))
     }
 
@@ -144,13 +155,13 @@ final class CalcAnswerTests: XCTestCase {
             asks += 1
             return .failure(.offline)
         }
-        _ = CalcAnswer(text: "2*(3+4)", locale: english, clock: berlin, now: now, rates: count)
-        _ = CalcAnswer(text: "5 km in mi", locale: english, clock: berlin, now: now, rates: count)
+        _ = try? CalcAnswer(text: "2*(3+4)", locale: english, clock: berlin, now: now, rates: count)
+        _ = try? CalcAnswer(text: "5 km in mi", locale: english, clock: berlin, now: now, rates: count)
         for text in ["safari", "2 pi", "25 dec", "1 month", "1pas", "12am in utc", "2pm in pst", "15 apr", "3 cats in dogs"] {
-            _ = CalcAnswer(text: text, locale: english, clock: berlin, now: now, rates: count)
+            _ = try? CalcAnswer(text: text, locale: english, clock: berlin, now: now, rates: count)
         }
         XCTAssertEqual(asks, 0)
-        _ = CalcAnswer(text: "15 usd in eur", locale: english, clock: berlin, now: now, rates: count)
+        _ = try? CalcAnswer(text: "15 usd in eur", locale: english, clock: berlin, now: now, rates: count)
         XCTAssertEqual(asks, 1)
     }
 }
