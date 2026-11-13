@@ -22,14 +22,6 @@ struct AccountCalls {
         }
     }
 
-    func open() -> CommandAPI.Work {
-        guard let app else { return CommandAnswer.notRunning("account open") }
-        return CommandAnswer.work {
-            _ = await app.openAccount()
-            return ""
-        }
-    }
-
     func sync(_ isOn: Bool) -> CommandAPI.Work {
         guard app != nil else { return CommandAnswer.notRunning("account sync") }
         return CommandAnswer.work { [store] in
@@ -57,7 +49,7 @@ struct AccountCalls {
         CommandAnswer.work { [store] in
             guard let key = try store.key(), key.words != nil else { throw SpotError.failed(1, "This Mac holds no account words.") }
             return places.map { place in
-                TextBlock(fields: [.init(key: "check", value: String(place))] + AccountFlow.choices(at: place, of: key).map { .init(key: "choice", value: $0) }).text
+                TextBlock(fields: [.init(key: "check", value: String(place))] + AccountPhrase.choices(at: place, of: key).map { .init(key: "choice", value: $0) }).text
             }.joined(separator: "\n")
         }
     }
@@ -76,27 +68,16 @@ struct AccountCalls {
     }
 
     func phrase(_ input: @escaping @Sendable () async -> String) -> CommandAPI.Work {
-        CommandAnswer.work { [store] in
-            let text = await input()
-            return await MainActor.run {
-                let flow = AccountFlow(store: store, step: .restore)
-                flow.phrase = text
-                return flow.facts
-            }
+        CommandAnswer.work {
+            AccountPhrase(await input()).facts
         }
     }
 
     func signIn(_ input: @escaping @Sendable () async -> String) -> CommandAPI.Work {
         CommandAnswer.work { [store] in
-            let text = await input()
-            let failure: String? = await MainActor.run {
-                let flow = AccountFlow(store: store, step: .restore)
-                flow.phrase = text
-                guard flow.canSignIn else { return flow.problem ?? "Type all 12 words first." }
-                flow.signIn()
-                return flow.failure
-            }
-            if let failure { throw SpotError.failed(1, failure) }
+            let phrase = AccountPhrase(await input())
+            guard phrase.canSignIn else { throw SpotError.failed(1, phrase.problem ?? "Type all 12 words first.") }
+            try store.keep(try phrase.key(), isBackedUp: true)
             return ""
         }
     }

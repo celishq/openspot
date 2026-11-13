@@ -50,6 +50,9 @@ targets:
       - target: OpenspotClient
         link: false
         embed: false
+      - target: OpenspotViewBuild
+        link: false
+        embed: false
     info:
       path: Shell/Info.plist
       properties:
@@ -114,6 +117,10 @@ targets:
           mkdir -p "$(dirname "$core")"
           cp -RL "$SRCROOT/../spots" "$core"
           cp "$SRCROOT/defaults.toml" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/defaults.toml"
+      - name: Build the views of the core spots
+        basedOnDependencyAnalysis: false
+        script: |
+          "$BUILT_PRODUCTS_DIR/openspot-views" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/spots" "$DERIVED_FILE_DIR/views"
       - name: Copy the emoji keywords
         basedOnDependencyAnalysis: false
         script: |
@@ -129,6 +136,7 @@ targets:
           if [ -n "$OPENSPOT_DEV_STATE" ] && [ ! -e "$OPENSPOT_DEV_STATE/spots" ]; then
             mkdir -p "$OPENSPOT_DEV_STATE"
             cp -R "$SRCROOT/../spots" "$OPENSPOT_DEV_STATE/spots"
+            rm -rf "$OPENSPOT_DEV_STATE/spots/openspot.spot"
           fi
     settings:
       base:
@@ -152,6 +160,20 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: dev.openspot.client
         SKIP_INSTALL: YES
         LD_OBJC_RUNTIME_ARGS: ""
+  OpenspotViewBuild:
+    type: tool
+    platform: macOS
+    sources:
+      - path: ViewBuild
+    dependencies:
+      - target: OpenspotCore
+      - package: secp256k1
+        product: P256K
+    settings:
+      base:
+        PRODUCT_NAME: openspot-views
+        PRODUCT_BUNDLE_IDENTIFIER: dev.openspot.views
+        SKIP_INSTALL: YES
   OpenspotStandIn:
     type: tool
     platform: macOS

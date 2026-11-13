@@ -31,16 +31,8 @@ final class TestHost: SpotsHost {
     /// The model whose show and hide steps the panel runs, as the app's window does.
     weak var model: SpotsModel?
 
-    /// Whether the person passes Touch ID, and each reason it was asked for.
-    var allowsActs = true
-    var asked: [String] = []
-
     nonisolated deinit {}
 
-    func allows(_ reason: String) async -> Bool {
-        asked.append(reason)
-        return allowsActs
-    }
 
     func dismiss() {
         dismissals += 1

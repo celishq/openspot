@@ -58,7 +58,4 @@ struct SpotRunningApp: RunningApp {
         await model.allows(reason)
     }
 
-    func openAccount() async -> Bool {
-        await model.openAccount()
-    }
 }

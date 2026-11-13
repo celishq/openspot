@@ -682,7 +682,7 @@ A spot asks the Mac and Openspot for things through one command, which works the
   - calls that change Openspot or its places: `app quit`, `update install`, and `setting set` of a key that Openspot
     keeps for the user (see [Settings](#settings));
   - calls that open a window or the panel: `spot show`, `spot open`, `spot review`, `spot store`, `setting change`,
-    `update check`, `account open`, `calendar show` and `reminders show`;
+    `update check`, `calendar show` and `reminders show`;
   - `account sync`, which only the user and the spots of Openspot can call.
 - `calendar add --dry-run` and `reminders add --dry-run` change nothing, so they work in a read.
 - `openspot batch` runs one call for each line of stdin, and prints `---` after each. It stops at the first failure.
@@ -761,7 +761,7 @@ openspot app quit
 
 | Use         | The calls that need it                                                                                                                                          |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app`       | `app quit`, `update check`, `update install`, `account open`, `account sync`, and `setting set` of `menubar`, `float`, `key.<command>` or of the spot `openspot` |
+| `app`       | `app quit`, `update check`, `update install`, and `setting set` of `menubar`, `float`, `key.<command>` or of the spot `openspot`                                |
 | `spots`     | `spot add`, `spot remove`, `spot new`, `spot run`, `spot log`, `setting list`, `setting set` of `enabled`, and `setting get`, `set` or `change` of another spot |
 | `screen`    | `screen sources`, `screen shot`, `screen record`, `window frame`, `window move` and `color pick`                                                                |
 | `clipboard` | `clipboard copy`, `clipboard paste` and `clipboard read`                                                                                                        |

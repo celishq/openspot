@@ -67,10 +67,6 @@ actor FakeRunningApp: RunningApp {
         return spot != "gone"
     }
 
-    func openAccount() -> Bool {
-        opened.append("account")
-        return true
-    }
 
     /// Each reason that Touch ID was asked for, and whether the person passes it.
     private(set) var asked: [String] = []

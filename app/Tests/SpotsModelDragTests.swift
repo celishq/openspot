@@ -647,7 +647,6 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(publication(of: "a"), .current)
         let again = await model.publish("a")
         XCTAssertEqual(again, .unchanged)
-        XCTAssertNil(model.accountSheet)
 
         let script = try FileHandle(forWritingTo: spots.appendingPathComponent("a.spot/a.sh"))
         try script.seekToEnd()
@@ -672,91 +671,14 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(try SpotFolder(contentsOf: file).files.first { $0.path == "a.spot/readme.md" }?.text, "Does a.")
     }
 
-    /// Waits until the account sheet shows, for a call that opens it and waits for its end.
-    private func accountSheet() async throws -> AccountSheet {
-        for _ in 0..<1000 {
-            if let sheet = model.accountSheet { return sheet }
-            await Task.yield()
-        }
-        return try XCTUnwrap(model.accountSheet)
-    }
-
-    func testAPublishWithNoAccountOpensTheAccountSheetAndWritesNothingWhenItClosesWithNone() async throws {
+    func testAPublishWithNoAccountAsksToSetOneUpAndWritesNothing() async throws {
         try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
-        let publish = Task { await model.publish("a") }
 
-        let sheet = try await accountSheet()
-        XCTAssertEqual(model.openList, AccountSheet.id)
-        XCTAssertEqual(sheet.flow.step, .choose)
-        _ = try await sheet.answer(["close"])
+        let result = await model.publish("a")
 
-        let result = await publish.value
         XCTAssertEqual(result, .failed)
-        XCTAssertNil(model.accountSheet)
-        XCTAssertEqual(host.notes, [])
+        XCTAssertEqual(host.notes, ["Set up your account, then publish again."])
         XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
-    }
-
-    func testAPublishGoesOnOnceTheSheetMadeAnAccount() async throws {
-        try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
-        let publish = Task { await model.publish("a") }
-
-        let sheet = try await accountSheet()
-        _ = try await sheet.answer(["create"])
-        XCTAssertEqual(sheet.flow.step, .about)
-        _ = try await sheet.answer(["show"])
-        XCTAssertEqual(sheet.flow.step, .words)
-        _ = try await sheet.answer(["close"])
-
-        let result = await publish.value
-        XCTAssertEqual(result, .published)
-        XCTAssertNotNil(try model.files.account.key())
-    }
-
-    func testTheSheetOpensOnTheStepOfTheAccount() async throws {
-        let key = try model.files.account.keyMadeOnce()
-        try model.files.account.markBackedUp()
-        let open = Task { await model.openAccount() }
-
-        let sheet = try await accountSheet()
-        XCTAssertEqual(sheet.flow.step, .account)
-        XCTAssertEqual(sheet.flow.npub, key.npub)
-        _ = try await sheet.answer(["close"])
-        let opened = await open.value
-        XCTAssertTrue(opened)
-    }
-
-    func testTheWordsOfAKeptKeyAndASignOutShowOnlyAfterTouchID() async throws {
-        _ = try model.files.account.keyMadeOnce()
-        try model.files.account.markBackedUp()
-        host.allowsActs = false
-        Task { await model.openAccount() }
-        let sheet = try await accountSheet()
-
-        _ = try await sheet.answer(["show"])
-        XCTAssertEqual(sheet.flow.step, .account)
-        _ = try await sheet.answer(["leave"])
-        _ = try await sheet.answer(["sign-out"])
-        XCTAssertNotNil(try model.files.account.key())
-        XCTAssertEqual(host.asked, ["show your account words", "sign out of your account"])
-
-        host.allowsActs = true
-        _ = try await sheet.answer(["sign-out"])
-        XCTAssertNil(try model.files.account.key())
-        XCTAssertNil(model.accountSheet)
-    }
-
-    func testTheSheetPrintsTheButtonsOfItsStep() async throws {
-        Task { await model.openAccount() }
-        let sheet = try await accountSheet()
-
-        let read = try await sheet.answer(["read"])
-
-        XCTAssertTrue(read.hasPrefix("grid=account\ngrid=create\ngrid=sign-in\n"))
-        XCTAssertTrue(read.contains("view=account"))
-        XCTAssertTrue(read.contains("button=create\ntitle=Create account\nshortcut=cmd+return\nlook=strong"))
-        XCTAssertTrue(read.contains("button=sign-in\ntitle=Use existing account"))
-        _ = try await sheet.answer(["close"])
     }
 
     func testASpotWithNoReadmeOpensItsListingAndIsNotPublished() async {

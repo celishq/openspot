@@ -39,6 +39,8 @@ class BuiltInCase: XCTestCase {
     /// The folder of the tools on the path, with `openspot` in it.
     var tools: URL!
     let app = FakeRunningApp()
+    /// The runs that start a spot when a test needs the API to know it as the caller, as the app does.
+    let runs = SpotRuns()
     let mac = MacSettings()
     private var socket: CommandSocket?
     private var before: [String: String] = [:]
@@ -111,7 +113,7 @@ class BuiltInCase: XCTestCase {
         setenv("OPENSPOT_CONFIG", root.path, 1)
         setenv("OPENSPOT_SPOTS", spots.path, 1)
         setenv("OPENSPOT_CORE", core.path, 1)
-        socket = CommandSocket(folder: root, api: CommandAPI(mac: Host(mac: mac, guide: guide), app: app))
+        socket = CommandSocket(folder: root, api: CommandAPI(mac: Host(mac: mac, guide: guide), app: app, runs: runs))
     }
 
     override func tearDown() async throws {

@@ -132,7 +132,7 @@ extension SpotsModel {
 
     /// What the search field says as the open review grows out of it.
     public var reviewDrop: SpotDrop? {
-        reviewed.map(SpotDrop.init(reviewing:)) ?? accountSheet.map { _ in SpotDrop(symbol: AccountSheet.symbol, title: AccountSheet.name, detail: nil) }
+        reviewed.map(SpotDrop.init(reviewing:))
     }
 
     /// Whether the panel stays open when it loses the focus: for a review, for a first launch, because the Mac can keep
@@ -141,9 +141,9 @@ extension SpotsModel {
         isReviewing || isFirstLaunch || isSettlingDrop
     }
 
-    /// Whether a review or the account sheet shows, which stays open when the panel loses the focus.
+    /// Whether a review shows, which stays open when the panel loses the focus.
     public var isReviewing: Bool {
-        reviewed != nil || accountSheet != nil
+        reviewed != nil
     }
 
     /// Opens the review of a `.spot` file on the clipboard. Returns false when the clipboard holds other things, or a form is open.
@@ -156,12 +156,9 @@ extension SpotsModel {
 
     /// Ends the review when its sheet has gone. Its sheet leaves with the next scan.
     public func endReview() {
-        guard reviewed != nil || accountSheet != nil else { return }
+        guard reviewed != nil else { return }
         reviewed = nil
-        accountSheet = nil
         reload()
-        accountEnd?.resume()
-        accountEnd = nil
     }
 
     /// Puts the file of a spot on the clipboard, ready to paste into a chat, and warns the sender about secrets. It signs a

@@ -74,8 +74,6 @@ public enum CommandLineCall: Equatable, Sendable {
     case updateCheck
     /// Prints the account as JSON, or with `frame` as one block.
     case accountStatus(frame: Bool)
-    /// Opens the account sheet.
-    case accountOpen
     /// Makes the account sync through iCloud Keychain, or stay on this Mac.
     case accountSync(Bool)
     /// Makes a key when the Mac holds none.
@@ -202,7 +200,6 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot update install                      Restarts the app into the update that it downloaded.
     openspot account [--frame]                   Prints the account that signs what you publish as JSON: signedIn,
                                                  npub, backedUp and sync. --frame prints them as one block.
-    openspot account open                        Opens the account sheet: set up, back up, your words or sign out.
     openspot account new                         Makes an account key when the Mac holds none. The calls from here
                                                  to sign-out answer only Openspot's Account spot.
     openspot account words                       Prints the 12 words, after Touch ID.
@@ -354,13 +351,12 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("account", "new") where rest.count == 1: self = Self.changing(.accountNew, "openspot account new", "makes an account", environment)
         case ("account", "words") where rest.count == 1: self = .accountWords
         case ("account", "check") where rest.count >= 2:
-            let places = rest.dropFirst().compactMap { Int($0) }.filter { (1...AccountFlow.wordCount).contains($0) }
+            let places = rest.dropFirst().compactMap { Int($0) }.filter { (1...AccountPhrase.wordCount).contains($0) }
             self = places.count == rest.count - 1 ? .accountCheck(places) : .unknown(arguments.joined(separator: " "))
         case ("account", "checked") where rest.count == 1: self = Self.changing(.accountChecked, "openspot account checked", "changes your account", environment)
         case ("account", "phrase") where rest.count == 1: self = .accountPhrase
         case ("account", "sign-in") where rest.count == 1: self = Self.changing(.accountSignIn, "openspot account sign-in", "changes your account", environment)
         case ("account", "sign-out") where rest.count == 1: self = Self.changing(.accountSignOut, "openspot account sign-out", "changes your account", environment)
-        case ("account", "open") where rest.count == 1: self = Self.changing(.accountOpen, "openspot account open", "opens the panel", environment)
         case ("account", "sync") where rest == ["sync", "on"] || rest == ["sync", "off"]:
             self = Self.changing(.accountSync(rest[1] == "on"), "openspot account sync", "changes where your account is kept", environment)
         case ("update", "install") where rest.count == 1: self = Self.changing(.updateInstall, "openspot update install", "restarts Openspot", environment)

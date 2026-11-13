@@ -32,6 +32,7 @@ dev-state:
 	rm -rf .temp/openspot
 	mkdir -p .temp/openspot/spots
 	[ -n "$(EMPTY)" ] || cp -R spots/. .temp/openspot/spots/
+	rm -rf .temp/openspot/spots/openspot.spot
 
 examples:
 	mkdir -p .temp/openspot/spots

@@ -33,7 +33,6 @@ public struct SpotUseCall: Equatable, Sendable {
         case ("menubar", "on"), ("menubar", "off"): (.app, "changed the menu bar")
         case ("update", "check"): (.app, "checked for an update")
         case ("update", "install"): (.app, "installed an update")
-        case ("account", "open"): (.app, "opened your account")
         case ("account", "sync"), ("account", "new"), ("account", "words"), ("account", "check"), ("account", "checked"),
              ("account", "phrase"), ("account", "sign-in"), ("account", "sign-out"): (.account, "reached your account key")
         case ("spot", "add"): (.spots, "added a spot")

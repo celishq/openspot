@@ -28,8 +28,6 @@ public protocol RunningApp: Sendable {
     /// Runs the action of a spot's setting, as Enter on its row does: its form shows in the panel, and the panel closes when
     /// it is done. Returns false when no spot has that ID.
     func changeSetting(_ key: String, of spot: String) async -> Bool
-    /// Opens the account sheet on a step, and returns once it closes, with whether the Mac then holds an account.
-    func openAccount() async -> Bool
     /// Asks for Touch ID or the Mac password, and returns whether the person passed.
     func allows(_ reason: String) async -> Bool
 }

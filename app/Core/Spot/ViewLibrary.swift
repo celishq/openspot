@@ -108,6 +108,36 @@ public struct ViewLibrary: Sendable {
         return built
     }
 
+    /// The kinds of Mac that a view built into the app runs on.
+    static let shippedKinds = ["arm64", "x86_64"]
+
+    /// Builds the view of each spot in a folder of spot folders for each kind of Mac, and puts the library beside its
+    /// source, where `library(of:)` finds it, so the view draws with no compiler on the Mac. A view whose source the
+    /// cache has already built is copied from it. Returns a line for each view.
+    public func ship(in folder: URL) async throws -> String {
+        var lines: [String] = []
+        let folders = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? []
+        for spotFolder in folders.filter({ $0.pathExtension == SpotFolder.fileExtension }).sorted(by: { $0.path < $1.path }) {
+            let files = (try? FileManager.default.contentsOfDirectory(at: spotFolder, includingPropertiesForKeys: nil)) ?? []
+            let views = Set(files.compactMap { file in (try? SpotFile(file: file, id: SpotID(file: file).description))?.spots.compactMap(\.view) }.joined())
+            for view in views.sorted() {
+                let source = URL(fileURLWithPath: view)
+                let text = try Data(contentsOf: source)
+                let built = cache.appendingPathComponent("\(Self.name(of: text))-shipped.\(Self.libraryExtension)")
+                if !FileManager.default.fileExists(atPath: built.path) {
+                    let data = try await build(source: text, named: source.lastPathComponent, kinds: Self.shippedKinds)
+                    try FileManager.default.createDirectory(at: cache, withIntermediateDirectories: true)
+                    try data.write(to: built, options: .atomic)
+                }
+                let beside = URL(fileURLWithPath: Self.path(beside: source.path))
+                try? FileManager.default.removeItem(at: beside)
+                try FileManager.default.copyItem(at: built, to: beside)
+                lines.append("built \(spotFolder.lastPathComponent)/\(beside.lastPathComponent)")
+            }
+        }
+        return lines.map { $0 + "\n" }.joined()
+    }
+
     /// Compiles a view for these kinds of Mac, such as `arm64` and `x86_64`, and returns the library. `name` is the name of
     /// its file, which an error line shows.
     public func build(source: Data, named name: String, kinds: [String]) async throws -> Data {
