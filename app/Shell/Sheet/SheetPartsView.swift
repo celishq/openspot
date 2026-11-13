@@ -543,7 +543,7 @@ private struct FocusOnShow: ViewModifier {
 
     func body(content: Content) -> some View {
         content.onChange(of: isShown) { _, isShown in
-            if isShown { DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeInDuration, execute: focus) }
+            if isShown { DispatchQueue.main.asyncAfter(deadline: .now() + MotionTokens.fadeIn, execute: focus) }
         }
     }
 }

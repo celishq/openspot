@@ -24,7 +24,7 @@ struct SpotCarriedCard: View {
                     onTap: {}
                 )
                 .modifier(SpotLiftedCard(isLifted: !carry.isLanding, isSolid: true, size: carry.size))
-                .transition(.asymmetric(insertion: .scale(scale: 1 / SpotMotion.liftedScale), removal: .opacity))
+                .transition(.asymmetric(insertion: .scale(scale: 1 / MotionTokens.liftedScale), removal: .opacity))
             }
         }
         .modifier(CarriedPlace(lift: model.lift, panel: panel))

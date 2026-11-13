@@ -51,7 +51,8 @@ struct SpotSheetLayer: View {
             radius: isOpen ? SpotTokens.radius : isInstall ? SpotTokens.corner(for: .strip) : SpotTokens.corner(for: card?.placement.size ?? entry.size),
             sheetRect: sheetRect,
             shift: isOpen ? .zero : shift(to: closedRect),
-            showsRing: !isOpen && cardIsSelected,
+            showsRing: cardIsSelected,
+            progress: progress,
             arrow: showsArrow ? AnyView(arrow) : nil,
             arrowBox: frame?.size ?? .zero
         ))

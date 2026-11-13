@@ -7,8 +7,8 @@ struct SpotFocusLook: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .scaleEffect(focus == .focused ? SpotMotion.focusedScale : 1)
+            .scaleEffect(focus == .focused ? MotionTokens.focusedScale : 1)
             .opacity(focus == .faded ? SpotTheme.unfocused : 1)
-            .animation(SpotMotion.sheet(isOpen: focus != .none), value: focus)
+            .animation(SpotMotion.grow(isOpen: focus != .none), value: focus)
     }
 }

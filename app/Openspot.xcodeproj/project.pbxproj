@@ -140,6 +140,7 @@
 		3A3AC3863B1AF5084A3D4293 /* SpotSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3D7738D2679B75088377D6 /* SpotSheetView.swift */; };
 		3A7C6B97E1191B5A44C5A31E /* SpotsModel+Drag.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A1297FE5C936AEE91823C82 /* SpotsModel+Drag.swift */; };
 		3B8FBB08AF6DE22373101644 /* FileIconTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D34F4DF9EE6D7D1505F40662 /* FileIconTests.swift */; };
+		3CBC527416954B90D30E6CAD /* MotionTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67D401B5A9ACE369B0FAE465 /* MotionTokens.swift */; };
 		3D2A84F82E17295B02DDE30E /* PromptCalls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68375DA913593D89F26065DC /* PromptCalls.swift */; };
 		3DFF7E4752E30213BCD6B523 /* ScreenPick.swift in Sources */ = {isa = PBXBuildFile; fileRef = E798461D8CB416E551905982 /* ScreenPick.swift */; };
 		3F2406CF702202DA25882FFE /* TerminalRun.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04422C7A233E68E420AB9537 /* TerminalRun.swift */; };
@@ -814,6 +815,7 @@
 		660DE35CC9822B4B24D09407 /* SpotArrangementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotArrangementTests.swift; sourceTree = "<group>"; };
 		6690DD894311538EAE43555B /* LoginItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItem.swift; sourceTree = "<group>"; };
 		66FF98F184EDE2E0F4446C2E /* SpotGlyph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotGlyph.swift; sourceTree = "<group>"; };
+		67D401B5A9ACE369B0FAE465 /* MotionTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionTokens.swift; sourceTree = "<group>"; };
 		68122EC7ACEF5F0A5EB80CFB /* SpotRunsWorkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotRunsWorkTests.swift; sourceTree = "<group>"; };
 		68375DA913593D89F26065DC /* PromptCalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptCalls.swift; sourceTree = "<group>"; };
 		68AA6BF3A666E5ADAB73A078 /* SpotSize.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSize.swift; sourceTree = "<group>"; };
@@ -1862,6 +1864,7 @@
 		B59CFB211C0D3E332592510F /* Panel */ = {
 			isa = PBXGroup;
 			children = (
+				67D401B5A9ACE369B0FAE465 /* MotionTokens.swift */,
 				D6181C65FF4F90D87E1C3AE5 /* PanelMotion.swift */,
 				F443B64A3866B1E3C8919DF7 /* SpotCarry.swift */,
 				D3A44329D0B28A249702E445 /* SpotDock.swift */,
@@ -2500,6 +2503,7 @@
 				D5AE4DC5DC48D88986CB8A60 /* MetricReading.swift in Sources */,
 				7F3083C79B1BD4666E33BA46 /* MetricValue.swift in Sources */,
 				784ECF14C88590D85EE82479 /* ModifierTap.swift in Sources */,
+				3CBC527416954B90D30E6CAD /* MotionTokens.swift in Sources */,
 				B8676F4AC37D3BDC56CEA2C7 /* OnceLink.swift in Sources */,
 				2AA3FBC09252C22BB0B9D56D /* PanelMotion.swift in Sources */,
 				CF4DF2850057B528C8AFBB61 /* PartCatalog.swift in Sources */,

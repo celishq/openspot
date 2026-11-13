@@ -17,7 +17,7 @@ struct SpotMorphLook: ViewModifier, @preconcurrency Animatable {
     func body(content: Content) -> some View {
         content
             .scaleEffect(scale(progress))
-            .opacity(max(opacity(progress), SpotMotion.coveredCardOpacity))
+            .opacity(max(opacity(progress), MotionTokens.hiddenOpacity))
             .offset(offset(progress))
     }
 }

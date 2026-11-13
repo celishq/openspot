@@ -29,7 +29,7 @@ final class SpotsPanel: NSPanel {
             await self?.model?.waitForReads()
             self?.contentView?.layoutSubtreeIfNeeded()
             self?.displayIfNeeded()
-            try? await Task.sleep(for: .seconds(2 * SpotMotion.fadeInDuration))
+            try? await Task.sleep(for: .seconds(2 * MotionTokens.fadeIn))
             if self?.model?.isWarming == true {
                 self?.model?.isWarming = false
                 self?.hide(then: done)
@@ -115,13 +115,13 @@ final class SpotsPanel: NSPanel {
             resize(to: whole)
             DispatchQueue.main.async { [weak self] in
                 guard let self, self.model?.isEditing == true else { return }
-                withAnimation(SpotMotion.edit) {
+                withAnimation(SpotMotion.move) {
                     self.place.isOut = true
                     self.place.lift = 0
                 }
             }
         } else if !isEditing, let rest = restFrame, model.isShown {
-            withAnimation(SpotMotion.edit) {
+            withAnimation(SpotMotion.move) {
                 place.isOut = false
                 place.lift = frame.maxY - rest.maxY - place.panel.y
             } completion: { [weak self] in
@@ -156,7 +156,7 @@ final class SpotsPanel: NSPanel {
     /// Starts the close motion, and takes the panel off the screen when it ends. Then it runs the given work.
     func hide(then done: (() -> Void)? = nil) {
         model?.panelWillHide()
-        DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeOutDuration) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + MotionTokens.fadeOut) {
             defer { done?() }
             guard self.model?.isShown == false else { return }
             self.orderOut(nil)

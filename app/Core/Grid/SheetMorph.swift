@@ -9,8 +9,6 @@ public struct SheetMorph: Equatable, Sendable {
     public let card: CGRect
     public let sheet: CGRect
 
-    /// The share of the motion near the card in which the card's own look, such as its fill, gives way to the sheet's.
-    public static let cardShare = 0.5
     /// How far past a part's far side the shape's edge lies when the part shows whole.
     public static let clearance = SpotTokens.padding
 
@@ -27,12 +25,12 @@ public struct SheetMorph: Equatable, Sendable {
 
     /// How strongly a look of the card shows, such as the fill of a card that is on: whole on the card, gone half way.
     public static func cardLook(at progress: Double) -> Double {
-        1 - ease(progress / cardShare)
+        1 - ease(progress / MotionTokens.cardShare)
     }
 
     /// How strongly a look of the open sheet shows that takes the place of one of the card's: none half way, whole open.
     public static func sheetLook(at progress: Double) -> Double {
-        ease((progress - cardShare) / (1 - cardShare))
+        ease((progress - MotionTokens.cardShare) / (1 - MotionTokens.cardShare))
     }
 
     /// Where the content's corner lies at this progress, in the panel.

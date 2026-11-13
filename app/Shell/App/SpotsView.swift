@@ -49,11 +49,11 @@ struct SpotsView: View {
             .modifier(GridEdgeScroll(model: model, scroll: $scroll))
             .modifier(SpotScrollEdgeTracker(edges: Binding(get: { fade.edges }, set: { fade.edges = $0 })))
             .modifier(GridFadeMask(fade: fade, height: cardHeight))
-            .animation(SpotMotion.sheetFade(isOpen: surfaceIsOut, isLate: !coversGrid)) { $0.opacity(coversGrid ? 0 : 1) }
+            .morph(coversGrid ? 0 : 1, opacity: { SheetMorph.sheetLook(at: $0) })
             SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: cardHeight, sheetHeight: max(sheetID == nil ? gridHeight : sheetHeight, menuBackdropHeight))
-                .animation(SpotMotion.sheet(isOpen: model.menu != nil), value: menuBackdropHeight)
+                .animation(SpotMotion.grow(isOpen: model.menu != nil), value: menuBackdropHeight)
                 .opacity(model.isShown ? 1 : 0)
-                .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
+                .animation(SpotMotion.fade(isShown: model.isShown), value: model.isShown)
             if let entry = model.entries.first(where: { $0.id == sheetID }) {
                 SpotSheetLayer(
                     model: model,
@@ -86,7 +86,7 @@ struct SpotsView: View {
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
         .overlayPreferenceValue(SpotMenuAnchor.self, alignment: .topLeading) { item in
             menuLayer(at: item)
-                .animation(SpotMotion.sheet(isOpen: model.menu != nil), value: model.menu == nil)
+                .animation(SpotMotion.grow(isOpen: model.menu != nil), value: model.menu == nil)
         }
         .background(softBlur)
         .environment(\.spotIsShown, model.isShown)
@@ -107,8 +107,8 @@ struct SpotsView: View {
         }
         .frame(maxHeight: .infinity, alignment: .top)
         .opacity(model.isShown ? 1 : 0)
-        .scaleEffect(model.isShown ? 1 : SpotMotion.backdropHiddenScale)
-        .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
+        .scaleEffect(model.isShown ? 1 : MotionTokens.backdropHiddenScale)
+        .animation(SpotMotion.fade(isShown: model.isShown), value: model.isShown)
     }
 
     /// One blur of a fixed height. It fades on the sheet's motion when it `fades`, and else shows or hides at once.
@@ -242,7 +242,7 @@ struct SpotsView: View {
                 let frame = isClosing ? session.frame ?? fresh : fresh
                 let shown = frame.rect(of: menu)
                 let isGrown = session.isGrown
-                let scale = isGrown ? 1 : SpotMotion.menuStartScale
+                let scale = isGrown ? 1 : MotionTokens.menuStartScale
                 let corner = UnitPoint(x: frame.side == .left ? 0 : 1, y: frame.stillEdge == .top ? 0 : 1)
                 ZStack(alignment: .topLeading) {
                     SpotSurface(rect: Self.rect(shown, scaledBy: scale, from: corner), radius: SpotActionMenuView.radius * scale, glass: isGrown ? 1 : 0)
@@ -303,7 +303,7 @@ private struct GridEdgeScroll: ViewModifier {
         )
         let point = SpotTokens.gridTop + drag.centre(movedBy: model.lift.offset).y
         guard point - model.gridScroll < SpotTokens.panelHeight else { return }
-        let next = window.offset(scrolling: point, from: model.gridScroll, by: SpotMotion.edgeScrollSpeed * seconds, over: SpotScrollEdges.fadeLength)
+        let next = window.offset(scrolling: point, from: model.gridScroll, by: MotionTokens.edgeScrollSpeed * seconds, over: SpotScrollEdges.fadeLength)
         if next != model.gridScroll { scroll.scrollTo(y: next) }
     }
 }
@@ -342,6 +342,6 @@ private struct GridSelectionFollow: ViewModifier {
         )
         let offset = window.offset(showing: top...(top + SpotTokens.height(rows: spot.size.rows)), from: scrollOffset)
         guard offset != scrollOffset else { return }
-        withAnimation(SpotMotion.follow) { scroll.scrollTo(y: offset) }
+        withAnimation(SpotMotion.move) { scroll.scrollTo(y: offset) }
     }
 }

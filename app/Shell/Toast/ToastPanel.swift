@@ -47,7 +47,7 @@ final class ToastPanel: NSPanel {
         let current = shows
         hold(fix: nil, key: nil)
         toast.isShown = false
-        DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeOutDuration) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + MotionTokens.fadeOut) {
             if self.shows == current { self.orderOut(nil) }
         }
     }

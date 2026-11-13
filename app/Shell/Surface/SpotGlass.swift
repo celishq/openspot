@@ -17,7 +17,7 @@ struct SpotGlass: ViewModifier {
         let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
         content
             .opacity(isShown ? 1 : 0)
-            .animation(SpotMotion.surface(isShown: isShown), value: isShown)
+            .animation(SpotMotion.fade(isShown: isShown), value: isShown)
             .background {
                 if blursBehind {
                     SpotBlur(radius: isShown ? SpotTheme.blur : 0)
@@ -27,15 +27,15 @@ struct SpotGlass: ViewModifier {
                 }
                 shape.fill(SpotTheme.solid).opacity(isShown && isSolid ? 1 : 0)
             }
-            .animation(SpotMotion.surface(isShown: isShown), value: isShown)
+            .animation(SpotMotion.fade(isShown: isShown), value: isShown)
             .overlay {
                 rim
                     .opacity(isShown && !isSolid && !isBare ? 1 : 0)
-                    .animation(SpotMotion.rim(isShown: isShown), value: isShown)
+                    .animation(SpotMotion.fade(isShown: isShown), value: isShown)
                     .allowsHitTesting(false)
             }
-            .scaleEffect(isShown ? 1 : SpotMotion.hiddenScale)
-            .animation(SpotMotion.surface(isShown: isShown), value: isShown)
+            .scaleEffect(isShown ? 1 : MotionTokens.hiddenScale)
+            .animation(SpotMotion.fade(isShown: isShown), value: isShown)
     }
 
     @ViewBuilder
