@@ -36,7 +36,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
         XCTAssertFalse(calculator.isFound)
     }
 
-    func testAnAnswerIsALargeCardOfTheSumOverTheAnswerWhosePickSendsThePlainValue() async throws {
+    func testAnAnswerIsALargeCardOfAFaintSumOverTheAnswerWhosePickCopiesThePlainValue() async throws {
         try await withPrivateHome { home in
             try "row=1234.5\ntitle=1,234.5\ndetail=1000 + 234.5\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
@@ -44,30 +44,43 @@ final class CalculatorSpotTests: SampleSpotsCase {
 
             XCTAssertEqual(answers.map(\.run), ["1234.5"])
             XCTAssertEqual(answers.first?.card?.face.answerSize, .large)
-            XCTAssertEqual(answers.first?.card?.face.parts.map(\.control), [.metric("1000 + 234.5"), .metric("1,234.5")])
+            XCTAssertEqual(answers.first?.card?.face.parts.map(\.detail), ["1000 + 234.5", nil])
+            XCTAssertEqual(answers.first?.card?.face.parts.last?.control, .metric("1,234.5"))
+            XCTAssertEqual(answers.first?.openTitle, "Copy")
             XCTAssertEqual(try String(contentsOf: home.appendingPathComponent("calc-asked"), encoding: .utf8), "1000+234.5\n")
         }
     }
 
-    func testACardOfFreshRatesShowsTheSumWithNoDayOfItsRates() async throws {
+    func testACardOfFreshRatesShowsTheSumWithNoDayOfItsRatesAndItsSymbolFaint() async throws {
         try await withPrivateHome { home in
-            try "row=13.46\ntitle=13,46 €\ndetail=15 USD in EUR · rates of Nov 10\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
+            try "row=13.46\ntitle=13,46 €\ndetail=15 USD in EUR · rates of Nov 10\nunit=€\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
             let answers = try await self.calculator.items(query: "15 usd in eur", timeout: 5).answers
 
-            XCTAssertEqual(answers.first?.card?.face.parts.map(\.control), [.metric("15 USD in EUR"), .metric("13,46 €")])
+            XCTAssertEqual(answers.first?.card?.face.parts.map(\.detail), ["15 USD in EUR", nil])
+            XCTAssertEqual(answers.first?.card?.face.parts.last?.metricPieces.map(\.isUnit), [false, true])
         }
     }
 
-    func testAnAnswerFromOldRatesStaysARowThatWarns() async throws {
+    func testATimeInAnotherZoneKeepsTheZoneItWasReadIn() async throws {
         try await withPrivateHome { home in
-            try "row=13.46\ntitle=13,46 €\ndetail=15 USD in EUR · rates of 3 days ago\ntone=warn\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
+            try "row=2026-11-11 07:00\ntitle=Wed 7:00 AM\ndetail=Wed 3:00 PM · Tokyo\nunit=AM\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
+
+            let answers = try await self.calculator.items(query: "3pm tokyo in berlin", timeout: 5).answers
+
+            XCTAssertEqual(answers.first?.card?.face.parts.first?.detail, "Wed 3:00 PM · Tokyo")
+        }
+    }
+
+    func testAnAnswerFromOldRatesIsACardWhoseSumWarnsWithTheAgeOfItsRates() async throws {
+        try await withPrivateHome { home in
+            try "row=13.46\ntitle=13,46 €\ndetail=15 USD in EUR · rates of Nov 2, 9 days old\nunit=€\ntone=warn\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
             let answers = try await self.calculator.items(query: "15 usd in eur", timeout: 5).answers
 
             XCTAssertEqual(answers.map(\.run), ["13.46"])
-            XCTAssertNil(answers.first?.card)
-            XCTAssertEqual(answers.first?.tone, .warn)
+            XCTAssertEqual(answers.first?.card?.face.parts.first?.detail, "15 USD in EUR · rates of Nov 2, 9 days old")
+            XCTAssertEqual(answers.first?.card?.face.parts.first?.textTone, .warn)
         }
     }
 
