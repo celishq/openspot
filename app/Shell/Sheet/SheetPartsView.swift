@@ -159,8 +159,8 @@ struct SheetPartsView: View {
         case .list(let items, let value):
             list(part, items: items, value: value)
                 .overlay(alignment: .topTrailing) { cornerMark(part, frame) }
-        case .metric(let number):
-            metric(part, number: number)
+        case .metric:
+            metric(part)
         case .chart(let points):
             chart(points)
         case .image(let path):
@@ -478,9 +478,9 @@ struct SheetPartsView: View {
         }
     }
 
-    private func metric(_ part: SpotPart, number: String) -> some View {
+    private func metric(_ part: SpotPart) -> some View {
         VStack(alignment: part.look == .bare ? .trailing : .leading, spacing: SpotType.lineGap) {
-            Text(number)
+            SpotMetricText(part: part)
                 .font(Self.metricFont)
                 .foregroundStyle(SpotTheme.ink)
                 .lineLimit(1)

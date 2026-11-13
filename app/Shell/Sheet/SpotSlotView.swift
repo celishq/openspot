@@ -53,9 +53,9 @@ struct SpotSlotView: View {
             SpotKeyLabel(text: text, isRecording: false)
         case .text(let text, let placeholder, let isReadOnly):
             SpotSlotField(text: text, placeholder: placeholder ?? part.title ?? "", isReadOnly: isReadOnly) { onSlot(part.id, $0) }
-        case .metric(let number):
+        case .metric:
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
-                Text(number)
+                SpotMetricText(part: part)
                     .font(.system(size: metricSize, weight: .semibold, design: .rounded))
                     .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)

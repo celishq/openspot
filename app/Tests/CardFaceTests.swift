@@ -96,6 +96,22 @@ final class CardFaceTests: XCTestCase {
         XCTAssertEqual(answer.answers.first?.card?.face.parts.last?.control, .metric("1,234.5"))
     }
 
+    func testAnAnswerCardTakesTheWordForEnterFromItsOpenButton() {
+        let answer = SpotOutput(text: "grid.large=a\n\nnumber=a\nvalue=14\n\nbutton=open\ntitle=Copy\n")
+
+        XCTAssertEqual(answer.answers.first?.openTitle, "Copy")
+    }
+
+    func testANumberDrawsItsUnitFaintWhereItShows() {
+        let price = SpotOutput(text: "grid.large=a\n\nnumber=a\nvalue=13.46\ndisplay=$13.46\nunit=$\n").parts.first
+        let plain = SpotOutput(text: "grid.large=a\n\nnumber=a\nvalue=14\n").parts.first
+
+        XCTAssertEqual(price?.metricPieces.map(\.text), ["$", "13.46"])
+        XCTAssertEqual(price?.metricPieces.map(\.isUnit), [true, false])
+        XCTAssertEqual(plain?.metricPieces.map(\.text), ["14"])
+        XCTAssertEqual(SpotOutput(text: "number=a\nvalue=1\nunit=kg\n").partFaults, [])
+    }
+
     func testAnAnswerWithNoMainValueOrNoFullWidthDrawingIsItsRows() {
         let noMain = SpotOutput(text: "grid.strip=a b\n\nnumber=a\nvalue=1\n\nnumber=b\nvalue=2\n\nrow=r\ntitle=R\n")
         let wide = SpotOutput(text: "grid.wide=a\n\nnumber=a\nvalue=1\n\nrow=r\ntitle=R\n")

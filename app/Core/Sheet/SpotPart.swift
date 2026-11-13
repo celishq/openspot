@@ -71,6 +71,14 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let mark: MetricValue?
     /// Each key of its block with its values, which a spot's own view draws. Only a `view` block keeps them.
     public let values: [String: [String]]
+    /// The part of a number's shown value that draws faint, such as its currency.
+    public let unit: String?
+
+    /// One run of a number's shown value, and whether it is the unit.
+    public struct MetricPiece: Equatable, Sendable {
+        public let text: String
+        public let isUnit: Bool
+    }
 
     /// The kinds of block that make a part, in the order of the table in Blocks of the protocol.
     public static let kinds = ["text", "number", "gauge", "graph", "picture", "view", "switch", "slider", "field", "choice", "hotkey", "button", "section"]
@@ -93,6 +101,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         file = icon?.file
         glyph = icon?.glyph
         tone = block.value("tone").flatMap(MetricValue.Tone.init)
+        unit = kind == "number" ? block.value("unit").flatMap { $0.isEmpty ? nil : $0 } : nil
         color = ["text", "number"].contains(kind) ? block.value("color").flatMap(Self.hex) : nil
         if kind == "button" {
             self.symbol = nil
@@ -145,6 +154,17 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
             points: data.points,
             max: block.number("max")
         )
+    }
+
+    /// The shown value of a number in runs, with the last place of its unit apart. A value without its unit is one run.
+    public var metricPieces: [MetricPiece] {
+        guard case .metric(let number) = control else { return [] }
+        guard let unit, let range = number.range(of: unit, options: .backwards) else { return [MetricPiece(text: number, isUnit: false)] }
+        return [
+            MetricPiece(text: String(number[..<range.lowerBound]), isUnit: false),
+            MetricPiece(text: unit, isUnit: true),
+            MetricPiece(text: String(number[range.upperBound...]), isUnit: false),
+        ].filter { !$0.text.isEmpty }
     }
 
     /// The good, warn or bad tone of a text, which colours its words. Another part shows its tone in its own way.

@@ -587,6 +587,7 @@
 		F8AA74D967663BD2D8598070 /* AppPresence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90A039991D63E5AFE9E595E9 /* AppPresence.swift */; };
 		FA383513EEEF5ABB9C96606D /* CalcToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 837BF87417D5A992B8089FFC /* CalcToken.swift */; };
 		FAA175179D2D13E6E7597AB7 /* SpotState.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFF472D0670906376236AEF8 /* SpotState.swift */; };
+		FC58E0F8AD8B2EF8A1874E1B /* SpotMetricText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51927154E03B1C4D95FED08D /* SpotMetricText.swift */; };
 		FC682E1AF5091566BE06CA9E /* P256K in Frameworks */ = {isa = PBXBuildFile; productRef = 176130F2F64BE01111A0C0B6 /* P256K */; };
 		FCDF7828A2901BB7E6555788 /* PointerShakeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17F7A0C925D690B8DF7148EB /* PointerShakeTests.swift */; };
 		FD8222B492B4190A22125F5B /* AppCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = D588084E8040F6D8F2460A1B /* AppCache.swift */; };
@@ -809,6 +810,7 @@
 		4FBF38806826AAD61118F1A5 /* SpotArrowScroll.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotArrowScroll.swift; sourceTree = "<group>"; };
 		50F4220BE5A4D4FC319E038B /* AgentNoteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentNoteTests.swift; sourceTree = "<group>"; };
 		513307403E69A6E0F4CAD083 /* CalendarShowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarShowTests.swift; sourceTree = "<group>"; };
+		51927154E03B1C4D95FED08D /* SpotMetricText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotMetricText.swift; sourceTree = "<group>"; };
 		51C4D39DCAE1A0AAAF08596B /* CardFaceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardFaceTests.swift; sourceTree = "<group>"; };
 		51D21CF903F24FBEACCADEC5 /* SpotChoiceMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotChoiceMenu.swift; sourceTree = "<group>"; };
 		521D1D66E3A085DE74BF1BFB /* HelpCalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpCalls.swift; sourceTree = "<group>"; };
@@ -1413,6 +1415,7 @@
 				FAA755C8339AB71444925D63 /* SpotKeyLabel.swift */,
 				0AAD2548261E9745E8A6B77A /* SpotLineMark.swift */,
 				066B6659D70619BDA90AE646 /* SpotMenuAnchor.swift */,
+				51927154E03B1C4D95FED08D /* SpotMetricText.swift */,
 				C224266FB08D7D98CBD42A79 /* SpotPictureStore.swift */,
 				DAB3C463D807C5294C4367A9 /* SpotRoundButton.swift */,
 				B59197E1402EADACBB12B789 /* SpotRowsView.swift */,
@@ -2838,6 +2841,7 @@
 				D27D981AA16CC7BC3F22CE9C /* SpotMac.swift in Sources */,
 				32E5C57D3C6B1A4442D934C6 /* SpotMenuAnchor.swift in Sources */,
 				534D200264F35F4D617392CF /* SpotMenuBarDrag.swift in Sources */,
+				FC58E0F8AD8B2EF8A1874E1B /* SpotMetricText.swift in Sources */,
 				8B0D9F677EEDF36D2E7A4EBE /* SpotMetricView.swift in Sources */,
 				067C862C128338148AA5D781 /* SpotMorphLook.swift in Sources */,
 				0C5A950E5216C6EED3762988 /* SpotMotion.swift in Sources */,

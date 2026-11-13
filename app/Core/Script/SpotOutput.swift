@@ -297,7 +297,7 @@ public struct SpotOutput: Equatable, Sendable {
     public var answers: [SpotItem] {
         guard face.answerSize != nil, let value, let run = value.value("value") else { return items }
         let title = value.value("display") ?? run
-        return [SpotItem(title: title, run: run, card: SpotState(output: self, header: SpotState(title: title)).holding(view))]
+        return [SpotItem(title: title, run: run, card: SpotState(output: self, header: SpotState(title: title)).holding(view), openTitle: primary)]
     }
 
     /// The component of the value.
