@@ -16,15 +16,20 @@ struct SpotSelectionRing<Edge: InsettableShape>: ViewModifier {
     var marksMenu = false
 
     func body(content: Content) -> some View {
-        content.overlay(
-            shape.strokeBorder(SpotTheme.accent, lineWidth: width)
-                .morph(progress ?? 0, opacity: { [isSelected, hasSheet = progress != nil] in
-                    isSelected ? (hasSheet ? SheetMorph.cardLook(at: $0) : 1) : 0
-                })
-                .allowsHitTesting(false)
-        )
+        content.overlay(ring.allowsHitTesting(false))
         .transformAnchorPreference(key: SpotMenuAnchor.self, value: .bounds) { item, bounds in
             if isSelected, marksMenu { item = SpotMenuAnchor.Item(bounds: bounds, corner: (shape as? RoundedRectangle)?.cornerSize.width ?? 0) }
+        }
+    }
+
+    /// The ring, which takes its fade from the sheet's motion only while a sheet grows out of this item.
+    @ViewBuilder
+    private var ring: some View {
+        let stroke = shape.strokeBorder(SpotTheme.accent, lineWidth: width)
+        if let progress {
+            stroke.morph(progress, opacity: { [isSelected] in isSelected ? SheetMorph.cardLook(at: $0) : 0 })
+        } else {
+            stroke.opacity(isSelected ? 1 : MotionTokens.hiddenOpacity)
         }
     }
 }
