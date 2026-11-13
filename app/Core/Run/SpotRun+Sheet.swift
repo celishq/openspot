@@ -144,7 +144,7 @@ extension SpotRun {
 
     private func stopUnwantedRead() {
         guard !isWanted else { return }
-        if let read = running(Self.readKey) { stop(read) }
+        if let read = running(Self.readKey), !finishesRead { stop(read) }
         if let search = running(Self.searchKey) { stop(search) }
     }
 

@@ -146,7 +146,16 @@ final class SpotEventsTests: SpotRunsCase {
         XCTAssertEqual(afterPanel, ["read"])
     }
 
+    func testAPanelThatHidesLetsALaunchReadFinish() async throws {
+        try script("news", header: "on=app.launch", log: "news", "sleep 0.3\necho done >> '\(path("done"))'\nprintf 'title=N\\n'")
+        _ = try scanned()
 
+        runs.launched()
+        runs.panelOpened()
+        runs.panelClosed()
+
+        try await wait("the end of the launch read") { self.exists("done") }
+    }
 
     func testAFailedReadOfAnEventForEachSpotIsTold() async throws {
         try script("unwanted", header: "on=app.update", log: "unwanted", "echo 'No news.' >&2\nexit 1")

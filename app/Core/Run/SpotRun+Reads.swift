@@ -124,8 +124,15 @@ extension SpotRun {
         list.select(run: run)
     }
 
+    /// Reads as a change does, and lets the read finish when the panel hides and nothing wants the spot.
+    func readToEnd(reason: ReadReason? = nil) {
+        finishesRead = true
+        read(need: .change, reason: reason)
+    }
+
     func answerArrived() {
         hasAsked = true
+        finishesRead = false
         let work = waiter
         waiter = nil
         work?()

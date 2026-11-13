@@ -21,7 +21,7 @@ extension SpotRuns {
     /// The app started: reads each spot that reads at launch, wanted or not, as a change does, which tells its failure.
     public func launched() {
         for sheet in sheets.values where sheet.spot.readsAtLaunch {
-            sheet.read(need: .change, reason: ReadReason(event: SpotEvent.appLaunch, value: nil))
+            sheet.readToEnd(reason: ReadReason(event: SpotEvent.appLaunch, value: nil))
         }
     }
 
@@ -29,7 +29,7 @@ extension SpotRuns {
     /// of the spots or a change of the config (protocol: Places).
     public func readOfferedRows() {
         for sheet in sheets.values where sheet.spot.readsOfferedRows {
-            sheet.read(need: .change)
+            sheet.readToEnd()
         }
     }
 
