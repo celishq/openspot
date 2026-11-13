@@ -17,6 +17,11 @@ public struct SheetPlacement: Equatable, Sendable {
         public let roundSize: CGFloat
         public let clearTop: CGFloat
         public let clearBottom: CGFloat
+
+        /// Whether it covers two lines or more, where a text shows its detail under its title.
+        public var hasDetailUnderTitle: Bool {
+            rect.height >= SheetPlacement.rowHeight * 2
+        }
     }
 
     public static let width: CGFloat = 263

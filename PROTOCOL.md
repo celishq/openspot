@@ -186,6 +186,7 @@ confirm=Press again to forget
   default), which sends a whole number when the user lets go, and `hotkey` for a hotkey that a press records.
 - `type=multiple` lets a choice pick several options (see [Buttons and actions](#buttons-and-actions)).
 - Every kind also takes `title`, `detail`, `tone` and `icon`. Openspot skips a key that a kind doesn't take.
+- A `text` that covers two lines or more shows its `detail` under its `title`, on as many lines as the place holds.
 - `icon` draws according to its value:
   - a path of an image file, such as `cups.png`, draws the image;
   - an `https://` URL draws an image from the web, which Openspot downloads once and keeps;

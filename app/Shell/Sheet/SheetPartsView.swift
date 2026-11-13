@@ -189,8 +189,44 @@ struct SheetPartsView: View {
         mark(part).padding(SpotTokens.controlPadding)
     }
 
-    /// A line with a label, a value, a round button and a switch or a menu.
+    /// A line with a label, a value, a round button and a switch or a menu, or a text over two lines with its detail under
+    /// its title.
+    @ViewBuilder
     private func labelled(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
+        if frame.hasDetailUnderTitle, part.control == .none, part.press == .none, part.mark == nil, let title = part.title, let detail = part.detail {
+            stacked(part, title: title, detail: detail)
+        } else {
+            line(part, frame)
+        }
+    }
+
+    /// A title with its detail under it, which wraps to fill the height of its place.
+    private func stacked(_ part: SpotPart, title: String, detail: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: Self.lineGap) {
+            if let symbol = part.symbol {
+                Image(systemName: symbol)
+                    .modifier(SpotSecondaryText())
+                    .frame(width: Self.symbolWidth)
+            }
+            VStack(alignment: .leading, spacing: SpotType.lineGap) {
+                Text(title).font(SpotType.body).foregroundStyle(SpotTheme.ink).lineLimit(1)
+                Group {
+                    if let colour = SpotToneWords.colour(of: part.textTone) {
+                        Text(detail).foregroundStyle(colour)
+                    } else {
+                        Text(detail).modifier(SpotSecondaryText())
+                    }
+                }
+                .font(SpotType.detail)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .modifier(SpotColorBar(color: part.color))
+    }
+
+    /// A line with a label, a value, a round button and a switch or a menu.
+    private func line(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         HStack(spacing: frame.rect.width < Self.narrowCell ? Self.narrowGap : Self.lineGap) {
             if !hasRoundMark(part), work(part) != nil {
                 mark(part)
