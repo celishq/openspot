@@ -28,13 +28,13 @@ final class IconSpotTests: BuiltInCase {
     func testItOffersChangeIconToEveryCardAndShowsNowhereElse() throws {
         let icon = try icon
 
-        XCTAssertEqual(icon.offeredActions.map(\.action.title), ["Change Icon"])
+        XCTAssertEqual(icon.offeredActions.map(\.action.title), ["Change Icon", "Draw…", "Reset Icon"])
         XCTAssertFalse(icon.offersFloat)
         XCTAssertFalse(icon.offersCard)
     }
 
     func testChangeIconOpensTheDrawerSheetOnThatCardsSpotWithItsButtons() async throws {
-        try await call(["change", "weather"])
+        try await call(["change.draw", "weather"])
 
         let opened = await app.opened
         let output = try await icon.items(timeout: 5)
@@ -47,7 +47,7 @@ final class IconSpotTests: BuiltInCase {
 
     func testAStrokeKeepsADraftThatSaveDrawsAsTheIconAndResetRemoves() async throws {
         let dots = "0" + String(repeating: ".", count: 142) + "2"
-        try await call(["change", "weather"])
+        try await call(["change.draw", "weather"])
 
         try await call(["drawer", dots])
         let draft = try await view().value("dots")
@@ -55,7 +55,7 @@ final class IconSpotTests: BuiltInCase {
         let changes = await app.changeList
         let path = try XCTUnwrap(saved)
         let picture = try String(contentsOfFile: path, encoding: .utf8)
-        try await call(["change", "weather"])
+        try await call(["change.draw", "weather"])
         let reopened = try await view().value("dots")
         try await call(["reset"])
 
@@ -68,13 +68,27 @@ final class IconSpotTests: BuiltInCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: path))
     }
 
+    func testResetIconInTheMenuGivesTheSpotItsOwnIconBackWithNoSheet() async throws {
+        try await call(["change.draw", "weather"])
+        try await call(["drawer", "0" + String(repeating: ".", count: 143)])
+        try await call(["save"])
+        let path = try XCTUnwrap(saved)
+
+        try await call(["change.reset", "weather"])
+
+        let opened = await app.opened
+        XCTAssertEqual(opened, ["open openspot/icon"])
+        XCTAssertNil(saved)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: path))
+    }
+
     func testSaveOfAnEmptyDrawingGivesTheSpotItsOwnIconBack() async throws {
-        try await call(["change", "weather"])
+        try await call(["change.draw", "weather"])
         try await call(["drawer", "0" + String(repeating: ".", count: 143)])
         try await call(["save"])
         XCTAssertNotNil(saved)
 
-        try await call(["change", "weather"])
+        try await call(["change.draw", "weather"])
         try await call(["drawer", empty])
         try await call(["save"])
 

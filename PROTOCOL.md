@@ -239,6 +239,9 @@ A button is a verb. If the layout places it, the sheet draws it. If not, it's an
   `scope=spot` always.
 - A `button` of the header with `offers=actions` shows in the ⌘K menu of every card, under the spot's name, while no row
   is selected. Its press sends `<spot> <id> <card spot id>`. It isn't a command of the spot, so it gets no hotkey.
+- A button whose ID is the ID of an offered button, a dot and a name, such as `button=change.draw` after
+  `button=change`, shows in the submenu of that action and fits the same cards. It takes no `offers` line. → or a press
+  opens the submenu, and ← goes back. A search finds its rows too.
 - A filter after `actions`, a comma list, names the cards it fits by where their spot comes from: `mine`, a spot in the
   user's folder or a file of it that doesn't load; `core`, a spot that comes with Openspot and can be turned off; and
   `builtin`, a spot of Openspot itself, such as Settings. With no filter, it fits every card.

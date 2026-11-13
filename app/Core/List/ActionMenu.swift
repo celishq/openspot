@@ -14,6 +14,8 @@ public struct ActionMenu: Equatable, Sendable {
         public var owner: String?
         /// The title of its group, which its header shows. Nil for the first group: the menu's own spot and the app.
         var group: String?
+        /// The rows of its submenu: each action of its spot whose ID is its own ID, a dot and a name, such as `change.draw`.
+        public var children: [Row] = []
     }
 
     /// An action that a spot offers to the menu of the card, with the name of its group. A spot of the app has none.
@@ -46,7 +48,16 @@ public struct ActionMenu: Equatable, Sendable {
     /// How many rows a menu needs to show a field to search them.
     private static let searchFrom = 3
 
-    public let rows: [Row]
+    /// The rows of the level that shows: the top, or the submenu of `parent`.
+    public private(set) var rows: [Row]
+    /// The row whose submenu shows, with the rows and the selection of the top. Nil at the top.
+    private var top: Top?
+
+    private struct Top: Equatable, Sendable {
+        let row: Row
+        let rows: [Row]
+        let selected: Int
+    }
     /// The rows that the search finds, best first. With no search, each row.
     public private(set) var shown: [Row]
     public private(set) var query = ""
@@ -65,10 +76,59 @@ public struct ActionMenu: Equatable, Sendable {
         let sorted = offered.enumerated().sorted {
             ($0.element.name == nil ? 0 : 1, $0.element.name ?? "", $0.offset) < ($1.element.name == nil ? 0 : 1, $1.element.name ?? "", $1.offset)
         }.map(\.element)
-        rows += sorted.map { Row(title: $0.action.title, keyLabel: $0.action.key?.label ?? "", action: $0.action, isQuiet: true, owner: $0.owner, group: $0.name) }
+        rows += Self.nested(sorted.map { Row(title: $0.action.title, keyLabel: $0.action.key?.label ?? "", action: $0.action, isQuiet: true, owner: $0.owner, group: $0.name) })
         guard !rows.isEmpty else { return nil }
         self.rows = rows
         shown = rows
+    }
+
+    /// Moves each row whose action ID is that of an earlier row of its owner, a dot and a name, into that row's children.
+    private static func nested(_ rows: [Row]) -> [Row] {
+        var top: [Row] = []
+        for row in rows {
+            let id = row.action?.id ?? ""
+            if let dot = id.lastIndex(of: "."), let index = top.firstIndex(where: { $0.owner == row.owner && $0.action?.id == String(id[..<dot]) }) {
+                top[index].children.append(row)
+                top[index] = Row(title: top[index].title, keyLabel: "›", action: top[index].action, isQuiet: true, owner: top[index].owner, group: top[index].group, children: top[index].children)
+            } else {
+                top.append(row)
+            }
+        }
+        return top
+    }
+
+    /// The row whose submenu shows, or nil at the top.
+    public var parent: Row? {
+        top?.row
+    }
+
+    /// Shows the children of the selected row in its place.
+    private mutating func enter(_ row: Row) {
+        top = Top(row: row, rows: rows, selected: selected)
+        rows = row.children
+        shown = rows
+        query = ""
+        selected = 0
+        confirming = nil
+    }
+
+    /// Goes back from a submenu to the top, with its row selected. Returns false at the top.
+    public mutating func back() -> Bool {
+        guard let top else { return false }
+        self.top = nil
+        rows = top.rows
+        shown = rows
+        query = ""
+        selected = top.selected
+        confirming = nil
+        return true
+    }
+
+    /// Opens the submenu of the selected row. Returns false for a row with none.
+    public mutating func enterSelected() -> Bool {
+        guard let row = selectedRow, !row.children.isEmpty else { return false }
+        enter(row)
+        return true
     }
 
     public var isSearchable: Bool {
@@ -113,8 +173,9 @@ public struct ActionMenu: Equatable, Sendable {
     public mutating func search(_ text: String) {
         guard text != query else { return }
         query = text
-        let items = rows.indices.map { SpotItem(title: rows[$0].title, run: String($0)) }
-        shown = text.isEmpty ? rows : SearchQuery(text: text).matching(items).compactMap { Int($0.run).map { rows[$0] } }
+        let all = rows.flatMap { row in [row] + row.children.map { Row(title: "\(row.title) › \($0.title)", keyLabel: $0.keyLabel, action: $0.action, isQuiet: $0.isQuiet, owner: $0.owner, group: $0.group) } }
+        let items = all.indices.map { SpotItem(title: all[$0].title, run: String($0)) }
+        shown = text.isEmpty ? rows : SearchQuery(text: text).matching(items).compactMap { Int($0.run).map { all[$0] } }.filter { $0.children.isEmpty }
         selected = 0
         confirming = nil
     }
@@ -147,10 +208,14 @@ public struct ActionMenu: Equatable, Sendable {
         selected = shown.firstIndex { $0.action == action } ?? selected
     }
 
-    /// Takes a press of the selected row. A row that asks to confirm needs a second press, and returns nil on the first. A
-    /// running row stops its call, which needs no question.
+    /// Takes a press of the selected row. A row with children opens them, and a row that asks to confirm needs a second
+    /// press: each returns nil. A running row stops its call, which needs no question.
     public mutating func press(isRunning: Bool = false) -> Row? {
         guard let row = selectedRow else { return nil }
+        if !row.children.isEmpty {
+            enter(row)
+            return nil
+        }
         guard !isRunning, let action = row.action, action.confirm != nil, confirming != action.id else { return row }
         confirming = action.id
         return nil

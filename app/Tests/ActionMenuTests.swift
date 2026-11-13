@@ -273,4 +273,48 @@ final class ActionMenuTests: XCTestCase {
         XCTAssertEqual(alone.rows.map(\.title), ["Change Icon"])
         XCTAssertEqual(alone.headers, [])
     }
+
+    /// The Icon spot's Change Icon with its three children, by dot notation.
+    private func icon() -> [ActionMenu.Offer] {
+        [("change", "Change Icon"), ("change.draw", "Draw…"), ("change.file", "Choose File…"), ("change.reset", "Reset Icon")].map {
+            ActionMenu.Offer(owner: "openspot/icon", name: "Icon", action: CommandAction(id: $0.0, title: $0.1, scope: .spot), isApp: true)
+        }
+    }
+
+    func testAnActionWhoseIDStartsWithAnotherOfItsSpotIsInItsSubmenu() throws {
+        let menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, offered: icon()))
+
+        XCTAssertEqual(menu.rows.map(\.title), ["Open", "New", "Change Icon"])
+        XCTAssertEqual(menu.rows.last?.keyLabel, "›")
+        XCTAssertEqual(menu.rows.last?.children.map(\.title), ["Draw…", "Choose File…", "Reset Icon"])
+    }
+
+    func testAPressOfARowWithChildrenOpensThemAndBackReturnsToItsRow() throws {
+        var menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, offered: icon()))
+        menu.move(by: 2)
+
+        XCTAssertNil(menu.press())
+        let inside = menu.shown.map(\.title)
+        let parent = menu.parent?.title
+        menu.move(by: 1)
+        let file = menu.press()?.action?.id
+        XCTAssertTrue(menu.back())
+
+        XCTAssertEqual(inside, ["Draw…", "Choose File…", "Reset Icon"])
+        XCTAssertEqual(parent, "Change Icon")
+        XCTAssertEqual(file, "change.file")
+        XCTAssertNil(menu.parent)
+        XCTAssertEqual(menu.selectedRow?.title, "Change Icon")
+        XCTAssertFalse(menu.back())
+    }
+
+    func testASearchFindsAChildByItsWordsUnderItsParentsTitle() throws {
+        var menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, offered: icon()))
+
+        menu.search("draw")
+
+        XCTAssertEqual(menu.shown.map(\.title), ["Change Icon › Draw…"])
+        XCTAssertEqual(menu.selectedRow?.action?.id, "change.draw")
+        XCTAssertEqual(menu.selectedRow?.owner, "openspot/icon")
+    }
 }

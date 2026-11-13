@@ -9,6 +9,12 @@
 # button=change
 # title=Change Icon
 # offers=actions
+#
+# button=change.draw
+# title=Draw…
+#
+# button=change.reset
+# title=Reset Icon
 data="$OPENSPOT_DATA/icons"
 target=$(cat "$data/target" 2>/dev/null)
 name=$(printf '%s' "$target" | tr '/' '_')
@@ -30,11 +36,13 @@ reset() {
 }
 
 case "$1" in
-  change)
+  change.draw|change.reset)
     mkdir -p "$data"
     printf '%s' "$2" > "$data/target"
-    rm -f "$data/$(printf '%s' "$2" | tr '/' '_').draft"
-    openspot spot open "$OPENSPOT_ID"
+    target=$2
+    name=$(printf '%s' "$target" | tr '/' '_')
+    rm -f "$data/$name.draft"
+    if [ "$1" = change.reset ]; then reset; else openspot spot open "$OPENSPOT_ID"; fi
     ;;
   read)
     [ -n "$target" ] || { printf 'text=none\ntitle=No spot\ndetail=Choose Change Icon in the menu of a card\n'; exit 0; }

@@ -265,7 +265,8 @@ extension SpotsModel {
         give(trigger.text, to: item, of: entry)
     }
 
-    /// Takes the keys of the open menu. In a menu that searches, a key with no ⌘ goes to its field, and returns false.
+    /// Takes the keys of the open menu: → opens the submenu of a row and ← goes back. In a menu that searches, another key
+    /// with no ⌘ goes to its field, and returns false.
     private func handleMenuKey(_ key: ActionKey) -> Bool {
         let types = menu?.isSearchable == true && !key.isCommand
         switch key {
@@ -273,6 +274,8 @@ extension SpotsModel {
         case ActionKey(name: "up"): menu?.move(by: -1)
         case ActionKey(name: "down"): menu?.move(by: 1)
         case ActionKey(name: "return"): pressMenu()
+        case ActionKey(name: "right") where menu?.selectedRow?.children.isEmpty == false: _ = menu?.enterSelected()
+        case ActionKey(name: "left") where menu?.parent != nil: _ = menu?.back()
         default:
             guard !types, let action = menu?.rows.compactMap(\.action).first(where: { $0.key == key }) else { return !types }
             menu?.select(action)
