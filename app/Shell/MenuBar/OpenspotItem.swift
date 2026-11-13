@@ -10,15 +10,15 @@ final class OpenspotItem {
 
     private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let iconWidth: CGFloat
-    private var icon: MenuBarHost<SpotTrayIconView>?
+    private var icon: MenuBarHost<SpotMenuBarIconView>?
     private var work: MenuBarMarkItem?
     private var drag: SpotMenuBarDrag?
 
     init(model: SpotsModel, toast: Toast?, target: AnyObject, action: Selector, onDragEnter: @escaping () -> Void, onDrop: @escaping ([URL]) -> Void) {
         #if DEBUG
-        let image = NSImage(named: "TrayMarkNightly")
+        let image = NSImage(named: "MenuBarIconNightly")
         #else
-        let image = NSImage(named: "TrayMark")
+        let image = NSImage(named: "MenuBarIcon")
         #endif
         item.button?.image = image
         item.button?.setAccessibilityLabel(Self.name)
@@ -39,7 +39,7 @@ final class OpenspotItem {
     }
 
     /// Shows running work in place of the icon, or the icon again with no work.
-    func show(work mark: TrayMark?) {
+    func show(work mark: MenuBarMark?) {
         guard let mark else {
             work?.remove()
             work = nil
@@ -54,10 +54,10 @@ final class OpenspotItem {
     }
 
     /// Moves the image of the item into a SwiftUI view of the same width.
-    private func makeIcon(model: SpotsModel, toast: Toast?) -> MenuBarHost<SpotTrayIconView>? {
+    private func makeIcon(model: SpotsModel, toast: Toast?) -> MenuBarHost<SpotMenuBarIconView>? {
         guard let button = item.button, let image = button.image else { return nil }
         button.image = nil
-        let host = MenuBarHost(rootView: SpotTrayIconView(model: model, image: image, toast: toast))
+        let host = MenuBarHost(rootView: SpotMenuBarIconView(model: model, image: image, toast: toast))
         host.frame = NSRect(x: 0, y: 0, width: iconWidth, height: button.bounds.height)
         host.autoresizingMask = [.width, .height]
         button.addSubview(host)

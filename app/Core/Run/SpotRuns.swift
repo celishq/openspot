@@ -200,9 +200,9 @@ public final class SpotRuns {
     }
 
     /// The marks of the scripts that show in the menu bar, in the order of the folder.
-    public var trayMarks: [(id: String, mark: TrayMark)] {
+    public var menuBarMarks: [(id: String, mark: MenuBarMark)] {
         order.compactMap { id in
-            guard let sheet = sheets[id], isInMenuBar(sheet.spot), let mark = TrayMark(reading: sheet.reading) else { return nil }
+            guard let sheet = sheets[id], isInMenuBar(sheet.spot), let mark = MenuBarMark(reading: sheet.reading) else { return nil }
             return (id, mark)
         }
     }
@@ -218,10 +218,10 @@ public final class SpotRuns {
     }
 
     /// What the Openspot item shows for running work, or nothing when none shows.
-    public var workMark: TrayMark? {
+    public var workMark: MenuBarMark? {
         let work = work
         guard let oldest = work.first else { return nil }
-        return TrayMark(workFill: oldest.call.fill, count: work.count, name: sheets[oldest.id]?.spot.name ?? oldest.id)
+        return MenuBarMark(workFill: oldest.call.fill, count: work.count, name: sheets[oldest.id]?.spot.name ?? oldest.id)
     }
 
     /// The ID of the script of the oldest running work, whose spot a click on the Openspot item selects.

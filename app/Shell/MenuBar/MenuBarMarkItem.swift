@@ -6,23 +6,23 @@ import SwiftUI
 @MainActor
 final class MenuBarMarkItem {
     let item: NSStatusItem
-    private let host: MenuBarHost<SpotTrayMarkView>
+    private let host: MenuBarHost<SpotMenuBarMarkView>
     /// The mark it draws, so that a mark that did not change is not drawn again.
-    private var mark: TrayMark?
+    private var mark: MenuBarMark?
 
-    init(item: NSStatusItem, mark: TrayMark) {
+    init(item: NSStatusItem, mark: MenuBarMark) {
         self.item = item
-        host = MenuBarHost(rootView: SpotTrayMarkView(mark: mark))
+        host = MenuBarHost(rootView: SpotMenuBarMarkView(mark: mark))
         host.sizingOptions = [.intrinsicContentSize]
         host.autoresizingMask = [.width, .height]
         item.button?.addSubview(host)
         draw(mark)
     }
 
-    func draw(_ mark: TrayMark) {
+    func draw(_ mark: MenuBarMark) {
         guard self.mark != mark else { return }
         self.mark = mark
-        host.rootView = SpotTrayMarkView(mark: mark)
+        host.rootView = SpotMenuBarMarkView(mark: mark)
         let width = ceil(host.fittingSize.width)
         item.length = width
         host.frame = NSRect(x: 0, y: 0, width: width, height: item.button?.bounds.height ?? 0)

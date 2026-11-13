@@ -31,7 +31,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     var wantedKeys: [GlobalKey] = []
     private var heldKeys: [GlobalKey: HotKey.Registration] = [:]
     private var keyFaults: [String] = []
-    private var trayBar: SpotTrayBar?
+    private var menuBar: SpotMenuBar?
     private var configFaults: [String] = []
     private var fileChooser: SpotFileChooser?
     private var motionProbe: SpotMotionProbe?
@@ -59,7 +59,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         EditMenu.install()
         SpotKeyLayouts.start()
         panel = SpotsPanel.make(model: model)
-        trayBar = SpotTrayBar(model: model, openspotItem: item)
+        menuBar = SpotMenuBar(model: model, openspotItem: item)
         if let panel, let probe = SpotMotionProbe(model: model, panel: panel) {
             motionProbe = probe
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) { probe.run(show: panel.show) }

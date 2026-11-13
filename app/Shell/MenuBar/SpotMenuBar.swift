@@ -5,7 +5,7 @@ import SwiftUI
 /// The menu bar items of the metrics that ask to show there, and running work on the Openspot item. An item comes and goes
 /// with its mark.
 @MainActor
-final class SpotTrayBar: NSObject {
+final class SpotMenuBar: NSObject {
     private let model: SpotsModel
     private let openspotItem: OpenspotItem
     private var shown: [String: MenuBarMarkItem] = [:]
@@ -20,7 +20,7 @@ final class SpotTrayBar: NSObject {
     /// Shows the marks of the model now, and again each time they change.
     private func update() {
         let (marks, workMark) = withObservationTracking {
-            (model.trayMarks, model.workMark)
+            (model.menuBarMarks, model.workMark)
         } onChange: { [weak self] in
             Task { @MainActor in self?.update() }
         }
@@ -33,7 +33,7 @@ final class SpotTrayBar: NSObject {
         openspotItem.show(work: workMark)
     }
 
-    private func makeItem(id: String, mark: TrayMark) -> MenuBarMarkItem {
+    private func makeItem(id: String, mark: MenuBarMark) -> MenuBarMarkItem {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.autosaveName = id
         item.button?.target = self
@@ -43,6 +43,6 @@ final class SpotTrayBar: NSObject {
 
     @objc private func press(_ sender: NSStatusBarButton) {
         guard let id = shown.first(where: { $0.value.item.button === sender })?.key else { return }
-        model.openFromTray(id)
+        model.openFromMenuBar(id)
     }
 }

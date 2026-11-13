@@ -1,9 +1,9 @@
 import XCTest
 @testable import OpenspotCore
 
-final class TrayMarkTests: XCTestCase {
-    private func mark(_ value: MetricValue?, label: String = "Label") -> TrayMark? {
-        TrayMark(reading: MetricReading(label: label, value: value))
+final class MenuBarMarkTests: XCTestCase {
+    private func mark(_ value: MetricValue?, label: String = "Label") -> MenuBarMark? {
+        MenuBarMark(reading: MetricReading(label: label, value: value))
     }
 
     func testRowsCountEachToneWithTheWorstFirstAndNoEmptyCount() {
@@ -28,7 +28,7 @@ final class TrayMarkTests: XCTestCase {
     func testATrendKeepsItsNewestBarsScaledFromZero() {
         let points = (1...10).map(Double.init)
 
-        XCTAssertEqual(mark(MetricValue(title: "10", points: points))?.content, .bars(Array(points.suffix(TrayMark.barCount)).map { $0 / 10 }, title: "10"))
+        XCTAssertEqual(mark(MetricValue(title: "10", points: points))?.content, .bars(Array(points.suffix(MenuBarMark.barCount)).map { $0 / 10 }, title: "10"))
     }
 
     func testNothingShowsBeforeTheFirstValueOrWhenTheMetricHidesIt() {
@@ -38,22 +38,22 @@ final class TrayMarkTests: XCTestCase {
 
     func testAFailedReadKeepsTheMarkAndDimsIt() {
         var reading = MetricReading(label: "L", value: MetricValue(title: "3"))
-        XCTAssertEqual(TrayMark(reading: reading)?.isStale, false)
+        XCTAssertEqual(MenuBarMark(reading: reading)?.isStale, false)
 
         reading.markStale()
 
-        XCTAssertEqual(TrayMark(reading: reading)?.isStale, true)
+        XCTAssertEqual(MenuBarMark(reading: reading)?.isStale, true)
     }
 
     func testRunningWorkIsARingOrASpinnerAndCountsOnlyMoreThanOne() {
-        XCTAssertEqual(TrayMark(workFill: 0.5, count: 1, name: "Encode").content, .work(fill: 0.5, count: nil))
-        XCTAssertEqual(TrayMark(workFill: nil, count: 1, name: "Encode").content, .work(fill: nil, count: nil))
-        XCTAssertEqual(TrayMark(workFill: nil, count: 3, name: "Encode").content, .work(fill: nil, count: 3))
+        XCTAssertEqual(MenuBarMark(workFill: 0.5, count: 1, name: "Encode").content, .work(fill: 0.5, count: nil))
+        XCTAssertEqual(MenuBarMark(workFill: nil, count: 1, name: "Encode").content, .work(fill: nil, count: nil))
+        XCTAssertEqual(MenuBarMark(workFill: nil, count: 3, name: "Encode").content, .work(fill: nil, count: 3))
     }
 
     func testTheSummaryOfWorkNamesTheOldestCallAndHowManyRun() {
-        XCTAssertEqual(TrayMark(workFill: nil, count: 1, name: "Encode").summary, "Encode is running")
-        XCTAssertEqual(TrayMark(workFill: nil, count: 3, name: "Encode").summary, "3 running. Encode is the oldest")
+        XCTAssertEqual(MenuBarMark(workFill: nil, count: 1, name: "Encode").summary, "Encode is running")
+        XCTAssertEqual(MenuBarMark(workFill: nil, count: 3, name: "Encode").summary, "3 running. Encode is the oldest")
     }
 
     func testTheSummaryNamesTheMetricAndItsValue() {

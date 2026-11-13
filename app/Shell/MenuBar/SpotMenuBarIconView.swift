@@ -3,7 +3,7 @@ import SwiftUI
 
 /// The icon of the Openspot item, or for a moment the symbol of the command whose key a person pressed, or of the toast
 /// that shows. The leaving icon shrinks and fades as the next one grows in.
-struct SpotTrayIconView: View {
+struct SpotMenuBarIconView: View {
     let model: SpotsModel
     let image: NSImage
     let toast: Toast?
@@ -32,7 +32,7 @@ struct SpotTrayIconView: View {
     @ViewBuilder
     private var icon: some View {
         if let symbol {
-            Image(systemName: symbol).font(SpotType.tray)
+            Image(systemName: symbol).font(SpotType.menuBar)
         } else {
             Image(nsImage: image).renderingMode(.template)
         }

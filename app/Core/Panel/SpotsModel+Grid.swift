@@ -207,12 +207,12 @@ extension SpotsModel {
     }
 
     /// The marks of the scripts that show in the menu bar, by script.
-    public var trayMarks: [(id: String, mark: TrayMark)] {
-        runs.trayMarks
+    public var menuBarMarks: [(id: String, mark: MenuBarMark)] {
+        runs.menuBarMarks
     }
 
     /// What the Openspot item shows for running work.
-    public var workMark: TrayMark? {
+    public var workMark: MenuBarMark? {
         runs.workMark
     }
 
@@ -243,7 +243,7 @@ extension SpotsModel {
 
     /// Opens the list of a metric that is also a list, or else selects the widget that places it. Closes the panel
     /// when it already shows that.
-    public func openFromTray(_ id: String) {
+    public func openFromMenuBar(_ id: String) {
         let opens = entries.first { $0.id == id && $0.kind.opensSheet }?.id
         if isShown, opens == nil || openList == opens {
             host.dismiss()
