@@ -11,6 +11,7 @@ final class StayLink: ScriptLink {
     private static let failureLimit = 3
     private static let failureWindow: TimeInterval = 60
     private static let slowLimit = 2
+    static let droppedLimit = 100
 
     weak var run: SpotRun?
     let keepsState = true
@@ -30,16 +31,16 @@ final class StayLink: ScriptLink {
     /// The reason of the newest read or search that was sent.
     private var askReason: String?
     /// The call numbers of searches and texts of the main search that a newer one stopped, whose late answers change nothing.
-    private var dropped: Set<Int> = []
+    private(set) var dropped: Set<Int> = []
     /// The call numbers of reads and searches that a picture came after, which a frame of only a head then answers.
-    private var pictured: Set<Int> = []
+    private(set) var pictured: Set<Int> = []
     /// The last frame with a block, which answers a read that ends with only a head.
     private var lastPicture: SpotOutput?
     /// The call whose output the script prints now, from the `call=<n>` mark of its start (protocol: Modes).
     private var current: Int?
     private var count = 0
     /// When each call that has not ended was sent, by its number.
-    private var sent: [Int: Date] = [:]
+    private(set) var sent: [Int: Date] = [:]
     private var calls: [String: ScriptCall] = [:] {
         didSet { noteReason() }
     }
@@ -132,7 +133,7 @@ final class StayLink: ScriptLink {
         guard let id = calls.first(where: { $0.value === call })?.key else { return }
         calls[id] = nil
         if let number = Int(id) {
-            dropped.insert(number)
+            drop(number)
             close(number, .stopped)
         }
     }
@@ -240,9 +241,8 @@ final class StayLink: ScriptLink {
     /// again.
     private func timeOut(_ id: Int, of script: ScriptProcess) {
         guard self.script === script, let ask = asks.removeValue(forKey: id) else { return }
-        dropped.insert(id)
+        drop(id)
         close(id, .failed(SpotError.timedOut))
-        pictured.remove(id)
         script.send(text: SpotAction.stopEvent(id: id))
         slowAsks += 1
         run?.askFailed(ask, SpotError.timedOut)
@@ -257,10 +257,19 @@ final class StayLink: ScriptLink {
         for (id, ask) in asks {
             guard kind(ask) else { continue }
             asks[id] = nil
-            dropped.insert(id)
+            drop(id)
             close(id, .stopped)
             script?.send(text: SpotAction.stopEvent(id: id))
         }
+    }
+
+    /// Forgets a call that a stop or a time-out ended, whose late answer changes nothing. It keeps the newest
+    /// `droppedLimit` such calls.
+    private func drop(_ id: Int) {
+        dropped.insert(id)
+        sent[id] = nil
+        pictured.remove(id)
+        if dropped.count > Self.droppedLimit, let oldest = dropped.min() { dropped.remove(oldest) }
     }
 
     /// Drops each ask, and ends each text of the main search with no rows, so that nothing waits for it.
@@ -297,7 +306,7 @@ final class StayLink: ScriptLink {
     private func take(_ text: String, _ lines: SpotOutput) {
         let ends = lines.ends.compactMap { Int($0) }
         let owners = lines.start.flatMap(Int.init).map { [$0] } ?? (ends.isEmpty ? current.map { [$0] } ?? [] : ends)
-        for id in owners { open[id]?.frames.append(text) }
+        for id in owners where open[id] != nil { runs.add(text, to: &open[id]!.frames) }
         for id in ends { close(id, .ended) }
     }
 
@@ -374,6 +383,7 @@ final class StayLink: ScriptLink {
                 answerForm(with: .failure(error))
             }
         }
+        runs.dropFinished()
         guard self.script === script else { return }
         closeAll(.ended, errors: script.errors)
         self.script = nil

@@ -63,7 +63,7 @@ public final class SpotRuns {
     @ObservationIgnored var nextRead: TimeInterval?
     /// Which `answers` patterns match the text of the main search.
     @ObservationIgnored var answerMatches = AnswerMatches()
-    @ObservationIgnored private var processes: [ScriptProcess] = []
+    @ObservationIgnored private(set) var processes: [ScriptProcess] = []
     /// The API in the app, which `openspot.call` of a JavaScript spot asks, or nil to run the `openspot` command.
     @ObservationIgnored public var api: CommandAPI?
     /// The record of each call that runs once, or nil to keep none.
@@ -302,13 +302,13 @@ public final class SpotRuns {
         call.halt = halt
         let id = spot.id
         let begin = Date()
-        Task { [weak self, log] in
+        Task { [weak self] in
             var end = ScriptCall.End.ended
             var printed: [String] = []
             do {
                 for try await frame in stream {
                     guard !call.isStopped else { break }
-                    if let log { log.add(frame, to: &printed) } else if self?.onCall != nil { printed.append(frame) }
+                    self?.add(frame, to: &printed)
                     guard let output = await self?.intake(frame, of: id), !call.isStopped else { break }
                     call.take(output)
                     await onFrame(call, frame, output)
@@ -317,6 +317,7 @@ public final class SpotRuns {
                 end = .failed(error)
             }
             let ending: ScriptCall.End = call.isStopped ? .stopped : end
+            self?.dropFinished()
             if let self { usage.called(spot, seconds: Date().timeIntervalSince(begin), isFailure: { if case .failed = ending { true } else { false } }(), at: now()) }
             if let process {
                 self?.record(spot, action, input: input, frames: printed + (process.failedFrame.map { [$0] } ?? []), errors: process.errors, end: ending, reason: reason, started: call.started, begin: begin)
@@ -324,6 +325,12 @@ public final class SpotRuns {
             await onEnd(call, ending)
         }
         return call
+    }
+
+    /// Adds a frame that a call printed to the frames of its record: within the limit of the call log, whole when only
+    /// `onCall` hears the call, and not at all when nothing records it.
+    func add(_ frame: String, to frames: inout [String]) {
+        if let log { log.add(frame, to: &frames) } else if onCall != nil { frames.append(frame) }
     }
 
     /// Keeps the record of a call that ended in the call log, unless it is a quiet one or a call of a spot that uses the
@@ -494,7 +501,12 @@ public final class SpotRuns {
     }
 
     private func keep(_ process: ScriptProcess) {
-        processes.removeAll { !$0.needsFinish }
+        dropFinished()
         processes.append(process)
+    }
+
+    /// Lets go of each process that a quit need not wait for, once the output of one ends.
+    func dropFinished() {
+        processes.removeAll { !$0.needsFinish }
     }
 }
