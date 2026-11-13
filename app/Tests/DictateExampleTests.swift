@@ -130,6 +130,33 @@ final class DictateExampleTests: SampleSpotsCase {
         XCTAssertEqual(try String(contentsOf: pidfile, encoding: .utf8), String(staying.processIdentifier))
     }
 
+    /// A stand-in for a helper that waits in `folder`: it holds the helper's locks and writes `named`, or its own process
+    /// ID, into the pid file. USR2 touches `fetched`, and TERM ends it after `dying` seconds.
+    private func holder(in folder: URL, naming named: pid_t? = nil, fetched: URL, dying: Double = 0) async throws -> Process {
+        let script = folder.appendingPathComponent("holder.py")
+        try """
+        import fcntl, os, signal, sys, time
+        folder, named, fetched, dying = sys.argv[1], sys.argv[2], sys.argv[3], float(sys.argv[4])
+        lock = open(folder + '/dictate.lock', 'a')
+        fcntl.lockf(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        pidfile = open(folder + '/dictate.pid', 'w')
+        fcntl.flock(pidfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        signal.signal(signal.SIGUSR2, lambda *_: open(fetched, 'w').close())
+        signal.signal(signal.SIGTERM, lambda *_: (time.sleep(dying), os._exit(0)))
+        pidfile.write(named if named != '0' else str(os.getpid()))
+        pidfile.flush()
+        while True:
+            signal.pause()
+        """.write(to: script, atomically: true, encoding: .utf8)
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
+        process.arguments = [script.path, folder.path, String(named ?? 0), fetched.path, String(dying)]
+        try process.run()
+        let pidfile = folder.appendingPathComponent("dictate.pid")
+        try await waitUntil { !((try? String(contentsOf: pidfile, encoding: .utf8)) ?? "").isEmpty }
+        return process
+    }
+
     func testASecondHelperHandsItsActionToTheOneThatWaitsAndEnds() async throws {
         let (folder, helper) = try await helper()
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -137,16 +164,8 @@ final class DictateExampleTests: SampleSpotsCase {
         defer { parent.terminate() }
         let fetched = folder.appendingPathComponent("fetched")
         try Data().write(to: folder.appendingPathComponent(Self.model))
-        let waiting = Process()
-        waiting.executableURL = URL(fileURLWithPath: "/bin/sh")
-        waiting.arguments = ["-c", "trap 'touch \(fetched.path)' USR2; while true; do sleep 0.05; done"]
-        try waiting.run()
+        let waiting = try await holder(in: folder, fetched: fetched)
         defer { waiting.terminate() }
-        let pidfile = folder.appendingPathComponent("dictate.pid")
-        try String(waiting.processIdentifier).write(to: pidfile, atomically: true, encoding: .utf8)
-        let held = open(pidfile.path, O_RDONLY)
-        defer { close(held) }
-        XCTAssertEqual(flock(held, LOCK_EX), 0)
 
         let second = try stay(helper, watching: parent, action: "fetch", in: folder)
         defer { kill(second.processIdentifier, SIGKILL) }
@@ -154,6 +173,74 @@ final class DictateExampleTests: SampleSpotsCase {
 
         XCTAssertFalse(second.isRunning)
         XCTAssertTrue(FileManager.default.fileExists(atPath: fetched.path))
+    }
+
+    func testASecondHelperSignalsNoProcessThatOnlyThePidFileNames() async throws {
+        let (folder, helper) = try await helper()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let parent = try sleeping()
+        defer { parent.terminate() }
+        let other = try sleeping()
+        defer { other.terminate() }
+        try Data().write(to: folder.appendingPathComponent(Self.model))
+        let waiting = try await holder(in: folder, naming: other.processIdentifier, fetched: folder.appendingPathComponent("fetched"))
+        defer { waiting.terminate() }
+
+        let second = try stay(helper, watching: parent, action: "fetch", in: folder)
+        defer { kill(second.processIdentifier, SIGKILL) }
+        try await waitUntil { !second.isRunning }
+
+        XCTAssertFalse(second.isRunning)
+        XCTAssertTrue(other.isRunning)
+    }
+
+    func testAHelperTakesItsSignalsFromTheMomentItNamesItself() async throws {
+        let (folder, helper) = try await helper()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let parent = try sleeping()
+        defer { parent.terminate() }
+        try Data().write(to: folder.appendingPathComponent(Self.model))
+        let pidfile = folder.appendingPathComponent("dictate.pid")
+
+        let staying = try stay(helper, watching: parent, in: folder)
+        defer { kill(staying.processIdentifier, SIGKILL) }
+        let named = String(staying.processIdentifier)
+        var sent = 0
+        for _ in 0..<200_000 where sent < 50 && staying.isRunning {
+            guard (try? String(contentsOf: pidfile, encoding: .utf8)) == named else { continue }
+            kill(staying.processIdentifier, SIGUSR2)
+            sent += 1
+        }
+        try await Task.sleep(for: .milliseconds(200))
+
+        XCTAssertGreaterThan(sent, 0)
+        XCTAssertTrue(staying.isRunning)
+    }
+
+    func testAPressAfterARebuildStartsTheNewHelperOnceTheOldOneHasEnded() async throws {
+        let dictate = try example("Dictate")
+        let (built, helper) = try await helper()
+        defer { try? FileManager.default.removeItem(at: built) }
+        try await withPrivateHome { folder in
+            let data = folder.appendingPathComponent(".config/openspot/data/dictate")
+            try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
+            try Data().write(to: data.appendingPathComponent(Self.model))
+            let old = try await self.holder(in: data, fetched: folder.appendingPathComponent("fetched"), dying: 0.5)
+            defer { old.terminate() }
+            let copy = data.appendingPathComponent("dictate")
+            try FileManager.default.copyItem(at: helper, to: copy)
+            try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(5)], ofItemAtPath: copy.path)
+            let pidfile = data.appendingPathComponent("dictate.pid")
+            func named() -> pid_t? { pid_t((try? String(contentsOf: pidfile, encoding: .utf8)) ?? "") }
+
+            _ = try await dictate.perform(SpotAction(arguments: ["open", "whisper"]), timeout: 5)
+            try await self.waitUntil { !old.isRunning && named().map { $0 != old.processIdentifier && kill($0, 0) == 0 } == true }
+            defer { if let new = named() { kill(new, SIGKILL) } }
+
+            XCTAssertFalse(old.isRunning)
+            XCTAssertNotEqual(named(), old.processIdentifier)
+            XCTAssertEqual(named().map { kill($0, 0) }, 0)
+        }
     }
 
     func testTheHelperKeepsTheWordsAndDropsTheTagsOfSounds() async throws {

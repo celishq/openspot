@@ -1338,6 +1338,42 @@ final class Dictation {
     }
 }
 
+/// The lock that one waiting helper holds for its whole life. The kernel drops it when the helper ends, however it ends,
+/// and names the process that holds it.
+struct HelperLock {
+    private let descriptor: Int32
+
+    init(file: URL) {
+        descriptor = open(file.path, O_RDWR | O_CREAT | O_CLOEXEC, 0o644)
+    }
+
+    /// Whether this process now holds the lock.
+    func take() -> Bool {
+        var whole = Self.whole
+        return fcntl(descriptor, F_SETLK, &whole) == 0
+    }
+
+    /// The process that holds the lock, once the pid file names it, which it does when it takes signals. Nil after a second.
+    func holder(named pidfile: URL) -> pid_t? {
+        for _ in 0..<20 {
+            var whole = Self.whole
+            if fcntl(descriptor, F_GETLK, &whole) == 0, whole.l_type != Int16(F_UNLCK),
+               (try? String(contentsOf: pidfile, encoding: .utf8)) == String(whole.l_pid) {
+                return whole.l_pid
+            }
+            usleep(50_000)
+        }
+        return nil
+    }
+
+    private static var whole: Darwin.flock {
+        var whole = Darwin.flock()
+        whole.l_type = Int16(F_WRLCK)
+        whole.l_whence = Int16(SEEK_SET)
+        return whole
+    }
+}
+
 let arguments = CommandLine.arguments
 switch arguments.dropFirst().first {
 case "clean":
@@ -1402,23 +1438,21 @@ case "stay":
     guard arguments.count >= 4, let parent = pid_t(arguments[2]) else { exit(2) }
     let folder = URL(fileURLWithPath: arguments[0]).deletingLastPathComponent()
     let action = arguments.count > 4 ? arguments[4] : ""
-    let pidfile = open(folder.appendingPathComponent("dictate.pid").path, O_RDWR | O_CREAT | O_CLOEXEC, 0o644)
-    guard flock(pidfile, LOCK_EX | LOCK_NB) == 0 else {
-        let holder = pid_t(String(decoding: FileHandle(fileDescriptor: pidfile).readDataToEndOfFile(), as: UTF8.self)) ?? 0
-        if holder > 0, let wake = ["start": SIGUSR1, "fetch": SIGUSR2][action] { kill(holder, wake) }
+    let pidfile = folder.appendingPathComponent("dictate.pid")
+    signal(SIGUSR1, SIG_IGN)
+    signal(SIGUSR2, SIG_IGN)
+    signal(SIGTERM, SIG_IGN)
+    let lock = HelperLock(file: folder.appendingPathComponent("dictate.lock"))
+    guard lock.take() else {
+        if let wake = ["start": SIGUSR1, "fetch": SIGUSR2][action], let holder = lock.holder(named: pidfile) { kill(holder, wake) }
         exit(0)
     }
-    ftruncate(pidfile, 0)
-    _ = String(getpid()).withCString { write(pidfile, $0, strlen($0)) }
     let app = NSApplication.shared
     app.setActivationPolicy(.accessory)
     let dictation = Dictation(model: arguments[3], folder: folder)
-    signal(SIGUSR1, SIG_IGN)
-    signal(SIGTERM, SIG_IGN)
     let press = DispatchSource.makeSignalSource(signal: SIGUSR1, queue: .main)
     press.setEventHandler { dictation.toggle() }
     press.resume()
-    signal(SIGUSR2, SIG_IGN)
     let fetch = DispatchSource.makeSignalSource(signal: SIGUSR2, queue: .main)
     fetch.setEventHandler { dictation.fetch() }
     fetch.resume()
@@ -1428,6 +1462,7 @@ case "stay":
     let watch = DispatchSource.makeProcessSource(identifier: parent, eventMask: .exit, queue: .global())
     watch.setEventHandler { exit(0) }
     watch.resume()
+    try? String(getpid()).write(to: pidfile, atomically: true, encoding: .utf8)
     if kill(parent, 0) != 0 { exit(0) }
     if action == "start" { DispatchQueue.main.async { dictation.toggle() } }
     if action == "fetch" { DispatchQueue.main.async { dictation.fetch() } }
