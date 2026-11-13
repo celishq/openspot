@@ -79,6 +79,12 @@ final class Tabs: ObservableObject {
         }
     }
 
+    /// Shows a board from its new place in the tab that showed it from the old one.
+    func replace(_ id: UUID, with file: URL) {
+        guard let index = pages.firstIndex(where: { $0.id == id }) else { return }
+        pages[index].studio = Studio(file: file)
+    }
+
     /// The tab of a board.
     func page(of studio: Studio) -> UUID? {
         pages.first { $0.studio === studio }?.id

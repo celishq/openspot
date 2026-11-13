@@ -95,15 +95,45 @@ struct Shelf {
     /// Makes a new folder with a free name, such as New Folder 2, in a folder or at the top.
     func makeFolder(in place: URL?) throws -> URL {
         let parent = place ?? folder
-        var name = "New Folder"
-        var count = 2
-        while FileManager.default.fileExists(atPath: parent.appendingPathComponent(name).path) {
-            name = "New Folder \(count)"
-            count += 1
-        }
-        let made = parent.appendingPathComponent(name, isDirectory: true)
+        let made = parent.appendingPathComponent(free("New Folder", in: parent), isDirectory: true)
         try FileManager.default.createDirectory(at: made, withIntermediateDirectories: false)
         return made
+    }
+
+    /// Moves a board with its picture and its images, or a folder, into a folder, and returns where it now is. A folder
+    /// never moves into itself, and a folder whose name is taken there takes a free one.
+    @discardableResult
+    func move(_ url: URL, into target: URL) throws -> URL {
+        let target = target.standardizedFileURL
+        if url.deletingLastPathComponent().standardizedFileURL == target { return url }
+        if Self.isFolder(url) {
+            guard !(target.path + "/").hasPrefix(url.standardizedFileURL.path + "/") else {
+                throw CocoaError(.fileWriteInvalidFileName)
+            }
+            let name = free(url.lastPathComponent, in: target)
+            let moved = target.appendingPathComponent(name, isDirectory: true)
+            try FileManager.default.moveItem(at: url, to: moved)
+            return moved
+        }
+        let base = url.deletingPathExtension()
+        let moved = target.appendingPathComponent(url.lastPathComponent)
+        try FileManager.default.moveItem(at: url, to: moved)
+        for ending in ["png", "assets"] where FileManager.default.fileExists(atPath: base.appendingPathExtension(ending).path) {
+            try FileManager.default.moveItem(at: base.appendingPathExtension(ending), to: moved.deletingPathExtension().appendingPathExtension(ending))
+        }
+        return moved
+    }
+
+    /// A name for a folder that nothing in `parent` takes yet: the name itself, or with 2, 3 and on after it.
+    private func free(_ name: String, in parent: URL) -> String {
+        let stem = name.replacingOccurrences(of: #" \d+$"#, with: "", options: .regularExpression)
+        var name = name
+        var count = 2
+        while FileManager.default.fileExists(atPath: parent.appendingPathComponent(name).path) {
+            name = "\(stem) \(count)"
+            count += 1
+        }
+        return name
     }
 
     // MARK: Reading

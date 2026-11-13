@@ -64,6 +64,7 @@ struct Knob: View {
     var below = false
     var quiet = false
     let action: () -> Void
+    @State private var hovering = false
 
     var body: some View {
         Button(action: action) {
@@ -78,10 +79,11 @@ struct Knob: View {
             }
             .frame(width: 34, height: 34)
             .foregroundStyle(on ? (quiet ? Color.accentColor : .white) : .primary)
-            .background(on ? (quiet ? Color.accentColor.opacity(0.14) : Color.accentColor) : .clear, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .background(on ? (quiet ? Color.accentColor.opacity(0.14) : Color.accentColor) : Color.primary.opacity(hovering && enabled ? 0.07 : 0), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .onHover { inside in withAnimation(.easeOut(duration: 0.12)) { hovering = inside } }
         .disabled(!enabled)
         .opacity(enabled ? 1 : 0.35)
         .tip(help, below: below)

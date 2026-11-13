@@ -50,6 +50,7 @@ struct Home: View {
                         })
                     }
                 }
+                Spacer(minLength: 0)
             }
             .frame(minHeight: max(0, height - 80))
             .padding(.leading, drawer.open ? 300 : 40)

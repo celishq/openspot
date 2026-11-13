@@ -113,4 +113,37 @@ final class DrawShelfTests: XCTestCase {
         try shelf.discard(renamed) { trashed.append($0.lastPathComponent) }
         XCTAssertEqual(trashed, ["Plans-2026"])
     }
+
+    func testAMoveTakesABoardWithItsPictureAndImagesIntoAFolder() throws {
+        let shelf = Shelf(folder: folder)
+        let work = try shelf.makeFolder(in: nil)
+        let file = try shelf.make(in: nil)
+        let base = file.deletingPathExtension()
+        try Data().write(to: base.appendingPathExtension("png"))
+        try FileManager.default.createDirectory(at: base.appendingPathExtension("assets"), withIntermediateDirectories: true)
+
+        let moved = try shelf.move(file, into: work)
+
+        XCTAssertEqual(moved.deletingLastPathComponent().standardizedFileURL, work.standardizedFileURL)
+        for ending in ["png", "assets"] {
+            XCTAssertTrue(FileManager.default.fileExists(atPath: moved.deletingPathExtension().appendingPathExtension(ending).path))
+            XCTAssertFalse(FileManager.default.fileExists(atPath: base.appendingPathExtension(ending).path))
+        }
+    }
+
+    func testAFolderMovesIntoAnotherWithAFreeNameAndNeverIntoItself() throws {
+        let shelf = Shelf(folder: folder)
+        let outer = try shelf.makeFolder(in: nil)
+        let inner = try shelf.makeFolder(in: outer)
+        let twin = try shelf.makeFolder(in: nil)
+
+        XCTAssertThrowsError(try shelf.move(outer, into: inner))
+        let moved = try shelf.move(twin, into: outer)
+
+        XCTAssertEqual(moved.lastPathComponent, "New Folder 2")
+        XCTAssertEqual(Set(shelf.tree.first?.children.map(\.title) ?? []), ["New Folder", "New Folder 2"])
+        let again = try shelf.makeFolder(in: nil)
+        try shelf.move(again, into: inner)
+        XCTAssertEqual(try shelf.move(shelf.makeFolder(in: nil), into: inner).lastPathComponent, "New Folder 3")
+    }
 }

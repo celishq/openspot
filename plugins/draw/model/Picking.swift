@@ -54,6 +54,11 @@ struct Picking: Equatable {
         focus = end
     }
 
+    /// Whether a sweep is under way.
+    var isSweeping: Bool {
+        sweepBase != nil
+    }
+
     /// Ends a sweep, so the next one starts from the pick as it is.
     mutating func endSweep() {
         sweepBase = nil

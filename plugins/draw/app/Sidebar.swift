@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// The list of boards that slides in from the left: a search field, buttons for a new board and a new folder, and the
-/// tree of folders and boards. A click picks, a double-click or Return opens a board or a folder, and a new board or
+/// tree of folders and boards. A click picks a board and opens or closes a folder, a double-click or Return opens a board,
+/// a plain drag moves rows into a folder and a Command-drag picks them, and a new board or
 /// folder goes where the pick is, as in a code editor.
 struct Sidebar: View {
     @ObservedObject var drawer: Drawer
@@ -12,11 +13,16 @@ struct Sidebar: View {
     let makeFolder: (URL?) -> Void
     let rename: (URL, String) -> Void
     let trash: ([URL]) -> Void
+    let move: ([URL], URL) -> Void
     @State private var tree: [Shelf.Node] = []
     @State private var name = ""
     @FocusState private var typing: Bool
     @FocusState private var listening: Bool
     @State private var frames: [URL: CGRect] = [:]
+    /// The rows that a drag carries, and the folder it would drop them in.
+    @State private var carried: [URL] = []
+    @State private var landing: URL?
+    @State private var opening: Task<Void, Never>?
 
     /// The rows that show, each with how deep it lies: the open folders' tree, or the boards that a search finds.
     private var rows: [(node: Shelf.Node, depth: Int)] {
@@ -65,12 +71,8 @@ struct Sidebar: View {
                 .coordinateSpace(name: "list")
                 .onPreferenceChange(RowFrames.self) { frames = $0 }
                 .gesture(DragGesture(minimumDistance: 4, coordinateSpace: .named("list"))
-                    .onChanged { drag in
-                        guard let start = row(at: drag.startLocation), let end = row(at: drag.location) else { return }
-                        drawer.picking.sweep(from: start, to: end, in: order, adding: NSEvent.modifierFlags.contains(.command))
-                        listening = true
-                    }
-                    .onEnded { _ in drawer.picking.endSweep() })
+                    .onChanged(dragged)
+                    .onEnded { _ in dropped() })
             }
             .focusable()
             .focusEffectDisabled()
@@ -93,7 +95,7 @@ struct Sidebar: View {
             }
         }
         .padding(.horizontal, 10)
-        .padding(.top, 58)
+        .padding(.top, 46)
         .padding(.bottom, 10)
         .frame(width: 270)
         .frame(maxHeight: .infinity, alignment: .top)
@@ -138,6 +140,45 @@ struct Sidebar: View {
         return .handled
     }
 
+    /// A Command-drag picks the rows it passes. A plain drag carries the picked rows, or the row it began on, and lights
+    /// the folder it would drop them in, which opens after a moment.
+    private func dragged(_ drag: DragGesture.Value) {
+        guard let start = row(at: drag.startLocation) else { return }
+        if carried.isEmpty, NSEvent.modifierFlags.contains(.command) || drawer.picking.isSweeping {
+            if let end = row(at: drag.location) {
+                drawer.picking.sweep(from: start, to: end, in: order, adding: true)
+            }
+            listening = true
+            return
+        }
+        if carried.isEmpty {
+            if !drawer.picking.picked.contains(start) { drawer.picking.click(start, in: order, mode: .only) }
+            carried = order.filter(drawer.picking.picked.contains)
+        }
+        let under = row(at: drag.location)
+        let target = under.map { Shelf.isFolder($0) ? $0 : $0.deletingLastPathComponent() } ?? shelf.folder
+        guard target != landing else { return }
+        landing = target
+        opening?.cancel()
+        if Shelf.isFolder(target), !drawer.expanded.contains(target) {
+            opening = Task {
+                try? await Task.sleep(for: .seconds(0.6))
+                guard !Task.isCancelled, landing == target else { return }
+                withAnimation(.easeOut(duration: 0.15)) { _ = drawer.expanded.insert(target) }
+            }
+        }
+    }
+
+    private func dropped() {
+        drawer.picking.endSweep()
+        opening?.cancel()
+        if let landing, !carried.isEmpty {
+            move(carried, landing)
+        }
+        carried = []
+        landing = nil
+    }
+
     /// The row that lies under a point of the list.
     private func row(at point: CGPoint) -> URL? {
         frames.first { $0.value.insetBy(dx: -2, dy: -1).contains(CGPoint(x: $0.value.midX, y: point.y)) }?.key
@@ -172,7 +213,7 @@ struct Sidebar: View {
                     .onTapGesture { activate(node.url) }
                 Image(systemName: drawer.expanded.contains(node.url) ? "folder.fill" : "folder")
                     .font(.system(size: 14))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(.secondary)
                     .frame(width: 22)
             } else {
                 Group {
@@ -207,11 +248,19 @@ struct Sidebar: View {
         .padding(.leading, CGFloat(depth) * 16)
         .padding(6)
         .frame(minHeight: node.isFolder ? 32 : 44)
-        .background(picked ? Color.accentColor.opacity(drawer.focused ? 0.2 : 0.12) : Color.primary.opacity(shown ? 0.05 : 0), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(landing == node.url ? Color.accentColor.opacity(0.25) : picked ? Color.accentColor.opacity(drawer.focused ? 0.2 : 0.12) : Color.primary.opacity(shown ? 0.05 : 0), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .opacity(carried.contains(node.url) ? 0.45 : 1)
         .contentShape(Rectangle())
         .onTapGesture {
             guard drawer.naming != node.url else { return }
-            if (NSApp.currentEvent?.clickCount ?? 1) > 1 { activate(node.url) } else { click(node) }
+            if node.isFolder {
+                click(node)
+                if (NSApp.currentEvent?.clickCount ?? 1) == 1, NSEvent.modifierFlags.intersection([.command, .shift]).isEmpty { activate(node.url) }
+            } else if (NSApp.currentEvent?.clickCount ?? 1) > 1 {
+                open(node.url)
+            } else {
+                click(node)
+            }
         }
         .overlay(MenuSpot { menu(for: node) })
     }

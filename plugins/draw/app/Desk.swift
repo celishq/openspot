@@ -66,7 +66,8 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         stage.translatesAutoresizingMaskIntoConstraints = false
         root.addSubview(stage)
         let side = bar(Sidebar(drawer: drawer, tabs: tabs, shelf: Shelf(folder: folder), open: { [weak self] in self?.show($0) }, make: { [weak self] in self?.make(in: $0) },
-                               makeFolder: { [weak self] in self?.makeFolder(in: $0) }, rename: { [weak self] in self?.rename($0, to: $1) }, trash: { [weak self] in self?.trash($0) }), in: root)
+                               makeFolder: { [weak self] in self?.makeFolder(in: $0) }, rename: { [weak self] in self?.rename($0, to: $1) }, trash: { [weak self] in self?.trash($0) },
+                               move: { [weak self] in self?.move($0, into: $1) }), in: root)
         side.isHidden = !drawer.open
         self.side = side
         let latch = bar(Latch(drawer: drawer) { [weak self] in self?.toggleBoards(nil) }, in: root)
@@ -77,7 +78,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         middle = window.frame.height - lights.midY
         let latchConstraint = latch.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: drawer.open ? 222 : latchLeading)
         self.latchConstraint = latchConstraint
-        let stripLeading = strip.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: (drawer.open ? Desk.besideList : latchLeading + 56) + 96)
+        let stripLeading = strip.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: stripStart(open: drawer.open))
         self.stripLeading = stripLeading
         NSLayoutConstraint.activate([
             stage.leadingAnchor.constraint(equalTo: root.leadingAnchor), stage.trailingAnchor.constraint(equalTo: root.trailingAnchor),
@@ -94,9 +95,15 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         window.contentView = root
     }
 
+    /// Where the tabs start: after the sidebar button or the open list, and after undo and redo when a board shows.
+    private func stripStart(open: Bool) -> CGFloat {
+        (open ? Desk.besideList : latchLeading + 56) + (studio == nil ? 0 : 96)
+    }
+
     /// Lays the canvas and the bars of the board that shows, or the start page on a New Tab.
     private func stageUp() {
         stage.subviews.forEach { $0.removeFromSuperview() }
+        stripLeading?.constant = stripStart(open: drawer.open)
         guard let studio else {
             canvas = nil
             let home = bar(Home(drawer: drawer, shelf: Shelf(folder: folder), open: { [weak self] in self?.show($0) }, make: { [weak self] in self?.make(in: nil) }, trash: { [weak self] in self?.trash($0) }, rename: { [weak self] file in
@@ -194,18 +201,33 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
             if let open = tabs.studio(for: url) { open.rename(name) } else { try? Shelf(folder: folder).rename(url, to: name) }
             return
         }
-        let inside = tabs.studios.filter { $0.file.path.hasPrefix(url.path + "/") }
+        relocate(url) { try Shelf(folder: folder).rename(url, to: name) }
+    }
+
+    /// Moves boards and folders into a folder, and keeps their open tabs.
+    func move(_ urls: [URL], into target: URL) {
+        for url in urls {
+            relocate(url) { try Shelf(folder: folder).move(url, into: target) }
+        }
+        drawer.expanded.insert(target)
+    }
+
+    /// Moves a board or a folder with `change`, and shows each open board from where it now is.
+    private func relocate(_ url: URL, change: () throws -> URL) {
+        let inside = tabs.studios.filter { $0.file.standardizedFileURL == url.standardizedFileURL || $0.file.path.hasPrefix(url.path + "/") }
+        let shown = studio.map { shown in inside.contains { $0 === shown } } ?? false
+        if shown { canvas?.endEditing() }
         inside.forEach { $0.save() }
-        guard let moved = try? Shelf(folder: folder).rename(url, to: name), moved != url else { return }
+        guard let moved = try? change(), moved != url else { return }
         if drawer.expanded.remove(url) != nil { drawer.expanded.insert(moved) }
+        let current = tabs.currentID
         for studio in inside {
             let next = URL(fileURLWithPath: moved.path + studio.file.path.dropFirst(url.path.count))
-            if let page = tabs.page(of: studio) {
-                withAnimation(nil) { tabs.close(page) }
-            }
-            tabs.show(next)
+            guard let page = tabs.page(of: studio) else { continue }
+            tabs.replace(page, with: next)
         }
-        if !inside.isEmpty { stageUp() }
+        if shown || tabs.currentID != current { stageUp() }
+        drawer.picking.clear()
         drawer.changes += 1
     }
 
@@ -216,7 +238,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.3
             context.allowsImplicitAnimation = true
-            stripLeading?.animator().constant = (opening ? Desk.besideList : latchLeading + 56) + 96
+            stripLeading?.animator().constant = stripStart(open: opening)
             latchConstraint?.animator().constant = opening ? 222 : latchLeading
             cornerLeading?.animator().constant = opening ? Desk.besideList : latchLeading + 56
         }

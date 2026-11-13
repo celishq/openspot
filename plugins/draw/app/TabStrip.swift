@@ -7,6 +7,7 @@ struct TabStrip: View {
     let select: (UUID) -> Void
     let close: (UUID) -> Void
     let trash: (URL) -> Void
+    @State private var hovered: UUID?
 
     var body: some View {
         if tabs.pages.count > 1 {
@@ -14,9 +15,10 @@ struct TabStrip: View {
                 ForEach(Array(tabs.pages.enumerated()), id: \.element.id) { index, page in
                     let current = page.id == tabs.currentID
                     let next = index + 1 < tabs.pages.count ? tabs.pages[index + 1].id : nil
-                    TabChip(page: page, current: current, select: { select(page.id) }, close: { close(page.id) }, trash: { page.studio.map { trash($0.file) } })
+                    TabChip(page: page, current: current, select: { select(page.id) }, close: { close(page.id) }, trash: { page.studio.map { trash($0.file) } },
+                            hover: { inside in hovered = inside ? page.id : (hovered == page.id ? nil : hovered) })
                         .overlay(alignment: .trailing) {
-                            if !current, next != tabs.currentID, next != nil {
+                            if let next, !current, next != tabs.currentID, page.id != hovered, next != hovered {
                                 Rectangle().fill(Color.primary.opacity(0.12)).frame(width: 1, height: 14)
                             }
                         }
@@ -61,6 +63,7 @@ struct TabChip: View {
     let select: () -> Void
     let close: () -> Void
     let trash: () -> Void
+    let hover: (Bool) -> Void
     @State private var hovering = false
 
     var body: some View {
@@ -90,7 +93,7 @@ struct TabChip: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
                 .padding(.trailing, 6)
-                .help("Close tab  ⌘W")
+                .tip("Close tab  ⌘W", below: true)
             }
         }
         .background {
@@ -99,7 +102,12 @@ struct TabChip: View {
                 .shadow(color: .black.opacity(current ? 0.12 : 0), radius: 3, y: 1)
         }
         .contentShape(Rectangle())
-        .onHover { inside in withAnimation(.easeOut(duration: 0.12)) { hovering = inside } }
+        .onHover { inside in
+            withAnimation(.easeOut(duration: 0.12)) {
+                hovering = inside
+                hover(inside)
+            }
+        }
         .onTapGesture {
             if (NSApp.currentEvent?.clickCount ?? 1) > 1, page.studio != nil {
                 NotificationCenter.default.post(name: TabTitle.renameName, object: page.studio)
