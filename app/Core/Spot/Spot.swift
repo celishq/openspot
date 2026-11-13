@@ -57,7 +57,8 @@ public struct Spot: Equatable, Sendable {
     public let glyph: String?
     /// The Swift file of the view that its card draws, as a full path (protocol: Views).
     public let view: String?
-    /// When the file of its view last changed, so that an edit of the view changes the spot.
+    /// When the files of its view last changed, so that an edit of the view changes the spot. Nil when the scan does not
+    /// watch them.
     public let viewDate: Date?
     /// The events that it raises with `openspot event emit`, which its header names in `emits` (protocol: Events).
     public let emits: [String]
