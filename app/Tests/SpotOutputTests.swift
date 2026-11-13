@@ -218,7 +218,7 @@ final class SpotOutputTests: XCTestCase {
 
         XCTAssertEqual(reading.kind, .rows)
         XCTAssertEqual(reading.value?.title, "0")
-        XCTAssertNil(TrayMark(reading: reading))
+        XCTAssertNil(MenuBarMark(reading: reading))
     }
 
     func testAPrintedSymbolBeatsTheHeader() {

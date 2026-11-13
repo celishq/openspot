@@ -75,9 +75,9 @@ final class SpotRunsWantTests: SpotRunsCase {
         try script("pulls", header: "title=Pull requests\non=clock.120", "printf 'text=m\\ntitle=2\\n\\nrow=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'")
         let sheet = try sheet("pulls")
 
-        try await wait("the mark") { !self.runs.trayMarks.isEmpty }
+        try await wait("the mark") { !self.runs.menuBarMarks.isEmpty }
 
-        XCTAssertEqual(runs.trayMarks.first?.mark.summary, "Pull requests: 2")
+        XCTAssertEqual(runs.menuBarMarks.first?.mark.summary, "Pull requests: 2")
         XCTAssertEqual(sheet.list.shown.count, 2)
     }
 
@@ -85,19 +85,19 @@ final class SpotRunsWantTests: SpotRunsCase {
         try script("cups", header: "on=clock.5", log: "cups", "printf 'text=t\\ntitle=3\\n'")
         try script("notes", header: "on=panel.open", log: "notes", "printf 'text=t\\ntitle=4\\n'")
         _ = try scanned()
-        XCTAssertTrue(runs.trayMarks.isEmpty)
+        XCTAssertTrue(runs.menuBarMarks.isEmpty)
 
         menuBar = ["cups", "notes"]
         _ = try scanned()
 
-        try await wait("the mark") { !self.runs.trayMarks.isEmpty }
-        XCTAssertEqual(runs.trayMarks.map(\.id), ["cups"])
+        try await wait("the mark") { !self.runs.menuBarMarks.isEmpty }
+        XCTAssertEqual(runs.menuBarMarks.map(\.id), ["cups"])
     }
 
     func testTheMenuBarHearsOfAMarkThatComesAfterItFirstLooked() async throws {
         let changed = expectation(description: "a change of the marks")
         changed.assertForOverFulfill = false
-        withObservationTracking { _ = runs.trayMarks } onChange: { changed.fulfill() }
+        withObservationTracking { _ = runs.menuBarMarks } onChange: { changed.fulfill() }
         menuBar.insert("agents")
         try script("agents", header: "on=clock.5", "printf 'row=a\\n'")
 

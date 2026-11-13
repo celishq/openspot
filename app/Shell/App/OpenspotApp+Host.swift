@@ -15,24 +15,24 @@ extension OpenspotApp: SpotsHost {
     }
 
     func notify(_ text: String) {
-        toast?.show(text, symbol: ToastPanel.failureSymbol)
+        toast?.show(text, kind: .failure)
     }
 
     func notify(_ text: String, fix: URL) {
-        toast?.show(text, symbol: ToastPanel.failureSymbol, fix: { NSWorkspace.shared.open(fix) }, key: model.files.config.read().fixKey)
+        toast?.show(text, kind: .failure, fix: { NSWorkspace.shared.open(fix) }, key: model.files.config.read().fixKey)
     }
 
     /// Tells the person of a key that macOS refused, with Settings as the fix.
     func notifyKeyFault(_ text: String) {
-        toast?.show(text, symbol: ToastPanel.failureSymbol, fix: { [weak self] in self?.openSettings() }, key: model.files.config.read().fixKey)
+        toast?.show(text, kind: .failure, fix: { [weak self] in self?.openSettings() }, key: model.files.config.read().fixKey)
     }
 
     func confirm(_ text: String) {
-        toast?.show(text, symbol: ToastPanel.confirmSymbol)
+        toast?.show(text, kind: .confirm)
     }
 
     func work(_ text: String) {
-        toast?.show(text, isWorking: true, for: nil)
+        toast?.show(text, kind: .work, for: nil)
     }
 
     /// Shows the float of a spot at the pointer once its first answer comes, or after the pause of a sheet (W4), or moves
@@ -77,7 +77,7 @@ extension OpenspotApp: SpotsHost {
 
     /// Whether a point on the screen lies on the cards of the panel or on the menu bar item.
     private func liesOnPanelDrop(_ point: NSPoint) -> Bool {
-        panel?.showsDrop(at: point) == true || statusItem?.button?.window?.frame.contains(point) == true
+        panel?.showsDrop(at: point) == true || item?.contains(point) == true
     }
 
     var draggedPaths: [String] {

@@ -1079,6 +1079,20 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the end of the flash") { model.flashSymbol == nil }
     }
 
+    func testTheMenuBarShowsAPressedCommandOverAToastAndAToastOverItsIcon() throws {
+        try script("move", header: "icon=macwindow\n\nbutton=left\ntitle=Left side\nicon=rectangle.lefthalf.inset.filled", "true")
+        model.reload()
+
+        XCTAssertNil(model.menuBarSymbol(during: nil))
+        XCTAssertEqual(model.menuBarSymbol(during: .confirm), ToastKind.confirm.symbol)
+        XCTAssertEqual(model.menuBarSymbol(during: .failure), ToastKind.failure.symbol)
+        XCTAssertNil(model.menuBarSymbol(during: .work))
+
+        model.press(GlobalKey(spot: "move", command: "left", shortcut: try XCTUnwrap(Shortcut(text: "ctrl+left"))))
+
+        XCTAssertEqual(model.menuBarSymbol(during: .failure), "rectangle.lefthalf.inset.filled")
+    }
+
     func testAKeyOfAScriptThatIsGoneShowsNothing() throws {
         model.reload()
 

@@ -37,6 +37,17 @@ public struct ScreenPlace: Sendable {
         return CGPoint(x: x.rounded(.down), y: y.rounded(.down))
     }
 
+    /// The origin of a toast of this size: hung centred under the menu bar item and moved in to lie whole on the item's
+    /// screen, or with no item, at the top centre of the main screen's free area. Nil with no screen.
+    public func origin(ofToast size: CGSize, under item: CGRect?) -> CGPoint? {
+        if let item, let area = screens.first(where: { $0.frame.intersects(item) })?.area {
+            let x = min(max(item.midX - size.width / 2, area.minX), area.maxX - size.width)
+            return CGPoint(x: x.rounded(.down), y: (item.minY - size.height).rounded(.down))
+        }
+        guard let area = screens.first?.area else { return nil }
+        return CGPoint(x: (area.midX - size.width / 2).rounded(.down), y: area.maxY - size.height)
+    }
+
     /// How far Edit Spots lifts the panel, whose content is this rect from the window's top, so that the window's top meets
     /// the top of the free area, and where the store lies then: centred under the content, whole on the screen, and from
     /// the bottom of the free area up to a margin under the lifted content, one line of rows high at least.

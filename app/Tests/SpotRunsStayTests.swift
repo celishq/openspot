@@ -329,19 +329,19 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertEqual(log().count, 1)
     }
 
-    func testAStayingTrayScriptRunsWithThePanelClosedAndItsFrameReachesTheMenuBar() async throws {
+    func testAStayingMenuBarScriptRunsWithThePanelClosedAndItsFrameReachesTheMenuBar() async throws {
         menuBar.insert("script")
         try staying(header: "mode=stay", frame: "text=n\\ntitle=3\\n")
         _ = try scanned()
 
-        try await wait("the mark") { self.runs.trayMarks.first?.mark.summary == "Script: 3" }
+        try await wait("the mark") { self.runs.menuBarMarks.first?.mark.summary == "Script: 3" }
 
         XCTAssertFalse(runs.isPanelOpen)
         XCTAssertEqual(log().count, 1)
         XCTAssertEqual(blocks(), ["arg=read"])
     }
 
-    func testAStayingTrayScriptGoesOnWhenItsSheetAndThePanelCloseAndAScanComes() async throws {
+    func testAStayingMenuBarScriptGoesOnWhenItsSheetAndThePanelCloseAndAScanComes() async throws {
         menuBar.insert("script")
         try staying(header: "mode=stay", frame: "text=n\\ntitle=3\\n\\nrow=a\\ntitle=A\\n")
         let sheet = try sheet()
@@ -362,7 +362,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertEqual(log().count, 1)
     }
 
-    func testAFrameOfAStayingTrayScriptIsItsWholePictureAndChangesItsMark() async throws {
+    func testAFrameOfAStayingMenuBarScriptIsItsWholePictureAndChangesItsMark() async throws {
         menuBar.insert("script")
         try script(header: "mode=stay", """
         while IFS= read -r line; do
@@ -374,19 +374,19 @@ final class SpotRunsStayTests: SpotRunsCase {
         done
         """)
         let sheet = try sheet()
-        try await wait("the mark") { !self.runs.trayMarks.isEmpty }
+        try await wait("the mark") { !self.runs.menuBarMarks.isEmpty }
 
         sheet.pick(SpotItem(title: "A", run: "a"))
 
-        try await wait("the new mark") { self.runs.trayMarks.first?.mark.summary == "Script: 4" }
-        XCTAssertEqual(runs.trayMarks.first?.mark.isStale, false)
+        try await wait("the new mark") { self.runs.menuBarMarks.first?.mark.summary == "Script: 4" }
+        XCTAssertEqual(runs.menuBarMarks.first?.mark.isStale, false)
     }
 
     func testASheetOfARunningStayingScriptOpensAtOnceWithItsLastFrame() async throws {
         menuBar.insert("script")
         try staying(header: "mode=stay", head: "main=n\\n", frame: "text=n\\ntitle=3\\n\\ntext=a\\ntitle=A\\n")
         let sheet = try sheet()
-        try await wait("the mark") { !self.runs.trayMarks.isEmpty }
+        try await wait("the mark") { !self.runs.menuBarMarks.isEmpty }
         XCTAssertNil(sheet.panel)
         var isReady = false
 
@@ -442,7 +442,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         menuBar.insert("script")
         try staying(header: "mode=stay\non=clock.5", frame: "text=n\\ntitle=3\\n")
         _ = try scanned()
-        try await wait("the mark") { !self.runs.trayMarks.isEmpty }
+        try await wait("the mark") { !self.runs.menuBarMarks.isEmpty }
         XCTAssertEqual(blocks(), ["arg=read"])
 
         time += 5
@@ -489,7 +489,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         menuBar.insert("script")
         let url = try staying(header: "mode=stay", frame: "text=n\\ntitle=3\\n")
         _ = try scanned()
-        try await wait("the mark") { !self.runs.trayMarks.isEmpty }
+        try await wait("the mark") { !self.runs.menuBarMarks.isEmpty }
 
         try FileManager.default.removeItem(at: url)
         _ = try scanned()
@@ -561,7 +561,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         try staying(header: "mode=stay", frame: "text=n\\ntitle=3\\n")
         _ = try scanned()
 
-        try await wait("the mark") { self.runs.trayMarks.first?.mark.summary == "Script: 3" }
+        try await wait("the mark") { self.runs.menuBarMarks.first?.mark.summary == "Script: 3" }
         XCTAssertEqual(log().count, 4)
     }
 
