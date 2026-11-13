@@ -7,8 +7,6 @@
   - `Core/` — the spot contract and loading. Imports Foundation only.
   - `Shell/` — the menu bar app, the panel and the hotkey. Imports AppKit and SwiftUI.
   - `StandIn/` — a small program for tests: a capability that needs no Mac feature. It does not ship.
-  - `ViewBuild/` — a small program that the build runs to compile the view of each core spot into the app, so that it
-    draws with no compiler on the Mac. It does not ship.
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
 - `app/Keywords/` holds the CLDR keywords of emoji and symbols, one xz file per language. `scripts/emoji-keywords.py` writes
   it from a pinned CLDR version, and the build copies it into the app.
