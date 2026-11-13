@@ -339,9 +339,10 @@ struct Search: View {
         .font(.system(size: wide ? 15 : 13))
         .padding(.horizontal, wide ? 16 : 11)
         .frame(height: wide ? 42 : 32)
-        .glassEffect(.regular.interactive(), in: Capsule())
+        .background(Capsule().fill(wide ? Color(white: 0.97) : Color.white))
+        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.1), lineWidth: 1))
         .overlay(Capsule().strokeBorder(Color.accentColor.opacity(typing ? 0.85 : 0), lineWidth: 2.5).padding(-1))
-        .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
+        .shadow(color: .black.opacity(0.07), radius: 5, y: 2)
         .animation(.easeOut(duration: 0.15), value: typing)
         .onAppear { if takesFocus { typing = true } }
         .onChange(of: drawer.searching) { _, now in if now { typing = true } }
@@ -372,8 +373,8 @@ struct Latch: View {
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
-        .glassEffect(.regular.interactive(), in: Capsule())
-        .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
+        .glassEffect(drawer.open ? .identity : .regular.interactive(), in: Capsule())
+        .shadow(color: .black.opacity(drawer.open ? 0 : 0.08), radius: 6, y: 2)
         .tip(drawer.open ? "Hide boards  ⌃⌘S" : "Show boards  ⌃⌘S", below: true)
     }
 }

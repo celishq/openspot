@@ -13,6 +13,14 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var side: NSView?
     private var stripLeading: NSLayoutConstraint?
     private var latchConstraint: NSLayoutConstraint?
+    private var cornerLeading: NSLayoutConstraint?
+    /// Where a bar beside the open list of boards starts.
+    private static let besideList: CGFloat = 290
+
+    /// How far down the content of a tab starts, under the title row and the row of tabs when it shows.
+    private var top: CGFloat {
+        tabs.pages.count > 1 ? middle + 56 : middle + 24
+    }
     private var latchLeading: CGFloat = 0
     /// How far down the window the middle of the window buttons lies, where the tab row lines up.
     private var middle: CGFloat = 26
@@ -61,13 +69,14 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         side.isHidden = !drawer.open
         self.side = side
         let latch = bar(Latch(drawer: drawer) { [weak self] in self?.toggleBoards(nil) }, in: root)
-        let strip = bar(TabStrip(tabs: tabs, select: { [weak self] in self?.select($0) }, close: { [weak self] in self?.close(page: $0) }, home: { [weak self] in self?.goHome(nil) }, trash: { [weak self] in self?.trash($0) }), in: root)
+        let strip = bar(TabStrip(tabs: tabs, select: { [weak self] in self?.select($0) }, close: { [weak self] in self?.close(page: $0) }, trash: { [weak self] in self?.trash($0) }), in: root, stretches: true)
+        let plus = bar(NewTabButton { [weak self] in self?.goHome(nil) }, in: root)
         let lights = window.standardWindowButton(.zoomButton).map { $0.convert($0.bounds, to: nil) } ?? CGRect(x: 60, y: window.frame.height - 26, width: 14, height: 14)
         latchLeading = lights.maxX + 16
         middle = window.frame.height - lights.midY
         let latchConstraint = latch.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: drawer.open ? 222 : latchLeading)
         self.latchConstraint = latchConstraint
-        let stripLeading = strip.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: latchLeading + 56)
+        let stripLeading = strip.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: drawer.open ? Desk.besideList : 12)
         self.stripLeading = stripLeading
         NSLayoutConstraint.activate([
             stage.leadingAnchor.constraint(equalTo: root.leadingAnchor), stage.trailingAnchor.constraint(equalTo: root.trailingAnchor),
@@ -76,8 +85,10 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
             side.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -8),
             latchConstraint,
             latch.centerYAnchor.constraint(equalTo: root.topAnchor, constant: middle),
-            stripLeading, strip.trailingAnchor.constraint(lessThanOrEqualTo: root.trailingAnchor, constant: -110),
-            strip.centerYAnchor.constraint(equalTo: root.topAnchor, constant: middle)
+            stripLeading, strip.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -12),
+            strip.topAnchor.constraint(equalTo: root.topAnchor, constant: middle + 22), strip.heightAnchor.constraint(equalToConstant: 32),
+            plus.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -12),
+            plus.centerYAnchor.constraint(equalTo: root.topAnchor, constant: middle)
         ])
         window.contentView = root
     }
@@ -93,7 +104,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
             }), in: stage)
             NSLayoutConstraint.activate([
                 home.leadingAnchor.constraint(equalTo: stage.leadingAnchor), home.trailingAnchor.constraint(equalTo: stage.trailingAnchor),
-                home.topAnchor.constraint(equalTo: stage.topAnchor, constant: 56), home.bottomAnchor.constraint(equalTo: stage.bottomAnchor)
+                home.topAnchor.constraint(equalTo: stage.topAnchor, constant: top), home.bottomAnchor.constraint(equalTo: stage.bottomAnchor)
             ])
             window.title = "New Tab"
             return
@@ -109,12 +120,14 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let tools = bar(Toolbar(studio: studio, picture: { canvas.insertPicture(nil) }), in: stage)
         let corner = bar(Corner(studio: studio), in: stage)
         let style = bar(StyleSlot(studio: studio), in: stage)
+        let cornerLeading = corner.leadingAnchor.constraint(equalTo: stage.leadingAnchor, constant: drawer.open ? Desk.besideList : latchLeading + 56)
+        self.cornerLeading = cornerLeading
         NSLayoutConstraint.activate([
             canvas.leadingAnchor.constraint(equalTo: stage.leadingAnchor), canvas.trailingAnchor.constraint(equalTo: stage.trailingAnchor),
             canvas.topAnchor.constraint(equalTo: stage.topAnchor), canvas.bottomAnchor.constraint(equalTo: stage.bottomAnchor),
             tools.centerXAnchor.constraint(equalTo: stage.centerXAnchor), tools.bottomAnchor.constraint(equalTo: stage.bottomAnchor, constant: -14),
-            corner.trailingAnchor.constraint(equalTo: stage.trailingAnchor, constant: -10), corner.centerYAnchor.constraint(equalTo: stage.topAnchor, constant: middle),
-            style.trailingAnchor.constraint(equalTo: stage.trailingAnchor, constant: -14), style.topAnchor.constraint(equalTo: corner.bottomAnchor, constant: 10)
+            cornerLeading, corner.centerYAnchor.constraint(equalTo: stage.topAnchor, constant: middle),
+            style.trailingAnchor.constraint(equalTo: stage.trailingAnchor, constant: -14), style.topAnchor.constraint(equalTo: stage.topAnchor, constant: top)
         ])
         window.title = studio.board.title
         window.makeFirstResponder(canvas)
@@ -168,8 +181,9 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.3
             context.allowsImplicitAnimation = true
-            stripLeading?.animator().constant = opening ? 290 : latchLeading + 56
+            stripLeading?.animator().constant = opening ? Desk.besideList : 12
             latchConstraint?.animator().constant = opening ? 222 : latchLeading
+            cornerLeading?.animator().constant = opening ? Desk.besideList : latchLeading + 56
         }
         if opening {
             side?.isHidden = false
@@ -244,9 +258,10 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [self] in drawer.naming = file }
     }
 
-    /// Floats a SwiftUI bar over the canvas at its own size.
-    private func bar(_ content: some View, in root: NSView) -> NSView {
+    /// Floats a SwiftUI bar over the canvas at its own size, or at the size its constraints give when it `stretches`.
+    private func bar(_ content: some View, in root: NSView, stretches: Bool = false) -> NSView {
         let host = NSHostingView(rootView: content)
+        if stretches { host.sizingOptions = [] }
         host.safeAreaRegions = []
         host.translatesAutoresizingMaskIntoConstraints = false
         root.addSubview(host)

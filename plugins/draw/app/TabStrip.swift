@@ -1,46 +1,63 @@
 import SwiftUI
 
-/// The tabs beside the window buttons, and a + that adds a New Tab with the start page. A tab grows in when it opens and
-/// folds away when it closes.
+/// The row of tabs under the title row, as Safari draws it: equal tabs on a grey track, the current one raised in white.
+/// It shows only with two tabs or more. A tab grows in when it opens and folds away when it closes.
 struct TabStrip: View {
     @ObservedObject var tabs: Tabs
     let select: (UUID) -> Void
     let close: (UUID) -> Void
-    let home: () -> Void
     let trash: (URL) -> Void
-    @State private var adding = false
 
     var body: some View {
-        HStack(spacing: 4) {
-            ForEach(tabs.pages) { page in
-                TabChip(page: page, current: page.id == tabs.currentID, closes: tabs.pages.count > 1 || page.studio != nil,
-                        select: { select(page.id) }, close: { close(page.id) }, trash: { page.studio.map { trash($0.file) } })
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.4, anchor: .leading).combined(with: .opacity),
-                        removal: .scale(scale: 0.2, anchor: .leading).combined(with: .opacity)
-                    ))
+        if tabs.pages.count > 1 {
+            HStack(spacing: 0) {
+                ForEach(Array(tabs.pages.enumerated()), id: \.element.id) { index, page in
+                    let current = page.id == tabs.currentID
+                    let next = index + 1 < tabs.pages.count ? tabs.pages[index + 1].id : nil
+                    TabChip(page: page, current: current, select: { select(page.id) }, close: { close(page.id) }, trash: { page.studio.map { trash($0.file) } })
+                        .overlay(alignment: .trailing) {
+                            if !current, next != tabs.currentID, next != nil {
+                                Rectangle().fill(Color.primary.opacity(0.12)).frame(width: 1, height: 14)
+                            }
+                        }
+                        .transition(.asymmetric(
+                            insertion: .scale(scale: 0.4, anchor: .leading).combined(with: .opacity),
+                            removal: .scale(scale: 0.2, anchor: .leading).combined(with: .opacity)
+                        ))
+                }
             }
-            Button(action: home) {
-                Image(systemName: "plus")
-                    .font(.system(size: 14, weight: .medium))
-                    .frame(width: 30, height: 28)
-                    .background(Color.primary.opacity(adding ? 0.08 : 0), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .onHover { inside in withAnimation(.easeOut(duration: 0.12)) { adding = inside } }
-            .tip("New tab  ⌘T", below: true)
+            .padding(2)
+            .background(Color.primary.opacity(0.07), in: Capsule())
+            .frame(height: 32)
+            .transition(.opacity)
         }
-        .frame(height: 34)
     }
 }
 
-/// One tab: the board's name, which a double-click renames, or New Tab; and a close button on the current or the
-/// hovered tab, except on a lone New Tab.
+/// The + at the top right that adds a New Tab with the start page.
+struct NewTabButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "plus")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(.primary)
+                .frame(width: 34, height: 30)
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .glassEffect(.regular.interactive(), in: Capsule())
+        .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
+        .tip("New tab  ⌘T", below: true)
+    }
+}
+
+/// One tab: the board's name, centred, which a double-click renames, or New Tab; and, while the pointer rests on it, a
+/// close button on the left.
 struct TabChip: View {
     let page: Tabs.Page
     let current: Bool
-    let closes: Bool
     let select: () -> Void
     let close: () -> Void
     let trash: () -> Void
@@ -56,28 +73,30 @@ struct TabChip: View {
             } else {
                 Text("New Tab").lineLimit(1)
             }
-            Spacer(minLength: 0)
-            if closes, current || hovering {
+        }
+        .font(.system(size: 12.5, weight: .medium))
+        .foregroundStyle(current ? Color.primary : Color.secondary)
+        .padding(.horizontal, 28)
+        .frame(maxWidth: .infinity, minHeight: 28, maxHeight: 28)
+        .overlay(alignment: .leading) {
+            if hovering {
                 Button(action: close) {
                     Image(systemName: "xmark")
                         .font(.system(size: 9, weight: .bold))
                         .frame(width: 18, height: 18)
-                        .contentShape(Rectangle())
+                        .background(Color.primary.opacity(0.06), in: Circle())
+                        .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
+                .padding(.leading, 6)
                 .help("Close tab  ⌘W")
             }
         }
-        .font(.system(size: 12.5, weight: current ? .semibold : .medium))
-        .foregroundStyle(current ? Color.primary : Color.secondary)
-        .padding(.leading, 10)
-        .padding(.trailing, 6)
-        .frame(minWidth: 72, idealWidth: 170, maxWidth: 190, minHeight: 28, maxHeight: 28)
         .background {
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(current ? Color.white : Color.primary.opacity(hovering ? 0.07 : 0.035))
-                .shadow(color: .black.opacity(current ? 0.1 : 0), radius: 3, y: 1)
+            Capsule()
+                .fill(current ? Color.white : Color.primary.opacity(hovering ? 0.05 : 0))
+                .shadow(color: .black.opacity(current ? 0.12 : 0), radius: 3, y: 1)
         }
         .contentShape(Rectangle())
         .onHover { inside in withAnimation(.easeOut(duration: 0.12)) { hovering = inside } }
@@ -114,6 +133,7 @@ struct TabTitle: View {
             if naming {
                 TextField("Name", text: $name)
                     .textFieldStyle(.plain)
+                    .multilineTextAlignment(.center)
                     .focused($typing)
                     .onSubmit { typing = false }
                     .onChange(of: typing) { _, now in
