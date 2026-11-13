@@ -231,9 +231,21 @@ public struct Spot: Equatable, Sendable {
         SpotState(title: name, subtitle: subtitle, isOnGrid: isOnGrid)
     }
 
-    /// Whether the panel asks the command how it looks each time it opens.
+    /// Whether its read tells how its card looks: the panel asks it at each open, or the app at its launch.
     public var readsState: Bool {
-        read?.has(.panel) == true && !isGlobal && !mode.stays
+        (read?.has(.panel) == true || read?.has(.event(SpotEvent.appLaunch)) == true) && !isGlobal && !mode.stays
+    }
+
+    /// Whether the app reads it once as it starts: it lists `app.launch`.
+    public var readsAtLaunch: Bool {
+        read?.has(.event(SpotEvent.appLaunch)) == true
+    }
+
+    /// Whether it offers rows to the main search that no panel open or clock reads, so that each load of the spots or of
+    /// the config reads it (protocol: Places).
+    public var readsOfferedRows: Bool {
+        guard let read else { return false }
+        return isGlobal && !read.has(.panel) && read.seconds == nil
     }
 
     /// Whether the person can put it in the menu bar: it has a number or an event in its `read`, or it stays.

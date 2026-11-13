@@ -238,6 +238,8 @@ class SampleSpotsCase: XCTestCase {
         return last
     }
 
+    /// Puts a stand-in for the openspot command on the path, which prints one emoji and one symbol, and a `defaults` that
+    /// prints the languages in the file `languages`, or English.
     func fakeEmoji(in folder: URL) throws -> Spot {
         let script = """
         #!/bin/sh
@@ -249,6 +251,7 @@ class SampleSpotsCase: XCTestCase {
 
         """
         try script.writeScript(to: folder.appendingPathComponent("tools/openspot"))
+        try "#!/bin/sh\ncat '\(folder.path)/languages' 2>/dev/null || printf '(\\n    \"en-US\"\\n)\\n'\n".writeScript(to: folder.appendingPathComponent("tools/defaults"))
         return try XCTUnwrap(try scan.spots.first { $0.name == "Emojis & Symbols" })
     }
 

@@ -7,9 +7,15 @@ src="$dir/confetti.swift"
 mine="$data/looks"
 
 look_ids() {
+  seen=' '
   for file in "$dir"/looks/*.look "$mine"/*.look; do
-    [ -f "$file" ] && basename "$file" .look
-  done | awk '!seen[$0]++'
+    [ -f "$file" ] || continue
+    id=${file##*/}
+    id=${id%.look}
+    case $seen in *" $id "*) continue ;; esac
+    seen="$seen$id "
+    printf '%s\n' "$id"
+  done
 }
 
 look_file() {
@@ -17,12 +23,16 @@ look_file() {
 }
 
 look_title() {
-  title=$(sed -n 's/^title=//p' "$(look_file "$1")" | head -n 1)
+  title=
+  while IFS= read -r line || [ -n "$line" ]; do
+    case $line in title=*) title=${line#title=}; break ;; esac
+  done < "$(look_file "$1")"
   printf %s "${title:-$1}"
 }
 
 default_look() {
-  look=$(cat "$data/default" 2>/dev/null)
+  look=
+  { read -r look < "$data/default"; } 2>/dev/null
   if [ -n "$look" ] && [ -f "$(look_file "$look")" ]; then printf %s "$look"; else printf colorful; fi
 }
 
@@ -77,22 +87,31 @@ app_key() {
 
 play_key() {
   [ -f "$data/key" ] || printf option+c > "$data/key"
-  cat "$data/key"
+  key=
+  read -r key < "$data/key"
+  printf %s "$key"
 }
 
 listening() {
-  pid=$(cat "$data/listen.pid" 2>/dev/null) && [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null
+  pid= parent=
+  { read -r pid parent < "$data/listen.pid"; } 2>/dev/null
+  [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null
+}
+
+# Whether the listener runs, ends with the caller of this script, and is no older than the program and the key.
+current() {
+  listening && [ "$parent" = "$PPID" ] && ! [ "$bin" -nt "$data/listen.pid" ] && ! [ "$data/key" -nt "$data/listen.pid" ]
 }
 
 listen() {
   build quiet || return 1
   key=$(play_key)
-  if listening && [ "$data/listen.pid" -nt "$bin" ] && [ "$data/listen.pid" -nt "$data/key" ]; then return 0; fi
+  [ "${1-}" != again ] && current && return 0
   listening && kill "$pid"
   rm -f "$data/listen.pid"
   [ -n "$key" ] || return 0
-  nohup "$bin" listen "$key" "$data" "$dir/looks" > "$data/listen.log" 2>&1 &
-  printf %s "$!" > "$data/listen.pid"
+  nohup "$bin" listen "$key" "$data" "$dir/looks" "$PPID" > "$data/listen.log" 2>&1 &
+  printf '%s %s' "$!" "$PPID" > "$data/listen.pid"
   sleep 0.3
   listening
 }

@@ -89,6 +89,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         try? AgentNote(command: Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/openspot").path).write(in: model.files.folder.url)
         showListener = SpotShowLink.listen { [weak self] id in self?.model.reveal(id) ?? false }
         let isFirstLaunch = SpotsFolder.standard().isFirstLaunch(config: .standard())
+        model.runs.launched()
         panel?.warm { [weak self] in
             guard let self else { return }
             SpotSheetWarmth.draw()

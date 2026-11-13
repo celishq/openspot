@@ -10,17 +10,18 @@ extension SpotRun {
 
     /// Asks the script for what it shows. A list that the script searches sends the text that is typed on stdin, so that the answer
     /// gives the spot's new value and the rows of that text. A request joins the read that runs, and a change reads again
-    /// after it (protocol: Events). A `panel` or a `sheet` moment uses an answer younger than 5 seconds (M2). A file with no `read` gets
-    /// its click instead.
+    /// after it (protocol: Events). A `panel` or a `sheet` moment uses an answer younger than 5 seconds, and the open of a sheet that
+    /// the spot lists uses only the answer of a sheet open (M2). A file with no `read` gets its click instead.
     public func read(selecting run: String? = nil, need: ReadNeed = .moment, reason: ReadReason? = nil) {
         let reason = reason ?? (need == .change ? .change : showsSheet ? .sheet : .panel)
+        let wantsSheetAnswer = reason == .sheet && spot.read?.has(.sheet) == true && readReason != .sheet
         if let run { selecting = run }
         if link.isAsking {
-            if need == .change { readsAgain = true }
+            if need == .change || wantsSheetAnswer { readsAgain = true }
             if reason.isEvent { eventAgain = reason }
             return
         }
-        if need == .moment, let answered, runs.now().timeIntervalSince(answered) < Self.answerAge {
+        if need == .moment, !wantsSheetAnswer, let answered, runs.now().timeIntervalSince(answered) < Self.answerAge {
             selectKept()
             return
         }
@@ -37,7 +38,10 @@ extension SpotRun {
             variables: action == read ? reason.variables : [:],
             purpose: .ask(.read(generation: panel?.generation, reports: need != .clock, query: query, tells: reason != .panel))
         ))
-        if isSent, !list.holdsItems || list.hasFailed { list.beginLoading() }
+        if isSent {
+            readReason = reason
+            if !list.holdsItems || list.hasFailed { list.beginLoading() }
+        }
     }
 
     /// Takes new text in the search. A newer search stops the older one, and the script hears after a pause.
@@ -120,8 +124,15 @@ extension SpotRun {
         list.select(run: run)
     }
 
+    /// Reads as a change does, and lets the read finish when the panel hides and nothing wants the spot.
+    func readToEnd(reason: ReadReason? = nil) {
+        finishesRead = true
+        read(need: .change, reason: reason)
+    }
+
     func answerArrived() {
         hasAsked = true
+        finishesRead = false
         let work = waiter
         waiter = nil
         work?()

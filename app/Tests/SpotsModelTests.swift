@@ -77,6 +77,19 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(host.held.last, [GlobalKey(spot: "move", act: .command("left"), trigger: trigger)])
     }
 
+    func testAKeyThatTheAPISetsReadsAgainASpotWhoseRowsOnlyItsSheetReads() async throws {
+        let reads = folder.appendingPathComponent("reads").path
+        try script("offer", header: "title=Offer\non=sheet.open\noffers=search", "echo read >> '\(reads)'\nprintf 'row=a\\ntitle=A\\n'")
+        model.reload()
+        try await wait("the read of the load") { ((try? String(contentsOfFile: reads, encoding: .utf8)) ?? "") == "read\n" }
+        let trigger = try XCTUnwrap(Trigger(text: "ctrl+option+l"))
+        try model.files.config.assign(trigger, to: "offer", act: .command("open"))
+
+        model.configChanged(.keys)
+
+        try await wait("the read of the change") { ((try? String(contentsOfFile: reads, encoding: .utf8)) ?? "") == "read\nread\n" }
+    }
+
     func testAPressReadsTheConfigOfTheLastReloadAndNotTheFile() throws {
         model.reload()
         try model.files.config.set("fix_key", to: "cmd+shift+9")

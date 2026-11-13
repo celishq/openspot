@@ -62,8 +62,8 @@ public struct SpotFile: Equatable, Sendable {
         let places = try Self.places(header.value("offers"), of: name)
         let isGlobal = places.contains("search")
         if isGlobal {
-            guard read?.has(.panel) == true || read?.seconds != nil else {
-                throw SpotError.fault("\(name) needs on=panel.open or a clock, such as on=clock.60, to join the main search")
+            guard read?.has(.panel) == true || read?.has(.sheet) == true || read?.seconds != nil else {
+                throw SpotError.fault("\(name) needs on=panel.open, on=sheet.open or a clock, such as on=clock.60, to join the main search")
             }
         }
         let answers = on?.answers

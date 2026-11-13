@@ -230,6 +230,10 @@ public final class SpotRun {
         didSet { settle() }
     }
     @ObservationIgnored var lastAnswer: SpotOutput?
+    /// The reason of the newest read that was sent, which the answer it gives carries.
+    @ObservationIgnored var readReason: ReadReason?
+    /// Whether the running read finishes even when nothing wants the spot, as a read at launch or of offered rows does.
+    @ObservationIgnored var finishesRead = false
     @ObservationIgnored var hasAsked = false
     /// The work that waits for the next answer, such as a press of a card whose kind the answer says.
     @ObservationIgnored var waiter: (() -> Void)?

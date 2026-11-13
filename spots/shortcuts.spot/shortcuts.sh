@@ -2,6 +2,7 @@
 # icon=/System/Applications/Shortcuts.app
 # detail=Run a shortcut
 # on=panel.open
+# on=sheet.open
 # offers=search
 # drop=*
 # uses=clipboard
@@ -82,6 +83,7 @@ case "$1" in
     head_of_list
     if [ -s "$kept" ]; then
       cat "$kept"
+      [ "$OPENSPOT_REASON" = panel.open ] && exit 0
       echo ---
       fresh=$(all_rows) || exit 0
       [ "$fresh" = "$(cat "$kept")" ] && exit 0
