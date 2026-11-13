@@ -227,6 +227,7 @@
 		63AC460410F859E63960587B /* ActionMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9273105C990676AF772DB05A /* ActionMenu.swift */; };
 		64B36997ED36E518E468DBDE /* AppCalls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EB9D7F839AFBC452A0C8BF5 /* AppCalls.swift */; };
 		64B8873DE3AF3C4F08BA2BDA /* SpotGridGlass.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB6A2912C0ECD42A493FAFED /* SpotGridGlass.swift */; };
+		64BFD6F141A2EBC2E473DE91 /* libOpenspotCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 04798119A31A08BDE55ED6D1 /* libOpenspotCore.a */; };
 		66255A8D8D61C67E712D877A /* ScriptCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 347C690A39CF114C90A03B03 /* ScriptCall.swift */; };
 		665C7E570D4711F70109E728 /* SampleSpotsCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BC62747E5454041447E56FA /* SampleSpotsCase.swift */; };
 		67723456ACA6EE8307A5AB79 /* SpotItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3B2496E5EF92E82E9D4D072 /* SpotItem.swift */; };
@@ -394,6 +395,7 @@
 		A795B698F5CFE58867C2DC12 /* SpotGroupTitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7313C5DDF13F1855B8506D7 /* SpotGroupTitle.swift */; };
 		A79E3616C9DF45B16C9C3447 /* CalendarEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E3D93D868910B76AFBE9F0A /* CalendarEntry.swift */; };
 		A81A9113A1BD0DE03FFE0CF8 /* SpotFileDragSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DFF8726FDD1394BA4F70D9C /* SpotFileDragSource.swift */; };
+		A8B40646676227B8ABC8F23A /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BB77A6A0BA76644749DD655 /* main.swift */; };
 		A9651902740496FFCED303F1 /* GlyphKeywords.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D7B8FC971C5895746897ABA /* GlyphKeywords.swift */; };
 		A977216BA7B3236678E4F84C /* CommandAnswer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60E4ED4839DF3376656D7F58 /* CommandAnswer.swift */; };
 		A9F5582B88F7FEA8BE8F0308 /* SpotWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CFA6717BC498DBE732137A5 /* SpotWindow.swift */; };
@@ -425,6 +427,7 @@
 		B34A155F568AA723C2FD1D2D /* AppsSpotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C48F05AFABA5992D73C68E /* AppsSpotTests.swift */; };
 		B3A81AA71492DAB6A602A383 /* SheetParts.swift in Sources */ = {isa = PBXBuildFile; fileRef = B85FFD8E808ABCBA2E1F9EBA /* SheetParts.swift */; };
 		B3B1E4C619780E3DF0F68E09 /* ScreenPlaceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACEB4F58C72D48426A0EBDC2 /* ScreenPlaceTests.swift */; };
+		B3BB0CBC2C6ADA98481E28E5 /* P256K in Frameworks */ = {isa = PBXBuildFile; productRef = 84BBF49B02591EF71D4726BD /* P256K */; };
 		B3BB2E7AEEB3AC706A9827CA /* SpotSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0FFD250D921A4ADA11DBCE3 /* SpotSlider.swift */; };
 		B3CC8129B5DF6FAE7772C7F5 /* GlyphKeywordCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 527256735F5B7974883B0741 /* GlyphKeywordCache.swift */; };
 		B3CE61B7B8BDA96D9B7BBFCE /* SpotGlyph.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66FF98F184EDE2E0F4446C2E /* SpotGlyph.swift */; };
@@ -648,6 +651,13 @@
 			remoteGlobalIDString = 74DFE392996A67F152001EAA;
 			remoteInfo = OpenspotClient;
 		};
+		467F7B8239F331D805E16325 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1C19AF8969943168B67EC323 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5F0BD7C8AF9A6FB05B0E992A;
+			remoteInfo = OpenspotCore;
+		};
 		56F9BCB0F8821B1FC1AD70E3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1C19AF8969943168B67EC323 /* Project object */;
@@ -668,6 +678,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 691DB204FAF28ABABBAFE7E2;
 			remoteInfo = OpenspotStandIn;
+		};
+		EE0D6B056395735D329AEA69 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1C19AF8969943168B67EC323 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 00827E95CE6D69D25FE1D935;
+			remoteInfo = OpenspotViews;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -902,6 +919,7 @@
 		6A55C7CE4DA3CCFD16818E01 /* SpotScrollFade.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotScrollFade.swift; sourceTree = "<group>"; };
 		6B5DD1F3EA02519207DE3849 /* InlineScript.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineScript.swift; sourceTree = "<group>"; };
 		6B88DACC35ADD24D5E1647C2 /* BuiltInCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInCase.swift; sourceTree = "<group>"; };
+		6BB77A6A0BA76644749DD655 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		6BE566EA52FD95472C996740 /* SpotFloatGlass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotFloatGlass.swift; sourceTree = "<group>"; };
 		6C5B6013A7D3A8A2D7C7E232 /* CalendarEntryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarEntryTests.swift; sourceTree = "<group>"; };
 		6CB75ADB73E5F9963AEBAC8E /* AccountKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountKey.swift; sourceTree = "<group>"; };
@@ -1027,6 +1045,7 @@
 		98DF19CC5B909FFF6AFC9A88 /* TranslationTargetsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationTargetsTests.swift; sourceTree = "<group>"; };
 		98E32D55CDEDB0CB8192C5FC /* SpotCalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotCalls.swift; sourceTree = "<group>"; };
 		993ACD223429E2D7E989A884 /* SearchQueryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchQueryTests.swift; sourceTree = "<group>"; };
+		9A762EA0DF88B438D5851ABD /* OpenspotViews */ = {isa = PBXFileReference; includeInIndex = 0; path = OpenspotViews; sourceTree = BUILT_PRODUCTS_DIR; };
 		9A8037FD906485D608A99586 /* SheetTransitionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetTransitionTests.swift; sourceTree = "<group>"; };
 		9AE17A796DA0F2B6CFA0CB99 /* SpotTipView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotTipView.swift; sourceTree = "<group>"; };
 		9B289E72C5F897BE6680CE9B /* SpotMenuBarDrag.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotMenuBarDrag.swift; sourceTree = "<group>"; };
@@ -1318,6 +1337,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		EEBC704B213B94EFB080BCC9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				64BFD6F141A2EBC2E473DE91 /* libOpenspotCore.a in Frameworks */,
+				B3BB0CBC2C6ADA98481E28E5 /* P256K in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -1577,6 +1605,7 @@
 				259F05606A45352D1D8B5700 /* OpenspotClient */,
 				907FD030E6A97CFF9983DE45 /* OpenspotStandIn */,
 				D2CAEE13E8AAF9CF999090F8 /* OpenspotTests.xctest */,
+				9A762EA0DF88B438D5851ABD /* OpenspotViews */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1918,6 +1947,14 @@
 			path = Field;
 			sourceTree = "<group>";
 		};
+		98C1566686213B7C69C39852 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				6BB77A6A0BA76644749DD655 /* main.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
 		9B8649034C344845415650D2 /* ActionMenu */ = {
 			isa = PBXGroup;
 			children = (
@@ -2197,6 +2234,7 @@
 				AC0DF50E527DAC861C2D8CFB /* Shell */,
 				CBC88D7DDCEEDABF7BC2A074 /* StandIn */,
 				775723F192EC7991A2AABB10 /* Tests */,
+				98C1566686213B7C69C39852 /* Views */,
 				43F99A2A8426AD8DCB4DE46A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -2313,6 +2351,26 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		00827E95CE6D69D25FE1D935 /* OpenspotViews */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6B32088A370A6A0B91CBAC7E /* Build configuration list for PBXNativeTarget "OpenspotViews" */;
+			buildPhases = (
+				658C77C233A8FA885E185727 /* Sources */,
+				EEBC704B213B94EFB080BCC9 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E4A3225493C30FF71FEA22D4 /* PBXTargetDependency */,
+			);
+			name = OpenspotViews;
+			packageProductDependencies = (
+				84BBF49B02591EF71D4726BD /* P256K */,
+			);
+			productName = OpenspotViews;
+			productReference = 9A762EA0DF88B438D5851ABD /* OpenspotViews */;
+			productType = "com.apple.product-type.tool";
+		};
 		0935741A5890ABCE44BE6174 /* Openspot */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 169F4EC2EABFB09092472269 /* Build configuration list for PBXNativeTarget "Openspot" */;
@@ -2323,6 +2381,7 @@
 				9086F9D8FC997F4EEA3460DC /* Copy the openspot command */,
 				9CAD7057076132D3CE954977 /* Join the guide, and copy the guides of the nouns */,
 				483CB758F22DD0EEA8575ACE /* Copy the core spots and their defaults */,
+				A5559893A07B2F829D83AC63 /* Build the views of the core spots */,
 				A5068AFF8D453D11CC2A8674 /* Copy the emoji keywords */,
 				0D4FDAB32F3B0E2B15E19EB2 /* Fill the dev state */,
 				E7D762305E01C1962B81C6F8 /* Strip Sparkle's localizations */,
@@ -2332,6 +2391,7 @@
 			dependencies = (
 				86D27CBB6BFDC3012ED1C75A /* PBXTargetDependency */,
 				4831FBDA9A65E8BD0C6E9869 /* PBXTargetDependency */,
+				6DF2B8B7F3768E3078DB5CDA /* PBXTargetDependency */,
 			);
 			name = Openspot;
 			packageProductDependencies = (
@@ -2430,6 +2490,10 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					00827E95CE6D69D25FE1D935 = {
+						DevelopmentTeam = NNK86LQK58;
+						ProvisioningStyle = Manual;
+					};
 					0935741A5890ABCE44BE6174 = {
 						DevelopmentTeam = "";
 						ProvisioningStyle = Manual;
@@ -2473,6 +2537,7 @@
 				5F0BD7C8AF9A6FB05B0E992A /* OpenspotCore */,
 				0935741A5890ABCE44BE6174 /* Openspot */,
 				74DFE392996A67F152001EAA /* OpenspotClient */,
+				00827E95CE6D69D25FE1D935 /* OpenspotViews */,
 				691DB204FAF28ABABBAFE7E2 /* OpenspotStandIn */,
 				404BF3EE1B95F578121EFECA /* OpenspotTests */,
 			);
@@ -2602,6 +2667,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "keywords=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Keywords\"\nrm -rf \"$keywords\"\ncp -R \"$SRCROOT/Keywords\" \"$keywords\"\n";
+		};
+		A5559893A07B2F829D83AC63 /* Build the views of the core spots */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build the views of the core spots";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\n[ \"$CONFIGURATION\" = Release ] || exit 0\nlist=\"$DERIVED_FILE_DIR/views.txt\"\nmkdir -p \"$DERIVED_FILE_DIR\"\n\"$BUILT_PRODUCTS_DIR/openspot-views\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/spots\" > \"$list\"\nwhile IFS= read -r library; do\n  codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY:--}\" -o runtime $OTHER_CODE_SIGN_FLAGS \"$library\"\ndone < \"$list\"\n";
 		};
 		E7D762305E01C1962B81C6F8 /* Strip Sparkle's localizations */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -2899,6 +2983,14 @@
 				168369EC270DEE5510DCAEA7 /* WidgetLayout.swift in Sources */,
 				88D4ACC719FF078293329240 /* WindowMove.swift in Sources */,
 				F78DF2739E21E68108720B97 /* WorkWindows.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		658C77C233A8FA885E185727 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A8B40646676227B8ABC8F23A /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3295,6 +3387,11 @@
 			target = 691DB204FAF28ABABBAFE7E2 /* OpenspotStandIn */;
 			targetProxy = E478FDDAFBC09CBAAC4A6C67 /* PBXContainerItemProxy */;
 		};
+		6DF2B8B7F3768E3078DB5CDA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 00827E95CE6D69D25FE1D935 /* OpenspotViews */;
+			targetProxy = EE0D6B056395735D329AEA69 /* PBXContainerItemProxy */;
+		};
 		86D27CBB6BFDC3012ED1C75A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 5F0BD7C8AF9A6FB05B0E992A /* OpenspotCore */;
@@ -3304,6 +3401,11 @@
 			isa = PBXTargetDependency;
 			target = 5F0BD7C8AF9A6FB05B0E992A /* OpenspotCore */;
 			targetProxy = 1604A58F6E2404774CA0B2D0 /* PBXContainerItemProxy */;
+		};
+		E4A3225493C30FF71FEA22D4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5F0BD7C8AF9A6FB05B0E992A /* OpenspotCore */;
+			targetProxy = 467F7B8239F331D805E16325 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -3373,6 +3475,44 @@
 				UPDATE_PUBLIC_KEY = "";
 			};
 			name = Release;
+		};
+		1EF34C11F5F8C0451CCF2489 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.openspot.views;
+				PRODUCT_NAME = "openspot-views";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		36B091F33B32CDF4AB9635F1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.openspot.views;
+				PRODUCT_NAME = "openspot-views";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
 		};
 		405D58E3B097903D70D0EB36 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -3676,6 +3816,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
+		6B32088A370A6A0B91CBAC7E /* Build configuration list for PBXNativeTarget "OpenspotViews" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				36B091F33B32CDF4AB9635F1 /* Debug */,
+				1EF34C11F5F8C0451CCF2489 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		9A9486212F8C79AD76F933F5 /* Build configuration list for PBXNativeTarget "OpenspotStandIn" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -3723,6 +3872,11 @@
 			productName = Sparkle;
 		};
 		726F059E2FD980EBD7858BF4 /* P256K */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 915C67AD6B7E0FBBCFE4E3B1 /* XCRemoteSwiftPackageReference "swift-secp256k1" */;
+			productName = P256K;
+		};
+		84BBF49B02591EF71D4726BD /* P256K */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 915C67AD6B7E0FBBCFE4E3B1 /* XCRemoteSwiftPackageReference "swift-secp256k1" */;
 			productName = P256K;
