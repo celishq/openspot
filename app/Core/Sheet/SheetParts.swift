@@ -25,7 +25,7 @@ public struct SheetParts: Equatable, Sendable {
     /// Where its parts lie, worked out once for each change of its parts.
     public private(set) var placement: SheetPlacement
     /// The time of the last change of the file of each picture part, by its path, read once when the parts arrive. A file it
-    /// cannot read has none.
+    /// cannot read has none. A picture that shows follows later changes itself, through `PictureFile.changes`.
     public private(set) var pictureTimes: [String: Double]
     /// The offsets in `parts` of the parts that take the focus, in their order, and the same offsets in lines of one top.
     private var focusOffsets: [Int] = []
@@ -46,8 +46,7 @@ public struct SheetParts: Equatable, Sendable {
         var times: [String: Double] = [:]
         for part in parts {
             guard case .image(let path) = part.control else { continue }
-            var info = stat()
-            if stat(path, &info) == 0 { times[path] = Double(info.st_mtimespec.tv_sec) + Double(info.st_mtimespec.tv_nsec) / 1e9 }
+            times[path] = PictureFile(path: path).changed
         }
         return times
     }

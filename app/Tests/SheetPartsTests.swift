@@ -64,6 +64,16 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertNil(parts.pictureTimes[missing])
     }
 
+    func testASetValueAndReadsOfThePicturesReadNoFile() throws {
+        var parts = try XCTUnwrap(SheetParts(output: SpotOutput(text: "picture=cover\nicon=/tmp/openspot-cover.png\n\nfield=note\nvalue=a\n")))
+        let reads = PictureFile.reads
+
+        parts.set("b", of: "note")
+        for _ in 0..<10 { _ = parts.pictureTimes["/tmp/openspot-cover.png"] }
+
+        XCTAssertEqual(PictureFile.reads, reads)
+    }
+
     func testAButtonThatOnlyACardDrawingPlacesIsAPartOfTheCardAndNoAction() {
         let output = SpotOutput(text: "grid.strip=next next next join-now\n\nnumber=next\nvalue=09:30\n\nbutton=join-now\ntitle=Join\n\nbutton=tick\ntitle=Mark as done\n")
 

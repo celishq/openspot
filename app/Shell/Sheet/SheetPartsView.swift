@@ -505,7 +505,7 @@ struct SheetPartsView: View {
     }
 
     private func image(_ path: String) -> some View {
-        SheetPicture(key: SpotPictureStore.Key(path: path, changed: panel.pictureTimes[path]))
+        SheetPicture(arrived: SpotPictureStore.Key(path: path, changed: panel.pictureTimes[path]))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .clipShape(shape)
     }
@@ -622,12 +622,19 @@ private struct TileLook: ViewModifier {
 }
 
 /// The picture at a file path, which fills its area and is cut at its edges. It shows an empty tile until it is read, and
-/// stays empty for a file it cannot read.
+/// stays empty for a file it cannot read. It starts from the time its parts read, and follows the file's later changes off
+/// the main thread, so that a picture that a spot writes after its answer shows.
 private struct SheetPicture: View {
-    let key: SpotPictureStore.Key
+    let arrived: SpotPictureStore.Key
+    @State private var followed: (from: SpotPictureStore.Key, changed: Double?)?
     @State private var loaded: (key: SpotPictureStore.Key, image: CGImage)?
 
+    private var key: SpotPictureStore.Key {
+        followed.flatMap { $0.from == arrived ? SpotPictureStore.Key(path: arrived.path, changed: $0.changed) : nil } ?? arrived
+    }
+
     var body: some View {
+        let key = key
         Color.clear
             .overlay {
                 if let image = SpotPictureStore.shared.cached(key) ?? (loaded?.key == key ? loaded?.image : nil) {
@@ -638,6 +645,9 @@ private struct SheetPicture: View {
             }
             .task(id: key) {
                 if let image = await SpotPictureStore.shared.image(key) { loaded = (key, image) }
+            }
+            .task(id: arrived) {
+                for await changed in PictureFile(path: arrived.path).changes { followed = (arrived, changed) }
             }
     }
 }
