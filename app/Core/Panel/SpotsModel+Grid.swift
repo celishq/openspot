@@ -15,6 +15,11 @@ extension SpotsModel {
         }
     }
 
+    /// The symbol the menu bar icon shows in place of itself: a pressed command's, else the toast's that shows, else none.
+    public func menuBarSymbol(during toast: ToastKind?) -> String? {
+        flashSymbol ?? toast?.symbol
+    }
+
     public func moveSelection(dx: Int, dy: Int) {
         if let next = SpotGrid().neighbour(of: selected, in: placements, dx: dx, dy: dy) {
             selected = next
