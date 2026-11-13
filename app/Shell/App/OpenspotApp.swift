@@ -203,7 +203,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
 
     private func register(_ key: Shortcut) -> HotKey.Registration? {
         HotKey.register(key) { [weak self] in
-            Task { @MainActor in self?.togglePanel() }
+            MainActor.assumeIsolated { self?.togglePanel() }
         }
     }
 

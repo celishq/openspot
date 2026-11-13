@@ -36,22 +36,8 @@ struct SpotFieldView: View {
                 .opacity(model.isEditing ? 1 : 0)
                 .allowsHitTesting(model.isEditing)
         }
-        .modifier(SpotFocusLook(focus: model.menu == nil ? .none : .faded))
-        .onChange(of: model.isShown) { _, isShown in
-            guard isShown else {
-                isFocused = false
-                return
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + MotionTokens.fadeIn) {
-                if model.isShown, model.showsSearch, !model.isOpenForDrag { isFocused = true }
-            }
-        }
-        .onChange(of: model.showsSearch) { _, shows in
-            isFocused = shows
-        }
-        .onChange(of: model.menu == nil) { _, isClosed in
-            if isClosed, model.isShown, model.showsSearch { isFocused = true }
-        }
+        .modifier(SpotFocusLook(focus: model.isMenuOpen ? .faded : .none))
+        .background(SpotFieldFocus(model: model, isFocused: $isFocused))
     }
 
     private var searchField: some View {
