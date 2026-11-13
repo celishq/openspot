@@ -61,15 +61,6 @@ struct SpotCalls {
         }
     }
 
-    /// Floats a spot that offers a float, and leaves one that floats as it is.
-    func float(_ id: String) -> CommandAPI.Work {
-        guard let app else { return CommandAnswer.notRunning("spot float \(id)") }
-        return CommandAnswer.work {
-            guard await app.float(id) else { throw SpotError.failed(1, "Openspot has no spot `\(id)` that offers float. Add offers=float to its header.") }
-            return ""
-        }
-    }
-
     /// Does what the row of a card's actions menu does to a spot, in the running app.
     func act(_ act: CardAct, _ id: String) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot \(act.rawValue) \(id)") }

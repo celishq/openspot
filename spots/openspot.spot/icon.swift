@@ -1,13 +1,17 @@
 import SwiftUI
 
-/// A grid of 16 by 16 dots that a click paints with the chosen colour, or clears when the dot has that colour, with the
-/// palette, Reset and Save under it. Save sends the 256 dots to the spot as `save <dots>`.
+/// A grid of 12 by 12 rounded squares that a drag paints with the chosen colour, with the palette under it. A stroke that
+/// starts on a square of that colour clears each square it passes instead. Each stroke's end sends the 144 squares to the
+/// spot.
 struct SpotView: View {
     let spot: SpotInput
-    @State private var dots: [Character] = Array(repeating: ".", count: 256)
+    @State private var dots: [Character] = Array(repeating: ".", count: 144)
+    @State private var sent = ""
     @State private var colour: Character = "0"
+    @State private var stroke: Character?
 
-    private static let side = 16
+    private static let side = 12
+    private static let swatch: CGFloat = 20
     private static let palette: [(Character, Color)] = [
         ("0", Color(red: 0.11, green: 0.11, blue: 0.12)),
         ("1", Color(red: 0.96, green: 0.96, blue: 0.97)),
@@ -18,9 +22,8 @@ struct SpotView: View {
     ]
 
     private var cell: CGFloat {
-        let width: CGFloat = spot.size.width - 2 * spot.inset
-        let height: CGFloat = spot.size.height - 2 * spot.inset - 76
-        return max(8, min(width, height) / CGFloat(Self.side))
+        let height = spot.size.height - Self.swatch - 12
+        return max(8, min(spot.size.width, height) / CGFloat(Self.side))
     }
 
     var body: some View {
@@ -31,17 +34,10 @@ struct SpotView: View {
                     swatch(key, fill)
                 }
             }
-            HStack {
-                Button("Reset") { spot.send("reset") }
-                Spacer(minLength: 0)
-                Button("Save") { spot.send("save \(String(dots))") }
-                    .keyboardShortcut(.defaultAction)
-            }
-            .frame(width: cell * CGFloat(Self.side))
         }
-        .frame(width: spot.size.width, height: spot.size.height, alignment: .top)
+        .frame(width: spot.size.width, height: spot.size.height)
         .task(id: spot["dots"]) {
-            if let saved = spot["dots"], saved.count == Self.side * Self.side { dots = Array(saved) }
+            if let saved = spot["dots"], saved.count == Self.side * Self.side, saved != sent { dots = Array(saved) }
         }
     }
 
@@ -51,7 +47,7 @@ struct SpotView: View {
             .fill(fill)
             .overlay(Circle().stroke(spot.accent, lineWidth: ring))
             .overlay(Circle().stroke(spot.ink.opacity(0.2), lineWidth: 0.5))
-            .frame(width: 20, height: 20)
+            .frame(width: Self.swatch, height: Self.swatch)
             .onTapGesture { colour = key }
     }
 
@@ -60,20 +56,50 @@ struct SpotView: View {
             ForEach(0..<Self.side, id: \.self) { row in
                 HStack(spacing: 0) {
                     ForEach(0..<Self.side, id: \.self) { column in
-                        dot(row * Self.side + column)
+                        Square(fill: fill(of: dots[row * Self.side + column]), size: cell)
                     }
                 }
             }
         }
+        .contentShape(Rectangle())
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { paint(at: $0.location) }
+                .onEnded { _ in end() }
+        )
     }
 
-    private func dot(_ index: Int) -> some View {
-        let fill = Self.palette.first { $0.0 == dots[index] }?.1
-        return Circle()
-            .fill(fill ?? spot.ink.opacity(0.08))
-            .padding(cell * 0.08)
-            .frame(width: cell, height: cell)
-            .contentShape(Rectangle())
-            .onTapGesture { dots[index] = dots[index] == colour ? "." : colour }
+    private func fill(of key: Character) -> Color {
+        Self.palette.first { $0.0 == key }?.1 ?? spot.ink.opacity(0.08)
+    }
+
+    /// Paints or clears the square under the point, as the stroke's first square decided.
+    private func paint(at point: CGPoint) {
+        let column = Int(point.x / cell)
+        let row = Int(point.y / cell)
+        guard (0..<Self.side).contains(column), (0..<Self.side).contains(row) else { return }
+        let index = row * Self.side + column
+        let mark = stroke ?? (dots[index] == colour ? "." : colour)
+        stroke = mark
+        if dots[index] != mark { dots[index] = mark }
+    }
+
+    private func end() {
+        stroke = nil
+        sent = String(dots)
+        spot.send(sent)
+    }
+}
+
+/// One square of the grid, drawn again only when its colour changes.
+private struct Square: View, Equatable {
+    let fill: Color
+    let size: CGFloat
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
+            .fill(fill)
+            .padding(size * 0.08)
+            .frame(width: size, height: size)
     }
 }

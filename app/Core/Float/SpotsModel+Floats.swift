@@ -19,14 +19,6 @@ extension SpotsModel {
         host.float(entry, followsDrag: host.isMouseDown)
     }
 
-    /// Floats a spot that offers a float, and keeps it floating when it already floats. Returns false for a spot that offers
-    /// none or does not exist.
-    public func showFloat(_ id: String) -> Bool {
-        guard cards.contains(where: { $0.id == id && $0.spot.offersFloat }) else { return false }
-        if !runs.floating.contains(id) { float(id) }
-        return true
-    }
-
     /// Closes the float of a spot.
     public func land(_ id: String) {
         runs.land(id)

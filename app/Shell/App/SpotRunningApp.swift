@@ -34,10 +34,6 @@ struct SpotRunningApp: RunningApp {
         await model.openSheet(id)
     }
 
-    func float(_ id: String) async -> Bool {
-        await model.showFloat(id)
-    }
-
     func act(_ act: CardAct, on id: String) async -> Bool {
         await model.act(act, on: id)
     }

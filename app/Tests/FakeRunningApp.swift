@@ -54,11 +54,6 @@ actor FakeRunningApp: RunningApp {
         return id != "gone"
     }
 
-    func float(_ id: String) -> Bool {
-        opened.append("float \(id)")
-        return id != "gone"
-    }
-
     func openStore() {
         opened.append("store")
     }

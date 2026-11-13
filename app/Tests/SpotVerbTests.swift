@@ -23,7 +23,6 @@ final class SpotVerbTests: XCTestCase {
         func installUpdate() async -> Bool { false }
         func quit() async {}
         func open(_ id: String) async -> Bool { false }
-        func float(_ id: String) async -> Bool { false }
         func review(_ id: String) async -> Bool { false }
         func openStore() async {}
         func reveal(_ id: String) async -> Bool { false }
@@ -146,6 +145,15 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertEqual(saved("calls"), "star weather\n")
     }
 
+    func testTheSheetOfTheIconSpotOpensThoughItHasNoCard() throws {
+        try script("weather", header: "title=Weather")
+        model.reload()
+
+        XCTAssertTrue(model.openSheet("openspot/icon"))
+
+        XCTAssertEqual(model.openList, "openspot/icon")
+    }
+
     func testTheIconSettingOfASpotWinsOverItsHeaderIconUntilItIsRemoved() throws {
         try script("weather", header: "title=Weather\nicon=cloud")
         let drawn = folder.appendingPathComponent("drawn.svg").path
@@ -159,18 +167,6 @@ final class SpotVerbTests: XCTestCase {
 
         XCTAssertEqual([changed.image, changed.headerSymbol], [drawn, nil])
         XCTAssertEqual([back.image, back.headerSymbol], [nil, "cloud"])
-    }
-
-    func testAFloatCallFloatsOnlyASpotThatOffersFloatAndKeepsItFloating() throws {
-        try "#!/bin/sh\n# title=Drawer\n# on=sheet.open\n# offers=float\n".writeScript(to: spots.spotFile("drawer"))
-        try script("weather", header: "title=Weather\non=sheet.open")
-        model.reload()
-
-        XCTAssertTrue(model.showFloat("drawer"))
-        XCTAssertTrue(model.showFloat("drawer"))
-        XCTAssertFalse(model.showFloat("weather"))
-        XCTAssertFalse(model.showFloat("gone"))
-        XCTAssertEqual(model.runs.floating, ["drawer"])
     }
 
     func testEachActOfTheAPIDoesWhatTheCardsRowDidAndANameOfNoCardDoesNothing() async throws {

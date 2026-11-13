@@ -18,8 +18,6 @@ public protocol RunningApp: Sendable {
     /// Shows the whole text of a spot that comes with the app, and what of it runs by itself. Returns false when no such
     /// spot has that ID.
     func review(_ id: String) async -> Bool
-    /// Floats a spot that offers a float. Returns false when no such spot has that ID.
-    func float(_ id: String) async -> Bool
     /// Does what the row of a card's actions menu does to a spot. Returns false when no card has that ID.
     func act(_ act: CardAct, on id: String) async -> Bool
     /// Opens the panel in Edit Spots with the store.

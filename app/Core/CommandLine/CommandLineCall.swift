@@ -28,7 +28,6 @@ public enum CommandLineCall: Equatable, Sendable {
     case spotRemove(String)
     /// Opens the panel on the sheet of a spot.
     case spotOpen(String)
-    case spotFloat(String)
     case spotAct(CardAct, String)
     /// Shows the whole text of a spot that comes with the app.
     case spotReview(String)
@@ -151,7 +150,6 @@ public enum CommandLineCall: Equatable, Sendable {
                                                  missing, at its commit. An update that adds a use needs --yes.
     openspot spot remove <id>                    Moves a spot that spot add added to the Trash, and drops it from spots.lock.
     openspot spot open <id>                      Opens the panel on the sheet of a spot.
-    openspot spot float <id>                     Floats a spot that offers float.
     openspot spot edit|prompt|share|delete <id>  Does what the row of a card's menu does: edit, copy a prompt, share or delete.
     openspot spot review <id>                    Shows the whole text of a spot that comes with the app, and what of it
                                                  runs by itself.
@@ -318,7 +316,6 @@ public enum CommandLineCall: Equatable, Sendable {
                 return Self.changing(.settingChange(spot: spot, key: key), "openspot setting change", "opens a form", environment)
             } ?? .unknown(arguments.joined(separator: " "))
         case ("spot", "open") where rest.count == 2: self = Self.changing(.spotOpen(rest[1]), "openspot spot open", "opens the panel", environment)
-        case ("spot", "float") where rest.count == 2: self = Self.changing(.spotFloat(rest[1]), "openspot spot float", "opens a window", environment)
         case ("spot", let verb?) where rest.count == 2 && CardAct(rawValue: verb) != nil:
             let act = CardAct(rawValue: verb)!
             self = Self.changing(.spotAct(act, rest[1]), "openspot spot \(verb)", act == .delete ? "changes your spots folder" : "opens a window", environment)
