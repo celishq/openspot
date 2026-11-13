@@ -24,6 +24,7 @@ final class SpotVerbTests: XCTestCase {
         func quit() async {}
         func open(_ id: String) async -> Bool { false }
         func review(_ id: String) async -> Bool { false }
+        func choose(for id: String) async -> Bool { false }
         func openStore() async {}
         func reveal(_ id: String) async -> Bool { false }
         func sandbox(_ file: URL?, isCareful: Bool) async {}
@@ -124,7 +125,7 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertEqual(menu.rows.count, 6)
         let rows = menu.rows.filter { $0.action != nil }
         XCTAssertEqual(rows.map(\.title), ["Edit", "Copy prompt for AI", "Share", "Delete", "Change Icon"])
-        XCTAssertEqual(rows.last?.children.map(\.title), ["Draw…", "Reset Icon"])
+        XCTAssertEqual(rows.last?.children.map(\.title), ["Draw…", "Choose File…", "Reset Icon"])
         XCTAssertEqual(rows.map(\.keyLabel), ["⌘E", "", "⌘⇧C", "⌘⌫", "›"])
         XCTAssertEqual(menu.headers.map(\.title), [])
     }
@@ -153,6 +154,15 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertTrue(model.openSheet("openspot/icon"))
 
         XCTAssertEqual(model.openList, "openspot/icon")
+    }
+
+    func testFilesAreAskedForOnlyForASpotThatTakesThem() throws {
+        try script("weather", header: "title=Weather")
+        model.reload()
+
+        XCTAssertTrue(model.chooseFiles(for: "openspot/icon"))
+        XCTAssertFalse(model.chooseFiles(for: "weather"))
+        XCTAssertFalse(model.chooseFiles(for: "gone"))
     }
 
     func testTheIconSettingOfASpotWinsOverItsHeaderIconUntilItIsRemoved() throws {

@@ -28,7 +28,7 @@ final class IconSpotTests: BuiltInCase {
     func testItOffersChangeIconToEveryCardAndShowsNowhereElse() throws {
         let icon = try icon
 
-        XCTAssertEqual(icon.offeredActions.map(\.action.title), ["Change Icon", "Draw…", "Reset Icon"])
+        XCTAssertEqual(icon.offeredActions.map(\.action.title), ["Change Icon", "Draw…", "Choose File…", "Reset Icon"])
         XCTAssertFalse(icon.offersFloat)
         XCTAssertFalse(icon.offersCard)
     }
@@ -80,6 +80,22 @@ final class IconSpotTests: BuiltInCase {
         XCTAssertEqual(opened, ["open openspot/icon"])
         XCTAssertNil(saved)
         XCTAssertFalse(FileManager.default.fileExists(atPath: path))
+    }
+
+    func testChooseFileAsksForAPictureThatACopyOfBecomesTheIcon() async throws {
+        let picture = root.appendingPathComponent("face.png")
+        try Data("png".utf8).write(to: picture)
+
+        try await call(["change.file", "weather"])
+        try await call(["drop", picture.path])
+
+        let opened = await app.opened
+        let path = try XCTUnwrap(saved)
+        XCTAssertEqual(opened, ["choose openspot/icon"])
+        XCTAssertTrue(path.hasSuffix(".png"), path)
+        XCTAssertNotEqual(path, picture.path)
+        XCTAssertEqual(try String(contentsOfFile: path, encoding: .utf8), "png")
+        XCTAssertTrue(try icon.takesDrops)
     }
 
     func testSaveOfAnEmptyDrawingGivesTheSpotItsOwnIconBack() async throws {

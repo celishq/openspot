@@ -54,6 +54,11 @@ actor FakeRunningApp: RunningApp {
         return id != "gone"
     }
 
+    func choose(for id: String) -> Bool {
+        opened.append("choose \(id)")
+        return id != "gone"
+    }
+
     func openStore() {
         opened.append("store")
     }

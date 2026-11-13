@@ -5,6 +5,7 @@
 # on=sheet.open
 # view=icon.swift
 # uses=spots
+# drop=png,jpg,jpeg,heic,gif,tiff,svg,pdf,icns
 #
 # button=change
 # title=Change Icon
@@ -12,6 +13,9 @@
 #
 # button=change.draw
 # title=Draw…
+#
+# button=change.file
+# title=Choose File…
 #
 # button=change.reset
 # title=Reset Icon
@@ -31,18 +35,29 @@ picture() {
 
 # Takes the spot's own icon back.
 reset() {
-  rm -f "$data/$name".*.svg "$data/$name.dots" "$data/$name.draft"
+  rm -f "$data/$name".*.svg "$data/$name".*.picture.* "$data/$name.dots" "$data/$name.draft"
   openspot setting set --spot "$target" icon
 }
 
 case "$1" in
-  change.draw|change.reset)
+  change.draw|change.file|change.reset)
     mkdir -p "$data"
     printf '%s' "$2" > "$data/target"
     target=$2
     name=$(printf '%s' "$target" | tr '/' '_')
     rm -f "$data/$name.draft"
-    if [ "$1" = change.reset ]; then reset; else openspot spot open "$OPENSPOT_ID"; fi
+    case "$1" in
+      change.draw) openspot spot open "$OPENSPOT_ID" ;;
+      change.file) openspot spot choose "$OPENSPOT_ID" ;;
+      change.reset) reset ;;
+    esac
+    ;;
+  drop)
+    [ -n "$target" ] || exit 0
+    rm -f "$data/$name".*.svg "$data/$name".*.picture.* "$data/$name.dots" "$data/$name.draft"
+    file="$data/$name.$(date +%s).picture.${2##*.}"
+    cp "$2" "$file"
+    openspot setting set --spot "$target" icon "$file"
     ;;
   read)
     [ -n "$target" ] || { printf 'text=none\ntitle=No spot\ndetail=Choose Change Icon in the menu of a card\n'; exit 0; }
@@ -64,7 +79,7 @@ case "$1" in
     [ -n "$target" ] || exit 0
     dots=$(cat "$data/$name.draft" 2>/dev/null || cat "$data/$name.dots" 2>/dev/null)
     [ ${#dots} -eq 144 ] && [ "$dots" != "$empty" ] || { reset; exit 0; }
-    rm -f "$data/$name".*.svg "$data/$name.draft"
+    rm -f "$data/$name".*.svg "$data/$name".*.picture.* "$data/$name.draft"
     printf '%s' "$dots" > "$data/$name.dots"
     file="$data/$name.$(date +%s).svg"
     picture "$dots" > "$file"

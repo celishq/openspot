@@ -304,6 +304,17 @@ final class SpotAPITests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "open", "notes"], environment: ["OPENSPOT_REASON": "panel"]), .refused("`openspot spot open` opens the panel, so it cannot run in a read. Run it from a pick or an action."))
     }
 
+    func testTheRunningAppAsksForFilesForASpotThatTakesThem() async throws {
+        let chose = try await answer(["spot", "choose", "shelf"])
+        let gone = try await answer(["spot", "choose", "gone"])
+
+        let opened = await app.opened
+        XCTAssertEqual(chose, CommandAnswer())
+        XCTAssertEqual(opened, ["choose shelf", "choose gone"])
+        XCTAssertEqual(gone.errors, "Openspot has no spot `gone` that takes files. Add drop= to its header.\n")
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "choose", "shelf"], environment: ["OPENSPOT_REASON": "panel"]), .refused("`openspot spot choose` opens a window, so it cannot run in a read. Run it from a pick or an action."))
+    }
+
     func testThePromptAsksForASpotInTheSpotsFolder() async throws {
         let answer = try await answer(["prompt", "new", "Show", "the weather"])
 

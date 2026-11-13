@@ -25,6 +25,7 @@ final class CommandSocketTests: XCTestCase {
         func open(_ id: String) async -> Bool { true }
         func review(_ id: String) async -> Bool { true }
         func act(_ act: CardAct, on id: String) async -> Bool { true }
+        func choose(for id: String) async -> Bool { true }
         func openStore() async {}
         func reveal(_ id: String) async -> Bool { true }
         func sandbox(_ file: URL?, isCareful: Bool) async {}
