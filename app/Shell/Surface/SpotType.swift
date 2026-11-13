@@ -18,4 +18,6 @@ enum SpotType {
     /// The heights of one line of `title` and of `detail`.
     static let titleLine: CGFloat = 16
     static let detailLine: CGFloat = 14
+    /// The height of one line of `input`.
+    static let inputLine: CGFloat = 18
 }

@@ -36,12 +36,12 @@ struct SpotGridGlass: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             glass(radius: SpotTheme.blur, isPress: false)
-            glass(radius: SpotTheme.blur * SpotMotion.pressedGlass, isPress: true)
+            glass(radius: SpotTheme.blur * MotionTokens.pressedGlass, isPress: true)
                 .opacity(pressable.contains(where: \.isPressed) ? 1 : 0)
         }
         .padding(-Self.reach)
         .opacity(isShown ? 1 : 0.001)
-        .animation(SpotMotion.surface(isShown: isShown), value: isShown)
+        .animation(SpotMotion.fade(isShown: isShown), value: isShown)
         .allowsHitTesting(false)
     }
 
@@ -63,10 +63,10 @@ struct SpotGridGlass: View {
     private func shape(of card: Card, isPress: Bool) -> some View {
         RoundedRectangle(cornerRadius: SpotTokens.corner(for: card.size), style: .continuous)
             .frame(width: SpotTokens.width(columns: card.size.columns), height: SpotTokens.height(rows: card.size.rows))
-            .scaleEffect(isPress && card.isPressed ? SpotMotion.pressedScale : 1)
+            .scaleEffect(isPress && card.isPressed ? MotionTokens.pressedScale : 1)
             .animation(SpotMotion.press, value: isPress && card.isPressed)
-            .scaleEffect(isShown ? 1 : SpotMotion.hiddenScale)
-            .scaleEffect(card.isLifted ? SpotMotion.liftedScale : 1)
+            .scaleEffect(isShown ? 1 : MotionTokens.hiddenScale)
+            .scaleEffect(card.isLifted ? MotionTokens.liftedScale : 1)
             .modifier(SpotFocusLook(focus: card.focus))
             .modifier(SpotCardPlace(motion: card.motion, lift: card.isLifted ? lift : nil))
             .opacity(card.isCovered || (isPress && !card.isPressed) ? 0 : 1)

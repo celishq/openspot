@@ -197,7 +197,7 @@ struct SpotRowsView: View {
                 .padding(.top, SpotTokens.padding)
                 .padding(.bottom, bottomInset)
             }
-            .modifier(RowsFollow(selection: selected, items: list.shown, proxy: proxy, motion: SpotMotion.arrowScroll))
+            .modifier(RowsFollow(selection: selected, items: list.shown, proxy: proxy, motion: SpotMotion.move))
         }
     }
 
@@ -422,6 +422,6 @@ private struct GridFollow: ViewModifier {
         let offset = window.offset(showing: top...(top + side), from: reading.aim)
         guard offset != reading.aim else { return }
         reading.aim = offset
-        withAnimation(SpotMotion.arrowScroll) { position.scrollTo(y: offset) }
+        withAnimation(SpotMotion.move) { position.scrollTo(y: offset) }
     }
 }

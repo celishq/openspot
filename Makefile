@@ -1,8 +1,9 @@
-.PHONY: verify test perf shots eval-agent docs-images plugins dev-state examples release release-build
+.PHONY: verify test perf film shots eval-agent docs-images plugins dev-state examples release release-build
 
 verify:
 	sh scripts/check-core.sh
 	sh scripts/check-tests.sh
+	sh scripts/check-motion.sh
 	cd app && xcodegen generate >/dev/null
 	cd app && DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project Openspot.xcodeproj -scheme Openspot -destination 'platform=macOS' test
 
@@ -12,6 +13,9 @@ test:
 
 perf:
 	sh scripts/motion-perf.sh $(N)
+
+film:
+	sh scripts/motion-film.sh
 
 shots:
 	sh scripts/menu-shots.sh
