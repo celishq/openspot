@@ -300,12 +300,21 @@ extension SpotsModel {
         menu == nil ? nil : menuSession?.target
     }
 
-    /// Keeps where the view placed the open menu. Once the menu has grown, the backdrop under it follows the new place with no
-    /// motion.
+    /// Keeps where the view placed the open menu, with its item at rest. Once the menu has grown, the backdrop under it follows
+    /// the new place with no motion.
     public func placeMenu(_ frame: ActionMenuFrame) {
         guard menu != nil, frame != menuFrame else { return }
         menuFrame = frame
         if menuSession?.phase != .opening { growBackdrop() }
+    }
+
+    /// Where the menu's item lies once its motion ends, from where it lies now: a focused card at its forward scale about the
+    /// centre that its grow keeps, and any other item where it lies.
+    public func menuItemAtRest(_ item: CGRect) -> CGRect {
+        guard focus(ofCard: selected) == .focused, let size = placements.first(where: { $0.index == selected })?.size else { return item }
+        let width = SpotTokens.width(columns: size.columns) * MotionTokens.focusedScale
+        let height = SpotTokens.height(rows: size.rows) * MotionTokens.focusedScale
+        return CGRect(x: item.midX - width / 2, y: item.midY - height / 2, width: width, height: height)
     }
 
     /// Sets the backdrop under the menu to the height that the menu's place asks for.
