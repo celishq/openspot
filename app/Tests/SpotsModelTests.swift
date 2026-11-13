@@ -206,21 +206,22 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.placements, grid)
     }
 
-    func testAnOpenFindsAScriptMadeExecutableSinceTheOpenBefore() throws {
+    func testAWatchedChangeFindsAScriptMadeExecutableSinceTheLastLoad() throws {
         let late = spots.spotFile("late")
         try FileManager.default.createDirectory(at: late.deletingLastPathComponent(), withIntermediateDirectories: true)
         try "#!/bin/sh\n# title=Late\n".write(to: late, atomically: false, encoding: .utf8)
-        model.panelWillShow(holding: [])
+        model.reload()
         XCTAssertFalse(model.entries.contains { $0.id == "late" })
 
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: late.path)
-        model.panelWillShow(holding: [])
+        model.folderChanged()
 
         XCTAssertTrue(model.entries.contains { $0.id == "late" })
     }
 
     func testAnOpenWithNoChangeTellsNoReaderOfTheCards() throws {
         try script("one", header: "title=One", "")
+        model.reload()
         model.panelWillShow(holding: [])
         model.panelWillHide()
         nonisolated(unsafe) var changed = false
@@ -232,22 +233,36 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(changed)
     }
 
-    func testAnOpenTakesAChangeOfTheConfigFile() throws {
+    func testAShowReadsNoConfigAndChecksNoFolder() throws {
         try script("one", header: "title=One", "")
         try script("two", header: "title=Two", "")
+        model.reload()
+        var arrangement = SpotArrangement()
+        arrangement.set(isOnGrid: false, of: "two")
+        try model.files.config.write(arrangement)
+        try script("three", header: "title=Three", "")
+
         model.panelWillShow(holding: [])
-        model.panelWillHide()
+
+        XCTAssertEqual(model.visible.map(\.id), ["one", "two"])
+    }
+
+    func testAWatchedChangeOfTheConfigFileTakesIt() throws {
+        try script("one", header: "title=One", "")
+        try script("two", header: "title=Two", "")
+        model.reload()
         var arrangement = SpotArrangement()
         arrangement.set(isOnGrid: false, of: "two")
 
         try model.files.config.write(arrangement)
-        model.panelWillShow(holding: [])
+        model.folderChanged()
 
         XCTAssertEqual(model.visible.map(\.id), ["one"])
     }
 
     func testAnOpenPanelReadsAgainAScriptWhoseBodyAloneChanged() async throws {
         try script("cups", header: "on=panel.open", "printf 'title=One cup\\n'")
+        model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
         try await wait("the first read") { model.entries.first { $0.id == "cups" }?.state.title == "One cup" }

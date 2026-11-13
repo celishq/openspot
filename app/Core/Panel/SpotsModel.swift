@@ -267,8 +267,8 @@ public final class SpotsModel {
         self.problems = problems
     }
 
-    /// Takes a change of the spots folder, such as an agent that writes a spot: the cards change at once, with no motion,
-    /// the selected card stays selected, and a changed script that the open panel reads at `panel` reads again.
+    /// Takes a change of the spots folder or the config file, such as an agent that writes a spot: the cards change at once,
+    /// with no motion, the selected card stays selected, and a changed script that the open panel reads at `panel` reads again.
     public func folderChanged() {
         let stamps = fileStamps
         let id = selectedEntry?.id
@@ -357,14 +357,13 @@ public final class SpotsModel {
         return arrangement.ordered(defaultArrangement.ordered(sorted))
     }
 
-    /// The panel starts to show: a pick that its fade left finishes, the first card is selected, the held keys count, the
-    /// spots folder is read again if it changed, and each script that the panel shows reads. The panel says it shows on the
-    /// next turn, so that its fade starts from hidden.
+    /// The panel starts to show: a pick that its fade left finishes, the first card is selected, the held keys count, and
+    /// each script that the panel shows reads. It reads no disk: the watch of the folder and the config reloads them. The
+    /// panel says it shows on the next turn, so that its fade starts from hidden.
     public func panelWillShow(holding modifiers: Shortcut.Modifiers) {
         finishPick()
         selected = 0
         takeHeld(modifiers)
-        reload()
         runs.panelOpened()
         askAnswers()
         DispatchQueue.main.async { [weak self] in self?.isShown = true }
