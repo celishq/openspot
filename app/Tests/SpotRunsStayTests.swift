@@ -810,4 +810,37 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertLessThanOrEqual(link.pictured.count, 1)
         XCTAssertLessThanOrEqual(link.dropped.count, StayLink.droppedLimit)
     }
+
+    func testALateAnswerToACallPastTheLimitOfStoppedCallsChangesNothing() async throws {
+        let last = StayLink.droppedLimit + 3
+        try script(header: "mode=stay\non=sheet.text", #"""
+        while IFS= read -r line; do
+          case "$line" in
+            call=*) id=${line#call=} ;;
+            '')
+              if [ "$id" = 1 ]; then printf 'row=a\ntitle=A\n\nend=1\n---\n'; fi
+              if [ "$id" = \#(last) ]; then printf 'end=2\n\nrow=old\ntitle=Old\n---\ntoast=done\n---\n'; id=; fi
+              ;;
+          esac
+        done
+        """#)
+        let sheet = try sheet()
+        nonisolated(unsafe) var toasts: [String] = []
+        let report = sheet.onReport
+        sheet.onReport = {
+            if case .toast(let text) = $0 { toasts.append(text) }
+            report($0)
+        }
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 }
+
+        for round in 2...last {
+            sheet.list.search("t\(round)")
+            sheet.ask()
+        }
+
+        try await wait("the late answer") { toasts == ["done"] }
+        XCTAssertEqual(sheet.list.all.map(\.run), ["a"])
+    }
 }

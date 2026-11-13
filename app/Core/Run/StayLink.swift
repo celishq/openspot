@@ -32,6 +32,8 @@ final class StayLink: ScriptLink {
     private var askReason: String?
     /// The call numbers of searches and texts of the main search that a newer one stopped, whose late answers change nothing.
     private(set) var dropped: Set<Int> = []
+    /// Each call below this number that neither waits nor runs was dropped, though `dropped` let go of it to keep its limit.
+    private var droppedBelow = 0
     /// The call numbers of reads and searches that a picture came after, which a frame of only a head then answers.
     private(set) var pictured: Set<Int> = []
     /// The last frame with a block, which answers a read that ends with only a head.
@@ -269,7 +271,15 @@ final class StayLink: ScriptLink {
         dropped.insert(id)
         sent[id] = nil
         pictured.remove(id)
-        if dropped.count > Self.droppedLimit, let oldest = dropped.min() { dropped.remove(oldest) }
+        if dropped.count > Self.droppedLimit, let oldest = dropped.min() {
+            dropped.remove(oldest)
+            droppedBelow = max(droppedBelow, oldest + 1)
+        }
+    }
+
+    /// Whether a stop or a time-out dropped this call, so that its late frames change nothing.
+    private func isDropped(_ id: Int) -> Bool {
+        dropped.contains(id) || (id < droppedBelow && asks[id] == nil && calls[String(id)] == nil)
     }
 
     /// Drops each ask, and ends each text of the main search with no rows, so that nothing waits for it.
@@ -333,6 +343,7 @@ final class StayLink: ScriptLink {
         do {
             for try await text in frames {
                 let lines = await runs.intake(text, of: run?.spot.id)
+                let late = lines.ends.compactMap(Int.init).filter(isDropped)
                 if self.script === script {
                     counted(lines.ends)
                     take(text, lines)
@@ -362,9 +373,10 @@ final class StayLink: ScriptLink {
                         await run.takeAnswer(lastPicture?.withoutEffects() ?? lines, frame: text, to: ask)
                     }
                     pictured.remove(id)
-                } else if ends.contains(where: { dropped.remove($0) != nil }) {
+                } else if !late.isEmpty {
+                    late.forEach { dropped.remove($0) }
                     continue
-                } else if let current, lines.start == nil, ends.isEmpty, dropped.contains(current) {
+                } else if let current, lines.start == nil, ends.isEmpty, isDropped(current) {
                     continue
                 } else if let current, lines.start == nil, lines.isPicture, let ask = asks.removeValue(forKey: current) {
                     await run.takeAnswer(lines, frame: text, to: ask)
