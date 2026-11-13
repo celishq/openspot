@@ -2,6 +2,7 @@
 # icon=link
 # detail=Open a link
 # on=panel.open
+# on=app.launch
 # offers=search
 # uses=network,clipboard
 export LC_ALL=en_US.UTF-8
@@ -108,7 +109,8 @@ fetch_icon() {
   touch "$icons/$host.none"
 }
 
-# Looks for the icon of each web link that has none. A site with no icon is tried again after a week.
+# Looks for the icon of each web link that has none. A site with no icon is tried again at a launch a week or more after
+# the last try.
 fetch_missing() {
   [ -d "$icons" ] && find "$icons" -name '*.none' -mtime +7 -delete
   load | jq -r '.[].url | capture("^(?<origin>https?://(?<host>[^/?#]+))") | "\(.origin) \(.host)"' | sort -u |
@@ -147,6 +149,7 @@ case "$1" in
     [ -s "$data" ] || exit 0
     set --
     for icon in "$icons"/*.png; do [ -e "$icon" ] && set -- "$@" "${icon##*/}"; done
+    [ "$OPENSPOT_REASON" != app.launch ] || { fetch_missing >/dev/null 2>&1 </dev/null & }
     jq -r --arg icons "$icons" --arg home "$HOME" "$esc"'$ARGS.positional as $found | .[]
       | if (.url | test("^[/~]")) then
           "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.url | esc)\nicon=\(.url | if startswith("~") then $home + .[1:] else . end | esc)\n"
