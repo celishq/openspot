@@ -165,6 +165,44 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertFalse(model.chooseFiles(for: "gone"))
     }
 
+    func testAHookOfAJavaScriptSpotShowsAnActionOnlyOnTheCardsItSaysYesTo() async throws {
+        try script("weather", header: "title=Weather")
+        try script("notes", header: "title=Notes")
+        let tools = spots.spotFile("tools", extension: "js")
+        try FileManager.default.createDirectory(at: tools.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try "// title=Tools\n//\n// button=star\n// title=Star\n// offers=actions\n// when=isWeather\n//\n// button=mark\n// title=Mark\n// offers=actions\n// when=always\nfunction isWeather(id, origin) { return id === \"weather\" && origin === \"mine\" }\nfunction always() { return true }\n".write(to: tools, atomically: true, encoding: .utf8)
+        let titles = { self.model.menu?.rows.map(\.title) ?? [] }
+
+        _ = try select("notes")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        try await wait("the yes of the second hook on notes") { titles().contains("Mark") }
+        let notes = titles()
+        model.closeMenu()
+        _ = try select("weather")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        try await wait("the yes of both hooks on weather") { titles().contains("Mark") && titles().contains("Star") }
+
+        XCTAssertFalse(notes.contains("Star"))
+        XCTAssertEqual(Array(titles().suffix(2)), ["Star", "Mark"])
+    }
+
+    func testASlowHookLeavesTheMenuOpenAtOnceAndItsLateYesJoinsIt() async throws {
+        try script("weather", header: "title=Weather")
+        let slow = spots.spotFile("slow", extension: "js")
+        try FileManager.default.createDirectory(at: slow.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try "// title=Slow\n//\n// button=late\n// title=Late\n// offers=actions\n// when=late\nfunction late() { const end = Date.now() + 300; while (Date.now() < end) {} return true }\n".write(to: slow, atomically: true, encoding: .utf8)
+        _ = try select("weather")
+
+        let start = Date()
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        let opened = Date().timeIntervalSince(start)
+        let first = model.menu?.rows.map(\.title) ?? []
+        try await wait("the late yes of the slow hook") { model.menu?.rows.contains { $0.title == "Late" } == true }
+
+        XCTAssertLessThan(opened, 0.2)
+        XCTAssertFalse(first.contains("Late"))
+    }
+
     func testTheIconSettingOfASpotWinsOverItsHeaderIconUntilItIsRemoved() throws {
         try script("weather", header: "title=Weather\nicon=cloud")
         let drawn = folder.appendingPathComponent("drawn.svg").path

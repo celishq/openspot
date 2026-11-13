@@ -63,6 +63,24 @@ final class SpotHeaderTests: XCTestCase {
         XCTAssertEqual(spot.offers.map(\.id), ["other.go"])
     }
 
+    func testAJavaScriptSpotNamesTheFunctionThatSaysWhetherAnActionShows() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-when-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let js = folder.appendingPathComponent("icon.js")
+        try "// title=Icon\n//\n// button=reset\n// title=Reset Icon\n// offers=actions\n// when=hasIcon\nfunction hasIcon(id) { return true }\n".write(to: js, atomically: true, encoding: .utf8)
+        let shell = folder.appendingPathComponent("icon.sh")
+        try "#!/bin/sh\n#\n# button=reset\n# title=Reset Icon\n# offers=actions\n# when=hasIcon\n".writeScript(to: shell)
+        let wrong = folder.appendingPathComponent("wrong.js")
+        try "// title=Icon\n//\n// button=reset\n// title=Reset Icon\n// offers=actions\n// when=has icon()\n".write(to: wrong, atomically: true, encoding: .utf8)
+
+        let spot = try XCTUnwrap(try SpotFile(file: js, id: "icon")?.spots.first)
+
+        XCTAssertEqual(spot.offeredActions.first?.when, "hasIcon")
+        XCTAssertThrowsError(try SpotFile(file: shell, id: "shell")) { XCTAssertTrue((($0 as? SpotError)?.reason ?? "").contains("only a JavaScript spot"), "\($0)") }
+        XCTAssertThrowsError(try SpotFile(file: wrong, id: "wrong")) { XCTAssertTrue((($0 as? SpotError)?.reason ?? "").contains("such as when=hasIcon"), "\($0)") }
+    }
+
     func testAnActionsFilterNamesTheOriginsOfTheCardsItFits() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-actions-\(UUID().uuidString)")
         try "#!/bin/sh\n#\n# button=off\n# title=Turn off\n# offers=actions core, builtin\n".writeScript(to: url)

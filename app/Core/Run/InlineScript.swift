@@ -153,11 +153,16 @@ final class InlineScript: @unchecked Sendable {
     }
 
     /// Runs `main` with the arguments, the variables and the stdin of the call (protocol: Modes). A script with no `main` gives an empty
-    /// frame.
+    /// frame. A hook's function gets the arguments alone, and gives `true` for a true answer and nothing for any other.
     private func run(_ call: InlineCall) throws -> String {
         let context = try loaded()
-        let function = context.objectForKeyedSubscript("main")
+        let function = context.objectForKeyedSubscript(call.function ?? "main")
         guard let function, let type = context.objectForKeyedSubscript("Function"), function.isInstance(of: type) else { return "" }
+        if call.function != nil {
+            let result = function.call(withArguments: call.arguments)
+            try rethrow()
+            return result?.toBool() == true ? "true" : ""
+        }
         let env = environment.filter { ["OPENSPOT_ID", CallerTokens.variable].contains($0.key) }.merging(call.variables) { _, new in new }
         variables = call.variables
         defer { variables = [:] }

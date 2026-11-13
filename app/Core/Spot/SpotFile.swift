@@ -96,8 +96,15 @@ public struct SpotFile: Equatable, Sendable {
                 }
                 return origin
             }
+            let when = block.value("when")
+            if let when, mode != .inline {
+                throw SpotError.fault("\(name) has when=\(when) on the button \(id), which only a JavaScript spot can answer. Remove it, or write the spot as a .js file")
+            }
+            if let when, when.range(of: "^[A-Za-z_$][A-Za-z0-9_$]*$", options: .regularExpression) == nil {
+                throw SpotError.fault("\(name) has when=\(when) on the button \(id). Name a function of the spot, such as when=hasIcon")
+            }
             let offered = CommandAction(id: action.id, title: action.title, key: action.key, scope: .spot, after: action.after, isForm: action.isForm, confirm: action.confirm)
-            offeredActions.append(OfferedAction(action: offered, origins: parent?.origins ?? Set(origins)))
+            offeredActions.append(OfferedAction(action: offered, origins: parent?.origins ?? Set(origins), when: when))
             offeredBlocks.insert(index)
         }
         let offers = try buttons.enumerated().filter { !offeredBlocks.contains($0.offset) }.map(\.element).map { block in

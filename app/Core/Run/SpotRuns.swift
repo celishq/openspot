@@ -68,6 +68,8 @@ public final class SpotRuns {
     /// Which `answers` patterns match the text of the main search.
     @ObservationIgnored var answerMatches = AnswerMatches()
     @ObservationIgnored private(set) var processes: [ScriptProcess] = []
+    /// The context of each JavaScript spot that answers hooks, with the spot it loaded, kept warm between two ⌘K menus.
+    @ObservationIgnored var hookScripts: [String: (spot: Spot, script: InlineScript)] = [:]
     /// The API in the app, which `openspot.call` of a JavaScript spot asks, or nil to run the `openspot` command.
     @ObservationIgnored public var api: CommandAPI?
     /// The record of each call that runs once, or nil to keep none.

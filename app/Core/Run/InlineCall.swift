@@ -14,6 +14,8 @@ final class InlineCall: @unchecked Sendable {
     let arguments: [String]
     let variables: [String: String]
     let input: String?
+    /// The function of a hook that the call asks, with the arguments as its own, or nil for `main`.
+    let function: String?
     private let lock = NSLock()
     private let arrival = DispatchSemaphore(value: 0)
     private var outcome: Outcome?
@@ -21,10 +23,11 @@ final class InlineCall: @unchecked Sendable {
     private var stopped = false
     private var isFinished = false
 
-    init(arguments: [String], variables: [String: String] = [:], input: String? = nil) {
+    init(arguments: [String], variables: [String: String] = [:], input: String? = nil, function: String? = nil) {
         self.arguments = arguments
         self.variables = variables
         self.input = input
+        self.function = function
     }
 
     var isStopped: Bool {

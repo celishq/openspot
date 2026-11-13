@@ -256,6 +256,10 @@ A button is a verb. If the layout places it, the sheet draws it. If not, it's an
 [ "$1" = star ] && echo "$2" >> "$OPENSPOT_DATA/starred"
 ```
 
+- In a JavaScript spot, `when=<function>` on an offered button names a function that says whether the action shows on a
+  card. ⌘K calls it with the card's spot ID and its origin, `mine`, `core` or `builtin`, and shows the action when it
+  returns `true`. Keep it fast: the menu waits 2 ms for it, and an answer that comes later joins the open menu. A
+  function that throws says no, and an action that its function hides hides its submenu too.
 - The ⌘K menu lists the spot's own actions first, then Openspot's under them, then the actions of other spots, grouped
   by spot, A to Z by its name. Each group of another spot has a header, which a search hides. Openspot's own actions, such as Edit,
   Delete and Change Icon, come from its built-in spots in the same way.
