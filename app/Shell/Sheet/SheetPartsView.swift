@@ -24,7 +24,7 @@ struct SheetPartsView: View {
     var onFocus: (SpotPart) -> Void = { _ in }
     /// The spot's own view at the size of the area of a `view` component (protocol: Views).
     /// A spot's own view in the place of a block, with the send that calls the spot with the block's id and a value.
-    var customView: (CGSize, @escaping (String) -> Void) -> AnyView? = { _, _ in nil }
+    var customView: (CGSize, [String: [String]], @escaping (String) -> Void) -> AnyView? = { _, _, _ in nil }
     @FocusState private var focus: String?
 
     private static let swatchSize: CGFloat = 22
@@ -137,7 +137,7 @@ struct SheetPartsView: View {
     @ViewBuilder
     private func drawn(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         if part.kind == "view" {
-            customView(frame.rect.size) { onSet(part, $0) }
+            customView(frame.rect.size, part.values) { onSet(part, $0) }
         } else {
             content(part, frame)
         }

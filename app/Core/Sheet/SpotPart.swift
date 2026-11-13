@@ -69,6 +69,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     /// The small mark of a line, drawn as a widget draws it: a ring around its detail from `value`, or bars before its
     /// detail from `point` lines.
     public let mark: MetricValue?
+    /// Each key of its block with its values, which a spot's own view draws. Only a `view` block keeps them.
+    public let values: [String: [String]]
 
     /// The kinds of block that make a part, in the order of the table in Blocks of the protocol.
     public static let kinds = ["text", "number", "gauge", "graph", "picture", "view", "switch", "slider", "field", "choice", "hotkey", "button", "section"]
@@ -78,6 +80,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         guard let kind = block.fields.first?.key, Self.kinds.contains(kind), let id = block.value(kind) else { return nil }
         self.id = id
         self.kind = kind
+        values = kind == "view" ? Dictionary(grouping: block.fields, by: \.key).mapValues { $0.map(\.value) } : [:]
         isSection = kind == "section"
         title = block.value("title")
         detail = block.value("detail")

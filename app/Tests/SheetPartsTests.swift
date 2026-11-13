@@ -63,6 +63,14 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(output.parts.map(\.color), ["#1BADF8", "#ff9500", nil, nil])
     }
 
+    func testAViewBlockKeepsItsOwnKeysForItsViewAndOtherPartsKeepNone() {
+        let output = SpotOutput(text: "title=Card\n\nview=steps\nstep=words\nword=flip\nword=column\n\ntext=note\ntitle=Hi\n")
+
+        XCTAssertEqual(output.parts.first { $0.id == "steps" }?.values["word"], ["flip", "column"])
+        XCTAssertEqual(output.parts.first { $0.id == "steps" }?.values["step"], ["words"])
+        XCTAssertEqual(output.parts.first { $0.id == "note" }?.values, [:])
+    }
+
     func testATextsToneColoursItsWordsAndAGaugeKeepsItsOwn() {
         let output = SpotOutput(text: "text=due\ndetail=Late\ntone=bad\n\ntext=now\ntitle=Standup\ntone=on\n\ngraph=disk\nvalue=0.9\ntone=bad\n")
 
