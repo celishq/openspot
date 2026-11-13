@@ -61,13 +61,6 @@ public struct ItemList: Equatable, Sendable {
         !all.isEmpty
     }
 
-    /// Whether it holds the same rows, search and state as another list, and differs at most in the selected row.
-    public func differsOnlyInSelection(from other: ItemList) -> Bool {
-        var same = self
-        same.selected = other.selected
-        return same == other
-    }
-
     /// Whether a search finds the same rows in it as in another list: the same rows, picks and searcher.
     public func findsSameRows(as other: ItemList) -> Bool {
         all == other.all && recent == other.recent && search == other.search

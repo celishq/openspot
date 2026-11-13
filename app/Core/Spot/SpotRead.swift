@@ -47,7 +47,7 @@ public struct SpotRead: Equatable, Sendable {
                 }
                 filter = pattern
             }
-            if filter != nil, [SpotEvent.sheetOpen, SpotEvent.panelOpen, SpotEvent.sheetText, SpotEvent.clipboard, SpotEvent.screenWake, SpotEvent.appLaunch].contains(event) || event.hasPrefix(SpotEvent.clockPrefix) {
+            if filter != nil, SpotEvent.valueless.contains(event) || event.hasPrefix(SpotEvent.clockPrefix) {
                 throw SpotError.fault("\(name) has a filter in on=\(line), and \(event) takes none. Write on=\(event) alone. A filter follows only an event with a value, such as on=app.front com\\.apple\\.Notes")
             }
             switch event {

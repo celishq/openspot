@@ -36,6 +36,8 @@ public enum SpotEvent: Equatable, Sendable {
     public static let clockPrefix = "clock."
     /// The events that Openspot raises.
     public static let known = [sheetOpen, panelOpen, searchText, sheetText, clipboard, frontApp, appUpdate, appLaunch, screenWake]
+    /// The known events that take no filter in `on=`.
+    public static let valueless = [sheetOpen, panelOpen, sheetText, clipboard, screenWake, appLaunch]
 
     /// Whether a word names an event: words of letters, digits, `-` and `_` joined by dots, such as `music.track`, that
     /// start with a letter.

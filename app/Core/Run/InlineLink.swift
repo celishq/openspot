@@ -1,10 +1,9 @@
 import Foundation
 
 /// The link to a JavaScript spot that runs inside the app (protocol: Modes). Each call runs on the thread of the script, which loads at
-/// the first call (A26). The main thread waits 2 ms for its frame, and a later frame lands in a later turn (protocol: Modes). The
-/// answers of all such spots to one text share one wait of 2 ms. A stopped
-/// call that has not run never runs, and one that ran changes nothing. Each call goes in the call log. A change of the
-/// file loads it again at the next call or scan.
+/// the first call (A26). The main thread waits at most `SpotRuns.frameWait` for its frame, and a later frame lands in a later
+/// turn (protocol: Modes). A stopped call that has not run never runs, and one that ran changes nothing. Each call goes in the
+/// call log. A change of the file loads it again at the next call or scan.
 @MainActor
 final class InlineLink: ScriptLink {
     weak var run: SpotRun?

@@ -48,7 +48,6 @@ struct SpotSheetView: View {
         model.form?.entry.id == entry.id ? model.form?.draft : nil
     }
 
-    /// The words of the button that makes a new item from the search, or nil when there is none.
     private var row: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
     }

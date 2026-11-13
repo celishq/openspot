@@ -15,8 +15,8 @@ struct SpotActionMenuView: View, @MainActor Equatable {
     var onPoint: (Int) -> Void = { _ in }
     /// Takes the text of the field of a menu that searches its rows.
     var onSearch: @MainActor @Sendable (String) -> Void = { _ in }
-    /// Reads the selected row where it is called. Nil reads it from the menu.
-    var selection: (() -> Int)?
+    /// Reads the selected row where it is called.
+    let selection: () -> Int
 
     static let radius = SpotTokens.radius - SpotTokens.padding + SpotTokens.menuPadding
 
@@ -58,7 +58,7 @@ struct SpotActionMenuView: View, @MainActor Equatable {
             .padding(.horizontal, SpotTokens.padding - SpotTokens.menuPadding + 4)
             .frame(height: SpotTokens.menuRowHeight)
             .spotFill(isActive: call != nil, otherwise: isConfirming ? SpotTheme.confirm : .clear, in: shape)
-            .modifier(SpotLiveSelectionRing(isSelected: { [selection, menu] in index == (selection ?? { menu.selected })() && !isConfirming }, shape: shape))
+            .modifier(SpotLiveSelectionRing(isSelected: { [selection] in index == selection() && !isConfirming }, shape: shape))
             .contentShape(shape)
         }
         .buttonStyle(.plain)
@@ -81,10 +81,9 @@ struct SpotActionMenuView: View, @MainActor Equatable {
         }
     }
 
-    /// Whether two menus show the same rows. The selection counts only where the menu reads it from its own value.
+    /// Whether two menus show the same rows, whatever their selection.
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.menu.rows == rhs.menu.rows && lhs.menu.shown == rhs.menu.shown && lhs.menu.query == rhs.menu.query
             && lhs.menu.confirming == rhs.menu.confirming && lhs.frame == rhs.frame && lhs.isSettled == rhs.isSettled
-            && (lhs.selection == nil) == (rhs.selection == nil) && (lhs.selection != nil || lhs.menu.selected == rhs.menu.selected)
     }
 }

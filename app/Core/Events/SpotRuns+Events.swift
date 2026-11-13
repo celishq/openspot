@@ -135,7 +135,7 @@ extension SpotRuns {
     }
 
     /// Sends the text to each spot whose `search.text` pattern matches it, and an empty text to the others, which drops their
-    /// answers (protocol: Places). The answers of JavaScript spots share one wait of 2 ms, after the text reaches each spot.
+    /// answers (protocol: Places). The answers of JavaScript spots share one `frameWait`, after the text reaches each spot.
     private func ask(_ query: String) {
         let text = query.trimmingCharacters(in: .whitespaces)
         answerWaits = []

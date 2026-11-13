@@ -205,7 +205,6 @@ public struct SpotFile: Equatable, Sendable {
         throw SpotError.fault("\(name) has size=\(size), which Openspot no longer reads. Openspot sizes a card by the person's choice, so remove it")
     }
 
-    /// A path that the header names: a full path or an https URL stays, and any other starts at the folder of the script.
     /// When a file that the build of a view reads last changed: its source or the library beside it. Nil where the scan and
     /// the watch of the folder miss an edit: a view outside its script's folder, or in a linked spot folder.
     private static func viewDate(of view: String, script: URL) -> Date? {
@@ -215,6 +214,7 @@ public struct SpotFile: Equatable, Sendable {
         return [view, ViewLibrary.path(beside: view)].compactMap { try? FileManager.default.attributesOfItem(atPath: $0)[.modificationDate] as? Date }.max()
     }
 
+    /// A path that the header names: a full path or an https URL stays, and any other starts at the folder of the script.
     private static func path(_ text: String, beside url: URL) -> String {
         text.hasPrefix("/") || WebPictures.isWeb(text) ? text : url.deletingLastPathComponent().appendingPathComponent(text).path
     }
