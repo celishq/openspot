@@ -35,7 +35,7 @@ struct SheetPartsView: View {
     private static let narrowGap: CGFloat = 2
     private static let markValueWidth: CGFloat = 36
     private static let symbolWidth: CGFloat = 22
-    private static let metricFont = Font.system(size: 24, weight: .semibold, design: .rounded).monospacedDigit()
+    private static let numberFont = Font.system(size: 24, weight: .semibold, design: .rounded).monospacedDigit()
 
     private var shape: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
@@ -159,8 +159,8 @@ struct SheetPartsView: View {
         case .list(let items, let value):
             list(part, items: items, value: value)
                 .overlay(alignment: .topTrailing) { cornerMark(part, frame) }
-        case .metric:
-            metric(part)
+        case .number:
+            number(part)
         case .chart(let points):
             chart(points)
         case .image(let path):
@@ -478,10 +478,10 @@ struct SheetPartsView: View {
         }
     }
 
-    private func metric(_ part: SpotPart) -> some View {
+    private func number(_ part: SpotPart) -> some View {
         VStack(alignment: part.look == .bare ? .trailing : .leading, spacing: SpotType.lineGap) {
-            SpotMetricText(part: part)
-                .font(Self.metricFont)
+            SpotNumberText(part: part)
+                .font(Self.numberFont)
                 .foregroundStyle(SpotTheme.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)

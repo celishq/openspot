@@ -93,7 +93,7 @@ final class CardFaceTests: XCTestCase {
         XCTAssertEqual(answer.answers.map(\.run), ["1234.5"])
         XCTAssertEqual(answer.answers.first?.title, "1,234.5")
         XCTAssertEqual(answer.answers.first?.card?.face.answerSize, .large)
-        XCTAssertEqual(answer.answers.first?.card?.face.parts.last?.control, .metric("1,234.5"))
+        XCTAssertEqual(answer.answers.first?.card?.face.parts.last?.control, .number("1,234.5"))
     }
 
     func testAnAnswerCardTakesTheWordForEnterFromItsOpenButton() {
@@ -106,9 +106,9 @@ final class CardFaceTests: XCTestCase {
         let price = SpotOutput(text: "grid.large=a\n\nnumber=a\nvalue=13.46\ndisplay=$13.46\nunit=$\n").parts.first
         let plain = SpotOutput(text: "grid.large=a\n\nnumber=a\nvalue=14\n").parts.first
 
-        XCTAssertEqual(price?.metricPieces.map(\.text), ["$", "13.46"])
-        XCTAssertEqual(price?.metricPieces.map(\.isUnit), [true, false])
-        XCTAssertEqual(plain?.metricPieces.map(\.text), ["14"])
+        XCTAssertEqual(price?.numberPieces.map(\.text), ["$", "13.46"])
+        XCTAssertEqual(price?.numberPieces.map(\.isUnit), [true, false])
+        XCTAssertEqual(plain?.numberPieces.map(\.text), ["14"])
         XCTAssertEqual(SpotOutput(text: "number=a\nvalue=1\nunit=kg\n").partFaults, [])
     }
 

@@ -402,7 +402,7 @@ final class SheetPartsTests: XCTestCase {
     func testANumberShowsItsValueLargeWithItsTitleAsTheLabel() throws {
         let part = try XCTUnwrap(SpotOutput(text: "grid=cpu cpu\ngrid=cpu cpu\n\nnumber=cpu\nvalue=42%\ntitle=CPU\n").parts.first)
 
-        XCTAssertEqual(part.control, .metric("42%"))
+        XCTAssertEqual(part.control, .number("42%"))
         XCTAssertEqual(part.title, "CPU")
         XCTAssertEqual(MetricValue(output: SpotOutput(text: "number=cpu\nvalue=42%\ntitle=CPU\n")), MetricValue(title: "42%", detail: "CPU"))
     }
