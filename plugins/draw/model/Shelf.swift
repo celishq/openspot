@@ -24,6 +24,13 @@ struct Shelf {
         }.sorted { $0.edited > $1.edited }
     }
 
+    /// The boards whose title holds the words, ignoring case and accents. Empty words match each board.
+    func entries(matching words: String) -> [Entry] {
+        let words = words.trimmingCharacters(in: .whitespaces)
+        guard !words.isEmpty else { return entries }
+        return entries.filter { $0.title.range(of: words, options: [.caseInsensitive, .diacriticInsensitive]) != nil }
+    }
+
     /// Gives a board a new title. A title of only spaces changes nothing.
     func rename(_ file: URL, to title: String) throws {
         let title = title.trimmingCharacters(in: .whitespacesAndNewlines)

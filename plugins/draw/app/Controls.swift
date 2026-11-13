@@ -305,6 +305,42 @@ final class Drawer: ObservableObject {
     @Published var picking = Picking()
     /// Whether the list takes the keys, after a click in it.
     @Published var focused = false
+    /// Whether the search field shows, and its words.
+    @Published var searching = false
+    @Published var query = ""
+}
+
+/// The search field of the boards, which takes the keys when it shows. Escape clears it and closes it.
+struct Search: View {
+    @ObservedObject var drawer: Drawer
+    var wide = false
+    @FocusState private var typing: Bool
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+            TextField("Search boards", text: $drawer.query)
+                .textFieldStyle(.plain)
+                .focused($typing)
+                .onKeyPress(.escape) {
+                    drawer.query = ""
+                    withAnimation(.spring(duration: 0.3, bounce: 0.1)) { drawer.searching = wide }
+                    return .handled
+                }
+            if !drawer.query.isEmpty {
+                Button { drawer.query = "" } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .font(.system(size: wide ? 15 : 13))
+        .padding(.horizontal, wide ? 14 : 9)
+        .frame(height: wide ? 40 : 30)
+        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: wide ? 12 : 8, style: .continuous))
+        .onAppear { typing = true }
+        .onChange(of: drawer.searching) { _, now in if now { typing = true } }
+    }
 }
 
 /// The button beside the window buttons that shows the list of boards, on a small rounded back.
@@ -341,12 +377,22 @@ struct Sidebar: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("Boards").font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
-                Spacer()
+            HStack(spacing: 2) {
+                if drawer.searching {
+                    Search(drawer: drawer)
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                } else {
+                    Text("Boards").font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
+                        .padding(.leading, 8)
+                        .transition(.opacity)
+                    Spacer()
+                    Knob(symbol: "magnifyingglass", help: "Search  ⌘F", below: true) {
+                        withAnimation(.spring(duration: 0.3, bounce: 0.1)) { drawer.searching = true }
+                    }
+                }
                 Knob(symbol: "plus", help: "New board  ⌘N", below: true, action: make)
             }
-            .padding(.leading, 8)
+            .frame(height: 34)
             ScrollView {
                 VStack(spacing: 2) {
                     ForEach(entries) { entry in
@@ -385,13 +431,14 @@ struct Sidebar: View {
             if !drawer.picking.picked.contains(studio.file) || drawer.picking.picked.count == 1 { drawer.picking.reset(to: studio.file) }
         }
         .onChange(of: drawer.changes) { _, _ in reload() }
+        .onChange(of: drawer.query) { _, _ in reload() }
         .onChange(of: drawer.naming) { _, file in
             if let file, let entry = entries.first(where: { $0.file == file }) { startNaming(entry) }
         }
     }
 
     private func reload() {
-        entries = shelf.entries
+        entries = shelf.entries(matching: drawer.query)
     }
 
     /// Moves the pick with an arrow key, and shows the board it lands on when it picks one alone.
@@ -420,7 +467,7 @@ struct Sidebar: View {
     }
 
     private func row(_ entry: Shelf.Entry) -> some View {
-        let picked = drawer.picking.picked.contains(entry.file)
+        let picked = drawer.picking.picked.contains(entry.file) && (!tabs.home || drawer.focused)
         return HStack(spacing: 10) {
             Group {
                 if let picture = NSImage(contentsOf: entry.picture) {

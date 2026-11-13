@@ -76,9 +76,21 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         window.contentView = root
     }
 
-    /// Lays the canvas and the bars of the board that shows.
+    /// Lays the canvas and the bars of the board that shows, or the start page with no tab open.
     private func stageUp() {
         stage.subviews.forEach { $0.removeFromSuperview() }
+        if tabs.home {
+            let home = bar(Home(drawer: drawer, shelf: Shelf(folder: studio.file.deletingLastPathComponent()), open: { [weak self] in self?.show($0) }, make: { [weak self] in self?.make() }, trash: { [weak self] in self?.trash($0) }, rename: { [weak self] file in
+                self?.show(file)
+                self?.renameBoard(nil)
+            }), in: stage)
+            NSLayoutConstraint.activate([
+                home.leadingAnchor.constraint(equalTo: stage.leadingAnchor), home.trailingAnchor.constraint(equalTo: stage.trailingAnchor),
+                home.topAnchor.constraint(equalTo: stage.topAnchor, constant: 56), home.bottomAnchor.constraint(equalTo: stage.bottomAnchor)
+            ])
+            window.title = "Draw"
+            return
+        }
         let studio = studio
         studio.gone = { [weak self, weak studio] in
             guard let self, let studio else { return }
@@ -106,25 +118,22 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     /// Shows a board in its tab, or in a new tab when it is not open.
     func show(_ file: URL) {
-        guard file.standardizedFileURL != studio.file.standardizedFileURL else { return }
-        canvas.endEditing()
-        studio.save()
+        guard !tabs.shows(file) else { return }
+        if !tabs.home {
+            canvas.endEditing()
+            studio.save()
+        }
         withAnimation(.spring(duration: 0.3, bounce: 0.12)) { tabs.show(file) }
         stageUp()
     }
 
-    /// Closes a board's tab, and Draw with the last one.
+    /// Closes a board's tab. After the last tab, the start page shows.
     func close(_ studio: Studio) {
-        if studio === self.studio { canvas.endEditing() }
+        if studio === self.studio, !tabs.home { canvas.endEditing() }
         if FileManager.default.fileExists(atPath: studio.file.path) { studio.save() }
         let shown = self.studio
-        var closed = false
-        withAnimation(.spring(duration: 0.3, bounce: 0.12)) { closed = tabs.close(studio) }
-        guard closed else {
-            NSApp.terminate(nil)
-            return
-        }
-        if tabs.current !== shown { stageUp() }
+        withAnimation(.spring(duration: 0.3, bounce: 0.12)) { tabs.close(studio) }
+        if tabs.home || tabs.current !== shown { stageUp() }
     }
 
     /// Makes a new board beside the others and shows it in a new tab.
@@ -155,23 +164,16 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
-    /// Moves a board, its picture and its images to the Trash, and closes its tab. With no other tab open, another board
-    /// shows first, or a new one.
+    /// Moves boards, their pictures and their images to the Trash, and closes their tabs.
     func trash(_ files: [URL]) {
         let shelf = Shelf(folder: studio.file.deletingLastPathComponent())
-        let gone = Set(files.map(\.standardizedFileURL))
         for file in files {
-            guard let open = tabs.studio(for: file) else { continue }
-            if tabs.studios.count == 1 {
-                guard let next = shelf.entries.first(where: { !gone.contains($0.file.standardizedFileURL) })?.file ?? (try? shelf.make()) else { return }
-                show(next)
-            }
-            close(open)
+            if let open = tabs.studio(for: file) { close(open) }
         }
         for file in files {
             try? shelf.discard(file) { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }
         }
-        drawer.picking.reset(to: studio.file)
+        if !tabs.home { drawer.picking.reset(to: studio.file) }
         drawer.changes += 1
     }
 
@@ -179,17 +181,17 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         trash([file])
     }
 
-    /// Trashes the boards picked in the list while it takes the keys, or else the board that shows.
+    /// Trashes the boards picked in the list or on the start page while it takes the keys, or else the board that shows.
     @objc func trashBoard(_ sender: Any?) {
-        if drawer.open, drawer.focused, !drawer.picking.picked.isEmpty {
+        if drawer.open || tabs.home, drawer.focused, !drawer.picking.picked.isEmpty {
             trash(Array(drawer.picking.picked))
-        } else {
+        } else if !tabs.home {
             trash(studio.file)
         }
     }
 
     @objc func revealBoard(_ sender: Any?) {
-        NSWorkspace.shared.activateFileViewerSelecting([studio.file])
+        NSWorkspace.shared.activateFileViewerSelecting([tabs.home ? studio.file.deletingLastPathComponent() : studio.file])
     }
 
     @objc func newBoard(_ sender: Any?) {
@@ -197,7 +199,14 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     @objc func closeBoard(_ sender: Any?) {
-        close(studio)
+        if !tabs.home { close(studio) }
+    }
+
+    /// Opens the search: on the start page its field, or else the list of boards with its field.
+    @objc func findBoards(_ sender: Any?) {
+        if !tabs.home, !drawer.open { toggleBoards(nil) }
+        drawer.searching = false
+        DispatchQueue.main.async { [self] in withAnimation(.spring(duration: 0.3, bounce: 0.1)) { drawer.searching = true } }
     }
 
     /// Shows the list of boards with the name of this board ready to change.
@@ -231,13 +240,13 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
-        canvas.endEditing()
+        if !tabs.home { canvas.endEditing() }
         for studio in tabs.studios where FileManager.default.fileExists(atPath: studio.file.path) { studio.save() }
         NSApp.terminate(nil)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        canvas.endEditing()
+        if !tabs.home { canvas.endEditing() }
         for studio in tabs.studios where FileManager.default.fileExists(atPath: studio.file.path) { studio.save() }
     }
 
@@ -279,6 +288,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
             item("New Board", #selector(Desk.newBoard(_:)), "n"),
             item("Rename Board…", #selector(Desk.renameBoard(_:)), "r"),
             item("Show in Finder", #selector(Desk.revealBoard(_:)), "r", [.command, .option]),
+            item("Find Board…", #selector(Desk.findBoards(_:)), "f"),
             .separator(),
             item("Move to Trash", #selector(Desk.trashBoard(_:)), "\u{8}"),
             .separator(),

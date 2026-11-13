@@ -53,6 +53,17 @@ final class DrawShelfTests: XCTestCase {
         XCTAssertEqual(trashed.sorted(), ["a.assets", "a.json", "a.png"])
     }
 
+    func testASearchFindsBoardsByAnyPartOfTheTitleIgnoringCaseAndAccents() throws {
+        for (id, title) in [("a", "Café flows"), ("b", "Launch plan"), ("c", "Old cafe")] {
+            try Board(title: title).save(to: folder.appendingPathComponent("\(id).json"))
+        }
+        let shelf = Shelf(folder: folder)
+
+        XCTAssertEqual(Set(shelf.entries(matching: "CAFE").map(\.title)), ["Café flows", "Old cafe"])
+        XCTAssertEqual(shelf.entries(matching: "plan").map(\.title), ["Launch plan"])
+        XCTAssertEqual(shelf.entries(matching: "  ").count, 3)
+    }
+
     func testANewBoardIsAnEmptyUntitledBoardOnTheShelf() throws {
         let shelf = Shelf(folder: folder)
 
