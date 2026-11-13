@@ -1,13 +1,12 @@
 import Foundation
 
 /// The link to a JavaScript spot that runs inside the app (protocol: Modes). Each call runs on the thread of the script, which loads at
-/// the first call (A26). The main thread waits 2 ms for its frame, and a later frame lands in a later turn (protocol: Modes). A stopped
+/// the first call (A26). The main thread waits 2 ms for its frame, and a later frame lands in a later turn (protocol: Modes). The
+/// answers of all such spots to one text share one wait of 2 ms. A stopped
 /// call that has not run never runs, and one that ran changes nothing. Each call goes in the call log. A change of the
 /// file loads it again at the next call or scan.
 @MainActor
 final class InlineLink: ScriptLink {
-    private static let frameWait: DispatchTimeInterval = .milliseconds(2)
-
     weak var run: SpotRun?
     let holdsScript = false
     let keepsState = false
@@ -42,10 +41,18 @@ final class InlineLink: ScriptLink {
         run.track(made)
         let begin = Date()
         current(for: run).send(inline)
-        let outcome = inline.wait(Self.frameWait) { outcome in
-            Task { @MainActor in self.take(outcome, of: call, made, begin: begin) }
+        let wait = { (deadline: DispatchTime) in
+            if DispatchTime.now() < deadline { self.runs.frameWaits += 1 }
+            let outcome = inline.wait(until: deadline) { outcome in
+                Task { @MainActor in self.take(outcome, of: call, made, begin: begin) }
+            }
+            if let outcome { self.take(outcome, of: call, made, begin: begin) }
         }
-        if let outcome { take(outcome, of: call, made, begin: begin) }
+        if case .ask(.answer) = call.purpose, runs.answerWaits != nil {
+            runs.answerWaits?.append(wait)
+        } else {
+            wait(.now() + runs.frameWait)
+        }
         return true
     }
 

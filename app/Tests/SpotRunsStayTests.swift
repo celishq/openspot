@@ -746,4 +746,101 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the parts") { sheet.panel != nil }
         XCTAssertEqual(arrivals, 1)
     }
+
+    // MARK: Bounds
+
+    func testTheRecordOfALongCallOfAStayingScriptKeepsOnlyTheFramesTheLogShows() async throws {
+        runs = SpotRuns(now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50), log: CallLog(folder: folder.appendingPathComponent("logs"), limit: 2_000))
+        nonisolated(unsafe) var kept: [Int] = []
+        runs.onCall = { record, _ in if record.arguments.first == "go" { kept.append(record.frames.count) } }
+        try script(header: "mode=stay", #"""
+        while IFS= read -r line; do
+          case "$line" in
+            call=*) id=${line#call=}; name= ;;
+            arg=*) [ -n "$name" ] || name=${line#arg=} ;;
+            '')
+              if [ "$name" = go ]; then
+                printf 'call=%s\n---\n' "$id"
+                i=0; while [ $i -lt 300 ]; do printf 'title=Frame %s of the long call\n---\n' "$i"; i=$((i+1)); done
+                printf 'end=%s\n---\n' "$id"
+              else
+                printf 'button=go\ntitle=Go\nscope=spot\n\nrow=a\ntitle=A\n\nend=%s\n---\n' "$id"
+              fi
+              name= ;;
+          esac
+        done
+        """#)
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the action") { sheet.spot.actions.count == 1 }
+
+        sheet.run(try XCTUnwrap(sheet.spot.actions.first), item: nil)
+
+        try await wait("the record") { !kept.isEmpty }
+        XCTAssertLessThan(kept[0], 30)
+    }
+
+    func testStoppedSearchesOfAStayingScriptLeaveNoCallBehind() async throws {
+        try script(header: "mode=stay\non=sheet.text", #"""
+        n=0
+        while IFS= read -r line; do
+          case "$line" in
+            call=*) id=${line#call=} ;;
+            '')
+              n=$((n+1))
+              if [ $n -eq 1 ]; then printf 'row=a\ntitle=A\n\nend=%s\n---\n' "$id"; else printf 'row=b\ntitle=B\n---\n'; fi
+              ;;
+          esac
+        done
+        """#)
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 }
+        let link = try XCTUnwrap(sheet.link as? StayLink)
+
+        for round in 1...150 {
+            sheet.list.search("t\(round)")
+            sheet.ask()
+            try await wait("the picture of search \(round)") { link.sent.keys.max().map(link.pictured.contains) == true }
+        }
+
+        XCTAssertLessThanOrEqual(link.sent.count, 1)
+        XCTAssertLessThanOrEqual(link.pictured.count, 1)
+        XCTAssertLessThanOrEqual(link.dropped.count, StayLink.droppedLimit)
+    }
+
+    func testALateAnswerToACallPastTheLimitOfStoppedCallsChangesNothing() async throws {
+        let last = StayLink.droppedLimit + 3
+        try script(header: "mode=stay\non=sheet.text", #"""
+        while IFS= read -r line; do
+          case "$line" in
+            call=*) id=${line#call=} ;;
+            '')
+              if [ "$id" = 1 ]; then printf 'row=a\ntitle=A\n\nend=1\n---\n'; fi
+              if [ "$id" = \#(last) ]; then printf 'end=2\n\nrow=old\ntitle=Old\n---\ntoast=done\n---\n'; id=; fi
+              ;;
+          esac
+        done
+        """#)
+        let sheet = try sheet()
+        nonisolated(unsafe) var toasts: [String] = []
+        let report = sheet.onReport
+        sheet.onReport = {
+            if case .toast(let text) = $0 { toasts.append(text) }
+            report($0)
+        }
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 }
+
+        for round in 2...last {
+            sheet.list.search("t\(round)")
+            sheet.ask()
+        }
+
+        try await wait("the late answer") { toasts == ["done"] }
+        XCTAssertEqual(sheet.list.all.map(\.run), ["a"])
+    }
 }

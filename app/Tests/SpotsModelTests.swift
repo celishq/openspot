@@ -1158,6 +1158,40 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.visible.map(\.id), ["mood"])
     }
 
+    func testAFrameThatKeepsTheTextOfACardBuildsNoSearchedItems() async throws {
+        try script("mood", header: "title=Calm\non=panel.open", "printf 'title=Stormy\nvalue=%s\n' \"$(date +%N)\"")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        let sheet = try XCTUnwrap(model.sheets["mood"])
+        try await wait("the read title") { sheet.state.title == "Stormy" && sheet.answered != nil }
+        model.searchText = "s"
+        let builds = model.spotListBuilds
+        let answered = sheet.answered
+
+        sheet.read(need: .change)
+        try await wait("the next answer") { sheet.answered != answered && sheet.answered != nil }
+        model.searchText = "st"
+
+        XCTAssertEqual(model.spotListBuilds, builds)
+        XCTAssertEqual(model.visible.map(\.id), ["mood"])
+    }
+
+    func testAFrameOfAKeySheetThatKeepsItsKeysReadsNoConfig() async throws {
+        try script("move", header: "title=Move\n\nbutton=left\ntitle=Left side", ":")
+        model.reload()
+        let sheet = try XCTUnwrap(model.sheets["move"])
+        sheet.read(need: .change)
+        try await wait("the keys") { sheet.answered != nil }
+        let holds = host.held.count
+        let answered = sheet.answered
+
+        sheet.read(need: .change)
+        try await wait("the next answer") { sheet.answered != answered && sheet.answered != nil }
+
+        XCTAssertEqual(host.held.count, holds)
+    }
+
     /// Shows the panel with a spot that answers the main search for text that starts with a digit.
     private func showAnswers(slow: String = "none") throws {
         let body = #"case "$OPENSPOT_VALUE" in \#(slow)) sleep 0.5 ;; esac; case "$1" in read) [ -n "$OPENSPOT_VALUE" ] && printf 'row=%s\ntitle=Is %s\ndetail=Read %s\n' "$OPENSPOT_VALUE" "$OPENSPOT_VALUE" "$OPENSPOT_VALUE" ;; open) printf 'toast=Picked %s\n' "$2" ;; esac"#

@@ -108,6 +108,43 @@ final class SpotUsageTests: SpotRunsCase {
         XCTAssertEqual(SpotUsage(folder: stats, at: day).counts["a"]?.runs, 1)
     }
 
+    func testAChangeIsNotWrittenBeforeItsPauseOfAMinute() async throws {
+        let usual = SpotUsage(folder: stats, at: day)
+        let other = folder.appendingPathComponent("other", isDirectory: true)
+        let sooner = SpotUsage(folder: other, at: day, pause: 5.5)
+
+        usual.called(spot("a", "Alpha"), seconds: 1, isFailure: false, at: day)
+        sooner.called(spot("a", "Alpha"), seconds: 1, isFailure: false, at: day)
+
+        for _ in 0..<1_000 where !FileManager.default.fileExists(atPath: other.appendingPathComponent("2026-11-11.json").path) {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: other.appendingPathComponent("2026-11-11.json").path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: file("2026-11-11").path))
+    }
+
+    func testTheCountsJustAfterANewDayHoldTheDayThatEnded() {
+        let usage = SpotUsage(folder: stats, at: day, pause: 60)
+        usage.called(spot("a", "Alpha"), seconds: 1, isFailure: false, at: day)
+        let next = day.addingTimeInterval(86_400)
+        usage.called(spot("a", "Alpha"), seconds: 1, isFailure: false, at: next)
+
+        let days = usage.days(2, at: next)
+
+        XCTAssertEqual(days.map(\.day), ["2026-11-12", "2026-11-11"])
+        XCTAssertEqual(days.last?.spots["a"]?.runs, 1)
+    }
+
+    func testTheMacGoingToSleepWritesTheDay() throws {
+        runs = SpotRuns(now: { [unowned self] in self.time }, stats: stats)
+        runs.usage.called(spot("a", "Alpha"), seconds: 1, isFailure: false, at: time)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: stats.path))
+
+        runs.raise(.sleep)
+
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: stats.path).count, 1)
+    }
+
     func testACallWritesNoFileAtOnce() throws {
         let usage = SpotUsage(folder: stats, at: day, pause: 60)
 
@@ -118,11 +155,13 @@ final class SpotUsageTests: SpotRunsCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: file("2026-11-11").path))
     }
 
-    func testANewDayStartsANewFile() throws {
+    func testANewDayStartsANewFile() async throws {
         let usage = SpotUsage(folder: stats, at: day, pause: 60)
         usage.called(spot("a", "Alpha"), seconds: 1, isFailure: false, at: day)
 
         usage.called(spot("a", "Alpha"), seconds: 1, isFailure: true, at: day.addingTimeInterval(86_400))
+
+        try await wait("the file of the day that ended") { FileManager.default.fileExists(atPath: self.file("2026-11-11").path) }
 
         XCTAssertEqual(SpotUsage(folder: stats, at: day).counts["a"]?.runs, 1)
         XCTAssertEqual(usage.counts["a"]?.failures, 1)

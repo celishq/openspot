@@ -7,6 +7,8 @@ import Foundation
 public enum SpotEvent: Equatable, Sendable {
     case panel
     case wake
+    /// The Mac goes to sleep: the counts of the day are written.
+    case sleep
     case clock
     case query(String)
     case named(String, value: String?, readsEachSpot: Bool = false)

@@ -23,6 +23,8 @@ public final class SpotRuns {
     public let readLimit: TimeInterval
     /// The time with no call after which an inline spot lets go of its context and its thread (A26).
     let inlineIdle: TimeInterval
+    /// The most time that the main thread waits for the frames of JavaScript spots (protocol: Modes).
+    let frameWait: DispatchTimeInterval
     /// What each spot cost and used, day by day (protocol: Stats).
     public nonisolated let usage: SpotUsage
     /// Whether each process of a spot runs in Careful mode, with only what its uses name (protocol: Trust). A change starts each staying
@@ -39,12 +41,14 @@ public final class SpotRuns {
     @ObservationIgnored let now: () -> Date
     @ObservationIgnored private let stopPause: TimeInterval
     @ObservationIgnored let tickPause: Duration
-    /// The time between two looks at the clipboard, while a spot lists `clipboard`.
+    /// The time between two looks at the clipboard with the panel open, while a spot lists `clipboard`.
     @ObservationIgnored let clipboardPause: Duration
     /// What raises the events of the Mac, once the app gives it.
     @ObservationIgnored var source: (any Mac)?
     /// The looks at the clipboard, which run only while a spot lists `clipboard`.
     @ObservationIgnored var clipboardWatch: Task<Void, Never>?
+    /// The count of the clipboard at the last look, or nil while nothing looks.
+    @ObservationIgnored var clipboardSeen: Int?
     /// Whether the app quit, after which nothing starts.
     @ObservationIgnored private(set) var hasQuit = false
     @ObservationIgnored private let recent: (String) -> [String]
@@ -63,13 +67,18 @@ public final class SpotRuns {
     @ObservationIgnored var nextRead: TimeInterval?
     /// Which `answers` patterns match the text of the main search.
     @ObservationIgnored var answerMatches = AnswerMatches()
-    @ObservationIgnored private var processes: [ScriptProcess] = []
+    @ObservationIgnored private(set) var processes: [ScriptProcess] = []
     /// The API in the app, which `openspot.call` of a JavaScript spot asks, or nil to run the `openspot` command.
     @ObservationIgnored public var api: CommandAPI?
     /// The record of each call that runs once, or nil to keep none.
     @ObservationIgnored private let log: CallLog?
     /// Hears each call that ends, quiet ones too, with the reason of a read, such as the playground that shows each call.
     @ObservationIgnored public var onCall: ((CallLog.Record, ReadReason?) -> Void)?
+    /// The number of waits for the frame of a JavaScript spot that began before their deadline, so that they could block.
+    @ObservationIgnored var frameWaits = 0
+    /// The waits for the answers of JavaScript spots to a text of the main search, which `ask` sends to each spot first and
+    /// then waits for together, or nil outside of it.
+    @ObservationIgnored var answerWaits: [(DispatchTime) -> Void]?
     /// The builds of Swift scripts, which each process runs once they are ready.
     @ObservationIgnored private let swift: SwiftProgram
 
@@ -83,6 +92,7 @@ public final class SpotRuns {
         recent: @escaping (String) -> [String] = { _ in [] },
         prepare: @escaping ([SpotItem], [String]) async -> Void = { _, _ in },
         inlineIdle: TimeInterval = 30,
+        frameWait: DispatchTimeInterval = .milliseconds(2),
         log: CallLog? = nil,
         stats: URL? = nil,
         swift: SwiftProgram = SwiftProgram(),
@@ -93,6 +103,7 @@ public final class SpotRuns {
         self.swift = swift
         usage = SpotUsage(folder: stats, at: now(), now: now)
         self.inlineIdle = inlineIdle
+        self.frameWait = frameWait
         self.readLimit = readLimit
         self.opening = opening
         self.now = now
@@ -302,13 +313,13 @@ public final class SpotRuns {
         call.halt = halt
         let id = spot.id
         let begin = Date()
-        Task { [weak self, log] in
+        Task { [weak self] in
             var end = ScriptCall.End.ended
             var printed: [String] = []
             do {
                 for try await frame in stream {
                     guard !call.isStopped else { break }
-                    if let log { log.add(frame, to: &printed) } else if self?.onCall != nil { printed.append(frame) }
+                    self?.add(frame, to: &printed)
                     guard let output = await self?.intake(frame, of: id), !call.isStopped else { break }
                     call.take(output)
                     await onFrame(call, frame, output)
@@ -317,6 +328,7 @@ public final class SpotRuns {
                 end = .failed(error)
             }
             let ending: ScriptCall.End = call.isStopped ? .stopped : end
+            self?.dropFinished()
             if let self { usage.called(spot, seconds: Date().timeIntervalSince(begin), isFailure: { if case .failed = ending { true } else { false } }(), at: now()) }
             if let process {
                 self?.record(spot, action, input: input, frames: printed + (process.failedFrame.map { [$0] } ?? []), errors: process.errors, end: ending, reason: reason, started: call.started, begin: begin)
@@ -324,6 +336,12 @@ public final class SpotRuns {
             await onEnd(call, ending)
         }
         return call
+    }
+
+    /// Adds a frame that a call printed to the frames of its record: within the limit of the call log, whole when only
+    /// `onCall` hears the call, and not at all when nothing records it.
+    func add(_ frame: String, to frames: inout [String]) {
+        if let log { log.add(frame, to: &frames) } else if onCall != nil { frames.append(frame) }
     }
 
     /// Keeps the record of a call that ended in the call log, unless it is a quiet one or a call of a spot that uses the
@@ -345,10 +363,12 @@ public final class SpotRuns {
         log.write(record)
     }
 
-    /// A JavaScript spot of these runs, which loads at its first call and counts the CPU time of its thread (A26).
+    /// A JavaScript spot of these runs, which loads at its first call and counts the CPU time of its thread (A26). A timed
+    /// spot keeps its context for one and a half times its read interval.
     func inline(_ spot: Spot, limit: TimeInterval? = nil) -> InlineScript {
         let id = spot.id
-        return InlineScript(spot: spot, api: api, tokens: tokens, careful: isCareful ? spot.uses : nil, limit: limit ?? readLimit, idle: inlineIdle) { [usage] seconds in
+        let idle = max(inlineIdle, (spot.read?.seconds ?? 0) * 1.5)
+        return InlineScript(spot: spot, api: api, tokens: tokens, careful: isCareful ? spot.uses : nil, limit: limit ?? readLimit, idle: idle) { [usage] seconds in
             usage.add(ProcessTime(cpu: seconds, wakeups: 0), to: id, at: usage.now())
         }
     }
@@ -494,7 +514,12 @@ public final class SpotRuns {
     }
 
     private func keep(_ process: ScriptProcess) {
-        processes.removeAll { !$0.needsFinish }
+        dropFinished()
         processes.append(process)
+    }
+
+    /// Lets go of each process that a quit need not wait for, once the output of one ends.
+    func dropFinished() {
+        processes.removeAll { !$0.needsFinish }
     }
 }

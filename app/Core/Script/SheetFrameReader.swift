@@ -21,8 +21,40 @@ public struct SheetFrameReader: Sendable {
 
     public init() {}
 
-    /// Takes the next chunk, and returns each frame it completes.
+    /// Takes the next chunk, and returns each frame it completes. A chunk with no escape code and none open is split at
+    /// each new line by `memchr`.
     public mutating func read(_ data: Data) -> [String] {
+        guard escape == .none else { return readEscaped(data) }
+        return data.withUnsafeBytes { raw -> [String]? in
+            guard let base = raw.baseAddress else { return [] }
+            guard memchr(base, 0x1B, raw.count) == nil else { return nil }
+            var frames: [String] = []
+            var start = 0
+            while start < raw.count, let found = memchr(base + start, 0x0A, raw.count - start) {
+                let end = base.distance(to: UnsafeRawPointer(found))
+                line.append(contentsOf: UnsafeRawBufferPointer(rebasing: raw[start..<end]))
+                endLine(into: &frames)
+                start = end + 1
+            }
+            line.append(contentsOf: UnsafeRawBufferPointer(rebasing: raw[start...]))
+            return frames
+        } ?? readEscaped(data)
+    }
+
+    /// Ends the line that it keeps: a mark ends the frame, and any other line joins it.
+    private mutating func endLine(into frames: inout [String]) {
+        let text = String(decoding: line, as: UTF8.self)
+        line.removeAll(keepingCapacity: true)
+        if text == Self.mark {
+            frames.append(frame)
+            frame = ""
+        } else {
+            frame += text + "\n"
+        }
+    }
+
+    /// Takes a chunk byte by byte, through each escape code.
+    private mutating func readEscaped(_ data: Data) -> [String] {
         var frames: [String] = []
         for byte in data {
             switch escape {
@@ -47,14 +79,7 @@ public struct SheetFrameReader: Sendable {
                 if byte == 0x1B {
                     escape = .start
                 } else if byte == UInt8(ascii: "\n") {
-                    let text = String(decoding: line, as: UTF8.self)
-                    line.removeAll(keepingCapacity: true)
-                    if text == Self.mark {
-                        frames.append(frame)
-                        frame = ""
-                    } else {
-                        frame += text + "\n"
-                    }
+                    endLine(into: &frames)
                 } else {
                     line.append(byte)
                 }

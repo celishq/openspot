@@ -101,6 +101,29 @@ final class SpotRunTests: XCTestCase {
         XCTAssertFalse(changed)
     }
 
+    func testARepeatedFrameTellsNoReader() async throws {
+        let sheet = try make("printf 'detail=Same\\nvalue=3\\n\\nswitch=power\\nvalue=true\\n\\nrow=a\\ntitle=A\\n'", read: .panel)
+        nonisolated(unsafe) var frames = 0
+        let report = sheet.onReport
+        sheet.onReport = {
+            if case .frame = $0 { frames += 1 }
+            report($0)
+        }
+        sheet.read()
+        try await wait("the first answer") { frames == 1 }
+        nonisolated(unsafe) var told: [String] = []
+        withObservationTracking { _ = sheet.spot } onChange: { told.append("spot") }
+        withObservationTracking { _ = sheet.reading } onChange: { told.append("reading") }
+        withObservationTracking { _ = sheet.state } onChange: { told.append("state") }
+        withObservationTracking { _ = sheet.list } onChange: { told.append("list") }
+        withObservationTracking { _ = sheet.failure } onChange: { told.append("failure") }
+
+        sheet.read(need: .change)
+        try await wait("the second answer") { frames == 2 }
+
+        XCTAssertEqual(told, [])
+    }
+
     func testANewValueOfAPartTellsNoReaderOfTheRectOrTheKindOfTheParts() async throws {
         let sheet = try make("printf 'field=a\\ntitle=Name\\nvalue=%s\\n\\ntext=b\\ntitle=B\\n' \"$2\"")
         sheet.open {}

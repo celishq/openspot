@@ -7,6 +7,7 @@ extension SpotRuns {
         switch event {
         case .panel: openPanel()
         case .wake: wake()
+        case .sleep: usage.flush()
         case .clock: tick()
         case .query(let text): ask(text)
         case .named(let name, let value, let readsEachSpot): read(name, value, readsEachSpot: readsEachSpot)
@@ -31,6 +32,11 @@ extension SpotRuns {
         watchClipboard()
     }
 
+    /// The time between two looks at the clipboard: its pause with the panel open, and twice that with the panel closed.
+    var clipboardWait: Duration {
+        isPanelOpen ? clipboardPause : clipboardPause * 2
+    }
+
     /// Whether the clipboard is looked at.
     var watchesClipboard: Bool {
         clipboardWatch != nil
@@ -38,22 +44,30 @@ extension SpotRuns {
 
     /// Looks at the count of the clipboard after each pause while something wants a spot that lists `clipboard.change`, and raises
     /// `clipboard.change` when it changes. Each change of what is wanted calls it, through `updateClock`. After a quit nothing looks.
-    func watchClipboard() {
+    /// With `looksNow` it looks before its first pause. A pause has a tolerance of half itself with the panel open, and of all of
+    /// itself with the panel closed.
+    func watchClipboard(looksNow: Bool = false) {
         let isWanted = sheets.values.contains { $0.isWanted && $0.spot.read?.has(.event(SpotEvent.clipboard)) == true }
         guard let source, isWanted, !hasQuit else {
             clipboardWatch?.cancel()
             clipboardWatch = nil
+            clipboardSeen = nil
             return
         }
         guard clipboardWatch == nil else { return }
-        var count = source.clipboardCount
-        clipboardWatch = Task { [weak self, weak source, clipboardPause] in
+        if clipboardSeen == nil { clipboardSeen = source.clipboardCount }
+        clipboardWatch = Task { [weak self, weak source] in
+            var looks = looksNow
             while !Task.isCancelled {
-                try? await Task.sleep(for: clipboardPause, tolerance: clipboardPause / 2)
+                if !looks, let self {
+                    let wait = clipboardWait
+                    try? await Task.sleep(for: wait, tolerance: isPanelOpen ? wait / 2 : wait)
+                }
+                looks = false
                 guard !Task.isCancelled, let self, let source else { return }
                 let next = source.clipboardCount
-                guard next != count else { continue }
-                count = next
+                guard next != clipboardSeen else { continue }
+                clipboardSeen = next
                 raise(.named(SpotEvent.clipboard, value: nil))
             }
         }
@@ -65,6 +79,11 @@ extension SpotRuns {
         let wasOpen = isPanelOpen
         isPanelOpen = true
         if !wasOpen { sheets.values.forEach { $0.panelOpened() } }
+        if !wasOpen, clipboardWatch != nil {
+            clipboardWatch?.cancel()
+            clipboardWatch = nil
+            watchClipboard(looksNow: true)
+        }
         raise(.clock)
         readPanel()
         for id in placed {
@@ -101,12 +120,17 @@ extension SpotRuns {
     }
 
     /// Sends the text to each spot whose `search.text` pattern matches it, and an empty text to the others, which drops their
-    /// answers (protocol: Places).
+    /// answers (protocol: Places). The answers of JavaScript spots share one wait of 2 ms, after the text reaches each spot.
     private func ask(_ query: String) {
         let text = query.trimmingCharacters(in: .whitespaces)
+        answerWaits = []
         for sheet in sheets.values {
             guard let pattern = sheet.spot.answers else { continue }
             sheet.answer(!text.isEmpty && answerMatches.matches(pattern, text) ? text : "")
         }
+        let waits = answerWaits ?? []
+        answerWaits = nil
+        let deadline = DispatchTime.now() + frameWait
+        waits.forEach { $0(deadline) }
     }
 }

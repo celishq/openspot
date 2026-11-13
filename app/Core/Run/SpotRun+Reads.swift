@@ -37,7 +37,7 @@ extension SpotRun {
             variables: action == read ? reason.variables : [:],
             purpose: .ask(.read(generation: panel?.generation, reports: need != .clock, query: query, tells: reason != .panel))
         ))
-        if isSent { list.beginLoading() }
+        if isSent, !list.holdsItems || list.hasFailed { list.beginLoading() }
     }
 
     /// Takes new text in the search. A newer search stops the older one, and the script hears after a pause.
