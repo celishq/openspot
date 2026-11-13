@@ -21,6 +21,23 @@ final class SnippetsSpotTests: SampleSpotsCase {
         }
     }
 
+    func testAReadStartsOnlyJq() async throws {
+        let snippets = try XCTUnwrap(try scan.spots.first { $0.name == "Snippets" })
+        try await withPrivateHome { folder in
+            let new = try await action("new", of: snippets)
+            var draft = FormDraft(form: try await snippets.form(new, item: nil, timeout: 5))
+            draft.set("A", for: "title")
+            draft.set("B", for: "content")
+            _ = try await snippets.submit(new, item: nil, draft: draft, timeout: 5)
+            try "#!/bin/sh\necho cat >> '\(folder.path)/started'\nexec /bin/cat \"$@\"\n".writeScript(to: folder.appendingPathComponent("tools/cat"))
+
+            let items = try await snippets.items(timeout: 5).items
+
+            XCTAssertEqual(items.map(\.title), ["A"])
+            XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("started").path))
+        }
+    }
+
     func testSnippetsKeepsExactTextThroughNewCopyEditPasteAndDelete() async throws {
         let snippets = try XCTUnwrap(try scan.spots.first { $0.name == "Snippets" })
         let text = "Say \"héllo\" \\ now\n\tthen $HOME\n"
