@@ -155,11 +155,7 @@ extension SpotsModel {
             return SpotDock.Item(spot: entry.spot, origin: origin, state: entry.isOnGrid ? .onGrid : .searchOnly, size: entry.size, publication: dockPublications[entry.id])
         }
         let off = dockOff.map { SpotDock.Item(spot: $0.spot, origin: $0.origin, size: choice.size(of: $0.id) ?? defaultArrangement.size(of: $0.id), publication: dockPublications[$0.id]) }
-        var next = SpotDock(items: on + off)
-        next.query = dock.query
-        next.section = dock.section
-        next.opened = dock.opened
-        next.isSheetOut = dock.isSheetOut
+        let next = SpotDock(items: on + off, query: dock.query, section: dock.section, opened: dock.opened, isSheetOut: dock.isSheetOut)
         if next != dock { dock = next }
     }
 
