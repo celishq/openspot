@@ -49,21 +49,15 @@ struct SpotActionMenuView: View, @MainActor Equatable {
             onPress(index)
         } label: {
             HStack(spacing: SpotTokens.padding) {
-                Text(menu.title(of: row, isRunning: call != nil))
-                    .font(SpotType.body)
-                    .foregroundStyle(isConfirming ? SpotTheme.onConfirm : SpotTheme.ink)
-                    .lineLimit(1)
+                title(of: row, isRunning: call != nil, isConfirming: isConfirming)
                 Spacer(minLength: 0)
-                if let call {
-                    SpotWorkMark(call: call, side: SpotTokens.workMark)
-                }
                 Text(row.keyLabel)
                     .font(SpotType.detail)
                     .modifier(SpotSecondaryText())
             }
             .padding(.horizontal, SpotTokens.padding - SpotTokens.menuPadding + 4)
             .frame(height: SpotTokens.menuRowHeight)
-            .background(isConfirming ? SpotTheme.confirm : .clear, in: shape)
+            .spotFill(isActive: call != nil, otherwise: isConfirming ? SpotTheme.confirm : .clear, in: shape)
             .modifier(MenuRing(index: index, selection: selection ?? { [menu] in menu.selected }, isConfirming: isConfirming, shape: shape))
             .contentShape(shape)
         }
@@ -74,6 +68,17 @@ struct SpotActionMenuView: View, @MainActor Equatable {
     /// The field that searches the rows.
     private var field: some View {
         SpotSteadyField(prompt: "Search actions", text: menu.query, isSettled: isSettled, onSearch: onSearch)
+    }
+
+    /// The words of a row, in the colour of a confirm while it asks for one.
+    @ViewBuilder
+    private func title(of row: ActionMenu.Row, isRunning: Bool, isConfirming: Bool) -> some View {
+        let text = Text(menu.title(of: row, isRunning: isRunning)).font(SpotType.body).lineLimit(1)
+        if isConfirming {
+            text.foregroundStyle(SpotTheme.onConfirm)
+        } else {
+            text
+        }
     }
 
     /// Whether two menus show the same rows. The selection counts only where the menu reads it from its own value.

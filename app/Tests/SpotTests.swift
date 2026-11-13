@@ -87,7 +87,7 @@ final class SpotTests: XCTestCase {
         let opened = try await command.opened(timeout: 5)
 
         XCTAssertEqual(opened.spot.kind, .list)
-        XCTAssertEqual(opened.spot.primary, "Select")
+        XCTAssertEqual(opened.spot.openTitle, "Select")
         XCTAssertEqual(opened.spot.actions.map(\.id), ["copy"])
         XCTAssertEqual(opened.state.on, true)
     }

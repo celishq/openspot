@@ -47,9 +47,9 @@ final class SpotHeaderTests: XCTestCase {
         let open = try XCTUnwrap(try SpotFile(file: opens, id: "opens")?.spots.first)
 
         XCTAssertTrue(run.pressRuns)
-        XCTAssertEqual(run.primaryTitle(hasItem: false), "Run")
+        XCTAssertEqual(run.openTitle(hasItem: false), "Run")
         XCTAssertFalse(open.pressRuns)
-        XCTAssertEqual(open.primaryTitle(hasItem: false), "Open")
+        XCTAssertEqual(open.openTitle(hasItem: false), "Open")
         XCTAssertThrowsError(try SpotFile(file: unknown, id: "unknown")) { error in
             XCTAssertTrue((error as? SpotError)?.reason.contains("Use open or sheet") == true, "\(error)")
         }

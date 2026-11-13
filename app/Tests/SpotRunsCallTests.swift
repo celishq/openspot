@@ -61,14 +61,14 @@ final class SpotRunsCallTests: SpotRunsCase {
         sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
         try await wait("the value") { sheet.reading.value?.title == "3" && sheet.calls.isEmpty }
         XCTAssertFalse(sheet.reading.isStale)
-        XCTAssertEqual(runs.trayMarks.first?.mark.isStale, false)
+        XCTAssertEqual(runs.menuBarMarks.first?.mark.isStale, false)
 
         time += 5
         runs.raise(.clock)
 
         try await wait("the dim") { sheet.reading.isStale }
         XCTAssertEqual(sheet.reading.value?.title, "3")
-        XCTAssertEqual(runs.trayMarks.first?.mark.isStale, true)
+        XCTAssertEqual(runs.menuBarMarks.first?.mark.isStale, true)
         XCTAssertEqual(failures, [])
     }
 

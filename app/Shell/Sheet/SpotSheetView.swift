@@ -112,7 +112,8 @@ struct SpotSheetView: View {
                 glyph
                 ZStack(alignment: .topLeading) {
                     if showsCardWords {
-                        words(subtitle: entry.shownState.subtitle, isOnSolid: showsFill)
+                        words(subtitle: entry.shownState.subtitle)
+                            .environment(\.spotIsOnSolid, showsFill)
                             .frame(width: max(cardWordsWidth, 0), alignment: .leading)
                             .morph(progress, opacity: SheetMorph.cardLook(at:))
                     }
@@ -128,20 +129,20 @@ struct SpotSheetView: View {
     }
 
     /// The title and the second line of the header, in one copy of its words.
-    private func words(subtitle: String?, selectedName: Bool = false, isOnSolid: Bool = false) -> some View {
+    private func words(subtitle: String?, selectedName: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: SpotType.lineGap) {
             Text(form?.form.title ?? entry.shownState.title)
                 .font(SpotType.title)
                 .frame(height: SpotType.titleLine)
-                .foregroundStyle(isOnSolid ? SpotTheme.onSolid : SpotTheme.ink)
+                .modifier(SpotInk())
                 .lineLimit(1)
             if form == nil, selectedName {
-                SelectedName(list: list, selection: selection, fallback: entry.shownState.subtitle, isOnSolid: isOnSolid)
+                SelectedName(list: list, selection: selection, fallback: entry.shownState.subtitle)
             } else if form == nil, let subtitle {
                 Text(subtitle)
                     .font(SpotType.detail)
                     .frame(height: SpotType.detailLine)
-                    .modifier(SpotSecondaryText(isOnSolid: isOnSolid))
+                    .modifier(SpotSecondaryText())
                     .lineLimit(1)
             }
         }
@@ -206,7 +207,8 @@ struct SpotSheetView: View {
         ZStack {
             SpotGlyph(entry: entry)
             if glyphDiffersOnCard {
-                SpotGlyph(entry: entry, isOnSolid: showsFill, showsDisc: !(isSmallCard || showsFill))
+                SpotGlyph(entry: entry, showsDisc: !(isSmallCard || showsFill))
+                    .environment(\.spotIsOnSolid, showsFill)
                     .morph(progress, opacity: SheetMorph.cardLook(at:))
             }
         }
@@ -290,7 +292,6 @@ private struct SelectedName: View {
     let list: ItemList
     let selection: () -> Int
     let fallback: String?
-    let isOnSolid: Bool
 
     var body: some View {
         let index = selection()
@@ -298,7 +299,7 @@ private struct SelectedName: View {
             Text(name)
                 .font(SpotType.detail)
                 .frame(height: SpotType.detailLine)
-                .modifier(SpotSecondaryText(isOnSolid: isOnSolid))
+                .modifier(SpotSecondaryText())
                 .lineLimit(1)
         }
     }

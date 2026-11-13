@@ -15,6 +15,11 @@ extension SpotsModel {
         }
     }
 
+    /// The symbol the menu bar icon shows in place of itself: a pressed command's, else the toast's that shows, else none.
+    public func menuBarSymbol(during toast: ToastKind?) -> String? {
+        flashSymbol ?? toast?.symbol
+    }
+
     public func moveSelection(dx: Int, dy: Int) {
         if let next = SpotGrid().neighbour(of: selected, in: placements, dx: dx, dy: dy) {
             selected = next
@@ -202,13 +207,13 @@ extension SpotsModel {
     }
 
     /// The marks of the scripts that show in the menu bar, by script.
-    public var trayMarks: [(id: String, mark: TrayMark)] {
-        runs.trayMarks
+    public var menuBarMarks: [(id: String, mark: MenuBarMark)] {
+        runs.menuBarMarks
     }
 
-    /// What the Openspot item shows for running work.
-    public var workMark: TrayMark? {
-        runs.workMark
+    /// What runs, in words, which the Openspot item shows while work runs.
+    public var runningSummary: String? {
+        runs.runningSummary
     }
 
     /// Opens the panel with the spot of the oldest running work selected, or closes it when it already shows that. A search
@@ -238,7 +243,7 @@ extension SpotsModel {
 
     /// Opens the list of a metric that is also a list, or else selects the widget that places it. Closes the panel
     /// when it already shows that.
-    public func openFromTray(_ id: String) {
+    public func openFromMenuBar(_ id: String) {
         let opens = entries.first { $0.id == id && $0.kind.opensSheet }?.id
         if isShown, opens == nil || openList == opens {
             host.dismiss()

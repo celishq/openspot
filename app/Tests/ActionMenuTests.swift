@@ -7,15 +7,15 @@ final class ActionMenuTests: XCTestCase {
     private let new = CommandAction(id: "new", title: "New", scope: .spot, isForm: true)
     private let item = SpotItem(title: "One", run: "1")
 
-    private func command(kind: SpotKind = .list, primary: String? = "Copy") -> Spot {
-        Spot(id: "a/A", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: kind, primary: primary, actions: [paste, delete, new])
+    private func command(kind: SpotKind = .list, openTitle: String? = "Copy") -> Spot {
+        Spot(id: "a/A", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: kind, openTitle: openTitle, actions: [paste, delete, new])
     }
 
     private func long() throws -> ActionMenu {
         let actions = ["Open in Zed", "Open in Cursor", "Use Zed by default", "Use Cursor by default", "Show in Finder"].enumerated().map {
             CommandAction(id: "a\($0.offset)", title: $0.element)
         } + [CommandAction(id: "copy", title: "Copy path", key: ActionKey(text: "cmd+shift+c"))]
-        return try XCTUnwrap(ActionMenu(spot: Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .list, primary: "Open", actions: actions), item: item))
+        return try XCTUnwrap(ActionMenu(spot: Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .list, openTitle: "Open", actions: actions), item: item))
     }
 
     func testALongMenuOpensOnItsFirstRow() throws {
@@ -53,9 +53,9 @@ final class ActionMenuTests: XCTestCase {
     func testAMenuOfThreeRowsSearchesAndAMenuOfTwoDoesNot() throws {
         let three = try XCTUnwrap(ActionMenu(spot: command(), item: item))
         let two = try XCTUnwrap(ActionMenu(
-            spot: Spot(id: "b", name: "B", url: URL(fileURLWithPath: "/bin/true"), kind: .list, primary: "Copy", actions: [paste, delete]),
+            spot: Spot(id: "b", name: "B", url: URL(fileURLWithPath: "/bin/true"), kind: .list, openTitle: "Copy", actions: [paste, delete]),
             item: item,
-            showsPrimary: false
+            showsOpen: false
         ))
 
         XCTAssertTrue(three.isSearchable)
@@ -162,23 +162,23 @@ final class ActionMenuTests: XCTestCase {
     }
 
     func testAnOpenListWithNoSelectedItemLeavesOutOpen() throws {
-        let menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, showsPrimary: false))
+        let menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, showsOpen: false))
 
         XCTAssertEqual(menu.rows.map(\.title), ["New"])
     }
 
     func testTheHintNamesTheFirstKeysAndTheMenu() throws {
-        let keyed = Spot(id: "a/A", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .list, primary: "Copy", actions: [paste, delete, new])
+        let keyed = Spot(id: "a/A", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .list, openTitle: "Copy", actions: [paste, delete, new])
 
         XCTAssertEqual(ActionMenu(spot: keyed, item: item)?.hint, "⏎ Copy   ⌘⏎ Paste   ⌘K Actions")
-        XCTAssertEqual(ActionMenu(spot: keyed, item: nil, showsPrimary: false)?.hint, "⌘K Actions")
+        XCTAssertEqual(ActionMenu(spot: keyed, item: nil, showsOpen: false)?.hint, "⌘K Actions")
     }
 
     func testEachKindOfSpotSaysWhatEnterDoes() {
-        XCTAssertEqual(command(kind: .launch).primaryTitle(hasItem: false), "Run")
-        XCTAssertEqual(command(kind: .toggle).primaryTitle(hasItem: false), "Toggle")
-        XCTAssertEqual(command(kind: .list).primaryTitle(hasItem: false), "Open")
-        XCTAssertNil(command(kind: .slider).primaryTitle(hasItem: false))
+        XCTAssertEqual(command(kind: .launch).openTitle(hasItem: false), "Run")
+        XCTAssertEqual(command(kind: .toggle).openTitle(hasItem: false), "Toggle")
+        XCTAssertEqual(command(kind: .list).openTitle(hasItem: false), "Open")
+        XCTAssertNil(command(kind: .slider).openTitle(hasItem: false))
     }
 
     func testAnActionThatConfirmsNeedsASecondPress() throws {
@@ -230,7 +230,7 @@ final class ActionMenuTests: XCTestCase {
         let asking = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .launch, actions: [
             CommandAction(id: "wipe", title: "Wipe", scope: .spot, confirm: "Wipe all?")
         ])
-        var menu = try XCTUnwrap(ActionMenu(spot: asking, item: nil, showsPrimary: false))
+        var menu = try XCTUnwrap(ActionMenu(spot: asking, item: nil, showsOpen: false))
 
         XCTAssertEqual(menu.press(isRunning: true)?.action?.id, "wipe")
         XCTAssertNil(menu.confirming)

@@ -23,7 +23,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case menu([Option], value: String?)
         case text(String, placeholder: String?, isReadOnly: Bool)
         case list([Option], value: String?)
-        case metric(String)
+        /// A big number as it shows, and the part of it that draws faint, such as its currency.
+        case number(String, unit: String?)
         case chart([Double])
         case image(String)
         case progress(level: Double)
@@ -71,6 +72,12 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let mark: MetricValue?
     /// Each key of its block with its values, which a spot's own view draws. Only a `view` block keeps them.
     public let values: [String: [String]]
+
+    /// One run of a number's shown value, and whether it is the unit.
+    public struct NumberPiece: Equatable, Sendable {
+        public let text: String
+        public let isUnit: Bool
+    }
 
     /// The kinds of block that make a part, in the order of the table in Blocks of the protocol.
     public static let kinds = ["text", "number", "gauge", "graph", "picture", "view", "switch", "slider", "field", "choice", "hotkey", "button", "section"]
@@ -124,7 +131,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
                 control = .menu(options, value: block.value("value"))
             }
         case "number":
-            control = .metric(block.value("display") ?? block.value("value") ?? "")
+            control = .number(block.value("display") ?? block.value("value") ?? "", unit: block.value("unit").flatMap { $0.isEmpty ? nil : $0 })
         default:
             control = .none
         }
@@ -147,6 +154,17 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         )
     }
 
+    /// The shown value of a number in runs, with the last place of its unit apart. A value without its unit is one run.
+    public var numberPieces: [NumberPiece] {
+        guard case .number(let number, let unit) = control else { return [] }
+        guard let unit, let range = number.range(of: unit, options: .backwards) else { return [NumberPiece(text: number, isUnit: false)] }
+        return [
+            NumberPiece(text: String(number[..<range.lowerBound]), isUnit: false),
+            NumberPiece(text: unit, isUnit: true),
+            NumberPiece(text: String(number[range.upperBound...]), isUnit: false),
+        ].filter { !$0.text.isEmpty }
+    }
+
     /// The good, warn or bad tone of a text, which colours its words. Another part shows its tone in its own way.
     public var textTone: MetricValue.Tone? {
         kind == "text" ? tone : nil
@@ -162,7 +180,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     /// The value of its control, as the script reads it. A line with no control has none.
     public var value: String? {
         switch control {
-        case .none, .metric, .chart, .image, .progress: nil
+        case .none, .number, .chart, .image, .progress: nil
         case .toggle(let on): on ? "true" : "false"
         case .slider(let level, _, _): String(Int(level.rounded()))
         case .swatches(_, let value), .menu(_, let value), .list(_, let value): value
@@ -189,7 +207,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public var fillsHeight: Bool {
         if kind == "view" { return true }
         return switch control {
-        case .text, .list, .metric, .chart, .image, .progress: true
+        case .text, .list, .number, .chart, .image, .progress: true
         default: false
         }
     }
@@ -241,7 +259,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     /// Takes a value that the person set.
     public mutating func set(_ value: String) {
         switch control {
-        case .none, .metric, .chart, .image, .progress: break
+        case .none, .number, .chart, .image, .progress: break
         case .list(let items, _): control = .list(items, value: value)
         case .toggle: control = .toggle(value == "true")
         case .slider(_, let low, let high): control = .slider(level: Double(value) ?? low, min: low, max: high)

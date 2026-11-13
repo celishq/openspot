@@ -354,7 +354,7 @@ extension SpotsModel {
         return ActionMenu(
             spot: target.entry.spot,
             item: target.item,
-            showsPrimary: !isOpenList || target.item != nil,
+            showsOpen: !isOpenList || target.item != nil,
             extras: extras(on: target)
         )
     }

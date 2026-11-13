@@ -99,14 +99,14 @@ final class ReposSpotTests: SampleSpotsCase {
             let then = repos.taking(try await repos.items(timeout: 5))
 
             XCTAssertNil(first.pickForm)
-            XCTAssertEqual(first.primary, "Open in Cursor")
+            XCTAssertEqual(first.openTitle, "Open in Cursor")
             XCTAssertEqual(opened, "-a \(cursor.path) \(item.run)\n")
             XCTAssertFalse(first.actions.contains { $0.title.hasPrefix("Use ") })
             XCTAssertEqual(change.scope, .spot)
             XCTAssertTrue(change.isForm)
             XCTAssertEqual(form.soleChoice?.options.map(\.title), ["Cursor", "Zed", "Finder"])
             XCTAssertEqual(try self.read("setting-editor", in: folder), zed.path)
-            XCTAssertEqual(then.primary, "Open in Zed")
+            XCTAssertEqual(then.openTitle, "Open in Zed")
         }
     }
 

@@ -32,6 +32,19 @@ enum CalcCurrency {
         fiat.contains(code)
     }
 
+    /// The symbol to write a currency with: the one of the Mac, or the one of its home country when the Mac writes only its
+    /// code, such as `₴` for `UAH`.
+    static func symbol(of code: String, written: String) -> String {
+        written == code ? homeSymbols[code] ?? written : written
+    }
+
+    /// The shortest symbol that a country writes each currency with, and `₿` for bitcoin.
+    private static let homeSymbols: [String: String] = Locale.availableIdentifiers.reduce(into: ["BTC": "₿"]) { symbols, identifier in
+        let locale = Locale(identifier: identifier)
+        guard let code = locale.currency?.identifier, let symbol = locale.currencySymbol, symbol != code else { return }
+        if symbols[code].map({ symbol.count < $0.count }) ?? true { symbols[code] = symbol }
+    }
+
     /// Whether a code names a currency that leaves no doubt: one of a country, bitcoin or ether. A conversion asks for rates
     /// only with one, so that a word such as `apr` or `pi` stays a date or a sum.
     static func isKnown(_ code: String) -> Bool {

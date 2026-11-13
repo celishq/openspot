@@ -49,7 +49,7 @@ final class SpotsPanel: NSPanel {
     /// With one screen it asks for no window, since the panel can open nowhere else.
     func place(over app: NSRunningApplication?) {
         guard model?.isShown != true || model?.isWarming == true else { return }
-        let screens = NSScreen.screens.map { ScreenPlace.Screen(frame: $0.frame, area: $0.visibleFrame) }
+        let screens = ScreenPlace.Screen.all
         let mainHeight = NSScreen.screens.first?.frame.maxY ?? 0
         let window = screens.count < 2 ? nil : app.flatMap(Self.frontWindow).map { ScreenPlace.frame(ofBounds: $0, mainHeight: mainHeight) }
         guard let origin = ScreenPlace(screens: screens).origin(of: frame.size, window: window, pointer: NSEvent.mouseLocation) else { return }

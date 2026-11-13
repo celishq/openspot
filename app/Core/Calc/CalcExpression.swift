@@ -130,7 +130,14 @@ struct CalcExpression: Sendable {
             index += 1
             guard let exponent = unary() else { return nil }
             operations += 1
-            return Term(value: pow(base.plain, exponent.plain), text: "\(base.text)^\(exponent.text)")
+            return Term(value: pow(base.plain, exponent.plain), text: "\(base.text)\(Self.raised(exponent.text))")
+        }
+
+        /// An exponent of digits as superscript, such as `²⁰`, and any other after a `^`.
+        private static func raised(_ text: String) -> String {
+            let marks: [Character: Character] = ["0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹", "−": "⁻"]
+            guard text.allSatisfy({ marks[$0] != nil }) else { return "^\(text)" }
+            return String(text.compactMap { marks[$0] })
         }
 
         /// A value with the `%` that follows it. A `%` before another value is a remainder, which `multiplicative` reads.

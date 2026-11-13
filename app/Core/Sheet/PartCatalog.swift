@@ -5,7 +5,7 @@ public enum PartCatalog {
     static let keys: Set<String> = [
         "title", "detail", "icon", "min", "max", "color", "value", "display",
         "placeholder", "readonly", "required", "type", "close", "confirm", "scope", "form", "align", "look",
-        "shortcut", "tone"
+        "shortcut", "tone", "unit"
     ]
     /// The kinds whose blocks can hold keys of the spot's own, which a view reads.
     private static let open: Set<String> = ["view"]
