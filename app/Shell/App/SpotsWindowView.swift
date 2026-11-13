@@ -11,7 +11,7 @@ struct SpotsWindowView: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             SpotsView(model: model)
-                .animation(nil) { $0.offset(x: place.panel.x, y: place.panel.y) }
+                .animation(nil) { $0.offset(x: place.panel.x + place.left, y: place.panel.y) }
                 .offset(y: place.lift)
             if let size = place.dock?.size ?? place.storeSize {
                 SpotDockView(model: model, size: size)
@@ -22,9 +22,9 @@ struct SpotsWindowView: View {
                     .animation(nil) { $0.offset(x: place.dock?.minX ?? Self.parked, y: place.dock?.minY ?? Self.parked) }
                     .opacity(place.isOut ? 1 : 0.001)
             }
-            SpotCarriedCard(model: model, panel: place.panel)
+            SpotCarriedCard(model: model, panel: CGPoint(x: place.panel.x + place.left, y: place.panel.y))
                 .environment(\.spotIsShown, model.isShown)
-            SpotTipView(model: model, panel: place.panel)
+            SpotTipView(model: model, panel: CGPoint(x: place.panel.x + place.left, y: place.panel.y))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }

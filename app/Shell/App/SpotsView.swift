@@ -50,7 +50,8 @@ struct SpotsView: View {
             .modifier(SpotScrollEdgeTracker(edges: Binding(get: { fade.edges }, set: { fade.edges = $0 })))
             .modifier(GridFadeMask(fade: fade, height: cardHeight))
             .morph(coversGrid ? 0 : 1, opacity: { SheetMorph.sheetLook(at: $0) })
-            SpotWidthHandles(model: model)
+            .frame(width: wideWidth, height: SpotTokens.panelHeight)
+            .offset(x: -model.sides.leftExtent)
             SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: max(gridHeight, model.menuBackdropHeight), sheetHeight: max(sheetID == nil ? gridHeight : sheetHeight, model.menuBackdropHeight))
                 .modifier(SpotShownFade(isShown: model.isShown))
             if let entry = model.entries.first(where: { $0.id == sheetID }) {
@@ -82,13 +83,18 @@ struct SpotsView: View {
         }
         .onDrop(of: [.fileURL], delegate: SpotAddDrop(model: model))
         .coordinateSpace(name: Self.panelSpace)
-        .frame(width: SpotTokens.panelWidth(columns: model.columns), height: SpotTokens.panelHeight)
+        .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
         .overlayPreferenceValue(SpotMenuAnchor.self, alignment: .topLeading) { item in
             SpotMenuLayer(model: model, item: item, fieldIsInSheet: fieldIsInSheet)
         }
-        .background(softBlur)
+        .background(alignment: .topLeading) {
+            softBlur
+                .frame(width: wideWidth, height: SpotTokens.panelHeight)
+                .offset(x: -model.sides.leftExtent)
+        }
         .environment(\.spotIsShown, model.isShown)
-        .environment(\.spotPanelWidth, SpotTokens.panelWidth(columns: model.columns))
+        .environment(\.spotPanelWidth, wideWidth)
+        .environment(\.spotPanelLeft, model.sides.leftExtent)
         .onChange(of: model.isShown) { _, isShown in
             if !isShown { dropTarget = nil }
         }
@@ -110,16 +116,18 @@ struct SpotsView: View {
     /// How the open sheet pushes the cards of the grid, with the sheet's rect taken into the grid. Its window starts at the
     /// top of the search field, so a card that moves up is gone there.
     private func push(from card: SpotSheetCard) -> SheetPush {
-        let origin = SpotTokens.gridOrigin(scrollOffset: scrollOffset)
-        let window = CGRect(x: -origin.x, y: SpotTokens.halo - origin.y, width: SpotTokens.panelWidth(columns: model.columns), height: SpotTokens.panelHeight - SpotTokens.halo)
+        let origin = SpotTokens.gridOrigin(scrollOffset: scrollOffset, left: model.sides.leftExtent)
+        let window = CGRect(x: -model.sides.leftExtent - origin.x, y: SpotTokens.halo - origin.y, width: wideWidth, height: SpotTokens.panelHeight - SpotTokens.halo)
         return SheetPush(open: card.placement, sheet: sheetRect.offsetBy(dx: -origin.x, dy: -origin.y), window: window)
     }
 
-    /// The open sheet's rect, over its card's columns on a wide grid.
     private var sheetRect: CGRect {
-        let rect = model.formRect ?? rect(of: sheetID)
-        guard model.columns > SpotTokens.columns, let column = SpotSheetCard.of(sheetID, in: model)?.placement.column else { return rect }
-        return rect.offsetBy(dx: SpotTokens.sheetShift(column: column, columns: model.columns), dy: 0)
+        model.formRect ?? rect(of: sheetID)
+    }
+
+    /// The width of the panel with its side panels.
+    private var wideWidth: CGFloat {
+        SpotTokens.panelWidth + model.sides.leftExtent + model.sides.rightExtent
     }
 
     private func rect(of id: String?) -> CGRect {

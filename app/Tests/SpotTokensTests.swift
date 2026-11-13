@@ -2,14 +2,6 @@ import XCTest
 @testable import OpenspotCore
 
 final class SpotTokensTests: XCTestCase {
-    func testASheetOpensOverItsCardsColumnsAndStaysInsideTheGrid() {
-        let step = SpotTokens.cell + SpotTokens.columnGap
-        XCTAssertEqual(SpotTokens.sheetShift(column: 3, columns: 4), 0)
-        XCTAssertEqual(SpotTokens.sheetShift(column: 2, columns: 8), 2 * step)
-        XCTAssertEqual(SpotTokens.sheetShift(column: 7, columns: 8), 4 * step)
-        XCTAssertEqual(SpotTokens.sheetShift(column: 11, columns: 12), 8 * step)
-    }
-
     func testAPictureInARoomOneLineHighIsARowIcon() {
         XCTAssertEqual(SpotTokens.pictureSide(in: CGSize(width: 80, height: 26)), SpotTokens.listIconSize)
         XCTAssertEqual(SpotTokens.pictureSide(in: CGSize(width: 80, height: SpotTokens.listRowHeight)), SpotTokens.listIconSize)

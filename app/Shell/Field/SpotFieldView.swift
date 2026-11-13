@@ -24,7 +24,6 @@ struct SpotFieldView: View {
     /// and the radius of its card. Nil with no sheet with a card, or for the install screen, which grows out of the field.
     var sheet: (morph: SheetMorph, cardRadius: CGFloat)?
     @FocusState private var isFocused: Bool
-    @Environment(\.spotPanelWidth) private var panelWidth
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -44,7 +43,7 @@ struct SpotFieldView: View {
     private var searchField: some View {
         let place = isInSheet ? fieldRowRect : Self.rect
         let top = SpotTokens.halo + (isInSheet ? SpotTokens.sheetFieldDrop - (SpotTokens.rowHeight - SpotTokens.listRowHeight) / 2 : 0)
-        let glyphLeft = SpotTokens.halo + SpotTokens.padding + (isInSheet ? sheetShift + SpotTokens.padding + (SpotTokens.listIconSize - SpotTokens.glyphSize) / 2 : 0)
+        let glyphLeft = SpotTokens.halo + SpotTokens.padding + (isInSheet ? SpotTokens.padding + (SpotTokens.listIconSize - SpotTokens.glyphSize) / 2 : 0)
         return ZStack(alignment: .topLeading) {
             SpotSurface(rect: place, radius: fieldRadius, glass: isInSheet || isInstall ? 0 : 1)
                 .mask { outsideSheet }
@@ -73,9 +72,9 @@ struct SpotFieldView: View {
         }
         .font(SpotType.input)
         .foregroundStyle(SpotTheme.ink)
-        .frame(width: panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
+        .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
         .animation(SpotMotion.fade(isShown: model.isShown)) {
-            $0.scaleEffect(model.isShown ? 1 : MotionTokens.hiddenScale, anchor: UnitPoint(x: Self.rect.midX / panelWidth, y: Self.rect.midY / SpotTokens.panelHeight))
+            $0.scaleEffect(model.isShown ? 1 : MotionTokens.hiddenScale, anchor: UnitPoint(x: 0.5, y: Self.rect.midY / SpotTokens.panelHeight))
         }
     }
 
@@ -86,28 +85,29 @@ struct SpotFieldView: View {
                 .font(SpotType.input)
                 .foregroundStyle(SpotTheme.ink)
             Spacer()
+            SpotRoundButton(symbol: "sidebar.left", label: "Left Panel", look: model.sides.hasLeft ? .strong : .plain) {
+                model.show(.left, !model.sides.hasLeft)
+            }
+            SpotRoundButton(symbol: "sidebar.right", label: "Right Panel", look: model.sides.hasRight ? .strong : .plain) {
+                model.show(.right, !model.sides.hasRight)
+            }
             SpotRoundButton(symbol: "checkmark", label: "Done", look: .strong) { model.endEditing() }
         }
         .padding(.leading, SpotTokens.padding + SpotTokens.glyphInset)
         .padding(.trailing, SpotTokens.padding)
         .frame(width: Self.rect.width, height: Self.rect.height)
         .offset(x: Self.rect.minX, y: Self.rect.minY)
-        .frame(width: panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
+        .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
     }
 
     /// The field's row in an open sheet.
     private var fieldRowRect: CGRect {
         CGRect(
-            x: SpotTokens.halo + sheetShift + SpotTokens.padding,
+            x: SpotTokens.halo + SpotTokens.padding,
             y: SpotTokens.halo + SpotTokens.sheetFieldDrop,
             width: SpotTokens.gridWidth - 2 * SpotTokens.padding,
             height: SpotTokens.listRowHeight
         )
-    }
-
-    /// How far right of the field's place at rest the open sheet lies, on a wide grid.
-    private var sheetShift: CGFloat {
-        (sheet?.morph.sheet.minX ?? SpotTokens.halo) - SpotTokens.halo
     }
 
     /// The width of the field's words, as narrow as its row in a sheet, so that it stays one size.
@@ -116,7 +116,7 @@ struct SpotFieldView: View {
     /// Where the field's words start, at rest and in a sheet.
     private var fieldTextLeft: CGFloat {
         isInSheet
-            ? SpotTokens.halo + sheetShift + 2 * SpotTokens.padding + SpotTokens.listIconSize + Self.gap
+            ? SpotTokens.halo + 2 * SpotTokens.padding + SpotTokens.listIconSize + Self.gap
             : SpotTokens.halo + SpotTokens.padding + SpotTokens.glyphSize + Self.gap
     }
 
@@ -188,12 +188,12 @@ struct SpotFieldView: View {
         return promptWords
             .frame(height: SpotTokens.rowHeight)
             .offset(x: left, y: top)
-            .frame(width: panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
+            .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
             .morph(showsField ? 1 : 0, opacity: { SheetMorph.sheetLook(at: $0) })
             .modifier(SpotShownFade(
                 isShown: model.isShown,
                 hiddenScale: MotionTokens.hiddenScale,
-                anchor: UnitPoint(x: Self.rect.midX / panelWidth, y: (SpotTokens.halo + SpotTokens.rowHeight / 2) / SpotTokens.panelHeight)
+                anchor: UnitPoint(x: 0.5, y: (SpotTokens.halo + SpotTokens.rowHeight / 2) / SpotTokens.panelHeight)
             ))
             .allowsHitTesting(false)
     }
@@ -236,9 +236,8 @@ struct SpotFieldView: View {
         let line = SpotType.inputLine
         let rest = SpotTokens.halo + (SpotTokens.rowHeight - line) / 2
         let drop = SpotTokens.sheetFieldDrop - (SpotTokens.rowHeight - SpotTokens.listRowHeight) / 2
-        let shift = sheetShift
         return { progress in
-            let words = CGRect(x: SpotTokens.halo + shift * CGFloat(progress), y: rest + drop * CGFloat(progress), width: SpotTokens.gridWidth, height: line)
+            let words = CGRect(x: SpotTokens.halo, y: rest + drop * CGFloat(progress), width: SpotTokens.gridWidth, height: line)
             return morph.crossing(of: words, header: header, at: progress)
         }
     }

@@ -36,6 +36,7 @@ struct SpotGridView: View {
         return ZStack(alignment: .topLeading) {
             SpotGridGlass(cards: glass, pressable: openID == nil ? glass : [], size: CGSize(width: SpotTokens.width(columns: model.columns), height: height), lift: model.lift)
             if model.isEditing {
+                SidePanelWells(sides: model.sides, height: placements.filter { $0.top < 2 * SpotTokens.groupTitleBand }.map(\.rect.maxY).max() ?? 0)
                 landing(of: drag, in: placements)
                     .frame(width: SpotTokens.width(columns: model.columns), height: height)
             }
@@ -119,5 +120,26 @@ struct SpotGridView: View {
                 withTransaction(still) { model.dragSpot(entry.id, by: value.translation) }
             }
             .onEnded { model.dropSpot(by: $0.translation) }
+    }
+}
+
+/// The room of each side panel in Edit Spots, as a faint well under its cards, so that a card can be dragged into an empty
+/// side. It is at least one row high.
+private struct SidePanelWells: View, Equatable {
+    let sides: GridSides
+    let height: CGFloat
+
+    var body: some View {
+        let top = SpotTokens.groupTitleBand
+        let shape = RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
+        ZStack(alignment: .topLeading) {
+            ForEach([SpotSide.left, .right].filter(sides.has), id: \.self) { side in
+                shape
+                    .fill(SpotTheme.ink.opacity(SpotTheme.track))
+                    .frame(width: SpotTokens.gridWidth, height: max(height - top, SpotTokens.rowHeight))
+                    .offset(x: CGFloat(sides.firstColumn(of: side)) * (SpotTokens.cell + SpotTokens.columnGap), y: top)
+            }
+        }
+        .allowsHitTesting(false)
     }
 }

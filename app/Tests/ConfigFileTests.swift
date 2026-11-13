@@ -46,18 +46,21 @@ final class ConfigFileTests: XCTestCase {
         XCTAssertEqual(Config(text: "fix_key = \"f\"\n").faults.count, 1)
     }
 
-    func testTheGridHasFourColumnsUntilTheFileAsksForEightOrTwelve() {
-        XCTAssertEqual(Config(text: "").columns, 4)
-        XCTAssertEqual(Config(text: "columns = 12\n").columns, 12)
-        XCTAssertEqual(Config(text: "columns = 6\n").columns, 4)
-        XCTAssertEqual(Config(text: "columns = 6\n").faults, ["config.toml: columns is 4, 8 or 12."])
+    func testTheGridHasNoSidePanelsUntilTheFileAsksForThem() {
+        XCTAssertEqual(Config(text: "").sides, GridSides())
+        XCTAssertEqual(Config(text: "left_panel = true\nright_panel = true\n").sides, GridSides(hasLeft: true, hasRight: true))
+        XCTAssertEqual(Config(text: "left_panel = 1\n").faults, ["config.toml: left_panel is true or false."])
     }
 
-    func testSettingTheColumnsWritesANumber() throws {
-        try file.set("columns", to: 8)
+    func testASpotKeepsItsSidePanel() throws {
+        var arrangement = SpotArrangement()
+        arrangement.set(side: .left, of: "a")
+        arrangement.set(side: .center, of: "b")
+        try file.write(arrangement)
 
-        XCTAssertEqual(try String(contentsOf: file.url, encoding: .utf8), "columns = 8\n")
-        XCTAssertEqual(file.read().columns, 8)
+        XCTAssertEqual(file.read().arrangement.side(of: "a"), .left)
+        XCTAssertNil(file.read().arrangement.side(of: "b"))
+        XCTAssertEqual(Config(text: "[[spots]]\nid = \"a\"\nside = \"up\"\n").faults, ["config.toml: a cannot use the side up."])
     }
 
     func testABadKeyGivesNoKeyAndAFault() {

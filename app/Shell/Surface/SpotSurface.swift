@@ -12,8 +12,10 @@ struct SpotSurface: View {
     var fill = 0.0
     @Environment(\.spotIsShown) private var isShown
     @Environment(\.spotPanelWidth) private var panelWidth
+    @Environment(\.spotPanelLeft) private var left
 
     var body: some View {
+        let rect = rect.offsetBy(dx: left, dy: 0)
         let shape = SpotSurfaceShape(rect: rect, radius: radius)
         ZStack(alignment: .topLeading) {
             SpotBlur(radius: SpotTheme.blur)
@@ -27,6 +29,7 @@ struct SpotSurface: View {
                 .animation(SpotMotion.fade(isShown: isShown), value: isShown)
         }
         .frame(width: panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
+        .offset(x: -left)
         .allowsHitTesting(false)
     }
 }

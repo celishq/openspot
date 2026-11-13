@@ -359,18 +359,28 @@ extension SpotsModel {
         saveArrangement(selecting: id)
     }
 
-    /// Gives the grid this many columns, 4, 8 or 12, and saves it. The panel takes its new width at once, and the cards
-    /// move to their new places.
-    public func setColumns(_ count: Int) {
-        guard count != columns, SpotGrid.columnCounts.contains(count) else { return }
-        do {
-            try files.config.set("columns", to: count)
-            tookOwnWrite()
-        } catch {
-            host.notify("Openspot could not save the columns. \(Self.reason(error))")
+    /// Shows or hides a side panel of the grid, and saves it. A panel that shows is empty, and no card moves. The cards of a
+    /// panel that hides first move to the end of the center's cards, and the panel goes when they land.
+    public func show(_ side: SpotSide, _ isShown: Bool) {
+        guard side != .center, sides.has(side) != isShown else { return }
+        let apply: @MainActor () -> Void = { [self] in
+            do {
+                try files.config.set(side == .left ? "left_panel" : "right_panel", to: isShown)
+                tookOwnWrite()
+            } catch {
+                host.notify("Openspot could not save the panels. \(Self.reason(error))")
+            }
+            var next = sides
+            if side == .left { next.hasLeft = isShown } else { next.hasRight = isShown }
+            sides = next
+            updateVisible()
         }
-        columns = count
-        change(.edit) { updateVisible() }
+        let leaving = isShown ? [] : cards.filter { $0.isOnGrid && $0.side == side }.map(\.id)
+        guard let first = leaving.first else { return apply() }
+        let onGrid = cards.filter(\.isOnGrid).map(\.id).filter { !leaving.contains($0) }
+        arrangement.arrange(onGrid + leaving + cards.filter { !$0.isOnGrid }.map(\.id))
+        leaving.forEach { arrangement.set(side: .center, of: $0) }
+        saveArrangement(selecting: first, landed: apply)
     }
 
     /// Takes the letter for the spot that records: a letter or a digit with no modifier gives it, and Delete takes its letter

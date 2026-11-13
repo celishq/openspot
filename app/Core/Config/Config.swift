@@ -14,8 +14,8 @@ public struct Config: Equatable, Sendable {
     public private(set) var settings: [SpotSetting] = []
     /// Whether each spot's process runs with only what its uses name (protocol: Trust).
     public private(set) var isCareful = false
-    /// How many columns the panel's grid has: 4, 8 or 12.
-    public private(set) var columns = SpotTokens.columns
+    /// The side panels beside the grid's center panel.
+    public private(set) var sides = GridSides()
 
     public init(text: String) {
         let document: TomlDocument
@@ -26,7 +26,7 @@ public struct Config: Equatable, Sendable {
             faults = ["config.toml: \((error as? SpotError)?.reason ?? String(describing: error))"]
             return
         }
-        for key in (Array(document.values.keys) + Array(document.arrays.keys)).sorted() where !["panel_key", "fix_key", "careful", "columns", "spots", "keys", "settings"].contains(key) {
+        for key in (Array(document.values.keys) + Array(document.arrays.keys)).sorted() where !["panel_key", "fix_key", "careful", "left_panel", "right_panel", "spots", "keys", "settings"].contains(key) {
             faults.append("config.toml: \(key) is not a setting.")
         }
         arrangement = SpotArrangement(choices: (document.arrays["spots"] ?? []).compactMap { choice(of: $0) })
@@ -39,10 +39,12 @@ public struct Config: Equatable, Sendable {
         case nil: break
         default: faults.append("config.toml: careful is true or false.")
         }
-        switch document.values["columns"] {
-        case .integer(let count)? where SpotGrid.columnCounts.contains(count): columns = count
-        case nil: break
-        default: faults.append("config.toml: columns is 4, 8 or 12.")
+        for (key, side) in [("left_panel", SpotSide.left), ("right_panel", .right)] {
+            switch document.values[key] {
+            case .boolean(let isOn)?: if side == .left { sides.hasLeft = isOn } else { sides.hasRight = isOn }
+            case nil: break
+            default: faults.append("config.toml: \(key) is true or false.")
+            }
         }
     }
 
@@ -103,11 +105,15 @@ public struct Config: Equatable, Sendable {
             choice.key = ActionKey(text: text)
             if choice.key == nil { faults.append("config.toml: \(id) cannot use the key \(text).") }
         }
+        if case .string(let name)? = table["side"] {
+            choice.side = SpotSide(rawValue: name).flatMap { $0 == .center ? nil : $0 }
+            if choice.side == nil { faults.append("config.toml: \(id) cannot use the side \(name).") }
+        }
         if case .string(let letter)? = table["letter"] {
             choice.letter = letter.isEmpty ? "" : CommandKey(name: letter)?.name
             if choice.letter == nil { faults.append("config.toml: \(id) cannot use the letter \(letter).") }
         }
-        for key in table.keys.sorted() where !["id", "size", "grid", "enabled", "global", "tray", "letter", "key"].contains(key) {
+        for key in table.keys.sorted() where !["id", "size", "grid", "enabled", "global", "tray", "letter", "key", "side"].contains(key) {
             faults.append("config.toml: \(key) is not a setting of a spot.")
         }
         return choice

@@ -10,6 +10,8 @@ final class SpotsPanel: NSPanel {
     private let cover = SpotsCover()
     /// The frame that the window had before Edit Spots grew it.
     private var restFrame: NSRect?
+    /// How far the side panels that the window holds reach right of the center panel.
+    private var appliedRight: CGFloat = 0
     private var pressWatch: Task<Void, Never>?
     private var tap = ModifierTap()
     /// The stage of the trackpad's press: 1 for a click, 2 for a force click.
@@ -53,8 +55,9 @@ final class SpotsPanel: NSPanel {
         let screens = ScreenPlace.Screen.all
         let mainHeight = NSScreen.screens.first?.frame.maxY ?? 0
         let window = screens.count < 2 ? nil : app.flatMap(Self.frontWindow).map { ScreenPlace.frame(ofBounds: $0, mainHeight: mainHeight) }
-        guard let origin = ScreenPlace(screens: screens).origin(of: frame.size, window: window, pointer: NSEvent.mouseLocation) else { return }
-        setFrameOrigin(origin)
+        let center = NSSize(width: frame.width - place.left - appliedRight, height: frame.height)
+        guard let origin = ScreenPlace(screens: screens).origin(of: center, window: window, pointer: NSEvent.mouseLocation) else { return }
+        setFrameOrigin(NSPoint(x: origin.x - place.left, y: origin.y))
     }
 
     /// The bounds of the app's front window, as Core Graphics gives them, or nil when it shows none. They need no permission.
@@ -133,31 +136,32 @@ final class SpotsPanel: NSPanel {
         place.lift = isSettled ? 0 : edit.lift
         place.dock = CGRect(x: edit.dock.minX - whole.minX, y: whole.maxY - edit.dock.maxY, width: edit.dock.width, height: edit.dock.height)
         place.storeSize = edit.dock.size
-        model.dockFrame = place.dock?.offsetBy(dx: -place.panel.x, dy: -place.panel.y)
+        model.dockFrame = place.dock?.offsetBy(dx: -place.panel.x - place.left, dy: -place.panel.y)
         resize(to: whole)
     }
 
-    /// Gives the window the width of the grid's columns, and draws the blur of the new width ahead. The panel keeps its left
-    /// edge, so that its cards stay where they are, and moves in only as far as the screen needs; the next open centres it.
-    /// In Edit Spots it lays the store out again.
-    private func followColumns() {
+    /// Gives the window the room of the side panels, left and right of the center panel, which keeps its place on the
+    /// screen, in one commit with the content. In Edit Spots it lays the store out again. It draws the blur of the new width
+    /// ahead.
+    private func followSides() {
         guard let model else { return }
-        let width = withObservationTracking { SpotTokens.panelWidth(columns: model.columns) } onChange: { [weak self] in
-            Task { @MainActor in self?.followColumns() }
+        let sides = withObservationTracking { model.sides } onChange: { [weak self] in
+            Task { @MainActor in self?.followSides() }
         }
-        let area = screen?.visibleFrame
-        let placed = { (frame: NSRect) in
-            let x = area.map { min(frame.minX, $0.maxX - width) } ?? frame.minX
-            return NSRect(x: x, y: frame.minY, width: width, height: frame.height)
+        let grown = (left: sides.leftExtent - place.left, right: sides.rightExtent - appliedRight)
+        guard grown.left != 0 || grown.right != 0 else { return }
+        let widened = { (frame: NSRect) in
+            NSRect(x: frame.minX - grown.left, y: frame.minY, width: frame.width + grown.left + grown.right, height: frame.height)
         }
-        if let rest = restFrame {
-            guard rest.width != width, let area else { return }
-            restFrame = placed(rest)
+        place.left = sides.leftExtent
+        appliedRight = sides.rightExtent
+        if let rest = restFrame, let area = screen?.visibleFrame {
+            restFrame = widened(rest)
             layOutEditing(in: area, isSettled: true)
-        } else if frame.width != width {
-            resize(to: placed(frame))
+        } else {
+            resize(to: widened(frame))
         }
-        SpotSoftBlur.warm(SpotsView.blurHeights(of: model), width: width)
+        SpotSoftBlur.warm(SpotsView.blurHeights(of: model), width: SpotTokens.panelWidth + sides.leftExtent + sides.rightExtent)
     }
 
     /// Shows the wallpaper over the other apps while the panel shows in Edit Spots, and takes it away when either ends. The
@@ -400,7 +404,7 @@ final class SpotsPanel: NSPanel {
         panel.center()
         panel.followEditing()
         panel.followCover()
-        panel.followColumns()
+        panel.followSides()
         return panel
     }
 }
