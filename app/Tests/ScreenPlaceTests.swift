@@ -19,22 +19,22 @@ final class ScreenPlaceTests: XCTestCase {
         XCTAssertEqual(place.origin(of: float, under: CGPoint(x: -2550, y: -280)), CGPoint(x: -2560, y: -288))
     }
 
-    func testAToastHangsCentredUnderTheMenuBarItem() {
+    func testAToastHangsCentredUnderTheMenuBarItemAsHighAsTheSystemHUD() {
         let toast = CGSize(width: 200, height: 68)
 
-        XCTAssertEqual(place.origin(ofToast: toast, under: CGRect(x: 1000, y: 938, width: 33, height: 29)), CGPoint(x: 916, y: 870))
+        XCTAssertEqual(place.origin(ofToast: toast, inset: 16, under: CGRect(x: 1000, y: 938, width: 33, height: 29)), CGPoint(x: 916, y: 876))
     }
 
     func testAToastUnderAnItemNearTheEdgeStaysWholeOnTheScreen() {
         let toast = CGSize(width: 200, height: 68)
 
-        XCTAssertEqual(place.origin(ofToast: toast, under: CGRect(x: 1450, y: 938, width: 33, height: 29)), CGPoint(x: 1296, y: 870))
+        XCTAssertEqual(place.origin(ofToast: toast, inset: 16, under: CGRect(x: 1450, y: 938, width: 33, height: 29)), CGPoint(x: 1296, y: 876))
     }
 
     func testAToastWithNoItemToHangFromSitsAtTheTopCentreOfTheMainScreen() {
         let toast = CGSize(width: 200, height: 68)
 
-        XCTAssertEqual(place.origin(ofToast: toast, under: nil), CGPoint(x: 648, y: 870))
+        XCTAssertEqual(place.origin(ofToast: toast, inset: 16, under: nil), CGPoint(x: 648, y: 876))
     }
 
     func testThePanelSitsAsACentredWindowSits() {
