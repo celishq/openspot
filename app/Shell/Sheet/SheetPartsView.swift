@@ -22,9 +22,9 @@ struct SheetPartsView: View {
     var menuOpening: () -> SheetParts.MenuOpening? = { nil }
     /// Takes a click into a field, which gives that part the focus.
     var onFocus: (SpotPart) -> Void = { _ in }
-    /// The spot's own view at the size of the area of a `view` component (protocol: Views).
-    /// A spot's own view in the place of a block, with the send that calls the spot with the block's id and a value.
-    var customView: (CGSize, [String: [String]], @escaping (String) -> Void) -> AnyView? = { _, _, _ in nil }
+    /// The source of the spot's own view, which a `view` component draws at the size of its area (protocol: Views).
+    var viewSource: String?
+    var views = SpotViews.shared
     @FocusState private var focus: String?
 
     private static let swatchSize: CGFloat = 22
@@ -137,7 +137,10 @@ struct SheetPartsView: View {
     @ViewBuilder
     private func drawn(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         if part.kind == "view" {
-            customView(frame.rect.size, part.values) { onSet(part, $0) }
+            if let viewSource {
+                SpotCustomView(source: viewSource, values: part.values, card: .square, room: frame.rect.size, views: views) { onSet(part, $0) }
+                    .equatable()
+            }
         } else {
             content(part, frame)
         }

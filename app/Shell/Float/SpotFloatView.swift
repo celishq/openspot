@@ -58,9 +58,7 @@ struct SpotFloatView: View {
                     selection: { run.selection },
                     selectedPart: { run.selectedPart?.id },
                     nudge: { run.nudge },
-                    customView: { room, values, send in
-                        entry.spot.view.map { AnyView(SpotCustomView(source: $0, values: values, card: .square, room: room, views: SpotViews.shared, send: send)) }
-                    }
+                    viewSource: entry.spot.view
                 )
                 .task(id: parts.parts.contains { $0.kind == "view" } ? entry.spot.view : nil) {
                     if let view = entry.spot.view, parts.parts.contains(where: { $0.kind == "view" }) { await SpotViews.shared.load(view) }

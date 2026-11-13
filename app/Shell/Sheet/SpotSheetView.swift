@@ -80,9 +80,7 @@ struct SpotSheetView: View {
                         nudge: { model.sheets[entry.id]?.nudge ?? SheetParts.Nudge.rest },
                         menuOpening: { model.sheets[entry.id]?.menuOpening },
                         onFocus: { model.focusPart($0) },
-                        customView: { room, values, send in
-                            entry.spot.view.map { AnyView(SpotCustomView(source: $0, values: values, card: .square, room: room, views: SpotViews.shared, send: send)) }
-                        }
+                        viewSource: entry.spot.view
                     )
                     .task(id: panel.parts.contains { $0.kind == "view" } ? entry.spot.view : nil) {
                         if let view = entry.spot.view, panel.parts.contains(where: { $0.kind == "view" }) { await SpotViews.shared.load(view) }
