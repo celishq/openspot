@@ -64,6 +64,7 @@ final class IconSpotTests: BuiltInCase {
         XCTAssertEqual(changes.last, .spots(["weather"]))
         XCTAssertTrue(path.hasSuffix(".svg"), path)
         XCTAssertEqual(picture.components(separatedBy: "<rect").count - 1, 2)
+        XCTAssertTrue(picture.contains("viewBox=\"-4.5 -4.5 18 18\""), picture)
         XCTAssertEqual(reopened, dots)
         XCTAssertNil(saved)
         XCTAssertFalse(FileManager.default.fileExists(atPath: path))
