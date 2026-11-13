@@ -13,6 +13,7 @@ final class SpotPlaygroundHost: SpotsHost {
     func dismiss() {}
     func show() {}
     func present() {}
+    func takeFocus() {}
     func notify(_ text: String) { onNote(text) }
     func notify(_ text: String, fix: URL) { onNote(text) }
     func confirm(_ text: String) { onNote(text) }

@@ -52,13 +52,16 @@ final class SpotsModelTests: XCTestCase {
     func testThePanelKeepsItsFocusWhileTouchIDAsksAndTakesItBackAfter() async throws {
         host.show()
         try await wait("the panel to show") { model.isShown }
+        let shows = host.shows
 
         let allowed = await model.allows("show your account words")
 
         XCTAssertTrue(allowed)
         XCTAssertEqual(host.heldDuringAsks, [true])
         XCTAssertFalse(model.holdsFocus)
-        XCTAssertEqual(host.presents, 1)
+        XCTAssertEqual(host.focusTakes, 1)
+        XCTAssertEqual(host.presents, 0)
+        XCTAssertEqual(host.shows, shows)
     }
 
     func testAKeyThatTheAPISetsHoldsTheKeysAgainAndBuildsNoGrid() throws {

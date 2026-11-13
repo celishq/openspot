@@ -13,6 +13,7 @@ final class SpotQuietHost: SpotsHost {
     func dismiss() {}
     func show() {}
     func present() {}
+    func takeFocus() {}
     func notify(_ text: String) {}
     func notify(_ text: String, fix: URL) {}
     func confirm(_ text: String) {}

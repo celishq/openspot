@@ -92,6 +92,11 @@ extension OpenspotApp: SpotsHost {
         SpotGridDrop.paths(on: .general)
     }
 
+    func takeFocus() {
+        NSApp.activate(ignoringOtherApps: true)
+        panel?.makeKeyAndOrderFront(nil)
+    }
+
     /// Asks for Touch ID or the Mac password, which then counts for 5 minutes. A Mac with neither allows it.
     func allows(_ reason: String) async -> Bool {
         if let passed = Self.touchIDPassed, Date().timeIntervalSince(passed) < Self.touchIDReuse { return true }

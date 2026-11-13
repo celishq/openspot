@@ -398,7 +398,7 @@ public final class SpotsModel {
         isAsking = true
         let allowed = await host.allows(reason)
         isAsking = false
-        if isShown { host.present() }
+        if isShown { host.takeFocus() }
         return allowed
     }
 

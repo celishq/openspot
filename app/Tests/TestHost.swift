@@ -46,6 +46,11 @@ final class TestHost: SpotsHost {
     }
 
     var presents = 0
+    var focusTakes = 0
+
+    func takeFocus() {
+        focusTakes += 1
+    }
     /// Whether the panel held its focus during each ask for Touch ID.
     var heldDuringAsks: [Bool] = []
 

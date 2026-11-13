@@ -10,6 +10,8 @@ public protocol SpotsHost: AnyObject {
     func show()
     /// Shows the panel and makes it key, as a review or a first launch does.
     func present()
+    /// Makes the shown panel key again, with none of the steps of a show.
+    func takeFocus()
     func notify(_ text: String)
     func notify(_ text: String, fix: URL)
     func confirm(_ text: String)
