@@ -23,7 +23,7 @@ final class IconSpotTests: BuiltInCase {
         file.read().setting("icon", of: "weather")
     }
 
-    private let empty = String(repeating: ".", count: 81)
+    private let empty = String(repeating: ".", count: 49)
 
     func testItShowsNowhereAndTakesPictures() throws {
         let icon = try icon
@@ -47,7 +47,7 @@ final class IconSpotTests: BuiltInCase {
     }
 
     func testAStrokeKeepsADraftThatSaveDrawsAsTheIconAndResetRemoves() async throws {
-        let dots = "0" + String(repeating: ".", count: 79) + "2"
+        let dots = "0" + String(repeating: ".", count: 47) + "2"
         try await call(["draw", "weather"])
 
         try await call(["drawer", dots])
@@ -64,7 +64,7 @@ final class IconSpotTests: BuiltInCase {
         XCTAssertEqual(changes.last, .spots(["weather"]))
         XCTAssertTrue(path.hasSuffix(".svg"), path)
         XCTAssertEqual(picture.components(separatedBy: "<rect").count - 1, 2)
-        XCTAssertTrue(picture.contains("viewBox=\"-2.25 -2.25 13.5 13.5\""), picture)
+        XCTAssertTrue(picture.contains("viewBox=\"-1.75 -1.75 10.5 10.5\""), picture)
         XCTAssertEqual(reopened, dots)
         XCTAssertNil(saved)
         XCTAssertFalse(FileManager.default.fileExists(atPath: path))
@@ -72,7 +72,7 @@ final class IconSpotTests: BuiltInCase {
 
     func testResetIconInTheMenuGivesTheSpotItsOwnIconBackWithNoSheet() async throws {
         try await call(["draw", "weather"])
-        try await call(["drawer", "0" + String(repeating: ".", count: 80)])
+        try await call(["drawer", "0" + String(repeating: ".", count: 48)])
         try await call(["save"])
         let path = try XCTUnwrap(saved)
 
@@ -101,7 +101,7 @@ final class IconSpotTests: BuiltInCase {
 
     func testClearEmptiesTheDrawingAndSaveThenKeepsNoIcon() async throws {
         try await call(["draw", "weather"])
-        try await call(["drawer", "0" + String(repeating: ".", count: 80)])
+        try await call(["drawer", "0" + String(repeating: ".", count: 48)])
         try await call(["save"])
         XCTAssertNotNil(saved)
 
