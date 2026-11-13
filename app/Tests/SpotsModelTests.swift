@@ -391,8 +391,11 @@ final class SpotsModelTests: XCTestCase {
         try script("party", header: "title=Party\nicon=🎉", "")
         try script("plain", header: "title=Plain", "")
         model.reload()
-        model.rebuildEntries()
+        let first = model.entries
+        try script("plain", header: "title=Plain again", "")
+        model.reload()
 
+        XCTAssertNotEqual(model.entries, first)
         XCTAssertEqual(host.cardGlyphs, [["🎉"]])
     }
 
