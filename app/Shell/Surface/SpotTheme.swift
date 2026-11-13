@@ -37,6 +37,8 @@ struct SpotTheme {
     let chipStrength: Double
     let controlStrength: Double
     let trackStrength: Double
+    /// The strength of ink in the dashed outline of an empty place that takes a drop.
+    let outlineStrength: Double
 
     static let dark = SpotTheme(
         ink: .white,
@@ -59,7 +61,8 @@ struct SpotTheme {
         discStrength: 0.2,
         chipStrength: 0.25,
         controlStrength: 0.2,
-        trackStrength: 0.2
+        trackStrength: 0.2,
+        outlineStrength: 0.35
     )
 
     static let light = SpotTheme(
@@ -83,7 +86,8 @@ struct SpotTheme {
         discStrength: 0,
         chipStrength: 0.1,
         controlStrength: 0.09,
-        trackStrength: 0.12
+        trackStrength: 0.12,
+        outlineStrength: 0.45
     )
 
     static func palette(for appearance: NSAppearance) -> SpotTheme {
@@ -125,6 +129,7 @@ struct SpotTheme {
     @MainActor static var chip: Double { current.chipStrength }
     @MainActor static var selectedFill: Double { current.selectedStrength }
     @MainActor static var track: Double { current.trackStrength }
+    @MainActor static var outline: Double { current.outlineStrength }
     @MainActor static var control: Double { current.controlStrength }
 
     static let ink = color(\.ink)

@@ -125,7 +125,7 @@ struct SpotGridView: View {
     }
 }
 
-/// The room of each side panel in Edit Spots, as a faint well under its cards and their glass, so that a card can be dragged
+/// The room of each side panel in Edit Spots, as a faint well with a dashed outline under its cards and their glass, so that a card can be dragged
 /// into an empty side. It is as high as the grid, and one row at least.
 private struct SidePanelWells: View, Equatable {
     let sides: GridSides
@@ -137,6 +137,7 @@ private struct SidePanelWells: View, Equatable {
             ForEach([SpotSide.left, .right].filter(sides.has), id: \.self) { side in
                 shape
                     .fill(SpotTheme.ink.opacity(SpotTheme.track))
+                    .overlay(shape.strokeBorder(SpotTheme.ink.opacity(SpotTheme.outline), style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
                     .frame(width: SpotTokens.gridWidth, height: max(height, SpotTokens.rowHeight))
                     .offset(x: CGFloat(sides.firstColumn(of: side)) * (SpotTokens.cell + SpotTokens.columnGap))
             }

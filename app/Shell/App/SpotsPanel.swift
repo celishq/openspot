@@ -124,12 +124,13 @@ final class SpotsPanel: NSPanel {
         }
     }
 
-    /// Grows the window in Edit Spots from its frame at rest to hold the store under the panel, with the panel lifted as far
-    /// as the store needs. A settled panel is drawn at its lifted place, and one that is not yet settled at its place at rest.
+    /// Grows the window in Edit Spots from its frame at rest to hold the store under the center panel, with the panel lifted
+    /// as far as the store needs. A settled panel is drawn at its lifted place, and one that is not yet settled at its place at rest.
     private func layOutEditing(in area: NSRect, isSettled: Bool) {
         guard let model, let panel = restFrame else { return }
         let content = SpotTokens.backdropHeight(gridHeight: SpotGrid.height(of: model.placements)) - SpotTokens.halo
-        let edit = ScreenPlace.edit(under: NSRect(x: panel.minX, y: panel.maxY - content, width: panel.width, height: content), in: area)
+        let center = NSRect(x: panel.minX + place.left, y: panel.maxY - content, width: panel.width - place.left - appliedRight, height: content)
+        let edit = ScreenPlace.edit(under: center, in: area)
         let lifted = panel.offsetBy(dx: 0, dy: edit.lift)
         let whole = panel.union(lifted).union(edit.dock)
         place.panel = CGPoint(x: lifted.minX - whole.minX, y: whole.maxY - lifted.maxY)

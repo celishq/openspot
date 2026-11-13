@@ -3,8 +3,9 @@ import OpenspotCore
 import SwiftUI
 
 /// The wallpaper of each screen, drawn over the other apps while Edit Spots shows, so that only the panel and the store are
-/// seen. It joins every Space, full-screen ones too, lies just under the panel, and a click on it ends Edit Spots. It decodes
-/// its pictures while the panel shows, so that a press finds them, and lets them go when the panel hides.
+/// seen. It joins every Space, full-screen ones too, lies just under the panel, and a click on it ends Edit Spots. While the
+/// panel shows, it decodes its pictures and builds its windows off the screen, so that a press only orders them in, and it
+/// lets them go when the panel hides.
 @MainActor
 final class SpotsCover {
     /// One screen's frame and the wallpaper decoded for it.
@@ -18,58 +19,54 @@ final class SpotsCover {
     private let look = Look()
     private var screens: [Screen]?
     private var load: Task<[Screen], Never>?
+    private weak var panel: NSWindow?
+    private var onClick: (() -> Void)?
     private var isWanted = false
 
-    /// Decodes each screen's wallpaper off the main thread, unless the pictures it holds are of the same files.
+    /// Decodes each screen's wallpaper off the main thread and builds its window, unless the windows it holds show the same
+    /// files.
     func prepare() {
         let wanted = NSScreen.screens.map { screen in
             (frame: screen.frame, url: NSWorkspace.shared.desktopImageURL(for: screen), side: max(screen.frame.width, screen.frame.height) * screen.backingScaleFactor)
         }
         if let screens, screens.map(\.frame) == wanted.map(\.frame), screens.map(\.url) == wanted.map(\.url) { return }
-        load?.cancel()
-        load = Task.detached(priority: .utility) {
+        if load != nil, screens == nil { return }
+        let load = Task.detached(priority: .utility) {
             wanted.map { screen in Screen(frame: screen.frame, url: screen.url, picture: screen.url.flatMap { Self.picture(at: $0, side: screen.side) }) }
         }
-        let load = load
+        self.load?.cancel()
+        self.load = load
         Task { [weak self] in
-            guard let screens = await load?.value, let self, self.load == load else { return }
-            self.screens = screens
+            let screens = await load.value
+            guard let self, self.load == load else { return }
+            self.build(screens)
         }
     }
 
-    /// Lets the pictures go, while the cover does not show.
+    /// Lets the windows and the pictures go, while the cover does not show.
     func release() {
         guard !isWanted else { return }
         load?.cancel()
         load = nil
         screens = nil
+        close()
     }
 
-    /// Lays the cover under this window and fades it in on the next turn, with the motion that starts there. Pictures that
-    /// are not decoded yet are waited for.
+    /// Orders the cover in under this window and fades it in on the next turn, with the motion that starts there. A cover
+    /// whose windows are not built yet shows once they are.
     func show(under panel: NSWindow, onClick: @escaping () -> Void) {
         guard !isWanted else { return }
         isWanted = true
-        if screens == nil, load == nil { prepare() }
-        Task { [weak self, weak panel] in
-            if self?.screens == nil, let load = self?.load {
-                let screens = await load.value
-                if self?.screens == nil { self?.screens = screens }
-            }
-            guard let self, let panel, self.isWanted, let screens = self.screens else { return }
-            self.close()
-            self.windows = screens.map { screen in
-                Self.window(frame: screen.frame, view: Wallpaper(look: self.look, picture: screen.picture, onClick: onClick), level: panel.level)
-            }
-            for window in self.windows { window.order(.below, relativeTo: panel.windowNumber) }
-            DispatchQueue.main.async { [weak self] in
-                guard let self, self.isWanted else { return }
-                withAnimation(SpotMotion.move) { self.look.isOut = true }
-            }
+        self.panel = panel
+        self.onClick = onClick
+        if screens == nil {
+            prepare()
+        } else {
+            present()
         }
     }
 
-    /// Fades the cover out, then takes its windows off the screen.
+    /// Fades the cover out, then takes its windows off the screen and keeps them for the next show.
     func hide() {
         guard isWanted else { return }
         isWanted = false
@@ -77,7 +74,29 @@ final class SpotsCover {
             look.isOut = false
         } completion: { [weak self] in
             guard let self, !self.isWanted else { return }
-            self.close()
+            for window in self.windows { window.orderOut(nil) }
+        }
+    }
+
+    /// Builds a window off the screen for each screen's wallpaper, and shows them when the cover is wanted.
+    private func build(_ screens: [Screen]) {
+        close()
+        self.screens = screens
+        windows = screens.map { screen in
+            Self.window(frame: screen.frame, view: Wallpaper(look: look, picture: screen.picture) { [weak self] in self?.onClick?() })
+        }
+        if isWanted { present() }
+    }
+
+    private func present() {
+        guard let panel else { return }
+        for window in windows {
+            window.level = panel.level
+            window.order(.below, relativeTo: panel.windowNumber)
+        }
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.isWanted else { return }
+            withAnimation(SpotMotion.move) { self.look.isOut = true }
         }
     }
 
@@ -86,18 +105,19 @@ final class SpotsCover {
         windows = []
     }
 
-    private static func window(frame: NSRect, view: Wallpaper, level: NSWindow.Level) -> NSWindow {
+    private static func window(frame: NSRect, view: Wallpaper) -> NSWindow {
         let window = NSWindow(contentRect: frame, styleMask: [.borderless], backing: .buffered, defer: false)
         window.isOpaque = false
         window.backgroundColor = .clear
         window.hasShadow = false
-        window.level = level
         window.isReleasedWhenClosed = false
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
         let hosting = NSHostingView(rootView: view)
         hosting.sizingOptions = []
         window.contentView = hosting
         window.setFrame(frame, display: false)
+        hosting.layoutSubtreeIfNeeded()
+        window.displayIfNeeded()
         return window
     }
 
