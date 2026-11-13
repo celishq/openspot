@@ -26,6 +26,7 @@ final class TestHost: SpotsHost {
     var prepared: [SpotItem] = []
     /// The glyphs of each whole list whose pictures the model asked for.
     var glyphLists: [[String]] = []
+    var cardGlyphs: [[String]] = []
     /// The ends of the motions that a test holds, to run them later. With none held, each motion ends at once.
     var heldEnds: [@MainActor () -> Void]?
     /// The model whose show and hide steps the panel runs, as the app's window does.
@@ -105,6 +106,10 @@ final class TestHost: SpotsHost {
     func prepare(_ items: [SpotItem], glyphs: [String]) async {
         prepared += items
         if !glyphs.isEmpty { glyphLists.append(glyphs) }
+    }
+
+    func prepareCards(glyphs: [String]) {
+        cardGlyphs.append(glyphs)
     }
 
     func agentPrompt(for folder: URL) -> AgentPrompt {

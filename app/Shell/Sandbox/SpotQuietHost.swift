@@ -30,6 +30,7 @@ final class SpotQuietHost: SpotsHost {
     var pastedPaths: [String] { [] }
     func copy(_ file: URL) {}
     func prepare(_ items: [SpotItem], glyphs: [String]) async {}
+    func prepareCards(glyphs: [String]) {}
 
     func agentPrompt(for folder: URL) -> AgentPrompt {
         AgentPrompt(folder: folder, guide: Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder, app: AgentPrompt.command(of: Bundle.main.executablePath ?? ""))

@@ -33,7 +33,7 @@ struct SpotBackdrop: View {
         }
             .frame(height: height)
             .transaction { $0.animation = nil }
-            .opacity(isShown ? 1 : 0)
+            .opacity(isShown ? 1 : MotionTokens.hiddenOpacity)
             .transaction { if !fades { $0.animation = nil } }
     }
 }

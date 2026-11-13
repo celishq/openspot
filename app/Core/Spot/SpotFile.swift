@@ -112,6 +112,7 @@ public struct SpotFile: Equatable, Sendable {
             image: icon?.image.map { Self.path($0, beside: url) },
             glyph: icon?.glyph,
             view: view.map { Self.path($0, beside: url) },
+            viewDate: view.flatMap { Self.viewDate(of: Self.path($0, beside: url), script: url) },
             emits: emits,
             uses: uses,
             keywords: header.list("keywords"),
@@ -205,6 +206,15 @@ public struct SpotFile: Equatable, Sendable {
     }
 
     /// A path that the header names: a full path or an https URL stays, and any other starts at the folder of the script.
+    /// When a file that the build of a view reads last changed: its source or the library beside it. Nil where the scan and
+    /// the watch of the folder miss an edit: a view outside its script's folder, or in a linked spot folder.
+    private static func viewDate(of view: String, script: URL) -> Date? {
+        let folder = script.deletingLastPathComponent().path
+        let isLinked = (try? FileManager.default.destinationOfSymbolicLink(atPath: folder)) != nil
+        guard (view as NSString).deletingLastPathComponent == folder, !isLinked else { return nil }
+        return [view, ViewLibrary.path(beside: view)].compactMap { try? FileManager.default.attributesOfItem(atPath: $0)[.modificationDate] as? Date }.max()
+    }
+
     private static func path(_ text: String, beside url: URL) -> String {
         text.hasPrefix("/") || WebPictures.isWeb(text) ? text : url.deletingLastPathComponent().appendingPathComponent(text).path
     }

@@ -50,7 +50,7 @@ struct SpotCardView: View, @MainActor Equatable {
             .animation(SpotMotion.fade(isShown: isOn), value: isOn)
             .scaleEffect(showsPress ? MotionTokens.pressedScale : 1)
             .animation(SpotMotion.press, value: showsPress)
-            .modifier(CardViewLoad(source: ownView))
+            .modifier(CardViewLoad(source: ownView, date: entry.spot.viewDate))
     }
 
     @ViewBuilder
@@ -271,21 +271,28 @@ private struct CardReveal: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .opacity(isShown ? 1 : 0)
+            .opacity(isShown ? 1 : MotionTokens.hiddenOpacity)
             .scaleEffect(isShown ? 1 : MotionTokens.hiddenScale)
             .animation(SpotMotion.fade(isShown: isShown), value: isShown)
     }
 }
 
-/// Builds the spot's own view of a card each time the panel shows (protocol: Views).
+/// Builds the spot's own view of a card when the card first shows and when its files change (protocol: Views). Where the scan
+/// does not watch its files, or its last build failed, it builds again each time the panel shows or hides.
 private struct CardViewLoad: ViewModifier {
     let source: String?
+    let date: Date?
     @Environment(\.spotIsShown) private var isShown
 
     func body(content: Content) -> some View {
-        content.task(id: source.map { "\($0)\n\(isShown)" }) {
+        content.task(id: source.map { "\($0)\n\(date?.timeIntervalSince1970 ?? 0)\n\(date == nil || hasFailed($0) ? isShown : true)" }) {
             if let source { await SpotViews.shared.load(source) }
         }
+    }
+
+    private func hasFailed(_ source: String) -> Bool {
+        if case .failed = SpotViews.shared.phase(of: source) { return true }
+        return false
     }
 }
 
