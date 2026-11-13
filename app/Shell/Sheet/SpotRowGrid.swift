@@ -32,13 +32,13 @@ struct SpotRowGrid: View {
         let first = max(reading.lines - 1, 0) * perLine
         let end = min(first + slots, count)
         ScrollView(showsIndicators: false) {
-            ZStack(alignment: .topLeading) {
+            GridPlacement(perLine: perLine, side: side) {
                 ForEach(0..<slots, id: \.self) { slot in
                     let index = first + (slot - first % slots + slots) % slots
                     if index < end {
                         SpotGridCell(item: list.shown[index], side: side)
                             .equatable()
-                            .offset(x: CGFloat(index % perLine) * step, y: CGFloat(index / perLine) * step)
+                            .layoutValue(key: CellIndex.self, value: index)
                     }
                 }
             }
@@ -87,6 +87,39 @@ struct SpotRowGrid: View {
               list.shown.indices.contains(index) else { return nil }
         return list.shown[index]
     }
+}
+
+/// The layout of the cells of the grid: each at the place of its index, at the size of a square. It takes the size it is
+/// offered, and measures no cell and asks no cell for its alignment.
+private struct GridPlacement: Layout {
+    let perLine: Int
+    let side: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        proposal.replacingUnspecifiedDimensions()
+    }
+
+    func explicitAlignment(of guide: HorizontalAlignment, in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGFloat? {
+        nil
+    }
+
+    func explicitAlignment(of guide: VerticalAlignment, in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGFloat? {
+        nil
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let step = side + SpotTokens.listRowGap
+        for subview in subviews {
+            let index = subview[CellIndex.self]
+            let place = CGPoint(x: bounds.minX + CGFloat(index % perLine) * step, y: bounds.minY + CGFloat(index / perLine) * step)
+            subview.place(at: place, anchor: .topLeading, proposal: ProposedViewSize(width: side, height: side))
+        }
+    }
+}
+
+/// The index of the row that a cell of the grid shows.
+private struct CellIndex: LayoutValueKey {
+    static let defaultValue = 0
 }
 
 /// One square of the grid. It depends on its item alone, so that a move of the selection leaves it as it is.
