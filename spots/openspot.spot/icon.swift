@@ -1,16 +1,16 @@
 import SwiftUI
 
-/// A grid of 7 by 7 rounded squares that a drag paints with the chosen colour, with the palette and an eraser under it. A
-/// stroke that starts on a square of that colour clears each square it passes instead. Each stroke's end sends the 49
+/// A grid of 9 by 9 rounded squares that a drag paints with the chosen colour, with the palette and an eraser under it. A
+/// stroke that starts on a square of that colour clears each square it passes instead. Each stroke's end sends the 81
 /// squares to the spot.
 struct SpotView: View {
     let spot: SpotInput
-    @State private var dots: [Character] = Array(repeating: ".", count: 49)
+    @State private var dots: [Character] = Array(repeating: ".", count: 81)
     @State private var sent = ""
     @State private var colour: Character = "0"
     @State private var stroke: Character?
 
-    private static let side = 7
+    private static let side = 9
     private static let eraser: Character = "."
     private static let swatch: CGFloat = 20
     private static let palette: [(Character, Color)] = [

@@ -38,7 +38,7 @@ final class ActionsSpotTests: BuiltInCase {
 
         let before = await ask("weather")
         try await actions.perform(SpotAction(arguments: ["icon.draw", "weather"]), timeout: 5)
-        try await icon.perform(SpotAction(arguments: ["drawer", "0" + String(repeating: ".", count: 48)]), timeout: 5)
+        try await icon.perform(SpotAction(arguments: ["drawer", "0" + String(repeating: ".", count: 80)]), timeout: 5)
         try await icon.perform(SpotAction(arguments: ["save"]), timeout: 5)
         let drawn = await ask("weather")
         try await actions.perform(SpotAction(arguments: ["icon.reset", "weather"]), timeout: 5)
