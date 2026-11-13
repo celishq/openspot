@@ -273,7 +273,7 @@ final class SpotsPanel: NSPanel {
 
     /// Where the pointer of this event lies in the panel, from its top left corner.
     private func panelPoint(of event: NSEvent) -> CGPoint {
-        CGPoint(x: event.locationInWindow.x, y: (contentView?.bounds.height ?? 0) - event.locationInWindow.y)
+        CGPoint(x: event.locationInWindow.x - place.left, y: (contentView?.bounds.height ?? 0) - event.locationInWindow.y)
     }
 
     /// Whether the text view that has the focus keeps an up or down arrow: up while its caret lies below its first line, and

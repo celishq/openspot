@@ -360,10 +360,12 @@ extension SpotsModel {
     }
 
     /// Shows or hides a side panel of the grid, and saves it. A panel that shows is empty, and no card moves. The cards of a
-    /// panel that hides first move to the end of the center's cards, and the panel goes when they land.
+    /// panel that hides first move to the end of the center's cards, and the panel goes when they land. A panel that is
+    /// on its way out takes no other change until it is gone.
     public func show(_ side: SpotSide, _ isShown: Bool) {
-        guard side != .center, sides.has(side) != isShown else { return }
+        guard side != .center, sides.has(side) != isShown, sideLeaving != side else { return }
         let apply: @MainActor () -> Void = { [self] in
+            sideLeaving = nil
             do {
                 try files.config.set(side == .left ? "left_panel" : "right_panel", to: isShown)
                 tookOwnWrite()
@@ -375,11 +377,19 @@ extension SpotsModel {
             sides = next
             updateVisible()
         }
+        let kept = cards.filter { $0.side == side }.map(\.id)
+        guard !kept.isEmpty else { return apply() }
         let leaving = isShown ? [] : cards.filter { $0.isOnGrid && $0.side == side }.map(\.id)
-        guard let first = leaving.first else { return apply() }
+        kept.forEach { arrangement.set(side: .center, of: $0) }
+        guard let first = leaving.first else {
+            try? files.config.write(arrangement)
+            tookOwnWrite()
+            rebuildEntries()
+            return apply()
+        }
+        sideLeaving = side
         let onGrid = cards.filter(\.isOnGrid).map(\.id).filter { !leaving.contains($0) }
         arrangement.arrange(onGrid + leaving + cards.filter { !$0.isOnGrid }.map(\.id))
-        leaving.forEach { arrangement.set(side: .center, of: $0) }
         saveArrangement(selecting: first, landed: apply)
     }
 

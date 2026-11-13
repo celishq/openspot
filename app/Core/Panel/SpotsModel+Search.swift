@@ -6,9 +6,13 @@ extension SpotsModel {
     /// the store.
     var grid: SpotGrid {
         let arriving = carry?.tile == nil ? nil : carry?.entry.id
-        let placed = query.isEmpty ? Dictionary(uniqueKeysWithValues: visible.indices.compactMap { index in
-            visible[index].side == .center ? nil : (index, visible[index].side)
-        }) : [:]
+        var placed: [Int: SpotSide] = [:]
+        if query.isEmpty {
+            for index in visible.indices {
+                let panel = visible[index].id == drag?.id ? drag?.target.side ?? .center : side(of: visible[index])
+                if panel != .center { placed[index] = panel }
+            }
+        }
         return SpotGrid(kept: Set(visible.indices.filter { visible[$0].isSizeChosen || visible[$0].id == arriving }), placed: placed, sides: sides)
     }
 

@@ -34,9 +34,11 @@ struct SpotGridView: View {
             )
         }
         return ZStack(alignment: .topLeading) {
+            if model.isEditing {
+                SidePanelWells(sides: model.sides, height: height)
+            }
             SpotGridGlass(cards: glass, pressable: openID == nil ? glass : [], size: CGSize(width: SpotTokens.width(columns: model.columns), height: height), lift: model.lift)
             if model.isEditing {
-                SidePanelWells(sides: model.sides, height: placements.filter { $0.top < 2 * SpotTokens.groupTitleBand }.map(\.rect.maxY).max() ?? 0)
                 landing(of: drag, in: placements)
                     .frame(width: SpotTokens.width(columns: model.columns), height: height)
             }
@@ -123,21 +125,20 @@ struct SpotGridView: View {
     }
 }
 
-/// The room of each side panel in Edit Spots, as a faint well under its cards, so that a card can be dragged into an empty
-/// side. It is at least one row high.
+/// The room of each side panel in Edit Spots, as a faint well under its cards and their glass, so that a card can be dragged
+/// into an empty side. It is as high as the grid, and one row at least.
 private struct SidePanelWells: View, Equatable {
     let sides: GridSides
     let height: CGFloat
 
     var body: some View {
-        let top = SpotTokens.groupTitleBand
         let shape = RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
         ZStack(alignment: .topLeading) {
             ForEach([SpotSide.left, .right].filter(sides.has), id: \.self) { side in
                 shape
                     .fill(SpotTheme.ink.opacity(SpotTheme.track))
-                    .frame(width: SpotTokens.gridWidth, height: max(height - top, SpotTokens.rowHeight))
-                    .offset(x: CGFloat(sides.firstColumn(of: side)) * (SpotTokens.cell + SpotTokens.columnGap), y: top)
+                    .frame(width: SpotTokens.gridWidth, height: max(height, SpotTokens.rowHeight))
+                    .offset(x: CGFloat(sides.firstColumn(of: side)) * (SpotTokens.cell + SpotTokens.columnGap))
             }
         }
         .allowsHitTesting(false)

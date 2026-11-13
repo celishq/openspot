@@ -75,6 +75,8 @@ public final class SpotsModel {
     }
     /// The side panels beside the grid's center panel.
     public internal(set) var sides = GridSides()
+    /// The side panel that hides once its cards have landed in the center.
+    @ObservationIgnored var sideLeaving: SpotSide?
     /// How many columns the grid has.
     public var columns: Int {
         sides.columns

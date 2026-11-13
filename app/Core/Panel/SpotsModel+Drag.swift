@@ -14,7 +14,7 @@ extension SpotsModel {
             let others = visible.filter(\.isOnGrid).count - (entry.isOnGrid ? 1 : 0)
             let hasHidden = !entry.isOnGrid || others < visible.count - 1
             let targets = gridTargets(0...others) + (hasHidden ? (others...(visible.count - 1)).map(SpotDrag.Target.hidden) : [])
-            let home = SpotDrag.Target(place: start, isOnGrid: entry.isOnGrid, side: entry.isOnGrid ? entry.side : .center)
+            let home = SpotDrag.Target(place: start, isOnGrid: entry.isOnGrid, side: entry.isOnGrid ? side(of: entry) : .center)
             let lifted = SpotDrag(id: id, home: home, sizes: visible.map(\.size), targets: targets, grid: grid)
             stopDragWait()
             scrollAtPress = gridScroll
@@ -316,6 +316,11 @@ extension SpotsModel {
         dragWait?.cancel()
         dragWait = nil
         dragTarget = nil
+    }
+
+    /// The panel that a card lies in: its side, while the grid has that side, and else the center.
+    func side(of entry: Entry) -> SpotSide {
+        sides.has(entry.side) ? entry.side : .center
     }
 
     /// The places on the grid that a dragged card may take, in each panel that the grid has.

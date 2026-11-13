@@ -78,6 +78,8 @@ struct SpotsView: View {
             if model.isMenuOpen {
                 Color.clear
                     .contentShape(Rectangle())
+                    .frame(width: wideWidth, height: SpotTokens.panelHeight)
+                    .offset(x: -model.sides.leftExtent)
                     .onTapGesture { model.closeMenu() }
             }
         }

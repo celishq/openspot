@@ -544,8 +544,9 @@ final class SpotsModelDragTests: XCTestCase {
         let column = model.sides.firstColumn(of: .right)
         let point = CGPoint(x: SpotPlacement(index: 0, row: 0, column: column, size: .small).rect.midX, y: model.placements[0].rect.midY)
 
-        model.dragSpot("a", by: move("a", to: point))
-        model.dropSpot(by: move("a", to: point))
+        let translation = move("a", to: point)
+        model.dragSpot("a", by: translation)
+        model.dropSpot(by: translation)
 
         XCTAssertEqual(model.visible.first { $0.id == "a" }?.side, .right)
         XCTAssertEqual(files.config.read().arrangement.side(of: "a"), .right)
@@ -554,6 +555,30 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertFalse(model.sides.hasRight)
         XCTAssertEqual(model.visible.first { $0.id == "a" }?.side, .center)
         XCTAssertEqual(model.visible.filter(\.isOnGrid).last?.id, "a")
+    }
+
+    func testADraggedCardMakesItsRoomInThePanelItWouldLandIn() {
+        model.show(.right, true)
+        let column = model.sides.firstColumn(of: .right)
+        let point = CGPoint(x: SpotPlacement(index: 0, row: 0, column: column, size: .small).rect.midX, y: model.placements[0].rect.midY)
+
+        model.dragSpot("a", by: move("a", to: point))
+
+        let index = model.visible.firstIndex { $0.id == "a" } ?? -1
+        XCTAssertGreaterThanOrEqual(model.placements.first { $0.index == index }?.column ?? -1, column)
+    }
+
+    func testAPanelThatShowsIsEmptyEvenWhenAnOldChoiceNamedIt() throws {
+        var arrangement = files.config.read().arrangement
+        arrangement.set(side: .right, of: "b")
+        try files.config.write(arrangement)
+        model.reload()
+        XCTAssertLessThan(model.placements.map(\.column).max() ?? 0, SpotTokens.columns)
+
+        model.show(.right, true)
+
+        XCTAssertLessThan(model.placements.map(\.column).max() ?? 0, SpotTokens.columns)
+        XCTAssertNil(files.config.read().arrangement.side(of: "b"))
     }
 
     func testTheGridTakesTheSidePanelsOfTheConfig() throws {
