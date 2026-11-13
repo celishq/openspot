@@ -125,6 +125,16 @@ extension SpotsModel {
         composeDock()
     }
 
+    /// Reads what the store needs from this folder off the main thread, and makes the store again when the read lands.
+    func refreshDock(in folder: SpotsFolder) async {
+        dockRead?.cancel()
+        let store = files.store
+        let read = await Task.detached(priority: .userInitiated) { (folder.stamp(), Self.readDock(in: folder, store: store)) }.value
+        dockStamp = read.0
+        (dockOff, dockPublications) = read.1
+        composeDock()
+    }
+
     /// Reads what the store needs from this folder off the main thread, so that Edit Spots starts with no read of the disk.
     func readDockLater(in folder: SpotsFolder) {
         dockRead?.cancel()

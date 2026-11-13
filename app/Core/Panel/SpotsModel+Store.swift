@@ -19,23 +19,28 @@ extension SpotsModel {
             return .needsReadme
         }
         let folder = self.folder
+        let store = files.store
         do {
-            var shared = try SpotPackage(sharing: spot, from: SpotsFolder(url: folder.url).keptScan())
-            guard Self.publication(of: shared, in: files.store) != .current else {
+            let read = try await Task.detached(priority: .userInitiated) {
+                let shared = try SpotPackage(sharing: spot, from: SpotsFolder(url: folder.url).keptScan())
+                return (shared: shared, isCurrent: Self.publication(of: shared, in: store) == .current)
+            }.value
+            var shared = read.shared
+            guard !read.isCurrent else {
                 host.confirm("\(spot.name) has no change since its last publish.")
                 return .unchanged
             }
             if spot.previewsSample {
                 try await SpotListing.capturePreview(of: spot, runs: runs)
-                shared = try SpotPackage(sharing: spot, from: SpotsFolder(url: folder.url).scan())
+                shared = try await Task.detached(priority: .userInitiated) { try SpotPackage(sharing: spot, from: SpotsFolder(url: folder.url).scan()) }.value
             }
             guard let released = try await release(shared, named: spot.name) else { return .failed }
-            try released.write(to: files.store)
+            try await Task.detached(priority: .userInitiated) { try released.write(to: store) }.value
         } catch {
             host.notify("\(spot.name) was not published. \(Self.reason(error))")
             return .failed
         }
-        refreshDock(in: folder)
+        await refreshDock(in: folder)
         host.confirm("Published \(spot.name) to your store. Its files travel as they are, so check them for secrets before you share it.")
         return .published
     }
@@ -45,13 +50,15 @@ extension SpotsModel {
     func release(_ package: SpotPackage, named name: String) async throws -> SpotPackage? {
         guard let key = try await accountKey() else { return nil }
         if package.needsCompile { host.work("Compiling \(name)") }
-        return try await package.release(by: key, keepingLogIn: folder.url)
+        let spots = folder.url
+        return try await Task.detached(priority: .userInitiated) { try await package.release(by: key, keepingLogIn: spots) }.value
     }
 
     /// The account key. With none, it opens the sheet of the spot that reaches the account key, so the person can set one
     /// up, and returns nil.
     func accountKey() async throws -> AccountKey? {
-        if let key = try files.account.key() { return key }
+        let account = files.account
+        if let key = try await Task.detached(priority: .userInitiated, operation: { try account.key() }).value { return key }
         if let account = entries.first(where: { $0.spot.reachesAccountKey }) {
             host.present()
             _ = openSheet(account.id)
