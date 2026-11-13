@@ -18,6 +18,7 @@ struct SpotGlass: ViewModifier {
         content
             .opacity(isShown ? 1 : MotionTokens.hiddenOpacity)
             .animation(SpotMotion.fade(isShown: isShown), value: isShown)
+            .allowsHitTesting(isShown)
             .background {
                 if blursBehind {
                     SpotBlur(radius: SpotTheme.blur)
