@@ -129,6 +129,36 @@ final class GridExampleTests: SampleSpotsCase {
         }
     }
 
+    func testASecondGridThatWouldWaitEndsAtOnceAndLeavesTheOneThatWaits() async throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-grid-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let grid = folder.appendingPathComponent("grid")
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-o", grid.path, examples.appendingPathComponent("grid.spot/grid.swift").path])
+        let pidfile = folder.appendingPathComponent("grid.pid")
+        try "1".write(to: pidfile, atomically: true, encoding: .utf8)
+        let held = open(pidfile.path, O_RDONLY)
+        defer { close(held) }
+        XCTAssertEqual(flock(held, LOCK_EX), 0)
+        let parent = Process()
+        parent.executableURL = URL(fileURLWithPath: "/bin/sleep")
+        parent.arguments = ["600"]
+        try parent.run()
+        defer { parent.terminate() }
+
+        let second = Process()
+        second.executableURL = grid
+        second.arguments = ["stay", String(parent.processIdentifier)]
+        try second.run()
+        defer { kill(second.processIdentifier, SIGKILL) }
+        for _ in 0..<200 where second.isRunning {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+
+        XCTAssertFalse(second.isRunning)
+        XCTAssertEqual(try String(contentsOf: pidfile, encoding: .utf8), "1")
+    }
+
     func testAReadWithNoReasonStartsNoGrid() async throws {
         let grid = try example("Grid")
         try await withPrivateHome { folder in

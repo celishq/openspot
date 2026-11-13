@@ -463,6 +463,13 @@ if arguments.first == "pick" {
     print(Pick(columns: numbers[0], rows: numbers[1], from: (numbers[2], numbers[3]), to: (numbers[4], numbers[5])).text)
     exit(0)
 }
+if arguments.first == "stay" {
+    let folder = URL(fileURLWithPath: CommandLine.arguments[0]).deletingLastPathComponent()
+    let pidfile = open(folder.appendingPathComponent("grid.pid").path, O_RDWR | O_CREAT | O_CLOEXEC, 0o644)
+    guard flock(pidfile, LOCK_EX | LOCK_NB) == 0 else { exit(0) }
+    ftruncate(pidfile, 0)
+    _ = String(getpid()).withCString { write(pidfile, $0, strlen($0)) }
+}
 
 let app = NSApplication.shared
 let grid = Grid(stays: arguments.first == "stay", host: arguments.count > 1 ? pid_t(arguments[1]) : nil)
