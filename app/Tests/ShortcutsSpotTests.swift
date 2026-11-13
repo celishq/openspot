@@ -8,10 +8,12 @@ final class ShortcutsSpotTests: SampleSpotsCase {
     }
 
     /// Puts a fake `shortcuts` on the path. It lists one folder, and a run or a view writes its arguments to `shortcuts-args`,
-    /// one on each line. A run gives the file `result` as its result, and fails when the file `fail` is there.
+    /// one on each line. A run gives the file `result` as its result, and fails when the file `fail` is there. Each call
+    /// adds a line to `shortcuts-calls`.
     private static func fakeShortcuts(in folder: URL, loose: String = "printf '%s\\n' 'Say \\ \"hi\" (now)' 'Take a break'") throws {
         let script = """
         #!/bin/sh
+        echo "$1" >> '\(folder.path)/shortcuts-calls'
         case "$1 $2 $3" in
           'list --folders ') echo Media ;;
           'list --folder-name Media') echo 'Video to audio' ;;
@@ -79,6 +81,24 @@ final class ShortcutsSpotTests: SampleSpotsCase {
             XCTAssertEqual(changed.count, 2)
             XCTAssertEqual(changed.first, first.first)
             XCTAssertEqual(SpotOutput(text: changed.last ?? "").items.map(\.title), ["Make a GIF", "Video to audio"])
+        }
+    }
+
+    func testAPanelOpenShowsTheKeptRowsAndAsksShortcutsNothing() async throws {
+        let shortcuts = try shortcuts()
+        try await withPrivateHome { folder in
+            try Self.fakeShortcuts(in: folder)
+            let first = try await Self.frames(of: shortcuts)
+            let calls = folder.appendingPathComponent("shortcuts-calls")
+            try FileManager.default.removeItem(at: calls)
+            try Self.fakeShortcuts(in: folder, loose: "echo 'Make a GIF'")
+
+            setenv("OPENSPOT_REASON", "panel.open", 1)
+            let opened = try await Self.frames(of: shortcuts)
+            unsetenv("OPENSPOT_REASON")
+
+            XCTAssertEqual(opened, first)
+            XCTAssertFalse(FileManager.default.fileExists(atPath: calls.path))
         }
     }
 
