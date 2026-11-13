@@ -479,23 +479,9 @@ struct SheetPartsView: View {
     }
 
     private func number(_ part: SpotPart) -> some View {
-        VStack(alignment: part.look == .bare ? .trailing : .leading, spacing: SpotType.lineGap) {
-            SpotNumberText(part: part)
-                .font(Self.numberFont)
-                .foregroundStyle(SpotTheme.ink)
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-            if let title = part.title {
-                Text(title)
-                    .font(SpotType.detail)
-                    .modifier(SpotSecondaryText())
-                    .lineLimit(1)
-            }
-        }
-        .modifier(SpotColorBar(color: part.color))
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: part.look == .bare ? .trailing : .leading)
-        .padding(.horizontal, part.look == .bare ? 0 : SpotTokens.padding)
-        .background(SpotTheme.ink.opacity(part.look == .bare ? 0 : SpotTheme.fill), in: shape)
+        SpotNumberView(part: part, font: Self.numberFont, leastScale: 0.6, alignment: part.look == .bare ? .trailing : .leading)
+            .padding(.horizontal, part.look == .bare ? 0 : SpotTokens.padding)
+            .background(SpotTheme.ink.opacity(part.look == .bare ? 0 : SpotTheme.fill), in: shape)
     }
 
     private func chart(_ points: [Double]) -> some View {
