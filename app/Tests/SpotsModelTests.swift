@@ -874,6 +874,37 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.visible.map(\.id), ["notes"])
     }
 
+    func testTheSameTextOfTheSearchFindsNothingAgain() throws {
+        try script("notes", header: "title=Notes", "true")
+        model.reload()
+        model.query = "no"
+        let before = model.visibleUpdates
+
+        model.query = "no"
+
+        XCTAssertEqual(model.visibleUpdates, before)
+    }
+
+    func testNewRowsOfACardOnTheGridWithNoSearchFindNothingAgain() throws {
+        try script("notes", header: "title=Notes", "true")
+        model.reload()
+        let before = model.visibleUpdates
+
+        model.sheets["notes"]?.list = ItemList(items: [SpotItem(title: "A", run: "a")])
+
+        XCTAssertEqual(model.visibleUpdates, before)
+        XCTAssertEqual(model.visible.map(\.id), ["notes"])
+    }
+
+    func testAStateThatTakesACardOffTheGridHidesItWithNoSearch() throws {
+        try script("notes", header: "title=Notes", "true")
+        model.reload()
+
+        model.sheets["notes"]?.state = SpotState(title: "Notes", isOnGrid: false)
+
+        XCTAssertEqual(model.visible.map(\.id), [])
+    }
+
     func testAChangedTitleOfACardIsFoundOnTheNextKey() async throws {
         try script("mood", header: "title=Calm\non=panel.open", "printf 'title=Stormy\n'")
         model.reload()

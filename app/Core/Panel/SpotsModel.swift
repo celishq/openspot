@@ -35,7 +35,8 @@ public final class SpotsModel {
     }
     public var query = "" {
         didSet {
-            if query != oldValue { selected = 0 }
+            guard query != oldValue else { return }
+            selected = 0
             askAnswers()
             updateVisible()
         }
@@ -52,6 +53,8 @@ public final class SpotsModel {
     @ObservationIgnored var spotListIsStale = true
     /// The number of times that the cards were made into the items of `spotList`.
     @ObservationIgnored var spotListBuilds = 0
+    /// The number of times that the search found the cards that show.
+    @ObservationIgnored var visibleUpdates = 0
     /// Which `answers` patterns match the text of the main search.
     var answerMatches: AnswerMatches {
         runs.answerMatches
@@ -419,7 +422,7 @@ public final class SpotsModel {
         case .failureWithFix(let text, let fix): host.notify(text, fix: fix)
         case .listChange:
             spotListIsStale = true
-            updateVisible()
+            if mayMove(id) { updateVisible() }
         case .frame:
             spotListIsStale = true
             if sheets[id]?.spot.setsKeys == true {
