@@ -63,8 +63,8 @@ enum CalcDate {
         }
         guard let count = format.clock.dateComponents([unit], from: from.date, to: to.date).value(for: unit) else { return nil }
         let detail = "\(format.day(from.date, hasTime: from.hasTime && [.hour, .minute].contains(unit))) to \(format.day(to.date, hasTime: to.hasTime && [.hour, .minute].contains(unit)))"
-        let title = format.length(count, unit)
-        return CalcAnswer(value: String(count), title: title, detail: detail, unit: title.firstMatch(of: /^[-\d\s.,\u{00A0}\u{202F}]+(\D.*)$/).map { String($0.1) })
+        let length = format.length(count, unit)
+        return CalcAnswer(value: String(count), title: length.title, detail: detail, unit: length.unit)
     }
 
     /// `<time> [zone] in <zone>`, such as `3pm tokyo in kyiv`, or `now in <zone>`.
@@ -164,7 +164,8 @@ enum CalcDate {
             return formatter.string(from: date)
         }
 
-        func length(_ count: Int, _ unit: Calendar.Component) -> String {
+        /// A count of a unit in words, such as `44 days`, and its words with no number, such as `days`.
+        func length(_ count: Int, _ unit: Calendar.Component) -> (title: String, unit: String?) {
             let formatter = DateComponentsFormatter()
             formatter.unitsStyle = .full
             var calendar = clock
@@ -179,7 +180,11 @@ enum CalcDate {
                 formatter.allowedUnits = [Self.unit(unit)]
                 parts.setValue(count, for: unit)
             }
-            return formatter.string(from: parts) ?? String(count)
+            let title = formatter.string(from: parts) ?? String(count)
+            let number = NumberFormatter()
+            number.locale = locale
+            number.numberStyle = .decimal
+            return (title, CalcAnswer.unit(of: title, number: number.string(from: NSNumber(value: count)) ?? String(count)))
         }
 
         private static func unit(_ component: Calendar.Component) -> NSCalendar.Unit {

@@ -115,7 +115,13 @@ public struct CalcAnswer: Equatable, Sendable {
         formatter.unitStyle = .medium
         formatter.numberFormatter = significant(6, locale: locale)
         let title = formatter.string(from: Measurement(value: value, unit: toUnit))
-        return CalcAnswer(value: plain(value, digits: 6), title: title, detail: "\(amount.detail) \(from) in \(to)", unit: title.contains(toUnit.symbol) ? toUnit.symbol : nil)
+        return CalcAnswer(value: plain(value, digits: 6), title: title, detail: "\(amount.detail) \(from) in \(to)", unit: unit(of: title, number: formatter.numberFormatter.string(from: NSNumber(value: value)) ?? ""))
+    }
+
+    /// The words of a title with no number, such as `mi` of `3.10686 mi`, as its formatter wrote the number.
+    static func unit(of title: String, number: String) -> String? {
+        let words = title.replacingOccurrences(of: number, with: "").trimmingCharacters(in: .whitespaces.union(CharacterSet(charactersIn: "\u{00A0}\u{202F}")))
+        return words.isEmpty || number.isEmpty ? nil : words
     }
 
     /// The age in days from which an answer says that its rates are old. The file changes once a day.
