@@ -77,6 +77,27 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(host.held.last, [GlobalKey(spot: "move", act: .command("left"), trigger: trigger)])
     }
 
+    func testAPressReadsTheConfigOfTheLastReloadAndNotTheFile() throws {
+        model.reload()
+        try model.files.config.set("fix_key", to: "cmd+shift+9")
+
+        XCTAssertEqual(model.config.fixKey, Config(text: "").fixKey)
+        model.folderChanged()
+        XCTAssertEqual(model.config.fixKey, Config(text: "fix_key = \"cmd+shift+9\"").fixKey)
+    }
+
+    func testAChoiceThatTheAppWritesBuildsNoGridWhenTheWatchReportsItsWrite() throws {
+        try script("one", header: "title=One", "")
+        model.reload()
+        model.prefer(.wide, for: "one")
+        let builds = model.gridBuilds
+
+        model.folderChanged()
+
+        XCTAssertEqual(model.gridBuilds, builds)
+        XCTAssertEqual(model.config.arrangement.size(of: "one"), .wide)
+    }
+
     func testAMenuBarPlaceAndAValueThatTheAPISetsBuildNoGridNowOrAtTheNextReload() throws {
         try script("cups", header: "title=Cups\non=clock.60", "printf 'text=c\\ntitle=3\\n'")
         try script("notes", header: "title=Notes", ":")
@@ -206,21 +227,22 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.placements, grid)
     }
 
-    func testAnOpenFindsAScriptMadeExecutableSinceTheOpenBefore() throws {
+    func testAWatchedChangeFindsAScriptMadeExecutableSinceTheLastLoad() throws {
         let late = spots.spotFile("late")
         try FileManager.default.createDirectory(at: late.deletingLastPathComponent(), withIntermediateDirectories: true)
         try "#!/bin/sh\n# title=Late\n".write(to: late, atomically: false, encoding: .utf8)
-        model.panelWillShow(holding: [])
+        model.reload()
         XCTAssertFalse(model.entries.contains { $0.id == "late" })
 
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: late.path)
-        model.panelWillShow(holding: [])
+        model.folderChanged()
 
         XCTAssertTrue(model.entries.contains { $0.id == "late" })
     }
 
     func testAnOpenWithNoChangeTellsNoReaderOfTheCards() throws {
         try script("one", header: "title=One", "")
+        model.reload()
         model.panelWillShow(holding: [])
         model.panelWillHide()
         nonisolated(unsafe) var changed = false
@@ -232,22 +254,36 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(changed)
     }
 
-    func testAnOpenTakesAChangeOfTheConfigFile() throws {
+    func testAShowReadsNoConfigAndChecksNoFolder() throws {
         try script("one", header: "title=One", "")
         try script("two", header: "title=Two", "")
+        model.reload()
+        var arrangement = SpotArrangement()
+        arrangement.set(isOnGrid: false, of: "two")
+        try model.files.config.write(arrangement)
+        try script("three", header: "title=Three", "")
+
         model.panelWillShow(holding: [])
-        model.panelWillHide()
+
+        XCTAssertEqual(model.visible.map(\.id), ["one", "two"])
+    }
+
+    func testAWatchedChangeOfTheConfigFileTakesIt() throws {
+        try script("one", header: "title=One", "")
+        try script("two", header: "title=Two", "")
+        model.reload()
         var arrangement = SpotArrangement()
         arrangement.set(isOnGrid: false, of: "two")
 
         try model.files.config.write(arrangement)
-        model.panelWillShow(holding: [])
+        model.folderChanged()
 
         XCTAssertEqual(model.visible.map(\.id), ["one"])
     }
 
     func testAnOpenPanelReadsAgainAScriptWhoseBodyAloneChanged() async throws {
         try script("cups", header: "on=panel.open", "printf 'title=One cup\\n'")
+        model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
         try await wait("the first read") { model.entries.first { $0.id == "cups" }?.state.title == "One cup" }
@@ -872,6 +908,79 @@ final class SpotsModelTests: XCTestCase {
 
         XCTAssertEqual(model.spotListBuilds - before, 1)
         XCTAssertEqual(model.visible.map(\.id), ["notes"])
+    }
+
+    func testAKeyInAFormOfOneChoiceTellsNoReaderOfTheFormsPlaceAndKind() async throws {
+        try script("list", header: "on=sheet.open", """
+        case "$1" in
+          pick) printf 'title=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n' ;;
+          *) printf 'button=pick\ntitle=Pick\nscope=spot\nform=true\n\nrow=a\ntitle=Apple\n' ;;
+        esac
+        """)
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.press("list")
+        try await wait("the open list") { model.openList == "list" && model.openEntry?.spot.actions.contains(where: \.isForm) == true }
+        let entry = try XCTUnwrap(model.openEntry)
+        model.openForm(try XCTUnwrap(entry.spot.actions.first { $0.id == "pick" }), on: (entry, nil))
+        try await wait("the form") { model.form != nil }
+        XCTAssertNotNil(model.formRect)
+        XCTAssertTrue(model.formHasChoices)
+        XCTAssertTrue(model.formIsMultiple)
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = (model.formRect, model.formHasChoices, model.formIsMultiple, model.isMenuOpen, model.gridHeight) } onChange: { changed = true }
+
+        model.searchText = "b"
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+
+        XCTAssertFalse(changed)
+    }
+
+    func testAMoveInTheActionsMenuTellsNoReaderThatTheMenuIsOpen() throws {
+        try script("weather", header: "title=Weather", ":")
+        model.reload()
+        model.isShown = true
+        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "weather" })
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        XCTAssertTrue(model.isMenuOpen)
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = model.isMenuOpen } onChange: { changed = true }
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+
+        XCTAssertFalse(changed)
+    }
+
+    func testTheSameTextOfTheSearchFindsNothingAgain() throws {
+        try script("notes", header: "title=Notes", "true")
+        model.reload()
+        model.query = "no"
+        let before = model.visibleUpdates
+
+        model.query = "no"
+
+        XCTAssertEqual(model.visibleUpdates, before)
+    }
+
+    func testNewRowsOfACardOnTheGridWithNoSearchFindNothingAgain() throws {
+        try script("notes", header: "title=Notes", "true")
+        model.reload()
+        let before = model.visibleUpdates
+
+        model.sheets["notes"]?.list = ItemList(items: [SpotItem(title: "A", run: "a")])
+
+        XCTAssertEqual(model.visibleUpdates, before)
+        XCTAssertEqual(model.visible.map(\.id), ["notes"])
+    }
+
+    func testAStateThatTakesACardOffTheGridHidesItWithNoSearch() throws {
+        try script("notes", header: "title=Notes", "true")
+        model.reload()
+
+        model.sheets["notes"]?.state = SpotState(title: "Notes", isOnGrid: false)
+
+        XCTAssertEqual(model.visible.map(\.id), [])
     }
 
     func testAChangedTitleOfACardIsFoundOnTheNextKey() async throws {

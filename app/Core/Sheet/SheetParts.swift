@@ -24,6 +24,9 @@ public struct SheetParts: Equatable, Sendable {
     public private(set) var layout: SheetLayout?
     /// Where its parts lie, worked out once for each change of its parts.
     public private(set) var placement: SheetPlacement
+    /// The offsets in `parts` of the parts that take the focus, in their order, and the same offsets in lines of one top.
+    private var focusOffsets: [Int] = []
+    private var focusLineOffsets: [[Int]] = []
     private var selected: String?
 
     /// Returns nil when a script prints no parts.
@@ -32,6 +35,7 @@ public struct SheetParts: Equatable, Sendable {
         parts = output.parts
         layout = output.layout
         placement = Self.placement(of: output.parts, in: output.layout)
+        orderFocus()
     }
 
     private static func placement(of parts: [SpotPart], in layout: SheetLayout?) -> SheetPlacement {
@@ -40,6 +44,31 @@ public struct SheetParts: Equatable, Sendable {
 
     private mutating func place() {
         placement = Self.placement(of: parts, in: layout)
+        orderFocus()
+    }
+
+    /// Finds the parts that take the focus, line by line and left to right on a line. A part that no drawing places, such
+    /// as an action, takes none. In a sheet of rows, only the parts below the rows do.
+    private mutating func orderFocus() {
+        let top = placement.repeatFrame?.maxY ?? -.infinity
+        let placed: [(offset: Int, rect: CGRect)] = parts.indices.compactMap { offset in
+            let part = parts[offset]
+            guard part.isFocusable, let rect = placement.frames[part.id]?.rect, rect.minY >= top else { return nil }
+            return (offset, rect)
+        }
+        let sorted = placed.sorted { $0.rect.minY == $1.rect.minY ? $0.rect.minX < $1.rect.minX : $0.rect.minY < $1.rect.minY }
+        focusOffsets = sorted.map(\.offset)
+        var lines: [[Int]] = []
+        var lineTop: CGFloat?
+        for (offset, rect) in sorted {
+            if rect.minY == lineTop, !lines.isEmpty {
+                lines[lines.count - 1].append(offset)
+            } else {
+                lines.append([offset])
+                lineTop = rect.minY
+            }
+        }
+        focusLineOffsets = lines
     }
 
     /// All values as one block, for the script to read on its standard input.
@@ -76,41 +105,22 @@ public struct SheetParts: Equatable, Sendable {
     /// Whether the arrows move the focus among its parts. A sheet of rows leaves them to the rows, until the person moves
     /// past the last row.
     public var takesArrows: Bool {
-        !showsRows && !focusOrder.isEmpty
+        !showsRows && !focusOffsets.isEmpty
     }
 
     /// Whether the up and down keys scroll it: it has no part to focus and no rows.
     public var scrollsByArrows: Bool {
-        !showsRows && focusOrder.isEmpty
+        !showsRows && focusOffsets.isEmpty
     }
 
-    /// The parts that take the focus, in the order they are drawn: line by line, and left to right on a line. A part that
-    /// no drawing places, such as an action, takes none. In a sheet of rows, only the parts below the rows do.
+    /// The parts that take the focus, in the order they are drawn: line by line, and left to right on a line.
     public var focusOrder: [SpotPart] {
-        let top = placement.repeatFrame?.maxY ?? -.infinity
-        let placed: [(part: SpotPart, rect: CGRect)] = parts.compactMap { part in
-            guard part.isFocusable, let rect = placement.frames[part.id]?.rect, rect.minY >= top else { return nil }
-            return (part, rect)
-        }
-        return placed
-            .sorted { $0.rect.minY == $1.rect.minY ? $0.rect.minX < $1.rect.minX : $0.rect.minY < $1.rect.minY }
-            .map(\.part)
+        focusOffsets.map { parts[$0] }
     }
 
     /// The focusable parts in lines of the same top, from the top line down.
     private var focusLines: [[SpotPart]] {
-        var lines: [[SpotPart]] = []
-        var top: CGFloat?
-        for part in focusOrder {
-            let minY = placement.frames[part.id]?.rect.minY
-            if minY == top, !lines.isEmpty {
-                lines[lines.count - 1].append(part)
-            } else {
-                lines.append([part])
-                top = minY
-            }
-        }
-        return lines
+        focusLineOffsets.map { $0.map { parts[$0] } }
     }
 
     /// Whether a part with no icon keeps an empty icon column, so that its words line up with the lines that have one. Only a
@@ -123,10 +133,9 @@ public struct SheetParts: Equatable, Sendable {
     /// The part that has the focus: the one the person moved to, or else the first field, or else the first part. In a sheet
     /// of rows, a part has it only once the person moved to it.
     public var selectedPart: SpotPart? {
-        let order = focusOrder
-        if let part = order.first(where: { $0.id == selected }) { return part }
+        if let selected, let offset = focusOffsets.first(where: { parts[$0].id == selected }) { return parts[offset] }
         guard takesArrows else { return nil }
-        return order.first(where: \.isEditable) ?? order.first
+        return (focusOffsets.first { parts[$0].isEditable } ?? focusOffsets.first).map { parts[$0] }
     }
 
     /// Moves the focus along its line, and stops at either end.
@@ -169,7 +178,7 @@ public struct SheetParts: Equatable, Sendable {
 
     /// Gives the focus to a part, as a click into its field does.
     public mutating func focus(_ id: String) {
-        guard focusOrder.contains(where: { $0.id == id }) else { return }
+        guard focusOffsets.contains(where: { parts[$0].id == id }) else { return }
         selected = id
     }
 

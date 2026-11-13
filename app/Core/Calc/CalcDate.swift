@@ -134,8 +134,7 @@ struct CalcDate {
         case "tomorrow": return clock.date(byAdding: .day, value: 1, to: today).map { ($0, false) }
         case "yesterday": return clock.date(byAdding: .day, value: -1, to: today).map { ($0, false) }
         default:
-            let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.date.rawValue)
-            guard let found = detector?.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+            guard let found = CalcFormats.dates?.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
                   found.range == NSRange(text.startIndex..., in: text), let date = found.date else { return nil }
             return (date, CalendarEntry.hasTime(found))
         }
@@ -170,27 +169,33 @@ struct CalcDate {
 
         /// A date as `2026-12-02`, or `2026-12-02 15:00` with its time.
         func value(_ date: Date, hasTime: Bool, in zone: TimeZone? = nil) -> String {
-            let formatter = DateFormatter()
-            formatter.locale = Locale(identifier: "en_US_POSIX")
-            formatter.timeZone = zone ?? clock.timeZone
-            formatter.dateFormat = hasTime ? "yyyy-MM-dd HH:mm" : "yyyy-MM-dd"
+            let zone = zone ?? clock.timeZone
+            let pattern = hasTime ? "yyyy-MM-dd HH:mm" : "yyyy-MM-dd"
+            let formatter = CalcFormats.formatter(DateFormatter.self, "value|\(pattern)|\(zone.identifier)") {
+                let formatter = DateFormatter()
+                formatter.locale = Locale(identifier: "en_US_POSIX")
+                formatter.timeZone = zone
+                formatter.dateFormat = pattern
+                return formatter
+            }
             return formatter.string(from: date)
         }
 
         func length(_ count: Int, _ unit: Calendar.Component) -> String {
-            let formatter = DateComponentsFormatter()
-            formatter.unitsStyle = .full
-            var calendar = clock
-            calendar.locale = locale
-            formatter.calendar = calendar
+            let allowed: NSCalendar.Unit = unit == .weekOfYear ? .weekOfMonth : Self.unit(unit)
+            let formatter = CalcFormats.formatter(DateComponentsFormatter.self, "length|\(allowed.rawValue)|\(CalcFormats.key(locale, clock))") {
+                let formatter = DateComponentsFormatter()
+                formatter.unitsStyle = .full
+                var calendar = clock
+                calendar.locale = locale
+                formatter.calendar = calendar
+                formatter.allowedUnits = allowed
+                return formatter
+            }
             var parts = DateComponents()
             switch unit {
-            case .weekOfYear:
-                formatter.allowedUnits = [.weekOfMonth]
-                parts.weekOfMonth = count
-            default:
-                formatter.allowedUnits = [Self.unit(unit)]
-                parts.setValue(count, for: unit)
+            case .weekOfYear: parts.weekOfMonth = count
+            default: parts.setValue(count, for: unit)
             }
             return formatter.string(from: parts) ?? String(count)
         }
@@ -206,11 +211,14 @@ struct CalcDate {
         }
 
         private func written(_ date: Date, _ template: String, in zone: TimeZone) -> String {
-            let formatter = DateFormatter()
-            formatter.locale = locale
-            formatter.calendar = clock
-            formatter.timeZone = zone
-            formatter.setLocalizedDateFormatFromTemplate(template)
+            let formatter = CalcFormats.formatter(DateFormatter.self, "written|\(template)|\(CalcFormats.key(locale, clock, zone))") {
+                let formatter = DateFormatter()
+                formatter.locale = locale
+                formatter.calendar = clock
+                formatter.timeZone = zone
+                formatter.setLocalizedDateFormatFromTemplate(template)
+                return formatter
+            }
             return formatter.string(from: date)
         }
     }

@@ -47,6 +47,7 @@ public final class PlaygroundPanel {
         }
         self.file = target
         try "[[spots]]\nid = \"\(id)\"\ngrid = true\n".write(to: config.appendingPathComponent("config.toml"), atomically: true, encoding: .utf8)
+        model.reload()
         model.panelWillShow(holding: [])
         return id
     }

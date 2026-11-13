@@ -10,6 +10,11 @@ public struct ItemList: Equatable, Sendable {
     /// The weight of each recent pick, made again only when `recent` changes.
     private(set) var weights: PickWeights
     public private(set) var shown: [SpotItem] = []
+    /// How many shown rows are pinned at the top and at the bottom, around the rows that scroll.
+    private var topCount = 0
+    private var bottomCount = 0
+    /// Whether a shown row has a file that a drag can take out.
+    public private(set) var hasFiles = false
     public private(set) var selected = 0
     public private(set) var perLine = 1
     /// The drawing that the rows flow through.
@@ -20,6 +25,10 @@ public struct ItemList: Equatable, Sendable {
     private(set) var all: [SpotItem]
     /// The searched texts of the rows, for a list that searches them itself. A list that its script searches keeps none.
     private(set) var searchIndex = SearchIndex()
+    /// The rows pinned at the top and at the bottom, and whether any row has a file, found once for each change of the rows.
+    private var pinnedAbove: [SpotItem] = []
+    private var pinnedBelow: [SpotItem] = []
+    private var holdsFiles = false
     /// The searches of the text as it grew, each one a prefix of the next. A longer search looks among the matches of the last
     /// one when it narrows to it, and a shorter one takes its matches back.
     private var narrowings: [Narrowing] = []
@@ -148,6 +157,7 @@ public struct ItemList: Equatable, Sendable {
         if let index = rows.index {
             all = rows.items
             searchIndex = index
+            pin()
             narrowings = []
             refresh()
         }
@@ -161,7 +171,22 @@ public struct ItemList: Equatable, Sendable {
 
     /// Whether rows pinned at the bottom lie under rows that scroll, so that a thin line sets them apart.
     public var setsApart: Bool {
-        perLine == 1 && shown.contains { $0.pin == .bottom } && shown.contains { $0.pin == nil }
+        perLine == 1 && bottomCount > 0 && shown.count > topCount + bottomCount
+    }
+
+    /// The shown rows pinned at the top.
+    public var pinnedTop: ArraySlice<SpotItem> {
+        shown[..<topCount]
+    }
+
+    /// The shown rows pinned at the bottom.
+    public var pinnedBottom: ArraySlice<SpotItem> {
+        shown[(shown.count - bottomCount)...]
+    }
+
+    /// The shown rows between the pinned ones, which scroll.
+    public var scrolling: ArraySlice<SpotItem> {
+        shown[topCount..<(shown.count - bottomCount)]
     }
 
     /// Selects the first row, or the last, as ⌘↑ and ⌘↓ do.
@@ -215,13 +240,19 @@ public struct ItemList: Equatable, Sendable {
     /// Builds the index of the rows when the list searches them itself, and drops it when its script searches them.
     private mutating func reindex() {
         searchIndex = search == .local ? SearchIndex(all) : SearchIndex()
+        pin()
+    }
+
+    private mutating func pin() {
+        pinnedAbove = all.filter { $0.pin == .top }
+        pinnedBelow = all.filter { $0.pin == .bottom }
+        holdsFiles = all.contains { $0.file != nil }
     }
 
     private mutating func refresh() {
         guard search == .local else {
             narrowings = []
-            shown = Self.pinning(all, all)
-            return
+            return show(all.indices)
         }
         let next = SearchQuery(text: query)
         while let last = narrowings.last, !next.text.hasPrefix(last.query.text) { narrowings.removeLast() }
@@ -229,12 +260,19 @@ public struct ItemList: Equatable, Sendable {
             let among = narrowings.last.flatMap { $0.query.narrows(to: next) ? $0.matches : nil } ?? Array(all.indices)
             narrowings.append(Narrowing(query: next, matches: next.ranking(searchIndex, items: all, among: among, weights: weights)))
         }
-        shown = Self.pinning(narrowings.last?.matches.map { all[$0] } ?? [], all)
+        show(narrowings.last?.matches ?? [])
     }
 
-    /// The found rows between the rows of all pinned at the top and those pinned at the bottom, so that a search never hides
+    /// Shows the found rows between the rows pinned at the top and those pinned at the bottom, so that a search never hides
     /// them.
-    private static func pinning(_ found: [SpotItem], _ all: [SpotItem]) -> [SpotItem] {
-        all.filter { $0.pin == .top } + found.filter { $0.pin == nil } + all.filter { $0.pin == .bottom }
+    private mutating func show<Offsets: Collection<Int>>(_ found: Offsets) {
+        var rows = pinnedAbove
+        rows.reserveCapacity(pinnedAbove.count + found.count + pinnedBelow.count)
+        for offset in found where all[offset].pin == nil { rows.append(all[offset]) }
+        rows += pinnedBelow
+        shown = rows
+        topCount = pinnedAbove.count
+        bottomCount = pinnedBelow.count
+        hasFiles = holdsFiles && rows.contains { $0.file != nil }
     }
 }

@@ -13,6 +13,18 @@ final class SpotDockTests: XCTestCase {
         ])
     }
 
+    func testReadsOfTheRowsLayOutNothingAndAChangeLaysThemOutOnce() {
+        var dock = SpotDock(items: (0..<150).map { item("Spot \($0)", state: $0 % 3 == 0 ? .onGrid : .searchOnly) })
+        let before = SpotDock.layouts
+
+        for _ in 0..<10 {
+            _ = (dock.shown, dock.rects, dock.groups, dock.height, dock.sheetRect, dock.part(at: CGPoint(x: 10, y: 60)))
+        }
+        dock.query = "Spot 1"
+
+        XCTAssertEqual(SpotDock.layouts - before, 1)
+    }
+
     func testAddedShowsTheSpotsOnTheGridThenThoseInSearchEachByName() {
         XCTAssertEqual(dock.shown.map(\.spot.name), ["Apple", "Timer", "Wave", "Bell", "Disk"])
         XCTAssertEqual(dock.groups.map(\.title), ["On Grid", "In Search"])
