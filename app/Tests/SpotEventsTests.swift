@@ -130,15 +130,23 @@ final class SpotEventsTests: SpotRunsCase {
         XCTAssertEqual(log("other"), [])
     }
 
-    func testASpotThatOffersRowsAndReadsOnlyAsItsSheetOpensReadsAtLaunch() async throws {
+    func testASpotThatOffersRowsAndReadsOnlyAsItsSheetOpensReadsAsTheSpotsLoadAndNotAtAPanelOpen() async throws {
         try script("offer", header: "on=sheet.open\noffers=search", log: "offer", "\(reasons)\nprintf 'row=a\\ntitle=A\\n'")
         _ = try scanned()
+        try await wait("the rows of the first load") { self.runs.sheets["offer"]?.list.all.map(\.title) == ["A"] }
+        try script("offer", header: "on=sheet.open\noffers=search", log: "offer", "\(reasons)\nprintf 'row=b\\ntitle=B\\n'")
 
-        runs.launched()
+        runs.panelOpened()
+        runs.panelClosed()
+        try await allEnded()
+        let afterPanel = log("offer")
+        _ = try scanned()
 
-        try await wait("the rows of the launch read") { self.runs.sheets["offer"]?.list.all.map(\.title) == ["A"] }
-        XCTAssertEqual(log("reasons"), ["app.launch none"])
+        try await wait("the rows of the second load") { self.runs.sheets["offer"]?.list.all.map(\.title) == ["B"] }
+        XCTAssertEqual(afterPanel, ["read"])
     }
+
+
 
     func testAFailedReadOfAnEventForEachSpotIsTold() async throws {
         try script("unwanted", header: "on=app.update", log: "unwanted", "echo 'No news.' >&2\nexit 1")

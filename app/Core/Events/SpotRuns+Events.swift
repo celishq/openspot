@@ -25,6 +25,14 @@ extension SpotRuns {
         }
     }
 
+    /// Reads each spot whose offered rows only the open of its sheet reads, so that the main search has its rows after a load
+    /// of the spots or a change of the config (protocol: Places).
+    public func readOfferedRows() {
+        for sheet in sheets.values where sheet.spot.readsOfferedRows {
+            sheet.read(need: .change)
+        }
+    }
+
     /// The Mac woke: each wanted script with a number in its `read` reads at once, and its clock starts again from now. A
     /// staying script that something wants and that ended starts again.
     public func woke() {

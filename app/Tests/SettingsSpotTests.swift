@@ -31,7 +31,7 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertTrue(spot.isFound)
         XCTAssertFalse(spot.read?.has(.panel) == true)
         XCTAssertTrue(spot.read?.has(.sheet) == true)
-        XCTAssertTrue(spot.readsAtLaunch)
+        XCTAssertTrue(spot.readsOfferedRows)
         XCTAssertEqual(SpotArrangement().spot(openedBy: ActionKey(name: ",", isCommand: true), over: defaults.arrangement), spot.id)
     }
 

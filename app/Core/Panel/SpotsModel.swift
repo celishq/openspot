@@ -394,6 +394,8 @@ public final class SpotsModel {
             }
             if caller != spot, let sheet = sheets[spot], sheet.isWanted { sheet.read(need: .change) }
         }
+        if case .spots = change { return }
+        runs.readOfferedRows()
     }
 
     /// Takes the config that the app itself just wrote as the one the cards come from, so that the watch's report of the

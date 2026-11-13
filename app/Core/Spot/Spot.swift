@@ -236,11 +236,16 @@ public struct Spot: Equatable, Sendable {
         (read?.has(.panel) == true || read?.has(.event(SpotEvent.appLaunch)) == true) && !isGlobal && !mode.stays
     }
 
-    /// Whether the app reads it once as it starts: it lists `app.launch`, or it offers rows to the main search that only
-    /// the open of its sheet reads (protocol: Places).
+    /// Whether the app reads it once as it starts: it lists `app.launch`.
     public var readsAtLaunch: Bool {
+        read?.has(.event(SpotEvent.appLaunch)) == true
+    }
+
+    /// Whether it offers rows to the main search that no panel open or clock reads, so that each load of the spots or of
+    /// the config reads it (protocol: Places).
+    public var readsOfferedRows: Bool {
         guard let read else { return false }
-        return read.has(.event(SpotEvent.appLaunch)) || isGlobal && !read.has(.panel) && read.seconds == nil
+        return isGlobal && !read.has(.panel) && read.seconds == nil
     }
 
     /// Whether the person can put it in the menu bar: it has a number or an event in its `read`, or it stays.

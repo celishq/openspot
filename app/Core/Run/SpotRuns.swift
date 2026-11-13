@@ -106,8 +106,8 @@ public final class SpotRuns {
     nonisolated deinit {}
 
     /// Takes a new look at the spots folder, with the spots that the person put in the menu bar. Each script keeps its sheet,
-    /// and a sheet whose script is gone stops its reads. A staying script that something wants starts. At most once a day, it
-    /// prunes the builds of Swift scripts.
+    /// and a sheet whose script is gone stops its reads. A staying script that something wants starts, and a spot whose offered
+    /// rows only its sheet reads reads them. At most once a day, it prunes the builds of Swift scripts.
     public func take(_ scan: ScanResult, menuBar: Set<String> = []) {
         let scripts = scan.scripts
         placed = Set(scan.spots.flatMap(\.places))
@@ -123,6 +123,7 @@ public final class SpotRuns {
         scripts.forEach { sheet(for: $0).scanned() }
         swift.prune(keeping: scripts.map(\.url))
         updateClock()
+        readOfferedRows()
     }
 
     /// The sheet of a script, with the spot as the folder last gave it.
