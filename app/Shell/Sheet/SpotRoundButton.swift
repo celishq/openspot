@@ -2,7 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 /// The round button of a sheet, with one symbol, such as close or swap. A button that floats on other content has the
-/// sheet's own glass under it, so that it looks like a button on the sheet and nothing sharp shows through it. While its call runs, it shows that work and says Stop.
+/// sheet's own glass under it, so that it looks like a button on the sheet and nothing sharp shows through it. While its call runs, it fills solid, shows that work and says Stop.
 struct SpotRoundButton: View {
     enum Look {
         case plain, floating, strong, bare
@@ -21,7 +21,7 @@ struct SpotRoundButton: View {
         Button(action: action) {
             Group {
                 if let work {
-                    SpotWorkMark(call: work, side: size, stops: true, isOnSolid: look == .strong)
+                    SpotWorkMark(call: work, side: size, stops: true, isOnSolid: true)
                 } else {
                     Image(systemName: symbol)
                         .font(.system(size: max(size * Self.symbolRatio, 10), weight: .semibold))
@@ -38,7 +38,8 @@ struct SpotRoundButton: View {
     }
 
     private var fill: AnyShapeStyle {
-        switch look {
+        if work != nil { return AnyShapeStyle(SpotTheme.solid) }
+        return switch look {
         case .plain: AnyShapeStyle(SpotTheme.ink.opacity(SpotTheme.control))
         case .floating: AnyShapeStyle(SpotTheme.ink.opacity(SpotTheme.control))
         case .strong: AnyShapeStyle(SpotTheme.solid)

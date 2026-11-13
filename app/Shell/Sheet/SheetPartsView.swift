@@ -276,12 +276,13 @@ struct SheetPartsView: View {
         return false
     }
 
-    /// What a button says: its own words, or the running work of its part and the word that a press stops it.
+    /// What a button says: its own words, or the running work of its part and the word that a press stops it, on the solid
+    /// fill of a running button.
     @ViewBuilder
     private func pressLabel(_ part: SpotPart, words: String, font: Font) -> some View {
         if let call = work(part) {
             HStack(spacing: SpotTokens.placeGap / 2) {
-                SpotWorkMark(call: call, side: SpotTokens.workMark, isOnSolid: part.look == .strong)
+                SpotWorkMark(call: call, side: SpotTokens.workMark, isOnSolid: true)
                 Text("Stop").font(font).lineLimit(1)
             }
         } else {
@@ -296,11 +297,11 @@ struct SheetPartsView: View {
             switch part.look {
             case .chip:
                 pressLabel(part, words: part.title ?? part.id, font: SpotType.action)
-                    .foregroundStyle(SpotTheme.ink)
+                    .foregroundStyle(work(part) != nil ? SpotTheme.onSolid : SpotTheme.ink)
                     .padding(.horizontal, SpotTokens.padding)
                     .padding(.vertical, 5)
                     .fixedSize()
-                    .background(SpotTheme.ink.opacity(frame.isOnTop ? SpotTheme.control : SpotTheme.selectedFill), in: Capsule())
+                    .background(work(part) != nil ? SpotTheme.solid : SpotTheme.ink.opacity(frame.isOnTop ? SpotTheme.control : SpotTheme.selectedFill), in: Capsule())
                     .background { if frame.isOnTop { SpotFloatGlass(shape: Capsule()) } }
                     .contentShape(Capsule())
             case .bare:
@@ -326,7 +327,11 @@ struct SheetPartsView: View {
                     .modifier(TileLook(isOn: true))
                     .contentShape(shape)
             default:
-                centeredLine(part, text: SpotTheme.ink, fill: SpotTheme.ink.opacity(SpotTheme.selectedFill))
+                if work(part) != nil {
+                    centeredLine(part, text: SpotTheme.onSolid, fill: SpotTheme.solid)
+                } else {
+                    centeredLine(part, text: SpotTheme.ink, fill: SpotTheme.ink.opacity(SpotTheme.selectedFill))
+                }
             }
         }
         .buttonStyle(.plain)

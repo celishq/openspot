@@ -124,7 +124,7 @@ struct SpotCardView: View, @MainActor Equatable {
 
     /// Whether a card draws the solid fill of a spot that is on or runs work, which no drag or drop tints.
     static func isFilled(_ entry: SpotsModel.Entry, takesDrag: Bool, isDropTarget: Bool) -> Bool {
-        (entry.isOn || entry.work != nil) && !takesDrag && !isDropTarget
+        entry.isActive && !takesDrag && !isDropTarget
     }
 
     private var row: some View {
