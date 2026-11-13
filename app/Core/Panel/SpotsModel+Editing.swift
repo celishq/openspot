@@ -15,7 +15,7 @@ extension SpotsModel {
     public func beginEditing() {
         guard openList == nil else { return }
         closeMenu()
-        let folder = files.folder
+        let folder = self.folder
         change(.edit) {
             query = ""
             isEditing = true
@@ -102,7 +102,7 @@ extension SpotsModel {
     public func copyListingPrompt(_ id: String) {
         guard let item = dock.items.first(where: { $0.id == id }) else { return }
         guard !item.isOwn else { return copyPrompt(changing: Entry(spot: item.spot, run: nil)) }
-        let prompt = host.agentPrompt(for: files.folder.url)
+        let prompt = host.agentPrompt(for: folder.url)
         Task {
             do {
                 host.confirm(try await prompt.copy(prompt.reviewing(item.spot.url)))
@@ -122,6 +122,16 @@ extension SpotsModel {
         dockRead?.cancel()
         dockStamp = folder.stamp()
         (dockOff, dockPublications) = Self.readDock(in: folder, store: files.store)
+        composeDock()
+    }
+
+    /// Reads what the store needs from this folder off the main thread, and makes the store again when the read lands.
+    func refreshDock(in folder: SpotsFolder) async {
+        dockRead?.cancel()
+        let store = files.store
+        let read = await Task.detached(priority: .userInitiated) { (folder.stamp(), Self.readDock(in: folder, store: store)) }.value
+        dockStamp = read.0
+        (dockOff, dockPublications) = read.1
         composeDock()
     }
 
@@ -146,7 +156,7 @@ extension SpotsModel {
     /// Makes the store from each card of the panel and each spot that is off, and keeps its filter and its search. A part of
     /// a widget, such as a metric that it places or a sheet that it opens, is not one.
     func composeDock() {
-        let folder = files.folder
+        let folder = self.folder
         let choice = arrangement
         let spots = cards.filter { $0.item == nil && $0.spot.fault == nil }
         let parts = Set(spots.flatMap { $0.spot.places + ($0.spot.opens.map { [$0] } ?? []) })
@@ -155,11 +165,7 @@ extension SpotsModel {
             return SpotDock.Item(spot: entry.spot, origin: origin, state: entry.isOnGrid ? .onGrid : .searchOnly, size: entry.size, publication: dockPublications[entry.id])
         }
         let off = dockOff.map { SpotDock.Item(spot: $0.spot, origin: $0.origin, size: choice.size(of: $0.id) ?? defaultArrangement.size(of: $0.id), publication: dockPublications[$0.id]) }
-        var next = SpotDock(items: on + off)
-        next.query = dock.query
-        next.section = dock.section
-        next.opened = dock.opened
-        next.isSheetOut = dock.isSheetOut
+        let next = SpotDock(items: on + off, query: dock.query, section: dock.section, opened: dock.opened, isSheetOut: dock.isSheetOut)
         if next != dock { dock = next }
     }
 
@@ -209,7 +215,7 @@ extension SpotsModel {
         let off = dock.items.filter { $0.state == .off }
         guard !off.isEmpty else { return }
         do {
-            for item in off { try files.config.turn(files.folder.fileID(of: item.spot), on: true) }
+            for item in off { try files.config.turn(folder.fileID(of: item.spot), on: true) }
         } catch {
             host.notify("Some spots were not turned on. \(Self.reason(error))")
         }
@@ -227,7 +233,7 @@ extension SpotsModel {
     @discardableResult
     func turn(_ spot: Spot, on isOn: Bool, ending: () -> Void = {}) -> Bool {
         do {
-            try files.config.turn(files.folder.fileID(of: spot), on: isOn)
+            try files.config.turn(folder.fileID(of: spot), on: isOn)
         } catch {
             host.notify("\(spot.name) was not turned \(isOn ? "on" : "off"). \(Self.reason(error))")
             return false
@@ -358,6 +364,7 @@ extension SpotsModel {
     func saveArrangement(selecting id: String, ending: () -> Void = {}, landed: @escaping @MainActor () -> Void = {}) {
         do {
             try files.config.write(arrangement)
+            tookOwnWrite()
         } catch {
             host.notify("Openspot could not save the spots. \(Self.reason(error))")
         }

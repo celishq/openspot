@@ -86,6 +86,7 @@ final class SpotSandboxModel {
     /// Runs the spot again as it is, as a new open of the panel does.
     func rerun() {
         guard let id else { return }
+        panel.model.reload()
         panel.model.panelWillShow(holding: [])
         if place == .sheet { panel.model.sheets[id]?.read(need: .change) }
     }
