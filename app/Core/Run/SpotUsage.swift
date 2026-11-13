@@ -74,7 +74,7 @@ public final class SpotUsage: @unchecked Sendable {
     private static let useLimit = 100
 
     private let folder: URL?
-    let pause: TimeInterval
+    private let pause: TimeInterval
     private let lock = NSLock()
     /// The one queue of each write, so that a newer copy of a day never lands before an older one.
     private let writes = DispatchQueue(label: "dev.openspot.stats")
@@ -103,8 +103,9 @@ public final class SpotUsage: @unchecked Sendable {
     }
 
     /// The counts of the last `count` days through the day of `date`, the newest first: today live, and each older day from
-    /// its file.
+    /// its file, after each write that waits.
     public func days(_ count: Int, at date: Date) -> [Day] {
+        writes.sync {}
         let now = lock.withLock { Self.day(of: date) == today.day ? withLive(today) : nil }
         return Self.days(count, at: date, today: now, in: folder)
     }
