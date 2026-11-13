@@ -12,7 +12,7 @@ final class ToastPanel: NSPanel {
     static let failureSymbol = "exclamationmark.triangle.fill"
     static let confirmSymbol = "checkmark.circle.fill"
 
-    private let toast = Toast()
+    let toast = Toast()
     private var shows = 0
     private var fixKey: HotKey.Registration?
     /// The frame of the menu bar item that toasts hang from, or nil when it shows nowhere.

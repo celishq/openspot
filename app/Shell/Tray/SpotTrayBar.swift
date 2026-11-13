@@ -26,13 +26,15 @@ final class SpotTrayBar: NSObject {
     private let model: SpotsModel
     private let openspotItem: NSStatusItem
     private let iconWidth: CGFloat
+    private let toast: Toast?
     private var icon: Host<SpotTrayIconView>?
     private var work: Shown?
     private var shown: [String: Shown] = [:]
 
-    init(model: SpotsModel, openspotItem: NSStatusItem) {
+    init(model: SpotsModel, openspotItem: NSStatusItem, toast: Toast?) {
         self.model = model
         self.openspotItem = openspotItem
+        self.toast = toast
         iconWidth = openspotItem.button?.fittingSize.width ?? 0
         super.init()
         icon = makeIcon()
@@ -43,7 +45,7 @@ final class SpotTrayBar: NSObject {
     private func makeIcon() -> Host<SpotTrayIconView>? {
         guard let button = openspotItem.button, let image = button.image else { return nil }
         button.image = nil
-        let host = Host(rootView: SpotTrayIconView(model: model, image: image))
+        let host = Host(rootView: SpotTrayIconView(model: model, image: image, toast: toast))
         host.frame = NSRect(x: 0, y: 0, width: iconWidth, height: button.bounds.height)
         host.autoresizingMask = [.width, .height]
         button.addSubview(host)

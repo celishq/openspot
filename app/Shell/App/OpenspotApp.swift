@@ -70,7 +70,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         toast?.anchor = { [weak item] in
             item?.button?.window.flatMap { $0.occlusionState.contains(.visible) ? $0.frame : nil }
         }
-        trayBar = SpotTrayBar(model: model, openspotItem: item)
+        trayBar = SpotTrayBar(model: model, openspotItem: item, toast: toast?.toast)
         if let panel, let probe = SpotMotionProbe(model: model, panel: panel) {
             motionProbe = probe
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) { probe.run(show: panel.show) }
