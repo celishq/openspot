@@ -2,7 +2,7 @@
 
 These rules are decisions about how this app works that no spot author sees. The spot contract is in
 `PROTOCOL.md`, and this file points to its sections, never the other way.
-Code and tests name a rule by its ID.
+Tests name a rule by its ID, as in `func test_A4_searchStaysUntilEsc`.
 
 ## The app
 

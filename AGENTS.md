@@ -54,6 +54,9 @@ Write a doc that people read, such as `GUIDE.md` and `PROTOCOL.md`, the way Appl
 - The one exception is a `// @todo #<id>` puzzle. The header of a spot script is not a comment: it is part of the spot.
 - `make verify` runs `scripts/check-comments.sh`. Its list `scripts/comments-allowed.txt` holds the old comments still to
   remove, and it fails on a line the list lacks and on a listed line the code no longer has.
+- A test names each rule it proves by its ID, as in `func test_A4_searchStaysUntilEsc`. `make verify` runs
+  `scripts/check-rules.sh`, which fails on a rule ID given twice, on a test that names an unknown ID, and on a rule that no
+  test names and that `scripts/rules-untested.txt` does not list.
 
 ## Core and Shell
 
@@ -160,7 +163,7 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
 ## Verify
 
 ```sh
-make verify                # the Core, Tests, Comments and Motion checks, then the XCTest suite, with test classes in parallel
+make verify                # the Core, Tests, Comments, Rules and Motion checks, then the XCTest suite, with test classes in parallel
 make test T=SpotRunsTests  # one test class, while you work on it
 make perf N=3              # times a Release sheet that opens and closes 20 times, 3 runs; ACTION picks another motion
 make film SPOT=caffeinate  # films the open and close of a sheet 10x slower (SLOW=1 for real speed) into .temp/film
