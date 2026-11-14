@@ -39,6 +39,23 @@ struct SpotCustomView: View, @MainActor Equatable {
             .allowsHitTesting(send != nil)
     }
 
+    /// The card of a spot by its store ID, as a plain function, since a view library casts it back from `Any`. A view's body
+    /// calls it on the main thread.
+    private var cardView: (String) -> AnyView {
+        let cards = cards
+        return { id in
+            var view = AnyView(EmptyView())
+            MainActor.assumeIsolated { view = cards.view(id) }
+            return view
+        }
+    }
+
+    /// The size of the card of a spot by its store ID, as a plain function.
+    private var cardSize: (String) -> CGSize {
+        let cards = cards
+        return { id in MainActor.assumeIsolated { cards.size(id) } }
+    }
+
     /// What the view reads of its card, by the keys of `SpotInput`.
     private var input: [String: Any] {
         [
@@ -52,8 +69,8 @@ struct SpotCustomView: View, @MainActor Equatable {
             "detail": SpotType.detail,
             "metric": SpotType.metric,
             "value": SpotType.value,
-            "card": { @MainActor (id: String) -> AnyView in cards.view(id) } as @MainActor (String) -> AnyView,
-            "cardSize": { @MainActor (id: String) -> CGSize in cards.size(id) } as @MainActor (String) -> CGSize
+            "card": cardView,
+            "cardSize": cardSize
         ]
     }
 
