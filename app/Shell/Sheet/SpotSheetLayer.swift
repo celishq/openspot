@@ -24,7 +24,7 @@ struct SpotSheetLayer: View {
             hasCardLook: card?.look != nil,
             morph: SheetMorph(card: closedRect, sheet: sheetRect)
         )
-        .id(FlowSheet(spot: entry.id, page: model.sheets[entry.id]?.page))
+        .id(entry.id)
         .morph(progress, opacity: contentOpacity)
         .overlay(alignment: .topLeading) {
             if let look = card?.look, let frame {

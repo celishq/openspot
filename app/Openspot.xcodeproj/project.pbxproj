@@ -92,6 +92,7 @@
 		20C595D08A6C0DCB45DC58EC /* RemindersTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92A4BCB2AF5BC515EE265370 /* RemindersTests.swift */; };
 		2128D97AE61D28977C35A9C1 /* SpotPlacement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55281667DA5D266778D3B00C /* SpotPlacement.swift */; };
 		22780D92B533C99BA3245236 /* SpotsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB56CAAADCC15D5DC54C5776 /* SpotsView.swift */; };
+		227FBB146B550B3B70AA89B7 /* FlowArrival.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48E9E55DB84DDDD95454BBCD /* FlowArrival.swift */; };
 		22A53FB08F8785F11EC5B9E5 /* SpotsModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31F1F762437F85CC9E26EAD7 /* SpotsModelTests.swift */; };
 		22F2F14518754249968C66CF /* LanguageCodes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C462005019A07CDCB802C03 /* LanguageCodes.swift */; };
 		231B9D2027C96F902722FDC0 /* EmojiCalls.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEB57C92F63515E40EE9CAC1 /* EmojiCalls.swift */; };
@@ -877,6 +878,7 @@
 		4846831A9EBA2EBCAD124F63 /* Flow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Flow.swift; sourceTree = "<group>"; };
 		486D6A4DAB2507851E2774B6 /* ReleaseLogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseLogTests.swift; sourceTree = "<group>"; };
 		48B0DA6204425E910C82D1D7 /* SheetLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetLayoutTests.swift; sourceTree = "<group>"; };
+		48E9E55DB84DDDD95454BBCD /* FlowArrival.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowArrival.swift; sourceTree = "<group>"; };
 		48F7451264C08B48BD7F2B65 /* CalcAnswerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalcAnswerTests.swift; sourceTree = "<group>"; };
 		4958C896F9317151F9D988A2 /* SpotFill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotFill.swift; sourceTree = "<group>"; };
 		49ACB26CF7EE399D010673E5 /* SpotSheetFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSheetFrame.swift; sourceTree = "<group>"; };
@@ -1560,6 +1562,7 @@
 		3002A6C4B0E182B859FDF6E5 /* Sheet */ = {
 			isa = PBXGroup;
 			children = (
+				48E9E55DB84DDDD95454BBCD /* FlowArrival.swift */,
 				171DE2A93C238530C6A56985 /* SheetPartsView.swift */,
 				4FBF38806826AAD61118F1A5 /* SpotArrowScroll.swift */,
 				D82A94DDBC2832F95B364CCF /* SpotBars.swift */,
@@ -3140,6 +3143,7 @@
 				F8AA74D967663BD2D8598070 /* AppPresence.swift in Sources */,
 				C77C92F46C4B3EA723DB2E9B /* AppUpdate.swift in Sources */,
 				EBC6F7F7A9303E3E3D95E542 /* EditMenu.swift in Sources */,
+				227FBB146B550B3B70AA89B7 /* FlowArrival.swift in Sources */,
 				0085501189CF1C5C6FAEEF32 /* HotKey.swift in Sources */,
 				263C01EB7C13448ABCEB8866 /* MenuBarHost.swift in Sources */,
 				62D1A945819C4B956583987D /* MenuBarMarkItem.swift in Sources */,

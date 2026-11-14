@@ -43,7 +43,7 @@ extension SpotsModel {
     private func standEdges() {
         edgeStep += 1
         guard let shown = flowEdges.shown, let rect = shownSheetRect else { return }
-        flowEdges = flowEdges.standing(at: rect, title: title(of: shown))
+        flowEdges = flowEdges.standing(at: rect, title: title(of: shown), in: flow)
     }
 
     private func moveEdges() {

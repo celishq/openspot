@@ -4,6 +4,7 @@ public struct FlowEdges: Equatable, Sendable {
     public private(set) var edges: [FlowEdge] = []
     public private(set) var shown: FlowSheet?
     public private(set) var from: CGRect?
+    public private(set) var coming: FlowEdge.Side?
 
     public init() {}
 
@@ -19,9 +20,11 @@ public struct FlowEdges: Equatable, Sendable {
         edges.filter { !$0.isFading && $0.place.side == side }.map(\.title)
     }
 
-    func standing(at rect: CGRect, title: String) -> FlowEdges {
+    func standing(at rect: CGRect, title: String, in flow: Flow) -> FlowEdges {
         var next = settled
         guard let shown, !next.edges.contains(where: { $0.sheet == shown }) else { return next }
+        let left = flow.pages.firstIndex(of: shown) ?? -1
+        next.coming = left > flow.index ? .behind : .ahead
         next.edges.append(FlowEdge(sheet: shown, title: title, place: .stand(rect)))
         next.from = rect
         return next
@@ -30,6 +33,7 @@ public struct FlowEdges: Equatable, Sendable {
     func moved(to rest: FlowEdges) -> FlowEdges {
         var next = rest
         next.from = from
+        next.coming = coming
         for edge in edges where !rest.edges.contains(where: { $0.sheet == edge.sheet }) {
             var gone = edge
             if edge.sheet == rest.shown { gone.place = .sheet }
@@ -43,6 +47,7 @@ public struct FlowEdges: Equatable, Sendable {
         var next = self
         next.edges.removeAll(where: \.isFading)
         next.from = nil
+        next.coming = nil
         return next
     }
 }

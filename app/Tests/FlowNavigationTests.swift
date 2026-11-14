@@ -104,6 +104,21 @@ final class FlowNavigationTests: PanelCase {
         XCTAssertEqual(host.edgeChanges.map(\.motion), [nil, .sheet(isOpen: true), nil])
     }
 
+    func testAStepSaysWhichSideItsNewPageComesFromUntilItEnds() async throws {
+        try await openList()
+        host.edgeChanges = []
+        try await openPage()
+        try await waitFor("the push to settle") { self.model.flowEdges.from == nil && self.model.flowEdges.titles(on: .behind) == ["List"] }
+        let pushed = host.edgeChanges.map(\.edges.coming)
+        host.edgeChanges = []
+
+        XCTAssertTrue(model.handleKey(back))
+
+        try await waitFor("the back to settle") { self.model.flowEdges.from == nil && self.model.flowEdges.titles(on: .ahead) == ["A"] }
+        XCTAssertEqual(pushed, [.ahead, .ahead, nil])
+        XCTAssertEqual(host.edgeChanges.map(\.edges.coming), [.behind, .behind, nil])
+    }
+
     func testBackPutsThePageItLeavesInABarAheadThatAClickGoesForwardTo() async throws {
         try await openList()
         try await openPage()
