@@ -21,7 +21,7 @@ final class FirstLaunchTests: XCTestCase {
         SpotsFolder(url: spots).isFirstLaunch(config: file)
     }
 
-    func testNoConfigAndNoFolderIsAFirstLaunch() {
+    func test_A14_noConfigAndNoFolderIsAFirstLaunch() {
         XCTAssertTrue(isFirst)
     }
 
@@ -55,7 +55,7 @@ final class FirstLaunchTests: XCTestCase {
         XCTAssertEqual(file.read().arrangement.enabled, ["apps", "files"])
     }
 
-    func testOnlyQuietRepoSpotsStartOn() throws {
+    func test_A12_onlyQuietRepoSpotsStartOn() throws {
         let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let place = SpotsFolder(url: spots, core: repo.appendingPathComponent("spots"))
 
@@ -72,7 +72,7 @@ final class FirstLaunchTests: XCTestCase {
         XCTAssertEqual(SpotsFolder(url: spots).startingSpots(), [])
     }
 
-    func testTheKeyToastNamesTheKeyInUse() throws {
+    func test_A8_theKeyToastNamesTheKeyInUse() throws {
         XCTAssertEqual(Shortcut.standard.openHint, "Press `⌃Space` to open Openspot")
         XCTAssertEqual(try XCTUnwrap(Shortcut(text: "option+k")).openHint, "Press `⌥K` to open Openspot")
     }

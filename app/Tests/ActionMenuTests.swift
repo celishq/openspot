@@ -72,7 +72,7 @@ final class ActionMenuTests: XCTestCase {
         XCTAssertEqual(two.lines, 2)
     }
 
-    func testEachRowOfAGridCardsMenuActsOnThatCard() throws {
+    func test_A28_eachRowOfAGridCardsMenuActsOnThatCard() throws {
         let menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, offered: app(share)))
 
         XCTAssertEqual(menu.rows.dropFirst().filter { $0.action == nil }.map(\.title), [])

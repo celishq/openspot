@@ -233,7 +233,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
         try await wait("the next answer") { sheet.list.shown.map(\.run) == ["a"] }
     }
 
-    func testTheScriptLoadsAtItsFirstCallAndLetsGoAfterItsIdleTime() async throws {
+    func test_A26_theScriptLoadsAtItsFirstCallAndLetsGoAfterItsIdleTime() async throws {
         runs(idle: 0.3)
         try answering()
         let sheet = try sheet()

@@ -163,7 +163,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         XCTAssertFalse(exists("runs"))
     }
 
-    func testEachScriptWithACardOrNotHasOneSheetAndAWidgetHasNone() throws {
+    func test_A2_eachScriptWithACardOrNotHasOneSheetAndAWidgetHasNone() throws {
         try script("cups", header: "on=clock.30\noffers=card\noffers=menubar")
         try script("tool", header: "on=sheet.open")
         try script("once")
@@ -206,7 +206,7 @@ final class SpotRunsReadTests: SpotRunsCase {
 
     // MARK: M2; M3; Events, Frames
 
-    func testARequestJoinsTheReadThatRuns() async throws {
+    func test_A1_aRequestJoinsTheReadThatRuns() async throws {
         try script(header: "on=sheet.open", "sleep 0.2\nprintf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
 

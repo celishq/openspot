@@ -61,7 +61,7 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(changes, 2)
     }
 
-    func testAReadStartsOneOpenspotAndNoJq() async throws {
+    func test_A27_aReadStartsOneOpenspotAndNoJq() async throws {
         try script("cups.sh", "title=Cups\non=clock.60\n\nfield=size")
         let programs = try countPrograms()
 

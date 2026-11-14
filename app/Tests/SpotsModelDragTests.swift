@@ -625,7 +625,7 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertFalse(try model.files.config.read().arrangement.enabled.contains("timer"))
     }
 
-    func testADragFromTheStoreOpensEditSpotsThatStaysAfterTheDrag() {
+    func test_A13_aDragFromTheStoreOpensEditSpotsThatStaysAfterTheDrag() {
         model.endEditing()
         model.isShown = false
 

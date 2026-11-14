@@ -32,7 +32,7 @@ final class ConfigFileTests: XCTestCase {
         XCTAssertEqual(file.read().faults, [])
     }
 
-    func testReadsTheKey() throws {
+    func test_A6_readsTheKey() throws {
         try write("# mine\npanel_key = \"option+space\"\n")
 
         XCTAssertEqual(file.read().panelKey, Shortcut(text: "option+space"))

@@ -8,7 +8,7 @@ final class UpdateSpotTests: BuiltInCase {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
     }
 
-    func testAReadStartsOneOpenspotAndNoJq() async throws {
+    func test_A27_aReadStartsOneOpenspotAndNoJq() async throws {
         let programs = try countPrograms()
 
         _ = try await spot("updates").state(timeout: 5)

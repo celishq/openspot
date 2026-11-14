@@ -73,7 +73,7 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(host.shows, shows)
     }
 
-    func testAKeyThatTheAPISetsHoldsTheKeysAgainAndBuildsNoGrid() throws {
+    func test_A25_aKeyThatTheAPISetsHoldsTheKeysAgainAndBuildsNoGrid() throws {
         try script("move", header: "title=Move\n\nbutton=left\ntitle=Left side", ":")
         model.reload()
         let builds = model.gridBuilds
@@ -608,6 +608,48 @@ final class SpotsModelTests: XCTestCase {
         model.panelWillShow(holding: [])
         XCTAssertEqual(model.selected, 0)
         try await wait("the shown panel") { model.isShown }
+    }
+
+    func test_A4_theSearchStaysThroughAHideUntilEsc() {
+        model.reload()
+        model.panelWillShow(holding: [])
+        model.searchText = "ban"
+
+        model.panelWillHide()
+        model.panelDidHide()
+        model.panelWillShow(holding: [])
+
+        XCTAssertEqual(model.searchText, "ban")
+        XCTAssertTrue(model.stepBack())
+        XCTAssertEqual(model.searchText, "")
+    }
+
+    func test_A8_theOpenAtLaunchWaitsAtMostTwoSecondsForTheReads() async throws {
+        let gate = folder.appendingPathComponent("gate").path
+        try script("stuck", header: "on=panel.open", "n=0; while [ ! -f '\(gate)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done")
+        model.reload()
+        model.panelWillShow(holding: [])
+        let start = ContinuousClock.now
+
+        await model.waitForReads()
+
+        let waited = ContinuousClock.now - start
+        XCTAssertTrue(model.runs.isReading)
+        XCTAssertGreaterThanOrEqual(waited, .seconds(2))
+        XCTAssertLessThan(waited, .seconds(20))
+        FileManager.default.createFile(atPath: gate, contents: nil)
+        try await wait("the end of the read") { !model.runs.isReading }
+    }
+
+    func test_A14_aFirstLaunchOpensThePanelOnTheGridAndNamesTheKeyWhenItCloses() {
+        model.beginFirstLaunch()
+
+        XCTAssertEqual(host.presents, 1)
+        XCTAssertNil(model.openList)
+        XCTAssertEqual(host.confirms, [])
+        model.panelWillHide()
+        model.panelDidHide()
+        XCTAssertEqual(host.confirms, [model.entryKey.openHint])
     }
 
     func testAFormOfSeveralPicksStaysOpenThroughEachPickReadsTheSpotAgainAndSelectsAllOnCommandShiftA() async throws {

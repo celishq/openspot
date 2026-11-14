@@ -42,7 +42,7 @@ final class SheetFocusTests: XCTestCase {
     shortcut=cmd+shift+v
     """
 
-    func testTheArrowsReachEachDrawnPartInTheOrderItIsDrawnAndNoAction() throws {
+    func test_A29_theArrowsReachEachDrawnPartInTheOrderItIsDrawnAndNoAction() throws {
         var sheet = try panel(confetti)
 
         XCTAssertEqual(sheet.focusOrder.map(\.id), ["look", "key", "make", "play"])

@@ -126,7 +126,7 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertEqual(try ReviewSpot(spot: SpotPackage(files: files), folder: folder).subtitle, "Holds a program that you cannot read")
     }
 
-    func testADragOfASpotSaysWhatADropInstalls() throws {
+    func test_A10_aDragOfASpotSaysWhatADropInstalls() throws {
         let file = folder.appendingPathComponent("any name.spot")
         try spot([("weather.spot/weather.sh", "#!/bin/sh\n# title=Weather\n# icon=sun.max\n# detail=Today\n", true)]).zip(to: file)
         let target = folder.appendingPathComponent("spots")
@@ -358,7 +358,7 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertEqual(try SpotsFolder(url: spots).scan().spots.map(\.name), ["Weather"])
     }
 
-    func testTheAppOffersTheReviewAsASheetThatGrowsOutOfTheField() async throws {
+    func test_A10_theAppOffersTheReviewAsASheetThatGrowsOutOfTheField() async throws {
         let review = try review("title=Weather")
         let command = review.spot
 

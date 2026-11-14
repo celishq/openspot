@@ -29,7 +29,7 @@ final class NewSpotTests: BuiltInCase {
         try String(contentsOf: root.appendingPathComponent(name), encoding: .utf8)
     }
 
-    func testItIsASmallListThatTheConfigOpensWithCommandN() throws {
+    func test_A22_itIsASmallListThatTheConfigOpensWithCommandN() throws {
         let spot = try newSpot()
         let defaults = Config(text: try String(contentsOf: repo.appendingPathComponent("app/defaults.toml"), encoding: .utf8))
 
@@ -59,7 +59,7 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(output.items.count, 1 + SpotStarter.allCases.count)
     }
 
-    func testCopyPromptForAICopiesThePromptWithTheSearchAndStartsNothing() async throws {
+    func test_A23_copyPromptForAICopiesThePromptWithTheSearchAndStartsNothing() async throws {
         let spot = try newSpot()
 
         let toast = try await spot.perform(.item(SpotItem(title: "Copy prompt for AI", run: "ask")), input: "search=Show the weather here\n", timeout: 5)
