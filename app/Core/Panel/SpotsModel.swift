@@ -26,9 +26,12 @@ public final class SpotsModel {
 
     /// The sheet that grows out of the search field in place of a card, such as the install screen, while it is loaded.
     public private(set) var fieldSheet: String?
+    /// The entries that the store draws by their store IDs, read at their first use after each change of the entries.
+    @ObservationIgnored var storeCards: [String: Entry]?
     public var entries: [Entry] = [] {
         didSet {
             spotListIsStale = true
+            storeCards = nil
             askAnswers()
             updateVisible()
             prepareCardGlyphs()

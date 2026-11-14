@@ -257,6 +257,19 @@ final class SpotFloatTests: XCTestCase {
         XCTAssertNil(model.openList)
     }
 
+    func testAFormOfAWindowSpotSaysItDoesNotShowYetAndOpensNoPanel() async throws {
+        try windowSpot()
+        model.press("store")
+        try await wait("the window") { host.windows == ["store"] }
+        let entry = try XCTUnwrap(model.cards.first { $0.id == "store" })
+        let rename = CommandAction(id: "rename", title: "Rename", isForm: true)
+
+        model.run(rename, on: (entry, model.sheets["store"]?.list.shown.first), in: .float)
+
+        XCTAssertEqual(host.notes, ["Rename asks with a form or a second press, which a window does not show yet."])
+        XCTAssertEqual(host.shows, 0)
+    }
+
     func testAWindowThatClosesLandsItsSpotAndAnotherPressOpensItAgain() async throws {
         try windowSpot()
         model.press("store")

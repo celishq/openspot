@@ -7,7 +7,7 @@ extension SpotsModel {
     /// first, a Swift spot is compiled into the package, and the package holds a signed release of it.
     @discardableResult
     public func publish(_ id: String) async -> SpotPublish {
-        guard let spot = entries.first(where: { $0.id == id && $0.item == nil })?.spot else { return .notOwn }
+        guard let spot = ownSpot(id) ?? entries.first(where: { $0.id == id && $0.item == nil })?.spot else { return .notOwn }
         guard origin(of: spot) == .mine else {
             host.notify("\(spot.name) comes with Openspot, so the store has it already.")
             return .notOwn
@@ -49,6 +49,11 @@ extension SpotsModel {
         if package.needsCompile { host.work("Compiling \(name)") }
         let spots = folder.url
         return try await Task.detached(priority: .userInitiated) { try await package.release(by: key, keepingLogIn: spots) }.value
+    }
+
+    /// The spot of a file of the spots folder by its ID, also when Edit Spots turned it off.
+    func ownSpot(_ id: String) -> Spot? {
+        (try? SpotsFolder(url: folder.url).keptScan())?.files.first { $0.id == id }?.spots.first
     }
 
     /// The account key. With none, it opens the sheet of the spot that reaches the account key, so the person can set one

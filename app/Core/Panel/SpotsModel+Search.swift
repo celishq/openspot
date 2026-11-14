@@ -6,8 +6,15 @@ extension SpotsModel {
     /// in the group of its target. It is nil out of Edit Spots and while the search has text.
     var hiddenStart: Int? {
         guard isEditing, query.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
-        let hidden = cards.filter { !$0.isOnGrid && $0.id != drag?.id }.count + (drag?.target.isOnGrid == false ? 1 : 0)
+        let hidden = shelfCards.filter { $0.id != drag?.id }.count + (drag?.target.isOnGrid == false ? 1 : 0)
         return visible.count - hidden
+    }
+
+    /// The cards of the Search only shelf of Edit Spots: each spot off the grid that offers a card of its own, and not a
+    /// sheet that another spot opens or a card of faults.
+    var shelfCards: [Entry] {
+        let parts = Set(cards.flatMap { $0.spot.places + ($0.spot.opens.map { [$0] } ?? []) })
+        return cards.filter { !$0.isOnGrid && $0.item == nil && $0.spot.offersCard && $0.spot.fault == nil && !parts.contains($0.id) }
     }
 
     /// The grid of the cards shown: in the two groups of Edit Spots, with the size of each card whose size the person chose.
@@ -71,7 +78,7 @@ extension SpotsModel {
     private func found() -> [Entry] {
         let text = query.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else {
-            return dragged(cards.filter(\.isOnGrid) + (isEditing ? cards.filter { !$0.isOnGrid } : []))
+            return dragged(cards.filter(\.isOnGrid) + (isEditing ? shelfCards : []))
         }
         var ids = Set<String>()
         let answers = entries.filter { $0.spot.answers.map { runs.answerMatches.matches($0, text) } == true }

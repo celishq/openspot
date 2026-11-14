@@ -49,7 +49,7 @@ public struct SpotGrid: Equatable, Sendable {
     /// Lays out the spots in shelves, as one group, or as two groups when both have spots. The rows count on through both
     /// groups. A spot of the second group keeps its size, as on the grid, and grows to fill no row.
     public func place(_ sizes: [SpotSize]) -> [SpotPlacement] {
-        guard let split, split > 0, split < sizes.count else { return shelvesByPanel(sizes) }
+        guard let split, split >= 0, split < sizes.count else { return shelvesByPanel(sizes) }
         let band = SpotTokens.groupTitleBand
         let first = shelvesByPanel(Array(sizes[..<split])).map {
             SpotPlacement(index: $0.index, row: $0.row, column: $0.column, size: $0.size, top: band)

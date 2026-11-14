@@ -58,6 +58,16 @@ final class StoreSpotTests: BuiltInCase {
         XCTAssertEqual(rows.first { $0[0] == "timer" }?[2], "added")
     }
 
+    func testGetTurnsBackOnYourOwnSpotThatEditSpotsTurnedOff() async throws {
+        try file.turn("mine", on: false)
+        let before = try await items()
+        XCTAssertEqual(before.first { $0[0] == "mine" }?[2], "get")
+
+        try await call(["gallery", "get:mine"])
+
+        XCTAssertEqual(file.read().arrangement.disabled, [])
+    }
+
     func testPublishPublishesYourOwnSpotInTheApp() async throws {
         let rows = try await items()
         let id = try XCTUnwrap(rows.first { $0[2] == "publish" }?[0])

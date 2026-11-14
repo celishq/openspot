@@ -64,6 +64,10 @@ extension SpotsModel {
             if isShown { host.dismiss() }
             return true
         }
+        if entries.first(where: { $0.id == id })?.spot.offersWindow == true {
+            openWindow(id)
+            return true
+        }
         let moves = isShown
         isSettlingDrop = true
         host.present()

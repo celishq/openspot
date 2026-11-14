@@ -89,7 +89,7 @@ A float is one spot in a window of its own, at the pointer, outside the panel.
 | W7 | Each spot has one float at most. Floats of other spots and the panel show at the same time. A float wants its script as an open sheet does (protocol: Events), and the panel's close does not close it. A float's close drops the values of a sheet of parts with a field, as the panel's close does (K5). |
 | W8 | A float takes Up, Down, Return, Esc and the shortcuts of its spot's actions. It has no search field, no `⌘K` menu and no form: an action or a pick that asks with a form, a key or a second press opens the spot in the panel. A pick leaves the float open. |
 | W9 | A drop on a float works as a drop on its card (D2, D6). The float shows that it takes a drag only while the pointer lies over it. |
-| W10 | A spot whose header says `offers=window` opens its sheet in a titled window of its own, from every open of its sheet, and the panel goes away. It runs as a float does (W7, W8), with the title bar in place of its header. The app is a regular app in the Dock and in Command-Tab while any such window is open. |
+| W10 | A spot whose header says `offers=window` opens its sheet in a titled window of its own, from every open of its sheet, and the panel goes away. It runs as a float does (W7, W8), with the title bar in place of its header, but an action that asks with a form or a second press shows a toast that it does not show yet. The app is a regular app in the Dock and in Command-Tab while any such window is open. |
 
 ## Decisions
 

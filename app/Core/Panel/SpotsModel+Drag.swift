@@ -12,7 +12,7 @@ extension SpotsModel {
             guard let start = visible.firstIndex(where: { $0.id == id }) else { return }
             let entry = visible[start]
             let others = visible.filter(\.isOnGrid).count - (entry.isOnGrid ? 1 : 0)
-            let targets = gridTargets(0...others) + (entry.item == nil ? (others...(visible.count - 1)).map(SpotDrag.Target.hidden) : [])
+            let targets = gridTargets(0...others) + (entry.item == nil && entry.spot.offersCard ? (others...(visible.count - 1)).map(SpotDrag.Target.hidden) : [])
             let home = SpotDrag.Target(place: start, isOnGrid: entry.isOnGrid, panel: entry.isOnGrid ? panel(of: entry) : .center)
             let lifted = SpotDrag(id: id, home: home, sizes: visible.map(\.size), targets: targets, grid: grid)
             stopDragWait()

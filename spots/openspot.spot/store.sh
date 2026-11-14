@@ -17,30 +17,34 @@ field() {
       if (found) { print value; exit } }'
 }
 
-# Gets spot $1: turns a core spot on, or adds a spot that the store holds.
+# Gets spot $1: turns on a core spot or one of your own that is off, or adds a spot that the store holds.
 get() {
   case "$(field "$1" origin)" in
-    core) openspot setting set --spot "$1" enabled true ;;
+    core | mine) openspot setting set --spot "$1" enabled true ;;
     store) openspot spot add "$(field "$1" path)" >/dev/null ;;
     *) return 0 ;;
-  esac && printf 'toast=Added %s\n' "$(field "$1" name)"
+  esac && printf 'toast=Added %s\n\n' "$(field "$1" name)"
+}
+
+# Prints the gallery: each spot with its id, its name and what its button does.
+gallery() {
+  printf 'view=gallery\n'
+  openspot store list --frame | awk 'BEGIN { RS = ""; FS = "\n" }
+    { delete f
+      for (i = 1; i <= NF; i++) { n = index($i, "="); f[substr($i, 1, n - 1)] = substr($i, n + 1) }
+      state = f["added"] == "true" ? "added" : "get"
+      if (f["origin"] == "mine" && f["added"] == "true" && f["published"] != "current") state = "publish"
+      printf "value=%s\t%s\t%s\n", f["spot"], f["name"], state }'
 }
 
 case "$1" in
-  read)
-    printf 'view=gallery\n'
-    openspot store list --frame | awk 'BEGIN { RS = ""; FS = "\n" }
-      { delete f
-        for (i = 1; i <= NF; i++) { n = index($i, "="); f[substr($i, 1, n - 1)] = substr($i, n + 1) }
-        state = f["added"] == "true" ? "added" : "get"
-        if (f["origin"] == "mine" && f["published"] != "current") state = "publish"
-        printf "value=%s\t%s\t%s\n", f["spot"], f["name"], state }'
-    ;;
+  read) gallery ;;
   gallery)
     case "$2" in
       get:*) get "${2#get:}" ;;
       publish:*) openspot store publish "${2#publish:}" >/dev/null ;;
     esac
+    gallery
     ;;
   open)
     [ -n "$2" ] || exit 0

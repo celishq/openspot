@@ -18,13 +18,14 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         super.sendEvent(event)
     }
 
-    /// Brings the window to the front, with the app regular while it is open.
+    /// Brings the window and the app to the front, with the app regular while the window is open.
     func show() {
         if !isPresent {
             isPresent = true
             AppPresence.open()
         }
         contentView?.layoutSubtreeIfNeeded()
+        NSApp.activate(ignoringOtherApps: true)
         makeKeyAndOrderFront(nil)
     }
 

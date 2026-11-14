@@ -255,6 +255,19 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(order, ["b", "c", "d"])
     }
 
+    func testTheShelfLeavesOutASpotWithNoCardOfItsOwn() throws {
+        try "#!/bin/sh\n# on=panel.open\n# offers=search\n".writeScript(to: spots.appendingPathComponent("rows.spot/rows.sh"))
+        model.reload()
+
+        XCTAssertFalse(order.contains("rows"))
+    }
+
+    func testWithEveryCardInSearchOnlyTheShelfStillHasItsTitleBand() {
+        for id in ["a", "b", "c", "d"] { model.setOnGrid(false, for: id) }
+
+        XCTAssertEqual(Set(model.placements.map(\.top)), [2 * SpotTokens.groupTitleBand])
+    }
+
     func testACardDraggedUnderTheGridGoesToSearchOnly() {
         let below = CGPoint(x: SpotTokens.cell / 2, y: SpotGrid.height(of: model.placements) + SpotTokens.rowHeight)
         let translation = move("b", to: below)
