@@ -72,9 +72,9 @@ extension SpotsModel {
     /// Opens a sheet, which closes the run of the sheet before and stops a recording in it, and shows it once it is ready: at
     /// once, or with its first answer. It takes the place of a sheet that shows, grows out of its card when it moves, and
     /// shows in place when it does not move or has no card.
-    public func open(_ id: String, moving: Bool) {
+    public func open(_ id: String, moving: Bool, title: String? = nil) {
         if openList == nil { endFlow() }
-        flow.push(FlowSheet(spot: id))
+        flow.push(FlowSheet(spot: id, title: title))
         sheets[id]?.show(page: nil)
         pendingPush = moving && openList != nil && openList != id ? 1 : nil
         present(id, moving: moving)

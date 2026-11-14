@@ -89,8 +89,6 @@ public final class SpotsModel {
     }
     /// The title of each sheet behind the one that shows, the nearest first.
     public private(set) var behindTitles: [String] = []
-    /// The title of each page that a row opened, which is the title of that row.
-    @ObservationIgnored var pageTitles: [FlowSheet: String] = [:]
     /// How far the content of the sheet lies from its place while the next sheet of the flow pushes in, or 0 at rest.
     public internal(set) var pushOffset = 0.0
     /// The side that the sheet of another spot pushes in from once it is ready, -1 for the left and 1 for the right.

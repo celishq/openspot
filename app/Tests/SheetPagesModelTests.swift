@@ -144,7 +144,7 @@ final class SheetPagesModelTests: XCTestCase {
 
         try await wait("the page") { titles == ["Detail a"] }
         XCTAssertEqual(model.behindTitles, ["List"])
-        XCTAssertEqual(model.title(of: FlowSheet(spot: "list", page: "a")), "A")
+        XCTAssertEqual(model.flow.current?.title, "A")
         XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "list"), FlowSheet(spot: "list", page: "a")])
     }
 

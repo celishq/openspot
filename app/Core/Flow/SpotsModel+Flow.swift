@@ -20,8 +20,7 @@ extension SpotsModel {
         if !moves { host.show() }
         endEditing(moving: false)
         if openList == nil { endFlow() }
-        let next = FlowSheet(spot: id, page: page)
-        if let title = title ?? sheets[id]?.list.all.first(where: { $0.run == page })?.title { pageTitles[next] = title }
+        let next = FlowSheet(spot: id, page: page, title: title ?? sheets[id]?.list.all.first { $0.run == page }?.title)
         flow.push(next)
         show(next, moving: moves, from: 1)
         return true
@@ -94,10 +93,9 @@ extension SpotsModel {
             sheets[id]?.pick(SpotItem(title: title ?? page ?? id, run: page ?? ""))
             return
         }
-        let next = FlowSheet(spot: id, page: page)
-        if let title { pageTitles[next] = title }
+        let next = FlowSheet(spot: id, page: page, title: title)
         guard replace, flow.current != nil else {
-            if let page { _ = openSheet(id, page: page, title: title) } else { open(id, moving: isShown) }
+            if let page { _ = openSheet(id, page: page, title: title) } else { open(id, moving: isShown, title: title) }
             return
         }
         flow.replaceCurrent(with: next)
@@ -159,12 +157,11 @@ extension SpotsModel {
     /// Brings each spot of the flow back to its first sheet, and empties the flow.
     func endFlow() {
         for page in flow.pages where page.page != nil { sheets[page.spot]?.show(page: nil) }
-        pageTitles = [:]
         flow.clear()
     }
 
-    /// The title of a sheet of the flow: of the row that opened its page, or else of its spot.
-    func title(of page: FlowSheet) -> String {
-        pageTitles[page] ?? (page.page == nil ? entries.first { $0.id == page.spot }?.spot.name : nil) ?? page.page ?? page.spot
+    /// The title of a sheet of the flow: its own, or else the name of its spot for a first sheet, or else its page.
+    func title(of sheet: FlowSheet) -> String {
+        sheet.title ?? (sheet.page == nil ? entries.first { $0.id == sheet.spot }?.spot.name : nil) ?? sheet.page ?? sheet.spot
     }
 }
