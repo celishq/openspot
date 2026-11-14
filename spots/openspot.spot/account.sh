@@ -182,7 +182,7 @@ sheet() {
   case $current in
     restore) restore; return ;;
     check) check; return ;;
-    choose) printf 'grid=head\ngrid=head\ngrid=new\ngrid=own\n' ;;
+    choose) printf 'grid=head\ngrid=head\ngrid=new\ngrid=own\ngrid=how\n' ;;
     how) printf 'grid=head\ngrid=head\ngrid=people\ngrid=icloud\ngrid=words\ngrid=private\ngrid=reset\ngrid=done\n' ;;
     about)
       printf 'grid=head\ngrid=head\ngrid=private\ngrid=reset\n'
@@ -194,7 +194,7 @@ sheet() {
       printf 'grid=head\ngrid=head\n'
       [ "$sync" = true ] || printf 'grid=backup\n'
       [ -z "$sync" ] || printf 'grid=sync\n'
-      printf 'grid=done\ngrid=about\ngrid=leave\n'
+      printf 'grid=done\ngrid=about\ngrid=how\ngrid=leave\n'
       ;;
     leave)
       printf 'grid=head\ngrid=head\n'

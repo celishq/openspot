@@ -73,13 +73,16 @@ final class AccountSpotTests: BuiltInCase {
         XCTAssertEqual(block("head", in: read)["title"], "Your account")
     }
 
-    func testHowItWorksIsAnActionThatExplainsTheKey() async throws {
+    func testHowItWorksIsAButtonOnTheChoiceAndTheAccountThatExplainsTheKey() async throws {
         let read = try await frame(["read"])
         let how = try await frame(["how"])
         let done = try await frame(["done"])
+        _ = try store.keyMadeOnce()
+        let account = try await frame(["read"])
 
         XCTAssertEqual(block("how", in: read)["title"], "How it works")
-        XCTAssertFalse(read.contains("grid=how"), read)
+        XCTAssertTrue(read.contains("grid=how\n"), read)
+        XCTAssertTrue(account.contains("grid=how\n"), account)
         XCTAssertEqual(block("head", in: how)["title"], "How your key works")
         XCTAssertEqual(block("head", in: done)["title"], "You need a key to publish")
     }
