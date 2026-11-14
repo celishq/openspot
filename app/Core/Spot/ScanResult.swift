@@ -35,8 +35,8 @@ public struct ScanResult: Equatable, Sendable {
         }
     }
 
-    public mutating func listKeys(in config: ConfigFile) {
-        let read = config.read()
+    public mutating func listKeys(in config: ConfigFile, read: Config? = nil) {
+        let read = read ?? config.read()
         files = files.map { SpotFile(id: $0.id, spots: $0.spots.map { $0.listingKeys(in: config).withIcon(read.setting(ReservedSetting.icon, of: $0.id)) }) }
     }
 
