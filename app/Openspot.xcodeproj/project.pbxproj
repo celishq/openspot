@@ -458,6 +458,7 @@
 		B512F4DB9EE1FF9D89C7C95E /* FormDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EC527B539564A89DFC014CA /* FormDraft.swift */; };
 		B588C95B7551CFAD1BE03E6C /* TerminalStop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E458884482770E1E8094D87 /* TerminalStop.swift */; };
 		B601E166271674D8DBFE9FEF /* CalendarEntryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C5B6013A7D3A8A2D7C7E232 /* CalendarEntryTests.swift */; };
+		B6745FC2B9BCEA2156209D7F /* PenExampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 424C4697CEBCCA92D20C9FF8 /* PenExampleTests.swift */; };
 		B6AE0BA72B641A993510EADF /* CalcCurrency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 251678C3FC2938A6AC64953A /* CalcCurrency.swift */; };
 		B6D177D1457692954AC673FD /* SpotList.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9DF64C4F736CF8CE9348941 /* SpotList.swift */; };
 		B6FD5695A5FD438CE5632CE1 /* SpotsModel+Pointer.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB160BC4C30BBFD00FB5FDC6 /* SpotsModel+Pointer.swift */; };
@@ -854,6 +855,7 @@
 		41BAF6625407D19B9911C04D /* FlowMoveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowMoveTests.swift; sourceTree = "<group>"; };
 		4223CF1668DC4EB0309DD41B /* SpotManifestTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotManifestTests.swift; sourceTree = "<group>"; };
 		422F920EDC6604D8738E717C /* LinksSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinksSpotTests.swift; sourceTree = "<group>"; };
+		424C4697CEBCCA92D20C9FF8 /* PenExampleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PenExampleTests.swift; sourceTree = "<group>"; };
 		42CB742B0DF238D60B6EF0D1 /* SpotPlaygroundStage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotPlaygroundStage.swift; sourceTree = "<group>"; };
 		43383EF80D00B3D49DDC9916 /* HexColorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HexColorTests.swift; sourceTree = "<group>"; };
 		43426D303EAEED7D975374D4 /* TestChildTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestChildTests.swift; sourceTree = "<group>"; };
@@ -1828,6 +1830,7 @@
 				8A564A8D2623D8AB8446F8EA /* ModifierTapTests.swift */,
 				C3C751B70058362610989AA1 /* NewSpotTests.swift */,
 				E345B88BAC41A77FBEDEF770 /* PanelCase.swift */,
+				424C4697CEBCCA92D20C9FF8 /* PenExampleTests.swift */,
 				92723660B306B51B22E61058 /* PictureFileTests.swift */,
 				808794ED0B6B75DB34BE08F3 /* PlaygroundCallTests.swift */,
 				96997A67D01A45DDF4D97F54 /* PlaygroundPlaceTests.swift */,
@@ -3380,6 +3383,7 @@
 				874A3EF7FD23EE0338C15917 /* ModifierTapTests.swift in Sources */,
 				29EE13B662BAD186D221A43A /* NewSpotTests.swift in Sources */,
 				3EB3ED5505B381CB1E731726 /* PanelCase.swift in Sources */,
+				B6745FC2B9BCEA2156209D7F /* PenExampleTests.swift in Sources */,
 				7AF5923B9EC64BE4333C1801 /* PictureFileTests.swift in Sources */,
 				4AC4210953BB05B0B3BFAC38 /* PlaygroundCallTests.swift in Sources */,
 				C1FB5D9F440C0F2157B04DE7 /* PlaygroundPlaceTests.swift in Sources */,
