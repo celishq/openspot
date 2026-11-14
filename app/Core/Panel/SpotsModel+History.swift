@@ -11,7 +11,11 @@ extension SpotsModel {
     /// shows. With no title, the page takes the title of the row of that spot that opens it, when the spot shows one.
     /// Returns false when no spot has that ID.
     public func openSheet(_ id: String, page: String, title: String? = nil) -> Bool {
-        guard entries.contains(where: { $0.id == id }) else { return false }
+        guard let spot = entries.first(where: { $0.id == id })?.spot else { return false }
+        guard spot.takes(page: page) else {
+            host.notify("\(spot.name) takes no page \(page). Add pages=\(page) to its header")
+            return true
+        }
         let moves = isShown
         if !moves { host.show() }
         endEditing(moving: false)

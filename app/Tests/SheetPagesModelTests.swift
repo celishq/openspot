@@ -61,7 +61,7 @@ final class SheetPagesModelTests: XCTestCase {
 
     /// Opens a list whose row `a` opens its page, which shows one row named after the page.
     private func openList() async throws {
-        try script("list", header: "title=List\non=sheet.open", """
+        try script("list", header: "title=List\non=sheet.open\npages=*", """
         if [ -n "$OPENSPOT_PAGE" ]; then printf 'row=x\\ntitle=Detail %s\\n' "$OPENSPOT_PAGE"; else printf 'row=a\\ntitle=A\\npush=true\\n'; fi
         """)
         try script("other", header: "on=sheet.open", "printf 'row=o\\ntitle=Other\\n'")
@@ -149,7 +149,7 @@ final class SheetPagesModelTests: XCTestCase {
     }
 
     func testTheHintOfAPageSaysThatEscGoesBack() async throws {
-        try script("info", header: "on=sheet.open", """
+        try script("info", header: "on=sheet.open\npages=a", """
         if [ -n "$OPENSPOT_PAGE" ]; then printf 'text=detail\\ntitle=Detail\\n'; else printf 'text=first\\ntitle=First\\n\\nrow=a\\ntitle=A\\npush=true\\n'; fi
         """)
         model.reload()
@@ -217,7 +217,7 @@ final class SheetPagesModelTests: XCTestCase {
     }
 
     private func writeFlow() throws {
-        try script("flow", header: "title=Flow\non=sheet.open", """
+        try script("flow", header: "title=Flow\non=sheet.open\npages=n*\npages=swapped", """
         case "$1" in
           read) printf 'button=done\\ntitle=Done\\nscope=spot\\n\\nbutton=top\\ntitle=Top\\nscope=spot\\n\\nbutton=next\\ntitle=Next\\nscope=spot\\n\\nbutton=swap\\ntitle=Swap\\nscope=spot\\n\\nbutton=hand\\ntitle=Hand\\nscope=spot\\n\\nrow=x\\ntitle=Page %s\\n' "${OPENSPOT_PAGE-first}" ;;
           done) printf 'pop=true\\n' ;;
@@ -315,5 +315,16 @@ final class SheetPagesModelTests: XCTestCase {
 
         XCTAssertEqual(titles, ["A"])
         XCTAssertFalse(model.pop(in: "list"))
+    }
+
+    func testAPushOfAPageThatTheSpotDoesNotTakeMovesNothingAndSaysSo() async throws {
+        try await openList()
+        try script("narrow", header: "title=Narrow\non=sheet.open\npages=ok:*", "printf 'row=n\\ntitle=N\\n'")
+        model.reload()
+
+        XCTAssertTrue(model.openSheet("narrow", page: "bad"))
+
+        XCTAssertEqual(model.openList, "list")
+        XCTAssertEqual(host.notes.last, "Narrow takes no page bad. Add pages=bad to its header")
     }
 }

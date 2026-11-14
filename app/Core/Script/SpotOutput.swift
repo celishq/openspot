@@ -227,8 +227,11 @@ public struct SpotOutput: Equatable, Sendable {
         checks ? checkedFaults : SpotOutput(blocks: blocks, checks: true).checkedFaults
     }
 
-    /// Finds what is wrong with the places of the head and the card drawings.
+    /// Finds what is wrong with the places of the head and the card drawings, and a head that moves the flow two ways.
     private mutating func check(head: TextBlock?) {
+        if let head, head.value("push") != nil || head.value("push.spot") != nil, head.value("pop") != nil {
+            checkedFaults.append("the frame holds both push and pop, and moves nothing. Print one of them")
+        }
         for field in head?.fields ?? [] where field.key.hasPrefix("grid.") && !CardFace.places.contains(String(field.key.dropFirst(5))) {
             checkedFaults.append("the head draws \(field.key), which is not a place")
         }

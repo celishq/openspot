@@ -67,6 +67,8 @@ public struct Spot: Equatable, Sendable {
     public let viewDate: Date?
     /// The events that it raises with `openspot event emit`, which its header names in `emits` (protocol: Events).
     public let emits: [String]
+    /// The patterns of the pages that a push may show of it, from its `pages` lines, such as `text:*` (protocol: Pages).
+    public let pages: [String]
     /// The uses that its header names in `uses` (protocol: Trust).
     public internal(set) var uses: Set<SpotUse>
     /// The commands its header lists, which a person can give keys.
@@ -127,11 +129,13 @@ public struct Spot: Equatable, Sendable {
         view: String? = nil,
         viewDate: Date? = nil,
         emits: [String] = [],
+        pages: [String] = [],
         uses: Set<SpotUse> = [],
         keywords: [String] = [],
         previewsSample: Bool = false
     ) {
         self.emits = emits
+        self.pages = pages
         self.uses = uses
         self.keywords = keywords
         self.previewsSample = previewsSample
@@ -357,4 +361,10 @@ public struct Spot: Equatable, Sendable {
         case .widget: return opens == nil ? nil : "Open"
         }
     }
+
+    /// Whether a push may show this page of it: one of its `pages` patterns matches the page, where `*` stands for any text.
+    public func takes(page: String) -> Bool {
+        pages.contains { fnmatch($0, page, 0) == 0 }
+    }
+
 }

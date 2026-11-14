@@ -82,6 +82,7 @@ public struct SpotCheck: Sendable {
                 findings += output.unreadable.map { found("cannot read the item \($0)") }
                 findings += Self.brokenBlocks(in: text).map(found)
                 findings += output.partFaults.map(found)
+                findings += Self.moveFaults(of: output, in: script, among: scan.scripts).map(found)
             } catch {
                 findings.append(found(Self.reason(error)))
             }
@@ -96,6 +97,24 @@ public struct SpotCheck: Sendable {
             }
         }
         return findings
+    }
+
+    /// The faults of the moves of a read's frame: a move in the head, which a read never makes, and a row that pushes a page
+    /// that its spot takes no `pages` line for (protocol: Pages).
+    static func moveFaults(of output: SpotOutput, in script: Spot, among scripts: [Spot]) -> [String] {
+        var faults: [String] = []
+        if let move = output.move {
+            let word = if case .pop = move { "pop" } else { "push" }
+            faults.append("the read prints \(word), which moves nothing in a read. Print it from a press")
+        }
+        for item in output.items {
+            guard case .push(let spot, let page?, _, _)? = item.move else { continue }
+            let target = spot ?? script.id
+            guard let taker = scripts.first(where: { $0.id == target }), !taker.takes(page: page) else { continue }
+            let pattern = page.firstIndex(of: ":").map { "\(page[..<$0]):*" } ?? page
+            faults.append("the row \(item.run) pushes the page \(page) of \(target), which takes no such page. Add pages=\(pattern) to \(target)")
+        }
+        return faults
     }
 
     /// The findings as one JSON list, with a new line at its end.

@@ -6,6 +6,7 @@
 # uses=app,spots
 # offers=card
 # offers=search
+# pages=spot:*
 
 # The spot and the key of a setting row, from setting:<spot>:<key>.
 setting() {
