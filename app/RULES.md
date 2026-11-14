@@ -19,7 +19,7 @@ Code and tests name a rule by its ID.
 | A10 | A dragged `.spot` file shows in the search field, and a drop, a paste or a double-click opens the install screen from there. |
 | A11 | The core spots are the spot folders in `spots/` of this repo. They run in place from the app, so an update updates them. Nothing downloads. |
 | A12 | A first launch turns on each core spot that reads only local data. Each other core spot is off until the person turns it on. A spot in the spots folder with the same ID wins over a core spot, and is always on. |
-| A13 | Spots opens Edit Spots, where the person arranges the grid; the store is a spot of its own. A search for "edit spots" finds Spots. |
+| A13 | Spots opens Edit Spots, where the person arranges the grid; the store is a spot of its own. A search for "edit spots" finds Spots. A drag of a card of the store opens Edit Spots under it, which stays after the drag, and a drop on the grid or the shelf adds the spot at the place nearest the drop. |
 | A14 | A first launch has no config and no spot, opens the panel on the grid once, and does not open at login. |
 | A15 | A toast takes no input, except a failure with a fix (protocol: The life of a call). One fix key, which the person chooses, opens it, and only while the toast shows. |
 | A16 | The main search ranks the best match first. Then the most weight of picks, where each pick weighs 0.9 of the one after it, then the spots, then each list in the order of the grid. A list that the person never picked from shows at most 3 rows. |

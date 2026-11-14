@@ -639,20 +639,20 @@ struct SpotView: View {
 - The spot and its view must be in a folder of their own, such as `cups/cups.sh` and `cups/cups.swift`.
 - The file declares `struct SpotView: View` with `let spot: SpotInput`, and has no top-level code.
 
-| Member              | Gives                                                             |
-| ------------------- | ----------------------------------------------------------------- |
-| `spot["key"]`       | The last value of a key of its block, or nil.                     |
-| `spot.all("key")`   | Each value of a key that repeats.                                 |
-| `spot.size`         | The size of its place.                                            |
-| `spot.inset`        | The space other cards keep between their edge and their words.    |
-| `spot.corner`       | The corner radius of the card.                                    |
-| `spot.ink`          | The colour of words, for light and dark.                          |
-| `spot.secondary`    | The opacity of a second line.                                     |
-| `spot.accent`       | The accent colour.                                                |
-| `spot.font`         | The fonts of the cards: `title`, `detail`, `metric` and `value`.  |
-| `spot.send(v)`      | Calls the spot with the view's id and `v`, as a field does.       |
-| `spot.card(id)`     | The card of a spot, at the size it takes on the grid, drawn only. |
-| `spot.cardSize(id)` | That size, so the view can lay cards out.                         |
+| Member              | Gives                                                                 |
+| ------------------- | --------------------------------------------------------------------- |
+| `spot["key"]`       | The last value of a key of its block, or nil.                         |
+| `spot.all("key")`   | Each value of a key that repeats.                                     |
+| `spot.size`         | The size of its place.                                                |
+| `spot.inset`        | The space other cards keep between their edge and their words.        |
+| `spot.corner`       | The corner radius of the card.                                        |
+| `spot.ink`          | The colour of words, for light and dark.                              |
+| `spot.secondary`    | The opacity of a second line.                                         |
+| `spot.accent`       | The accent colour.                                                    |
+| `spot.font`         | The fonts of the cards: `title`, `detail`, `metric` and `value`.      |
+| `spot.send(v)`      | Calls the spot with the view's id and `v`, as a field does.           |
+| `spot.card(id)`     | The card of a spot, at the size it takes on the grid. A drag adds it. |
+| `spot.cardSize(id)` | That size, so the view can lay cards out.                             |
 
 - The view fills its place, and the whole card when there's no card layout. It can't change the size of its place.
 - In a window (see [Places](#places)), a sheet with one `view` block fills the window. `spot.card(id)` draws the card of

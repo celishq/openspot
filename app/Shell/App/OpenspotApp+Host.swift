@@ -61,6 +61,10 @@ extension OpenspotApp: SpotsHost {
         spotWindows.removeValue(forKey: id)?.close()
     }
 
+    func showForDrag() {
+        showPanelForDrag()
+    }
+
     func window(_ entry: SpotsModel.Entry) {
         let window = spotWindows[entry.id] ?? SpotSheetWindow.make(model: model, entry: entry)
         spotWindows[entry.id] = window

@@ -7,7 +7,8 @@ extension EnvironmentValues {
 }
 
 /// The cards of other spots that a spot's view draws, such as the store's gallery: each at the size the grid gives it, on
-/// its glass, drawing only. A spot that the panel lacks draws its header's face (protocol: Views).
+/// its glass. A spot that the panel lacks draws its header's face (protocol: Views). A drag of a card carries its store ID
+/// and opens Edit Spots, where a drop adds the spot.
 @MainActor
 struct SpotCardSource {
     let model: SpotsModel?
@@ -20,8 +21,26 @@ struct SpotCardSource {
             SpotCardView(entry: entry, size: entry.size, index: -1, isPressed: false, takesDrag: false, isDropTarget: false, chainLetter: nil, model: model)
                 .background { SpotBlur(radius: SpotTheme.blur).overlay(SpotTheme.glass).clipShape(shape) }
                 .allowsHitTesting(false)
+                .contentShape(.dragPreview, shape)
+                .contentShape(shape)
+                .onDrag {
+                    model.beginStoreDrag()
+                    return NSItemProvider(object: Self.dragText(of: id) as NSString)
+                }
         )
     }
+
+    /// The text that a drag of a store card carries, and the store ID that a drop reads back from it.
+    static func dragText(of id: String) -> String {
+        dragPrefix + id
+    }
+
+    static func storeID(in text: String?) -> String? {
+        guard let text, text.hasPrefix(dragPrefix) else { return nil }
+        return String(text.dropFirst(dragPrefix.count))
+    }
+
+    private static let dragPrefix = "openspot-store:"
 
     /// The size of the card of the spot with this store ID on the grid.
     func size(_ id: String) -> CGSize {

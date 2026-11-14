@@ -8,6 +8,8 @@ public protocol SpotsHost: AnyObject {
     func dismiss()
     /// Shows the panel when it is hidden or warming.
     func show()
+    /// Shows the panel for a drag: the front app stays in front, and the panel takes no focus.
+    func showForDrag()
     /// Shows the panel and makes it key, as a review or a first launch does.
     func present()
     /// Makes the shown panel key again, with none of the steps of a show.

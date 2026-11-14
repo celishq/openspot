@@ -625,6 +625,39 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertFalse(try model.files.config.read().arrangement.enabled.contains("timer"))
     }
 
+    func testADragFromTheStoreOpensEditSpotsThatStaysAfterTheDrag() {
+        model.endEditing()
+        model.isShown = false
+
+        model.beginStoreDrag()
+
+        XCTAssertEqual(host.dragShows, 1)
+        XCTAssertTrue(model.isEditing)
+        XCTAssertFalse(model.isOpenForDrag)
+    }
+
+    func testACoreSpotDroppedFromTheStoreOnTheGridTurnsOnThere() throws {
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
+        model.reload()
+        let place = model.placements[1].rect
+
+        XCTAssertTrue(model.dropStoreSpot("timer", at: CGPoint(x: place.midX, y: place.midY)))
+
+        XCTAssertEqual(order, ["a", "timer", "b", "c", "d"])
+        XCTAssertTrue(try model.files.config.read().arrangement.enabled.contains("timer"))
+    }
+
+    func testASpotDroppedFromTheStoreOnTheShelfGoesInSearchOnly() throws {
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
+        model.setOnGrid(false, for: "d")
+        let shelf = model.placements[3].rect
+
+        XCTAssertTrue(model.dropStoreSpot("timer", at: CGPoint(x: shelf.midX, y: shelf.midY)))
+
+        XCTAssertEqual(order, ["a", "b", "c", "timer", "d"])
+        XCTAssertEqual(model.cards.first { $0.id == "timer" }?.isOnGrid, false)
+    }
+
     func testTheStoreFindsTheCardOfASpotThatIsOffByItsStoreID() throws {
         try "#!/bin/sh\n# detail=Counts down\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
         try "#!/bin/sh\n# title=Shared\n".writeScript(to: store.appendingPathComponent("shared.spot/shared.sh"))

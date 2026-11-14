@@ -27,6 +27,7 @@ final class SpotPlaygroundHost: SpotsHost {
     func float(_ entry: SpotsModel.Entry, followsDrag: Bool) {}
     func land(_ id: String) {}
     func window(_ entry: SpotsModel.Entry) {}
+    func showForDrag() {}
     var isPointerOverDrop: Bool { false }
     var draggedPaths: [String] { [] }
     var isMouseDown: Bool { false }
