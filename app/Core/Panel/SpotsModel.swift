@@ -243,7 +243,7 @@ public final class SpotsModel {
         let faults = folder.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
         if !faults.isEmpty { scan.files.append(SpotFile(id: FaultSpot.fileID, spots: faults)) }
         guard spotScan.stamp != loadedStamp || config != loadedConfig else { return holdAssignedKeys(config) }
-        scan.listKeys(in: files.config)
+        scan.listKeys(in: files.config, read: config)
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
         runs.isCareful = config.isCareful
@@ -357,7 +357,7 @@ public final class SpotsModel {
         let next = ordered().map { Entry(spot: $0, run: runs.sheets[$0.id], choice: arrangement, defaults: defaultArrangement, letter: letters[$0.id]) }
         let field = next.first { $0.spot.growsFromField }?.id
         if field != fieldSheet { fieldSheet = field }
-        entries = next
+        if next != entries { entries = next }
     }
 
     private func ordered() -> [Spot] {

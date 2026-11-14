@@ -33,7 +33,7 @@ extension SpotsModel {
     }
 
     public func focus(ofCard index: Int) -> CardFocus {
-        guard menu != nil, openList == nil else { return .none }
+        guard isMenuOpen, openList == nil else { return .none }
         return index == selected ? .focused : .faded
     }
 

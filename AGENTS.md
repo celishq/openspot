@@ -82,6 +82,15 @@ below is one a reviewer can check in a diff.
 - A press makes one update. The animated change goes first in it, or alone, since SwiftUI animates a view by the first change
   it sees in an update.
 
+### Where work lives
+
+- A getter, a computed property and a static factory read only memory. They touch no disk, start no process and change no
+  state. Work that reads the disk is a method named for it, such as `read()` or `scan()`.
+- The model and the views do not read the disk. A loader, such as `SpotScan` or `ConfigFile`, reads it at a load, and the
+  rest read the value it kept.
+- A stamp holds only what changes the result it guards. A choice that filters the result, such as which spots are on, is
+  applied after the kept result, not put in the stamp.
+
 ### What a view reads
 
 - A view reads only the state it shows. Move each read of a value that changes fast into the smallest child or modifier that
@@ -131,7 +140,9 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
 - A shipped spot does no work all day. A spot that polls goes in `examples/`.
 - Each buffer, log and cache has a limit in bytes. A kept tail is cut back when it holds twice its limit. A loop that reads a
   stream wraps each pass in `autoreleasepool`.
-- The panel stays warm while hidden. Cut the waste around it, not the panel.
+- Each collection kept per call, page or frame drops an entry when the thing it tracks ends, and has a limit in count.
+- The panel stays warm while hidden. Cut the waste around it, not the panel. A view that the panel hides stays built,
+  except a spot's own view, which can run work of its own.
 - A framework that the panel does not need, such as translation or screen capture, runs in a helper process, not in the app.
 
 ### Proving a speed fix

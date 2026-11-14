@@ -228,6 +228,7 @@ extension SpotRun {
         let text = switch error as? SpotError {
         case .failed(_, let message) where !message.isEmpty, .failedWithFix(_, let message, _) where !message.isEmpty: message
         case .timedOut: "\(spot.name) took too long, so Openspot stopped it."
+        case .tooLarge: "\(spot.name) printed more than 32 MB in one frame, so Openspot stopped it."
         case let error?: "\(spot.name) failed. \(error.reason)"
         case nil: "\(spot.name) failed. \(error.localizedDescription)"
         }

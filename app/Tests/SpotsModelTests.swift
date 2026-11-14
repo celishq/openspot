@@ -260,6 +260,32 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertTrue(model.entries.contains { $0.id == "late" })
     }
 
+    func testAKeyAndItsHintLeaveTheSpotsFolderAsItIs() throws {
+        try script("one", header: "title=One", "")
+        try script("two", header: "title=Two", "")
+        model.reload()
+        model.isShown = true
+        let loose = spots.appendingPathComponent("loose", isDirectory: true)
+        try FileManager.default.createDirectory(at: loose, withIntermediateDirectories: true)
+        try "#!/bin/sh\n".writeScript(to: loose.appendingPathComponent("loose.sh"))
+
+        model.selected = 1
+        _ = model.handleKey(ActionKey(name: "x"))
+        _ = model.hint
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: loose.path))
+    }
+
+    func testABuildOfTheSameCardsFindsNothingAgain() throws {
+        try script("one", header: "title=One", "")
+        model.reload()
+        let updates = model.visibleUpdates
+
+        model.rebuildEntries()
+
+        XCTAssertEqual(model.visibleUpdates, updates)
+    }
+
     func testAnOpenWithNoChangeTellsNoReaderOfTheCards() throws {
         try script("one", header: "title=One", "")
         model.reload()
@@ -379,6 +405,17 @@ final class SpotsModelTests: XCTestCase {
 
         XCTAssertEqual(model.openItems?.shown.map(\.run), ["c"])
         XCTAssertEqual(model.openItems?.selectedItem?.run, "c")
+    }
+
+    func testAReadOfTheHintRightAfterAKeyLeavesTheFindToTheBackground() async throws {
+        try await openList()
+        let landed = try XCTUnwrap(model.openItems?.landedSearches)
+
+        model.searchText = "b"
+        _ = model.hint
+
+        XCTAssertEqual(model.openItems?.landedSearches, landed)
+        XCTAssertEqual(model.openItems?.isFinding, true)
     }
 
     func testReturnRightAfterAKeyThatFindsNothingOpensTheFormThatCreates() async throws {
@@ -1065,6 +1102,20 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(changed)
     }
 
+    func testAMoveInTheActionsMenuTellsNoReaderOfACardsFocus() throws {
+        try script("weather", header: "title=Weather", ":")
+        model.reload()
+        model.isShown = true
+        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "weather" })
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = model.focus(ofCard: 0) } onChange: { changed = true }
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+
+        XCTAssertFalse(changed)
+    }
+
     func testAMoveInTheActionsMenuTellsNoReaderThatTheMenuIsOpen() throws {
         try script("weather", header: "title=Weather", ":")
         model.reload()
@@ -1346,6 +1397,17 @@ final class SpotsModelTests: XCTestCase {
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
+    }
+
+    func testAKeyBuildsItsSearchOnceForTheCardsAndEachSpotThatAnswers() throws {
+        try showAnswers()
+        try script("sum", header: "title=Sum\non=search.text ^[0-9]", ":")
+        model.reload()
+        let builds = model.runs.searchBuilds
+
+        model.searchText = "2"
+
+        XCTAssertEqual(model.runs.searchBuilds, builds + 1)
     }
 
     func testASpotAnswersTheMainSearchFirstWhileItsPatternMatchesTheText() async throws {

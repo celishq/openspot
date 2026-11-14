@@ -83,7 +83,7 @@ extension SpotRun {
         link.send(Call(
             action: .read,
             key: Self.answerKey,
-            input: SearchQuery(text: text).input,
+            input: runs.search(of: text).input,
             limit: runs.readLimit,
             reason: .text(text, inSheet: false),
             variables: ReadReason.text(text, inSheet: false).variables,

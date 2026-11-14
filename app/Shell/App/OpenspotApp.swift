@@ -75,10 +75,11 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
                 .error("Openspot cannot listen for openspot calls for \(config.path, privacy: .public), so spots that ask the app fail.")
         }
         model.reload()
-        spotsWatch = SpotsWatch(folder: model.files.folder.url, config: model.files.config.url) { [weak self] in self?.model.spotsChanged() }
-        try? AgentNote(command: Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/openspot").path).write(in: model.files.folder.url)
+        let spots = model.folder.url
+        spotsWatch = SpotsWatch(folder: spots, config: model.files.config.url) { [weak self] in self?.model.spotsChanged() }
+        try? AgentNote(command: Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/openspot").path).write(in: spots)
         showListener = SpotShowLink.listen { [weak self] id in self?.model.reveal(id) ?? false }
-        let isFirstLaunch = SpotsFolder.standard().isFirstLaunch(config: .standard())
+        let isFirstLaunch = model.folder.isFirstLaunch(config: model.files.config)
         model.runs.launched()
         panel?.warm { [weak self] in
             guard let self else { return }

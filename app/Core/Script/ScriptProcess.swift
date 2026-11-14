@@ -288,6 +288,7 @@ public final class ScriptProcess: @unchecked Sendable {
                 return DispatchQueue.global().async { [self] in end(errorsRead: errorsRead, lastErrors: lastErrors) }
             }
             for frame in reader.read(data) { yield(frame) }
+            if reader.isOverLimit { stop(because: SpotError.tooLarge) }
         }
     }
 

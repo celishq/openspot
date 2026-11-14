@@ -185,6 +185,16 @@ final class SpotDropTests: XCTestCase {
         XCTAssertEqual(cardsThatTakeTheDrag(), [])
     }
 
+    func testACardKnowsItTakesTheDragFromTheStartOfTheDragWithNoNewLookAtTheFiles() throws {
+        try addScript("movies", header: "drop=mov")
+        let movie = file("a.mov")
+        runs.draggedPaths = [movie]
+
+        try FileManager.default.removeItem(atPath: movie)
+
+        XCTAssertTrue(runs.takesDrag("movies"))
+    }
+
     func testACardThatIsNotAScriptNeverTakesADrag() {
         runs.draggedPaths = [file("a.mov")]
 

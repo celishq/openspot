@@ -44,6 +44,18 @@ final class WebPicturesTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: URL(fileURLWithPath: first)), Data("png".utf8))
     }
 
+    func testTheKeptPicturesStayUnderTheirLimitAndTheNewestStays() async throws {
+        let pictures = WebPictures(folder: folder, limit: 10) { _ in Data("123456".utf8) }
+
+        for name in ["a", "b", "c"] { _ = await pictures.path(of: "https://example.com/\(name).png") }
+        let newest = await pictures.path(of: "https://example.com/c.png")
+
+        let sizes = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.fileSizeKey])
+            .map { try $0.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0 }
+        XCTAssertLessThanOrEqual(sizes.reduce(0, +), 10)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: try XCTUnwrap(newest)))
+    }
+
     func testAnOutputNamesItsPicturesOnTheWebForARenderToFetch() {
         let output = SpotOutput(text: "row=a\nicon=https://example.com/a.png\n\nchoice=c\n\noption=x\nicon=https://example.com/x.png\n\nrow=b\nicon=wifi\n")
 
