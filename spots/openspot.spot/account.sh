@@ -1,7 +1,7 @@
 #!/bin/sh
 # title=Account
 # icon=person.crop.circle
-# detail=The key that signs what you publish
+# detail=Signs what you publish
 # on=sheet.open
 # uses=app,account
 # offers=card
@@ -179,7 +179,7 @@ sheet() {
   case $current in
     restore) restore; return ;;
     check) check; return ;;
-    choose) printf 'search=off\n' ;;
+    choose) printf 'grid=head\ngrid=head\ngrid=new\ngrid=own\n' ;;
     how) printf 'grid=head\ngrid=head\ngrid=people\ngrid=icloud\ngrid=words\ngrid=private\ngrid=reset\ngrid=done\n' ;;
     about)
       printf 'grid=head\ngrid=head\ngrid=private\ngrid=reset\n'
@@ -202,19 +202,15 @@ sheet() {
   [ -z "$toast" ] || openspot_kv toast "$toast"
   case $current in
     choose)
-      line head 'Sign what you publish' signature '' 'Openspot signs your spots with a key, so people know an update is from you.'
-      printf '\nrow=new\n'
-      openspot_kv title 'Create a new key'
-      printf 'icon=plus.circle\nclose=false\n'
-      printf '\nrow=own\n'
-      openspot_kv title 'Use my words or nsec'
-      printf 'icon=key\nclose=false\n'
+      line head 'You need a key to publish' signature '' 'Openspot signs your spots with it, so people know an update is from you.'
+      button new 'Create a new key' main
+      button own 'Use my words or nsec'
       ;;
     how)
       line head 'How your key works' key '' 'Openspot signs each spot you publish with your key. There is no email, password or server.'
-      line people 'People can tell an update is from you' checkmark.seal
-      line icloud 'iCloud Keychain keeps it on your Macs' icloud
-      line words 'Your 12 words bring it back on any Mac' list.number
+      line people 'Shows an update is yours' checkmark.seal
+      line icloud 'Kept in iCloud Keychain' icloud
+      line words '12 words bring it back' list.number
       line private 'Anyone with the words is you' eye.slash
       line reset 'Nobody can reset them' exclamationmark.triangle warn
       button done Done main
@@ -290,13 +286,8 @@ case "$1" in
     sheet
     ;;
   phrase) phrase=$2; sheet ;;
-  open)
-    case $2 in
-      new) openspot account new || exit 1; [ -z "$publishing" ] || publish ;;
-      own) go restore ;;
-    esac
-    sheet
-    ;;
+  new) openspot account new || exit 1; [ -z "$publishing" ] || publish; sheet ;;
+  own) go restore; sheet ;;
   how) go how; sheet ;;
   about) go about; sheet ;;
   show) go words; sheet ;;
