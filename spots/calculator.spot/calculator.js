@@ -3,6 +3,7 @@
 // detail=Sums, units, currencies and dates
 // on=search.text ^\s*([-+(.$€£¥₴₿₹₩₺₪π0-9]|(?i:the|today|tomorrow|yesterday|now|time|next|last|in|days|weeks|months|years|hours|minutes|sqrt|sin|cos|tan|ln|log|abs|round|pi|noon|midnight)\b)
 // uses=clipboard
+// preview=sample
 
 /** The row that says why a currency has no rates, by the status that `openspot calc solve` prints. */
 const noRates = {
@@ -32,6 +33,7 @@ function main([id, picked], env) {
     if (picked === "offline" || openspot.call(["clipboard", "copy"], picked).code !== 0) return ""
     return openspot.frame({ toast: `Copied ${picked}` })
   }
+  if (env.OPENSPOT_REASON === "spot.preview") return card({ row: "3.10686", title: "3.10686 mi", detail: "5 km in miles", unit: "mi" })
   const text = env.OPENSPOT_VALUE
   if (!text) return ""
   const answer = openspot.call(["calc", "solve", text]).stdout

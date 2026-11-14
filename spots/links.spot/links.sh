@@ -4,8 +4,23 @@
 # on=panel.open
 # on=app.launch
 # uses=network,clipboard
+# preview=sample
 # offers=card
 # offers=search
+if [ "$OPENSPOT_REASON" = spot.preview ]; then
+  printf 'button=copy\ntitle=Copy\nshortcut=cmd+return\nclose=true\n\n'
+  printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+r\nclose=true\n\n'
+  printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\n\n'
+  printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\n\n'
+  printf 'button=new\ntitle=New link\nshortcut=cmd+n\nscope=spot\nform=true\n\n'
+  for link in 'calendar:Team calendar:calendar.example.com' 'docs:Project docs:docs.example.com' 'mail:Mail:mail.example.com' 'tracker:Issue tracker:tracker.example.com' 'weather:Weather:weather.com'; do
+    printf '%s\n' "$link" | awk -F: '{ printf "row=%s\ntitle=%s\ndetail=%s\nhides=reveal\nicon=link\n\n", $1, $2, $3 }'
+  done
+  icons=/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources
+  printf 'row=downloads\ntitle=Downloads\ndetail=~/Downloads\nicon=%s/DownloadsFolder.icns\n\n' "$icons"
+  printf 'row=screenshots\ntitle=Screenshots\ndetail=~/Desktop\nicon=%s/DesktopFolderIcon.icns\n' "$icons"
+  exit 0
+fi
 export LC_ALL=en_US.UTF-8
 data="$OPENSPOT_DATA/links.json"
 icons="$OPENSPOT_DATA/icons"

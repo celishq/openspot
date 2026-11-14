@@ -3,8 +3,23 @@
 # icon=gearshape
 # detail=Open a setting
 # on=panel.open
+# preview=sample
 # offers=card
 # offers=search
+if [ "$OPENSPOT_REASON" = spot.preview ]; then
+  link=x-apple.systempreferences:
+  panes=/System/Library/ExtensionKit/Extensions
+  for pane in 'com.apple.wifi-settings-extension:Wi‑Fi:Wi-Fi' 'com.apple.BluetoothSettings:Bluetooth:Bluetooth' 'com.apple.Displays-Settings.extension:Displays:DisplaysExt' \
+    'com.apple.Sound-Settings.extension:Sound:Sound' 'com.apple.Notifications-Settings.extension:Notifications:NotificationsSettings' \
+    'com.apple.Keyboard-Settings.extension:Keyboard:KeyboardSettings' 'com.apple.Wallpaper-Settings.extension:Wallpaper:Wallpaper'; do
+    id=${pane%%:*}
+    rest=${pane#*:}
+    printf 'row=%s%s#%s\ntitle=%s\ndetail=System Settings\nicon=%s/%s.appex\n\n' "$link" "$id" "${rest%%:*}" "${rest%%:*}" "$panes" "${rest#*:}"
+  done
+  printf 'row=%scom.apple.Displays-Settings.extension?ambienceSection#Display Brightness\ntitle=Display Brightness\n' "$link"
+  printf 'detail=System Settings › Displays\nparent=Displays\nicon=%s/DisplaysExt.appex\n' "$panes"
+  exit 0
+fi
 export LC_ALL=en_US.UTF-8
 panes="${SETTINGS_PANES:-/System/Library/ExtensionKit/Extensions}"
 link='x-apple.systempreferences:'
