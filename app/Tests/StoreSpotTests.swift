@@ -1,8 +1,8 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Store spot of the app: a window of every spot from `openspot store list`, where Return gets a spot that the
-/// person lacks and Publish publishes one of their own, each through the API.
+/// Proves the Store spot of the app: a window with a gallery of every spot from `openspot store list`, where Get gets a spot
+/// that the person lacks and Publish publishes one of their own, each through the API.
 final class StoreSpotTests: BuiltInCase {
     private var store: Spot {
         get throws {
@@ -17,8 +17,11 @@ final class StoreSpotTests: BuiltInCase {
         try "#!/bin/sh\n# title=Mine\n".writeScript(to: spots.appendingPathComponent("mine.spot/mine.sh"))
     }
 
-    private func items() async throws -> [SpotItem] {
-        try await store.items(timeout: 5).items
+    /// The spots of the gallery, each as its id, name and button, in the order of the store's list.
+    private func items() async throws -> [[String]] {
+        let parts = try await store.items(timeout: 5).parts
+        XCTAssertEqual(parts.map(\.id), ["gallery"])
+        return (parts.first?.values["value"] ?? []).map { $0.split(separator: "\t").map(String.init) }
     }
 
     @discardableResult
@@ -26,40 +29,40 @@ final class StoreSpotTests: BuiltInCase {
         try await store.perform(SpotAction(arguments: arguments), timeout: 5)
     }
 
-    func testItOpensInAWindowAndTheSearchFindsIt() throws {
+    func testItOpensInAWindowWithItsGalleryView() throws {
         let spot = try store
 
         XCTAssertEqual(spot.name, "Store")
         XCTAssertTrue(spot.offersWindow)
         XCTAssertTrue(spot.offersCard)
         XCTAssertEqual(spot.kind, .list)
+        XCTAssertEqual(spot.view.map { URL(fileURLWithPath: $0).lastPathComponent }, "store.swift")
     }
 
-    func testItListsEachSpotWithACheckOnTheOnesYouHave() async throws {
+    func testItListsEachSpotWithWhatItsButtonDoes() async throws {
         let rows = try await items()
 
-        XCTAssertEqual(rows.map(\.run), ["mine", "shared", "timer"])
-        XCTAssertEqual(rows.map(\.isOn), [true, false, false])
-        XCTAssertEqual(rows.first { $0.run == "mine" }?.subtitle, "Not published")
-        XCTAssertEqual(rows.first { $0.run == "timer" }?.subtitle, "Counts down")
+        XCTAssertEqual(rows, [["mine", "Mine", "publish"], ["shared", "Shared", "get"], ["timer", "Timer", "get"]])
     }
 
-    func testReturnTurnsOnACoreSpotAndAddsAStoredOne() async throws {
-        let ids = try await items().map(\.run)
+    func testGetTurnsOnACoreSpotAndAddsAStoredOne() async throws {
+        let ids = try await items().map { $0[0] }
         XCTAssertTrue(ids.contains("timer"))
 
-        try await call(["open", "timer"])
+        try await call(["gallery", "get:timer"])
         XCTAssertTrue(file.read().arrangement.enabled.contains("timer"))
 
-        try await call(["open", "shared"])
+        try await call(["gallery", "get:shared"])
         XCTAssertTrue(FileManager.default.fileExists(atPath: spots.appendingPathComponent("shared.spot/shared.sh").path))
+        let rows = try await items()
+        XCTAssertEqual(rows.first { $0[0] == "timer" }?[2], "added")
     }
 
     func testPublishPublishesYourOwnSpotInTheApp() async throws {
         let rows = try await items()
-        let id = try XCTUnwrap(rows.first { $0.subtitle == "Not published" }?.run)
+        let id = try XCTUnwrap(rows.first { $0[2] == "publish" }?[0])
 
-        try await call(["publish", id])
+        try await call(["gallery", "publish:\(id)"])
 
         let opened = await app.opened
         XCTAssertEqual(opened, ["publish mine"])

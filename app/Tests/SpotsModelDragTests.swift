@@ -589,6 +589,17 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertFalse(try model.files.config.read().arrangement.enabled.contains("timer"))
     }
 
+    func testTheStoreFindsTheCardOfASpotThatIsOffByItsStoreID() throws {
+        try "#!/bin/sh\n# detail=Counts down\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
+        try "#!/bin/sh\n# title=Shared\n".writeScript(to: store.appendingPathComponent("shared.spot/shared.sh"))
+        model.reload()
+
+        XCTAssertEqual(model.storeEntry("a")?.id, "a")
+        XCTAssertEqual(model.storeEntry("timer")?.spot.subtitle, "Counts down")
+        XCTAssertEqual(model.storeEntry("shared")?.spot.name, "Shared")
+        XCTAssertNil(model.storeEntry("missing"))
+    }
+
     func testNoCardLiftsOutsideEditSpots() {
         model.endEditing()
 

@@ -30,6 +30,7 @@ struct SpotFloatView: View {
         .onChange(of: dropTarget) { dropWords = dropTarget.flatMap { model.dropWords(SpotGridDrop.paths, on: $0) } }
         .onChange(of: size, initial: true) { onSize(size) }
         .environment(\.spotIsShown, true)
+        .environment(\.spotCards, SpotCardSource(model: model))
     }
 
     /// The size of the sheet or the card.
@@ -44,7 +45,13 @@ struct SpotFloatView: View {
     private func sheet(_ entry: SpotsModel.Entry, _ run: SpotRun, size: CGSize) -> some View {
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             if !fills { header(entry, run) }
-            if let parts = run.panel {
+            if fills, let parts = run.panel, parts.parts.count == 1, let part = parts.parts.first, part.kind == "view", let view = entry.spot.view {
+                GeometryReader { area in
+                    SpotCustomView(source: view, values: part.values, card: .square, room: area.size, views: .shared) { run.set(part, to: $0) }
+                        .equatable()
+                }
+                .task(id: view) { await SpotViews.shared.load(view) }
+            } else if let parts = run.panel {
                 SheetPartsView(
                     panel: parts,
                     work: { run.work(of: $0) },

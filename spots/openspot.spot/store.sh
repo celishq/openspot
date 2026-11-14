@@ -5,44 +5,46 @@
 # keywords=store, get spots, publish
 # on=sheet.open
 # uses=spots,account
+# view=store.swift
 # offers=card
-# offers=search
 # offers=window
 
 # Prints the field $2 of the block of spot $1 in the store's list.
 field() {
   openspot store list --frame | awk -v id="$1" -v key="$2" 'BEGIN { RS = ""; FS = "\n" }
     { found = 0; value = ""
-      for (i = 1; i <= NF; i++) { split($i, kv, "="); if ($i == "spot=" id) found = 1; if (kv[1] == key) value = substr($i, length(key) + 2) }
+      for (i = 1; i <= NF; i++) { n = index($i, "="); if ($i == "spot=" id) found = 1; if (substr($i, 1, n - 1) == key) value = substr($i, n + 1) }
       if (found) { print value; exit } }'
+}
+
+# Gets spot $1: turns a core spot on, or adds a spot that the store holds.
+get() {
+  case "$(field "$1" origin)" in
+    core) openspot setting set --spot "$1" enabled true ;;
+    store) openspot spot add "$(field "$1" path)" >/dev/null ;;
+    *) return 0 ;;
+  esac && printf 'toast=Added %s\n' "$(field "$1" name)"
 }
 
 case "$1" in
   read)
-    printf 'button=open\ntitle=Get\n\nbutton=publish\ntitle=Publish\nshortcut=cmd+p\n'
+    printf 'view=gallery\n'
     openspot store list --frame | awk 'BEGIN { RS = ""; FS = "\n" }
       { delete f
         for (i = 1; i <= NF; i++) { n = index($i, "="); f[substr($i, 1, n - 1)] = substr($i, n + 1) }
-        printf "\nrow=%s\ntitle=%s\nicon=%s\n", f["spot"], f["name"], f["icon"]
-        detail = f["detail"]
-        if (f["published"] == "current") detail = "Published"
-        else if (f["published"] == "changed") detail = "Changes not published"
-        else if (f["origin"] == "mine") detail = "Not published"
-        if (detail != "") printf "detail=%s\n", detail
-        if (f["added"] == "true") printf "value=true\nopen=Show\n"
-        if (f["origin"] != "mine" || f["published"] == "current") printf "hides=publish\n" }'
+        state = f["added"] == "true" ? "added" : "get"
+        if (f["origin"] == "mine" && f["published"] != "current") state = "publish"
+        printf "value=%s\t%s\t%s\n", f["spot"], f["name"], state }'
+    ;;
+  gallery)
+    case "$2" in
+      get:*) get "${2#get:}" ;;
+      publish:*) openspot store publish "${2#publish:}" >/dev/null ;;
+    esac
     ;;
   open)
     [ -n "$2" ] || exit 0
-    case "$(field "$2" origin):$(field "$2" added)" in
-      *:true) exec openspot spot show "$2" ;;
-      core:*) openspot setting set --spot "$2" enabled true && printf 'toast=Added %s\n' "$(field "$2" name)" ;;
-      store:*) openspot spot add "$(field "$2" path)" >/dev/null && printf 'toast=Added %s\n' "$(field "$2" name)" ;;
-    esac
-    ;;
-  publish)
-    [ -n "$2" ] || exit 0
-    openspot store publish "$2" >/dev/null
+    get "$2"
     ;;
   *)
     echo 'Store cannot do that.' >&2

@@ -17,6 +17,7 @@ struct SpotCustomView: View, @MainActor Equatable {
     /// Calls the spot with the view's id and a value, in a sheet. Nil on a card, which takes no input.
     var send: ((String) -> Void)?
     @Environment(\.spotIsShown) private var isShown
+    @Environment(\.spotCards) private var cards
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.source == rhs.source && lhs.values == rhs.values && lhs.card == rhs.card && lhs.room == rhs.room && lhs.views === rhs.views
@@ -50,7 +51,9 @@ struct SpotCustomView: View, @MainActor Equatable {
             "title": SpotType.title,
             "detail": SpotType.detail,
             "metric": SpotType.metric,
-            "value": SpotType.value
+            "value": SpotType.value,
+            "card": { @MainActor (id: String) -> AnyView in cards.view(id) } as @MainActor (String) -> AnyView,
+            "cardSize": { @MainActor (id: String) -> CGSize in cards.size(id) } as @MainActor (String) -> CGSize
         ]
     }
 

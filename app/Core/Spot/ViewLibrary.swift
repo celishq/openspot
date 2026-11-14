@@ -30,10 +30,14 @@ public struct ViewLibrary: Sendable {
             public let font: SpotFonts
             let values: [String: [String]]
             let sender: (String) -> Void
+            let cardMaker: @MainActor (String) -> AnyView
+            let cardSizer: @MainActor (String) -> CGSize
 
             init(values: [String: [String]], card: [String: Any], sender: @escaping (String) -> Void) {
                 self.values = values
                 self.sender = sender
+                cardMaker = card["card"] as? @MainActor (String) -> AnyView ?? { _ in AnyView(EmptyView()) }
+                cardSizer = card["cardSize"] as? @MainActor (String) -> CGSize ?? { _ in .zero }
                 size = card["size"] as? CGSize ?? .zero
                 inset = card["inset"] as? CGFloat ?? 13
                 corner = card["corner"] as? CGFloat ?? 20
@@ -53,6 +57,10 @@ public struct ViewLibrary: Sendable {
             public func all(_ key: String) -> [String] { values[key] ?? [] }
 
             public func send(_ value: String) { sender(value) }
+
+            @MainActor public func card(_ id: String) -> AnyView { cardMaker(id) }
+
+            @MainActor public func cardSize(_ id: String) -> CGSize { cardSizer(id) }
         }
 
         @_cdecl("\(entry)")
