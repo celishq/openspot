@@ -1,20 +1,15 @@
 import Foundation
 
-/// The units that a conversion knows by their symbols and English names, such as `km`, `miles` or `°C`, in Foundation's
-/// kinds: length, area, volume, mass, temperature, speed, time, data size, energy, pressure and angle.
 enum CalcUnit {
     private static var kinds: [Dimension.Type] {
         [UnitLength.self, UnitArea.self, UnitVolume.self, UnitMass.self, UnitTemperature.self, UnitSpeed.self, UnitDuration.self,
          UnitInformationStorage.self, UnitEnergy.self, UnitPressure.self, UnitAngle.self]
     }
 
-    /// Whether two units measure one kind of thing, such as two lengths. The units that Foundation gives are private
-    /// subclasses of their kind, so the classes of the two cannot be compared.
     static func areAlike(_ one: Dimension, _ two: Dimension) -> Bool {
         kinds.contains { one.isKind(of: $0) && two.isKind(of: $0) }
     }
 
-    /// The unit of a name in any case, or nil when no unit has it.
     static func named(_ name: String) -> Dimension? {
         switch name.lowercased().replacingOccurrences(of: " ", with: "") {
         case "mm", "millimeter", "millimeters", "millimetre", "millimetres": UnitLength.millimeters

@@ -1,19 +1,12 @@
 import Foundation
 
-/// The drag of a card out of the store: it opens Edit Spots for the drag, and a drop on the grid or the shelf adds the spot
-/// at that place.
 extension SpotsModel {
-    /// Opens the panel in Edit Spots for a drag of a store card. The panel stays in Edit Spots after the drag, also when the
-    /// card lands elsewhere.
     public func beginStoreDrag() {
         if !isShown || isWarming { host.showForDrag() }
         isOpenForDrag = false
         if !isEditing { beginEditing() }
     }
 
-    /// Adds the spot of a store card at the place of the grid nearest this point of the grid, on the grid or the shelf as
-    /// that place is, or at the end of the shelf for a point under the cards, and gets it from the store. A spot that the panel has moves there. Returns false when the store has no
-    /// spot with the ID.
     @discardableResult
     public func dropStoreSpot(_ id: String, at point: CGPoint) -> Bool {
         let store = self.store

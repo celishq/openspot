@@ -2,24 +2,17 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// The window of a spot that offers one: its sheet on the panel's glass, in a window that the person moves, resizes and
-/// closes by the buttons of its clear title bar, where the spot's view may put its own toolbar items. The app shows in the
-/// Dock and in Command-Tab while it is open.
 final class SpotSheetWindow: NSWindow, NSWindowDelegate {
     private var model: SpotsModel?
     private var id = ""
-    /// Whether the window counts in `AppPresence`, from its show until it closes.
     private var isPresent = false
 
-    /// Gives each key but Esc to the spot first, so that its rows and actions work whichever part has the focus. Esc stays
-    /// with the view, such as a search field that it clears, and ⌘W closes the window, as in any window.
     override func sendEvent(_ event: NSEvent) {
         if event.type == .keyDown, !event.modifierFlags.contains(.command), let model, let key = SpotsPanel.actionKey(of: event),
            key.name != "escape", model.handleFloatKey(key, in: id) { return }
         super.sendEvent(event)
     }
 
-    /// Brings the window and the app to the front, with the app regular while the window is open.
     func show() {
         if !isPresent {
             isPresent = true
@@ -30,7 +23,6 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         makeKeyAndOrderFront(nil)
     }
 
-    /// Closes the window, and lands its spot when the person closed it.
     func windowWillClose(_ notification: Notification) {
         guard isPresent else { return }
         isPresent = false

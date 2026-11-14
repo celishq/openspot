@@ -1,8 +1,6 @@
 import OpenspotCore
 import SwiftUI
 
-/// The rows of the open submenu, on the menu's glass, each with its key and the selection ring. It alone reads the submenu,
-/// so that a key in it reruns only this view.
 struct SpotSubmenuView: View {
     let model: SpotsModel
 

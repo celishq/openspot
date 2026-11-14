@@ -2,9 +2,6 @@ import Foundation
 import Synchronization
 
 public struct SpotsFolder: Sendable {
-    /// What a scan reads: the identity, mode, size and times of each file through its links, the spots that are on or off
-    /// and the sheets of the app. An equal stamp gives an equal scan, because a write, a change of mode and a move each change
-    /// the change time of a file.
     public struct Stamp: Equatable, Sendable {
         fileprivate let files: [String: [Int]]
         fileprivate let enabled: Set<String>
@@ -13,17 +10,12 @@ public struct SpotsFolder: Sendable {
     }
 
     private static let coreName = "spots"
-    /// The spot folder of the core that holds the spots of the app itself, which are always on.
     private static let appName = "openspot.spot"
-    /// The core spots that start on: each reads only local data, and only at a person's act or when the panel opens.
     private static let startingIDs: Set<String> = ["apps", "caffeinate", "color-picker", "emoji", "files", "links", "paste-screenshot", "settings", "snippets", "translate"]
 
     public let url: URL
-    /// The folder of the core spots in the app. A scan skips it when it does not exist.
     public let core: URL?
-    /// The IDs of the core spots that the person turned on.
     public let enabled: Set<String>
-    /// The IDs of the spots of the folder that the person turned off. Their files stay, and a scan does not load them.
     public let disabled: Set<String>
 
     public init(url: URL, core: URL? = nil, enabled: Set<String> = [], disabled: Set<String> = []) {
@@ -33,7 +25,6 @@ public struct SpotsFolder: Sendable {
         self.disabled = disabled
     }
 
-    /// The person's spots folder, opened: an older `plugins` folder moves to its place, and its loose files are wrapped.
     public static func standard(
         environment: [String: String] = ProcessInfo.processInfo.environment,
         home: URL = FileManager.default.homeDirectoryForCurrentUser,
@@ -57,18 +48,14 @@ public struct SpotsFolder: Sendable {
         return spots
     }
 
-    /// The name of the spots folder in the config folder.
     static let folderName = "spots"
 
-    /// Moves the `plugins` folder of an older Openspot to the place of the spots folder, once, when no spots folder is there.
     static func moveOldFolder(to url: URL) {
         let old = url.deletingLastPathComponent().appendingPathComponent("plugins", isDirectory: true)
         guard !FileManager.default.fileExists(atPath: url.path), FileManager.default.fileExists(atPath: old.path) else { return }
         try? FileManager.default.moveItem(at: old, to: url)
     }
 
-    /// The folder that holds the spots folder and the data of spots.
-    /// A Debug build names its own folder, so that its spots and config stay out of the real ones.
     static func config(
         environment: [String: String],
         home: URL,
@@ -80,9 +67,6 @@ public struct SpotsFolder: Sendable {
         return home.appendingPathComponent(".config/openspot", isDirectory: true)
     }
 
-    /// Reads each script that is not off in each spot folder of the folder, after the sheets of the app, and names each loose
-    /// script, which it does not read. Then it reads each core spot that is on, each core spot that a spot needs, and the
-    /// spots of the app, a source that a person cannot change. A spot in the folder hides one of those with the same ID.
     public func scan(hosted: [Spot] = []) throws -> ScanResult {
         var result = ScanResult(files: hosted.isEmpty ? [] : [SpotFile(id: "openspot", spots: hosted)], refused: [])
         for file in ((try? Self.sorted(in: url)) ?? []).filter(Self.isScript) {
@@ -108,8 +92,6 @@ public struct SpotsFolder: Sendable {
         return result
     }
 
-    /// The stamp of all that a scan reads: each entry at the top of the folder and of the core folder, and each entry one
-    /// folder down. A hidden file is in it too, so it can only ask for a scan that changes nothing.
     public func stamp(hosted: [Spot] = []) -> Stamp {
         var files: [String: [Int]] = [:]
         for folder in [url.path] + (core.map { [$0.path] } ?? []) {
@@ -123,7 +105,6 @@ public struct SpotsFolder: Sendable {
         return Stamp(files: files, enabled: enabled, disabled: disabled, hosted: hosted)
     }
 
-    /// Whether a scan reads this path: the folder, or an entry at its top or one folder down that is not hidden.
     public func reads(_ path: String) -> Bool {
         let roots = [url.path, url.resolvingSymlinksInPath().path].map { $0.hasSuffix("/") ? String($0.dropLast()) : $0 }
         guard let root = roots.first(where: { path == $0 || path.hasPrefix($0 + "/") }) else { return false }
@@ -131,13 +112,9 @@ public struct SpotsFolder: Sendable {
         return parts.count <= 2 && !parts.contains { $0.hasPrefix(".") }
     }
 
-    /// The last scan of each folder and the stamp that it came from, by the paths of the folder and its core folder.
     private static let scans = Mutex<[String: (stamp: Stamp, result: ScanResult)]>([:])
-    /// The last core choices of each core folder and the stamp of that folder.
     private static let choices = Mutex<[String: (stamp: Stamp, result: [Spot])]>([:])
 
-    /// The scan of the folder, kept from the last one while its stamp holds, so that a look at a folder that did not change
-    /// reads no file.
     public func keptScan() throws -> ScanResult {
         let key = "\(url.path)\n\(core?.path ?? "")"
         let stamp = stamp()
@@ -147,7 +124,6 @@ public struct SpotsFolder: Sendable {
         return result
     }
 
-    /// The core choices, kept from the last look while no file of the core folder changed.
     public func keptCoreChoices() -> [Spot] {
         guard let core else { return [] }
         let stamp = SpotsFolder(url: core).stamp()
@@ -157,43 +133,34 @@ public struct SpotsFolder: Sendable {
         return result
     }
 
-    /// The core spots that a person can turn on. A part of a widget, such as a metric that it places or a sheet off the grid
-    /// that it opens, is not one: it comes with its widget.
     public func coreChoices() -> [Spot] {
         let commands = ScanResult(files: coreFiles().compactMap { try? SpotFile(file: $0.file, id: $0.id) }, refused: []).spots
         let opened = Set(commands.compactMap(\.opens))
         return commands.filter { !opened.contains($0.id) && $0.read?.seconds == nil }
     }
 
-    /// The ID that turns a core command on: the name of its spot folder.
     public static func coreID(of spot: Spot) -> String {
         SpotID(file: spot.url).name
     }
 
-    /// The ID that turns a spot on or off: the core ID of a core spot, or else the ID of its file.
     public func fileID(of spot: Spot) -> String {
         isCore(spot) ? Self.coreID(of: spot) : SpotID(file: spot.url).description
     }
 
-    /// Whether the app runs for the first time here: no config file, and no spot in the folder.
     public func isFirstLaunch(config: ConfigFile) -> Bool {
         guard !FileManager.default.fileExists(atPath: config.url.path) else { return false }
         return ((try? SpotsFolder(url: url).scan())?.spots ?? []).isEmpty
     }
 
-    /// The IDs of the core spots that a first launch turns on, in the order of the grid.
     public func startingSpots() -> [String] {
         coreChoices().map(Self.coreID(of:)).filter(Self.startingIDs.contains)
     }
 
-    /// Whether a command runs from the core folder of the app.
     public func isCore(_ spot: Spot) -> Bool {
         guard let core, spot.host == nil, !spot.isBuiltIn else { return false }
         return spot.url.standardizedFileURL.path.hasPrefix(core.standardizedFileURL.path + "/")
     }
 
-    /// Takes a spot out of the folder, to the Trash: its whole spot folder, or only its file, its program, and its view with
-    /// the view's library when the folder holds the script of another spot.
     public func remove(_ spot: Spot, discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }) throws {
         guard spot.host == nil, !spot.isBuiltIn, !isCore(spot) else { throw SpotError.fault("\(spot.name) comes with Openspot, so it cannot be removed.") }
         let folder = spot.url.deletingLastPathComponent()
@@ -207,10 +174,6 @@ public struct SpotsFolder: Sendable {
         try discard(folder)
     }
 
-    /// Moves each loose file at the top of the folder into a spot folder of its name, with the files of the same name, such
-    /// as its program, and its view. `<name>.md` becomes `readme.md` and `<name>.preview.txt` becomes `preview.txt`. A plain
-    /// folder with a script at its top takes the extension. A file that is no script stays, and so does a file whose name its
-    /// spot folder holds already: a wrap never replaces a file.
     public func wrap() throws {
         let entries = try Self.sorted(in: url)
         var loose = entries.filter { !Self.isFolder($0) }
@@ -236,9 +199,6 @@ public struct SpotsFolder: Sendable {
         }
     }
 
-    /// The place that a wrap gives a path of an older layout in a spots folder: `notes.spot/notes.sh` for `notes.sh`,
-    /// `notes.spot/readme.md` for `notes.md`, `home.spot/lights.sh` for `home/lights.sh`, and `home.spot` for a folder
-    /// `home`. A file goes into the spot folder of `name` when one is given, such as the view of a script.
     static func wrapped(_ path: String, into name: String? = nil) -> String {
         let parts = path.split(separator: "/", maxSplits: 1).map(String.init)
         guard let first = parts.first, (first as NSString).pathExtension != SpotPackage.fileExtension else { return path }
@@ -253,12 +213,10 @@ public struct SpotsFolder: Sendable {
         return SpotID(stem).folderName + "/" + file
     }
 
-    /// The part of a file name before its first dot.
     private static func stem(of name: String) -> String {
         String(name.prefix { $0 != "." })
     }
 
-    /// Whether a file, not a folder, is a script that runs.
     private static func isScript(_ url: URL) -> Bool {
         !isFolder(url) && SpotFile.runs(url)
     }
@@ -268,8 +226,6 @@ public struct SpotsFolder: Sendable {
         return FileManager.default.fileExists(atPath: url.path, isDirectory: &isFolder) && isFolder.boolValue
     }
 
-    /// Adds what one file gives, and reports its fault. A dated file takes its place in the grid by the date it was added,
-    /// and a read-only one comes with the app.
     private static func read(_ file: URL, id: String, into result: inout ScanResult, isDated: Bool = false, isReadOnly: Bool = false) {
         do {
             guard let loaded = try SpotFile(file: file, id: id) else { return }
@@ -285,7 +241,6 @@ public struct SpotsFolder: Sendable {
         }
     }
 
-    /// The core files to load: each one that is on, and each one that a loaded spot places or opens.
     private func wantedCoreFiles(after result: ScanResult, hiding ownIDs: Set<String>) -> [(file: URL, id: String)] {
         let files = coreFiles().filter { !ownIDs.contains($0.id) }
         var wanted = Set(files.map(\.id).filter(enabled.contains))
@@ -304,25 +259,20 @@ public struct SpotsFolder: Sendable {
         ((try? SpotFile(file: file.file, id: file.id)) ?? nil)?.spots ?? []
     }
 
-    /// The files of the spot folders of the core, each a spot that the person turns on or off.
     private func coreFiles() -> [(file: URL, id: String)] {
         guard let core, let folders = try? Self.spotFolders(in: core) else { return [] }
         return Self.files(in: folders.filter { $0.lastPathComponent != Self.appName })
     }
 
-    /// The files of the spots of the app, in the `openspot.spot` folder of the core, by their IDs as the folder of a person
-    /// gives them.
     private func appFiles() -> [(file: URL, id: String)] {
         guard let folder = core?.appendingPathComponent(Self.appName, isDirectory: true), Self.isFolder(folder) else { return [] }
         return Self.files(in: [folder])
     }
 
-    /// The spot folders at the top of a folder.
     private static func spotFolders(in folder: URL) throws -> [URL] {
         try sorted(in: folder).filter { $0.pathExtension == SpotPackage.fileExtension && isFolder($0) }
     }
 
-    /// The files at the top of these spot folders, by their IDs. A folder inside one, such as of shared code, is no spot.
     private static func files(in folders: [URL]) -> [(file: URL, id: String)] {
         folders.flatMap { folder in ((try? sorted(in: folder)) ?? []).filter { !isFolder($0) }.map { ($0, SpotID(file: $0).description) } }
     }
@@ -331,7 +281,6 @@ public struct SpotsFolder: Sendable {
         ((try? FileManager.default.contentsOfDirectory(atPath: folder)) ?? []).map { folder + "/" + $0 }
     }
 
-    /// The kind, identity, mode, size, change time and modification time of a file, through its links.
     private static func state(of path: String) -> [Int] {
         var info = stat()
         guard stat(path, &info) == 0 else { return [] }
@@ -341,8 +290,6 @@ public struct SpotsFolder: Sendable {
         ]
     }
 
-    /// The entries of a folder that are not hidden, in name order, by their paths under the folder as given, also when it
-    /// is a link to a folder.
     private static func sorted(in folder: URL) throws -> [URL] {
         try FileManager.default.contentsOfDirectory(atPath: folder.path).filter { !$0.hasPrefix(".") }.sorted()
             .map { folder.appendingPathComponent($0) }

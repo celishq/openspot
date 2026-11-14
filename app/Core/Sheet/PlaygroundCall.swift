@@ -1,7 +1,5 @@
 import Foundation
 
-/// One call as the playground shows it: a line of its arguments and reason, then its stdin, its frames and its stderr, each
-/// line marked by where it went, then how it ended.
 public struct PlaygroundCall: Equatable, Sendable {
     public let lines: [String]
 

@@ -2,15 +2,12 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// One blur of what lies behind the window, with the theme's shade. The shade grows from nothing at its edge across the
-/// whole margin, and the blur grows only close to the content.
 struct SpotSoftBlur: NSViewRepresentable {
     private static let blurInset: CGFloat = SpotTokens.halo - 5
     private static let blurSoftness: CGFloat = 20
     private static let tintInset: CGFloat = SpotTokens.halo * 0.58
     private static let tintSoftness: CGFloat = SpotTokens.halo / 4.7
 
-    /// Images of alpha alone, which is the strength of the blur and of the tint at each point.
     struct Masks {
         let blur: CGImage?
         let tint: CGImage?
@@ -19,7 +16,6 @@ struct SpotSoftBlur: NSViewRepresentable {
     let height: CGFloat
     var width = SpotTokens.panelWidth
 
-    /// The size of a pair of masks.
     private struct Size: Hashable {
         let width: CGFloat
         let height: CGFloat
@@ -40,7 +36,6 @@ struct SpotSoftBlur: NSViewRepresentable {
             }
         }
 
-        /// Whether the panel is in the dark theme, which picks the shade of the tint.
         var isDark = true {
             didSet { if isDark != oldValue { applyShade() } }
         }
@@ -51,7 +46,6 @@ struct SpotSoftBlur: NSViewRepresentable {
         private var filter: NSObject?
         private var appliedFilter: NSObject?
 
-        /// A filter holds its mask from the first time it draws, so each mask has a filter of its own.
         private static func filter(mask: CGImage?, radius: CGFloat) -> NSObject? {
             let filter = (NSClassFromString("CAFilter") as? NSObject.Type)?
                 .perform(NSSelectorFromString("filterWithType:"), with: filterType)?
@@ -78,7 +72,6 @@ struct SpotSoftBlur: NSViewRepresentable {
             applyBlur()
         }
 
-        /// Gives the tint the shade of the theme that the panel is in.
         private func applyShade() {
             CATransaction.begin()
             CATransaction.setDisableActions(true)
@@ -117,7 +110,6 @@ struct SpotSoftBlur: NSViewRepresentable {
         }
     }
 
-    /// Fills the surface it lies on, so that a resize asks AppKit for no size of its own.
     func sizeThatFits(_ proposal: ProposedViewSize, nsView: Surface, context: Context) -> CGSize? {
         proposal.replacingUnspecifiedDimensions()
     }
@@ -137,12 +129,8 @@ struct SpotSoftBlur: NSViewRepresentable {
         surface.masks = Self.masks(Size(width: width, height: height))
     }
 
-    /// The masks of each size, 8 MB beside two of the largest pairs. Each surface asks for its size on each update, so the
-    /// sizes in use are the last to go.
     private static var kept = RecentCache<Size, Masks>(base: 8 << 20)
 
-    /// Draws the masks of these heights at this width ahead in their order, one in each turn of the main queue, so that an
-    /// open of a sheet finds them. It stops where the next pair would push out a kept one.
     static func warm(_ heights: [CGFloat], width: CGFloat) {
         var left = heights[...]
         while let height = left.first, kept.value(for: Size(width: width, height: height)) != nil { left = left.dropFirst() }
@@ -151,12 +139,10 @@ struct SpotSoftBlur: NSViewRepresentable {
         DispatchQueue.main.async { warm(Array(left.dropFirst()), width: width) }
     }
 
-    /// The most bytes that the pair of masks of this size can take, with room for the padding of its rows.
     private static func cost(of size: Size) -> Int {
         2 * (Int(size.width.rounded(.up)) + 64) * Int(size.height.rounded(.up))
     }
 
-    /// The masks of this size.
     private static func masks(_ size: Size) -> Masks {
         if let masks = kept.value(for: size) { return masks }
         let masks = Masks(
@@ -167,7 +153,6 @@ struct SpotSoftBlur: NSViewRepresentable {
         return masks
     }
 
-    /// Draws a soft rounded shape and keeps only its alpha, a quarter of the bytes of the drawing.
     private static func mask(_ size: Size, inset: CGFloat, softness: CGFloat) -> CGImage? {
         let shape = RoundedRectangle(cornerRadius: SpotTokens.radius + SpotTokens.halo - inset, style: .continuous)
             .fill(Color.black)

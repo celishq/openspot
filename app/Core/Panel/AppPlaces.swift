@@ -1,14 +1,10 @@
 import Foundation
 
-/// Where the app keeps its spots, its config and the recent rows of each list. A test points it at a folder of its own.
 public struct AppPlaces {
     public let environment: [String: String]
     public let home: URL
     public let defaults: UserDefaults
-    /// Moves a file to the Trash, and returns where it went.
     public let trash: (URL) throws -> URL
-    /// The config that ships with the app, whose choices for the core spots, such as their letters, count until the
-    /// person's config makes its own.
     public let defaultConfig: URL?
 
     public init(
@@ -25,7 +21,6 @@ public struct AppPlaces {
         self.defaultConfig = defaultConfig
     }
 
-    /// Moves a file to the Trash of the Mac.
     public static func systemTrash(_ url: URL) throws -> URL {
         var place: NSURL?
         try FileManager.default.trashItem(at: url, resultingItemURL: &place)
@@ -40,43 +35,35 @@ public struct AppPlaces {
         .standard(environment: environment, home: home)
     }
 
-    /// The choices of the config that ships with the app. A file that is missing or that it cannot read gives none.
     public var defaultArrangement: SpotArrangement {
         guard let defaultConfig, let text = try? String(contentsOf: defaultConfig, encoding: .utf8) else { return SpotArrangement() }
         return Config(text: text).arrangement
     }
 
-    /// The spots folder, with the core spots that this config turns on.
     public func folder(_ config: Config) -> SpotsFolder {
         .standard(environment: environment, home: home, enabled: config.arrangement.enabled, disabled: config.arrangement.disabled)
     }
 
-    /// The spots folder, with the core spots that the config file turns on now.
     public var folder: SpotsFolder {
         folder(config.read())
     }
 
-    /// Where the person's account key lives.
     public var account: AccountStore {
         .standard(environment: environment, home: home)
     }
 
-    /// The folder of the packages that the person published to the store.
     public var store: URL {
         SpotStore.url(environment: environment, home: home)
     }
 
-    /// The record of the calls of each spot, beside the spots folder.
     public var log: CallLog {
         CallLog(folder: SpotsFolder.config(environment: environment, home: home).appendingPathComponent("logs", isDirectory: true))
     }
 
-    /// The folder of the stats of each day, beside the spots folder (protocol: Stats).
     public var stats: URL {
         SpotsFolder.config(environment: environment, home: home).appendingPathComponent("stats", isDirectory: true)
     }
 
-    /// The rows that a person picked last in a list, the newest first.
     public func recent(of id: String) -> [String] {
         defaults.stringArray(forKey: Self.recentKey(id)) ?? []
     }

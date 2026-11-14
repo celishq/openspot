@@ -1,4 +1,3 @@
-/// The 2048 English words of BIP-39, in their order, from which 12 words make an account key.
 enum AccountWords {
     static let all: [String] = [
         "abandon", "ability", "able", "about", "above", "absent", "absorb", "abstract", "absurd", "abuse", "access", "accident",

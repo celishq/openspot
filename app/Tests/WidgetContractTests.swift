@@ -13,15 +13,12 @@ final class WidgetContractTests: XCTestCase {
         try FileManager.default.removeItem(at: folder)
     }
 
-    /// Writes a script with one fixed date of creation, so that the scan's order by the date it was added never depends on
-    /// a second that passes between two writes.
     private func script(_ name: String, _ text: String) throws {
         let url = folder.appendingPathComponent(name.inSpotFolder)
         try text.writeScript(to: url)
         try FileManager.default.setAttributes([.creationDate: Date(timeIntervalSince1970: 1_700_000_000)], ofItemAtPath: url.path)
     }
 
-    /// A spot whose header draws its card from other spots, at a strip for one line and else large, unless a size is given.
     private func widget(name: String = "Now", grid: [String] = ["power power"], size: String? = nil, more: String = "", file: String = "mine.sh") throws {
         let size = size ?? (grid.count == 1 ? "strip" : "large")
         let lines = grid.map { "# grid.\(size)=\($0)\n" }.joined()

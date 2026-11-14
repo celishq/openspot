@@ -1,6 +1,5 @@
 import Foundation
 
-/// A colour as a person copies it, such as #1A2B3C, from parts between 0 and 1.
 public struct HexColor: Equatable, Sendable {
     public let text: String
 

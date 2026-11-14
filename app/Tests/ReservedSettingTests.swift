@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves that `openspot setting set` sets the person's choices of a spot and of the app, as the calls that it took the
-/// place of did, and that those calls name their new form.
 final class ReservedSettingTests: XCTestCase {
     private func call(_ words: String...) -> CommandLineCall? {
         CommandLineCall(arguments: words, environment: [:])

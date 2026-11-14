@@ -1,9 +1,7 @@
 import OpenspotCore
 import SwiftUI
 
-/// Draws a text with a capsule behind each run marked as a key, as the footer draws its keys.
 struct ToastKeyFill: TextRenderer {
-    /// Marks a run of a text as a key.
     struct Key: TextAttribute {}
 
     private static let thinSpace: CGFloat = 2

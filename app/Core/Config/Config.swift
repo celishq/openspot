@@ -1,20 +1,13 @@
 import Foundation
 
-/// What the config file asks for. A value that it cannot use is a fault, and the others still count.
 public struct Config: Equatable, Sendable {
-    /// The key that opens the panel. Nil when the file asks for one that it cannot use.
     public private(set) var panelKey: Shortcut? = .standard
-    /// The key that opens the link of a failure toast. Nil when the file asks for one that it cannot use.
     public private(set) var fixKey: Shortcut? = .fix
     public private(set) var faults: [String] = []
     public private(set) var arrangement = SpotArrangement()
-    /// The keys that the person assigned to commands of scripts, or to spots that they float.
     public private(set) var keys: [GlobalKey] = []
-    /// The values that scripts keep for the person through `openspot setting` (protocol: Settings).
     public private(set) var settings: [SpotSetting] = []
-    /// Whether each spot's process runs with only what its uses name (protocol: Trust).
     public private(set) var isCareful = false
-    /// The side panels beside the grid's center panel.
     public private(set) var panels = GridPanels()
 
     public init(text: String) {
@@ -49,12 +42,10 @@ public struct Config: Equatable, Sendable {
         }
     }
 
-    /// The value that a script keeps under this key for its spot.
     public func setting(_ key: String, of spot: String) -> String? {
         settings.first { $0.spot == spot && $0.key == key }?.value
     }
 
-    /// Reads one `[[settings]]` table. A table that it cannot use is a fault.
     private mutating func setting(of table: [String: TomlDocument.Value]) -> SpotSetting? {
         guard case .string(let spot)? = table["spot"], case .string(let key)? = table["key"], case .string(let value)? = table["value"] else {
             faults.append("config.toml: a setting needs a spot, a key and a value.")
@@ -63,7 +54,6 @@ public struct Config: Equatable, Sendable {
         return SpotSetting(spot: spot, key: key, value: value)
     }
 
-    /// Reads one key setting. A value that it cannot use is a fault, and gives no key.
     private mutating func shortcut(_ value: TomlDocument.Value?, named name: String, or standard: Shortcut) -> Shortcut? {
         guard let value else { return standard }
         if case .string(let text) = value, let shortcut = Shortcut(text: text) { return shortcut }
@@ -72,7 +62,6 @@ public struct Config: Equatable, Sendable {
         return nil
     }
 
-    /// Reads one `[[keys]]` table. A table that it cannot use is a fault.
     private mutating func key(of table: [String: TomlDocument.Value]) -> GlobalKey? {
         guard case .string(let spot)? = table["spot"], case .string(let text)? = table["key"] else {
             faults.append("config.toml: a key needs a spot and a key.")
@@ -87,7 +76,6 @@ public struct Config: Equatable, Sendable {
         return GlobalKey(spot: spot, act: act, trigger: trigger)
     }
 
-    /// Reads one `[[spots]]` table. A table with no id is a fault, and any other bad value leaves that value out.
     private mutating func choice(of table: [String: TomlDocument.Value]) -> SpotArrangement.Choice? {
         guard case .string(let id)? = table["id"] else {
             faults.append("config.toml: a spot needs an id.")

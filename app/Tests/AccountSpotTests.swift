@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Account spot of the app: it draws each step of the account in its view, from the facts of `openspot
-/// account`, and only it reaches the key, which a test keeps in a file of its own.
 final class AccountSpotTests: BuiltInCase {
     private let phrase = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
 
@@ -16,14 +14,11 @@ final class AccountSpotTests: BuiltInCase {
         AccountStore.standard(environment: ["OPENSPOT_CONFIG": root.path], home: root, devState: nil)
     }
 
-    /// The frame that a call of the spot prints: a read as the open sheet or the panel asks it, or a press with the values
-    /// of the sheet on stdin.
     private func frame(_ arguments: [String], input: String? = nil, reason: String = "sheet.open") async throws -> String {
         let variables = arguments == ["read"] ? ["OPENSPOT_REASON": reason] : [:]
         return try await runs.answer(of: account, SpotAction(arguments: arguments), input: input, limit: 10, variables: variables)
     }
 
-    /// The keys of the block with this id in a frame.
     private func block(_ id: String, in frame: String) -> [String: String] {
         let found = frame.components(separatedBy: "\n\n").first { $0.split(separator: "\n").contains { $0.hasSuffix("=\(id)") && !$0.hasPrefix("grid=") } }
         var keys: [String: String] = [:]
@@ -38,7 +33,6 @@ final class AccountSpotTests: BuiltInCase {
         frame.split(separator: "\n").first { $0.hasPrefix("toast=") }.map { String($0.dropFirst(6)) }
     }
 
-    /// The words of the numbered blocks of a frame, in order.
     private func words(in frame: String) -> [String] {
         (1...12).compactMap { block("w\($0)", in: frame)["title"] }
     }
@@ -74,7 +68,6 @@ final class AccountSpotTests: BuiltInCase {
         XCTAssertEqual(asked, ["show your account words"])
     }
 
-    /// The buttons of the check, by place: each id is `pick-<place>-<word>`.
     private func picks(in frame: String) -> [(place: Int, word: String)] {
         frame.split(separator: "\n").filter { $0.hasPrefix("button=pick-") }.map { line in
             let rest = line.dropFirst("button=pick-".count)

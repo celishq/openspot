@@ -1,9 +1,6 @@
 import OpenspotCore
 import SwiftUI
 
-/// The rows of a sheet as square buttons, placed by hand. It builds only the lines near the visible band, each cell in a slot
-/// that it keeps while the grid scrolls, and one tap, hover and drag on the whole grid find the cell under the pointer. A
-/// search that lands scrolls it to the top in the same update as its rows.
 struct SpotRowGrid: View {
     let list: ItemList
     let selection: () -> Int
@@ -13,15 +10,12 @@ struct SpotRowGrid: View {
     let onPoint: (SpotItem) -> Void
     let onDragOut: ([SpotItem]) -> Void
     @State private var reading = GridReading()
-    /// Counts the changes of the band and of the aim, so that each one updates the grid. No measure changes it while the
-    /// grid's own scroll moves.
-    @State private var moves = 0
+    @State private var bandChanges = 0
 
-    /// How many cells of a new search draw their pictures ahead: more than a sheet shows.
     private static let drawnAhead = 120
 
     var body: some View {
-        let _ = moves
+        let _ = bandChanges
         let _ = reading.land(list.landedSearches)
         let perLine = list.perLine
         let side = SpotTokens.square(perLine: perLine)
@@ -71,22 +65,21 @@ struct SpotRowGrid: View {
             reading.contentHeight = size.height
         })
         .onScrollGeometryChange(for: Int.self, of: { Int(max($0.contentOffset.y - SpotTokens.padding, 0) / step) }, action: { _, lines in
-            if reading.pass(lines, bandLines: bandLines) { moves &+= 1 }
+            if reading.pass(lines, bandLines: bandLines) { bandChanges &+= 1 }
         })
         .onScrollPhaseChange { _, phase, context in
             if phase != .animating { reading.isMoving = false }
             guard phase == .idle else { return }
             reading.aim = context.geometry.contentOffset.y
-            if reading.pass(Int(max(reading.aim - SpotTokens.padding, 0) / step), bandLines: bandLines) { moves &+= 1 }
+            if reading.pass(Int(max(reading.aim - SpotTokens.padding, 0) / step), bandLines: bandLines) { bandChanges &+= 1 }
         }
-        .modifier(GridFollow(selection: selection, items: list.shown, perLine: perLine, bandLines: bandLines, bottomFade: bottomFade, reading: reading, moves: $moves))
+        .modifier(GridFollow(selection: selection, items: list.shown, perLine: perLine, bandLines: bandLines, bottomFade: bottomFade, reading: reading, bandChanges: $bandChanges))
         .onChange(of: list.landedSearches, initial: true) {
             let ahead = list.shown.prefix(Self.drawnAhead)
             if reading.newAhead(ahead) { SpotItemIcon.prepare(ahead, size: SpotTokens.listIconSize) }
         }
     }
 
-    /// The row whose cell holds this point of the grid, or nil in a gap or past the last row.
     private func item(at point: CGPoint, step: CGFloat, side: CGFloat) -> SpotItem? {
         guard point.x >= 0, point.y >= 0 else { return nil }
         let column = Int(point.x / step)
@@ -98,8 +91,6 @@ struct SpotRowGrid: View {
     }
 }
 
-/// The layout of the cells of the grid: each at the place of its index, at the size of a square. It takes the size it is
-/// offered, and measures no cell and asks no cell for its alignment.
 private struct GridPlacement: Layout {
     let perLine: Int
     let side: CGFloat
@@ -126,12 +117,10 @@ private struct GridPlacement: Layout {
     }
 }
 
-/// The index of the row that a cell of the grid shows.
 private struct CellIndex: LayoutValueKey {
     static let defaultValue = 0
 }
 
-/// One square of the grid. It depends on its item alone, so that a move of the selection leaves it as it is.
 private struct SpotGridCell: View, Equatable {
     let item: SpotItem
     let side: CGFloat
@@ -147,8 +136,6 @@ private struct SpotGridCell: View, Equatable {
     }
 }
 
-/// What the grid last knew of its scroll view, kept out of observation so that a scroll redraws nothing: its sizes, its aim,
-/// the position it asks of the scroll view, the band of lines it builds, the pointer, and the rows whose pictures it drew ahead.
 @MainActor
 private final class GridReading {
     var viewHeight: CGFloat = 0
@@ -156,20 +143,16 @@ private final class GridReading {
     var aim: CGFloat = 0
     var position = ScrollPosition(edge: .top)
     var isDragging = false
-    /// Whether the grid's own scroll moves, while which no measure changes the band.
     var isMoving = false
-    /// Where the pointer last lay over the grid.
     var pointer: CGPoint?
     private var built: Range<Int>?
     private var landed: Int?
     private var ahead: [String] = []
 
-    /// The lines that the grid builds: those it was given, or else the first band.
     func band(lines: Int) -> Range<Int> {
         built ?? 0..<lines
     }
 
-    /// Scrolls to the top when a search landed since the last call.
     func land(_ searches: Int) {
         guard searches != landed else { return }
         landed = searches
@@ -178,7 +161,6 @@ private final class GridReading {
         position = ScrollPosition(y: 0)
     }
 
-    /// Builds the band around the lines the scroll has passed, unless the grid's own scroll moves. Returns whether it changed.
     func pass(_ lines: Int, bandLines: Int) -> Bool {
         guard !isMoving else { return false }
         let next = Self.band(around: lines, bandLines: bandLines)
@@ -187,8 +169,6 @@ private final class GridReading {
         return true
     }
 
-    /// Builds the lines from the band around the last aim to the band around the next, when they span at most two bands, and
-    /// returns true. A longer jump builds only the next band and returns false, so that the scroll lands at once.
     func aim(from last: Int, to lines: Int, bandLines: Int) -> Bool {
         let target = Self.band(around: lines, bandLines: bandLines)
         let now = Self.band(around: last, bandLines: bandLines)
@@ -202,7 +182,6 @@ private final class GridReading {
         return first..<(first + bandLines)
     }
 
-    /// Whether these rows differ from those whose pictures were last drawn ahead, and keeps them when they do.
     func newAhead(_ rows: ArraySlice<SpotItem>) -> Bool {
         guard !rows.elementsEqual(ahead, by: { $0.run == $1 }) else { return false }
         ahead = rows.map(\.run)
@@ -210,7 +189,6 @@ private final class GridReading {
     }
 }
 
-/// The one ring of the grid, over the selected cell. It alone reads the selection, so that a move redraws no cell.
 private struct GridRing: View {
     let selection: () -> Int
     let count: Int
@@ -235,8 +213,6 @@ private struct GridRing: View {
     }
 }
 
-/// Scrolls the grid until the line of the selected cell lies clear of the fades at its two ends. It alone reads the
-/// selection, so that a move reruns only this modifier.
 private struct GridFollow: ViewModifier {
     private static let linesAhead = 10
 
@@ -246,7 +222,7 @@ private struct GridFollow: ViewModifier {
     let bandLines: Int
     let bottomFade: CGFloat
     let reading: GridReading
-    @Binding var moves: Int
+    @Binding var bandChanges: Int
 
     func body(content: Content) -> some View {
         content.onChange(of: selection()) { _, index in show(index) }
@@ -273,6 +249,6 @@ private struct GridFollow: ViewModifier {
         reading.isMoving = glides
         var change = Transaction(animation: glides ? SpotMotion.move : nil)
         change.disablesAnimations = !glides
-        withTransaction(change) { moves &+= 1 }
+        withTransaction(change) { bandChanges &+= 1 }
     }
 }

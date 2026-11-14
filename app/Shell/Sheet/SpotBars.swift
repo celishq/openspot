@@ -1,7 +1,5 @@
 import SwiftUI
 
-/// The bars of a chart, drawn in one canvas: each point a bar from the bottom, as tall as its share of the highest point or
-/// of 1. The last bar is the newest.
 struct SpotBars: View {
     let points: [Double]
     let gap: CGFloat

@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves Return on a spot with one command: with no key yet it records one, and with a key it runs the command.
 @MainActor
 final class SoleCommandTests: XCTestCase {
     private var folder: URL!

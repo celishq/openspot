@@ -1,7 +1,6 @@
 import OpenspotCore
 import SwiftUI
 
-/// Lays a view of the center panel's size out across the panel with these side panels, from the left side panel's edge.
 struct PanelSpan: ViewModifier {
     let panels: GridPanels
 

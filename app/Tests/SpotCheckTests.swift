@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves that a check names the spot and the file of each fault, in words and in JSON for an agent.
 @MainActor
 final class SpotCheckTests: XCTestCase {
     private var folder: URL!

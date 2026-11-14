@@ -1,9 +1,6 @@
 import Foundation
 
-/// The CLDR keywords of each emoji and symbol, in the first language of the Mac that has them, read from the xz files that
-/// the app holds. A glyph with no keywords, or a folder with no files, gives none.
 public struct GlyphKeywords: Sendable {
-    /// The folder in the app, found from the real executable, so that the `openspot` command, a link to it, finds it too.
     public static let standardFolder = Bundle.main.executableURL?.resolvingSymlinksInPath()
         .deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Resources/Keywords")
 
@@ -21,13 +18,11 @@ public struct GlyphKeywords: Sendable {
         }.map(Self.read) ?? [:]
     }
 
-    /// The keywords of a glyph, found by its form with no skin tone and no presentation mark.
     public func of(_ glyph: String) -> [String] {
         let base = glyph.unicodeScalars.filter { !Self.tones.contains($0.value) && !Self.marks.contains($0.value) }
         return words[String(String.UnicodeScalarView(base))] ?? []
     }
 
-    /// The `keywords` line of a row of a glyph, or none when it has no keywords.
     func field(of glyph: String) -> [TextBlock.Field] {
         let words = of(glyph)
         return words.isEmpty ? [] : [.init(key: "keywords", value: words.joined(separator: ", "))]

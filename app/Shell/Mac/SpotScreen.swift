@@ -4,13 +4,9 @@ import OpenspotCore
 import ScreenCaptureKit
 import UniformTypeIdentifiers
 
-/// The `openspot screen` commands of the list of sources and a picture. They read the screens and draw a pick on the main
-/// thread, and do the rest on the thread of their call.
 enum SpotScreen {
     static let screenRecording = "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"
 
-    /// Each display, window, sound, microphone and camera as a row whose id is its source or input word. It needs no
-    /// permission, so a window shows its app's name where macOS hides its title.
     static func sources() async -> String {
         var rows = await displays()
         for window in SpotScreenTarget.windows() {
@@ -37,8 +33,6 @@ enum SpotScreen {
         }
     }
 
-    /// Takes a picture of the source and writes it, and returns its path on a line. A cancel of the pick returns nothing. A
-    /// relative file starts in `folder`.
     static func shot(_ capture: ScreenCapture, in folder: URL) async throws -> String {
         guard let found = try await SpotScreenTarget.target(of: capture.source), !Task.isCancelled else { return "" }
         let file = try CaptureFile(path: capture.file, kind: .picture, folder: screenshots, current: folder).url
@@ -47,15 +41,12 @@ enum SpotScreen {
         return file.path + "\n"
     }
 
-    /// The picture of a target, with its pixels for each point.
     private static func picture(of found: ScreenTarget, cursor: Bool) async throws -> (CGImage, CGFloat) {
         let target = try await SpotScreenTarget.find(found)
         let image = try await allowed { try await SCScreenshotManager.captureImage(contentFilter: target.filter, configuration: target.configuration(cursor: cursor)) }
         return (image, target.scale)
     }
 
-    /// Runs a call to ScreenCaptureKit. When macOS does not allow it, this asks macOS for the permission and fails with the
-    /// fix and the link to its pane (S11).
     static func allowed<Value>(isolation: isolated (any Actor)? = #isolation, _ work: () async throws -> Value) async throws -> Value {
         do {
             return try await work()
@@ -66,7 +57,6 @@ enum SpotScreen {
         }
     }
 
-    /// The folder where macOS keeps screenshots, or the Desktop.
     static var screenshots: URL {
         let desktop = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Desktop", isDirectory: true)
         guard let location = UserDefaults(suiteName: "com.apple.screencapture")?.string(forKey: "location") else { return desktop }
@@ -79,7 +69,6 @@ enum SpotScreen {
         TextBlock(fields: [.init(key: "row", value: id), .init(key: "title", value: title), .init(key: "detail", value: detail), .init(key: "icon", value: icon)])
     }
 
-    /// Writes the picture whole or not at all, with its pixels for each point, so that it shows at the size it had.
     private static func write(_ image: CGImage, scale: CGFloat, to url: URL) throws {
         let type: UTType = switch url.pathExtension.lowercased() {
         case "jpg", "jpeg": .jpeg

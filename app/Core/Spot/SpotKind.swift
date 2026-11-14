@@ -7,7 +7,6 @@ public enum SpotKind: String, CaseIterable, Sendable {
     case slider
     case widget
 
-    /// Whether the spot opens a sheet in the panel.
     public var opensSheet: Bool {
         self == .list
     }

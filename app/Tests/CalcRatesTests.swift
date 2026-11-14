@@ -55,7 +55,6 @@ final class CalcRatesTests: XCTestCase {
         XCTAssertEqual(CalcRates(file: rates.file), rates)
     }
 
-    /// A source that counts its fetches, and answers each with the rates of the test or fails.
     private actor Source {
         var count = 0
         var fails = false
@@ -76,7 +75,6 @@ final class CalcRatesTests: XCTestCase {
         func setFile(_ value: Data) { file = value }
     }
 
-    /// A clock that a test moves.
     private final class Clock: @unchecked Sendable {
         var now = Date(timeIntervalSince1970: 1_800_000_000)
     }

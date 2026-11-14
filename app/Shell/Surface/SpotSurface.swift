@@ -1,14 +1,10 @@
 import OpenspotCore
 import SwiftUI
 
-/// A Control Center surface at a rect of the panel: one blur of a fixed size seen through its shape, a tint, a fill and a
-/// rim. Only the shape moves, so a surface that grows lays out nothing and resizes no AppKit view.
 struct SpotSurface: View {
     let rect: CGRect
     let radius: CGFloat
-    /// How strong the blur, the tint and the rim are, from 0 to 1.
     var glass = 1.0
-    /// How strong the fill of a row is, from 0 to 1.
     var fill = 0.0
     @Environment(\.spotIsShown) private var isShown
     @Environment(\.spotPanels) private var panels

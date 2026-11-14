@@ -1,11 +1,8 @@
 import Foundation
 
-/// The words that ask a coding agent to build or fix a spot, with the places that it needs: the spots folder and the
-/// `openspot` command of this app.
 public struct AgentPrompt: Equatable, Sendable {
     public let folder: URL
     public let guide: URL
-    /// The `openspot` command that the agent runs.
     public let app: String
 
     public init(folder: URL, guide: URL, app: String) {
@@ -14,18 +11,14 @@ public struct AgentPrompt: Equatable, Sendable {
         self.app = app
     }
 
-    /// The `openspot` client in the Helpers of the app, which reaches the running app, or the app's own program when the
-    /// app has no client.
     public static func command(of app: String) -> String {
         let contents = URL(fileURLWithPath: app).deletingLastPathComponent().deletingLastPathComponent()
         let client = contents.appendingPathComponent("Helpers/openspot").path
         return FileManager.default.isExecutableFile(atPath: client) ? client : app
     }
 
-    /// The toast of each copy of a prompt.
     public static let copied = "Copied a prompt for your agent. Paste it into Claude Code, Codex or another agent."
 
-    /// Asks for a new spot in the spots folder that does what the person described.
     public func building(_ description: String) -> String {
         """
         Build an Openspot spot that does this: \(description)
@@ -35,7 +28,6 @@ public struct AgentPrompt: Equatable, Sendable {
         """
     }
 
-    /// Asks to fix the file of a spot that does not load, with each fault that Openspot found.
     public func fixing(_ file: URL, faults: [String]) -> String {
         """
         Fix the Openspot spot in \(file.path). Openspot does not load it, and says:
@@ -45,7 +37,6 @@ public struct AgentPrompt: Equatable, Sendable {
         """
     }
 
-    /// Asks to change a spot, after the agent asks the person what to change, with the words of its last failed call.
     public func changing(_ file: URL, failure: String?) -> String {
         let failed = failure.map { "Its last call failed, and said: \($0)\n" } ?? ""
         return """
@@ -55,7 +46,6 @@ public struct AgentPrompt: Equatable, Sendable {
         """
     }
 
-    /// The steps of each build: the guide, a try, a look, the check and a show.
     private func steps(for id: String) -> String {
         """
         First run "\(app)" guide, and read all of it.
@@ -66,7 +56,6 @@ public struct AgentPrompt: Equatable, Sendable {
         """
     }
 
-    /// Puts the words on the clipboard, and returns the toast that says so.
     func copy(_ text: String) async throws -> String {
         _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["LC_ALL=en_US.UTF-8", "pbcopy"], input: text)
         return Self.copied

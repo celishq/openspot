@@ -1,6 +1,5 @@
 import Darwin
 
-/// A JSON value, read from the bytes of one line (RFC 8259), with only what the answer of the app needs.
 enum JSON {
     case object([String: JSON])
     case array([JSON])
@@ -8,7 +7,6 @@ enum JSON {
     case number(Double)
     case other
 
-    /// Reads one value, or returns nil when the bytes do not hold one.
     init?(_ bytes: [UInt8]) {
         var place = 0
         guard let value = Self.value(bytes, &place) else { return nil }
@@ -20,7 +18,6 @@ enum JSON {
         return nil
     }
 
-    /// A string as a JSON string, in quotes, with each quote, backslash and control character escaped.
     static func quoted(_ text: String) -> String {
         var quoted = "\""
         for scalar in text.unicodeScalars {
@@ -91,7 +88,6 @@ enum JSON {
         }
     }
 
-    /// Reads a string from its opening quote, into its UTF-8 bytes.
     private static func text(_ bytes: [UInt8], _ place: inout Int) -> [UInt8]? {
         place += 1
         var text: [UInt8] = []

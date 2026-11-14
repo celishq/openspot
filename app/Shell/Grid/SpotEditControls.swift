@@ -1,17 +1,13 @@
 import OpenspotCore
 import SwiftUI
 
-/// The controls of a card in Edit Spots: the minus that turns the spot off on its top left corner, and the handle on its
-/// bottom right corner that resizes it, which shows while the pointer is over the card.
 struct SpotEditControls: ViewModifier {
     let model: SpotsModel
     let id: String
     let size: SpotSize
     let turnsOff: Bool
-    /// The sizes that the handle offers. With fewer than two the card shows no handle.
     let sizes: [SpotSize]
     let isResizing: Bool
-    /// Whether another card is dragged over the grid, which hides every handle.
     let isDragging: Bool
     @State private var isHovered = false
 
@@ -39,7 +35,6 @@ struct SpotEditControls: ViewModifier {
             }
     }
 
-    /// Shows the tip of a corner control while the pointer lies over it.
     private func tip(_ anchor: SpotTip.Anchor, text: String) -> (Bool) -> Void {
         let tip = SpotTip(id: id, anchor: anchor, text: text)
         return { isOver in

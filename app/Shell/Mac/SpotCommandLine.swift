@@ -1,13 +1,10 @@
 import AppKit
 import OpenspotCore
 
-/// The `openspot` command. It does one call, prints plain text and exits, with no window of its own.
 @MainActor
 enum SpotCommandLine {
-    /// The time that posted key events need to leave the process. An exit before it drops them.
-    private static let postPause: Duration = .milliseconds(100)
+    private static let postedKeysPause: Duration = .milliseconds(100)
 
-    /// Does the call: the work of the API when Core has it, or the work of the Shell, and exits.
     static func run(_ call: CommandLineCall) -> Never {
         enterBundle()
         let environment = ProcessInfo.processInfo.environment.merging(["PWD": FileManager.default.currentDirectoryPath]) { _, real in real }
@@ -20,7 +17,7 @@ enum SpotCommandLine {
                 let answer = await work()
                 output.print(answer.output)
                 output.report(answer.errors)
-                if call == .clipboardPaste { try? await Task.sleep(for: postPause) }
+                if call == .clipboardPaste { try? await Task.sleep(for: postedKeysPause) }
                 exit(answer.code)
             }
             if needsEvents(call) {
@@ -62,8 +59,6 @@ enum SpotCommandLine {
         }
     }
 
-    /// Starts this command again from the program inside the app when a link started it, such as `Helpers/openspot`, so
-    /// that it finds the guide and the core spots of the app, and the folder of a Debug build.
     private static func enterBundle() {
         guard Bundle.main.bundleIdentifier == nil else { return }
         var size = UInt32(PATH_MAX)
@@ -78,8 +73,6 @@ enum SpotCommandLine {
         String(decoding: FileHandle.standardInput.readDataToEndOfFile(), as: UTF8.self)
     }
 
-    /// Draws the sheet of a spot that the panel shows, such as an installed spot or one that ships with the app, from its
-    /// read, with its view. It waits for the read on the main thread, which the window of the picture needs.
     private static func renderSheet(of id: String, to path: String) -> Never {
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
         model.reload()
@@ -100,7 +93,6 @@ enum SpotCommandLine {
         SpotSheetPicture.run(text: text, path: path, view: spot.view, spot: spot)
     }
 
-    /// Whether a call runs scripts, which Ctrl-C stops before the command exits with 130 (protocol: The openspot command).
     private static func runsScripts(_ call: CommandLineCall) -> Bool {
         switch call {
         case .check, .checkJSON, .spotRun: true
@@ -108,7 +100,6 @@ enum SpotCommandLine {
         }
     }
 
-    /// Whether a call needs the event loop of an app, for a pick or for an overlay over the screens.
     private static func needsEvents(_ call: CommandLineCall) -> Bool {
         switch call {
         case .colorPick, .folderPick, .screenShot, .screenRecordStart, .screenRecordStop, .screenRecordStatus: true

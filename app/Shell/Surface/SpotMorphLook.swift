@@ -1,8 +1,6 @@
 import OpenspotCore
 import SwiftUI
 
-/// One part of a moving sheet, placed and faded on each frame from the sheet's progress: 0 on its card and 1 open.
-/// The progress rides the sheet's own motion, so the part keeps no clock of its own, and only this modifier reruns.
 struct SpotMorphLook: ViewModifier, @preconcurrency Animatable {
     var progress: Double
     var offset: (Double) -> CGSize = { _ in .zero }
@@ -21,7 +19,6 @@ struct SpotMorphLook: ViewModifier, @preconcurrency Animatable {
 }
 
 extension View {
-    /// Places and fades this part from the progress of the sheet's motion.
     func morph(
         _ progress: Double,
         offset: @escaping (Double) -> CGSize = { _ in .zero },

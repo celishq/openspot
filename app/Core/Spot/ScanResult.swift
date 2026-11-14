@@ -1,5 +1,4 @@
 public struct ScanResult: Equatable, Sendable {
-    /// A file that the scan did not load, with the reason.
     public struct Refusal: Equatable, Sendable {
         public let file: String
         public let reason: String
@@ -18,18 +17,15 @@ public struct ScanResult: Equatable, Sendable {
         self.refused = refused
     }
 
-    /// The commands, each with a card, in their grid order: a lower `order` first, and otherwise as the folder sorts them.
     public var spots: [Spot] {
         files.flatMap(\.spots).enumerated()
             .sorted { ($0.element.order, $0.offset) < ($1.element.order, $1.offset) }.map(\.element)
     }
 
-    /// Each script, with a card or not. A widget is not a script.
     public var scripts: [Spot] {
         files.flatMap(\.spots).filter { $0.kind != .widget }
     }
 
-    /// The assigned keys whose script still lists their command, or still offers a float (W1; protocol: Places).
     public func offered(_ keys: [GlobalKey]) -> [GlobalKey] {
         keys.filter { key in
             switch key.act {
@@ -39,15 +35,11 @@ public struct ScanResult: Equatable, Sendable {
         }
     }
 
-    /// Makes each script that lists commands and has no read open to the keys of its commands in this config, and gives
-    /// each spot the icon that the config keeps for it.
     public mutating func listKeys(in config: ConfigFile) {
         let read = config.read()
         files = files.map { SpotFile(id: $0.id, spots: $0.spots.map { $0.listingKeys(in: config).withIcon(read.setting(ReservedSetting.icon, of: $0.id)) }) }
     }
 
-    /// Leaves out each widget that names a script with no `read` or a command no spot has, and reports why.
-    /// Takes each script that a widget opens off the grid.
     mutating func keepOpenedOffTheGrid() {
         let opened = Set(files.flatMap(\.spots).compactMap(\.opens))
         files = files.map { SpotFile(id: $0.id, spots: $0.spots.map { opened.contains($0.id) ? $0.offTheGrid() : $0 }) }

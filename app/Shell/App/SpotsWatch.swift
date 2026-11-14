@@ -2,9 +2,6 @@ import CoreServices
 import Foundation
 import OpenspotCore
 
-/// A watch of the spots folder and the folders in it, and of the config file, which calls back on the main thread a moment
-/// after a change that a scan or a reload reads settles, such as an agent that writes a spot or a person who edits the config.
-/// It takes each event on a utility queue, so that a write beside them, such as a log, never wakes the main thread.
 @MainActor
 final class SpotsWatch {
     private static let settle: CFTimeInterval = 0.3
@@ -13,7 +10,6 @@ final class SpotsWatch {
     nonisolated private let onChange: @MainActor @Sendable () -> Void
     nonisolated private let paths: SpotsWatchPaths
 
-    /// Starts to watch the folder and the config file, and makes the folder when it does not exist yet.
     init(folder: URL, config: URL, onChange: @escaping @MainActor @Sendable () -> Void) {
         self.onChange = onChange
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -36,7 +32,6 @@ final class SpotsWatch {
 
     nonisolated deinit {}
 
-    /// Stops the watch.
     func stop() {
         guard let stream else { return }
         FSEventStreamStop(stream)

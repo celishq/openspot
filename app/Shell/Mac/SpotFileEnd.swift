@@ -1,8 +1,6 @@
 import AVFoundation
 import ScreenCaptureKit
 
-/// The end of a file that a framework writes on its own thread: its delegate ends it, and `wait` returns once it is whole,
-/// or throws the error that stopped it. An end that comes before the wait is kept for it.
 final class SpotFileEnd: NSObject, SCRecordingOutputDelegate, AVCaptureFileOutputRecordingDelegate, @unchecked Sendable {
     private let lock = NSLock()
     private var result: Result<Void, Error>?
@@ -37,7 +35,6 @@ final class SpotFileEnd: NSObject, SCRecordingOutputDelegate, AVCaptureFileOutpu
         end(.failure(error))
     }
 
-    /// A movie file that is whole can still come with an error that says so, which counts as success.
     func fileOutput(_ output: AVCaptureFileOutput, didFinishRecordingTo outputFileURL: URL, from connections: [AVCaptureConnection], error: (any Error)?) {
         let whole = ((error as NSError?)?.userInfo[AVErrorRecordingSuccessfullyFinishedKey] as? Bool) ?? (error == nil)
         end(whole ? .success(()) : .failure(error!))

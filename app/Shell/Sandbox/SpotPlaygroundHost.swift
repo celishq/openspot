@@ -1,11 +1,8 @@
 import AppKit
 import OpenspotCore
 
-/// The host of the playground's panel: it shows nothing of its own, and hands each toast, failure and note of work to the
-/// playground.
 @MainActor
 final class SpotPlaygroundHost: SpotsHost {
-    /// Takes each toast, failure and note of work of the panel.
     var onNote: (String) -> Void = { _ in }
 
     nonisolated deinit {}

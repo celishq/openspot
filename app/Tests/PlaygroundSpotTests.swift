@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Playground spot of the app: search finds it by its name or as sandbox, it has no card on the grid, and a press
-/// opens the playground.
 final class PlaygroundSpotTests: BuiltInCase {
     func testAPressOpensThePlayground() async throws {
         let spot = try spot("playground")

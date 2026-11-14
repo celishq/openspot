@@ -1,18 +1,13 @@
 import OpenspotCore
 import SwiftUI
 
-/// The rows of a script, one on each line or as square buttons, which scroll when they do not fit.
 struct SpotRowsView: View {
     let list: ItemList
     var recording: String?
-    /// The words of the key that records.
     var recordingWords = "Press keys"
     let onRun: (SpotItem) -> Void
-    /// Takes the row that the pointer moves onto.
     var onPoint: (SpotItem) -> Void = { _ in }
-    /// Reads the selected row where it is called. Nil reads it from the list.
     var selection: (() -> Int)?
-    /// Takes the rows whose files a drag took out to another app (protocol: Files out).
     var onDragOut: ([SpotItem]) -> Void = { _ in }
 
     private static let bottomFade = 2 * SpotTokens.padding
@@ -25,7 +20,6 @@ struct SpotRowsView: View {
         selection ?? { [list] in list.selected }
     }
 
-    /// Reads the run of the selected row where it is called, so that a row's ring needs no index.
     private var selectedRun: () -> String? {
         { [list, selected] in
             let index = selected()
@@ -65,7 +59,6 @@ struct SpotRowsView: View {
         }
     }
 
-    /// The rows that stay above or under the rows that scroll, such as the key of a spot's command.
     private func pinned(_ pin: SpotItem.Pin) -> some View {
         ForEach(pin == .top ? list.pinnedTop : list.pinnedBottom, id: \.run) { item in
             Button { onRun(item) } label: { rowLabel(item) }
@@ -93,7 +86,6 @@ struct SpotRowsView: View {
         SpotTokens.sheetFits(rows: list.shown.count, perLine: list.perLine) ? SpotTokens.padding : Self.bottomFade
     }
 
-    /// The rows between the pinned rows, which fill exactly the room between them, with no margin or fade to reach past it.
     private var pinnedScroll: some View {
         ScrollViewReader { proxy in
             ScrollView(showsIndicators: false) { lines }
@@ -137,7 +129,6 @@ struct SpotRowsView: View {
         }
     }
 
-    /// The rows of a bento: the drawing of the repeat, tile under tile, with each row drawn at the size of its place.
     private var bentoScroll: some View {
         let drawing = list.drawing
         let side = SpotTokens.square(perLine: drawing.columns)
@@ -162,7 +153,6 @@ struct SpotRowsView: View {
         }
     }
 
-    /// The size of a tile that covers an area of the drawing, whose cells lie a step apart.
     fileprivate static func size(of area: SheetArea, step: CGFloat) -> CGSize {
         CGSize(
             width: CGFloat(area.x1 - area.x0 + 1) * step - SpotTokens.listRowGap,
@@ -220,8 +210,6 @@ struct SpotRowsView: View {
     }
 }
 
-/// The second line of a row that says another thing while it is selected. It alone reads the selection, so that a move
-/// redraws only it.
 private struct RowDetail: View {
     let text: String?
     let focus: String
@@ -236,8 +224,6 @@ private struct RowDetail: View {
     }
 }
 
-/// The fade at each end of the rows as they scroll. It alone holds how far each end fades, so that a scroll near an end
-/// reruns no row.
 private struct RowsFade: ViewModifier {
     let bottom: CGFloat
     @State private var edges = SpotScrollEdges()
@@ -257,7 +243,6 @@ private struct RowsFade: ViewModifier {
     }
 }
 
-/// The one ring of a bento, over the tile of the selected row. It alone reads the selection, so that a move redraws no tile.
 private struct BentoRing: View {
     let selection: () -> Int
     let count: Int
@@ -277,7 +262,6 @@ private struct BentoRing: View {
     }
 }
 
-/// Scrolls the rows until the selected row shows. It alone reads the selection, so that a move reruns only this modifier.
 private struct RowsFollow: ViewModifier {
     let selection: () -> Int
     let items: [SpotItem]

@@ -1,23 +1,17 @@
 import Foundation
 
-/// The main search: the cards that its text finds, with the rows and the answers that join them.
 extension SpotsModel {
-    /// Where the cards of the shelf start in the order of Edit Spots, after the cards on the grid. A dragged card counts in
-    /// the group of its target. It is nil out of Edit Spots and while the search has text.
     var shelfStart: Int? {
         guard isEditing, query.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
         let hidden = shelfCards.filter { $0.id != drag?.id }.count + (drag?.target.isOnGrid == false ? 1 : 0)
         return visible.count - hidden
     }
 
-    /// The cards of the Search only shelf of Edit Spots: each spot off the grid that offers a card of its own, and not a
-    /// sheet that another spot opens or a card of faults.
     var shelfCards: [Entry] {
         let parts = Set(cards.flatMap { $0.spot.places + ($0.spot.opens.map { [$0] } ?? []) })
         return cards.filter { !$0.isOnGrid && $0.item == nil && $0.spot.offersCard && $0.spot.fault == nil && !parts.contains($0.id) }
     }
 
-    /// The grid of the cards shown: in the two groups of Edit Spots, with the size of each card whose size the person chose.
     var grid: SpotGrid {
         var placed: [Int: GridPanel] = [:]
         let split = shelfStart
@@ -30,21 +24,16 @@ extension SpotsModel {
         return SpotGrid(split: split, kept: Set(visible.indices.filter { visible[$0].isSizeChosen }), placed: placed, panels: panels)
     }
 
-    /// The entries that have a card. A sheet that grows out of the field, such as the install screen, has none.
     public var cards: [Entry] {
         entries.filter { $0.id != fieldSheet }
     }
 
-    /// The entry with a card that has this ID, found with no copy of the cards.
     public func card(id: String) -> Entry? {
         id == fieldSheet ? nil : entries.first { $0.id == id }
     }
 
-    /// The most rows that the main search shows from a list that the person never picked from.
     private static let unpickedRows = 3
 
-    /// Shows the spots that the search finds and the items it finds in the lists that offer them, in one ranking. While the
-    /// search has text, each one is a full-width row, and an answer card keeps its own full-width size (protocol: Places).
     public func updateVisible() {
         visibleUpdates += 1
         let next = found()
@@ -60,9 +49,6 @@ extension SpotsModel {
         if transition.phase == .closing, !hasPlace(transition.id) { cutSheet(to: nil) }
     }
 
-    /// Whether a change of the rows or the state of a spot can change the cards that show: with no search, when it moves its
-    /// card on or off the grid, in Edit Spots between the grid and the shelf, and with a search, when the search finds the
-    /// spot, its rows or its answers.
     func mayMove(_ id: String) -> Bool {
         guard let entry = entries.first(where: { $0.id == id }) else { return false }
         guard !query.trimmingCharacters(in: .whitespaces).isEmpty else {
@@ -74,13 +60,10 @@ extension SpotsModel {
         return entry.spot.isFound || entry.spot.isGlobal || entry.spot.answers != nil
     }
 
-    /// Raises the text of the main search, which each spot whose `answers` pattern matches answers (protocol: Places).
     func askAnswers() {
         runs.raise(.query(query))
     }
 
-    /// The cards that the search finds, or each card on the grid when there is no search. The rows that spots give as
-    /// answers to the text come first (protocol: Places).
     private func found() -> [Entry] {
         let text = query.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else {
@@ -104,19 +87,16 @@ extension SpotsModel {
         }.filter { !ids.contains($0.id) }
     }
 
-    /// The item that the main search finds for a card.
     private static func foundItem(_ card: Entry) -> SpotItem {
         SpotItem(title: card.state.title, subtitle: [card.state.subtitle, card.spot.name].compactMap { $0 }.joined(separator: " "), run: card.id, keywords: card.spot.keywords)
     }
 
-    /// Marks `spotList` stale when the searched text of this card differs from its item there.
     func markFound(_ id: String) {
         guard !spotListIsStale else { return }
         let card = cards.first { $0.id == id }.flatMap { $0.spot.isFound ? Self.foundItem($0) : nil }
         if spotList.all.first(where: { $0.run == id }) != card { spotListIsStale = true }
     }
 
-    /// The text of the field: the search of the open list, or else the search of the spots.
     public var searchText: String {
         get { form?.draft.choices?.query ?? openSheet?.query ?? query }
         set {

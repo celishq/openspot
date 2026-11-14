@@ -1,8 +1,6 @@
 import Foundation
 
-/// A call to the helper that keeps the recording of `openspot screen record`, as one text block (S10).
 public enum RecordingRequest: Equatable, Sendable {
-    /// A recording that the helper starts: what it captures, what it hears, and where each file goes, each path whole.
     public struct Plan: Equatable, Sendable {
         public var target: ScreenTarget
         public var inputs: [ScreenInput]
@@ -38,7 +36,6 @@ public enum RecordingRequest: Equatable, Sendable {
         }
     }
 
-    /// Reads a request, or returns nil for one that has no target or no file to start.
     public init?(text: String) {
         guard let block = TextBlock.blocks(in: text).first else { return nil }
         switch block.value("do") {

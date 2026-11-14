@@ -1,11 +1,9 @@
 import Foundation
 @testable import OpenspotCore
 
-/// A host that records what the model asks of the app, and makes each change at once.
 @MainActor
 final class TestHost: SpotsHost {
     var dismissals = 0
-    /// Each offset that the content of a sheet started a slide from.
     var pushStarts: [Double] = []
     var shows = 0
     var dragShows = 0
@@ -17,24 +15,16 @@ final class TestHost: SpotsHost {
     var isMouseDown = false
     var pastedPaths: [String] = []
     var motions: [PanelMotion?] = []
-    /// The spots that the model floated, and the ones whose float it closed, in order.
     var floats: [String] = []
     var landings: [String] = []
     var windows: [String] = []
-    /// The phase of the sheet's transition after each change.
     var phases: [SheetTransition.Phase] = []
-    /// The sheet whose open motion runs, after each change.
     var openings: [String?] = []
-    /// The program of the app that the prompt for an agent names.
     var app = "/Apps/Openspot"
-    /// The rows whose pictures the model asked to draw ahead.
     var prepared: [SpotItem] = []
-    /// The glyphs of each whole list whose pictures the model asked for.
     var glyphLists: [[String]] = []
     var cardGlyphs: [[String]] = []
-    /// The ends of the motions that a test holds, to run them later. With none held, each motion ends at once.
     var heldEnds: [@MainActor () -> Void]?
-    /// The model whose show and hide steps the panel runs, as the app's window does.
     weak var model: SpotsModel?
 
     nonisolated deinit {}
@@ -62,7 +52,6 @@ final class TestHost: SpotsHost {
     func takeFocus() {
         focusTakes += 1
     }
-    /// Whether the panel held its focus during each ask for Touch ID.
     var heldDuringAsks: [Bool] = []
 
     func present() {
@@ -94,7 +83,6 @@ final class TestHost: SpotsHost {
 
     func setEntryKey(on isOn: Bool) {}
 
-    /// The keys that the model held, at each time it held them.
     var held: [[GlobalKey]] = []
 
     func hold(_ keys: [GlobalKey]) {
@@ -103,7 +91,6 @@ final class TestHost: SpotsHost {
 
     func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void) {}
 
-    /// The row of each submenu that showed, and nil for each hide.
     var submenus: [CGRect?] = []
 
     func showSubmenu(beside row: CGRect, of menu: CGRect) {
@@ -114,8 +101,11 @@ final class TestHost: SpotsHost {
         submenus.append(nil)
     }
 
+    var floatsFollowingDrag: [Bool] = []
+
     func float(_ entry: SpotsModel.Entry, followsDrag: Bool) {
         floats.append(entry.id)
+        floatsFollowingDrag.append(followsDrag)
     }
 
     func land(_ id: String) {

@@ -1,21 +1,14 @@
 import OpenspotCore
 import SwiftUI
 
-/// The actions of the selected row or card, each with its key. The panel draws its surface. It equals another menu of the
-/// same rows, so that a move of the selection reruns only the rings, which read it themselves.
 struct SpotActionMenuView: View, @MainActor Equatable {
     let menu: ActionMenu
-    /// Where the menu and each of its lines lie.
     let frame: ActionMenuFrame
-    /// Whether the menu has stopped moving, which its field needs.
     var isSettled = true
     var work: (ActionMenu.Row) -> ScriptCall? = { _ in nil }
     let onPress: (Int) -> Void
-    /// Takes the row that the pointer moves onto.
     var onPoint: (Int) -> Void = { _ in }
-    /// Takes the text of the field of a menu that searches its rows.
     var onSearch: @MainActor @Sendable (String) -> Void = { _ in }
-    /// Reads the selected row where it is called.
     let selection: () -> Int
 
     static let radius = SpotTokens.radius - SpotTokens.padding + SpotTokens.menuPadding
@@ -81,12 +74,10 @@ struct SpotActionMenuView: View, @MainActor Equatable {
         .modifier(SpotPointerMove { onPoint(index) })
     }
 
-    /// The field that searches the rows.
     private var field: some View {
         SpotSteadyField(prompt: "Search actions", text: menu.query, isSettled: isSettled, onSearch: onSearch)
     }
 
-    /// The words of a row, in the colour of a confirm while it asks for one.
     @ViewBuilder
     private func title(of row: ActionMenu.Row, isRunning: Bool, isConfirming: Bool) -> some View {
         let text = Text(menu.title(of: row, isRunning: isRunning)).font(SpotType.body).lineLimit(1)
@@ -97,7 +88,6 @@ struct SpotActionMenuView: View, @MainActor Equatable {
         }
     }
 
-    /// Whether two menus show the same rows, whatever their selection.
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.menu.rows == rhs.menu.rows && lhs.menu.shown == rhs.menu.shown && lhs.menu.query == rhs.menu.query
             && lhs.menu.confirming == rhs.menu.confirming && lhs.frame == rhs.frame && lhs.isSettled == rhs.isSettled

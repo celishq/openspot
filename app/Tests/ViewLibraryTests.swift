@@ -18,7 +18,6 @@ final class ViewLibraryTests: XCTestCase {
         folder.appendingPathComponent("cache")
     }
 
-    /// A folder of stand-ins for the build commands, with a compiler that counts its runs and writes `built`.
     private func tools(selector: String = "exit 0", compiler: String? = nil) throws -> ViewLibrary {
         let place = folder.appendingPathComponent("tools")
         try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)

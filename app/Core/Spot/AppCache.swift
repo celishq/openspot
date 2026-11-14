@@ -1,6 +1,5 @@
 import Foundation
 
-/// The cache folder of the app: the folder of a Debug build or of `OPENSPOT_CONFIG`, else in the person's Caches.
 public enum AppCache {
     public static func folder(
         environment: [String: String] = ProcessInfo.processInfo.environment,

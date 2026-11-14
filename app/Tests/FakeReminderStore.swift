@@ -1,8 +1,6 @@
 import Foundation
 @testable import OpenspotCore
 
-/// A store of reminders in memory that answers as EventKit does: each open reminder due before the end of a range, and each
-/// reminder done since its start.
 final class FakeReminderStore: ReminderStore {
     struct Range: Equatable {
         let start: Date
@@ -69,7 +67,6 @@ final class FakeReminderStore: ReminderStore {
         list
     }
 
-    /// Keeps the reminder in the default list with the next id, as EventKit gives a new one.
     func add(_ reminder: Reminder) throws -> Reminder {
         added.append(reminder)
         return Reminder(id: "saved-\(added.count)", title: reminder.title, due: reminder.due, isAllDay: reminder.isAllDay, list: list!, doneAt: nil)

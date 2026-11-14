@@ -1,11 +1,8 @@
 import XCTest
 
-/// Proves the images of the guide: each image under an example exists, and was drawn from that example as it is now, so
-/// that a changed example needs `make docs-images` again.
 final class GuideImageTests: XCTestCase {
     private let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
 
-    /// Each image of the guide, with the sh or js example right above it.
     private func images() throws -> [(name: String, example: String)] {
         let guide = try String(contentsOf: repo.appendingPathComponent("GUIDE.md"), encoding: .utf8)
         var found: [(String, String)] = []

@@ -1,10 +1,8 @@
 import Foundation
 
-/// A git repository of a test in a folder of its own, made with the git of the Mac and none of the person's git config.
 struct GitRepo {
     let url: URL
 
-    /// Keeps the git that this test process starts, such as the one of `openspot spot add`, from the person's git config.
     static func isolate() {
         setenv("GIT_CONFIG_GLOBAL", "/dev/null", 1)
         setenv("GIT_CONFIG_NOSYSTEM", "1", 1)
@@ -16,7 +14,6 @@ struct GitRepo {
         try git(["init", "--quiet", "--initial-branch=main"])
     }
 
-    /// Writes each file, with a script as an executable, commits all, and returns the commit.
     @discardableResult
     func commit(_ files: [String: String], message: String = "change") throws -> String {
         for (path, text) in files {

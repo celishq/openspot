@@ -1,17 +1,13 @@
 import Foundation
 import Observation
 
-/// Edit Spots: the order, the size, the letter and the place on the grid of each spot.
 extension SpotsModel {
-    /// The code of the Delete key, which takes away the letter that records.
     private static let deleteCode: UInt32 = 51
 
-    /// The sizes that a person can prefer for a spot, in words for its menu.
     public func sizes(of entry: Entry) -> [SpotSize] {
         entry.item == nil ? entry.spot.sizes : []
     }
 
-    /// Starts Edit Spots on the grid, with the search cleared.
     public func beginEditing() {
         guard openList == nil else { return }
         closeMenu()
@@ -22,25 +18,21 @@ extension SpotsModel {
         }
     }
 
-    /// Shows the panel in Edit Spots, from the grid, a search or a sheet.
     public func editGrid() {
         if openList != nil { closeList(moving: false) }
         host.show()
         beginEditing()
     }
 
-    /// Whether the minus of Edit Spots can turn this spot off. A built-in and a card of faults stay on.
     public func turnsOff(_ entry: Entry) -> Bool {
         entry.item == nil && entry.spot.host == nil && !entry.spot.isBuiltIn && entry.spot.fault == nil
     }
 
-    /// Turns a spot off from Edit Spots: its card leaves the panel.
     public func turnOff(_ id: String) {
         guard let entry = visible.first(where: { $0.id == id }), turnsOff(entry) else { return }
         turn(entry.spot, on: false)
     }
 
-    /// Turns a spot on or off in the config, and loads the spots again on the edit motion, after `ending` runs in it.
     @discardableResult
     func turn(_ spot: Spot, on isOn: Bool, ending: () -> Void = {}) -> Bool {
         do {
@@ -56,7 +48,6 @@ extension SpotsModel {
         return true
     }
 
-    /// Ends Edit Spots. A panel that closes passes no motion, so that nothing moves during its fade.
     public func endEditing(moving: Bool = true) {
         guard isEditing else { return }
         stopDragWait()
@@ -105,7 +96,6 @@ extension SpotsModel {
         moveSpot(order[selected], to: place)
     }
 
-    /// Puts a spot at this place in the grid, and keeps it selected.
     public func moveSpot(_ id: String, to place: Int) {
         var order = visible.map(\.id)
         guard let from = order.firstIndex(of: id), order.indices.contains(place), place != from else { return }
@@ -126,7 +116,6 @@ extension SpotsModel {
         setOnGrid(!entry.isOnGrid, for: entry.id)
     }
 
-    /// Takes a preferred size for a spot. The grid can still change it to fill a row.
     public func prefer(_ size: SpotSize, for id: String) {
         arrangement.arrange(visible.map(\.id))
         arrangement.set(size: size, of: id)
@@ -140,9 +129,6 @@ extension SpotsModel {
         saveArrangement(selecting: id)
     }
 
-    /// Shows or hides a side panel of the grid, and saves it. A panel that shows is empty, and no card moves. The cards of a
-    /// panel that hides first move to the end of the center's cards, and the panel goes when they land. A panel that is
-    /// on its way out takes no other change until it is gone.
     public func show(_ panel: GridPanel, _ isShown: Bool) {
         guard let key = panel.configKey, panels[panel] != isShown, panelLeaving != panel else { return }
         let apply: @MainActor () -> Void = { [self] in
@@ -172,9 +158,6 @@ extension SpotsModel {
         saveArrangement(selecting: first, landed: apply)
     }
 
-    /// Takes the letter for the spot that records: a letter or a digit with no modifier gives it, and Delete takes its letter
-    /// away. A letter that another spot held moves, and a toast names that spot. Any other key leaves it recording, and says
-    /// why.
     func recordLetter(code: UInt32, modifiers: Shortcut.Modifiers) {
         guard let id = recording else { return }
         let letter = CommandKey(code: code)
@@ -192,8 +175,6 @@ extension SpotsModel {
         saveArrangement(selecting: id)
     }
 
-    /// Writes the arrangement, and lays out the cards from it on the edit motion, after `ending` runs in that motion.
-    /// `landed` runs when the motion ends.
     func saveArrangement(selecting id: String, ending: () -> Void = {}, landed: @escaping @MainActor () -> Void = {}) {
         do {
             try files.config.write(arrangement)

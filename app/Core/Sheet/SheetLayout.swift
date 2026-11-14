@@ -1,6 +1,5 @@
 import Foundation
 
-/// Where the parts of a sheet go: a drawing in letters, or one column of lines.
 public struct SheetLayout: Equatable, Sendable {
     public static let empty = "."
     public static let divider = "-"
@@ -8,7 +7,6 @@ public struct SheetLayout: Equatable, Sendable {
     public let rows: [[String]]
     public let isDrawn: Bool
     public let areas: [String: SheetArea]
-    /// The area that the rows of a script flow through, with how many rows go on one line.
     public let repeated: (area: String, perLine: Int)?
     let repeatCount: Int
 
@@ -17,8 +15,6 @@ public struct SheetLayout: Equatable, Sendable {
             && first.repeated?.perLine == second.repeated?.perLine
     }
 
-    /// Reads the layout block of a sheet, with the area of its repeat and how many rows go on its line. Returns nil when
-    /// there is no `grid`.
     public init?(block: TextBlock?, repeating: (area: String, perLine: Int)? = nil, repeats: Int = 0) {
         let block = block ?? TextBlock(fields: [])
         let rows = block.values("grid").filter { !$0.isEmpty }.map(Self.words)
@@ -30,8 +26,6 @@ public struct SheetLayout: Equatable, Sendable {
         areas = Self.areas(in: rows)
     }
 
-    /// The default drawing (protocol: Layouts): one column of lines in the order of the parts, then the area of the rows. A section with a
-    /// title starts with a divider, and a section with no title is only a divider.
     public init(flat parts: [SpotPart], repeating: (area: String, perLine: Int)? = nil) {
         var rows: [[String]] = []
         for part in parts {
@@ -47,7 +41,6 @@ public struct SheetLayout: Equatable, Sendable {
         repeatCount = 0
     }
 
-    /// The area a part fills, which its id names (protocol: Layouts).
     public func letter(of part: SpotPart) -> String? {
         part.id
     }

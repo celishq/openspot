@@ -1,11 +1,8 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves one owner, one sheet for each script, and when a script is read.
 @MainActor
 final class SpotRunsReadTests: SpotRunsCase {
-    // MARK: A1, A2
-
     func testAnOpenAtLaunchWaitsForEachReadAndServesTheNextOpen() async throws {
         try script(header: "on=panel.open", "echo run >> '\(path("runs"))'\nsleep 0.1\nprintf 'title=Read\\n'")
         let sheet = try sheet()
@@ -29,8 +26,6 @@ final class SpotRunsReadTests: SpotRunsCase {
 
         XCTAssertEqual(items.map(\.run), ["coffee"])
     }
-
-    // MARK: Events
 
     func testALaterFrameOfAReadWithABlockReplacesItsValue() async throws {
         try script(header: "on=sheet.open", "printf 'main=m\\n\\ntext=m\\ntitle=3\\n---\\n'\nsleep 0.05\nprintf 'text=b\\ntitle=B\\n---\\n'")
@@ -203,8 +198,6 @@ final class SpotRunsReadTests: SpotRunsCase {
         XCTAssertNil(runs.sheets["script"])
         XCTAssertFalse(exists("went-on"))
     }
-
-    // MARK: M2; M3; Events, Frames
 
     func testARequestJoinsTheReadThatRuns() async throws {
         try script(header: "on=sheet.open", "sleep 0.2\nprintf 'row=a\\ntitle=A\\n'")

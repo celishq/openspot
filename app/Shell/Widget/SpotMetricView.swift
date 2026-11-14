@@ -1,9 +1,6 @@
 import OpenspotCore
 import SwiftUI
 
-/// One place of a widget, drawn in the form its layout gives. A big place leads with one large value, a line lies
-/// between a label and a value, a half hugs its outer edge, and a stat or a control keeps only the value and what fits.
-/// A stale value stays, and dims.
 struct SpotMetricView: View {
     let reading: MetricReading?
     let form: WidgetLayout.Form
@@ -212,7 +209,6 @@ struct SpotMetricView: View {
             .frame(width: Self.dot, height: Self.dot)
     }
 
-    /// The colour of a mark: what its tone means, or else white.
     private var markColour: Color {
         value?.tone.map(Self.colour) ?? SpotTheme.ink
     }

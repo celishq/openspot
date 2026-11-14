@@ -2,14 +2,10 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// A picture of the window of the first spot that offers one, such as the Store, after its read and the build of its view:
-/// the real window content on its glass over a wallpaper, since a window's blur does not show in a picture.
 @MainActor
 enum SpotStorePicture {
     private static let margin: CGFloat = 20
 
-    /// Reads the cards as an open panel does, opens the window spot's sheet with no window, waits for its read and its view,
-    /// draws it, writes the picture as a PNG and exits.
     static func run(path: String) -> Never {
         NSApplication.shared.setActivationPolicy(.prohibited)
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())

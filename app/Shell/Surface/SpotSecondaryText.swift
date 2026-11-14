@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// Secondary text: ink at less strength, so it stays below the title on any backdrop and on a solid fill.
 struct SpotSecondaryText: ViewModifier {
     @Environment(\.spotIsOnSolid) private var isOnSolid
     var strength = SpotTheme.secondaryLight

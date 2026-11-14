@@ -1,9 +1,6 @@
 import Foundation
 
-/// The folders that the watch of the spots folder and the config file listens to, resolved once through their links, and
-/// the changed paths it reports: those that a scan reads and the config file itself.
 public struct SpotsWatchPaths: Sendable {
-    /// The spots folder, and the folder that holds the config file when it is another one.
     public let roots: [String]
     private let folder: SpotsFolder
     private let config: String
@@ -16,12 +13,10 @@ public struct SpotsWatchPaths: Sendable {
         roots = configFolder == spots ? [spots] : [spots, configFolder]
     }
 
-    /// Whether a change of this path, as the watch reports it, changes what a reload reads.
     public func reports(_ path: String) -> Bool {
         path == config || folder.reads(path)
     }
 
-    /// The path with each link resolved, as the watch reports it. A file that is not there yet resolves through its folder.
     private static func real(_ path: String) -> String {
         if let resolved = realpath(path, nil) {
             defer { free(resolved) }

@@ -1,17 +1,12 @@
 import OpenspotCore
 import SwiftUI
 
-/// The place, shrink and fade of a card of the grid. The shrink and fade follow where the card is on its push, so that a
-/// sheet that changes its size during its motion keeps them in step. A card that the push leaves in place fades with `share`.
 struct SpotPushedCard: ViewModifier, @preconcurrency Animatable {
     var offset: CGSize
-    /// How far the sheet is open, from 0 to 1.
     var share: Double
-    /// Where the card lies with no push.
     let base: CGSize
     let push: SheetPush?
     let placement: SpotPlacement
-    /// The point the card shrinks towards: its side that faces the sheet.
     let anchor: UnitPoint
 
     var animatableData: AnimatablePair<AnimatablePair<CGFloat, CGFloat>, Double> {

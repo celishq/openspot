@@ -1,27 +1,16 @@
 import OpenspotCore
 import SwiftUI
 
-/// The search field and the words it shows while empty. It grows from its place at rest into its row in an open sheet: its
-/// glass grows by a shape, and its glyph and its words keep one size and move by offsets alone. It takes the focus when the
-/// panel shows with a search, and gives it up when the panel hides.
 struct SpotFieldView: View {
-    /// Where the field lies at rest. The install screen grows out of it and collapses into it.
     static let rect = CGRect(x: SpotTokens.halo, y: SpotTokens.halo, width: SpotTokens.gridWidth, height: SpotTokens.rowHeight)
     private static let gap: CGFloat = 8
 
     let model: SpotsModel
-    /// Whether a sheet is open or on its way there.
     let isOpen: Bool
-    /// Whether the field lies in the open sheet.
     let isInSheet: Bool
-    /// Whether the sheet is the install screen, which grows out of the field and has no header for the words to cross.
     let isInstall: Bool
-    /// Whether the field is drawn. A form, a sheet of parts and the install screen replace it.
     let showsField: Bool
-    /// Whether a sheet is out or a drop is taken, which sets the time of each fade.
     let surfaceIsOut: Bool
-    /// The sheet that is built, from its card to its open place, which holds the field's row while the field lies in it,
-    /// and the radius of its card. Nil with no sheet with a card, or for the install screen, which grows out of the field.
     var sheet: (morph: SheetMorph, cardRadius: CGFloat)?
     @FocusState private var isFocused: Bool
 
@@ -78,7 +67,6 @@ struct SpotFieldView: View {
         }
     }
 
-    /// The words of Edit Spots and its Done button, on the field's glass in the place of the search.
     private var editHeader: some View {
         HStack {
             Text("Edit Spots")
@@ -100,7 +88,6 @@ struct SpotFieldView: View {
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
     }
 
-    /// The field's row in an open sheet.
     private var fieldRowRect: CGRect {
         CGRect(
             x: SpotTokens.halo + SpotTokens.padding,
@@ -110,10 +97,8 @@ struct SpotFieldView: View {
         )
     }
 
-    /// The width of the field's words, as narrow as its row in a sheet, so that it stays one size.
     private static let fieldTextWidth = SpotTokens.gridWidth - 4 * SpotTokens.padding - SpotTokens.listIconSize - gap
 
-    /// Where the field's words start, at rest and in a sheet.
     private var fieldTextLeft: CGFloat {
         isInSheet
             ? SpotTokens.halo + 2 * SpotTokens.padding + SpotTokens.listIconSize + Self.gap
@@ -180,8 +165,6 @@ struct SpotFieldView: View {
                 }
     }
 
-    /// The empty field's words, as a layer of their own that moves with the field by offsets alone, which stay smooth where
-    /// layout rounds to whole pixels.
     private var promptLayer: some View {
         let top = SpotTokens.halo + (isInSheet ? SpotTokens.sheetFieldDrop - (SpotTokens.rowHeight - SpotTokens.listRowHeight) / 2 : 0)
         let left = fieldTextLeft
@@ -198,7 +181,6 @@ struct SpotFieldView: View {
             .allowsHitTesting(false)
     }
 
-    /// One line on one path: the first word stays, and the last fades into the other in its place.
     private var promptWords: some View {
         HStack(spacing: 0) {
             Text("\(SearchPrompt.verb) ")
@@ -216,20 +198,15 @@ struct SpotFieldView: View {
         .modifier(SpotEmptyField(model: model, isHidden: model.showsFieldDrop))
     }
 
-    /// The last word of the prompt in the open sheet, from its spot's title. It is read here, so that a new title reruns
-    /// the field and not the panel.
     private var sheetWord: String {
         let id = model.transition.id
         return SearchPrompt.word(for: model.entries.first { $0.id == id }?.state.title ?? "")
     }
 
-    /// How far the sheet is open, which the sheet's motion carries from 0 to 1.
     private var progress: Double {
         isOpen ? 1 : 0
     }
 
-    /// How strongly the field's words show as they pass the sheet's header: none while they lie across it. With no sheet,
-    /// as for the install screen, they pass no header.
     private var crossing: (Double) -> Double {
         guard let morph = sheet?.morph else { return { _ in 1 } }
         let header = CGRect(x: SpotTokens.padding, y: SpotTokens.padding, width: SpotTokens.gridWidth - 2 * SpotTokens.padding, height: SpotTokens.glyphSize)
@@ -242,12 +219,10 @@ struct SpotFieldView: View {
         }
     }
 
-    /// The sheet's shape now: on its card until it opens.
     private var sheetShape: SpotSurfaceShape? {
         sheet.map { isOpen ? SpotSurfaceShape(rect: $0.morph.sheet, radius: SpotTokens.radius) : SpotSurfaceShape(rect: $0.morph.card, radius: $0.cardRadius) }
     }
 
-    /// The panel but the sheet, where the field's glass shows, so that one glass lies under the field where it meets the sheet.
     @ViewBuilder
     private var outsideSheet: some View {
         if let sheetShape {
@@ -257,7 +232,6 @@ struct SpotFieldView: View {
         }
     }
 
-    /// The sheet, where the field's row shows, so that the row never lies outside the sheet's edge.
     @ViewBuilder
     private var insideSheet: some View {
         if let sheetShape {

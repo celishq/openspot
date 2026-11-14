@@ -1,8 +1,6 @@
 import AppKit
 import OpenspotCore
 
-/// How `openspot spot show` asks the running app to show a spot: a distributed notification with the spot and the config
-/// folder, which the app of that folder answers. With no answer, the command opens the app and asks again.
 @MainActor
 enum SpotShowLink {
     nonisolated private static let ask = Notification.Name("dev.openspot.show")
@@ -11,12 +9,10 @@ enum SpotShowLink {
     private static let launchWait: TimeInterval = 15
     private static let askPause: TimeInterval = 0.5
 
-    /// The config folder of this app, which tells a Debug build and the installed app apart.
     static var config: String {
         AppPlaces.standard.log.folder.deletingLastPathComponent().standardizedFileURL.path
     }
 
-    /// Answers each ask for this config folder with whether the model showed the spot.
     static func listen(reveal: @escaping @MainActor (String) -> Bool) -> NSObjectProtocol {
         let config = config
         let center = DistributedNotificationCenter.default()
@@ -27,7 +23,6 @@ enum SpotShowLink {
         }
     }
 
-    /// Asks the app to show the spot, opens the app when it does not answer, and exits with 0 when the spot shows.
     static func send(_ id: String) -> Never {
         let center = DistributedNotificationCenter.default()
         let token = UUID().uuidString

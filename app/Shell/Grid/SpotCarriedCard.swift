@@ -1,12 +1,9 @@
 import OpenspotCore
 import SwiftUI
 
-/// The card that the person carries in Edit Spots, over the panel: lifted on its solid fill, where the pointer holds it. It
-/// grows as it lifts, and settles to its size as it glides to its place. Only its place reads the lift, so a move of the pointer redraws that alone.
 struct SpotCarriedCard: View {
     let model: SpotsModel
-    /// Where the panel lies in the window.
-    let panel: CGPoint
+    let panelOrigin: CGPoint
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -26,17 +23,16 @@ struct SpotCarriedCard: View {
                 .transition(.asymmetric(insertion: .scale(scale: 1 / MotionTokens.liftedScale), removal: .opacity))
             }
         }
-        .modifier(CarriedPlace(lift: model.lift, panel: panel))
+        .modifier(CarriedPlace(lift: model.lift, panelOrigin: panelOrigin))
         .allowsHitTesting(false)
     }
 }
 
-/// Moves the carried card to where the lift puts it.
 private struct CarriedPlace: ViewModifier {
     let lift: SpotLift
-    let panel: CGPoint
+    let panelOrigin: CGPoint
 
     func body(content: Content) -> some View {
-        content.offset(x: panel.x + lift.origin.x, y: panel.y + lift.origin.y)
+        content.offset(x: panelOrigin.x + lift.origin.x, y: panelOrigin.y + lift.origin.y)
     }
 }

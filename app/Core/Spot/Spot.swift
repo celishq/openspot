@@ -1,6 +1,5 @@
 import Foundation
 
-/// One script of a spot, with the look its spot takes. A widget runs nothing, and places scripts in a layout.
 public struct Spot: Equatable, Sendable {
     private static let folderWord = "folder"
     private static let anyWord = "*"
@@ -14,17 +13,11 @@ public struct Spot: Equatable, Sendable {
     public let subtitle: String?
     public private(set) var read: SpotRead?
     public private(set) var pick: ItemPick
-    /// The form that Enter on a row asks with first, from the last output of its script.
     public private(set) var pickForm: CommandAction?
-    /// The places its header offers, where the person can show it (protocol: Places).
     public let offeredPlaces: Set<Place>
-    /// Whether its rows join the main search.
     public var isGlobal: Bool { offeredPlaces.contains(.search) }
-    /// Whether the main search finds the spot itself. A header with `offers=rows` offers only its rows.
     public let isFound: Bool
-    /// The text of the main search that its script answers with rows (protocol: Places).
     public let answers: AnswerPattern?
-    /// Its place in the grid before the person's choice: a lower number first. The person's newest file comes first.
     public private(set) var order: Int
     public private(set) var keepsRecent = true
     public private(set) var openTitle: String?
@@ -32,66 +25,36 @@ public struct Spot: Equatable, Sendable {
     public let layout: WidgetLayout?
     public let places: [String]
     public let opens: String?
-    /// The sheet that the app answers in Swift for it, when it is the card of a file that does not load or a review.
     public let host: HostSheet?
-    /// Whether its sheet grows out of the search field in place of a card, as the review of a dropped spot does.
     public let growsFromField: Bool
-    /// How its script runs.
     public let mode: SpotMode
-    /// Whether Enter and a click on its card call `open` though it has a sheet, which ⌘ opens (`press=open`).
     public let pressRuns: Bool
-    /// The file extensions that its card takes, with `folder` and `*`.
     public let drop: [String]
-    /// Whether the person can float it, with a key or a shake.
     public var offersFloat: Bool { offeredPlaces.contains(.float) }
     public var offersWindow: Bool { offeredPlaces.contains(.window) }
-    /// Whether the person can put its card on the grid.
     public var offersCard: Bool { offeredPlaces.contains(.card) }
     public var offersMenuBar: Bool { offeredPlaces.contains(.menubar) }
-    /// The folder of its files inside the data of the app. A sheet of the app and a widget have none.
     public let dataName: String?
-    /// Whether the grid shows its card before the person's choice. A script with commands, one that offers only its rows,
-    /// one with a number in its `read` (protocol: Places), or one that a widget opens, has no card on the grid.
     public private(set) var isOnGrid: Bool
-    /// The `symbol` its header names, if any.
     public private(set) var headerSymbol: String?
-    /// The file whose icon its header names, as a full path.
     public private(set) var file: String?
-    /// The image its header names, as a full path.
     public private(set) var image: String?
-    /// The short text, such as an emoji, that its header names as its picture.
     public private(set) var glyph: String?
-    /// The Swift file of the view that its card draws, as a full path (protocol: Views).
     public let view: String?
-    /// When the files of its view last changed, so that an edit of the view changes the spot. Nil when the scan does not
-    /// watch them.
     public let viewDate: Date?
-    /// The events that it raises with `openspot event emit`, which its header names in `emits` (protocol: Events).
     public let emits: [String]
-    /// The patterns of the pages that a push may show of it, from its `pages` lines, such as `text:*` (protocol: Pages).
     public let pages: [String]
-    /// The uses that its header names in `uses` (protocol: Trust).
     public internal(set) var uses: Set<SpotUse>
-    /// The commands its header lists, which a person can give keys.
     public let offers: [CommandOffer]
-    /// The actions it adds to the actions menu of every card, from the buttons of its header with `offers=actions`.
     public private(set) var offeredActions: [OfferedAction]
-    /// The values that it keeps with `openspot setting`, each with its title, which Settings lists.
     public let settings: [CommandOffer]
-    /// The Settings rows of its own commands, which its sheet shows. Nil for a spot that draws its own sheet.
     public private(set) var keyList: KeyList?
-    /// Whether its sheet shows the keys of its commands above the rows that its own read prints.
     public private(set) var listsKeysAbove = false
-    /// Whether it comes with the app as a part of it: always on, and never edited, removed or shared as a file of the
-    /// person's.
     public private(set) var isBuiltIn = false
-    /// Whether it reaches the account key, whose calls stay out of the call log (protocol: Trust).
     public var reachesAccountKey: Bool {
         SpotUse.reachesAccountKey(uses, isBuiltIn: isBuiltIn)
     }
-    /// More words that find it in the main search, beside its name and the words under it.
     public let keywords: [String]
-    /// Whether its read prints fake data while `OPENSPOT_REASON` is `spot.preview`, for the preview of its listing.
     public let previewsSample: Bool
 
     public init(
@@ -176,34 +139,27 @@ public struct Spot: Equatable, Sendable {
         self.viewDate = viewDate
     }
 
-    /// The sheet of the file that does not load, which this card stands for.
     public var fault: FaultSpot? {
         if case .fault(let fault)? = host { fault } else { nil }
     }
 
-    /// The picture its header names in place of its symbol: its image, or else the icon of its file.
     public var icon: FileIcon? {
         image.map(FileIcon.image) ?? file.map(FileIcon.init(path:))
     }
 
-    /// The sizes a person can prefer for its card. A widget has the size of its layout.
     public var sizes: [SpotSize] {
         kind == .widget ? [] : SpotSize.all
     }
 
-    /// The SF Symbol of one of its commands: the command's own icon when that is a symbol, or else its own symbol.
     public func symbol(of command: String) -> String {
         Icon(text: offers.first { $0.id == command }?.icon)?.symbol ?? symbol
     }
 
-    /// The one command of a spot that opens to the keys of its commands, which Return runs.
     public var soleCommand: String? {
         guard keyList != nil, offers.count == 1 else { return nil }
         return offers.first?.id
     }
 
-    /// The same spot, which opens to the keys of its commands in this config when it lists commands. With a read of its
-    /// own, its sheet shows the keys beside its own rows.
     func listingKeys(in config: ConfigFile) -> Spot {
         guard !offers.isEmpty, host == nil else { return self }
         var spot = self
@@ -217,14 +173,12 @@ public struct Spot: Equatable, Sendable {
         return spot
     }
 
-    /// The same spot, placed in the grid by the date its file was added: the newest first.
     func added(at date: Date) -> Spot {
         var spot = self
         spot.order = -Int(date.timeIntervalSince1970)
         return spot
     }
 
-    /// The same spot with the icon that the person chose in place of its header's, or as it is with none.
     func withIcon(_ text: String?) -> Spot {
         guard let icon = Icon(text: text) else { return self }
         var spot = self
@@ -236,7 +190,6 @@ public struct Spot: Equatable, Sendable {
         return spot
     }
 
-    /// The same spot, as a part of the app.
     func builtIn() -> Spot {
         var spot = self
         spot.isBuiltIn = true
@@ -244,67 +197,53 @@ public struct Spot: Equatable, Sendable {
         return spot
     }
 
-    /// The same spot, off the grid.
     func offTheGrid() -> Spot {
         var spot = self
         spot.isOnGrid = false
         return spot
     }
 
-    /// Whether its sheet changes the keys in the config file: the sheet of the keys of its commands.
     public var setsKeys: Bool {
         keyList != nil
     }
 
-    /// The state the header gives, shown before the command answers or when it cannot.
     public var headerState: SpotState {
         SpotState(title: name, subtitle: subtitle, isOnGrid: isOnGrid)
     }
 
-    /// Whether its read tells how its card looks: the panel asks it at each open, or the app at its launch.
     public var readsState: Bool {
         (read?.has(.panel) == true || read?.has(.event(SpotEvent.appLaunch)) == true) && !isGlobal && !mode.stays
     }
 
-    /// Whether the app reads it once as it starts: it lists `app.launch`.
     public var readsAtLaunch: Bool {
         read?.has(.event(SpotEvent.appLaunch)) == true
     }
 
-    /// Whether it offers rows to the main search that no panel open or clock reads, so that each load of the spots or of
-    /// the config reads it (protocol: Places).
     public var readsOfferedRows: Bool {
         guard let read else { return false }
         return isGlobal && !read.has(.panel) && read.seconds == nil
     }
 
-    /// Whether the person can put it in the menu bar: it offers the menu bar, and has a clock or an event in its `read`, or
-    /// stays.
     public var canShowInMenuBar: Bool {
         offersMenuBar && (read?.seconds != nil || read?.hasEvent == true || mode.stays)
     }
 
-    /// The call that a click on its card makes.
     public var click: SpotAction {
         .open
     }
 
-    /// Whether its `drop` takes files that are not folders.
     public var takesFiles: Bool {
         dropWords.contains { !$0.isEmpty && $0 != Self.folderWord }
     }
 
-    /// Whether its `drop` takes folders: the word `folder` or `*`. A bundle, such as an app, is a folder.
     public var takesFolders: Bool {
         dropWords.contains(Self.folderWord) || dropWords.contains(Self.anyWord)
     }
 
-    /// Whether its card takes anything that a person drops.
     public var takesDrops: Bool {
         takesFiles || takesFolders
     }
 
-    /// Whether its card takes all these files at once. One that does not fit, or that is not on the disk, refuses all.
     public func accepts(_ paths: [String]) -> Bool {
         !paths.isEmpty && paths.allSatisfy(accepts(path:))
     }
@@ -322,8 +261,6 @@ public struct Spot: Equatable, Sendable {
         drop.map { $0.lowercased() }
     }
 
-    /// This command with the actions, the word for Enter, the pick and the recents that its script printed, and the kind it
-    /// makes when the panel asks it how it looks.
     public func taking(_ output: SpotOutput) -> Spot {
         var command = self
         command.actions = output.actions
@@ -335,8 +272,6 @@ public struct Spot: Equatable, Sendable {
         return command
     }
 
-    /// The state that an output gives, with each value of its head for a view. A command with no state to read keeps its
-    /// header.
     public func state(of output: SpotOutput) throws -> SpotState {
         guard readsState else { return headerState }
         guard output.summary != nil || output.errors.isEmpty else { throw SpotError.badState }
@@ -346,12 +281,10 @@ public struct Spot: Equatable, Sendable {
         return state.onGrid(isOnGrid)
     }
 
-    /// The actions that fit: those an item does not hide, and only the command's own with no item.
     public func actions(for item: SpotItem?) -> [CommandAction] {
         actions.filter { ($0.scope == .spot || item != nil) && item?.hides?.contains($0.id) != true }
     }
 
-    /// What Enter does, in words. A slider has no Enter.
     public func openTitle(hasItem: Bool) -> String? {
         if hasItem { return openTitle ?? "Open" }
         switch kind {
@@ -363,7 +296,6 @@ public struct Spot: Equatable, Sendable {
         }
     }
 
-    /// Whether a push may show this page of it: one of its `pages` patterns matches the page, where `*` stands for any text.
     public func takes(page: String) -> Bool {
         pages.contains { fnmatch($0, page, 0) == 0 }
     }

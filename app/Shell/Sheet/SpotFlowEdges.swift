@@ -1,9 +1,6 @@
 import OpenspotCore
 import SwiftUI
 
-/// The edges of the sheets behind the open one, stacked on its left, the nearest first and tallest: one for each sheet
-/// behind, three at most. A pointer that rests on an edge names its sheet over the panel, and a click goes back to it. It
-/// alone reads the titles of the sheets behind.
 struct SpotFlowEdges: View {
     let model: SpotsModel
     let rect: CGRect
@@ -57,8 +54,6 @@ struct SpotFlowEdges: View {
             .allowsHitTesting(false)
     }
 
-    /// Names the sheet of an edge once the pointer has rested on it for a moment, so that a pointer that only crosses the
-    /// edges names nothing.
     private func hover(_ index: Int, _ inside: Bool) {
         pause?.cancel()
         guard inside else {

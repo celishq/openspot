@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the work of `openspot <noun> <verb>` that Core does, the same for the app and for a process of its own.
 final class CommandAPITests: XCTestCase {
     private final class Host: Mac, @unchecked Sendable {
         var made = 0
@@ -213,7 +212,6 @@ final class CommandAPITests: XCTestCase {
     }
 }
 
-/// The events that a test's API raised.
 private actor LockedEvents {
     private(set) var events: [SpotEvent] = []
 

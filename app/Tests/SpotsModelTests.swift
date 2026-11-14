@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the panel's decisions: which sheet opens and closes, where the search goes, and what a pick leaves behind.
 @MainActor
 final class SpotsModelTests: XCTestCase {
     private var folder: URL!
@@ -149,7 +148,6 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(Set(model.entries.map { $0.spot.name }), ["Mugs", "Notes"])
     }
 
-    /// Shows the panel with one list of two rows, and opens that list.
     private func openList() async throws {
         try script("list", header: "on=sheet.open", "printf 'row=a\\ntitle=Apple\\n\\nrow=b\\ntitle=Banana\\n'")
         model.reload()
@@ -610,6 +608,48 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the shown panel") { model.isShown }
     }
 
+    func testTheSearchStaysThroughAHideUntilEsc() {
+        model.reload()
+        model.panelWillShow(holding: [])
+        model.searchText = "ban"
+
+        model.panelWillHide()
+        model.panelDidHide()
+        model.panelWillShow(holding: [])
+
+        XCTAssertEqual(model.searchText, "ban")
+        XCTAssertTrue(model.stepBack())
+        XCTAssertEqual(model.searchText, "")
+    }
+
+    func testTheOpenAtLaunchWaitsAtMostTwoSecondsForTheReads() async throws {
+        let gate = folder.appendingPathComponent("gate").path
+        try script("stuck", header: "on=panel.open", "n=0; while [ ! -f '\(gate)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done")
+        model.reload()
+        model.panelWillShow(holding: [])
+        let start = ContinuousClock.now
+
+        await model.waitForReads()
+
+        let waited = ContinuousClock.now - start
+        XCTAssertTrue(model.runs.isReading)
+        XCTAssertGreaterThanOrEqual(waited, .seconds(2))
+        XCTAssertLessThan(waited, .seconds(20))
+        FileManager.default.createFile(atPath: gate, contents: nil)
+        try await wait("the end of the read") { !model.runs.isReading }
+    }
+
+    func testAFirstLaunchOpensThePanelOnTheGridAndNamesTheKeyWhenItCloses() {
+        model.beginFirstLaunch()
+
+        XCTAssertEqual(host.presents, 1)
+        XCTAssertNil(model.openList)
+        XCTAssertEqual(host.confirms, [])
+        model.panelWillHide()
+        model.panelDidHide()
+        XCTAssertEqual(host.confirms, [model.entryKey.openHint])
+    }
+
     func testAFormOfSeveralPicksStaysOpenThroughEachPickReadsTheSpotAgainAndSelectsAllOnCommandShiftA() async throws {
         let sent = folder.appendingPathComponent("sent").path
         let reads = folder.appendingPathComponent("reads").path
@@ -840,7 +880,6 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.visible.map(\.id), ["other"])
     }
 
-    /// Opens a sheet that a script prints on each read. The script writes each other call to the returned file.
     private func openParts(_ sheet: String) async throws -> URL {
         let calls = folder.appendingPathComponent("calls")
         try script("parts", header: "on=sheet.open", "if [ \"$1\" = read ]; then printf '\(sheet)'; else echo \"$@\" >> '\(calls.path)'; fi")
@@ -1041,8 +1080,6 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(changed)
     }
 
-    /// Reads what the body of the panel's root view, SpotsView, reads of the model, and what the body of the search field,
-    /// SpotFieldView, reads, and calls `told` when a later change tells any of them.
     private func trackPanelAndField(_ told: @escaping @Sendable () -> Void) {
         withObservationTracking {
             let id = model.transition.id
@@ -1115,7 +1152,6 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(told)
     }
 
-    /// Opens the actions menu of the weather card, and returns where a view would place it.
     private func openWeatherMenu() throws -> ActionMenuFrame {
         try script("weather", header: "title=Weather", ":")
         model.reload()
@@ -1303,7 +1339,6 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(host.held.count, holds)
     }
 
-    /// Shows the panel with a spot that answers the main search for text that starts with a digit.
     private func showAnswers(slow: String = "none") throws {
         let body = #"case "$OPENSPOT_VALUE" in \#(slow)) sleep 0.5 ;; esac; case "$1" in read) [ -n "$OPENSPOT_VALUE" ] && printf 'row=%s\ntitle=Is %s\ndetail=Read %s\n' "$OPENSPOT_VALUE" "$OPENSPOT_VALUE" "$OPENSPOT_VALUE" ;; open) printf 'toast=Picked %s\n' "$2" ;; esac"#
         try script("calc", header: "title=Calc\non=search.text ^[0-9]", body)

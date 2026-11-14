@@ -2,24 +2,17 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// A window for toasts under the Openspot menu bar item, or at the top of the screen when the item shows nowhere, so they
-/// show when the spots panel is closed. It is as large as its message, up to 560 pt wide.
-/// Only a toast with a fix takes input: a click on it, or its fix key, opens the fix (A15).
 final class ToastPanel: NSPanel {
     static let margin: CGFloat = 16
     private static let maxSize = NSSize(width: 560, height: 120)
     private static let duration: TimeInterval = 5
 
     let toast = Toast()
-    /// The view that sizes the window to a message, made once and given a copy of each toast.
     private lazy var measure = NSHostingController(rootView: ToastView(toast: Toast()))
     private var shows = 0
     private var fixKey: HotKey.Registration?
-    /// The menu bar item that toasts hang from.
     weak var item: OpenspotItem?
 
-    /// Shows a message, in place of any toast on screen, and hides it after a while, or keeps it with no duration. A fix opens
-    /// on a click or on its key.
     func show(_ message: String, kind: ToastKind, fix: (@MainActor @Sendable () -> Void)? = nil, key: Shortcut? = nil, for duration: TimeInterval? = ToastPanel.duration) {
         shows += 1
         let current = shows
@@ -57,7 +50,6 @@ final class ToastPanel: NSPanel {
         }
     }
 
-    /// Holds the fix key and takes clicks while a fix shows, and lets go of both when none does. It returns the key it holds.
     @discardableResult
     private func hold(fix: (@MainActor @Sendable () -> Void)?, key: Shortcut?) -> Shortcut? {
         fixKey.map(HotKey.unregister)

@@ -11,7 +11,6 @@
   - `Views/` — `openspot-views`, which a Release build runs to compile each view of the core spots into a `.view` beside
     its source, so that it draws on a Mac with no developer tools. It does not ship. Debug compiles a view at its first use.
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
-- `app/RULES.md` holds the rules of the app that no spot author sees, by ID. Code and tests name a rule by its ID.
 - `app/Keywords/` holds the CLDR keywords of emoji and symbols, one xz file per language. `scripts/emoji-keywords.py` writes
   it from a pinned CLDR version, and the build copies it into the app.
 - `app/Help/` holds the guide of each `openspot` noun that has one, which `openspot help <noun>` prints. The build copies it
@@ -46,11 +45,22 @@ Write a doc that people read, such as `GUIDE.md` and `PROTOCOL.md`, the way Appl
 - Keep the main idea and the edge cases apart. Put limits, errors and rare cases in a short note or in the reference.
 - Write natural English: "you" for the reader, short sentences, common words. Contractions are fine.
 - Use one word for each meaning on the page.
+- `make verify` fails when a doc links to a file or a heading that does not exist, names a repo path or a `make` target
+  that does not exist, or when code cites a protocol heading that does not exist (`DocReferenceTests`).
+- It fails when PROTOCOL.md and Core disagree on a key, a block kind, a call word, an event, a place, a use, a shell
+  helper or an `openspot` command (`ProtocolContractTests`). `scripts/protocol-gaps.txt` lists today's gaps, and it
+  fails on a gap the list lacks and on a listed gap that is gone.
+- It fails when an `sh`, `js` or `swift` example of GUIDE.md, PROTOCOL.md or `app/Help/` does not run (`DocExampleTests`).
+  An example that needs a network, an account or a tool that not every Mac has goes in a `text` fence.
+- The docs are `AGENTS.md`, `GUIDE.md`, `PROTOCOL.md`, `CONTRIBUTING.md`, `README.md` and `app/Help/`. The code is the
+  truth for how the app works, so no doc describes the app's code. Before you add a sentence, look for one that says it
+  already, and link to it, since no check finds a repeat.
 
-## Docstrings
+## Comments
 
-- Docstrings on types and members only. No inline comments.
-- A docstring says what the item does. Five lines on a type, three on a member, none where the name says it.
+- Code and the scripts in `scripts/` hold no comment and no docstring. A name, a type or a test says what a comment would.
+- The one exception is a `// @todo #<id>` puzzle. The header of a spot script is not a comment: it is part of the spot.
+- `make verify` runs `scripts/check-comments.sh`, which fails on a comment.
 
 ## Core and Shell
 
@@ -157,7 +167,7 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
 ## Verify
 
 ```sh
-make verify                # the Core, Tests and Motion checks, then the XCTest suite, with test classes in parallel
+make verify                # the Core, Tests, Comments and Motion checks, then the XCTest suite, with test classes in parallel
 make test T=SpotRunsTests  # one test class, while you work on it
 make perf N=3              # times a Release sheet that opens and closes 20 times, 3 runs; ACTION picks another motion
 make film SPOT=caffeinate  # films the open and close of a sheet 10x slower (SLOW=1 for real speed) into .temp/film

@@ -1,18 +1,15 @@
 import Foundation
 
-/// The bech32 text of NIP-19, such as an `npub` or an `nsec`: a prefix, the bytes in 5-bit groups, and a checksum.
 enum Bech32 {
     private static let alphabet = Array("qpzry9x8gf2tvdw0s3jn54khce6mua7l")
     private static let generator: [UInt32] = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3]
 
-    /// The text of these bytes under a prefix.
     static func encode(_ prefix: String, _ bytes: Data) -> String {
         let values = regroup(Array(bytes), from: 8, to: 5, pads: true) ?? []
         let check = checksum(prefix, values)
         return prefix + "1" + String((values + check).map { alphabet[Int($0)] })
     }
 
-    /// The bytes of a text with this prefix, or nil when the prefix, a letter or the checksum is wrong.
     static func decode(_ text: String, prefix: String) -> Data? {
         let lower = text.lowercased()
         guard lower == text || text.uppercased() == text, let split = lower.lastIndex(of: "1"),

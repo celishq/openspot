@@ -1,7 +1,6 @@
 import OpenspotCore
 import SwiftUI
 
-/// What one menu bar item draws. Marks take the colour of the menu bar, and a tone adds colour where it means something.
 struct SpotMenuBarMarkView: View {
     let mark: MenuBarMark
 

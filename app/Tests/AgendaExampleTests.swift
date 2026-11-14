@@ -1,18 +1,13 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Agenda example with its real script and a stand-in for the openspot command, which logs each call with its
-/// reason and its stdin.
 final class AgendaExampleTests: SampleSpotsCase {
-    /// A time from now in ISO 8601 with the offset of the zone, as `openspot calendar events` prints it.
     private func iso(_ seconds: TimeInterval) -> String {
         let format = ISO8601DateFormatter()
         format.timeZone = .current
         return format.string(from: Date().addingTimeInterval(seconds))
     }
 
-    /// A stand-in for the openspot command that answers each list from a file of the folder, keeps settings in files, and
-    /// adds a line to `calls` for each call: its reason, its words and its stdin.
     private func fakeOpenspot(in folder: URL) throws {
         let path = folder.path
         try """
@@ -239,7 +234,6 @@ final class AgendaExampleTests: SampleSpotsCase {
         }
     }
 
-    /// The rows that the open sheet of a spot shows once the person types the text, through the app's own run of the spot.
     @MainActor
     private static func rows(of spot: Spot, after text: String) async throws -> [String] {
         let runs = SpotRuns()

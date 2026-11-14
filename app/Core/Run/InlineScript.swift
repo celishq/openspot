@@ -1,10 +1,6 @@
 import Foundation
 import JavaScriptCore
 
-/// A JavaScript spot that runs inside the app, in a context of its own on a thread of its own (protocol: Modes). It makes the thread
-/// and loads its file at its first call, and lets go of both after `idle` seconds with no call (A26). Each call runs
-/// `main(args, env, input)` with the three parts of the call and returns the text of a frame (protocol: Modes), and fails as too slow
-/// past `limit` (protocol: Modes). `openspot.call(argv, input)` asks the API and returns `{ stdout, code }` (protocol: Modes).
 final class InlineScript: @unchecked Sendable {
     private final class Box: @unchecked Sendable {
         var answer = CommandAnswer()
@@ -13,12 +9,9 @@ final class InlineScript: @unchecked Sendable {
     private typealias Termination = @convention(c) (OpaquePointer?, UnsafeMutableRawPointer?) -> Bool
     private typealias TimeLimit = @convention(c) (OpaquePointer?, Double, Termination?, UnsafeMutableRawPointer?) -> Void
 
-    /// `JSContextGroupSetExecutionTimeLimit`, which JavaScriptCore exports with no public header.
     private static let timeLimit: TimeLimit? = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "JSContextGroupSetExecutionTimeLimit")
         .map { unsafeBitCast($0, to: TimeLimit.self) }
 
-    /// `openspot.frame(object)`, which writes an object as one block, or a list of objects as blocks, with each value
-    /// written as a value: a list repeats its key, and null leaves it out (protocol: The calls).
     private static let frame = """
     openspot.frame = function frame(value) {
       if (Array.isArray(value)) return value.map(frame).join("\\n")
@@ -38,26 +31,19 @@ final class InlineScript: @unchecked Sendable {
     private let api: CommandAPI?
     private let tokens: CallerTokens?
     private let token: String?
-    /// The sandbox of Careful mode for each process that `openspot.call` starts, or nil to run them as the person.
     private let careful: CarefulMode?
     private let limit: TimeInterval
     private let idle: TimeInterval
-    /// Takes the CPU time of each call on the thread.
     private let spent: @Sendable (TimeInterval) -> Void
     private let condition = NSCondition()
     private var calls: [InlineCall] = []
     private var isEnded = false
     private var hasThread = false
-    /// Whether the time limit stopped the call that runs.
     private var isOverTime = false
-    /// The context of the script, which only its thread touches.
     private var context: JSContext?
     private var thrown: JSValue?
-    /// The variables of the call that runs, which `openspot.call` passes on.
     private var variables: [String: String] = [:]
 
-    /// `tokens` gives the script a token of its spot for as long as it lives (protocol: Trust). `careful` runs each process that it starts
-    /// in Careful mode with these uses (protocol: Trust).
     init(spot: Spot, api: CommandAPI?, tokens: CallerTokens? = nil, careful: Set<SpotUse>? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
         self.careful = careful.map(CarefulMode.init)
         url = spot.url
@@ -77,12 +63,10 @@ final class InlineScript: @unchecked Sendable {
         if let token { tokens?.release(token) }
     }
 
-    /// Whether its thread runs, with its context.
     var isRunning: Bool {
         condition.withLock { hasThread }
     }
 
-    /// Puts a call in line on the thread of the script, and starts the thread when none runs.
     func send(_ call: InlineCall) {
         condition.withLock {
             guard !isEnded else { return call.finish(.dropped) }
@@ -99,7 +83,6 @@ final class InlineScript: @unchecked Sendable {
         }
     }
 
-    /// Ends the thread once the call that runs returns. Each call in line is dropped.
     func end() {
         condition.withLock {
             isEnded = true
@@ -107,7 +90,6 @@ final class InlineScript: @unchecked Sendable {
         }
     }
 
-    /// Runs each call in turn until the end, or until no call comes for `idle` seconds, and then lets go of the context.
     private func follow() {
         while true {
             condition.lock()
@@ -140,7 +122,6 @@ final class InlineScript: @unchecked Sendable {
         }
     }
 
-    /// The CPU time, user and system, of the thread that asks.
     private static func threadTime() -> TimeInterval {
         var info = thread_basic_info()
         var count = mach_msg_type_number_t(MemoryLayout<thread_basic_info_data_t>.size / MemoryLayout<natural_t>.size)
@@ -152,8 +133,6 @@ final class InlineScript: @unchecked Sendable {
         return user + Double(info.system_time.seconds) + Double(info.system_time.microseconds) / 1_000_000
     }
 
-    /// Runs `main` with the arguments, the variables and the stdin of the call (protocol: Modes). A script with no `main` gives an empty
-    /// frame. A hook's function gets the arguments alone, and gives `true` for a true answer and nothing for any other.
     private func run(_ call: InlineCall) throws -> String {
         let context = try loaded()
         let function = context.objectForKeyedSubscript(call.function ?? "main")
@@ -172,7 +151,6 @@ final class InlineScript: @unchecked Sendable {
         return result.toString() ?? ""
     }
 
-    /// The context with the file run in it, which it makes at the first call.
     private func loaded() throws -> JSContext {
         if let context { return context }
         guard let context = JSContext() else { throw SpotError.failed(1, "Openspot cannot start JavaScript.") }
@@ -199,8 +177,6 @@ final class InlineScript: @unchecked Sendable {
         return context
     }
 
-    /// Throws what the script threw, as the failure of its call. A call that the time limit stopped fails as too slow, and
-    /// the next call starts from a new context.
     private func rethrow() throws {
         if isOverTime {
             isOverTime = false
@@ -214,7 +190,6 @@ final class InlineScript: @unchecked Sendable {
         throw SpotError.failed(1, message)
     }
 
-    /// Asks the API in the app, or the `openspot` command for a call that runs in a process of its own.
     private func ask(_ arguments: [String], input: String?) -> CommandAnswer {
         let environment = environment.merging(variables) { _, new in new }
         guard let call = CommandLineCall(arguments: arguments, environment: environment) else {
@@ -234,7 +209,6 @@ final class InlineScript: @unchecked Sendable {
         return process(arguments, input: input, environment: environment)
     }
 
-    /// Runs the `openspot` command on the path, in Careful mode when it is on, and returns its stdout and its code.
     private func process(_ arguments: [String], input: String?, environment: [String: String]) -> CommandAnswer {
         let words = (careful?.words(in: environment) ?? []) + ["/usr/bin/env", "openspot"] + arguments
         let process = Process()

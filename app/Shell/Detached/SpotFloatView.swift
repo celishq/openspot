@@ -1,16 +1,12 @@
 import OpenspotCore
 import SwiftUI
 
-/// The content of a float: the spot's sheet with its header, its rows or parts and a close button, or its card when it has
-/// no sheet. It tells its window the size that it needs. In a window of its own it fills the window, whose title bar holds
-/// the name and the close button.
 struct SpotFloatView: View {
     let model: SpotsModel
     let id: String
     var fills = false
     let onSize: (CGSize) -> Void
 
-    /// Where the sheet shows: in a window of its own when it fills one, or else in a float.
     private var place: SheetPlace {
         fills ? .window : .float
     }
@@ -38,7 +34,6 @@ struct SpotFloatView: View {
         .environment(\.spotCards, SpotCardSource(model: model))
     }
 
-    /// The size of the sheet or the card.
     private func size(_ entry: SpotsModel.Entry?, _ run: SpotRun?) -> CGSize {
         guard let entry, let run else { return CGSize(width: SpotTokens.gridWidth, height: SpotTokens.rowHeight) }
         guard entry.kind.opensSheet else {
@@ -130,7 +125,6 @@ struct SpotFloatView: View {
         .background { SpotBlur(radius: SpotTheme.blur).overlay(SpotTheme.glass).clipShape(shape) }
     }
 
-    /// What a drop adds, over the float, only while a drag that it takes lies over it (W9).
     @ViewBuilder
     private func drop(on entry: SpotsModel.Entry?) -> some View {
         if let dropWords, entry?.kind.opensSheet == true {
@@ -146,8 +140,6 @@ struct SpotFloatView: View {
     }
 }
 
-/// The glass of a float, and of a window of its own, which lies under the whole window, its title bar too, while the
-/// content keeps clear of the title bar.
 private struct FloatSurface: ViewModifier {
     let fills: Bool
 

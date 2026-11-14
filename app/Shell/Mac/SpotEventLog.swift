@@ -1,9 +1,6 @@
 import AppKit
 import OpenspotCore
 
-/// The log of what the pointer and the keys do while a recording runs, one JSON object on each line (S5). A listen-only
-/// event tap on its own thread writes it. Keys need Input Monitoring: without it, this asks macOS for it and logs the
-/// pointer alone (S6).
 final class SpotEventLog: @unchecked Sendable {
     private static let pointer: [CGEventType] = [
         .mouseMoved, .leftMouseDragged, .rightMouseDragged, .otherMouseDragged,
@@ -21,7 +18,6 @@ final class SpotEventLog: @unchecked Sendable {
     private var loop: CFRunLoop?
     private let ended = DispatchSemaphore(value: 0)
 
-    /// Opens the log and writes its first line: the size of the video in points and its pixels for each point.
     init(path: String, frame: CGRect, scale: CGFloat) throws {
         let url = URL(fileURLWithPath: path)
         try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -33,7 +29,6 @@ final class SpotEventLog: @unchecked Sendable {
         write(["type": "frame", "width": Double(frame.width), "height": Double(frame.height), "scale": Double(scale)])
     }
 
-    /// Starts the tap on its own thread, and returns once it listens.
     func listen() throws {
         let keys = CGPreflightListenEventAccess() || CGRequestListenEventAccess()
         let types = Self.pointer + (keys ? [.keyDown] : [])
@@ -61,7 +56,6 @@ final class SpotEventLog: @unchecked Sendable {
         ready.wait()
     }
 
-    /// Stops the tap, and returns once the log is closed.
     func stop() {
         guard let tap, let loop else {
             try? handle.close()

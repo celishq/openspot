@@ -1,7 +1,6 @@
 import Foundation
 import Synchronization
 
-/// The character that each key of a keyboard layout types with no modifier, by key code.
 public struct KeyLayout: Equatable, Sendable {
     public let keys: [UInt16: Character]
     private let codes: [Character: UInt16]
@@ -13,13 +12,11 @@ public struct KeyLayout: Equatable, Sendable {
 
     private static let current = Mutex<[KeyLayout]>([])
 
-    /// The layouts that the person turned on. The app sets them as it starts and each time they change.
     public static var enabled: [KeyLayout] {
         get { current.withLock { $0 } }
         set { current.withLock { $0 = newValue } }
     }
 
-    /// The text that the same keys type in another layout, or nil when a character of it is on no key of this one.
     func text(_ text: String, in other: KeyLayout) -> String? {
         var typed = ""
         for character in text.lowercased() {

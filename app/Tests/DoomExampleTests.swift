@@ -1,9 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Doom example with its real script, in a private home, with stand-ins for `curl`, `clang` and the engine.
 final class DoomExampleTests: SampleSpotsCase {
-    /// The commit of the engine that the script pins, which names the folder of its source and its engine.
     private func engineCommit() throws -> String {
         let script = try String(contentsOf: examples.appendingPathComponent("doom.spot/doom.sh"), encoding: .utf8)
         let line = try XCTUnwrap(script.split(separator: "\n").first { $0.hasPrefix("engine_commit=") })
@@ -14,20 +12,15 @@ final class DoomExampleTests: SampleSpotsCase {
         folder.appendingPathComponent(".config/openspot/data/doom")
     }
 
-    /// The engine that the pinned commit names in the data folder.
     private func engine(in folder: URL) throws -> URL {
         data(in: folder).appendingPathComponent("doom-\(try engineCommit())")
     }
 
-    /// An engine that writes its mark and its arguments, then its folder, to `played` when it starts.
     private func fakeEngine(at url: URL, in folder: URL, mark: String) throws {
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try "#!/bin/sh\necho \"\(mark) $*\" > '\(folder.path)/played'\npwd >> '\(folder.path)/played'\n".writeScript(to: url)
     }
 
-    /// A curl that logs each address to `fetched`, fails for each address that holds a word of the file `unreachable`,
-    /// and writes a file that is not the real one for each other address. With a number in the file `size`, it writes
-    /// half of that many bytes, waits one second, then writes the rest.
     private func fakeCurl(in folder: URL) throws {
         try """
         #!/bin/sh
@@ -53,9 +46,6 @@ final class DoomExampleTests: SampleSpotsCase {
         """.writeScript(to: folder.appendingPathComponent("tools/curl"))
     }
 
-    /// A clang that logs each call to `compiled`, fails as a Mac with no Command Line Tools does while the file
-    /// `clang-fails` is there, writes an empty object for `-c`, for a file named `slow` once the file `release` is there, and links a fake
-    /// engine with the mark `built`.
     private func fakeClang(in folder: URL) throws {
         try fakeEngine(at: folder.appendingPathComponent("built"), in: folder, mark: "built")
         try """
@@ -87,7 +77,6 @@ final class DoomExampleTests: SampleSpotsCase {
         try "SRC_DOOM = \(files)\n".write(to: source.appendingPathComponent("Makefile"), atomically: true, encoding: .utf8)
     }
 
-    /// Lets the compile of `slow` end.
     private func release(in folder: URL) {
         FileManager.default.createFile(atPath: folder.appendingPathComponent("release").path, contents: Data())
     }
@@ -97,8 +86,6 @@ final class DoomExampleTests: SampleSpotsCase {
         try "wad".write(to: data(in: folder).appendingPathComponent("doom1.wad"), atomically: true, encoding: .utf8)
     }
 
-    /// Runs the script once with the host's process, as a press of its card or of its Play button does, and returns each
-    /// frame that it printed and the line that its failure shows, if it failed. `onFrame` sees each frame when it comes.
     private func press(_ spot: Spot, _ call: String = "open", onFrame: (String) -> Void = { _ in }) async -> (frames: [String], failure: String?) {
         var frames: [String] = []
         do {
@@ -114,7 +101,6 @@ final class DoomExampleTests: SampleSpotsCase {
         return (frames, nil)
     }
 
-    /// Copies the example into a spots folder of its own, so that the panel reads no other spot.
     private func spots(in folder: URL) throws -> URL {
         let spots = folder.appendingPathComponent("spots")
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
@@ -122,9 +108,6 @@ final class DoomExampleTests: SampleSpotsCase {
         return spots
     }
 
-    /// Opens the panel once for each change and once more, each 10 seconds after the last, as a person does, and returns
-    /// the picture that the card of the spot drew after each read, or nil for its default card, with the drawing of its
-    /// sheet. Each change runs while the panel is closed.
     @MainActor
     private static func pictures(spots: URL, changes: [@Sendable () throws -> Void]) async throws -> [(picture: String?, sheet: [[String]]?)] {
         var time = Date(timeIntervalSince1970: 1000)
@@ -157,7 +140,6 @@ final class DoomExampleTests: SampleSpotsCase {
         FileManager.default.fileExists(atPath: folder.appendingPathComponent(name).path)
     }
 
-    /// The files that a run left in the temporary folder.
     private func leftovers(in folder: URL) throws -> [String] {
         try FileManager.default.contentsOfDirectory(atPath: folder.path).filter { $0.hasPrefix("doom.") }
     }

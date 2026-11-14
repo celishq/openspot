@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the floats: a key with no command shows its spot in a window of its own, apart from the panel (W1–W9).
 @MainActor
 final class SpotFloatTests: XCTestCase {
     private var folder: URL!
@@ -52,7 +51,6 @@ final class SpotFloatTests: XCTestCase {
         GlobalKey(spot: spot, act: .float, trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+s"))))
     }
 
-    /// Floats a list of two rows whose pick and action each toast what they got.
     private func floatList() async throws {
         try script("list", header: "on=sheet.open", """
         case "$1" in
@@ -74,6 +72,21 @@ final class SpotFloatTests: XCTestCase {
         XCTAssertNil(model.openList)
         XCTAssertEqual(model.runs.floating, ["list"])
         XCTAssertEqual(model.sheets["list"]?.list.shown.first?.title, "sheet.open")
+    }
+
+    func testAFloatThatOpensDuringADragFollowsItAndOneWithNoDragDoesNot() async throws {
+        try script("list", header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
+        model.reload()
+
+        host.isMouseDown = true
+        model.press(try key("list"))
+        try await wait("the float during the drag") { host.floats == ["list"] }
+        host.isMouseDown = false
+        model.press(try key("list"))
+        model.press(try key("list"))
+
+        try await wait("the float with no drag") { host.floats == ["list", "list"] }
+        XCTAssertEqual(host.floatsFollowingDrag, [true, false])
     }
 
     func testTheSameKeyAgainClosesTheFloatAndDuringADragBringsItToThePointer() async throws {
@@ -228,7 +241,6 @@ final class SpotFloatTests: XCTestCase {
         XCTAssertEqual(host.dismissals, 0)
     }
 
-    /// Loads a spot that offers a window, with one row.
     private func windowSpot() throws {
         try script("store", header: "on=sheet.open\noffers=card\noffers=window", "printf 'row=a\\ntitle=Apple\\n'")
         model.reload()

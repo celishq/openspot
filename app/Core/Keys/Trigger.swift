@@ -1,6 +1,5 @@
 import Foundation
 
-/// What a person gives a global key: a key with its modifiers, a tap of one modifier alone, or a shake of the pointer (W2).
 public enum Trigger: Hashable, Sendable {
     case key(Shortcut)
     case tap(Shortcut.Modifiers)
@@ -8,7 +7,6 @@ public enum Trigger: Hashable, Sendable {
 
     private static let shakeWord = "shake"
 
-    /// Reads a key as a person writes it, such as ctrl+space, one modifier, such as option, or the word shake.
     public init?(text: String) {
         if text.lowercased() == Self.shakeWord {
             self = .shake
@@ -21,7 +19,6 @@ public enum Trigger: Hashable, Sendable {
         }
     }
 
-    /// The words for the config file.
     public var text: String {
         switch self {
         case .key(let shortcut): shortcut.text
@@ -30,7 +27,6 @@ public enum Trigger: Hashable, Sendable {
         }
     }
 
-    /// The key as the Mac writes it, such as ⌃Space, ⌥ Option, or Shake.
     public var label: String {
         switch self {
         case .key(let shortcut): shortcut.label

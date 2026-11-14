@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves what the panel does when another app takes the focus (D7): it closes at once with no press, waits while a press
-/// lasts, closes as the press ends, and stays for a drag of files that the press starts.
 final class FocusLossTests: XCTestCase {
     func testALossWithNoPressClosesAtOnce() {
         let loss = FocusLoss(dragCount: 4)

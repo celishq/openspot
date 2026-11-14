@@ -1,10 +1,6 @@
 import Foundation
 
-/// The hooks of offered actions: functions of a JavaScript spot that say whether an action shows on a card (protocol:
-/// Buttons and actions).
 extension SpotRuns {
-    /// Asks a hook of a spot about a card, with the card's ID and origin as its arguments, and waits `frameWait` at most.
-    /// Returns nil past the wait, and then the answer goes to `later` on the main thread. A hook that throws says no.
     func ask(_ function: String, of spot: Spot, card: String, origin: String, later: @escaping @MainActor (Bool) -> Void) -> Bool? {
         let script = hookScript(of: spot)
         let call = InlineCall(arguments: [card, origin], function: function)

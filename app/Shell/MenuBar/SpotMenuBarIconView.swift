@@ -1,16 +1,12 @@
 import OpenspotCore
 import SwiftUI
 
-/// The icon of the Openspot item, or for a moment the symbol of the command whose key a person pressed, or of the toast
-/// that shows. The leaving icon shrinks and fades as the next one grows in. While work runs, the icon is cut out of a pill
-/// of the menu bar's colour.
 struct SpotMenuBarIconView: View {
     let model: SpotsModel
     let image: NSImage
     let toast: Toast?
     var isWorking = false
 
-    /// The width of the item, which holds the pill and stays the same with no work, so that no item beside it moves.
     static let width: CGFloat = 30
 
     private static let small = 0.5

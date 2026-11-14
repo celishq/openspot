@@ -1,8 +1,5 @@
 import Foundation
 
-/// The spots that `openspot spot list` prints as JSON or as blocks: each script that the app loads, with its buttons, its
-/// fields and their keys, or with `core` each spot that comes with the app and that the person turns on or off. It also
-/// prints the values that the spots keep, for `openspot setting list`.
 struct SpotList {
     private struct Loaded: Encodable {
         struct Offer: Encodable {
@@ -36,7 +33,6 @@ struct SpotList {
     let folder: SpotsFolder
     let config: Config
 
-    /// Each script of the scan, in its order.
     func loaded() throws -> String {
         let scan = try folder.keptScan()
         let keys = config.keys
@@ -58,8 +54,6 @@ struct SpotList {
         })
     }
 
-    /// Each script of the scan as a `spot` block, with a `button` block for each of its commands and a `field` block for
-    /// each of its settings after it (protocol: The openspot command).
     func loadedFrame() throws -> String {
         let scan = try folder.keptScan()
         let keys = config.keys
@@ -77,19 +71,16 @@ struct SpotList {
         }.joined()
     }
 
-    /// Each core spot that a person can turn on, by name. A file of the spots folder with its ID is always on.
     func core() throws -> String {
         try Self.json(choices.map { Choice(id: $0.id, name: $0.spot.name, icon: Self.picture(of: $0.spot), detail: $0.spot.subtitle, on: $0.on, own: $0.own) })
     }
 
-    /// Each core spot that a person can turn on, as a `spot` block (protocol: The openspot command).
     func coreFrame() -> String {
         choices.map { choice in
             Self.block([("spot", choice.id), ("name", choice.spot.name), ("icon", Self.picture(of: choice.spot)), ("detail", choice.spot.subtitle), ("on", String(choice.on)), ("own", String(choice.own))])
         }.joined()
     }
 
-    /// The core spots by name, each with its ID and whether it is on and a file of the spots folder.
     private var choices: [(id: String, spot: Spot, on: Bool, own: Bool)] {
         let own = folder.ownIDs
         let enabled = config.arrangement.enabled
@@ -99,22 +90,18 @@ struct SpotList {
         }
     }
 
-    /// Each value that a spot keeps, in the order of the file.
     func values() throws -> String {
         try Self.json(config.settings.map { ["spot": $0.spot, "key": $0.key, "value": $0.value] })
     }
 
-    /// Each value that a spot keeps as a `field` block, in the order of the file (protocol: The openspot command).
     func valuesFrame() -> String {
         config.settings.map { Self.block([("field", $0.key), ("spot", $0.spot), ("value", $0.value)]) }.joined()
     }
 
-    /// One block of the lines that have a value, and a blank line after it.
     private static func block(_ pairs: [(String, String?)]) -> String {
         TextBlock(fields: pairs.compactMap { key, value in value.map { TextBlock.Field(key: key, value: $0) } }).text + "\n"
     }
 
-    /// The picture that its header names, or else its symbol.
     private static func picture(of spot: Spot) -> String {
         spot.image ?? spot.file ?? spot.glyph ?? spot.symbol
     }

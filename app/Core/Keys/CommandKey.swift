@@ -1,6 +1,5 @@
 import Foundation
 
-/// A letter or digit that runs a command from the panel, at its place on a US keyboard.
 public struct CommandKey: Equatable, Sendable {
     private static let codes: [String: UInt32] = [
         "a": 0, "s": 1, "d": 2, "f": 3, "h": 4, "g": 5, "z": 6, "x": 7, "c": 8, "v": 9, "b": 11, "q": 12,
@@ -19,7 +18,6 @@ public struct CommandKey: Equatable, Sendable {
         self.code = code
     }
 
-    /// Finds the key at a place on the keyboard.
     public init?(code: UInt32) {
         guard let name = Self.codes.first(where: { $0.value == code })?.key else { return nil }
         self.name = name

@@ -1,6 +1,5 @@
 import Foundation
 
-/// The call of `openspot prompt new`: the prompt that asks a coding agent to build a spot.
 struct PromptCalls {
     let mac: any Mac
     let environment: [String: String]

@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the pictures that an `icon` names by an https URL: each one is fetched once and kept, and a failed or too large
-/// fetch keeps nothing.
 final class WebPicturesTests: XCTestCase {
     private final class Fetches: @unchecked Sendable {
         private let lock = NSLock()
@@ -54,7 +52,7 @@ final class WebPicturesTests: XCTestCase {
 
     func testAPathStaysAndAFailedOrTooLargeFetchKeepsNothing() async throws {
         let failing = WebPictures(folder: folder) { _ in throw Failure() }
-        let large = WebPictures(folder: folder) { _ in Data(count: WebPictures.limit + 1) }
+        let large = WebPictures(folder: folder) { _ in Data(count: WebPictures.byteLimit + 1) }
 
         let path = await failing.path(of: "/tmp/a.png")
         let failed = await failing.path(of: "https://example.com/a.png")

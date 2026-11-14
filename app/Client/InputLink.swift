@@ -1,6 +1,5 @@
 import Darwin
 
-/// Sends stdin to the app as `stdin` notifications, one for each read, and one with `end` at its end, once the app asks.
 struct InputLink {
     let socket: Int32
     private(set) var isWanted = false
@@ -11,14 +10,12 @@ struct InputLink {
         self.socket = socket
     }
 
-    /// Starts to send stdin, or ends it at once when this process has none.
     mutating func want() {
         guard !isWanted else { return }
         isWanted = true
         if fcntl(STDIN_FILENO, F_GETFD) == -1 { end() }
     }
 
-    /// Reads once from stdin, and sends each whole character that it holds.
     mutating func readOnce() {
         var buffer = [UInt8](repeating: 0, count: 65_536)
         let count = read(STDIN_FILENO, &buffer, buffer.count)
@@ -44,7 +41,6 @@ struct InputLink {
         _ = deliver(Array("{\"jsonrpc\":\"2.0\",\"method\":\"stdin\",\"params\":{\"text\":\(JSON.quoted(text))}}\n".utf8), on: socket)
     }
 
-    /// The length of the bytes up to the end of their last whole UTF-8 character.
     private static func wholeLength(_ bytes: [UInt8]) -> Int {
         var start = bytes.count
         while start > 0, bytes.count - start < 4 {

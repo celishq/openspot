@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves how a spot moves a flow: a press that pushes or pops, a push of another spot, the routes of `pages`, and the
-/// command that pops.
 @MainActor
 final class FlowMoveTests: PanelCase {
     func openFlowSpot() async throws {
@@ -27,7 +25,6 @@ final class FlowMoveTests: PanelCase {
         """)
     }
 
-    /// Writes the flow spot beside an open list, and waits for its sheet over the list.
     private func openFlowSheetInPlace() async throws {
         try await waitFor("the flow over the list") { self.model.openList == "flow" && self.titles == ["Page first"] && self.model.sheets["flow"]?.spot.actions.count == 5 }
     }

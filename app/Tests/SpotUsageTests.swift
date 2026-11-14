@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves what the app counts for each spot, day by day: its runs and failures, their time, the CPU time and the disk bytes
-/// of its processes, each call that needs a use and its last fault, and how each day goes to a file of its own (G5; protocol: Stats).
 @MainActor
 final class SpotUsageTests: SpotRunsCase {
     private static let busyLoop = "i=0; while [ $i -lt 50000 ]; do i=$((i + 1)); done"

@@ -1,7 +1,6 @@
 import EventKit
 import OpenspotCore
 
-/// The person's events, read and written through EventKit. An event that the person declined is left out.
 final class SpotEventStore: EventStore {
     private let store = EKEventStore()
 
@@ -55,7 +54,6 @@ final class SpotEventStore: EventStore {
         )
     }
 
-    /// The leave that the person gave to the events or the reminders.
     static func access(to entity: EKEntityType) -> CalendarAccess {
         switch EKEventStore.authorizationStatus(for: entity) {
         case .fullAccess: .allowed
@@ -64,7 +62,6 @@ final class SpotEventStore: EventStore {
         }
     }
 
-    /// A calendar of events or a list of reminders, with its colour as `#RRGGBB`.
     static func list(_ calendar: EKCalendar?) -> CalendarList {
         let color = calendar?.cgColor.flatMap { $0.converted(to: CGColorSpace(name: CGColorSpace.sRGB)!, intent: .defaultIntent, options: nil) }?.components
         return CalendarList(

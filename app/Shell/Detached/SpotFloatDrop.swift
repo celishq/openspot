@@ -2,7 +2,6 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// The drop target of a float. It reads the dragged files, and says whether the spot of the float takes them.
 struct SpotFloatDrop: DropDelegate {
     let id: String
     let place: SheetPlace

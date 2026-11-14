@@ -1,17 +1,12 @@
 import CryptoKit
 import Foundation
 
-/// The compiled form of a spot's view: a library with one entry that makes the view (protocol: Views). A library is kept in a cache
-/// by the text it was built from, so an unchanged view is built once.
 public struct ViewLibrary: Sendable {
-    /// The C name of the entry, which returns a retained function from the values, the card and a send to a view.
     public static let entry = "openspot_view_v1"
     static let libraryExtension = "view"
     private static let platform = "apple-macos26.0"
     private static let preludeName = "openspot-view.swift"
 
-    /// The code that Openspot builds with each view: `SpotInput` and the entry. The compiler imports SwiftUI into it. The
-    /// card reaches the view as a dictionary, so a new value of the card needs no new entry.
     static let prelude = """
         public struct SpotFonts {
             public let title: Font
@@ -76,29 +71,23 @@ public struct ViewLibrary: Sendable {
     private let cache: URL
     private let tools: URL
 
-    /// `cache` is the folder of built libraries, and `tools` the folder that holds `xcode-select`, `swiftc` and `lipo`.
     public init(cache: URL, tools: URL = URL(fileURLWithPath: "/usr/bin", isDirectory: true)) {
         self.cache = cache
         self.tools = tools
     }
 
-    /// The libraries in the cache folder of the app.
     public static func standard(cache: URL = AppCache.folder()) -> ViewLibrary {
         ViewLibrary(cache: cache.appendingPathComponent("views", isDirectory: true))
     }
 
-    /// The path of the library that travels beside a view's source, relative when the source path is.
     static func path(beside source: String) -> String {
         (source as NSString).deletingPathExtension + "." + libraryExtension
     }
 
-    /// Whether a file of this path is the library of a view.
     static func isLibrary(_ path: String) -> Bool {
         (path as NSString).pathExtension == libraryExtension
     }
 
-    /// The library of a view: the one that travels beside its source, else one built for this Mac. Throws a fault that
-    /// names what is wrong.
     public func library(of source: URL) async throws -> URL {
         let carried = URL(fileURLWithPath: Self.path(beside: source.path))
         if FileManager.default.fileExists(atPath: carried.path) { return carried }
@@ -116,8 +105,6 @@ public struct ViewLibrary: Sendable {
         return built
     }
 
-    /// Builds the library of each view that a script under the folder names, for each kind of Mac, and writes it beside
-    /// its source, where `library(of:)` finds it first. Returns the libraries it wrote.
     public func buildViews(under folder: URL) async throws -> [URL] {
         var built: [URL] = []
         let scripts = (FileManager.default.enumerator(at: folder, includingPropertiesForKeys: nil)?.allObjects as? [URL] ?? [])
@@ -134,8 +121,6 @@ public struct ViewLibrary: Sendable {
         return built
     }
 
-    /// Compiles a view for these kinds of Mac, such as `arm64` and `x86_64`, and returns the library. `name` is the name of
-    /// its file, which an error line shows.
     public func build(source: Data, named name: String, kinds: [String]) async throws -> Data {
         guard (try? await run("xcode-select", ["-p"])) != nil else {
             throw SpotError.fault("To draw a view, install the Command Line Tools: xcode-select --install")
@@ -173,12 +158,10 @@ public struct ViewLibrary: Sendable {
         #endif
     }
 
-    /// The name of a library: a hash of its source and of the prelude.
     private static func name(of source: Data) -> String {
         SHA256.hash(data: Data(prelude.utf8) + source).map { String(format: "%02x", $0) }.joined()
     }
 
-    /// Runs a tool and waits for its end. A failure throws the first error line on stderr, with no folders in its path.
     private func run(_ name: String, _ arguments: [String]) async throws {
         let process = Process()
         process.executableURL = tools.appendingPathComponent(name)
@@ -206,7 +189,6 @@ public struct ViewLibrary: Sendable {
         }
     }
 
-    /// A compiler line with the folders cut from the path at its start.
     private static func withoutFolders(_ line: String) -> String {
         guard line.hasPrefix("/"), let colon = line.firstIndex(of: ":") else { return line }
         let path = line[..<colon]

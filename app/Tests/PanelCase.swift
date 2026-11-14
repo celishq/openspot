@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// The setup and the helpers of the tests that prove the panel with real spots: a folder of spots, a test host, and a list
-/// whose row `a` opens its page.
 @MainActor
 class PanelCase: XCTestCase {
     var folder: URL!
@@ -59,7 +57,6 @@ class PanelCase: XCTestCase {
         model.openItems?.shown.map(\.title) ?? []
     }
 
-    /// Opens a list whose row `a` opens its page, which shows one row named after the page.
     func openList() async throws {
         try script("list", header: "title=List\non=sheet.open\npages=*", """
         if [ -n "$OPENSPOT_PAGE" ]; then printf 'row=x\\ntitle=Detail %s\\n' "$OPENSPOT_PAGE"; else printf 'row=a\\ntitle=A\\npush=true\\n'; fi

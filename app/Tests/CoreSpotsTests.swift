@@ -93,6 +93,15 @@ final class CoreSpotsTests: XCTestCase {
         XCTAssertEqual(config.arrangement.letters(over: SpotArrangement()).count, config.arrangement.choices.filter { $0.letter?.isEmpty == false }.count)
     }
 
+    func testACoreSpotRunsInPlaceFromItsFolderInTheApp() throws {
+        try write("apps.sh", in: core)
+
+        let apps = try XCTUnwrap(SpotsFolder(url: folder, core: core, enabled: ["apps"]).scan().spots.first)
+
+        XCTAssertEqual(apps.url.resolvingSymlinksInPath().path, core.appendingPathComponent("apps.spot/apps.sh").resolvingSymlinksInPath().path)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), [])
+    }
+
     func testAFaultInACoreSpotThatIsOffStaysQuiet() throws {
         try write("bad.sh", in: core, header: "read=never")
 

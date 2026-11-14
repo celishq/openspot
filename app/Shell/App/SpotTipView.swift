@@ -1,15 +1,12 @@
 import OpenspotCore
 import SwiftUI
 
-/// The tip that the pointer rests on in Edit Spots, centred under its control, over the panel. It shows after the pointer
-/// rests for `delay`, and goes at once. Its place comes from the layout of the grid.
 struct SpotTipView: View {
     static let delay: Duration = .milliseconds(500)
     private static let gap: CGFloat = 4
 
     let model: SpotsModel
-    /// Where the panel lies in the window.
-    let panel: CGPoint
+    let panelOrigin: CGPoint
     @State private var isShown = false
 
     var body: some View {
@@ -24,7 +21,7 @@ struct SpotTipView: View {
                     .frame(height: SpotTokens.hintPillHeight)
                     .background(SpotTheme.keycap, in: Capsule())
                     .overlay(Capsule().strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
-                    .position(x: panel.x + top.x, y: panel.y + top.y + Self.gap + SpotTokens.hintPillHeight / 2)
+                    .position(x: panelOrigin.x + top.x, y: panelOrigin.y + top.y + Self.gap + SpotTokens.hintPillHeight / 2)
                     .opacity(isShown ? 1 : 0)
             }
         }
@@ -38,7 +35,6 @@ struct SpotTipView: View {
         }
     }
 
-    /// The middle of the tip's top edge in the panel: under the control on the rim of a card's top corner on the grid.
     private func top(of tip: SpotTip) -> CGPoint? {
         guard let index = model.visible.firstIndex(where: { $0.id == tip.id }),
               let placement = model.placements.first(where: { $0.index == index }) else { return nil }

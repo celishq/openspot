@@ -1,7 +1,5 @@
 import Foundation
 
-/// One process of a script, and the only way to start one. `once` gives it one input, and `stays` keeps its input open
-/// for calls. Both give frames as the script prints them, and end when its output closes.
 public final class ScriptProcess: @unchecked Sendable {
     public enum Mode: Sendable {
         case once(input: String?)
@@ -13,18 +11,14 @@ public final class ScriptProcess: @unchecked Sendable {
     private static let forcePause: TimeInterval = 0.1
 
     private let url: URL
-    /// The first argument that the program sees, such as the path of the script of a built program.
     private let name: String?
     private let arguments: [String]
     private let mode: Mode
     private let limit: TimeInterval?
     private let dataName: String?
-    /// The sandbox of Careful mode, or nil to run as the person.
     private let careful: CarefulMode?
     private let variables: [String: String]
-    /// The environment that the script starts from in place of the app's, such as that of a caller of `spot run`.
     private let base: [String: String]?
-    /// The working folder of the script in place of the app's.
     private let folder: URL?
     private let stopPause: TimeInterval
     private let input = Pipe()
@@ -38,26 +32,16 @@ public final class ScriptProcess: @unchecked Sendable {
     private var stopped = false
     private var ended = false
     private var killsLater = false
-    /// The process ID once it runs, and 0 before.
     private var id: pid_t = 0
-    /// The wait status once the process ended and Openspot reaped it.
-    private var status: Int32?
-    /// Its time once it ended.
+    private var waitStatus: Int32?
     private var endTime: ProcessTime?
     private var exitWatch: DispatchSourceProcess?
     private var exitHandlers: [@Sendable (ProcessTime) -> Void] = []
     private var startHandlers: [@Sendable (pid_t) -> Void] = []
     private let errorText: ErrorTail
     private var unended: String?
-    /// The frames of the output so far, which only the output's handler reads, one read at a time.
     private var reader = SheetFrameReader()
 
-    /// `limit` is the time the script has to its first frame or its end. With none, it has no limit. `stopPause` is the time
-    /// between each step of a stop. `variables` add to its environment. `errorLimit` is how many of the last bytes of stderr
-    /// it keeps, and nil keeps all. `careful` runs it in Careful mode with these uses (protocol: Trust), and nil runs it as the person.
-    /// `name` is its first argument in place of its path, which `sandbox-exec` in Careful mode does not pass on. `base` and
-    /// `folder` start it with another environment and working folder than the app's, and Careful mode still takes its
-    /// folders from the app's.
     public init(url: URL, name: String? = nil, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], errorLimit: Int? = 64 * 1024, careful: Set<SpotUse>? = nil, base: [String: String]? = nil, folder: URL? = nil) {
         self.name = name
         self.base = base
@@ -73,9 +57,6 @@ public final class ScriptProcess: @unchecked Sendable {
         self.stopPause = stopPause
     }
 
-    /// The environment of a script: the `openspot` command of this app on its path, the config folder of the app, the data
-    /// folder, which this creates, and the shell helper in the bundle of the app, or what `base` names with no bundle.
-    /// `dataName` names a folder of its own inside the data of the app.
     public static func environment(base: [String: String], app: String, dataName: String? = nil) -> [String: String] {
         let contents = URL(fileURLWithPath: app).deletingLastPathComponent().deletingLastPathComponent()
         let helpers = contents.appendingPathComponent("Helpers").path
@@ -88,7 +69,6 @@ public final class ScriptProcess: @unchecked Sendable {
         return environment
     }
 
-    /// The data folder of a script in an environment: `data` in the config folder, and the folder that `dataName` names in it.
     static func dataFolder(base: [String: String], dataName: String?) -> URL {
         var data = SpotsFolder.config(environment: base, home: home(of: base)).appendingPathComponent("data", isDirectory: true)
         if let dataName { data.appendPathComponent(URL(fileURLWithPath: dataName).lastPathComponent, isDirectory: true) }
@@ -99,7 +79,6 @@ public final class ScriptProcess: @unchecked Sendable {
         base["HOME"].map { URL(fileURLWithPath: $0, isDirectory: true) } ?? FileManager.default.homeDirectoryForCurrentUser
     }
 
-    /// Runs a process once, and returns all that it prints.
     public static func output(url: URL, arguments: [String] = [], input: String? = nil, limit: TimeInterval? = nil) async throws -> String {
         var text = ""
         for try await frame in ScriptProcess(url: url, arguments: arguments, mode: .once(input: input), limit: limit).start() {
@@ -108,9 +87,6 @@ public final class ScriptProcess: @unchecked Sendable {
         return text
     }
 
-    /// Starts the process on another thread, and returns its frames at once. A line `---` ends a frame, and so does the end
-    /// of the output. A script that cannot start ends its frames with the reason. Ending the stream early stops a process
-    /// that runs once.
     public func start() -> AsyncThrowingStream<String, Error> {
         let (stream, continuation) = AsyncThrowingStream.makeStream(of: String.self)
         lock.withLock { self.continuation = continuation }
@@ -121,7 +97,6 @@ public final class ScriptProcess: @unchecked Sendable {
         return stream
     }
 
-    /// Runs the process, unless a stop came first, and follows its output. A stop that comes while it starts reaches it.
     private func launch() {
         var text: String?
         var hasInput = true
@@ -167,19 +142,15 @@ public final class ScriptProcess: @unchecked Sendable {
         follow(output: output, errors: errors)
     }
 
-    /// Sends one call to the script as a block with its `id`, its stdin and its variables, in the order of the calls (protocol: Modes).
     public func send(_ action: SpotAction, input: String? = nil, variables: [String: String] = [:], id: Int) {
         send(text: action.block(input: input, variables: variables, id: id))
     }
 
-    /// Sends a block as it is, in the order of the calls.
     public func send(text: String) {
         let handle = input.fileHandleForWriting
         writes.async { try? handle.write(contentsOf: Data(text.utf8)) }
     }
 
-    /// Closes its input after the calls already sent, which ends a script that reads to the end. After 2 seconds its group
-    /// gets the terminate signal, and 2 seconds later Openspot kills what still runs.
     public func end() {
         closeInput()
         DispatchQueue.global().asyncAfter(deadline: .now() + stopPause) { [self] in
@@ -191,32 +162,26 @@ public final class ScriptProcess: @unchecked Sendable {
         }
     }
 
-    /// Stops the call: its stream ends now with no error, and each process in its group gets the terminate signal. After 2
-    /// seconds, Openspot kills what still runs. A call that ended by itself has nothing to stop.
     public func stop() {
         stop(because: nil)
     }
 
-    /// What the process printed on stderr, all of it or its last bytes up to `errorLimit`, once its output has closed.
     public var errors: String {
         errorText.text
     }
 
-    /// The last frame of a call that failed, which had no `---` after it. The app does not draw it.
     public var failedFrame: String? {
         lock.withLock { unended }
     }
 
-    /// Whether `stop` or the time limit ended this process. Its silence then says nothing.
     public var isStopped: Bool {
         lock.withLock { stopped }
     }
 
     public var isRunning: Bool {
-        lock.withLock { id > 0 && status == nil }
+        lock.withLock { id > 0 && waitStatus == nil }
     }
 
-    /// The CPU time and the wakeups of the process so far, or all of them once it ended.
     public var time: ProcessTime {
         let (id, endTime) = lock.withLock { (self.id, self.endTime) }
         if let endTime { return endTime }
@@ -224,28 +189,22 @@ public final class ScriptProcess: @unchecked Sendable {
         return ProcessTime(of: id) ?? .zero
     }
 
-    /// Adds a handler that takes the ID of the process, which is also the ID of its group, once it starts. Add it before
-    /// `start`.
     func onStart(_ handler: @escaping @Sendable (pid_t) -> Void) {
         lock.withLock { startHandlers.append(handler) }
     }
 
-    /// Adds a handler that takes the time of the process once it ends. Add it before `start`.
     func onExit(_ handler: @escaping @Sendable (ProcessTime) -> Void) {
         lock.withLock { exitHandlers.append(handler) }
     }
 
-    /// Whether its output is still open, so that the call has not ended.
     var isLive: Bool {
         !lock.withLock { ended }
     }
 
-    /// Whether a quit must wait for it: its call runs, or a stop will still kill what its group holds.
     var needsFinish: Bool {
         lock.withLock { !ended || killsLater }
     }
 
-    /// Asks the process to end as quitting does: a staying script's input closes, and any other process stops.
     func leave() {
         if case .stays = mode {
             closeInput()
@@ -254,7 +213,6 @@ public final class ScriptProcess: @unchecked Sendable {
         }
     }
 
-    /// Waits for the end of each process in its group, up to the time given. Ends what still runs by force after that.
     func finish(by deadline: Date) {
         _ = waitForExit(seconds: deadline.timeIntervalSinceNow)
         while hasGroup, Date() < deadline { Thread.sleep(forTimeInterval: Self.forcePause) }
@@ -299,20 +257,16 @@ public final class ScriptProcess: @unchecked Sendable {
         }
     }
 
-    /// Whether a process of its group still runs.
     private var hasGroup: Bool {
         let id = lock.withLock { self.id }
         return id > 0 && kill(-id, 0) == 0
     }
 
-    /// Sends a signal to the process group of the script, which holds the children it started.
     private func deliver(_ number: Int32) {
         let id = lock.withLock { self.id }
         if id > 0 { kill(-id, number) }
     }
 
-    /// Takes the output and stderr as each read arrives, with no thread that waits on a pipe, and ends the stream once the
-    /// output closes.
     private func follow(output: Pipe, errors: Pipe) {
         let errorsRead = DispatchSemaphore(value: 0)
         let lastErrors = LastLine()
@@ -337,7 +291,6 @@ public final class ScriptProcess: @unchecked Sendable {
         }
     }
 
-    /// Ends the stream once the output closed: with the reason of a failed exit, or with the last frame.
     private func end(errorsRead: DispatchSemaphore, lastErrors: LastLine) {
         let hasExited = waitForExit(seconds: Self.exitPause)
         _ = errorsRead.wait(timeout: .now() + Self.errorsPause)
@@ -372,13 +325,11 @@ public final class ScriptProcess: @unchecked Sendable {
         continuation?.finish(throwing: error)
     }
 
-    /// The code that the process exited with, or the number of the signal that ended it.
     private var exitCode: Int32 {
-        let status = lock.withLock { self.status } ?? 0
+        let status = lock.withLock { self.waitStatus } ?? 0
         return status & 0x7f == 0 ? (status >> 8) & 0xff : status & 0x7f
     }
 
-    /// Closes each end of its pipes and gives its exit handler no time, for a process that never started.
     private func abandon() {
         for handle in [input.fileHandleForReading, output.fileHandleForReading, output.fileHandleForWriting, errorOutput.fileHandleForReading, errorOutput.fileHandleForWriting] {
             try? handle.close()
@@ -392,8 +343,6 @@ public final class ScriptProcess: @unchecked Sendable {
         handlers.forEach { $0(.zero) }
     }
 
-    /// Starts the program in a process group of its own, with these ends of pipes as its stdin, stdout and stderr, and with
-    /// no other open file and no signal that the app ignores. `fence` holds the words of Careful mode before the program.
     private func spawn(input: FileHandle?, output: FileHandle, errors: FileHandle, environment: [String: String], fence wrapper: [String]) throws -> pid_t {
         var actions: posix_spawn_file_actions_t?
         posix_spawn_file_actions_init(&actions)
@@ -429,8 +378,6 @@ public final class ScriptProcess: @unchecked Sendable {
         return started
     }
 
-    /// Reaps the process once it ends, with no thread that waits for it. A process that ended before the watch began is
-    /// reaped at once.
     private func watchExit(of started: pid_t) {
         let watch = DispatchSource.makeProcessSource(identifier: started, eventMask: .exit, queue: .global())
         watch.setEventHandler { [self] in reap(started) }
@@ -440,7 +387,6 @@ public final class ScriptProcess: @unchecked Sendable {
         if waitid(P_PID, id_t(started), &info, WEXITED | WNOHANG | WNOWAIT) == 0, info.si_pid == started { reap(started) }
     }
 
-    /// Reads the time of the ended process before it is reaped, so that it holds all of it, then reaps it.
     private func reap(_ started: pid_t) {
         let isFirst = lock.withLock {
             guard let watch = exitWatch else { return false }
@@ -459,7 +405,7 @@ public final class ScriptProcess: @unchecked Sendable {
         let time = read ?? ProcessTime(usage)
         if kill(-started, 0) != 0 { TerminalStop.leave(started) }
         let handlers = lock.withLock {
-            status = code
+            waitStatus = code
             endTime = time
             defer { exitHandlers = [] }
             return exitHandlers
@@ -468,7 +414,6 @@ public final class ScriptProcess: @unchecked Sendable {
         exit.signal()
     }
 
-    /// Waits for the reap to signal, and leaves the signal for the next one that waits.
     private func waitForExit(seconds: TimeInterval) -> Bool {
         guard exit.wait(timeout: .now() + max(seconds, 0)) == .success else { return false }
         exit.signal()
@@ -476,8 +421,6 @@ public final class ScriptProcess: @unchecked Sendable {
     }
 }
 
-/// The last line that has words of a stream that one queue writes and another reads. It keeps no more than that line and
-/// one line break after it, and no more than the end of a line longer than its limit, cut between two characters.
 private final class LastLine: @unchecked Sendable {
     private static let limit = 16 * 1024
     private static let breaks: Set<UInt8> = [UInt8(ascii: "\n"), UInt8(ascii: "\r")]
@@ -501,8 +444,6 @@ private final class LastLine: @unchecked Sendable {
     }
 }
 
-/// The end of a stream that one queue writes and another reads: all of it, or its last bytes up to a limit, cut between two
-/// characters, so that a script that writes to stderr all day holds no more than twice that.
 private final class ErrorTail: @unchecked Sendable {
     private let limit: Int?
     private let lock = NSLock()

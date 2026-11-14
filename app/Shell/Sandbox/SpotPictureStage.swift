@@ -1,12 +1,9 @@
 import OpenspotCore
 import SwiftUI
 
-/// The ground of a picture of the guide: a drawn wallpaper, and over it a surface of the panel's glass, a blur of the
-/// wallpaper through its shape with the panel's rim, under the content.
 struct SpotPictureStage<Content: View>: View {
     let size: CGSize
     let radius: CGFloat
-    /// What places the wallpaper, such as the name of the picture.
     let seed: String
     let content: Content
 
@@ -24,7 +21,7 @@ struct SpotPictureStage<Content: View>: View {
         ZStack {
             SpotWallpaper(seed: seed)
             SpotWallpaper.blurred(seed: seed, size: CGSize(width: size.width + 2 * Self.margin, height: size.height + 2 * Self.margin))
-                .overlay(Color.black.opacity(SpotWallpaper.shade))
+                .overlay(Color.black.opacity(SpotWallpaper.glassShade))
                 .overlay(SpotTheme.glass)
                 .mask { shape.frame(width: size.width, height: size.height) }
             content
@@ -35,9 +32,6 @@ struct SpotPictureStage<Content: View>: View {
     }
 }
 
-/// A dark wallpaper of layered ridges with a violet light between them, which stands in for the desktop behind the panel.
-/// The seed, such as the name of a picture, places the ridges and the light, so that each picture differs and stays the
-/// same each time it is drawn.
 struct SpotWallpaper: View {
     var seed = ""
 
@@ -45,12 +39,9 @@ struct SpotWallpaper: View {
     private static let ground = Color(red: 0.00, green: 0.03, blue: 0.03)
     private static let light = Color(red: 0.62, green: 0.62, blue: 1.00)
     private static let ridges = 6
-    /// The shade of the glass over the blurred wallpaper.
-    static let shade = 0.28
+    static let glassShade = 0.28
     private static let blur: CGFloat = 40
 
-    /// The wallpaper of a size blurred into a picture, because a blur of a view does not show when the view is drawn to a
-    /// picture.
     @MainActor
     static func blurred(seed: String, size: CGSize) -> Image {
         let renderer = ImageRenderer(content: SpotWallpaper(seed: seed).frame(width: size.width, height: size.height).blur(radius: blur, opaque: true))
@@ -110,7 +101,6 @@ struct SpotWallpaper: View {
     }
 }
 
-/// A small generator of numbers from a text, the same numbers for the same text.
 private struct Seed {
     private var state: UInt64
 
@@ -118,7 +108,6 @@ private struct Seed {
         state = text.utf8.reduce(1_469_598_103_934_665_603) { ($0 ^ UInt64($1)) &* 1_099_511_628_211 }
     }
 
-    /// The next number between the two bounds.
     mutating func next(_ low: Double, _ high: Double) -> Double {
         state = state &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
         return low + (high - low) * Double(state >> 11) / Double(1 << 53)

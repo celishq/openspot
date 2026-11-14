@@ -1,6 +1,5 @@
 @testable import OpenspotCore
 
-/// The frames that one run reports, in order. It passes each report on to the listener the run had before.
 @MainActor
 final class FrameLog {
     private(set) var frames: [String] = []

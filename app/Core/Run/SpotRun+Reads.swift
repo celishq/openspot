@@ -1,16 +1,11 @@
 import Foundation
 
-/// The reads of a run, the searches of its list and the answers to a text of the main search.
 extension SpotRun {
-    /// Asks for the first answer, and runs the given work when it arrives.
     public func afterAnswer(_ work: @escaping () -> Void) {
         waiter = work
         read()
     }
 
-    /// Asks the script for what it shows. A list that the script searches sends the text that is typed on stdin, so that the answer
-    /// gives the spot's new value and the rows of that text. A request joins the read that runs, and a change reads again
-    /// after it (protocol: Events). A moment keeps a young answer by M2. A file with no `read` gets its click instead.
     public func read(selecting run: String? = nil, need: ReadNeed = .moment, reason: ReadReason? = nil) {
         let reason = reason ?? (need == .change ? .change : showsSheet ? .sheet : .panel)
         let wantsSheetAnswer = reason == .sheet && spot.read?.has(.sheet) == true && readReason != .sheet
@@ -43,7 +38,6 @@ extension SpotRun {
         }
     }
 
-    /// Takes new text in the search. A newer search stops the older one, and the script hears after a pause.
     public func search(_ text: String) {
         if list.search == .local { return find(text) }
         guard list.search(text), list.search == .script else { return }
@@ -51,7 +45,6 @@ extension SpotRun {
         after(Self.textPause, key: Self.searchKey) { [weak self] in self?.ask() }
     }
 
-    /// Ranks the rows for new text away from the main thread, and shows them in one change unless newer text came first.
     private func find(_ text: String) {
         guard list.beginFinding(text) else { return }
         let asked = rows
@@ -61,8 +54,6 @@ extension SpotRun {
         }
     }
 
-    /// Asks the script about the current search, with the values of the sheet and the text on stdin. A newer search stops
-    /// the older one. This never waits: `search` holds the pause.
     func ask() {
         let query = list.query
         if let older = running(Self.searchKey) { stop(older) }
@@ -79,8 +70,6 @@ extension SpotRun {
         ))
     }
 
-    /// Asks the script for the rows that answer a text of the main search, at once, and stops the older ask. An empty text
-    /// drops the answers (protocol: Places).
     public func answer(_ text: String) {
         guard text != answerQuery else { return }
         answerQuery = text
@@ -102,12 +91,10 @@ extension SpotRun {
         ))
     }
 
-    /// Runs the work once the newest text is answered, or at once when it is.
     public func afterAnswers(_ work: @escaping () -> Void) {
         if isAnswering { answerWaiters.append(work) } else { work() }
     }
 
-    /// Takes the rows that answer a text, and runs the work that waited for them when the text is the newest.
     func takeAnswers(_ rows: [SpotItem], to query: String? = nil) {
         if let query {
             guard query == answerQuery else { return }
@@ -123,7 +110,6 @@ extension SpotRun {
         waiting.forEach { $0() }
     }
 
-    /// Whether a read or a search of this script waits for its answer.
     var isReading: Bool {
         link.isAsking
     }
@@ -134,7 +120,6 @@ extension SpotRun {
         list.select(run: run)
     }
 
-    /// Reads as a change does, and lets the read finish when the panel hides and nothing wants the spot.
     func readToEnd(reason: ReadReason? = nil) {
         finishesRead = true
         read(need: .change, reason: reason)
@@ -149,8 +134,6 @@ extension SpotRun {
         runs.opening.startMotion(of: spot.id)
     }
 
-    /// Reads again when a change or an event came during a read, once no read or search waits. The newest event gives
-    /// the reason.
     func readAgainIfAsked() {
         guard readsAgain || eventAgain != nil, !link.isAsking else { return }
         let need: ReadNeed = readsAgain ? .change : .clock

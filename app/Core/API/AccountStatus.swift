@@ -1,14 +1,11 @@
 import Foundation
 
-/// What `openspot account status` prints as JSON, or as one block: whether an account is signed in, its `npub`, whether
-/// its words were backed up, and whether it syncs through iCloud Keychain, absent when this copy of the app cannot sync.
 struct AccountStatus: Encodable {
     let signedIn: Bool
     let npub: String?
     let backedUp: Bool?
     let sync: Bool?
 
-    /// The state as JSON, or with `frame` as one block of `key=value` lines (protocol: The openspot command).
     func text(frame: Bool) throws -> String {
         guard frame else {
             let encoder = JSONEncoder()

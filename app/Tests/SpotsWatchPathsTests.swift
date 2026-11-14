@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves which folders the watch of the spots and the config listens to, and which changed paths it reports.
 final class SpotsWatchPathsTests: XCTestCase {
     private var folder: URL!
 
