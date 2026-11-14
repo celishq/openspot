@@ -76,6 +76,7 @@ extension SpotsModel {
         if openList == nil { closeHistory() }
         history.push(SheetPage(spot: id))
         sheets[id]?.show(page: nil)
+        pendingSlide = moving && openList != nil && openList != id ? 1 : nil
         present(id, moving: moving)
     }
 
@@ -114,11 +115,17 @@ extension SpotsModel {
     func showSheet(_ list: String?, moving: Bool) {
         guard list != openList else { return }
         if let list, openList != nil, transition.isOpen {
-            change(moving ? .sheet(isOpen: true) : nil, { transition.show(list, moves: true) }) { [weak self] in
+            let pushes = pendingSlide != nil
+            change(moving ? .sheet(isOpen: true) : nil, {
+                transition.show(list, moves: true)
+                startPendingSlide()
+            }) { [weak self] in
                 self?.change(nil) { self?.transition.settle(list) }
             }
+            if pushes { settleSlide() }
             return
         }
+        pendingSlide = nil
         guard moving, hasPlace(list ?? transition.id) else { return cutSheet(to: list) }
         guard let list else {
             animate(isOpen: false) {

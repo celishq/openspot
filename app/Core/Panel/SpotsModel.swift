@@ -91,8 +91,10 @@ public final class SpotsModel {
     public private(set) var behindTitles: [String] = []
     /// The title of each page that a row opened, which is the title of that row.
     @ObservationIgnored var pageTitles: [SheetPage: String] = [:]
-    /// How far the content of the sheet lies from its place while another page of it slides in, or 0 at rest.
+    /// How far the content of the sheet lies from its place while the next sheet of the flow pushes in, or 0 at rest.
     public internal(set) var slideOffset = 0.0
+    /// The side that the sheet of another spot pushes in from once it is ready, -1 for the left and 1 for the right.
+    @ObservationIgnored var pendingSlide: Double?
     /// Where the open sheet is in its motion between its card and its open place.
     public internal(set) var transition = SheetTransition() {
         didSet {

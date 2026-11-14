@@ -61,6 +61,7 @@ extension SpotsModel {
         }
         guard openList == page.spot else {
             sheet.show(page: page.page)
+            pendingSlide = moving ? side : nil
             return present(page.spot, moving: moving)
         }
         guard moving, sheet.page != page.page else { return sheet.show(page: page.page) }
@@ -68,6 +69,18 @@ extension SpotsModel {
             sheet.show(page: page.page)
             slideOffset = side * MotionTokens.slideDistance
         }
+        settleSlide()
+    }
+
+    /// Takes the side of a push that waits for its sheet, and lays the content there for this turn.
+    func startPendingSlide() {
+        guard let side = pendingSlide else { return }
+        pendingSlide = nil
+        slideOffset = side * MotionTokens.slideDistance
+    }
+
+    /// Moves the content of the sheet to its place on the next turn, so that the push has a start.
+    func settleSlide() {
         DispatchQueue.main.async { [weak self] in
             self?.change(.slide) { self?.slideOffset = 0 }
         }

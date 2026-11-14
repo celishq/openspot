@@ -189,4 +189,19 @@ final class SheetPagesModelTests: XCTestCase {
         try await wait("the first sheet") { model.openList == "list" && titles == ["A"] }
         XCTAssertEqual(model.behindTitles, [])
     }
+
+    func testAnotherSpotOfTheFlowPushesInFromTheRightAndComesBackFromTheLeft() async throws {
+        try await openList()
+        host.slideStarts = []
+
+        XCTAssertTrue(model.openSheet("other"))
+        try await wait("the push to rest") { model.openList == "other" && model.slideOffset == 0 && !host.slideStarts.isEmpty }
+        XCTAssertEqual(host.slideStarts.first.map { $0 > 0 }, true)
+        host.slideStarts = []
+
+        XCTAssertTrue(model.handleKey(back))
+
+        try await wait("the way back to rest") { model.openList == "list" && model.slideOffset == 0 && !host.slideStarts.isEmpty }
+        XCTAssertEqual(host.slideStarts.first.map { $0 < 0 }, true)
+    }
 }

@@ -134,8 +134,8 @@ private struct MovingLook<Look: View>: View {
     }
 }
 
-/// The content of the sheet while another page of it slides in: it lies `slideOffset` from its place, and fades in as it
-/// comes. It alone reads the offset, so that a slide reruns no sheet.
+/// The content of the sheet while the next sheet of the flow pushes in: it lies `slideOffset` from its place, inside the
+/// sheet's shape, and fades in as it comes. It alone reads the offset, so that a push reruns no sheet.
 private struct SheetSlideIn: ViewModifier {
     let model: SpotsModel
 
@@ -143,7 +143,7 @@ private struct SheetSlideIn: ViewModifier {
         let offset = model.slideOffset
         content
             .offset(x: offset)
-            .opacity(1 - abs(offset) / MotionTokens.slideDistance * 0.6)
+            .opacity(1 - abs(offset) / MotionTokens.slideDistance)
     }
 }
 
