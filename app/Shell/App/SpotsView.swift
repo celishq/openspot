@@ -64,11 +64,9 @@ struct SpotsView: View {
                     isOpen: sheetOpen,
                     fade: fade,
                     fadeHeight: cardHeight,
-                    isStepping: isStepping,
+                    edges: model.flowEdges,
                     showsField: showsSearchField && fieldIsInSheet
                 )
-                .id(FlowSheet(spot: entry.id, page: model.sheets[entry.id]?.page))
-                .transition(flowLine)
             }
             SpotFieldView(
                 model: model,
@@ -119,19 +117,6 @@ struct SpotsView: View {
         let panel = model.panels.frame
         let window = CGRect(x: panel.minX - origin.x, y: SpotTokens.halo - origin.y, width: panel.width, height: panel.height - SpotTokens.halo)
         return SheetPush(open: card.placement, sheet: sheetRect.offsetBy(dx: -origin.x, dy: -origin.y), window: window)
-    }
-
-    private var flowLine: AnyTransition {
-        let edges = model.flowEdges
-        guard let coming = edges.coming, let leaving = edges.leaving else { return .identity }
-        let rect = sheetRect
-        return .asymmetric(
-            insertion: .modifier(active: FlowLine(progress: 0, line: FlowEdge.Place.bar(coming, 0).rect(around: rect), sheet: rect), identity: FlowLine(progress: 1, line: rect, sheet: rect)),
-            removal: .modifier(
-                active: FlowLine(progress: 0, line: leaving.rect(around: rect), sheet: rect, fadeStart: MotionTokens.cardShare),
-                identity: FlowLine(progress: 1, line: rect, sheet: rect, fadeStart: MotionTokens.cardShare)
-            )
-        )
     }
 
     private var sheetRect: CGRect {

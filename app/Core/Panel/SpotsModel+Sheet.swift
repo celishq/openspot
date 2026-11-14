@@ -96,13 +96,15 @@ extension SpotsModel {
     func showSheet(_ list: String?, moving: Bool) {
         guard list != openList else { return dropWaitingPush() }
         if let list, openList != nil, transition.isOpen {
-            let step = edgeStep
-            change(moving ? (waitingPush ? .flow : .sheet(isOpen: true)) : nil, {
+            let swapped = takeWaitingPush { [weak self] in
+                self?.transition.show(list, moves: true)
+                self?.transition.settle(list)
+            }
+            guard !swapped else { return }
+            change(moving ? .sheet(isOpen: true) : nil, {
                 transition.show(list, moves: true)
-                startWaitingPush()
             }) { [weak self] in
                 self?.change(nil) { self?.transition.settle(list) }
-                self?.settleEdges(step)
             }
             return
         }

@@ -7,13 +7,10 @@ struct SpotFlowEdges: View {
     @State private var resting: FlowSheet?
     @State private var named: FlowSheet?
     @State private var pause: Task<Void, Never>?
-    @Environment(\.spotIsShown) private var isShown
-    @Environment(\.spotPanels) private var panels
 
     var body: some View {
         let edges = model.flowEdges.edges
         ZStack(alignment: .topLeading) {
-            glass(edges)
             ForEach(edges.filter { !$0.isFading && $0.place.side != nil }) { edge in
                 target(edge)
             }
@@ -25,38 +22,6 @@ struct SpotFlowEdges: View {
             resting = nil
             named = nil
         }
-    }
-
-    private func glass(_ edges: [FlowEdge]) -> some View {
-        let shift = -panels.frame.minX
-        return ZStack(alignment: .topLeading) {
-            SpotBlur(radius: SpotTheme.blur)
-                .overlay(SpotTheme.glass)
-                .mask {
-                    ZStack(alignment: .topLeading) {
-                        ForEach(edges) { edge in
-                            SpotSurfaceShape(rect: edge.rect(around: rect).offsetBy(dx: shift, dy: 0), radius: edge.radius)
-                                .fill(Color.black.opacity(strength(of: edge)))
-                                .transition(.opacity)
-                        }
-                    }
-                }
-            ForEach(edges) { edge in
-                SpotRim(radius: edge.radius, rect: edge.rect(around: rect).offsetBy(dx: shift, dy: 0))
-                    .opacity(strength(of: edge))
-                    .transition(.opacity)
-            }
-        }
-        .opacity(isShown ? 1 : MotionTokens.hiddenOpacity)
-        .animation(SpotMotion.fade(isShown: isShown), value: isShown)
-        .modifier(PanelSpan(panels: panels))
-        .allowsHitTesting(false)
-    }
-
-    private func strength(of edge: FlowEdge) -> Double {
-        guard !edge.isFading else { return MotionTokens.hiddenOpacity }
-        guard case .bar(_, let index) = edge.place else { return 1 }
-        return SpotTheme.edgeStrengths[min(index, SpotTheme.edgeStrengths.count - 1)]
     }
 
     private func target(_ edge: FlowEdge) -> some View {

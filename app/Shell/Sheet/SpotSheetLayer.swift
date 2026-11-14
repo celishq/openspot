@@ -10,7 +10,7 @@ struct SpotSheetLayer: View {
     let isOpen: Bool
     let fade: SpotScrollFade
     let fadeHeight: CGFloat
-    var isStepping = false
+    var edges = FlowEdges()
     var showsField = false
 
     var body: some View {
@@ -43,7 +43,7 @@ struct SpotSheetLayer: View {
             }
         }
         .modifier(SpotSheetFrame(
-            rect: isOpen ? sheetRect : closedRect,
+            rect: isOpen ? edges.sheetStart?.rect(around: edges.from ?? sheetRect) ?? sheetRect : closedRect,
             radius: isOpen ? SpotTokens.radius : isInstall ? SpotTokens.corner(for: .strip) : SpotTokens.corner(for: card?.placement.size ?? entry.size),
             sheetRect: sheetRect,
             shift: isOpen ? .zero : shift(to: closedRect),
@@ -53,14 +53,20 @@ struct SpotSheetLayer: View {
             progress: progress,
             arrow: showsArrow ? AnyView(arrow) : nil,
             arrowBox: frame?.size ?? .zero,
-            glass: isStepping ? MotionTokens.hiddenOpacity : 1
+            step: step
         ))
-        .overlay(alignment: .topLeading) {
-            if isStepping, showsField {
-                SpotFieldLook(model: model, title: entry.state.title)
-            }
-        }
         .modifier(SheetFadeMask(fade: fade, height: fadeHeight, isOpen: isOpen))
+    }
+
+    private var step: SheetStep {
+        guard isOpen else { return SheetStep() }
+        let isStepping = edges.coming != nil
+        return SheetStep(
+            marks: edges.edges,
+            clip: isStepping && !edges.isSwapped ? edges.leavingEdge?.rect(around: sheetRect) : nil,
+            showsContent: edges.showsContent,
+            field: isStepping && showsField ? AnyView(SpotFieldLook(model: model, title: entry.state.title)) : nil
+        )
     }
 
     private var progress: Double {
