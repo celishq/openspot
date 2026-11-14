@@ -80,6 +80,20 @@ public final class SpotsModel {
     /// open run: a run's first answer shows its sheet, and a close or a hidden panel takes it away. It changes only with the
     /// sheet, not with each phase of its motion.
     public private(set) var openList: String?
+    /// The sheets that the panel went through since a sheet opened from the grid, with the one that shows at its centre.
+    public internal(set) var flow = Flow() {
+        didSet {
+            for gone in Set(oldValue.pages).subtracting(flow.pages) { sheets[gone.spot]?.forget(page: gone.page) }
+            let titles = flow.pages.prefix(max(flow.index, 0)).reversed().map(title(of:))
+            if titles != behindTitles { behindTitles = titles }
+        }
+    }
+    /// The title of each sheet behind the one that shows, the nearest first.
+    public private(set) var behindTitles: [String] = []
+    /// How far the content of the sheet lies from its place while the next sheet of the flow pushes in, or 0 at rest.
+    public internal(set) var pushOffset = 0.0
+    /// The side that the sheet of another spot pushes in from once it is ready, -1 for the left and 1 for the right.
+    @ObservationIgnored var waitingPush: Double?
     /// Where the open sheet is in its motion between its card and its open place.
     public internal(set) var transition = SheetTransition() {
         didSet {
@@ -520,9 +534,14 @@ public final class SpotsModel {
         case .landed:
             host.land(id)
         case .closed:
-            if let shown = openList, runs.sheets[shown]?.isOpen != true { showSheet(nil, moving: false) }
+            if let shown = openList, runs.sheets[shown]?.isOpen != true {
+                showSheet(nil, moving: false)
+                endFlow()
+            }
         case .chooseFiles:
             _ = chooseFiles(for: id)
+        case .move(let move):
+            self.move(move, in: id)
         }
     }
 

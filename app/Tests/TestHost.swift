@@ -5,6 +5,8 @@ import Foundation
 @MainActor
 final class TestHost: SpotsHost {
     var dismissals = 0
+    /// Each offset that the content of a sheet started a slide from.
+    var pushStarts: [Double] = []
     var shows = 0
     var notes: [String] = []
     var confirms: [String] = []
@@ -130,6 +132,7 @@ final class TestHost: SpotsHost {
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void) {
         motions.append(motion)
         body()
+        if let offset = model?.pushOffset, offset != 0 { pushStarts.append(offset) }
         if let phase = model?.transition.phase { phases.append(phase) }
         openings.append(model?.runs.opening.moving)
         if heldEnds != nil { heldEnds?.append(completion) } else { completion() }

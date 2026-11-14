@@ -52,6 +52,9 @@ struct SpotsView: View {
             .morph(coversGrid ? 0 : 1, opacity: { SheetMorph.sheetLook(at: $0) })
             SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: max(gridHeight, model.menuBackdropHeight), sheetHeight: max(sheetID == nil ? gridHeight : sheetHeight, model.menuBackdropHeight))
                 .modifier(SpotShownFade(isShown: model.isShown))
+            if sheetOpen, sheetID != nil {
+                SpotFlowEdges(model: model, rect: sheetRect)
+            }
             if let entry = model.entries.first(where: { $0.id == sheetID }) {
                 SpotSheetLayer(
                     model: model,

@@ -11,6 +11,8 @@ final class SpotsPanel: NSPanel {
     private var restFrame: NSRect?
     private var pressWatch: Task<Void, Never>?
     private var tap = ModifierTap()
+    /// The two-finger swipe that steps back and forward in the flow of an open sheet.
+    private var swipe = FlowSwipe()
     /// The stage of the trackpad's press: 1 for a click, 2 for a force click.
     private var pressStage = 0
     /// Whether a force click opened the menu and its button is still down, so that its release runs the row under it.
@@ -188,6 +190,7 @@ final class SpotsPanel: NSPanel {
             default: break
             }
         }
+        if event.type == .scrollWheel, takeSwipe(event) { return }
         if event.type == .rightMouseDown, let model, model.isShown, !model.isEditing, model.openList == nil {
             openMenu(at: event)
             return
@@ -246,6 +249,28 @@ final class SpotsPanel: NSPanel {
         if flags.contains(.option) { modifiers.insert(.option) }
         if flags.contains(.shift) { modifiers.insert(.shift) }
         return modifiers
+    }
+
+    /// Takes a two-finger swipe across an open sheet, as Safari takes one for back and forward, when the person lets swipes
+    /// move between pages. Returns true when the swipe stepped, which no scroll view then sees.
+    private func takeSwipe(_ event: NSEvent) -> Bool {
+        guard NSEvent.isSwipeTrackingFromScrollEventsEnabled, let model, model.openList != nil, event.momentumPhase.isEmpty else { return false }
+        let phase: FlowSwipe.Phase
+        if event.phase.contains(.began) {
+            phase = .began
+        } else if event.phase.contains(.changed) {
+            phase = .changed
+        } else if event.phase.contains(.ended) || event.phase.contains(.cancelled) {
+            phase = .ended
+        } else {
+            return false
+        }
+        let dx = Double(event.scrollingDeltaX) * (event.isDirectionInvertedFromDevice ? 1 : -1)
+        switch swipe.take(dx: dx, dy: Double(event.scrollingDeltaY), phase: phase) {
+        case .back: return model.back()
+        case .forward: return model.forward()
+        case nil: return false
+        }
     }
 
     static func actionKey(of event: NSEvent) -> ActionKey? {

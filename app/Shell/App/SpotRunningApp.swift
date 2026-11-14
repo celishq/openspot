@@ -31,7 +31,15 @@ struct SpotRunningApp: RunningApp {
     }
 
     func open(_ id: String) async -> Bool {
-        await model.openSheet(id)
+        await model.open(id)
+    }
+
+    func push(_ id: String, page: String?, title: String?, replace: Bool) async -> Bool {
+        await model.push(FlowSheet(spot: id, page: page, title: title), replace: replace)
+    }
+
+    func pop(_ id: String, all: Bool) async -> Bool {
+        await all ? model.pop(in: id, all: true) : model.pop(in: id)
     }
 
     func choose(for id: String) async -> Bool {

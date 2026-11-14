@@ -1,8 +1,9 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Settings spot of the app: it lists the keys of the app, the switches of the Mac, a row for each menu bar
-/// place, float and command of a spot, and each value that a spot keeps, and it changes each one through the API.
+/// Proves the Settings spot of the app: its first sheet lists the keys of the app, the switches of the Mac and a row for each
+/// spot with settings, whose page lists its menu bar place, float, commands and values, and it changes each one through
+/// the API.
 final class SettingsSpotTests: BuiltInCase {
     private var settings: Spot {
         get throws {
@@ -10,8 +11,8 @@ final class SettingsSpotTests: BuiltInCase {
         }
     }
 
-    private func items() async throws -> [SpotItem] {
-        try await settings.items(timeout: 5).items
+    private func items(page: String? = nil) async throws -> [SpotItem] {
+        try await settings.items(page: page, timeout: 5).items
     }
 
     @discardableResult
@@ -40,14 +41,17 @@ final class SettingsSpotTests: BuiltInCase {
         try script("relay.sh", "title=Relay\nmode=stay\noffers=menubar")
         try script("notes.sh", "title=Notes\non=panel.open")
 
-        let before = try await items()
-        XCTAssertEqual(before.filter { $0.run.hasPrefix("menubar:") }.map(\.run), ["menubar:cups", "menubar:relay"])
-        XCTAssertEqual(before.first { $0.run == "menubar:cups" }?.isOn, false)
+        let first = try await items()
+        XCTAssertEqual(first.filter { $0.run.hasPrefix("spot:") }.map(\.run), ["spot:cups", "spot:relay"])
+        XCTAssertEqual(first.filter { $0.run.hasPrefix("spot:") }.map { $0.move != nil }, [true, true])
+        let before = try await items(page: "spot:cups")
+        XCTAssertEqual(before.map(\.run), ["menubar:cups"])
+        XCTAssertEqual(before.first?.isOn, false)
 
         try await call(["open", "menubar:cups"])
 
         XCTAssertEqual(file.read().arrangement.menuBar, ["cups"])
-        let after = try await items()
+        let after = try await items(page: "spot:cups")
         XCTAssertEqual(after.first { $0.run == "menubar:cups" }?.isOn, true)
 
         try await call(["open", "menubar:cups"])
@@ -91,11 +95,14 @@ final class SettingsSpotTests: BuiltInCase {
     func testTheSheetListsEachCommandOfAScriptAndGivesItAKey() async throws {
         try script("move.sh", "title=Move\nicon=macwindow\n\nbutton=left\ntitle=Left side\n\nbutton=right\ntitle=Right side")
 
-        let before = try await items()
-        XCTAssertEqual(before.map(\.title), ["Open Openspot", "Open a fix", "Careful mode", "Left side", "Right side"])
-        XCTAssertEqual(before.map(\.subtitle), [nil, nil, "Spots get only what their uses name", "Move", "Move"])
-        XCTAssertEqual(before.dropFirst(3).map(\.shortcut), ["Record", "Record"])
-        XCTAssertEqual(before.dropFirst(3).map(\.takesShake), [true, true])
+        let first = try await items()
+        XCTAssertEqual(first.map(\.title), ["Open Openspot", "Open a fix", "Careful mode", "Move"])
+        XCTAssertEqual(first.last?.symbol, "macwindow")
+        let before = try await items(page: "spot:move")
+        XCTAssertEqual(before.map(\.title), ["Left side", "Right side"])
+        XCTAssertEqual(before.map(\.subtitle), ["Move", "Move"])
+        XCTAssertEqual(before.map(\.shortcut), ["Record", "Record"])
+        XCTAssertEqual(before.map(\.takesShake), [true, true])
 
         try await call(["key:move:left", "ctrl+option+left"])
         try await call(["key:move:left", "ctrl+option+up"])
@@ -103,9 +110,9 @@ final class SettingsSpotTests: BuiltInCase {
 
         XCTAssertEqual(file.read().keys.map(\.act), [.command("left"), .command("right")])
         XCTAssertEqual(file.read().keys.map(\.trigger.text), ["ctrl+option+up", "ctrl+option+right"])
-        let after = try await items()
-        XCTAssertEqual(after.map(\.shortcut).dropFirst(3), ["ctrl+option+up", "ctrl+option+right"])
-        XCTAssertEqual(after.dropFirst(3).map(\.hides), [nil, nil])
+        let after = try await items(page: "spot:move")
+        XCTAssertEqual(after.map(\.shortcut), ["ctrl+option+up", "ctrl+option+right"])
+        XCTAssertEqual(after.map(\.hides), [nil, nil])
 
         try await call(["clear", "key:move:left"])
 
@@ -117,10 +124,11 @@ final class SettingsSpotTests: BuiltInCase {
         try script("notes.sh", "title=Notes")
         try script("move.sh", "title=Move\n\nbutton=left\ntitle=Left side")
 
-        let before = try await items()
+        let first = try await items()
+        XCTAssertEqual(first.filter { $0.run.hasPrefix("spot:") }.map(\.run), ["spot:move", "spot:shelf"])
+        let before = try await items(page: "spot:shelf")
         let floats = before.filter { $0.title == "Float" }
         XCTAssertEqual(floats.map(\.run), ["float:shelf"])
-        XCTAssertEqual(before.last?.run, "key:move:left")
         let shelf = try XCTUnwrap(floats.first)
         XCTAssertEqual(shelf.subtitle, "Shelf")
         XCTAssertEqual(shelf.symbol, "tray.full")
@@ -130,7 +138,7 @@ final class SettingsSpotTests: BuiltInCase {
         try await call(["float:shelf", "ctrl+option+s"])
 
         XCTAssertEqual(file.read().keys, [GlobalKey(spot: "shelf", act: .float, trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+s"))))])
-        let after = try await items()
+        let after = try await items(page: "spot:shelf")
         XCTAssertEqual(after.first { $0.run == "float:shelf" }?.shortcut, "ctrl+option+s")
 
         try await call(["clear", "float:shelf"])
@@ -147,7 +155,7 @@ final class SettingsSpotTests: BuiltInCase {
 
         try await call(["float:notes", "shake"])
         XCTAssertEqual(file.read().keys, [GlobalKey(spot: "notes", act: .float, trigger: .shake)])
-        let items = try await items()
+        let items = try await items(page: "spot:notes")
         XCTAssertEqual(items.first { $0.run == "float:notes" }?.shortcut, "shake")
 
         do {
@@ -164,8 +172,10 @@ final class SettingsSpotTests: BuiltInCase {
         try file.set(setting: "editor", of: "gone", to: "Zed")
         try file.set(setting: "icon", of: "repos", to: "/drawn.svg")
 
-        let items = try await items().dropFirst(3)
+        let first = try await items().dropFirst(3)
+        let items = try await items(page: "spot:repos") + items(page: "spot:gone")
 
+        XCTAssertEqual(first.map(\.title), ["Repos", "gone"])
         XCTAssertEqual(items.map(\.title), ["Folder", "Default app", "Editor"])
         XCTAssertEqual(items.map(\.subtitle), ["Repos · ~/Code", "Repos · Not set", "gone · Zed"])
         XCTAssertEqual(items.map(\.run), ["setting:repos:folder", "setting:repos:editor", "setting:gone:editor"])
@@ -183,7 +193,7 @@ final class SettingsSpotTests: BuiltInCase {
         try script("repos.sh", "title=Repos\nicon=folder")
         try file.set(setting: "theme", of: "repos", to: "dark")
 
-        let items = try await items().dropFirst(3)
+        let items = try await items(page: "spot:repos")
 
         XCTAssertEqual(items.map(\.title), ["Theme"])
         XCTAssertEqual(items.map(\.subtitle), ["Repos · dark"])
@@ -201,13 +211,13 @@ final class SettingsSpotTests: BuiltInCase {
     func testARowShowsTheIconOfItsCommandOrElseOfItsScript() async throws {
         try script("move.sh", "title=Move\nicon=macwindow\n\nbutton=left\ntitle=Left side\nicon=rectangle.lefthalf.filled\n\nbutton=right\ntitle=Right side\n\nbutton=fun\ntitle=Fun\nicon=🎉")
 
-        let items = try await items()
+        let items = try await items(page: "spot:move")
 
-        XCTAssertEqual(items.dropFirst(3).map(\.symbol), ["rectangle.lefthalf.filled", "macwindow", nil])
-        XCTAssertEqual(items.dropFirst(3).map(\.glyph), [nil, nil, "🎉"])
-        XCTAssertEqual(items.dropFirst(3).map(\.title), ["Left side", "Right side", "Fun"])
-        XCTAssertEqual(items.dropFirst(3).map(\.subtitle), ["Move", "Move", "Move"])
-        XCTAssertEqual(items.dropFirst(3).map(\.parent), ["Move", "Move", "Move"])
+        XCTAssertEqual(items.map(\.symbol), ["rectangle.lefthalf.filled", "macwindow", nil])
+        XCTAssertEqual(items.map(\.glyph), [nil, nil, "🎉"])
+        XCTAssertEqual(items.map(\.title), ["Left side", "Right side", "Fun"])
+        XCTAssertEqual(items.map(\.subtitle), ["Move", "Move", "Move"])
+        XCTAssertEqual(items.map(\.parent), ["Move", "Move", "Move"])
     }
 
     func testTheSheetListsTheStandardKeyWithNoFile() async throws {

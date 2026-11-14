@@ -172,6 +172,11 @@ extension SpotRun {
     }
 
     /// Takes a frame of only a head: its effects act, and the picture stays.
+    /// Tells the owner of a `push` or `pop` effect in a frame of a press. A read never moves the flow.
+    func takeMove(_ lines: SpotOutput) {
+        if let move = lines.move { onReport(.move(move)) }
+    }
+
     func takeEffects(_ lines: SpotOutput, frame: String) {
         report(toastOf: lines)
         onReport(.frame(frame))

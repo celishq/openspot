@@ -113,6 +113,7 @@ public struct SpotFile: Equatable, Sendable {
             view: view.map { Self.path($0, beside: url) },
             viewDate: view.flatMap { Self.viewDate(of: Self.path($0, beside: url), script: url) },
             emits: emits,
+            pages: header.values("pages"),
             uses: uses,
             keywords: header.list("keywords"),
             previewsSample: preview != nil

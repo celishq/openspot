@@ -62,6 +62,16 @@ public enum SpotTokens {
     public static let menuPadding: CGFloat = 8
     public static let placeGap: CGFloat = 8
     public static let sideGap: CGFloat = 20
+    /// The edges of the sheets behind the open one: the width of each, its gap to the sheet, the gap between two, how much
+    /// shorter each further one is, how many show, and how long a pointer rests on one before it names its sheet.
+    public static let edgeWidth: CGFloat = 8
+    public static let edgeGap: CGFloat = 8
+    public static let edgeStep: CGFloat = 5
+    public static let edgeShrink: CGFloat = 28
+    public static let edgeCount = 3
+    public static let edgeRest: Duration = .milliseconds(250)
+    /// How far two fingers move across the panel before a swipe steps back or forward.
+    public static let swipeDistance: CGFloat = 60
     public static let controlPadding: CGFloat = 7
     /// How far the outer edge of the focus ring of a part in a sheet lies outside the part's own box. It leaves clear space
     /// on both sides of the ring, within the gap between two parts, as a system focus ring does.

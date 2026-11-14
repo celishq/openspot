@@ -125,6 +125,24 @@ struct SpotCalls {
         }
     }
 
+    func push(_ id: String, page: String?, title: String?, replace: Bool) -> CommandAPI.Work {
+        guard let app else { return CommandAnswer.notRunning("spot push \(id)") }
+        return CommandAnswer.work {
+            guard await app.push(id, page: page, title: title, replace: replace) else {
+                throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.")
+            }
+            return ""
+        }
+    }
+
+    func pop(_ id: String, all: Bool) -> CommandAPI.Work {
+        guard let app else { return CommandAnswer.notRunning("spot pop \(id)") }
+        return CommandAnswer.work {
+            guard await app.pop(id, all: all) else { throw SpotError.failed(1, "The panel shows no sheet of `\(id)` to go back from.") }
+            return ""
+        }
+    }
+
     func review(_ id: String) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot review \(id)") }
         return CommandAnswer.work {

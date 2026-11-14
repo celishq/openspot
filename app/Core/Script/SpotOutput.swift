@@ -43,6 +43,8 @@ public struct SpotOutput: Equatable, Sendable {
     private var checkedFaults: [String] = []
     /// The row that a `select` effect selects when the call ends, such as the row that a drop added (protocol: The calls).
     public private(set) var select: String?
+    /// The move of the spot's flow that a `push` or `pop` effect asks for (protocol: Pages).
+    public private(set) var move: FlowMove?
     /// Whether it holds a block, so that it is the whole picture of the spot.
     public let isPicture: Bool
 
@@ -79,7 +81,7 @@ public struct SpotOutput: Equatable, Sendable {
 
     /// The keys that start the head. A block whose first key is neither a kind nor one of them is of an unknown kind, which
     /// is skipped and reported (protocol: The head).
-    private static let headKeys: Set<String> = ["grid", "main", "title", "detail", "active", "recents", "toast", "link", "progress", "select", "end", "call", "search"]
+    private static let headKeys: Set<String> = ["grid", "main", "title", "detail", "active", "recents", "toast", "link", "progress", "select", "push", "push.spot", "push.title", "push.replace", "pop", "end", "call", "search"]
 
     private static func isHead(_ key: String) -> Bool {
         headKeys.contains(key) || key.hasPrefix("grid.")
@@ -225,8 +227,11 @@ public struct SpotOutput: Equatable, Sendable {
         checks ? checkedFaults : SpotOutput(blocks: blocks, checks: true).checkedFaults
     }
 
-    /// Finds what is wrong with the places of the head and the card drawings.
+    /// Finds what is wrong with the places of the head and the card drawings, and a head that moves the flow two ways.
     private mutating func check(head: TextBlock?) {
+        if let head, head.value("push") != nil || head.value("push.spot") != nil, head.value("pop") != nil {
+            checkedFaults.append("the frame holds both push and pop, and moves nothing. Print one of them")
+        }
         for field in head?.fields ?? [] where field.key.hasPrefix("grid.") && !CardFace.places.contains(String(field.key.dropFirst(5))) {
             checkedFaults.append("the head draws \(field.key), which is not a place")
         }
@@ -287,6 +292,7 @@ public struct SpotOutput: Equatable, Sendable {
         output.toast = nil
         output.link = nil
         output.select = nil
+        output.move = nil
         output.ends = []
         output.start = nil
         return output
@@ -335,6 +341,7 @@ public struct SpotOutput: Equatable, Sendable {
         toast = block.value("toast") ?? toast
         link = block.value("link") ?? link
         select = block.value("select") ?? select
+        move = FlowMove(block: block) ?? move
         if let end = block.value("end") { ends.append(end) }
         start = block.value("call") ?? start
     }

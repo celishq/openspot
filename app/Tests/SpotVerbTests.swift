@@ -23,6 +23,8 @@ final class SpotVerbTests: XCTestCase {
         func installUpdate() async -> Bool { false }
         func quit() async {}
         func open(_ id: String) async -> Bool { false }
+        func push(_ id: String, page: String?, title: String?, replace: Bool) async -> Bool { false }
+        func pop(_ id: String, all: Bool) async -> Bool { false }
         func review(_ id: String) async -> Bool { false }
         func choose(for id: String) async -> Bool { false }
         func openStore() async {}
@@ -151,7 +153,7 @@ final class SpotVerbTests: XCTestCase {
         try script("weather", header: "title=Weather")
         model.reload()
 
-        XCTAssertTrue(model.openSheet("openspot/icon"))
+        XCTAssertTrue(model.push(FlowSheet(spot: "openspot/icon")))
 
         XCTAssertEqual(model.openList, "openspot/icon")
     }
