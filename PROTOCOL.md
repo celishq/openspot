@@ -762,6 +762,7 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot spot stats`                              | Prints what each spot cost and used. See [Stats](#stats).                                       |
 | `openspot grid edit`                               | Opens the panel in Edit Spots, to arrange the grid.                                             |
 | `openspot store list [--frame]`                    | Prints each spot of the store, whether you have it, and if it's yours, whether it's published.  |
+| `openspot store get <id>`                          | Gets a spot of the store: turns it on, or adds its package to your spots folder.                |
 | `openspot store publish <id>`                      | Publishes a spot of your spots folder to the store. It needs a `readme.md` beside its script.   |
 
 ### Settings

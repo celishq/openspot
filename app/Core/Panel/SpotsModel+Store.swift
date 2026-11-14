@@ -21,7 +21,7 @@ extension SpotsModel {
         do {
             let read = try await Task.detached(priority: .userInitiated) {
                 let shared = try SpotPackage(sharing: spot, from: SpotsFolder(url: folder.url).keptScan())
-                return (shared: shared, isCurrent: Self.publication(of: shared, in: store) == .current)
+                return (shared: shared, isCurrent: SpotStore.publication(of: shared, in: store) == .current)
             }.value
             var shared = read.shared
             guard !read.isCurrent else {
@@ -51,6 +51,11 @@ extension SpotsModel {
         return try await Task.detached(priority: .userInitiated) { try await package.release(by: key, keepingLogIn: spots) }.value
     }
 
+    /// The store as the panel's arrangement sees it.
+    var store: SpotStore {
+        SpotStore(url: files.store, folder: folder, arrangement: arrangement)
+    }
+
     /// The spot of a file of the spots folder by its ID, also when Edit Spots turned it off.
     func ownSpot(_ id: String) -> Spot? {
         (try? SpotsFolder(url: folder.url).keptScan())?.files.first { $0.id == id }?.spots.first
@@ -67,22 +72,5 @@ extension SpotsModel {
         }
         host.notify("Set up your account, then publish again.")
         return nil
-    }
-
-    /// Whether the store's copy of each spot of the spots folder holds its files as they are now.
-    nonisolated static func publications(of scan: ScanResult, in folder: SpotsFolder, store: URL) -> [String: SpotPublication] {
-        var result: [String: SpotPublication] = [:]
-        for spot in scan.spots where FileManager.default.fileExists(atPath: store.appendingPathComponent(SpotID(file: spot.url).folderName).path) {
-            guard let shared = try? SpotPackage(sharing: spot, from: scan) else { continue }
-            result[spot.id] = publication(of: shared, in: store)
-        }
-        return result
-    }
-
-    /// Whether the store holds a copy of a spot's own spot folder with the files that a person writes as they are now, or
-    /// older ones, or nil when it holds none. The programs and the views that a publish builds, and the release log, do not count.
-    nonisolated static func publication(of spot: SpotPackage, in store: URL) -> SpotPublication? {
-        guard let root = spot.roots.first, let stored = try? SpotPackage(contentsOf: store.appendingPathComponent(root)) else { return nil }
-        return stored.manifest(of: root).written == spot.manifest(of: root).written ? .current : .changed
     }
 }

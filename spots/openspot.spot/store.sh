@@ -9,21 +9,9 @@
 # offers=card
 # offers=window
 
-# Prints the field $2 of the block of spot $1 in the store's list.
-field() {
-  openspot store list --frame | awk -v id="$1" -v key="$2" 'BEGIN { RS = ""; FS = "\n" }
-    { found = 0; value = ""
-      for (i = 1; i <= NF; i++) { n = index($i, "="); if ($i == "spot=" id) found = 1; if (substr($i, 1, n - 1) == key) value = substr($i, n + 1) }
-      if (found) { print value; exit } }'
-}
-
-# Gets spot $1: turns on a core spot or one of your own that is off, or adds a spot that the store holds.
+# Gets spot $1 from the store, and says so in a toast.
 get() {
-  case "$(field "$1" origin)" in
-    core | mine) openspot setting set --spot "$1" enabled true ;;
-    store) openspot spot add "$(field "$1" path)" >/dev/null ;;
-    *) return 0 ;;
-  esac && printf 'toast=Added %s\n\n' "$(field "$1" name)"
+  added=$(openspot store get "$1") && printf 'toast=%s\n\n' "$added"
 }
 
 # Prints the gallery: each spot with its id, its name and what its button does.

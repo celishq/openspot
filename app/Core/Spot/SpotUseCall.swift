@@ -37,6 +37,7 @@ public struct SpotUseCall: Equatable, Sendable {
              ("account", "phrase"), ("account", "sign-in"), ("account", "sign-out"): (.account, "reached your account key")
         case ("spot", "add"): (.spots, "added a spot")
         case ("store", "list"): (.spots, "read the store")
+        case ("store", "get"): (.spots, "added a spot")
         case ("store", "publish"): (.account, "published a spot")
         case ("spot", "remove"): (.spots, "removed a spot")
         case ("spot", "edit"): (.spots, "opened the file of a spot")

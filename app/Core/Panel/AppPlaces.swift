@@ -63,7 +63,7 @@ public struct AppPlaces {
 
     /// The folder of the packages that the person published to the store.
     public var store: URL {
-        SpotsFolder.config(environment: environment, home: home).appendingPathComponent("store", isDirectory: true)
+        SpotStore.url(environment: environment, home: home)
     }
 
     /// The record of the calls of each spot, beside the spots folder.

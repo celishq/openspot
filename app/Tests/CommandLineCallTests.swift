@@ -25,6 +25,7 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["store", "list"]), .storeList(frame: false))
         XCTAssertEqual(CommandLineCall(arguments: ["store", "list", "--frame"]), .storeList(frame: true))
         XCTAssertEqual(CommandLineCall(arguments: ["store", "publish", "timer"]), .storePublish("timer"))
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "get", "timer"]), .storeGet("timer"))
         XCTAssertEqual(CommandLineCall(arguments: ["store", "publish", "timer"], environment: ["OPENSPOT_REASON": "panel.open"]), .refused("`openspot store publish` changes the store, so it cannot run in a read. Run it from a pick or an action."))
     }
 

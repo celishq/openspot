@@ -549,7 +549,7 @@ final class SpotsModelDragTests: XCTestCase {
 
     private func publication(of id: String) -> SpotPublication? {
         let scan = (try? SpotsFolder(url: spots).keptScan()) ?? ScanResult(files: [], refused: [])
-        return SpotsModel.publications(of: scan, in: model.folder, store: store)[id]
+        return SpotStore.publications(of: scan, in: store)[id]
     }
 
     func testPublishWritesAPackageOnceAndAgainOnlyWhenTheFilesChange() async throws {

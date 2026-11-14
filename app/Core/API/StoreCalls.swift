@@ -1,16 +1,26 @@
 import Foundation
 
-/// The calls of `openspot store`: the spots that the store holds, and the publish of a spot of the spots folder to it.
+/// The calls of `openspot store`: the spots that the store holds, the get of one, and the publish of a spot of the spots
+/// folder to it.
 struct StoreCalls {
     let environment: [String: String]
     let app: (any RunningApp)?
 
+    /// The store as the config and the spots folder of this environment see it.
+    private var store: SpotStore {
+        SpotStore(url: SpotStore.url(environment: environment), folder: SpotsFolder.standard(environment: environment), arrangement: ConfigFile.standard(environment: environment).read().arrangement)
+    }
+
     func list(frame: Bool) -> CommandAPI.Work {
-        CommandAnswer.work { [environment] in
-            let config = ConfigFile.standard(environment: environment).read()
-            let store = SpotsFolder.config(environment: environment, home: FileManager.default.homeDirectoryForCurrentUser).appendingPathComponent("store", isDirectory: true)
-            let list = StoreList(folder: SpotsFolder.standard(environment: environment), config: config, store: store)
-            return frame ? list.frame() : try list.json()
+        CommandAnswer.work { [store] in frame ? store.frame() : try store.json() }
+    }
+
+    /// Gets a spot of the store, and tells the running app of the change.
+    func get(_ id: String) -> CommandAPI.Work {
+        CommandAnswer.work { [store, environment, app] in
+            let item = try await store.get(id, config: ConfigFile.standard(environment: environment), environment: environment)
+            await app?.configChanged(.spots([id]))
+            return "Added \(item.spot.name).\n"
         }
     }
 
