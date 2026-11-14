@@ -42,11 +42,16 @@ public struct SpotStore: Sendable {
         folder.fileID(of: spot)
     }
 
-    /// Each spot of the store, by name.
+    /// Each spot of the store, by name, with whether the store holds each spot of the person's own as it is.
     public var items: [Item] {
+        items(publications: true)
+    }
+
+    /// Each spot of the store, by name. With no publications it reads no package, which a hash of each file would cost.
+    public func items(publications reads: Bool) -> [Item] {
         let own = (try? SpotsFolder(url: folder.url).keptScan()) ?? ScanResult(files: [], refused: [])
         let ownIDs = Set(own.files.map(\.id))
-        let publications = Self.publications(of: own, in: url)
+        let publications = reads ? Self.publications(of: own, in: url) : [:]
         let enabled = arrangement.enabled.union(folder.enabled)
         let disabled = arrangement.disabled.union(folder.disabled)
         let core = folder.keptCoreChoices().filter { !ownIDs.contains(SpotsFolder.coreID(of: $0)) }.map { spot in
@@ -62,7 +67,7 @@ public struct SpotStore: Sendable {
     }
 
     public func item(_ id: String) -> Item? {
-        items.first { $0.id == id }
+        items(publications: false).first { $0.id == id }
     }
 
     private func item(_ spot: Spot, id: String, origin: SpotOrigin, isAdded: Bool, publication: SpotPublication? = nil) -> Item {
@@ -88,9 +93,7 @@ public struct SpotStore: Sendable {
         }
         guard !item.isAdded else { return item }
         if item.origin == .store { try await add(item, environment: environment) } else {
-            var next = config.read().arrangement
-            turnOn(item, in: &next)
-            try config.write(next)
+            try config.turn(item.id, on: true)
         }
         return item
     }

@@ -36,7 +36,7 @@ case "$1" in
     ;;
   open)
     [ -n "$2" ] || exit 0
-    get "$2"
+    get "$2" || true
     ;;
   *)
     echo 'Store cannot do that.' >&2

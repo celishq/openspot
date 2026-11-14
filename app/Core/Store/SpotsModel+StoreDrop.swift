@@ -17,7 +17,7 @@ extension SpotsModel {
     @discardableResult
     public func dropStoreSpot(_ id: String, at point: CGPoint) -> Bool {
         let store = self.store
-        guard let item = store.item(id), let entry = storeEntry(id) else { return false }
+        guard let item = storeItem(id), let entry = storeEntry(id) else { return false }
         let target = placements.min { distance($0.rect, point) < distance($1.rect, point) }
         let place = target?.index ?? visible.filter(\.isOnGrid).count
         let isOnGrid = target.map { visible[$0.index].isOnGrid } ?? true

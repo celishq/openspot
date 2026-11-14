@@ -34,7 +34,7 @@ struct SpotCardSource {
     /// What a drag of a store card carries: its store ID, as data of the store card's own type.
     static func dragItem(of id: String) -> NSItemProvider {
         let item = NSItemProvider()
-        item.registerDataRepresentation(forTypeIdentifier: UTType.storeCard.identifier, visibility: .ownProcess) { done in
+        item.registerDataRepresentation(forTypeIdentifier: UTType.storeCard.identifier, visibility: .all) { done in
             done(Data(id.utf8), nil)
             return nil
         }
