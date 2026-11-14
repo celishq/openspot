@@ -38,10 +38,12 @@ extension SpotsModel {
         openSheet?.list
     }
 
-    /// Clears the search, or else closes the open list. Returns false when there is nothing to step back from.
+    /// Clears the search, or else shows the sheet before in the history, or else closes the open list. Returns false when
+    /// there is nothing to step back from.
     public func stepBack() -> Bool {
         if !searchText.isEmpty {
             searchText = ""
+        } else if goBack() {
         } else if openList != nil {
             closeList(moving: isShown)
         } else {
@@ -71,6 +73,14 @@ extension SpotsModel {
     /// once, or with its first answer. It takes the place of a sheet that shows, grows out of its card when it moves, and
     /// shows in place when it does not move or has no card.
     public func open(_ id: String, moving: Bool) {
+        if openList == nil { closeHistory() }
+        history.push(SheetPage(spot: id))
+        sheets[id]?.show(page: nil)
+        present(id, moving: moving)
+    }
+
+    /// Opens the sheet of a spot in the place of the one that shows, with no change of the history.
+    func present(_ id: String, moving: Bool) {
         if let shown = openList, shown != id { stopRecording() }
         sheets[id]?.open(waits: moving) { [weak self] in self?.showSheet(id, moving: moving) }
     }
@@ -81,6 +91,7 @@ extension SpotsModel {
         stopRecording()
         showSheet(nil, moving: moving)
         runs.closeOpen()
+        closeHistory()
     }
 
     /// Closes each sheet of parts when the panel has faded, stops the reads that nothing wants now, and drops the answers
@@ -260,6 +271,10 @@ extension SpotsModel {
     /// Runs a pick of a row, or an action on it. In the panel, a pick that closes it closes the panel. A float stays open
     /// with the picked row selected, and a pick that asks with a form or records a key opens the spot in the panel (W8).
     public func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil, in place: SheetPlace = .panel) {
+        if action == nil, item.opensPage {
+            _ = openSheet(entry.id, page: item.run)
+            return
+        }
         if place == .float {
             if action == nil, entry.spot.pickForm != nil || item.records { return press(entry.id) }
             remember(item, of: entry)

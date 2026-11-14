@@ -39,6 +39,7 @@ extension SpotsModel {
             }
             return true
         }
+        if openList != nil, let handled = handleHistoryKey(key) { return handled }
         if key == Self.undoKey, openList == nil, searchText.isEmpty, undoRemoval() { return true }
         if key == ActionKey(name: "return", isCommand: true), openSelected() { return true }
         if let panel = openPanel, !panel.showsRows { return handlePanelKey(key, panel) }
@@ -114,7 +115,7 @@ extension SpotsModel {
             return true
         }
         if key == ActionKey(name: "escape") {
-            closeList(moving: true)
+            if !goBack() { closeList(moving: true) }
             return true
         }
         if panel.scrollsByArrows, key == ActionKey(name: "up") || key == ActionKey(name: "down") {

@@ -46,8 +46,10 @@ public struct SpotItem: Equatable, Sendable {
     public let openTitle: String?
     /// Whether the panel stays open after Return on this row, from `close=false`.
     public let staysOnPick: Bool
+    /// Whether a pick opens the row as a page of its spot, from `page=true`, in place of `<spot> open <row id>`.
+    public let opensPage: Bool
 
-    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, to: String? = nil, fields: String? = nil, card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, focusSubtitle: String? = nil) {
+    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, to: String? = nil, fields: String? = nil, card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, focusSubtitle: String? = nil, opensPage: Bool = false) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
@@ -68,6 +70,7 @@ public struct SpotItem: Equatable, Sendable {
         self.openTitle = openTitle
         self.focusSubtitle = focusSubtitle
         self.staysOnPick = staysOnPick
+        self.opensPage = opensPage
     }
 
     /// Reads the block of one row: `row=<id>`, which a pick sends, and `title`, which is the id when it has none.
@@ -94,7 +97,8 @@ public struct SpotItem: Equatable, Sendable {
             pin: block.value("pin").flatMap(Pin.init(rawValue:)),
             openTitle: block.value("open"),
             staysOnPick: block.flag("close") == false,
-            focusSubtitle: block.value("focus")
+            focusSubtitle: block.value("focus"),
+            opensPage: block.flag("page") == true
         )
     }
 
