@@ -1,6 +1,6 @@
 import Foundation
 
-/// The floats: spots that show in windows of their own at the pointer, apart from the panel (W1–W9).
+/// The sheets outside the panel: floats at the pointer (W1–W9), and windows of spots that offer one (W10).
 extension SpotsModel {
     /// Floats a spot, or closes its float when it floats. While a drag holds the mouse button, it brings the float to the
     /// pointer instead, where the drag needs it (W6). A spot whose kind comes from its first answer floats once that answer
