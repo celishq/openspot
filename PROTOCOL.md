@@ -500,6 +500,7 @@ start ──► frame ──► frame ──► ... ──► end        exit 0:
 ```
 
 - A `read` has 10 seconds to print its first frame or end. Other calls have no time limit.
+- A frame holds at most 32 MB. Openspot stops a call that prints more in one frame, and the call fails.
 - A new value of a block stops the older call of that block. A second press of a running call stops it: its process
   group gets the terminate signal, then the kill signal. When Openspot quits, it stops every call.
 - A call ends when its output closes. A stopped call changes nothing.

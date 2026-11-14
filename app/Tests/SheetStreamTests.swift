@@ -37,6 +37,24 @@ final class SheetStreamTests: XCTestCase {
         XCTAssertNil(reader.finish())
     }
 
+    func testAFrameOverTheLimitIsDroppedAndMarksTheReader() {
+        var reader = SheetFrameReader(limit: 8)
+
+        XCTAssertEqual(reader.read(Data("text=a\n---\n".utf8)), ["text=a\n"])
+        XCTAssertFalse(reader.isOverLimit)
+        XCTAssertEqual(reader.read(Data("text=abcdef\n---\n".utf8)), [])
+        XCTAssertTrue(reader.isOverLimit)
+    }
+
+    func testALineWithNoEndOverTheLimitMarksTheReader() {
+        var reader = SheetFrameReader(limit: 8)
+
+        _ = reader.read(Data("abcdefghijk".utf8))
+
+        XCTAssertTrue(reader.isOverLimit)
+        XCTAssertNil(reader.finish())
+    }
+
     func testATerminalProgressCodeIsAFrameWithItsValue() {
         var reader = SheetFrameReader()
 

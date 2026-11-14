@@ -2,6 +2,7 @@ import Foundation
 
 public enum SpotError: Error, Equatable, Sendable {
     case timedOut
+    case tooLarge
     case failed(Int32, String)
     case failedWithFix(Int32, String, URL)
     case badState
@@ -12,6 +13,7 @@ public enum SpotError: Error, Equatable, Sendable {
     public var reason: String {
         switch self {
         case .timedOut: "It took too long."
+        case .tooLarge: "It printed more than 32 MB in one frame."
         case .failed(let code, ""): "It stopped with code \(code)."
         case .failed(_, let message): message
         case .failedWithFix(let code, let message, _): SpotError.failed(code, message).reason

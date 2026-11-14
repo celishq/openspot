@@ -11,12 +11,18 @@ public struct SheetFrameReader: Sendable {
         case commandEnd
     }
 
+    public static let limit = 32 << 20
+
+    private let limit: Int
     private var line = Data()
     private var frame = ""
     private var escape = Escape.none
     private var command = Data()
+    public private(set) var isOverLimit = false
 
-    public init() {}
+    public init(limit: Int = Self.limit) {
+        self.limit = limit
+    }
 
     public mutating func read(_ data: Data) -> [String] {
         guard escape == .none else { return readEscaped(data) }
@@ -32,6 +38,7 @@ public struct SheetFrameReader: Sendable {
                 start = end + 1
             }
             line.append(contentsOf: UnsafeRawBufferPointer(rebasing: raw[start...]))
+            checkLine()
             return frames
         } ?? readEscaped(data)
     }
@@ -39,12 +46,25 @@ public struct SheetFrameReader: Sendable {
     private mutating func endLine(into frames: inout [String]) {
         let text = String(decoding: line, as: UTF8.self)
         line.removeAll(keepingCapacity: true)
+        if isOverLimit { return }
         if text == Self.mark {
             frames.append(frame)
             frame = ""
+        } else if frame.utf8.count + text.utf8.count >= limit {
+            drop()
         } else {
             frame += text + "\n"
         }
+    }
+
+    private mutating func checkLine() {
+        if line.count + frame.utf8.count >= limit { drop() }
+    }
+
+    private mutating func drop() {
+        isOverLimit = true
+        frame = ""
+        line = Data()
     }
 
     private mutating func readEscaped(_ data: Data) -> [String] {
@@ -78,10 +98,12 @@ public struct SheetFrameReader: Sendable {
                 }
             }
         }
+        checkLine()
         return frames
     }
 
     public mutating func finish() -> String? {
+        guard !isOverLimit else { return nil }
         if !line.isEmpty {
             frame += String(decoding: line, as: UTF8.self)
             line.removeAll()

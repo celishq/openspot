@@ -7,6 +7,7 @@ public struct TerminalRun {
     }
 
     private static let readLimit: TimeInterval = 10
+    static let errorLimit = 1 << 20
     private static let callID = 1
 
     public let spot: Spot
@@ -43,10 +44,10 @@ public struct TerminalRun {
         let variables = ["OPENSPOT_ID": spot.id].merging(isRead ? ReadReason.sheet.variables : [:]) { _, new in new }.merging(token.map { [CallerTokens.variable: $0] } ?? [:]) { _, new in new }
         let process: ScriptProcess
         if spot.mode.stays {
-            process = ScriptProcess(url: program, name: spot.url.path, mode: .stays, limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: nil, careful: careful, base: environment, folder: folder)
+            process = ScriptProcess(url: program, name: spot.url.path, mode: .stays, limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder)
         } else {
             let sent = action.sent(input: input)
-            process = ScriptProcess(url: program, name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: nil, careful: careful, base: environment, folder: folder)
+            process = ScriptProcess(url: program, name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder)
         }
         if let tokens, let token {
             process.onStart { group in tokens.enter(group, token: token) }

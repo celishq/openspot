@@ -4,6 +4,7 @@ import Foundation
 public actor WebPictures {
     public static let shared = WebPictures(folder: cacheFolder, fetch: download)
     static let byteLimit = 8 << 20
+    static let folderLimit = 64 << 20
 
     private static let cacheFolder = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
         .appendingPathComponent(Bundle.main.bundleIdentifier ?? "openspot").appendingPathComponent("pictures")
@@ -14,11 +15,13 @@ public actor WebPictures {
     }()
 
     private let folder: URL
+    private let limit: Int
     private let fetch: @Sendable (URL) async throws -> Data
     private var loads: [String: Task<String?, Never>] = [:]
 
-    init(folder: URL, fetch: @escaping @Sendable (URL) async throws -> Data) {
+    init(folder: URL, limit: Int = folderLimit, fetch: @escaping @Sendable (URL) async throws -> Data) {
         self.folder = folder
+        self.limit = limit
         self.fetch = fetch
     }
 
@@ -43,9 +46,22 @@ public actor WebPictures {
         do {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             try data.write(to: file, options: .atomic)
+            prune(keeping: file)
             return file.path
         } catch {
             return nil
+        }
+    }
+
+    private func prune(keeping kept: URL) {
+        let keys: Set<URLResourceKey> = [.fileSizeKey, .contentModificationDateKey]
+        let files = ((try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: Array(keys))) ?? [])
+            .compactMap { file in (try? file.resourceValues(forKeys: keys)).map { (file, $0.fileSize ?? 0, $0.contentModificationDate ?? .distantPast) } }
+            .sorted { $0.2 < $1.2 }
+        var total = files.reduce(0) { $0 + $1.1 }
+        for (file, size, _) in files where total > limit && file.standardizedFileURL != kept.standardizedFileURL {
+            try? FileManager.default.removeItem(at: file)
+            total -= size
         }
     }
 
