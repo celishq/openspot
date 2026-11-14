@@ -3,10 +3,6 @@ import Foundation
 /// The flow of the panel: a page or a spot that opens over the sheet that shows, and the keys that move back, forward
 /// and to the grid.
 extension SpotsModel {
-    static let backKey = ActionKey(name: "[", isCommand: true)
-    static let forwardKey = ActionKey(name: "]", isCommand: true)
-    static let gridKey = ActionKey(name: "escape", isCommand: true)
-
     /// Opens a spot as a new flow, with nothing behind it: in the panel that shows, or else in the panel that it shows.
     /// Returns false when no spot has that ID.
     @discardableResult
@@ -90,11 +86,11 @@ extension SpotsModel {
 
     /// Takes ⌘[, ⌘] and ⌘Esc while a sheet shows. Returns nil for any other key.
     func handleFlowKey(_ key: ActionKey) -> Bool? {
-        switch key {
-        case Self.backKey: back()
-        case Self.forwardKey: forward()
-        case Self.gridKey: closeList(moving: isShown)
-        default: return nil
+        switch FlowKey(key) {
+        case .back: back()
+        case .forward: forward()
+        case .grid: closeList(moving: isShown)
+        case nil: return nil
         }
         return true
     }
