@@ -47,10 +47,13 @@ Write a doc that people read, such as `GUIDE.md` and `PROTOCOL.md`, the way Appl
 - Write natural English: "you" for the reader, short sentences, common words. Contractions are fine.
 - Use one word for each meaning on the page.
 
-## Docstrings
+## Comments
 
-- Docstrings on types and members only. No inline comments.
-- A docstring says what the item does. Five lines on a type, three on a member, none where the name says it.
+- Code and the scripts in `scripts/` hold no comment and no docstring. A name, a type or a test says what a comment would.
+  A fact that none of them can hold, such as why a limit is 2 ms, is a rule in `app/RULES.md` with a test that names its ID.
+- The one exception is a `// @todo #<id>` puzzle. The header of a spot script is not a comment: it is part of the spot.
+- `make verify` runs `scripts/check-comments.sh`. Its list `scripts/comments-allowed.txt` holds the old comments still to
+  remove, and it fails on a line the list lacks and on a listed line the code no longer has.
 
 ## Core and Shell
 
@@ -157,7 +160,7 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
 ## Verify
 
 ```sh
-make verify                # the Core, Tests and Motion checks, then the XCTest suite, with test classes in parallel
+make verify                # the Core, Tests, Comments and Motion checks, then the XCTest suite, with test classes in parallel
 make test T=SpotRunsTests  # one test class, while you work on it
 make perf N=3              # times a Release sheet that opens and closes 20 times, 3 runs; ACTION picks another motion
 make film SPOT=caffeinate  # films the open and close of a sheet 10x slower (SLOW=1 for real speed) into .temp/film
