@@ -14,8 +14,9 @@ final class AccountSpotTests: BuiltInCase {
         AccountStore.standard(environment: ["OPENSPOT_CONFIG": root.path], home: root, devState: nil)
     }
 
-    private func frame(_ arguments: [String], input: String? = nil, reason: String = "sheet.open") async throws -> String {
-        let variables = arguments == ["read"] ? ["OPENSPOT_REASON": reason] : [:]
+    private func frame(_ arguments: [String], input: String? = nil, reason: String = "sheet.open", page: String? = nil) async throws -> String {
+        var variables = arguments == ["read"] ? ["OPENSPOT_REASON": reason] : [:]
+        if let page { variables["OPENSPOT_PAGE"] = page }
         return try await runs.answer(of: account, SpotAction(arguments: arguments), input: input, limit: 10, variables: variables)
     }
 
@@ -53,6 +54,47 @@ final class AccountSpotTests: BuiltInCase {
         XCTAssertTrue(read.hasPrefix("grid=head\ngrid=head\ngrid=create\ngrid=sign_in\n"), read)
         XCTAssertEqual(block("head", in: read)["title"], "Set up your account")
         XCTAssertEqual(block("create", in: read)["look"], "strong")
+    }
+
+    func testThePublishPageSaysWhatTheKeyIsAndOffersANewKeyOrYourOwnAsRows() async throws {
+        let read = try await frame(["read"], page: "publish:a")
+
+        XCTAssertEqual(block("head", in: read)["title"], "Sign what you publish")
+        XCTAssertFalse(read.contains("grid="), read)
+        let rows = read.split(separator: "\n").filter { $0.hasPrefix("row=") }
+        XCTAssertEqual(rows, ["row=new", "row=own"])
+        XCTAssertEqual(block("new", in: read)["title"], "Create a new key")
+        XCTAssertEqual(block("own", in: read)["title"], "Use my words or nsec")
+    }
+
+    func testANewKeyOnThePublishPageMakesTheKeyPublishesAndGoesBack() async throws {
+        let programs = try countPrograms()
+
+        let done = try await frame(["open", "new"], page: "publish:a")
+
+        XCTAssertNotNil(try store.key())
+        XCTAssertTrue(programs().contains("openspot store publish a"), programs().joined(separator: "\n"))
+        XCTAssertTrue(done.contains("pop=true\n"), done)
+    }
+
+    func testYourOwnWordsOnThePublishPageSignInPublishesAndGoesBack() async throws {
+        let programs = try countPrograms()
+
+        let restore = try await frame(["open", "own"], page: "publish:a")
+        let done = try await frame(["sign_in"], input: "phrase=\(phrase)\n", page: "publish:a")
+
+        XCTAssertTrue(restore.contains("field=phrase"), restore)
+        XCTAssertEqual(try store.key()?.words?.joined(separator: " "), phrase)
+        XCTAssertTrue(programs().contains("openspot store publish a"), programs().joined(separator: "\n"))
+        XCTAssertTrue(done.contains("pop=true\n"), done)
+    }
+
+    func testBackFromSignInOnThePublishPageShowsItsTwoChoicesAgain() async throws {
+        _ = try await frame(["open", "own"], page: "publish:a")
+
+        let back = try await frame(["back"], page: "publish:a")
+
+        XCTAssertEqual(block("new", in: back)["title"], "Create a new key")
     }
 
     func testCreateSaysWhatTheWordsAreThenShowsTheWordsOfANewKey() async throws {

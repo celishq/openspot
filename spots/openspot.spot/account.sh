@@ -6,10 +6,12 @@
 # uses=app,account
 # offers=card
 # offers=search
+# pages=publish:*
 . "$OPENSPOT_SH"
 
 data=${OPENSPOT_DATA:-${TMPDIR:-/tmp}/openspot-account}
 mkdir -p "$data"
+case ${OPENSPOT_PAGE-} in publish:*) publishing=${OPENSPOT_PAGE#publish:} ;; *) publishing= ;; esac
 
 # Reads the public facts of the account.
 facts() {
@@ -32,6 +34,10 @@ EOF
 step() {
   [ -z "${OPENSPOT_REASON-}" ] || [ "$(cat "$data/step" 2>/dev/null)" != words ] || rm -f "$data/step"
   saved=$(cat "$data/step" 2>/dev/null)
+  if [ -n "$publishing" ] && [ "$signed" != true ]; then
+    if [ "$saved" = restore ]; then echo restore; else echo publish; fi
+    return
+  fi
   case "$saved:$signed:$backed" in
     choose:false:* | restore:false:* | about:false:*) echo "$saved"; return ;;
     about:true:false | words:true:* | check:true:false | restore:true:*) echo "$saved"; return ;;
@@ -44,6 +50,13 @@ step() {
   else
     echo account
   fi
+}
+
+# Publishes the spot of the publish page, and takes the page off.
+publish() {
+  rm -f "$data/step"
+  openspot store publish "$publishing" >/dev/null
+  printf 'pop=true\n'
 }
 
 # Keeps the step, and forgets what belonged to the one before.
@@ -177,6 +190,17 @@ sheet() {
   case $current in
     restore) restore; return ;;
     check) check; return ;;
+    publish)
+      printf 'search=off\n'
+      line head 'Sign what you publish' signature '' 'Openspot signs your spots with a key, so people know an update is from you.'
+      printf '\nrow=new\n'
+      openspot_kv title 'Create a new key'
+      printf 'icon=plus.circle\nclose=false\n'
+      printf '\nrow=own\n'
+      openspot_kv title 'Use my words or nsec'
+      printf 'icon=key\nclose=false\n'
+      return
+      ;;
     choose) printf 'grid=head\ngrid=head\ngrid=create\ngrid=sign_in\n' ;;
     about) printf 'grid=head\ngrid=head\ngrid=private\ngrid=reset\ngrid=show\n' ;;
     words) printf 'grid=head head\n'; word_grid 12; printf 'grid=wrote wrote\ngrid=later later\n' ;;
@@ -258,6 +282,7 @@ case "$1" in
       if printf '%s' "$phrase" | openspot account sign-in 2>/dev/null; then
         go account
         phrase= toast='Signed in'
+        [ -z "$publishing" ] || publish
       fi
     else
       go restore
@@ -265,6 +290,13 @@ case "$1" in
     sheet
     ;;
   phrase) phrase=$2; sheet ;;
+  open)
+    case $2 in
+      new) openspot account new || exit 1; publish ;;
+      own) go restore ;;
+    esac
+    sheet
+    ;;
   show)
     facts
     if [ "$signed" != true ]; then openspot account new || exit 1; fi

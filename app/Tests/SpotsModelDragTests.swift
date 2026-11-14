@@ -581,6 +581,20 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
     }
 
+    func testAPublishWithNoAccountOpensThePublishPageOfTheAccountSpot() async throws {
+        try "#!/bin/sh\n# title=Account\n# uses=account\n# on=sheet.open\n# pages=publish:*\necho\n"
+            .writeScript(to: core.appendingPathComponent("openspot.spot/account.sh"))
+        model.reload()
+        try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
+
+        let result = await model.publish("a")
+
+        XCTAssertEqual(result, .failed)
+        XCTAssertEqual(model.flow.current, FlowSheet(spot: "openspot/account", page: "publish:a"))
+        XCTAssertEqual(host.notes, [])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
+    }
+
     func testASpotWithNoReadmeAsksForOneAndIsNotPublished() async {
         let result = await model.publish("a")
 

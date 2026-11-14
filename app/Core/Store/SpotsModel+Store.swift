@@ -28,7 +28,7 @@ extension SpotsModel {
                 try await SpotListing.capturePreview(of: spot, runs: runs)
                 shared = try await Task.detached(priority: .userInitiated) { try SpotPackage(sharing: spot, from: SpotsFolder(url: folder.url).scan()) }.value
             }
-            guard let released = try await release(shared, named: spot.name) else { return .failed }
+            guard let released = try await release(shared, named: spot.name, publishing: id) else { return .failed }
             try await Task.detached(priority: .userInitiated) { try released.write(to: store) }.value
         } catch {
             host.notify("\(spot.name) was not published. \(Self.reason(error))")
@@ -38,8 +38,8 @@ extension SpotsModel {
         return .published
     }
 
-    func release(_ package: SpotPackage, named name: String) async throws -> SpotPackage? {
-        guard let key = try await accountKey() else { return nil }
+    func release(_ package: SpotPackage, named name: String, publishing id: String? = nil) async throws -> SpotPackage? {
+        guard let key = try await accountKey(publishing: id) else { return nil }
         if package.needsCompile { host.work("Compiling \(name)") }
         let spots = folder.url
         return try await Task.detached(priority: .userInitiated) { try await package.release(by: key, keepingLogIn: spots) }.value
@@ -53,11 +53,16 @@ extension SpotsModel {
         (try? SpotsFolder(url: folder.url).keptScan())?.files.first { $0.id == id }?.spots.first
     }
 
-    func accountKey() async throws -> AccountKey? {
+    func accountKey(publishing id: String?) async throws -> AccountKey? {
         let account = files.account
         if let key = try await Task.detached(priority: .userInitiated, operation: { try account.key() }).value { return key }
+        let page = id.map { "publish:\($0)" }
         if let account = entries.first(where: { $0.spot.reachesAccountKey }) {
             host.present()
+            if let page, account.spot.takes(page: page) {
+                _ = push(FlowSheet(spot: account.id, page: page))
+                return nil
+            }
             _ = push(FlowSheet(spot: account.id))
         }
         host.notify("Set up your account, then publish again.")
