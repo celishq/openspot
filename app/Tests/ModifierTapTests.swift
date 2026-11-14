@@ -3,7 +3,7 @@ import XCTest
 
 /// Proves a tap of one modifier alone: a quick press and release with nothing between, and never a modifier of a shortcut.
 final class ModifierTapTests: XCTestCase {
-    func testALoneModifierLetGoInTimeIsATap() {
+    func test_W2_aLoneModifierLetGoInTimeIsATap() {
         var tap = ModifierTap()
 
         XCTAssertNil(tap.take(.option, at: 1))

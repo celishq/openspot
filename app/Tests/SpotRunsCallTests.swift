@@ -311,7 +311,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         XCTAssertEqual(sheet.list.shown.map(\.run), [])
     }
 
-    func testOpeningASheetWhileACallRunsShowsItsRead() async throws {
+    func test_L7_openingASheetWhileACallRunsShowsItsRead() async throws {
         try script(header: "on=sheet.open", """
         case "$1" in
           read) printf 'grid=go\\ngrid=note\\ngrid=bar\\n\\nbutton=go\\ntitle=Go\\n\\nfield=note\\nvalue=\\n\\ntext=bar\\ntitle=idle\\n' ;;

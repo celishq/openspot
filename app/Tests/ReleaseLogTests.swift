@@ -43,14 +43,14 @@ final class ReleaseLogTests: XCTestCase {
         XCTAssertEqual(try release.manifest().sorted.map(\.path), ["cups.spot/cups.sh", "cups.spot/readme.md"])
     }
 
-    func testASpotWhoseFilesTheLastReleaseNamesIsSentAsItIs() throws {
+    func test_P7_aSpotWhoseFilesTheLastReleaseNamesIsSentAsItIs() throws {
         let signed = try spot().signed(by: mine)
 
         XCTAssertEqual(try signed.signed(by: mine), signed)
         XCTAssertEqual(try signed.signed(by: theirs), signed)
     }
 
-    func testAChangeSignedByTheSameKeyIsTheNextVersionOfTheSameAddress() throws {
+    func test_P13_aChangeSignedByTheSameKeyIsTheNextVersionOfTheSameAddress() throws {
         let first = try spot().signed(by: mine)
 
         let second = try editing(first, "cups.spot/cups.sh", to: "#!/bin/sh\n# title=Mugs\n").signed(by: mine)
@@ -61,7 +61,7 @@ final class ReleaseLogTests: XCTestCase {
         XCTAssertEqual(releases[1].previous, releases[0].id)
     }
 
-    func testAChangeSignedByAnotherKeyIsANewAddressThatKeepsTheLog() throws {
+    func test_P13_aChangeSignedByAnotherKeyIsANewAddressThatKeepsTheLog() throws {
         let first = try spot().signed(by: mine)
 
         let copy = try editing(first, "cups.spot/cups.sh", to: "#!/bin/sh\n# title=Mugs\n").signed(by: theirs)
@@ -73,7 +73,7 @@ final class ReleaseLogTests: XCTestCase {
         XCTAssertEqual(releases[1].previous, releases[0].id)
     }
 
-    func testALogThatDoesNotMatchItsFilesIsRefused() throws {
+    func test_P12_aLogThatDoesNotMatchItsFilesIsRefused() throws {
         let signed = try spot().signed(by: mine)
         let changed = try editing(signed, "cups.spot/cups.sh", to: "#!/bin/sh\nrm -rf ~\n")
         let missing = try SpotPackage(files: signed.files.filter { $0.path != "cups.spot/readme.md" })
@@ -86,7 +86,7 @@ final class ReleaseLogTests: XCTestCase {
         }
     }
 
-    func testALogWithABrokenLinkOrABadSignatureIsRefused() throws {
+    func test_P12_aLogWithABrokenLinkOrABadSignatureIsRefused() throws {
         let first = try spot().signed(by: mine)
         let second = try editing(first, "cups.spot/cups.sh", to: "#!/bin/sh\n# title=Mugs\n").signed(by: mine)
         let lines = try log(of: second).text.split(separator: "\n").map(String.init)
@@ -118,7 +118,7 @@ final class ReleaseLogTests: XCTestCase {
         XCTAssertTrue(ReleaseLog(releases: []).review(over: first).isOtherKey)
     }
 
-    func testTheLogKeptInTheFolderIsTheOneTheNextSignatureFollows() throws {
+    func test_P7_theLogKeptInTheFolderIsTheOneTheNextSignatureFollows() throws {
         let signed = try spot().signed(by: mine)
         try FileManager.default.createDirectory(at: folder.appendingPathComponent("cups.spot"), withIntermediateDirectories: true)
 

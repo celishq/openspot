@@ -218,7 +218,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         XCTAssertEqual(log(), ["read"])
     }
 
-    func testAPanelOpenAndASheetOpenWithinFiveSecondsRunOnce() async throws {
+    func test_M2_aPanelOpenAndASheetOpenWithinFiveSecondsRunOnce() async throws {
         try script(header: "on=panel.open\noffers=search", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
@@ -233,7 +233,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         XCTAssertEqual(log(), ["read"])
     }
 
-    func testASheetOpenThatTheSpotListsReadsAfterAYoungPanelAnswer() async throws {
+    func test_M2_aSheetOpenThatTheSpotListsReadsAfterAYoungPanelAnswer() async throws {
         try script(header: "on=panel.open\non=sheet.open", "echo \"$OPENSPOT_REASON\" >> '\(path("reasons"))'\nprintf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
@@ -266,7 +266,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         XCTAssertEqual(log(), ["read"])
     }
 
-    func testAnAnswerOlderThanFiveSecondsIsReadAgain() async throws {
+    func test_M2_anAnswerOlderThanFiveSecondsIsReadAgain() async throws {
         try script(header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         sheet.open {}
@@ -474,7 +474,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         try await wait("two reads") { self.log() == ["read", "read"] }
     }
 
-    func testOneSlowScriptDoesNotDelayAnother() async throws {
+    func test_M3_oneSlowScriptDoesNotDelayAnother() async throws {
         try script("slow", header: "on=panel.open\noffers=search", "\(untilRelease)\nprintf 'row=s\\ntitle=S\\n'")
         try script("fast", header: "on=panel.open\noffers=search", "printf 'row=f\\ntitle=F\\n'")
         _ = try scanned()
@@ -486,7 +486,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         XCTAssertEqual(runs.sheets["slow"]?.list.shown.count, 0)
     }
 
-    func testASpotShowsItsHeaderUntilItsAnswerArrives() async throws {
+    func test_M3_aSpotShowsItsHeaderUntilItsAnswerArrives() async throws {
         try script(header: "on=panel.open\ndetail=Header", "sleep 0.2\nprintf 'switch=power\\ndetail=Answer\\nvalue=true\\n'")
         let sheet = try sheet()
 

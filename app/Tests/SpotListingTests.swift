@@ -28,7 +28,7 @@ final class SpotListingTests: XCTestCase {
     }
 
     @MainActor
-    func testTheCaptureRunsThePreviewModeAsTheSpotsCallAndKeepsItsTextBesideTheSpot() async throws {
+    func test_P11_theCaptureRunsThePreviewModeAsTheSpotsCallAndKeepsItsTextBesideTheSpot() async throws {
         let spot = try self.spot("# preview=sample", body: "[ \"$OPENSPOT_REASON\" = spot.preview ] && [ -n \"$OPENSPOT_TOKEN\" ] && printf 'row=a\\ntitle=Sample\\n' || printf 'row=a\\ntitle=Real\\n'")
         let runs = SpotRuns()
         defer { runs.quit() }

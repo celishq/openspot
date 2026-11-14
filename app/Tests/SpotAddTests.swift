@@ -340,7 +340,7 @@ final class SpotAddTests: XCTestCase {
         XCTAssertEqual(try lock.entries().map(\.uses), [[.spots, .app, .network]])
     }
 
-    func testAnAddOfASignedSpotKeepsItsAddressAndKeyAndAnUpdateFromAnotherKeyNeedsYes() async throws {
+    func test_P15_anAddOfASignedSpotKeepsItsAddressAndKeyAndAnUpdateFromAnotherKeyNeedsYes() async throws {
         let file = root.appendingPathComponent("Cups.spot")
         let mine = try AccountKey.make()
         let cups = try SpotPackage(files: [.init(path: "cups.spot/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8))]).signed(by: mine)

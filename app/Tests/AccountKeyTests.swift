@@ -46,7 +46,7 @@ final class AccountKeyTests: XCTestCase {
         XCTAssertTrue(AccountKey.isValid(try key.sign(message), of: message, by: key.publicKey))
     }
 
-    func test_A50_theWordsOfCelisGiveTheAccountOfCelis() throws {
+    func test_P14_theWordsOfCelisGiveTheAccountOfCelis() throws {
         let key = try AccountKey(words: phrase.split(separator: " ").map(String.init))
 
         XCTAssertEqual(key.npub, npub)

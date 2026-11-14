@@ -119,7 +119,7 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(file.read().keys.map(\.act), [.command("right")])
     }
 
-    func testTheSheetListsAFloatRowForEachSpotThatOffersItAndGivesItAKey() async throws {
+    func test_W3_theSheetListsAFloatRowForEachSpotThatOffersItAndGivesItAKey() async throws {
         try script("shelf.sh", "title=Shelf\nicon=tray.full\non=sheet.open\noffers=float")
         try script("notes.sh", "title=Notes")
         try script("move.sh", "title=Move\n\nbutton=left\ntitle=Left side")

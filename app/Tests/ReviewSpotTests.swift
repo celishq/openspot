@@ -33,7 +33,7 @@ final class ReviewSpotTests: XCTestCase {
         return text
     }
 
-    func testItShowsAllOfTheTextOfEachFile() throws {
+    func test_P4_itShowsAllOfTheTextOfEachFile() throws {
         let review = try ReviewSpot(
             spot: spot([("home.spot/a.sh", "#!/bin/sh\necho one\\two\n", true), ("home.spot/lib.sh", "lib code\n", false)]),
             folder: folder
@@ -66,7 +66,7 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertEqual(review.name, "Sum")
     }
 
-    func testAFileThatIsNotTextIsNamedWithItsSize() throws {
+    func test_P4_aFileThatIsNotTextIsNamedWithItsSize() throws {
         let files = [
             SpotPackage.File(path: "home.spot/a.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8)),
             SpotPackage.File(path: "home.spot/icon.png", isExecutable: false, contents: Data([0xFF, 0x00, 0xFE]))
@@ -119,7 +119,7 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertEqual(review.name, "Desk")
     }
 
-    func testAProgramWarningComesBeforeTheDescription() throws {
+    func test_P6_aProgramWarningComesBeforeTheDescription() throws {
         let long = "#!/bin/sh\n# detail=Nice\n" + String(repeating: "x", count: ReviewSpot.textLimit)
         let files = [SpotPackage.File(path: "tool.spot/tool", isExecutable: true, contents: Data(long.utf8))]
 
@@ -149,7 +149,7 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertEqual(drop.detail, "This file is not a spot.")
     }
 
-    func testOnlyACommandKeyAddsIt() throws {
+    func test_P4_onlyACommandKeyAddsIt() throws {
         let add = try XCTUnwrap(sheet(review("")).parts.first { $0.id == "install" })
 
         XCTAssertEqual(add.key, ActionKey(name: "return", isCommand: true))
@@ -167,7 +167,7 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertFalse(text.contains("Runs by itself"))
     }
 
-    func testItSaysWhatRunsByItself() throws {
+    func test_P4_itSaysWhatRunsByItself() throws {
         let review = try review("title=Weather\non=panel.open\non=clock.30")
 
         XCTAssertEqual(review.subtitle, "Runs by itself")
@@ -385,7 +385,7 @@ final class ReviewSpotTests: XCTestCase {
         return spots
     }
 
-    func testANewInstallSaysNothingOfItsSigner() throws {
+    func test_P15_aNewInstallSaysNothingOfItsSigner() throws {
         let review = try ReviewSpot(spot: weather("Weather").signed(by: AccountKey.make()), folder: folder.appendingPathComponent("spots"))
 
         let text = try shown(review)
@@ -393,7 +393,7 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertFalse(text.contains("releases.jsonl"))
     }
 
-    func testAnUpdateFromTheSameKeySaysItsVersion() throws {
+    func test_P15_anUpdateFromTheSameKeySaysItsVersion() throws {
         let key = try AccountKey.make()
         let first = try weather("Weather").signed(by: key)
         let spots = try installed(first)
@@ -406,7 +406,7 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertNotEqual(review.subtitle, ReviewSpot.otherKeySubtitle)
     }
 
-    func testAVersionThatAnotherKeySignedOrNoneSaysSoFirst() throws {
+    func test_P15_aVersionThatAnotherKeySignedOrNoneSaysSoFirst() throws {
         let spots = try installed(weather("Weather").signed(by: AccountKey.make()))
 
         for other in [try weather("Weather 2").signed(by: AccountKey.make()), try weather("Weather 2")] {

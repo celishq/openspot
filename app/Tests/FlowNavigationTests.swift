@@ -27,7 +27,7 @@ final class FlowNavigationTests: PanelCase {
         XCTAssertEqual(titles, ["Detail a"])
     }
 
-    func testEscClearsTheSearchThenStepsBackThenClosesTheSheet() async throws {
+    func test_H1_escClearsTheSearchThenStepsBackThenClosesTheSheet() async throws {
         try await openList()
         try await openPage()
         model.searchText = "de"
@@ -105,7 +105,7 @@ final class FlowNavigationTests: PanelCase {
         try await waitFor("the slide from the left to rest") { self.model.pushOffset == 0 && self.host.pushStarts.contains { $0 < 0 } }
     }
 
-    func testEachSheetBehindHasATitleAndAClickOnItsEdgeGoesBackToIt() async throws {
+    func test_H3_eachSheetBehindHasATitleAndAClickOnItsEdgeGoesBackToIt() async throws {
         try await openList()
         try await openPage()
         XCTAssertTrue(model.push(FlowSheet(spot: "other")))

@@ -62,7 +62,7 @@ final class SpotStoreTests: XCTestCase {
         XCTAssertTrue(frame.contains("spot=shared\n"), frame)
     }
 
-    func testGetTurnsOnACoreSpotByTheIDThatTheListPrints() async throws {
+    func test_P9_getTurnsOnACoreSpotByTheIDThatTheListPrints() async throws {
         let id = try XCTUnwrap(list().items.first { $0.origin == .core && !$0.isAdded }?.id)
 
         let item = try await list().get(id, config: config, environment: [:])

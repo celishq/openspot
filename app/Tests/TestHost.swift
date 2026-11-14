@@ -114,8 +114,11 @@ final class TestHost: SpotsHost {
         submenus.append(nil)
     }
 
+    var floatsFollowingDrag: [Bool] = []
+
     func float(_ entry: SpotsModel.Entry, followsDrag: Bool) {
         floats.append(entry.id)
+        floatsFollowingDrag.append(followsDrag)
     }
 
     func land(_ id: String) {
