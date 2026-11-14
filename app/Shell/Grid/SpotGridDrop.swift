@@ -21,7 +21,7 @@ struct SpotGridDrop: DropDelegate {
 
     /// The store ID of a card of the store that the drag in progress carries.
     static var storeID: String? {
-        SpotCardSource.storeID(in: NSPasteboard(name: .drag).string(forType: .string))
+        SpotCardSource.storeID(on: NSPasteboard(name: .drag))
     }
 
     func validateDrop(info: DropInfo) -> Bool {

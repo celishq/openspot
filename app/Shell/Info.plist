@@ -81,6 +81,16 @@
 				</array>
 			</dict>
 		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>Openspot store card</string>
+			<key>UTTypeIdentifier</key>
+			<string>dev.openspot.store-card</string>
+		</dict>
 	</array>
 </dict>
 </plist>

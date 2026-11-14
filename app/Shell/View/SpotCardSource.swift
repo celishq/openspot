@@ -1,5 +1,6 @@
 import OpenspotCore
 import SwiftUI
+import UniformTypeIdentifiers
 
 extension EnvironmentValues {
     /// The cards that a spot's view can draw by `spot.card(id)`.
@@ -25,22 +26,25 @@ struct SpotCardSource {
                 .contentShape(shape)
                 .onDrag {
                     model.beginStoreDrag()
-                    return NSItemProvider(object: Self.dragText(of: id) as NSString)
+                    return Self.dragItem(of: id)
                 }
         )
     }
 
-    /// The text that a drag of a store card carries, and the store ID that a drop reads back from it.
-    static func dragText(of id: String) -> String {
-        dragPrefix + id
+    /// What a drag of a store card carries: its store ID, as data of the store card's own type.
+    static func dragItem(of id: String) -> NSItemProvider {
+        let item = NSItemProvider()
+        item.registerDataRepresentation(forTypeIdentifier: UTType.storeCard.identifier, visibility: .ownProcess) { done in
+            done(Data(id.utf8), nil)
+            return nil
+        }
+        return item
     }
 
-    static func storeID(in text: String?) -> String? {
-        guard let text, text.hasPrefix(dragPrefix) else { return nil }
-        return String(text.dropFirst(dragPrefix.count))
+    /// The store ID that a drag of a store card carries, read from a drag's pasteboard.
+    static func storeID(on pasteboard: NSPasteboard) -> String? {
+        pasteboard.data(forType: NSPasteboard.PasteboardType(UTType.storeCard.identifier)).map { String(decoding: $0, as: UTF8.self) }
     }
-
-    private static let dragPrefix = "openspot-store:"
 
     /// The place in the grid that a store card stands for: none that a selection reaches, so it never shows a ring.
     private static let unselectable = Int.min
@@ -50,4 +54,9 @@ struct SpotCardSource {
         guard let size = model?.storeEntry(id)?.size else { return .zero }
         return CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))
     }
+}
+
+extension UTType {
+    /// A card of the store that a person drags into Edit Spots, which the app declares in its Info.plist.
+    static let storeCard = UTType(exportedAs: "dev.openspot.store-card")
 }

@@ -1,5 +1,6 @@
 import OpenspotCore
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// The cards of the panel on their grid, over one blur. An open sheet pushes each other card away from its own card, and
 /// fades and shrinks it as it crosses the window's edge. A change of the panel that does not reach these inputs leaves the grid as it is.
@@ -78,7 +79,7 @@ struct SpotGridView: View {
         }
         .frame(width: SpotTokens.width(columns: model.panels.columns), height: height, alignment: .topLeading)
         .contentShape(Rectangle())
-        .onDrop(of: [.fileURL, .plainText], delegate: SpotGridDrop(model: model, target: $dropTarget))
+        .onDrop(of: [.fileURL, .storeCard], delegate: SpotGridDrop(model: model, target: $dropTarget))
     }
 
     /// Where a card lies in the grid, from its place, or the place a lifted card started at, and the push of an open sheet,

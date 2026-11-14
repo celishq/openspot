@@ -85,6 +85,7 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["render", "--card", "wide", "a.png"]), .renderCard(.wide, "a.png"))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "--card", "huge", "a.png"]), .unknown("render --card huge a.png"))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "--panel", "a.png"]), .renderPanel("a.png"))
+        XCTAssertEqual(CommandLineCall(arguments: ["render", "--store", "a.png"]), .renderStore("a.png"))
         XCTAssertEqual(CommandLineCall(arguments: ["render"]), .unknown("render"))
     }
 

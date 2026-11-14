@@ -151,7 +151,7 @@ public final class CommandAPI: @unchecked Sendable {
         case .translateLanguages: return { [mac] in CommandAnswer(output: await mac.translationLanguages()) }
         case .colorPick: return { [mac] in CommandAnswer(output: await mac.pickColor()) }
         case .folderPick: return { [mac] in CommandAnswer(output: await mac.pickFolder()) }
-        case .renderSpot, .render, .renderCard, .renderPanel, .helper, .glyphBook:
+        case .renderSpot, .render, .renderCard, .renderPanel, .renderStore, .helper, .glyphBook:
             return nil
         }
     }
