@@ -12,12 +12,12 @@ final class FocusLossTests: XCTestCase {
         XCTAssertEqual(loss.step(isPressed: true, dragCount: 4, holdsFiles: false), .wait)
     }
 
-    func test_D7_aPressThatEndsWithNoDragCloses() {
+    func testAPressThatEndsWithNoDragCloses() {
         let loss = FocusLoss(dragCount: 4)
         XCTAssertEqual(loss.step(isPressed: false, dragCount: 4, holdsFiles: true), .close)
     }
 
-    func test_D7_aDragOfFilesThatThePressStartsKeepsThePanelForTheDrag() {
+    func testADragOfFilesThatThePressStartsKeepsThePanelForTheDrag() {
         let loss = FocusLoss(dragCount: 4)
         XCTAssertEqual(loss.step(isPressed: true, dragCount: 5, holdsFiles: true), .followDrag)
     }

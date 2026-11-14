@@ -58,7 +58,7 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(changes, 2)
     }
 
-    func test_A27_aReadStartsOneOpenspotAndNoJq() async throws {
+    func testAReadStartsOneOpenspotAndNoJq() async throws {
         try script("cups.sh", "title=Cups\non=clock.60\n\nfield=size")
         let programs = try countPrograms()
 
@@ -116,7 +116,7 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(file.read().keys.map(\.act), [.command("right")])
     }
 
-    func test_W3_theSheetListsAFloatRowForEachSpotThatOffersItAndGivesItAKey() async throws {
+    func testTheSheetListsAFloatRowForEachSpotThatOffersItAndGivesItAKey() async throws {
         try script("shelf.sh", "title=Shelf\nicon=tray.full\non=sheet.open\noffers=float")
         try script("notes.sh", "title=Notes")
         try script("move.sh", "title=Move\n\nbutton=left\ntitle=Left side")

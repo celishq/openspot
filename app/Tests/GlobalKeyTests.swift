@@ -110,7 +110,7 @@ final class GlobalKeyTests: XCTestCase {
         XCTAssertEqual(Trigger(text: "ctrl+space")?.label, "⌃Space")
     }
 
-    func test_W1_aKeyWithNoCommandStaysOnlyForASpotThatOffersFloat() throws {
+    func testAKeyWithNoCommandStaysOnlyForASpotThatOffersFloat() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-keys-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }

@@ -18,7 +18,7 @@ final class SpotArrangementTests: XCTestCase {
         XCTAssertNil(arrangement.size(of: "a"))
     }
 
-    func test_A7_listedSpotsTakeTheOrderOfTheFile() {
+    func testListedSpotsTakeTheOrderOfTheFile() {
         let arrangement = SpotArrangement(choices: [choice("c"), choice("a")])
 
         XCTAssertEqual(arrangement.ordered(commands("a", "b", "c")).map(\.id), ["c", "b", "a"])

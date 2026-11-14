@@ -308,7 +308,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         XCTAssertEqual(sheet.list.shown.map(\.run), [])
     }
 
-    func test_L7_openingASheetWhileACallRunsShowsItsRead() async throws {
+    func testOpeningASheetWhileACallRunsShowsItsRead() async throws {
         try script(header: "on=sheet.open", """
         case "$1" in
           read) printf 'grid=go\\ngrid=note\\ngrid=bar\\n\\nbutton=go\\ntitle=Go\\n\\nfield=note\\nvalue=\\n\\ntext=bar\\ntitle=idle\\n' ;;
@@ -457,7 +457,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         XCTAssertEqual(TextBlock.blocks(in: got).first?.value("input"), Self.big)
     }
 
-    func test_A30_aTwoMegabyteRunGoesOnStdinAsValue() async throws {
+    func testATwoMegabyteRunGoesOnStdinAsValue() async throws {
         let url = try script(body: "printf '%s\\n' \"$#\"\ncat")
 
         let text = try await runs.answer(of: Spot(id: "script", name: "Script", url: url), .item(SpotItem(title: "A", run: Self.big)))

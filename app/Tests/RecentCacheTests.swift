@@ -17,7 +17,7 @@ final class RecentCacheTests: XCTestCase {
         XCTAssertEqual(cache.bytes, 30)
     }
 
-    func test_A40_theLargestValueTwiceFitsBesideTheBase() {
+    func testTheLargestValueTwiceFitsBesideTheBase() {
         var cache = RecentCache<String, Int>(base: 30)
         cache.keep(1, for: "card", cost: 10)
         cache.keep(2, for: "dock sides", cost: 100)

@@ -27,7 +27,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertFalse(changed)
     }
 
-    func test_L6_workShowsOnlyAfterItsCallHasRunForOneSecond() async throws {
+    func testWorkShowsOnlyAfterItsCallHasRunForOneSecond() async throws {
         try script(body: Self.progress)
         let sheet = try sheet()
 
@@ -123,7 +123,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertNotNil(live.runningSummary)
     }
 
-    func test_G1_theSpotShowsASpinnerWithNoValueAndARingFromValue() async throws {
+    func testTheSpotShowsASpinnerWithNoValueAndARingFromValue() async throws {
         try script(body: steps([
             ("half", "progress=0.42"),
             ("over", "progress=7"),
@@ -147,7 +147,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertNil(call.fill)
     }
 
-    func test_G4_aFramesWordsShowOnTheSpotOnlyWhileItsCallRuns() async throws {
+    func testAFramesWordsShowOnTheSpotOnlyWhileItsCallRuns() async throws {
         try script(header: "title=Encode\ndetail=Videos", "printf 'title=42%%\\ndetail=2 min left\\n---\\n'\nwhile [ ! -e '\(path("end"))' ]; do sleep 0.02; done")
         let sheet = try sheet()
         sheet.pressCard()
@@ -196,7 +196,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertEqual(log(), ["open"])
     }
 
-    func test_G3_theMenuBarShowsTheOldestCallOfAllScriptsAndHowManyRun() async throws {
+    func testTheMenuBarShowsTheOldestCallOfAllScriptsAndHowManyRun() async throws {
         try script("a", "sleep 30")
         try script("z", "printf 'progress=0.25\\n---\\n'\nsleep 30")
         _ = try scanned()
@@ -316,7 +316,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertFalse(exists("went-on"))
     }
 
-    func test_L11_aPressOfAPartWithinOneSecondOfItsStartDoesNothing() async throws {
+    func testAPressOfAPartWithinOneSecondOfItsStartDoesNothing() async throws {
         try script(header: "on=sheet.open", """
         case "$1" in
           read) printf 'grid=go\\n\\nbutton=go\\ntitle=Go\\n' ;;
@@ -360,7 +360,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try await wait("the end of the work") { self.exists("action") && self.exists("pick") }
     }
 
-    func test_L11_aPressOfACardWithinOneSecondOfItsStartDoesNothing() async throws {
+    func testAPressOfACardWithinOneSecondOfItsStartDoesNothing() async throws {
         try script(header: "on=panel.open", "[ \"$1\" = read ] && { printf 'switch=power\\nvalue=false\\n'; exit 0; }\nsleep 0.3\ntouch '\(path("done"))'\nprintf 'switch=power\\nvalue=true\\n'")
         let sheet = try sheet()
         runs.panelOpened()

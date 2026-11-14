@@ -57,7 +57,7 @@ final class AccountCallsTests: XCTestCase {
         XCTAssertEqual(facts.output, "signedIn=true\nnpub=\(key.npub)\nbackedUp=false\n")
     }
 
-    func test_P14_onlyABuiltInSpotThatUsesAccountReachesTheKey() async throws {
+    func testOnlyABuiltInSpotThatUsesAccountReachesTheKey() async throws {
         _ = try store.keyMadeOnce()
         let refused = "Only Openspot's Account spot can reach your account key.\n"
 

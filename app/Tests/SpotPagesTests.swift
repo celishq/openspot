@@ -21,7 +21,7 @@ final class SpotPagesTests: SpotRunsCase {
         XCTAssertEqual(log("pages"), ["none", "detail"])
     }
 
-    func test_H2_aPageThatComesBackShowsItsRowsAtOnceAndReadsAgain() async throws {
+    func testAPageThatComesBackShowsItsRowsAtOnceAndReadsAgain() async throws {
         try script(header: "on=sheet.open", "printf 'row=a\\ntitle=Page %s\\n' \"${OPENSPOT_PAGE-first}\"")
         let sheet = try sheet()
         runs.panelOpened()

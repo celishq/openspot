@@ -13,7 +13,7 @@ final class PointerShakeTests: XCTestCase {
         return fired
     }
 
-    func test_W2_quickTurnsLeftAndRightAreAShake() {
+    func testQuickTurnsLeftAndRightAreAShake() {
         XCTAssertEqual(shakes(swing: 80, seconds: 0.1, for: 0.7).count, 1)
     }
 

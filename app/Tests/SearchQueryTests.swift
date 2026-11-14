@@ -158,7 +158,7 @@ final class SearchQueryTests: XCTestCase {
         XCTAssertEqual(found("s", in: lists), ["Safari", "Sun", "Site"])
     }
 
-    func test_A16_aLatePickOutweighsManyOldOnes() {
+    func testALatePickOutweighsManyOldOnes() {
         let recent = ["Slack"] + Array(repeating: "Mess", count: 29) + Array(repeating: "Safari", count: 5)
 
         XCTAssertEqual(titles("s", in: ["Safari", "Slack"], recent: recent), ["Slack", "Safari"])

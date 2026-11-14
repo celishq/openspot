@@ -6,7 +6,7 @@ final class FlowTests: XCTestCase {
     private let caffeinate = FlowSheet(spot: "settings", page: "spot:caffeinate")
     private let notes = FlowSheet(spot: "notes")
 
-    func test_H1_aPushPutsThePageAtTheCentreAndBackAndForwardMoveAlongTheHistory() {
+    func testAPushPutsThePageAtTheCentreAndBackAndForwardMoveAlongTheHistory() {
         var flow = Flow()
         flow.push(settings)
         flow.push(caffeinate)
@@ -20,7 +20,7 @@ final class FlowTests: XCTestCase {
         XCTAssertEqual(flow.behind, settings)
     }
 
-    func test_H1_aPushAfterAStepBackDropsTheSheetsAhead() {
+    func testAPushAfterAStepBackDropsTheSheetsAhead() {
         var flow = Flow()
         flow.push(settings)
         flow.push(caffeinate)
@@ -32,7 +32,7 @@ final class FlowTests: XCTestCase {
         XCTAssertNil(flow.forward())
     }
 
-    func test_H1_aPageThatIsAlreadyInTheHistoryMovesToTheTop() {
+    func testAPageThatIsAlreadyInTheHistoryMovesToTheTop() {
         var flow = Flow()
         flow.push(settings)
         flow.push(notes)
@@ -53,7 +53,7 @@ final class FlowTests: XCTestCase {
         XCTAssertEqual(flow.pages, [settings])
     }
 
-    func test_H1_theOldestPageDropsPastTheLimit() {
+    func testTheOldestPageDropsPastTheLimit() {
         var flow = Flow()
         for index in 0...Flow.limit { flow.push(FlowSheet(spot: "s\(index)")) }
 

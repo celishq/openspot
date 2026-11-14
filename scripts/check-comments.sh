@@ -1,9 +1,8 @@
 #!/bin/sh
 set -e
 cd "$(dirname "$0")/.."
-allowed=scripts/comments-allowed.txt
 found=$(mktemp)
-trap 'rm -f "$found" "$found.a"' EXIT
+trap 'rm -f "$found"' EXIT
 
 swift_files=$(find app scripts -name '*.swift' -not -path '*/Openspot.xcodeproj/*' | sort)
 script_files=$(find scripts -name '*.sh' -o -name '*.py' | sort; echo Makefile)
@@ -49,20 +48,9 @@ for f in $script_files; do
   ' "$f" >>"$found"
 done
 
-LC_ALL=C sort "$found" -o "$found"
-if [ "$1" = "--write" ]; then cp "$found" "$allowed"; echo "Wrote $(wc -l <"$allowed" | tr -d ' ') lines to $allowed."; exit 0; fi
-LC_ALL=C sort "$allowed" >"$found.a"
-
-new=$(LC_ALL=C comm -23 "$found" "$found.a")
-gone=$(LC_ALL=C comm -13 "$found" "$found.a")
-if [ -n "$new" ]; then
-  echo "$new" >&2
+if [ -s "$found" ]; then
+  cat "$found" >&2
   echo "A comment in code or scripts; see Comments in AGENTS.md." >&2
   exit 1
 fi
-if [ -n "$gone" ]; then
-  echo "$gone" >&2
-  echo "These lines of $allowed are gone from the code; remove them from it." >&2
-  exit 1
-fi
-echo "Comments check passed ($(wc -l <"$allowed" | tr -d ' ') old comments left)."
+echo "Comments check passed."

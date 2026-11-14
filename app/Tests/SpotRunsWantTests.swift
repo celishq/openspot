@@ -4,7 +4,7 @@ import XCTest
 
 @MainActor
 final class SpotRunsWantTests: SpotRunsCase {
-    func test_K5_closingThePanelClosesASheetOfPartsAndTheNextOpenReads() async throws {
+    func testClosingThePanelClosesASheetOfPartsAndTheNextOpenReads() async throws {
         try script(header: "on=sheet.open", "printf 'field=a\\nvalue=one\\n'")
         let sheet = try sheet()
         sheet.open {}
@@ -20,7 +20,7 @@ final class SpotRunsWantTests: SpotRunsCase {
         XCTAssertEqual(log(), ["read", "read"])
     }
 
-    func test_K5_closingThePanelLeavesASheetOfRowsOpen() async throws {
+    func testClosingThePanelLeavesASheetOfRowsOpen() async throws {
         try script(header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         sheet.open {}
@@ -222,7 +222,7 @@ final class SpotRunsWantTests: SpotRunsCase {
         try await wait("the read from the clock") { self.blocks().filter { $0 == "arg=read" }.count == 2 }
     }
 
-    func test_C4_searchTextReachesTheScriptAfterAPause() async throws {
+    func testSearchTextReachesTheScriptAfterAPause() async throws {
         try script(header: "on=sheet.open\non=sheet.text", "printf 'row=a\\ntitle=%s\\n' \"${OPENSPOT_VALUE:-none}\"")
         let sheet = try sheet()
         sheet.open {}

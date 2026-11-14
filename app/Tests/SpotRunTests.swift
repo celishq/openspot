@@ -62,7 +62,7 @@ final class SpotRunTests: XCTestCase {
         XCTAssertEqual(partsAtOpen, true)
     }
 
-    func test_A9_aSheetThatWaitsOpensWithoutAnAnswerThatIsLate() async throws {
+    func testASheetThatWaitsOpensWithoutAnAnswerThatIsLate() async throws {
         let sheet = try holding("sleep 5", pause: 0.02)
         var isOpened = false
 

@@ -35,7 +35,7 @@ final class SpotReleaseTests: XCTestCase {
         }
     }
 
-    func test_P12_aSignedReleaseNamesEachFileItsAddressItsVersionAndTheOneBefore() throws {
+    func testASignedReleaseNamesEachFileItsAddressItsVersionAndTheOneBefore() throws {
         let release = try SpotRelease.sign(files, address: "a1", version: 2, previous: "ff00", readme: "Counts cups.\n", by: key(), at: Date(timeIntervalSince1970: 100))
 
         XCTAssertTrue(release.isAuthentic)

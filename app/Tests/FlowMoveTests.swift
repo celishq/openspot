@@ -89,7 +89,7 @@ final class FlowMoveTests: PanelCase {
         XCTAssertEqual(model.behindTitles, ["Flow", "List"])
     }
 
-    func test_H4_aReadThatPushesMovesNothing() async throws {
+    func testAReadThatPushesMovesNothing() async throws {
         try script("reader", header: "title=Reader\non=sheet.open", "printf 'push=elsewhere\\n\\nrow=r\\ntitle=R\\n'")
         model.reload()
         model.isShown = true
@@ -101,7 +101,7 @@ final class FlowMoveTests: PanelCase {
         XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "reader")])
     }
 
-    func test_H4_theCommandStepsBackOnlyWithinTheSpotThatShows() async throws {
+    func testTheCommandStepsBackOnlyWithinTheSpotThatShows() async throws {
         try await openList()
         try await openPage()
 
@@ -112,7 +112,7 @@ final class FlowMoveTests: PanelCase {
         XCTAssertFalse(model.pop(in: "list"))
     }
 
-    func test_H4_aPushOfAPageThatTheSpotDoesNotTakeMovesNothingAndSaysSo() async throws {
+    func testAPushOfAPageThatTheSpotDoesNotTakeMovesNothingAndSaysSo() async throws {
         try await openList()
         try script("narrow", header: "title=Narrow\non=sheet.open\npages=ok:*", "printf 'row=n\\ntitle=N\\n'")
         model.reload()

@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 final class ModifierTapTests: XCTestCase {
-    func test_W2_aLoneModifierLetGoInTimeIsATap() {
+    func testALoneModifierLetGoInTimeIsATap() {
         var tap = ModifierTap()
 
         XCTAssertNil(tap.take(.option, at: 1))

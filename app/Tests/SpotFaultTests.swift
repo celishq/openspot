@@ -72,7 +72,7 @@ final class SpotFaultTests: XCTestCase {
         return try XCTUnwrap(model.openPanel)
     }
 
-    func test_A19_aFileThatDoesNotLoadKeepsAWideCardThatSaysHowToFixIt() throws {
+    func testAFileThatDoesNotLoadKeepsAWideCardThatSaysHowToFixIt() throws {
         try script("weather", header: "mode=huge", "echo")
 
         model.reload()
@@ -137,7 +137,7 @@ final class SpotFaultTests: XCTestCase {
         XCTAssertNil(entry("weather")?.spot.fault)
     }
 
-    func test_A21_aFailedRunMarksItsCardUntilARunSucceeds() async throws {
+    func testAFailedRunMarksItsCardUntilARunSucceeds() async throws {
         try script("ping", "echo 'Openspot cannot reach the server. Try again when the Mac is online.' >&2; exit 1")
         model.reload()
 
@@ -151,7 +151,7 @@ final class SpotFaultTests: XCTestCase {
         try await wait("the success") { entry("ping")?.failure == nil }
     }
 
-    func test_A20_aChangeOfTheFolderShowsANewSpotAtOnce() throws {
+    func testAChangeOfTheFolderShowsANewSpotAtOnce() throws {
         model.reload()
 
         try script("hello", "echo")

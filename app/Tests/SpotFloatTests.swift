@@ -64,7 +64,7 @@ final class SpotFloatTests: XCTestCase {
         try await wait("the floating list") { model.sheets["list"]?.list.shown.count == 2 }
     }
 
-    func test_W1_aKeyWithNoCommandFloatsItsSheetAndLeavesThePanel() async throws {
+    func testAKeyWithNoCommandFloatsItsSheetAndLeavesThePanel() async throws {
         try await floatList()
 
         XCTAssertEqual(host.floats, ["list"])
@@ -74,7 +74,7 @@ final class SpotFloatTests: XCTestCase {
         XCTAssertEqual(model.sheets["list"]?.list.shown.first?.title, "sheet.open")
     }
 
-    func test_W5_aFloatThatOpensDuringADragFollowsItAndOneWithNoDragDoesNot() async throws {
+    func testAFloatThatOpensDuringADragFollowsItAndOneWithNoDragDoesNot() async throws {
         try script("list", header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
         model.reload()
 
@@ -89,7 +89,7 @@ final class SpotFloatTests: XCTestCase {
         XCTAssertEqual(host.floatsFollowingDrag, [true, false])
     }
 
-    func test_W6_theSameKeyAgainClosesTheFloatAndDuringADragBringsItToThePointer() async throws {
+    func testTheSameKeyAgainClosesTheFloatAndDuringADragBringsItToThePointer() async throws {
         try await floatList()
 
         host.isMouseDown = true
@@ -105,7 +105,7 @@ final class SpotFloatTests: XCTestCase {
         XCTAssertEqual(model.runs.floating, [])
     }
 
-    func test_W8_theKeysOfAFloatMoveThePickAndCloseIt() async throws {
+    func testTheKeysOfAFloatMoveThePickAndCloseIt() async throws {
         try await floatList()
 
         XCTAssertTrue(model.handleFloatKey(ActionKey(name: "down"), in: "list"))
@@ -131,7 +131,7 @@ final class SpotFloatTests: XCTestCase {
         XCTAssertEqual(host.dismissals, 0)
     }
 
-    func test_W8_anActionThatAsksWithAFormOpensTheSpotInThePanel() async throws {
+    func testAnActionThatAsksWithAFormOpensTheSpotInThePanel() async throws {
         try await floatList()
         let rename = try XCTUnwrap(model.sheets["list"]?.spot.actions.first { $0.id == "rename" })
         let entry = try XCTUnwrap(model.cards.first { $0.id == "list" })
@@ -142,7 +142,7 @@ final class SpotFloatTests: XCTestCase {
         try await wait("the sheet in the panel") { model.openList == "list" }
     }
 
-    func test_W7_aFloatOfPartsKeepsItsValuesWhenThePanelClosesAndDropsThemWhenItCloses() async throws {
+    func testAFloatOfPartsKeepsItsValuesWhenThePanelClosesAndDropsThemWhenItCloses() async throws {
         try script("note", header: "on=sheet.open", "printf 'field=note\\nvalue=hi\\n'")
         model.reload()
         model.press(try key("note"))
@@ -160,7 +160,7 @@ final class SpotFloatTests: XCTestCase {
         XCTAssertEqual(host.landings, ["note"])
     }
 
-    func test_W7_aFloatOfPartsWithNoFieldKeepsItsPartsWhenItCloses() async throws {
+    func testAFloatOfPartsWithNoFieldKeepsItsPartsWhenItCloses() async throws {
         try script("note", header: "on=sheet.open", "printf 'text=hi\\ntitle=Hi\\n'")
         model.reload()
         model.press(try key("note"))
@@ -172,7 +172,7 @@ final class SpotFloatTests: XCTestCase {
         XCTAssertEqual(host.landings, ["note"])
     }
 
-    func test_W9_aDropOnAFloatGoesToItsScriptAndLeavesThePanel() async throws {
+    func testADropOnAFloatGoesToItsScriptAndLeavesThePanel() async throws {
         try script("shelf", header: "on=sheet.open\ndrop=*", """
         case "$1" in
           read) printf 'row=a\\n' ;;
@@ -246,7 +246,7 @@ final class SpotFloatTests: XCTestCase {
         model.reload()
     }
 
-    func test_W10_aPressOfASpotThatOffersAWindowOpensItsWindowAndNotThePanel() async throws {
+    func testAPressOfASpotThatOffersAWindowOpensItsWindowAndNotThePanel() async throws {
         try windowSpot()
 
         model.press("store")
@@ -270,7 +270,7 @@ final class SpotFloatTests: XCTestCase {
         XCTAssertNil(model.openList)
     }
 
-    func test_W10_aFormOfAWindowSpotSaysItDoesNotShowYetAndOpensNoPanel() async throws {
+    func testAFormOfAWindowSpotSaysItDoesNotShowYetAndOpensNoPanel() async throws {
         try windowSpot()
         model.press("store")
         try await wait("the window") { host.windows == ["store"] }

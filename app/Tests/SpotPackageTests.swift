@@ -314,7 +314,7 @@ final class SpotPackageTests: XCTestCase {
         XCTAssertEqual(SpotPackage.file(in: folder.path)?.path, folder.path)
     }
 
-    func test_P7_theNoticeWarnsTheSenderAboutSecrets() throws {
+    func testTheNoticeWarnsTheSenderAboutSecrets() throws {
         try script("weather.spot/weather.sh")
         try script("home.spot/a.sh")
         try plain("home.spot/b", Data("b".utf8))

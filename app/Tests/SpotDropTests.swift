@@ -161,7 +161,7 @@ final class SpotDropTests: XCTestCase {
         Set(runs.sheets.keys.filter { runs.takesDrag($0) })
     }
 
-    func test_D2_forTheWholeDragEachCardThatTakesEachFileShowsItAndNoOtherDoes() throws {
+    func testForTheWholeDragEachCardThatTakesEachFileShowsItAndNoOtherDoes() throws {
         try addScript("movies", header: "drop=mov")
         try addScript("clips", header: "drop=mov,mkv")
         try addScript("all", header: "drop=*")
@@ -430,7 +430,7 @@ final class SpotDropTests: XCTestCase {
         return { count }
     }
 
-    func test_D5_aClickOnACardWithDropAndNoSheetAsksForAChoiceAndRunsNothing() async throws {
+    func testAClickOnACardWithDropAndNoSheetAsksForAChoiceAndRunsNothing() async throws {
         let sheet = try sheet(header: "drop=mov")
         let choices = choiceCount(of: sheet)
 
@@ -442,7 +442,7 @@ final class SpotDropTests: XCTestCase {
         XCTAssertEqual(log(), [])
     }
 
-    func test_D5_aChoiceRunsTheSameCallAsADrop() async throws {
+    func testAChoiceRunsTheSameCallAsADrop() async throws {
         let sheet = try sheet(header: "drop=mov")
         sheet.pressCard()
         let file = file("a b.mov")
@@ -502,7 +502,7 @@ final class SpotDropTests: XCTestCase {
         try await wait("the call") { self.log().contains("power true") }
     }
 
-    func test_D6_aDropHasNoTimeLimitAndGoesOnWithThePanelClosed() async throws {
+    func testADropHasNoTimeLimitAndGoesOnWithThePanelClosed() async throws {
         runs = SpotRuns(readLimit: 0.2, now: { [unowned self] in self.time })
         let sheet = try sheet(header: "drop=mov", "sleep 0.5\ntouch '\(path("done"))'")
         runs.panelOpened()

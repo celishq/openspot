@@ -113,7 +113,7 @@ final class SpotVerbTests: XCTestCase {
         return (entry, nil)
     }
 
-    func test_A24_theMenuOfASpotOfThePersonOffersEachActWithItsKey() throws {
+    func testTheMenuOfASpotOfThePersonOffersEachActWithItsKey() throws {
         try script("weather", header: "title=Weather")
         _ = try select("weather")
 
@@ -379,7 +379,7 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertTrue(prompt.contains("Openspot cannot reach the server."))
     }
 
-    func test_A24_deleteAsksNothingKeepsThePanelAndCommandZPutsTheSpotBack() async throws {
+    func testDeleteAsksNothingKeepsThePanelAndCommandZPutsTheSpotBack() async throws {
         try script("weather", header: "title=Weather")
         _ = try select("weather")
 

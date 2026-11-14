@@ -545,7 +545,7 @@ final class SpotsModelDragTests: XCTestCase {
         return SpotStore.publications(of: scan, in: store)[id]
     }
 
-    func test_P10_publishWritesAPackageOnceAndAgainOnlyWhenTheFilesChange() async throws {
+    func testPublishWritesAPackageOnceAndAgainOnlyWhenTheFilesChange() async throws {
         try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
         _ = try model.files.account.keyMadeOnce()
         XCTAssertNil(publication(of: "a"))
@@ -581,7 +581,7 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
     }
 
-    func test_P10_aSpotWithNoReadmeAsksForOneAndIsNotPublished() async {
+    func testASpotWithNoReadmeAsksForOneAndIsNotPublished() async {
         let result = await model.publish("a")
 
         XCTAssertEqual(result, .needsReadme)
@@ -618,7 +618,7 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertFalse(try model.files.config.read().arrangement.enabled.contains("timer"))
     }
 
-    func test_A13_aDragFromTheStoreOpensEditSpotsThatStaysAfterTheDrag() {
+    func testADragFromTheStoreOpensEditSpotsThatStaysAfterTheDrag() {
         model.endEditing()
         model.isShown = false
 

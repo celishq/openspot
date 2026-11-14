@@ -11,7 +11,6 @@
   - `Views/` — `openspot-views`, which a Release build runs to compile each view of the core spots into a `.view` beside
     its source, so that it draws on a Mac with no developer tools. It does not ship. Debug compiles a view at its first use.
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
-- `app/RULES.md` holds the rules of the app that no spot author sees, by ID. Code and tests name a rule by its ID.
 - `app/Keywords/` holds the CLDR keywords of emoji and symbols, one xz file per language. `scripts/emoji-keywords.py` writes
   it from a pinned CLDR version, and the build copies it into the app.
 - `app/Help/` holds the guide of each `openspot` noun that has one, which `openspot help <noun>` prints. The build copies it
@@ -53,19 +52,15 @@ Write a doc that people read, such as `GUIDE.md` and `PROTOCOL.md`, the way Appl
   fails on a gap the list lacks and on a listed gap that is gone.
 - It fails when an `sh`, `js` or `swift` example of GUIDE.md, PROTOCOL.md or `app/Help/` does not run (`DocExampleTests`).
   An example that needs a network, an account or a tool that not every Mac has goes in a `text` fence.
-- `sh scripts/doc-repeats.sh [words]` prints each pair of sentences in the docs that share a run of that many words or
-  more, 6 by default, so that you can say the thing once and link to it.
+- The docs are `AGENTS.md`, `GUIDE.md`, `PROTOCOL.md`, `CONTRIBUTING.md`, `README.md` and `app/Help/`. The code is the
+  truth for how the app works, so no doc describes the app's code. Before you add a sentence, look for one that says it
+  already, and link to it, since no check finds a repeat.
 
 ## Comments
 
 - Code and the scripts in `scripts/` hold no comment and no docstring. A name, a type or a test says what a comment would.
-  A fact that none of them can hold, such as why a limit is 2 ms, is a rule in `app/RULES.md` with a test that names its ID.
 - The one exception is a `// @todo #<id>` puzzle. The header of a spot script is not a comment: it is part of the spot.
-- `make verify` runs `scripts/check-comments.sh`. Its list `scripts/comments-allowed.txt` holds the old comments still to
-  remove, and it fails on a line the list lacks and on a listed line the code no longer has.
-- A test names each rule it proves by its ID, as in `func test_A4_searchStaysUntilEsc`. `make verify` runs
-  `scripts/check-rules.sh`, which fails on a rule ID given twice, on a test that names an unknown ID, and on a rule that no
-  test names and that `scripts/rules-untested.txt` does not list.
+- `make verify` runs `scripts/check-comments.sh`, which fails on a comment.
 
 ## Core and Shell
 
@@ -172,7 +167,7 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
 ## Verify
 
 ```sh
-make verify                # the Core, Tests, Comments, Rules and Motion checks, then the XCTest suite, with test classes in parallel
+make verify                # the Core, Tests, Comments and Motion checks, then the XCTest suite, with test classes in parallel
 make test T=SpotRunsTests  # one test class, while you work on it
 make perf N=3              # times a Release sheet that opens and closes 20 times, 3 runs; ACTION picks another motion
 make film SPOT=caffeinate  # films the open and close of a sheet 10x slower (SLOW=1 for real speed) into .temp/film

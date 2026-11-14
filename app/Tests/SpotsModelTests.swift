@@ -72,7 +72,7 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(host.shows, shows)
     }
 
-    func test_A25_aKeyThatTheAPISetsHoldsTheKeysAgainAndBuildsNoGrid() throws {
+    func testAKeyThatTheAPISetsHoldsTheKeysAgainAndBuildsNoGrid() throws {
         try script("move", header: "title=Move\n\nbutton=left\ntitle=Left side", ":")
         model.reload()
         let builds = model.gridBuilds
@@ -608,7 +608,7 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the shown panel") { model.isShown }
     }
 
-    func test_A4_theSearchStaysThroughAHideUntilEsc() {
+    func testTheSearchStaysThroughAHideUntilEsc() {
         model.reload()
         model.panelWillShow(holding: [])
         model.searchText = "ban"
@@ -622,7 +622,7 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.searchText, "")
     }
 
-    func test_A8_theOpenAtLaunchWaitsAtMostTwoSecondsForTheReads() async throws {
+    func testTheOpenAtLaunchWaitsAtMostTwoSecondsForTheReads() async throws {
         let gate = folder.appendingPathComponent("gate").path
         try script("stuck", header: "on=panel.open", "n=0; while [ ! -f '\(gate)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done")
         model.reload()
@@ -639,7 +639,7 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the end of the read") { !model.runs.isReading }
     }
 
-    func test_A14_aFirstLaunchOpensThePanelOnTheGridAndNamesTheKeyWhenItCloses() {
+    func testAFirstLaunchOpensThePanelOnTheGridAndNamesTheKeyWhenItCloses() {
         model.beginFirstLaunch()
 
         XCTAssertEqual(host.presents, 1)

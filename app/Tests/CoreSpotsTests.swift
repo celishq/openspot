@@ -35,7 +35,7 @@ final class CoreSpotsTests: XCTestCase {
         XCTAssertEqual(try names(enabled: ["files"]), ["Files"])
     }
 
-    func test_A12_aFileInTheSpotsFolderWinsOverACoreSpotAndIsAlwaysOn() throws {
+    func testAFileInTheSpotsFolderWinsOverACoreSpotAndIsAlwaysOn() throws {
         try write("apps.sh", in: core, header: "title=Core apps")
         try write("apps.sh", in: folder, header: "title=My apps")
 
@@ -93,7 +93,7 @@ final class CoreSpotsTests: XCTestCase {
         XCTAssertEqual(config.arrangement.letters(over: SpotArrangement()).count, config.arrangement.choices.filter { $0.letter?.isEmpty == false }.count)
     }
 
-    func test_A11_aCoreSpotRunsInPlaceFromItsFolderInTheApp() throws {
+    func testACoreSpotRunsInPlaceFromItsFolderInTheApp() throws {
         try write("apps.sh", in: core)
 
         let apps = try XCTUnwrap(SpotsFolder(url: folder, core: core, enabled: ["apps"]).scan().spots.first)

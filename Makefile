@@ -4,7 +4,6 @@ verify:
 	sh scripts/check-core.sh
 	sh scripts/check-tests.sh
 	sh scripts/check-comments.sh
-	sh scripts/check-rules.sh
 	sh scripts/check-motion.sh
 	cd app && xcodegen generate >/dev/null
 	cd app && DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project Openspot.xcodeproj -scheme Openspot -destination 'platform=macOS' test

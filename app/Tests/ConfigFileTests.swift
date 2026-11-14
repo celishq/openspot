@@ -32,7 +32,7 @@ final class ConfigFileTests: XCTestCase {
         XCTAssertEqual(file.read().faults, [])
     }
 
-    func test_A6_readsTheKey() throws {
+    func testReadsTheKey() throws {
         try write("# mine\npanel_key = \"option+space\"\n")
 
         XCTAssertEqual(file.read().panelKey, Shortcut(text: "option+space"))
@@ -141,7 +141,7 @@ final class ConfigFileTests: XCTestCase {
         XCTAssertEqual(file.read().keys.map(\.act), [.command("left")])
     }
 
-    func test_A51_writesAtTheSameTimeLoseNoSetting() throws {
+    func testWritesAtTheSameTimeLoseNoSetting() throws {
         let file = file
 
         DispatchQueue.concurrentPerform(iterations: 20) { index in
