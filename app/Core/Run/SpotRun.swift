@@ -1,46 +1,30 @@
 import Foundation
 import Observation
 
-/// All that one script shows: its state, its value, its rows, its parts, whether its sheet is open and its
-/// running calls. It reaches the script through its link, which runs a process for each call or keeps one that stays. A run
-/// of one never stops a run of another, and a stopped run changes nothing.
 @MainActor
 @Observable
 public final class SpotRun {
-    /// What the sheet tells its owner.
     public enum Report: Sendable {
         case toast(String)
         case failure(String)
-        /// A failure with a link that opens its fix (protocol: The life of a call).
         case failureWithFix(String, URL)
         case frame(String)
-        /// The rows that a search finds, or the state, changed.
         case listChange
-        /// A click on a card that takes files and has no sheet: the owner asks the person for files, and gives them to `drop`.
         case chooseFiles
-        /// The float of the script closed by itself, as when its script left the folder.
         case landed
-        /// The sheet closed by itself, as when the panel closed or its script left the folder.
         case closed
-        /// A press asked to move the spot's flow, by a `push` or `pop` effect (protocol: Pages).
         case move(FlowMove)
     }
 
-    /// Why a read is asked. A `panel` or a `sheet` moment can use a young answer. The clock and an event always run and report
-    /// no failure to a person. A change of state always runs, and runs again after a read that started before it.
     public enum ReadNeed: Sendable {
         case moment
         case clock
         case change
     }
 
-    /// What a call asks for, which says what its answer replaces. A read of a list that the script searches carries the text
-    /// it was sent with.
     enum Ask {
-        /// `tells` says whether its failure shows as a toast, which a read at the opening of the panel does not (protocol: The life of a call).
         case read(generation: Int?, reports: Bool, query: String = "", tells: Bool = true)
         case search(String)
-        /// The rows that answer a text of the main search, which leave the spot and its sheet as they are (protocol: Places).
         case answer(String)
 
         var isAnswer: Bool {
@@ -49,8 +33,6 @@ public final class SpotRun {
         }
     }
 
-    /// A call of work: the parts it answers, the part whose text the person owns, whether a read follows it, and the state
-    /// that a stop brings back.
     struct Work {
         var generation: Int?
         var keeping: String?
@@ -58,13 +40,11 @@ public final class SpotRun {
         var undo: SpotState?
     }
 
-    /// What a call is for, which says what its frames and its end change.
     enum Purpose {
         case ask(Ask)
         case work(Work)
     }
 
-    /// One call that a run sends through its link.
     struct Call {
         let action: SpotAction
         let key: String
@@ -88,23 +68,16 @@ public final class SpotRun {
     static let globalKey = "global"
 
     public internal(set) var spot: Spot
-    /// The rows that the script gave for the text of the main search, which stay until the newest text is answered (protocol: Places).
     public internal(set) var answers: [SpotItem] = []
-    /// The text of the main search that the script was last asked to answer, and the text that its rows answer.
     var answerQuery = ""
     var answeredQuery = ""
-    /// The work that waits for the answer to the newest text, such as a pick of a row of the older one.
     var answerWaiters: [() -> Void] = []
 
-    /// Whether the script has not yet answered the newest text that it was asked.
     public var isAnswering: Bool {
         answeredQuery != answerQuery
     }
     @ObservationIgnored var rows: ItemList
 
-    /// The rows of the sheet. A move of the selection alone tells only the readers of `selection` and reports nothing, so
-    /// that a held arrow key redraws what shows the selection and nothing else. The owner hears of a change only when the
-    /// rows that a search finds change.
     public var list: ItemList {
         get {
             access(keyPath: \.list)
@@ -125,37 +98,30 @@ public final class SpotRun {
         }
     }
 
-    /// Lands the rows of the newest text at once when they are still being found, for an action that reads them.
     public func landRows() {
         if rows.isFinding { list.landFinding() }
     }
 
-    /// The text of the search of the rows. New text tells its readers before the rows that it finds land.
     public var query: String {
         access(keyPath: \.query)
         return rows.query
     }
 
-    /// Makes a change that tells the readers of a key path when `tells`, and else tells no one.
     private func tell<Member>(_ path: KeyPath<SpotRun, Member>, _ tells: Bool, _ change: () -> Void) {
         tells ? withMutation(keyPath: path, change) : change()
     }
 
-    /// The index of the selected row among the shown rows.
     public var selection: Int {
         access(keyPath: \.selection)
         return rows.selected
     }
 
-    /// The selected row, read so that a move of the selection and a change of the rows both tell its reader.
     public var selectedItem: SpotItem? {
         access(keyPath: \.list)
         access(keyPath: \.selection)
         return rows.selectedItem
     }
     @ObservationIgnored private var parts: SheetParts?
-    /// The parts of the sheet. A move of the selection alone tells only the readers of `selectedPart`, so that an arrow press
-    /// redraws what shows the selection and not the sheet.
     public internal(set) var panel: SheetParts? {
         get {
             access(keyPath: \.panel)
@@ -171,48 +137,31 @@ public final class SpotRun {
             settle()
         }
     }
-    /// The part that return uses, read so that a move of the selection and a change of the parts both tell its reader.
     public var selectedPart: SpotPart? {
         access(keyPath: \.panel)
         access(keyPath: \.selectedPart)
         return parts?.selectedPart
     }
-    /// The last arrow press that asks the parts to scroll. It lives apart from the parts, so that a press redraws only the scroll.
     public internal(set) var nudge = SheetParts.Nudge.rest
-    /// The last press of return that asks the menu of a part to open. It lives apart from the parts, as the nudge does.
     public internal(set) var menuOpening: SheetParts.MenuOpening?
-    /// Whether this sheet is the open one, as the runs record it.
     public var isOpen: Bool {
         runs.openID == spot.id
     }
-    /// Whether the script shows in a float of its own (W7).
     public var isFloating: Bool {
         runs.floating.contains(spot.id)
     }
-    /// The places where its sheet shows, as the runs record them.
     public var places: Set<SheetPlace> {
         Set([isOpen ? SheetPlace.panel : nil, isFloating ? .float : nil].compactMap { $0 })
     }
-    /// Whether its sheet shows in any place.
     var showsSheet: Bool {
         !places.isEmpty
     }
-    /// How many rows the list shows, and how many on a line. It changes only when they do, so a move of the selection leaves
-    /// a view that sizes itself by it alone.
     public private(set) var shape = Shape(rows: 0, perLine: 1)
-    /// What kind of sheet it is, from its parts, or from a first answer that waits for the open motion. An open sheet that
-    /// still waits for its first answer cannot say yet.
     public private(set) var kind = SheetKind.rows
-    /// The rect of its sheet of parts, and the kind of those parts. They change only when they do, so that a new value of a
-    /// part reaches no view that reads only these.
     public private(set) var partsRect: CGRect?
     public private(set) var partsKind: SheetKind?
-    /// The rect of its sheet in the panel: of its parts, or else of its rows up to the tallest sheet, and whether its search
-    /// field shows. They change only when they do, so that a search that leaves a long list long reaches no view that reads
-    /// only these.
     public private(set) var sheetRect = SpotTokens.sheetRect(rows: 0)
     public private(set) var showsField = true
-    /// The kind of the first answer while it waits for the open motion, or nil when no such answer waits.
     @ObservationIgnored var heardKind: SheetKind? {
         didSet { settle() }
     }
@@ -223,48 +172,34 @@ public final class SpotRun {
             onReport(.listChange)
         }
     }
-    /// Whether its card is on. It changes only when that does, so that a view that shows only this hears of no other change.
     public private(set) var isOn = false
     public internal(set) var reading: MetricReading
-    /// The words of its last failed call, until a call ends well.
     public internal(set) var failure: String?
-    /// Each running call, the oldest first, with the last frame of each. A read starts and ends a call, so no view hears of it.
     @ObservationIgnored public internal(set) var calls: [ScriptCall] = []
-    /// The calls that do work, the oldest first, which `work` shows. Only a call of work changes it.
     var workCalls: [ScriptCall] = []
     @ObservationIgnored public var onReport: (Report) -> Void = { _ in }
-    /// Makes the change that brings the sheet its first parts.
     @ObservationIgnored public var partsArrival: (() -> Void) -> Void = { $0() }
     var workPauses = 0
     @ObservationIgnored let runs: SpotRuns
-    /// Makes the pictures of these rows ready ahead of their first frame, with the colour glyphs of the whole list.
     @ObservationIgnored let prepare: ([SpotItem], [String]) async -> Void
-    /// The glyphs of the rows that were made ready last.
     @ObservationIgnored var glyphs: (rows: [SpotItem], glyphs: [String]) = ([], [])
     @ObservationIgnored var link: ScriptLink
     @ObservationIgnored var answered: Date? {
         didSet { settle() }
     }
     @ObservationIgnored var lastAnswer: SpotOutput?
-    /// The reason of the newest read that was sent, which the answer it gives carries.
     @ObservationIgnored var readReason: ReadReason?
-    /// Whether the running read finishes even when nothing wants the spot, as a read at launch or of offered rows does.
     @ObservationIgnored var finishesRead = false
     @ObservationIgnored var hasAsked = false
-    /// The work that waits for the next answer, such as a press of a card whose kind the answer says.
     @ObservationIgnored var waiter: (() -> Void)?
     @ObservationIgnored var selecting: String?
     @ObservationIgnored var readsAgain = false
-    /// The newest event that came during a read, which reads again once that read ends.
     @ObservationIgnored var eventAgain: ReadReason?
     @ObservationIgnored var pauses: [String: Task<Void, Never>] = [:]
     @ObservationIgnored var editing: String?
-    /// The drops and the drags of files that wait for the running work, each in turn (protocol: The calls, Files out).
     @ObservationIgnored var waitingFiles: [SpotAction] = []
     @ObservationIgnored var waitingKeys: [String] = []
-    /// The page that the sheet shows, which each call names in `OPENSPOT_PAGE`, or nil for the spot's first sheet.
     public internal(set) var page: String?
-    /// What each page of the flow last showed while another page shows, which the flow forgets as the page leaves it.
     @ObservationIgnored var pageStates: [(page: String?, state: PageState)] = []
 
     init(spot: Spot, runs: SpotRuns, recent: [String], prepare: @escaping ([SpotItem], [String]) async -> Void) {
@@ -290,8 +225,6 @@ public final class SpotRun {
         }
     }
 
-    /// Takes the spot again after a new look at the spots folder, with what its script last printed. A script that starts
-    /// or stops staying, or that starts or stops running inline, gets a new link.
     public func update(_ new: Spot) {
         let header = spot.headerState
         if new.answers != spot.answers { answer("") }
@@ -308,26 +241,20 @@ public final class SpotRun {
         if new.headerState != header { takeState(lastAnswer) }
     }
 
-    /// Ends a staying script that runs, so that it starts again with the mode of the runs while something wants it, and
-    /// lets an inline script load again at its next call (protocol: Trust).
     func restartScript() {
         guard spot.mode.stays || spot.mode == .inline, link.isReachable else { return }
         link.end()
         link.settle()
     }
 
-    /// Whether a click must wait for the first answer, because the kind of this spot comes from what the script prints.
     public var awaitsAnswer: Bool {
         spot.readsState && !hasAsked
     }
 
-    /// The rows and the line length of a list.
     public struct Shape: Equatable, Sendable {
         public let rows: Int
         public let perLine: Int
-        /// Whether the search field lies over the rows, which takes the room of one row.
         public let hasField: Bool
-        /// Whether a thin line sets the rows pinned at the bottom apart from the rows that scroll.
         public let setsApart: Bool
 
         public init(rows: Int, perLine: Int, hasField: Bool = true, setsApart: Bool = false) {
@@ -338,7 +265,6 @@ public final class SpotRun {
         }
     }
 
-    /// Takes the shape and the wait from the list, the parts and the answer, and stores each only when it changes.
     func settle() {
         let next = rows.isBento
             ? Shape(rows: rows.drawing.lineCount(rows: rows.shown.count) * rows.drawing.columns, perLine: rows.drawing.columns)
@@ -357,8 +283,6 @@ public final class SpotRun {
         if field != showsField { showsField = field }
     }
 
-    /// Hears a frame that waits for the open motion, or nil when the wait ends. A sheet that waits for its first answer
-    /// takes its kind from that frame while it waits.
     func hear(_ lines: SpotOutput?) {
         guard let lines else {
             heardKind = nil

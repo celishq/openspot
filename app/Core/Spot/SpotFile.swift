@@ -1,7 +1,5 @@
 import Foundation
 
-/// What one file in the spots folder gives: a spot of an executable, or of a JavaScript file with a header that runs inline
-/// when it is not executable.
 public struct SpotFile: Equatable, Sendable {
     private static let widgetExtension = "toml"
     public static let inlineExtension = "js"
@@ -14,7 +12,6 @@ public struct SpotFile: Equatable, Sendable {
         self.spots = spots
     }
 
-    /// Reads a file with no run of it. Returns nil for a file that is neither. Throws a fault that names what is wrong.
     public init?(file url: URL, id: String) throws {
         if SwiftProgram.isProgram(url) { return nil }
         if url.pathExtension == Self.widgetExtension {
@@ -30,7 +27,6 @@ public struct SpotFile: Equatable, Sendable {
         }
     }
 
-    /// A script with a clock starts off the grid until the person shows it (protocol: Places).
     public init(script url: URL, header: TextBlock, id: String) throws {
         let name = header.value("title") ?? Self.name(of: url)
         if header.fields.contains(where: { $0.key.hasPrefix(Self.drawingPrefix) }) {
@@ -121,13 +117,11 @@ public struct SpotFile: Equatable, Sendable {
         self.init(id: id, spots: [command])
     }
 
-    /// Whether a file is a spot that runs: an executable, or a JavaScript file with a header.
     static func runs(_ url: URL) -> Bool {
         if FileManager.default.isExecutableFile(atPath: url.path) { return true }
         return url.pathExtension == inlineExtension && !SpotHeader(url: url).block.fields.isEmpty
     }
 
-    /// Refuses a header that still has `global`, `float`, `tray`, `data`, `stay` or `shortcut`, and names the new way.
     private static func refuseOldKeys(_ header: TextBlock, of name: String) throws {
         if let read = header.value("read") {
             let events = SpotRead.words(read).compactMap { ["panel": "on=panel.open", "sheet": "on=sheet.open"][$0] }
@@ -171,26 +165,21 @@ public struct SpotFile: Equatable, Sendable {
         try refuseSize(header, of: name)
     }
 
-    /// Refuses a letter that a file names, because the person gives each spot its letter.
     private static func refuseLetter(_ text: String?, of name: String) throws {
         guard text != nil else { return }
         throw SpotError.fault("\(name) has shortcut, which Openspot no longer reads. The person gives each spot its letter in Edit Spots")
     }
 
-    /// Refuses a `keyword` line, because the keywords are one comma list.
     private static func refuseKeyword(_ header: TextBlock, of name: String) throws {
         guard let keyword = header.value("keyword") else { return }
         throw SpotError.fault("\(name) has keyword=\(keyword), which Openspot no longer reads. Write keywords=a, b")
     }
 
-    /// Refuses a `size` line, because the person sizes each card.
     private static func refuseSize(_ header: TextBlock, of name: String) throws {
         guard let size = header.value("size") else { return }
         throw SpotError.fault("\(name) has size=\(size), which Openspot no longer reads. Openspot sizes a card by the person's choice, so remove it")
     }
 
-    /// When a file that the build of a view reads last changed: its source or the library beside it. Nil where the scan and
-    /// the watch of the folder miss an edit: a view outside its script's folder, or in a linked spot folder.
     private static func viewDate(of view: String, script: URL) -> Date? {
         let folder = script.deletingLastPathComponent().path
         let isLinked = (try? FileManager.default.destinationOfSymbolicLink(atPath: folder)) != nil
@@ -198,12 +187,10 @@ public struct SpotFile: Equatable, Sendable {
         return [view, ViewLibrary.path(beside: view)].compactMap { try? FileManager.default.attributesOfItem(atPath: $0)[.modificationDate] as? Date }.max()
     }
 
-    /// A path that the header names: a full path or an https URL stays, and any other starts at the folder of the script.
     private static func path(_ text: String, beside url: URL) -> String {
         text.hasPrefix("/") || WebPictures.isWeb(text) ? text : url.deletingLastPathComponent().appendingPathComponent(text).path
     }
 
-    /// The name a file gives when it has no `name` line: its words with a capital first letter.
     static func name(of url: URL) -> String {
         let words = url.deletingPathExtension().lastPathComponent
             .replacingOccurrences(of: "-", with: " ")
@@ -212,12 +199,8 @@ public struct SpotFile: Equatable, Sendable {
     }
 
 
-    /// The start of the key of a card drawing in a header, such as `grid.large`.
     private static let drawingPrefix = "grid."
 
-    /// A spot whose header draws its card from other spots: each word of its `grid.<size>` lines is the ID of a spot, whose
-    /// main block shows in that area, and `to` names the spot that a press opens.
-    /// The keys beside its `grid.<size>` lines that a header of a card of other spots takes (protocol: Cards of other spots).
     private static let cardKeys: Set<String> = ["title", "icon", "detail", "keywords", "to"]
 
     private static func drawn(_ header: TextBlock, name: String, id: String, url: URL) throws -> Spot {
@@ -251,8 +234,6 @@ public struct SpotFile: Equatable, Sendable {
         )
     }
 
-    /// The ID of a tool that a widget names: a script of the widget's own spot folder by its file name first, else the name
-    /// as an ID (protocol: A spot).
     private static func tool(_ name: String, beside url: URL, id: String) -> String {
         guard !name.contains("/") else { return name }
         let files = (try? FileManager.default.contentsOfDirectory(at: url.deletingLastPathComponent(), includingPropertiesForKeys: nil)) ?? []

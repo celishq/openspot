@@ -1,15 +1,11 @@
 import Foundation
 
-/// What `openspot spot stats` prints from the days of the counts (protocol: Stats): their sum for a person, a `row` block for each
-/// spot with the most CPU time first and a `use` block for each call that needs a use, the newest first, or the days as
-/// JSON.
 public struct StatsReport: Sendable {
     public enum Format: Equatable, Sendable {
         case text, frame, json
     }
 
     let days: [SpotUsage.Day]
-    /// The one spot to keep, or nil for each spot.
     let spot: String?
 
     public init(days: [SpotUsage.Day], spot: String?) {
@@ -25,7 +21,6 @@ public struct StatsReport: Sendable {
         }
     }
 
-    /// The count of each spot over the days, the most CPU time first.
     private var counts: [(id: String, count: SpotUsage.Count)] {
         var sums: [String: SpotUsage.Count] = [:]
         for day in days {
@@ -36,7 +31,6 @@ public struct StatsReport: Sendable {
         return sums.sorted { ($0.value.cpu, $1.key) > ($1.value.cpu, $0.key) }.map { ($0.key, $0.value) }
     }
 
-    /// Each call that needs a use over the days, the newest first.
     private var uses: [SpotUsage.Use] {
         days.flatMap(\.uses).filter { spot == nil || $0.spot == spot }.sorted { $0.time > $1.time }
     }
@@ -115,7 +109,6 @@ public struct StatsReport: Sendable {
         }
     }
 
-    /// Its CPU time, its runs and the time of each run on average, in words.
     private static func detail(of count: SpotUsage.Count) -> String {
         let cpu = "\(time(count.cpu)) CPU"
         guard count.runs > 0 else { return cpu }

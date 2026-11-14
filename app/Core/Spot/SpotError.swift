@@ -3,14 +3,12 @@ import Foundation
 public enum SpotError: Error, Equatable, Sendable {
     case timedOut
     case failed(Int32, String)
-    /// A failure whose output names a link that opens its fix (protocol: The life of a call).
     case failedWithFix(Int32, String, URL)
     case badState
     case badForm
     case badMetric
     case fault(String)
 
-    /// Why it failed, in words for the person.
     public var reason: String {
         switch self {
         case .timedOut: "It took too long."

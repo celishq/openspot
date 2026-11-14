@@ -1,8 +1,5 @@
 import Foundation
 
-/// The link to a script that runs once for each call. Each call is a process of its own. Each frame with a block of a
-/// read or a search answers it, and one that ended with no picture answers with its last head. A frame of only a head
-/// carries effects.
 @MainActor
 final class OnceLink: ScriptLink {
     weak var run: SpotRun?
@@ -75,7 +72,6 @@ final class OnceLink: ScriptLink {
         try await text(of: action, key: key, input: values)
     }
 
-    /// Runs a call to its end, and returns all that it printed, or nil when it was stopped.
     private func text(of action: SpotAction, key: String, input: String?) async throws -> String? {
         guard let run else { return nil }
         return try await withCheckedThrowingContinuation { continuation in

@@ -54,7 +54,7 @@ final class WebPicturesTests: XCTestCase {
 
     func testAPathStaysAndAFailedOrTooLargeFetchKeepsNothing() async throws {
         let failing = WebPictures(folder: folder) { _ in throw Failure() }
-        let large = WebPictures(folder: folder) { _ in Data(count: WebPictures.limit + 1) }
+        let large = WebPictures(folder: folder) { _ in Data(count: WebPictures.byteLimit + 1) }
 
         let path = await failing.path(of: "/tmp/a.png")
         let failed = await failing.path(of: "https://example.com/a.png")
