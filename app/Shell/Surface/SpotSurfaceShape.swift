@@ -15,7 +15,7 @@ struct SpotSurfaceShape: InsettableShape {
 
     func path(in bounds: CGRect) -> Path {
         let place = rect.insetBy(dx: inset, dy: inset)
-        let corner = max(radius - inset, 0)
+        let corner = min(max(radius - inset, 0), min(place.width, place.height) / 2)
         return RoundedRectangle(cornerRadius: corner, style: Self.style(corner: corner, in: place)).path(in: place)
     }
 

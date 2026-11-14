@@ -6,6 +6,7 @@ public struct FlowEdges: Equatable, Sendable {
     public private(set) var from: CGRect?
     public private(set) var coming: FlowEdge.Side?
     public private(set) var leaving: FlowEdge.Place?
+    public private(set) var isMoving = false
 
     public init() {}
 
@@ -41,6 +42,7 @@ public struct FlowEdges: Equatable, Sendable {
         next.from = from
         next.coming = coming
         next.leaving = leaving
+        next.isMoving = true
         for edge in edges where !rest.edges.contains(where: { $0.sheet == edge.sheet }) {
             var gone = edge
             if edge.sheet == rest.shown {
@@ -61,6 +63,7 @@ public struct FlowEdges: Equatable, Sendable {
         next.from = nil
         next.coming = nil
         next.leaving = nil
+        next.isMoving = false
         return next
     }
 }

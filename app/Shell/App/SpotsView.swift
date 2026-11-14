@@ -104,7 +104,7 @@ struct SpotsView: View {
     }
 
     private var softBlur: some View {
-        SpotBackdrop(model: model, gridHeight: gridHeight, sheetHeight: max(sheetHeight, replacedHeight), menuHeight: menuHeight, drawsBlur: drawsBlur)
+        SpotBackdrop(model: model, gridHeight: gridHeight, sheetHeight: max(sheetHeight, replacedHeight), stepHeight: stepHeight, menuHeight: menuHeight, drawsBlur: drawsBlur)
             .environment(\.spotPanels, model.shownPanels)
             .modifier(PanelSpan(panels: model.shownPanels))
     }
@@ -160,13 +160,16 @@ struct SpotsView: View {
     }
 
     private var replacedHeight: CGFloat {
-        let stand = model.flowEdges.from.map(Self.blurHeight(of:)) ?? 0
-        guard let replaced = model.transition.replaced else { return stand }
-        return max(stand, Self.blurHeight(of: rect(of: replaced)))
+        guard let replaced = model.transition.replaced else { return 0 }
+        return Self.blurHeight(of: rect(of: replaced))
     }
 
     private var gridPush: CGFloat {
         coversGrid ? sheetRect.maxY - SpotFieldView.rect.maxY : 0
+    }
+
+    private var stepHeight: CGFloat? {
+        model.flowEdges.from.map(Self.blurHeight(of:))
     }
 
     private var isStepping: Bool {

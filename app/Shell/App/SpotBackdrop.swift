@@ -5,6 +5,7 @@ struct SpotBackdrop: View {
     let model: SpotsModel
     let gridHeight: CGFloat
     let sheetHeight: CGFloat
+    var stepHeight: CGFloat?
     let menuHeight: CGFloat
     let drawsBlur: Bool
     @Environment(\.spotPanels) private var panels
@@ -16,6 +17,9 @@ struct SpotBackdrop: View {
         ZStack(alignment: .top) {
             blur(height: gridHeight, isShown: gridIsTaller ? !isOpen : phase != .open, fades: gridIsTaller)
             blur(height: sheetHeight, isShown: gridIsTaller ? phase != .closed : isOpen, fades: !gridIsTaller)
+            if let stepHeight {
+                blur(height: stepHeight, isShown: !model.flowEdges.isMoving, fades: true)
+            }
         }
         .frame(maxHeight: .infinity, alignment: .top)
         .modifier(SpotShownFade(isShown: model.isShown, hiddenScale: MotionTokens.backdropHiddenScale))

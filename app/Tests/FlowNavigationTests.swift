@@ -102,6 +102,7 @@ final class FlowNavigationTests: PanelCase {
         XCTAssertEqual(places.first, .stand(try XCTUnwrap(host.edgeChanges.first?.edges.from)))
         XCTAssertEqual(Array(places.dropFirst()), [.bar(.behind, 0), .bar(.behind, 0)])
         XCTAssertEqual(host.edgeChanges.map(\.motion), [nil, .flow, nil])
+        XCTAssertEqual(host.edgeChanges.map(\.edges.isMoving), [false, true, false])
     }
 
     func testAStepSaysWhichSideItsNewPageComesFromUntilItEnds() async throws {

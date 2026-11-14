@@ -25,8 +25,7 @@ public struct FlowEdge: Equatable, Identifiable, Sendable {
     }
 
     public var radius: CGFloat {
-        if case .bar = place { return SpotTokens.edgeWidth / 2 }
-        return SpotTokens.radius
+        SpotTokens.radius
     }
 }
 
