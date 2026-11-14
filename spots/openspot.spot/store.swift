@@ -80,41 +80,44 @@ struct SpotView: View {
             ("Yours to publish", items.filter { $0.state == "publish" }),
             ("Added", items.filter { $0.state == "added" })
         ].filter { !$0.1.isEmpty }
-        VStack(alignment: .leading, spacing: 18) {
-            toolbar
-            ScrollView {
-                VStack(alignment: .leading, spacing: 28) {
-                    ForEach(groups, id: \.0) { title, list in section(groups.count > 1 ? title : nil, list) }
-                    if groups.isEmpty {
-                        Text(query.isEmpty ? "No spot is here." : "No spot has these words.")
-                            .font(spot.font.detail)
-                            .foregroundStyle(spot.ink.opacity(spot.secondary))
-                    }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 28) {
+                ForEach(groups, id: \.0) { title, list in section(groups.count > 1 ? title : nil, list) }
+                if groups.isEmpty {
+                    Text(query.isEmpty ? "No spot is here." : "No spot has these words.")
+                        .font(spot.font.detail)
+                        .foregroundStyle(spot.ink.opacity(spot.secondary))
                 }
-                .padding(.bottom, spot.inset * 2)
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .padding(.horizontal, spot.inset * 2)
+            .padding(.vertical, spot.inset)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding([.horizontal, .top], spot.inset * 2)
+        .toolbar {
+            ToolbarItem { search }
+            ToolbarItem { filter }
+            ToolbarItem { sort }
+        }
     }
 
-    /// The search, the filter by origin and the sort, in one line.
-    private var toolbar: some View {
-        HStack(spacing: 12) {
-            search
-            Picker("Origin", selection: $origin) {
-                ForEach(Origin.allCases) { Text($0.rawValue).tag($0) }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .fixedSize()
-            Picker("Sort", selection: $order) {
-                ForEach(Order.allCases) { Text("By \($0.rawValue)").tag($0) }
-            }
-            .pickerStyle(.menu)
-            .labelsHidden()
-            .fixedSize()
+    /// The filter by origin, as one segmented control.
+    private var filter: some View {
+        Picker("Origin", selection: $origin) {
+            ForEach(Origin.allCases) { Text($0.rawValue).tag($0) }
         }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .fixedSize()
+    }
+
+    /// The order of the cards in each group, as a menu.
+    private var sort: some View {
+        Picker("Sort", selection: $order) {
+            ForEach(Order.allCases) { Text("By \($0.rawValue)").tag($0) }
+        }
+        .pickerStyle(.menu)
+        .labelsHidden()
+        .fixedSize()
     }
 
     /// A field whose whole fill takes a click, and whose Esc clears it.
@@ -128,10 +131,9 @@ struct SpotView: View {
         }
         .font(spot.font.detail)
         .padding(.horizontal, 10)
-        .frame(height: 28)
+        .frame(width: 220, height: 26)
         .background(spot.ink.opacity(0.08), in: Capsule())
         .contentShape(Capsule())
-        .frame(maxWidth: 260)
     }
 
     /// A group of cards, under its title when the store shows more than one group.

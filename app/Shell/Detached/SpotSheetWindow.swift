@@ -3,7 +3,8 @@ import OpenspotCore
 import SwiftUI
 
 /// The window of a spot that offers one: its sheet on the panel's glass, in a window that the person moves, resizes and
-/// closes by the buttons of its clear title bar. The app shows in the Dock and in Command-Tab while it is open.
+/// closes by the buttons of its clear title bar, where the spot's view may put its own toolbar items. The app shows in the
+/// Dock and in Command-Tab while it is open.
 final class SpotSheetWindow: NSWindow, NSWindowDelegate {
     private var model: SpotsModel?
     private var id = ""
@@ -57,10 +58,12 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         window.minSize = SpotTokens.windowMinSize
         window.delegate = window
         window.setFrameAutosaveName("spot-window-\(entry.id)")
-        let view = NSHostingView(rootView: SpotFloatView(model: model, id: entry.id, fills: true) { _ in })
-        view.sizingOptions = []
-        view.safeAreaRegions = []
-        window.contentView = view
+        let host = NSHostingController(rootView: SpotFloatView(model: model, id: entry.id, fills: true) { _ in })
+        host.sizingOptions = []
+        host.sceneBridgingOptions = [.toolbars]
+        window.contentViewController = host
+        window.toolbarStyle = .unifiedCompact
+        window.setContentSize(SpotTokens.windowSize)
         if window.frame.origin == .zero { window.center() }
         return window
     }
