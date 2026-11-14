@@ -302,8 +302,7 @@ Rows are a list that the user searches and picks from. See [Show a list](GUIDE.m
 | `open`     | What Return does on this row, in place of the `title` of `button=open`.                        |
 | `close`    | `false` keeps the panel open after a pick of this row.                                         |
 | `file`     | The file the row stands for. See [Files out](#files-out).                                      |
-| `to`       | Another spot that a pick goes to, as `<spot> open <row id>` with the keys of the row on stdin. |
-| `page`     | `true` opens the row as a page of the spot, in place of `<spot> open <row id>`. See [Pages](#pages). |
+| `push`     | A page that a pick pushes, in place of `<spot> open <id>`, with `push.spot` and `push.title`. See [Pages](#pages). |
 
 - Rows go into a `repeat`, or into a plain list when there's none.
 - Openspot searches the rows itself, and puts recent picks first. `recents=false` in the head turns that off, and
@@ -326,25 +325,31 @@ grid=a a d e
 
 ### Pages
 
-A page is a sheet of a spot that shows the detail of one of its rows. See [Open a row as a page](GUIDE.md#open-a-row-as-a-page)
-for an example.
+A page is a sheet of a spot that shows the detail of one of its rows, and a flow is the row of sheets that the person
+went through. A spot pushes a sheet onto the flow and pops its own sheet off it. See
+[Open a row as a page](GUIDE.md#open-a-row-as-a-page) for an example.
 
-- A pick of a row with `page=true` opens its page. Its id is the id of the row.
+| Key                   | Where                  | Does                                                                                 |
+| --------------------- | ---------------------- | ------------------------------------------------------------------------------------ |
+| `pages=<pattern>`     | the header             | A page that a push may show of this spot, such as `text:*`. One line for each.       |
+| `push=<page id>`      | a row, or a press      | Pushes that page over the sheet that shows. On a row, `push=true` pushes the row's id. |
+| `push.spot=<spot id>` | a row, or a press      | Pushes a sheet of that spot instead. With no `push=`, its first sheet.               |
+| `push.title=<words>`  | a row, or a press      | The title of the pushed sheet, which its edge names. By default, the row's title.     |
+| `push.replace=true`   | a press                | The pushed sheet takes the place of the one that shows, so going back skips it.       |
+| `pop=true`            | a press                | Takes the spot's sheet off. On its first sheet, that goes back to whoever pushed it.  |
+| `pop=all`             | a press                | Goes back to the spot's first sheet.                                                  |
+
 - Each call of a page, a read or a press, gets the page's id in `OPENSPOT_PAGE`. The first sheet of a spot gets none.
-- `openspot spot open <id> [page]` opens a spot's sheet, or a page of it, over the sheet that shows.
-- A press moves its own flow with `go=` in the head of its frame:
-
-| Effect                     | Does                                                                 |
-| -------------------------- | -------------------------------------------------------------------- |
-| `go=<page id>`             | Opens that page of the spot, over the page that shows.               |
-| `go=<page id>` and `replace=true` | Opens that page in the place of the page that shows, so back skips it. |
-| `go=back`                  | Goes back one page.                                                  |
-| `go=first`                 | Goes back to the spot's first sheet.                                 |
-
-- `go` acts only in a press, never in a read, and only while the spot's sheet shows. It never goes back past the spot's
-  first sheet, so `back` and `first` are no page ids. `openspot spot back <id>` goes back one page as `go=back` does.
+- A press moves the flow with the keys in the head of its frame. A read never moves it, and a frame moves it one way at
+  most: a push or a pop.
+- A pushed page must match a `pages=` line of the spot that shows it, where `*` stands for any text. A spot with no
+  sheet gets the call `<spot> open <page id>` instead of a push.
+- A spot takes off only its own sheets. It never takes off another spot's sheet and never closes the panel.
 - The panel keeps the last 20 sheets. `⌘[` or a swipe to the right goes back, `⌘]` or a swipe to the left goes forward, Esc
-  goes back one sheet, and `⌘Esc` goes back to the grid. An edge left of the sheet stands for each sheet behind it. A sheet that comes back shows what it last showed at once, and reads again.
+  goes back one sheet, and `⌘Esc` goes back to the grid. An edge left of the sheet stands for each sheet behind it. A sheet
+  that comes back shows what it last showed at once, and reads again.
+- `openspot spot open <id>` starts a new flow on a spot. `openspot spot push <id> [page] [--replace] [--title <words>]` and
+  `openspot spot pop <id> [--all]` move the flow that shows, as the keys do.
 
 ## The head
 
@@ -357,7 +362,7 @@ effects of the frame.
   - `link=<url>` opens the URL;
   - `progress=<0 to 1>` shows progress. With it, `title` and `detail` show only while the call runs;
   - `select=<row id>` asks the spot again with that row selected;
-  - `go=` moves the spot's flow after a press: see [Pages](#pages);
+  - `push=`, `push.spot=`, `push.title=`, `push.replace=` and `pop=` move the flow after a press: see [Pages](#pages);
   - `call=<n>` and `end=<n>` mark the calls of a staying spot (see [Modes](#modes)).
 - The head can come anywhere in the frame. Openspot skips and reports a second head.
 
@@ -768,8 +773,9 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | `openspot guide`                                   | Prints the guide, then this protocol.                                                           |
 | `openspot spot show <id>`                          | Opens the panel with the spot selected.                                                         |
-| `openspot spot open <id> [page]`                   | Opens the panel on the sheet of a spot, or on a page of it. See [Pages](#pages).                |
-| `openspot spot back <id>`                          | Goes back one page of a spot that shows. See [Pages](#pages).                                   |
+| `openspot spot open <id>`                          | Opens the panel on a spot, as a new flow. See [Pages](#pages).                                  |
+| `openspot spot push <id> [page]`                   | Pushes a spot, or a page of it, over the flow that shows. See [Pages](#pages).                  |
+| `openspot spot pop <id> [--all]`                   | Goes back one sheet of a spot that shows, or to its first sheet. See [Pages](#pages).           |
 | `openspot spot choose <id>`                        | Asks for files, and drops the chosen ones on a spot that takes them, as a press of its card does. |
 | `openspot spot edit <id>`                          | Opens the file of a spot in the text editor, as Edit in its ⌘K menu does.                       |
 | `openspot spot prompt <id>`                        | Copies a prompt that asks a coding agent to change a spot.                                      |

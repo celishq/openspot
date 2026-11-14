@@ -95,17 +95,18 @@ Learn more in [Rows](PROTOCOL.md#rows) and [The calls](PROTOCOL.md#the-calls).
 
 ## Open a row as a page
 
-A page shows the detail of a row as a sheet of its own, and keeps the list it came from. Give the row `page=true`, and
-print the page when `OPENSPOT_PAGE` holds its id.
+A page shows the detail of a row as a sheet of its own, and keeps the list it came from. Name the pages in the header
+with `pages=`, give the row `push=true`, and print the page when `OPENSPOT_PAGE` holds its id.
 
 ```sh
 #!/bin/sh
 # title=Fruit
 # icon=leaf
 # on=sheet.open
+# pages=*
 . "$OPENSPOT_SH"
 case "$OPENSPOT_PAGE" in
-  '') printf 'row=apple\ntitle=Apple\npage=true\n\nrow=pear\ntitle=Pear\npage=true\n' ;;
+  '') printf 'row=apple\ntitle=Apple\npush=true\n\nrow=pear\ntitle=Pear\npush=true\n' ;;
   *) openspot_row "$OPENSPOT_PAGE:color" "Color" "Green" ;;
 esac
 ```
@@ -114,8 +115,8 @@ Pick **Apple**, and its page opens in place of the list, with one row, **Color**
 and `⌘]` to go forward to the page again. `⌘Esc` goes back to the grid.
 
 Each call of a page gets its id in `OPENSPOT_PAGE`, so a press on the page knows which page it came from. A press can
-move the flow too: print `go=back` after it saves, and the list shows again. `openspot spot open <id> [page]` opens a
-page from anywhere.
+move the flow too: print `pop=true` after it saves, and the list shows again. A row or a press with `push.spot=` pushes
+another spot, which reads what to show from its page, as a web page reads its URL.
 
 Learn more in [Pages](PROTOCOL.md#pages).
 
