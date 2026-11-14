@@ -59,6 +59,7 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         window.setFrameAutosaveName("spot-window-\(entry.id)")
         let view = NSHostingView(rootView: SpotFloatView(model: model, id: entry.id, fills: true) { _ in })
         view.sizingOptions = []
+        view.safeAreaRegions = []
         window.contentView = view
         if window.frame.origin == .zero { window.center() }
         return window
