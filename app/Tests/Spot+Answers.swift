@@ -19,11 +19,12 @@ extension Spot {
         return (taking(output), try state(of: output))
     }
 
-    func items(query: String = "", input: String? = nil, timeout: TimeInterval) async throws -> SpotOutput {
+    func items(query: String = "", input: String? = nil, page: String? = nil, timeout: TimeInterval) async throws -> SpotOutput {
         let typed = query.isEmpty ? nil : TextBlock(fields: [.init(key: "search", value: query)]).text
         let lines = [input, typed].compactMap { $0 }
         let reason = query.isEmpty ? [:] : ReadReason.text(query, inSheet: answers == nil).variables
-        return try await output(.read, input: lines.isEmpty ? nil : lines.joined(), variables: reason, timeout: timeout)
+        let variables = reason.merging(page.map { ["OPENSPOT_PAGE": $0] } ?? [:]) { _, new in new }
+        return try await output(.read, input: lines.isEmpty ? nil : lines.joined(), variables: variables, timeout: timeout)
     }
 
     func form(_ action: CommandAction, item: SpotItem?, timeout: TimeInterval) async throws -> ItemForm {

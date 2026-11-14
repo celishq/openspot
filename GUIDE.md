@@ -93,6 +93,31 @@ shell helper, `$OPENSPOT_SH`, prints rows for you and escapes each value.
 
 Learn more in [Rows](PROTOCOL.md#rows) and [The calls](PROTOCOL.md#the-calls).
 
+## Open a row as a page
+
+A page shows the detail of a row as a sheet of its own, and keeps the list it came from. Give the row `page=true`, and
+print the page when `OPENSPOT_PAGE` holds its id.
+
+```sh
+#!/bin/sh
+# title=Fruit
+# icon=leaf
+# on=sheet.open
+. "$OPENSPOT_SH"
+case "$OPENSPOT_PAGE" in
+  '') printf 'row=apple\ntitle=Apple\npage=true\n\nrow=pear\ntitle=Pear\npage=true\n' ;;
+  *) openspot_row "$OPENSPOT_PAGE:color" "Color" "Green" ;;
+esac
+```
+
+Pick **Apple**, and its page opens in place of the list, with one row, **Color**. Press `⌘[` or Esc to go back to the list,
+and `⌘]` to go forward to the page again. `⌘Esc` goes back to the grid.
+
+Each call of a page gets its id in `OPENSPOT_PAGE`, so a press on the page knows which page it came from. A page can
+open another page, and `openspot spot open <id> [page]` opens a page from anywhere.
+
+Learn more in [Pages](PROTOCOL.md#pages).
+
 ## Show a value on a card
 
 A card can show one live value, such as free disk space. `on=panel.open` asks your spot each time the panel opens, and
@@ -285,7 +310,7 @@ case "$1" in
 esac
 ```
 
-In Settings, choose **folder**, and Openspot runs `repos.sh folder`. The spot asks for a folder and keeps it. Later
+In Settings, choose **Repos**, then **folder**, and Openspot runs `repos.sh folder`. The spot asks for a folder and keeps it. Later
 calls read it with `openspot setting get folder`.
 
 Learn more in [Settings](PROTOCOL.md#settings).

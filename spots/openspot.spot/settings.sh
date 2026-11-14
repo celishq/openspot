@@ -67,27 +67,44 @@ settingrow() {
   fi
 }
 
+# Takes a row of spot $1: the spot gets a row on the first sheet, and the row shows on the page of that spot.
+add() {
+  case " $has " in *" $1 "*) ;; *) has="$has $1" ;; esac
+  [ "$page" != "spot:$1" ] || out="$out$2$nl"
+}
+
 # Takes the block that ends: a spot gives its menu bar and float rows, a button its key row, and a field its row.
 flush() {
   case $kind in
     spot)
       spot=$id name=$b_name icon=$b_icon
       names="$names$spot$nl$name$nl$icon$nl"
-      [ "$b_menubar" != true ] || menubars="$menubars${nl}row=menubar:$spot${nl}title=Show in the menu bar${nl}detail=$name${nl}parent=$name${nl}icon=$icon${nl}hides=clear${nl}value=$b_in$nl"
-      [ "$b_float" != true ] || floats="$floats$(keyrow "float:$spot" Float "$name" "$icon" "$b_floatKey")$nl"
+      [ "$b_menubar" != true ] || add "$spot" "${nl}row=menubar:$spot${nl}title=Show in the menu bar${nl}detail=$name${nl}parent=$name${nl}icon=$icon${nl}hides=clear${nl}value=$b_in"
+      [ "$b_float" != true ] || add "$spot" "$(keyrow "float:$spot" Float "$name" "$icon" "$b_floatKey")"
       ;;
-    button) keys="$keys$(keyrow "key:$spot:$id" "$b_title" "$name" "${b_icon:-$icon}" "$b_key")$nl" ;;
+    button) add "$spot" "$(keyrow "key:$spot:$id" "$b_title" "$name" "${b_icon:-$icon}" "$b_key")" ;;
     field)
       named="$named$spot $id$nl"
-      settings="$settings$(settingrow "$spot" "$id" "$b_title" "${b_icon:-${icon:-gearshape}}" "$name")$nl"
+      add "$spot" "$(settingrow "$spot" "$id" "$b_title" "${b_icon:-${icon:-gearshape}}" "$name")"
       ;;
   esac
   kind= id= b_name= b_icon= b_title= b_key= b_float= b_floatKey= b_menubar= b_in=
 }
 
-# Prints the sheet from the frames of the batch: the values, the state of the app, then the spots.
+# Sets `name` and `icon` to those of spot $1, or to its ID and a gear when it left the folder.
+named_spot() {
+  name=$1 icon=gearshape
+  while IFS= read -r known && IFS= read -r known_name && IFS= read -r known_icon; do
+    [ "$known" = "$1" ] && { name=$known_name icon=$known_icon; return; }
+  done <<EOF
+$names
+EOF
+}
+
+# Prints the sheet from the frames of the batch: the values, the state of the app, then the spots. The first sheet holds
+# the keys of the app and a row for each spot with settings, and the page spot:<id> holds the settings of that spot.
 sheet() {
-  part=1 values= names= named= menubars= floats= keys= settings= kind= careful=
+  part=1 values= names= named= kind= careful= has= out= page=${OPENSPOT_PAGE-}
   while IFS= read -r line; do
     case $part:$line in
       *:---) flush; part=$((part + 1)) ;;
@@ -114,25 +131,27 @@ sheet() {
 $1
 EOF
   printf 'recents=false\n\nbutton=open\ntitle=Change\nclose=false\n\nbutton=clear\ntitle=Remove\nshortcut=cmd+backspace\n'
+  while IFS= read -r value_spot && IFS= read -r value_key && IFS= read -r value; do
+    case $value_key in '' | *[[:space:]]* | icon) continue ;; esac
+    case "$nl$named" in *"$nl$value_spot $value_key$nl"*) continue ;; esac
+    named_spot "$value_spot"
+    add "$value_spot" "$(settingrow "$value_spot" "$value_key" "$(titled "$value_key")" "$icon" "$name")"
+  done <<EOF
+$values
+EOF
+  if [ -n "$page" ]; then
+    printf '%s' "$out"
+    return
+  fi
   printf '\nrow=panel_key\ntitle=Open Openspot\nicon=keyboard\nhides=clear\ntype=hotkey\nshortcut=%s\n' "$panel"
   printf '\nrow=fix_key\ntitle=Open a fix\nicon=wrench.and.screwdriver\nhides=clear\ntype=hotkey\nshortcut=%s\n' "$fix"
   printf '\nrow=careful_mode\ntitle=Careful mode\ndetail=Spots get only what their uses name\nicon=lock.shield\nvalue=%s\n' "$careful"
   [ -z "$login" ] || printf '\nrow=open_at_login\ntitle=Open at login\nicon=power\nvalue=%s\n' "$login"
   [ -z "$link" ] || printf '\nrow=command_link\ntitle=Use openspot in Terminal\ndetail=The command line tool\nicon=terminal\nvalue=%s\n' "$link"
-  printf '%s%s%s%s' "$menubars" "$floats" "$keys" "$settings"
-  while IFS= read -r value_spot && IFS= read -r value_key && IFS= read -r value; do
-    case $value_key in '' | *[[:space:]]* | icon) continue ;; esac
-    case "$nl$named" in *"$nl$value_spot $value_key$nl"*) continue ;; esac
-    name=$value_spot icon=gearshape
-    while IFS= read -r known && IFS= read -r known_name && IFS= read -r known_icon; do
-      [ "$known" = "$value_spot" ] && { name=$known_name icon=$known_icon; break; }
-    done <<EOF
-$names
-EOF
-    printf '%s\n' "$(settingrow "$value_spot" "$value_key" "$(titled "$value_key")" "$icon" "$name")"
-  done <<EOF
-$values
-EOF
+  for spot in $has; do
+    named_spot "$spot"
+    printf '\nrow=spot:%s\ntitle=%s\nicon=%s\nopen=Open\nhides=clear\npage=true\n' "$spot" "$name" "$icon"
+  done
 }
 
 # Prints the value of a key of the state of the app.

@@ -303,6 +303,7 @@ Rows are a list that the user searches and picks from. See [Show a list](GUIDE.m
 | `close`    | `false` keeps the panel open after a pick of this row.                                         |
 | `file`     | The file the row stands for. See [Files out](#files-out).                                      |
 | `to`       | Another spot that a pick goes to, as `<spot> open <row id>` with the keys of the row on stdin. |
+| `page`     | `true` opens the row as a page of the spot, in place of `<spot> open <row id>`. See [Pages](#pages). |
 
 - Rows go into a `repeat`, or into a plain list when there's none.
 - Openspot searches the rows itself, and puts recent picks first. `recents=false` in the head turns that off, and
@@ -322,6 +323,17 @@ grid=a a d e
 
 - A row draws its `icon`, `title`, `detail`, `tone`, `value` and `shortcut`. To show more, give the row an action, or
   draw it with a `view`.
+
+### Pages
+
+A page is a sheet of a spot that shows the detail of one of its rows. See [Open a row as a page](GUIDE.md#open-a-row-as-a-page)
+for an example.
+
+- A pick of a row with `page=true` opens its page. Its id is the id of the row.
+- Each call of a page, a read or a press, gets the page's id in `OPENSPOT_PAGE`. The first sheet of a spot gets none.
+- `openspot spot open <id> [page]` opens a spot's sheet, or a page of it, over the sheet that shows.
+- The panel keeps the last 20 sheets. `⌘[` goes back, `⌘]` goes forward, Esc goes back one sheet, and `⌘Esc` goes back to
+  the grid. A sheet that comes back shows what it last showed at once, and reads again.
 
 ## The head
 
@@ -423,7 +435,7 @@ Each call has three parts:
 
 - **Arguments:** the id, its row, then its values, so that `case "$1"` handles each call. A value over 64 KB goes only
   on stdin.
-- **Variables:** `OPENSPOT_REASON` and `OPENSPOT_VALUE` of a read, `OPENSPOT_ID`, the spot's id, `OPENSPOT_DATA`, a
+- **Variables:** `OPENSPOT_REASON` and `OPENSPOT_VALUE` of a read, `OPENSPOT_PAGE`, the page that shows, `OPENSPOT_ID`, the spot's id, `OPENSPOT_DATA`, a
   folder for its files that one spot folder shares, `OPENSPOT_SH`, the shell helper, and `PATH`, with the `openspot`
   command first.
 - **Stdin:** one block of what the user filled in and typed: a line for each field of the sheet, `search=` with the
@@ -744,6 +756,7 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | `openspot guide`                                   | Prints the guide, then this protocol.                                                           |
 | `openspot spot show <id>`                          | Opens the panel with the spot selected.                                                         |
+| `openspot spot open <id> [page]`                   | Opens the panel on the sheet of a spot, or on a page of it. See [Pages](#pages).                |
 | `openspot spot choose <id>`                        | Asks for files, and drops the chosen ones on a spot that takes them, as a press of its card does. |
 | `openspot spot edit <id>`                          | Opens the file of a spot in the text editor, as Edit in its ⌘K menu does.                       |
 | `openspot spot prompt <id>`                        | Copies a prompt that asks a coding agent to change a spot.                                      |
@@ -758,7 +771,7 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 A setting keeps a choice of the user. See [Let the user choose a setting](GUIDE.md#let-the-user-choose-a-setting) for an
 example.
 
-- A `field` block in the header names a setting. The Settings spot lists it, set or not.
+- A `field` block in the header names a setting. The Settings spot lists it on the page of the spot, set or not.
 - Return on it runs the action with the same id, which can answer with a form. `⌘⌫` removes the value.
 - `openspot setting get <key>` prints the value, or nothing. `openspot setting set <key> [value]` keeps the value, or
   removes it when there's no value. In a terminal, `--spot <id>` names the spot.
