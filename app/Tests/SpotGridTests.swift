@@ -232,8 +232,8 @@ final class SpotGridTests: XCTestCase {
         let placed = SpotGrid(split: 2).place([.small, .wide, .small])
         let bands = try? XCTUnwrap(SpotGroupBands(placed))
 
-        XCTAssertEqual(bands?.onGrid, 2)
-        XCTAssertEqual(bands?.searchOnly, 1)
+        XCTAssertEqual(bands?.grid, 2)
+        XCTAssertEqual(bands?.shelf, 1)
         XCTAssertEqual(bands?.shelfTop, placed[2].rect.minY - band)
         XCTAssertNil(SpotGroupBands(SpotGrid().place([.small, .wide])))
     }

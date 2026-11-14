@@ -1,19 +1,34 @@
 import Foundation
 
+/// Where a spot lies on the grid: its place in the order, its row and column, its size, and in Edit Spots its group.
 public struct SpotPlacement: Equatable, Sendable {
+    /// The group of a card in Edit Spots while both have cards: on the grid, or on the shelf of search only under it.
+    public enum Group: Equatable, Sendable {
+        case grid, shelf
+    }
+
     public let index: Int
     public let row: Int
     public let column: Int
     public let size: SpotSize
-    /// How far the title bands above the spot push it down.
-    public let top: CGFloat
+    /// Its group, or nil while the cards lie in one group.
+    public let group: Group?
 
-    public init(index: Int, row: Int, column: Int, size: SpotSize, top: CGFloat = 0) {
+    public init(index: Int, row: Int, column: Int, size: SpotSize, group: Group? = nil) {
         self.index = index
         self.row = row
         self.column = column
         self.size = size
-        self.top = top
+        self.group = group
+    }
+
+    /// How far the title bands above the spot push it down: one band over the grid, and one more over the shelf.
+    public var top: CGFloat {
+        switch group {
+        case nil: 0
+        case .grid: SpotTokens.groupTitleBand
+        case .shelf: 2 * SpotTokens.groupTitleBand
+        }
     }
 
     /// The way this spot moves when another spot opens: up or down if it lies above or below it, else to its side.

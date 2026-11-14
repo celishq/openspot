@@ -3,7 +3,7 @@ import Foundation
 /// A card that the person drags over the grid in Edit Spots: where it started, where a release puts it now, and the layout
 /// of the grid for each target that it may take.
 public struct SpotDrag: Equatable, Sendable {
-    /// A place in the order of the cards, in the group of the cards on the grid or of the hidden cards.
+    /// A place in the order of the cards, in the group of the cards on the grid or on the shelf.
     public struct Target: Hashable, Sendable {
         public let place: Int
         public let isOnGrid: Bool
@@ -14,7 +14,7 @@ public struct SpotDrag: Equatable, Sendable {
             Target(place: place, isOnGrid: true, panel: panel)
         }
 
-        public static func hidden(_ place: Int) -> Target {
+        public static func shelf(_ place: Int) -> Target {
             Target(place: place, isOnGrid: false)
         }
     }

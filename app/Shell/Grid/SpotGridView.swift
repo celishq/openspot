@@ -110,8 +110,8 @@ struct SpotGridView: View {
         if let bands {
             let center = model.panels.firstColumn(of: .center)
             ZStack(alignment: .topLeading) {
-                GroupTitle(name: "On grid", count: bands.onGrid)
-                GroupTitle(name: "Search only", count: bands.searchOnly)
+                GroupTitle(name: "On grid", count: bands.grid)
+                GroupTitle(name: "Search only", count: bands.shelf)
                     .offset(y: bands.shelfTop)
             }
             .offset(x: center == 0 ? 0 : SpotTokens.width(columns: center) + SpotTokens.columnGap)

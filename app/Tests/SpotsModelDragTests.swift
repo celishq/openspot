@@ -260,8 +260,8 @@ final class SpotsModelDragTests: XCTestCase {
 
         XCTAssertFalse(model.mayMove("a"))
         XCTAssertFalse(model.mayMove("b"))
-        XCTAssertEqual(model.groupBands?.onGrid, 3)
-        XCTAssertEqual(model.groupBands?.searchOnly, 1)
+        XCTAssertEqual(model.groupBands?.grid, 3)
+        XCTAssertEqual(model.groupBands?.shelf, 1)
     }
 
     func testTheShelfLeavesOutASpotWithNoCardOfItsOwn() throws {

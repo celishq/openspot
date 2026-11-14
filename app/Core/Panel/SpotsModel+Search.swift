@@ -2,9 +2,9 @@ import Foundation
 
 /// The main search: the cards that its text finds, with the rows and the answers that join them.
 extension SpotsModel {
-    /// Where the cards in search only start in the order of Edit Spots, after the cards on the grid. A dragged card counts
-    /// in the group of its target. It is nil out of Edit Spots and while the search has text.
-    var hiddenStart: Int? {
+    /// Where the cards of the shelf start in the order of Edit Spots, after the cards on the grid. A dragged card counts in
+    /// the group of its target. It is nil out of Edit Spots and while the search has text.
+    var shelfStart: Int? {
         guard isEditing, query.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
         let hidden = shelfCards.filter { $0.id != drag?.id }.count + (drag?.target.isOnGrid == false ? 1 : 0)
         return visible.count - hidden
@@ -20,7 +20,7 @@ extension SpotsModel {
     /// The grid of the cards shown: in the two groups of Edit Spots, with the size of each card whose size the person chose.
     var grid: SpotGrid {
         var placed: [Int: GridPanel] = [:]
-        let split = hiddenStart
+        let split = shelfStart
         if query.isEmpty {
             for index in visible.indices where index < (split ?? visible.count) {
                 let panel = visible[index].id == drag?.id ? drag?.target.panel ?? .center : panel(of: visible[index])
@@ -69,7 +69,7 @@ extension SpotsModel {
             guard isEditing, let index = visible.firstIndex(where: { $0.id == id }), placements.indices.contains(index) else {
                 return entry.isOnGrid != visible.contains { $0.id == id }
             }
-            return entry.isOnGrid == (placements[index].top == 2 * SpotTokens.groupTitleBand)
+            return entry.isOnGrid == (placements[index].group == .shelf)
         }
         return entry.spot.isFound || entry.spot.isGlobal || entry.spot.answers != nil
     }
