@@ -338,4 +338,16 @@ final class SheetPagesModelTests: XCTestCase {
         XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "other")])
         XCTAssertNil(model.sheets["list"]?.page)
     }
+
+    func testARunForgetsWhatEachPageShowedOnceThePageLeavesTheFlow() async throws {
+        try await openList()
+        try await openPage()
+        XCTAssertTrue(model.handleKey(back))
+        XCTAssertEqual(model.sheets["list"]?.pageStates.map(\.page), ["a"])
+
+        XCTAssertTrue(model.handleKey(toGrid))
+
+        try await wait("the grid") { model.openList == nil }
+        XCTAssertEqual(model.sheets["list"]?.pageStates.count, 0)
+    }
 }

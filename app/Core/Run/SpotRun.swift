@@ -264,8 +264,8 @@ public final class SpotRun {
     @ObservationIgnored var waitingKeys: [String] = []
     /// The page that the sheet shows, which each call names in `OPENSPOT_PAGE`, or nil for the spot's first sheet.
     public internal(set) var page: String?
-    /// What each page last showed, by page, while another one shows, at most `Flow.limit` of them.
-    @ObservationIgnored var keptPages: [(page: String?, kept: KeptPage)] = []
+    /// What each page of the flow last showed while another page shows, which the flow forgets as the page leaves it.
+    @ObservationIgnored var pageStates: [(page: String?, state: PageState)] = []
 
     init(spot: Spot, runs: SpotRuns, recent: [String], prepare: @escaping ([SpotItem], [String]) async -> Void) {
         self.spot = spot

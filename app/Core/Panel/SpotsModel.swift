@@ -83,6 +83,7 @@ public final class SpotsModel {
     /// The sheets that the panel went through since a sheet opened from the grid, with the one that shows at its centre.
     public internal(set) var flow = Flow() {
         didSet {
+            for gone in Set(oldValue.pages).subtracting(flow.pages) { sheets[gone.spot]?.forget(page: gone.page) }
             let titles = flow.pages.prefix(max(flow.index, 0)).reversed().map(title(of:))
             if titles != behindTitles { behindTitles = titles }
         }
