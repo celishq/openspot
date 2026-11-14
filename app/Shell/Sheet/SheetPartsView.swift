@@ -318,6 +318,7 @@ struct SheetPartsView: View {
 
     private func centeredLine(_ part: SpotPart, isActive: Bool) -> some View {
         pressLabel(part, words: part.title ?? part.id.capitalized, font: SpotType.body.weight(.medium))
+            .padding(.horizontal, SpotTokens.padding)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .spotFill(isActive: isActive, otherwise: SpotTheme.ink.opacity(SpotTheme.selectedFill), in: shape)
             .contentShape(shape)

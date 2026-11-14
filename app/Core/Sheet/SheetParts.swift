@@ -80,8 +80,9 @@ public struct SheetParts: Equatable, Sendable {
         hint(stopping: { _ in false })
     }
 
-    public func hint(escape: String = "Close", stopping isRunning: (SpotPart) -> Bool) -> String {
+    public func hint(escape: String = "Close", stopping isRunning: (SpotPart) -> Bool, actions: Bool = false) -> String {
         let keys = parts.compactMap { part in part.key.map { "\($0.label) \(isRunning(part) ? "Stop" : part.title ?? part.id.capitalized)" } }
+        if actions { return (keys + ["\(ActionMenu.key) Actions"]).joined(separator: "   ") }
         let close = parts.contains { $0.key == ActionKey(name: "escape") } ? [] : ["Esc \(escape)"]
         return (keys + close).joined(separator: "   ")
     }

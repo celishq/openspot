@@ -37,7 +37,7 @@ extension SpotsModel {
         openSheet?.landRows()
         if openList != nil, let handled = handleFlowKey(key) { return handled }
         if key == Self.undoKey, openList == nil, searchText.isEmpty, undoRemoval() { return true }
-        if key == ActionKey(name: "return", isCommand: true), openSelected() { return true }
+        if key == ActionKey(name: "return", isCommand: true), openSelectedSettings() { return true }
         if let panel = openPanel, !panel.showsRows { return handlePanelKey(key, panel) }
         if let panel = openPanel, handleRowsPanelKey(key, panel) { return true }
         if let part = openPanel?.parts.first(where: { $0.key == key }) {
@@ -54,11 +54,13 @@ extension SpotsModel {
         }
         guard let target else { return openSheet(on: key) }
         if key == ActionKey(name: "k", isCommand: true) {
+            guard actionMenu(on: target)?.holdsMore == true else { return false }
             openMenu(on: target)
             return menu != nil
         }
+        let typesKey = !searchText.isEmpty && Self.editsText(key)
         var noHooks: Set<String> = []
-        if searchText.isEmpty, !target.entry.spot.actions(for: target.item).contains(where: { $0.key == key }),
+        if !typesKey, !target.entry.spot.actions(for: target.item).contains(where: { $0.key == key }),
            let offer = offered(on: target, yes: &noHooks, asks: false).first(where: { $0.action.key == key }) {
             if offer.action.confirm != nil {
                 openMenu(on: target)
@@ -69,7 +71,8 @@ extension SpotsModel {
             }
             return true
         }
-        guard let action = target.entry.spot.actions(for: target.item).first(where: { $0.key == key }) else { return openSheet(on: key) }
+        let quiet = typesKey ? [] : extras(on: target)
+        guard let action = (target.entry.spot.actions(for: target.item) + quiet).first(where: { $0.key == key }) else { return openSheet(on: key) }
         if action.confirm != nil {
             openMenu(on: target)
             menu?.select(action)
@@ -91,6 +94,10 @@ extension SpotsModel {
         arrangement.spot(openedBy: key, over: defaultArrangement).flatMap { id in entries.contains { $0.id == id } ? id : nil }
     }
 
+    static func editsText(_ key: ActionKey) -> Bool {
+        key.isCommand && !key.isShift && ["backspace", "a", "c", "v", "x", "z"].contains(key.name)
+    }
+
     static let openLabel = "⌘⏎"
 
     public func pressHint(_ label: String) {
@@ -102,6 +109,10 @@ extension SpotsModel {
         if let part = panel.parts.first(where: { $0.key == key }) {
             pressPart(part)
             return true
+        }
+        if key == ActionKey(name: "k", isCommand: true), let target {
+            openMenu(on: target)
+            return menu != nil
         }
         if key == ActionKey(name: "escape") {
             if !back() { closeList(moving: true) }
@@ -205,8 +216,12 @@ extension SpotsModel {
     }
 
     private func give(_ key: String, to item: SpotItem, of entry: Entry) {
+        if let settings = entry.spot.settingsSheet, entry.spot.holdsSettings, let field = settings.hotkeyField(of: item.run) {
+            sheets[settings.spot]?.set(SpotItem(title: item.title, run: field), to: key)
+            return
+        }
         sheets[entry.id]?.set(item, to: key)
-        guard entry.spot.keyList == nil else { return }
+        guard !entry.spot.holdsSettings else { return }
         closingPick = (item, entry)
         if isShown {
             host.dismiss()
@@ -359,8 +374,28 @@ extension SpotsModel {
             spot: target.entry.spot,
             item: target.item,
             showsOpen: !isOpenList || target.item != nil,
+            extras: extras(on: target),
             offered: offered(on: target, yes: &yes, asks: asks)
         )
+    }
+
+    private func extras(on target: Target) -> [CommandAction] {
+        guard openList == nil, target.item == nil else { return [] }
+        let spot = target.entry.spot
+        let opens: [CommandAction] = spot.pressRuns && target.entry.kind.opensSheet ? [.open] : []
+        let history: [CommandAction] = spot.keepsHistory ? [.history] : []
+        let commands = spot.opensToSettings || spot.soleCommand != nil ? [] : spot.offers.map(CommandAction.command)
+        return opens + history + commands
+    }
+
+    @discardableResult
+    public func openEdit(of entry: Entry) -> Bool {
+        let spot = entry.spot
+        guard entry.item == nil, spot.fault == nil, spot.host == nil, !spot.isBuiltIn,
+              let sheet = runs.editSheet(of: spot, isOwn: !folder.isCore(spot))
+        else { return false }
+        pushFirst(sheet.spot.id, moving: true)
+        return true
     }
 
     private func offered(on target: Target, yes: inout Set<String>, asks: Bool) -> [OfferedAction] {
@@ -416,13 +451,17 @@ extension SpotsModel {
         if isEditing { return "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done" }
         if spotDrop != nil { return "Nothing runs until you press ⌘⏎" }
         let escape = flow.behind == nil ? "Close" : "Back"
-        if let panel = openPanel, !panel.showsRows || panel.drawsKeys { return panel.hint(escape: escape) { work(of: $0) != nil } }
+        if let panel = openPanel, !panel.showsRows || panel.drawsKeys {
+            let hasActions = target.flatMap(actionMenu(on:)) != nil
+            return panel.hint(escape: escape, stopping: { work(of: $0) != nil }, actions: hasActions)
+        }
         if let soleHint { return soleHint }
         let keys = target.flatMap { target in
-            let opens = openList == nil && target.item == nil && target.entry.spot.pressRuns && target.entry.kind.opensSheet
+            let onGrid = openList == nil && target.item == nil
+            let settings = onGrid && settingsSheet(of: target.entry) != nil ? ["\(Self.openLabel) Settings"] : []
             return actionMenu(on: target)?.hint(
                 stopping: { sheets[target.entry.id]?.work(of: $0, item: target.item) != nil },
-                second: opens ? "\(Self.openLabel) Settings" : nil
+                second: settings
             )
         } ?? "Esc \(escape)"
         return selectedGlyphTitle.map { "\($0)  \(keys)" } ?? keys
@@ -506,6 +545,14 @@ extension SpotsModel {
             } else {
                 sheets[target.entry.id]?.run(action, item: target.item)
             }
+        } else if action.id == SpotSettings.removeID, let item = target.item, target.entry.spot.holdsSettings,
+                  let settings = target.entry.spot.settingsSheet, let field = settings.hotkeyField(of: item.run) {
+            sheets[settings.spot]?.set(SpotItem(title: item.title, run: field), to: "")
+        } else if action == .open || action == .history {
+            presentSheet(of: target.entry.id, moving: true)
+        } else if let command = CommandAction.command(of: action) {
+            if isShown { host.dismiss() }
+            sheets[target.entry.id]?.pressKey(command)
         } else if action.isForm {
             openForm(action, on: target)
         } else if action.after == .stay {

@@ -48,13 +48,16 @@ public struct Spot: Equatable, Sendable {
     public let offers: [CommandOffer]
     public private(set) var offeredActions: [OfferedAction]
     public let settings: [CommandOffer]
-    public private(set) var keyList: KeyList?
-    public private(set) var listsKeysAbove = false
+    public private(set) var settingsSheet: SpotSettings?
+    public private(set) var holdsSettings = false
+    public private(set) var opensToSettings = false
     public private(set) var isBuiltIn = false
     public var reachesAccountKey: Bool {
         SpotUse.reachesAccountKey(uses, isBuiltIn: isBuiltIn)
     }
     public let keywords: [String]
+    public let editsSpots: Bool
+    public private(set) var editedFile: URL?
     public let previewsSample: Bool
 
     public init(
@@ -96,8 +99,10 @@ public struct Spot: Equatable, Sendable {
         pages: [String] = [],
         uses: Set<SpotUse> = [],
         keywords: [String] = [],
-        previewsSample: Bool = false
+        previewsSample: Bool = false,
+        editsSpots: Bool = false
     ) {
+        self.editsSpots = editsSpots
         self.emits = emits
         self.pages = pages
         self.uses = uses
@@ -156,20 +161,80 @@ public struct Spot: Equatable, Sendable {
     }
 
     public var soleCommand: String? {
-        guard keyList != nil, offers.count == 1 else { return nil }
+        guard host == nil, offers.count == 1 else { return nil }
         return offers.first?.id
     }
 
-    func listingKeys(in config: ConfigFile) -> Spot {
-        guard !offers.isEmpty, host == nil else { return self }
+    public var opensOnReturn: Bool {
+        kind.opensSheet && !pressRuns && soleCommand == nil
+    }
+
+    public var keepsHistory: Bool {
+        soleCommand != nil && !opensToSettings && read != nil
+    }
+
+    func takingSettings(in config: ConfigFile) -> Spot {
+        guard host == nil else { return self }
         var spot = self
-        spot.keyList = KeyList(file: config, spot: id, offers: offers, picture: image ?? file ?? glyph ?? symbol)
-        guard read == nil else {
-            spot.listsKeysAbove = true
-            return spot
+        spot.settingsSheet = SpotSettings(
+            file: config,
+            spot: id,
+            offers: offers,
+            fields: settings,
+            offersFloat: offersFloat,
+            showsInMenuBar: canShowInMenuBar
+        )
+        if read == nil, !offers.isEmpty {
+            spot.kind = .list
+            spot.opensToSettings = true
         }
-        spot.kind = .list
-        spot.read = .sheet
+        return spot
+    }
+
+    public var settingsSpot: Spot? {
+        guard let settingsSheet, !holdsSettings else { return nil }
+        var spot = Spot(
+            id: SpotSettings.sheetID(of: id),
+            name: "\(name) Settings",
+            url: url,
+            kind: .list,
+            size: size,
+            symbol: symbol,
+            read: .sheet,
+            isFound: false,
+            isOnGrid: false,
+            headerSymbol: headerSymbol,
+            file: file,
+            image: image,
+            glyph: glyph
+        )
+        spot.settingsSheet = settingsSheet
+        spot.holdsSettings = true
+        return spot
+    }
+
+    public func editSheet(of owner: Spot, isOwn: Bool) -> Spot? {
+        guard editsSpots, isBuiltIn else { return nil }
+        var spot = Spot(
+            id: OwnedSheet.edit.id(of: owner.id),
+            name: "Edit \(owner.name)",
+            url: url,
+            kind: .list,
+            size: owner.size,
+            symbol: owner.symbol,
+            read: read,
+            isFound: false,
+            mode: mode,
+            dataName: dataName,
+            isOnGrid: false,
+            headerSymbol: owner.headerSymbol,
+            file: owner.file,
+            image: owner.image,
+            glyph: owner.glyph,
+            uses: uses
+        )
+        spot.isBuiltIn = true
+        spot.editedFile = isOwn ? owner.url : nil
         return spot
     }
 
@@ -203,10 +268,6 @@ public struct Spot: Equatable, Sendable {
         return spot
     }
 
-    public var setsKeys: Bool {
-        keyList != nil
-    }
-
     public var headerState: SpotState {
         SpotState(title: name, subtitle: subtitle, isOnGrid: isOnGrid)
     }
@@ -225,6 +286,10 @@ public struct Spot: Equatable, Sendable {
     }
 
     public var canShowInMenuBar: Bool {
+        host == nil
+    }
+
+    public var showsValueInMenuBar: Bool {
         offersMenuBar && (read?.seconds != nil || read?.hasEvent == true || mode.stays)
     }
 
@@ -290,7 +355,7 @@ public struct Spot: Equatable, Sendable {
         switch kind {
         case .launch: return "Run"
         case .toggle: return "Toggle"
-        case .list: return pressRuns ? "Run" : "Open"
+        case .list: return soleCommand.flatMap { command in offers.first { $0.id == command }?.title } ?? (pressRuns ? "Run" : "Open")
         case .slider: return nil
         case .widget: return opens == nil ? nil : "Open"
         }

@@ -82,6 +82,25 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertEqual(a.height, SheetPlacement.rowHeight)
     }
 
+    func testARowOfButtonsAtTheEndStandsAGroupGapBelowTheField() throws {
+        let frames = try placement("""
+        grid=note note
+        grid=note note
+        grid=save save
+
+        field=note
+        type=multiline
+
+        button=save
+        title=Save
+        """).frames
+
+        let note = try XCTUnwrap(frames["note"]).rect, save = try XCTUnwrap(frames["save"]).rect
+        XCTAssertEqual(save.minY - note.maxY, SheetPlacement.groupGap)
+        XCTAssertEqual(save.maxY, SheetPlacement.maxHeight)
+        XCTAssertGreaterThan(SheetPlacement.groupGap, SheetPlacement.gap)
+    }
+
     func testTilesHaveTheOneRowHeightAndGap() throws {
         let sheet = try XCTUnwrap(SheetParts(output: SpotOutput(text: "text=a\ntitle=A\nlook=tile\n\ntext=b\ntitle=B\nlook=tile\n"))).placement
 

@@ -165,7 +165,7 @@ final class WidgetContractTests: XCTestCase {
         }
     }
 
-    func testOnlyAScriptThatOffersTheMenuBarCanShowThere() throws {
+    func testEachSpotCanShowInTheMenuBarAndOnlyOneThatOffersItWithAValueShowsTheValue() throws {
         try script("one.sh", "#!/bin/sh\n")
         try script("two.sh", "#!/bin/sh\n# on=panel.open\n")
         try script("three.sh", "#!/bin/sh\n# mode=stay\n# offers=menubar\n")
@@ -173,7 +173,8 @@ final class WidgetContractTests: XCTestCase {
         try script("five.sh", "#!/bin/sh\n# on=clock.5\n")
 
         XCTAssertEqual(try scan.refused, [])
-        XCTAssertEqual(try scan.scripts.filter(\.canShowInMenuBar).map(\.id), ["four", "three"])
+        XCTAssertEqual(try scan.scripts.filter(\.canShowInMenuBar).map(\.id), ["five", "four", "one", "three", "two"])
+        XCTAssertEqual(try scan.scripts.filter(\.showsValueInMenuBar).map(\.id), ["four", "three"])
     }
 
     func testASpotWhoseHeaderDrawsItsCardPlacesMetricsOfOtherScripts() throws {

@@ -20,6 +20,10 @@ extension SpotRun {
         startWaitingKey()
     }
 
+    func drewFrame(_ call: ScriptCall) {
+        if let index = workCalls.firstIndex(where: { $0 === call }) { workCalls.remove(at: index) }
+    }
+
     func forget(_ call: ScriptCall) {
         calls.removeAll { $0 === call }
         if let index = workCalls.firstIndex(where: { $0 === call }) { workCalls.remove(at: index) }

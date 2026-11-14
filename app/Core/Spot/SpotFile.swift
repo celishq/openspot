@@ -80,6 +80,8 @@ public struct SpotFile: Equatable, Sendable {
         guard preview == nil || preview == "sample" else {
             throw SpotError.fault("\(name) has an unknown preview: \(preview!). Use preview=sample, and print fake data while OPENSPOT_REASON is spot.preview")
         }
+        let edits = header.value("edits")
+        guard edits == nil || edits == "spots" else { throw SpotError.fault("\(name) has an unknown edits: \(edits!). Use edits=spots") }
         let places: Set<Place> = namedPlaces ?? (offeredActions.isEmpty && !answersOnly ? [.card] : [])
         let kind: SpotKind = mode.stays || places.contains(.search) || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch
         try Place.check(places, read: read, mode: mode, kind: kind, of: name)
@@ -112,7 +114,8 @@ public struct SpotFile: Equatable, Sendable {
             pages: header.values("pages"),
             uses: uses,
             keywords: header.list("keywords"),
-            previewsSample: preview != nil
+            previewsSample: preview != nil,
+            editsSpots: edits != nil
         )
         self.init(id: id, spots: [command])
     }
