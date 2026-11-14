@@ -68,7 +68,7 @@ extension SpotsModel {
         if let key = try await Task.detached(priority: .userInitiated, operation: { try account.key() }).value { return key }
         if let account = entries.first(where: { $0.spot.reachesAccountKey }) {
             host.present()
-            _ = openSheet(account.id)
+            _ = push(FlowSheet(spot: account.id))
         }
         host.notify("Set up your account, then publish again.")
         return nil

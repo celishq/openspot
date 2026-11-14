@@ -502,7 +502,7 @@ final class SpotsModelTests: XCTestCase {
         try script("other", header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
         model.reload()
 
-        model.open("other", moving: true)
+        model.pushFirst("other", moving: true)
 
         try await wait("the other sheet") { model.openList == "other" }
         XCTAssertEqual(model.runs.openID, "other")
@@ -515,7 +515,7 @@ final class SpotsModelTests: XCTestCase {
         host.motions = []
         model.closeList(moving: true)
         XCTAssertEqual(host.motions.compactMap { $0 }, [.sheet(isOpen: false)])
-        model.open("list", moving: true)
+        model.pushFirst("list", moving: true)
         try await wait("the open list") { model.openList == "list" }
         host.motions = []
         model.pick(SpotItem(title: "Apple", run: "a"), of: try XCTUnwrap(model.openEntry))
@@ -530,7 +530,7 @@ final class SpotsModelTests: XCTestCase {
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
-        model.open("parts", moving: true)
+        model.pushFirst("parts", moving: true)
         try await wait("the open sheet") { model.openList == "parts" && model.openPanel != nil }
 
         host.motions = []
@@ -776,7 +776,7 @@ final class SpotsModelTests: XCTestCase {
         host.motions = []
         host.phases = []
 
-        model.open("other", moving: true)
+        model.pushFirst("other", moving: true)
 
         try await wait("the other sheet") { model.openList == "other" }
         XCTAssertEqual(model.transition.phase, .open)
@@ -800,7 +800,7 @@ final class SpotsModelTests: XCTestCase {
 
         XCTAssertEqual(entry.id, "picker")
 
-        XCTAssertTrue(model.openSheet("build"))
+        XCTAssertTrue(model.push(FlowSheet(spot: "build")))
 
         try await wait("the New spot sheet") { model.openList == "build" }
         XCTAssertEqual(model.transition.phase, .open)
@@ -819,7 +819,7 @@ final class SpotsModelTests: XCTestCase {
         host.motions = []
         host.phases = []
 
-        model.open("other", moving: true)
+        model.pushFirst("other", moving: true)
 
         try await wait("the sheet") { model.openList == "other" }
         XCTAssertEqual(model.transition.phase, .open)
@@ -847,7 +847,7 @@ final class SpotsModelTests: XCTestCase {
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
-        model.open("parts", moving: true)
+        model.pushFirst("parts", moving: true)
         try await wait("the open sheet") { model.openList == "parts" && model.openPanel != nil }
         return calls
     }
@@ -1531,8 +1531,8 @@ final class SpotsModelTests: XCTestCase {
         try script("list", header: "on=sheet.open", "printf 'row=a\\ntitle=Apple\\n'")
         model.reload()
 
-        XCTAssertFalse(model.openSheet("gone"))
-        XCTAssertTrue(model.openSheet("list"))
+        XCTAssertFalse(model.push(FlowSheet(spot: "gone")))
+        XCTAssertTrue(model.push(FlowSheet(spot: "list")))
 
         XCTAssertEqual(host.shows, 1)
         try await wait("the sheet") { model.openList == "list" }

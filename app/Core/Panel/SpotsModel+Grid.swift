@@ -140,7 +140,7 @@ extension SpotsModel {
     public func run(_ entry: Entry) {
         if let item = entry.item, let list = entries.first(where: { $0.id == entry.spot.id }) {
             if item.records, openList != list.id {
-                open(list.id, moving: true)
+                pushFirst(list.id, moving: true)
             }
             pick(item, of: list)
             return
@@ -164,7 +164,7 @@ extension SpotsModel {
             } else if let command = entry.spot.soleCommand {
                 runSole(command, of: entry)
             } else {
-                open(entry.id, moving: true)
+                pushFirst(entry.id, moving: true)
             }
         case .slider:
             break
@@ -177,7 +177,7 @@ extension SpotsModel {
     /// rows of its own read beside it. It is false for any other spot, so the key goes on to the actions and the forms.
     public func openSoleSettings() -> Bool {
         guard openList == nil, let entry = selectedEntry, entry.spot.soleCommand != nil else { return false }
-        open(entry.id, moving: true)
+        pushFirst(entry.id, moving: true)
         return true
     }
 
@@ -199,7 +199,7 @@ extension SpotsModel {
             if isShown { host.dismiss() }
             press(key)
         } else {
-            open(entry.id, moving: true)
+            pushFirst(entry.id, moving: true)
             toggleRecording(id: KeyList.keyRun(spot: entry.id, command: command))
         }
     }

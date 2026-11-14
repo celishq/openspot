@@ -246,11 +246,11 @@ final class SpotFloatTests: XCTestCase {
         try await wait("its rows") { model.sheets["store"]?.list.shown.first?.title == "Apple" }
     }
 
-    func testSpotOpenOfASpotThatOffersAWindowOpensItsWindowAndHidesThePanel() async throws {
+    func testOpenOfASpotThatOffersAWindowOpensItsWindowAndHidesThePanel() async throws {
         try windowSpot()
         model.isShown = true
 
-        XCTAssertTrue(model.openSheet("store"))
+        XCTAssertTrue(model.open("store"))
         try await wait("the window") { host.windows == ["store"] }
 
         XCTAssertEqual(host.dismissals, 0)

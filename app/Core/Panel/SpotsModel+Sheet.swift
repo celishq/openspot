@@ -38,26 +38,16 @@ extension SpotsModel {
         openSheet?.list
     }
 
-    /// Clears the search, or else closes the open list. Returns false when there is nothing to step back from.
+    /// Clears the search, or else shows the sheet before in the flow, or else closes the open list. Returns false when
+    /// there is nothing to step back from.
     public func stepBack() -> Bool {
         if !searchText.isEmpty {
             searchText = ""
+        } else if back() {
         } else if openList != nil {
             closeList(moving: isShown)
         } else {
             return false
-        }
-        return true
-    }
-
-    /// Opens the sheet of a spot, as `openspot spot open` asks: in the panel that shows, or else in the panel that it shows.
-    /// Returns false when no spot has that ID.
-    public func openSheet(_ id: String) -> Bool {
-        guard entries.contains(where: { $0.id == id }) else { return false }
-        let moves = isShown
-        presentSheet(of: id, moving: moves) {
-            if !moves { host.show() }
-            endEditing(moving: false)
         }
         return true
     }
@@ -71,20 +61,29 @@ extension SpotsModel {
     func presentSheet(of id: String, moving: Bool, showingPanel: () -> Void = {}) {
         guard place(ofSheet: id) == .panel else { return openWindow(id) }
         showingPanel()
-        open(id, moving: moving)
+        pushFirst(id, moving: moving)
     }
 
     /// Opens the sheet of the spot that the config gives `⌘,`, the settings key of the Mac.
     public func openSettings() {
         guard let id = spot(openedBy: ActionKey(name: ",", isCommand: true)) else { return }
-        open(id, moving: true)
+        pushFirst(id, moving: true)
     }
 
     /// Opens a sheet, which closes the run of the sheet before and stops a recording in it, and shows it once it is ready: at
     /// once, or with its first answer. It takes the place of a sheet that shows, grows out of its card when it moves, and
     /// shows in place when it does not move or has no card. A spot that offers a window opens there instead.
-    public func open(_ id: String, moving: Bool) {
+    public func pushFirst(_ id: String, moving: Bool, title: String? = nil) {
         if place(ofSheet: id) == .window { return openWindow(id) }
+        if openList == nil { endFlow() }
+        flow.push(FlowSheet(spot: id, title: title))
+        sheets[id]?.show(page: nil)
+        waitPush(from: moving && openList != nil && openList != id ? 1 : nil)
+        present(id, moving: moving)
+    }
+
+    /// Opens the sheet of a spot in the place of the one that shows, with no change of the flow.
+    func present(_ id: String, moving: Bool) {
         if let shown = openList, shown != id { stopRecording() }
         sheets[id]?.open(waits: moving) { [weak self] in self?.showSheet(id, moving: moving) }
     }
@@ -95,6 +94,7 @@ extension SpotsModel {
         stopRecording()
         showSheet(nil, moving: moving)
         runs.closeOpen()
+        endFlow()
     }
 
     /// Closes each sheet of parts when the panel has faded, stops the reads that nothing wants now, and drops the answers
@@ -117,11 +117,15 @@ extension SpotsModel {
     func showSheet(_ list: String?, moving: Bool) {
         guard list != openList else { return }
         if let list, openList != nil, transition.isOpen {
-            change(moving ? .sheet(isOpen: true) : nil, { transition.show(list, moves: true) }) { [weak self] in
+            change(moving ? .sheet(isOpen: true) : nil, {
+                transition.show(list, moves: true)
+                startWaitingPush()
+            }) { [weak self] in
                 self?.change(nil) { self?.transition.settle(list) }
             }
             return
         }
+        dropWaitingPush()
         guard moving, hasPlace(list ?? transition.id) else { return cutSheet(to: list) }
         guard let list else {
             animate(isOpen: false) {
@@ -274,6 +278,10 @@ extension SpotsModel {
     /// Runs a pick of a row, or an action on it. In the panel, a pick that closes it closes the panel. A float stays open
     /// with the picked row selected, and a pick that asks with a form or records a key opens the spot in the panel (W8).
     public func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil, in place: SheetPlace = .panel) {
+        if action == nil, case .push(let spot, let page, let title, _)? = item.move, spot.map(opensSheet) ?? true {
+            push(FlowSheet(spot: spot ?? entry.id, page: page, title: title ?? (page == nil ? nil : item.title)))
+            return
+        }
         if place.isDetached {
             if action == nil, entry.spot.pickForm != nil || item.records { return press(entry.id) }
             remember(item, of: entry)

@@ -100,4 +100,29 @@ final class SpotCheckTests: XCTestCase {
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: far.path))
     }
+
+    func testARowThatPushesAPageThatNoSpotTakesIsAFaultThatNamesThePagesLine() async throws {
+        try "#!/bin/sh\n# pages=text:*\n".writeScript(to: folder.spotFile("translate"))
+        let file = folder.spotFile("clips")
+        try "#!/bin/sh\n# on=sheet.open\nprintf 'row=a\\npush=text:a\\npush.spot=translate\\n\\nrow=b\\npush=word:b\\npush.spot=translate\\n\\nrow=c\\npush=true\\n'\n".writeScript(to: file)
+
+        let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
+
+        XCTAssertEqual(findings.map(\.fault), [
+            "the row b pushes the page word:b of translate, which takes no such page. Add pages=word:* to translate",
+            "the row c pushes the page c of clips, which takes no such page. Add pages=c to clips",
+        ])
+    }
+
+    func testAReadThatPushesOrAFrameWithBothMovesIsAFault() async throws {
+        try "#!/bin/sh\n# on=sheet.open\n# pages=*\nprintf 'push=a\\npop=true\\n\\nrow=r\\n'\n".writeScript(to: folder.spotFile("both"))
+        try "#!/bin/sh\n# on=sheet.open\n# pages=*\nprintf 'push=a\\n\\nrow=r\\n'\n".writeScript(to: folder.spotFile("reads"))
+
+        let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
+
+        XCTAssertEqual(findings.map(\.line), [
+            "both: the frame holds both push and pop, and moves nothing. Print one of them",
+            "reads: the read prints push, which moves nothing in a read. Print it from a press",
+        ])
+    }
 }

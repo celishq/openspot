@@ -298,6 +298,10 @@ final class SpotAPITests: XCTestCase {
 
     func testTheRunningAppOpensASheetAReviewAndAChangeOfASetting() async throws {
         _ = try await answer(["spot", "open", "notes"])
+        _ = try await answer(["spot", "push", "settings", "spot:notes", "--replace", "--title", "Notes"])
+        _ = try await answer(["spot", "push", "notes"])
+        _ = try await answer(["spot", "pop", "settings", "--all"])
+        _ = try await answer(["spot", "pop", "settings"])
         _ = try await answer(["spot", "review", "apps"])
         let change = try await answer(["setting", "change", "--spot", "repos", "folder"])
         let gone = try await answer(["spot", "open", "gone"])
@@ -305,7 +309,7 @@ final class SpotAPITests: XCTestCase {
 
         XCTAssertEqual(change, CommandAnswer())
         let opened = await app.opened
-        XCTAssertEqual(opened, ["open notes", "review apps", "change repos folder", "open gone", "review gone"])
+        XCTAssertEqual(opened, ["open notes", "push settings spot:notes replace Notes", "push notes", "pop settings all", "pop settings", "review apps", "change repos folder", "open gone", "review gone"])
         XCTAssertEqual(gone.errors, "Openspot has no spot `gone`. Run `openspot spot list` to see each one.\n")
         XCTAssertEqual(goneReview.code, 1)
         for arguments in [["spot", "open", "notes"], ["spot", "review", "apps"], ["setting", "change", "--spot", "a", "b"]] {

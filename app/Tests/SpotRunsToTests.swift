@@ -19,7 +19,7 @@ final class SpotRunsToTests: SpotRunsCase {
         try script("files", log: "files-log")
         let files = try sheet("files")
 
-        files.pick(try row("row=doc\ntitle=Doc\nfile=/tmp/doc.txt\nto=viewer\n"))
+        files.pick(try row("row=doc\ntitle=Doc\nfile=/tmp/doc.txt\npush.spot=viewer\n"))
 
         try await wait("the toast of the viewer") { self.toasts(of: "viewer").count == 1 }
         XCTAssertEqual(toasts(of: "viewer"), ["doc /tmp/doc.txt"])
@@ -33,17 +33,17 @@ final class SpotRunsToTests: SpotRunsCase {
         try script("files", log: "files-log")
         let files = try sheet("files")
 
-        files.pick(try row("row=doc\ntitle=Doc\nfile=/tmp/doc.txt\nto=viewer\n"))
+        files.pick(try row("row=doc\ntitle=Doc\nfile=/tmp/doc.txt\npush.spot=viewer\n"))
 
         try await wait("the toast of the viewer") { self.toasts(of: "viewer").count == 1 }
-        XCTAssertEqual(toasts(of: "viewer"), ["row=doc title=Doc file=/tmp/doc.txt to=viewer"])
+        XCTAssertEqual(toasts(of: "viewer"), ["row=doc title=Doc file=/tmp/doc.txt push.spot=viewer"])
     }
 
     func testARowToASpotThatIsNotThereFailsOnItsOwnSpot() async throws {
         try script("files", log: "files-log")
         let files = try sheet("files")
 
-        files.pick(try row("row=doc\nto=gone\n"))
+        files.pick(try row("row=doc\npush.spot=gone\n"))
 
         try await wait("the failure") { !self.failures(of: "files").isEmpty }
         XCTAssertEqual(failures(of: "files"), ["Files hands this row to `gone`, which is not on. Turn it on, then try again."])

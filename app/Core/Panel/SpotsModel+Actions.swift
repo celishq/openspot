@@ -38,6 +38,7 @@ extension SpotsModel {
             }
             return true
         }
+        if openList != nil, let handled = handleFlowKey(key) { return handled }
         if key == Self.undoKey, openList == nil, searchText.isEmpty, undoRemoval() { return true }
         if key == ActionKey(name: "return", isCommand: true), openSelected() { return true }
         if let panel = openPanel, !panel.showsRows { return handlePanelKey(key, panel) }
@@ -87,7 +88,7 @@ extension SpotsModel {
     func openSheet(on key: ActionKey) -> Bool {
         guard openList == nil, let id = spot(openedBy: key) else { return false }
         endEditing(moving: false)
-        open(id, moving: true)
+        pushFirst(id, moving: true)
         return true
     }
 
@@ -113,7 +114,7 @@ extension SpotsModel {
             return true
         }
         if key == ActionKey(name: "escape") {
-            closeList(moving: true)
+            if !back() { closeList(moving: true) }
             return true
         }
         if panel.scrollsByArrows, key == ActionKey(name: "up") || key == ActionKey(name: "down") {
@@ -468,7 +469,8 @@ extension SpotsModel {
         if recording != nil { return "Esc Cancel" }
         if isEditing { return "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done" }
         if spotDrop != nil { return "Nothing runs until you press ⌘⏎" }
-        if let panel = openPanel, !panel.showsRows || panel.drawsKeys { return panel.hint { work(of: $0) != nil } }
+        let escape = flow.behind == nil ? "Close" : "Back"
+        if let panel = openPanel, !panel.showsRows || panel.drawsKeys { return panel.hint(escape: escape) { work(of: $0) != nil } }
         if let soleHint { return soleHint }
         let keys = target.flatMap { target in
             let opens = openList == nil && target.item == nil && target.entry.spot.pressRuns && target.entry.kind.opensSheet
@@ -476,7 +478,7 @@ extension SpotsModel {
                 stopping: { sheets[target.entry.id]?.work(of: $0, item: target.item) != nil },
                 second: opens ? "\(Self.openLabel) Settings" : nil
             )
-        } ?? "Esc Close"
+        } ?? "Esc \(escape)"
         return selectedGlyphTitle.map { "\($0)  \(keys)" } ?? keys
     }
 
@@ -592,7 +594,7 @@ extension SpotsModel {
                 closeMenu()
                 let opensSheet = openList != target.entry.id
                 if opensSheet {
-                    open(target.entry.id, moving: isShown)
+                    pushFirst(target.entry.id, moving: isShown)
                 }
                 self.form = FormSession(
                     draft: FormDraft(form: form, prefill: prefill),
@@ -619,7 +621,7 @@ extension SpotsModel {
             do {
                 switch try await sheet.change(action) {
                 case .form(let form)? where isShown && formAsk == ask:
-                    open(id, moving: true)
+                    pushFirst(id, moving: true)
                     self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: action, item: nil, openedSheet: true)
                 case .done?:
                     if isShown { host.dismiss() }

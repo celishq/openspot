@@ -53,6 +53,9 @@ struct SpotsView: View {
             .modifier(PanelSpan(panels: model.panels))
             SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: max(gridHeight, model.menuBackdropHeight), sheetHeight: max(sheetID == nil ? gridHeight : sheetHeight, model.menuBackdropHeight))
                 .modifier(SpotShownFade(isShown: model.isShown))
+            if sheetOpen, sheetID != nil {
+                SpotFlowEdges(model: model, rect: sheetRect)
+            }
             if let entry = model.entries.first(where: { $0.id == sheetID }) {
                 SpotSheetLayer(
                     model: model,

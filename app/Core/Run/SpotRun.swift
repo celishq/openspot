@@ -22,6 +22,8 @@ public final class SpotRun {
         case landed
         /// The sheet closed by itself, as when the panel closed or its script left the folder.
         case closed
+        /// A press asked to move the spot's flow, by a `push` or `pop` effect (protocol: Pages).
+        case move(FlowMove)
     }
 
     /// Why a read is asked. A `panel` or a `sheet` moment can use a young answer. The clock and an event always run and report
@@ -260,6 +262,10 @@ public final class SpotRun {
     /// The drops and the drags of files that wait for the running work, each in turn (protocol: The calls, Files out).
     @ObservationIgnored var waitingFiles: [SpotAction] = []
     @ObservationIgnored var waitingKeys: [String] = []
+    /// The page that the sheet shows, which each call names in `OPENSPOT_PAGE`, or nil for the spot's first sheet.
+    public internal(set) var page: String?
+    /// What each page of the flow last showed while another page shows, which the flow forgets as the page leaves it.
+    @ObservationIgnored var pageStates: [(page: String?, state: PageState)] = []
 
     init(spot: Spot, runs: SpotRuns, recent: [String], prepare: @escaping ([SpotItem], [String]) async -> Void) {
         self.spot = spot
