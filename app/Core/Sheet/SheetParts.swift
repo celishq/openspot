@@ -94,10 +94,11 @@ public struct SheetParts: Equatable, Sendable {
         hint(stopping: { _ in false })
     }
 
-    /// The keys of its parts, in words for the footer. The key of a running part says that it stops the call.
-    public func hint(stopping isRunning: (SpotPart) -> Bool) -> String {
+    /// The keys of its parts, in words for the footer. The key of a running part says that it stops the call, and Esc says
+    /// `escape`, such as Back when a sheet lies behind.
+    public func hint(escape: String = "Close", stopping isRunning: (SpotPart) -> Bool) -> String {
         let keys = parts.compactMap { part in part.key.map { "\($0.label) \(isRunning(part) ? "Stop" : part.title ?? part.id.capitalized)" } }
-        let close = parts.contains { $0.key == ActionKey(name: "escape") } ? [] : ["Esc Close"]
+        let close = parts.contains { $0.key == ActionKey(name: "escape") } ? [] : ["Esc \(escape)"]
         return (keys + close).joined(separator: "   ")
     }
 

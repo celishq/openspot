@@ -470,7 +470,8 @@ extension SpotsModel {
         if recording != nil { return "Esc Cancel" }
         if isEditing { return "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done" }
         if spotDrop != nil { return "Nothing runs until you press ⌘⏎" }
-        if let panel = openPanel, !panel.showsRows || panel.drawsKeys { return panel.hint { work(of: $0) != nil } }
+        let escape = history.behind == nil ? "Close" : "Back"
+        if let panel = openPanel, !panel.showsRows || panel.drawsKeys { return panel.hint(escape: escape) { work(of: $0) != nil } }
         if let soleHint { return soleHint }
         let keys = target.flatMap { target in
             let opens = openList == nil && target.item == nil && target.entry.spot.pressRuns && target.entry.kind.opensSheet
@@ -478,7 +479,7 @@ extension SpotsModel {
                 stopping: { sheets[target.entry.id]?.work(of: $0, item: target.item) != nil },
                 second: opens ? "\(Self.openLabel) Settings" : nil
             )
-        } ?? "Esc Close"
+        } ?? "Esc \(escape)"
         return selectedGlyphTitle.map { "\($0)  \(keys)" } ?? keys
     }
 

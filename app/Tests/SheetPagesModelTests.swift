@@ -145,4 +145,20 @@ final class SheetPagesModelTests: XCTestCase {
         try await wait("the page") { titles == ["Detail b"] }
         XCTAssertEqual(model.history.pages, [SheetPage(spot: "list"), SheetPage(spot: "list", page: "b")])
     }
+
+    func testTheHintOfAPageSaysThatEscGoesBack() async throws {
+        try script("info", header: "on=sheet.open", """
+        if [ -n "$OPENSPOT_PAGE" ]; then printf 'text=detail\\ntitle=Detail\\n'; else printf 'text=first\\ntitle=First\\n\\nrow=a\\ntitle=A\\npage=true\\n'; fi
+        """)
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.press("info")
+        try await wait("the first sheet") { model.openPanel?.parts.first?.title == "First" }
+        XCTAssertTrue(model.openSheet("info", page: "a"))
+
+        try await wait("the page of parts") { model.openPanel?.parts.first?.title == "Detail" }
+
+        XCTAssertEqual(model.hint, "Esc Back")
+    }
 }
