@@ -15,6 +15,20 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertFalse(CommandLineCall.usage.contains("glyphs"))
     }
 
+    func testGridEditOpensEditSpotsAndSpotStoreIsGone() {
+        XCTAssertEqual(CommandLineCall(arguments: ["grid", "edit"]), .gridEdit)
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "store"]), .unknown("spot store"))
+        XCTAssertTrue(CommandLineCall.usage.contains("openspot grid edit"))
+    }
+
+    func testStoreListsItsSpotsAndPublishesOne() {
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "list"]), .storeList(frame: false))
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "list", "--frame"]), .storeList(frame: true))
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "publish", "timer"]), .storePublish("timer"))
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "get", "timer"]), .storeGet("timer"))
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "publish", "timer"], environment: ["OPENSPOT_REASON": "panel.open"]), .refused("`openspot store publish` changes the store, so it cannot run in a read. Run it from a pick or an action."))
+    }
+
     func testEventEmitTakesAnEventNameAndAValue() {
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music.track"]), .eventEmit(name: "music.track", value: nil))
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music.track", "Blue in Green"]), .eventEmit(name: "music.track", value: "Blue in Green"))
@@ -71,6 +85,7 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["render", "--card", "wide", "a.png"]), .renderCard(.wide, "a.png"))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "--card", "huge", "a.png"]), .unknown("render --card huge a.png"))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "--panel", "a.png"]), .renderPanel("a.png"))
+        XCTAssertEqual(CommandLineCall(arguments: ["render", "--store", "a.png"]), .renderStore("a.png"))
         XCTAssertEqual(CommandLineCall(arguments: ["render"]), .unknown("render"))
     }
 

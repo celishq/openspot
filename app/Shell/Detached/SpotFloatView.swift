@@ -2,11 +2,18 @@ import OpenspotCore
 import SwiftUI
 
 /// The content of a float: the spot's sheet with its header, its rows or parts and a close button, or its card when it has
-/// no sheet. It tells its window the size that it needs.
+/// no sheet. It tells its window the size that it needs. In a window of its own it fills the window, whose title bar holds
+/// the name and the close button.
 struct SpotFloatView: View {
     let model: SpotsModel
     let id: String
+    var fills = false
     let onSize: (CGSize) -> Void
+
+    /// Where the sheet shows: in a window of its own when it fills one, or else in a float.
+    private var place: SheetPlace {
+        fills ? .window : .float
+    }
     @State private var dropTarget: String?
     @State private var dropWords: String?
 
@@ -24,10 +31,11 @@ struct SpotFloatView: View {
             }
         }
         .overlay { drop(on: entry) }
-        .onDrop(of: [.fileURL], delegate: SpotFloatDrop(id: id, model: model, target: $dropTarget))
+        .onDrop(of: [.fileURL], delegate: SpotFloatDrop(id: id, place: place, model: model, target: $dropTarget))
         .onChange(of: dropTarget) { dropWords = dropTarget.flatMap { model.dropWords(SpotGridDrop.paths, on: $0) } }
         .onChange(of: size, initial: true) { onSize(size) }
         .environment(\.spotIsShown, true)
+        .environment(\.spotCards, SpotCardSource(model: model))
     }
 
     /// The size of the sheet or the card.
@@ -41,8 +49,14 @@ struct SpotFloatView: View {
 
     private func sheet(_ entry: SpotsModel.Entry, _ run: SpotRun, size: CGSize) -> some View {
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
-            header(entry, run)
-            if let parts = run.panel {
+            if !fills { header(entry, run) }
+            if fills, let parts = run.panel, parts.parts.count == 1, let part = parts.parts.first, part.kind == "view", let view = entry.spot.view {
+                GeometryReader { area in
+                    SpotCustomView(source: view, values: part.values, card: .square, room: area.size, views: .shared) { run.set(part, to: $0) }
+                        .equatable()
+                }
+                .task(id: view) { await SpotViews.shared.load(view) }
+            } else if let parts = run.panel {
                 SheetPartsView(
                     panel: parts,
                     work: { run.work(of: $0) },
@@ -52,7 +66,7 @@ struct SpotFloatView: View {
                         if part.closes { model.land(id) }
                     },
                     list: run.list,
-                    onRun: { model.pick($0, of: entry, in: .float) },
+                    onRun: { model.pick($0, of: entry, in: place) },
                     onDragOut: { model.dragOut($0, of: id) },
                     selection: { run.selection },
                     selectedPart: { run.selectedPart?.id },
@@ -65,15 +79,16 @@ struct SpotFloatView: View {
             } else {
                 SpotRowsView(
                     list: run.list,
-                    onRun: { model.pick($0, of: entry, in: .float) },
+                    onRun: { model.pick($0, of: entry, in: place) },
                     selection: { run.selection },
                     onDragOut: { model.dragOut($0, of: id) }
                 )
             }
         }
         .padding(SpotTokens.padding)
-        .frame(width: size.width, height: size.height, alignment: .topLeading)
-        .modifier(SpotGlass())
+        .frame(width: fills ? nil : size.width, height: fills ? nil : size.height, alignment: .topLeading)
+        .frame(maxWidth: fills ? .infinity : nil, maxHeight: fills ? .infinity : nil, alignment: .topLeading)
+        .modifier(FloatSurface(fills: fills))
     }
 
     private func header(_ entry: SpotsModel.Entry, _ run: SpotRun) -> some View {
@@ -127,6 +142,20 @@ struct SpotFloatView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(SpotTheme.accent, in: RoundedRectangle(cornerRadius: SpotTokens.radius, style: .continuous))
                 .allowsHitTesting(false)
+        }
+    }
+}
+
+/// The glass of a float, and of a window of its own, which lies under the whole window, its title bar too, while the
+/// content keeps clear of the title bar.
+private struct FloatSurface: ViewModifier {
+    let fills: Bool
+
+    func body(content: Content) -> some View {
+        if fills {
+            content.background { Color.clear.modifier(SpotGlass(radius: SpotTokens.radius)).ignoresSafeArea() }
+        } else {
+            content.modifier(SpotGlass())
         }
     }
 }

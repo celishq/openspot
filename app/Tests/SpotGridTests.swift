@@ -2,6 +2,33 @@ import XCTest
 @testable import OpenspotCore
 
 final class SpotGridTests: XCTestCase {
+    func testASpotOnASidePanelLiesInThatPanelsShelvesFromTheTop() {
+        let grid = SpotGrid(placed: [1: .left, 3: .right], panels: GridPanels(hasLeft: true, hasRight: true))
+        XCTAssertEqual(grid.place([.strip, .strip, .strip, .strip]), [
+            SpotPlacement(index: 0, row: 0, column: 4, size: .strip),
+            SpotPlacement(index: 1, row: 0, column: 0, size: .strip),
+            SpotPlacement(index: 2, row: 1, column: 4, size: .strip),
+            SpotPlacement(index: 3, row: 0, column: 8, size: .strip)
+        ])
+    }
+
+    func testASpotOfASideThatTheGridDoesNotHaveLiesInTheCenter() {
+        let grid = SpotGrid(placed: [0: .left], panels: GridPanels(hasRight: true))
+        XCTAssertEqual(grid.place([.strip]), [SpotPlacement(index: 0, row: 0, column: 0, size: .strip)])
+        XCTAssertEqual(grid.panels.columns, 8)
+    }
+
+    func testAMovedSpotTakesItsSideAlong() {
+        let grid = SpotGrid(placed: [0: .right], panels: GridPanels(hasRight: true)).moving(0, to: 1, split: nil)
+        XCTAssertEqual(grid.placed, [1: .right])
+        XCTAssertEqual(grid.panels, GridPanels(hasRight: true))
+    }
+
+    func testTheHiddenGroupLiesInTheCenterUnderEveryPanel() {
+        let grid = SpotGrid(split: 2, placed: [0: .left], panels: GridPanels(hasLeft: true))
+        XCTAssertEqual(grid.place([.large, .strip, .strip]).map { [$0.row, $0.column] }, [[0, 0], [0, 4], [2, 4]])
+    }
+
     func testTwoSmallSpotsThenAWideOneShareARow() {
         let placements = SpotGrid().place([.small, .small, .wide])
         XCTAssertEqual(placements, [
@@ -190,8 +217,25 @@ final class SpotGridTests: XCTestCase {
     func testOneGroupHasNoTitleBand() {
         let sizes: [SpotSize] = [.small, .wide, .small]
         XCTAssertEqual(SpotGrid(split: 3).place(sizes), SpotGrid().place(sizes))
-        XCTAssertEqual(SpotGrid(split: 0).place(sizes), SpotGrid().place(sizes))
         XCTAssertEqual(SpotGrid(split: nil).place(sizes), SpotGrid().place(sizes))
+    }
+
+    func testASplitAtTheStartPutsEveryCardOnTheShelfUnderItsBand() {
+        let placed = SpotGrid(split: 0).place([.small, .wide, .small])
+
+        XCTAssertEqual(placed.map(\.top), Array(repeating: 2 * SpotTokens.groupTitleBand, count: 3))
+        XCTAssertEqual(placed.map(\.size), [.small, .wide, .small])
+    }
+
+    func testTheBandsCountEachGroupAndStartTheShelfOverItsFirstCard() {
+        let band = SpotTokens.groupTitleBand
+        let placed = SpotGrid(split: 2).place([.small, .wide, .small])
+        let bands = try? XCTUnwrap(SpotGroupBands(placed))
+
+        XCTAssertEqual(bands?.grid, 2)
+        XCTAssertEqual(bands?.shelf, 1)
+        XCTAssertEqual(bands?.shelfTop, placed[2].rect.minY - band)
+        XCTAssertNil(SpotGroupBands(SpotGrid().place([.small, .wide])))
     }
 
     func testAnEmptyGridHasNoHeight() {

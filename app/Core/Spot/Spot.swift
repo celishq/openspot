@@ -44,6 +44,7 @@ public struct Spot: Equatable, Sendable {
     public let drop: [String]
     /// Whether the person can float it, with a key or a shake.
     public var offersFloat: Bool { offeredPlaces.contains(.float) }
+    public var offersWindow: Bool { offeredPlaces.contains(.window) }
     /// Whether the person can put its card on the grid.
     public var offersCard: Bool { offeredPlaces.contains(.card) }
     public var offersMenuBar: Bool { offeredPlaces.contains(.menubar) }

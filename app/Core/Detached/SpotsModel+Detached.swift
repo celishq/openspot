@@ -1,6 +1,6 @@
 import Foundation
 
-/// The floats: spots that show in windows of their own at the pointer, apart from the panel (W1–W9).
+/// The sheets outside the panel: floats at the pointer (W1–W9), and windows of spots that offer one (W10).
 extension SpotsModel {
     /// Floats a spot, or closes its float when it floats. While a drag holds the mouse button, it brings the float to the
     /// pointer instead, where the drag needs it (W6). A spot whose kind comes from its first answer floats once that answer
@@ -19,7 +19,30 @@ extension SpotsModel {
         host.float(entry, followsDrag: host.isMouseDown)
     }
 
-    /// Closes the float of a spot.
+    /// The place of a sheet that shows outside the panel: its window, or else its float.
+    func detachedPlace(of id: String) -> SheetPlace {
+        place(ofSheet: id) == .window ? .window : .float
+    }
+
+    /// Opens the sheet of a spot that offers a window in its window, and puts the panel away. A spot whose window shows
+    /// comes to the front. A spot whose kind comes from its first answer opens once that answer arrives.
+    public func openWindow(_ id: String) {
+        guard let entry = cards.first(where: { $0.id == id }) else { return }
+        if let sheet = sheets[id], sheet.awaitsAnswer, !runs.floating.contains(id) {
+            sheet.afterAnswer { [weak self] in self?.openWindow(id) }
+            return
+        }
+        if !runs.floating.contains(id) { runs.float(id) }
+        host.window(entry)
+    }
+
+    /// Reads each sheet that shows in a window again, so that a window that lists the spots, such as the store, shows a
+    /// change of them.
+    func readWindows() {
+        for id in runs.floating where place(ofSheet: id) == .window { sheets[id]?.read(need: .change) }
+    }
+
+    /// Closes the float or the window of a spot.
     public func land(_ id: String) {
         runs.land(id)
         host.land(id)
@@ -35,7 +58,7 @@ extension SpotsModel {
             return true
         }
         if let action = sheet.spot.actions(for: item).first(where: { $0.key == key }), let entry = cards.first(where: { $0.id == id }) {
-            run(action, on: (entry, item), in: .float)
+            run(action, on: (entry, item), in: detachedPlace(of: id))
             return true
         }
         switch key {
@@ -44,7 +67,7 @@ extension SpotsModel {
         case ActionKey(name: "down"): sheet.list.move(by: 1)
         case ActionKey(name: "return"):
             guard let item, let entry = cards.first(where: { $0.id == id }) else { return false }
-            pick(item, of: entry, in: .float)
+            pick(item, of: entry, in: detachedPlace(of: id))
         default: return false
         }
         return true

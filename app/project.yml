@@ -91,6 +91,10 @@ targets:
             UTTypeTagSpecification:
               public.filename-extension:
                 - spot
+          - UTTypeIdentifier: dev.openspot.store-card
+            UTTypeDescription: Openspot store card
+            UTTypeConformsTo:
+              - public.data
     entitlements:
       path: Shell/Openspot.entitlements
       properties:

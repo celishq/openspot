@@ -2,11 +2,32 @@ import Foundation
 
 /// The main search: the cards that its text finds, with the rows and the answers that join them.
 extension SpotsModel {
-    /// The grid of the cards shown, with the size of each card whose size the person chose, and of a card that arrives from
-    /// the store.
+    /// Where the cards of the shelf start in the order of Edit Spots, after the cards on the grid. A dragged card counts in
+    /// the group of its target. It is nil out of Edit Spots and while the search has text.
+    var shelfStart: Int? {
+        guard isEditing, query.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
+        let hidden = shelfCards.filter { $0.id != drag?.id }.count + (drag?.target.isOnGrid == false ? 1 : 0)
+        return visible.count - hidden
+    }
+
+    /// The cards of the Search only shelf of Edit Spots: each spot off the grid that offers a card of its own, and not a
+    /// sheet that another spot opens or a card of faults.
+    var shelfCards: [Entry] {
+        let parts = Set(cards.flatMap { $0.spot.places + ($0.spot.opens.map { [$0] } ?? []) })
+        return cards.filter { !$0.isOnGrid && $0.item == nil && $0.spot.offersCard && $0.spot.fault == nil && !parts.contains($0.id) }
+    }
+
+    /// The grid of the cards shown: in the two groups of Edit Spots, with the size of each card whose size the person chose.
     var grid: SpotGrid {
-        let arriving = carry?.tile == nil ? nil : carry?.entry.id
-        return SpotGrid(kept: Set(visible.indices.filter { visible[$0].isSizeChosen || visible[$0].id == arriving }))
+        var placed: [Int: GridPanel] = [:]
+        let split = shelfStart
+        if query.isEmpty {
+            for index in visible.indices where index < (split ?? visible.count) {
+                let panel = visible[index].id == drag?.id ? drag?.target.panel ?? .center : panel(of: visible[index])
+                if panel != .center { placed[index] = panel }
+            }
+        }
+        return SpotGrid(split: split, kept: Set(visible.indices.filter { visible[$0].isSizeChosen }), placed: placed, panels: panels)
     }
 
     /// The entries that have a card. A sheet that grows out of the field, such as the install screen, has none.
@@ -40,10 +61,16 @@ extension SpotsModel {
     }
 
     /// Whether a change of the rows or the state of a spot can change the cards that show: with no search, when it moves its
-    /// card on or off the grid, and with a search, when the search finds the spot, its rows or its answers.
+    /// card on or off the grid, in Edit Spots between the grid and the shelf, and with a search, when the search finds the
+    /// spot, its rows or its answers.
     func mayMove(_ id: String) -> Bool {
         guard let entry = entries.first(where: { $0.id == id }) else { return false }
-        guard !query.trimmingCharacters(in: .whitespaces).isEmpty else { return entry.isOnGrid != visible.contains { $0.id == id } }
+        guard !query.trimmingCharacters(in: .whitespaces).isEmpty else {
+            guard isEditing, let index = visible.firstIndex(where: { $0.id == id }), placements.indices.contains(index) else {
+                return entry.isOnGrid != visible.contains { $0.id == id }
+            }
+            return entry.isOnGrid == (placements[index].group == .shelf)
+        }
         return entry.spot.isFound || entry.spot.isGlobal || entry.spot.answers != nil
     }
 
@@ -57,8 +84,7 @@ extension SpotsModel {
     private func found() -> [Entry] {
         let text = query.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else {
-            let arriving = carry.flatMap { $0.tile != nil && drag?.id == $0.entry.id ? [$0.entry] : nil } ?? []
-            return dragged(cards.filter(\.isOnGrid) + arriving)
+            return dragged(cards.filter(\.isOnGrid) + (isEditing ? shelfCards : []))
         }
         var ids = Set<String>()
         let answers = entries.filter { $0.spot.answers.map { runs.answerMatches.matches($0, text) } == true }

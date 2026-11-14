@@ -69,8 +69,13 @@ actor FakeRunningApp: RunningApp {
         return id != "gone"
     }
 
-    func openStore() {
-        opened.append("store")
+    func editGrid() {
+        opened.append("grid")
+    }
+
+    func publish(_ id: String) -> SpotPublish {
+        opened.append("publish \(id)")
+        return .published
     }
 
     func reveal(_ id: String) -> Bool {

@@ -54,8 +54,12 @@ struct SpotRunningApp: RunningApp {
         await model.reviewCore(id)
     }
 
-    func openStore() async {
-        await model.openStore()
+    func editGrid() async {
+        await model.editGrid()
+    }
+
+    func publish(_ id: String) async -> SpotPublish {
+        await model.publish(id)
     }
 
     func reveal(_ id: String) async -> Bool {

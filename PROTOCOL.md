@@ -73,7 +73,7 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `keywords`    | More words that find the spot in the main search, split by commas, such as `keywords=coffee, cup`.                               |
 | `on`          | An event that makes Openspot ask the spot what to show. One line for each event. See [Events](#events).                          |
 | `emits`       | The events the spot raises, split by commas. See [Events](#events).                                                              |
-| `offers`      | A place where the spot can show: `card`, `search`, `menubar` or `float`. One line for each place. See [Places](#places).          |
+| `offers`      | A place where the spot can show: `card`, `search`, `menubar`, `float` or `window`. One line each. See [Places](#places).         |
 | `drop`        | The files its card takes: extensions such as `mov,mkv`, `folder`, or `*`. See [The calls](#the-calls).                           |
 | `preview`     | `sample`: when `OPENSPOT_REASON` is `spot.preview`, the spot prints sample data for the store.                                   |
 | `view`        | A SwiftUI file next to the spot, such as `view=cups.swift`. See [Views](#views).                                                 |
@@ -527,6 +527,7 @@ The user decides where a spot shows. A spot only offers, with one `offers` line 
 | `search`  | its rows in the main search.                                            | `on=panel.open`, `on=sheet.open` or a `clock`       |
 | `menubar` | its main block in the menu bar.                                         | a `clock`, another event, or `mode=stay` or `always` |
 | `float`   | in a small window at the pointer, which a hotkey or a shake opens.      | a sheet                                             |
+| `window`  | its sheet in a window of its own, in place of the panel.                | a sheet                                             |
 | `actions` | a `button` of its header in the ⌘K menu of every card.                  | a line in the `button` block, not in the header     |
 | `none`    | nowhere, until another spot opens its sheet with `openspot spot open`.  | no other `offers` line                              |
 
@@ -541,6 +542,9 @@ The user decides where a spot shows. A spot only offers, with one `offers` line 
   rows by the user's picks.
 - The user can give a spot that offers `float` a hotkey, or a shake of the pointer, in Settings. It shows the spot in a
   small window at the pointer, which stays while the user works in other apps. The spot never learns where it shows.
+- A spot that offers `window` opens its sheet in a normal window, from its card, the main search or `openspot spot open`.
+  The user moves, resizes and closes it, and Openspot shows in the Dock while it's open. Use it for a sheet that needs
+  room, such as a catalog.
 - `on=search.text <pattern>` makes a spot answer the main search. Openspot asks it at each change of a text that the
   pattern matches, with no pause. A newer text stops the older call. The answer should be fast.
 - Its rows show first in the main search until the newest text has an answer, and go at once when the pattern no longer
@@ -664,20 +668,24 @@ struct SpotView: View {
 - The spot and its view must be in a folder of their own, such as `cups/cups.sh` and `cups/cups.swift`.
 - The file declares `struct SpotView: View` with `let spot: SpotInput`, and has no top-level code.
 
-| Member            | Gives                                                            |
-| ----------------- | ---------------------------------------------------------------- |
-| `spot["key"]`     | The last value of a key of its block, or nil.                    |
-| `spot.all("key")` | Each value of a key that repeats.                                |
-| `spot.size`       | The size of its place.                                           |
-| `spot.inset`      | The space other cards keep between their edge and their words.   |
-| `spot.corner`     | The corner radius of the card.                                   |
-| `spot.ink`        | The colour of words, for light and dark.                         |
-| `spot.secondary`  | The opacity of a second line.                                    |
-| `spot.accent`     | The accent colour.                                               |
-| `spot.font`       | The fonts of the cards: `title`, `detail`, `metric` and `value`. |
-| `spot.send(v)`    | Calls the spot with the view's id and `v`, as a field does.      |
+| Member              | Gives                                                                 |
+| ------------------- | --------------------------------------------------------------------- |
+| `spot["key"]`       | The last value of a key of its block, or nil.                         |
+| `spot.all("key")`   | Each value of a key that repeats.                                     |
+| `spot.size`         | The size of its place.                                                |
+| `spot.inset`        | The space other cards keep between their edge and their words.        |
+| `spot.corner`       | The corner radius of the card.                                        |
+| `spot.ink`          | The colour of words, for light and dark.                              |
+| `spot.secondary`    | The opacity of a second line.                                         |
+| `spot.accent`       | The accent colour.                                                    |
+| `spot.font`         | The fonts of the cards: `title`, `detail`, `metric` and `value`.      |
+| `spot.send(v)`      | Calls the spot with the view's id and `v`, as a field does.           |
+| `spot.card(id)`     | The card of a spot, at the size it takes on the grid. A drag adds it. |
+| `spot.cardSize(id)` | That size, so the view can lay cards out.                             |
 
 - The view fills its place, and the whole card when there's no card layout. It can't change the size of its place.
+- In a window (see [Places](#places)), a sheet with one `view` block fills the window. `spot.card(id)` draws the card of
+  any spot by the ID that `openspot store list` prints, as the store does.
 - It gets the keys of its block in each frame. A new frame keeps its `@State`.
 - On a card, the view only draws, and a press works as on any card. In a sheet, it takes clicks and keys, and
   `spot.send(value)` calls the spot with `<id> <value>`, as a field does. A newer send stops the call of the older one.
@@ -760,7 +768,7 @@ A spot asks the Mac and Openspot for things through one command, which works the
     `reminders add`, `reminders done`, `spot add`, `spot remove` and `spot delete`;
   - calls that change Openspot or its places: `app quit`, `update install`, and `setting set` of a key that Openspot
     keeps for the user (see [Settings](#settings));
-  - calls that open a window or the panel: `spot show`, `spot open`, `spot choose`, `spot edit`, `spot prompt`, `spot share`, `spot review`, `spot store`, `setting change`,
+  - calls that open a window or the panel: `spot show`, `spot open`, `spot choose`, `spot edit`, `spot prompt`, `spot share`, `spot review`, `grid edit`, `setting change`,
     `update check`, `calendar show` and `reminders show`;
   - `account sync`, which only the user and the spots of Openspot can call.
 - `calendar add --dry-run` and `reminders add --dry-run` change nothing, so they work in a read.
@@ -784,6 +792,10 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot spot add <git url, folder or .spot>`     | Adds a spot, and records it in `spots.lock`. An update that needs a new use also needs `--yes`. |
 | `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                                |
 | `openspot spot stats`                              | Prints what each spot cost and used. See [Stats](#stats).                                       |
+| `openspot grid edit`                               | Opens the panel in Edit Spots, to arrange the grid.                                             |
+| `openspot store list [--frame]`                    | Prints each spot of the store, whether you have it, and if it's yours, whether it's published.  |
+| `openspot store get <id>`                          | Gets a spot of the store: turns it on, or adds its package to your spots folder.                |
+| `openspot store publish <id>`                      | Publishes a spot of your spots folder to the store. It needs a `readme.md` beside its script.   |
 
 ### Settings
 

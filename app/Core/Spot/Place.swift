@@ -3,7 +3,7 @@ import Foundation
 /// A place where a spot can show, which its header offers with one `offers` line each. The person decides whether it shows
 /// there (protocol: Places).
 public enum Place: String, CaseIterable, Sendable {
-    case card, search, menubar, float
+    case card, search, menubar, float, window
 
     /// The word of an `offers` line that offers no place.
     private static let none = "none"
@@ -27,7 +27,7 @@ public enum Place: String, CaseIterable, Sendable {
                 throw SpotError.fault("\(name) offers rows, which Openspot no longer reads. Use offers=search, and leave out offers=card")
             }
             guard let place = Place(rawValue: word) else {
-                throw SpotError.fault("\(name) offers an unknown place: \(word). Use card, search, menubar, float or none")
+                throw SpotError.fault("\(name) offers an unknown place: \(word). Use card, search, menubar, float, window or none")
             }
             return place
         })
@@ -40,6 +40,9 @@ public enum Place: String, CaseIterable, Sendable {
         }
         if places.contains(.float), kind != .list {
             throw SpotError.fault("\(name) offers float, which needs a sheet. Add on=sheet.open, or remove offers=float")
+        }
+        if places.contains(.window), kind != .list {
+            throw SpotError.fault("\(name) offers window, which needs a sheet. Add on=sheet.open, or remove offers=window")
         }
         if places.contains(.menubar), read?.seconds == nil, read?.hasEvent != true, !mode.stays {
             throw SpotError.fault("\(name) offers menubar, which needs a clock, an event or mode=stay, such as on=clock.60")

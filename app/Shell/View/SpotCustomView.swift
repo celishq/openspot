@@ -17,6 +17,7 @@ struct SpotCustomView: View, @MainActor Equatable {
     /// Calls the spot with the view's id and a value, in a sheet. Nil on a card, which takes no input.
     var send: ((String) -> Void)?
     @Environment(\.spotIsShown) private var isShown
+    @Environment(\.spotCards) private var cards
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.source == rhs.source && lhs.values == rhs.values && lhs.card == rhs.card && lhs.room == rhs.room && lhs.views === rhs.views
@@ -38,6 +39,23 @@ struct SpotCustomView: View, @MainActor Equatable {
             .allowsHitTesting(send != nil)
     }
 
+    /// The card of a spot by its store ID, as a plain function, since a view library casts it back from `Any`. A view's body
+    /// calls it on the main thread.
+    private var cardView: (String) -> AnyView {
+        let cards = cards
+        return { id in
+            var view = AnyView(EmptyView())
+            MainActor.assumeIsolated { view = cards.view(id) }
+            return view
+        }
+    }
+
+    /// The size of the card of a spot by its store ID, as a plain function.
+    private var cardSize: (String) -> CGSize {
+        let cards = cards
+        return { id in MainActor.assumeIsolated { cards.size(id) } }
+    }
+
     /// What the view reads of its card, by the keys of `SpotInput`.
     private var input: [String: Any] {
         [
@@ -50,7 +68,9 @@ struct SpotCustomView: View, @MainActor Equatable {
             "title": SpotType.title,
             "detail": SpotType.detail,
             "metric": SpotType.metric,
-            "value": SpotType.value
+            "value": SpotType.value,
+            "card": cardView,
+            "cardSize": cardSize
         ]
     }
 

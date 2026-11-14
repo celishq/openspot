@@ -85,6 +85,12 @@ struct SpotFieldView: View {
                 .font(SpotType.input)
                 .foregroundStyle(SpotTheme.ink)
             Spacer()
+            SpotRoundButton(symbol: "sidebar.left", label: "Left Panel", look: model.panels[.left] ? .strong : .plain) {
+                model.show(.left, !model.panels[.left])
+            }
+            SpotRoundButton(symbol: "sidebar.right", label: "Right Panel", look: model.panels[.right] ? .strong : .plain) {
+                model.show(.right, !model.panels[.right])
+            }
             SpotRoundButton(symbol: "checkmark", label: "Done", look: .strong) { model.endEditing() }
         }
         .padding(.leading, SpotTokens.padding + SpotTokens.glyphInset)

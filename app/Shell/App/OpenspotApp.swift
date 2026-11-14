@@ -45,6 +45,8 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var openedAtLaunch: [URL] = []
     /// The window of each float, by the ID of its spot.
     var floats: [String: SpotFloatPanel] = [:]
+    /// The window of each spot that offers one and shows, by the ID of its spot.
+    var spotWindows: [String: SpotSheetWindow] = [:]
     /// The watch of the pointer, while a key holds the shake or a row of Settings records one.
     private var shakeWatch: SpotShakeWatch?
     private var tapWatch: SpotTapWatch?
@@ -86,7 +88,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         panel?.warm { [weak self] in
             guard let self else { return }
             SpotSheetWarmth.draw()
-            SpotSoftBlur.warm(SpotsView.blurHeights(of: model))
+            SpotSoftBlur.warm(SpotsView.blurHeights(of: model), width: model.panels.frame.width)
             update?.start()
             if isFirstLaunch {
                 model.beginFirstLaunch()
@@ -258,10 +260,10 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     }
 
     /// Opens the panel for a drag. The front app stays in front, so that closing the panel activates nothing.
-    private func showPanelForDrag() {
+    func showPanelForDrag(beside window: NSRect? = nil) {
         guard !model.isShown || model.isWarming else { return model.followDrag() }
         previousApp = nil
-        panel?.place(over: nil)
+        if let window { panel?.place(beside: window) } else { panel?.place(over: nil) }
         panel?.showForDrag()
     }
 

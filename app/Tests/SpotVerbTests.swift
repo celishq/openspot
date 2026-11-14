@@ -27,7 +27,8 @@ final class SpotVerbTests: XCTestCase {
         func pop(_ id: String, all: Bool) async -> Bool { false }
         func review(_ id: String) async -> Bool { false }
         func choose(for id: String) async -> Bool { false }
-        func openStore() async {}
+        func editGrid() async {}
+        func publish(_ id: String) async -> SpotPublish { .notOwn }
         func reveal(_ id: String) async -> Bool { false }
         func sandbox(_ file: URL?, isCareful: Bool) async {}
         func changeSetting(_ key: String, of spot: String) async -> Bool { false }
@@ -266,7 +267,7 @@ final class SpotVerbTests: XCTestCase {
         let index = try XCTUnwrap(model.visible.firstIndex { $0.id == "weather" })
         let card = try XCTUnwrap(model.placements.first { $0.index == index }).rect
 
-        let origin = SpotTokens.gridOrigin(scrollOffset: model.gridScroll)
+        let origin = model.gridOrigin
         model.openMenu(at: CGPoint(x: origin.x + card.midX, y: origin.y + card.midY))
         model.tap("weather")
 

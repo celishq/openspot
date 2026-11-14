@@ -13,8 +13,6 @@ public enum SpotTokens {
     /// The height of a group's title in Edit Spots, and of its band over the group's cards.
     public static let groupTitleHeight: CGFloat = 16
     public static let groupTitleBand: CGFloat = groupTitleHeight + placeGap
-    /// The gap that a group of the store keeps above its title after another group, with a line across its middle.
-    public static let groupGap: CGFloat = rowGap
     public static let glyphSize: CGFloat = 36
     /// How far the mark of a glyph lies inside its square, such as the search field's magnifier, where a title over a
     /// column of glyphs starts.
@@ -27,19 +25,8 @@ public enum SpotTokens {
     /// The side of the square that takes a drag of a card's resize handle, and the width of its line on the rim.
     public static let resizeHandle: CGFloat = 28
     public static let resizeHandleLine: CGFloat = 5
-    /// The widest the store of Edit Spots grows, twelve columns of the grid, and its gap to the edges of the screen.
-    public static let dockWidth: CGFloat = 2 * padding + width(columns: 12)
-    public static let dockMargin: CGFloat = 20
     /// The gap from the menu bar to the top of a toast, the same as the system's volume and brightness HUD leaves.
     public static let toastGap: CGFloat = 10
-    /// The height of the button at the end of a store row, the width of its main part, which every step shares, and of its arrow.
-    public static let storeButtonHeight: CGFloat = 28
-    public static let storeStepWidth: CGFloat = 80
-    public static let storeArrowWidth: CGFloat = 26
-    /// The height of the sheet that shows a listing in the store.
-    public static let storeSheetHeight: CGFloat = height(rows: 3)
-    /// Where the store's rows start: the title of their first group lies on the middle line of the search beside it.
-    public static let dockRowsTop: CGFloat = padding + (menuRowHeight - groupTitleHeight) / 2
     /// How far from each edge the rim of a round corner passes through its diagonal, as a part of the radius.
     public static let rimPoint: CGFloat = 1 - 0.5.squareRoot()
     public static let listRowHeight: CGFloat = 40
@@ -96,11 +83,6 @@ public enum SpotTokens {
         CGFloat(rows) * rowHeight + CGFloat(rows - 1) * rowGap
     }
 
-    /// The height of the store when it shows this many lines of rows under one group title.
-    public static func dockHeight(rows: Int) -> CGFloat {
-        dockRowsTop + groupTitleBand + height(rows: rows) + padding
-    }
-
     /// The space between the edge of a card and what it shows. A 1x1 widget keeps more room for its one mark.
     public static func cardPadding(for size: SpotSize, isWidget: Bool) -> CGFloat {
         isWidget && size == .small ? controlPadding : padding
@@ -143,6 +125,10 @@ public enum SpotTokens {
 
     /// The size of a float's sheet: its header, then its parts or its rows, with no search field. A tall one stops at the
     /// height of the panel's sheet, and its rows scroll.
+    /// The size that the window of a spot opens at, and the least it can be resized to.
+    public static let windowSize = CGSize(width: 720, height: 560)
+    public static let windowMinSize = CGSize(width: 360, height: 280)
+
     public static func floatSize(rows: Int, perLine: Int = 1, parts: SheetParts? = nil) -> CGSize {
         let content: CGFloat
         if let parts {
@@ -200,8 +186,9 @@ public enum SpotTokens {
     /// Where the grid's first row starts: under the field, one gap down.
     public static let gridTop: CGFloat = halo + rowHeight + rowGap
 
-    /// Where the grid's top left corner lies in the panel, with the grid scrolled this far.
-    public static func gridOrigin(scrollOffset: CGFloat) -> CGPoint {
-        CGPoint(x: halo, y: gridTop - scrollOffset)
+    /// Where the grid's top left corner lies in the panel, with the grid scrolled this far and reaching this far left of the
+    /// center panel.
+    public static func gridOrigin(scrollOffset: CGFloat, left: CGFloat) -> CGPoint {
+        CGPoint(x: halo - left, y: gridTop - scrollOffset)
     }
 }

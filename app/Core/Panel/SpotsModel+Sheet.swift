@@ -52,6 +52,18 @@ extension SpotsModel {
         return true
     }
 
+    /// Where the sheet of a spot opens: in a window of its own when its header offers one (W10), or else in the panel.
+    public func place(ofSheet id: String) -> SheetPlace {
+        entries.first { $0.id == id }?.spot.offersWindow == true ? .window : .panel
+    }
+
+    /// Opens the sheet of a spot where it opens: in its window, or in the panel once `showingPanel` has shown it.
+    func presentSheet(of id: String, moving: Bool, showingPanel: () -> Void = {}) {
+        guard place(ofSheet: id) == .panel else { return openWindow(id) }
+        showingPanel()
+        pushFirst(id, moving: moving)
+    }
+
     /// Opens the sheet of the spot that the config gives `⌘,`, the settings key of the Mac.
     public func openSettings() {
         guard let id = spot(openedBy: ActionKey(name: ",", isCommand: true)) else { return }
@@ -60,8 +72,9 @@ extension SpotsModel {
 
     /// Opens a sheet, which closes the run of the sheet before and stops a recording in it, and shows it once it is ready: at
     /// once, or with its first answer. It takes the place of a sheet that shows, grows out of its card when it moves, and
-    /// shows in place when it does not move or has no card.
+    /// shows in place when it does not move or has no card. A spot that offers a window opens there instead.
     public func pushFirst(_ id: String, moving: Bool, title: String? = nil) {
+        if place(ofSheet: id) == .window { return openWindow(id) }
         if openList == nil { endFlow() }
         flow.push(FlowSheet(spot: id, title: title))
         sheets[id]?.show(page: nil)
@@ -269,7 +282,7 @@ extension SpotsModel {
             push(FlowSheet(spot: spot ?? entry.id, page: page, title: title ?? (page == nil ? nil : item.title)))
             return
         }
-        if place == .float {
+        if place.isDetached {
             if action == nil, entry.spot.pickForm != nil || item.records { return press(entry.id) }
             remember(item, of: entry)
             sheets[entry.id]?.list.select(run: item.run)

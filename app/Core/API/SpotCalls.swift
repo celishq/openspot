@@ -79,10 +79,10 @@ struct SpotCalls {
         }
     }
 
-    func store() -> CommandAPI.Work {
-        guard let app else { return CommandAnswer.notRunning("spot store") }
+    func editGrid() -> CommandAPI.Work {
+        guard let app else { return CommandAnswer.notRunning("grid edit") }
         return CommandAnswer.work {
-            await app.openStore()
+            await app.editGrid()
             return ""
         }
     }

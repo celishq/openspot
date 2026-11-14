@@ -80,7 +80,7 @@ extension SpotsModel {
     @discardableResult
     public func openSelected() -> Bool {
         guard isOnGrid, let entry = selectedEntry, entry.item == nil, entry.spot.pressRuns, entry.kind.opensSheet else { return false }
-        pushFirst(entry.id, moving: true)
+        presentSheet(of: entry.id, moving: true)
         return true
     }
 
@@ -95,9 +95,7 @@ extension SpotsModel {
             run(entry)
             return
         }
-        let moving = isShown
-        host.show()
-        pushFirst(id, moving: moving)
+        presentSheet(of: id, moving: isShown) { host.show() }
     }
 
     /// Notes which modifiers the person holds. The letters show once they have matched the entry key for a moment, so that

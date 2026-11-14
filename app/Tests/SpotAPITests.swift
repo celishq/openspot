@@ -136,6 +136,17 @@ final class SpotAPITests: XCTestCase {
         XCTAssertEqual(changes, 0)
     }
 
+    func testOnTurnsBackOnAFileOfTheFolderThatEditSpotsTurnedOff() async throws {
+        try "#!/bin/sh\n".writeScript(to: spots.spotFile("notes"))
+        try file.turn("notes", on: false)
+        XCTAssertEqual(file.read().arrangement.disabled, ["notes"])
+
+        let on = try await answer(["setting", "set", "--spot", "notes", "enabled", "true"])
+
+        XCTAssertEqual(on.code, 0)
+        XCTAssertEqual(file.read().arrangement.disabled, [])
+    }
+
     func testOnWithNoSpotIsUnknown() {
         XCTAssertEqual(CommandLineCall(arguments: ["setting", "set", "--spot", "a", "enabled"], environment: [:]), .refused("`enabled` takes `true` or `false`, such as `openspot setting set --spot a enabled true`."))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "list", "--all"], environment: [:]), .unknown("spot list --all"))

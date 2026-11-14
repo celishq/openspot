@@ -1,8 +1,9 @@
 import Foundation
 
-/// Packs spots into full rows of four columns. Each spot takes the next shelf, a smaller spot moves up to fill
-/// a gap, and spots grow until their shelf has no hole, save a kept spot, which keeps its size and may leave one. A square
-/// lies on the left of its shelf, or on the right when small spots that fit on half a line come before it.
+/// Packs spots into shelves of four columns. Each spot takes the next shelf, a smaller spot moves up to fill a gap, and
+/// spots grow until their shelf has no hole, save a kept spot, which keeps its size and may leave one. A square lies on the
+/// left of its shelf, or on the right when small spots that fit on half a line come before it. A spot on a side panel lies
+/// in the shelves of that side, and a spot of a side that the grid does not have lies in the center.
 public struct SpotGrid: Equatable, Sendable {
     private typealias Slot = (index: Int, size: SpotSize, keeps: Bool)
 
@@ -10,37 +11,66 @@ public struct SpotGrid: Equatable, Sendable {
     public let split: Int?
     /// The indexes of the spots that keep their size.
     public let kept: Set<Int>
+    /// The side panel of each spot on one, by its index. Each other spot lies in the center.
+    public let placed: [Int: GridPanel]
+    public let panels: GridPanels
 
-    public init(split: Int? = nil, kept: Set<Int> = []) {
+    public init(split: Int? = nil, kept: Set<Int> = [], placed: [Int: GridPanel] = [:], panels: GridPanels = GridPanels()) {
         self.split = split
         self.kept = kept
+        self.placed = placed.filter { $0.value != .center }
+        self.panels = panels
     }
 
     /// This grid with the spot at `from` moved to `to` in the order, and the second group starting at `split`.
     public func moving(_ from: Int, to: Int, split: Int?) -> SpotGrid {
-        var flags = (0...max(from, to, kept.max() ?? 0)).map { kept.contains($0) }
+        var flags = (0...max(from, to, kept.max() ?? 0, placed.keys.max() ?? 0)).map { (kept.contains($0), placed[$0]) }
         flags.insert(flags.remove(at: from), at: to)
-        return SpotGrid(split: split, kept: Set(flags.indices.filter { flags[$0] }))
+        return SpotGrid(
+            split: split,
+            kept: Set(flags.indices.filter { flags[$0].0 }),
+            placed: Dictionary(uniqueKeysWithValues: flags.indices.compactMap { index in flags[index].1.map { (index, $0) } }),
+            panels: panels
+        )
     }
 
     /// This grid with the spot at this index kept too.
     public func keeping(_ index: Int) -> SpotGrid {
-        SpotGrid(split: split, kept: kept.union([index]))
+        SpotGrid(split: split, kept: kept.union([index]), placed: placed, panels: panels)
+    }
+
+    /// This grid with the spot at this index on this side.
+    public func placing(_ index: Int, on panel: GridPanel) -> SpotGrid {
+        var placed = placed
+        placed[index] = panel
+        return SpotGrid(split: split, kept: kept, placed: placed, panels: panels)
     }
 
     /// Lays out the spots in shelves, as one group, or as two groups when both have spots. The rows count on through both
-    /// groups.
+    /// groups. A spot of the second group keeps its size, as on the grid, and grows to fill no row.
     public func place(_ sizes: [SpotSize]) -> [SpotPlacement] {
-        guard let split, split > 0, split < sizes.count else { return shelves(sizes, kept: kept) }
-        let band = SpotTokens.groupTitleBand
-        let first = shelves(Array(sizes[..<split]), kept: kept.filter { $0 < split }).map {
-            SpotPlacement(index: $0.index, row: $0.row, column: $0.column, size: $0.size, top: band)
+        guard let split, split >= 0, split < sizes.count else { return shelvesByPanel(sizes) }
+        let first = shelvesByPanel(Array(sizes[..<split])).map {
+            SpotPlacement(index: $0.index, row: $0.row, column: $0.column, size: $0.size, group: .grid)
         }
         let rows = first.map { $0.row + $0.size.rows }.max() ?? 0
-        let second = shelves(Array(sizes[split...]), kept: Set(kept.filter { $0 >= split }.map { $0 - split })).map {
-            SpotPlacement(index: $0.index + split, row: $0.row + rows, column: $0.column, size: $0.size, top: 2 * band)
+        let center = panels.firstColumn(of: .center)
+        let second = shelves(Array(sizes[split...]), kept: Set(sizes[split...].indices.map { $0 - split })).map {
+            SpotPlacement(index: $0.index + split, row: $0.row + rows, column: $0.column + center, size: $0.size, group: .shelf)
         }
         return first + second
+    }
+
+    /// Lays out these spots in the shelves of their panels, each panel from the top, in the order of the spots.
+    private func shelvesByPanel(_ sizes: [SpotSize]) -> [SpotPlacement] {
+        GridPanel.allCases.flatMap { panel -> [SpotPlacement] in
+            let indices = sizes.indices.filter { panels.holding(placed[$0] ?? .center) == panel }
+            let local = Set(indices.indices.filter { kept.contains(indices[$0]) })
+            let column = panels.firstColumn(of: panel)
+            return shelves(indices.map { sizes[$0] }, kept: local).map {
+                SpotPlacement(index: indices[$0.index], row: $0.row, column: $0.column + column, size: $0.size)
+            }
+        }.sorted { $0.index < $1.index }
     }
 
     /// The height of the cards and the title bands of these placements.
@@ -156,20 +186,20 @@ public struct SpotGrid: Equatable, Sendable {
             placements.append(SpotPlacement(index: next.index, row: row, column: 2, size: .square))
             return 2
         }
-        let side = leading + taking(nil, from: &queue, room: 4 - leading.reduce(0) { $0 + $1.size.columns }, widest: 2)
-        guard !side.isEmpty else {
+        let panel = leading + taking(nil, from: &queue, room: 4 - leading.reduce(0) { $0 + $1.size.columns }, widest: 2)
+        guard !panel.isEmpty else {
             placements.append(SpotPlacement(index: square.index, row: row, column: 0, size: square.keeps ? .square : .strip))
             return square.keeps ? 2 : 1
         }
         let squareColumn = leading.isEmpty ? 0 : 2
         let sideColumn = 2 - squareColumn
         placements.append(SpotPlacement(index: square.index, row: row, column: squareColumn, size: .square))
-        if side.count == 1 {
-            placements.append(SpotPlacement(index: side[0].index, row: row, column: sideColumn, size: side[0].keeps ? side[0].size : .square))
+        if panel.count == 1 {
+            placements.append(SpotPlacement(index: panel[0].index, row: row, column: sideColumn, size: panel[0].keeps ? panel[0].size : .square))
             return 2
         }
         var used = [0, 0]
-        for spot in justified(side) {
+        for spot in justified(panel) {
             let line = used[0] + spot.size.columns <= 2 ? 0 : 1
             placements.append(SpotPlacement(index: spot.index, row: row + line, column: sideColumn + used[line], size: spot.size))
             used[line] += spot.size.columns

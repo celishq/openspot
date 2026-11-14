@@ -18,12 +18,15 @@ extension SpotsModel {
         private let gridChoice: Bool?
         /// The letter that runs it from the panel, which the person or the default config gives it.
         public let letter: CommandKey?
+        /// The panel of the grid that its card lies in.
+        public let panel: GridPanel
 
         public init(spot: Spot, run: SpotRun?, choice: SpotArrangement = SpotArrangement(), defaults: SpotArrangement = SpotArrangement(), letter: CommandKey? = nil) {
             id = spot.id
             sizeChoice = choice.size(of: spot.id)
             defaultSize = defaults.size(of: spot.id)
             gridChoice = choice.isOnGrid(of: spot.id) ?? defaults.isOnGrid(of: spot.id)
+            panel = choice.panel(of: spot.id) ?? .center
             self.letter = letter
             item = nil
             isAnswer = false
@@ -39,6 +42,7 @@ extension SpotsModel {
             sizeChoice = item.card?.face.answerSize ?? .strip
             defaultSize = nil
             gridChoice = nil
+            panel = .center
             letter = nil
             self.item = item
             self.isAnswer = isAnswer
@@ -117,7 +121,7 @@ extension SpotsModel {
 
         /// Whether two entries are one card: the same spot or row, the same choices and the same run.
         public static func == (lhs: Entry, rhs: Entry) -> Bool {
-            lhs.id == rhs.id && lhs.item == rhs.item && lhs.sizeChoice == rhs.sizeChoice && lhs.gridChoice == rhs.gridChoice
+            lhs.id == rhs.id && lhs.item == rhs.item && lhs.sizeChoice == rhs.sizeChoice && lhs.gridChoice == rhs.gridChoice && lhs.panel == rhs.panel
                 && lhs.run === rhs.run && lhs.fixedSpot == rhs.fixedSpot && lhs.fixedState == rhs.fixedState
         }
     }

@@ -14,11 +14,15 @@ extension SpotsModel {
 
     /// Pushes a sheet over the flow that shows: in the panel that shows, or else in the panel that it shows. A page that the
     /// spot takes no `pages` line for moves nothing and says so, and a page of a spot with no sheet is the call
-    /// `<spot> open <page>`. With `replace`, the sheet takes the place of the one that shows. Returns false when no spot has
-    /// that ID.
+    /// `<spot> open <page>`. With `replace`, the sheet takes the place of the one that shows. A spot that offers a window
+    /// opens in its window (W10). Returns false when no spot has that ID.
     @discardableResult
     public func push(_ sheet: FlowSheet, replace: Bool = false) -> Bool {
         guard let spot = entries.first(where: { $0.id == sheet.spot })?.spot else { return false }
+        if sheet.page == nil, place(ofSheet: sheet.spot) == .window {
+            openWindow(sheet.spot)
+            return true
+        }
         if let page = sheet.page, !opensSheet(sheet.spot) {
             sheets[sheet.spot]?.pick(SpotItem(title: sheet.title ?? page, run: page))
             return true

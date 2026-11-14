@@ -34,8 +34,14 @@ public enum CommandLineCall: Equatable, Sendable {
     case spotAct(CardAct, String)
     /// Shows the whole text of a spot that comes with the app.
     case spotReview(String)
-    /// Opens the panel in Edit Spots with the store.
-    case spotStore
+    /// Opens the panel in Edit Spots.
+    case gridEdit
+    /// Prints each spot of the store, with whether the person has it.
+    case storeList(frame: Bool)
+    /// Gets a spot of the store: turns it on, or adds its package.
+    case storeGet(String)
+    /// Publishes a spot of the spots folder to the store.
+    case storePublish(String)
     /// Runs the action of a spot's setting in the panel, as Enter on its row in Settings does.
     case settingChange(spot: String, key: String)
     /// Prints the prompt that asks a coding agent to build a spot that does what the words say.
@@ -49,6 +55,8 @@ public enum CommandLineCall: Equatable, Sendable {
     case renderCard(SpotSize, String)
     /// Draws the panel with each installed spot on its grid to a picture.
     case renderPanel(String)
+    /// Draws the window of the spot that offers one, such as the Store, to a picture.
+    case renderStore(String)
     case sandbox(String?)
     case colorPick
     case folderPick
@@ -160,7 +168,10 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot spot edit|prompt|share|delete <id>  Does what the row of a card's menu does: edit, copy a prompt, share or delete.
     openspot spot review <id>                    Shows the whole text of a spot that comes with the app, and what of it
                                                  runs by itself.
-    openspot spot store                          Opens the panel in Edit Spots with the store of spots.
+    openspot grid edit                           Opens the panel in Edit Spots, to arrange the grid.
+    openspot store list [--frame]                Prints each spot of the store, and whether you have it.
+    openspot store get <id>                      Gets a spot of the store: turns it on, or adds it to your spots folder.
+    openspot store publish <id>                  Publishes a spot of your spots folder to the store.
     openspot check [--json] [folder]             Reports the faults of a spots folder.
     openspot check --sheet                       Reports the faults of a sheet on stdin.
     openspot render [--view file] <file.png>     Draws the sheet on stdin to a picture, with its view from a Swift file.
@@ -168,6 +179,7 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot render --spot <id> [--card <size>] <file.png>
                                                  Draws the sheet of an installed spot, or its card at a size.
     openspot render --panel <file.png>           Draws the panel with each installed spot on its grid.
+    openspot render --store <file.png>           Draws the window of the Store with each spot as its card.
     openspot sandbox [file]                      Opens the playground: a spot that you type or a file, its live sheet
                                                  and card, and each call that it gets with what it printed.
     openspot color pick                          Prints the colour the person picks.
@@ -333,7 +345,10 @@ public enum CommandLineCall: Equatable, Sendable {
             let act = CardAct(rawValue: verb)!
             self = Self.changing(.spotAct(act, rest[1]), "openspot spot \(verb)", act == .delete ? "changes your spots folder" : "opens a window", environment)
         case ("spot", "review") where rest.count == 2: self = Self.changing(.spotReview(rest[1]), "openspot spot review", "opens the panel", environment)
-        case ("spot", "store") where rest.count == 1: self = Self.changing(.spotStore, "openspot spot store", "opens the panel", environment)
+        case ("store", "list") where Self.flags(rest.dropFirst(), within: ["--frame"]): self = .storeList(frame: rest.contains("--frame"))
+        case ("store", "get") where rest.count == 2: self = Self.changing(.storeGet(rest[1]), "openspot store get", "changes your spots", environment)
+        case ("store", "publish") where rest.count == 2: self = Self.changing(.storePublish(rest[1]), "openspot store publish", "changes the store", environment)
+        case ("grid", "edit") where rest.count == 1: self = Self.changing(.gridEdit, "openspot grid edit", "opens the panel", environment)
         case ("prompt", "new") where rest.count > 1: self = .promptNew(rest.dropFirst().joined(separator: " "))
         case ("key", "set"):
             self = Self.key(Array(rest.dropFirst())).map { Self.changing($0, "openspot setting set \(Self.keyName(Array(rest.dropFirst())))", "sets a key of your Mac", environment) }
@@ -363,6 +378,7 @@ public enum CommandLineCall: Equatable, Sendable {
             guard let size = SpotSize(name: rest[1]) else { self = .unknown(arguments.joined(separator: " ")); return }
             self = .renderCard(size, rest[2])
         case ("render", "--panel") where rest.count == 2: self = .renderPanel(rest[1])
+        case ("render", "--store") where rest.count == 2: self = .renderStore(rest[1])
         case ("render", "--view") where rest.count == 3: self = .render(rest[2], view: rest[1])
         case ("render", let path?) where rest.count == 1: self = .render(path, view: nil)
         case ("screen", "sources") where rest.count == 1: self = .screenSources

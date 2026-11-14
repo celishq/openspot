@@ -64,10 +64,10 @@ extension SpotsModel {
             if isShown { host.dismiss() }
             return true
         }
-        let moves = isShown
-        isSettlingDrop = true
-        host.present()
-        pushFirst(id, moving: moves)
+        presentSheet(of: id, moving: isShown) {
+            isSettlingDrop = true
+            host.present()
+        }
         return true
     }
 

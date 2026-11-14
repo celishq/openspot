@@ -105,7 +105,10 @@ public final class CommandAPI: @unchecked Sendable {
         case .spotChoose(let id): return spots.choose(for: id)
         case .spotAct(let act, let id): return spots.act(act, id)
         case .spotReview(let id): return spots.review(id)
-        case .spotStore: return spots.store()
+        case .gridEdit: return spots.editGrid()
+        case .storeList(let frame): return StoreCalls(environment: environment, app: app).list(frame: frame)
+        case .storeGet(let id): return StoreCalls(environment: environment, app: app).get(id)
+        case .storePublish(let id): return StoreCalls(environment: environment, app: app).publish(id)
         case .spotNew(let name, let starter): return spots.new(name, from: starter)
         case .spotLog(let id): return spots.log(id)
         case .spotStats(let days, let spot, let format): return spots.stats(days: days, spot: spot, format: format)
@@ -150,7 +153,7 @@ public final class CommandAPI: @unchecked Sendable {
         case .translateLanguages: return { [mac] in CommandAnswer(output: await mac.translationLanguages()) }
         case .colorPick: return { [mac] in CommandAnswer(output: await mac.pickColor()) }
         case .folderPick: return { [mac] in CommandAnswer(output: await mac.pickFolder()) }
-        case .renderSpot, .render, .renderCard, .renderPanel, .helper, .glyphBook:
+        case .renderSpot, .render, .renderCard, .renderPanel, .renderStore, .helper, .glyphBook:
             return nil
         }
     }

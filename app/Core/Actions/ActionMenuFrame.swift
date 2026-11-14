@@ -43,10 +43,11 @@ public struct ActionMenuFrame: Equatable, Sendable {
         side = isOnLeft ? .left : .right
     }
 
-    /// Where a menu may lie in the panel: from this top down to the hint line's place at the panel's foot.
-    public static func bounds(under top: CGFloat) -> CGRect {
+    /// Where a menu may lie in this panel, in the center panel's space: from this top down to the hint line's place at the
+    /// panel's foot.
+    public static func bounds(under top: CGFloat, in panel: CGRect = GridPanels().frame) -> CGRect {
         let bottom = SpotTokens.panelHeight - SpotTokens.halo - SpotTokens.hintBlock
-        return CGRect(x: margin, y: top, width: SpotTokens.panelWidth - 2 * margin, height: bottom - top)
+        return CGRect(x: panel.minX + margin, y: top, width: panel.width - 2 * margin, height: bottom - top)
     }
 
     /// The menu at the smaller height that a search leaves, with its still edge in place.

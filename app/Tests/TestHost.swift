@@ -8,9 +8,11 @@ final class TestHost: SpotsHost {
     /// Each offset that the content of a sheet started a slide from.
     var pushStarts: [Double] = []
     var shows = 0
+    var dragShows = 0
     var notes: [String] = []
     var confirms: [String] = []
     var isPointerOverDrop = false
+    var isPointerOverWindow = false
     var draggedPaths: [String] = []
     var isMouseDown = false
     var pastedPaths: [String] = []
@@ -18,6 +20,7 @@ final class TestHost: SpotsHost {
     /// The spots that the model floated, and the ones whose float it closed, in order.
     var floats: [String] = []
     var landings: [String] = []
+    var windows: [String] = []
     /// The phase of the sheet's transition after each change.
     var phases: [SheetTransition.Phase] = []
     /// The sheet whose open motion runs, after each change.
@@ -41,6 +44,11 @@ final class TestHost: SpotsHost {
         dismissals += 1
         model?.panelWillHide()
         model?.panelDidHide()
+    }
+
+    func showForDrag() {
+        dragShows += 1
+        model?.panelWillShow(holding: [])
     }
 
     func show() {
@@ -112,6 +120,11 @@ final class TestHost: SpotsHost {
 
     func land(_ id: String) {
         landings.append(id)
+    }
+
+    func window(_ entry: SpotsModel.Entry) {
+        if model?.isShown == true { model?.panelWillHide() }
+        windows.append(entry.id)
     }
 
     func copy(_ file: URL) {}

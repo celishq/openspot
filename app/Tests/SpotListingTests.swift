@@ -19,47 +19,6 @@ final class SpotListingTests: XCTestCase {
         return try XCTUnwrap(try SpotFile(file: url, id: name)?.spots.first)
     }
 
-    func testTheListingKeepsItsReadmeWithItsInlineMarkdownOrWordsThatSayItHasNone() {
-        let listing = SpotListing(description: nil, readme: "Counts **down**", preview: [])
-
-        XCTAssertEqual(String(listing.shownReadme.characters), "Counts down")
-        XCTAssertEqual(String(SpotListing(description: nil, readme: nil, preview: []).shownReadme.characters), "This spot has no readme yet.")
-    }
-
-    func testTheListingReadsTheReadmeAndThePreviewBesideTheSpot() throws {
-        let spot = try self.spot("# title=Timer\n# detail=Counts down")
-        try "Counts down from a time you pick.".write(to: folder.appendingPathComponent("timer.spot/readme.md"), atomically: true, encoding: .utf8)
-        try "row=five\ntitle=5 minutes\n\nrow=ten\ntitle=10 minutes\n".write(to: folder.appendingPathComponent("timer.spot/preview.txt"), atomically: true, encoding: .utf8)
-
-        let listing = SpotListing(beside: spot)
-
-        XCTAssertEqual(listing.description, "Counts down")
-        XCTAssertEqual(listing.readme, "Counts down from a time you pick.")
-        XCTAssertEqual(listing.preview.map(\.title), ["5 minutes", "10 minutes"])
-    }
-
-    func testALinkedSpotFolderKeepsItsReadme() throws {
-        let real = folder.deletingLastPathComponent().appendingPathComponent("linked-\(UUID().uuidString)")
-        try "#!/bin/sh\n# title=Timer\n".writeScript(to: real.appendingPathComponent("timer.sh"))
-        try "Counts down.".write(to: real.appendingPathComponent("readme.md"), atomically: true, encoding: .utf8)
-        defer { try? FileManager.default.removeItem(at: real) }
-        let spots = folder.appendingPathComponent("linked")
-        try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
-        try FileManager.default.createSymbolicLink(at: spots.appendingPathComponent("timer.spot"), withDestinationURL: real)
-        let scan = try SpotsFolder(url: spots).scan()
-        let timer = try XCTUnwrap(scan.spots.first, "\(scan.refused) \((try? FileManager.default.contentsOfDirectory(atPath: spots.appendingPathComponent("timer.spot").path)) ?? [])")
-
-        XCTAssertEqual(SpotListing(beside: timer).readme, "Counts down.")
-    }
-
-    func testASpotWithNoFilesBesideItHasOnlyItsDescription() throws {
-        let listing = SpotListing(beside: try spot("# detail=Counts down"))
-
-        XCTAssertEqual(listing.description, "Counts down")
-        XCTAssertNil(listing.readme)
-        XCTAssertEqual(listing.preview, [])
-    }
-
     func testPreviewSampleMarksASpotThatPrintsFakeData() throws {
         XCTAssertTrue(try spot("# preview=sample", named: "sample").previewsSample)
         XCTAssertFalse(try spot("# title=Timer", named: "plain").previewsSample)
@@ -76,7 +35,8 @@ final class SpotListingTests: XCTestCase {
 
         try await SpotListing.capturePreview(of: spot, runs: runs)
 
-        XCTAssertEqual(SpotListing(beside: spot).preview.map(\.title), ["Sample"])
+        let preview = try String(contentsOf: SpotListing.preview(of: spot.url), encoding: .utf8)
+        XCTAssertEqual(SpotOutput(text: preview).items.map(\.title), ["Sample"])
     }
 
     func testEachCoreSpotHasAReadme() throws {
@@ -85,7 +45,7 @@ final class SpotListingTests: XCTestCase {
 
         XCTAssertFalse(choices.isEmpty)
         for spot in choices {
-            XCTAssertNotNil(SpotListing(beside: spot).readme, "\(spot.name) has no readme")
+            XCTAssertTrue(FileManager.default.fileExists(atPath: SpotListing.readme(of: spot.url).path), "\(spot.name) has no readme")
         }
     }
 }

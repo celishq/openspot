@@ -1,9 +1,8 @@
 import OpenspotCore
 import SwiftUI
 
-/// The card that the person carries in Edit Spots, over the panel and the dock: lifted on its solid fill, where the pointer
-/// holds it. It grows as it lifts, settles to its size as it glides to its place, and fades when a release on the dock
-/// turns its spot off. Only its place reads the lift, so a move of the pointer redraws that alone.
+/// The card that the person carries in Edit Spots, over the panel: lifted on its solid fill, where the pointer holds it. It
+/// grows as it lifts, and settles to its size as it glides to its place. Only its place reads the lift, so a move of the pointer redraws that alone.
 struct SpotCarriedCard: View {
     let model: SpotsModel
     /// Where the panel lies in the window.

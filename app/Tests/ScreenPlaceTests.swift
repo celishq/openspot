@@ -75,25 +75,12 @@ final class ScreenPlaceTests: XCTestCase {
         XCTAssertEqual(ScreenPlace.frame(ofBounds: bounds, mainHeight: 967), CGRect(x: -2000, y: 267, width: 800, height: 600))
     }
 
-    func testEditSpotsLiftsThePanelToTheTopAndTheStoreFillsTheAreaUnderIt() {
-        let area = CGRect(x: 0, y: 0, width: 1440, height: 875)
-        let panel = CGRect(x: 575, y: 400, width: 289, height: 385)
+    func testAPanelBesideAWindowGoesRightOfItAndElseLeftOfIt() {
+        let screen = ScreenPlace.Screen(frame: CGRect(x: 0, y: 0, width: 1440, height: 900), area: CGRect(x: 0, y: 0, width: 1440, height: 875))
+        let place = ScreenPlace(screens: [screen])
+        let size = CGSize(width: 289, height: 500)
 
-        let place = ScreenPlace.edit(under: panel, in: area)
-
-        XCTAssertEqual(place.lift, 90)
-        XCTAssertEqual(place.dock, CGRect(x: 262, y: 20, width: SpotTokens.dockWidth, height: 490 - 40))
-    }
-
-    func testTheStoreKeepsOneLineOfRowsUnderATallPanel() {
-        let area = CGRect(x: 0, y: 0, width: 1440, height: 875)
-
-        XCTAssertEqual(ScreenPlace.edit(under: CGRect(x: 575, y: 50, width: 289, height: 825), in: area).dock.height, SpotTokens.dockHeight(rows: 1))
-    }
-
-    func testTheStoreStaysWholeOnItsScreen() {
-        let panel = CGRect(x: 690, y: 400, width: 289, height: 300)
-
-        XCTAssertEqual(ScreenPlace.edit(under: panel, in: CGRect(x: 0, y: 0, width: 1000, height: 800)).dock.minX, 65)
+        XCTAssertEqual(place.origin(of: size, beside: CGRect(x: 300, y: 200, width: 600, height: 500)), CGPoint(x: 912, y: 200))
+        XCTAssertEqual(place.origin(of: size, beside: CGRect(x: 900, y: 200, width: 500, height: 500)), CGPoint(x: 599, y: 200))
     }
 }

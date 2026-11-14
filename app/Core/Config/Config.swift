@@ -14,6 +14,8 @@ public struct Config: Equatable, Sendable {
     public private(set) var settings: [SpotSetting] = []
     /// Whether each spot's process runs with only what its uses name (protocol: Trust).
     public private(set) var isCareful = false
+    /// The side panels beside the grid's center panel.
+    public private(set) var panels = GridPanels()
 
     public init(text: String) {
         let document: TomlDocument
@@ -24,7 +26,7 @@ public struct Config: Equatable, Sendable {
             faults = ["config.toml: \((error as? SpotError)?.reason ?? String(describing: error))"]
             return
         }
-        for key in (Array(document.values.keys) + Array(document.arrays.keys)).sorted() where !["panel_key", "fix_key", "careful", "spots", "keys", "settings"].contains(key) {
+        for key in (Array(document.values.keys) + Array(document.arrays.keys)).sorted() where !(["panel_key", "fix_key", "careful", "spots", "keys", "settings"] + GridPanel.allCases.compactMap(\.configKey)).contains(key) {
             faults.append("config.toml: \(key) is not a setting.")
         }
         arrangement = SpotArrangement(choices: (document.arrays["spots"] ?? []).compactMap { choice(of: $0) })
@@ -36,6 +38,14 @@ public struct Config: Equatable, Sendable {
         case .boolean(let isOn)?: isCareful = isOn
         case nil: break
         default: faults.append("config.toml: careful is true or false.")
+        }
+        for panel in GridPanel.allCases {
+            guard let key = panel.configKey else { continue }
+            switch document.values[key] {
+            case .boolean(let isOn)?: panels[panel] = isOn
+            case nil: break
+            default: faults.append("config.toml: \(key) is true or false.")
+            }
         }
     }
 
@@ -96,11 +106,15 @@ public struct Config: Equatable, Sendable {
             choice.key = ActionKey(text: text)
             if choice.key == nil { faults.append("config.toml: \(id) cannot use the key \(text).") }
         }
+        if case .string(let name)? = table["side"] {
+            choice.panel = GridPanel(rawValue: name).flatMap { $0 == .center ? nil : $0 }
+            if choice.panel == nil { faults.append("config.toml: \(id) cannot use the side \(name).") }
+        }
         if case .string(let letter)? = table["letter"] {
             choice.letter = letter.isEmpty ? "" : CommandKey(name: letter)?.name
             if choice.letter == nil { faults.append("config.toml: \(id) cannot use the letter \(letter).") }
         }
-        for key in table.keys.sorted() where !["id", "size", "grid", "enabled", "global", "tray", "letter", "key"].contains(key) {
+        for key in table.keys.sorted() where !["id", "size", "grid", "enabled", "global", "tray", "letter", "key", "side"].contains(key) {
             faults.append("config.toml: \(key) is not a setting of a spot.")
         }
         return choice

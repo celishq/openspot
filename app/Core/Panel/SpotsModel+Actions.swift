@@ -20,7 +20,6 @@ extension SpotsModel {
             return handleMenuKey(key)
         }
         if isEditing {
-            if isSearchingDock, key.name != "escape" { return false }
             handleEditKey(key)
             return true
         }
@@ -373,7 +372,7 @@ extension SpotsModel {
     /// Selects the card at this point of the panel and opens its actions menu, as `⌘K` does, for a right or force click. A
     /// sheet or Edit Spots takes none.
     public func openMenu(at point: CGPoint) {
-        let origin = SpotTokens.gridOrigin(scrollOffset: gridScroll)
+        let origin = gridOrigin
         guard openList == nil, !isEditing, let id = card(at: CGPoint(x: point.x - origin.x, y: point.y - origin.y)), let index = visible.firstIndex(where: { $0.id == id }) else { return }
         selected = index
         if let target { openMenu(on: target) }
@@ -451,7 +450,7 @@ extension SpotsModel {
     }
 
     /// Where a spot comes from, or nil for a sheet that the app draws, such as a review.
-    private func origin(of spot: Spot) -> SpotDock.Origin? {
+    func origin(of spot: Spot) -> SpotOrigin? {
         if spot.fault != nil { return .mine }
         guard spot.host == nil else { return nil }
         if spot.isBuiltIn { return .builtIn }
@@ -560,8 +559,10 @@ extension SpotsModel {
     /// Runs an action on a row or on the whole spot. In a float, an action that asks with a form or for a second press opens
     /// the spot in the panel, where both work, and any other runs at once and leaves the float open (W8).
     public func run(_ action: CommandAction, on target: Target, in place: SheetPlace = .panel) {
-        if place == .float {
-            if action.isForm || action.confirm != nil {
+        if place.isDetached {
+            if action.isForm || action.confirm != nil, place == .window {
+                host.notify("\(action.title) asks with a form or a second press, which a window does not show yet.")
+            } else if action.isForm || action.confirm != nil {
                 press(target.entry.id)
             } else {
                 sheets[target.entry.id]?.run(action, item: target.item)
@@ -581,6 +582,9 @@ extension SpotsModel {
     /// Asks the script for the form of an action, and shows it in place of the actions menu once it comes, so that the menu
     /// stays while the script answers.
     public func openForm(_ action: CommandAction, on target: Target, prefill: String = "") {
+        guard place(ofSheet: target.entry.id) == .panel else {
+            return host.notify("\(action.title) asks with a form, which a window does not show yet.")
+        }
         let ask = UUID()
         formAsk = ask
         Task {

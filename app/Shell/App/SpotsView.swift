@@ -50,6 +50,7 @@ struct SpotsView: View {
             .modifier(SpotScrollEdgeTracker(edges: Binding(get: { fade.edges }, set: { fade.edges = $0 })))
             .modifier(GridFadeMask(fade: fade, height: cardHeight))
             .morph(coversGrid ? 0 : 1, opacity: { SheetMorph.sheetLook(at: $0) })
+            .modifier(PanelSpan(panels: model.panels))
             SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: max(gridHeight, model.menuBackdropHeight), sheetHeight: max(sheetID == nil ? gridHeight : sheetHeight, model.menuBackdropHeight))
                 .modifier(SpotShownFade(isShown: model.isShown))
             if sheetOpen, sheetID != nil {
@@ -79,26 +80,33 @@ struct SpotsView: View {
             if model.isMenuOpen {
                 Color.clear
                     .contentShape(Rectangle())
+                    .modifier(PanelSpan(panels: model.panels))
                     .onTapGesture { model.closeMenu() }
             }
         }
         .onDrop(of: [.fileURL], delegate: SpotAddDrop(model: model))
         .coordinateSpace(name: Self.panelSpace)
-        .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
+        .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
         .overlayPreferenceValue(SpotMenuAnchor.self, alignment: .topLeading) { item in
             SpotMenuLayer(model: model, item: item, fieldIsInSheet: fieldIsInSheet)
         }
-        .background(softBlur)
+        .background(alignment: .topLeading) {
+            softBlur
+        }
         .environment(\.spotIsShown, model.isShown)
+        .environment(\.spotPanels, model.panels)
         .onChange(of: model.isShown) { _, isShown in
             if !isShown { dropTarget = nil }
         }
     }
 
-    /// The blur of the grid and the blur of the sheet, each with a fixed size. While the sheet moves, the shorter one stays
-    /// whole and the taller one fades on the sheet's own motion, so that where they overlap the backdrop keeps one strength.
+    /// The blur of the grid and the blur of the sheet, each with a fixed size and as wide as the side panels that show. While
+    /// the sheet moves, the shorter one stays whole and the taller one fades on the sheet's own motion, so that where they
+    /// overlap the backdrop keeps one strength.
     private var softBlur: some View {
         SpotBackdrop(model: model, gridHeight: gridHeight, sheetHeight: max(sheetHeight, replacedHeight), menuHeight: menuHeight, drawsBlur: drawsBlur)
+            .environment(\.spotPanels, model.shownPanels)
+            .modifier(PanelSpan(panels: model.shownPanels))
     }
 
     /// The sheet that is built, from its card to its open place, and its card's radius, for the field that joins it. Nil
@@ -111,8 +119,9 @@ struct SpotsView: View {
     /// How the open sheet pushes the cards of the grid, with the sheet's rect taken into the grid. Its window starts at the
     /// top of the search field, so a card that moves up is gone there.
     private func push(from card: SpotSheetCard) -> SheetPush {
-        let origin = SpotTokens.gridOrigin(scrollOffset: scrollOffset)
-        let window = CGRect(x: -origin.x, y: SpotTokens.halo - origin.y, width: SpotTokens.panelWidth, height: SpotTokens.panelHeight - SpotTokens.halo)
+        let origin = SpotTokens.gridOrigin(scrollOffset: scrollOffset, left: model.panels.leftExtent)
+        let panel = model.panels.frame
+        let window = CGRect(x: panel.minX - origin.x, y: SpotTokens.halo - origin.y, width: panel.width, height: panel.height - SpotTokens.halo)
         return SheetPush(open: card.placement, sheet: sheetRect.offsetBy(dx: -origin.x, dy: -origin.y), window: window)
     }
 
@@ -209,7 +218,7 @@ struct SpotsView: View {
 }
 
 /// Scrolls the grid while a lifted card lies in the fade at either end of the grid's clear part, faster the deeper it lies,
-/// once a frame until the drag ends. A card past the panel's bottom or over the dock scrolls nothing.
+/// once a frame until the drag ends. A card past the panel's bottom scrolls nothing.
 private struct GridEdgeScroll: ViewModifier {
     let model: SpotsModel
     @Binding var scroll: ScrollPosition
@@ -228,7 +237,7 @@ private struct GridEdgeScroll: ViewModifier {
     }
 
     private func step(seconds: Double) {
-        guard let drag = model.drag, model.carry?.isOverDock != true else { return }
+        guard let drag = model.drag else { return }
         let window = ScrollWindow(
             top: SpotTokens.halo + SpotTokens.rowHeight + SpotScrollEdges.fadeLength,
             bottom: SpotTokens.panelHeight - SpotsView.gridBottom - SpotScrollEdges.fadeLength,
