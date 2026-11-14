@@ -67,27 +67,14 @@ final class StoreSpotTests: BuiltInCase {
         XCTAssertEqual(file.read().arrangement.disabled, [])
     }
 
-    func testAboutPrintsTheReadmeOfASpotLineByLine() async throws {
+    func testEachAnswerCarriesTheReadmeOfEachSpotLineByLine() async throws {
         try "# Timer\n\nCounts down.\n".write(to: core.appendingPathComponent("timer.spot/readme.md"), atomically: true, encoding: .utf8)
 
-        let text = try await SpotRuns().answer(of: store, SpotAction(arguments: ["gallery", "about:timer"]), limit: 5)
-
-        let values = SpotOutput(text: text).parts.first?.values ?? [:]
-        XCTAssertEqual(values["about"], ["timer"])
-        XCTAssertEqual(values["readme"], ["# Timer", "", "Counts down."])
-        XCTAssertTrue(values["value"]?.contains { $0.hasPrefix("timer\t") } == true)
-    }
-
-    func testGetAndPublishKeepTheReadmeOfTheirSpot() async throws {
-        try "# Timer\n".write(to: core.appendingPathComponent("timer.spot/readme.md"), atomically: true, encoding: .utf8)
-
-        for call in ["get:timer", "publish:timer"] {
-            let text = try await SpotRuns().answer(of: store, SpotAction(arguments: ["gallery", call]), limit: 5)
+        for action in [SpotAction.read, SpotAction(arguments: ["gallery", "get:timer"]), SpotAction(arguments: ["gallery", "publish:timer"])] {
+            let text = try await SpotRuns().answer(of: store, action, limit: 5)
 
             let values = SpotOutput(text: text).parts.first?.values ?? [:]
-            XCTAssertEqual(values["about"], ["timer"], call)
-            XCTAssertEqual(values["readme"], ["# Timer"], call)
-            XCTAssertEqual(values["answered"]?.first?.hasPrefix("\(call) "), true, call)
+            XCTAssertEqual(values["readme"], ["timer\t# Timer", "timer\t", "timer\tCounts down."], "\(action.arguments)")
         }
     }
 

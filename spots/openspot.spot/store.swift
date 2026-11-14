@@ -144,7 +144,8 @@ struct SpotView: View {
         }
         .onChange(of: spot["answered"], initial: true) {
             pending = nil
-            if let about = spot["about"] { readmes[about] = spot.all("readme") }
+            readmes = Dictionary(grouping: spot.all("readme").map { $0.split(separator: "\t", maxSplits: 1, omittingEmptySubsequences: false) }, by: { String($0[0]) })
+                .mapValues { $0.map { $0.count > 1 ? String($0[1]) : "" } }
         }
         .task(id: hovered) {
             tip = nil
@@ -342,12 +343,11 @@ struct SpotView: View {
             .overlay(alignment: .topLeading) { control(item, card: size) }
     }
 
-    /// Opens the sheet of a spot, and asks the store for its readme.
+    /// Opens the sheet of a spot.
     private func open(_ item: Item) {
         hovered = nil
         isTrying = false
         opened = item.id
-        spot.send("about:\(item.id)")
     }
 
     /// The sheet of a spot: its card, name and description, then its readme, or its sheet with sample data while the person
@@ -386,14 +386,16 @@ struct SpotView: View {
             Divider()
             Group {
                 if isTrying {
-                    VStack(spacing: 10) {
-                        spot.sheet(item.id)
-                        Text("Sample data. Clicks here run nothing and change nothing on your Mac.")
-                            .font(Self.caption)
-                            .foregroundStyle(.secondary)
+                    ScrollView {
+                        VStack(spacing: 10) {
+                            spot.sheet(item.id)
+                            Text("Sample data. Clicks here run nothing and change nothing on your Mac.")
+                                .font(Self.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(20)
+                        .frame(maxWidth: .infinity)
                     }
-                    .padding(20)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     ScrollView {
                         readme(item)
@@ -449,31 +451,26 @@ struct SpotView: View {
     }
 
     /// The readme of a spot, with its headings in bold, or a line that says it has none.
-    @ViewBuilder
     private func readme(_ item: Item) -> some View {
-        if let lines = readmes[item.id] {
-            VStack(alignment: .leading, spacing: 6) {
-                if lines.isEmpty {
-                    Text("\(item.name) has no readme yet.")
-                        .foregroundStyle(.secondary)
-                }
-                ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
-                    if line.hasPrefix("#") {
-                        Text(line.drop { $0 == "#" }.trimmingCharacters(in: .whitespaces))
-                            .font(.system(size: 15, weight: .semibold))
-                            .padding(.top, 6)
-                    } else {
-                        let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-                        Text((try? AttributedString(markdown: line, options: options)) ?? AttributedString(line))
-                    }
+        let lines = readmes[item.id] ?? []
+        return VStack(alignment: .leading, spacing: 6) {
+            if lines.isEmpty {
+                Text("\(item.name) has no readme yet.")
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
+                if line.hasPrefix("#") {
+                    Text(line.drop { $0 == "#" }.trimmingCharacters(in: .whitespaces))
+                        .font(.system(size: 15, weight: .semibold))
+                        .padding(.top, 6)
+                } else {
+                    let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+                    Text((try? AttributedString(markdown: line, options: options)) ?? AttributedString(line))
                 }
             }
-            .font(Self.text)
-            .textSelection(.enabled)
-        } else {
-            ProgressView()
-                .controlSize(.small)
         }
+        .font(Self.text)
+        .textSelection(.enabled)
     }
 
     /// The control on the top left rim of a card, as on the cards of Edit Spots: a plus that gets a spot you lack, an up

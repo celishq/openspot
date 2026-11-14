@@ -15,7 +15,7 @@ get() {
 }
 
 # Prints the gallery: each spot with its id, its name, what its button does, its origin, its description, its size, and
-# whether it has sample data.
+# whether it has sample data, then each line of its readme after its id.
 gallery() {
   printf 'view=gallery\n'
   openspot store list --frame | awk 'BEGIN { RS = ""; FS = "\n" }
@@ -24,16 +24,8 @@ gallery() {
       state = f["added"] == "true" ? "added" : "get"
       if (f["origin"] == "mine" && f["added"] == "true" && f["published"] != "current") state = "publish"
       sample = f["sample"] == "true" ? "sample" : ""
-      printf "value=%s\t%s\t%s\t%s\t%s\t%s\t%s\n", f["spot"], f["name"], state, f["origin"], f["detail"], f["size"], sample }'
-}
-
-# Prints the readme of spot $1, each line as a readme value, after its id as the about value.
-about() {
-  printf 'about=%s\n' "$1"
-  readme=$(openspot store list --frame | awk -v id="$1" 'BEGIN { RS = ""; FS = "\n" }
-    { for (i = 1; i <= NF; i++) if ($i == "spot=" id) for (j = 1; j <= NF; j++) if (index($j, "readme=") == 1) print substr($j, 8) }')
-  [ -n "$readme" ] && sed 's/^/readme=/' "$readme"
-  return 0
+      printf "value=%s\t%s\t%s\t%s\t%s\t%s\t%s\n", f["spot"], f["name"], state, f["origin"], f["detail"], f["size"], sample
+      if (f["readme"] != "") { RS = "\n"; while ((getline line < f["readme"]) > 0) printf "readme=%s\t%s\n", f["spot"], line; close(f["readme"]); RS = "" } }'
 }
 
 case "$1" in
@@ -47,8 +39,6 @@ case "$1" in
       publish:*) openspot store publish "${2#publish:}" >/dev/null ;;
     esac
     gallery
-    id=${2#*:}
-    if [ "$id" != "$2" ]; then about "$id"; fi
     printf 'answered=%s %s\n' "$2" "$$"
     ;;
   open)
