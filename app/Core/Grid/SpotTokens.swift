@@ -64,12 +64,12 @@ public enum SpotTokens {
     public static let sideGap: CGFloat = 20
     /// The edges of the sheets behind the open one: the width of each, its gap to the sheet, the gap between two, how much
     /// shorter each further one is, how many show, and how long a pointer rests on one before it names its sheet.
-    public static let peekWidth: CGFloat = 8
-    public static let peekGap: CGFloat = 8
-    public static let peekStep: CGFloat = 5
-    public static let peekShrink: CGFloat = 28
-    public static let peekCount = 3
-    public static let peekRest: Duration = .milliseconds(250)
+    public static let edgeWidth: CGFloat = 8
+    public static let edgeGap: CGFloat = 8
+    public static let edgeStep: CGFloat = 5
+    public static let edgeShrink: CGFloat = 28
+    public static let edgeCount = 3
+    public static let edgeRest: Duration = .milliseconds(250)
     /// How far two fingers move across the panel before a swipe steps back or forward.
     public static let swipeDistance: CGFloat = 60
     public static let controlPadding: CGFloat = 7

@@ -81,20 +81,20 @@ public final class SpotsModel {
     /// sheet, not with each phase of its motion.
     public private(set) var openList: String?
     /// The sheets that the panel went through since a sheet opened from the grid, with the one that shows at its centre.
-    public internal(set) var history = SheetHistory() {
+    public internal(set) var flow = Flow() {
         didSet {
-            let titles = history.pages.prefix(max(history.index, 0)).reversed().map(title(of:))
+            let titles = flow.pages.prefix(max(flow.index, 0)).reversed().map(title(of:))
             if titles != behindTitles { behindTitles = titles }
         }
     }
     /// The title of each sheet behind the one that shows, the nearest first.
     public private(set) var behindTitles: [String] = []
     /// The title of each page that a row opened, which is the title of that row.
-    @ObservationIgnored var pageTitles: [SheetPage: String] = [:]
+    @ObservationIgnored var pageTitles: [FlowSheet: String] = [:]
     /// How far the content of the sheet lies from its place while the next sheet of the flow pushes in, or 0 at rest.
-    public internal(set) var slideOffset = 0.0
+    public internal(set) var pushOffset = 0.0
     /// The side that the sheet of another spot pushes in from once it is ready, -1 for the left and 1 for the right.
-    @ObservationIgnored var pendingSlide: Double?
+    @ObservationIgnored var pendingPush: Double?
     /// Where the open sheet is in its motion between its card and its open place.
     public internal(set) var transition = SheetTransition() {
         didSet {
@@ -537,7 +537,7 @@ public final class SpotsModel {
         case .closed:
             if let shown = openList, runs.sheets[shown]?.isOpen != true {
                 showSheet(nil, moving: false)
-                closeHistory()
+                endFlow()
             }
         case .chooseFiles:
             _ = chooseFiles(for: id)

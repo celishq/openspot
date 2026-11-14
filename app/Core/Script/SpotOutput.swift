@@ -44,7 +44,7 @@ public struct SpotOutput: Equatable, Sendable {
     /// The row that a `select` effect selects when the call ends, such as the row that a drop added (protocol: The calls).
     public private(set) var select: String?
     /// The move of the spot's flow that a `push` or `pop` effect asks for (protocol: Pages).
-    public private(set) var move: SheetMove?
+    public private(set) var move: FlowMove?
     /// Whether it holds a block, so that it is the whole picture of the spot.
     public let isPicture: Bool
 
@@ -341,7 +341,7 @@ public struct SpotOutput: Equatable, Sendable {
         toast = block.value("toast") ?? toast
         link = block.value("link") ?? link
         select = block.value("select") ?? select
-        move = SheetMove(block: block) ?? move
+        move = FlowMove(block: block) ?? move
         if let end = block.value("end") { ends.append(end) }
         start = block.value("call") ?? start
     }

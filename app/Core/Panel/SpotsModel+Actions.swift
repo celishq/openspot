@@ -39,7 +39,7 @@ extension SpotsModel {
             }
             return true
         }
-        if openList != nil, let handled = handleHistoryKey(key) { return handled }
+        if openList != nil, let handled = handleFlowKey(key) { return handled }
         if key == Self.undoKey, openList == nil, searchText.isEmpty, undoRemoval() { return true }
         if key == ActionKey(name: "return", isCommand: true), openSelected() { return true }
         if let panel = openPanel, !panel.showsRows { return handlePanelKey(key, panel) }
@@ -470,7 +470,7 @@ extension SpotsModel {
         if recording != nil { return "Esc Cancel" }
         if isEditing { return "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done" }
         if spotDrop != nil { return "Nothing runs until you press ⌘⏎" }
-        let escape = history.behind == nil ? "Close" : "Back"
+        let escape = flow.behind == nil ? "Close" : "Back"
         if let panel = openPanel, !panel.showsRows || panel.drawsKeys { return panel.hint(escape: escape) { work(of: $0) != nil } }
         if let soleHint { return soleHint }
         let keys = target.flatMap { target in

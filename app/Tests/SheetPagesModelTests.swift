@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the history of the panel: a row that opens a page, a spot that opens another, and the keys that move back,
+/// Proves the flow of the panel: a row that opens a page, a spot that opens another, and the keys that move back,
 /// forward and to the grid.
 @MainActor
 final class SheetPagesModelTests: XCTestCase {
@@ -82,7 +82,7 @@ final class SheetPagesModelTests: XCTestCase {
 
         try await openPage()
 
-        XCTAssertEqual(model.history.current, SheetPage(spot: "list", page: "a"))
+        XCTAssertEqual(model.flow.current, FlowSheet(spot: "list", page: "a"))
         XCTAssertEqual(model.openList, "list")
         XCTAssertEqual(host.dismissals, 0)
     }
@@ -93,7 +93,7 @@ final class SheetPagesModelTests: XCTestCase {
 
         XCTAssertTrue(model.handleKey(back))
         XCTAssertEqual(titles, ["A"])
-        XCTAssertEqual(model.history.ahead, SheetPage(spot: "list", page: "a"))
+        XCTAssertEqual(model.flow.ahead, FlowSheet(spot: "list", page: "a"))
 
         XCTAssertTrue(model.handleKey(forward))
         XCTAssertEqual(titles, ["Detail a"])
@@ -112,7 +112,7 @@ final class SheetPagesModelTests: XCTestCase {
         XCTAssertTrue(model.handleKey(escape))
 
         try await wait("the grid") { model.openList == nil }
-        XCTAssertNil(model.history.current)
+        XCTAssertNil(model.flow.current)
     }
 
     func testCommandEscGoesToTheGridFromAPageAndTheSpotShowsItsFirstSheetNextTime() async throws {
@@ -122,7 +122,7 @@ final class SheetPagesModelTests: XCTestCase {
         XCTAssertTrue(model.handleKey(toGrid))
 
         try await wait("the grid") { model.openList == nil }
-        XCTAssertNil(model.history.current)
+        XCTAssertNil(model.flow.current)
         XCTAssertNil(model.sheets["list"]?.page)
     }
 
@@ -134,7 +134,7 @@ final class SheetPagesModelTests: XCTestCase {
 
         XCTAssertTrue(model.handleKey(back))
         try await wait("the first sheet") { model.openList == "list" && titles == ["A"] }
-        XCTAssertEqual(model.history.ahead, SheetPage(spot: "other"))
+        XCTAssertEqual(model.flow.ahead, FlowSheet(spot: "other"))
     }
 
     func testAPageOpensFromOutsideTheSpot() async throws {
@@ -144,8 +144,8 @@ final class SheetPagesModelTests: XCTestCase {
 
         try await wait("the page") { titles == ["Detail a"] }
         XCTAssertEqual(model.behindTitles, ["List"])
-        XCTAssertEqual(model.title(of: SheetPage(spot: "list", page: "a")), "A")
-        XCTAssertEqual(model.history.pages, [SheetPage(spot: "list"), SheetPage(spot: "list", page: "a")])
+        XCTAssertEqual(model.title(of: FlowSheet(spot: "list", page: "a")), "A")
+        XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "list"), FlowSheet(spot: "list", page: "a")])
     }
 
     func testTheHintOfAPageSaysThatEscGoesBack() async throws {
@@ -168,13 +168,13 @@ final class SheetPagesModelTests: XCTestCase {
         try await openList()
         host.motions = []
         try await openPage()
-        try await wait("the slide from the right to rest") { host.motions.contains(.slide) && model.slideOffset == 0 }
-        XCTAssertTrue(host.slideStarts.contains { $0 > 0 })
-        host.slideStarts = []
+        try await wait("the slide from the right to rest") { host.motions.contains(.push) && model.pushOffset == 0 }
+        XCTAssertTrue(host.pushStarts.contains { $0 > 0 })
+        host.pushStarts = []
 
         XCTAssertTrue(model.handleKey(back))
 
-        try await wait("the slide from the left to rest") { model.slideOffset == 0 && host.slideStarts.contains { $0 < 0 } }
+        try await wait("the slide from the left to rest") { model.pushOffset == 0 && host.pushStarts.contains { $0 < 0 } }
     }
 
     func testEachSheetBehindHasATitleAndAClickOnItsEdgeGoesBackToIt() async throws {
@@ -192,17 +192,17 @@ final class SheetPagesModelTests: XCTestCase {
 
     func testAnotherSpotOfTheFlowPushesInFromTheRightAndComesBackFromTheLeft() async throws {
         try await openList()
-        host.slideStarts = []
+        host.pushStarts = []
 
         XCTAssertTrue(model.openSheet("other"))
-        try await wait("the push to rest") { model.openList == "other" && model.slideOffset == 0 && !host.slideStarts.isEmpty }
-        XCTAssertEqual(host.slideStarts.first.map { $0 > 0 }, true)
-        host.slideStarts = []
+        try await wait("the push to rest") { model.openList == "other" && model.pushOffset == 0 && !host.pushStarts.isEmpty }
+        XCTAssertEqual(host.pushStarts.first.map { $0 > 0 }, true)
+        host.pushStarts = []
 
         XCTAssertTrue(model.handleKey(back))
 
-        try await wait("the way back to rest") { model.openList == "list" && model.slideOffset == 0 && !host.slideStarts.isEmpty }
-        XCTAssertEqual(host.slideStarts.first.map { $0 < 0 }, true)
+        try await wait("the way back to rest") { model.openList == "list" && model.pushOffset == 0 && !host.pushStarts.isEmpty }
+        XCTAssertEqual(host.pushStarts.first.map { $0 < 0 }, true)
     }
 
     /// Opens a spot whose buttons move its flow: Done goes back, Top goes to its first sheet, Next pushes a page and Swap
@@ -249,10 +249,10 @@ final class SheetPagesModelTests: XCTestCase {
         try pressFlow("done")
         try await wait("the first page again") { titles == ["Page n0"] }
         try pressFlow("next")
-        try await wait("the second page again") { titles == ["Page n2"] && model.history.pages.count == 3 }
+        try await wait("the second page again") { titles == ["Page n2"] && model.flow.pages.count == 3 }
         try pressFlow("top")
 
-        try await wait("the first sheet") { titles == ["Page first"] && model.history.index == 0 }
+        try await wait("the first sheet") { titles == ["Page first"] && model.flow.index == 0 }
     }
 
     func testAPressThatReplacesTakesThePlaceOfThePageThatShows() async throws {
@@ -263,7 +263,7 @@ final class SheetPagesModelTests: XCTestCase {
         try pressFlow("swap")
 
         try await wait("the swapped page") { titles == ["Page swapped"] }
-        XCTAssertEqual(model.history.pages, [SheetPage(spot: "flow"), SheetPage(spot: "flow", page: "swapped")])
+        XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "flow"), FlowSheet(spot: "flow", page: "swapped")])
     }
 
     func testAllOnTheFirstSheetStaysAndOnePopReturnsToTheSpotThatPushedIt() async throws {
@@ -279,7 +279,7 @@ final class SheetPagesModelTests: XCTestCase {
         try pressFlow("done")
 
         try await wait("the list") { model.openList == "list" && titles == ["A"] }
-        XCTAssertEqual(model.history.ahead, SheetPage(spot: "flow"))
+        XCTAssertEqual(model.flow.ahead, FlowSheet(spot: "flow"))
     }
 
     func testAPressPushesAnotherSpotOverItsSheet() async throws {
@@ -303,7 +303,7 @@ final class SheetPagesModelTests: XCTestCase {
 
         try await wait("the reader") { titles == ["R"] && !model.runs.isReading }
 
-        XCTAssertEqual(model.history.pages, [SheetPage(spot: "reader")])
+        XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "reader")])
     }
 
     func testTheCommandStepsBackOnlyWithinTheSpotThatShows() async throws {
@@ -335,7 +335,7 @@ final class SheetPagesModelTests: XCTestCase {
         XCTAssertTrue(model.openFlow("other"))
 
         try await wait("the other spot") { model.openList == "other" && titles == ["Other"] }
-        XCTAssertEqual(model.history.pages, [SheetPage(spot: "other")])
+        XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "other")])
         XCTAssertNil(model.sheets["list"]?.page)
     }
 }

@@ -2,7 +2,7 @@ import Foundation
 
 /// A two-finger swipe across the panel, which steps back or forward in the flow once per swipe. A swipe whose start is
 /// more vertical than horizontal is a scroll and steps nowhere. `dx` is positive when the fingers move right.
-public struct SheetSwipe: Sendable {
+public struct FlowSwipe: Sendable {
     public enum Phase: Sendable {
         case began, changed, ended
     }

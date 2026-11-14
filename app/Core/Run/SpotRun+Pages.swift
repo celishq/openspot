@@ -16,7 +16,7 @@ extension SpotRun {
         guard next != page else { return }
         keptPages.removeAll { $0.page == page }
         keptPages.append((page, KeptPage(state: state, rows: rows, panel: panel)))
-        if keptPages.count > SheetHistory.limit { keptPages.removeFirst(keptPages.count - SheetHistory.limit) }
+        if keptPages.count > Flow.limit { keptPages.removeFirst(keptPages.count - Flow.limit) }
         if let read = running(Self.readKey) { stop(read) }
         if let search = running(Self.searchKey) { stop(search) }
         page = next

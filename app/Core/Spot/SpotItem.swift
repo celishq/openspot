@@ -48,9 +48,9 @@ public struct SpotItem: Equatable, Sendable {
     /// Whether the panel stays open after Return on this row, from `close=false`.
     public let staysOnPick: Bool
     /// The push that a pick makes in place of `<spot> open <row id>`, from `push=`, `push.spot=` and `push.title=`.
-    public let move: SheetMove?
+    public let move: FlowMove?
 
-    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, to: String? = nil, fields: String? = nil, card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, focusSubtitle: String? = nil, move: SheetMove? = nil) {
+    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, to: String? = nil, fields: String? = nil, card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, focusSubtitle: String? = nil, move: FlowMove? = nil) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
@@ -99,7 +99,7 @@ public struct SpotItem: Equatable, Sendable {
             openTitle: block.value("open"),
             staysOnPick: block.flag("close") == false,
             focusSubtitle: block.value("focus"),
-            move: SheetMove(block: block, own: run).flatMap { if case .push = $0 { $0 } else { nil } }
+            move: FlowMove(block: block, own: run).flatMap { if case .push = $0 { $0 } else { nil } }
         )
     }
 

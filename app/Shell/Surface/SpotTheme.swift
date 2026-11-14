@@ -122,7 +122,7 @@ struct SpotTheme {
     static let unfocused = 0.35
     @MainActor static var fill: Double { current.fillStrength }
     /// The strength of each edge of a sheet behind the open one, the nearest first.
-    static let peekStrengths = [1.0, 0.7, 0.45]
+    static let edgeStrengths = [1.0, 0.7, 0.45]
     @MainActor static var disc: Double { current.discStrength }
     @MainActor static var chip: Double { current.chipStrength }
     @MainActor static var selectedFill: Double { current.selectedStrength }

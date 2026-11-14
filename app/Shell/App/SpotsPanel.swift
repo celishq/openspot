@@ -12,7 +12,7 @@ final class SpotsPanel: NSPanel {
     private var pressWatch: Task<Void, Never>?
     private var tap = ModifierTap()
     /// The two-finger swipe that steps back and forward in the flow of an open sheet.
-    private var swipe = SheetSwipe()
+    private var swipe = FlowSwipe()
     /// The stage of the trackpad's press: 1 for a click, 2 for a force click.
     private var pressStage = 0
     /// Whether a force click opened the menu and its button is still down, so that its release runs the row under it.
@@ -255,7 +255,7 @@ final class SpotsPanel: NSPanel {
     /// move between pages. Returns true when the swipe stepped, which no scroll view then sees.
     private func takeSwipe(_ event: NSEvent) -> Bool {
         guard NSEvent.isSwipeTrackingFromScrollEventsEnabled, let model, model.openList != nil, event.momentumPhase.isEmpty else { return false }
-        let phase: SheetSwipe.Phase
+        let phase: FlowSwipe.Phase
         if event.phase.contains(.began) {
             phase = .began
         } else if event.phase.contains(.changed) {

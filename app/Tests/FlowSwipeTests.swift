@@ -3,9 +3,9 @@ import XCTest
 
 /// Proves the swipe of a flow: one step back or forward for each horizontal swipe that goes far enough, and none for a
 /// scroll or for the coast after the fingers lift.
-final class SheetSwipeTests: XCTestCase {
+final class FlowSwipeTests: XCTestCase {
     func testASwipeToTheRightGoesBackOnceWhenItGoesFarEnough() {
-        var swipe = SheetSwipe()
+        var swipe = FlowSwipe()
 
         XCTAssertNil(swipe.take(dx: 20, dy: 1, phase: .began))
         XCTAssertEqual(swipe.take(dx: SpotTokens.swipeDistance, dy: 2, phase: .changed), .back)
@@ -14,7 +14,7 @@ final class SheetSwipeTests: XCTestCase {
     }
 
     func testASwipeToTheLeftGoesForward() {
-        var swipe = SheetSwipe()
+        var swipe = FlowSwipe()
 
         _ = swipe.take(dx: -20, dy: 0, phase: .began)
 
@@ -22,7 +22,7 @@ final class SheetSwipeTests: XCTestCase {
     }
 
     func testAMostlyVerticalScrollGoesNowhere() {
-        var swipe = SheetSwipe()
+        var swipe = FlowSwipe()
 
         _ = swipe.take(dx: 4, dy: 30, phase: .began)
 
@@ -30,7 +30,7 @@ final class SheetSwipeTests: XCTestCase {
     }
 
     func testANewSwipeCanStepAgainAfterTheLastOneEnded() {
-        var swipe = SheetSwipe()
+        var swipe = FlowSwipe()
         _ = swipe.take(dx: 20, dy: 0, phase: .began)
         _ = swipe.take(dx: SpotTokens.swipeDistance, dy: 0, phase: .changed)
         _ = swipe.take(dx: 0, dy: 0, phase: .ended)

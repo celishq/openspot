@@ -38,7 +38,7 @@ extension SpotsModel {
         openSheet?.list
     }
 
-    /// Clears the search, or else shows the sheet before in the history, or else closes the open list. Returns false when
+    /// Clears the search, or else shows the sheet before in the flow, or else closes the open list. Returns false when
     /// there is nothing to step back from.
     public func stepBack() -> Bool {
         if !searchText.isEmpty {
@@ -73,14 +73,14 @@ extension SpotsModel {
     /// once, or with its first answer. It takes the place of a sheet that shows, grows out of its card when it moves, and
     /// shows in place when it does not move or has no card.
     public func open(_ id: String, moving: Bool) {
-        if openList == nil { closeHistory() }
-        history.push(SheetPage(spot: id))
+        if openList == nil { endFlow() }
+        flow.push(FlowSheet(spot: id))
         sheets[id]?.show(page: nil)
-        pendingSlide = moving && openList != nil && openList != id ? 1 : nil
+        pendingPush = moving && openList != nil && openList != id ? 1 : nil
         present(id, moving: moving)
     }
 
-    /// Opens the sheet of a spot in the place of the one that shows, with no change of the history.
+    /// Opens the sheet of a spot in the place of the one that shows, with no change of the flow.
     func present(_ id: String, moving: Bool) {
         if let shown = openList, shown != id { stopRecording() }
         sheets[id]?.open(waits: moving) { [weak self] in self?.showSheet(id, moving: moving) }
@@ -92,7 +92,7 @@ extension SpotsModel {
         stopRecording()
         showSheet(nil, moving: moving)
         runs.closeOpen()
-        closeHistory()
+        endFlow()
     }
 
     /// Closes each sheet of parts when the panel has faded, stops the reads that nothing wants now, and drops the answers
@@ -115,17 +115,17 @@ extension SpotsModel {
     func showSheet(_ list: String?, moving: Bool) {
         guard list != openList else { return }
         if let list, openList != nil, transition.isOpen {
-            let pushes = pendingSlide != nil
+            let pushes = pendingPush != nil
             change(moving ? .sheet(isOpen: true) : nil, {
                 transition.show(list, moves: true)
-                startPendingSlide()
+                startPendingPush()
             }) { [weak self] in
                 self?.change(nil) { self?.transition.settle(list) }
             }
-            if pushes { settleSlide() }
+            if pushes { settlePush() }
             return
         }
-        pendingSlide = nil
+        pendingPush = nil
         guard moving, hasPlace(list ?? transition.id) else { return cutSheet(to: list) }
         guard let list else {
             animate(isOpen: false) {

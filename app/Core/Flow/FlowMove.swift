@@ -2,7 +2,7 @@ import Foundation
 
 /// A move of a flow that a spot asks for: a push of a sheet over the one that shows, or a pop of its own sheet
 /// (protocol: Pages).
-public enum SheetMove: Equatable, Sendable {
+public enum FlowMove: Equatable, Sendable {
     /// A sheet of `spot`, or of the spot that asks when nil, at `page`, or its first sheet when nil. With `replace`, it takes
     /// the place of the sheet that shows.
     case push(spot: String?, page: String?, title: String?, replace: Bool)
