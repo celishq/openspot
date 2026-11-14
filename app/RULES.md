@@ -57,6 +57,9 @@ Tests name a rule by its ID, as in `func test_A4_searchStaysUntilEsc`.
 | A25 | A change that the API writes to the config applies only what changed. A key holds the keys again, a spot that turns on or off adds or removes its card, and a value of a spot reads that spot again. The grid does not build again. |
 | A26 | An inline spot makes its JavaScript context and its thread at its first call, and drops them after 30 seconds with no call. Its calls go in the call log, the CPU time of its thread counts in `spot stats`, and Review shows its text. |
 | A27 | Settings and Updates read with one `openspot` process and no `jq`. |
+| A40 | A cache of drawn surfaces holds its base in bytes plus twice its largest value, so that the two parts of the largest surface never push the rest out. |
+| A41 | New exchange rates replace kept ones only when they are of the same day or a later one and know at least half as many currencies, so that a broken or old copy of the file never replaces good rates. |
+| A42 | Calc asks for exchange rates only for a currency that leaves no doubt: one of a country, bitcoin or ether. A word such as `apr` or `pi` stays a date or a sum. |
 
 ## Sharing
 

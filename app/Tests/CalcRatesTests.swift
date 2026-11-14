@@ -170,7 +170,7 @@ final class CalcRatesTests: XCTestCase {
         XCTAssertEqual(down, .failure(.unavailable))
     }
 
-    func testAFileWithFarFewerCurrenciesOrAnOlderDayLeavesTheKeptRates() async throws {
+    func test_A41_aFileWithFarFewerCurrenciesOrAnOlderDayLeavesTheKeptRates() async throws {
         let clock = Clock()
         _ = await cache(Source(), clock).rates()
         let source = Source()

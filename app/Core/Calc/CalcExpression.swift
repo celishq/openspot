@@ -1,12 +1,8 @@
 import Foundation
 
-/// A typed sum read into its value: numbers, `+ - * / ^`, `%` as a part or a remainder, brackets, the functions `sqrt sin
-/// cos tan ln log abs round` with angles in degrees, and the constants `pi` and `e`. It also says how it read the sum.
 struct CalcExpression: Sendable {
     let value: Double
-    /// The sum as it was read, written the way of the Mac, such as `2 × (3 + 4)`.
     let detail: String
-    /// Whether the text was only a number, with no operator, function or constant, so that its value adds nothing.
     let isPlain: Bool
 
     init?(text: String, locale: Locale) {
@@ -19,7 +15,6 @@ struct CalcExpression: Sendable {
         guard value.isFinite else { return nil }
     }
 
-    /// A value as it was read: a percent is a part of what it meets, and its text is how the detail writes it.
     private struct Term {
         var value: Double
         var text: String
@@ -41,12 +36,10 @@ struct CalcExpression: Sendable {
 
     private static let constants: [String: (value: Double, text: String)] = ["pi": (.pi, "π"), "π": (.pi, "π"), "e": (M_E, "e")]
 
-    /// Reads the tokens from the first, one rule of precedence at a time.
     private struct Reader {
         let tokens: [CalcToken]
         let locale: Locale
         var index = 0
-        /// How many operators, functions and constants it read.
         var operations = 0
 
         init(tokens: [CalcToken], locale: Locale) {
@@ -62,14 +55,11 @@ struct CalcExpression: Sendable {
             index + offset < tokens.count ? tokens[index + offset] : nil
         }
 
-        /// Whether a token starts a value, which makes a `%` before it a remainder.
         private static func startsValue(_ token: CalcToken?) -> Bool {
             if case .number? = token { return true }
             return followsImplicitly(token)
         }
 
-        /// Whether a token can follow a value with no operator and multiply it, as in `2(3+4)` or `2pi`. A number cannot, so
-        /// `1 000` is no sum.
         private static func followsImplicitly(_ token: CalcToken?) -> Bool {
             switch token {
             case .symbol("(")?: true
@@ -133,14 +123,12 @@ struct CalcExpression: Sendable {
             return Term(value: pow(base.plain, exponent.plain), text: "\(base.text)\(Self.raised(exponent.text))")
         }
 
-        /// An exponent of digits as superscript, such as `²⁰`, and any other after a `^`.
         private static func raised(_ text: String) -> String {
             let marks: [Character: Character] = ["0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹", "−": "⁻"]
             guard text.allSatisfy({ marks[$0] != nil }) else { return "^\(text)" }
             return String(text.compactMap { marks[$0] })
         }
 
-        /// A value with the `%` that follows it. A `%` before another value is a remainder, which `multiplicative` reads.
         mutating func postfix() -> Term? {
             guard var term = primary() else { return nil }
             if case .symbol("%")? = next, !Self.startsValue(token(after: 1)) {
@@ -177,7 +165,6 @@ struct CalcExpression: Sendable {
             }
         }
 
-        /// A number written the way of the Mac, with no grouping, so that the detail reads like the typed text.
         private static func written(_ number: Double, _ locale: Locale) -> String {
             let formatter = CalcFormats.formatter(NumberFormatter.self, "typed|\(CalcFormats.key(locale))") {
                 let formatter = NumberFormatter()
