@@ -357,7 +357,7 @@ public final class SpotsModel {
         let next = ordered().map { Entry(spot: $0, run: runs.sheets[$0.id], choice: arrangement, defaults: defaultArrangement, letter: letters[$0.id]) }
         let field = next.first { $0.spot.growsFromField }?.id
         if field != fieldSheet { fieldSheet = field }
-        entries = next
+        if next != entries { entries = next }
     }
 
     private func ordered() -> [Spot] {

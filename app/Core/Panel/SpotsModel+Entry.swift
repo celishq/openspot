@@ -101,6 +101,7 @@ extension SpotsModel {
 
         public static func == (lhs: Entry, rhs: Entry) -> Bool {
             lhs.id == rhs.id && lhs.item == rhs.item && lhs.sizeChoice == rhs.sizeChoice && lhs.gridChoice == rhs.gridChoice && lhs.panel == rhs.panel
+                && lhs.letter == rhs.letter && lhs.defaultSize == rhs.defaultSize && lhs.isAnswer == rhs.isAnswer
                 && lhs.run === rhs.run && lhs.fixedSpot == rhs.fixedSpot && lhs.fixedState == rhs.fixedState
         }
     }

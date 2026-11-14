@@ -42,6 +42,16 @@ public final class SpotRuns {
     @ObservationIgnored var clock: Task<Void, Never>?
     @ObservationIgnored var nextRead: TimeInterval?
     @ObservationIgnored var answerMatches = AnswerMatches()
+    @ObservationIgnored private var lastSearch: SearchQuery?
+    @ObservationIgnored private(set) var searchBuilds = 0
+
+    func search(of text: String) -> SearchQuery {
+        if let lastSearch, lastSearch.text == text.trimmingCharacters(in: .whitespaces) { return lastSearch }
+        searchBuilds += 1
+        let search = SearchQuery(text: text)
+        lastSearch = search
+        return search
+    }
     @ObservationIgnored private(set) var processes: [ScriptProcess] = []
     @ObservationIgnored var hookScripts: [String: (spot: Spot, script: InlineScript)] = [:]
     @ObservationIgnored public var api: CommandAPI?

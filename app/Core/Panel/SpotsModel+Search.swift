@@ -81,7 +81,7 @@ extension SpotsModel {
             spotList.replace(cards.filter(\.spot.isFound).map(Self.foundItem))
         }
         let sources = entries.filter { $0.spot.isGlobal && arrangement.isGlobal(of: $0.id) != false }
-        let found = mainSearch.matching(SearchQuery(text: text), in: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() }, unpickedLimit: Self.unpickedRows, limit: Self.searchLimit - answers.count)
+        let found = mainSearch.matching(runs.search(of: text), in: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() }, unpickedLimit: Self.unpickedRows, limit: Self.searchLimit - answers.count)
         return answers + found.compactMap { match in
             match.list == 0 ? spots[match.item.run] : Entry(spot: sources[match.list - 1].spot, item: match.item)
         }.filter { !ids.contains($0.id) }

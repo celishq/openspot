@@ -4,7 +4,6 @@ import Observation
 extension SpotsModel {
     private var target: Target? {
         if let entry = openEntry {
-            openSheet?.landRows()
             return (entry, openSheet?.selectedItem)
         }
         guard let entry = selectedEntry else { return nil }
@@ -35,6 +34,7 @@ extension SpotsModel {
             }
             return true
         }
+        openSheet?.landRows()
         if openList != nil, let handled = handleFlowKey(key) { return handled }
         if key == Self.undoKey, openList == nil, searchText.isEmpty, undoRemoval() { return true }
         if key == ActionKey(name: "return", isCommand: true), openSelected() { return true }
@@ -402,7 +402,7 @@ extension SpotsModel {
         if spot.fault != nil { return .mine }
         guard spot.host == nil else { return nil }
         if spot.isBuiltIn { return .builtIn }
-        return files.folder(Config(text: "")).isCore(spot) ? .core : .mine
+        return folder.isCore(spot) ? .core : .mine
     }
 
     public func run(_ action: CommandAction, offeredBy owner: String, on target: Target) {
