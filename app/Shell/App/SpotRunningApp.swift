@@ -30,8 +30,9 @@ struct SpotRunningApp: RunningApp {
         await MainActor.run { NSApp.terminate(nil) }
     }
 
-    func open(_ id: String) async -> Bool {
-        await model.openSheet(id)
+    func open(_ id: String, page: String?) async -> Bool {
+        if let page { return await model.openSheet(id, page: page) }
+        return await model.openSheet(id)
     }
 
     func choose(for id: String) async -> Bool {

@@ -13,8 +13,8 @@ public protocol RunningApp: Sendable {
     /// Restarts into the downloaded update. Returns false when none waits.
     func installUpdate() async -> Bool
     func quit() async
-    /// Opens the panel on the sheet of a spot. Returns false when no spot has that ID.
-    func open(_ id: String) async -> Bool
+    /// Opens the panel on the sheet of a spot, or on a page of it. Returns false when no spot has that ID.
+    func open(_ id: String, page: String?) async -> Bool
     /// Shows the whole text of a spot that comes with the app, and what of it runs by itself. Returns false when no such
     /// spot has that ID.
     func review(_ id: String) async -> Bool

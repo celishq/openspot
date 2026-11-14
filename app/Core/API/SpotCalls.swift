@@ -53,10 +53,10 @@ struct SpotCalls {
         }
     }
 
-    func open(_ id: String) -> CommandAPI.Work {
+    func open(_ id: String, page: String?) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot open \(id)") }
         return CommandAnswer.work {
-            guard await app.open(id) else { throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.") }
+            guard await app.open(id, page: page) else { throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.") }
             return ""
         }
     }

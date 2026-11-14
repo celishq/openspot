@@ -39,8 +39,8 @@ actor FakeRunningApp: RunningApp {
         quits += 1
     }
 
-    func open(_ id: String) -> Bool {
-        opened.append("open \(id)")
+    func open(_ id: String, page: String?) -> Bool {
+        opened.append((["open", id] + [page].compactMap { $0 }).joined(separator: " "))
         return id != "gone"
     }
 

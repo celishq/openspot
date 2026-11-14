@@ -22,7 +22,7 @@ final class SpotVerbTests: XCTestCase {
         func checkUpdate() async -> Bool { false }
         func installUpdate() async -> Bool { false }
         func quit() async {}
-        func open(_ id: String) async -> Bool { false }
+        func open(_ id: String, page: String?) async -> Bool { false }
         func review(_ id: String) async -> Bool { false }
         func choose(for id: String) async -> Bool { false }
         func openStore() async {}
