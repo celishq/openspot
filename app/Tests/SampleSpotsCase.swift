@@ -25,7 +25,7 @@ class SampleSpotsCase: XCTestCase {
                 .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             let folder = root.appendingPathComponent("spots")
             var scan = try SpotsFolder(url: folder).scan()
-            scan.listKeys(in: ConfigFile(url: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-samples/config.toml")))
+            scan.addSettings(in: ConfigFile(url: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-samples/config.toml")))
             return scan
         }
     }

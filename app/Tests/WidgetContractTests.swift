@@ -165,14 +165,15 @@ final class WidgetContractTests: XCTestCase {
         }
     }
 
-    func testOnlyAMetricOrAStayingScriptCanShowInTheMenuBar() throws {
+    func testEachSpotCanShowInTheMenuBarAndOnlyAMetricOrAStayingScriptShowsAValueThere() throws {
         try script("one.sh", "#!/bin/sh\n")
         try script("two.sh", "#!/bin/sh\n# on=panel.open\n")
         try script("three.sh", "#!/bin/sh\n# mode=stay\n")
         try script("four.sh", "#!/bin/sh\n# on=clock.5\n")
 
         XCTAssertEqual(try scan.refused, [])
-        XCTAssertEqual(try scan.scripts.filter(\.canShowInMenuBar).map(\.id), ["four", "three"])
+        XCTAssertEqual(try scan.scripts.filter(\.canShowInMenuBar).map(\.id), ["four", "one", "three", "two"])
+        XCTAssertEqual(try scan.scripts.filter(\.showsValueInMenuBar).map(\.id), ["four", "three"])
     }
 
     func testASpotWhoseHeaderDrawsItsCardPlacesMetricsOfOtherScripts() throws {

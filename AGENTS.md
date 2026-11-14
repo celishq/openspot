@@ -48,6 +48,17 @@ Write a doc that people read, such as `GUIDE.md` and `PROTOCOL.md`, the way Appl
 - Docstrings on types and members only. No inline comments.
 - A docstring says what the item does. Five lines on a type, three on a member, none where the name says it.
 
+## UX
+
+Each spot follows [The keys of a spot](PROTOCOL.md#the-keys-of-a-spot): Return does its main act, `⌘` Return opens its
+Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these for every spot, so a rule changes in one place.
+
+- Settings follow the level they change. openspot's Settings hold only the app's rows. Each spot's own Settings hold its
+  Float, menu bar, keys and fields, with one icon per kind of row and the same Not set and `⌘⌫` Remove on every key row.
+- A card's ⌘K menu holds only the standard acts. A key that a footer already shows does not need a ⌘K menu of its own.
+- Making and changing a spot both go through one form: describe it, then Copy prompt (`⌘⏎`), which flashes `✓ Copied`
+  on the same black button. The prompt tells the agent to finish alone, with no question.
+
 ## Core and Shell
 
 - `Core/` imports neither AppKit nor SwiftUI. `make verify` runs `scripts/check-core.sh`, which fails when it does.

@@ -80,6 +80,6 @@ struct SpotActionMenuView: View {
     }
 
     private func titleColor(of row: ActionMenu.Row) -> Color {
-        isConfirming(row) ? SpotTheme.onConfirm : SpotTheme.ink
+        isConfirming(row) ? SpotTheme.onConfirm : row.isDestructive ? SpotTheme.confirm : SpotTheme.ink
     }
 }

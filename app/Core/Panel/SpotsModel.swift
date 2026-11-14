@@ -169,7 +169,7 @@ public final class SpotsModel {
     private var lastScan = ScanResult(files: [], refused: [])
     /// The stamp of the folder and the config that the cards were last built from.
     @ObservationIgnored private var loadedStamp: SpotsFolder.Stamp?
-    @ObservationIgnored private var loadedConfig: Config?
+    @ObservationIgnored private(set) var loadedConfig: Config?
     /// How many times the grid built all its cards again, which a change of the config through the API does not do (A25).
     @ObservationIgnored private(set) var gridBuilds = 0
     /// The files of the last spot that Delete moved to the Trash, which `⌘Z` puts back.
@@ -241,7 +241,7 @@ public final class SpotsModel {
         let faults = folder.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
         if !faults.isEmpty { scan.files.append(SpotFile(id: FaultSpot.fileID, spots: faults)) }
         guard spotScan.stamp != loadedStamp || config != loadedConfig else { return holdAssignedKeys(config) }
-        scan.listKeys(in: files.config)
+        scan.addSettings(in: files.config)
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
         runs.isCareful = config.isCareful
@@ -325,6 +325,7 @@ public final class SpotsModel {
                 loadedConfig = config
             }
             if caller != spot, let sheet = sheets[spot], sheet.isWanted { sheet.read(need: .change) }
+            if let settings = sheets[SpotSettings.sheetID(of: spot)], settings.isOpen { settings.read(need: .change) }
         }
     }
 
@@ -422,11 +423,7 @@ public final class SpotsModel {
             updateVisible()
         case .frame:
             spotListIsStale = true
-            if sheets[id]?.spot.setsKeys == true {
-                let config = files.config.read()
-                host.applyConfig(config)
-                holdAssignedKeys(config)
-            }
+            if let spot = sheets[id]?.spot, spot.holdsSettings, let owner = spot.settingsSheet?.spot { settingsChanged(of: owner) }
         case .landed:
             host.land(id)
         case .closed:
@@ -434,6 +431,20 @@ public final class SpotsModel {
         case .chooseFiles:
             if let sheet = sheets[id] { host.chooseFiles(for: sheet.spot) { sheet.drop($0) } }
         }
+    }
+
+    /// Takes what a Settings sheet may have changed in the config: a place in the menu bar builds the card of its spot again,
+    /// a key holds the keys again, and a value reads its spot again when something wants it.
+    private func settingsChanged(of spot: String) {
+        let config = files.config.read()
+        let loaded = loadedConfig
+        if config.arrangement.menuBar != loaded?.arrangement.menuBar {
+            configChanged(.spots([spot]))
+        } else {
+            host.applyConfig(config)
+            holdAssignedKeys(config)
+        }
+        if config.settings != loaded?.settings { configChanged(.value(spot: spot, caller: nil)) }
     }
 
     public static func reason(_ error: Error) -> String {

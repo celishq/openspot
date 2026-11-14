@@ -24,6 +24,11 @@ extension SpotRun {
         startWaitingKey()
     }
 
+    /// Stops showing a call as running work once it drew a frame of its own, which then says what it does. It still runs.
+    func drewFrame(_ call: ScriptCall) {
+        if let index = workCalls.firstIndex(where: { $0 === call }) { workCalls.remove(at: index) }
+    }
+
     /// Drops a call from the running calls. A call that is already gone tells no reader of the work.
     func forget(_ call: ScriptCall) {
         calls.removeAll { $0 === call }

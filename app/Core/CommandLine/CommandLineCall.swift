@@ -34,8 +34,12 @@ public enum CommandLineCall: Equatable, Sendable {
     case spotStore
     /// Runs the action of a spot's setting in the panel, as Enter on its row in Settings does.
     case settingChange(spot: String, key: String)
-    /// Prints the prompt that asks a coding agent to build a spot that does what the words say.
+    /// Prints the prompt that asks a coding agent to build a spot that does what the words say, or with no words, to ask
+    /// the person first.
     case promptNew(String)
+    /// Prints the prompt that asks a coding agent to change a spot as the words say, or with none, to ask the person first,
+    /// with the words of its last failed call.
+    case promptChange(id: String, words: String, failure: String?)
     /// Draws the sheet of an installed spot, or its card at a size.
     case renderSpot(id: String, size: SpotSize?, path: String)
     case checkSheet
@@ -172,8 +176,11 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot setting list [--frame]              Prints each value that a spot keeps as JSON, with its spot and key.
                                                  --frame prints a field=<key> block with spot and value for each.
     openspot setting change [--spot id] <key>    Runs the action of the setting in the panel, which can ask with a form.
-    openspot prompt new <words>...               Prints a prompt that asks a coding agent to build a spot that does
-                                                 what the words say.
+    openspot prompt new [words]...               Prints a prompt that asks a coding agent to build a spot that does
+                                                 what the words say. With no words, the agent asks you first.
+    openspot prompt change <id> [--failure <text>] [words]...
+                                                 Prints a prompt that asks a coding agent to change the spot as the
+                                                 words say. With no words, the agent asks you what to change.
     openspot app status [--frame]                Prints the state of the app as JSON: version, panelKey, fixKey, login,
                                                  link, update, calls and firstLaunch. --frame prints them as one block.
     openspot batch                               Runs one call for each line of stdin, its words split at spaces, and
@@ -316,7 +323,11 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("spot", "open") where rest.count == 2: self = Self.changing(.spotOpen(rest[1]), "openspot spot open", "opens the panel", environment)
         case ("spot", "review") where rest.count == 2: self = Self.changing(.spotReview(rest[1]), "openspot spot review", "opens the panel", environment)
         case ("spot", "store") where rest.count == 1: self = Self.changing(.spotStore, "openspot spot store", "opens the panel", environment)
-        case ("prompt", "new") where rest.count > 1: self = .promptNew(rest.dropFirst().joined(separator: " "))
+        case ("prompt", "new"): self = .promptNew(rest.dropFirst().joined(separator: " "))
+        case ("prompt", "change") where rest.count > 1:
+            let words = Array(rest.dropFirst(2))
+            let failure = words.first == "--failure" && words.count > 1 ? words[1] : nil
+            self = .promptChange(id: rest[1], words: (failure == nil ? words : Array(words.dropFirst(2))).joined(separator: " "), failure: failure)
         case ("key", "set"):
             self = Self.key(Array(rest.dropFirst())).map { Self.changing($0, "openspot setting set \(Self.keyName(Array(rest.dropFirst())))", "sets a key of your Mac", environment) }
                 ?? .unknown(arguments.joined(separator: " "))

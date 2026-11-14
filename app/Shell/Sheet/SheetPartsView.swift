@@ -335,6 +335,7 @@ struct SheetPartsView: View {
     private func centeredLine(_ part: SpotPart, text: Color, fill: Color) -> some View {
         pressLabel(part, words: part.title ?? part.id.capitalized, font: SpotType.body.weight(.medium))
             .foregroundStyle(text)
+            .padding(.horizontal, SpotTokens.padding)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(fill, in: shape)
             .contentShape(shape)

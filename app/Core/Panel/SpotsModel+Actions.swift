@@ -37,7 +37,7 @@ extension SpotsModel {
             return true
         }
         if key == Self.undoKey, openList == nil, searchText.isEmpty, undoRemoval() { return true }
-        if key == ActionKey(name: "return", isCommand: true), openSelected() { return true }
+        if key == ActionKey(name: "return", isCommand: true), openSelectedSettings() { return true }
         if let panel = openPanel, !panel.showsRows { return handlePanelKey(key, panel) }
         if let panel = openPanel, handleRowsPanelKey(key, panel) { return true }
         if let part = openPanel?.parts.first(where: { $0.key == key }) {
@@ -54,10 +54,11 @@ extension SpotsModel {
         }
         guard let target else { return openSheet(on: key) }
         if key == ActionKey(name: "k", isCommand: true) {
+            guard actionMenu(on: target)?.holdsMore == true else { return false }
             openMenu(on: target)
             return menu != nil
         }
-        let quiet = searchText.isEmpty ? extras(on: target) : []
+        let quiet = extras(on: target).filter { searchText.isEmpty || !($0.key.map(Self.editsText) ?? false) }
         guard let action = (target.entry.spot.actions(for: target.item) + quiet).first(where: { $0.key == key }) else { return openSheet(on: key) }
         if action.confirm != nil {
             openMenu(on: target)
@@ -83,7 +84,13 @@ extension SpotsModel {
         arrangement.spot(openedBy: key, over: defaultArrangement).flatMap { id in entries.contains { $0.id == id } ? id : nil }
     }
 
-    /// The footer label of ⌘ Return, which opens the sheet of a spot that Return runs.
+    /// Whether a key edits the words of the search, such as `⌘⌫` or `⌘V`, so that it stays the field's while a search is
+    /// typed.
+    static func editsText(_ key: ActionKey) -> Bool {
+        key.isCommand && !key.isShift && ["backspace", "a", "c", "v", "x", "z"].contains(key.name)
+    }
+
+    /// The footer label of ⌘ Return, which opens the Settings sheet of a card.
     static let openLabel = "⌘⏎"
 
     /// Does what the key of a footer label does, as if it were pressed: Return runs the selected row.
@@ -92,12 +99,16 @@ extension SpotsModel {
         if !handleKey(key), key == ActionKey(name: "return") { runSelected() }
     }
 
-    /// Takes the keys of the parts, Esc, the arrows and return, and leaves all others to the text areas. A part's own Esc wins
-    /// over closing the sheet.
+    /// Takes the keys of the parts, ⌘K, Esc, the arrows and return, and leaves all others to the text areas. A part's own
+    /// key wins over ⌘K and over closing the sheet.
     private func handlePanelKey(_ key: ActionKey, _ panel: SheetParts) -> Bool {
         if let part = panel.parts.first(where: { $0.key == key }) {
             pressPart(part)
             return true
+        }
+        if key == ActionKey(name: "k", isCommand: true), let target {
+            openMenu(on: target)
+            return menu != nil
         }
         if key == ActionKey(name: "escape") {
             closeList(moving: true)
@@ -209,11 +220,15 @@ extension SpotsModel {
         if let item, let entry = openEntry { give(shortcut.text, to: item, of: entry) }
     }
 
-    /// Gives a row its new key. A spot's own key list stays open, so the person sees the key that it took. A row of Settings
-    /// closes the panel, as a pick of any row does.
+    /// Gives a row its new key. A Settings sheet stays open, so the person sees the key that it took, and the key of a
+    /// hotkey field goes to the spot's own action of that name. A row of any other sheet closes the panel, as a pick does.
     private func give(_ key: String, to item: SpotItem, of entry: Entry) {
+        if let settings = entry.spot.settingsSheet, entry.spot.holdsSettings, let field = settings.hotkeyField(of: item.run) {
+            sheets[settings.spot]?.set(SpotItem(title: item.title, run: field), to: key)
+            return
+        }
         sheets[entry.id]?.set(item, to: key)
-        guard entry.spot.keyList == nil else { return }
+        guard !entry.spot.holdsSettings else { return }
         closingPick = (item, entry)
         if isShown {
             host.dismiss()
@@ -335,16 +350,50 @@ extension SpotsModel {
         )
     }
 
-    /// The rows that the app adds for a selected card of the grid: the acts on the file of a spot of the person, and on a
-    /// card of a file that does not load. A core spot can be shared and turned off. A row of a list or an open sheet keeps its
-    /// own Delete.
+    /// The rows that the app adds for a selected card of the grid: Open for a spot whose Return runs it, History for one that
+    /// runs its one command and keeps rows, the commands of its
+    /// header, Share, its Settings, Edit, then Turn off or Delete: first what a person does with the spot, then what changes
+    /// it, and what takes it away last. A row of a list or an open sheet keeps its own Delete.
     private func extras(on target: Target) -> [CommandAction] {
         guard openList == nil, target.item == nil else { return [] }
-        let command = target.entry.spot
+        let spot = target.entry.spot
+        let opens: [CommandAction] = spot.pressRuns && target.entry.kind.opensSheet ? [.open] : []
+        let history: [CommandAction] = spot.keepsHistory ? [.history] : []
+        let commands = spot.opensToSettings || spot.soleCommand != nil ? [] : spot.offers.map(CommandAction.command)
+        let settings: [CommandAction] = settingsSheet(of: target.entry) == nil ? [] : [.settings]
+        let files = fileActions(on: target.entry)
+        let shares = files.filter { $0 == .share }
+        let changes = files.filter { $0 == .edit }
+        let ends = files.filter { $0 != .share && $0 != .edit }
+        return opens + history + commands + shares + settings + changes + ends
+    }
+
+    /// The acts on the file of a card: Edit, Share and Delete for a spot of the person, Edit, Share and Turn off for a core
+    /// spot, and Edit, which opens its file, and Delete for a file that does not load. A spot of the app has none.
+    private func fileActions(on entry: Entry) -> [CommandAction] {
+        let command = entry.spot
         if command.fault != nil { return [.edit, .remove()] }
         guard command.host == nil, !command.isBuiltIn else { return [] }
-        guard !files.folder(Config(text: "")).isCore(command) else { return [.share, .turnOff] }
-        return [.edit, .copyPrompt, .share, .remove(widgets: widgets(sharingFileWith: target.entry))]
+        let edit: [CommandAction] = runs.editsSpots ? [.edit] : []
+        guard !isCore(command) else { return edit + [.share, .turnOff] }
+        return edit + [.share, .remove(widgets: widgets(sharingFileWith: entry))]
+    }
+
+    /// Whether a spot comes with the app, as a core spot that the person turned on.
+    private func isCore(_ spot: Spot) -> Bool {
+        files.folder(Config(text: "")).isCore(spot)
+    }
+
+    /// Opens the Edit sheet of a card, which grows from the card. Returns false for a spot that no Edit sheet changes: a
+    /// spot of the app, a sheet of the app, a file that does not load, or with no spot of the app that edits spots.
+    @discardableResult
+    public func openEdit(of entry: Entry) -> Bool {
+        let spot = entry.spot
+        guard entry.item == nil, spot.fault == nil, spot.host == nil, !spot.isBuiltIn,
+              let sheet = runs.editSheet(of: spot, isOwn: !isCore(spot))
+        else { return false }
+        open(sheet.spot.id, moving: true)
+        return true
     }
 
     /// How many widgets the file of a widget holds, which go together when it is removed.
@@ -358,13 +407,17 @@ extension SpotsModel {
         if recording != nil { return "Esc Cancel" }
         if isEditing { return "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done" }
         if spotDrop != nil { return "Nothing runs until you press ⌘⏎" }
-        if let panel = openPanel, !panel.showsRows || panel.drawsKeys { return panel.hint { work(of: $0) != nil } }
+        if let panel = openPanel, !panel.showsRows || panel.drawsKeys {
+            let hasActions = target.flatMap(actionMenu(on:)) != nil
+            return panel.hint(stopping: { work(of: $0) != nil }, actions: hasActions)
+        }
         if let soleHint { return soleHint }
         let keys = target.flatMap { target in
-            let opens = openList == nil && target.item == nil && target.entry.spot.pressRuns && target.entry.kind.opensSheet
+            let onGrid = openList == nil && target.item == nil
+            let settings = onGrid && settingsSheet(of: target.entry) != nil ? ["\(Self.openLabel) \(CommandAction.settings.title)"] : []
             return actionMenu(on: target)?.hint(
                 stopping: { sheets[target.entry.id]?.work(of: $0, item: target.item) != nil },
-                second: opens ? "\(Self.openLabel) Settings" : nil
+                second: settings
             )
         } ?? "Esc Close"
         return selectedGlyphTitle.map { "\($0)  \(keys)" } ?? keys
@@ -418,15 +471,25 @@ extension SpotsModel {
             } else {
                 sheets[target.entry.id]?.run(action, item: target.item)
             }
+        } else if action.id == SpotSettings.removeID, let item = target.item, target.entry.spot.holdsSettings,
+                  let settings = target.entry.spot.settingsSheet, let field = settings.hotkeyField(of: item.run) {
+            sheets[settings.spot]?.set(SpotItem(title: item.title, run: field), to: "")
+        } else if action == .settings {
+            openSettings(of: target.entry)
+        } else if action == .open || action == .history {
+            open(target.entry.id, moving: true)
+        } else if let command = CommandAction.command(of: action) {
+            if isShown { host.dismiss() }
+            sheets[target.entry.id]?.pressKey(command)
         } else if action == .share {
             share(target.entry)
         } else if action.id == CommandAction.removeID {
             remove(target.entry)
+        } else if action == .edit, target.entry.spot.fault == nil {
+            openEdit(of: target.entry)
         } else if action == .edit {
             if isShown { host.dismiss() }
             edit(target.entry)
-        } else if action == .copyPrompt {
-            copyPrompt(changing: target.entry)
         } else if action == .turnOff {
             turnOff(target.entry)
         } else if action.isForm {

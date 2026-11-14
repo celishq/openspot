@@ -8,6 +8,11 @@ public struct ActionMenu: Equatable, Sendable {
         public let action: CommandAction?
         /// Whether the hint leaves it out, as a row that each spot has.
         var isQuiet = false
+
+        /// Whether it takes the spot or its file away, which the menu draws last and in red.
+        public var isDestructive: Bool {
+            action?.id == CommandAction.removeID
+        }
     }
 
     /// What Enter does on a row that shows a key: it records a new one.
@@ -32,7 +37,7 @@ public struct ActionMenu: Equatable, Sendable {
     /// Returns nil when there is nothing to list.
     public init?(spot: Spot, item: SpotItem?, showsOpen: Bool = true, extras: [CommandAction] = []) {
         var rows: [Row] = []
-        let keyTitle = item.flatMap { $0.records ? ($0.shortcut == KeyList.unset ? Self.setTitle : Self.changeTitle) : nil }
+        let keyTitle = item.flatMap { $0.records ? ($0.shortcut == SpotSettings.unset ? Self.setTitle : Self.changeTitle) : nil }
         if showsOpen, let title = item?.openTitle ?? keyTitle ?? spot.openTitle(hasItem: item != nil) {
             rows.append(Row(title: title, keyLabel: "⏎", action: nil))
         }
@@ -77,14 +82,23 @@ public struct ActionMenu: Equatable, Sendable {
     }
 
     /// The first two keys, an action that holds Esc, and the key of this menu, in words for a footer. The key of a running row
-    /// says that it stops the call. A second key of the item, such as ⌘⏎ Settings, follows the first.
-    public func hint(stopping isRunning: (Row) -> Bool, second: String? = nil) -> String {
+    /// says that it stops the call. The next keys of the item, such as ⌘⏎ Settings and ⌘E Edit, follow the first.
+    public func hint(stopping isRunning: (Row) -> Bool, second: [String] = []) -> String {
+        var keys = footerRows.map { "\($0.keyLabel) \(isRunning($0) ? Self.stopTitle(of: $0) : $0.title)" }
+        keys.insert(contentsOf: second, at: min(1, keys.count))
+        return (keys + (holdsMore ? ["\(Self.key) Actions"] : [])).joined(separator: "   ")
+    }
+
+    /// Whether it holds a row that the footer does not show, so that ⌘K has something to open.
+    public var holdsMore: Bool {
+        rows.count > footerRows.count
+    }
+
+    /// The rows that the footer names with their keys: the first two, and the one on Escape.
+    private var footerRows: [Row] {
         let keyed = rows.filter { !$0.keyLabel.isEmpty && !$0.isQuiet }
         let isEscape = { (row: Row) in row.action?.key == ActionKey(name: "escape") }
-        let shown = Array(keyed.filter { !isEscape($0) }.prefix(2)) + keyed.filter(isEscape)
-        var keys = shown.map { "\($0.keyLabel) \(isRunning($0) ? Self.stopTitle(of: $0) : $0.title)" }
-        if let second { keys.insert(second, at: min(1, keys.count)) }
-        return (keys + ["\(Self.key) Actions"]).joined(separator: "   ")
+        return Array(keyed.filter { !isEscape($0) }.prefix(2)) + keyed.filter(isEscape)
     }
 
     public mutating func move(by step: Int) {

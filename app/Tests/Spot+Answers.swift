@@ -26,6 +26,10 @@ extension Spot {
         return try await output(.read, input: lines.isEmpty ? nil : lines.joined(), variables: reason, timeout: timeout)
     }
 
+    func answer(_ action: SpotAction, input: String? = nil, timeout: TimeInterval) async throws -> SpotOutput {
+        try await output(action, input: input, timeout: timeout)
+    }
+
     func form(_ action: CommandAction, item: SpotItem?, timeout: TimeInterval) async throws -> ItemForm {
         guard let form = ItemForm(output: try await output(.action(action, item: item), timeout: timeout)) else { throw SpotError.badForm }
         return form

@@ -1,8 +1,8 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the acts that the app adds to each spot of the person: they open its file, copy a prompt for an agent, and delete
-/// it so that `⌘Z` puts it back.
+/// Proves the acts that the app adds to each spot of the person: Edit opens the sheet where the person describes a change
+/// for an agent, Share copies it, and Delete moves it so that `⌘Z` puts it back.
 @MainActor
 final class SpotVerbTests: XCTestCase {
     private var folder: URL!
@@ -27,8 +27,19 @@ final class SpotVerbTests: XCTestCase {
         host = TestHost()
         host.app = "/Apps/Openspot.app/Contents/MacOS/Openspot"
         let trash = trash!
+        let editor = [
+            "#!/bin/sh", "# title=Change", "# on=sheet.open", "# edits=spots",
+            "case \"$1\" in",
+            "  read) printf 'grid=describe\\ngrid=copy\\n\\nfield=describe\\ntype=multiline\\n\\nbutton=copy\\ntitle=Copy prompt\\nlook=strong\\nshortcut=cmd+return\\n'",
+            "    [ -z \"${OPENSPOT_EDIT_FILE-}\" ] || printf '\\nbutton=editor\\ntitle=Open in editor\\nscope=spot\\nclose=true\\n' ;;",
+            "  copy) echo \"$OPENSPOT_EDIT|${OPENSPOT_EDIT_FILE-}|${OPENSPOT_EDIT_FAILURE-}\" >> '\(folder.path)/edits' ;;",
+            "  editor) open -t \"$OPENSPOT_EDIT_FILE\" ;;",
+            "esac"
+        ]
+        try editor.joined(separator: "\n").appending("\n").writeScript(to: core.appendingPathComponent("openspot.spot/change.sh"))
+        try "#!/bin/sh\n# title=Cups\necho\n".writeScript(to: core.spotFile("cups"))
         let files = AppPlaces(
-            environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
+            environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path, "OPENSPOT_CORE": core.path],
             home: folder,
             defaults: defaults,
             trash: { url in
@@ -50,6 +61,10 @@ final class SpotVerbTests: XCTestCase {
 
     private var spots: URL {
         folder.appendingPathComponent("spots", isDirectory: true)
+    }
+
+    private var core: URL {
+        folder.appendingPathComponent("core", isDirectory: true)
     }
 
     private var trash: URL! {
@@ -91,8 +106,82 @@ final class SpotVerbTests: XCTestCase {
         let menu = try XCTUnwrap(model.menu)
         XCTAssertEqual(menu.rows.count, 5)
         let rows = menu.rows.filter { $0.action != nil }
-        XCTAssertEqual(rows.map(\.title), ["Edit", "Copy prompt for AI", "Share", "Delete"])
-        XCTAssertEqual(rows.map(\.keyLabel), ["⌘E", "", "⌘⇧C", "⌘⌫"])
+        XCTAssertEqual(rows.map(\.title), ["Share", "Settings", "Edit", "Delete"])
+        XCTAssertEqual(rows.map(\.keyLabel), ["⌘⇧C", "⌘⏎", "⌘E", "⌘⌫"])
+        XCTAssertFalse(menu.rows.contains { $0.title == "Copy prompt for AI" })
+    }
+
+    func testTheFooterOfASpotOfThePersonLeavesEditToTheActionsMenu() throws {
+        try script("weather", header: "title=Weather")
+        try script("notes", header: "title=Notes\non=sheet.open")
+
+        _ = try select("weather")
+        XCTAssertEqual(model.hint, "⏎ Run   ⌘⏎ Settings   ⌘K Actions")
+        _ = try select("notes")
+        XCTAssertEqual(model.hint, "⏎ Open   ⌘⏎ Settings   ⌘K Actions")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "e", isCommand: true)))
+    }
+
+    func testCommandEOpensTheEditSheetOfTheSpotFromItsCardWithItsFileAndOpenInEditor() async throws {
+        try script("weather", header: "title=Weather")
+        _ = try select("weather")
+        let sheet = OwnedSheet.edit.id(of: "weather")
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "e", isCommand: true)))
+
+        try await wait("the Edit sheet") { model.openList == sheet && model.openPanel != nil }
+        XCTAssertEqual(model.openEntry?.state.title, "Edit Weather")
+        XCTAssertEqual(SpotSheetCard.of(sheet, in: model)?.id, "weather")
+        XCTAssertEqual(model.openPanel?.parts.map(\.id), ["describe", "copy"])
+        XCTAssertEqual(model.hint, "⌘⏎ Copy prompt   ⌘K Actions")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
+        try await wait("the copy") { saved("edits") == "weather|\(spots.spotFile("weather").path)|\n" }
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        let row = try XCTUnwrap(model.menu?.rows.firstIndex { $0.title == "Open in editor" })
+        model.pressMenu(row: row)
+        try await wait("the editor") { saved("opened") == "-t \(spots.spotFile("weather").path)\n" }
+    }
+
+    func testEditInTheMenuOpensTheEditSheetWithTheLastFailureOfTheSpot() async throws {
+        try script("ping", "echo 'Openspot cannot reach the server.' >&2; exit 1")
+        _ = try select("ping")
+        model.tap("ping")
+        try await wait("the failure") { model.entries.first { $0.id == "ping" }?.failure != nil }
+        model.isShown = true
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        model.pressMenu(row: try XCTUnwrap(model.menu?.rows.firstIndex { $0.title == "Edit" }))
+        try await wait("the Edit sheet") { model.openList == OwnedSheet.edit.id(of: "ping") && model.openPanel != nil }
+        model.pressPart(try XCTUnwrap(model.openPanel?.parts.last))
+
+        try await wait("the copy") { saved("edits")?.hasSuffix("|Openspot cannot reach the server.\n") == true }
+        XCTAssertTrue(saved("edits")?.hasPrefix("ping|\(spots.spotFile("ping").path)|") == true)
+    }
+
+    func testACoreSpotHasEditWithNoFileToOpenAndASpotOfTheAppHasNone() async throws {
+        try model.files.config.turn("cups", on: true)
+        _ = try select("cups")
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        let rows = try XCTUnwrap(model.menu?.rows.filter { $0.action != nil })
+        XCTAssertEqual(rows.map(\.title), ["Share", "Settings", "Edit", "Turn off"])
+        XCTAssertEqual(rows.first { $0.title == "Edit" }?.keyLabel, "⌘E")
+        model.closeMenu()
+        XCTAssertTrue(model.handleKey(ActionKey(name: "e", isCommand: true)))
+        try await wait("the Edit sheet") { model.openList == OwnedSheet.edit.id(of: "cups") && model.openPanel != nil }
+        model.pressPart(try XCTUnwrap(model.openPanel?.parts.last))
+        try await wait("the copy") { saved("edits") == "cups||\n" }
+        _ = model.handleKey(ActionKey(name: "k", isCommand: true))
+        XCTAssertNil(model.menu?.rows.first { $0.title == "Open in editor" })
+        model.closeMenu()
+        model.closeList(moving: false)
+
+        let change = try XCTUnwrap(model.entries.first { $0.spot.editsSpots })
+        XCTAssertFalse(model.openEdit(of: change))
+        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == change.id })
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        XCTAssertFalse(model.menu?.rows.contains { $0.title == "Edit" } ?? false)
     }
 
     func testARightOrForceClickOnACardOpensItsMenuAndTheClickThatEndsItRunsNothing() throws {
@@ -195,28 +284,6 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertEqual(model.focus(ofCard: clock), .faded)
         model.closeMenu()
         XCTAssertEqual(model.focus(ofCard: clock), .none)
-    }
-
-    func testEditOpensTheFileInTheTextEditor() async throws {
-        try script("weather")
-        _ = try select("weather")
-        XCTAssertTrue(model.handleKey(ActionKey(name: "e", isCommand: true)))
-        try await wait("the editor") { saved("opened")?.hasPrefix("-t /") == true && saved("opened")?.hasSuffix("/spots/weather.spot/weather.sh\n") == true }
-    }
-
-    func testCopyPromptForAICopiesTheFileAndTheLastFailure() async throws {
-        try script("ping", "echo 'Openspot cannot reach the server.' >&2; exit 1")
-        let target = try select("ping")
-        model.tap("ping")
-        try await wait("the failure") { model.entries.first { $0.id == "ping" }?.failure != nil }
-
-        model.run(CommandAction.copyPrompt, on: target)
-        try await wait("the toast") { host.confirms.last == AgentPrompt.copied }
-
-        let prompt = try XCTUnwrap(saved("clipboard"))
-        XCTAssertTrue(prompt.contains(spots.spotFile("ping").path))
-        XCTAssertTrue(prompt.contains("Ask me what to change"))
-        XCTAssertTrue(prompt.contains("Openspot cannot reach the server."))
     }
 
     func testDeleteAsksNothingKeepsThePanelAndCommandZPutsTheSpotBack() throws {

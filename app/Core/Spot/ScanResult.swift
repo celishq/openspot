@@ -39,9 +39,9 @@ public struct ScanResult: Equatable, Sendable {
         }
     }
 
-    /// Makes each script that lists commands and has no read open to the keys of its commands in this config.
-    public mutating func listKeys(in config: ConfigFile) {
-        files = files.map { SpotFile(id: $0.id, spots: $0.spots.map { $0.listingKeys(in: config) }) }
+    /// Gives each spot its Settings sheet in this config.
+    public mutating func addSettings(in config: ConfigFile) {
+        files = files.map { SpotFile(id: $0.id, spots: $0.spots.map { $0.takingSettings(in: config) }) }
     }
 
     /// Leaves out each widget that names a script with no `read` or a command no spot has, and reports why.

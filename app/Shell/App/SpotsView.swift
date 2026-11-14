@@ -54,7 +54,7 @@ struct SpotsView: View {
                 .animation(SpotMotion.grow(isOpen: model.menu != nil), value: menuBackdropHeight)
                 .opacity(model.isShown ? 1 : 0)
                 .animation(SpotMotion.fade(isShown: model.isShown), value: model.isShown)
-            if let entry = model.entries.first(where: { $0.id == sheetID }) {
+            if let entry = model.sheetEntry(sheetID) {
                 SpotSheetLayer(
                     model: model,
                     entry: entry,

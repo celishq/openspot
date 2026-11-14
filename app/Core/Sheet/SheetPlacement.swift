@@ -27,6 +27,8 @@ public struct SheetPlacement: Equatable, Sendable {
     public static let width: CGFloat = 263
     public static let maxHeight: CGFloat = 442
     public static let gap: CGFloat = 6
+    /// The gap above a row of buttons that ends the sheet, wider than the gap inside a group, so the acts stand apart.
+    public static let groupGap: CGFloat = SpotTokens.padding
     public static let rowHeight: CGFloat = 40
     public static let maxRound: CGFloat = 44
     public static let dividerHeight: CGFloat = 1
@@ -64,7 +66,10 @@ public struct SheetPlacement: Equatable, Sendable {
         if let repeatArea {
             for y in repeatArea.y0...repeatArea.y1 where !layout.hasDivider(inRow: y) { fillRows.insert(y) }
         }
-        let gaps = gap * CGFloat(max(rows.count - 1, 0))
+        let endsInButtons = Self.endsInButtons(parts: parts, layout: layout)
+        var rowGaps = Array(repeating: gap, count: max(rows.count - 1, 0))
+        if endsInButtons { rowGaps[rowGaps.count - 1] = Self.groupGap }
+        let gaps = rowGaps.reduce(0, +)
         if !fillRows.isEmpty {
             let room = Self.maxHeight - (repeatArea == nil ? 0 : Self.fieldRoom)
             let free = room - heights.reduce(0, +) - gaps
@@ -73,9 +78,9 @@ public struct SheetPlacement: Equatable, Sendable {
 
         var rowY: [CGFloat] = []
         var y: CGFloat = 0
-        for row in heights {
+        for (index, row) in heights.enumerated() {
             rowY.append(y)
-            y += row + gap
+            y += row + (rowGaps.indices.contains(index) ? rowGaps[index] : gap)
         }
         let rect = { (area: SheetArea) in
             CGRect(
@@ -148,6 +153,14 @@ public struct SheetPlacement: Equatable, Sendable {
         }
         repeatFrame = repeatArea.map(rect)
         height = rows.isEmpty ? 0 : heights.reduce(0, +) + gaps
+    }
+
+    /// Whether the last row holds only buttons that lie in it alone, below a row of other parts.
+    private static func endsInButtons(parts: [SpotPart], layout: SheetLayout) -> Bool {
+        let last = layout.rows.count - 1
+        guard last > 0, !layout.hasDivider(inRow: last) else { return false }
+        let inLast = parts.filter { part in layout.letter(of: part).flatMap { layout.areas[$0] }.map { $0.y1 == last } ?? false }
+        return !inLast.isEmpty && inLast.allSatisfy { $0.kind == "button" && layout.letter(of: $0).flatMap { layout.areas[$0] }?.y0 == last }
     }
 
     private static func side(_ align: SpotPart.Align?, default fallback: Side) -> Side {

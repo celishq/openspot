@@ -83,6 +83,7 @@ public final class CommandAPI: @unchecked Sendable {
         case .refused(let line): return { CommandAnswer(errors: "\(line)\n", code: 1) }
         case .guide: return GuideCalls(mac: mac).text()
         case .promptNew(let words): return PromptCalls(mac: mac, environment: environment).new(words)
+        case .promptChange(let id, let words, let failure): return PromptCalls(mac: mac, environment: environment).change(id, words: words, failure: failure)
         case .checkSheet: return CheckCalls(input: input, environment: environment).sheet()
         case .check(let path): return CheckCalls(input: input, environment: environment, tokens: runs?.tokens).folder(path, json: false, careful: fence(environment))
         case .checkJSON(let path): return CheckCalls(input: input, environment: environment, tokens: runs?.tokens).folder(path, json: true, careful: fence(environment))

@@ -66,6 +66,8 @@ struct SpotMenuBarMarkView: View {
                 ProgressView().progressViewStyle(.circular).controlSize(.small).frame(width: Self.ring, height: Self.ring)
             }
             if let count { Text("\(count)") }
+        case .icon:
+            EmptyView()
         }
     }
 

@@ -3,77 +3,86 @@
 # icon=plus
 # detail=Make your own
 # on=sheet.open
-# on=sheet.text
-# uses=spots,clipboard
+# uses=clipboard
+# edits=spots
+. "$OPENSPOT_SH"
 folder="${OPENSPOT_SPOTS:-$OPENSPOT_CONFIG/spots}"
 
-# Prints a row with an id, a title, a detail and an icon.
-row() {
-  printf '\nrow=%s\ntitle=%s\ndetail=%s\nicon=%s\n' "$1" "$2" "$3" "$4"
+# The same sheet edits a spot when Openspot names it in OPENSPOT_EDIT, with a draft of its own for each spot.
+edit=${OPENSPOT_EDIT-}
+if [ -n "$edit" ]; then
+  draft="$OPENSPOT_DATA/edits/$edit.draft"
+  copied="$OPENSPOT_DATA/edits/$edit.copied"
+  placeholder='Describe what you want to change'
+else
+  draft="$OPENSPOT_DATA/draft"
+  copied="$OPENSPOT_DATA/copied"
+  placeholder='Describe what you want to build'
+fi
+nl='
+'
+
+# Prints the sheet with these words in its field, the head lines in $2 before its layout, and the words of its button in $3.
+sheet() {
+  printf '%s' "$2"
+  printf 'grid=describe describe describe\ngrid=describe describe describe\ngrid=describe describe describe\ngrid=copy copy copy\n\n'
+  printf 'field=describe\ntype=multiline\nplaceholder=%s\n' "$placeholder"
+  openspot_kv value "$1"
+  printf '\nbutton=copy\ntitle=%s\nlook=strong\nshortcut=cmd+return\n\n' "${3:-Copy prompt}"
+  printf 'button=clear\ntitle=Clear\nscope=spot\n\n'
+  [ -z "${OPENSPOT_EDIT_FILE-}" ] || printf 'button=editor\ntitle=Open in editor\nscope=spot\nclose=true\n\n'
+  printf 'button=guide\ntitle=Read the guide\nscope=spot\nclose=true\n'
+  [ -n "$edit" ] || printf '\nbutton=folder\ntitle=Open spots folder\nscope=spot\nclose=true\n'
 }
 
-# Writes a starter of this kind under the first free name from Untitled, and prints that name, then the path of its file.
-starter() {
-  name=Untitled
-  n=1
-  while :; do
-    if wrote=$(openspot spot new "$name" --from "$1" 2>&1); then
-      printf '%s\n%s\n' "$name" "$(printf '%s' "$wrote" | sed -n 's/^Wrote \(.*\)\. Its ID is .*/\1/p')"
-      return 0
-    fi
-    case "$wrote" in *"already exists"*) ;; *) printf '%s\n' "$wrote" >&2; return 1 ;; esac
-    n=$((n + 1))
-    name="Untitled $n"
-  done
+# Prints the prompt for the agent: to change the spot of OPENSPOT_EDIT, or to build a new one, as the words say.
+prompt() {
+  if [ -n "$edit" ]; then
+    set -- "$edit" ${OPENSPOT_EDIT_FAILURE:+--failure "$OPENSPOT_EDIT_FAILURE"} ${1:+"$1"}
+    openspot prompt change "$@"
+  elif [ -n "$1" ]; then
+    openspot prompt new "$1"
+  else
+    openspot prompt new
+  fi
 }
+
+# The words of the field: the ones on stdin when the sheet sends them, or else the draft that a last call kept. A draft that
+# was copied is done, so the sheet opens empty.
+case "$nl$_openspot_stdin" in
+  *"${nl}describe="*)
+    typed=$(value describe; printf x)
+    typed=${typed%x}
+    mkdir -p "${draft%/*}" && printf '%s' "$typed" > "$draft"
+    ;;
+  *)
+    typed=$(cat "$draft" 2>/dev/null; printf x)
+    typed=${typed%x}
+    if [ -f "$copied" ] && [ "$typed" = "$(cat "$copied")" ]; then
+      rm -f "$draft" "$copied"
+      typed=
+    fi
+    ;;
+esac
 
 case "$1" in
-  read)
-    printf 'recents=false\n'
-    printf '\nbutton=open\ntitle=Choose\n'
-    printf '\nbutton=guide\ntitle=Read the guide\nscope=spot\nclose=true\n'
-    printf '\nbutton=folder\ntitle=Open spots folder\nscope=spot\nclose=true\n'
-    typed=$(sed -n 's/^search=//p' | head -1)
-    row ask "Copy prompt for AI" "${typed:-Type what the spot should do}" sparkles
-    row button Button "Runs a command when you press it" hand.tap
-    row list List "Shows rows to pick from" list.bullet
-    row number "Live value" "Shows a value that updates" clock
-    row form Form "Asks for words and saves them" square.and.pencil
+  read | describe) sheet "$typed" ;;
+  copy)
+    text=$(printf '%s' "$typed" | awk '{ lines[NR] = $0 } END { s = ""; for (i = 1; i <= NR; i++) s = s (i > 1 ? "\n" : "") lines[i]; sub(/^[ \t\n]+/, "", s); sub(/[ \t\n]+$/, "", s); printf "%s", s }')
+    words=$(prompt "$text") || exit 1
+    printf '%s' "$words" | openspot clipboard copy || exit 1
+    mkdir -p "${copied%/*}" && printf '%s' "$typed" > "$copied"
+    sheet "$typed" "toast=Prompt copied. Paste it into your agent.$nl" "✓ Copied"
+    printf -- '---\n'
+    sleep 1.5
+    sheet "$typed"
     ;;
-  open)
-    case "$2" in
-      ask)
-        text=$(sed -n 's/^search=//p' | head -1 | awk '{
-          s = $0; out = ""
-          while ((i = index(s, "\\")) > 0) {
-            c = substr(s, i + 1, 1)
-            if (c == "n" || c == "\\") { out = out substr(s, 1, i - 1) (c == "n" ? "\n" : "\\"); s = substr(s, i + 2) }
-            else { out = out substr(s, 1, i); s = substr(s, i + 1) }
-          }
-          out = out s
-          sub(/^[ \t\n]+/, "", out); sub(/[ \t\n]+$/, "", out)
-          printf "%s", out
-        }')
-        if [ -z "$text" ]; then
-          echo 'Type what the spot should do, then press `⏎`.' >&2
-          exit 1
-        fi
-        prompt=$(openspot prompt new "$text") || exit 1
-        printf '%s' "$prompt" | openspot clipboard copy || exit 1
-        echo 'toast=Copied a prompt for your agent. Paste it into Claude Code, Codex or another agent.'
-        ;;
-      button|list|number|form)
-        made=$(starter "$2") || exit 1
-        file=$(printf '%s' "$made" | sed -n 2p)
-        [ -n "$file" ] || { echo 'Openspot wrote the spot but cannot find its file.' >&2; exit 1; }
-        open -t "$file" || exit 1
-        printf 'toast=Made %s. Change the file that opened to make it yours.\n' "$(printf '%s' "$made" | sed -n 1p)"
-        ;;
-      *)
-        echo 'New spot cannot do that.' >&2
-        exit 1
-        ;;
-    esac
+  clear)
+    rm -f "$draft" "$copied"
+    sheet ""
+    ;;
+  editor)
+    open -t "$OPENSPOT_EDIT_FILE"
     ;;
   guide)
     openspot guide > "$OPENSPOT_DATA/GUIDE.md" && open "$OPENSPOT_DATA/GUIDE.md"

@@ -83,9 +83,8 @@ final class SpotAPITests: XCTestCase {
         XCTAssertEqual(move["floatKey"] as? String, "shake")
         XCTAssertEqual((move["buttons"] as? [[String: Any]])?.first?["key"] as? String, "ctrl+option+left")
         XCTAssertEqual((move["fields"] as? [[String: Any]])?.map { $0["title"] as? String }, ["Folder"])
-        XCTAssertEqual(spots.first?["menubar"] as? Bool, true)
-        XCTAssertEqual(spots.first?["inMenuBar"] as? Bool, true)
-        XCTAssertEqual(move["menubar"] as? Bool, false)
+        XCTAssertEqual(spots.map { $0["menubar"] as? Bool }, [true, true])
+        XCTAssertEqual(spots.map { $0["inMenuBar"] as? Bool }, [true, false])
     }
 
     func testTheCoreListHoldsEachCoreSpotByNameAndWhetherItIsOn() async throws {
@@ -309,6 +308,20 @@ final class SpotAPITests: XCTestCase {
 
         XCTAssertTrue(answer.output.hasPrefix("Build an Openspot spot that does this: Show the weather\n"))
         XCTAssertTrue(answer.output.contains(spots.path))
-        XCTAssertEqual(CommandLineCall(arguments: ["prompt", "new"], environment: [:]), .unknown("prompt new"))
+        XCTAssertTrue(answer.output.contains(AgentPrompt.finishAlone))
+    }
+
+    func testThePromptChangeCallTakesTheSpotTheFailureAndTheWords() {
+        XCTAssertEqual(CommandLineCall(arguments: ["prompt", "change", "weather", "Add", "a button"], environment: [:]), .promptChange(id: "weather", words: "Add a button", failure: nil))
+        XCTAssertEqual(CommandLineCall(arguments: ["prompt", "change", "weather", "--failure", "It broke"], environment: [:]), .promptChange(id: "weather", words: "", failure: "It broke"))
+        XCTAssertEqual(CommandLineCall(arguments: ["prompt", "change"], environment: [:]), .unknown("prompt change"))
+    }
+
+    func testThePromptWithNoWordsAsksThePersonWhatToBuild() async throws {
+        let answer = try await answer(["prompt", "new"])
+
+        XCTAssertEqual(CommandLineCall(arguments: ["prompt", "new"], environment: [:]), .promptNew(""))
+        XCTAssertTrue(answer.output.hasPrefix("Help me build an Openspot spot. Start by asking me what the spot should do"))
+        XCTAssertTrue(answer.output.contains(spots.path))
     }
 }

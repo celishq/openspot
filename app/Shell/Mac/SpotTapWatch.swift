@@ -33,6 +33,7 @@ final class SpotTapWatch {
 
     private func take(_ event: NSEvent) {
         guard event.type == .flagsChanged else { return tap.spoil() }
-        if let modifier = tap.take(SpotsPanel.modifiers(of: event.modifierFlags), at: event.timestamp) { onTap(modifier) }
+        let keysDown = CGEventSource.counterForEventType(.combinedSessionState, eventType: .keyDown)
+        if let modifier = tap.take(SpotsPanel.modifiers(of: event.modifierFlags), at: event.timestamp, keysDown: keysDown) { onTap(modifier) }
     }
 }

@@ -42,11 +42,11 @@ extension SpotsModel {
     }
 
     /// Runs the card, unless the open menu owns the pointer, as after a force press whose click ends on the card. A click
-    /// with ⌘ opens the sheet of a spot whose press runs it (`press=open`).
+    /// with ⌘ opens its Settings, as ⌘ Return does.
     public func tap(_ id: String, opening: Bool = false) {
         guard !menuOwnsPointer, let position = visible.firstIndex(where: { $0.id == id }) else { return }
         selected = position
-        if !opening || !openSelected() { runSelected() }
+        if !opening || !openSelectedSettings() { runSelected() }
     }
 
     public func setLevel(_ id: String, to value: Double) {
@@ -73,15 +73,6 @@ extension SpotsModel {
             return
         }
         run(entry)
-    }
-
-    /// Takes ⌘ with Enter. On the grid, it opens the sheet of the selected spot whose Enter runs it (`press=open`). Returns
-    /// false for any other spot, or away from the grid, so that the key goes on to the actions and the forms.
-    @discardableResult
-    public func openSelected() -> Bool {
-        guard isOnGrid, let entry = selectedEntry, entry.item == nil, entry.spot.pressRuns, entry.kind.opensSheet else { return false }
-        open(entry.id, moving: true)
-        return true
     }
 
     /// Runs a command by its key, with the panel open only when its spot needs it.
@@ -129,9 +120,10 @@ extension SpotsModel {
         menu == nil && form == nil && openList == nil && !isEditing
     }
 
-    /// Runs the spot whose letter this press holds, whatever the search shows. A spot with no sheet closes the panel.
+    /// Runs the spot whose letter this press holds, whatever the search shows, while the letters show. Before they show, a
+    /// press with the same modifiers stays a key of the selected card, such as ⌘E. A spot with no sheet closes the panel.
     public func handleChain(code: UInt32, modifiers: Shortcut.Modifiers) -> Bool {
-        guard isOnGrid, let entry = entries.first(where: { entry in
+        guard isChainHeld, isOnGrid, let entry = entries.first(where: { entry in
             entry.letter.map { entryKey.chains(to: $0, code: code, modifiers: modifiers) } ?? false
         }) else { return false }
         press(entry.id)
@@ -175,12 +167,26 @@ extension SpotsModel {
         }
     }
 
-    /// Opens the settings of the selected spot that has one command, as ⌘ Return does: the key of its command, and the
-    /// rows of its own read beside it. It is false for any other spot, so the key goes on to the actions and the forms.
-    public func openSoleSettings() -> Bool {
-        guard openList == nil, let entry = selectedEntry, entry.spot.soleCommand != nil else { return false }
-        open(entry.id, moving: true)
+    /// Opens the Settings sheet of the selected card, as ⌘ Return does on the grid. It is false away from the grid and for a
+    /// card with nothing to set, so the key goes on to the actions and the forms.
+    public func openSelectedSettings() -> Bool {
+        guard isOnGrid, let entry = selectedEntry else { return false }
+        return openSettings(of: entry)
+    }
+
+    /// Opens the Settings sheet of a card, which the app makes and which grows from the card. Returns false for a card with
+    /// nothing to set.
+    @discardableResult
+    public func openSettings(of entry: Entry) -> Bool {
+        guard let id = settingsSheet(of: entry) else { return false }
+        open(id, moving: true)
         return true
+    }
+
+    /// The ID of the Settings sheet of a card, or nil for a row, a sheet of the app, or a card with nothing to set.
+    public func settingsSheet(of entry: Entry) -> String? {
+        guard entry.item == nil, let settings = entry.spot.settingsSheet, settings.hasRows(in: loadedConfig ?? Config(text: "")) else { return nil }
+        return SpotSettings.sheetID(of: entry.id)
     }
 
     /// The footer of the selected spot that has one command: Return sets its key until it has one, and runs it after, and
@@ -201,8 +207,8 @@ extension SpotsModel {
             if isShown { host.dismiss() }
             press(key)
         } else {
-            open(entry.id, moving: true)
-            toggleRecording(id: KeyList.keyRun(spot: entry.id, command: command))
+            openSettings(of: entry)
+            toggleRecording(id: SpotSettings.keyRun(spot: entry.id, command: command))
         }
     }
 
@@ -242,8 +248,13 @@ extension SpotsModel {
     }
 
     /// Opens the list of a metric that is also a list, or else selects the widget that places it. Closes the panel
-    /// when it already shows that.
+    /// when it already shows that. The icon of a spot that Return runs runs it, as Return does.
     public func openFromMenuBar(_ id: String) {
+        if let entry = entries.first(where: { $0.id == id && $0.item == nil }), !entry.spot.showsValueInMenuBar, !entry.spot.opensOnReturn {
+            let recordsFirst = entry.spot.soleCommand.map { command in !assignedKeys.contains { $0.spot == id && $0.act == .command(command) } } ?? false
+            if recordsFirst { host.show() }
+            return run(entry)
+        }
         let opens = entries.first { $0.id == id && $0.kind.opensSheet }?.id
         if isShown, opens == nil || openList == opens {
             host.dismiss()
@@ -254,10 +265,5 @@ extension SpotsModel {
             host.show()
             selected = visible.firstIndex { $0.spot.places.contains(id) } ?? 0
         }
-    }
-
-    public func openBigView() {
-        guard let entry = selectedEntry else { return }
-        host.notify("\(entry.state.title) has no big view yet.")
     }
 }

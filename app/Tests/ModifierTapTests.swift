@@ -12,6 +12,15 @@ final class ModifierTapTests: XCTestCase {
         XCTAssertEqual(tap.take([], at: 2.1), .command)
     }
 
+    func testAModifierHeldWhileAKeyThatAnotherAppCaughtWentDownIsNoTap() {
+        var tap = ModifierTap()
+
+        XCTAssertNil(tap.take(.option, at: 1, keysDown: 40))
+        XCTAssertNil(tap.take([], at: 1.2, keysDown: 41))
+        XCTAssertNil(tap.take(.option, at: 2, keysDown: 41))
+        XCTAssertEqual(tap.take([], at: 2.1, keysDown: 41), .option)
+    }
+
     func testAModifierHeldTooLongIsNoTap() {
         var tap = ModifierTap()
 

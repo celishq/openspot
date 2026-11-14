@@ -65,10 +65,13 @@ public struct Spot: Equatable, Sendable {
     public let offers: [CommandOffer]
     /// The values that it keeps with `openspot setting`, each with its title, which Settings lists.
     public let settings: [CommandOffer]
-    /// The Settings rows of its own commands, which its sheet shows. Nil for a spot that draws its own sheet.
-    public private(set) var keyList: KeyList?
-    /// Whether its sheet shows the keys of its commands above the rows that its own read prints.
-    public private(set) var listsKeysAbove = false
+    /// Its Settings sheet, which the app makes: its place in the menu bar, its keys and its values. Nil for a sheet of the
+    /// app, such as a review.
+    public private(set) var settingsSheet: SpotSettings?
+    /// Whether it is the Settings sheet of a spot, which the app answers. A spot's own sheet never holds its Settings.
+    public private(set) var holdsSettings = false
+    /// Whether it has no content of its own, only commands, so that opening it opens its Settings.
+    public private(set) var opensToSettings = false
     /// Whether it comes with the app as a part of it: always on, and never edited, removed or shared as a file of the
     /// person's.
     public private(set) var isBuiltIn = false
@@ -78,6 +81,10 @@ public struct Spot: Equatable, Sendable {
     }
     /// More words that find it in the main search, beside its name and the words under it.
     public let keywords: [String]
+    /// Whether its sheet is also the Edit sheet of each spot, from `edits=spots`, which only a spot of the app can be.
+    public let editsSpots: Bool
+    /// The file of the person's spot that this Edit sheet changes, or nil for a core spot, whose copy the agent makes.
+    public private(set) var editedFile: URL?
     /// Whether its read prints fake data while `OPENSPOT_REASON` is `spot.preview`, for the preview of its listing.
     public let previewsSample: Bool
 
@@ -118,8 +125,10 @@ public struct Spot: Equatable, Sendable {
         emits: [String] = [],
         uses: Set<SpotUse> = [],
         keywords: [String] = [],
-        previewsSample: Bool = false
+        previewsSample: Bool = false,
+        editsSpots: Bool = false
     ) {
+        self.editsSpots = editsSpots
         self.emits = emits
         self.uses = uses
         self.keywords = keywords
@@ -179,24 +188,91 @@ public struct Spot: Equatable, Sendable {
         Icon(text: offers.first { $0.id == command }?.icon)?.symbol ?? symbol
     }
 
-    /// The one command of a spot that opens to the keys of its commands, which Return runs.
+    /// The one command of a spot with no content of its own, which Return runs.
     public var soleCommand: String? {
-        guard keyList != nil, offers.count == 1 else { return nil }
+        guard host == nil, offers.count == 1 else { return nil }
         return offers.first?.id
     }
 
-    /// The same spot, which opens to the keys of its commands in this config when it lists commands. With a read of its
-    /// own, its sheet shows the keys beside its own rows.
-    func listingKeys(in config: ConfigFile) -> Spot {
-        guard !offers.isEmpty, host == nil else { return self }
+    /// Whether Return opens another view of the spot, its sheet, which its card marks with an arrow. A spot that Return runs
+    /// shows no arrow and no Run.
+    public var opensOnReturn: Bool {
+        kind.opensSheet && !pressRuns && soleCommand == nil
+    }
+
+    /// Whether Return runs its one command and its own rows open apart, as its History.
+    public var keepsHistory: Bool {
+        soleCommand != nil && !opensToSettings && read != nil
+    }
+
+    /// The same spot, with its Settings sheet in this config. A spot that lists commands and has no read opens to its
+    /// Settings.
+    func takingSettings(in config: ConfigFile) -> Spot {
+        guard host == nil else { return self }
         var spot = self
-        spot.keyList = KeyList(file: config, spot: id, offers: offers, picture: image ?? file ?? glyph ?? symbol)
-        guard read == nil else {
-            spot.listsKeysAbove = true
-            return spot
+        spot.settingsSheet = SpotSettings(
+            file: config,
+            spot: id,
+            offers: offers,
+            fields: settings,
+            offersFloat: offersFloat,
+            showsInMenuBar: canShowInMenuBar
+        )
+        if read == nil, !offers.isEmpty {
+            spot.kind = .list
+            spot.opensToSettings = true
         }
-        spot.kind = .list
-        spot.read = .sheet
+        return spot
+    }
+
+    /// The sheet of its Settings: a list that the app answers, which grows from its card. Nil for that sheet itself.
+    public var settingsSpot: Spot? {
+        guard let settingsSheet, !holdsSettings else { return nil }
+        var spot = Spot(
+            id: SpotSettings.sheetID(of: id),
+            name: "\(name) Settings",
+            url: url,
+            kind: .list,
+            size: size,
+            symbol: symbol,
+            read: .sheet,
+            isFound: false,
+            isOnGrid: false,
+            headerSymbol: headerSymbol,
+            file: file,
+            image: image,
+            glyph: glyph
+        )
+        spot.settingsSheet = settingsSheet
+        spot.holdsSettings = true
+        return spot
+    }
+
+    /// The Edit sheet of a spot, when this spot of the app edits spots: its own sheet, with the spot to change in its
+    /// variables, which grows from that spot's card. `isOwn` says whether the file is the person's, which the agent changes
+    /// in place, or a core spot's, which it copies first.
+    public func editSheet(of owner: Spot, isOwn: Bool) -> Spot? {
+        guard editsSpots, isBuiltIn else { return nil }
+        var spot = Spot(
+            id: OwnedSheet.edit.id(of: owner.id),
+            name: "Edit \(owner.name)",
+            url: url,
+            kind: .list,
+            size: owner.size,
+            symbol: owner.symbol,
+            read: read,
+            isFound: false,
+            mode: mode,
+            dataName: dataName,
+            isOnGrid: false,
+            headerSymbol: owner.headerSymbol,
+            file: owner.file,
+            image: owner.image,
+            glyph: owner.glyph,
+            uses: uses
+        )
+        spot.isBuiltIn = true
+        spot.editedFile = isOwn ? owner.url : nil
         return spot
     }
 
@@ -221,11 +297,6 @@ public struct Spot: Equatable, Sendable {
         return spot
     }
 
-    /// Whether its sheet changes the keys in the config file: the sheet of the keys of its commands.
-    public var setsKeys: Bool {
-        keyList != nil
-    }
-
     /// The state the header gives, shown before the command answers or when it cannot.
     public var headerState: SpotState {
         SpotState(title: name, subtitle: subtitle, isOnGrid: isOnGrid)
@@ -236,8 +307,13 @@ public struct Spot: Equatable, Sendable {
         read?.has(.panel) == true && !isGlobal && !mode.stays
     }
 
-    /// Whether the person can put it in the menu bar: it has a number or an event in its `read`, or it stays.
+    /// Whether the person can put it in the menu bar: every spot but a sheet of the app. One with no value shows its icon.
     public var canShowInMenuBar: Bool {
+        host == nil
+    }
+
+    /// Whether it shows a value in the menu bar: it has a number or an event in its `read`, or it stays.
+    public var showsValueInMenuBar: Bool {
         read?.seconds != nil || read?.hasEvent == true || mode.stays
     }
 
@@ -314,7 +390,7 @@ public struct Spot: Equatable, Sendable {
         switch kind {
         case .launch: return "Run"
         case .toggle: return "Toggle"
-        case .list: return pressRuns ? "Run" : "Open"
+        case .list: return soleCommand.flatMap { command in offers.first { $0.id == command }?.title } ?? (pressRuns ? "Run" : "Open")
         case .slider: return nil
         case .widget: return opens == nil ? nil : "Open"
         }

@@ -87,6 +87,8 @@ public struct SpotFile: Equatable, Sendable {
         guard preview == nil || preview == "sample" else {
             throw SpotError.fault("\(name) has an unknown preview: \(preview!). Use preview=sample, and print fake data while OPENSPOT_REASON is spot.preview")
         }
+        let edits = header.value("edits")
+        guard edits == nil || edits == "spots" else { throw SpotError.fault("\(name) has an unknown edits: \(edits!). Use edits=spots") }
         let kind: SpotKind = mode.stays || isGlobal || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch
         let command = Spot(
             id: id,
@@ -115,7 +117,8 @@ public struct SpotFile: Equatable, Sendable {
             emits: emits,
             uses: uses,
             keywords: header.list("keywords"),
-            previewsSample: preview != nil
+            previewsSample: preview != nil,
+            editsSpots: edits != nil
         )
         self.init(id: id, spots: [command])
     }

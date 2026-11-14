@@ -21,11 +21,29 @@ public struct CommandAction: Equatable, Sendable {
         CommandAction(id: removeID, title: count > 1 ? "Delete \(count) widgets" : "Delete", key: ActionKey(text: "cmd+backspace"), scope: .spot, after: .stay)
     }
 
-    /// The row that opens the file of a spot in the text editor.
-    public static let edit = CommandAction(id: "openspot.edit", title: "Edit", key: ActionKey(text: "cmd+e"), scope: .spot, after: .close)
+    /// The row that opens the Settings sheet of a spot, as ⌘ Return does on its card.
+    public static let settings = CommandAction(id: "openspot.settings", title: "Settings", key: ActionKey(name: "return", isCommand: true), scope: .spot, after: .stay)
 
-    /// The row that copies a prompt that asks a coding agent to change a spot.
-    public static let copyPrompt = CommandAction(id: "openspot.copy-prompt", title: "Copy prompt for AI", scope: .spot, after: .close)
+    /// The row that opens the own rows of a spot whose Return runs its one command, such as the past texts of Dictate.
+    public static let history = CommandAction(id: "openspot.history", title: "History", key: ActionKey(text: "cmd+y"), scope: .spot, after: .stay)
+
+    /// The row that opens the sheet of a spot whose Return runs it.
+    public static let open = CommandAction(id: "openspot.open", title: "Open", scope: .spot, after: .stay)
+
+    private static let commandPrefix = "openspot.command."
+
+    /// The row that runs a command of a spot's header, as its hotkey does.
+    public static func command(_ offer: CommandOffer) -> CommandAction {
+        CommandAction(id: commandPrefix + offer.id, title: offer.title, scope: .spot, after: .close)
+    }
+
+    /// The command of a spot's header that this row runs, or nil for any other row.
+    public static func command(of action: CommandAction) -> String? {
+        action.id.hasPrefix(commandPrefix) ? String(action.id.dropFirst(commandPrefix.count)) : nil
+    }
+
+    /// The row that opens the Edit sheet of a spot, or the file of a spot that does not load in the text editor.
+    public static let edit = CommandAction(id: "openspot.edit", title: "Edit", key: ActionKey(text: "cmd+e"), scope: .spot, after: .close)
 
     public static let removeID = "openspot.remove"
 

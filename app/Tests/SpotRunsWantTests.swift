@@ -81,17 +81,19 @@ final class SpotRunsWantTests: SpotRunsCase {
         XCTAssertEqual(sheet.list.shown.count, 2)
     }
 
-    func testASpotShowsInTheMenuBarOnlyWhenThePersonPutsItThereAndCanShowThere() async throws {
-        try script("cups", header: "on=clock.5", log: "cups", "printf 'text=t\\ntitle=3\\n'")
-        try script("notes", header: "on=panel.open", log: "notes", "printf 'text=t\\ntitle=4\\n'")
+    func testASpotShowsInTheMenuBarWhenThePersonPutsItThereWithItsValueOrElseItsIcon() async throws {
+        try script("cups", header: "title=Cups\non=clock.5", log: "cups", "printf 'text=t\\ntitle=3\\n'")
+        try script("notes", header: "title=Notes\nicon=note.text\non=panel.open", log: "notes", "printf 'text=t\\ntitle=4\\n'")
         _ = try scanned()
         XCTAssertTrue(runs.menuBarMarks.isEmpty)
 
         menuBar = ["cups", "notes"]
         _ = try scanned()
 
-        try await wait("the mark") { !self.runs.menuBarMarks.isEmpty }
-        XCTAssertEqual(runs.menuBarMarks.map(\.id), ["cups"])
+        try await wait("both marks") { self.runs.menuBarMarks.count == 2 }
+        XCTAssertEqual(runs.menuBarMarks.map(\.id), ["cups", "notes"])
+        XCTAssertEqual(runs.menuBarMarks.map(\.mark.summary), ["Cups: 3", "Notes"])
+        XCTAssertEqual(runs.menuBarMarks.last?.mark, MenuBarMark(icon: "note.text", name: "Notes"))
     }
 
     func testTheMenuBarHearsOfAMarkThatComesAfterItFirstLooked() async throws {

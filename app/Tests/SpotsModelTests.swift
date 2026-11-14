@@ -269,7 +269,12 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testPointingAtARowSelectsItUnlessItsMenuIsOpen() async throws {
-        try await openList()
+        try script("list", header: "on=sheet.open", "printf 'button=copy\\ntitle=Copy\\nshortcut=cmd+c\\n\\nbutton=mark\\ntitle=Mark\\n\\nrow=a\\ntitle=Apple\\n\\nrow=b\\ntitle=Banana\\n'")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.press("list")
+        try await wait("the open list") { model.openList == "list" && model.openItems?.shown.count == 2 }
         let rows = try XCTUnwrap(model.openItems?.shown)
 
         model.point(at: .item(rows[1]))
@@ -731,6 +736,24 @@ final class SpotsModelTests: XCTestCase {
         ((try? String(contentsOf: file, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init)
     }
 
+    func testCommandReturnInAMultilineFieldPressesItsButtonAndCommandKOpensTheActions() async throws {
+        let calls = try await openParts(
+            "grid=describe describe\\ngrid=. copy\\n\\nfield=describe\\ntype=multiline\\n\\nbutton=copy\\ntitle=Copy prompt\\nlook=strong\\nshortcut=cmd+return\\n\\n"
+                + "button=guide\\ntitle=Read the guide\\nscope=spot\\nclose=true\\n"
+        )
+        XCTAssertEqual(model.openPanel?.selectedPart?.id, "describe")
+        XCTAssertEqual(model.hint, "⌘⏎ Copy prompt   ⌘K Actions")
+        model.setPart(try XCTUnwrap(model.openPanel?.selectedPart), to: "Weather")
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
+        try await wait("the press") { self.calls(in: calls).contains("copy") }
+        XCTAssertEqual(model.openList, "parts")
+        XCTAssertFalse(model.openSelectedSettings())
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        XCTAssertEqual(model.menu?.rows.map(\.title), ["Read the guide"])
+    }
+
     func testReturnOpensAFocusedMenuAndPressesAFocusedButton() async throws {
         let calls = try await openParts(
             "grid=look look\\ngrid=key key\\ngrid=make play\\n\\nchoice=look\\nvalue=a\\n\\noption=a\\ntitle=A\\n\\noption=b\\ntitle=B\\n\\n"
@@ -789,7 +812,7 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.openItems?.selected, 1)
     }
 
-    func testEnterRunsASpotWithPressOpenAndCommandEnterOpensItsSheet() async throws {
+    func testEnterRunsASpotWithPressOpenCommandEnterOpensItsSettingsAndTheMenuOpensItsSheet() async throws {
         let log = folder.appendingPathComponent("calls")
         try script("conf", header: "on=sheet.open\npress=open", "if [ \"$1\" = read ]; then printf 'row=a\\ntitle=A\\n'; else echo \"$@\" >> '\(log.path)'; fi")
         model.reload()
@@ -806,12 +829,19 @@ final class SpotsModelTests: XCTestCase {
         model.isShown = true
         model.panelWillShow(holding: [])
         XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
-        try await wait("the sheet") { model.openList == "conf" }
-        XCTAssertFalse(model.openSelected())
+        try await wait("the Settings sheet") { model.openList == SpotSettings.sheetID(of: "conf") }
+        try await wait("its rows") { model.openItems?.shown.map(\.run) == ["float:conf", "menubar:conf"] }
+        model.closeList(moving: false)
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        let row = try XCTUnwrap(model.menu?.rows.firstIndex { $0.title == "Open" && $0.action != nil })
+        model.pressMenu(row: row)
+        try await wait("its own sheet") { model.openItems?.shown.map(\.run) == ["a"] }
+        XCTAssertEqual(model.openList, "conf")
         XCTAssertEqual(calls(), ["open"])
     }
 
-    func testAClickWithCommandOpensTheSheetOfASpotWithPressOpen() async throws {
+    func testAClickWithCommandOpensTheSettingsOfASpotWithPressOpen() async throws {
         let log = folder.appendingPathComponent("calls")
         try script("conf", header: "on=sheet.open\npress=open", "if [ \"$1\" = read ]; then printf 'row=a\\ntitle=A\\n'; else echo \"$@\" >> '\(log.path)'; fi")
         model.reload()
@@ -820,19 +850,19 @@ final class SpotsModelTests: XCTestCase {
 
         model.tap("conf", opening: true)
 
-        try await wait("the sheet") { model.openList == "conf" }
+        try await wait("the Settings sheet") { model.openList == SpotSettings.sheetID(of: "conf") }
         XCTAssertFalse(FileManager.default.fileExists(atPath: log.path))
     }
 
-    func testCommandEnterLeavesASpotWithNoPressOpenToItsActions() async throws {
+    func testCommandEnterOpensTheSettingsOfASpotWithNoPressOpenAndNotItsOwnSheet() async throws {
         try script("list", header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
 
-        XCTAssertFalse(model.hint.contains("Settings"))
-        XCTAssertFalse(model.handleKey(ActionKey(name: "return", isCommand: true)))
-        XCTAssertNil(model.openList)
+        XCTAssertEqual(model.hint, "⏎ Open   ⌘⏎ Settings   ⌘K Actions")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
+        try await wait("the Settings sheet") { model.openList == SpotSettings.sheetID(of: "list") }
     }
 
     func testTheGridSearchFindsAGlobalSpotWithNoKeyBesideARowOfTheSameName() async throws {

@@ -75,9 +75,23 @@ app_key() {
   esac
 }
 
+# Prints the key that plays confetti: the setting `key`, which its Settings record, or the last key the listener took.
 play_key() {
+  kept=$(openspot setting get key 2>/dev/null)
+  if [ -n "$kept" ]; then
+    [ "$(cat "$data/key" 2>/dev/null)" = "$kept" ] || printf %s "$kept" > "$data/key"
+    printf %s "$kept"
+    return
+  fi
   [ -f "$data/key" ] || printf option+c > "$data/key"
+  openspot setting set key "$(cat "$data/key")" > /dev/null 2>&1
   cat "$data/key"
+}
+
+# Keeps the key that plays confetti, in the setting and for the listener.
+save_key() {
+  openspot setting set key "$1" > /dev/null 2>&1
+  printf %s "$1" > "$data/key.$$" && mv "$data/key.$$" "$data/key"
 }
 
 listening() {

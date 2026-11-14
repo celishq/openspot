@@ -75,6 +75,20 @@ final class SpotLettersTests: XCTestCase {
         model.reload()
 
         XCTAssertEqual(letter(of: "notes"), "N")
+        model.isChainHeld = true
+        XCTAssertTrue(model.handleChain(code: try code("n"), modifiers: model.entryKey.modifiers))
+    }
+
+    func testALetterOpensItsSpotOnlyWhileTheLettersShowSoACommandKeyOfTheCardStaysItsOwn() throws {
+        try script("notes")
+        model.reload()
+
+        XCTAssertFalse(model.showsChain)
+        XCTAssertFalse(model.handleChain(code: try code("n"), modifiers: model.entryKey.modifiers))
+        XCTAssertNil(model.openList)
+
+        model.isChainHeld = true
+        XCTAssertTrue(model.showsChain)
         XCTAssertTrue(model.handleChain(code: try code("n"), modifiers: model.entryKey.modifiers))
     }
 

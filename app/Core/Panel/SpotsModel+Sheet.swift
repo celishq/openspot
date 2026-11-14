@@ -31,7 +31,15 @@ extension SpotsModel {
     }
 
     public var openEntry: Entry? {
-        entries.first { $0.id == openList }
+        sheetEntry(openList)
+    }
+
+    /// The card of a sheet: the entry of its spot, or for a sheet that the app makes for a spot, an entry of that sheet.
+    public func sheetEntry(_ id: String?) -> Entry? {
+        guard let id else { return nil }
+        if let entry = entries.first(where: { $0.id == id }) { return entry }
+        guard OwnedSheet.owner(of: id) != nil, let run = sheets[id] else { return nil }
+        return Entry(spot: run.spot, run: run)
     }
 
     public var openItems: ItemList? {
@@ -69,8 +77,15 @@ extension SpotsModel {
 
     /// Opens a sheet, which closes the run of the sheet before and stops a recording in it, and shows it once it is ready: at
     /// once, or with its first answer. It takes the place of a sheet that shows, grows out of its card when it moves, and
-    /// shows in place when it does not move or has no card.
+    /// shows in place when it does not move or has no card. A spot with only commands opens its Settings sheet, which is
+    /// made at its first open.
     public func open(_ id: String, moving: Bool) {
+        if let spot = sheets[id]?.spot, spot.opensToSettings {
+            return open(SpotSettings.sheetID(of: id), moving: moving)
+        }
+        if let owner = SpotSettings.owner(of: id), let spot = sheets[owner]?.spot ?? entries.first(where: { $0.id == owner })?.spot {
+            runs.settingsSheet(of: spot)
+        }
         if let shown = openList, shown != id { stopRecording() }
         sheets[id]?.open(waits: moving) { [weak self] in self?.showSheet(id, moving: moving) }
     }
@@ -258,6 +273,10 @@ extension SpotsModel {
     /// Runs a pick of a row, or an action on it. In the panel, a pick that closes it closes the panel. A float stays open
     /// with the picked row selected, and a pick that asks with a form or records a key opens the spot in the panel (W8).
     public func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil, in place: SheetPlace = .panel) {
+        if action == nil, !item.records, entry.spot.holdsSettings, let settings = entry.spot.settingsSheet, let key = settings.field(of: item.run) {
+            _ = changeSetting(key, of: settings.spot)
+            return
+        }
         if place == .float {
             if action == nil, entry.spot.pickForm != nil || item.records { return press(entry.id) }
             remember(item, of: entry)

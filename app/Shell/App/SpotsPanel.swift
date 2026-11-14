@@ -202,7 +202,7 @@ final class SpotsPanel: NSPanel {
                 }
                 return
             }
-            if Int(event.keyCode) == kVK_Return, event.modifierFlags.contains(.command), model?.openSoleSettings() == true { return }
+            if Int(event.keyCode) == kVK_Return, event.modifierFlags.contains(.command), model?.openSelectedSettings() == true { return }
             if let key = Self.actionKey(of: event), !textKeepsArrow(key), model?.handleKey(key) == true { return }
             if model?.handleChain(code: UInt32(event.keyCode), modifiers: Self.modifiers(of: event.modifierFlags)) == true { return }
         }

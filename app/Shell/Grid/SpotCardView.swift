@@ -184,18 +184,9 @@ struct SpotCardView: View, @MainActor Equatable {
     @ViewBuilder
     private var accessory: some View {
         switch entry.kind {
-        case .list:
+        case .list where entry.spot.opensOnReturn:
             SpotCardArrow(isOnSolid: isFilled)
-        case .launch:
-            if size != .wide, entry.item == nil, !entry.stopsOnPress {
-                Text("Run")
-                    .font(SpotType.action)
-                    .foregroundStyle(SpotTheme.ink)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 6)
-                    .background(SpotTheme.ink.opacity(SpotTheme.chip), in: Capsule())
-            }
-        case .toggle, .slider, .widget:
+        case .list, .launch, .toggle, .slider, .widget:
             EmptyView()
         }
     }

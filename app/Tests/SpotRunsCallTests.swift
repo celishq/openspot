@@ -72,6 +72,18 @@ final class SpotRunsCallTests: SpotRunsCase {
         XCTAssertEqual(failures, [])
     }
 
+    func testASpotWithNoValueShowsItsIconInTheMenuBar() throws {
+        menuBar.insert("pen")
+        _ = try script("pen", header: "title=Pen\nicon=pencil.tip\n\nbutton=draw\ntitle=Draw on screen")
+        let pen = try sheet("pen")
+
+        XCTAssertTrue(pen.spot.canShowInMenuBar)
+        let mark = try XCTUnwrap(runs.menuBarMarks.first { $0.id == "pen" }?.mark)
+        XCTAssertEqual(mark.symbol, "pencil.tip")
+        XCTAssertEqual(mark.content, .icon)
+        XCTAssertEqual(mark.summary, "Pen")
+    }
+
     func testAFailedCallAlwaysTellsThePerson() async throws {
         try script(body: "echo gone >&2\nexit 2")
         let sheet = try sheet()

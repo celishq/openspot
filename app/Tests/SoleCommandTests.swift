@@ -65,7 +65,7 @@ final class SoleCommandTests: XCTestCase {
 
         XCTAssertEqual(model.recording, "key:dictate:dictate")
         try await wait("the key row") { model.openItems?.shown.contains { $0.run == "key:dictate:dictate" } == true }
-        XCTAssertEqual(model.openList, "dictate")
+        XCTAssertEqual(model.openList, SpotSettings.sheetID(of: "dictate"))
         XCTAssertEqual(model.recordingWords, "Press keys or shake")
         model.record(code: 125, modifiers: .command)
         XCTAssertEqual(model.recording, "key:dictate:dictate")
@@ -80,15 +80,15 @@ final class SoleCommandTests: XCTestCase {
         XCTAssertEqual(model.openItems?.shown.first?.subtitle, "Press ⌘↓ to select")
         XCTAssertEqual(model.openItems?.shown.first?.focusSubtitle, "Press ⏎ to change")
         XCTAssertNil(model.recording)
-        XCTAssertEqual(model.openList, "dictate")
+        XCTAssertEqual(model.openList, SpotSettings.sheetID(of: "dictate"))
         XCTAssertEqual(host.dismissals, 0)
 
         model.closeList(moving: false)
         model.query = "dictate"
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "dictate" })
         try await wait("the key in the footer") { model.hint == "⏎ Dictate   ⌘⏎ Settings   ⌘K Actions" }
-        XCTAssertTrue(model.openSoleSettings())
-        try await wait("the key row again") { model.openList == "dictate" }
+        XCTAssertTrue(model.openSelectedSettings())
+        try await wait("the key row again") { model.openList == SpotSettings.sheetID(of: "dictate") }
         XCTAssertNil(model.recording)
         model.closeList(moving: false)
         model.run(try entry("dictate"))
@@ -105,12 +105,13 @@ final class SoleCommandTests: XCTestCase {
 
         model.run(try entry("windows"))
 
-        try await wait("the key rows") { model.openList == "windows" }
+        try await wait("the key rows") { model.openList == SpotSettings.sheetID(of: "windows") }
+        try await wait("their rows") { model.openItems?.shown.map(\.run) == ["key:windows:left", "key:windows:right", "menubar:windows"] }
         XCTAssertNil(model.recording)
     }
 
-    func testCommandReturnOpensTheSpotsOwnRowsAboveItsPinnedKey() async throws {
-        let lines = ["title=Dictate", "on=sheet.open", "", "button=dictate", "title=Dictate"].map { $0.isEmpty ? "#" : "# \($0)" }
+    func testReturnRunsTheOneCommandOfASpotWithRowsAndCommandYOpensTheRowsAsHistory() async throws {
+        let lines = ["title=Dictate", "on=sheet.open", "on=app.update", "", "button=dictate", "title=Dictate"].map { $0.isEmpty ? "#" : "# \($0)" }
         try "#!/bin/sh\n\(lines.joined(separator: "\n"))\ncase \"$1\" in read) printf 'row=one\\ntitle=Hello there\\n\\nrow=two\\ntitle=Second\\n' ;; esac\n"
             .writeScript(to: spots.appendingPathComponent("dictate.sh"))
         model.reload()
@@ -119,43 +120,40 @@ final class SoleCommandTests: XCTestCase {
         model.query = "dictate"
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "dictate" })
 
-        XCTAssertTrue(model.openSoleSettings())
+        XCTAssertEqual(try entry("dictate").spot.soleCommand, "dictate")
+        XCTAssertFalse(try entry("dictate").spot.opensOnReturn)
+        XCTAssertEqual(model.hint, "⏎ Set key   ⌘⏎ Settings   ⌘K Actions")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        let menu = try XCTUnwrap(model.menu)
+        XCTAssertEqual(menu.rows.map(\.title), ["Dictate", "History", "Share", "Settings", "Delete"])
+        XCTAssertEqual(menu.rows.filter { $0.title == "Dictate" }.count, 1)
+        XCTAssertEqual(menu.rows.first { $0.title == "History" }?.keyLabel, "⌘Y")
+        XCTAssertEqual(menu.rows.last?.isDestructive, true)
+        XCTAssertEqual(menu.rows.filter(\.isDestructive).count, 1)
+        model.closeMenu()
 
-        try await wait("the key and the rows") { model.openItems?.shown.count == 3 }
-        XCTAssertEqual(model.openItems?.shown.map(\.run), ["key:dictate:dictate", "one", "two"])
-        XCTAssertEqual(model.sheets["dictate"]?.shape.setsApart, false)
-        model.searchText = "zzz"
-        XCTAssertEqual(model.openItems?.shown.map(\.run), ["key:dictate:dictate"])
-        model.searchText = ""
-        model.moveItemToEdge(last: true)
-        XCTAssertEqual(model.openItems?.selectedItem?.run, "two")
-        model.moveItemToEdge(last: false)
-        XCTAssertEqual(model.openItems?.selectedItem?.run, "key:dictate:dictate")
-        XCTAssertNil(model.recording)
+        XCTAssertTrue(model.handleKey(ActionKey(name: "y", isCommand: true)))
+        try await wait("its History with a search typed") { model.openList == "dictate" }
+        model.closeList(moving: false)
+
+        model.run(.history, on: SpotsModel.Target(entry: try entry("dictate"), item: nil))
+        try await wait("its own rows") { model.openItems?.shown.map(\.run) == ["one", "two"] }
+        XCTAssertEqual(model.openList, "dictate")
+        model.closeList(moving: false)
+
+        model.runSelected()
+        try await wait("its settings, recording its key") {
+            model.recording == SpotSettings.keyRun(spot: "dictate", command: "dictate") && model.openList == SpotSettings.sheetID(of: "dictate")
+        }
     }
 
-    func testEachRowOfTheJoinedSheetKeepsOnlyItsOwnActions() {
-        let keys = "button=open\ntitle=Change\n\nbutton=clear\ntitle=Remove\nshortcut=cmd+backspace\n\nrow=key:d:d\ntitle=Dictate\ntype=hotkey\nshortcut=option\n"
-        let own = "button=open\ntitle=Copy\n\nbutton=delete\ntitle=Delete\nshortcut=cmd+backspace\n\nrow=1\ntitle=Hello\n"
+    func testAKeyRowSaysSetUntilItHasAKeyAndChangeAfter() {
+        let spot = Spot(id: "d", name: "d", url: URL(fileURLWithPath: "/d.sh"))
+        let unset = SpotOutput(text: "row=key:d:d\ntitle=Dictate\ntype=hotkey\nshortcut=\(SpotSettings.unset)\n").items.first
+        let set = SpotOutput(text: "row=key:d:d\ntitle=Dictate\ntype=hotkey\nshortcut=option\n").items.first
 
-        let blocks = TextBlock.blocks(in: SpotRuns.joined(keys: keys, own: own))
-        let output = SpotOutput(text: SpotRuns.joined(keys: keys, own: own))
-        let key = try? XCTUnwrap(output.items.first { $0.run == "key:d:d" })
-        let text = try? XCTUnwrap(output.items.first { $0.run == "1" })
-
-        XCTAssertEqual(blocks.filter { $0.fields.first?.key == "button" }.compactMap { $0.value("title") }, ["Copy", "Delete", "Remove"])
-        XCTAssertEqual(key?.hides, ["open", "delete"])
-        XCTAssertEqual(key?.isPinned, true)
-        XCTAssertEqual(text?.isPinned, false)
-        XCTAssertEqual(ItemList(items: output.items).shown.map(\.run), ["1", "key:d:d"])
-        XCTAssertTrue(ItemList(items: output.items).setsApart)
-        let unset = SpotOutput(text: SpotRuns.joined(keys: keys.replacingOccurrences(of: "shortcut=option", with: "shortcut=\(KeyList.unset)"), own: own))
-        XCTAssertEqual(ItemList(items: unset.items).shown.map(\.run), ["key:d:d", "1"])
-        XCTAssertFalse(ItemList(items: unset.items).setsApart)
-        let unsetKey = unset.items.first { $0.run == "key:d:d" }
-        XCTAssertEqual(ActionMenu(spot: Spot(id: "d", name: "d", url: URL(fileURLWithPath: "/d.sh")), item: unsetKey)?.rows.first?.title, "Set")
-        XCTAssertEqual(text?.hides, ["clear"])
-        XCTAssertEqual(ActionMenu(spot: Spot(id: "d", name: "d", url: URL(fileURLWithPath: "/d.sh")), item: key)?.rows.first?.title, "Change")
+        XCTAssertEqual(ActionMenu(spot: spot, item: unset)?.rows.first?.title, "Set")
+        XCTAssertEqual(ActionMenu(spot: spot, item: set)?.rows.first?.title, "Change")
     }
 
     func testARowThatSaysCloseFalseNamesItsEnterAndKeepsThePanelOpen() async throws {
@@ -178,23 +176,32 @@ final class SoleCommandTests: XCTestCase {
         XCTAssertEqual(host.dismissals, 1)
     }
 
-    func testASheetWithSearchOffHasNoFieldAndItsSetupRowFirst() async throws {
+    func testASheetWithSearchOffShowsOnlyItsOwnRowsAsItsHistory() async throws {
         let lines = ["title=Dictate", "on=sheet.open", "", "button=dictate", "title=Dictate"].map { $0.isEmpty ? "#" : "# \($0)" }
         try "#!/bin/sh\n\(lines.joined(separator: "\n"))\ncase \"$1\" in read) printf 'row=whisper\\ntitle=Download\\npin=top\\n\\nsearch=off\\n' ;; esac\n"
             .writeScript(to: spots.appendingPathComponent("dictate.sh"))
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
-        model.query = "dictate"
-        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "dictate" })
 
-        XCTAssertTrue(model.openSoleSettings())
+        model.run(.history, on: SpotsModel.Target(entry: try entry("dictate"), item: nil))
 
-        try await wait("the rows") { model.openItems?.shown.count == 2 }
-        XCTAssertEqual(model.openItems?.shown.map(\.run), ["whisper", "key:dictate:dictate"])
-        XCTAssertEqual(model.openItems?.selectedItem?.run, "whisper")
+        try await wait("the rows") { model.openItems?.shown.count == 1 }
+        XCTAssertEqual(model.openItems?.shown.map(\.run), ["whisper"])
         XCTAssertEqual(model.openItems?.search, .off)
-        XCTAssertEqual(model.sheets["dictate"]?.shape.setsApart, false)
         XCTAssertEqual(model.sheets["dictate"]?.shape.hasField, false)
+    }
+
+    func testAClickOnTheMenuBarIconOfASpotThatReturnRunsDoesWhatReturnDoes() async throws {
+        let lines = ["title=Pen", "icon=pencil.tip", "", "button=draw", "title=Draw on screen"].map { $0.isEmpty ? "#" : "# \($0)" }
+        try "#!/bin/sh\n\(lines.joined(separator: "\n"))\nexit 0\n".writeScript(to: spots.appendingPathComponent("pen.sh"))
+        model.reload()
+
+        model.openFromMenuBar("pen")
+
+        try await wait("its key, as the first Return records it") {
+            model.recording == SpotSettings.keyRun(spot: "pen", command: "draw") && model.openList == SpotSettings.sheetID(of: "pen")
+        }
+        XCTAssertGreaterThan(host.shows, 0)
     }
 }

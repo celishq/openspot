@@ -31,6 +31,32 @@ press   ─ on a block ─►  <spot> <id>    the user or an agent acts
 - An agent can do anything the user does, with `openspot spot run <id> <call>` and `openspot event emit`. A spot
   can't tell who called it.
 
+## The keys of a spot
+
+Every spot answers the same keys, so a person learns them once. Openspot gives each key its act, and a spot only says
+what it has.
+
+| Key          | What it does                                                                                              |
+| ------------ | --------------------------------------------------------------------------------------------------------- |
+| Return       | The main act of the spot: it runs the spot, or opens its rows when the rows are what the spot is for.     |
+| `⌘` Return   | Opens the spot's [Settings](#settings): Float, Show in the menu bar, its keys and each `field`.           |
+| `⌘Y`         | Opens the rows of a spot whose Return runs its command, as its **History**.                               |
+| `⌘K`         | Opens the menu of all acts, when it holds more than the footer shows.                                     |
+
+- A spot with one `button` in its header and its own rows, such as Dictate, runs that command on Return. Its rows are
+  its History, on `⌘Y` and in its ⌘K menu. With no key yet, Return records one first.
+- A spot whose rows are its main use, such as a clipboard history, has no `button`: Return opens its rows.
+- The ⌘K menu of a card holds only the acts that Openspot adds, always in this order: first what the user does with the
+  spot, the main act on Return, History and Share; then what changes it, Settings and Edit; then Turn off or Delete,
+  last and red. A spot adds no act of its own to its card. Its
+  sheet carries what it does.
+- A card's `⌘` keys work while a search is typed, except the ones that edit the words, such as `⌘⌫`.
+- Edit copies a prompt that sends an agent to the spot's file. A person changes a spot there, not in its Settings.
+- A choice that stays, such as a look or a folder, is a `field` in Settings, not a part of the spot's own sheet.
+- A card shows an arrow only when Return opens another view of the spot, its sheet. A card that Return runs, as an app
+  runs, shows no arrow and no Run.
+- The footer names the spot's own keys first and `⌘K Actions` last.
+
 ## The format
 
 Everything a spot prints, and its header, is lines of `key=value`.
@@ -78,7 +104,7 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `preview`     | `sample`: when `OPENSPOT_REASON` is `spot.preview`, the spot prints sample data for the store.                                   |
 | `view`        | A SwiftUI file next to the spot, such as `view=cups.swift`. See [Views](#views).                                                 |
 | `mode`        | `once` (the default), `stay` or `always`. See [Modes](#modes).                                                                   |
-| `press`       | `open`: a press of the card sends `<spot> open` though the spot has a sheet, which `⌘` opens. `sheet` is the default.            |
+| `press`       | `open`: a press of the card sends `<spot> open` though the spot has a sheet, which **Open** in ⌘K opens. `sheet` is the default. |
 | `uses`        | What the spot uses, split by commas: `app`, `spots`, `screen`, `clipboard`, `calendar`, `network`, `files`. See [Trust](#trust). |
 | `grid.<size>` | A card made of other spots. Each word is a spot id. See [Cards of other spots](#cards-of-other-spots).                           |
 | `to`          | The spot that opens when the user presses a card of other spots. See [Cards of other spots](#cards-of-other-spots).              |
@@ -89,8 +115,10 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `field=<key>` | A setting the user chooses, with its `title` (by default, its key) and `icon`. See [Settings](#settings). |
 
 - A spot with a `button` in its header has no card. It gives its commands instead.
-- Return on a spot with one `button` runs it, as its hotkey does. When it has no hotkey yet, Return opens the spot and
-  records one. `⌘` Return opens the spot: the hotkey of each `button`, and the rows of its read when it has `on=` events.
+- Return on a spot with one `button` and no `on=` events runs it, as its hotkey does. When it has no hotkey yet, Return
+  opens its [Settings](#settings) and records one.
+- A spot with one `button` and its own rows runs the command on Return, and its rows open as its History on `⌘Y`. A
+  spot with more `button`s runs them by their hotkeys and from its ⌘K menu. See [The keys of a spot](#the-keys-of-a-spot).
 
 ## Frames
 
@@ -239,8 +267,8 @@ A button is a verb. If the layout places it, the sheet draws it. If not, it's an
   `scope=spot` always.
 - `close=true` closes the panel after the call. `confirm` asks for a second press.
 - A button `shortcut` is a letter, a digit, `return`, `backspace` or `,`, after `cmd+`, `shift+`, both or neither, such as
-  `cmd+shift+n`, or `escape` alone. A row `shortcut` is any text (see [Rows](#rows)). The user gives hotkeys in
-  [Settings](#settings).
+  `cmd+shift+n`, or `escape` alone. A row `shortcut` is any text (see [Rows](#rows)). The user gives a `button` in the
+  header its hotkey in the spot's [Settings](#settings).
 - An action needs a `title`. `openspot check` reports an action with no title, or with a shortcut it can't use.
 - `shortcut=escape` presses the button instead of closing the sheet, like a Cancel button.
 - In a ⌘K menu of more than 5 rows, a field searches them, so only a `shortcut` with `cmd` works there.
@@ -327,7 +355,8 @@ The main block stands for the spot on its card and in the menu bar.
 - When a frame holds only one `switch` or one slider, the card draws it, and a press of the card changes it. A card
   that is a switch is active while the switch is on.
 - A press on the card outside a control opens the sheet, or sends `<spot> open` when there's no sheet or the header has
-  `press=open`. With `press=open`, a press with `⌘` opens the sheet.
+  `press=open`. With `press=open`, **Open** in the ⌘K menu opens the sheet. A press with `⌘` opens the spot's
+  [Settings](#settings).
 
 ## Events
 
@@ -458,10 +487,10 @@ The user decides where a spot shows. A spot only offers. See [Answer the main se
 example.
 
 - The user gives each spot its hotkey, puts spots in the menu bar, floats them, and orders and sizes the cards. A spot
-  can't claim a hotkey or a place.
+  can't claim a hotkey or a place. The hotkeys, the float and the menu bar are in the spot's [Settings](#settings).
 - `offers=search` shows the spot's rows in the main search. It needs `on=panel.open` or a `clock`. Openspot ranks the
   rows by the user's picks.
-- The user can give any spot with a sheet a hotkey, or a shake of the pointer, in Settings. It shows the spot in a small
+- The user can give any spot with a sheet a hotkey, or a shake of the pointer, in its Settings. It shows the spot in a small
   window at the pointer, which stays while the user works in other apps. The spot never learns where it shows.
 - `on=search.text <pattern>` makes a spot answer the main search. Openspot asks it at each change of a text that the
   pattern matches, with no pause. A newer text stops the older call. The answer should be fast.
@@ -471,8 +500,9 @@ example.
 - An answer can be one card instead of rows: its head has `grid.large=` or `grid.strip=` lines, and its main block has a
   `value`. A pick of the card sends `<spot> open <value>`.
 - `openspot calc solve <words>...` prints the answer to a sum, a conversion or a date as a row.
-- A spot with a `clock`, another event, or `mode=stay` or `always`, and a main `text`, `number` or `graph`, can show in
-  the menu bar when the user puts it there. A read that prints nothing hides it until the next read.
+- Every spot can show in the menu bar when the user puts it there. A spot with a `clock`, another event, or `mode=stay`
+  or `always`, and a main `text`, `number` or `graph`, shows its value. A read that prints nothing hides it until the
+  next read. Any other spot shows its icon, and a click does what Return does.
 - A spot with a `clock` has no card on the grid until the user adds it.
 
 ## Modes
@@ -701,11 +731,22 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 
 ### Settings
 
-A setting keeps a choice of the user. See [Let the user choose a setting](GUIDE.md#let-the-user-choose-a-setting) for an
-example.
+A setting keeps a choice of the user. Each spot has its own Settings, a sheet apart from its own rows, which `⌘` Return
+on its card, a press of the card with `⌘`, or **Settings** in its ⌘K menu opens. Return does the spot's main act, and
+`⌘` Return sets it up. See [Let the user choose a setting](GUIDE.md#let-the-user-choose-a-setting) for an example.
 
-- A `field` block in the header names a setting. The Settings spot lists it, set or not.
-- Return on it runs the action with the same id, which can answer with a form. `⌘⌫` removes the value.
+- The Settings of a spot list each thing the user can change about it, in this order: first what the spot itself does,
+  each `field` that isn't a hotkey, set or not, and each value it keeps that no `field` names, such as a look; then its
+  shortcuts, the hotkey of each `button` in its header and each `field` with `type=hotkey`; then **Float** when it has a
+  view to float, its sheet; and last **Show in the menu bar**, which every spot has.
+- Openspot makes the Settings sheet, and it grows from the spot's card. Its rows never show in the spot's own sheet.
+- The Settings spot of Openspot holds only the settings of the app: its keys, Careful mode, Open at login and the
+  `openspot` command.
+- A `field` block in the header names a setting. Return on it runs the action with the same id, which can answer with a
+  form. `⌘⌫` removes the value.
+- A `field` with `type=hotkey` is a key that the spot listens for itself. Its row records a key, and Openspot sends
+  `<spot> <key> <shortcut>`. The spot checks the key, keeps it with `openspot setting set <key> <shortcut>`, and fails
+  to refuse it. Its row shows the kept value. `⌘⌫` sends `<spot> <key>` with no shortcut, and the spot stops listening.
 - `openspot setting get <key>` prints the value, or nothing. `openspot setting set <key> [value]` keeps the value, or
   removes it when there's no value. In a terminal, `--spot <id>` names the spot.
 - Keep a choice of the user in a setting. Keep what the spot makes, such as a cache, in `OPENSPOT_DATA`.

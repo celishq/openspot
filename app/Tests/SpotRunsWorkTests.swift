@@ -270,6 +270,26 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertNil(sheet.cardWork)
     }
 
+    func testAPartWhoseCallDrewItsOwnFrameShowsThatFrameAndNoWork() async throws {
+        try script(header: "on=sheet.open", """
+        case "$1" in
+          read) printf 'grid=go\\n\\nbutton=go\\ntitle=Go\\n' ;;
+          go) printf 'grid=go\\n\\nbutton=go\\ntitle=Done\\n---\\n'; sleep 30 ;;
+        esac
+        """)
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the parts") { sheet.panel != nil }
+        let go = try XCTUnwrap(sheet.panel?.parts.first)
+
+        sheet.press(go)
+        try await wait("the frame of the call") { sheet.panel?.parts.first?.title == "Done" }
+        time += 1
+
+        XCTAssertNil(sheet.work(of: go))
+        XCTAssertEqual(sheet.calls.count, 1)
+    }
+
     func testARunningActionOrPickShowsOnItsRowOfTheMenu() async throws {
         try script(header: "on=sheet.open", """
         case "$1" in

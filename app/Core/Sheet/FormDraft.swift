@@ -4,7 +4,8 @@ import Foundation
 public struct FormDraft: Equatable, Sendable {
     public let form: ItemForm
     public private(set) var values: [String: String]
-    /// The options of a form of one choice as rows, with its value selected.
+    /// The options of a form of one choice as rows, with its value selected and ticked: the option that the spot keeps, or
+    /// each pick of a choice of several.
     public private(set) var choices: ItemList?
 
     /// Starts from the values the form gives. A prefill goes into the first field when that field is empty.
@@ -18,7 +19,7 @@ public struct FormDraft: Equatable, Sendable {
             choices = ItemList(items: choice.options.map { option in
                 SpotItem(
                     title: option.title, run: option.id, picture: Icon(text: option.icon),
-                    isOn: choice.picks?.contains(option.id) ?? false
+                    isOn: choice.picks?.contains(option.id) ?? (option.id == choice.value)
                 )
             })
             choices?.select(run: values[choice.name] ?? "")

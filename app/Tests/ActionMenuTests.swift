@@ -143,7 +143,7 @@ final class ActionMenuTests: XCTestCase {
         let trash = CommandAction(id: "remove", title: "Move to Trash", key: ActionKey(text: "cmd+return"), scope: .spot)
         let sheet = Spot(id: "apps", name: "Apps", url: URL(fileURLWithPath: "/bin/true"), kind: .list, actions: [cancel, trash])
 
-        XCTAssertEqual(ActionMenu(spot: sheet, item: item)?.hint, "⏎ Open   ⌘⏎ Move to Trash   Esc Cancel   ⌘K Actions")
+        XCTAssertEqual(ActionMenu(spot: sheet, item: item)?.hint, "⏎ Open   ⌘⏎ Move to Trash   Esc Cancel")
     }
 
     func testAKeyLabelOfTheFooterNamesItsKey() {
@@ -221,8 +221,8 @@ final class ActionMenuTests: XCTestCase {
         XCTAssertEqual(menu.title(of: primary), "Run")
         XCTAssertEqual(menu.title(of: primary, isRunning: true), "Stop")
         XCTAssertEqual(menu.title(of: copy, isRunning: true), "Stop Copy")
-        XCTAssertEqual(menu.hint(stopping: { $0.action == nil }), "⏎ Stop   ⌘C Copy   ⌘K Actions")
-        XCTAssertEqual(menu.hint(stopping: { $0.action != nil }), "⏎ Run   ⌘C Stop Copy   ⌘K Actions")
+        XCTAssertEqual(menu.hint(stopping: { $0.action == nil }), "⏎ Stop   ⌘C Copy")
+        XCTAssertEqual(menu.hint(stopping: { $0.action != nil }), "⏎ Run   ⌘C Stop Copy")
         XCTAssertEqual(menu.hint(stopping: { _ in false }), menu.hint)
     }
 

@@ -83,7 +83,7 @@ struct SpotSheetLayer: View {
 
     /// Whether the card draws an arrow. A 1x1 card shows its glyph alone, and a card with its own look draws none.
     private var showsArrow: Bool {
-        entry.kind == .list && card?.look == nil && (frame?.width ?? 0) > SpotTokens.cell
+        (card?.kind ?? entry.kind) == .list && card?.look == nil && (frame?.width ?? 0) > SpotTokens.cell
     }
 
     /// The arrow of the card while its sheet moves. It stays in view until the close button takes its place at the edge.
@@ -99,7 +99,7 @@ struct SpotSheetLayer: View {
     }
 
     private var cardIsSelected: Bool {
-        let id = card?.look?.id ?? entry.id
+        let id = card?.id ?? entry.id
         return model.placements.first { model.visible[$0.index].id == id }?.index == model.selected
     }
 

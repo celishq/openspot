@@ -28,7 +28,8 @@ final class SampleSpotsTests: SampleSpotsCase {
     func testConfettiSourceTypeChecks() async throws {
         let confetti = try XCTUnwrap(try scan.spots.first { $0.id == "confetti" })
         XCTAssertEqual(confetti.symbol, "party.popper")
-        XCTAssertTrue(confetti.pressRuns)
+        XCTAssertFalse(confetti.kind.opensSheet)
+        XCTAssertEqual(confetti.settings.map(\.title), ["Look", "Shortcut"])
         let source = confetti.url.deletingPathExtension().appendingPathComponent("confetti.swift")
 
         _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-typecheck", source.path])
@@ -61,6 +62,69 @@ final class SampleSpotsTests: SampleSpotsCase {
             XCTAssertEqual(try String(contentsOf: data.appendingPathComponent("key"), encoding: .utf8), "option+c")
             XCTAssertFalse(FileManager.default.fileExists(atPath: data.appendingPathComponent("listen.pid").path))
         }
+    }
+
+    /// Runs a call of Confetti with its data in a folder of the test, and returns what it prints.
+    private func confetti(_ arguments: [String], input: String = "", data: URL) throws -> String {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let process = Process()
+        let out = Pipe()
+        let stdin = Pipe()
+        process.executableURL = root.appendingPathComponent("spots/confetti.spot/confetti.sh")
+        process.arguments = arguments
+        process.environment = [
+            "PATH": "/usr/bin:/bin", "OPENSPOT_DATA": data.path, "HOME": data.path,
+            "OPENSPOT_SH": root.appendingPathComponent("app/Shell/openspot.sh").path
+        ]
+        process.standardOutput = out
+        process.standardInput = stdin
+        try process.run()
+        stdin.fileHandleForWriting.write(Data(input.utf8))
+        try stdin.fileHandleForWriting.close()
+        process.waitUntilExit()
+        return String(data: out.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+    }
+
+    func testConfettiAsksForItsLookAsAChoiceAndKeepsThePick() throws {
+        let data = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-look-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: data) }
+
+        let form = SpotOutput(text: try confetti(["look"], data: data))
+        XCTAssertEqual(form.summary?.value("title"), "Look")
+        let choice = try XCTUnwrap(ItemForm(output: form)?.fields.first)
+        XCTAssertTrue(choice.options.map(\.id).contains("gold"))
+
+        try "#!/bin/sh\necho \"$@\" >> '\(data.path)/played'\n".writeScript(to: data.appendingPathComponent("confetti"))
+        let again = SpotOutput(text: try confetti(["look"], input: "look=gold\n", data: data))
+        XCTAssertEqual(try String(contentsOf: data.appendingPathComponent("default"), encoding: .utf8), "gold")
+        XCTAssertEqual(ItemForm(output: again)?.soleChoice?.value, "gold")
+        XCTAssertTrue(try String(contentsOf: data.appendingPathComponent("played"), encoding: .utf8).contains("gold.look"))
+    }
+
+    func testConfettiWithNoKeyStopsListeningAndSaysSo() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let data = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-key-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: data) }
+        try "option+c".write(to: data.appendingPathComponent("key"), atomically: true, encoding: .utf8)
+        let process = Process()
+        let out = Pipe()
+        process.executableURL = root.appendingPathComponent("spots/confetti.spot/confetti.sh")
+        process.arguments = ["key", ""]
+        process.environment = [
+            "PATH": "/usr/bin:/bin", "OPENSPOT_DATA": data.path, "HOME": data.path,
+            "OPENSPOT_SH": root.appendingPathComponent("app/Shell/openspot.sh").path
+        ]
+        process.standardOutput = out
+        process.standardInput = FileHandle.nullDevice
+        try process.run()
+        process.waitUntilExit()
+        let text = String(data: out.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+
+        XCTAssertTrue(text.contains("Confetti has no shortcut now."), text)
+        XCTAssertEqual(try String(contentsOf: data.appendingPathComponent("key"), encoding: .utf8), "")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: data.appendingPathComponent("listen.pid").path))
     }
 
     func testNoMetricShowsTwiceInTheGrid() throws {

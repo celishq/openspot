@@ -106,14 +106,20 @@ public final class SpotRuns {
     nonisolated deinit {}
 
     /// Takes a new look at the spots folder, with the spots that the person put in the menu bar. Each script keeps its sheet,
-    /// and a sheet whose script is gone stops its reads. A staying script that something wants starts. At most once a day, it
-    /// prunes the builds of Swift scripts.
+    /// and a sheet whose script is gone stops its reads. The Settings and the Edit sheet of a spot follow their spot. A
+    /// staying script that something wants starts. At most once a day, it prunes the builds of Swift scripts.
     public func take(_ scan: ScanResult, menuBar: Set<String> = []) {
         let scripts = scan.scripts
         placed = Set(scan.spots.flatMap(\.places))
         self.menuBar = menuBar
         order = scripts.map(\.id)
+        let owners = Dictionary(scan.spots.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         for (id, sheet) in sheets where !order.contains(id) {
+            if let settings = SpotSettings.owner(of: id).flatMap({ owners[$0] })?.settingsSpot {
+                sheet.update(settings)
+                continue
+            }
+            if let owner = OwnedSheet.owner(of: id), owner.sheet == .edit, owners[owner.spot] != nil, editor != nil { continue }
             sheets[id] = nil
             if sheet.isOpen { onReport(id, .closed) }
             if floating.remove(id) != nil { onReport(id, .landed) }
@@ -140,6 +146,30 @@ public final class SpotRuns {
         }
         sheets[id] = sheet
         return sheet
+    }
+
+    /// The sheet of the Settings of a spot whose own sheet does not hold them, made at its first open. Nil for a spot whose
+    /// own sheet holds them, and for a sheet of the app.
+    @discardableResult
+    public func settingsSheet(of spot: Spot) -> SpotRun? {
+        spot.settingsSpot.map(sheet(for:))
+    }
+
+    /// Whether a spot of the app edits spots, so that each spot has an Edit sheet.
+    public var editsSpots: Bool {
+        editor != nil
+    }
+
+    /// The spot of the app whose sheet is also the Edit sheet of each spot.
+    private var editor: Spot? {
+        sheets.values.lazy.map(\.spot).first { $0.editsSpots && $0.isBuiltIn }
+    }
+
+    /// The Edit sheet of a spot, made at its first open and given the spot as it is now. `isOwn` says whether the file is
+    /// the person's. Nil when no spot of the app edits spots.
+    @discardableResult
+    public func editSheet(of spot: Spot, isOwn: Bool) -> SpotRun? {
+        editor?.editSheet(of: spot, isOwn: isOwn).map(sheet(for:))
     }
 
     /// Records the sheet that opens, and closes the one before.
@@ -202,8 +232,9 @@ public final class SpotRuns {
     /// The marks of the scripts that show in the menu bar, in the order of the folder.
     public var menuBarMarks: [(id: String, mark: MenuBarMark)] {
         order.compactMap { id in
-            guard let sheet = sheets[id], isInMenuBar(sheet.spot), let mark = MenuBarMark(reading: sheet.reading) else { return nil }
-            return (id, mark)
+            guard let sheet = sheets[id], isInMenuBar(sheet.spot) else { return nil }
+            guard sheet.spot.showsValueInMenuBar else { return (id, MenuBarMark(icon: sheet.spot.symbol, name: sheet.spot.name)) }
+            return MenuBarMark(reading: sheet.reading).map { (id, $0) }
         }
     }
 
@@ -317,7 +348,7 @@ public final class SpotRuns {
                 end = .failed(error)
             }
             let ending: ScriptCall.End = call.isStopped ? .stopped : end
-            if let self { usage.called(spot, seconds: Date().timeIntervalSince(begin), isFailure: { if case .failed = ending { true } else { false } }(), at: now()) }
+            if let self, OwnedSheet.owner(of: id) == nil { usage.called(spot, seconds: Date().timeIntervalSince(begin), isFailure: { if case .failed = ending { true } else { false } }(), at: now()) }
             if let process {
                 self?.record(spot, action, input: input, frames: printed + (process.failedFrame.map { [$0] } ?? []), errors: process.errors, end: ending, reason: reason, started: call.started, begin: begin)
             }
@@ -363,16 +394,11 @@ public final class SpotRuns {
         return (script, frames, token)
     }
 
-    /// The frames of one call. A read of a spot that lists its keys beside its own rows joins the two, unless `withKeys` is
-    /// false.
-    private func frames(of spot: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, variables: [String: String] = [:], withKeys: Bool = true) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void, process: ScriptProcess?) {
-        let isOwnRead = spot.listsKeysAbove && action.arguments.first == "read"
-        if withKeys, isOwnRead, let keyList = spot.keyList {
-            let own = frames(of: spot, action, input: input, limit: limit, variables: variables, withKeys: false)
-            return (Self.prefixed(own.stream) { (try? keyList.answer(["read"])) ?? "" }, own.halt, own.process)
-        }
-        if !isOwnRead, let keyList = spot.keyList, keyList.answers(action.arguments) {
-            let (stream, halt) = answered { try keyList.answer(action.arguments) }
+    /// The frames of one call. The Settings sheet of a spot answers each call in the app.
+    private func frames(of spot: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, variables given: [String: String] = [:]) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void, process: ScriptProcess?) {
+        let variables = given.merging(editing(spot)) { given, _ in given }
+        if spot.holdsSettings, let settings = spot.settingsSheet {
+            let (stream, halt) = answered { try settings.answer(action.arguments) }
             return (stream, halt, nil)
         }
         if let sheet = spot.host {
@@ -405,60 +431,14 @@ public final class SpotRuns {
         return (stream, { process.stop() }, process)
     }
 
-    /// A frame of the script with the key rows after its rows, pinned at the top while they have no key and at the bottom once
-    /// they have one, so a row that the script pins at the top comes first. The two heads become one, and the script's keys
-    /// win, such as `search=off`. Each row keeps only its own actions: a key row hides the
-    /// script's, and a row of the script hides the keys', so a shortcut that both use, such as ⌘⌫, acts on the right row.
-    /// An action of the script wins over a key action of the same id.
-    static func joined(keys: String, own frame: String) -> String {
-        let keyBlocks = TextBlock.blocks(in: keys)
-        let ownBlocks = TextBlock.blocks(in: frame)
-        func ids(_ blocks: [TextBlock]) -> [String] {
-            blocks.compactMap { $0.fields.first?.key == "button" ? $0.fields.first?.value : nil }
-        }
-        let ownActions = ids(ownBlocks)
-        let keyActions = ids(keyBlocks).filter { !ownActions.contains($0) }
-        func hiding(_ actions: [String], pin: Bool) -> (TextBlock) -> TextBlock? {
-            { block in
-                guard let kind = block.fields.first?.key else { return block }
-                if kind == "button", keyBlocks.contains(block), ownActions.contains(block.fields.first?.value ?? "") { return nil }
-                guard kind == "row" else { return block }
-                let place = block.value("shortcut") == KeyList.unset ? SpotItem.Pin.top : .bottom
-                let pinned = pin ? [TextBlock.Field(key: "pin", value: place.rawValue)] : []
-                return TextBlock(fields: block.fields + actions.map { TextBlock.Field(key: "hides", value: $0) } + pinned)
-            }
-        }
-        func isHead(_ block: TextBlock) -> Bool {
-            block.fields.first.map { !SpotOutput.isKind($0.key) && $0.key != "button" } ?? false
-        }
-        let ownHead = ownBlocks.first(where: isHead)
-        let keyHead = keyBlocks.first(where: isHead)
-        let headFields = (ownHead?.fields ?? []) + (keyHead?.fields ?? []).filter { field in ownHead?.value(field.key) == nil }
-        let head = headFields.isEmpty ? [] : [TextBlock(fields: headFields)]
-        let rest = ownBlocks.filter { !isHead($0) }.compactMap(hiding(keyActions, pin: false))
-            + keyBlocks.filter { !isHead($0) }.compactMap(hiding(ownActions, pin: true))
-        return (head + rest).map(\.text).joined(separator: "\n")
-    }
-
-    /// The frames of a script with the rows of `head` above each, and those rows alone when the script prints no frame.
-    private static func prefixed(_ frames: AsyncThrowingStream<String, Error>, head: @escaping @Sendable () -> String) -> AsyncThrowingStream<String, Error> {
-        let (stream, continuation) = AsyncThrowingStream.makeStream(of: String.self)
-        let task = Task {
-            let rows = head()
-            var printed = false
-            do {
-                for try await frame in frames {
-                    printed = true
-                    continuation.yield(rows.isEmpty ? frame : Self.joined(keys: rows, own: frame))
-                }
-                if !printed, !rows.isEmpty { continuation.yield(rows) }
-                continuation.finish()
-            } catch {
-                continuation.finish(throwing: error)
-            }
-        }
-        continuation.onTermination = { _ in task.cancel() }
-        return stream
+    /// The variables that tell an Edit sheet which spot it changes: its ID, its file when it is the person's, and the words
+    /// of its last failed call. None for any other spot.
+    private func editing(_ spot: Spot) -> [String: String] {
+        guard let owner = OwnedSheet.owner(of: spot.id), owner.sheet == .edit else { return [:] }
+        var variables = ["OPENSPOT_EDIT": owner.spot]
+        variables["OPENSPOT_EDIT_FILE"] = spot.editedFile?.path
+        variables["OPENSPOT_EDIT_FAILURE"] = sheets[owner.spot]?.failure
+        return variables
     }
 
     /// The frames of an answer that Swift gives in the app: one frame with all its text.

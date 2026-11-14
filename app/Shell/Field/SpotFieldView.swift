@@ -181,11 +181,6 @@ struct SpotFieldView: View {
                     }
                     return .handled
                 }
-                .onKeyPress(keys: [.return]) { press in
-                    guard press.modifiers.contains(.command) else { return .ignored }
-                    model.openBigView()
-                    return .handled
-                }
     }
 
     /// The empty field's words, as a layer of their own that moves with the field by offsets alone, which stay smooth where
@@ -226,7 +221,7 @@ struct SpotFieldView: View {
     /// the field and not the panel.
     private var sheetWord: String {
         let id = model.transition.id
-        return SearchPrompt.word(for: model.entries.first { $0.id == id }?.state.title ?? "")
+        return SearchPrompt.word(for: model.sheetEntry(id)?.state.title ?? "")
     }
 
     /// How far the sheet is open, which the sheet's motion carries from 0 to 1.
