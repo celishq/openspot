@@ -658,6 +658,27 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.cards.first { $0.id == "timer" }?.isOnGrid, false)
     }
 
+    func testACardReleasedOverTheStoresWindowTurnsItsSpotOff() {
+        let translation = move("a", to: leftHalf(of: "b"))
+        model.dragSpot("a", by: translation)
+        host.isPointerOverWindow = true
+
+        model.dropSpot(by: translation)
+
+        XCTAssertFalse(order.contains("a"))
+        XCTAssertEqual(offInConfig, ["a"])
+    }
+
+    func testASpotDroppedFromTheStoreUnderTheCardsGoesToTheEndOfTheShelf() throws {
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
+        model.reload()
+
+        XCTAssertTrue(model.dropStoreSpot("timer", at: CGPoint(x: 10, y: SpotGrid.height(of: model.placements) + SpotTokens.rowHeight)))
+
+        XCTAssertEqual(order.last, "timer")
+        XCTAssertEqual(model.cards.first { $0.id == "timer" }?.isOnGrid, false)
+    }
+
     func testTheStoreFindsTheCardOfASpotThatIsOffByItsStoreID() throws {
         try "#!/bin/sh\n# detail=Counts down\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
         try "#!/bin/sh\n# title=Shared\n".writeScript(to: store.appendingPathComponent("shared.spot/shared.sh"))

@@ -62,10 +62,11 @@ extension OpenspotApp: SpotsHost {
     }
 
     func showForDrag() {
-        showPanelForDrag()
+        showPanelForDrag(beside: spotWindows.values.first(where: \.isVisible)?.frame)
     }
 
     func window(_ entry: SpotsModel.Entry) {
+        if model.isShown { panel?.hide() }
         let window = spotWindows[entry.id] ?? SpotSheetWindow.make(model: model, entry: entry)
         spotWindows[entry.id] = window
         window.show()
@@ -84,6 +85,10 @@ extension OpenspotApp: SpotsHost {
 
     var isPointerOverDrop: Bool {
         liesOnPanelDrop(NSEvent.mouseLocation)
+    }
+
+    var isPointerOverWindow: Bool {
+        spotWindows.values.contains { $0.isVisible && $0.frame.contains(NSEvent.mouseLocation) }
     }
 
     /// Whether a point on the screen lies on the cards of the panel or on the menu bar item.

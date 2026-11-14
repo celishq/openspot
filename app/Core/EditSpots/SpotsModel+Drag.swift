@@ -52,9 +52,14 @@ extension SpotsModel {
     }
 
     /// Ends the drag: the card lands at the place nearest the lifted card, and the order is saved. A release with the
-    /// pointer off the grid, or where the card started, puts every card back.
+    /// pointer off the grid, or where the card started, puts every card back. A release over the store's window turns the
+    /// spot off, back to the store.
     public func dropSpot(by translation: CGSize) {
         guard let drag else { return }
+        if host.isPointerOverWindow, let entry = visible.first(where: { $0.id == drag.id }), turnsOff(entry) {
+            cancelDrag()
+            return turnOff(entry.id)
+        }
         let move = inGrid(translation)
         let centre = drag.centre(movedBy: move)
         let target = drag.nearest(to: drag.centre(movedBy: drag.capped(move, within: windowInGrid)))

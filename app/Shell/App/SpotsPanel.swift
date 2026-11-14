@@ -57,6 +57,14 @@ final class SpotsPanel: NSPanel {
         setFrameOrigin(NSPoint(x: origin.x - place.left, y: origin.y))
     }
 
+    /// Moves the panel beside a window, such as the store that a card is dragged out of, so that it covers none of it.
+    func place(beside window: NSRect) {
+        guard model?.isShown != true || model?.isWarming == true else { return }
+        let center = NSSize(width: frame.width - place.left - appliedRight, height: frame.height)
+        guard let origin = ScreenPlace(screens: ScreenPlace.Screen.all).origin(of: center, beside: window) else { return }
+        setFrameOrigin(NSPoint(x: origin.x - place.left, y: origin.y))
+    }
+
     /// The bounds of the app's front window, as Core Graphics gives them, or nil when it shows none. They need no permission.
     private static func frontWindow(of app: NSRunningApplication) -> CGRect? {
         let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []

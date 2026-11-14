@@ -28,13 +28,18 @@ extension SpotsModel {
     /// comes to the front. A spot whose kind comes from its first answer opens once that answer arrives.
     public func openWindow(_ id: String) {
         guard let entry = cards.first(where: { $0.id == id }) else { return }
-        if isShown { host.dismiss() }
         if let sheet = sheets[id], sheet.awaitsAnswer, !runs.floating.contains(id) {
             sheet.afterAnswer { [weak self] in self?.openWindow(id) }
             return
         }
         if !runs.floating.contains(id) { runs.float(id) }
         host.window(entry)
+    }
+
+    /// Reads each sheet that shows in a window again, so that a window that lists the spots, such as the store, shows a
+    /// change of them.
+    func readWindows() {
+        for id in runs.floating where place(ofSheet: id) == .window { sheets[id]?.read(need: .change) }
     }
 
     /// Closes the float or the window of a spot.

@@ -33,10 +33,13 @@ public protocol SpotsHost: AnyObject {
     func float(_ entry: SpotsModel.Entry, followsDrag: Bool)
     /// Closes the float or the window of a spot, when it shows.
     func land(_ id: String)
-    /// Shows the sheet of a spot in a window of its own, or brings its window to the front when it shows.
+    /// Shows the sheet of a spot in a window of its own, or brings its window to the front when it shows. It puts the panel
+    /// away and keeps the focus in the app, which the window takes.
     func window(_ entry: SpotsModel.Entry)
     /// Whether the pointer lies on the panel or the menu bar item.
     var isPointerOverDrop: Bool { get }
+    /// Whether the pointer lies on a window of a spot that offers one, such as the store.
+    var isPointerOverWindow: Bool { get }
     /// The files of the drag in progress.
     var draggedPaths: [String] { get }
     /// Whether the left mouse button is down, as it is through a drag.

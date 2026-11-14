@@ -329,6 +329,7 @@ public final class SpotsModel {
         if panels != config.panels { panels = config.panels }
         scanned = scan.spots
         if let ids, isOnlyNamed { patchEntries(ids) } else { rebuildEntries() }
+        readWindows()
         if problems != self.problems, !problems.isEmpty {
             host.notify(problems.joined(separator: " "))
         }

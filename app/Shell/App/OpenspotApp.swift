@@ -260,10 +260,10 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     }
 
     /// Opens the panel for a drag. The front app stays in front, so that closing the panel activates nothing.
-    func showPanelForDrag() {
+    func showPanelForDrag(beside window: NSRect? = nil) {
         guard !model.isShown || model.isWarming else { return model.followDrag() }
         previousApp = nil
-        panel?.place(over: nil)
+        if let window { panel?.place(beside: window) } else { panel?.place(over: nil) }
         panel?.showForDrag()
     }
 

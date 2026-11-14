@@ -28,6 +28,19 @@ public struct ScreenPlace: Sendable {
         return CGPoint(x: (area.midX - size.width / 2).rounded(.down), y: (area.minY + (area.height - size.height) * 0.75).rounded(.down))
     }
 
+    /// The origin of a panel of this size beside a window: right of it when it fits on the free area of the window's
+    /// screen, else left of it, with the tops in line, and kept whole on the screen. Nil with no screen.
+    public func origin(of size: CGSize, beside window: CGRect) -> CGPoint? {
+        guard let area = screen(window: window, pointer: CGPoint(x: window.midX, y: window.midY))?.area else { return nil }
+        let right = window.maxX + Self.besideGap
+        let x = right + size.width <= area.maxX ? right : max(window.minX - Self.besideGap - size.width, area.minX)
+        let y = min(max(window.maxY - size.height, area.minY), area.maxY - size.height)
+        return CGPoint(x: x.rounded(.down), y: y.rounded(.down))
+    }
+
+    /// The gap between a window and a panel placed beside it.
+    static let besideGap: CGFloat = 12
+
     /// The origin of a float of this size: centred on the pointer, and moved in so that it lies whole in the free area of the
     /// pointer's screen (W4). Nil with no screen.
     public func origin(of size: CGSize, under pointer: CGPoint) -> CGPoint? {

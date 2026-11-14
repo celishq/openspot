@@ -10,6 +10,7 @@ final class TestHost: SpotsHost {
     var notes: [String] = []
     var confirms: [String] = []
     var isPointerOverDrop = false
+    var isPointerOverWindow = false
     var draggedPaths: [String] = []
     var isMouseDown = false
     var pastedPaths: [String] = []
@@ -120,6 +121,7 @@ final class TestHost: SpotsHost {
     }
 
     func window(_ entry: SpotsModel.Entry) {
+        if model?.isShown == true { model?.panelWillHide() }
         windows.append(entry.id)
     }
 

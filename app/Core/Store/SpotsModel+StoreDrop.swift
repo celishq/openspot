@@ -12,15 +12,16 @@ extension SpotsModel {
     }
 
     /// Adds the spot of a store card at the place of the grid nearest this point of the grid, on the grid or the shelf as
-    /// that place is, and gets it from the store. A spot that the panel has moves there. Returns false when the store has no
+    /// that place is, or at the end of the shelf for a point under the cards, and gets it from the store. A spot that the panel has moves there. Returns false when the store has no
     /// spot with the ID.
     @discardableResult
     public func dropStoreSpot(_ id: String, at point: CGPoint) -> Bool {
         let store = self.store
         guard let item = storeItem(id), let entry = storeEntry(id) else { return false }
-        let target = placements.min { distance($0.rect, point) < distance($1.rect, point) }
-        let place = target?.index ?? visible.filter(\.isOnGrid).count
-        let isOnGrid = target.map { visible[$0.index].isOnGrid } ?? true
+        let isUnderCards = point.y > SpotGrid.height(of: placements) + SpotTokens.rowGap
+        let target = isUnderCards ? nil : placements.min { distance($0.rect, point) < distance($1.rect, point) }
+        let place = target?.index ?? visible.count
+        let isOnGrid = target.map { visible[$0.index].isOnGrid } ?? !isUnderCards
         var order = visible.map(\.id).filter { $0 != entry.id }
         order.insert(entry.id, at: min(place, order.count))
         var next = arrangement
