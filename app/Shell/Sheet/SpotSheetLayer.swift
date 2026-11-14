@@ -31,6 +31,7 @@ struct SpotSheetLayer: View {
             morph: SheetMorph(card: closedRect, sheet: sheetRect)
         )
         .id(entry.id)
+        .modifier(SheetSlideIn(model: model))
         .morph(progress, opacity: contentOpacity)
         .overlay(alignment: .topLeading) {
             if let look = card?.look, let frame {
@@ -130,6 +131,19 @@ private struct MovingLook<Look: View>: View {
 
     var body: some View {
         look(model.transition.phase != .open || model.transition.id != id)
+    }
+}
+
+/// The content of the sheet while another page of it slides in: it lies `slideOffset` from its place, and fades in as it
+/// comes. It alone reads the offset, so that a slide reruns no sheet.
+private struct SheetSlideIn: ViewModifier {
+    let model: SpotsModel
+
+    func body(content: Content) -> some View {
+        let offset = model.slideOffset
+        content
+            .offset(x: offset)
+            .opacity(1 - abs(offset) / MotionTokens.slideDistance * 0.6)
     }
 }
 

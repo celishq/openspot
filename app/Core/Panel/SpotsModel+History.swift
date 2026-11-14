@@ -17,7 +17,7 @@ extension SpotsModel {
         if openList == nil { closeHistory() }
         let next = SheetPage(spot: id, page: page)
         history.push(next)
-        show(next, moving: moves)
+        show(next, moving: moves, from: 1)
         return true
     }
 
@@ -25,7 +25,7 @@ extension SpotsModel {
     @discardableResult
     public func goBack() -> Bool {
         guard openList != nil, let page = history.back() else { return false }
-        show(page, moving: isShown)
+        show(page, moving: isShown, from: -1)
         return true
     }
 
@@ -33,7 +33,7 @@ extension SpotsModel {
     @discardableResult
     public func goForward() -> Bool {
         guard openList != nil, let page = history.forward() else { return false }
-        show(page, moving: isShown)
+        show(page, moving: isShown, from: 1)
         return true
     }
 
@@ -48,16 +48,27 @@ extension SpotsModel {
         return true
     }
 
-    /// Shows a sheet of the history: its page in its run, in the place of the sheet that shows. A spot that left the folder
+    /// Shows a sheet of the history: its page in its run, in the place of the sheet that shows. Another page of the sheet
+    /// that shows slides in from `side`, -1 for the left and 1 for the right, when it moves. A spot that left the folder
     /// leaves the history, which then shows the page at its centre, or closes when it is empty.
-    private func show(_ page: SheetPage, moving: Bool) {
+    private func show(_ page: SheetPage, moving: Bool, from side: Double) {
         guard let sheet = sheets[page.spot] else {
             history.remove(spot: page.spot)
-            if let current = history.current { show(current, moving: moving) } else { closeList(moving: moving) }
+            if let current = history.current { show(current, moving: moving, from: side) } else { closeList(moving: moving) }
             return
         }
-        sheet.show(page: page.page)
-        if openList != page.spot { present(page.spot, moving: moving) }
+        guard openList == page.spot else {
+            sheet.show(page: page.page)
+            return present(page.spot, moving: moving)
+        }
+        guard moving, sheet.page != page.page else { return sheet.show(page: page.page) }
+        change(nil) {
+            sheet.show(page: page.page)
+            slideOffset = side * MotionTokens.slideDistance
+        }
+        DispatchQueue.main.async { [weak self] in
+            self?.change(.slide) { self?.slideOffset = 0 }
+        }
     }
 
     /// Brings each spot of the history back to its first sheet, and empties the history.

@@ -82,6 +82,8 @@ public final class SpotsModel {
     public private(set) var openList: String?
     /// The sheets that the panel went through since a sheet opened from the grid, with the one that shows at its centre.
     public internal(set) var history = SheetHistory()
+    /// How far the content of the sheet lies from its place while another page of it slides in, or 0 at rest.
+    public internal(set) var slideOffset = 0.0
     /// Where the open sheet is in its motion between its card and its open place.
     public internal(set) var transition = SheetTransition() {
         didSet {

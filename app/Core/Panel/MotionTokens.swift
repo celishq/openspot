@@ -36,6 +36,8 @@ public enum MotionTokens {
     public static let pressedScale = 1.04
     public static let liftedScale = 1.05
     public static let focusedScale = 1.04
+    /// How far the content of a sheet starts from its place as another page of it slides in.
+    public static let slideDistance = 24.0
     /// How small a card gets as an open sheet pushes it out.
     public static let pushedScale = 0.4
     /// How much stronger the blur is under a pressed card.

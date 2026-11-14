@@ -161,4 +161,17 @@ final class SheetPagesModelTests: XCTestCase {
 
         XCTAssertEqual(model.hint, "Esc Back")
     }
+
+    func testAPageOfTheSameSheetSlidesInFromTheSideItComesFrom() async throws {
+        try await openList()
+        host.motions = []
+        try await openPage()
+        try await wait("the slide from the right to rest") { host.motions.contains(.slide) && model.slideOffset == 0 }
+        XCTAssertTrue(host.slideStarts.contains { $0 > 0 })
+        host.slideStarts = []
+
+        XCTAssertTrue(model.handleKey(back))
+
+        try await wait("the slide from the left to rest") { model.slideOffset == 0 && host.slideStarts.contains { $0 < 0 } }
+    }
 }

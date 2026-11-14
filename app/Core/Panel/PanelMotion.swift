@@ -5,5 +5,7 @@ import Foundation
 public enum PanelMotion: Equatable, Sendable {
     case sheet(isOpen: Bool)
     case edit
+    /// The content of a sheet that slides to its place from the side that its page comes from.
+    case slide
     case fade
 }
