@@ -110,29 +110,11 @@ extension SpotsModel {
         }
         guard openList == page.spot else {
             sheet.show(page: page.page)
-            pendingPush = moving ? side : nil
+            waitPush(from: moving ? side : nil)
             return present(page.spot, moving: moving)
         }
         guard moving, sheet.page != page.page else { return sheet.show(page: page.page) }
-        change(nil) {
-            sheet.show(page: page.page)
-            pushOffset = side * MotionTokens.pushDistance
-        }
-        settlePush()
-    }
-
-    /// Takes the side of a push that waits for its sheet, and lays the content there for this turn.
-    func startPendingPush() {
-        guard let side = pendingPush else { return }
-        pendingPush = nil
-        pushOffset = side * MotionTokens.pushDistance
-    }
-
-    /// Moves the content of the sheet to its place on the next turn, so that the push has a start.
-    func settlePush() {
-        DispatchQueue.main.async { [weak self] in
-            self?.change(.push) { self?.pushOffset = 0 }
-        }
+        pushIn(from: side) { sheet.show(page: page.page) }
     }
 
     /// Brings each spot of the flow back to its first sheet, and empties the flow.

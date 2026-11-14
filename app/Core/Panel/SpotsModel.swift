@@ -92,7 +92,7 @@ public final class SpotsModel {
     /// How far the content of the sheet lies from its place while the next sheet of the flow pushes in, or 0 at rest.
     public internal(set) var pushOffset = 0.0
     /// The side that the sheet of another spot pushes in from once it is ready, -1 for the left and 1 for the right.
-    @ObservationIgnored var pendingPush: Double?
+    @ObservationIgnored var waitingPush: Double?
     /// Where the open sheet is in its motion between its card and its open place.
     public internal(set) var transition = SheetTransition() {
         didSet {

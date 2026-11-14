@@ -394,6 +394,7 @@
 		A467160A615A07904E0F6AAF /* SpotSurfaceShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE349937DD8063F00D305FDA /* SpotSurfaceShape.swift */; };
 		A49D805A74202FC00CBD3FF7 /* SheetStreamTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AD5607F47BCD0BAD71F0BA0 /* SheetStreamTests.swift */; };
 		A4C6B67B3CB5AEB88193812B /* SpotToneDot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FA2E6CC7436778D0F50D325 /* SpotToneDot.swift */; };
+		A4FB695E74D1BE0A690BF951 /* SpotsModel+FlowPush.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BA4677D795AA3198D5C60FA /* SpotsModel+FlowPush.swift */; };
 		A50F8386852175FA8D092E7C /* SpotShownFade.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB45A187F57E0392F646EFE /* SpotShownFade.swift */; };
 		A53D385C881EDF9EFD991E68 /* SpotPagesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E41076F30B7792F010F79D1E /* SpotPagesTests.swift */; };
 		A54A8BCA63FF8D34823A3ACC /* ScriptLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 458EC05F801F997F96F3BC73 /* ScriptLink.swift */; };
@@ -862,6 +863,7 @@
 		4AFA371803B93938FB6ED76A /* ProcessTime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessTime.swift; sourceTree = "<group>"; };
 		4B34F0EE9609556532E5F215 /* Icon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Icon.swift; sourceTree = "<group>"; };
 		4BA2CD893CD36A22F56960F1 /* AgentPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentPrompt.swift; sourceTree = "<group>"; };
+		4BA4677D795AA3198D5C60FA /* SpotsModel+FlowPush.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+FlowPush.swift"; sourceTree = "<group>"; };
 		4BC66EA3227BE39AC4E9A0E1 /* SpotDrag.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotDrag.swift; sourceTree = "<group>"; };
 		4C3D7738D2679B75088377D6 /* SpotSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSheetView.swift; sourceTree = "<group>"; };
 		4CC48EEEE73E01DA1768C18C /* ReminderStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderStore.swift; sourceTree = "<group>"; };
@@ -1704,6 +1706,7 @@
 				D5446BF4E4FE701A2DDDF32E /* FlowSheet.swift */,
 				C299932C9129F7568AED1A24 /* FlowSwipe.swift */,
 				11CA4D7D57188F0F8D27100B /* SpotsModel+Flow.swift */,
+				4BA4677D795AA3198D5C60FA /* SpotsModel+FlowPush.swift */,
 			);
 			path = Flow;
 			sourceTree = "<group>";
@@ -3020,6 +3023,7 @@
 				FE356AB5C24D98757A45996F /* SpotsModel+Entry.swift in Sources */,
 				5134351A5BC6D67C42C1070F /* SpotsModel+Floats.swift in Sources */,
 				94808A51A99C200BF30D042D /* SpotsModel+Flow.swift in Sources */,
+				A4FB695E74D1BE0A690BF951 /* SpotsModel+FlowPush.swift in Sources */,
 				5234425085BE4F5729B4E2DB /* SpotsModel+Grid.swift in Sources */,
 				05C78FC3AC1D067347D757A4 /* SpotsModel+Intake.swift in Sources */,
 				B6FD5695A5FD438CE5632CE1 /* SpotsModel+Pointer.swift in Sources */,
