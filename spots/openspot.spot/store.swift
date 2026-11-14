@@ -1,49 +1,149 @@
 import SwiftUI
 
 /// The store: each spot as its card at the size it takes on the grid, in rows that wrap, under the title of its group, with
-/// a plus on the corner of the ones you lack and an up arrow on your own that changed.
+/// a plus on the corner of the ones you lack and an up arrow on your own that changed. A search, a filter by origin and a
+/// sort over the groups pick and order the cards.
 struct SpotView: View {
     let spot: SpotInput
+    @State private var query = ""
+    @State private var origin = Origin.all
+    @State private var order = Order.name
 
-    /// One spot of the store: its id, its name and what its button does.
+    /// Where the spots that the filter keeps come from.
+    private enum Origin: String, CaseIterable, Identifiable {
+        case all = "All", core = "Core", mine = "Yours", store = "Shared"
+
+        var id: Self { self }
+
+        /// The word of `openspot store list` for this origin, or nil for all.
+        var word: String? {
+            switch self {
+            case .all: nil
+            case .core: "core"
+            case .mine: "mine"
+            case .store: "store"
+            }
+        }
+    }
+
+    /// How the cards of each group are ordered.
+    private enum Order: String, CaseIterable, Identifiable {
+        case name = "Name", size = "Size"
+
+        var id: Self { self }
+    }
+
+    /// One spot of the store: its id, its name, what its button does, its origin, its description, its size, and the folded
+    /// words that a search compares, made once.
     private struct Item: Identifiable {
         let id: String
         let name: String
         let state: String
+        let origin: String
+        let size: String
+        let words: String
 
         init?(_ line: String) {
             let parts = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
-            guard parts.count == 3 else { return nil }
-            (id, name, state) = (parts[0], parts[1], parts[2])
+            guard parts.count == 6 else { return nil }
+            (id, name, state, origin, size) = (parts[0], parts[1], parts[2], parts[3], parts[5])
+            words = [name, parts[4], Self.label(of: origin)].joined(separator: " ").folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+        }
+
+        /// The cells that its card covers on the grid.
+        var area: Int {
+            ["small": 1, "wide": 2, "square": 4, "strip": 4, "large": 8][size] ?? 1
+        }
+
+        /// The word of the filter that names its origin.
+        static func label(of origin: String) -> String {
+            Origin.allCases.first { $0.word == origin }?.rawValue ?? origin
         }
     }
 
+    /// The spots that the search and the filter keep, in the chosen order.
     private var items: [Item] {
-        spot.all("value").compactMap(Item.init)
+        let folded = query.trimmingCharacters(in: .whitespaces).folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+        let kept = spot.all("value").compactMap(Item.init).filter { item in
+            (origin.word == nil || item.origin == origin.word) && (folded.isEmpty || item.words.contains(folded))
+        }
+        switch order {
+        case .name: return kept.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        case .size: return kept.sorted { ($0.area, $1.name) > ($1.area, $0.name) }
+        }
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
-                section("Get more spots", items.filter { $0.state == "get" })
-                section("Yours to publish", items.filter { $0.state == "publish" })
-                section("Added", items.filter { $0.state == "added" })
+        let items = items
+        let groups = [
+            ("Get more spots", items.filter { $0.state == "get" }),
+            ("Yours to publish", items.filter { $0.state == "publish" }),
+            ("Added", items.filter { $0.state == "added" })
+        ].filter { !$0.1.isEmpty }
+        VStack(alignment: .leading, spacing: 18) {
+            toolbar
+            ScrollView {
+                VStack(alignment: .leading, spacing: 28) {
+                    ForEach(groups, id: \.0) { title, list in section(groups.count > 1 ? title : nil, list) }
+                    if groups.isEmpty {
+                        Text(query.isEmpty ? "No spot is here." : "No spot has these words.")
+                            .font(spot.font.detail)
+                            .foregroundStyle(spot.ink.opacity(spot.secondary))
+                    }
+                }
+                .padding(.bottom, spot.inset * 2)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(spot.inset * 2)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding([.horizontal, .top], spot.inset * 2)
+    }
+
+    /// The search, the filter by origin and the sort, in one line.
+    private var toolbar: some View {
+        HStack(spacing: 12) {
+            search
+            Picker("Origin", selection: $origin) {
+                ForEach(Origin.allCases) { Text($0.rawValue).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .fixedSize()
+            Picker("Sort", selection: $order) {
+                ForEach(Order.allCases) { Text("By \($0.rawValue)").tag($0) }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .fixedSize()
         }
     }
 
-    @ViewBuilder
-    private func section(_ title: String, _ list: [Item]) -> some View {
-        if !list.isEmpty {
-            VStack(alignment: .leading, spacing: 14) {
+    /// A field whose whole fill takes a click, and whose Esc clears it.
+    private var search: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(spot.ink.opacity(spot.secondary))
+            TextField("Search spots", text: $query)
+                .textFieldStyle(.plain)
+                .onExitCommand { query = "" }
+        }
+        .font(spot.font.detail)
+        .padding(.horizontal, 10)
+        .frame(height: 28)
+        .background(spot.ink.opacity(0.08), in: Capsule())
+        .contentShape(Capsule())
+        .frame(maxWidth: 260)
+    }
+
+    /// A group of cards, under its title when the store shows more than one group.
+    private func section(_ title: String?, _ list: [Item]) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if let title {
                 Text(title)
                     .font(spot.font.title)
                     .foregroundStyle(spot.ink)
-                Flow(gap: 16) {
-                    ForEach(list) { tile($0) }
-                }
+            }
+            Flow(gap: 16) {
+                ForEach(list) { tile($0) }
             }
         }
     }

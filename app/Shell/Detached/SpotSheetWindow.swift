@@ -10,11 +10,11 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
     /// Whether the window counts in `AppPresence`, from its show until it closes.
     private var isPresent = false
 
-    /// Gives each key to the spot first, so that its rows and actions work whichever part has the focus. Esc closes the
-    /// window, as it does a float.
+    /// Gives each key but Esc to the spot first, so that its rows and actions work whichever part has the focus. Esc stays
+    /// with the view, such as a search field that it clears, and ⌘W closes the window, as in any window.
     override func sendEvent(_ event: NSEvent) {
         if event.type == .keyDown, !event.modifierFlags.contains(.command), let model, let key = SpotsPanel.actionKey(of: event),
-           model.handleFloatKey(key, in: id) { return }
+           key.name != "escape", model.handleFloatKey(key, in: id) { return }
         super.sendEvent(event)
     }
 

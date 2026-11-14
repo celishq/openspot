@@ -21,7 +21,7 @@ final class StoreSpotTests: BuiltInCase {
     private func items() async throws -> [[String]] {
         let parts = try await store.items(timeout: 5).parts
         XCTAssertEqual(parts.map(\.id), ["gallery"])
-        return (parts.first?.values["value"] ?? []).map { $0.split(separator: "\t").map(String.init) }
+        return (parts.first?.values["value"] ?? []).map { $0.split(separator: "\t", omittingEmptySubsequences: false).map(String.init) }
     }
 
     @discardableResult
@@ -42,7 +42,8 @@ final class StoreSpotTests: BuiltInCase {
     func testItListsEachSpotWithWhatItsButtonDoes() async throws {
         let rows = try await items()
 
-        XCTAssertEqual(rows, [["mine", "Mine", "publish"], ["shared", "Shared", "get"], ["timer", "Timer", "get"]])
+        XCTAssertEqual(rows.map { Array($0.prefix(4)) }, [["mine", "Mine", "publish", "mine"], ["shared", "Shared", "get", "store"], ["timer", "Timer", "get", "core"]])
+        XCTAssertEqual(rows.first { $0[0] == "timer" }?[4], "Counts down")
     }
 
     func testGetTurnsOnACoreSpotAndAddsAStoredOne() async throws {
