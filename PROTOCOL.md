@@ -73,7 +73,7 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `keywords`    | More words that find the spot in the main search, split by commas, such as `keywords=coffee, cup`.                               |
 | `on`          | An event that makes Openspot ask the spot what to show. One line for each event. See [Events](#events).                          |
 | `emits`       | The events the spot raises, split by commas. See [Events](#events).                                                              |
-| `offers`      | A place where the spot can show: `card`, `search`, `menubar` or `float`. One line for each place. See [Places](#places).          |
+| `offers`      | A place where the spot can show: `card`, `search`, `menubar`, `float` or `window`. One line each. See [Places](#places).         |
 | `drop`        | The files its card takes: extensions such as `mov,mkv`, `folder`, or `*`. See [The calls](#the-calls).                           |
 | `preview`     | `sample`: when `OPENSPOT_REASON` is `spot.preview`, the spot prints sample data for the store.                                   |
 | `view`        | A SwiftUI file next to the spot, such as `view=cups.swift`. See [Views](#views).                                                 |
@@ -757,6 +757,8 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                                |
 | `openspot spot stats`                              | Prints what each spot cost and used. See [Stats](#stats).                                       |
 | `openspot grid edit`                               | Opens the panel in Edit Spots, to arrange the grid.                                             |
+| `openspot store list [--frame]`                    | Prints each spot of the store, whether you have it, and if it's yours, whether it's published.  |
+| `openspot store publish <id>`                      | Publishes a spot of your spots folder to the store. It needs a `readme.md` beside its script.   |
 
 ### Settings
 

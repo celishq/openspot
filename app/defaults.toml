@@ -59,6 +59,10 @@ size = "small"
 letter = "p"
 
 [[spots]]
+id = "openspot/store"
+size = "small"
+
+[[spots]]
 id = "openspot/settings"
 size = "small"
 key = "cmd+,"

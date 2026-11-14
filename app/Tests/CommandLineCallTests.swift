@@ -21,6 +21,13 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertTrue(CommandLineCall.usage.contains("openspot grid edit"))
     }
 
+    func testStoreListsItsSpotsAndPublishesOne() {
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "list"]), .storeList(frame: false))
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "list", "--frame"]), .storeList(frame: true))
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "publish", "timer"]), .storePublish("timer"))
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "publish", "timer"], environment: ["OPENSPOT_REASON": "panel.open"]), .refused("`openspot store publish` changes the store, so it cannot run in a read. Run it from a pick or an action."))
+    }
+
     func testEventEmitTakesAnEventNameAndAValue() {
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music.track"]), .eventEmit(name: "music.track", value: nil))
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music.track", "Blue in Green"]), .eventEmit(name: "music.track", value: "Blue in Green"))

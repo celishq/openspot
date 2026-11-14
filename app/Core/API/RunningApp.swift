@@ -25,6 +25,8 @@ public protocol RunningApp: Sendable {
     func choose(for id: String) async -> Bool
     /// Opens the panel in Edit Spots.
     func editGrid() async
+    /// Publishes a spot of the spots folder to the store, and says what it did.
+    func publish(_ id: String) async -> SpotPublish
     /// Opens the panel with the card of a spot selected. Returns false when no card has that ID.
     func reveal(_ id: String) async -> Bool
     /// Opens the sandbox window on a file, or on typed text with none, and returns once the person closes it. A script that

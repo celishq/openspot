@@ -50,6 +50,10 @@ struct SpotRunningApp: RunningApp {
         await model.editGrid()
     }
 
+    func publish(_ id: String) async -> SpotPublish {
+        await model.publish(id)
+    }
+
     func reveal(_ id: String) async -> Bool {
         await model.reveal(id)
     }

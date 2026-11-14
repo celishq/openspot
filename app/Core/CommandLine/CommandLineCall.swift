@@ -34,6 +34,10 @@ public enum CommandLineCall: Equatable, Sendable {
     case spotReview(String)
     /// Opens the panel in Edit Spots.
     case gridEdit
+    /// Prints each spot of the store, with whether the person has it.
+    case storeList(frame: Bool)
+    /// Publishes a spot of the spots folder to the store.
+    case storePublish(String)
     /// Runs the action of a spot's setting in the panel, as Enter on its row in Settings does.
     case settingChange(spot: String, key: String)
     /// Prints the prompt that asks a coding agent to build a spot that does what the words say.
@@ -156,6 +160,8 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot spot review <id>                    Shows the whole text of a spot that comes with the app, and what of it
                                                  runs by itself.
     openspot grid edit                           Opens the panel in Edit Spots, to arrange the grid.
+    openspot store list [--frame]                Prints each spot of the store, and whether you have it.
+    openspot store publish <id>                  Publishes a spot of your spots folder to the store.
     openspot check [--json] [folder]             Reports the faults of a spots folder.
     openspot check --sheet                       Reports the faults of a sheet on stdin.
     openspot render [--view file] <file.png>     Draws the sheet on stdin to a picture, with its view from a Swift file.
@@ -323,6 +329,8 @@ public enum CommandLineCall: Equatable, Sendable {
             let act = CardAct(rawValue: verb)!
             self = Self.changing(.spotAct(act, rest[1]), "openspot spot \(verb)", act == .delete ? "changes your spots folder" : "opens a window", environment)
         case ("spot", "review") where rest.count == 2: self = Self.changing(.spotReview(rest[1]), "openspot spot review", "opens the panel", environment)
+        case ("store", "list") where Self.flags(rest.dropFirst(), within: ["--frame"]): self = .storeList(frame: rest.contains("--frame"))
+        case ("store", "publish") where rest.count == 2: self = Self.changing(.storePublish(rest[1]), "openspot store publish", "changes the store", environment)
         case ("grid", "edit") where rest.count == 1: self = Self.changing(.gridEdit, "openspot grid edit", "opens the panel", environment)
         case ("prompt", "new") where rest.count > 1: self = .promptNew(rest.dropFirst().joined(separator: " "))
         case ("key", "set"):
