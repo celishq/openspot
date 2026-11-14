@@ -54,7 +54,7 @@ final class AccountCallsTests: XCTestCase {
 
         let facts = try await call(["account", "--frame"], from: spot(uses: [], isBuiltIn: false))
 
-        XCTAssertEqual(facts.output, "signedIn=true\nnpub=\(key.npub)\nbackedUp=false\n")
+        XCTAssertEqual(facts.output, "signedIn=true\nnpub=\(key.npub)\nsince=\(try XCTUnwrap(try store.since()))\nbackedUp=false\n")
     }
 
     func testOnlyABuiltInSpotThatUsesAccountReachesTheKey() async throws {
@@ -83,6 +83,16 @@ final class AccountCallsTests: XCTestCase {
         XCTAssertEqual(denied.errors, "Touch ID didn't pass, so Openspot showed no words.\n")
         let asked = await app.asked
         XCTAssertEqual(asked, ["show your account words", "show your account words"])
+    }
+
+    func testNewKeepsTheNameItIsGivenAndAnyoneReadsItWithTheDay() async throws {
+        let made = try await call(["account", "new", "Tony", "Pinkevych"], from: account)
+
+        let facts = try await call(["account", "--frame"], from: spot(uses: [], isBuiltIn: false))
+
+        XCTAssertEqual(made.code, 0, made.errors)
+        XCTAssertTrue(facts.output.contains("\nname=Tony Pinkevych\n"), facts.output)
+        XCTAssertNotNil(facts.output.range(of: "\nsince=\\d{4}-\\d{2}-\\d{2}\n", options: .regularExpression), facts.output)
     }
 
     func testNewMakesAKeyOnce() async throws {

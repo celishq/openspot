@@ -3,7 +3,7 @@ import Foundation
 public enum AccountCall: Equatable, Sendable {
     case status(frame: Bool)
     case sync(Bool)
-    case new
+    case new(String?)
     case words
     case check([Int])
     case checked
@@ -15,7 +15,9 @@ public enum AccountCall: Equatable, Sendable {
         switch (words.first, words.count) {
         case (nil, _): self = .status(frame: false)
         case ("--frame", 1): self = .status(frame: true)
-        case ("new", 1): self = .new
+        case ("new", _):
+            let name = words.dropFirst().joined(separator: " ").trimmingCharacters(in: .whitespaces)
+            self = .new(name.isEmpty ? nil : name)
         case ("words", 1): self = .words
         case ("check", 2...):
             let places = words.dropFirst().compactMap { Int($0) }.filter { (1...AccountPhrase.wordCount).contains($0) }

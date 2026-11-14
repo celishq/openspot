@@ -56,10 +56,16 @@ final class AccountSpotTests: BuiltInCase {
         XCTAssertEqual(block("own", in: read)["title"], "Use my own key")
     }
 
-    func testANewKeyOpensTheAccountWithNoStepAboutTheWords() async throws {
-        let made = try await frame(["new"])
+    func testANewKeyAsksForANameThenOpensTheAccountWithNoStepAboutTheWords() async throws {
+        let asked = try await frame(["new"])
+        XCTAssertNil(try store.key())
+        XCTAssertTrue(asked.contains("field=name\n"), asked)
+        XCTAssertTrue(asked.contains("grid=back create\n"), asked)
+
+        let made = try await frame(["create"], input: "name=Tony Pinkevych\n")
 
         XCTAssertNotNil(try store.key())
+        XCTAssertEqual(try store.name(), "Tony Pinkevych")
         XCTAssertEqual(block("head", in: made)["title"], "Your account")
         XCTAssertEqual(block("backup", in: made)["title"], "Your 12 words are not backed up")
         XCTAssertFalse(made.contains("pop=true"), made)
@@ -100,7 +106,8 @@ final class AccountSpotTests: BuiltInCase {
     func testANewKeyOnThePublishPageMakesTheKeyPublishesAndGoesBack() async throws {
         let programs = try countPrograms()
 
-        let done = try await frame(["new"], page: "publish:a")
+        _ = try await frame(["new"], page: "publish:a")
+        let done = try await frame(["create"], input: "name=Tony\n", page: "publish:a")
 
         XCTAssertNotNil(try store.key())
         XCTAssertTrue(programs().contains("openspot store publish a"), programs().joined(separator: "\n"))

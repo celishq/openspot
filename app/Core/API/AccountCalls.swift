@@ -12,7 +12,7 @@ struct AccountCalls {
         switch call {
         case .status(let frame): status(frame: frame)
         case .sync(let isOn): sync(isOn)
-        case .new: new()
+        case .new(let name): new(name: name)
         case .words: words()
         case .check(let places): check(places)
         case .checked: checked(input)
@@ -29,6 +29,8 @@ struct AccountCalls {
             return try AccountStatus(
                 signedIn: key != nil,
                 npub: key?.npub,
+                name: key == nil ? nil : try store.name(),
+                since: key == nil ? nil : try store.since(),
                 backedUp: key == nil ? nil : try store.isBackedUp(),
                 sync: key == nil || !store.canSync ? nil : try store.isSyncing()
             ).text(frame: frame)
@@ -43,9 +45,9 @@ struct AccountCalls {
         }
     }
 
-    func new() -> CommandAPI.Work {
+    func new(name: String?) -> CommandAPI.Work {
         CommandAnswer.work { [store] in
-            _ = try store.keyMadeOnce()
+            _ = try store.keyMadeOnce(name: name)
             return ""
         }
     }

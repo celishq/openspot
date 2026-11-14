@@ -35,7 +35,7 @@ step() {
   [ -z "${OPENSPOT_REASON-}" ] || [ "$(cat "$data/step" 2>/dev/null)" != words ] || rm -f "$data/step"
   saved=$(cat "$data/step" 2>/dev/null)
   case "$saved:$signed:$backed" in
-    how:*:* | restore:*:*) echo "$saved"; return ;;
+    how:*:* | restore:*:* | name:false:*) echo "$saved"; return ;;
     about:true:* | words:true:* | check:true:false | account:true:* | leave:true:*) echo "$saved"; return ;;
   esac
   if [ "$signed" != true ]; then echo choose; else echo account; fi
@@ -183,6 +183,7 @@ sheet() {
     restore) restore; return ;;
     check) check; return ;;
     choose) printf 'grid=head head\ngrid=head head\ngrid=new new\ngrid=own how\n' ;;
+    name) printf 'grid=head head\ngrid=head head\ngrid=name name\ngrid=back create\n' ;;
     how) printf 'grid=head\ngrid=head\ngrid=people\ngrid=icloud\ngrid=words\ngrid=private\ngrid=reset\ngrid=done\n' ;;
     about)
       printf 'grid=head\ngrid=head\ngrid=private\ngrid=reset\n'
@@ -208,6 +209,13 @@ sheet() {
       line head 'You need a key to publish' signature '' 'Openspot signs your spots with it, so people know an update is from you.'
       button new 'Create a new key' main
       button own 'Use my own key'
+      ;;
+    name)
+      line head 'Who publishes?' person.crop.circle '' 'People see this name on the spots you publish.'
+      printf '\nfield=name\nplaceholder=Your name\n'
+      openspot_kv value "$(id -F 2>/dev/null)"
+      button back Back
+      button create 'Create key' main
       ;;
     how)
       line head 'How your key works' key '' 'Openspot signs each spot you publish with your key. There is no email, password or server.'
@@ -289,7 +297,13 @@ case "$1" in
     sheet
     ;;
   phrase) phrase=$2; sheet ;;
-  new) openspot account new || exit 1; [ -z "$publishing" ] || publish; sheet ;;
+  new) go name; sheet ;;
+  create)
+    openspot account new "$(value name)" || exit 1
+    rm -f "$data/step"
+    [ -z "$publishing" ] || publish
+    sheet
+    ;;
   own) go restore; sheet ;;
   how) go how; sheet ;;
   about) go about; sheet ;;

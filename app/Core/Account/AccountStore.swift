@@ -6,6 +6,8 @@ public struct AccountStore: Sendable {
     private static let account = "key"
     private static let fileName = "account"
     private static let backedUpLine = "backed-up"
+    private static let namePrefix = "name "
+    private static let sincePrefix = "since "
 
     let file: URL?
 
@@ -28,15 +30,35 @@ public struct AccountStore: Sendable {
         return line.hasPrefix("nsec") ? try AccountKey(nsec: line) : try AccountKey(words: line.split(separator: " ").map(String.init))
     }
 
-    public func keyMadeOnce() throws -> AccountKey {
+    public func keyMadeOnce(name: String? = nil, on date: Date = Date()) throws -> AccountKey {
         if let key = try key() { return key }
         let key = try AccountKey.make()
-        try keep(key)
+        try keep(key, name: name, since: Self.day(of: date))
         return key
     }
 
-    public func keep(_ key: AccountKey, isBackedUp: Bool = false) throws {
-        try write([key.words?.joined(separator: " ") ?? key.nsec] + (isBackedUp ? [Self.backedUpLine] : []))
+    public func keep(_ key: AccountKey, isBackedUp: Bool = false, name: String? = nil, since: String? = nil) throws {
+        var lines = [key.words?.joined(separator: " ") ?? key.nsec]
+        if isBackedUp { lines.append(Self.backedUpLine) }
+        if let name, !name.isEmpty { lines.append(Self.namePrefix + name) }
+        if let since { lines.append(Self.sincePrefix + since) }
+        try write(lines)
+    }
+
+    public func name() throws -> String? {
+        try detail(Self.namePrefix)
+    }
+
+    public func since() throws -> String? {
+        try detail(Self.sincePrefix)
+    }
+
+    private func detail(_ prefix: String) throws -> String? {
+        try lines()?.dropFirst().first { $0.hasPrefix(prefix) }.map { String($0.dropFirst(prefix.count)) }
+    }
+
+    private static func day(of date: Date) -> String {
+        date.formatted(.iso8601.year().month().day().dateSeparator(.dash))
     }
 
     public func isBackedUp() throws -> Bool {
@@ -45,7 +67,7 @@ public struct AccountStore: Sendable {
 
     public func markBackedUp() throws {
         guard let key = try key() else { return }
-        try keep(key, isBackedUp: true)
+        try keep(key, isBackedUp: true, name: try name(), since: try since())
     }
 
     public func remove() throws {
