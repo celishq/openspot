@@ -1,10 +1,8 @@
 import OpenspotCore
 import SwiftUI
 
-/// The picture at the head of a spot's sheet: the picture that its header names, or its symbol on a disc.
 struct SpotGlyph: View {
     let entry: SpotsModel.Entry
-    /// Whether its symbol lies on a disc.
     var showsDisc = true
     @Environment(\.spotIsOnSolid) private var isOnSolid
 

@@ -2,24 +2,19 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// The one drop target of the grid. It finds the card under a drag, reads the dragged files, and says which card takes them.
-/// A `.spot` file goes to the review on any card, and a card of the store adds its spot where it lands.
 struct SpotGridDrop: DropDelegate {
     let model: SpotsModel
     @Binding var target: String?
 
-    /// The files of the drag in progress.
     static var paths: [String] {
         paths(on: NSPasteboard(name: .drag))
     }
 
-    /// The files that a pasteboard holds.
     static func paths(on pasteboard: NSPasteboard) -> [String] {
         let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL]
         return urls?.map(\.path) ?? []
     }
 
-    /// The store ID of a card of the store that the drag in progress carries.
     static var storeID: String? {
         SpotCardSource.storeID(on: NSPasteboard(name: .drag))
     }
@@ -35,8 +30,6 @@ struct SpotGridDrop: DropDelegate {
         _ = dropUpdated(info: info)
     }
 
-    /// Marks the card under the drag when it takes the files. It lets a `.spot` file through anywhere, and other files only over
-    /// a card that takes them.
     func dropUpdated(info: DropInfo) -> DropProposal? {
         if Self.storeID != nil { return DropProposal(operation: .copy) }
         let taker = model.card(at: info.location).flatMap { model.takesDrag($0) ? $0 : nil }

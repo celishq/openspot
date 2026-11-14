@@ -3,21 +3,8 @@ import AppKit
 import QuartzCore
 import ScreenCaptureKit
 
-/// A run that opens and closes the sheet of one spot again and again, or with `OPENSPOT_ACTION` moves down its rows, types
-/// in its search, picks the row `OPENSPOT_ROW`, types `OPENSPOT_TEXT` in the main search, opens the panel itself after
-/// `OPENSPOT_PAUSE`, drags a card in Edit Spots or with `edit` starts and ends Edit Spots, and writes the time of each frame
-/// to a file.
-/// `OPENSPOT_ACTION=mouse` drags a card with mouse events instead, or with `OPENSPOT_ROW` holds it at the bottom `edge`,
-/// pulls its `corner` handle or presses its `minus`, and writes whether it lifted or resized, the order, its size and
-/// whether it is on the grid after.
-/// `scripts/motion-perf.sh` starts it with `OPENSPOT_PROBE`. The panel stays almost clear, takes no focus and no clicks,
-/// unless `OPENSPOT_SEEN` asks for a picture. With `OPENSPOT_SHOTS`, a drag saves a picture of each state to that folder
-/// from a panel off every screen, and `edit` saves Edit Spots from the panel at its place, and neither times anything. `menu`
-/// opens and closes the actions menu, or saves it at its card and row. `tile` pulls the corner of a card, with mouse events
-/// on each frame, and writes how often its size changed.
 @MainActor
 final class SpotMotionProbe: NSObject {
-    /// How long each open of the panel is timed: its fade and the reads that land in it.
     private static let openWindow: CFTimeInterval = 1
     private let model: SpotsModel
     private let panel: NSPanel
@@ -25,23 +12,16 @@ final class SpotMotionProbe: NSObject {
     private let spot: String?
     private let presses: Int
     private let pause: Double
-    /// Whether the panel shows in full, for a picture of it.
     private let isSeen: Bool
     private let action: String?
-    /// The row that the `pick` action picks.
     private let row: String?
-    /// The folder for the pictures of a drag.
-    private let shots: String?
-    /// Moves the lifted card on each frame of a drag, from the time of that frame.
+    private let shotsFolder: String?
     private var dragStep: ((CFTimeInterval) -> Void)?
-    /// The text that the `search` action types in the main search.
-    private let text: String
+    private let searchText: String
     private var link: CADisplayLink?
     private var frames: [CFTimeInterval] = []
     private var start: CFTimeInterval = 0
-    /// The times that the `panel` action counts frames in, one from each open, so that the hidden panel counts for nothing.
-    private var windows: [ClosedRange<CFTimeInterval>] = []
-    /// The milliseconds of each open press of the `panel` action, on the main thread.
+    private var countedWindows: [ClosedRange<CFTimeInterval>] = []
     private var pressTimes: [Double] = []
 
     init?(model: SpotsModel, panel: NSPanel, environment: [String: String] = ProcessInfo.processInfo.environment) {
@@ -55,11 +35,10 @@ final class SpotMotionProbe: NSObject {
         isSeen = environment["OPENSPOT_SEEN"] != nil
         action = environment["OPENSPOT_ACTION"].flatMap { $0.isEmpty ? nil : $0 }
         row = environment["OPENSPOT_ROW"]
-        shots = environment["OPENSPOT_SHOTS"]
-        text = environment["OPENSPOT_TEXT"].flatMap { $0.isEmpty ? nil : $0 } ?? "2*(3+4)"
+        shotsFolder = environment["OPENSPOT_SHOTS"]
+        searchText = environment["OPENSPOT_TEXT"].flatMap { $0.isEmpty ? nil : $0 } ?? "2*(3+4)"
     }
 
-    /// Shows the panel, waits for its reads, then starts the presses.
     func run(show: () -> Void) {
         show()
         if !isSeen {
@@ -100,8 +79,6 @@ final class SpotMotionProbe: NSObject {
         }
     }
 
-    /// Starts Edit Spots under a capture of the display that holds only the panel's window, and writes how far the search
-    /// field's row lies on the screen from where it lay before, in pixels, for each frame of the next second.
     private func beginJump() {
         Task { @MainActor in
             guard let watch = await SpotJumpWatch(panel: panel, row: SpotTokens.halo + SpotTokens.rowHeight / 2) else {
@@ -116,10 +93,9 @@ final class SpotMotionProbe: NSObject {
         }
     }
 
-    /// Starts Edit Spots, and ends it as Done does, again and again.
     private func beginEdit() {
         guard let view = panel.contentView else { return finish(with: "no panel\n") }
-        if let shots { return shootEdit(into: shots) }
+        if let shotsFolder { return shootEdit(into: shotsFolder) }
         let link = view.displayLink(target: self, selector: #selector(tick))
         link.add(to: .main, forMode: .common)
         self.link = link
@@ -127,9 +103,8 @@ final class SpotMotionProbe: NSObject {
         edit(left: presses)
     }
 
-    /// Opens and closes the actions menu of the first small card again and again, or with `OPENSPOT_SHOTS` saves pictures of it.
     private func beginMenus() {
-        if let shots { return shootMenus(into: shots) }
+        if let shotsFolder { return shootMenus(into: shotsFolder) }
         guard let view = panel.contentView else { return finish(with: "no panel\n") }
         let link = view.displayLink(target: self, selector: #selector(tick))
         link.add(to: .main, forMode: .common)
@@ -151,8 +126,6 @@ final class SpotMotionProbe: NSObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.edit(left: left - 1) }
     }
 
-    /// Saves a picture of Edit Spots a second after it starts, then of the tip of the first card's eye, then of the panel
-    /// after Edit Spots ends and starts again.
     private func shootEdit(into folder: String) {
         model.beginEditing()
         try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
@@ -167,8 +140,6 @@ final class SpotMotionProbe: NSObject {
         }
     }
 
-    /// Saves a picture of the actions menu on a small card on the left, a small card on the right and a wide card, of a
-    /// search in it, and of the menu on a row of `OPENSPOT_SPOT`'s list.
     private func shootMenus(into folder: String) {
         try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
         NSApp.activate(ignoringOtherApps: true)
@@ -193,7 +164,6 @@ final class SpotMotionProbe: NSObject {
         }
     }
 
-    /// Saves a picture of the first card's menu with the first submenu open beside it, then goes on to the search.
     private func shootSubmenu(into folder: String) {
         model.selected = model.placements.first { $0.size == .small && $0.column == 0 }?.index ?? 0
         _ = model.handleKey(ActionKey(name: "k", isCommand: true))
@@ -206,7 +176,6 @@ final class SpotMotionProbe: NSObject {
         }
     }
 
-    /// Saves a picture of the panel with each child window drawn at its place, on a canvas that holds them all.
     private func saveWithChildren(to path: String) {
         let windows = [panel as NSWindow] + (panel.childWindows ?? []).filter(\.isVisible)
         let whole = windows.map(\.frame).reduce(panel.frame) { $0.union($1) }
@@ -258,7 +227,6 @@ final class SpotMotionProbe: NSObject {
         }
     }
 
-    /// Saves a picture of the actions menu on the first result of a search for the first word of a spot's name.
     private func shootResults(into folder: String) {
         _ = model.stepBack()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
@@ -274,7 +242,6 @@ final class SpotMotionProbe: NSObject {
         }
     }
 
-    /// Ends Edit Spots and saves a picture of the panel a second later, then starts it again and saves a picture of it.
     private func shootEnd(into folder: String) {
         model.endEditing()
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
@@ -287,9 +254,6 @@ final class SpotMotionProbe: NSObject {
         }
     }
 
-    /// Presses the corner handle of the grid's smallest card with more than one size, and pulls it two columns right and a
-    /// row down and back, once for every four presses, with a mouse event on each frame. The app takes the focus, as the
-    /// events reach only the key window.
     private func pullTile() {
         let cards = model.visible.indices.filter { model.visible[$0].isOnGrid && model.sizes(of: model.visible[$0]).count > 1 }
         let card = cards.min { model.visible[$0].size.columns * model.visible[$0].size.rows < model.visible[$1].size.columns * model.visible[$1].size.rows }
@@ -347,8 +311,6 @@ final class SpotMotionProbe: NSObject {
         }
     }
 
-    /// Opens the panel again and again, once its first reads have ended, each after the pause, so that each open reads its
-    /// scripts as an open of a person does.
     private func beginOpens() {
         guard !model.runs.isReading else {
             return DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { self.beginOpens() }
@@ -361,7 +323,6 @@ final class SpotMotionProbe: NSObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.open(panel, left: self.presses / 2) }
     }
 
-    /// Opens the panel as the key does, but with no focus, and times the press. It hides the panel when its window ends.
     private func open(_ panel: SpotsPanel, left: Int) {
         guard left > 0 else { return finish(with: report()) }
         panel.alphaValue = 0.02
@@ -371,14 +332,13 @@ final class SpotMotionProbe: NSObject {
         panel.orderFrontRegardless()
         pressTimes.append((CACurrentMediaTime() - pressed) * 1000)
         frames.append(pressed)
-        windows.append(pressed...(pressed + Self.openWindow))
+        countedWindows.append(pressed...(pressed + Self.openWindow))
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.openWindow) {
             panel.hide()
             DispatchQueue.main.asyncAfter(deadline: .now() + self.pause) { self.open(panel, left: left - 1) }
         }
     }
 
-    /// Types the text in the main search once the first reads have ended.
     private func beginSearch() {
         guard !model.runs.isReading else {
             return DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { self.beginSearch() }
@@ -391,21 +351,18 @@ final class SpotMotionProbe: NSObject {
         search(left: presses)
     }
 
-    /// Types the text a letter at a time from an empty search, again and again, then types it whole and adds the title and
-    /// the detail of each card that shows to the report.
     private func search(left: Int) {
         guard left > 0 else {
-            model.searchText = text
+            model.searchText = searchText
             return DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 let shown = self.model.visible.map { "\($0.state.title) · \($0.state.subtitle ?? "")" }
                 self.finish(with: self.report() + "shows:\n" + shown.joined(separator: "\n") + "\n")
             }
         }
-        model.searchText = String(text.prefix((presses - left) % (text.count + 1)))
+        model.searchText = String(searchText.prefix((presses - left) % (searchText.count + 1)))
         DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.search(left: left - 1) }
     }
 
-    /// Runs the work a second after the open sheet holds its rows.
     private func whenRowsArrive(_ work: @escaping @MainActor @Sendable () -> Void) {
         guard let list = model.openItems, list.holdsItems, !list.isLoading else {
             return DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { self.whenRowsArrive(work) }
@@ -413,14 +370,12 @@ final class SpotMotionProbe: NSObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: work)
     }
 
-    /// Moves down one line of the open rows for each step, and back up for each second half of the steps.
     private func arrow(left: Int) {
         guard left > 0 else { return end() }
         model.moveItemLine(by: left > presses / 2 ? 1 : -1)
         DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.arrow(left: left - 1) }
     }
 
-    /// Types a word into the search of the open rows a letter at a time, then clears it, again and again.
     private func type(left: Int) {
         guard left > 0 else { return end() }
         let word = "smile"
@@ -429,7 +384,6 @@ final class SpotMotionProbe: NSObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.type(left: left - 1) }
     }
 
-    /// Picks the row `OPENSPOT_ROW` of the open rows, as a press of Enter on it does.
     private func pick() {
         if let item = model.openItems?.shown.first(where: { $0.run == row }) { model.runItem(item) }
         DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.end() }
@@ -457,8 +411,6 @@ final class SpotMotionProbe: NSObject {
         dragStep?(link.timestamp)
     }
 
-    /// Lifts the last card on the grid, or `OPENSPOT_SPOT`, in Edit Spots, and moves it along a tour of the grid once for
-    /// every two presses: to the first place, to the middle, and back to where it started, with a rest at each stop.
     private func beginDrag() {
         model.beginEditing()
         guard let id = spot ?? model.visible.last(where: \.isOnGrid)?.id, let index = model.visible.firstIndex(where: { $0.id == id }),
@@ -470,7 +422,7 @@ final class SpotMotionProbe: NSObject {
             CGPoint(x: SpotTokens.gridWidth / 2, y: SpotGrid.height(of: model.placements) / 2),
             CGPoint(x: rect.midX, y: rect.midY)
         ].map { CGSize(width: $0.x - rect.midX, height: $0.y - rect.midY) }
-        if let shots { return shoot(id, stops: stops, into: shots) }
+        if let shotsFolder { return shoot(id, stops: stops, into: shotsFolder) }
         if action == "mouse" { return press(id, at: rect, by: stops[1]) }
         let link = view.displayLink(target: self, selector: #selector(tick))
         link.add(to: .main, forMode: .common)
@@ -502,10 +454,6 @@ final class SpotMotionProbe: NSObject {
         start = CACurrentMediaTime()
     }
 
-    /// Presses the card at this place, moves the mouse this far in steps and lets go, through events put in the app's queue
-    /// for a panel off every screen, as a person's mouse sends them. The press starts at the card's centre, its corner
-    /// handle, which it pulls down a row, or its minus, which it only clicks. At the edge it rests 1.5 s before it lets go.
-    /// The panel stays open when another app takes the focus. It logs the drag after each step, and each 10 ms after the last.
     private func press(_ id: String, at rect: CGRect, by move: CGSize) {
         panel.setFrameOrigin(NSPoint(x: -9000, y: -9000))
         panel.alphaValue = 1
@@ -561,9 +509,6 @@ final class SpotMotionProbe: NSObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { run(steps[...]) }
     }
 
-    /// Saves a picture of Edit Spots, of the card 30 ms into its lift and once the cards made room near the first place,
-    /// 60 ms into its drop there and after it, and of the card pulled a row taller by its corner and kept, from a panel off
-    /// every screen.
     private func shoot(_ id: String, stops: [CGSize], into folder: String) {
         panel.setFrameOrigin(NSPoint(x: -9000, y: -9000))
         panel.alphaValue = 1
@@ -593,8 +538,6 @@ final class SpotMotionProbe: NSObject {
         next(states[...])
     }
 
-    /// Writes the panel's content as a PNG over the colour of a window, since the blur draws nothing off screen.
-    /// Saves the panel at twice its size in points, as a Retina screen draws it, so that half a point shows.
     private func saveSharp(to path: String) {
         guard let view = panel.contentView, let bitmap = NSBitmapImageRep(
             bitmapDataPlanes: nil, pixelsWide: Int(view.bounds.width) * 2, pixelsHigh: Int(view.bounds.height) * 2, bitsPerSample: 8,
@@ -618,9 +561,8 @@ final class SpotMotionProbe: NSObject {
         FileManager.default.createFile(atPath: path, contents: data)
     }
 
-    /// The frame times from the first press, or in the windows of the opens, in milliseconds: their spread, then each one.
     private func report() -> String {
-        let counted = { (time: CFTimeInterval) in self.windows.isEmpty ? time >= self.start : self.windows.contains { $0.contains(time) } }
+        let counted = { (time: CFTimeInterval) in self.countedWindows.isEmpty ? time >= self.start : self.countedWindows.contains { $0.contains(time) } }
         let gaps = zip(frames.dropFirst(), frames).filter { counted($0.1) }.map { ($0.0 - $0.1) * 1000 }
         let sorted = gaps.sorted()
         guard !sorted.isEmpty else { return "no frames\n" }
@@ -645,8 +587,6 @@ final class SpotMotionProbe: NSObject {
     }
 }
 
-/// A capture of the display that holds only the panel's window. For each frame it finds how far one row of the panel lies
-/// from where it lay in the first frame.
 private final class SpotJumpWatch: NSObject, SCStreamOutput, @unchecked Sendable {
     private let stream: SCStream
     private let rowY: Int
@@ -677,7 +617,6 @@ private final class SpotJumpWatch: NSObject, SCStreamOutput, @unchecked Sendable
         return lock.withLock { shifts }
     }
 
-    /// The range of brightness along the first row, which is 0 when the capture holds nothing of the panel.
     var contrast: Double {
         lock.withLock { (first?.max() ?? 0) - (first?.min() ?? 0) }
     }
@@ -698,7 +637,6 @@ private final class SpotJumpWatch: NSObject, SCStreamOutput, @unchecked Sendable
         shifts.append(Self.shift(of: row, from: first))
     }
 
-    /// The shift of a row against the first row, within 600 pixels, that makes the two most alike.
     private static func shift(of row: [Double], from first: [Double]) -> Int {
         let count = min(row.count, first.count)
         func cost(_ shift: Int) -> Double {

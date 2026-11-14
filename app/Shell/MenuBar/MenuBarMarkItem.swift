@@ -2,12 +2,10 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// A menu bar item that draws a mark, as wide as the mark.
 @MainActor
 final class MenuBarMarkItem {
     let item: NSStatusItem
     private let host: MenuBarHost<SpotMenuBarMarkView>
-    /// The mark it draws, so that a mark that did not change is not drawn again.
     private var mark: MenuBarMark?
 
     init(item: NSStatusItem, mark: MenuBarMark) {

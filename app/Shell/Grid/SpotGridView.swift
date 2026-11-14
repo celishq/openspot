@@ -2,16 +2,12 @@ import OpenspotCore
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// The cards of the panel on their grid, over one blur. An open sheet pushes each other card away from its own card, and
-/// fades and shrinks it as it crosses the window's edge. A change of the panel that does not reach these inputs leaves the grid as it is.
 struct SpotGridView: View {
     let model: SpotsModel
     let isSheetOpen: Bool
-    /// The card that the open sheet grows from, and how the sheet pushes the other cards.
     let openID: String?
     let push: SheetPush?
     @Binding var dropTarget: String?
-    /// The card that the person presses.
     @GestureState private var pressed: String?
 
     var body: some View {
@@ -82,8 +78,6 @@ struct SpotGridView: View {
         .onDrop(of: [.fileURL, .storeCard], delegate: SpotGridDrop(model: model, target: $dropTarget))
     }
 
-    /// Where a card lies in the grid, from its place, or the place a lifted card started at, and the push of an open sheet,
-    /// and how it shrinks and fades on that push.
     private func motion(of placement: SpotPlacement, at place: CGRect, id: String) -> SpotPushedCard {
         let base = CGSize(width: place.minX, height: place.minY)
         let pushed = isSheetOpen ? push?.offset(of: placement) ?? .zero : .zero
@@ -97,15 +91,12 @@ struct SpotGridView: View {
         )
     }
 
-    /// The side of a card that faces the open sheet, which stays in step with the sheet's edge as the card shrinks.
     private func anchor(of placement: SpotPlacement) -> UnitPoint {
         guard let push else { return .center }
         let away = placement.direction(awayFrom: push.open)
         return away.columns < 0 ? .trailing : away.columns > 0 ? .leading : away.rows < 0 ? .bottom : away.rows > 0 ? .top : .center
     }
 
-    /// The title over each group of Edit Spots, with the number of its cards, at the top of the group's band over the
-    /// center panel. It shows while the grid has two groups, and moves with the cards.
     @ViewBuilder
     private func groupTitles(_ bands: SpotGroupBands?) -> some View {
         if let bands {
@@ -121,8 +112,6 @@ struct SpotGridView: View {
         }
     }
 
-    /// The faint shape where a release puts the lifted card. With no card lifted it lies under the selected card, unseen, so
-    /// that it shows in place when a drag starts.
     private func landing(of drag: SpotDrag?, in placements: [SpotPlacement]) -> some View {
         let placement = placements.first { $0.index == (drag?.place ?? model.selected) }
         return SpotSurfaceShape(rect: placement?.rect ?? .zero, radius: SpotTokens.corner(for: placement?.size ?? .small))
@@ -131,8 +120,6 @@ struct SpotGridView: View {
             .allowsHitTesting(false)
     }
 
-    /// Moves a card in Edit Spots: it follows the pointer, the other cards make room, and a release puts it in that room. It
-    /// runs beside the card's press and tap. Its moves carry no speed, so a release lands the card from rest.
     private func moveGesture(of entry: SpotsModel.Entry) -> some Gesture {
         DragGesture(coordinateSpace: .named(SpotsView.panelSpace))
             .onChanged { value in
@@ -144,8 +131,6 @@ struct SpotGridView: View {
     }
 }
 
-/// The room of each side panel in Edit Spots, as a faint well under its cards and their glass, so that a card can be dragged
-/// into an empty side. It is as high as the grid, and one row at least.
 private struct SidePanelWells: View, Equatable {
     let panels: GridPanels
     let height: CGFloat
@@ -164,7 +149,6 @@ private struct SidePanelWells: View, Equatable {
     }
 }
 
-/// The name of a group of Edit Spots and the number of its cards.
 private struct GroupTitle: View {
     let name: String
     let count: Int

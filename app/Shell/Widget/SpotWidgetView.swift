@@ -1,11 +1,9 @@
 import OpenspotCore
 import SwiftUI
 
-/// The places of a widget, each in the cell its drawing gives it.
 struct SpotWidgetView: View {
     let layout: WidgetLayout
     let places: [String]
-    /// What each script last gave it to draw, read here so that a new reading reruns only this view.
     let reading: (String) -> MetricReading?
     let card: SpotSize
 

@@ -1,7 +1,5 @@
 import SwiftUI
 
-/// The selection ring of an item that reads whether it is selected itself, where it draws, so that a move of the
-/// selection reruns only the rings and no item.
 struct SpotLiveSelectionRing<Edge: InsettableShape>: ViewModifier {
     let isSelected: () -> Bool
     let shape: Edge

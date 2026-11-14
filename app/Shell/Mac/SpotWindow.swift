@@ -2,18 +2,12 @@ import AppKit
 import ApplicationServices
 import OpenspotCore
 
-/// The number of the window server for the window of an Accessibility element.
 @_silgen_name("_AXUIElementGetWindow")
 private func windowNumber(_ element: AXUIElement, _ number: UnsafeMutablePointer<CGWindowID>) -> AXError
 
-/// The focused window of the front app, read and moved through Accessibility for the `openspot window` commands. It blocks
-/// the thread of its call, never the main one, and reads the screens on the main thread only when a frame needs the area
-/// of one.
-/// Frames are in points from the top left of the main screen, as Accessibility gives them.
 struct SpotWindow {
     private let element: AXUIElement
 
-    /// The focused window of the front app. It fails without Accessibility, or when that app shows no window.
     static func front() throws -> SpotWindow {
         guard let app = NSWorkspace.shared.frontmostApplication,
               app.executableURL?.resolvingSymlinksInPath() != Bundle.main.executableURL?.resolvingSymlinksInPath() else {
@@ -33,7 +27,6 @@ struct SpotWindow {
         CGRect(origin: value(kAXPositionAttribute, .cgPoint, CGPoint.zero), size: value(kAXSizeAttribute, .cgSize, CGSize.zero))
     }
 
-    /// The window, then the usable area of its screen, as one line of eight whole numbers.
     var frameText: String {
         let window = frame
         let area = Self.area(holding: CGPoint(x: window.midX, y: window.midY))
@@ -41,9 +34,6 @@ struct SpotWindow {
             .map { String(Int($0.rounded())) }.joined(separator: " ")) + "\n"
     }
 
-    /// Gives the window its new size in one change, as near the pick as the app allows, then glides only its place,
-    /// as a size on the way makes the app lay itself out at each step. It first stands where the size fits its
-    /// screen. The end holds the target's edges by the size the app gave, and asks again for a length that came short.
     func move(_ move: WindowMove) throws {
         let window = frame
         let home = Self.area(holding: CGPoint(x: window.midX, y: window.midY))
@@ -80,7 +70,6 @@ struct SpotWindow {
         }
     }
 
-    /// Waits, for a second at most, until the window server shows the window at this size.
     private func settle(at size: CGSize) {
         var id: CGWindowID = 0
         guard windowNumber(element, &id) == .success else { return }
@@ -96,7 +85,6 @@ struct SpotWindow {
         }
     }
 
-    /// The usable area of the screen that holds this point, or of the main screen, read on the main thread.
     private static func area(holding point: CGPoint) -> CGRect {
         Thread.isMainThread ? MainActor.assumeIsolated { area(of: point) } : DispatchQueue.main.sync { MainActor.assumeIsolated { area(of: point) } }
     }

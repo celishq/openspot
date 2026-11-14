@@ -1,8 +1,6 @@
 import OpenspotCore
 import SwiftUI
 
-/// The small mark of a sheet line: a thin ring around its words for a level, or bars for the newest points of a trend,
-/// scaled to the highest that shows unless the trend has a top. A tone colours it, and else it is white.
 struct SpotLineMark: View {
     let value: MetricValue
     var words: String?

@@ -1,7 +1,6 @@
 import OpenspotCore
 import SwiftUI
 
-/// The drop target of the whole panel, which takes only `.spot` files and opens their review.
 struct SpotAddDrop: DropDelegate {
     let model: SpotsModel
 

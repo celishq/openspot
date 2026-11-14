@@ -2,15 +2,11 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// Sheets that the app draws once as it starts, in a window off every screen: one of menus and text areas, one of emoji
-/// tiles, and a list. The first sheet that a person opens then finds the code of these views and the emoji font ready. The
-/// focus of the panel stays where it was.
 @MainActor
 enum SpotSheetWarmth {
     private static let life: TimeInterval = 0.5
     private static let rows = ["star", "folder", "doc", "gear", "clock"].map { SpotItem(title: $0.capitalized, subtitle: "Row", run: $0, picture: .symbol($0)) }
 
-    /// Draws each sheet once, and lets go of the window after a short life.
     static func draw() {
         let sheets = [SheetExamples.all[0], SheetExamples.tiles].map { SpotOutput(text: $0.text) }
         let view = VStack(alignment: .leading, spacing: 0) {

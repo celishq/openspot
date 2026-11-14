@@ -2,9 +2,6 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// The rim of a surface of a fixed size, drawn once into a picture for each size and theme. A card moves and shrinks this
-/// picture on each frame of a push, which costs nothing, where a drawn or a layer rim is made again on each frame. It keeps
-/// 8 MB of pictures beside two of its largest, and lets the least recently used go first.
 struct SpotRimPicture: View {
     let size: CGSize
     let radius: CGFloat
@@ -45,13 +42,11 @@ struct SpotRimPicture: View {
         let scale: CGFloat
     }
 
-    /// The two parts of the rim: the dark lines down the sides, and the light that is added at the top and foot.
     private enum Part {
         case sides
         case ends
     }
 
-    /// One part of the rim as `SpotRim` draws it with layers.
     private struct Drawing: View {
         let part: Part
         let radius: CGFloat

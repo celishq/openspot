@@ -1,13 +1,10 @@
 import OpenspotCore
 import SwiftUI
 
-/// The fields of a form that a command asked for, drawn with system controls.
 struct SpotFormView: View {
     let draft: FormDraft
     let onValue: (String, String) -> Void
-    /// Takes a click on an option of a form of one choice, which shows its options as rows.
     var onChoose: (SpotItem) -> Void = { _ in }
-    /// Reads the selected row of those options where it is called, so that a move redraws only the ring.
     var selection: (() -> Int)?
     @FocusState private var focus: String?
 
@@ -107,8 +104,6 @@ struct SpotFormView: View {
     }
 }
 
-/// The slider of a form with its number beside it. It keeps its value while the person drags it, and sends it once they let
-/// go, so that a tick redraws only it.
 private struct FormSlider: View {
     let text: String
     let level: Double

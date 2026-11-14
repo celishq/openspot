@@ -3,7 +3,6 @@ import LocalAuthentication
 import OpenspotCore
 import SwiftUI
 
-/// The app as the host of the panel's model: its windows, its toasts, its keys, the clipboard, the drag and the springs.
 extension OpenspotApp: SpotsHost {
     func dismiss() {
         panel?.hide()
@@ -22,7 +21,6 @@ extension OpenspotApp: SpotsHost {
         toast?.show(text, kind: .failure, fix: { NSWorkspace.shared.open(fix) }, key: model.config.fixKey)
     }
 
-    /// Tells the person of a key that macOS refused, with Settings as the fix.
     func notifyKeyFault(_ text: String) {
         toast?.show(text, kind: .failure, fix: { [weak self] in self?.openSettings() }, key: model.config.fixKey)
     }
@@ -35,8 +33,6 @@ extension OpenspotApp: SpotsHost {
         toast?.show(text, kind: .work, for: nil)
     }
 
-    /// Shows the float of a spot at the pointer once its first answer comes, or after the pause of a sheet (W4), or moves
-    /// its float there.
     func float(_ entry: SpotsModel.Entry, followsDrag: Bool) {
         let pointer = NSEvent.mouseLocation
         if let shown = floats[entry.id] {
@@ -77,8 +73,6 @@ extension OpenspotApp: SpotsHost {
         holdWantedKeys()
     }
 
-    /// Whether a point on the screen lies on a part of Openspot that takes a drop: the cards of the panel, the menu bar
-    /// item or a float.
     func takesDrop(at point: NSPoint) -> Bool {
         liesOnPanelDrop(point) || floats.values.contains { $0.isVisible && $0.frame.contains(point) }
     }
@@ -91,7 +85,6 @@ extension OpenspotApp: SpotsHost {
         spotWindows.values.contains { $0.isVisible && $0.frame.contains(NSEvent.mouseLocation) }
     }
 
-    /// Whether a point on the screen lies on the cards of the panel or on the menu bar item.
     private func liesOnPanelDrop(_ point: NSPoint) -> Bool {
         panel?.showsDrop(at: point) == true || item?.contains(point) == true
     }
@@ -113,7 +106,6 @@ extension OpenspotApp: SpotsHost {
         panel?.makeKeyAndOrderFront(nil)
     }
 
-    /// Asks for Touch ID or the Mac password, which then counts for 5 minutes. A Mac with neither allows it.
     func allows(_ reason: String) async -> Bool {
         if let passed = Self.touchIDPassed, Date().timeIntervalSince(passed) < Self.touchIDReuse { return true }
         let context = LAContext()

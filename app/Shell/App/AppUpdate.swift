@@ -2,16 +2,11 @@ import AppKit
 @preconcurrency import Sparkle
 import OpenspotCore
 
-/// Keeps the app current: it checks GitHub each day, downloads a new version silently and installs it on quit, or at once
-/// from the Updates spot. It waits for `start()`, so that the launch shows the panel first. A build with no update key has
-/// none of this.
 @MainActor
 final class AppUpdate: NSObject, SPUUpdaterDelegate, SPUStandardUserDriverDelegate {
-    /// The version of the downloaded update that waits to install.
-    private(set) var ready: String?
+    private(set) var readyVersion: String?
     private var controller: SPUStandardUpdaterController?
     private var install: (() -> Void)?
-    /// Whether Sparkle shows its window now, which keeps the app in the Dock.
     private var showsWindow = false
     private let onReady: @MainActor (String) -> Void
 
@@ -22,7 +17,6 @@ final class AppUpdate: NSObject, SPUUpdaterDelegate, SPUStandardUserDriverDelega
         controller = SPUStandardUpdaterController(startingUpdater: false, updaterDelegate: self, userDriverDelegate: self)
     }
 
-    /// Starts the daily check, which checks at once when the last check is a day old.
     func start() {
         controller?.startUpdater()
     }
@@ -40,13 +34,12 @@ final class AppUpdate: NSObject, SPUUpdaterDelegate, SPUStandardUserDriverDelega
         nonisolated(unsafe) let handler = immediateInstallHandler
         MainActor.assumeIsolated {
             install = handler
-            ready = version
+            readyVersion = version
             onReady(version)
         }
         return true
     }
 
-    /// Brings the app to the front while Sparkle shows its update window.
     nonisolated func standardUserDriverWillHandleShowingUpdate(
         _ handleShowingUpdate: Bool,
         forUpdate update: SUAppcastItem,
@@ -74,7 +67,6 @@ final class AppUpdate: NSObject, SPUUpdaterDelegate, SPUStandardUserDriverDelega
         controller?.checkForUpdates(nil)
     }
 
-    /// Restarts into the downloaded update, and returns false when none waits.
     @discardableResult
     func restart() -> Bool {
         guard let install else { return false }

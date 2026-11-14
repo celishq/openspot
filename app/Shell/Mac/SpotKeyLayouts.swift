@@ -2,8 +2,6 @@ import Carbon
 import Foundation
 import OpenspotCore
 
-/// The keyboard layouts that the person turned on, read from the Mac into `KeyLayout.enabled` as the app starts and each
-/// time the person turns one on or off. An input method with no key layout, such as Pinyin, gives none.
 @MainActor
 enum SpotKeyLayouts {
     private static let keyCodes: ClosedRange<UInt16> = 0...50
@@ -18,7 +16,6 @@ enum SpotKeyLayouts {
         }
     }
 
-    /// The Latin layout that the Mac keeps for ⌘ shortcuts, such as ABC, read when a key needs it (A17).
     static var latin: KeyLayout? {
         guard let source = TISCopyCurrentASCIICapableKeyboardLayoutInputSource()?.takeRetainedValue() else { return nil }
         return layout(source)
@@ -41,7 +38,6 @@ enum SpotKeyLayouts {
         return keys.isEmpty ? nil : KeyLayout(keys: keys)
     }
 
-    /// The printable character that a key types with no modifier and no dead key.
     private static func character(_ code: UInt16, in layout: UnsafePointer<UCKeyboardLayout>) -> Character? {
         var deadKeys: UInt32 = 0
         var length = 0

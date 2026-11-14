@@ -1,7 +1,5 @@
 import SwiftUI
 
-/// The fill of a button or a row: the solid fill while it is active, with the ink of that fill for all that lies on it, or
-/// its own fill when it is not.
 struct SpotFill<S: Shape>: ViewModifier {
     let isActive: Bool
     let otherwise: Color

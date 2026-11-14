@@ -1,33 +1,23 @@
 import SwiftUI
 import OpenspotCore
 
-/// A spot: a glyph, then a title with a detail, then an accessory. A small card shows the glyph alone, and a widget shows
-/// its places. A kind differs only in what fills a slot: a slider has its track as its detail. A card that is on or runs
-/// work draws a solid fill.
 struct SpotCardView: View, @MainActor Equatable {
     let entry: SpotsModel.Entry
     let size: SpotSize
-    /// The card's place among the visible cards, which its ring compares with the selection.
     let index: Int
-    /// Whether the person presses the card, which the grid follows so that its blur grows with the card.
     let isPressed: Bool
     let takesDrag: Bool
     let isDropTarget: Bool
-    /// The letter of the spot's key, which shows while the model shows the letters.
     let chainLetter: String?
-    /// The model that a tap and a slide go to.
     let model: SpotsModel
-    /// What a tap does in place of a press on the grid, such as on a float.
     var onTap: (() -> Void)?
 
-    /// Whether two cards show the same values, so that a run of the grid reruns only the cards that changed.
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.entry == rhs.entry && lhs.size == rhs.size && lhs.index == rhs.index && lhs.isPressed == rhs.isPressed
             && lhs.takesDrag == rhs.takesDrag && lhs.isDropTarget == rhs.isDropTarget && lhs.chainLetter == rhs.chainLetter
             && lhs.model === rhs.model
     }
 
-    /// How far a line reaches past the inset at its trailing end, where the round end of the card leaves room.
     private static let lineReach: CGFloat = 6
 
     private var shape: RoundedRectangle {
@@ -73,30 +63,24 @@ struct SpotCardView: View, @MainActor Equatable {
         }
     }
 
-    /// What each script last gave a widget to draw. Only a widget reads it.
     private var reading: (String) -> MetricReading? {
         entry.kind == .widget ? { [model] in model.reading(of: $0) } : { _ in nil }
     }
 
-    /// The source of the spot's own view, which fills the whole card in place of its glyph and words (protocol: Views).
     private var ownView: String? {
         drawsOwnCard && entry.state.face.hasView ? entry.spot.view : nil
     }
 
-    /// The source of the spot's own view once it is built or has failed. While it builds, the card is drawn as any card
-    /// with running work.
     private var drawnView: String? {
         guard let ownView else { return nil }
         if case .building = SpotViews.shared.phase(of: ownView) { return nil }
         return ownView
     }
 
-    /// Whether its script draws the card from a drawing for its size (protocol: Layouts).
     private var isDrawn: Bool {
         drawsOwnCard && entry.state.face.layout(for: size) != nil
     }
 
-    /// Whether the card is the spot's own or an answer card, which its script can draw (protocol: Layouts, Places).
     private var drawsOwnCard: Bool {
         entry.item == nil || entry.item?.card != nil
     }
@@ -109,12 +93,10 @@ struct SpotCardView: View, @MainActor Equatable {
         isPressed && Self.showsPress(of: entry)
     }
 
-    /// Whether a press shows on a card: a slider takes its own drags, and a widget that opens nothing has no press.
     static func showsPress(of entry: SpotsModel.Entry) -> Bool {
         entry.kind != .slider && (entry.kind != .widget || entry.spot.opens != nil)
     }
 
-    /// How strong the fill is: part of the way on a card that takes the drag, and full on the card that takes the drop.
     private var dropFill: Double {
         isDropTarget ? 1 : takesDrag ? SpotTheme.dragFill : 0
     }
@@ -123,7 +105,6 @@ struct SpotCardView: View, @MainActor Equatable {
         Self.isFilled(entry, takesDrag: takesDrag, isDropTarget: isDropTarget)
     }
 
-    /// Whether a card draws the solid fill of a spot that is on or runs work, which no drag or drop tints.
     static func isFilled(_ entry: SpotsModel.Entry, takesDrag: Bool, isDropTarget: Bool) -> Bool {
         entry.isActive && !takesDrag && !isDropTarget
     }
@@ -233,7 +214,6 @@ struct SpotCardView: View, @MainActor Equatable {
     }
 }
 
-/// The ring of a selected card. It alone reads the selection, so that an arrow press reruns the rings and no card.
 private struct CardRing: ViewModifier {
     let model: SpotsModel
     let index: Int
@@ -244,7 +224,6 @@ private struct CardRing: ViewModifier {
     }
 }
 
-/// The tint of a pressed card. The pointer moves the selection ring, not a tint.
 private struct CardPress: ViewModifier {
     let shape: RoundedRectangle
     let isFilled: Bool
@@ -257,8 +236,6 @@ private struct CardPress: ViewModifier {
     }
 }
 
-/// The fade and the scale of a ring as the panel shows and hides. It alone reads whether the panel shows, so that a show
-/// reruns no card.
 private struct CardReveal: ViewModifier {
     @Environment(\.spotIsShown) private var isShown
 
@@ -270,8 +247,6 @@ private struct CardReveal: ViewModifier {
     }
 }
 
-/// Builds the spot's own view of a card when the card first shows and when its files change (protocol: Views). Where the scan
-/// does not watch its files, or its last build failed, it builds again each time the panel shows or hides.
 private struct CardViewLoad: ViewModifier {
     let source: String?
     let date: Date?
@@ -289,8 +264,6 @@ private struct CardViewLoad: ViewModifier {
     }
 }
 
-/// The mark of a spot whose last call failed, on the rim of its top right corner, until a call ends well. It alone reads
-/// the failure, so that a failure reruns the mark and no card.
 private struct FailureMark: View {
     let entry: SpotsModel.Entry
     let size: SpotSize
@@ -311,8 +284,6 @@ private struct FailureMark: View {
     }
 }
 
-/// The letter of a spot's key, on the rim of its card's top right corner. It alone reads whether the letters show, so that
-/// their fade reruns this mark and no card.
 private struct ChainKeycap: View {
     let model: SpotsModel
     let letter: String

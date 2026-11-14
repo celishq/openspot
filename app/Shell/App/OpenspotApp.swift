@@ -16,9 +16,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         app.run()
     }
 
-    /// The seconds after a drop until the app that the drag came from has let go of the focus.
-    private static let dropSettle = 0.2
-    /// The seconds that a passed Touch ID counts for, and when it last passed.
+    private static let dragSourceFocusDelay = 0.2
     static let touchIDReuse: TimeInterval = 300
     static var touchIDPassed: Date?
 
@@ -43,11 +41,8 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private let mac = SpotMac()
     private var isLaunched = false
     private var openedAtLaunch: [URL] = []
-    /// The window of each float, by the ID of its spot.
     var floats: [String: SpotFloatPanel] = [:]
-    /// The window of each spot that offers one and shows, by the ID of its spot.
     var spotWindows: [String: SpotSheetWindow] = [:]
-    /// The watch of the pointer, while a key holds the shake or a row of Settings records one.
     private var shakeWatch: SpotShakeWatch?
     private var tapWatch: SpotTapWatch?
 
@@ -101,7 +96,6 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         model.runs.listen(to: mac)
     }
 
-    /// Takes what the config file asks for. A key that macOS refuses leaves the current one in use, and the person sees why.
     func applyConfig(_ config: Config) {
         var faults = config.faults
         let key = config.panelKey ?? model.entryKey
@@ -130,7 +124,6 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         watchShake()
     }
 
-    /// Watches the pointer while a key holds the shake or a row of Settings records, and stops otherwise (W2).
     private func watchShake() {
         let wanted = wantedKeys.contains { $0.trigger == .shake } || model.recording != nil
         if wanted, shakeWatch == nil {
@@ -141,8 +134,6 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Watches the keys for a tap of a lone modifier while a key holds one, and stops otherwise. With no Accessibility the
-    /// watch hears nothing, so the person sees the fix once.
     private func watchTap() {
         let wanted = wantedKeys.contains { if case .tap = $0.trigger { true } else { false } }
         if wanted, tapWatch == nil {
@@ -156,13 +147,11 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Gives a tap of a lone modifier to the key that holds it, unless a row of Settings records, which takes it itself.
     private func takeTap(_ modifier: Shortcut.Modifiers) {
         guard model.recording == nil, let key = wantedKeys.first(where: { $0.trigger == .tap(modifier) }) else { return }
         model.press(key)
     }
 
-    /// Gives a shake to the row of Settings that records, or else to the key that holds it.
     private func takeShake() {
         if model.recording != nil {
             model.recordShake()
@@ -171,8 +160,6 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Holds the keys that the person assigned and lets go of the rest, unless a key is being recorded. A refused key is tried again at
-    /// the next scan, and the person sees why once.
     func holdWantedKeys() {
         watchShake()
         watchTap()
@@ -203,7 +190,6 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// A person opened `.spot` files, such as by a double-click. macOS can ask this before the app has finished its launch.
     func application(_ application: NSApplication, open urls: [URL]) {
         if isLaunched {
             model.review(urls)
@@ -218,7 +204,6 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         model.quit()
     }
 
-    /// A click on the Openspot item goes to running work, if any shows (G3).
     @objc private func pressItem() {
         if !model.openWork() { togglePanel() }
     }
@@ -239,19 +224,17 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         panel.show()
     }
 
-    /// Shows the panel on the Settings sheet.
     func openSettings() {
         show()
         model.openSettings()
     }
 
-    /// Brings the panel to the front with the focus, also when a drag opened it or it already shows.
     func present() {
         if let front = NSWorkspace.shared.frontmostApplication, front != .current { previousApp = front }
         panel?.place(over: NSWorkspace.shared.frontmostApplication)
         NSApp.activate(ignoringOtherApps: true)
         panel?.show()
-        DispatchQueue.main.asyncAfter(deadline: .now() + Self.dropSettle) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.dragSourceFocusDelay) { [weak self] in
             guard self?.model.holdsFocus == true else { return }
             NSApp.activate(ignoringOtherApps: true)
             self?.panel?.makeKeyAndOrderFront(nil)
@@ -259,7 +242,6 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Opens the panel for a drag. The front app stays in front, so that closing the panel activates nothing.
     func showPanelForDrag(beside window: NSRect? = nil) {
         guard !model.isShown || model.isWarming else { return model.followDrag() }
         previousApp = nil
@@ -278,7 +260,6 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         submenu?.hide()
     }
 
-    /// Closes the panel and asks the person for files. Afterwards the app that was in front comes back.
     func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void) {
         guard fileChooser == nil else { return }
         let previous = model.isShown && !model.isWarming ? previousApp : NSWorkspace.shared.frontmostApplication
