@@ -107,7 +107,8 @@ public struct SpotStore: Sendable {
         items.map(Printed.init).map { printed in
             let pairs: [(String, String?)] = [
                 ("spot", printed.id), ("name", printed.name), ("icon", printed.icon), ("detail", printed.detail), ("size", printed.size),
-                ("origin", printed.origin), ("added", String(printed.added)), ("published", printed.published), ("path", printed.path)
+                ("origin", printed.origin), ("added", String(printed.added)), ("published", printed.published), ("path", printed.path),
+                ("readme", printed.readme)
             ]
             return TextBlock(fields: pairs.compactMap { key, value in value.map { TextBlock.Field(key: key, value: $0) } }).text + "\n"
         }.joined()
@@ -115,7 +116,7 @@ public struct SpotStore: Sendable {
 
     private struct Printed: Encodable {
         let id, name, icon, size, origin: String
-        let detail, published, path: String?
+        let detail, published, path, readme: String?
         let added: Bool
 
         init(_ item: Item) {
@@ -128,6 +129,8 @@ public struct SpotStore: Sendable {
             added = item.isAdded
             published = item.publication?.rawValue
             path = item.package?.path
+            let readme = SpotListing.readme(of: item.spot.url).path
+            self.readme = FileManager.default.fileExists(atPath: readme) ? readme : nil
         }
     }
 }

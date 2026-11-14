@@ -66,6 +66,17 @@ final class StoreSpotTests: BuiltInCase {
         XCTAssertEqual(file.read().arrangement.disabled, [])
     }
 
+    func testAboutPrintsTheReadmeOfASpotLineByLine() async throws {
+        try "# Timer\n\nCounts down.\n".write(to: core.appendingPathComponent("timer.spot/readme.md"), atomically: true, encoding: .utf8)
+
+        let text = try await SpotRuns().answer(of: store, SpotAction(arguments: ["gallery", "about:timer"]), limit: 5)
+
+        let values = SpotOutput(text: text).parts.first?.values ?? [:]
+        XCTAssertEqual(values["about"], ["timer"])
+        XCTAssertEqual(values["readme"], ["# Timer", "", "Counts down."])
+        XCTAssertTrue(values["value"]?.contains { $0.hasPrefix("timer\t") } == true)
+    }
+
     func testPublishPublishesYourOwnSpotInTheApp() async throws {
         let rows = try await items()
         let id = try XCTUnwrap(rows.first { $0[2] == "publish" }?[0])

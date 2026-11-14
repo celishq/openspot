@@ -43,9 +43,10 @@ struct SpotFloatView: View {
     }
 
     private func sheet(_ entry: SpotsModel.Entry, _ run: SpotRun, size: CGSize) -> some View {
-        VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
+        let sole = fills ? run.panel.flatMap { $0.parts.count == 1 ? $0.parts.first : nil }.flatMap { $0.kind == "view" ? $0 : nil } : nil
+        return VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             if !fills { header(entry, run) }
-            if fills, let parts = run.panel, parts.parts.count == 1, let part = parts.parts.first, part.kind == "view", let view = entry.spot.view {
+            if let part = sole, let view = entry.spot.view {
                 GeometryReader { area in
                     SpotCustomView(source: view, values: part.values, card: .square, room: area.size, views: .shared) { run.set(part, to: $0) }
                         .equatable()
@@ -80,7 +81,7 @@ struct SpotFloatView: View {
                 )
             }
         }
-        .padding(SpotTokens.padding)
+        .padding(sole == nil ? SpotTokens.padding : 0)
         .frame(width: fills ? nil : size.width, height: fills ? nil : size.height, alignment: .topLeading)
         .frame(maxWidth: fills ? .infinity : nil, maxHeight: fills ? .infinity : nil, alignment: .topLeading)
         .modifier(FloatSurface(fills: fills))

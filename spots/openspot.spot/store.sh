@@ -25,6 +25,15 @@ gallery() {
       printf "value=%s\t%s\t%s\t%s\t%s\t%s\n", f["spot"], f["name"], state, f["origin"], f["detail"], f["size"] }'
 }
 
+# Prints the readme of spot $1, each line as a readme value, after its id as the about value.
+about() {
+  printf 'about=%s\n' "$1"
+  readme=$(openspot store list --frame | awk -v id="$1" 'BEGIN { RS = ""; FS = "\n" }
+    { for (i = 1; i <= NF; i++) if ($i == "spot=" id) for (j = 1; j <= NF; j++) if (index($j, "readme=") == 1) print substr($j, 8) }')
+  [ -n "$readme" ] && sed 's/^/readme=/' "$readme"
+  return 0
+}
+
 case "$1" in
   read) gallery ;;
   gallery)
@@ -33,6 +42,7 @@ case "$1" in
       publish:*) openspot store publish "${2#publish:}" >/dev/null ;;
     esac
     gallery
+    case "$2" in about:*) about "${2#about:}" ;; esac
     ;;
   open)
     [ -n "$2" ] || exit 0
