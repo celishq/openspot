@@ -6,13 +6,14 @@ struct SpotCustomView: View, @MainActor Equatable {
     let values: [String: [String]]
     let card: SpotSize
     var room: CGSize?
+    var answers = 0
     let views: SpotViews
     var send: ((String) -> Void)?
     @Environment(\.spotIsShown) private var isShown
     @Environment(\.spotCards) private var cards
 
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.source == rhs.source && lhs.values == rhs.values && lhs.card == rhs.card && lhs.room == rhs.room && lhs.views === rhs.views
+        lhs.source == rhs.source && lhs.values == rhs.values && lhs.card == rhs.card && lhs.room == rhs.room && lhs.answers == rhs.answers && lhs.views === rhs.views
             && (lhs.send == nil) == (rhs.send == nil)
     }
 
@@ -61,6 +62,7 @@ struct SpotCustomView: View, @MainActor Equatable {
     private var input: [String: Any] {
         [
             "size": size,
+            "answers": answers,
             "inset": SpotTokens.padding,
             "corner": corner,
             "ink": SpotTheme.ink,

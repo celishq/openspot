@@ -48,7 +48,7 @@ struct SpotFloatView: View {
             if !fills { header(entry, run) }
             if let part = sole, let view = entry.spot.view {
                 GeometryReader { area in
-                    SpotCustomView(source: view, values: part.values, card: .square, room: area.size, views: .shared) { run.set(part, to: $0) }
+                    SpotCustomView(source: view, values: part.values, card: .square, room: area.size, answers: run.panel?.answers ?? 0, views: .shared) { run.set(part, to: $0) }
                         .equatable()
                 }
                 .ignoresSafeArea()

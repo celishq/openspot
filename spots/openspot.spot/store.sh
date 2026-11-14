@@ -31,7 +31,6 @@ gallery() {
 case "$1" in
   read)
     gallery
-    printf 'answered=read %s\n' "$$"
     ;;
   gallery)
     case "$2" in
@@ -39,7 +38,6 @@ case "$1" in
       publish:*) openspot store publish "${2#publish:}" >/dev/null ;;
     esac
     gallery
-    printf 'answered=%s %s\n' "$2" "$$"
     ;;
   open)
     [ -n "$2" ] || exit 0

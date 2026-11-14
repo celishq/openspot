@@ -48,6 +48,17 @@ final class SheetPartsTests: XCTestCase {
         try XCTUnwrap(SheetParts(output: SpotOutput(text: text)))
     }
 
+    func testThePartsCountEachAnswerTheyTakeEvenOneEqualToTheLast() throws {
+        var parts = try panel(lights)
+        let first = parts.answers
+
+        parts.take(SpotOutput(text: lights), answering: parts.generation)
+        parts.take(SpotOutput(text: lights), answering: parts.generation)
+        parts.take(SpotOutput(text: lights), answering: parts.generation - 1)
+
+        XCTAssertEqual(parts.answers, first + 2)
+    }
+
     func testThePartsKeepTheTimeOfTheLastChangeOfEachPictureWhenTheyArrive() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-pictures-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

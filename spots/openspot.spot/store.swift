@@ -142,7 +142,7 @@ struct SpotView: View {
             }
             .allowsHitTesting(false)
         }
-        .onChange(of: spot["answered"], initial: true) {
+        .onChange(of: spot.answers, initial: true) {
             pending = nil
             readmes = Dictionary(grouping: spot.all("readme").map { $0.split(separator: "\t", maxSplits: 1, omittingEmptySubsequences: false) }, by: { String($0[0]) })
                 .mapValues { $0.map { $0.count > 1 ? String($0[1]) : "" } }

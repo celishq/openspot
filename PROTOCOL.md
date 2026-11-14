@@ -683,6 +683,7 @@ struct SpotView: View {
 | `spot.accent`       | The accent colour.                                                    |
 | `spot.font`         | The fonts of the cards: `title`, `detail`, `metric` and `value`.      |
 | `spot.send(v)`      | Calls the spot with the view's id and `v`, as a field does.           |
+| `spot.answers`      | How many answers the sheet took, so that a view can end a busy state. |
 | `spot.card(id)`     | The card of a spot, at the size it takes on the grid.                 |
 | `spot.cardSize(id)` | That size, so the view can lay cards out.                             |
 | `spot.sheet(id)`    | The sheet of a spot with its sample data, where a click runs nothing. |

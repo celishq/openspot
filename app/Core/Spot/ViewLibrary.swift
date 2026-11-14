@@ -23,6 +23,7 @@ public struct ViewLibrary: Sendable {
             public let secondary: Double
             public let accent: Color
             public let font: SpotFonts
+            public let answers: Int
             let values: [String: [String]]
             let sender: (String) -> Void
             let cardMaker: (String) -> AnyView
@@ -38,6 +39,7 @@ public struct ViewLibrary: Sendable {
                 sheetMaker = card["sheet"] as? (String) -> AnyView ?? { _ in AnyView(EmptyView()) }
                 tipMaker = card["tip"] as? (String) -> AnyView ?? { AnyView(Text($0)) }
                 size = card["size"] as? CGSize ?? .zero
+                answers = card["answers"] as? Int ?? 0
                 inset = card["inset"] as? CGFloat ?? 13
                 corner = card["corner"] as? CGFloat ?? 20
                 ink = card["ink"] as? Color ?? .primary

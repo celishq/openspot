@@ -79,15 +79,6 @@ final class StoreSpotTests: BuiltInCase {
         }
     }
 
-    func testEachAnswerCarriesAMarkOfItsOwn() async throws {
-        let first = try await SpotRuns().answer(of: store, .read, limit: 5)
-        let second = try await SpotRuns().answer(of: store, .read, limit: 5)
-
-        let marks = [first, second].map { SpotOutput(text: $0).parts.first?.values["answered"] ?? [] }
-        XCTAssertEqual(marks.map(\.count), [1, 1])
-        XCTAssertNotEqual(marks[0], marks[1])
-    }
-
     func testPublishPublishesYourOwnSpotInTheApp() async throws {
         let rows = try await items()
         let id = try XCTUnwrap(rows.first { $0[2] == "publish" }?[0])
