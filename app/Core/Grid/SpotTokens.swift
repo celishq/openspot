@@ -70,6 +70,8 @@ public enum SpotTokens {
     public static let peekShrink: CGFloat = 28
     public static let peekCount = 3
     public static let peekRest: Duration = .milliseconds(250)
+    /// How far two fingers move across the panel before a swipe steps back or forward.
+    public static let swipeDistance: CGFloat = 60
     public static let controlPadding: CGFloat = 7
     /// How far the outer edge of the focus ring of a part in a sheet lies outside the part's own box. It leaves clear space
     /// on both sides of the ring, within the gap between two parts, as a system focus ring does.
