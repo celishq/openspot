@@ -97,7 +97,7 @@ final class CapabilityTests: XCTestCase {
         XCTAssertTrue(settled)
     }
 
-    func testTheHelperIsGoneAfterItsIdleTimeAndTheNextCallStartsANewOne() async throws {
+    func test_K2_theHelperIsGoneAfterItsIdleTimeAndTheNextCallStartsANewOne() async throws {
         setenv("STANDIN_IDLE", "1", 1)
 
         let id = pid_t(try field("pid", in: try await call()))

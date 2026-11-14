@@ -11,7 +11,7 @@ final class ScreenPlaceTests: XCTestCase {
         ScreenPlace(screens: [main, left])
     }
 
-    func testAFloatCentresOnThePointerAndStaysWholeOnItsScreen() {
+    func test_W4_aFloatCentresOnThePointerAndStaysWholeOnItsScreen() {
         let float = CGSize(width: 289, height: 200)
 
         XCTAssertEqual(place.origin(of: float, under: CGPoint(x: 700, y: 500)), CGPoint(x: 555, y: 400))

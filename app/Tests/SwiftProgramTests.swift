@@ -123,7 +123,7 @@ final class SwiftProgramTests: XCTestCase {
         XCTAssertEqual(printed, "text=program\n")
     }
 
-    func testASourceBuildsAProgramThatRunsForBothKindsOfMac() async throws {
+    func test_P6_aSourceBuildsAProgramThatRunsForBothKindsOfMac() async throws {
         let built = try await SwiftProgram().build(source: source)
 
         let program = folder.appendingPathComponent("hello")
@@ -207,7 +207,7 @@ final class SwiftProgramTests: XCTestCase {
         XCTAssertEqual(scan.refused, [])
     }
 
-    func testAProgramRunsInPlaceOfItsSource() async throws {
+    func test_P6_aProgramRunsInPlaceOfItsSource() async throws {
         try script("hello.swift", "#!/bin/sh\necho source\n")
         try script("hello.program", "#!/bin/sh\necho program\n")
         let command = try XCTUnwrap(try SpotsFolder(url: folder).scan().spots.first)
