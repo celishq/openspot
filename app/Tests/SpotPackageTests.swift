@@ -49,7 +49,6 @@ final class SpotPackageTests: XCTestCase {
         }
     }
 
-    /// The spot after a trip through a zip, as a chat carries it.
     private func sent(_ spot: SpotPackage) throws -> SpotPackage {
         let zip = target.deletingLastPathComponent().appendingPathComponent("sent-\(UUID().uuidString).spot")
         try spot.zip(to: zip)

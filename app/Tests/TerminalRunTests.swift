@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves that `openspot spot run` makes a call as the app makes it, and gives back all that the script printed.
 @MainActor
 final class TerminalRunTests: XCTestCase {
     private var folder: URL!

@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Repos example with its real script, a fake openspot command and a fake folder of repos.
 final class ReposSpotTests: SampleSpotsCase {
     private var repos: Spot {
         get throws {
@@ -9,7 +8,6 @@ final class ReposSpotTests: SampleSpotsCase {
         }
     }
 
-    /// Makes a repo with this HEAD, or a worktree whose `.git` file points to its HEAD elsewhere.
     private func repo(_ path: URL, head: String, worktree: URL? = nil) throws {
         let manager = FileManager.default
         try manager.createDirectory(at: path, withIntermediateDirectories: true)

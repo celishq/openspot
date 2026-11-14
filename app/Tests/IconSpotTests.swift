@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Icon spot of the app: Change Icon in the menu of a card opens the drawer's sheet for that card's spot, each
-/// stroke keeps a draft, Save keeps a picture of the squares as that spot's icon, and Reset gives the spot its own icon back.
 final class IconSpotTests: BuiltInCase {
     private var icon: Spot {
         get throws {

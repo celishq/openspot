@@ -1,14 +1,10 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves how running work shows, what a press does while a call runs, and what a quit stops.
 @MainActor
 final class SpotRunsWorkTests: SpotRunsCase {
-    // MARK: L6, G1 to G4
-
     private static let progress = "printf 'title=42%%\\ndetail=2 min left\\nprogress=0.42\\n---\\n'\nsleep 30"
 
-    /// A body that waits for a file before each of these frames.
     private func steps(_ steps: [(file: String, frame: String)]) -> String {
         steps.map { "while [ ! -e '\(path($0.file))' ]; do sleep 0.02; done\nprintf '\($0.frame)\\n---\\n'" }.joined(separator: "\n") + "\nsleep 30"
     }
@@ -319,8 +315,6 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try await allEnded()
         XCTAssertFalse(exists("went-on"))
     }
-
-    // MARK: L11
 
     func testAPressOfAPartWithinOneSecondOfItsStartDoesNothing() async throws {
         try script(header: "on=sheet.open", """

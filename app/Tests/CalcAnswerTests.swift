@@ -10,14 +10,12 @@ final class CalcAnswerTests: XCTestCase {
         clock.timeZone = TimeZone(identifier: "Europe/Berlin")!
         return clock
     }()
-    /// Wednesday 11 November 2026 at 14:05 in Berlin.
     private let now = Date(timeIntervalSince1970: 1_794_402_300)
 
     private func answer(_ text: String, in locale: Locale? = nil, rates: CalcRates? = nil, failure: CalcRateFailure = .offline) -> CalcAnswer? {
         try? CalcAnswer(text: text, locale: locale ?? english, clock: berlin, now: now, rates: { rates.map { .success($0) } ?? .failure(failure) })
     }
 
-    /// Why a text has no answer when the rates fail, or nil when it has one or none.
     private func failure(_ text: String, _ failure: CalcRateFailure = .offline) -> CalcRateFailure? {
         do throws(CalcRateFailure) {
             _ = try CalcAnswer(text: text, locale: english, clock: berlin, now: now, rates: { .failure(failure) })
@@ -27,7 +25,6 @@ final class CalcAnswerTests: XCTestCase {
         }
     }
 
-    /// The text with the narrow and the no-break spaces that macOS writes in times and amounts as plain spaces.
     private func spaced(_ text: String?) -> String? {
         text?.replacingOccurrences(of: "\u{202F}", with: " ").replacingOccurrences(of: "\u{00A0}", with: " ")
     }

@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves which day `openspot calendar show` opens for the id of an event, and which reminder `openspot reminders show` opens.
 final class CalendarShowTests: XCTestCase {
     private let family = CalendarList(id: "7D10", title: "Family", account: "iCloud", color: nil)
     private let work = CalendarList(id: "A8E2", title: "Work", account: "iCloud", color: nil)

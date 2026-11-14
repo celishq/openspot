@@ -1,9 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves `Contents/Helpers/openspot`: it asks the socket of the running app, and runs the program of its app with the same
-/// arguments for a call of files when no socket answers or the call runs in a process of its own. A live call starts the
-/// app and waits for its socket, and Ctrl-C stops its work in the app (protocol: The openspot command).
 final class CommandClientTests: XCTestCase {
     private final class Host: Mac {
         func eventStore() -> any EventStore { FakeEventStore() }
@@ -12,8 +9,6 @@ final class CommandClientTests: XCTestCase {
         func open(_ link: URL) -> Bool { true }
     }
 
-    /// A running app whose change of a setting takes 30 seconds and then writes a far-off file, unless its call stops first.
-    /// It writes `started` as it begins and `ended` as it ends.
     private struct SlowApp: RunningApp {
         let folder: URL
 
@@ -70,7 +65,6 @@ final class CommandClientTests: XCTestCase {
         socket = CommandSocket(folder: config, api: CommandAPI(mac: Host()))
     }
 
-    /// Runs the program with the arguments and stdin, and returns what it prints and its exit code.
     private func run(_ program: URL, _ arguments: [String], input: String = "") throws -> (output: String, errors: String, code: Int32) {
         let process = Process()
         let output = Pipe()
@@ -159,7 +153,6 @@ final class CommandClientTests: XCTestCase {
         XCTAssertEqual(try run(client, ["render", "x.png"]).output, "app: render x.png\n")
     }
 
-    /// Starts the program with the arguments and these more variables, and returns it as it runs.
     private func start(_ arguments: [String], variables: [String: String] = [:]) throws -> (process: Process, output: Pipe, errors: Pipe) {
         let process = Process()
         let output = Pipe()
@@ -174,7 +167,6 @@ final class CommandClientTests: XCTestCase {
         return (process, output, errors)
     }
 
-    /// Waits for a fact, for 10 seconds at most.
     private func wait(_ what: String, until fact: () -> Bool) async throws {
         for _ in 0..<1000 {
             if fact() { return }

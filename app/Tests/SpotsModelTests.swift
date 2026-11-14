@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the panel's decisions: which sheet opens and closes, where the search goes, and what a pick leaves behind.
 @MainActor
 final class SpotsModelTests: XCTestCase {
     private var folder: URL!
@@ -149,7 +148,6 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(Set(model.entries.map { $0.spot.name }), ["Mugs", "Notes"])
     }
 
-    /// Shows the panel with one list of two rows, and opens that list.
     private func openList() async throws {
         try script("list", header: "on=sheet.open", "printf 'row=a\\ntitle=Apple\\n\\nrow=b\\ntitle=Banana\\n'")
         model.reload()
@@ -882,7 +880,6 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.visible.map(\.id), ["other"])
     }
 
-    /// Opens a sheet that a script prints on each read. The script writes each other call to the returned file.
     private func openParts(_ sheet: String) async throws -> URL {
         let calls = folder.appendingPathComponent("calls")
         try script("parts", header: "on=sheet.open", "if [ \"$1\" = read ]; then printf '\(sheet)'; else echo \"$@\" >> '\(calls.path)'; fi")
@@ -1083,8 +1080,6 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(changed)
     }
 
-    /// Reads what the body of the panel's root view, SpotsView, reads of the model, and what the body of the search field,
-    /// SpotFieldView, reads, and calls `told` when a later change tells any of them.
     private func trackPanelAndField(_ told: @escaping @Sendable () -> Void) {
         withObservationTracking {
             let id = model.transition.id
@@ -1157,7 +1152,6 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(told)
     }
 
-    /// Opens the actions menu of the weather card, and returns where a view would place it.
     private func openWeatherMenu() throws -> ActionMenuFrame {
         try script("weather", header: "title=Weather", ":")
         model.reload()
@@ -1345,7 +1339,6 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(host.held.count, holds)
     }
 
-    /// Shows the panel with a spot that answers the main search for text that starts with a digit.
     private func showAnswers(slow: String = "none") throws {
         let body = #"case "$OPENSPOT_VALUE" in \#(slow)) sleep 0.5 ;; esac; case "$1" in read) [ -n "$OPENSPOT_VALUE" ] && printf 'row=%s\ntitle=Is %s\ndetail=Read %s\n' "$OPENSPOT_VALUE" "$OPENSPOT_VALUE" "$OPENSPOT_VALUE" ;; open) printf 'toast=Picked %s\n' "$2" ;; esac"#
         try script("calc", header: "title=Calc\non=search.text ^[0-9]", body)

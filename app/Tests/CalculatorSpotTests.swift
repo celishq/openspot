@@ -1,10 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Calculator spot with its real script and a fake `openspot calc solve` that prints a file, and its time from
-/// a key to its rows with the real API.
 final class CalculatorSpotTests: SampleSpotsCase {
-    /// A host of the API that reaches nothing on the Mac.
     private final class Host: Mac {
         func eventStore() -> any EventStore { FakeEventStore() }
         func reminderStore() -> any ReminderStore { FakeReminderStore() }
@@ -119,8 +116,6 @@ final class CalculatorSpotTests: SampleSpotsCase {
         XCTAssertEqual(try calculator.mode, .inline)
     }
 
-    /// Types a sum in the main search of a panel with the calculator and the real API, 5 times, and times each key whose
-    /// rows show in its own turn. The fastest proves the path, and a busy Mac can slow the others.
     @MainActor
     func testAKeyShowsTheRowOfASumWithin4Milliseconds() async throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-calc-\(UUID().uuidString)")

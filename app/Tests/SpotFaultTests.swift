@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves that the panel keeps each fault of a spot where the person looks: a file that does not load keeps a card, a failed
-/// run marks its card, and a change of the spots folder shows at once.
 @MainActor
 final class SpotFaultTests: XCTestCase {
     private var folder: URL!
@@ -65,7 +63,6 @@ final class SpotFaultTests: XCTestCase {
         try? String(contentsOf: folder.appendingPathComponent(name), encoding: .utf8)
     }
 
-    /// Opens the sheet of the spot of a file that does not load.
     private func openFault() async throws -> SheetParts {
         try script("weather", header: "mode=huge", "echo")
         model.reload()

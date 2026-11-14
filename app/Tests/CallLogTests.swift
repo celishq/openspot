@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves that the log keeps what each call of a spot got and gave, so that a person or an agent can see what happened.
 @MainActor
 final class CallLogTests: SpotRunsCase {
     private var log: CallLog!

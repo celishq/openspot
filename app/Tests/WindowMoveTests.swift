@@ -73,8 +73,6 @@ final class WindowMoveTests: XCTestCase {
         XCTAssertEqual(taller, CGPoint(x: 0, y: 25))
     }
 
-    /// A window of an app with a smallest size, which either takes each axis down to that size or refuses a size
-    /// that is smaller on either axis, and counts the sizes it shows.
     private final class FakeWindow {
         var size: CGSize
         let smallest: CGSize

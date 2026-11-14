@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves that each starter is a working spot from its first save, and that a name makes one file that no other spot has.
 @MainActor
 final class SpotStarterTests: XCTestCase {
     private var folder: URL!

@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves `openspot calendar events` and `calendars` through `Events`, with a fake store in place of EventKit.
 final class EventsTests: XCTestCase {
     private let berlin = TimeZone(identifier: "Europe/Berlin")!
     private let work = CalendarList(id: "A8E2", title: "Work", account: "iCloud", color: "#1BADF8")
@@ -12,7 +11,6 @@ final class EventsTests: XCTestCase {
         return clock
     }
 
-    /// Tuesday 10 November 2026 at the hour and minute in Berlin, or on a later day.
     private func at(_ hour: Int, _ minute: Int = 0, day: Int = 10) -> Date {
         clock.date(from: DateComponents(year: 2026, month: 11, day: day, hour: hour, minute: minute))!
     }

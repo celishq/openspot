@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Links spot with its real script and fake tools.
 final class LinksSpotTests: SampleSpotsCase {
     func testLinksAndAppsJoinTheMainSearch() throws {
         let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
@@ -123,7 +122,6 @@ final class LinksSpotTests: SampleSpotsCase {
         }
     }
 
-    /// Waits until no process of a read of the spot runs, such as a job that the read left in the background.
     private func readsEnded(of spot: Spot) async throws {
         for _ in 0..<500 {
             let pgrep = Process()

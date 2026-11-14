@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the flow of sheets: what a push, a step back and a step forward leave at its centre and ahead of it.
 final class FlowTests: XCTestCase {
     private let settings = FlowSheet(spot: "settings")
     private let caffeinate = FlowSheet(spot: "settings", page: "spot:caffeinate")

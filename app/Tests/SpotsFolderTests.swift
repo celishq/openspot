@@ -15,7 +15,6 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     @discardableResult
-    /// Writes a script in its spot folder, or with `loose` true where the path says, as an older layout or an agent leaves it.
     private func write(_ path: String, header: String = "", body: String = "", loose: Bool = false) throws -> URL {
         let url = folder.appendingPathComponent(loose || path.split(separator: "/").contains { $0.hasSuffix(".spot") } ? path : path.inSpotFolder)
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -25,7 +24,6 @@ final class SpotsFolderTests: XCTestCase {
         return url
     }
 
-    /// The spots folder as the app and the command open it, which wraps its loose files first.
     private var opened: SpotsFolder {
         SpotsFolder.standard(environment: ["OPENSPOT_SPOTS": folder.path], home: folder.appendingPathComponent("home"))
     }

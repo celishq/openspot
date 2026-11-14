@@ -1,9 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves Careful mode with the real `sandbox-exec`: a spot's process writes only to its data folder and the temp folder
-/// unless its header names `files`, and reaches no network unless it names `network`. Off, a spot can do all that the
-/// person can (protocol: Trust).
 @MainActor
 final class CarefulModeTests: SpotRunsCase {
     private var outside: URL!
@@ -34,7 +31,6 @@ final class CarefulModeTests: SpotRunsCase {
         try await super.tearDown()
     }
 
-    /// A spot that tries each use and shows what worked as the title of its read.
     private func trying(uses: String = "") throws -> SpotRun {
         try script(header: "on=sheet.open\(uses.isEmpty ? "" : "\nuses=\(uses)")", """
         r=

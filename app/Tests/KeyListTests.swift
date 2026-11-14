@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the sheet that the app gives a script with commands and no read: a row for each of its commands, whose key a
-/// person records or removes.
 @MainActor
 final class KeyListTests: XCTestCase {
     private var folder: URL!

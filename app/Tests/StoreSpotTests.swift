@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Store spot of the app: a window with a gallery of every spot from `openspot store list`, where Get gets a spot
-/// that the person lacks and Publish publishes one of their own, each through the API.
 final class StoreSpotTests: BuiltInCase {
     private var store: Spot {
         get throws {
@@ -17,7 +15,6 @@ final class StoreSpotTests: BuiltInCase {
         try "#!/bin/sh\n# title=Mine\n".writeScript(to: spots.appendingPathComponent("mine.spot/mine.sh"))
     }
 
-    /// The spots of the gallery, each as its id, name and button, in the order of the store's list.
     private func items() async throws -> [[String]] {
         let parts = try await store.items(timeout: 5).parts
         XCTAssertEqual(parts.map(\.id), ["gallery"])

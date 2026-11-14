@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the playground's panel: it runs one spot in a real panel model over a folder of its own, keeps it on the grid,
-/// and shows it in the place that the person picks: its sheet, its card, or the main search.
 @MainActor
 final class PlaygroundPlaceTests: XCTestCase {
     private var folder: URL!

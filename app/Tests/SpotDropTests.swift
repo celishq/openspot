@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the rules of drops with real files and real processes: which files a card takes, the arguments of its call, and
-/// how a drop waits for a running call.
 @MainActor
 final class SpotDropTests: XCTestCase {
     private var folder: URL!
@@ -28,24 +26,20 @@ final class SpotDropTests: XCTestCase {
         FileManager.default.fileExists(atPath: path(name))
     }
 
-    /// A real file with this name, and its path.
     private func file(_ name: String) -> String {
         FileManager.default.createFile(atPath: path(name), contents: Data())
         return path(name)
     }
 
-    /// A real folder with this name, and its path.
     private func directory(_ name: String) throws -> String {
         try FileManager.default.createDirectory(atPath: path(name), withIntermediateDirectories: true)
         return path(name)
     }
 
-    /// The calls that a script logged, one line for each.
     private func log() -> [String] {
         ((try? String(contentsOfFile: path("log"), encoding: .utf8)) ?? "").split(separator: "\n", omittingEmptySubsequences: false).dropLast().map(String.init)
     }
 
-    /// Writes a script with these header lines, which logs each call before its body runs, and gives its sheet.
     private func sheet(header: String = "", _ body: String = "") throws -> SpotRun {
         let url = folder.spotFile("script")
         let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
@@ -64,14 +58,12 @@ final class SpotDropTests: XCTestCase {
         XCTFail("waited for \(what)")
     }
 
-    /// Waits for the end of each process of a script so far, after which no stopped script can act.
     private func allEnded() async throws {
         let text = (try? String(contentsOfFile: path("pids"), encoding: .utf8)) ?? ""
         let pids = text.split(separator: "\n").compactMap { Int32($0) }
         try await wait("the end of each script") { pids.allSatisfy { kill($0, 0) != 0 } }
     }
 
-    /// A shell loop that waits for the file `release`, for 30 seconds at most.
     private var untilRelease: String {
         "n=0; while [ ! -f '\(path("release"))' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done"
     }
@@ -83,8 +75,6 @@ final class SpotDropTests: XCTestCase {
     private func command(drop: [String]) -> Spot {
         Spot(id: "a", name: "A", url: folder, drop: drop)
     }
-
-    // MARK: D2
 
     func testACardTakesOnlyFilesWhoseExtensionItsDropLists() {
         let card = command(drop: ["mov", "mkv"])
@@ -161,7 +151,6 @@ final class SpotDropTests: XCTestCase {
         XCTAssertFalse(sheet.spot.accepts([file("a.txt")]))
     }
 
-    /// Writes one more script with this header, and takes a new scan.
     private func addScript(_ name: String, header: String) throws {
         let url = folder.spotFile(name)
         try "#!/bin/sh\n# \(header)\n".writeScript(to: url)
@@ -214,8 +203,6 @@ final class SpotDropTests: XCTestCase {
         XCTAssertTrue(frames.frames.isEmpty)
     }
 
-    // MARK: The calls
-
     func testADropRunsOneCallWithEachPathAsItsOwnArgument() async throws {
         let sheet = try sheet(header: "drop=mov", """
         printf '%s\\n' "$#" > '\(path("arguments"))'
@@ -250,9 +237,6 @@ final class SpotDropTests: XCTestCase {
         XCTAssertTrue(sheet.calls.isEmpty)
     }
 
-    // MARK: The calls
-
-    /// An open sheet whose running `work` action goes on until the file `release` appears.
     private func busySheet() async throws -> SpotRun {
         let sheet = try sheet(header: "on=sheet.open\ndrop=mov", """
         case "$1" in
@@ -382,9 +366,6 @@ final class SpotDropTests: XCTestCase {
         XCTAssertEqual(log(), ["read", "work"])
     }
 
-    // MARK: Modes
-
-    /// The sheet of a staying script that takes `mov` files. It logs each line of its stdin, and prints a frame after each block.
     private func stayingSheet(header: String = "") throws -> SpotRun {
         try sheet(header: "mode=stay\ndrop=mov\n\(header)\noffers=card\noffers=menubar", """
         while IFS= read -r line; do
@@ -395,7 +376,6 @@ final class SpotDropTests: XCTestCase {
         """)
     }
 
-    /// The blocks that a staying script got, one string for each, with no `call` or `reason` line.
     private func blocks() -> [String] {
         let text = (try? String(contentsOfFile: path("blocks"), encoding: .utf8)) ?? ""
         return text.components(separatedBy: "\n\n").filter { !$0.isEmpty }.map { block in
@@ -444,9 +424,6 @@ final class SpotDropTests: XCTestCase {
         XCTAssertEqual(log().count, 1)
     }
 
-    // MARK: D5
-
-    /// Counts how often the sheet asks its owner for a choice of files.
     private func choiceCount(of sheet: SpotRun) -> () -> Int {
         var count = 0
         sheet.onReport = { if case .chooseFiles = $0 { count += 1 } }
@@ -525,8 +502,6 @@ final class SpotDropTests: XCTestCase {
         try await wait("the call") { self.log().contains("power true") }
     }
 
-    // MARK: D6
-
     func testADropHasNoTimeLimitAndGoesOnWithThePanelClosed() async throws {
         runs = SpotRuns(readLimit: 0.2, now: { [unowned self] in self.time })
         let sheet = try sheet(header: "drop=mov", "sleep 0.5\ntouch '\(path("done"))'")
@@ -597,8 +572,6 @@ final class SpotDropTests: XCTestCase {
 
         try await wait("the read after the call") { self.log() == ["drop \(file)", "read"] }
     }
-
-    // MARK: D8
 
     func testADropThatSelectsARowReadsAgainWithThatRowSelected() async throws {
         let rows = "printf 'row=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'"

@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Spots spot of the app: a small card on the grid that a search for "edit spots" finds, whose press opens the
-/// grid of Edit Spots through the API.
 final class CatalogSpotTests: BuiltInCase {
     override func setUp() async throws {
         try await super.setUp()

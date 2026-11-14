@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the System Settings spot with its real script, a folder of fake panes and a fake language list.
 final class SystemSettingsSpotTests: SampleSpotsCase {
     func testSystemSettingsJoinsTheMainSearch() throws {
         let settings = try XCTUnwrap(try scan.spots.first { $0.name == "System Settings" })
@@ -63,8 +62,6 @@ final class SystemSettingsSpotTests: SampleSpotsCase {
         return output.items
     }
 
-    /// Runs in a private home, which it passes, with a Sound pane, a Battery pane known only by its code name, a pane with no name and an
-    /// extension that is not a pane. The Mac's first language is Russian.
     private func withPanes(_ body: @escaping (URL) async throws -> Void) async throws {
         try await withPrivateHome { folder in
             let panes = folder.appendingPathComponent("panes")

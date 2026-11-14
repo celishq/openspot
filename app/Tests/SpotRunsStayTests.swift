@@ -1,11 +1,8 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves how a script that stays starts, takes calls and ends.
 @MainActor
 final class SpotRunsStayTests: SpotRunsCase {
-    // MARK: Modes
-
     private static let form = """
     while IFS= read -r line; do
       printf '%%s\\n' "$line" >> '%@'
@@ -23,8 +20,6 @@ final class SpotRunsStayTests: SpotRunsCase {
       esac
     done
     """
-
-    // MARK: Modes
 
     private static let ends = """
     while IFS= read -r line; do
@@ -231,7 +226,6 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertEqual(log().count, 1)
     }
 
-    /// A staying script that answers each text of the main search with one row of that text, and a stop with nothing.
     private var answering: String {
         """
         while IFS= read -r line; do
@@ -655,8 +649,6 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the frame after the late answer") { frames.last?.contains("Done") == true }
         XCTAssertEqual(sheet.list.shown.map(\.run), ["n"])
     }
-    /// New runs whose read has `limit` seconds, and a staying script whose first process busy-waits 5 seconds on each call
-    /// while the file `slow` exists, then answers with the number of the call as its title.
     private func slowStaying(limit: TimeInterval = 1) throws -> (sheet: SpotRun, told: () -> [String]) {
         runs.quit()
         runs = SpotRuns(readLimit: limit, now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50))
@@ -747,8 +739,6 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the parts") { sheet.panel != nil }
         XCTAssertEqual(arrivals, 1)
     }
-
-    // MARK: Bounds
 
     func testTheRecordOfALongCallOfAStayingScriptKeepsOnlyTheFramesTheLogShows() async throws {
         runs = SpotRuns(now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50), log: CallLog(folder: folder.appendingPathComponent("logs"), limit: 2_000))

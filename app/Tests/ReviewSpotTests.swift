@@ -317,7 +317,6 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertThrowsError(try review(""))
     }
 
-    /// A review of a `.spot` file with one script, which adds to the folder `spots` and records in a lock beside it.
     private func filed(_ header: String, body: String = "") throws -> ReviewSpot {
         let text = "#!/bin/sh\n\(header.split(separator: "\n").map { "# \($0)\n" }.joined())\(body)"
         let file = folder.appendingPathComponent("Weather.spot")

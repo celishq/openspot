@@ -243,12 +243,10 @@ final class ScriptProcessTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(started), 2)
     }
 
-    /// A line that writes the pid of its shell to the file `name` whole, so that a reader never sees it half written.
     private func writesPid(_ name: String) -> String {
         "echo $$ > '\(path(name)).new' && mv '\(path(name)).new' '\(path(name))'"
     }
 
-    /// A child that ignores the terminate signal, with its output somewhere else, so that its end does not close the call.
     private func deafChild() -> String {
         "sh -c \"trap '' TERM; \(writesPid("child").replacingOccurrences(of: "$$", with: "\\$\\$")); exec sleep 30\" >/dev/null 2>&1 &\n"
     }
