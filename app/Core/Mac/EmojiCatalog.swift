@@ -1,6 +1,5 @@
 import Foundation
 
-/// The emoji of this Mac, with their names in its language and their order, read from the files of the system.
 public struct EmojiCatalog: Sendable {
     public enum Tone: String, Sendable, CaseIterable {
         case none
@@ -10,7 +9,6 @@ public struct EmojiCatalog: Sendable {
         case mediumDark = "medium-dark"
         case dark
 
-        /// The mark that follows a person in an emoji.
         var mark: Unicode.Scalar? {
             switch self {
             case .none: nil
@@ -40,7 +38,6 @@ public struct EmojiCatalog: Sendable {
         self.keywords = keywords ?? GlyphKeywords(languages: languages)
     }
 
-    /// Each emoji as one row, in the order of the Mac. An emoji with no form in this tone stays as it is.
     public func rows(tone: Tone) throws -> String {
         let names = try self.names()
         let known = known()
@@ -70,7 +67,6 @@ public struct EmojiCatalog: Sendable {
         throw SpotError.fault(Self.missing)
     }
 
-    /// Each form that the Mac can draw, in its order: the text runs of a binary file.
     private func known() -> [String] {
         guard let data = try? Data(contentsOf: resources.appendingPathComponent("emojimeta.dat")) else { return [] }
         return String(decoding: data, as: UTF8.self).unicodeScalars
@@ -78,7 +74,6 @@ public struct EmojiCatalog: Sendable {
             .map { String(String.UnicodeScalarView($0)) }
     }
 
-    /// Puts the mark after each person of an emoji. The hands of a pair take none, and a mark that asks for a picture goes.
     private static func form(of emoji: String, tone: Tone, known: [String: Int]) -> String {
         guard let mark = tone.mark, emoji.unicodeScalars.contains(where: \.properties.isEmojiModifierBase) else { return emoji }
         let scalars = emoji.unicodeScalars

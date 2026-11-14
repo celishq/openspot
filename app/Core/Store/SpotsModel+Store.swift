@@ -1,10 +1,6 @@
 import Foundation
 
-/// The store's publish: the spot folder of a spot of the spots folder is copied into the store, a folder of spot folders.
 extension SpotsModel {
-    /// Publishes a spot of the spots folder to the store. A spot with no readme is refused with a toast that asks for one.
-    /// A spot whose files did not change since its last publish writes nothing. A spot with `preview=sample` prints its preview
-    /// first, a Swift spot is compiled into the package, and the package holds a signed release of it.
     @discardableResult
     public func publish(_ id: String) async -> SpotPublish {
         guard let spot = ownSpot(id) ?? entries.first(where: { $0.id == id && $0.item == nil })?.spot else { return .notOwn }
@@ -42,8 +38,6 @@ extension SpotsModel {
         return .published
     }
 
-    /// A spot of the spots folder as a release, signed by the account after a compile that a toast names. Nil when the
-    /// person has no account yet, which opens the spot that sets one up.
     func release(_ package: SpotPackage, named name: String) async throws -> SpotPackage? {
         guard let key = try await accountKey() else { return nil }
         if package.needsCompile { host.work("Compiling \(name)") }
@@ -51,18 +45,14 @@ extension SpotsModel {
         return try await Task.detached(priority: .userInitiated) { try await package.release(by: key, keepingLogIn: spots) }.value
     }
 
-    /// The store as the panel's arrangement sees it.
     var store: SpotStore {
         SpotStore(url: files.store, folder: folder, arrangement: arrangement)
     }
 
-    /// The spot of a file of the spots folder by its ID, also when Edit Spots turned it off.
     func ownSpot(_ id: String) -> Spot? {
         (try? SpotsFolder(url: folder.url).keptScan())?.files.first { $0.id == id }?.spots.first
     }
 
-    /// The account key. With none, it opens the sheet of the spot that reaches the account key, so the person can set one
-    /// up, and returns nil.
     func accountKey() async throws -> AccountKey? {
         let account = files.account
         if let key = try await Task.detached(priority: .userInitiated, operation: { try account.key() }).value { return key }

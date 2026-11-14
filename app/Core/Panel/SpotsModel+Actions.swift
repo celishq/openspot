@@ -415,7 +415,7 @@ extension SpotsModel {
     /// or an open sheet keeps its own actions.
     private func offered(on target: Target, yes: inout Set<String>, asks: Bool) -> [OfferedAction] {
         guard openList == nil, target.item == nil, let origin = origin(of: target.entry.spot) else { return [] }
-        let word = OfferedAction.words.first { $0.value == origin }?.key ?? ""
+        let word = OfferedAction.originWords.first { $0.value == origin }?.key ?? ""
         var shown: [OfferedAction] = []
         for spot in sheets.values.map(\.spot).sorted(by: { $0.id < $1.id }) {
             var hidden: [String] = []

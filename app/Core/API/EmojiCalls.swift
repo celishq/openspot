@@ -1,6 +1,5 @@
 import Foundation
 
-/// The call of `openspot emoji`: each emoji as a row, with its keywords.
 struct EmojiCalls {
     let keywords: GlyphKeywordCache
 

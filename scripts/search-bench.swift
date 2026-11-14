@@ -1,9 +1,5 @@
 import Foundation
 
-/// Times each keystroke of the search over copies of the real lists, built with the Core sources at -O by
-/// `scripts/search-bench.sh`. The first argument is the folder of the lists, the second the folder of the keywords.
-/// Each scene types its words a letter at a time, then deletes them a letter at a time, as a person does.
-
 let data = URL(fileURLWithPath: CommandLine.arguments[1])
 let keywordFolder = URL(fileURLWithPath: CommandLine.arguments[2])
 let rounds = 30
@@ -22,7 +18,6 @@ func glyphItems() -> [SpotItem] {
     return items("emoji")
 }
 
-/// The ANSI key codes of the letter keys, in the order of `us` and `ru`.
 let codes: [UInt16] = [12, 13, 14, 15, 17, 16, 32, 34, 31, 35, 33, 30, 0, 1, 2, 3, 5, 4, 38, 40, 37, 41, 39, 6, 7, 8, 9, 11, 45, 46, 43, 47, 50]
 let us = Array("qwertyuiop[]asdfghjkl;'zxcvbnm,.`")
 let ru = Array("йцукенгшщзхъфывапролджэячсмитьбюё")
@@ -31,7 +26,6 @@ KeyLayout.enabled = [
     KeyLayout(keys: Dictionary(uniqueKeysWithValues: zip(codes, ru)))
 ]
 
-/// The texts of one word as it is typed and then deleted, a letter at a time.
 func keystrokes(_ words: [String]) -> [String] {
     words.flatMap { word in
         let typed = (1...word.count).map { String(word.prefix($0)) }
@@ -43,14 +37,12 @@ func now() -> UInt64 {
     clock_gettime_nsec_np(CLOCK_UPTIME_RAW)
 }
 
-/// Prints the spread of the time of one keystroke, in milliseconds.
 func report(_ name: String, _ times: [UInt64]) {
     let sorted = times.sorted().map { Double($0) / 1_000_000 }
     let at = { (share: Double) in sorted[min(Int(Double(sorted.count) * share), sorted.count - 1)] }
     print(String(format: "%-16@ n %5d  p50 %6.3f  p90 %6.3f  p99 %6.3f  max %6.3f ms", name as NSString, sorted.count, at(0.5), at(0.9), at(0.99), sorted.last ?? 0))
 }
 
-/// Runs `step` for each keystroke, once to warm up and then `rounds` times, and reports the time of each keystroke.
 func scene(_ name: String, _ texts: [String], _ step: (String) -> Void) {
     texts.forEach(step)
     var times: [UInt64] = []
@@ -71,7 +63,6 @@ let settings = items("settings")
 let glyphs = glyphItems()
 print("items: spots \(spots.count), apps \(apps.count), settings \(settings.count), emoji and symbols \(glyphs.count)")
 
-/// Builds a list of these items `rounds` times, as when its rows arrive, and reports the time of one build.
 func load(_ name: String, _ items: [SpotItem]) {
     var times: [UInt64] = []
     for _ in 0..<rounds {

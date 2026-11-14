@@ -1,14 +1,11 @@
 import Foundation
 
-/// The link that puts the `openspot` command on the path of a terminal. It is on only when the link points at this app.
 public struct CommandLink: Equatable, Sendable {
-    /// The value of its row in a list.
     public static let run = "command_link"
     public static let standard = URL(fileURLWithPath: "/usr/local/bin/openspot")
 
     public let link: URL
     public let target: URL
-    /// Runs a shell line with the rights of an administrator, after macOS asks the person.
     public let elevated: @Sendable (String) throws -> Void
 
     public init(link: URL = standard, target: URL, elevated: @escaping @Sendable (String) throws -> Void) {
@@ -21,7 +18,6 @@ public struct CommandLink: Equatable, Sendable {
         (try? FileManager.default.destinationOfSymbolicLink(atPath: link.path)) == target.path
     }
 
-    /// Its row in a list.
     var row: TextBlock {
         TextBlock(fields: [
             .init(key: "row", value: Self.run),
@@ -32,8 +28,6 @@ public struct CommandLink: Equatable, Sendable {
         ])
     }
 
-    /// Adds the link when it is off, and removes it when it is on. Asks for the rights of an administrator only when the
-    /// folder refuses the change. Returns the toast that names what it did.
     func toggle() throws -> String {
         let manager = FileManager.default
         if isOn {
@@ -51,7 +45,6 @@ public struct CommandLink: Equatable, Sendable {
         return "toast=Installed openspot\n"
     }
 
-    /// Adds the link or removes it, and does nothing when it is so already.
     func set(_ isOn: Bool) throws {
         if isOn != self.isOn { _ = try toggle() }
     }

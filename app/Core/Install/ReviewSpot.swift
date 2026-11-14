@@ -1,10 +1,6 @@
 import Foundation
 
-/// What a person sees before they add a shared spot: its title, the uses that it names, what its text seems to do beyond
-/// them, what runs by itself and its whole text (protocol: Trust). It learns this from the text of the files, runs none of them, and
-/// warns without a refusal.
 public struct ReviewSpot: Equatable, Sendable {
-    /// The ID of its sheet, which has no card in the grid.
     public static let id = "openspot/install"
     static let textLimit = 256_000
     static let installPart = "install"
@@ -15,20 +11,13 @@ public struct ReviewSpot: Equatable, Sendable {
     public let description: String?
     public let folder: URL
     public let subtitle: String
-    /// The lines of what it uses, what it can also do and what runs by itself, as the review shows them, or nothing.
     public let trust: String
-    /// Each line of what it can also do and of what runs by itself, after the title of its section, such as
-    /// `Can also: Delete files with rm`.
     public let canDo: [String]
     private let text: String
     private let canAdd: Bool
-    /// The `.spot` file that its Add reads again, and the lock that records it.
     private var source: URL?
     private var lock: SpotLock?
 
-    /// Reads a spot for a spots folder, with the readme and the preview of its first spot folder after what it uses and
-    /// does. Throws a fault when it gives no spot, cannot go into that folder, or holds a release log that does not check
-    /// against its files. With `canAdd` false it only shows the text.
     public init(spot: SpotPackage, folder: URL, canAdd: Bool = true) throws {
         if let clash = spot.clash(in: folder) { throw SpotError.fault(clash) }
         let logs = try spot.roots.map { try spot.releaseLog(in: $0) }
@@ -46,7 +35,7 @@ public struct ReviewSpot: Equatable, Sendable {
         let programs = spot.files.filter { ($0.isExecutable || ViewLibrary.isLibrary($0.path)) && !Self.canShow($0) }.map(\.path)
         let quiet = "Runs only when you use it"
         let release = (logs.first.flatMap { $0 } ?? ReleaseLog(releases: [])).review(over: spot.roots.first.flatMap { ReleaseLog(installed: $0, in: folder) })
-        subtitle = release.isOtherKey ? Self.otherKey
+        subtitle = release.isOtherKey ? Self.otherKeySubtitle
             : !programs.isEmpty ? "Holds a program that you cannot read" : primary.subtitle ?? (runs.isEmpty ? quiet : "Runs by itself")
         let uses = SpotUse.allCases.filter { use in scan.scripts.contains { $0.uses.contains(use) } }
         let present = spot.files.map(\.path).filter { FileManager.default.fileExists(atPath: folder.appendingPathComponent($0).path) }
@@ -78,28 +67,22 @@ public struct ReviewSpot: Equatable, Sendable {
         ].compactMap { $0 }.joined() + spot.files.filter { !$0.path.hasSuffix("/\(ReleaseLog.fileName)") }.map(Self.shown).joined(separator: "\n")
     }
 
-    /// Reads a spot folder or a zip of spot folders for a spots folder, which its Add puts in that folder and records in
-    /// the lock (protocol: The openspot command).
     public init(file: URL, folder: URL, lock: SpotLock) throws {
         try self.init(spot: SpotPackage(contentsOf: file), folder: folder)
         source = file
         self.lock = lock
     }
 
-    /// Adds the spot as `openspot spot add` adds its file, with each file that the review names as replaced, and returns the
-    /// toast. A file that changed after the review adds nothing.
     func add() async throws -> String {
         guard canAdd, let source, let lock else { throw SpotError.failed(1, "This sheet cannot do that.") }
         _ = try await lock.add(.file(source), to: folder, isConfirmed: true, replaces: shared.replaced(in: folder), expecting: shared)
         return TextBlock(fields: [.init(key: "toast", value: "\(name) added")]).text
     }
 
-    /// Its sheet, which grows out of the search field.
     public var spot: Spot {
         Spot(id: Self.id, name: name, url: folder, kind: .list, symbol: symbol, subtitle: subtitle, read: .sheet, order: .max, host: .review(self), growsFromField: true)
     }
 
-    /// Answers one call with the text a script would print.
     public func answer(_ arguments: [String]) throws -> String {
         switch arguments.first {
         case "read":
@@ -132,7 +115,6 @@ public struct ReviewSpot: Equatable, Sendable {
         ])
     }
 
-    /// Reads the spot as a scan would, from a folder that holds only its files.
     private static func scan(of spot: SpotPackage) throws -> ScanResult {
         let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-review-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: place) }
@@ -140,10 +122,8 @@ public struct ReviewSpot: Equatable, Sendable {
         return try SpotsFolder(url: place).scan()
     }
 
-    /// The subtitle of a version that another key signed than the copy that the spots folder holds.
-    static let otherKey = "Signed by another key"
+    static let otherKeySubtitle = "Signed by another key"
 
-    /// A line for each script that runs with no act of a person, which says when.
     private static func selfRuns(in scan: ScanResult) -> [String] {
         let placed = Set(scan.files.flatMap(\.spots).flatMap(\.places))
         return scan.scripts.compactMap { script in
@@ -167,8 +147,6 @@ public struct ReviewSpot: Equatable, Sendable {
         }
     }
 
-    /// A line for each thing that the text of the files seems to do and `uses` does not name: the network, a delete, a
-    /// screenshot or a copy that skips `openspot`, and each call of `openspot` for another use.
     private static func canAlso(_ spot: SpotPackage, uses: Set<SpotUse>, id: String) -> [String] {
         let texts = spot.files.compactMap(\.text)
         func found(_ tools: [String]) -> [String] {
@@ -192,7 +170,6 @@ public struct ReviewSpot: Equatable, Sendable {
         return lines
     }
 
-    /// The words of each call of `openspot` in a text: a command in a shell, or `openspot.call([...])` in JavaScript.
     private static func calls(in text: String) -> [[String]] {
         let shell = text.matches(of: /openspot[ \t]+([a-z]+)[ \t]+([a-z-]+)((?:[ \t]+[^\s;|&)]+)*)/).map { match in
             [String(match.1), String(match.2)] + match.3.split(whereSeparator: { $0 == " " || $0 == "\t" }).map(unquoted)
@@ -207,7 +184,6 @@ public struct ReviewSpot: Equatable, Sendable {
         word.trimmingCharacters(in: CharacterSet(charactersIn: " \t\"'"))
     }
 
-    /// Words joined as a list is read: `a`, `a and b`, `a, b and c`.
     private static func listed(_ words: [String]) -> String {
         words.count < 2 ? words.joined() : "\(words.dropLast().joined(separator: ", ")) and \(words.last ?? "")"
     }
@@ -216,7 +192,6 @@ public struct ReviewSpot: Equatable, Sendable {
         lines.isEmpty ? nil : "\(title)\n\(lines.joined(separator: "\n"))\n\n"
     }
 
-    /// Whether this path is the program of a Swift script or the library of a view in the spot.
     private static func hasSource(_ path: String, in spot: SpotPackage) -> Bool {
         spot.files.contains { SwiftProgram.path(beside: $0.path) == path || (URL(fileURLWithPath: $0.path).pathExtension == SwiftProgram.sourceExtension && ViewLibrary.path(beside: $0.path) == path) }
     }

@@ -1,7 +1,5 @@
 import Foundation
 
-/// The events of the person as the rows that `openspot calendar` prints (E1). A read never asks for leave: it says
-/// `status=unasked`, and a call outside a read asks (E6, E7).
 public struct Events {
     private static let pane = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars")!
     private static let refusal = "Openspot has no access to your calendars. Allow Openspot in Privacy & Security › Calendars, then try again."
@@ -16,7 +14,6 @@ public struct Events {
         self.isRead = isRead
     }
 
-    /// Each event that has not ended, through the end of a day, in each calendar but the hidden ones, in the order of its start.
     public func events(days: Int, hiding hidden: [String]) async throws -> String {
         guard try await isAllowed() else { return CalendarAccess.unaskedText }
         let events = store.events(from: clock.now, to: clock.end(ofDay: days), hiding: hidden)
@@ -34,7 +31,6 @@ public struct Events {
         return Self.text(store.calendars().map(\.row))
     }
 
-    /// The time of the event whose row has this id, on whose day Calendar opens.
     public func day(of id: String) async throws -> Date {
         switch CalendarItemID(id) {
         case .event(_, let start)?: return start
@@ -43,7 +39,6 @@ public struct Events {
         }
     }
 
-    /// Adds an event from the words, and prints its row. A dry run prints the row it would add, with the id `event:new` (E5).
     public func add(_ words: String, isDry: Bool) async throws -> String {
         let entry = try CalendarEntry(titled: words)
         guard let date = entry.date else {

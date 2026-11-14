@@ -1,6 +1,5 @@
 import Foundation
 
-/// The calls of `openspot key`: the keys of the app, and the key or the shake of a command or a float of a spot (W1, W2).
 struct KeyCalls {
     let environment: [String: String]
     let app: (any RunningApp)?

@@ -70,7 +70,7 @@ final class CallLogTests: SpotRunsCase {
         XCTAssertLessThanOrEqual(text.utf8.count, 2_000)
         XCTAssertTrue(text.contains("run 39"))
         XCTAssertFalse(text.contains("run 0\n"))
-        XCTAssertTrue(text.hasPrefix(CallLog.mark))
+        XCTAssertTrue(text.hasPrefix(CallLog.recordMark))
     }
 
     func testACallKeepsOnlyTheFramesThatItsRecordShows() {
@@ -108,6 +108,6 @@ final class CallLogTests: SpotRunsCase {
         XCTAssertLessThanOrEqual(file.count, 4_000)
         XCTAssertLessThanOrEqual(text.utf8.count, 2_000)
         XCTAssertTrue(text.contains("run 24"))
-        XCTAssertTrue(text.hasPrefix(CallLog.mark))
+        XCTAssertTrue(text.hasPrefix(CallLog.recordMark))
     }
 }

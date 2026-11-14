@@ -1,6 +1,5 @@
 import Foundation
 
-/// The call of `openspot guide`: the guide to building a spot.
 struct GuideCalls {
     let mac: any Mac
 

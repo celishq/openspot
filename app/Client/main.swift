@@ -1,11 +1,8 @@
 import Darwin
 
-/// The time a live call waits for the app that it starts, in seconds, unless `OPENSPOT_START_WAIT` gives another.
-let startWait = getenv("OPENSPOT_START_WAIT").flatMap { Double(String(cString: $0)) } ?? 10
-/// The connection to the app, which Ctrl-C closes so that the app stops the work of the call (protocol: The openspot command).
+let startWaitSeconds = getenv("OPENSPOT_START_WAIT").flatMap { Double(String(cString: $0)) } ?? 10
 nonisolated(unsafe) var connection: Int32 = -1
 
-/// Runs the program of the app with the same arguments, which does a call of files itself (protocol: The openspot command).
 func runAlone(_ app: AppBundle) -> Never {
     let program = app.program
     var argv: [UnsafeMutablePointer<CChar>?] = ([program] + CommandLine.arguments.dropFirst()).map { strdup($0) }
@@ -20,8 +17,6 @@ func fail(_ line: String) -> Never {
     exit(1)
 }
 
-/// Starts the app in the background with no arguments: through `open` for a bundle with an Info.plist, so that it runs as
-/// it does from the Finder with the config folder of this call, and else as its program in a session of its own.
 func startInBackground(_ app: AppBundle, config: String) {
     let bundle = String(app.contents[..<(app.contents.lastIndex(of: "/") ?? app.contents.endIndex)])
     var arguments = access(app.contents + "/Info.plist", F_OK) == 0 ? ["/usr/bin/open", "-g", "-j", bundle] : [app.program]
@@ -42,21 +37,19 @@ func startInBackground(_ app: AppBundle, config: String) {
     _ = posix_spawn(&started, arguments[0], &actions, &attributes, words, environ)
 }
 
-/// Starts the app and waits for its socket, for `startWait` seconds at most, or fails and says so (protocol: The openspot command).
 func reachStarted(_ app: AppBundle, config: String) -> Int32 {
     startInBackground(app, config: config)
     var waited = 0.0
-    while waited < startWait {
+    while waited < startWaitSeconds {
         let reached = reach(config)
         if reached >= 0 { return reached }
         usleep(50_000)
         waited += 0.05
     }
-    let seconds = startWait == startWait.rounded() ? String(Int(startWait)) : String(startWait)
+    let seconds = startWaitSeconds == startWaitSeconds.rounded() ? String(Int(startWaitSeconds)) : String(startWaitSeconds)
     fail("Openspot did not start within \(seconds) seconds, so this call did not run. Open Openspot, then run it again.")
 }
 
-/// Connects to the socket of the API in the config folder, or returns -1 when nothing listens there.
 func reach(_ config: String) -> Int32 {
     guard let real = realpath(config, nil) else { return -1 }
     let path = Array(SocketPath.of(config: String(cString: real)).utf8)
@@ -79,8 +72,6 @@ func reach(_ config: String) -> Int32 {
     return descriptor
 }
 
-/// The request of this call as one JSON-RPC 2.0 line: its arguments, its working folder, its variables, and whether its
-/// stdin is a pipe or a file.
 func request() -> [UInt8] {
     let argv = CommandLine.arguments.dropFirst().map(JSON.quoted).joined(separator: ",")
     var folder = [CChar](repeating: 0, count: Int(PATH_MAX))
@@ -100,7 +91,6 @@ func request() -> [UInt8] {
     return Array(line.utf8)
 }
 
-/// Sends all the bytes, or returns false when the connection closed.
 func deliver(_ line: [UInt8], on socket: Int32) -> Bool {
     var offset = 0
     while offset < line.count {
@@ -129,9 +119,9 @@ func put(_ bytes: [UInt8], to descriptor: Int32) {
 guard let app = AppBundle() else { fail("openspot cannot find the path of its own program.") }
 let arguments = Array(CommandLine.arguments.dropFirst())
 let isLive = CommandKind.needsApp(arguments)
-connection = app.config.map(reach) ?? -1
+connection = app.configFolder.map(reach) ?? -1
 if connection < 0 {
-    guard isLive, let config = app.config else { runAlone(app) }
+    guard isLive, let config = app.configFolder else { runAlone(app) }
     connection = reachStarted(app, config: config)
 }
 signal(SIGINT) { _ in

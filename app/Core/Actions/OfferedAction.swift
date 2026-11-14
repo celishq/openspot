@@ -1,19 +1,13 @@
 import Foundation
 
-/// An action that a spot adds to the actions menu of other cards, with the spot that runs it, the group it shows in, and
-/// the origins of the cards it fits. With no origin, it fits every card. `when` names a function of a JavaScript spot that
-/// says whether it shows on a card (protocol: Buttons and actions).
 public struct OfferedAction: Equatable, Sendable {
     public let action: CommandAction
-    /// The ID of the spot that offers it, which a press runs.
     public let owner: String
-    /// The title of its group in the menu: the name of its spot, or nil for a spot of the app, whose actions have none.
     public private(set) var group: String?
     public let origins: Set<SpotOrigin>
     public let when: String?
 
-    /// The words of the filter, each with its origin.
-    static let words: [String: SpotOrigin] = ["mine": .mine, "core": .core, "builtin": .builtIn]
+    static let originWords: [String: SpotOrigin] = ["mine": .mine, "core": .core, "builtin": .builtIn]
 
     public init(action: CommandAction, owner: String = "", group: String? = nil, origins: Set<SpotOrigin> = [], when: String? = nil) {
         self.action = action
@@ -23,8 +17,6 @@ public struct OfferedAction: Equatable, Sendable {
         self.when = when
     }
 
-    /// The actions that these header buttons offer: each with `offers=actions` and a filter, and each named after one of
-    /// them with a dot, which joins its submenu and its filter. Throws a fault that names what is wrong.
     static func read(_ buttons: [TextBlock], owner: String, of name: String, isInline: Bool) throws -> [OfferedAction] {
         if let block = buttons.first(where: { $0.values("offers").contains { $0.split(separator: " ").first != "actions" } }) {
             let word = block.values("offers").first { $0.split(separator: " ").first != "actions" } ?? ""
@@ -56,17 +48,15 @@ public struct OfferedAction: Equatable, Sendable {
         return offered
     }
 
-    /// The origins that a filter's comma list names.
     private static func origins(_ filter: String, of name: String) throws -> Set<SpotOrigin> {
         try Set(filter.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }.map { word in
-            guard let origin = words[word] else {
+            guard let origin = originWords[word] else {
                 throw SpotError.fault("\(name) offers actions to an unknown card: \(word). Use mine, core or builtin")
             }
             return origin
         })
     }
 
-    /// The same action in the app's group, which has no header.
     func ofTheApp() -> OfferedAction {
         var offered = self
         offered.group = nil

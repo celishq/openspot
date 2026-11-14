@@ -1,7 +1,5 @@
 import Foundation
 
-/// The calls of `openspot reminders`: the reminders of the Mac (E1-E5). It keeps the store warm across calls once the
-/// person gave it leave.
 final class RemindersCalls: @unchecked Sendable {
     private let mac: any Mac
     private let lock = NSLock()
