@@ -1,13 +1,8 @@
 import Foundation
 
-/// How an open sheet moves the other cards of the grid. Each card is pushed away from the sheet's card as far as the
-/// sheet's edge on its side moves, and fades as it crosses the window's edge.
 public struct SheetPush: Equatable, Sendable {
-    /// The card that the sheet grows from.
     public let open: SpotPlacement
-    /// The sheet's rect, in the grid.
     public let sheet: CGRect
-    /// The rect of the window, in the grid.
     public let window: CGRect
 
     public init(open: SpotPlacement, sheet: CGRect, window: CGRect) {
@@ -16,7 +11,6 @@ public struct SheetPush: Equatable, Sendable {
         self.window = window
     }
 
-    /// How far the open sheet pushes a card. A card that lies wholly beside the sheet's columns, on a wide grid, stays.
     public func offset(of placement: SpotPlacement) -> CGSize {
         let from = open.rect
         let rect = placement.rect
@@ -28,9 +22,6 @@ public struct SheetPush: Equatable, Sendable {
         )
     }
 
-    /// How far a card that has moved this far has faded and shrunk, from 0 to 1: the share of its way from its place until
-    /// its centre meets the window's edge, or of its whole push when it stays in the window. Nil for a card that the push
-    /// leaves in place, and 0 for the sheet's own card.
     public func fade(of placement: SpotPlacement, movedBy moved: CGSize) -> Double? {
         guard placement.index != open.index else { return 0 }
         let push = offset(of: placement)

@@ -1,18 +1,14 @@
 import Foundation
 
-/// Every key that a part can hold, as the kinds table of the guide names them, and the faults a printed part can have.
 public enum PartCatalog {
     static let keys: Set<String> = [
         "title", "detail", "icon", "min", "max", "color", "value", "display",
         "placeholder", "readonly", "required", "type", "close", "confirm", "scope", "form", "align", "look",
         "shortcut", "tone", "unit"
     ]
-    /// The kinds whose blocks can hold keys of the spot's own, which a view reads.
     private static let open: Set<String> = ["view"]
-    /// The keys of an `option` block after a choice.
     private static let optionKeys: Set<String> = ["option", "title", "icon"]
 
-    /// What is wrong with a block of a part, in words for a person or an agent.
     public static func faults(in block: TextBlock) -> [String] {
         let name = block.fields.first?.value ?? ""
         let isOpen = open.contains(block.fields.first?.key ?? "")
@@ -52,8 +48,6 @@ public enum PartCatalog {
         return faults
     }
 
-    /// What keeps a button that no drawing places from being an action: no title, a shortcut that a button cannot take, or
-    /// an unknown scope.
     public static func actionFaults(in block: TextBlock) -> [String] {
         let id = block.value("button") ?? ""
         var faults = (block.value("title") == nil ? ["the button \(id) needs a title"] : []) + shortcutFaults(in: block)

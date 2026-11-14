@@ -1,7 +1,5 @@
 import Foundation
 
-/// What the person chose for the spots: a size, which the grid keeps, whether the grid shows a spot, whether its rows join
-/// the main search, whether the menu bar shows it, its letter, and the order.
 public struct SpotArrangement: Equatable, Sendable {
     public struct Choice: Equatable, Sendable {
         public let id: String
@@ -10,11 +8,8 @@ public struct SpotArrangement: Equatable, Sendable {
         public var isEnabled: Bool?
         public var isGlobal: Bool?
         public var isInMenuBar: Bool?
-        /// The letter that runs the spot from the panel. An empty letter takes away the letter of the default config.
         public var letter: String?
-        /// A key of the panel that opens the sheet of the spot, such as cmd+n.
         public var key: ActionKey?
-        /// The side panel that the spot lies in, on the grid.
         public var panel: GridPanel?
 
         public init(id: String, size: SpotSize? = nil, isOnGrid: Bool? = nil, isEnabled: Bool? = nil, isGlobal: Bool? = nil, isInMenuBar: Bool? = nil, letter: String? = nil, key: ActionKey? = nil) {
@@ -32,7 +27,6 @@ public struct SpotArrangement: Equatable, Sendable {
     public private(set) var choices: [Choice] {
         didSet { places = Self.places(of: choices) }
     }
-    /// The offset of the first choice of each spot.
     private var places: [String: Int]
 
     public init(choices: [Choice] = []) {
@@ -48,7 +42,6 @@ public struct SpotArrangement: Equatable, Sendable {
         places[id].map { choices[$0] }
     }
 
-    /// The spot whose sheet a key of the panel opens: the person's choice, or else the default config's.
     public func spot(openedBy key: ActionKey, over defaults: SpotArrangement) -> String? {
         if let own = choices.first(where: { $0.key == key }) { return own.id }
         return defaults.choices.first { choice in choice.key == key && self.choice(of: choice.id)?.key == nil }?.id
@@ -70,8 +63,6 @@ public struct SpotArrangement: Equatable, Sendable {
         choice(of: id)?.isGlobal
     }
 
-    /// The letter of each spot: each letter of these choices first, then each letter of the defaults for a spot that these
-    /// choices give no letter, while no spot holds it. Of two spots with one letter, the first keeps it.
     public func letters(over defaults: SpotArrangement) -> [String: CommandKey] {
         var letters: [String: CommandKey] = [:]
         var taken = Set<String>()
@@ -86,7 +77,6 @@ public struct SpotArrangement: Equatable, Sendable {
         return letters
     }
 
-    /// Gives a spot this letter, or takes its letter away with nil. Returns the spot that held the letter, which loses it.
     public mutating func give(_ letter: CommandKey?, to id: String, over defaults: SpotArrangement) -> String? {
         let holder = letter.flatMap { key in letters(over: defaults).first { $0.value == key && $0.key != id }?.key }
         if let holder { change(holder) { $0.letter = "" } }
@@ -94,29 +84,23 @@ public struct SpotArrangement: Equatable, Sendable {
         return holder
     }
 
-    /// The IDs of the spots that the person put in the menu bar.
     public var menuBar: Set<String> {
         Set(choices.filter { $0.isInMenuBar == true }.map(\.id))
     }
 
-    /// The IDs of the core spots that the person turned on.
     public var enabled: Set<String> {
         Set(choices.filter { $0.isEnabled == true }.map(\.id))
     }
 
-    /// The IDs of the spots that the person turned off. A spot of the spots folder loads unless it is here.
     public var disabled: Set<String> {
         Set(choices.filter { $0.isEnabled == false }.map(\.id))
     }
 
-    /// The commands in the order of the grid: each listed one takes a place that a listed one holds, in the order of the
-    /// list, and each other one stays where it is.
     public func ordered(_ spots: [Spot]) -> [Spot] {
         var listed = spots.filter { places[$0.id] != nil }.sorted { places[$0.id]! < places[$1.id]! }.makeIterator()
         return spots.map { places[$0.id] != nil ? listed.next()! : $0 }
     }
 
-    /// Lists these spots in this order, with their choices. A choice for a spot that is gone stays after them.
     public mutating func arrange(_ ids: [String]) {
         let listed = Set(ids)
         let kept = choices.filter { !listed.contains($0.id) }
@@ -131,7 +115,6 @@ public struct SpotArrangement: Equatable, Sendable {
         change(id) { $0.isOnGrid = isOnGrid }
     }
 
-    /// Puts a spot on a side panel, or with the center, takes its side away.
     public mutating func set(panel: GridPanel, of id: String) {
         change(id) { $0.panel = panel == .center ? nil : panel }
     }
@@ -149,7 +132,6 @@ public struct SpotArrangement: Equatable, Sendable {
         choices.indices.filter { choices[$0].id == id }.forEach { work(&choices[$0]) }
     }
 
-    /// The lines of its choices in the config file.
     var text: String {
         choices.map { choice in
             var lines = ["[[spots]]", "id = \"\(choice.id)\""]

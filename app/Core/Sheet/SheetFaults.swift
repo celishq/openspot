@@ -1,7 +1,6 @@
 import Foundation
 import CoreGraphics
 
-/// What is wrong with the layout of a sheet, in words that let a person or a model fix it.
 public enum SheetFaults {
     private static let letterWidth: CGFloat = 6.5
     private static let detailLetterWidth: CGFloat = 5.5
@@ -12,7 +11,6 @@ public enum SheetFaults {
     private static let swatchWidth: CGFloat = 26
     private static let smallSwatchWidth: CGFloat = 18
 
-    /// Returns one line for each fault. A sheet with no drawing has only the faults of its height.
     public static func of(layout: SheetLayout?, summary: TextBlock?, parts: [SpotPart]) -> [String] {
         var faults: [String] = []
         if summary?.value("layout") != nil { faults.append("a sheet has no layout key, so draw it with grid= lines") }
