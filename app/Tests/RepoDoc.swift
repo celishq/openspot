@@ -68,8 +68,7 @@ struct RepoDoc {
     func section(_ heading: String) -> String {
         let lines = prose.components(separatedBy: "\n")
         guard let start = lines.firstIndex(where: { $0.hasPrefix("#") && String($0.drop { $0 == "#" }.dropFirst()) == heading }) else { return "" }
-        let level = lines[start].prefix { $0 == "#" }.count
-        let rest = lines[(start + 1)...].prefix { line in !(line.hasPrefix("#") && line.contains("# ") && line.prefix { $0 == "#" }.count <= level) }
+        let rest = lines[(start + 1)...].prefix { line in !(line.hasPrefix("#") && line.contains("# ")) }
         return rest.joined(separator: "\n")
     }
 
