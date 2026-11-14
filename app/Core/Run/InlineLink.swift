@@ -34,7 +34,7 @@ final class InlineLink: ScriptLink {
     func send(_ call: SpotRun.Call) -> Bool {
         guard let run else { return false }
         let made = ScriptCall(action: call.action, key: call.key, started: runs.now())
-        let inline = InlineCall(arguments: call.action.arguments, variables: call.variables, input: call.input)
+        let inline = InlineCall(arguments: call.action.arguments, variables: run.withPage(call.variables), input: call.input)
         made.halt = { inline.stop() }
         if case .ask(let ask) = call.purpose, !ask.isAnswer { asking.append(made) }
         run.track(made)
@@ -165,7 +165,7 @@ final class InlineLink: ScriptLink {
     private func text(of action: SpotAction, key: String, input: String?) async throws -> String? {
         guard let run else { return nil }
         let made = ScriptCall(action: action, key: key, started: runs.now())
-        let inline = InlineCall(arguments: action.arguments, input: input)
+        let inline = InlineCall(arguments: action.arguments, variables: run.withPage([:]), input: input)
         made.halt = { inline.stop() }
         run.track(made)
         let begin = Date()

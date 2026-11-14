@@ -260,6 +260,10 @@ public final class SpotRun {
     /// The drops and the drags of files that wait for the running work, each in turn (protocol: The calls, Files out).
     @ObservationIgnored var waitingFiles: [SpotAction] = []
     @ObservationIgnored var waitingKeys: [String] = []
+    /// The page that the sheet shows, which each call names in `OPENSPOT_PAGE`, or nil for the spot's first sheet.
+    public internal(set) var page: String?
+    /// What each page last showed, by page, while another one shows, at most `SheetHistory.limit` of them.
+    @ObservationIgnored var keptPages: [(page: String?, kept: KeptPage)] = []
 
     init(spot: Spot, runs: SpotRuns, recent: [String], prepare: @escaping ([SpotItem], [String]) async -> Void) {
         self.spot = spot

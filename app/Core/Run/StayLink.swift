@@ -98,7 +98,7 @@ final class StayLink: ScriptLink {
             let id = next()
             ask(.read(generation: generation, reports: reports, tells: tells), id: id, reason: call.variables["OPENSPOT_REASON"])
             opened(id, .read, input: call.input, reason: call.reason)
-            script.send(.read, input: call.input, variables: call.variables, id: id)
+            script.send(.read, input: call.input, variables: paged(call.variables), id: id)
         case .ask(.search(let query)):
             stop { if case .search = $0 { true } else { false } }
             if let id = send(.read, input: call.input, variables: call.variables, reason: call.reason) { ask(.search(query), id: id, reason: call.variables["OPENSPOT_REASON"]) }
@@ -193,7 +193,7 @@ final class StayLink: ScriptLink {
         askReason = variables["OPENSPOT_REASON"]
         asks[id] = .read(generation: nil, reports: true)
         opened(id, .read, input: nil, reason: reason ?? startReason)
-        script.send(.read, variables: variables, id: id)
+        script.send(.read, variables: paged(variables), id: id)
         Task { await follow(script, frames) }
     }
 
@@ -208,7 +208,7 @@ final class StayLink: ScriptLink {
         }
         let id = next()
         opened(id, action, input: input, reason: reason)
-        script.send(action, input: input, variables: variables, id: id)
+        script.send(action, input: input, variables: paged(variables), id: id)
         if let key {
             let call = ScriptCall(action: action, key: key, started: runs.now())
             call.halt = { script.send(text: SpotAction.stopEvent(id: id)) }
@@ -217,6 +217,11 @@ final class StayLink: ScriptLink {
         }
         settle()
         return id
+    }
+
+    /// The variables of a call with the page of the sheet added.
+    private func paged(_ variables: [String: String]) -> [String: String] {
+        run?.withPage(variables) ?? variables
     }
 
     /// Keeps an ask until the frame that ends it, for the read limit at most.
