@@ -1,6 +1,5 @@
 import Foundation
 
-/// The languages to translate into: those the person prefers, each once, with no country and without the source.
 public struct TranslationTargets: Equatable, Sendable {
     public let codes: [String]
 

@@ -1,12 +1,8 @@
 import CryptoKit
 import Foundation
 
-/// One signed release of a spot: a nostr event (NIP-01) of kind 30063, the release artifact set of NIP-51. Its `d` tag is
-/// `<address>@<version>`, a `file` tag names each file with its SHA-256, its size and its mode, an `e` tag marked `previous`
-/// names the release before it, and its content is the readme.
 public struct SpotRelease: Equatable, Sendable {
     public static let kind = 30063
-    /// The marker of the `e` tag that names the release before this one.
     static let previousMarker = "previous"
 
     public let id: String
@@ -17,7 +13,6 @@ public struct SpotRelease: Equatable, Sendable {
     public let content: String
     public let signature: String
 
-    /// Signs a release of these files.
     public static func sign(
         _ files: [SpotPackage.File],
         address: String,
@@ -40,7 +35,6 @@ public struct SpotRelease: Equatable, Sendable {
         )
     }
 
-    /// Reads one line of `releases.jsonl`. Throws a fault for a line that is not an event.
     public init(line: String) throws {
         guard let object = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
               let id = object["id"] as? String, let publicKey = object["pubkey"] as? String,
@@ -61,14 +55,12 @@ public struct SpotRelease: Equatable, Sendable {
         self.signature = signature
     }
 
-    /// Whether its id is the hash of what it holds, and its signature is its author's over that id.
     public var isAuthentic: Bool {
         let digest = Self.digest(publicKey: publicKey, createdAt: createdAt, kind: kind, tags: tags, content: content)
         guard digest.hex == id, let signature = Data(hex: signature) else { return false }
         return AccountKey.isValid(signature, of: digest, by: publicKey)
     }
 
-    /// The address of the spot, the same for each of its versions.
     public var address: String? {
         place?.address
     }
@@ -77,12 +69,10 @@ public struct SpotRelease: Equatable, Sendable {
         place?.version
     }
 
-    /// The id of the release before this one.
     public var previous: String? {
         tags.first { $0.count >= 4 && $0[0] == "e" && $0[3] == Self.previousMarker }?[1]
     }
 
-    /// The manifest of the files that it names. Throws a fault for a `file` tag that cannot be read.
     public func manifest() throws -> SpotManifest {
         SpotManifest(try tags.filter { $0.first == "file" }.map { tag in
             guard tag.count >= 5, let size = Int(tag[3]), ["755", "644"].contains(tag[4]) else {
@@ -92,7 +82,6 @@ public struct SpotRelease: Equatable, Sendable {
         })
     }
 
-    /// Its line in `releases.jsonl`: the event as one line of JSON.
     public var line: String {
         let fields = [
             "\"id\":\(Self.quoted(id))", "\"pubkey\":\(Self.quoted(publicKey))", "\"created_at\":\(createdAt)", "\"kind\":\(kind)",
@@ -101,14 +90,12 @@ public struct SpotRelease: Equatable, Sendable {
         return "{" + fields.joined(separator: ",") + "}"
     }
 
-    /// The address and the version that its `d` tag holds.
     private var place: (address: String, version: Int)? {
         guard let value = tags.first(where: { $0.count >= 2 && $0[0] == "d" })?[1], let at = value.lastIndex(of: "@"),
               let version = Int(value[value.index(after: at)...]) else { return nil }
         return (String(value[..<at]), version)
     }
 
-    /// The SHA-256 of the NIP-01 serialization: `[0,pubkey,created_at,kind,tags,content]` with no spaces.
     static func digest(publicKey: String, createdAt: Int, kind: Int, tags: [[String]], content: String) -> Data {
         let text = "[0,\(quoted(publicKey)),\(createdAt),\(kind),\(json(tags)),\(quoted(content))]"
         return Data(CryptoKit.SHA256.hash(data: Data(text.utf8)))
@@ -118,7 +105,6 @@ public struct SpotRelease: Equatable, Sendable {
         "[" + tags.map { "[" + $0.map(quoted).joined(separator: ",") + "]" }.joined(separator: ",") + "]"
     }
 
-    /// A JSON string as NIP-01 writes it: only the quote, the backslash and the control characters are escaped.
     static func quoted(_ text: String) -> String {
         var result = "\""
         for scalar in text.unicodeScalars {

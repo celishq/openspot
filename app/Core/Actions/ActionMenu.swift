@@ -1,59 +1,41 @@
 import Foundation
 
-/// The rows of the actions menu for one command and its selected item, with the selected row. Its rows come in groups:
-/// the spot's own with Openspot's after them, then those that each other spot offers, A to Z by its name. Each group after
-/// the first has a header line, unless a search shows the rows.
 public struct ActionMenu: Equatable, Sendable {
     public struct Row: Equatable, Sendable {
         public let title: String
         public let keyLabel: String
         public let action: CommandAction?
-        /// Whether the hint leaves it out, as a row that each spot has.
         var isQuiet = false
-        /// The ID of the spot that offers the action, which a press runs. Nil for an action of the menu's own spot or of the app.
         public var owner: String?
-        /// The title of its group, which its header shows. Nil for the first group: the menu's own spot and the app.
         var group: String?
-        /// The rows of its submenu: each action of its spot whose ID is its own ID, a dot and a name, such as `change.draw`.
         public var children: [Row] = []
     }
 
-    /// The title of a group, and the line it takes among the lines of the rows.
     public struct Header: Equatable, Sendable {
         public let title: String
         public let line: Int
     }
 
-    /// What Enter does on a row that shows a key: it records a new one.
     static let changeTitle = "Change"
-    /// What Enter does on a row that has no key yet.
     static let setTitle = "Set"
 
-    /// The key that opens and closes the menu, as the footer shows it.
     public static let key = "⌘K"
 
-    /// How many rows a menu needs to show a field to search them.
     private static let searchFrom = 3
 
     public let rows: [Row]
-    /// The submenu that shows beside the menu, which then takes the keys. Nil while none shows.
     public private(set) var submenu: Submenu?
 
-    /// The children of one row, which show beside it, with the selected one.
     public struct Submenu: Equatable, Sendable {
-        /// The index of its row among the shown rows.
         public let parent: Int
         public let rows: [Row]
         public fileprivate(set) var selected = 0
     }
-    /// The rows that the search finds, best first. With no search, each row.
     public private(set) var shown: [Row]
     public private(set) var query = ""
     public private(set) var selected = 0
     public private(set) var confirming: String?
 
-    /// Lists what Enter does, the actions that fit, then the actions that spots offer: the app's first, then each other
-    /// spot's, A to Z. Returns nil when there is nothing to list.
     public init?(spot: Spot, item: SpotItem?, showsOpen: Bool = true, offered: [OfferedAction] = []) {
         var rows: [Row] = []
         let keyTitle = item.flatMap { $0.records ? ($0.shortcut == KeyList.unset ? Self.setTitle : Self.changeTitle) : nil }
@@ -70,7 +52,6 @@ public struct ActionMenu: Equatable, Sendable {
         shown = rows
     }
 
-    /// Moves each row whose action ID is that of an earlier row of its owner, a dot and a name, into that row's children.
     private static func nested(_ rows: [Row]) -> [Row] {
         var top: [Row] = []
         for row in rows {
@@ -85,12 +66,10 @@ public struct ActionMenu: Equatable, Sendable {
         return top
     }
 
-    /// The row whose submenu shows, or nil while none shows.
     public var parent: Row? {
         submenu.map { shown[$0.parent] }
     }
 
-    /// Opens the submenu of the selected row. Returns false for a row with none.
     public mutating func enterSelected() -> Bool {
         guard submenu == nil, shown.indices.contains(selected), !shown[selected].children.isEmpty else { return false }
         submenu = Submenu(parent: selected, rows: shown[selected].children)
@@ -98,7 +77,6 @@ public struct ActionMenu: Equatable, Sendable {
         return true
     }
 
-    /// Closes the submenu, and leaves its row selected. Returns false when none shows.
     public mutating func back() -> Bool {
         guard submenu != nil else { return false }
         submenu = nil
@@ -106,7 +84,6 @@ public struct ActionMenu: Equatable, Sendable {
         return true
     }
 
-    /// Selects a shown row as the pointer reaches it: its submenu opens, and the submenu of another row closes.
     public mutating func point(at index: Int) {
         guard shown.indices.contains(index) else { return }
         if submenu?.parent == index { return }
@@ -116,7 +93,6 @@ public struct ActionMenu: Equatable, Sendable {
         _ = enterSelected()
     }
 
-    /// Selects a row of the submenu.
     public mutating func pointSubmenu(at index: Int) {
         guard let rows = submenu?.rows, rows.indices.contains(index), submenu?.selected != index else { return }
         submenu?.selected = index
@@ -127,23 +103,18 @@ public struct ActionMenu: Equatable, Sendable {
         rows.count >= Self.searchFrom
     }
 
-    /// How many lines it draws: one for each row that it shows, one for each header, and one for the field of a menu that
-    /// searches.
     public var lines: Int {
         shown.count + headers.count + (isSearchable ? 1 : 0)
     }
 
-    /// How many lines it draws with no search, which sets its place.
     public var fullLines: Int {
         rows.count + Self.headers(of: rows).count + (isSearchable ? 1 : 0)
     }
 
-    /// The header of each group after the first, with no search. A menu of one group has none.
     public var headers: [Header] {
         query.isEmpty ? Self.headers(of: shown) : []
     }
 
-    /// The line of the shown row at this index among the lines of the rows and the headers.
     public func line(ofShown index: Int) -> Int {
         index + headers.enumerated().filter { $0.element.line - $0.offset <= index }.count
     }
@@ -157,13 +128,11 @@ public struct ActionMenu: Equatable, Sendable {
         return headers
     }
 
-    /// The selected row of the submenu while one shows, else of the menu.
     public var selectedRow: Row? {
         if let submenu { return submenu.rows.indices.contains(submenu.selected) ? submenu.rows[submenu.selected] : nil }
         return shown.indices.contains(selected) ? shown[selected] : nil
     }
 
-    /// Shows the rows whose words match the text, as the lists match them, and selects the first.
     public mutating func search(_ text: String) {
         guard text != query else { return }
         query = text
@@ -175,13 +144,10 @@ public struct ActionMenu: Equatable, Sendable {
         confirming = nil
     }
 
-    /// The first keys and the key of this menu, in words for a footer.
     public var hint: String {
         hint(stopping: { _ in false })
     }
 
-    /// The first two keys, an action that holds Esc, and the key of this menu, in words for a footer. The key of a running row
-    /// says that it stops the call. A second key of the item, such as ⌘⏎ Settings, follows the first.
     public func hint(stopping isRunning: (Row) -> Bool, second: String? = nil) -> String {
         let keyed = rows.filter { !$0.keyLabel.isEmpty && !$0.isQuiet }
         let isEscape = { (row: Row) in row.action?.key == ActionKey(name: "escape") }
@@ -191,7 +157,6 @@ public struct ActionMenu: Equatable, Sendable {
         return (keys + ["\(Self.key) Actions"]).joined(separator: "   ")
     }
 
-    /// Moves the selection of the submenu while one shows, else of the menu.
     public mutating func move(by step: Int) {
         guard step != 0 else { return }
         if let submenu {
@@ -202,15 +167,12 @@ public struct ActionMenu: Equatable, Sendable {
         confirming = nil
     }
 
-    /// Selects the row of this action. A search that hides it ends first.
     public mutating func select(_ action: CommandAction) {
         submenu = nil
         if !shown.contains(where: { $0.action == action }) { search("") }
         selected = shown.firstIndex { $0.action == action } ?? selected
     }
 
-    /// Takes a press of the selected row. A row with children opens them, and a row that asks to confirm needs a second
-    /// press: each returns nil. A running row stops its call, which needs no question.
     public mutating func press(isRunning: Bool = false) -> Row? {
         guard let row = selectedRow else { return nil }
         if !row.children.isEmpty {
@@ -222,8 +184,6 @@ public struct ActionMenu: Equatable, Sendable {
         return nil
     }
 
-    /// What a row says now. A running row says that it stops the call, and a row shows its question while it waits for the
-    /// second press.
     public func title(of row: Row, isRunning: Bool = false) -> String {
         if isRunning { return Self.stopTitle(of: row) }
         if let action = row.action, action.id == confirming, let confirm = action.confirm { return confirm }

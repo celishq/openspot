@@ -1,7 +1,5 @@
 import Foundation
 
-/// The id of the row of an event or a reminder, which each other verb takes as it is (E1): one time of an event, so that each
-/// time of a repeating event has its own, or a reminder.
 enum CalendarItemID: Equatable {
     case event(String, start: Date)
     case reminder(String)
@@ -9,7 +7,6 @@ enum CalendarItemID: Equatable {
     private static let eventPrefix = "event:"
     private static let reminderPrefix = "reminder:"
 
-    /// Reads the id of a row, or returns nil for any other text.
     init?(_ text: String) {
         if text.hasPrefix(Self.reminderPrefix) {
             self = .reminder(String(text.dropFirst(Self.reminderPrefix.count)))
@@ -28,7 +25,6 @@ enum CalendarItemID: Equatable {
         }
     }
 
-    /// The failure of a verb that got an id that names no row of its kind.
     static func missing(_ text: String) -> SpotError {
         SpotError.failed(1, "Openspot cannot find \(text). Read the list again, and use the id of one of its rows.")
     }

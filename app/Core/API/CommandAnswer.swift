@@ -1,6 +1,5 @@
 import Foundation
 
-/// What a call of `openspot` prints and the code it exits with, as its process gives them.
 public struct CommandAnswer: Equatable, Sendable {
     public let output: String
     public let errors: String
@@ -12,7 +11,6 @@ public struct CommandAnswer: Equatable, Sendable {
         self.code = code
     }
 
-    /// The answer of a failed call: its reason on stderr and code 1, with the link to its fix on stdout when it has one.
     init(failure error: Error) {
         let link = if case SpotError.failedWithFix(_, _, let link) = error { "link=\(link.absoluteString)\n" } else { "" }
         self.init(output: link, errors: "\((error as? SpotError)?.reason ?? error.localizedDescription)\n", code: 1)
@@ -20,8 +18,6 @@ public struct CommandAnswer: Equatable, Sendable {
 }
 
 extension CommandAnswer {
-    /// The work of a call that only the running app can answer, when no app answers. `call` is its words, such as
-    /// `grid edit`.
     static func notRunning(_ call: String) -> CommandAPI.Work {
         {
             let call = "openspot \(call)"
@@ -29,7 +25,6 @@ extension CommandAnswer {
         }
     }
 
-    /// The work that prints what the text work returns, and fails as `init(failure:)` says.
     static func work(_ text: @escaping @Sendable () async throws -> String) -> CommandAPI.Work {
         {
             do { return CommandAnswer(output: try await text()) } catch { return CommandAnswer(failure: error) }

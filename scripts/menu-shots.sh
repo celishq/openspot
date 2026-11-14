@@ -1,6 +1,4 @@
 #!/bin/sh
-# Builds a Release app and saves pictures of the actions menu into .temp/shots: at a small card on each side, a wide card,
-# a long menu and its search, a row of SPOT's list (apps by default), and a search result. The field's pictures are at 2x.
 set -e
 cd "$(dirname "$0")/.."
 out=.temp/shots

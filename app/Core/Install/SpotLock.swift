@@ -1,33 +1,20 @@
 import Foundation
 
-/// `spots.lock` in the config folder: the source of each spot that `openspot spot add` put in the spots folder, the
-/// commit of a git source, the paths that the spot took, a hash of its files, its uses and the lines of what it can also
-/// do and of what runs by itself (protocol: The openspot command, Trust). A first add of a spot that has a use, can do more or runs by itself, and an update that adds a use, change
-/// nothing until the person confirms them. Each read, change and write holds a lock beside the file, in the app and in
-/// the command alike.
 public struct SpotLock: Equatable, Sendable {
     public struct Entry: Codable, Equatable, Sendable {
         public let source: String
         public let commit: String?
-        /// The paths that it took in the spots folder, each in a spot folder. A path that an older Openspot kept outside
-        /// one, such as `coffee` or `notes.sh`, reads as the place where a wrap of the folder put it.
         public let paths: [String]
-        /// The hash of the manifest of its files.
         public let hash: String?
-        /// The uses that its scripts name, in the order of the set.
         public let uses: [SpotUse]?
-        /// The lines of what it can also do and of what runs by itself, as its review shows them.
         public var canDo: [String]?
-        /// The address and the signing key of its last release, when it came signed.
         public var address: String?
         public var key: String?
 
-        /// The name of the spot: its first spot folder with no extension.
         public var name: String {
             SpotID(path: paths.first ?? source).name
         }
 
-        /// Whether a spot of this ID came from this entry: any script in one of its spot folders.
         func holds(_ id: String) -> Bool {
             paths.contains { path in
                 SpotID(id).isSameFolder(as: SpotID(path: path))
@@ -60,19 +47,15 @@ public struct SpotLock: Equatable, Sendable {
         }
 
 
-        /// The line that tells the person what came in.
         var added: String {
             commit.map { "Added \(name) at \($0.prefix(7)).\n" } ?? "Added \(name).\n"
         }
 
-        /// The line that tells the person what an update brought.
         var updated: String {
             commit.map { "Updated \(name) to \($0.prefix(7)).\n" } ?? "Updated \(name).\n"
         }
     }
 
-    /// The hash, the uses, the lines of what it can also do and of what runs by itself, and the last release, of a spot's
-    /// paths in a folder.
     private struct Facts {
         let hash: String
         let uses: [SpotUse]
@@ -93,7 +76,6 @@ public struct SpotLock: Equatable, Sendable {
         SpotLock(url: SpotsFolder.config(environment: environment, home: home).appendingPathComponent(name))
     }
 
-    /// Each entry, in the order that the spots came in. No file has none.
     public func entries() throws -> [Entry] {
         guard let data = try? Data(contentsOf: url) else { return [] }
         guard let entries = try? JSONDecoder().decode([Entry].self, from: data) else {
@@ -102,12 +84,6 @@ public struct SpotLock: Equatable, Sendable {
         return entries
     }
 
-    /// Puts a spot from a source in the folder, and records it in place of each entry that shared a path with it. A first
-    /// add of a spot that the review would show with lines of uses, of what it can also do or of what runs by itself
-    /// throws those lines, and a source that the lock has already is an update of its spot, which applies only when it adds
-    /// no use; `isConfirmed` lets either through (protocol: Trust). `replaces` names more paths that the new spot may replace, and
-    /// `expecting` the files that the source must still hold, such as those a review showed. The old copy goes to `discard`,
-    /// as the Trash. Returns the line that tells the person what changed.
     public func add(
         _ source: SpotSource,
         to folder: URL,
@@ -149,9 +125,6 @@ public struct SpotLock: Equatable, Sendable {
         }
     }
 
-    /// Adds each spot of the lockfile whose first path the folder lacks, a git one at its commit. One whose files no longer
-    /// match the hash comes back only when it adds no use, or when `isConfirmed` (protocol: Trust). A spot that cannot come back is a
-    /// fault line, and the others still come.
     public func restore(to folder: URL, isConfirmed: Bool = false) async throws -> CommandAnswer {
         try await locked { try await restoring(to: folder, isConfirmed: isConfirmed) }
     }
@@ -184,8 +157,6 @@ public struct SpotLock: Equatable, Sendable {
         return CommandAnswer(output: added, errors: faults, code: faults.isEmpty ? 0 : 1)
     }
 
-    /// Throws the lines that name each use, and each line of what it can also do or of what runs by itself, that the new
-    /// version adds, with the command that confirms it, when it adds any.
     private static func refuseGrowth(from uses: [SpotUse], _ canDo: [String], to new: Facts, confirm: String) throws {
         let added = new.uses.filter { !uses.contains($0) }
         let more = new.canDo.filter { !canDo.contains($0) }
@@ -194,7 +165,6 @@ public struct SpotLock: Equatable, Sendable {
         throw SpotError.fault(([head] + more + ["Openspot kept the one you have. Run `\(confirm)` to update it."]).joined(separator: "\n"))
     }
 
-    /// The hash of the files under the paths in a folder, and the uses that their scripts name.
     private static func facts(of paths: [String], in folder: URL) throws -> Facts {
         let spot: SpotPackage?
         let unread: Error?
@@ -221,8 +191,6 @@ public struct SpotLock: Equatable, Sendable {
         return Facts(hash: manifest.hash, uses: uses, canDo: canDo, release: release)
     }
 
-    /// Moves each path of the entry that holds this ID to the Trash, and drops the entry. A spot that `spot add` did not add
-    /// stays, with a fault.
     public func remove(_ id: String, from folder: URL, discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }) throws -> Entry {
         let lock = try lockFile()
         defer { close(lock) }
@@ -240,7 +208,6 @@ public struct SpotLock: Equatable, Sendable {
         return entry
     }
 
-    /// Runs a read, change and write of the file while it holds the lock beside it, which another caller waits for.
     private func locked<T>(_ work: () async throws -> T) async throws -> T {
         let lock = try lockFile()
         defer { close(lock) }
@@ -248,7 +215,6 @@ public struct SpotLock: Equatable, Sendable {
         return try await work()
     }
 
-    /// The open file of the lock beside the file, which a close lets go of.
     private func lockFile() throws -> Int32 {
         let folder = url.deletingLastPathComponent()
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

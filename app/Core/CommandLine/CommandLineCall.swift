@@ -1,140 +1,83 @@
 import Foundation
 
-/// What the `openspot` command was asked to do: `openspot <noun> <verb>`. No arguments start the app.
 public enum CommandLineCall: Equatable, Sendable {
     case check(String?)
-    /// Reports the faults of a spots folder as JSON, for an agent.
     case checkJSON(String?)
     case guide
-    /// Writes a working spot from a starter, with a name.
     case spotNew(name: String, starter: SpotStarter)
-    /// Makes one call of a spot as the app makes it.
     case spotRun(id: String, arguments: [String])
-    /// Asks the running app to show the panel with the spot selected.
     case spotShow(String)
-    /// Prints the record of the last calls of a spot.
     case spotLog(String)
-    /// Prints what each spot cost and used over the last days, for one spot or each one (protocol: Stats).
     case spotStats(days: Int, spot: String?, format: StatsReport.Format)
-    /// Prints each script that the app loads as JSON, or with `core` each spot that comes with the app, and with `frame` as
-    /// `key=value` blocks (protocol: The openspot command).
     case spotList(core: Bool, frame: Bool)
-    /// Turns spots that come with the app on or off.
     case spotTurn(ids: [String], on: Bool)
-    /// Puts a spot from a git URL, a folder or a `.spot` file in the spots folder, or with none each spot of `spots.lock`
-    /// that is missing (protocol: The openspot command). An update that adds a use applies only when it is confirmed (protocol: Trust).
     case spotAdd(String?, isConfirmed: Bool)
-    /// Takes a spot that `spot add` added out of the spots folder.
     case spotRemove(String)
-    /// Opens the panel on the sheet of a spot.
     case spotOpen(String)
     case spotPush(String, page: String?, title: String?, replace: Bool)
     case spotPop(String, all: Bool)
     case spotChoose(String)
     case spotAct(CardAct, String)
-    /// Shows the whole text of a spot that comes with the app.
     case spotReview(String)
-    /// Opens the panel in Edit Spots.
     case gridEdit
-    /// Prints each spot of the store, with whether the person has it.
     case storeList(frame: Bool)
-    /// Gets a spot of the store: turns it on, or adds its package.
     case storeGet(String)
-    /// Publishes a spot of the spots folder to the store.
     case storePublish(String)
-    /// Runs the action of a spot's setting in the panel, as Enter on its row in Settings does.
     case settingChange(spot: String, key: String)
-    /// Prints the prompt that asks a coding agent to build a spot that does what the words say.
     case promptNew(String)
-    /// Draws the sheet of an installed spot, or its card at a size.
     case renderSpot(id: String, size: SpotSize?, path: String)
     case checkSheet
-    /// Draws the sheet on stdin, with the spot's view from a Swift file when it names one.
     case render(String, view: String?)
-    /// Draws the card of the output on stdin at a size, from its drawing for that size.
     case renderCard(SpotSize, String)
-    /// Draws the panel with each installed spot on its grid to a picture.
     case renderPanel(String)
-    /// Draws the window of the spot that offers one, such as the Store, to a picture.
     case renderStore(String)
     case sandbox(String?)
     case colorPick
     case folderPick
-    /// Prints the value of a spot's setting, or nothing when it has none (protocol: Settings).
     case settingGet(spot: String, key: String)
-    /// Keeps the value of a spot's setting, or removes it with no value (protocol: Settings).
     case settingSet(spot: String, key: String, value: String?)
-    /// Prints each value that a spot keeps, as JSON.
     case settingList(frame: Bool)
-    /// Runs one call for each line of stdin, and prints the output of each with a line `---` after it (protocol: The openspot command).
     case batch
-    /// Gives the app a key of its own: `panel_key` opens the panel, and `fix_key` opens the fix of a failure.
     case appKeySet(name: String, key: String)
-    /// Gives a command, or the float of a spot, a key or the shake, or takes its key away with none (W1, W2).
     case keySet(spot: String, act: GlobalKey.Act, key: String?)
-    /// Puts a spot in the menu bar, or takes it out.
     case menuBar(id: String, isShown: Bool)
-    /// Prints the state of the app as JSON: its version, its keys, its login and terminal settings, and its update.
     case appStatus(frame: Bool)
-    /// Opens the app at login, or stops it.
     case appLogin(Bool)
-    /// Puts `openspot` on the path of a terminal, or takes it off.
     case appLink(Bool)
-    /// Turns Careful mode on or off (protocol: Trust).
     case appCareful(Bool)
     case appQuit
     case updateCheck
-    /// A call of `openspot account`.
     case account(AccountCall)
-    /// Restarts the app into the downloaded update.
     case updateInstall
-    /// A call that cannot run here, with the line that says why and how to fix it.
     case refused(String)
-    /// Copies a file, or the text on stdin with no file.
     case clipboardCopy(String?)
     case clipboardPaste
-    /// Prints the text on the clipboard.
     case clipboardRead
-    /// Raises an event in the running app, with a value, so that each spot that lists it reads (protocol: Events).
     case eventEmit(name: String, value: String?)
     case translate(from: String?, to: String?)
     case translateLanguages
-    /// Prints the answer of a sum or a conversion as one row, or nothing for words that are not one.
     case calcSolve(String)
     case emoji(tone: EmojiCatalog.Tone)
     case symbols
     case windowFrame
     case windowMove(WindowMove)
     case screenSources
-    /// Takes a picture of a source, picked by the person when the words fix none (S1).
     case screenShot(ScreenCapture)
-    /// Starts a recording in the helper of the screen, which goes on until a stop (S10).
     case screenRecordStart(ScreenCapture)
     case screenRecordStop
     case screenRecordStatus
-    /// Prints the events that have not ended through the end of a day, in each calendar but the hidden ones (E1).
     case calendarEvents(days: Int, hidden: [String])
     case calendarCalendars
-    /// Adds an event from the words, or with a dry run prints the row that it would add (E4, E5).
     case calendarAdd(words: String, isDry: Bool)
-    /// Opens Calendar on the day of the event whose row has this id (E1).
     case calendarShow(id: String)
-    /// Prints the open reminders that are late or due through the end of a day, and those done today, in each list but the
-    /// hidden ones.
     case remindersDue(days: Int, hidden: [String])
     case remindersLists
-    /// Adds a reminder from the words, or with a dry run prints the row that it would add (E4, E5).
     case remindersAdd(words: String, isDry: Bool)
-    /// Ticks a reminder, or opens it again (E3).
     case remindersDone(id: String, isDone: Bool)
-    /// Opens Reminders on the reminder whose row has this id (E1).
     case remindersShow(id: String)
-    /// Runs as the helper process of a capability. A script never makes this call, so the usage does not list it.
     case helper(String)
-    /// Draws the colour glyphs on stdin, one on each line, into a picture book at a path. Only the app makes this call.
     case glyphBook(side: Double, fontSize: Double, path: String)
     case help
-    /// Prints the guide of a noun, such as `screen`.
     case guideOf(String)
     case unknown(String)
 
@@ -272,13 +215,10 @@ public enum CommandLineCall: Equatable, Sendable {
 
     private static let spotWord = "--spot"
 
-    /// Whether the words are flags of this set, each at most once.
     private static func flags(_ words: ArraySlice<String>, within allowed: Set<String>) -> Bool {
         Set(words).count == words.count && Set(words).isSubset(of: allowed)
     }
 
-    /// Returns nil when these arguments start the app, such as none or the flags that the system passes. The environment
-    /// names the spot of a setting and tells a read, in which a command that waits for the person is refused (protocol: The openspot command).
     public init?(arguments: [String], environment: [String: String] = ProcessInfo.processInfo.environment) {
         guard let noun = arguments.first else { return nil }
         if noun == "--help" || noun == "help" {
@@ -301,7 +241,6 @@ public enum CommandLineCall: Equatable, Sendable {
         }
     }
 
-    /// Reads the words of a call, also of a call that a reserved setting runs.
     private init(reserved arguments: [String], environment: [String: String]) {
         let noun = arguments[0]
         if arguments == ["check", "--sheet"] {
@@ -459,7 +398,6 @@ public enum CommandLineCall: Equatable, Sendable {
         }
     }
 
-    /// The call of a command that waits for the person, or its refusal in a read (protocol: The openspot command).
     private static func waiting(_ call: CommandLineCall, _ name: String, _ environment: [String: String]) -> CommandLineCall {
         guard environment["OPENSPOT_REASON"] == nil else {
             return .refused("`\(name)` waits for the person, so it cannot run in a read. Run it from a pick or an action.")
@@ -467,7 +405,6 @@ public enum CommandLineCall: Equatable, Sendable {
         return call
     }
 
-    /// The call of a command that captures the screen, or its refusal in a read, so that nothing captures by surprise (S8).
     private static func capturing(_ call: CommandLineCall, _ name: String, _ environment: [String: String]) -> CommandLineCall {
         guard environment["OPENSPOT_REASON"] == nil else {
             return .refused("`\(name)` captures the screen, so it cannot run in a read. Run it from a pick or an action.")
@@ -475,7 +412,6 @@ public enum CommandLineCall: Equatable, Sendable {
         return call
     }
 
-    /// The setting that a `key set` call stands for, such as `key.go`, `float` or `--spot openspot panel-key`.
     private static func keyName(_ words: [String]) -> String {
         switch words.first {
         case "--panel": "--spot \(ReservedSetting.app) panel-key"
@@ -484,7 +420,6 @@ public enum CommandLineCall: Equatable, Sendable {
         }
     }
 
-    /// Reads `[--dry-run] <words>...` into the call that it makes, or returns nil with no words.
     private static func adding(_ words: [String], _ environment: [String: String], _ call: (String, Bool) -> CommandLineCall) -> CommandLineCall? {
         let isDry = words.first == "--dry-run"
         let rest = isDry ? Array(words.dropFirst()) : words
@@ -492,9 +427,6 @@ public enum CommandLineCall: Equatable, Sendable {
         return call(rest.joined(separator: " "), isDry)
     }
 
-    /// The call of a command that changes the person's data, the Mac or the places of the app, or opens a window or the panel,
-    /// or its refusal in a read, so that nothing changes or opens by surprise. A dry run changes nothing, so it runs in a read
-    /// (protocol: The openspot command).
     private static func changing(_ call: CommandLineCall, _ name: String, _ act: String, _ environment: [String: String]) -> CommandLineCall {
         if case .calendarAdd(_, true) = call { return call }
         if case .remindersAdd(_, true) = call { return call }
@@ -504,7 +436,6 @@ public enum CommandLineCall: Equatable, Sendable {
         return call
     }
 
-    /// Reads the words of `openspot screen record <verb>`, or returns nil for anything else.
     private static func recording(_ words: [String], verb: String, _ environment: [String: String]) -> CommandLineCall? {
         switch verb {
         case "start": ScreenCapture(words: words, records: true).map { capturing(.screenRecordStart($0), "openspot screen record start", environment) }
@@ -514,7 +445,6 @@ public enum CommandLineCall: Equatable, Sendable {
         }
     }
 
-    /// Reads `[--spot id] <key>`, and a value after the key of a set. The spot is `OPENSPOT_ID` when no `--spot` names one.
     private static func setting(_ words: [String], sets: Bool, _ environment: [String: String]) -> CommandLineCall? {
         var words = words
         var spot = environment["OPENSPOT_ID"].flatMap { $0.isEmpty ? nil : $0 }
@@ -528,7 +458,6 @@ public enum CommandLineCall: Equatable, Sendable {
         return sets ? .settingSet(spot: spot, key: key, value: words.dropFirst().first) : .settingGet(spot: spot, key: key)
     }
 
-    /// Reads `[--days n] [--spot id] [--frame|--json]`, each at most once, or returns nil for anything else.
     private static func stats(_ words: [String]) -> CommandLineCall? {
         var days = 1
         var spot: String?
@@ -556,7 +485,6 @@ public enum CommandLineCall: Equatable, Sendable {
         return .spotStats(days: days, spot: spot, format: format)
     }
 
-    /// Reads `--panel <key>`, `--fix <key>`, `<id> <command> [key]` or `<id> --float [key]`, or returns nil for anything else.
     private static func key(_ words: [String]) -> CommandLineCall? {
         switch words.first {
         case "--panel" where words.count == 2: return .appKeySet(name: "panel_key", key: words[1])
@@ -569,7 +497,6 @@ public enum CommandLineCall: Equatable, Sendable {
         }
     }
 
-    /// Reads `[--days n]` and `--hide <id>`, which can repeat, or returns nil for anything else. Day 1 is today.
     private static func listing(_ words: [String]) -> (days: Int, hidden: [String])? {
         var days = 1
         var hidden: [String] = []
@@ -589,7 +516,6 @@ public enum CommandLineCall: Equatable, Sendable {
         return (days, hidden)
     }
 
-    /// Reads `--from` and `--to`, each with a value. Returns nil for anything else.
     private static func options(_ words: [String]) -> [String: String]? {
         guard words.count.isMultiple(of: 2) else { return nil }
         var options: [String: String] = [:]
@@ -600,8 +526,6 @@ public enum CommandLineCall: Equatable, Sendable {
         return options
     }
 
-    /// The push of `spot push <id> [page] [--replace] [--title <words>]`, from the words after `push`, or nil for words it
-    /// does not take.
     private static func push(_ words: [String]) -> CommandLineCall? {
         guard let id = words.first else { return nil }
         var page: String?

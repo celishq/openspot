@@ -1,24 +1,16 @@
 import Foundation
 
-/// A setting whose key Openspot keeps for the person, not for the spot: where a spot shows (`enabled`, `menubar`, `float`
-/// and `key.<command>`), and on the spot `openspot`, the app (`login`, `link`, `careful`, `panel-key` and `fix-key`).
-/// `openspot setting set` of such a key runs the call that does the work.
 enum ReservedSetting {
-    /// The spot that stands for the app.
     static let app = "openspot"
     private static let commandKey = "key."
-    /// The icon that the person chose for a spot, which wins over the icon of its header.
     static let icon = "icon"
     private static let spotKeys: Set<String> = ["enabled", "menubar", "float", icon]
     private static let appKeys: Set<String> = ["login", "link", "careful", "panel-key", "fix-key"]
 
-    /// Whether a spot cannot name this key as a value of its own.
     static func isReserved(_ key: String) -> Bool {
         spotKeys.contains(key) || appKeys.contains(key) || key.hasPrefix(commandKey)
     }
 
-    /// The words of the call that sets the key of the spot to the value, or a refusal of a value that does not fit, or nil
-    /// for a key that is the spot's own.
     static func call(spot: String, key: String, value: String?) -> Result<[String], Refusal>? {
         let flag = value.flatMap { ["true": "on", "false": "off"][$0] }
         func on(_ words: (String) -> [String]) -> Result<[String], Refusal> {
@@ -42,7 +34,6 @@ enum ReservedSetting {
         }
     }
 
-    /// Why a reserved setting cannot be set as it was asked.
     struct Refusal: Error, Equatable {
         let line: String
 
@@ -51,7 +42,6 @@ enum ReservedSetting {
         }
     }
 
-    /// The new form of a call that this setting took the place of, or nil for any other call.
     static func replacement(of arguments: [String]) -> String? {
         form(of: arguments)?.replacingOccurrences(of: "  ", with: " ").trimmingCharacters(in: .whitespaces)
     }
@@ -72,8 +62,6 @@ enum ReservedSetting {
         }
     }
 
-    /// The call that `openspot setting set` of a reserved key runs, or its refusal, or nil for any other call. `spot` is
-    /// the spot of the caller, which `--spot` replaces.
     static func call(of arguments: [String], spot: String?) -> Result<[String], Refusal>? {
         guard arguments.count >= 3, arguments[0] == "setting", arguments[1] == "set" else { return nil }
         var words = Array(arguments.dropFirst(2))
@@ -86,7 +74,6 @@ enum ReservedSetting {
         return call(spot: spot, key: key, value: words.dropFirst().first)
     }
 
-    /// The words of the call that a setting of a reserved key runs, or the words as they are.
     static func words(of arguments: [String], spot: String?) -> [String] {
         guard case .success(let words)? = call(of: arguments, spot: spot) else { return arguments }
         return words

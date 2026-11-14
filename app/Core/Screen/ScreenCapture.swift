@@ -1,11 +1,9 @@
 import Foundation
 
-/// A picture or a recording that `openspot screen` was asked for: its source, its inputs, its options and its file.
 public struct ScreenCapture: Equatable, Sendable {
     public var source: ScreenSource
     public var inputs: [ScreenInput]
     public var cursor: Bool
-    /// The file of the pointer and key log of a recording (S5).
     public var events: String?
     public var file: String?
 
@@ -17,8 +15,6 @@ public struct ScreenCapture: Equatable, Sendable {
         self.file = file
     }
 
-    /// Reads the words after the verb, in any order. Inputs and `--events` belong to a recording. A word of a known kind
-    /// with a bad value is refused, not taken for a file. Returns nil for anything else.
     public init?(words: [String], records: Bool) {
         self.init()
         var words = words[...]

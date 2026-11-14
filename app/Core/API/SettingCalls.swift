@@ -1,6 +1,5 @@
 import Foundation
 
-/// The calls of `openspot setting`: the values that a spot keeps (protocol: Settings), and the action of a setting in the panel.
 struct SettingCalls {
     let environment: [String: String]
     let app: (any RunningApp)?

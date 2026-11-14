@@ -1,5 +1,4 @@
 #!/bin/sh
-# Renders the app icon sets in the asset catalog from the SVG sources in app/Icon.
 set -eu
 
 root=$(cd "$(dirname "$0")/.." && pwd)

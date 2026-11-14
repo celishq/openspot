@@ -1,7 +1,4 @@
 #!/bin/sh
-# Builds a signed DMG of the app at a version, and with `publish` notarizes it and makes a GitHub release.
-# Usage: release.sh build|publish x.y.z
-# PUBLIC_KEY and BUILD replace the Keychain update key and the commit count, for a test build.
 set -e
 stage=$1
 version=$2

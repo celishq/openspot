@@ -1,7 +1,4 @@
 #!/bin/sh
-# Times each keystroke of the search over copies of the real lists, in an optimized build of the Core sources.
-# The first run copies the lists of this Mac into .temp/search-bench/data, and later runs reuse them, so that runs before
-# and after a change read the same items. Usage: scripts/search-bench.sh [label]. Prints and keeps .temp/search-bench/<label>.txt.
 set -e
 cd "$(dirname "$0")/.."
 out=.temp/search-bench
