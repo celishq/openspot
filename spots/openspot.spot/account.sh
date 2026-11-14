@@ -97,12 +97,11 @@ word_grid() {
 restore() {
   facts_of_phrase=
   [ -z "$phrase" ] || facts_of_phrase=$(printf '%s' "$phrase" | openspot account phrase)
-  words= unknown= counter= completion= problem= account=
+  words= unknown= completion= problem= account=
   while IFS='=' read -r key value; do
     case $key in
       word) words="$words$value " ;;
       unknown) unknown=" $value " ;;
-      counter) counter=$value ;;
       completion) completion=$value ;;
       problem) problem=$value ;;
       account) account=$value ;;
@@ -111,9 +110,19 @@ restore() {
 $facts_of_phrase
 EOF
   set -- $words
+  said= icon= tone= detail=
+  if [ -n "$problem" ]; then
+    said=$problem icon=exclamationmark.triangle tone=bad
+  elif [ -n "$account" ] && [ "$signed" = true ]; then
+    said='Replaces the account on this Mac' icon=exclamationmark.triangle tone=warn detail=$(short "$account")
+  elif [ -n "$account" ]; then
+    said='Signs in as' icon=checkmark.circle tone=good detail=$(short "$account")
+  elif [ -n "$completion" ]; then
+    said="Did you mean $completion?" icon=questionmark.circle
+  fi
   printf 'grid=phrase phrase\n'
-  word_grid $#
-  [ -z "$phrase" ] || printf 'grid=status status\n'
+  word_grid 12
+  [ -z "$said" ] || printf 'grid=status status\n'
   printf 'grid=back sign_in\n'
   [ -z "$toast" ] || openspot_kv toast "$toast"
   printf '\nfield=phrase\ntype=multiline\nplaceholder=Your 12 words, or an nsec\n'
@@ -123,17 +132,11 @@ EOF
     case "$unknown" in *" $i "*) word "$i" "$each" bad ;; *) word "$i" "$each" ;; esac
     i=$((i + 1))
   done
-  if [ -n "$problem" ]; then
-    line status "$problem" exclamationmark.triangle bad
-  elif [ -n "$account" ] && [ "$signed" = true ]; then
-    line status 'Replaces the account on this Mac' exclamationmark.triangle warn "$(short "$account")"
-  elif [ -n "$account" ]; then
-    line status 'Signs in as' checkmark.circle good "$(short "$account")"
-  elif [ -n "$completion" ]; then
-    line status "Did you mean $completion?" questionmark.circle
-  elif [ -n "$phrase" ]; then
-    line status "$counter"
-  fi
+  while [ "$i" -le 12 ]; do
+    word "$i" ' '
+    i=$((i + 1))
+  done
+  [ -z "$said" ] || line status "$said" "$icon" "$tone" "$detail"
   button sign_in 'Sign in' main
   button back Back
 }

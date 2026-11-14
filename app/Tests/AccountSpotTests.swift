@@ -35,7 +35,7 @@ final class AccountSpotTests: BuiltInCase {
     }
 
     private func words(in frame: String) -> [String] {
-        (1...12).compactMap { block("w\($0)", in: frame)["title"] }
+        (1...12).compactMap { block("w\($0)", in: frame)["title"] }.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
     }
 
     func testSearchFindsItAndItShipsWithTheApp() throws {
@@ -179,14 +179,15 @@ final class AccountSpotTests: BuiltInCase {
         XCTAssertFalse(try store.isBackedUp())
     }
 
-    func testTheSignInPageShowsNoCountBeforeTypingAndPutsSignInOnTheRight() async throws {
+    func testTheSignInPageShowsTwelveNumberedSlotsAndNoCountAndPutsSignInOnTheRight() async throws {
         let empty = try await frame(["sign_in"])
         let typing = try await frame(["phrase", "abandon"])
 
         XCTAssertTrue(empty.contains("grid=back sign_in\n"), empty)
-        XCTAssertFalse(empty.contains("grid=status"), empty)
-        XCTAssertEqual(block("status", in: typing)["title"], "1 of 12")
-        XCTAssertNil(block("status", in: typing)["icon"])
+        XCTAssertTrue(empty.contains("grid=w11 w12\n"), empty)
+        XCTAssertEqual(block("w12", in: empty)["icon"], "12.circle")
+        XCTAssertFalse(typing.contains("grid=status"), typing)
+        XCTAssertEqual(words(in: typing), ["abandon"])
     }
 
     func testThePhraseNumbersItsWordsAsItIsTypedAndSignsIn() async throws {
