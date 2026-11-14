@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The store: each spot as its card at the size it takes on the grid, in rows that wrap, with Get under the ones you lack,
-/// Publish under your own that changed, and Added under the rest.
+/// The store: each spot as its card at the size it takes on the grid, in rows that wrap, under the title of its group, with
+/// a plus on the corner of the ones you lack and an up arrow on your own that changed.
 struct SpotView: View {
     let spot: SpotInput
 
@@ -50,36 +50,38 @@ struct SpotView: View {
 
     private func tile(_ item: Item) -> some View {
         let size = spot.cardSize(item.id)
-        return VStack(alignment: .leading, spacing: 8) {
-            spot.card(item.id)
-                .frame(width: size.width, height: size.height)
-            button(item)
-        }
+        return spot.card(item.id)
+            .frame(width: size.width, height: size.height)
+            .overlay(alignment: .topLeading) { control(item, card: size) }
     }
 
+    /// The control on the top left rim of a card, as on the cards of Edit Spots: a plus that gets a spot you lack, an up
+    /// arrow that publishes your own spot's changes, and none on a spot you have.
     @ViewBuilder
-    private func button(_ item: Item) -> some View {
+    private func control(_ item: Item, card: CGSize) -> some View {
         switch item.state {
-        case "get": pill("Get") { spot.send("get:\(item.id)") }
-        case "publish": pill("Publish") { spot.send("publish:\(item.id)") }
-        default:
-            Text("Added")
-                .font(spot.font.detail)
-                .foregroundStyle(spot.ink.opacity(spot.secondary))
-                .frame(height: 24)
+        case "get": corner("plus", label: "Get \(item.name)", card: card) { spot.send("get:\(item.id)") }
+        case "publish": corner("arrow.up", label: "Publish \(item.name)", card: card) { spot.send("publish:\(item.id)") }
+        default: EmptyView()
         }
     }
 
-    private func pill(_ title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(spot.accent)
-                .padding(.horizontal, 14)
-                .frame(height: 24)
-                .background(spot.ink.opacity(0.08), in: Capsule())
-        }
-        .buttonStyle(.plain)
+    /// A small round control on the rim of a card's top left corner, which a click presses.
+    private func corner(_ symbol: String, label: String, card: CGSize, action: @escaping () -> Void) -> some View {
+        let radius: CGFloat = card.height <= 64 && card.width < 289 ? card.height / 2 : 26
+        let inset = radius * (1 - 0.5.squareRoot()) - 10
+        return Image(systemName: symbol)
+            .font(.system(size: 10, weight: .bold))
+            .foregroundStyle(spot.ink)
+            .frame(width: 20, height: 20)
+            .background(Circle().fill(.background))
+            .overlay(Circle().strokeBorder(spot.ink.opacity(0.15)))
+            .contentShape(Circle())
+            .onTapGesture(perform: action)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityLabel(label)
+            .help(label)
+            .offset(x: inset, y: inset)
     }
 }
 
