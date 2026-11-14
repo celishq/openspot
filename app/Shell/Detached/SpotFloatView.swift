@@ -92,20 +92,7 @@ struct SpotFloatView: View {
         HStack(spacing: SpotTokens.padding - 5) {
             SpotGlyph(entry: entry)
                 .modifier(SpotFileDragSource(items: run.list.shown, hasFiles: run.list.hasFiles, onDrop: { model.dragOut($0, of: id) }))
-            VStack(alignment: .leading, spacing: SpotType.lineGap) {
-                Text(entry.shownState.title)
-                    .font(SpotType.title)
-                    .frame(height: SpotType.titleLine)
-                    .foregroundStyle(SpotTheme.ink)
-                    .lineLimit(1)
-                if let subtitle = entry.shownState.subtitle {
-                    Text(subtitle)
-                        .font(SpotType.detail)
-                        .frame(height: SpotType.detailLine)
-                        .modifier(SpotSecondaryText())
-                        .lineLimit(1)
-                }
-            }
+            SpotSheetTitle(title: entry.shownState.title, subtitle: entry.shownState.subtitle)
             Spacer(minLength: 0)
             SpotRoundButton(symbol: "xmark", label: "Close") { model.land(id) }
         }

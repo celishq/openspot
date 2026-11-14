@@ -15,18 +15,7 @@ struct SpotSampleSheet: View {
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             HStack(spacing: SpotTokens.padding - 5) {
                 SpotGlyph(entry: entry)
-                VStack(alignment: .leading, spacing: SpotType.lineGap) {
-                    Text(entry.spot.name)
-                        .font(SpotType.title)
-                        .foregroundStyle(SpotTheme.ink)
-                        .lineLimit(1)
-                    if let subtitle = entry.spot.subtitle {
-                        Text(subtitle)
-                            .font(SpotType.detail)
-                            .modifier(SpotSecondaryText())
-                            .lineLimit(1)
-                    }
-                }
+                SpotSheetTitle(title: entry.spot.name, subtitle: entry.spot.subtitle)
             }
             if let panel {
                 SheetPartsView(panel: panel, onSet: { _, _ in }, onPress: { _ in }, list: list, onRun: pick(in: list), selection: { selected }, viewSource: entry.spot.view)
