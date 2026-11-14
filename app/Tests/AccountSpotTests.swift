@@ -53,7 +53,7 @@ final class AccountSpotTests: BuiltInCase {
 
         XCTAssertEqual(block("head", in: read)["title"], "You need a key to publish")
         XCTAssertEqual(block("new", in: read)["title"], "Create a new key")
-        XCTAssertEqual(block("own", in: read)["title"], "Use my words or nsec")
+        XCTAssertEqual(block("own", in: read)["title"], "Use my own key")
     }
 
     func testANewKeyOpensTheAccountWithNoStepAboutTheWords() async throws {
@@ -81,8 +81,8 @@ final class AccountSpotTests: BuiltInCase {
         let account = try await frame(["read"])
 
         XCTAssertEqual(block("how", in: read)["title"], "How it works")
-        XCTAssertTrue(read.contains("grid=how\n"), read)
-        XCTAssertTrue(account.contains("grid=how\n"), account)
+        XCTAssertTrue(read.contains("grid=own how\n"), read)
+        XCTAssertTrue(account.contains("grid=about how\n"), account)
         XCTAssertEqual(block("head", in: how)["title"], "How your key works")
         XCTAssertEqual(block("head", in: done)["title"], "You need a key to publish")
     }
@@ -91,10 +91,10 @@ final class AccountSpotTests: BuiltInCase {
         let read = try await frame(["read"], page: "publish:a")
 
         XCTAssertEqual(block("head", in: read)["title"], "You need a key to publish")
-        XCTAssertTrue(read.hasPrefix("grid=head\ngrid=head\ngrid=new\ngrid=own\n"), read)
+        XCTAssertTrue(read.hasPrefix("grid=head head\ngrid=head head\ngrid=new new\ngrid=own how\n"), read)
         XCTAssertEqual(block("new", in: read)["title"], "Create a new key")
         XCTAssertEqual(block("new", in: read)["look"], "strong")
-        XCTAssertEqual(block("own", in: read)["title"], "Use my words or nsec")
+        XCTAssertEqual(block("own", in: read)["title"], "Use my own key")
     }
 
     func testANewKeyOnThePublishPageMakesTheKeyPublishesAndGoesBack() async throws {

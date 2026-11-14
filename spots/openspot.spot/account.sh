@@ -182,7 +182,7 @@ sheet() {
   case $current in
     restore) restore; return ;;
     check) check; return ;;
-    choose) printf 'grid=head\ngrid=head\ngrid=new\ngrid=own\ngrid=how\n' ;;
+    choose) printf 'grid=head head\ngrid=head head\ngrid=new new\ngrid=own how\n' ;;
     how) printf 'grid=head\ngrid=head\ngrid=people\ngrid=icloud\ngrid=words\ngrid=private\ngrid=reset\ngrid=done\n' ;;
     about)
       printf 'grid=head\ngrid=head\ngrid=private\ngrid=reset\n'
@@ -191,10 +191,10 @@ sheet() {
       ;;
     words) printf 'grid=head head\n'; word_grid 12; printf 'grid=wrote wrote\ngrid=later later\n' ;;
     account)
-      printf 'grid=head\ngrid=head\n'
-      [ "$sync" = true ] || printf 'grid=backup\n'
-      [ -z "$sync" ] || printf 'grid=sync\n'
-      printf 'grid=done\ngrid=about\ngrid=how\ngrid=leave\n'
+      printf 'grid=head head\ngrid=head head\n'
+      [ "$sync" = true ] || printf 'grid=backup backup\n'
+      [ -z "$sync" ] || printf 'grid=sync sync\n'
+      printf 'grid=done done\ngrid=about how\ngrid=leave leave\n'
       ;;
     leave)
       printf 'grid=head\ngrid=head\n'
@@ -207,7 +207,7 @@ sheet() {
     choose)
       line head 'You need a key to publish' signature '' 'Openspot signs your spots with it, so people know an update is from you.'
       button new 'Create a new key' main
-      button own 'Use my words or nsec'
+      button own 'Use my own key'
       ;;
     how)
       line head 'How your key works' key '' 'Openspot signs each spot you publish with your key. There is no email, password or server.'
