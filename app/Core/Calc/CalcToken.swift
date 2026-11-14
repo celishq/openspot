@@ -1,19 +1,14 @@
 import Foundation
 
-/// One piece of a typed sum: a number, an operator or a bracket, or a word such as `sqrt`, `pi` or `of`.
 enum CalcToken: Equatable, Sendable {
     case number(Double)
-    /// An operator or a bracket, written as one of `+ - * / ^ % ( )`.
     case symbol(Character)
-    /// Letters, in lower case.
     case word(String)
 
     private static let symbols: [Character: Character] = [
         "+": "+", "-": "-", "−": "-", "*": "*", "×": "*", "·": "*", "/": "/", "÷": "/", "^": "^", "%": "%", "(": "(", ")": ")",
     ]
 
-    /// The pieces of the text, or nil when it holds a character that no sum uses. A decimal point is always a dot, and also
-    /// a comma where the Mac writes one. Where the Mac writes a dot, a comma before three digits groups thousands.
     static func tokens(in text: String, locale: Locale) -> [CalcToken]? {
         let decimalComma = locale.decimalSeparator == ","
         let characters = Array(text)
@@ -51,8 +46,6 @@ enum CalcToken: Equatable, Sendable {
         index < characters.count && characters[index].isASCII && characters[index].isNumber
     }
 
-    /// Reads a number with its digits, its decimal point and an exponent such as `e3`. Returns nil for a point with no
-    /// digits after it, or a comma that neither groups nor marks a decimal.
     private static func number(in characters: [Character], from index: inout Int, decimalComma: Bool) -> Double? {
         var text = ""
         var hasPoint = false

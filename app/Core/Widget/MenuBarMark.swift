@@ -1,8 +1,6 @@
 import Foundation
 
-/// What a menu bar item shows for a reading, or nothing before the first value or when the metric hides it.
 public struct MenuBarMark: Equatable, Sendable {
-    /// How many rows of a metric have one tone.
     public struct Count: Equatable, Sendable {
         public let tone: MetricValue.Tone?
         public let count: Int
@@ -19,9 +17,6 @@ public struct MenuBarMark: Equatable, Sendable {
         case ring(fill: Double, title: String)
         case bars([Double], title: String)
         case status(String)
-        /// Running work: a ring from `fill`, or a spinner with none, and how many run when there is more than one.
-        case work(fill: Double?, count: Int?)
-        /// The icon of a spot that has no value to show, which a click runs as Return does.
         case icon
     }
 
@@ -33,16 +28,6 @@ public struct MenuBarMark: Equatable, Sendable {
     public let isStale: Bool
     public let summary: String
 
-    /// What the Openspot item shows for running work, with the fill and the name of the oldest call.
-    public init(workFill: Double?, count: Int, name: String) {
-        symbol = nil
-        tone = nil
-        isStale = false
-        summary = count > 1 ? "\(count) running. \(name) is the oldest" : "\(name) is running"
-        content = .work(fill: workFill, count: count > 1 ? count : nil)
-    }
-
-    /// The icon of a spot that has no value, with its name for the tooltip.
     public init(icon: String, name: String) {
         symbol = icon
         tone = nil

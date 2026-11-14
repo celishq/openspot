@@ -1,7 +1,5 @@
 import Foundation
 
-/// What a capture shows: a display, a window or an area, each fixed by a value or picked by the person (S2).
-/// `any` lets the person pick a source of any kind.
 public enum ScreenSource: Equatable, Sendable {
     public enum Window: Equatable, Sendable {
         case front
@@ -15,7 +13,6 @@ public enum ScreenSource: Equatable, Sendable {
 
     static let kinds: Set<String> = ["display", "window", "area"]
 
-    /// Reads one source word, such as `display`, `window:front` or `area:0,0,1/2,1`. Returns nil for anything else.
     init?(word: String) {
         let (kind, value) = Self.split(word)
         switch (kind, value) {
@@ -37,7 +34,6 @@ public enum ScreenSource: Equatable, Sendable {
         }
     }
 
-    /// The kind of a word and its value after the first colon. A colon with nothing after it is an empty value.
     static func split(_ word: String) -> (kind: String, value: String?) {
         guard let colon = word.firstIndex(of: ":") else { return (word, nil) }
         return (String(word[..<colon]), String(word[word.index(after: colon)...]))

@@ -10,12 +10,10 @@ struct SpotsView: View {
     @State private var dropTarget: String?
     @Environment(\.spotDrawsBlur) private var drawsBlur
 
-    /// The sheet that is built, from its first frame on its card to the end of its close.
     private var sheetID: String? {
         model.transition.id
     }
 
-    /// Whether the sheet is open or on its way there.
     private var sheetOpen: Bool {
         model.transition.isOpen
     }
@@ -50,10 +48,12 @@ struct SpotsView: View {
             .modifier(SpotScrollEdgeTracker(edges: Binding(get: { fade.edges }, set: { fade.edges = $0 })))
             .modifier(GridFadeMask(fade: fade, height: cardHeight))
             .morph(coversGrid ? 0 : 1, opacity: { SheetMorph.sheetLook(at: $0) })
-            SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: cardHeight, sheetHeight: max(sheetID == nil ? gridHeight : sheetHeight, menuBackdropHeight))
-                .animation(SpotMotion.grow(isOpen: model.menu != nil), value: menuBackdropHeight)
-                .opacity(model.isShown ? 1 : 0)
-                .animation(SpotMotion.fade(isShown: model.isShown), value: model.isShown)
+            .modifier(PanelSpan(panels: model.panels))
+            SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: max(gridHeight, model.menuBackdropHeight), sheetHeight: max(sheetID == nil ? gridHeight : sheetHeight, model.menuBackdropHeight))
+                .modifier(SpotShownFade(isShown: model.isShown))
+            if sheetOpen, sheetID != nil {
+                SpotFlowEdges(model: model, rect: sheetRect)
+            }
             if let entry = model.sheetEntry(sheetID) {
                 SpotSheetLayer(
                     model: model,
@@ -75,87 +75,59 @@ struct SpotsView: View {
                 surfaceIsOut: surfaceIsOut,
                 sheet: fieldSheet(on: card, at: frame)
             )
-            if model.menu != nil {
+            if model.isMenuOpen {
                 Color.clear
                     .contentShape(Rectangle())
+                    .modifier(PanelSpan(panels: model.panels))
                     .onTapGesture { model.closeMenu() }
             }
         }
         .onDrop(of: [.fileURL], delegate: SpotAddDrop(model: model))
         .coordinateSpace(name: Self.panelSpace)
-        .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
+        .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
         .overlayPreferenceValue(SpotMenuAnchor.self, alignment: .topLeading) { item in
-            menuLayer(at: item)
-                .animation(SpotMotion.grow(isOpen: model.menu != nil), value: model.menu == nil)
+            SpotMenuLayer(model: model, item: item, fieldIsInSheet: fieldIsInSheet)
         }
-        .background(softBlur)
+        .background(alignment: .topLeading) {
+            softBlur
+        }
         .environment(\.spotIsShown, model.isShown)
+        .environment(\.spotPanels, model.panels)
         .onChange(of: model.isShown) { _, isShown in
             if !isShown { dropTarget = nil }
         }
     }
 
-    /// The blur of the grid and the blur of the sheet, each with a fixed size. While the sheet moves, the shorter one stays
-    /// whole and the taller one fades on the sheet's own motion, so that where they overlap the backdrop keeps one strength.
     private var softBlur: some View {
-        let sheet = max(sheetHeight, replacedHeight)
-        let phase = model.transition.phase
-        let gridIsTaller = max(gridHeight, menuBackdropHeight) >= max(sheet, menuBackdropHeight)
-        return ZStack(alignment: .top) {
-            blur(height: gridHeight, isShown: gridIsTaller ? !sheetOpen : phase != .open, fades: gridIsTaller)
-            blur(height: sheet, isShown: gridIsTaller ? phase != .closed : sheetOpen, fades: !gridIsTaller)
-        }
-        .frame(maxHeight: .infinity, alignment: .top)
-        .opacity(model.isShown ? 1 : 0)
-        .scaleEffect(model.isShown ? 1 : MotionTokens.backdropHiddenScale)
-        .animation(SpotMotion.fade(isShown: model.isShown), value: model.isShown)
+        SpotBackdrop(model: model, gridHeight: gridHeight, sheetHeight: max(sheetHeight, replacedHeight), menuHeight: menuHeight, drawsBlur: drawsBlur)
+            .environment(\.spotPanels, model.shownPanels)
+            .modifier(PanelSpan(panels: model.shownPanels))
     }
 
-    /// One blur of a fixed height. It fades on the sheet's motion when it `fades`, and else shows or hides at once.
-    @ViewBuilder
-    private func blur(height: CGFloat, isShown: Bool, fades: Bool) -> some View {
-        let height = max(height, menuBackdropHeight)
-        Group {
-            if drawsBlur { SpotSoftBlur(height: height) } else { Color.clear }
-        }
-            .frame(height: height)
-            .transaction { $0.animation = nil }
-            .opacity(isShown ? 1 : 0)
-            .transaction { if !fades { $0.animation = nil } }
-    }
-
-    /// The sheet that is built, from its card to its open place, and its card's radius, for the field that joins it. Nil
-    /// with no sheet with a card, and for the install screen.
     private func fieldSheet(on card: SpotSheetCard?, at frame: CGRect?) -> (morph: SheetMorph, cardRadius: CGFloat)? {
         guard let card, let frame, !isInstall else { return nil }
         return (SheetMorph(card: frame, sheet: sheetRect), SpotTokens.corner(for: card.placement.size))
     }
 
-    /// How the open sheet pushes the cards of the grid, with the sheet's rect taken into the grid. Its window starts at the
-    /// top of the search field, so a card that moves up is gone there.
     private func push(from card: SpotSheetCard) -> SheetPush {
-        let origin = SpotTokens.gridOrigin(scrollOffset: scrollOffset)
-        let window = CGRect(x: -origin.x, y: SpotTokens.halo - origin.y, width: SpotTokens.panelWidth, height: SpotTokens.panelHeight - SpotTokens.halo)
+        let origin = SpotTokens.gridOrigin(scrollOffset: scrollOffset, left: model.panels.leftExtent)
+        let panel = model.panels.frame
+        let window = CGRect(x: panel.minX - origin.x, y: SpotTokens.halo - origin.y, width: panel.width, height: panel.height - SpotTokens.halo)
         return SheetPush(open: card.placement, sheet: sheetRect.offsetBy(dx: -origin.x, dy: -origin.y), window: window)
     }
 
     private var sheetRect: CGRect {
-        if let form = model.form { return SpotTokens.formRect(form.draft.form) }
-        return rect(of: sheetID)
+        model.formRect ?? rect(of: sheetID)
     }
 
     private func rect(of id: String?) -> CGRect {
         Self.rect(of: id, in: model)
     }
 
-    /// The rect of a sheet from its parts, or else from the shape of its rows.
     private static func rect(of id: String?, in model: SpotsModel) -> CGRect {
-        if let rect = model.sheets[id ?? ""]?.partsRect { return rect }
-        let shape = model.sheets[id ?? ""]?.shape
-        return SpotTokens.sheetRect(rows: shape?.rows ?? 0, perLine: shape?.perLine ?? 1, hasField: shape?.hasField ?? true, setsApart: shape?.setsApart ?? false)
+        model.sheets[id ?? ""]?.sheetRect ?? SpotTokens.sheetRect(rows: 0)
     }
 
-    /// The heights of blur that the grid, each sheet as it is now and the tallest sheet ask for.
     static func blurHeights(of model: SpotsModel) -> [CGFloat] {
         let sheets = model.sheets.keys.map { blurHeight(of: rect(of: $0, in: model)) }
         return [gridHeight(of: model), blurHeight(of: SpotTokens.sheetRect(rows: 0)), SpotTokens.panelHeight] + sheets
@@ -169,29 +141,23 @@ struct SpotsView: View {
         SpotTokens.backdropHeight(gridHeight: SpotGrid.height(of: model.placements))
     }
 
-    /// The height of the sheet that the open one took the place of, so that the blur stays under both until the change
-    /// settles.
     private var replacedHeight: CGFloat {
         guard let replaced = model.transition.replaced else { return 0 }
         return Self.blurHeight(of: rect(of: replaced))
     }
 
-    /// How far the install screen pushes the grid: as far as its lower edge moves.
     private var gridPush: CGFloat {
         coversGrid ? sheetRect.maxY - SpotFieldView.rect.maxY : 0
     }
 
-    /// Whether a sheet is out or a drop is taken, which sets the time of each fade and which hint shows.
     private var surfaceIsOut: Bool {
         sheetOpen || (model.showsFieldDrop && !(model.transition.phase == .closing && isInstall))
     }
 
-    /// Whether the sheet is the install screen, which grows out of the field.
     private var isInstall: Bool {
         sheetID != nil && sheetID == model.fieldSheet
     }
 
-    /// Whether the field lies in the open sheet. The install screen grows out of the field, which stays where it is.
     private var fieldIsInSheet: Bool {
         sheetOpen && !isInstall
     }
@@ -205,77 +171,29 @@ struct SpotsView: View {
     }
 
     private var gridHeight: CGFloat {
-        Self.gridHeight(of: model)
+        model.gridHeight
     }
 
-    /// The height of the shape that ends the cards. It follows only the grid, so that a sheet's motion swaps no image.
     private var cardHeight: CGFloat {
-        max(gridHeight, menuBackdropHeight)
+        max(gridHeight, menuHeight)
     }
 
-    private var menuBackdropHeight: CGFloat {
-        model.menuSession?.frame.map { $0.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock } ?? 0
+    private var menuHeight: CGFloat {
+        model.menuFrame.map { $0.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock } ?? 0
     }
 
-    /// Where the menu may lie: under the field, down to the panel's foot.
-    private var menuBounds: CGRect {
-        ActionMenuFrame.bounds(under: fieldIsInSheet ? SpotTokens.halo + SpotTokens.sheetFieldDrop + SpotTokens.listRowHeight + SpotTokens.rowGap : SpotTokens.gridTop)
-    }
-
-    /// The rect of the menu's glass at a scale from its corner nearest its item, as its rows scale, so that the blur behind
-    /// it stays still.
-    private static func rect(_ rect: CGRect, scaledBy scale: CGFloat, from corner: UnitPoint) -> CGRect {
-        let size = CGSize(width: rect.width * scale, height: rect.height * scale)
-        return CGRect(x: rect.minX + (rect.width - size.width) * corner.x, y: rect.minY + (rect.height - size.height) * corner.y, width: size.width, height: size.height)
-    }
-
-    /// The open menu at the selected card or row, or the closing one at its last place. With no selected item it opens under
-    /// the field.
-    private func menuLayer(at item: SpotMenuAnchor.Item?) -> some View {
-        GeometryReader { proxy in
-            if let session = model.menuSession {
-                let menu = session.menu
-                let bounds = menuBounds
-                let rect = item.map { proxy[$0.bounds] } ?? SpotFieldView.rect
-                let isClosing = session.phase == .closing
-                let fresh = ActionMenuFrame(item: rect, menu: menu, bounds: bounds)
-                let frame = isClosing ? session.frame ?? fresh : fresh
-                let shown = frame.rect(of: menu)
-                let isGrown = session.isGrown
-                let scale = isGrown ? 1 : MotionTokens.menuStartScale
-                let corner = UnitPoint(x: frame.side == .left ? 0 : 1, y: frame.stillEdge == .top ? 0 : 1)
-                ZStack(alignment: .topLeading) {
-                    SpotSurface(rect: Self.rect(shown, scaledBy: scale, from: corner), radius: SpotActionMenuView.radius * scale, glass: isGrown ? 1 : 0)
-                    SpotActionMenuView(menu: menu, frame: frame, isSettled: session.phase == .settled, work: { model.work(of: $0) }, onPress: { model.pressMenu(row: $0) }, onPoint: { model.point(at: .menuRow($0)) }, onSearch: { model.searchMenu($0) })
-                        .scaleEffect(scale, anchor: corner)
-                        .opacity(isGrown ? 1 : 0)
-                        .offset(x: shown.minX, y: shown.minY)
-                }
-                .allowsHitTesting(!isClosing)
-                .transition(.opacity)
-                .onChange(of: frame, initial: true) { model.placeMenu(frame) }
-            }
-        }
-    }
-
-    /// Whether the install screen takes the place of the grid and the field.
     private var coversGrid: Bool {
         sheetOpen && isInstall
     }
 
-    /// Whether the search field is drawn. A form, a sheet of parts and the install screen replace it, but a form of one choice
-    /// keeps it to search its rows.
     private var showsSearchField: Bool {
         guard !coversGrid else { return false }
-        if let form = model.form { return form.draft.choices != nil }
+        if model.formRect != nil { return model.formHasChoices }
         guard sheetOpen else { return true }
-        guard let sheet = model.sheets[sheetID ?? ""] else { return true }
-        return sheet.kind.showsField && sheet.list.search != .off
+        return model.sheets[sheetID ?? ""]?.showsField ?? true
     }
 }
 
-/// Scrolls the grid while a lifted card lies in the fade at either end of the grid's clear part, faster the deeper it lies,
-/// once a frame until the drag ends. A card past the panel's bottom or over the dock scrolls nothing.
 private struct GridEdgeScroll: ViewModifier {
     let model: SpotsModel
     @Binding var scroll: ScrollPosition
@@ -294,7 +212,7 @@ private struct GridEdgeScroll: ViewModifier {
     }
 
     private func step(seconds: Double) {
-        guard let drag = model.drag, model.carry?.isOverDock != true else { return }
+        guard let drag = model.drag else { return }
         let window = ScrollWindow(
             top: SpotTokens.halo + SpotTokens.rowHeight + SpotScrollEdges.fadeLength,
             bottom: SpotTokens.panelHeight - SpotsView.gridBottom - SpotScrollEdges.fadeLength,
@@ -308,8 +226,6 @@ private struct GridEdgeScroll: ViewModifier {
     }
 }
 
-/// The fade of the grid's cards at the ends of the scroll. It alone reads the fade, so that a scroll near an end reruns no
-/// other view.
 private struct GridFadeMask: ViewModifier {
     let fade: SpotScrollFade
     let height: CGFloat
@@ -319,8 +235,6 @@ private struct GridFadeMask: ViewModifier {
     }
 }
 
-/// Scrolls the grid until the selected spot lies clear of the fades at its two ends. It alone reads the selection, so that an
-/// arrow press on the grid reruns this modifier and not the panel. The grid holds still under a drag.
 private struct GridSelectionFollow: ViewModifier {
     let model: SpotsModel
     @Binding var scroll: ScrollPosition

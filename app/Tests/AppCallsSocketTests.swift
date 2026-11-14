@@ -1,9 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves that the running app answers `check`, `spot run`, `spot show` and `sandbox` on its socket: a run gets the folder,
-/// the variables and the stdin of its caller and streams each frame, Ctrl-C stops its script, and Careful mode fences what
-/// a run or a check starts to the uses of the spot and of its caller (protocol: Trust).
 final class AppCallsSocketTests: XCTestCase {
     private final class Host: Mac {
         func eventStore() -> any EventStore { FakeEventStore() }
@@ -58,7 +55,6 @@ final class AppCallsSocketTests: XCTestCase {
         try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: spots.spotFile(name))
     }
 
-    /// Waits for a fact, for 10 seconds at most.
     private func wait(_ what: String, until fact: () -> Bool) async throws {
         for _ in 0..<1000 {
             if fact() { return }

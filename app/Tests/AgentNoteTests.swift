@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves that the spots folder tells any agent that opens it how to build a spot, and keeps a note that a person wrote.
 final class AgentNoteTests: XCTestCase {
     private var folder: URL!
 

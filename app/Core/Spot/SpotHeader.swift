@@ -1,16 +1,12 @@
 import Foundation
 
-/// The `key=value` comment lines at the top of a script, which say what it is without running it. They are a frame in
-/// comments: a blank comment line ends a block, and a `button` or `field` block follows the keys of the spot.
 public struct SpotHeader: Equatable, Sendable {
     private static let limit = 4096
     private static let marks = ["//", "--", "#"]
     private static let kinds: Set<String> = ["button", "field", "command", "setting"]
 
-    /// The keys of the spot, with each `button` and `field` block as a child.
     public let block: TextBlock
 
-    /// Reads the comment lines under the first line of a script. The first other line ends them, and a program has none.
     public init(text: String) {
         var lines: [String] = []
         var rest = text[...]
@@ -33,7 +29,6 @@ public struct SpotHeader: Equatable, Sendable {
         block = TextBlock(fields: keys, children: children)
     }
 
-    /// Takes the next line off the front of the text, so that a read stops at the end of the header and splits no more.
     private static func nextLine(of text: inout Substring) -> Substring? {
         guard !text.isEmpty else { return nil }
         guard let end = text.firstIndex(of: "\n") else {
@@ -44,7 +39,6 @@ public struct SpotHeader: Equatable, Sendable {
         return text[..<end]
     }
 
-    /// Reads the start of the file only, so that a large program costs no more than a small script.
     public init(url: URL) {
         let file = try? FileHandle(forReadingFrom: url)
         let data = (try? file?.read(upToCount: Self.limit)) ?? Data()

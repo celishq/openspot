@@ -1,6 +1,5 @@
 import Foundation
 
-/// A value that the person chose for one spot, which its script keeps through `openspot setting` (protocol: Settings).
 public struct SpotSetting: Hashable, Sendable {
     public let spot: String
     public let key: String
@@ -12,7 +11,6 @@ public struct SpotSetting: Hashable, Sendable {
         self.value = value
     }
 
-    /// The lines of this value in the config file.
     var text: String {
         "[[settings]]\nspot = \(Self.quoted(spot))\nkey = \(Self.quoted(key))\nvalue = \(Self.quoted(value))"
     }

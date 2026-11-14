@@ -1,6 +1,5 @@
 import Foundation
 
-/// The stop of a call that may come before its task exists: a stop that comes first cancels the task as it arrives.
 final class CommandStop: @unchecked Sendable {
     private let lock = NSLock()
     private var task: Task<CommandAnswer, Never>?

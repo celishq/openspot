@@ -1,10 +1,7 @@
 import CryptoKit
 import Foundation
 
-/// The check that a person wrote the words of a key down.
 extension AccountKey {
-    /// The 4 words to pick from for one place of its words: the right one and 3 others, in an order that the key and the
-    /// place fix, so that each read gives the same choices.
     public func choices(at place: Int) -> [String] {
         guard let words, words.indices.contains(place - 1) else { return [] }
         let seed = "\(publicKey):\(place)"

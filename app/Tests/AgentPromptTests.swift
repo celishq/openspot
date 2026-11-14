@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves that the prompt for an agent names the `openspot` client, which reaches the running app.
 final class AgentPromptTests: XCTestCase {
     private var folder: URL!
 

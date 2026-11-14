@@ -1,9 +1,5 @@
 import Foundation
 
-/// The call of `openspot batch`: one call for each line of stdin, with its words split at spaces, run in turn in one
-/// process (protocol: The openspot command). It prints the output of each call and then a line `---` as each call ends, and stops at the first call that
-/// fails, or once its caller stops it. It runs no call that the app leaves to a process of its own, that reads stdin, or that can wait for
-/// the person.
 struct BatchCalls {
     let api: CommandAPI
     let environment: [String: String]
@@ -28,8 +24,6 @@ struct BatchCalls {
         }
     }
 
-    /// Whether a call reads stdin, which a batch holds, can wait for the person, such as a pick of a colour, or runs a spot, a
-    /// check or a window.
     private static func isRefused(_ call: CommandLineCall) -> Bool {
         switch call {
         case .clipboardCopy(nil), .translate, .colorPick, .folderPick, .screenShot, .screenRecordStart, .check, .checkJSON, .spotRun, .sandbox: true

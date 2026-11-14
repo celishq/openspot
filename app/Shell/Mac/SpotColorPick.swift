@@ -1,7 +1,6 @@
 import AppKit
 import OpenspotCore
 
-/// The macOS colour sampler for a script. It gives the picked colour, and nothing on a cancel.
 @MainActor
 final class SpotColorPick {
     private static let limit: TimeInterval = 25
@@ -11,8 +10,6 @@ final class SpotColorPick {
 
     private init() {}
 
-    /// The picked colour on a line, or nothing on a cancel or once its time is up, before the action of its script times
-    /// out. It waits on the main thread without blocking it.
     static func pick() async -> String {
         let pick = SpotColorPick()
         return await withCheckedContinuation { answer in

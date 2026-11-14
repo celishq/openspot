@@ -1,8 +1,5 @@
 import Foundation
 
-/// The layout of a picture book: colour glyphs drawn once at one size, tile after tile, in a file that the app maps from
-/// disk. Each tile is a square of premultiplied RGBA bytes at twice the side. The file's name changes with its glyphs, its
-/// sizes and the system, so a new set of emoji gets a new book.
 public struct GlyphBook: Equatable, Sendable {
     public static let scale = 2.0
     public static let fileExtension = ".glyphs"
@@ -12,7 +9,6 @@ public struct GlyphBook: Equatable, Sendable {
     public let fontSize: Double
     private let places: [String: Int]
 
-    /// Keeps each glyph once, in its first place, and leaves out a glyph that breaks a line, which a helper reads as two.
     public init(glyphs: [String], side: Double, fontSize: Double) {
         var places: [String: Int] = [:]
         var kept: [String] = []
@@ -38,12 +34,10 @@ public struct GlyphBook: Equatable, Sendable {
         glyphs.count * tileBytes
     }
 
-    /// Where the tile of a glyph starts in the file, or nil for a glyph that the book does not hold.
     public func offset(of glyph: String) -> Int? {
         places[glyph].map { $0 * tileBytes }
     }
 
-    /// The file name of the book on this system, from a stable hash of all that its pictures depend on.
     public func name(system: String) -> String {
         var hash: UInt64 = 0xcbf2_9ce4_8422_2325
         for byte in "\(side)|\(fontSize)|\(Self.scale)|\(system)\n\(glyphs.joined(separator: "\n"))".utf8 {
@@ -52,7 +46,6 @@ public struct GlyphBook: Equatable, Sendable {
         return String(format: "%016llx", hash) + Self.fileExtension
     }
 
-    /// The folder of the books in the cache folder of the app.
     public static func folder(in cache: URL = AppCache.folder()) -> URL {
         cache.appendingPathComponent("glyphs", isDirectory: true)
     }

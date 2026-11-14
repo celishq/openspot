@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Settings sheet that the app makes for each spot: a row for its place in the menu bar, its float, each of its
-/// commands, each value that its header names and each value that it keeps, which a person changes in the config.
 @MainActor
 final class SpotSettingsTests: XCTestCase {
     private var folder: URL!
@@ -72,7 +70,7 @@ final class SpotSettingsTests: XCTestCase {
     }
 
     func testASpotWithOneCommandAndAReadKeepsItsOwnSheetAndItsSettingsApart() async throws {
-        try "#!/bin/sh\n# title=Move\n# on=sheet.open\n#\n# button=left\n# title=Left side\n[ \"$1\" = read ] && printf 'row=own\\ntitle=Own\\n'\nexit 0\n".writeScript(to: folder.spotFile("move"))
+        try "#!/bin/sh\n# title=Move\n# on=sheet.open\n# offers=card\n# offers=float\n#\n# button=left\n# title=Left side\n[ \"$1\" = read ] && printf 'row=own\\ntitle=Own\\n'\nexit 0\n".writeScript(to: folder.spotFile("move"))
         let move = try spot("move")
         let runs = SpotRuns()
 
@@ -86,7 +84,7 @@ final class SpotSettingsTests: XCTestCase {
     }
 
     func testAHotkeyFieldShowsItsKeyAndRecordsANewOne() async throws {
-        try "#!/bin/sh\n# title=Confetti\n# on=sheet.open\n#\n# field=key\n# type=hotkey\n# title=Shortcut\n#\n# field=theme\n".writeScript(to: folder.spotFile("confetti"))
+        try "#!/bin/sh\n# title=Confetti\n# on=sheet.open\n# offers=card\n# offers=float\n#\n# field=key\n# type=hotkey\n# title=Shortcut\n#\n# field=theme\n".writeScript(to: folder.spotFile("confetti"))
         let settings = try XCTUnwrap(try spot("confetti").settingsSheet)
         let runs = SpotRuns()
         let sheet = try XCTUnwrap(try spot("confetti").settingsSpot)
@@ -114,7 +112,7 @@ final class SpotSettingsTests: XCTestCase {
     }
 
     func testAListSpotKeepsItsSettingsInASheetOfTheirOwn() async throws {
-        let header = ["title=Shelf", "icon=tray.full", "on=sheet.open", "on=clock.60", "", "button=left", "title=Left side", "", "button=right", "title=Right side", "", "field=folder", "", "field=editor", "title=Default app", "icon=app.badge"]
+        let header = ["title=Shelf", "icon=tray.full", "on=sheet.open", "on=clock.60", "offers=card", "offers=float", "", "button=left", "title=Left side", "", "button=right", "title=Right side", "", "field=folder", "", "field=editor", "title=Default app", "icon=app.badge"]
         try "#!/bin/sh\n\(header.map { $0.isEmpty ? "#" : "# \($0)" }.joined(separator: "\n"))\nprintf 'row=own\\ntitle=Own\\n'\n".writeScript(to: folder.spotFile("shelf"))
         try file.set(setting: "folder", of: "shelf", to: "~/Code")
         try file.set(setting: "theme", of: "shelf", to: "dark")
@@ -186,8 +184,8 @@ final class SpotSettingsTests: XCTestCase {
     }
 
     func testAShakeOnARowTakesTheShakeFromTheRowThatHadIt() async throws {
-        try "#!/bin/sh\n# title=Shelf\n# on=sheet.open\n".writeScript(to: folder.spotFile("shelf"))
-        try "#!/bin/sh\n# title=Notes\n# on=sheet.open\n".writeScript(to: folder.spotFile("notes"))
+        try "#!/bin/sh\n# title=Shelf\n# on=sheet.open\n# offers=card\n# offers=float\n".writeScript(to: folder.spotFile("shelf"))
+        try "#!/bin/sh\n# title=Notes\n# on=sheet.open\n# offers=card\n# offers=float\n".writeScript(to: folder.spotFile("notes"))
         let shelf = try XCTUnwrap(try spot("shelf").settingsSpot)
         let notes = try XCTUnwrap(try spot("notes").settingsSpot)
         let runs = SpotRuns()

@@ -1,12 +1,8 @@
 import Foundation
 
-/// The calls of `openspot screen`, which reach the screen through the Mac. A relative file starts in the working folder of
-/// the caller. In Careful mode, a spot with no `files` use takes a capture only into a file that its own process could
-/// write, and any other file is refused (protocol: Trust).
 struct ScreenCalls {
     let mac: any Mac
     let environment: [String: String]
-    /// The spot that calls and the folders of its process in Careful mode, or nil when it may write anywhere.
     let fence: (caller: CallerTokens.Caller, mode: CarefulMode)?
 
     private var folder: URL {
@@ -25,8 +21,6 @@ struct ScreenCalls {
         refusal(of: capture) ?? CommandAnswer.work { [mac, folder] in try await mac.startRecording(capture, in: folder) }
     }
 
-    /// The answer that refuses a capture into a file that the calling spot's own process could not write, or nil. A path
-    /// with `..` is refused, because the system follows a link before it climbs.
     private func refusal(of capture: ScreenCapture) -> CommandAPI.Work? {
         guard let fence else { return nil }
         let own = ProcessInfo.processInfo.environment

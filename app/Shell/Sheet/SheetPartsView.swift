@@ -2,8 +2,6 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// The parts that a script prints, drawn with system controls where `SheetPlacement` puts them. It draws what it gets,
-/// and reports each change.
 struct SheetPartsView: View {
     let panel: SheetParts
     var work: (SpotPart) -> ScriptCall? = { _ in nil }
@@ -15,16 +13,12 @@ struct SheetPartsView: View {
     var onRun: (SpotItem) -> Void = { _ in }
     var onDragOut: ([SpotItem]) -> Void = { _ in }
     var selection: (() -> Int)?
-    /// Reads the id of the selected part where it is called. Nil reads it from the parts.
     var selectedPart: (() -> String?)?
     var nudge: () -> SheetParts.Nudge = { SheetParts.Nudge.rest }
-    /// The last press of return that asks a menu to open.
     var menuOpening: () -> SheetParts.MenuOpening? = { nil }
-    /// Takes a click into a field, which gives that part the focus.
     var onFocus: (SpotPart) -> Void = { _ in }
-    /// The spot's own view at the size of the area of a `view` component (protocol: Views).
-    /// A spot's own view in the place of a block, with the send that calls the spot with the block's id and a value.
-    var customView: (CGSize, [String: [String]], @escaping (String) -> Void) -> AnyView? = { _, _, _ in nil }
+    var viewSource: String?
+    var views = SpotViews.shared
     @FocusState private var focus: String?
 
     private static let swatchSize: CGFloat = 22
@@ -102,7 +96,6 @@ struct SheetPartsView: View {
         selectedPart ?? { [panel] in panel.selectedPart?.id }
     }
 
-    /// Whether a part fills its whole cell with a box of its own, as a button, a tile or a field does.
     private func hasBox(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> Bool {
         if part.isEditable || part.look == .tile { return true }
         guard part.press == .line else { return false }
@@ -127,7 +120,6 @@ struct SheetPartsView: View {
         return Alignment(horizontal: horizontal, vertical: vertical)
     }
 
-    /// Gives the text focus to the field that has the focus of the sheet, and takes it from a field that lost it.
     private func focusSelectedField() {
         guard !panel.showsRows else { return }
         let id = selectedID()
@@ -137,7 +129,10 @@ struct SheetPartsView: View {
     @ViewBuilder
     private func drawn(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         if part.kind == "view" {
-            customView(frame.rect.size, part.values) { onSet(part, $0) }
+            if let viewSource {
+                SpotCustomView(source: viewSource, values: part.values, card: .square, room: frame.rect.size, views: views) { onSet(part, $0) }
+                    .equatable()
+            }
         } else {
             content(part, frame)
         }
@@ -176,7 +171,6 @@ struct SheetPartsView: View {
         }
     }
 
-    /// The running work of a part, in the slot of its symbol. The square of a part that takes a press says that it stops.
     @ViewBuilder
     private func mark(_ part: SpotPart) -> some View {
         if let call = work(part) {
@@ -184,13 +178,10 @@ struct SheetPartsView: View {
         }
     }
 
-    /// The running work of a part that fills its cell, in the corner of that cell.
     private func cornerMark(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         mark(part).padding(SpotTokens.controlPadding)
     }
 
-    /// A line with a label, a value, a round button and a switch or a menu, or a text over two lines with its detail under
-    /// its title.
     @ViewBuilder
     private func labelled(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         if frame.hasDetailUnderTitle, part.control == .none, part.press == .none, part.mark == nil, let title = part.title, let detail = part.detail {
@@ -200,7 +191,6 @@ struct SheetPartsView: View {
         }
     }
 
-    /// A title with its detail under it, which wraps to fill the height of its place.
     private func stacked(_ part: SpotPart, title: String, detail: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: Self.lineGap) {
             if let symbol = part.symbol {
@@ -225,7 +215,6 @@ struct SheetPartsView: View {
         .modifier(SpotColorBar(color: part.color))
     }
 
-    /// A line with a label, a value, a round button and a switch or a menu.
     private func line(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         HStack(spacing: frame.rect.width < Self.narrowCell ? Self.narrowGap : Self.lineGap) {
             if !hasRoundMark(part), work(part) != nil {
@@ -270,18 +259,16 @@ struct SheetPartsView: View {
         .modifier(SpotColorBar(color: part.color))
     }
 
-    /// Whether a part shows its running work on its round button.
     private func hasRoundMark(_ part: SpotPart) -> Bool {
         if case .symbol = part.press { return true }
         return false
     }
 
-    /// What a button says: its own words, or the running work of its part and the word that a press stops it.
     @ViewBuilder
     private func pressLabel(_ part: SpotPart, words: String, font: Font) -> some View {
         if let call = work(part) {
             HStack(spacing: SpotTokens.placeGap / 2) {
-                SpotWorkMark(call: call, side: SpotTokens.workMark, isOnSolid: part.look == .strong)
+                SpotWorkMark(call: call, side: SpotTokens.workMark)
                 Text("Stop").font(font).lineLimit(1)
             }
         } else {
@@ -289,18 +276,16 @@ struct SheetPartsView: View {
         }
     }
 
-    /// A line that is a button. It looks like one by default, and `look` changes how.
     @ViewBuilder
     private func lineButton(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         Button { onPress(part) } label: {
             switch part.look {
             case .chip:
                 pressLabel(part, words: part.title ?? part.id, font: SpotType.action)
-                    .foregroundStyle(SpotTheme.ink)
                     .padding(.horizontal, SpotTokens.padding)
                     .padding(.vertical, 5)
                     .fixedSize()
-                    .background(SpotTheme.ink.opacity(frame.isOnTop ? SpotTheme.control : SpotTheme.selectedFill), in: Capsule())
+                    .spotFill(isActive: work(part) != nil, otherwise: SpotTheme.ink.opacity(frame.isOnTop ? SpotTheme.control : SpotTheme.selectedFill), in: Capsule())
                     .background { if frame.isOnTop { SpotFloatGlass(shape: Capsule()) } }
                     .contentShape(Capsule())
             case .bare:
@@ -313,31 +298,29 @@ struct SheetPartsView: View {
                 .contentShape(Rectangle())
             case .strong where frame.isOnTop:
                 pressLabel(part, words: part.title ?? part.id.capitalized, font: SpotType.action)
-                    .foregroundStyle(SpotTheme.onSolid)
                     .padding(.horizontal, SpotTokens.padding)
                     .padding(.vertical, 5)
                     .fixedSize()
-                    .background(SpotTheme.solid, in: Capsule())
+                    .spotFill(isActive: true, in: Capsule())
                     .contentShape(Capsule())
             case .strong:
-                centeredLine(part, text: SpotTheme.onSolid, fill: SpotTheme.solid)
+                centeredLine(part, isActive: true)
             case .tile:
                 labelled(part, frame)
                     .modifier(TileLook(isOn: true))
                     .contentShape(shape)
             default:
-                centeredLine(part, text: SpotTheme.ink, fill: SpotTheme.ink.opacity(SpotTheme.selectedFill))
+                centeredLine(part, isActive: work(part) != nil)
             }
         }
         .buttonStyle(.plain)
     }
 
-    private func centeredLine(_ part: SpotPart, text: Color, fill: Color) -> some View {
+    private func centeredLine(_ part: SpotPart, isActive: Bool) -> some View {
         pressLabel(part, words: part.title ?? part.id.capitalized, font: SpotType.body.weight(.medium))
-            .foregroundStyle(text)
             .padding(.horizontal, SpotTokens.padding)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(fill, in: shape)
+            .spotFill(isActive: isActive, otherwise: SpotTheme.ink.opacity(SpotTheme.selectedFill), in: shape)
             .contentShape(shape)
     }
 
@@ -404,7 +387,6 @@ struct SheetPartsView: View {
         }
     }
 
-    /// The key of a part. A click asks for the next key that the person presses.
     private func shortcut(_ part: SpotPart, text: String) -> some View {
         Button { onRecord(part) } label: {
             SpotKeyLabel(text: text, isRecording: recordingPart == part.id)
@@ -426,14 +408,10 @@ struct SheetPartsView: View {
                 Image(systemName: symbol)
                     .foregroundStyle(SpotTheme.ink)
             }
-            Slider(value: Binding(get: { level }, set: { onSet(part, String(Int($0.rounded()))) }), in: low...max(high, low + 1))
-                .controlSize(.small)
-                .tint(SpotTheme.ink)
-                .labelsHidden()
+            SpotSlider(level: level, range: low...max(high, low + 1)) { onSet(part, String(Int($0.rounded()))) }
         }
     }
 
-    /// A row of colours that reaches both edges of its cell.
     private func swatches(_ part: SpotPart, colors: [String], value: String?) -> some View {
         HStack(spacing: 0) {
             ForEach(Array(colors.enumerated()), id: \.offset) { index, color in
@@ -457,7 +435,6 @@ struct SheetPartsView: View {
         .accessibilityLabel(color)
     }
 
-    /// Rows to choose from, one under the other, which scroll when they do not fit.
     private func list(_ part: SpotPart, items: [SpotPart.Option], value: String?) -> some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: SpotTokens.listRowGap) {
@@ -486,23 +463,13 @@ struct SheetPartsView: View {
     }
 
     private func chart(_ points: [Double]) -> some View {
-        let top = max(points.max() ?? 1, 1)
-        return GeometryReader { room in
-            HStack(alignment: .bottom, spacing: Self.barGap) {
-                ForEach(Array(points.enumerated()), id: \.offset) { _, point in
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
-                        .frame(height: room.size.height * max(point, 0) / top)
-                }
-            }
-            .frame(maxHeight: .infinity, alignment: .bottom)
-        }
-        .padding(SpotTokens.padding)
-        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
+        SpotBars(points: points, gap: Self.barGap, radius: 2)
+            .padding(SpotTokens.padding)
+            .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
     }
 
     private func image(_ path: String) -> some View {
-        SheetPicture(key: SpotPictureStore.Key(path: path))
+        SheetPicture(arrived: SpotPictureStore.Key(path: path, changed: panel.pictureTimes[path]))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .clipShape(shape)
     }
@@ -560,7 +527,6 @@ struct SheetPartsView: View {
     }
 }
 
-/// Gives the focus back once the panel has faded in. It alone reads whether the panel shows, so that a show reruns no part.
 private struct FocusOnShow: ViewModifier {
     let focus: @MainActor @Sendable () -> Void
     @Environment(\.spotIsShown) private var isShown
@@ -572,8 +538,6 @@ private struct FocusOnShow: ViewModifier {
     }
 }
 
-/// The ring of the focused part: a few points outside its own box, with that box's corners, or around its line, with room
-/// for its words at each side, when it has no box. It reads the focus itself, so a move of the focus redraws only rings.
 private struct PartRing: ViewModifier {
     let id: String
     let selectedID: () -> String?
@@ -592,7 +556,6 @@ private struct PartRing: ViewModifier {
     }
 }
 
-/// Gives the focus to the field that the keyboard selects. It reads the selection itself, so a move redraws only this.
 private struct FocusOnSelect: ViewModifier {
     let selectedID: () -> String?
     let focus: () -> Void
@@ -602,7 +565,6 @@ private struct FocusOnSelect: ViewModifier {
     }
 }
 
-/// The filled row of `look=tile`.
 private struct TileLook: ViewModifier {
     let isOn: Bool
 
@@ -618,13 +580,17 @@ private struct TileLook: ViewModifier {
     }
 }
 
-/// The picture at a file path, which fills its area and is cut at its edges. It shows an empty tile until it is read, and
-/// stays empty for a file it cannot read.
 private struct SheetPicture: View {
-    let key: SpotPictureStore.Key
+    let arrived: SpotPictureStore.Key
+    @State private var followed: (from: SpotPictureStore.Key, changed: Double?)?
     @State private var loaded: (key: SpotPictureStore.Key, image: CGImage)?
 
+    private var key: SpotPictureStore.Key {
+        followed.flatMap { $0.from == arrived ? SpotPictureStore.Key(path: arrived.path, changed: $0.changed) : nil } ?? arrived
+    }
+
     var body: some View {
+        let key = key
         Color.clear
             .overlay {
                 if let image = SpotPictureStore.shared.cached(key) ?? (loaded?.key == key ? loaded?.image : nil) {
@@ -635,6 +601,9 @@ private struct SheetPicture: View {
             }
             .task(id: key) {
                 if let image = await SpotPictureStore.shared.image(key) { loaded = (key, image) }
+            }
+            .task(id: arrived) {
+                for await changed in PictureFile(path: arrived.path).changes { followed = (arrived, changed) }
             }
     }
 }

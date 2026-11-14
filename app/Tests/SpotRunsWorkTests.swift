@@ -1,14 +1,10 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves how running work shows, what a press does while a call runs, and what a quit stops.
 @MainActor
 final class SpotRunsWorkTests: SpotRunsCase {
-    // MARK: L6, G1 to G4
-
     private static let progress = "printf 'title=42%%\\ndetail=2 min left\\nprogress=0.42\\n---\\n'\nsleep 30"
 
-    /// A body that waits for a file before each of these frames.
     private func steps(_ steps: [(file: String, frame: String)]) -> String {
         steps.map { "while [ ! -e '\(path($0.file))' ]; do sleep 0.02; done\nprintf '\($0.frame)\\n---\\n'" }.joined(separator: "\n") + "\nsleep 30"
     }
@@ -40,13 +36,13 @@ final class SpotRunsWorkTests: SpotRunsCase {
         time += 0.9
         XCTAssertTrue(sheet.work.isEmpty)
         XCTAssertNil(sheet.cardWork)
-        XCTAssertNil(runs.workMark)
+        XCTAssertNil(runs.runningSummary)
         XCTAssertNil(runs.workSpot)
         XCTAssertEqual(sheet.shownState, sheet.state)
 
         time += 0.1
         XCTAssertEqual(sheet.work.map(\.id), sheet.calls.map(\.id))
-        XCTAssertNotNil(runs.workMark)
+        XCTAssertNotNil(runs.runningSummary)
         XCTAssertEqual(runs.workSpot, "script")
     }
 
@@ -76,7 +72,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         time += 5
 
         XCTAssertTrue(sheet.work.isEmpty)
-        XCTAssertNil(runs.workMark)
+        XCTAssertNil(runs.runningSummary)
     }
 
     func testAReadNeverShowsAsWork() async throws {
@@ -88,7 +84,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
 
         XCTAssertEqual(sheet.calls.count, 1)
         XCTAssertTrue(sheet.work.isEmpty)
-        XCTAssertNil(runs.workMark)
+        XCTAssertNil(runs.runningSummary)
         XCTAssertNil(runs.workSpot)
     }
 
@@ -107,7 +103,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
 
         XCTAssertTrue(sheet.calls.isEmpty)
         XCTAssertTrue(sheet.work.isEmpty)
-        XCTAssertNil(runs.workMark)
+        XCTAssertNil(runs.runningSummary)
         XCTAssertNil(runs.workSpot)
         XCTAssertEqual(sheet.shownState, before)
     }
@@ -121,10 +117,10 @@ final class SpotRunsWorkTests: SpotRunsCase {
         sheet.pressCard()
         let changes = expectation(description: "the second has passed")
 
-        XCTAssertNil(withObservationTracking { live.workMark } onChange: { changes.fulfill() })
+        XCTAssertNil(withObservationTracking { live.runningSummary } onChange: { changes.fulfill() })
         await fulfillment(of: [changes], timeout: 5)
 
-        XCTAssertNotNil(live.workMark)
+        XCTAssertNotNil(live.runningSummary)
     }
 
     func testTheSpotShowsASpinnerWithNoValueAndARingFromValue() async throws {
@@ -194,7 +190,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertTrue(sheet.work.isEmpty)
         XCTAssertEqual(sheet.shownState.title, "Encode")
         XCTAssertNil(sheet.shownState.subtitle)
-        XCTAssertNil(runs.workMark)
+        XCTAssertNil(runs.runningSummary)
         XCTAssertNil(runs.workSpot)
         try await pause()
         XCTAssertEqual(log(), ["open"])
@@ -211,15 +207,15 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try await wait("the frame") { z.calls.first?.status != nil }
         time += 1
         a.pressCard()
-        XCTAssertEqual(runs.workMark?.content, .work(fill: 0.25, count: nil))
+        XCTAssertEqual(runs.runningSummary, "\(z.spot.name) is running")
         XCTAssertEqual(runs.workSpot, "z")
 
         time += 1
-        XCTAssertEqual(runs.workMark?.content, .work(fill: 0.25, count: 2))
+        XCTAssertEqual(runs.runningSummary, "2 running. \(z.spot.name) is the oldest")
         XCTAssertEqual(runs.workSpot, "z")
 
         z.stop(try XCTUnwrap(z.calls.first))
-        XCTAssertEqual(runs.workMark?.content, .work(fill: nil, count: nil))
+        XCTAssertEqual(runs.runningSummary, "\(a.spot.name) is running")
         XCTAssertEqual(runs.workSpot, "a")
     }
 
@@ -339,8 +335,6 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try await allEnded()
         XCTAssertFalse(exists("went-on"))
     }
-
-    // MARK: L11
 
     func testAPressOfAPartWithinOneSecondOfItsStartDoesNothing() async throws {
         try script(header: "on=sheet.open", """
@@ -560,7 +554,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAQuitChangesNothingOnAStayingScriptThatFailsAsItEnds() async throws {
-        try script(header: "mode=always", """
+        try script(header: "mode=always\noffers=card\noffers=menubar", """
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
           [ -n "$line" ] || printf 'end=%s\\n\\ntext=n\\ntitle=A\\n---\\n' "$call"

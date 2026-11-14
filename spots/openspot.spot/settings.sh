@@ -2,10 +2,10 @@
 # title=Settings
 # icon=gearshape
 # detail=Choose your key
-# on=panel.open
 # on=sheet.open
-# offers=search
 # uses=app
+# offers=card
+# offers=search
 
 # The settings of the app alone. Each spot keeps its own in its Settings sheet, which ⌘⏎ on its card opens.
 

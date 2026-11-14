@@ -2,6 +2,42 @@ import XCTest
 @testable import OpenspotCore
 
 final class ItemListTests: XCTestCase {
+    func testRowsFoundForOlderTextAreDroppedWhileNewerTextIsFound() {
+        var list = ItemList(items: [SpotItem(title: "Apple", run: "a"), SpotItem(title: "Banana", run: "b")])
+        let landed = list.landedSearches
+        list.beginFinding("a")
+        let older = list.found()
+        list.beginFinding("ap")
+        let newer = list.found()
+
+        list.take(older)
+
+        XCTAssertEqual(list.shown.map(\.run), ["a", "b"])
+        XCTAssertEqual(list.landedSearches, landed)
+        list.take(newer)
+        XCTAssertEqual(list.shown.map(\.run), ["a"])
+        XCTAssertEqual(list.landedSearches, landed + 1)
+    }
+
+    func testEachNewSearchLandsOnceWhenItsRowsShow() {
+        var local = ItemList(items: items("Safari", "Slack"))
+        local.search("s")
+        local.search("sa")
+        local.search("sa")
+        local.search("")
+
+        var script = ItemList(search: .script)
+        script.search("s")
+        let waiting = script.landedSearches
+        script.answer(items("Safari"), to: "x")
+        script.answer(items("Safari"), to: "s")
+        script.answer(items("Safari", "Slack"), to: "s")
+
+        XCTAssertEqual(local.landedSearches, 3)
+        XCTAssertEqual(waiting, 0)
+        XCTAssertEqual(script.landedSearches, 1)
+    }
+
     func testTheSameItemsAgainTakeNoNewWork() {
         let rows = (0..<6000).map { SpotItem(title: "Ключ настройки \($0)", subtitle: "Системные настройки", run: "\($0)", keywords: ["громкость", "звук", "экран"]) }
         var list = ItemList(items: rows)
@@ -386,5 +422,22 @@ final class ItemListTests: XCTestCase {
         list.search("s")
 
         XCTAssertEqual(list.shown.map(\.title), ["Safari", "Notes"])
+    }
+
+    func testASearchKeepsThePinnedRowsAroundTheRowsThatScroll() {
+        var list = ItemList(items: [
+            SpotItem(title: "Key", run: "key", pin: .top), SpotItem(title: "Apple", run: "apple", file: "/apple.txt"),
+            SpotItem(title: "Bell", run: "bell"), SpotItem(title: "Quit", run: "quit", pin: .bottom)
+        ])
+
+        list.search("be")
+
+        XCTAssertEqual(list.pinnedTop.map(\.run), ["key"])
+        XCTAssertEqual(list.scrolling.map(\.run), ["bell"])
+        XCTAssertEqual(list.pinnedBottom.map(\.run), ["quit"])
+        XCTAssertFalse(list.hasFiles)
+        XCTAssertTrue(list.setsApart)
+        list.search("ap")
+        XCTAssertTrue(list.hasFiles)
     }
 }

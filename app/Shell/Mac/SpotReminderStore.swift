@@ -1,7 +1,6 @@
 import EventKit
 import OpenspotCore
 
-/// The person's reminders, read and written through EventKit.
 final class SpotReminderStore: ReminderStore {
     private let store = EKEventStore()
 
@@ -54,7 +53,6 @@ final class SpotReminderStore: ReminderStore {
         return Reminder(id: new.calendarItemIdentifier, title: reminder.title, due: reminder.due, isAllDay: reminder.isAllDay, list: SpotEventStore.list(new.calendar), doneAt: nil)
     }
 
-    /// The reminders that a predicate matches, read into values in the callback, where EventKit hands them over.
     private func fetch(_ predicate: NSPredicate) async -> [Reminder] {
         await withCheckedContinuation { answer in
             store.fetchReminders(matching: predicate) { reminders in

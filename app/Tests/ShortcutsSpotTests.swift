@@ -1,17 +1,15 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Shortcuts spot with its real script in a private home and a fake `shortcuts` command.
 final class ShortcutsSpotTests: SampleSpotsCase {
     private func shortcuts() throws -> Spot {
         try XCTUnwrap(try scan.spots.first { $0.name == "Shortcuts" })
     }
 
-    /// Puts a fake `shortcuts` on the path. It lists one folder, and a run or a view writes its arguments to `shortcuts-args`,
-    /// one on each line. A run gives the file `result` as its result, and fails when the file `fail` is there.
     private static func fakeShortcuts(in folder: URL, loose: String = "printf '%s\\n' 'Say \\ \"hi\" (now)' 'Take a break'") throws {
         let script = """
         #!/bin/sh
+        echo "$1" >> '\(folder.path)/shortcuts-calls'
         case "$1 $2 $3" in
           'list --folders ') echo Media ;;
           'list --folder-name Media') echo 'Video to audio' ;;
@@ -55,7 +53,6 @@ final class ShortcutsSpotTests: SampleSpotsCase {
         }
     }
 
-    /// The frames of one read of the spot, with its own data folder.
     private static func frames(of shortcuts: Spot) async throws -> [String] {
         var frames: [String] = []
         for try await frame in ScriptProcess(url: shortcuts.url, arguments: ["read"], limit: 10, dataName: shortcuts.dataName).start() {
@@ -79,6 +76,24 @@ final class ShortcutsSpotTests: SampleSpotsCase {
             XCTAssertEqual(changed.count, 2)
             XCTAssertEqual(changed.first, first.first)
             XCTAssertEqual(SpotOutput(text: changed.last ?? "").items.map(\.title), ["Make a GIF", "Video to audio"])
+        }
+    }
+
+    func testAPanelOpenShowsTheKeptRowsAndAsksShortcutsNothing() async throws {
+        let shortcuts = try shortcuts()
+        try await withPrivateHome { folder in
+            try Self.fakeShortcuts(in: folder)
+            let first = try await Self.frames(of: shortcuts)
+            let calls = folder.appendingPathComponent("shortcuts-calls")
+            try FileManager.default.removeItem(at: calls)
+            try Self.fakeShortcuts(in: folder, loose: "echo 'Make a GIF'")
+
+            setenv("OPENSPOT_REASON", "panel.open", 1)
+            let opened = try await Self.frames(of: shortcuts)
+            unsetenv("OPENSPOT_REASON")
+
+            XCTAssertEqual(opened, first)
+            XCTAssertFalse(FileManager.default.fileExists(atPath: calls.path))
         }
     }
 

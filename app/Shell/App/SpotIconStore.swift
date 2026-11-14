@@ -2,7 +2,6 @@ import AppKit
 import OpenspotCore
 import UniformTypeIdentifiers
 
-/// Icons drawn once into small bitmaps, off the main thread, for views to read without any work.
 @MainActor
 final class SpotIconStore {
     static let shared = SpotIconStore()
@@ -44,7 +43,6 @@ final class SpotIconStore {
         return image
     }
 
-    /// Draws the icons of these items, and returns when they are ready.
     func prepare(_ items: [SpotItem]) async {
         let icons = Set(items.compactMap(\.icon))
         await withTaskGroup(of: Void.self) { group in
@@ -54,7 +52,6 @@ final class SpotIconStore {
         }
     }
 
-    /// Draws an icon, after it fetches a picture on the web into a file.
     private func draw(_ icon: FileIcon) async -> CGImage? {
         var file = icon
         if case .image(let path) = icon {
@@ -77,7 +74,6 @@ final class SpotIconStore {
         }
     }
 
-    /// Draws the picture of an image file in its whole square, and a Finder icon with its body at the share of an app icon.
     private nonisolated static func bitmap(of icon: FileIcon) -> CGImage? {
         switch icon {
         case .file(let path): bodied(NSWorkspace.shared.icon(forFile: path))

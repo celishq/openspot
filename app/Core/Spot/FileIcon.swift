@@ -1,6 +1,5 @@
 import Foundation
 
-/// Where a picture comes from: the icon of a file, the icon of a type, which files of that type share, or an image.
 public enum FileIcon: Hashable, Sendable {
     case file(String)
     case type(String)

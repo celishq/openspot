@@ -3,5 +3,7 @@
 # icon=internaldrive
 # on=panel.open
 # on=clock.300
+# offers=card
+# offers=menubar
 free=$(df -h / | awk 'NR==2 {print $4}')
 printf 'detail=%s free\n\ntext=free\ntitle=%s free\n' "$free" "$free"

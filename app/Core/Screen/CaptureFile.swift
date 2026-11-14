@@ -1,6 +1,5 @@
 import Foundation
 
-/// The file of a capture: the path that the script named, or a new name in the folder of screenshots, as macOS names one (S7).
 public struct CaptureFile: Sendable {
     public enum Kind: Sendable {
         case picture
@@ -30,7 +29,6 @@ public struct CaptureFile: Sendable {
 
     public let url: URL
 
-    /// A relative path starts in the current folder. With no path, the name has the time and, when it is taken, a number.
     public init(path: String?, kind: Kind, folder: URL, current: URL, now: Date = Date(), timeZone: TimeZone = .current) throws {
         guard let path else {
             url = Self.free(kind: kind, folder: folder, now: now, timeZone: timeZone)
@@ -41,7 +39,6 @@ public struct CaptureFile: Sendable {
         self.url = url
     }
 
-    /// The camera's own file beside a video, such as `Talk.camera.mov` beside `Talk.mp4`.
     public static func camera(beside video: URL) -> URL {
         video.deletingPathExtension().appendingPathExtension("camera").appendingPathExtension("mov")
     }

@@ -1,7 +1,6 @@
 import Foundation
 @testable import OpenspotCore
 
-/// One call of a script through the owner of all runs, for a test that proves what a script answers.
 @MainActor
 extension Spot {
     private func output(_ action: SpotAction, input: String? = nil, variables: [String: String] = [:], timeout: TimeInterval) async throws -> SpotOutput {
@@ -19,11 +18,12 @@ extension Spot {
         return (taking(output), try state(of: output))
     }
 
-    func items(query: String = "", input: String? = nil, timeout: TimeInterval) async throws -> SpotOutput {
+    func items(query: String = "", input: String? = nil, page: String? = nil, timeout: TimeInterval) async throws -> SpotOutput {
         let typed = query.isEmpty ? nil : TextBlock(fields: [.init(key: "search", value: query)]).text
         let lines = [input, typed].compactMap { $0 }
         let reason = query.isEmpty ? [:] : ReadReason.text(query, inSheet: answers == nil).variables
-        return try await output(.read, input: lines.isEmpty ? nil : lines.joined(), variables: reason, timeout: timeout)
+        let variables = reason.merging(page.map { ["OPENSPOT_PAGE": $0] } ?? [:]) { _, new in new }
+        return try await output(.read, input: lines.isEmpty ? nil : lines.joined(), variables: variables, timeout: timeout)
     }
 
     func answer(_ action: SpotAction, input: String? = nil, timeout: TimeInterval) async throws -> SpotOutput {
@@ -45,6 +45,17 @@ extension Spot {
         try await output(action, input: input, timeout: timeout).summary?.value("toast")
     }
 
+    func hook(_ function: String, card: String, origin: String) async -> Bool {
+        let runs = SpotRuns()
+        let answer = await withCheckedContinuation { continuation in
+            if let now = runs.ask(function, of: self, card: card, origin: origin, later: { continuation.resume(returning: $0) }) {
+                continuation.resume(returning: now)
+            }
+        }
+        withExtendedLifetime(runs) {}
+        return answer
+    }
+
     func read(timeout: TimeInterval) async throws -> MetricValue {
         guard let value = MetricValue(output: try await output(.read, timeout: timeout)) else { throw SpotError.badMetric }
         return value
@@ -52,7 +63,6 @@ extension Spot {
 }
 
 extension ScanResult {
-    /// The scripts with a number in their `read`.
     var metrics: [Spot] {
         scripts.filter { $0.read?.seconds != nil }
     }

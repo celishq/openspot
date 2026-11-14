@@ -2,21 +2,24 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// One blur of what lies behind the window, with the theme's shade. The shade grows from nothing at its edge across the
-/// whole margin, and the blur grows only close to the content.
 struct SpotSoftBlur: NSViewRepresentable {
     private static let blurInset: CGFloat = SpotTokens.halo - 5
     private static let blurSoftness: CGFloat = 20
     private static let tintInset: CGFloat = SpotTokens.halo * 0.58
     private static let tintSoftness: CGFloat = SpotTokens.halo / 4.7
 
-    /// Images of alpha alone, which is the strength of the blur and of the tint at each point.
     struct Masks {
         let blur: CGImage?
         let tint: CGImage?
     }
 
     let height: CGFloat
+    var width = SpotTokens.panelWidth
+
+    private struct Size: Hashable {
+        let width: CGFloat
+        let height: CGFloat
+    }
 
     final class Surface: NSVisualEffectView {
         private static let filterType = "variableBlur"
@@ -33,7 +36,6 @@ struct SpotSoftBlur: NSViewRepresentable {
             }
         }
 
-        /// Whether the panel is in the dark theme, which picks the shade of the tint.
         var isDark = true {
             didSet { if isDark != oldValue { applyShade() } }
         }
@@ -44,7 +46,6 @@ struct SpotSoftBlur: NSViewRepresentable {
         private var filter: NSObject?
         private var appliedFilter: NSObject?
 
-        /// A filter holds its mask from the first time it draws, so each mask has a filter of its own.
         private static func filter(mask: CGImage?, radius: CGFloat) -> NSObject? {
             let filter = (NSClassFromString("CAFilter") as? NSObject.Type)?
                 .perform(NSSelectorFromString("filterWithType:"), with: filterType)?
@@ -71,7 +72,6 @@ struct SpotSoftBlur: NSViewRepresentable {
             applyBlur()
         }
 
-        /// Gives the tint the shade of the theme that the panel is in.
         private func applyShade() {
             CATransaction.begin()
             CATransaction.setDisableActions(true)
@@ -110,7 +110,6 @@ struct SpotSoftBlur: NSViewRepresentable {
         }
     }
 
-    /// Fills the surface it lies on, so that a resize asks AppKit for no size of its own.
     func sizeThatFits(_ proposal: ProposedViewSize, nsView: Surface, context: Context) -> CGSize? {
         proposal.replacingUnspecifiedDimensions()
     }
@@ -121,42 +120,44 @@ struct SpotSoftBlur: NSViewRepresentable {
         surface.state = .active
         surface.appearance = NSAppearance(named: .darkAqua)
         surface.isDark = context.environment.colorScheme == .dark
-        surface.masks = Self.masks(height: height)
+        surface.masks = Self.masks(Size(width: width, height: height))
         return surface
     }
 
     func updateNSView(_ surface: Surface, context: Context) {
         surface.isDark = context.environment.colorScheme == .dark
-        surface.masks = Self.masks(height: height)
+        surface.masks = Self.masks(Size(width: width, height: height))
     }
 
-    private static var kept: [CGFloat: Masks] = [:]
+    private static var kept = RecentCache<Size, Masks>(base: 8 << 20)
 
-    /// Draws the masks of these heights ahead, one in each turn of the main queue, so that an open of a sheet finds them.
-    static func warm(_ heights: [CGFloat]) {
-        var left = Set(heights).subtracting(kept.keys)
-        guard let height = left.popFirst() else { return }
-        _ = masks(height: height)
-        DispatchQueue.main.async { warm(Array(left)) }
+    static func warm(_ heights: [CGFloat], width: CGFloat) {
+        var left = heights[...]
+        while let height = left.first, kept.value(for: Size(width: width, height: height)) != nil { left = left.dropFirst() }
+        guard let height = left.first, cost(of: Size(width: width, height: height)) <= kept.room else { return }
+        _ = masks(Size(width: width, height: height))
+        DispatchQueue.main.async { warm(Array(left.dropFirst()), width: width) }
     }
 
-    /// The masks of this height, kept for each height.
-    private static func masks(height: CGFloat) -> Masks {
-        if let masks = kept[height] { return masks }
+    private static func cost(of size: Size) -> Int {
+        2 * (Int(size.width.rounded(.up)) + 64) * Int(size.height.rounded(.up))
+    }
+
+    private static func masks(_ size: Size) -> Masks {
+        if let masks = kept.value(for: size) { return masks }
         let masks = Masks(
-            blur: mask(height: height, inset: blurInset, softness: blurSoftness),
-            tint: mask(height: height, inset: tintInset, softness: tintSoftness)
+            blur: mask(size, inset: blurInset, softness: blurSoftness),
+            tint: mask(size, inset: tintInset, softness: tintSoftness)
         )
-        kept[height] = masks
+        kept.keep(masks, for: size, cost: [masks.blur, masks.tint].reduce(0) { $0 + ($1.map { $0.bytesPerRow * $0.height } ?? 0) })
         return masks
     }
 
-    /// Draws a soft rounded shape and keeps only its alpha, a quarter of the bytes of the drawing.
-    private static func mask(height: CGFloat, inset: CGFloat, softness: CGFloat) -> CGImage? {
+    private static func mask(_ size: Size, inset: CGFloat, softness: CGFloat) -> CGImage? {
         let shape = RoundedRectangle(cornerRadius: SpotTokens.radius + SpotTokens.halo - inset, style: .continuous)
             .fill(Color.black)
             .padding(inset)
-            .frame(width: SpotTokens.panelWidth, height: height)
+            .frame(width: size.width, height: size.height)
             .blur(radius: softness)
         guard let drawn = ImageRenderer(content: shape).cgImage,
               let alpha = CGContext(data: nil, width: drawn.width, height: drawn.height, bitsPerComponent: 8, bytesPerRow: 0,

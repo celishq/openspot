@@ -2,15 +2,11 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// The square on a card's corner that takes the drag of its resize handle: the card snaps to the nearest size, and the
-/// other cards make room. The pointer over it, and through its drag, is the system's bottom right resize arrow, with a
-/// head on each side the card can still go. A release off the handle gives back the arrow.
 struct SpotHandleArea: View {
     let model: SpotsModel
     let id: String
     let size: SpotSize
     let sizes: [SpotSize]
-    /// Where the pointer lies in the square, which is where a press grips the handle.
     @State private var grip = CGPoint(x: SpotTokens.resizeHandle, y: SpotTokens.resizeHandle)
 
     var body: some View {
@@ -39,7 +35,6 @@ struct SpotHandleArea: View {
             }
     }
 
-    /// The system's bottom right resize arrow, with grey heads on the sides that the card cannot go.
     private static func pointer(for reach: (grows: Bool, shrinks: Bool)) -> NSCursor {
         NSCursor.frameResize(position: .bottomRight, directions: reach.grows == reach.shrinks ? .all : reach.grows ? .outward : .inward)
     }

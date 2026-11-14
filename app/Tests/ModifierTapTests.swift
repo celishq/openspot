@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves a tap of one modifier alone: a quick press and release with nothing between, and never a modifier of a shortcut.
 final class ModifierTapTests: XCTestCase {
     func testALoneModifierLetGoInTimeIsATap() {
         var tap = ModifierTap()

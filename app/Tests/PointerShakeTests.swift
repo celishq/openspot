@@ -1,10 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves which moves of the pointer are a shake (W2), with paths sampled as the Mac sends them, 120 times a second.
 final class PointerShakeTests: XCTestCase {
-    /// The times at which a path of the pointer fires a shake: the pointer swings this far to each side, with this many
-    /// seconds for each swing, for this long.
     private func shakes(swing: CGFloat, seconds: TimeInterval, for duration: TimeInterval) -> [TimeInterval] {
         var shake = PointerShake()
         var fired: [TimeInterval] = []

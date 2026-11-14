@@ -1,8 +1,6 @@
 import AppKit
 import OpenspotCore
 
-/// A picture book mapped from disk: each glyph's bitmap is read in place, with no copy, so its pages stay the file's and
-/// the system can drop them. A helper process writes the book, so the glyph caches of Core Text end with that process.
 final class SpotGlyphBook: @unchecked Sendable {
     let layout: GlyphBook
     private let bytes: NSData
@@ -12,7 +10,6 @@ final class SpotGlyphBook: @unchecked Sendable {
         self.bytes = bytes
     }
 
-    /// The bitmap of a glyph, read from its tile, or nil for a glyph that the book does not hold.
     func image(of glyph: String) -> CGImage? {
         guard let offset = layout.offset(of: glyph), let space = CGColorSpace(name: CGColorSpace.displayP3) else { return nil }
         let info = Unmanaged.passRetained(self).toOpaque()
@@ -29,14 +26,12 @@ final class SpotGlyphBook: @unchecked Sendable {
         )
     }
 
-    /// Maps the book from its file, or nil when the file is missing or holds other than the book's bytes.
     static func open(_ layout: GlyphBook, at file: URL) -> SpotGlyphBook? {
         guard let bytes = try? NSData(contentsOf: file, options: .alwaysMapped), bytes.length == layout.fileBytes else { return nil }
         try? FileManager.default.setAttributes([.modificationDate: Date()], ofItemAtPath: file.path)
         return SpotGlyphBook(layout: layout, bytes: bytes)
     }
 
-    /// Draws each glyph of the book into its tile, and writes the tiles in order to a file. The helper process runs it.
     static func write(_ layout: GlyphBook, to path: String) -> Bool {
         guard FileManager.default.createFile(atPath: path, contents: nil), let file = FileHandle(forWritingAtPath: path) else { return false }
         defer { try? file.close() }

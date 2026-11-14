@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Updates spot of the app: search finds it with the version, and the grid shows it with a downloaded update.
-/// A press checks now or restarts into the update, and it warns once before a restart that would stop running calls.
 final class UpdateSpotTests: BuiltInCase {
     private var version: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
@@ -43,11 +41,13 @@ final class UpdateSpotTests: BuiltInCase {
         XCTAssertEqual(installs, 1)
     }
 
-    func testItReadsWhenTheAppHasAnUpdate() throws {
+    func testItReadsAtLaunchAndWhenTheAppHasAnUpdateAndNotAtEachPanelOpen() throws {
         let spot = try spot("updates")
 
         XCTAssertTrue(spot.read?.has(.event(SpotEvent.appUpdate)) == true)
-        XCTAssertTrue(spot.read?.has(.panel) == true)
+        XCTAssertTrue(spot.read?.has(.event(SpotEvent.appLaunch)) == true)
+        XCTAssertFalse(spot.read?.has(.panel) == true)
+        XCTAssertTrue(spot.readsState)
         XCTAssertTrue(spot.isBuiltIn)
     }
 

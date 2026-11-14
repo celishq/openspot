@@ -1,12 +1,4 @@
 #!/bin/sh
-# Draws the image under each example of GUIDE.md. A line ![...](docs/images/<name>.png) after a sh or js example draws
-# that example as an installed spot: its sheet, or its card when a line <!-- card: <size> --> comes right before the image.
-# A line <!-- draw: <command> --> right before the image draws what that command prints instead of a read, with the
-# example's header and $EXAMPLE as the path of the example. Each spot that a card of other spots names gets a stub with a
-# sample value. A copy of the example goes beside the image as <name>.example, which GuideImageTests compare with the
-# guide. It also draws the image of the README as docs/images/panel.png: the panel of the spots in docs/sample, the System
-# card of the core spots and the Now playing example, each with its sample data.
-# OPENSPOT_APP names the app to draw with.
 set -e
 cd "$(dirname "$0")/.."
 app=${OPENSPOT_APP:-.temp/dd/Build/Products/Debug/Openspot.app/Contents/MacOS/Openspot}

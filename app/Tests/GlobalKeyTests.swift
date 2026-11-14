@@ -110,20 +110,22 @@ final class GlobalKeyTests: XCTestCase {
         XCTAssertEqual(Trigger(text: "ctrl+space")?.label, "⌃Space")
     }
 
-    func testAKeyWithNoCommandStaysOnlyForASpotWithASheet() throws {
+    func testAKeyWithNoCommandStaysOnlyForASpotThatOffersFloat() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-keys-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
-        try "#!/bin/sh\n# on=sheet.open\n".writeScript(to: folder.spotFile("shelf"))
+        try "#!/bin/sh\n# on=sheet.open\n# offers=float\n".writeScript(to: folder.spotFile("shelf"))
         try "#!/bin/sh\n".writeScript(to: folder.spotFile("notes"))
-        try "#!/bin/sh\n# on=clock.60\necho text=cups\n".writeScript(to: folder.spotFile("cups"))
+        try "#!/bin/sh\n# on=clock.60\n# offers=card\n# offers=float\necho text=cups\n".writeScript(to: folder.spotFile("cups"))
+        try "#!/bin/sh\n# on=sheet.open\n".writeScript(to: folder.spotFile("sheet"))
         let shortcut = try XCTUnwrap(Shortcut(text: "ctrl+up"))
         let shelf = GlobalKey(spot: "shelf", act: .float, trigger: .key(shortcut))
         let cups = GlobalKey(spot: "cups", act: .float, trigger: .key(shortcut))
         let notes = GlobalKey(spot: "notes", act: .float, trigger: .key(shortcut))
+        let sheet = GlobalKey(spot: "sheet", act: .float, trigger: .key(shortcut))
         let gone = GlobalKey(spot: "gone", act: .float, trigger: .key(shortcut))
 
-        XCTAssertEqual(try SpotsFolder(url: folder).scan().offered([shelf, cups, notes, gone]), [shelf, cups])
+        XCTAssertEqual(try SpotsFolder(url: folder).scan().offered([shelf, cups, notes, sheet, gone]), [shelf, cups])
     }
 
     func testSavingTheGridKeepsTheKeys() throws {

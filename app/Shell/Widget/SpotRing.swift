@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// A round gauge: a faint track, with an arc over it that starts at the top. It fills the room it gets.
 struct SpotRing: View {
     let fill: Double
     let line: CGFloat

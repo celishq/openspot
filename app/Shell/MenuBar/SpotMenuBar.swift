@@ -2,8 +2,6 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// The menu bar items of the metrics that ask to show there, and running work on the Openspot item. An item comes and goes
-/// with its mark.
 @MainActor
 final class SpotMenuBar: NSObject {
     private let model: SpotsModel
@@ -17,10 +15,9 @@ final class SpotMenuBar: NSObject {
         update()
     }
 
-    /// Shows the marks of the model now, and again each time they change.
     private func update() {
-        let (marks, workMark) = withObservationTracking {
-            (model.menuBarMarks, model.workMark)
+        let (marks, running) = withObservationTracking {
+            (model.menuBarMarks, model.runningSummary)
         } onChange: { [weak self] in
             Task { @MainActor in self?.update() }
         }
@@ -30,7 +27,7 @@ final class SpotMenuBar: NSObject {
         for (id, mark) in marks {
             if let item = shown[id] { item.draw(mark) } else { shown[id] = makeItem(id: id, mark: mark) }
         }
-        openspotItem.show(work: workMark)
+        openspotItem.show(running: running)
     }
 
     private func makeItem(id: String, mark: MenuBarMark) -> MenuBarMarkItem {

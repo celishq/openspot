@@ -1,0 +1,222 @@
+import SwiftUI
+
+/// The store: each spot as its card at the size it takes on the grid, in rows that wrap, under the title of its group, with
+/// a plus on the corner of the ones you lack and an up arrow on your own that changed. A search, a filter by origin and a
+/// sort over the groups pick and order the cards.
+struct SpotView: View {
+    let spot: SpotInput
+    @State private var query = ""
+    @State private var origin = Origin.all
+    @State private var order = Order.name
+
+    /// Where the spots that the filter keeps come from.
+    private enum Origin: String, CaseIterable, Identifiable {
+        case all = "All", core = "Core", mine = "Yours", store = "Shared"
+
+        var id: Self { self }
+
+        /// The word of `openspot store list` for this origin, or nil for all.
+        var word: String? {
+            switch self {
+            case .all: nil
+            case .core: "core"
+            case .mine: "mine"
+            case .store: "store"
+            }
+        }
+    }
+
+    /// How the cards of each group are ordered.
+    private enum Order: String, CaseIterable, Identifiable {
+        case name = "Name", size = "Size"
+
+        var id: Self { self }
+    }
+
+    /// One spot of the store: its id, its name, what its button does, its origin, its description, its size, and the folded
+    /// words that a search compares, made once.
+    private struct Item: Identifiable {
+        let id: String
+        let name: String
+        let state: String
+        let origin: String
+        let size: String
+        let words: String
+
+        init?(_ line: String) {
+            let parts = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
+            guard parts.count == 6 else { return nil }
+            (id, name, state, origin, size) = (parts[0], parts[1], parts[2], parts[3], parts[5])
+            words = [name, parts[4], Self.label(of: origin)].joined(separator: " ").folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+        }
+
+        /// The cells that its card covers on the grid.
+        var area: Int {
+            ["small": 1, "wide": 2, "square": 4, "strip": 4, "large": 8][size] ?? 1
+        }
+
+        /// The word of the filter that names its origin.
+        static func label(of origin: String) -> String {
+            Origin.allCases.first { $0.word == origin }?.rawValue ?? origin
+        }
+    }
+
+    /// The spots that the search and the filter keep, in the chosen order.
+    private var items: [Item] {
+        let folded = query.trimmingCharacters(in: .whitespaces).folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+        let kept = spot.all("value").compactMap(Item.init).filter { item in
+            (origin.word == nil || item.origin == origin.word) && (folded.isEmpty || item.words.contains(folded))
+        }
+        switch order {
+        case .name: return kept.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        case .size: return kept.sorted { ($0.area, $1.name) > ($1.area, $0.name) }
+        }
+    }
+
+    var body: some View {
+        let items = items
+        let groups = [
+            ("Get more spots", items.filter { $0.state == "get" }),
+            ("Yours to publish", items.filter { $0.state == "publish" }),
+            ("Added", items.filter { $0.state == "added" })
+        ].filter { !$0.1.isEmpty }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 28) {
+                ForEach(groups, id: \.0) { title, list in section(groups.count > 1 ? title : nil, list) }
+                if groups.isEmpty {
+                    Text(query.isEmpty ? "No spot is here." : "No spot has these words.")
+                        .font(spot.font.detail)
+                        .foregroundStyle(spot.ink.opacity(spot.secondary))
+                }
+            }
+            .padding(.horizontal, spot.inset * 2)
+            .padding(.vertical, spot.inset)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .toolbar {
+            ToolbarItem { search }
+            ToolbarItem { filter }
+            ToolbarItem { sort }
+        }
+    }
+
+    /// The filter by origin, as one segmented control.
+    private var filter: some View {
+        Picker("Origin", selection: $origin) {
+            ForEach(Origin.allCases) { Text($0.rawValue).tag($0) }
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .fixedSize()
+    }
+
+    /// The order of the cards in each group, as a menu.
+    private var sort: some View {
+        Picker("Sort", selection: $order) {
+            ForEach(Order.allCases) { Text("By \($0.rawValue)").tag($0) }
+        }
+        .pickerStyle(.menu)
+        .labelsHidden()
+        .fixedSize()
+    }
+
+    /// A field whose whole fill takes a click, and whose Esc clears it.
+    private var search: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(spot.ink.opacity(spot.secondary))
+            TextField("Search spots", text: $query)
+                .textFieldStyle(.plain)
+                .onExitCommand { query = "" }
+        }
+        .font(spot.font.detail)
+        .padding(.horizontal, 10)
+        .frame(width: 220, height: 26)
+        .background(spot.ink.opacity(0.08), in: Capsule())
+        .contentShape(Capsule())
+    }
+
+    /// A group of cards, under its title when the store shows more than one group.
+    private func section(_ title: String?, _ list: [Item]) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if let title {
+                Text(title)
+                    .font(spot.font.title)
+                    .foregroundStyle(spot.ink)
+            }
+            Flow(gap: 16) {
+                ForEach(list) { tile($0) }
+            }
+        }
+    }
+
+    private func tile(_ item: Item) -> some View {
+        let size = spot.cardSize(item.id)
+        return spot.card(item.id)
+            .frame(width: size.width, height: size.height)
+            .overlay(alignment: .topLeading) { control(item, card: size) }
+    }
+
+    /// The control on the top left rim of a card, as on the cards of Edit Spots: a plus that gets a spot you lack, an up
+    /// arrow that publishes your own spot's changes, and none on a spot you have.
+    @ViewBuilder
+    private func control(_ item: Item, card: CGSize) -> some View {
+        switch item.state {
+        case "get": corner("plus", label: "Get \(item.name)", card: card) { spot.send("get:\(item.id)") }
+        case "publish": corner("arrow.up", label: "Publish \(item.name)", card: card) { spot.send("publish:\(item.id)") }
+        default: EmptyView()
+        }
+    }
+
+    /// A small round control on the rim of a card's top left corner, which a click presses.
+    private func corner(_ symbol: String, label: String, card: CGSize, action: @escaping () -> Void) -> some View {
+        let radius: CGFloat = card.height <= 64 && card.width < 289 ? card.height / 2 : 26
+        let inset = radius * (1 - 0.5.squareRoot()) - 10
+        return Image(systemName: symbol)
+            .font(.system(size: 10, weight: .bold))
+            .foregroundStyle(spot.ink)
+            .frame(width: 20, height: 20)
+            .background(Circle().fill(.background))
+            .overlay(Circle().strokeBorder(spot.ink.opacity(0.15)))
+            .contentShape(Circle())
+            .onTapGesture(perform: action)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityLabel(label)
+            .help(label)
+            .offset(x: inset, y: inset)
+    }
+}
+
+/// Lays its views in rows that wrap at the width it gets, each row as tall as its tallest view.
+private struct Flow: Layout {
+    let gap: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = proposal.width ?? .infinity
+        let places = place(subviews, in: width)
+        return CGSize(width: proposal.width ?? places.map(\.maxX).max() ?? 0, height: places.map(\.maxY).max() ?? 0)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        for (view, rect) in zip(subviews, place(subviews, in: bounds.width)) {
+            view.place(at: CGPoint(x: bounds.minX + rect.minX, y: bounds.minY + rect.minY), proposal: ProposedViewSize(rect.size))
+        }
+    }
+
+    private func place(_ subviews: Subviews, in width: CGFloat) -> [CGRect] {
+        var rects: [CGRect] = []
+        var x: CGFloat = 0, y: CGFloat = 0, line: CGFloat = 0
+        for view in subviews {
+            let size = view.sizeThatFits(.unspecified)
+            if x > 0, x + size.width > width {
+                x = 0
+                y += line + gap
+                line = 0
+            }
+            rects.append(CGRect(origin: CGPoint(x: x, y: y), size: size))
+            x += size.width + gap
+            line = max(line, size.height)
+        }
+        return rects
+    }
+}

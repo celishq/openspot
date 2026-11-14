@@ -317,7 +317,6 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertThrowsError(try review(""))
     }
 
-    /// A review of a `.spot` file with one script, which adds to the folder `spots` and records in a lock beside it.
     private func filed(_ header: String, body: String = "") throws -> ReviewSpot {
         let text = "#!/bin/sh\n\(header.split(separator: "\n").map { "# \($0)\n" }.joined())\(body)"
         let file = folder.appendingPathComponent("Weather.spot")
@@ -403,7 +402,7 @@ final class ReviewSpotTests: XCTestCase {
 
         let text = try shown(review)
         XCTAssertTrue(text.hasPrefix("Weather 2\nUpdate to version 2\n\n"), text)
-        XCTAssertNotEqual(review.subtitle, ReviewSpot.otherKey)
+        XCTAssertNotEqual(review.subtitle, ReviewSpot.otherKeySubtitle)
     }
 
     func testAVersionThatAnotherKeySignedOrNoneSaysSoFirst() throws {
@@ -412,7 +411,7 @@ final class ReviewSpotTests: XCTestCase {
         for other in [try weather("Weather 2").signed(by: AccountKey.make()), try weather("Weather 2")] {
             let review = try ReviewSpot(spot: other, folder: spots)
 
-            XCTAssertEqual(review.subtitle, ReviewSpot.otherKey)
+            XCTAssertEqual(review.subtitle, ReviewSpot.otherKeySubtitle)
             let text = try shown(review)
             XCTAssertTrue(text.hasPrefix("Weather 2\nAnother key signed this version than the one you have. Add it only if you trust the sender.\n"), text)
         }

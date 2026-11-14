@@ -1,6 +1,5 @@
 import Foundation
 
-/// The part of TOML a widget file uses: top-level pairs and arrays of tables, with strings, integers, booleans, one-line lists of strings and one-line tables of strings.
 public struct TomlDocument: Equatable, Sendable {
     public enum Value: Equatable, Sendable {
         case string(String)
@@ -107,7 +106,6 @@ public struct TomlDocument: Equatable, Sendable {
         return nil
     }
 
-    /// Reads up to the closing quote, and leaves what follows it.
     private static func quoted(_ rest: inout Substring) -> String? {
         var result = ""
         var escaped = false

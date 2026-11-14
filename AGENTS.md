@@ -6,7 +6,10 @@
   add or move a file. Targets:
   - `Core/` — the spot contract and loading. Imports Foundation only.
   - `Shell/` — the menu bar app, the panel and the hotkey. Imports AppKit and SwiftUI.
+  - `Client/` — the `openspot` command, which talks to the running app.
   - `StandIn/` — a small program for tests: a capability that needs no Mac feature. It does not ship.
+  - `Views/` — `openspot-views`, which a Release build runs to compile each view of the core spots into a `.view` beside
+    its source, so that it draws on a Mac with no developer tools. It does not ship. Debug compiles a view at its first use.
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
 - `app/Keywords/` holds the CLDR keywords of emoji and symbols, one xz file per language. `scripts/emoji-keywords.py` writes
   it from a pinned CLDR version, and the build copies it into the app.
@@ -24,7 +27,8 @@
 
 ## Writing
 
-- Say it once, in the fewest words that keep the meaning. Short sentences, never fragments.
+- Say each thing once, in one place, and link to it from other places. Use the fewest words that keep the meaning. Short
+  sentences, never fragments.
 - A name is a noun for what a thing is. No `-er`/`-or` suffix (`Manager`, `Handler`, `Renderer`).
 - One primary type per file. The filename matches it.
 - Nouns own their data. Verbs are methods on the noun that owns the data.
@@ -41,12 +45,22 @@ Write a doc that people read, such as `GUIDE.md` and `PROTOCOL.md`, the way Appl
 - Keep the main idea and the edge cases apart. Put limits, errors and rare cases in a short note or in the reference.
 - Write natural English: "you" for the reader, short sentences, common words. Contractions are fine.
 - Use one word for each meaning on the page.
-- Put each rule in one place, and link to it from other places.
+- `make verify` fails when a doc links to a file or a heading that does not exist, names a repo path or a `make` target
+  that does not exist, or when code cites a protocol heading that does not exist (`DocReferenceTests`).
+- It fails when PROTOCOL.md and Core disagree on a key, a block kind, a call word, an event, a place, a use, a shell
+  helper or an `openspot` command (`ProtocolContractTests`). `scripts/protocol-gaps.txt` lists today's gaps, and it
+  fails on a gap the list lacks and on a listed gap that is gone.
+- It fails when an `sh`, `js` or `swift` example of GUIDE.md, PROTOCOL.md or `app/Help/` does not run (`DocExampleTests`).
+  An example that needs a network, an account or a tool that not every Mac has goes in a `text` fence.
+- The docs are `AGENTS.md`, `GUIDE.md`, `PROTOCOL.md`, `CONTRIBUTING.md`, `README.md` and `app/Help/`. The code is the
+  truth for how the app works, so no doc describes the app's code. Before you add a sentence, look for one that says it
+  already, and link to it, since no check finds a repeat.
 
-## Docstrings
+## Comments
 
-- Docstrings on types and members only. No inline comments.
-- A docstring says what the item does. Five lines on a type, three on a member, none where the name says it.
+- Code and the scripts in `scripts/` hold no comment and no docstring. A name, a type or a test says what a comment would.
+- The one exception is a `// @todo #<id>` puzzle. The header of a spot script is not a comment: it is part of the spot.
+- `make verify` runs `scripts/check-comments.sh`, which fails on a comment.
 
 ## UX
 
@@ -55,7 +69,8 @@ Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these 
 
 - Settings follow the level they change. openspot's Settings hold only the app's rows. Each spot's own Settings hold its
   Float, menu bar, keys and fields, with one icon per kind of row and the same Not set and `⌘⌫` Remove on every key row.
-- A card's ⌘K menu holds only the standard acts. A key that a footer already shows does not need a ⌘K menu of its own.
+- A card's ⌘K menu holds the standard acts in one order, which `spots/openspot.spot/actions.js` offers to every card.
+  A key that a footer already shows does not need a ⌘K menu of its own.
 - Making and changing a spot both go through one form: describe it, then Copy prompt (`⌘⏎`), which flashes `✓ Copied`
   on the same black button. The prompt tells the agent to finish alone, with no question.
 
@@ -65,26 +80,94 @@ Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these 
 - Logic that a window needs goes in `Core/`. Only drawing and window handling go in `Shell/`.
 - Each colour, strength and blur radius of the panel is in `Shell/Surface/SpotTheme.swift`, and a new theme is one more value there.
 
-## Motion
+## Performance
+
+A frame has 8.3 ms at 120 Hz. Each interaction (a press, a key, an arrow, a drag, a motion) uses no more than 4 ms of the main
+thread in each frame. At idle, the app wakes only for work that is due, and holds only the memory a warm panel needs. Each rule
+below is one a reviewer can check in a diff.
+
+### The press
+
+- A press reads no disk, starts no process and asks the window server nothing. Read ahead in the background, and check only a
+  cheap stamp at the press.
+- The main thread never waits on a spot. The one exception: the answers to a key share one wait of 2 ms at most.
+- A press makes one update. The animated change goes first in it, or alone, since SwiftUI animates a view by the first change
+  it sees in an update.
+
+### Where work lives
+
+- A getter, a computed property and a static factory read only memory. They touch no disk, start no process and change no
+  state. Work that reads the disk is a method named for it, such as `read()` or `scan()`.
+- The model and the views do not read the disk. A loader, such as `SpotScan` or `ConfigFile`, reads it at a load, and the
+  rest read the value it kept.
+- A stamp holds only what changes the result it guards. A choice that filters the result, such as which spots are on, is
+  applied after the kept result, not put in the stamp.
+
+### What a view reads
+
+- A view reads only the state it shows. Move each read of a value that changes fast into the smallest child or modifier that
+  shows it, behind an `if` on the fact that does not change.
+- A fast signal, such as a held key, a drag or a slider, lives in its own value or in local `@State`, and reaches the model
+  at its end or after a pause.
+- Write an observed value only when it changes. A mutating call on an observed collection tells every reader, so guard it too.
+  Mark a field that no view reads `@ObservationIgnored`.
+- Store a derived value that views read, and write it where its source changes. A computed property over a list reruns on
+  each read.
+- A child view takes plain values, not closures, so its container skips it when nothing changed.
+- A body does no pass over a list, no parse, no `stat`, no formatter or regex made anew, and no picture drawn. Do that work
+  once, where the data arrives.
+
+### Lists and search
+
+- Fold and index each item's text once, when the list loads. A key folds only the query.
+- Build each thing made from the query once per query, and pass it on.
+- A list that can be long is lazy, or builds only the cells near the visible band. In a grid that is not lazy, a cell is a
+  plain view with a tap and the button trait, not a `Button`.
+- One drop target on a container that holds still, not one per moving item.
+
+### Motion
 
 Each motion is one of five kinds, each with one curve in `Shell/Surface/SpotMotion.swift`: grow (and its way back), move,
 fade and press. Each duration, bounce and motion scale is in `Core/Panel/MotionTokens.swift`. A part of a surface that grows
 takes its look from the surface's progress, by `SheetMorph`, and keeps no curve of its own. `make verify` runs
 `scripts/check-motion.sh`, which fails on a curve written anywhere else.
 
-A frame has 8.3 ms at 120 Hz. During a motion, the main thread uses no more than 4 ms of each frame, the frame of the press
-too. `make perf` checks it: p99 must stay under 8.3 ms.
-
 - Move a view with FLIP: lay it out at its last place, then animate only `offset`, `scaleEffect` and `opacity` from its
-  first place. Do not animate a frame, a padding, a font or a text width.
+  first place. Do not animate a frame, a padding, a font, a text width or a blur radius.
 - Grow a surface with an animated shape that clips its content, masks its blur and places its rim. Do not scale a surface
   that has corners, a rim or words.
 - Change words by a crossfade of two laid-out copies, not by a reflow.
 - Draw blur from one fixed view behind the moving shapes. Do not put an AppKit view in a view that moves or resizes.
-- The model starts a motion, not a view: no `onChange` chain, and no state written from `onGeometryChange` during a motion.
-  A view that is just built lies at its first place for one turn, and its motion starts on the next turn. SwiftUI animates
-  a view by the first change it sees in an update, so the animated change goes first, or alone.
+- The model starts a motion where its cause happens, not a view: no `onChange` chain, and no `.animation(_:value:)` on a
+  container. A view that is just built lies at its first place for one turn, and its motion starts on the next turn.
+- During a motion, no state is written from a measure, such as `onGeometryChange` or a scroll's geometry. Compute frames
+  from the layout's own numbers, and scale the content inside a scroll view, not the scroll view.
+- Content that reaches a surface during its open motion is applied when the motion ends.
 - Hide a view that comes back with a mask or with opacity 0.001, not with opacity 0, which drops its drawing.
+
+### Idle and memory
+
+- Nothing wakes while the panel is hidden unless work is due. A sleep has a tolerance, and a write to disk waits to merge
+  with others.
+- A shipped spot does no work all day. A spot that polls goes in `examples/`.
+- Each buffer, log and cache has a limit in bytes. A kept tail is cut back when it holds twice its limit. A loop that reads a
+  stream wraps each pass in `autoreleasepool`.
+- Each collection kept per call, page or frame drops an entry when the thing it tracks ends, and has a limit in count.
+- The panel stays warm while hidden. Cut the waste around it, not the panel. A view that the panel hides stays built,
+  except a spot's own view, which can run work of its own.
+- A framework that the panel does not need, such as translation or screen capture, runs in a helper process, not in the app.
+
+### Proving a speed fix
+
+- Choose each fix by one of these rules, and prove it with a count of the work it removes: a test through
+  `withObservationTracking` that no reader is told, a count of bodies, or a bench of an optimized build. The test fails first.
+- Before a rework, build a throwaway copy with the part's cost removed. Build the rework only when that copy gains more than
+  two identical builds differ.
+- `make perf` guards against a loss. Run it after a change to a view that moves, interleaved with the commit before and a
+  copy of it, since the Mac's load moves the numbers more than most changes do. It fails when the median of dropped frames
+  over 40 motions is over 140.
+- A fresh reviewer reads the diff before it is called done, for rules the old code kept that the new code drops, readers
+  that no longer hear of a change, and views that now run more.
 
 ## Tests
 
@@ -107,19 +190,17 @@ too. `make perf` checks it: p99 must stay under 8.3 ms.
 ## Verify
 
 ```sh
-make verify                # the Core and Tests checks, then the XCTest suite, with test classes in parallel
+make verify                # the Core, Tests, Comments and Motion checks, then the XCTest suite, with test classes in parallel
 make test T=SpotRunsTests  # one test class, while you work on it
-make perf N=3              # times a sheet that opens and closes 20 times, 3 runs; fails over the dropped-frame budget
+make perf N=3              # times a Release sheet that opens and closes 20 times, 3 runs; ACTION picks another motion
 make film SPOT=caffeinate  # films the open and close of a sheet 10x slower (SLOW=1 for real speed) into .temp/film
 make shots                 # saves pictures of the actions menu in the running panel into .temp/shots
 make docs-images           # draws the image under each GUIDE.md example; GuideImageTests fail when one is out of date
 make eval-agent N=1        # gives N tasks to claude -p with only `openspot guide`, and checks each spot; it costs money
 ```
 
-`make verify` runs `xcodegen generate` first, so the project file matches the folders on disk.
-
-Run `make perf` after a change to a view that moves, and compare it with the commit before by interleaved runs: the Mac's
-load moves the numbers more than most changes do.
+`make verify` runs `xcodegen generate` before it builds, so the project file matches the folders on disk. `make perf` is
+under "Proving a speed fix".
 
 ## Signing
 

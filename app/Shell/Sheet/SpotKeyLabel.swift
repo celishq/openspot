@@ -1,7 +1,6 @@
 import OpenspotCore
 import SwiftUI
 
-/// A key at the end of a line, or the words that ask for one while it records.
 struct SpotKeyLabel: View {
     let text: String
     let isRecording: Bool

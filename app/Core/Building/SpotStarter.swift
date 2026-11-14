@@ -1,14 +1,11 @@
 import Foundation
 
-/// A working spot to start from, which a person or an agent then changes: a button, a list, a value that reads when the
-/// panel opens, or a form.
 public enum SpotStarter: String, CaseIterable, Sendable {
     case button
     case list
     case number
     case form
 
-    /// The SF Symbol that a spot made from it shows.
     var symbol: String {
         switch self {
         case .button: "hand.tap"
@@ -18,14 +15,10 @@ public enum SpotStarter: String, CaseIterable, Sendable {
         }
     }
 
-    /// Writes this starter as a new script in a new spot folder in the folder, and returns its file. The spot folder and the
-    /// file take the words of the name in lowercase with dashes, and the spot takes the name as its title. A name that another
-    /// spot has is refused.
     public func write(name: String, in folder: URL) throws -> URL {
         try Self.write(name: name, in: folder, text: text(title:))
     }
 
-    /// Writes a new script with the text that its title gives, under the name's words in lowercase with dashes.
     static func write(name: String, in folder: URL, text: (String) -> String) throws -> URL {
         let slug = slug(of: name)
         guard !slug.isEmpty else { throw SpotError.fault("Use letters or digits in the name.") }
@@ -43,7 +36,6 @@ public enum SpotStarter: String, CaseIterable, Sendable {
         ["", ".\(SpotPackage.fileExtension)", ".sh"].contains { FileManager.default.fileExists(atPath: folder.appendingPathComponent(slug + $0).path) }
     }
 
-    /// The words of a name in lowercase, joined by dashes, with only Latin letters and digits.
     static func slug(of name: String) -> String {
         let words = name.lowercased().unicodeScalars.split { !("a"..."z").contains($0) && !("0"..."9").contains($0) }
         return words.map { String(String.UnicodeScalarView($0)) }.joined(separator: "-")

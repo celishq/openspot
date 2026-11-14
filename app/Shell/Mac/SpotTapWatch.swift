@@ -1,9 +1,6 @@
 import AppKit
 import OpenspotCore
 
-/// Watches the keys of every app for a tap of one modifier alone, such as Option, through a monitor of the events of other
-/// apps and one of the app's own. A monitor of the keys of other apps needs Accessibility. It runs only while a key holds
-/// a tap.
 @MainActor
 final class SpotTapWatch {
     private static let spoils: NSEvent.EventTypeMask = [.keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown, .scrollWheel]

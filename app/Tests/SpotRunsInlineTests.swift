@@ -1,11 +1,8 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves how a JavaScript spot answers inside the app: in the turn of the text when it is fast, and in a later turn,
-/// with the last rows kept, when it is slow (protocol: Modes).
 @MainActor
 final class SpotRunsInlineTests: SpotRunsCase {
-    /// A host of the API that reaches nothing on the Mac.
     private final class Host: Mac {
         func eventStore() -> any EventStore { FakeEventStore() }
         func reminderStore() -> any ReminderStore { FakeReminderStore() }
@@ -13,7 +10,6 @@ final class SpotRunsInlineTests: SpotRunsCase {
         func open(_ link: URL) -> Bool { false }
     }
 
-    /// Writes a JavaScript spot with these header lines.
     private func inline(_ name: String = "script", header: String, _ body: String) throws {
         let lines = header.split(separator: "\n").map { "// \($0)\n" }.joined()
         let url = folder.spotFile(name, extension: "js")
@@ -21,7 +17,6 @@ final class SpotRunsInlineTests: SpotRunsCase {
         try "\(lines)\(body)\n".write(to: url, atomically: true, encoding: .utf8)
     }
 
-    /// A spot that answers each text with one row of it, and works for 300 ms first on the text `slow`.
     private func answering() throws {
         try inline(header: "on=search.text ^[0-9]", """
         function main([id, row], env) {
@@ -43,6 +38,42 @@ final class SpotRunsInlineTests: SpotRunsCase {
         XCTAssertEqual(sheet.answers.map(\.run), ["7"])
         XCTAssertEqual(sheet.answers.first?.subtitle, "search.text")
         XCTAssertFalse(sheet.isAnswering)
+    }
+
+    private func slowAnswering(_ names: [String]) throws -> [SpotRun] {
+        let body = """
+        function main([id], env) {
+          if (env.OPENSPOT_VALUE === "12") { const end = Date.now() + 300; while (Date.now() < end) {} }
+          return `row=${env.OPENSPOT_VALUE}\\ntitle=Is ${env.OPENSPOT_VALUE}\\n`
+        }
+        """
+        for name in names { try inline(name, header: "on=search.text ^[0-9]", body) }
+        _ = try scanned()
+        return names.compactMap { runs.sheets[$0] }
+    }
+
+    func testThreeSlowInlineSpotsShareOneWaitForTheirAnswers() async throws {
+        runs(frameWait: .milliseconds(20))
+        let sheets = try slowAnswering(["a", "b", "c"])
+        runs.raise(.query("1"))
+        try await wait("the loaded scripts") { sheets.allSatisfy { $0.answers.map(\.run) == ["1"] } }
+        runs.raise(.query("7"))
+        XCTAssertTrue(sheets.allSatisfy { $0.answers.map(\.run) == ["7"] })
+        let waits = runs.frameWaits
+
+        runs.raise(.query("12"))
+
+        XCTAssertEqual(runs.frameWaits - waits, 1)
+        try await wait("the slow answers") { sheets.allSatisfy { $0.answers.map(\.run) == ["12"] } }
+    }
+
+    func testTheWaitForTheAnswersStartsAfterTheTextReachesEachSpot() async throws {
+        let sheets = try slowAnswering((1...30).map { "s\($0)" })
+
+        runs.raise(.query("12"))
+
+        XCTAssertEqual(runs.frameWaits, 1)
+        try await wait("the slow answers") { sheets.allSatisfy { $0.answers.map(\.run) == ["12"] } }
     }
 
     func testASlowInlineSpotKeepsTheLastRowsUntilItsAnswerLandsInALaterTurn() async throws {
@@ -173,10 +204,9 @@ final class SpotRunsInlineTests: SpotRunsCase {
         XCTAssertEqual(SpotOutput(text: text).toast, "Saved a=1")
     }
 
-    /// New runs with this time for a call, this idle time of a script and this log.
-    private func runs(limit: TimeInterval = 10, idle: TimeInterval = 30, log: CallLog? = nil) {
+    private func runs(limit: TimeInterval = 10, idle: TimeInterval = 30, frameWait: DispatchTimeInterval = .milliseconds(2), log: CallLog? = nil) {
         runs.quit()
-        runs = SpotRuns(readLimit: limit, now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50), inlineIdle: idle, log: log)
+        runs = SpotRuns(readLimit: limit, now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50), inlineIdle: idle, frameWait: frameWait, log: log)
     }
 
     func testAnEndlessLoopFailsAsTooSlowAndTheSpotAnswersItsNextCall() async throws {
@@ -210,6 +240,23 @@ final class SpotRunsInlineTests: SpotRunsCase {
         try await wait("the idle end") { !link.isLoaded }
         sheet.answer("7")
         try await wait("the answer after the idle end") { sheet.answers.map(\.run) == ["7"] }
+    }
+
+    func testATimedScriptKeepsItsContextPastItsIdleTimeUntilItsNextRead() async throws {
+        runs(idle: 0.1)
+        try inline(header: "on=clock.60\noffers=card\noffers=menubar", "function main() { return 'text=n\\ntitle=3\\n' }")
+        try inline("other", header: "on=sheet.open", "function main() { return 'text=n\\ntitle=4\\n' }")
+        let sheet = try sheet()
+        let other = try XCTUnwrap(runs.sheets["other"])
+        let link = try XCTUnwrap(sheet.link as? InlineLink)
+        let otherLink = try XCTUnwrap(other.link as? InlineLink)
+
+        sheet.read(need: .change)
+        other.read(need: .change)
+        try await wait("the values") { sheet.reading.value?.title == "3" && other.reading.value?.title == "4" }
+        try await wait("the idle end of the spot with no clock") { !otherLink.isLoaded }
+
+        XCTAssertTrue(link.isLoaded)
     }
 
     func testEachCallGoesInTheCallLogWithItsArgumentsStdinAndFailure() async throws {

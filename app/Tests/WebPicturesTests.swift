@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the pictures that an `icon` names by an https URL: each one is fetched once and kept, and a failed or too large
-/// fetch keeps nothing.
 final class WebPicturesTests: XCTestCase {
     private final class Fetches: @unchecked Sendable {
         private let lock = NSLock()
@@ -46,6 +44,18 @@ final class WebPicturesTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: URL(fileURLWithPath: first)), Data("png".utf8))
     }
 
+    func testTheKeptPicturesStayUnderTheirLimitAndTheNewestStays() async throws {
+        let pictures = WebPictures(folder: folder, limit: 10) { _ in Data("123456".utf8) }
+
+        for name in ["a", "b", "c"] { _ = await pictures.path(of: "https://example.com/\(name).png") }
+        let newest = await pictures.path(of: "https://example.com/c.png")
+
+        let sizes = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.fileSizeKey])
+            .map { try $0.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0 }
+        XCTAssertLessThanOrEqual(sizes.reduce(0, +), 10)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: try XCTUnwrap(newest)))
+    }
+
     func testAnOutputNamesItsPicturesOnTheWebForARenderToFetch() {
         let output = SpotOutput(text: "row=a\nicon=https://example.com/a.png\n\nchoice=c\n\noption=x\nicon=https://example.com/x.png\n\nrow=b\nicon=wifi\n")
 
@@ -54,7 +64,7 @@ final class WebPicturesTests: XCTestCase {
 
     func testAPathStaysAndAFailedOrTooLargeFetchKeepsNothing() async throws {
         let failing = WebPictures(folder: folder) { _ in throw Failure() }
-        let large = WebPictures(folder: folder) { _ in Data(count: WebPictures.limit + 1) }
+        let large = WebPictures(folder: folder) { _ in Data(count: WebPictures.byteLimit + 1) }
 
         let path = await failing.path(of: "/tmp/a.png")
         let failed = await failing.path(of: "https://example.com/a.png")

@@ -1,7 +1,6 @@
 import OpenspotCore
 import SwiftUI
 
-/// A sheet on its own, of parts or of rows, with the header and size it has in the panel, on the glass of a picture.
 struct SpotSheetPreview: View {
     let panel: SheetParts?
     var title = "Sheet"
@@ -10,8 +9,8 @@ struct SpotSheetPreview: View {
     var onSet: (SpotPart, String) -> Void = { _, _ in }
     var onPress: (SpotPart) -> Void = { _ in }
     var list = ItemList()
-    var customView: (CGSize, [String: [String]], @escaping (String) -> Void) -> AnyView? = { _, _, _ in nil }
-    /// What places the wallpaper behind it, such as the name of the picture.
+    var viewSource: String?
+    var views = SpotViews.shared
     var seed = ""
 
     var body: some View {
@@ -32,7 +31,7 @@ struct SpotSheetPreview: View {
             }
             if let panel {
                 if panel.showsRows { Color.clear.frame(height: SpotTokens.listRowHeight) }
-                SheetPartsView(panel: panel, onSet: onSet, onPress: onPress, list: list, customView: customView)
+                SheetPartsView(panel: panel, onSet: onSet, onPress: onPress, list: list, viewSource: viewSource, views: views)
             } else {
                 SpotRowsView(list: list, onRun: { _ in })
             }

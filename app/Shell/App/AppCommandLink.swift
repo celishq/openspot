@@ -1,7 +1,6 @@
 import Foundation
 import OpenspotCore
 
-/// The link from `/usr/local/bin/openspot` to the command inside this app.
 enum AppCommandLink {
     static let item = CommandLink(
         target: Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/openspot"),

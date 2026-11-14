@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves `openspot spot add` and `openspot spot remove`: a spot from a git repository, a folder or a `.spot` file goes into
-/// the spots folder, and only a spot that `spot add` added comes out (protocol: The openspot command).
 final class SpotAddTests: XCTestCase {
     private final class Host: Mac {
         func eventStore() -> any EventStore { FakeEventStore() }
@@ -110,7 +108,6 @@ final class SpotAddTests: XCTestCase {
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: spots.path), [])
     }
 
-    /// Removes through the lock as the API does, with the Trash of the test in place of the person's.
     private func remove(_ id: String) throws -> (name: String, discarded: [String]) {
         var discarded: [String] = []
         let trash = root.appendingPathComponent("trash")
@@ -149,14 +146,12 @@ final class SpotAddTests: XCTestCase {
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: spots.path), [])
     }
 
-    /// The first connection to a listener within 10 seconds, or -1.
     private static func accepted(on listener: Int32) -> Int32 {
         var watch = pollfd(fd: listener, events: Int16(POLLIN), revents: 0)
         guard poll(&watch, 1, 10_000) == 1 else { return -1 }
         return accept(listener, nil, nil)
     }
 
-    /// Whether the other end closes a connection within 5 seconds, after all that it sends.
     private static func closes(_ connection: Int32) -> Bool {
         var buffer = [UInt8](repeating: 0, count: 4096)
         var watch = pollfd(fd: connection, events: Int16(POLLIN), revents: 0)

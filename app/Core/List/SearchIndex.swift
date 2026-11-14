@@ -1,15 +1,11 @@
 import Foundation
 
-/// The searched texts of the items of one list, folded once: every letter in one buffer and a small record for each item,
-/// so that a search reads memory in order. It holds no item; the list keeps its items beside it, in the same order.
 struct SearchIndex: Equatable, Sendable {
-    /// Where one text lies: its letters, and the offsets of its word starts from its first letter.
     fileprivate struct Span: Equatable, Sendable {
         let letters: Range<UInt32>
         let starts: Range<UInt32>
     }
 
-    /// One item: its texts, which are its title, then its subtitle when it has one, then its keywords.
     fileprivate struct Record: Equatable, Sendable {
         let texts: Range<UInt32>
         let hasSubtitle: Bool
@@ -33,8 +29,6 @@ struct SearchIndex: Equatable, Sendable {
         }
     }
 
-    /// Folds a text onto the buffers, and returns one bit for each of its letters. A word begins after a character that is
-    /// not a letter or a digit, or at a capital after a small letter. Plain ASCII text takes a path that reads its bytes.
     private mutating func append(_ text: String) -> UInt64 {
         let first = letters.count
         let firstStart = starts.count
@@ -79,7 +73,6 @@ struct SearchIndex: Equatable, Sendable {
         (97...122).contains(byte)
     }
 
-    /// Calls `body` with the items, which read the buffers in place and live only during the call.
     func withItems<Result>(_ body: (Items) -> Result) -> Result {
         letters.withUnsafeBufferPointer { letters in
             starts.withUnsafeBufferPointer { starts in
@@ -92,7 +85,6 @@ struct SearchIndex: Equatable, Sendable {
         }
     }
 
-    /// The items of an index, read in place.
     struct Items {
         fileprivate let letters: UnsafeBufferPointer<UInt32>
         fileprivate let starts: UnsafeBufferPointer<UInt32>
@@ -120,7 +112,6 @@ struct SearchIndex: Equatable, Sendable {
         }
     }
 
-    /// Some texts of an index, such as the keywords of one item, read in place.
     struct Texts: RandomAccessCollection {
         fileprivate let items: Items
         fileprivate let range: Range<Int>

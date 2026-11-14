@@ -1,9 +1,6 @@
 import Foundation
 
-/// The acts that the app adds to each spot of the person: open its file in the text editor, copy a prompt for an agent to
-/// change it, and delete it so that `⌘Z` puts it back.
 extension SpotsModel {
-    /// The files of a spot that Delete moved to the Trash, and where each went.
     struct Removal {
         let id: String
         let words: String
@@ -12,12 +9,30 @@ extension SpotsModel {
 
     static let undoKey = ActionKey(name: "z", isCommand: true)
 
-    /// The file that the card stands for: the file of a spot, or the file of a card of faults.
     private func file(of entry: Entry) -> URL {
         entry.spot.fault?.file ?? entry.spot.url
     }
 
-    /// Opens the file of a spot in the text editor.
+    public func act(_ act: CardAct, on id: String) -> Bool {
+        guard let entry = cards.first(where: { $0.id == id && $0.item == nil }) else { return false }
+        switch act {
+        case .settings:
+            if !isShown { host.show() }
+            if !openSettings(of: entry) { host.notify("\(entry.state.title) has nothing to set.") }
+        case .edit:
+            if openEdit(of: entry) {
+                if !isShown { host.show() }
+            } else {
+                if isShown { host.dismiss() }
+                edit(entry)
+            }
+        case .prompt: copyPrompt(changing: entry)
+        case .share: share(entry)
+        case .delete: remove(entry)
+        }
+        return true
+    }
+
     func edit(_ entry: Entry) {
         let path = file(of: entry).path
         Task {
@@ -29,9 +44,8 @@ extension SpotsModel {
         }
     }
 
-    /// Copies a prompt that asks an agent to change the file of a spot, with the words of its last failed call.
     func copyPrompt(changing entry: Entry) {
-        let prompt = host.agentPrompt(for: files.folder.url)
+        let prompt = host.agentPrompt(for: folder.url)
         let text = prompt.changing(file(of: entry), failure: entry.failure)
         Task {
             do {
@@ -42,8 +56,6 @@ extension SpotsModel {
         }
     }
 
-    /// Moves the files of a spot to the Trash with no question, keeps the panel open, and says that `⌘Z` puts them back. A
-    /// card of faults takes its file. What the spot keeps in `$OPENSPOT_DATA` stays, and its log goes.
     func remove(_ entry: Entry) {
         closeList(moving: isShown)
         let command = entry.spot.fault.map { Spot(id: entry.id, name: $0.name, url: $0.file) } ?? entry.spot
@@ -51,7 +63,7 @@ extension SpotsModel {
         let words = count > 1 ? "\(count) widgets" : command.name
         var moves: [(from: URL, to: URL)] = []
         do {
-            try files.folder.remove(command) { url in moves.append((url, try files.trash(url))) }
+            try folder.remove(command) { url in moves.append((url, try files.trash(url))) }
             removal = Removal(id: entry.id, words: words, moves: moves)
             files.log.remove(entry.id)
             reload()
@@ -63,8 +75,6 @@ extension SpotsModel {
         }
     }
 
-    /// Puts back the files of the last spot that Delete moved to the Trash, and selects its card. Returns false when there
-    /// is nothing to put back.
     func undoRemoval() -> Bool {
         guard let removal else { return false }
         self.removal = nil

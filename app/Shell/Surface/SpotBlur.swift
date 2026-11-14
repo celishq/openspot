@@ -1,8 +1,6 @@
 import AppKit
 import SwiftUI
 
-/// A blur of what lies behind the window, with the system material's own tint where the theme keeps it, and with no tint
-/// elsewhere. Its radius animates with the surrounding animation.
 struct SpotBlur: View, @preconcurrency Animatable {
     var radius: CGFloat
     @Environment(\.colorScheme) private var scheme
@@ -22,8 +20,6 @@ struct SpotBlur: View, @preconcurrency Animatable {
     }
 }
 
-/// The system blur view behind a `SpotBlur`, with its tint and saturation hidden unless the theme keeps them. It stays dark,
-/// because only there it has the backdrop layer.
 private struct Backing: NSViewRepresentable {
     var radius: CGFloat
     var isTinted: Bool
@@ -31,9 +27,7 @@ private struct Backing: NSViewRepresentable {
     final class Surface: NSVisualEffectView {
         var radius: CGFloat = 0
         var isTinted = false
-        /// The layer that blurs, found when AppKit lays the view out, so that a new radius in a motion touches only it.
         private weak var backdrop: CALayer?
-        /// The material's saturation filter, kept to put back when the theme keeps the tint again.
         private var saturation: NSObject?
 
         override func layout() {
@@ -56,8 +50,6 @@ private struct Backing: NSViewRepresentable {
             DispatchQueue.main.async { self.applyBlur() }
         }
 
-        /// Hides each layer but the one that blurs and takes the saturation out of its filters, unless the theme keeps the
-        /// tint, and sets its radius.
         func applyBlur() {
             CATransaction.begin()
             CATransaction.setDisableActions(true)
@@ -78,7 +70,6 @@ private struct Backing: NSViewRepresentable {
             }
         }
 
-        /// Sets a new radius on the layer that blurs, and finds that layer again when AppKit has made it anew.
         func applyRadius() {
             guard let backdrop, backdrop.superlayer != nil else { return applyBlur() }
             CATransaction.begin()
@@ -88,7 +79,6 @@ private struct Backing: NSViewRepresentable {
         }
     }
 
-    /// Fills the surface it lies on, so that a resize asks AppKit for no size of its own.
     func sizeThatFits(_ proposal: ProposedViewSize, nsView: Surface, context: Context) -> CGSize? {
         proposal.replacingUnspecifiedDimensions()
     }

@@ -1,9 +1,6 @@
 import AppKit
 import OpenspotCore
 
-/// Watches the pointer for a shake, with or without a drag, through a monitor of the events of other apps and one of the
-/// app's own (W2). A monitor of the pointer needs no permission, as one of the keys would. It runs only while something
-/// takes a shake.
 @MainActor
 final class SpotShakeWatch {
     private static let moves: NSEvent.EventTypeMask = [.mouseMoved, .leftMouseDragged, .rightMouseDragged, .otherMouseDragged]

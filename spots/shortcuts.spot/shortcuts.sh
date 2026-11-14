@@ -2,9 +2,11 @@
 # icon=/System/Applications/Shortcuts.app
 # detail=Run a shortcut
 # on=panel.open
-# offers=search
+# on=sheet.open
 # drop=*
 # uses=clipboard
+# offers=card
+# offers=search
 . "$OPENSPOT_SH"
 input="$OPENSPOT_DATA/input"
 kept="$OPENSPOT_DATA/rows"
@@ -82,6 +84,7 @@ case "$1" in
     head_of_list
     if [ -s "$kept" ]; then
       cat "$kept"
+      [ "$OPENSPOT_REASON" = panel.open ] && exit 0
       echo ---
       fresh=$(all_rows) || exit 0
       [ "$fresh" = "$(cat "$kept")" ] && exit 0

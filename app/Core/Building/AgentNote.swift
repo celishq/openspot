@@ -1,20 +1,16 @@
 import Foundation
 
-/// The note for coding agents in the spots folder: `AGENTS.md`, which says how to build a spot there, and `CLAUDE.md`,
-/// which points to it. The app keeps a note that it wrote up to date, and never changes a note that a person wrote.
 public struct AgentNote: Equatable, Sendable {
     static let mark = "<!-- Openspot keeps this file up to date. Write your own rules in another file. -->"
     static let name = "AGENTS.md"
     static let pointerName = "CLAUDE.md"
 
-    /// The path of the `openspot` command of this app.
     public let command: String
 
     public init(command: String) {
         self.command = command
     }
 
-    /// Writes the note when the folder has none, or when the note of the app says something else.
     public func write(in folder: URL) throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let note = folder.appendingPathComponent(Self.name)

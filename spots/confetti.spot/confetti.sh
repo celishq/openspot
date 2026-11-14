@@ -3,6 +3,7 @@
 # icon=party.popper
 # detail=Celebrate on each screen
 # on=panel.open
+# offers=card
 #
 # field=look
 # title=Look
@@ -10,12 +11,12 @@
 # field=key
 # type=hotkey
 # title=Shortcut
-dir=$(cd "$(dirname "$0")" && pwd)/confetti
+dir=$(cd "${0%/*}" && pwd)/confetti
 . "$dir/shared.sh"
 
 case "$1" in
   read)
-    [ -z "${OPENSPOT_REASON-}" ] || (listen > /dev/null 2>&1 &)
+    [ -z "${OPENSPOT_REASON-}" ] || current || (listen > /dev/null 2>&1 &)
     title=$(look_title "$(default_look)")
     [ -n "$(openspot setting get look 2>/dev/null)" ] || openspot setting set look "$title" > /dev/null 2>&1
     printf 'detail=%s\n' "$(esc "$title")"
@@ -46,10 +47,10 @@ case "$1" in
       fail "$(key_name "$2") belongs to the apps on your Mac, such as Copy or Paste. Hold ⌃ or ⌥ with a letter. $(key_name "$old") still plays it."
     fi
     save_key "$2"
-    if ! listen; then
+    if ! listen again; then
       reason=$(tail -n 1 "$data/listen.log" 2>/dev/null)
       save_key "$old"
-      listen > /dev/null 2>&1
+      listen again > /dev/null 2>&1
       fail "${reason:-Openspot cannot use that key.} $(key_name "$old") still plays it."
     fi
     printf 'toast=%s\n' "$(esc "$(key_name "$2") now plays confetti anywhere.")"

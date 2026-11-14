@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the calls of `openspot` that the spots of the app make: the list of spots, a spot turned on or off, and the
-/// values that the spots keep.
 final class SpotAPITests: XCTestCase {
     private final class Login: @unchecked Sendable {
         var isOn = false
@@ -65,8 +63,8 @@ final class SpotAPITests: XCTestCase {
     }
 
     func testTheListHoldsEachScriptWithItsCommandsSettingsAndKeys() async throws {
-        try "#!/bin/sh\n# title=Move\n# icon=macwindow\n# on=sheet.open\n#\n# button=left\n# title=Left side\n#\n# field=folder\n".writeScript(to: spots.spotFile("move"))
-        try "#!/bin/sh\n# title=Cups\n# on=clock.60\n".writeScript(to: spots.spotFile("cups"))
+        try "#!/bin/sh\n# title=Move\n# icon=macwindow\n# on=sheet.open\n# offers=card\n# offers=float\n#\n# button=left\n# title=Left side\n#\n# field=folder\n".writeScript(to: spots.spotFile("move"))
+        try "#!/bin/sh\n# title=Cups\n# on=clock.60\n# offers=card\n# offers=menubar\n".writeScript(to: spots.spotFile("cups"))
         try file.write(keys: [
             GlobalKey(spot: "move", act: .command("left"), trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+left")))),
             GlobalKey(spot: "move", act: .float, trigger: .shake)
@@ -133,6 +131,17 @@ final class SpotAPITests: XCTestCase {
         XCTAssertEqual(file.read().arrangement.enabled, [])
         let changes = await app.changes
         XCTAssertEqual(changes, 0)
+    }
+
+    func testOnTurnsBackOnAFileOfTheFolderThatEditSpotsTurnedOff() async throws {
+        try "#!/bin/sh\n".writeScript(to: spots.spotFile("notes"))
+        try file.turn("notes", on: false)
+        XCTAssertEqual(file.read().arrangement.disabled, ["notes"])
+
+        let on = try await answer(["setting", "set", "--spot", "notes", "enabled", "true"])
+
+        XCTAssertEqual(on.code, 0)
+        XCTAssertEqual(file.read().arrangement.disabled, [])
     }
 
     func testOnWithNoSpotIsUnknown() {
@@ -286,6 +295,10 @@ final class SpotAPITests: XCTestCase {
 
     func testTheRunningAppOpensASheetAReviewAndAChangeOfASetting() async throws {
         _ = try await answer(["spot", "open", "notes"])
+        _ = try await answer(["spot", "push", "settings", "spot:notes", "--replace", "--title", "Notes"])
+        _ = try await answer(["spot", "push", "notes"])
+        _ = try await answer(["spot", "pop", "settings", "--all"])
+        _ = try await answer(["spot", "pop", "settings"])
         _ = try await answer(["spot", "review", "apps"])
         let change = try await answer(["setting", "change", "--spot", "repos", "folder"])
         let gone = try await answer(["spot", "open", "gone"])
@@ -293,7 +306,7 @@ final class SpotAPITests: XCTestCase {
 
         XCTAssertEqual(change, CommandAnswer())
         let opened = await app.opened
-        XCTAssertEqual(opened, ["open notes", "review apps", "change repos folder", "open gone", "review gone"])
+        XCTAssertEqual(opened, ["open notes", "push settings spot:notes replace Notes", "push notes", "pop settings all", "pop settings", "review apps", "change repos folder", "open gone", "review gone"])
         XCTAssertEqual(gone.errors, "Openspot has no spot `gone`. Run `openspot spot list` to see each one.\n")
         XCTAssertEqual(goneReview.code, 1)
         for arguments in [["spot", "open", "notes"], ["spot", "review", "apps"], ["setting", "change", "--spot", "a", "b"]] {
@@ -301,6 +314,17 @@ final class SpotAPITests: XCTestCase {
             XCTAssertEqual(answer.code, 1, arguments.joined(separator: " "))
         }
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "open", "notes"], environment: ["OPENSPOT_REASON": "panel"]), .refused("`openspot spot open` opens the panel, so it cannot run in a read. Run it from a pick or an action."))
+    }
+
+    func testTheRunningAppAsksForFilesForASpotThatTakesThem() async throws {
+        let chose = try await answer(["spot", "choose", "shelf"])
+        let gone = try await answer(["spot", "choose", "gone"])
+
+        let opened = await app.opened
+        XCTAssertEqual(chose, CommandAnswer())
+        XCTAssertEqual(opened, ["choose shelf", "choose gone"])
+        XCTAssertEqual(gone.errors, "Openspot has no spot `gone` that takes files. Add drop= to its header.\n")
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "choose", "shelf"], environment: ["OPENSPOT_REASON": "panel"]), .refused("`openspot spot choose` opens a window, so it cannot run in a read. Run it from a pick or an action."))
     }
 
     func testThePromptAsksForASpotInTheSpotsFolder() async throws {

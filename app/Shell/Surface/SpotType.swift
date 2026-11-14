@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// The sizes and weights of all text, on the Mac's own scale.
 enum SpotType {
     static let title = Font.system(size: 13, weight: .medium)
     static let body = Font.system(size: 13)
@@ -15,9 +14,7 @@ enum SpotType {
     static let small = Font.system(size: 10, weight: .medium)
     static let keycap = Font.system(size: 11, weight: .semibold, design: .rounded)
     static let lineGap: CGFloat = 1
-    /// The heights of one line of `title` and of `detail`.
     static let titleLine: CGFloat = 16
     static let detailLine: CGFloat = 14
-    /// The height of one line of `input`.
     static let inputLine: CGFloat = 18
 }

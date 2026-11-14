@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves what the playground shows of each call: the runs tell it each call, and it prints each part of the call.
 @MainActor
 final class PlaygroundCallTests: SpotRunsCase {
     func testTheRunsTellEachCallWithItsPartsAlsoAQuietOne() async throws {
@@ -35,7 +34,7 @@ final class PlaygroundCallTests: SpotRunsCase {
     }
 
     func testTheRunsTellEachCallOfAStayingSpotOnceWhenItEnds() async throws {
-        try script(header: "mode=stay", """
+        try script(header: "mode=stay\noffers=card\noffers=menubar", """
         while IFS= read -r line; do
           case "$line" in
             call=*) id=${line#call=}; name= ;;

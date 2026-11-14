@@ -1,9 +1,10 @@
 #!/bin/sh
 # title=Updates
 # icon=arrow.triangle.2.circlepath
-# on=panel.open
+# on=app.launch
 # on=app.update
 # uses=app
+# offers=card
 warned="$OPENSPOT_DATA/updates-warned"
 status=$(openspot app status --frame) || exit 1
 version= ready= calls=0

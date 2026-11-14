@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves Return on a spot with one command: with no key yet it records one, and with a key it runs the command.
 @MainActor
 final class SoleCommandTests: XCTestCase {
     private var folder: URL!
@@ -125,11 +124,8 @@ final class SoleCommandTests: XCTestCase {
         XCTAssertEqual(model.hint, "⏎ Set key   ⌘⏎ Settings   ⌘K Actions")
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
         let menu = try XCTUnwrap(model.menu)
-        XCTAssertEqual(menu.rows.map(\.title), ["Dictate", "History", "Share", "Settings", "Delete"])
-        XCTAssertEqual(menu.rows.filter { $0.title == "Dictate" }.count, 1)
+        XCTAssertEqual(menu.rows.map(\.title), ["Dictate", "History"])
         XCTAssertEqual(menu.rows.first { $0.title == "History" }?.keyLabel, "⌘Y")
-        XCTAssertEqual(menu.rows.last?.isDestructive, true)
-        XCTAssertEqual(menu.rows.filter(\.isDestructive).count, 1)
         model.closeMenu()
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "y", isCommand: true)))

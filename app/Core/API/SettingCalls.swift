@@ -1,6 +1,5 @@
 import Foundation
 
-/// The calls of `openspot setting`: the values that a spot keeps (protocol: Settings), and the action of a setting in the panel.
 struct SettingCalls {
     let environment: [String: String]
     let app: (any RunningApp)?
@@ -14,7 +13,7 @@ struct SettingCalls {
     func set(_ key: String, of spot: String, to value: String?) -> CommandAPI.Work {
         CommandAnswer.work { [environment, app] in
             try ConfigFile.standard(environment: environment).set(setting: key, of: spot, to: value)
-            await app?.configChanged(.value(spot: spot, caller: environment["OPENSPOT_ID"]))
+            await app?.configChanged(key == ReservedSetting.icon ? .spots([spot]) : .value(spot: spot, caller: environment["OPENSPOT_ID"]))
             return ""
         }
     }

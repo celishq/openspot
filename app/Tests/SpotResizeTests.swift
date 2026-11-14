@@ -2,7 +2,6 @@ import XCTest
 @testable import OpenspotCore
 
 final class SpotResizeTests: XCTestCase {
-    /// `a a b b / c c d d`: three wide spots and a small one, which grows to fill its row.
     private let sizes: [SpotSize] = [.wide, .wide, .wide, .small]
 
     private func corner(of rect: CGRect) -> CGPoint {

@@ -2,14 +2,10 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// The `openspot sandbox` window, the playground: a window of the running app, or an ordinary window in a process of its own, whose close
-/// ends the process.
 @MainActor
 final class SpotSandbox: NSObject, NSApplicationDelegate, NSWindowDelegate {
-    /// The sandbox of a process of its own, and each sandbox that the running app shows.
     private static var kept: Set<SpotSandbox> = []
 
-    /// The size of a new playground window, which fits the editor, the whole panel and the call log.
     private static let size = CGSize(width: 1180, height: 940)
 
     private let window: NSWindow
@@ -46,7 +42,6 @@ final class SpotSandbox: NSObject, NSApplicationDelegate, NSWindowDelegate {
         exit(0)
     }
 
-    /// Shows a sandbox in the running app, and returns once the person closes it. A stop of the call closes it.
     static func show(path: String?, isCareful: Bool) async {
         let sandbox = SpotSandbox(path: path, isCareful: isCareful)
         kept.insert(sandbox)

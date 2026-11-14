@@ -1,8 +1,6 @@
 import OpenspotCore
 import SwiftUI
 
-/// The right pane of the playground: the picker of the place on the window's own background, then the real panel of the
-/// playground, with its field, its grid and its sheets, centred on a blur of the desktop.
 struct SpotPlaygroundStage: View {
     @Bindable var model: SpotSandboxModel
 

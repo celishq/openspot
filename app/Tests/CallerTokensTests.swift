@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves that each process and inline link of a spot gets a token that the app maps to the spot while it runs, and that a
-/// call with no token, or with an unknown one, is the person's (protocol: Trust).
 @MainActor
 final class CallerTokensTests: SpotRunsCase {
     private func caller(_ token: String?) -> String? {
@@ -49,7 +47,7 @@ final class CallerTokensTests: SpotRunsCase {
     }
 
     func testAStayingProcessKeepsItsTokenBetweenCalls() async throws {
-        try script(header: "mode=stay\non=sheet.open", """
+        try script(header: "mode=stay\non=sheet.open\noffers=card\noffers=menubar", """
         echo "$OPENSPOT_TOKEN" > '\(path("token"))'
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac

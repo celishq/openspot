@@ -1,8 +1,6 @@
 import AppKit
 import OpenspotCore
 
-/// The options of a `choice` as the system menu that a click on it opens, popped up from the keyboard under its control.
-/// The menu takes the arrows, return and Esc itself.
 @MainActor
 final class SpotChoiceMenu: NSObject {
     private let choose: (String) -> Void
@@ -11,8 +9,6 @@ final class SpotChoiceMenu: NSObject {
         self.choose = choose
     }
 
-    /// Pops the menu up under a rect of the key window, in SwiftUI's global points, and waits until the person chooses or
-    /// closes it.
     static func popUp(options: [SpotPart.Option], value: String?, under rect: CGRect, choose: @escaping (String) -> Void) {
         guard let window = NSApp.keyWindow, let content = window.contentView else { return }
         let target = SpotChoiceMenu(choose: choose)

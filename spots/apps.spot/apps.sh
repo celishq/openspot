@@ -2,6 +2,7 @@
 # icon=/System/Applications/Apps.app
 # detail=Open app
 # on=panel.open
+# offers=card
 # offers=search
 data=${OPENSPOT_DATA:-${TMPDIR:-/tmp}}
 pending="$data/uninstall"
@@ -12,7 +13,7 @@ lib="$HOME/Library"
 
 # Prints the bundle of each running app, one a line.
 running() {
-  ps -axo comm= | awk '{ p = index($0, ".app/"); if (p) print substr($0, 1, p + 3) }' | sort -u
+  ps -axo comm= | awk '{ p = index($0, ".app/"); if (p && !seen[app = substr($0, 1, p + 3)]++) print app }'
 }
 
 # Runs find with these tests over the folders that hold apps.
@@ -111,7 +112,7 @@ case "$1" in
     if [ "$OPENSPOT_REASON" = spot.change ] && [ -s "$pending" ] && [ -d "$(cat "$pending")" ]; then
       uninstall_sheet "$(cat "$pending")"
     else
-      rm -f "$pending" "$kept"
+      [ ! -e "$pending" ] && [ ! -e "$kept" ] || rm -f "$pending" "$kept"
       apps
     fi
     ;;

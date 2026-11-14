@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves that the socket of the API answers a JSON-RPC request on one line with a stream of JSON-RPC notifications, one
-/// object per line: each piece of stdout and stderr as it comes, a pull of stdin, and then the exit code.
 final class CommandSocketTests: XCTestCase {
     private final class Host: Mac {
         func eventStore() -> any EventStore { FakeEventStore() }
@@ -11,8 +9,6 @@ final class CommandSocketTests: XCTestCase {
         func open(_ link: URL) -> Bool { true }
     }
 
-    /// A running app whose change of a setting takes 30 seconds and then writes a far-off file, unless its call stops first.
-    /// It writes `started` as it begins and `ended` as it ends.
     private struct SlowApp: RunningApp {
         let folder: URL
 
@@ -23,8 +19,13 @@ final class CommandSocketTests: XCTestCase {
         func allows(_ reason: String) async -> Bool { false }
         func quit() async {}
         func open(_ id: String) async -> Bool { true }
+        func push(_ id: String, page: String?, title: String?, replace: Bool) async -> Bool { true }
+        func pop(_ id: String, all: Bool) async -> Bool { true }
         func review(_ id: String) async -> Bool { true }
-        func openStore() async {}
+        func act(_ act: CardAct, on id: String) async -> Bool { true }
+        func choose(for id: String) async -> Bool { true }
+        func editGrid() async {}
+        func publish(_ id: String) async -> SpotPublish { .notOwn }
         func reveal(_ id: String) async -> Bool { true }
         func sandbox(_ file: URL?, isCareful: Bool) async {}
 
@@ -67,7 +68,6 @@ final class CommandSocketTests: XCTestCase {
         return try connection.exchange(input: input)
     }
 
-    /// Waits for a fact, for 10 seconds at most.
     private func wait(_ what: String, until fact: () -> Bool) async throws {
         for _ in 0..<1000 {
             if fact() { return }

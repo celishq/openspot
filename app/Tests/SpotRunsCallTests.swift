@@ -1,11 +1,8 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves how long a call runs, how a call stops, and how a big value reaches a script.
 @MainActor
 final class SpotRunsCallTests: SpotRunsCase {
-    // MARK: Section 7
-
     func testAReadAtThePanelThatTakesTooLongMarksItsCardAndTellsNoOne() async throws {
         runs = SpotRuns(readLimit: 0.3)
         try script(header: "on=panel.open", "sleep 30")
@@ -51,7 +48,7 @@ final class SpotRunsCallTests: SpotRunsCase {
 
     func testAFailedTimerReadKeepsTheValueAndDimsWithNoToast() async throws {
         menuBar.insert("script")
-        try script(header: "on=clock.5", """
+        try script(header: "on=clock.5\noffers=card\noffers=menubar", """
         [ -f '\(path("second"))' ] && exit 1
         touch '\(path("second"))'
         printf 'text=m\\ntitle=3\\n'
@@ -234,6 +231,16 @@ final class SpotRunsCallTests: SpotRunsCase {
         XCTAssertFalse(exists("went-on"))
     }
 
+    func testAProcessThatEndedIsLetGoWithNoLaterCall() async throws {
+        try script(header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
+        let sheet = try sheet()
+
+        sheet.read()
+
+        try await wait("the row") { sheet.list.shown.count == 1 && sheet.calls.isEmpty }
+        try await wait("no process kept") { self.runs.processes.isEmpty }
+    }
+
     func testAStoppedReadChangesNothing() async throws {
         try script(header: "on=sheet.open", """
         [ -f '\(path("second"))' ] && { sleep 5; exit 0; }
@@ -244,10 +251,10 @@ final class SpotRunsCallTests: SpotRunsCase {
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 && sheet.calls.isEmpty }
         sheet.read(need: .change)
-        XCTAssertTrue(sheet.list.isLoading)
+        XCTAssertFalse(sheet.calls.isEmpty)
 
         sheet.close()
-        try await wait("the end of the read") { !sheet.list.isLoading }
+        try await wait("the end of the read") { sheet.calls.isEmpty }
         try await pause(0.1)
 
         XCTAssertEqual(sheet.list.shown.count, 1)
@@ -441,8 +448,6 @@ final class SpotRunsCallTests: SpotRunsCase {
         try await wait("the old state") { sheet.state.on == false }
     }
 
-    // MARK: The calls
-
     private static let big = String(repeating: "line \\ one=two\n", count: 2_000_000 / 15)
 
     func testATwoMegabyteValueOfAPartIsLeftOutOfTheArgumentsAndStdinHoldsIt() async throws {
@@ -464,7 +469,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         XCTAssertEqual(TextBlock.blocks(in: got).first?.value("input"), Self.big)
     }
 
-    func testATwoMegabyteRunIsLeftOutOfTheArgumentsAndStdinHoldsItAsValue() async throws {
+    func testATwoMegabyteRunGoesOnStdinAsValue() async throws {
         let url = try script(body: "printf '%s\\n' \"$#\"\ncat")
 
         let text = try await runs.answer(of: Spot(id: "script", name: "Script", url: url), .item(SpotItem(title: "A", run: Self.big)))

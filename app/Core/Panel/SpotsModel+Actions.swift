@@ -1,23 +1,21 @@
 import Foundation
 import Observation
 
-/// The keys of the panel, the actions menu, the forms of actions and the recording of keys.
 extension SpotsModel {
-    /// What the actions menu and the action keys work on: the selected row, or else the selected card.
     private var target: Target? {
-        if let entry = openEntry { return (entry, openSheet?.selectedItem) }
+        if let entry = openEntry {
+            return (entry, openSheet?.selectedItem)
+        }
         guard let entry = selectedEntry else { return nil }
         if let item = entry.item, let list = entries.first(where: { $0.id == entry.spot.id }) { return (list, item) }
         return (entry, nil)
     }
 
-    /// Takes a key before the focused field does. Returns false when the key is not for an action, a menu or a form.
     public func handleKey(_ key: ActionKey) -> Bool {
         if menu != nil {
             return handleMenuKey(key)
         }
         if isEditing {
-            if isSearchingDock, key.name != "escape" { return false }
             handleEditKey(key)
             return true
         }
@@ -36,6 +34,8 @@ extension SpotsModel {
             }
             return true
         }
+        openSheet?.landRows()
+        if openList != nil, let handled = handleFlowKey(key) { return handled }
         if key == Self.undoKey, openList == nil, searchText.isEmpty, undoRemoval() { return true }
         if key == ActionKey(name: "return", isCommand: true), openSelectedSettings() { return true }
         if let panel = openPanel, !panel.showsRows { return handlePanelKey(key, panel) }
@@ -58,7 +58,20 @@ extension SpotsModel {
             openMenu(on: target)
             return menu != nil
         }
-        let quiet = extras(on: target).filter { searchText.isEmpty || !($0.key.map(Self.editsText) ?? false) }
+        let typesKey = !searchText.isEmpty && Self.editsText(key)
+        var noHooks: Set<String> = []
+        if !typesKey, !target.entry.spot.actions(for: target.item).contains(where: { $0.key == key }),
+           let offer = offered(on: target, yes: &noHooks, asks: false).first(where: { $0.action.key == key }) {
+            if offer.action.confirm != nil {
+                openMenu(on: target)
+                menu?.select(offer.action)
+                pressMenu()
+            } else {
+                run(offer.action, offeredBy: offer.owner, on: target)
+            }
+            return true
+        }
+        let quiet = typesKey ? [] : extras(on: target)
         guard let action = (target.entry.spot.actions(for: target.item) + quiet).first(where: { $0.key == key }) else { return openSheet(on: key) }
         if action.confirm != nil {
             openMenu(on: target)
@@ -70,37 +83,28 @@ extension SpotsModel {
         return true
     }
 
-    /// Opens the sheet of the spot that the config gives this key of the panel, such as `⌘N`, when no action of the selected
-    /// card takes the key and no sheet shows. Returns false for any other key.
     func openSheet(on key: ActionKey) -> Bool {
         guard openList == nil, let id = spot(openedBy: key) else { return false }
         endEditing(moving: false)
-        open(id, moving: true)
+        pushFirst(id, moving: true)
         return true
     }
 
-    /// The spot that the config gives a key of the panel, when it has a card.
     func spot(openedBy key: ActionKey) -> String? {
         arrangement.spot(openedBy: key, over: defaultArrangement).flatMap { id in entries.contains { $0.id == id } ? id : nil }
     }
 
-    /// Whether a key edits the words of the search, such as `⌘⌫` or `⌘V`, so that it stays the field's while a search is
-    /// typed.
     static func editsText(_ key: ActionKey) -> Bool {
         key.isCommand && !key.isShift && ["backspace", "a", "c", "v", "x", "z"].contains(key.name)
     }
 
-    /// The footer label of ⌘ Return, which opens the Settings sheet of a card.
     static let openLabel = "⌘⏎"
 
-    /// Does what the key of a footer label does, as if it were pressed: Return runs the selected row.
     public func pressHint(_ label: String) {
         guard let key = ActionKey(label: label) else { return }
         if !handleKey(key), key == ActionKey(name: "return") { runSelected() }
     }
 
-    /// Takes the keys of the parts, ⌘K, Esc, the arrows and return, and leaves all others to the text areas. A part's own
-    /// key wins over ⌘K and over closing the sheet.
     private func handlePanelKey(_ key: ActionKey, _ panel: SheetParts) -> Bool {
         if let part = panel.parts.first(where: { $0.key == key }) {
             pressPart(part)
@@ -111,7 +115,7 @@ extension SpotsModel {
             return menu != nil
         }
         if key == ActionKey(name: "escape") {
-            closeList(moving: true)
+            if !back() { closeList(moving: true) }
             return true
         }
         if panel.scrollsByArrows, key == ActionKey(name: "up") || key == ActionKey(name: "down") {
@@ -122,17 +126,13 @@ extension SpotsModel {
         return handleFocusKey(key, part)
     }
 
-    /// Takes the down arrow on the last line of rows, which moves the focus to the parts below them, and the keys of the part
-    /// that has the focus. All other keys go to the rows.
     private func handleRowsPanelKey(_ key: ActionKey, _ panel: SheetParts) -> Bool {
         if let part = panel.selectedPart { return handleFocusKey(key, part) }
+        openSheet?.landRows()
         guard key == ActionKey(name: "down"), openItems?.isOnLastLine != false else { return false }
         return openSheet?.leaveRows() == true
     }
 
-    /// Takes the arrows and return for the part that has the focus. Up and down move between lines, and left and right along
-    /// a line. A slider takes left and right, and a field keeps them and return for its text, and up and down past its edge
-    /// when no line lies there.
     private func handleFocusKey(_ key: ActionKey, _ part: SpotPart) -> Bool {
         switch key {
         case ActionKey(name: "up"), ActionKey(name: "down"):
@@ -156,7 +156,6 @@ extension SpotsModel {
         return true
     }
 
-    /// Does what a click on the control of this part does. A menu opens.
     private func useSelected(_ part: SpotPart) {
         switch part.control {
         case .shortcut: toggleRecording(part)
@@ -167,7 +166,6 @@ extension SpotsModel {
         }
     }
 
-    /// Gives the focus to a part, as a click into its field does.
     public func focusPart(_ part: SpotPart) {
         openSheet?.focusPart(part.id)
     }
@@ -181,12 +179,10 @@ extension SpotsModel {
         if part.closes, isShown { host.dismiss() }
     }
 
-    /// Starts to record the next key for a part, with the entry key off so that it can be recorded too, or stops.
     public func toggleRecording(_ part: SpotPart) {
         toggleRecording(id: part.id)
     }
 
-    /// Starts to record the next key for a part or a row, or stops.
     public func toggleRecording(id: String) {
         if recording == id {
             stopRecording()
@@ -202,7 +198,6 @@ extension SpotsModel {
         host.setEntryKey(on: true)
     }
 
-    /// Takes the key for the part or the row that records. A key it cannot use leaves it recording, and says why. In Edit Spots it takes the letter of the selected spot.
     public func record(code: UInt32, modifiers: Shortcut.Modifiers) {
         if isEditing { return recordLetter(code: code, modifiers: modifiers) }
         guard let shortcut = Shortcut(code: code, modifiers: modifiers) else {
@@ -220,8 +215,6 @@ extension SpotsModel {
         if let item, let entry = openEntry { give(shortcut.text, to: item, of: entry) }
     }
 
-    /// Gives a row its new key. A Settings sheet stays open, so the person sees the key that it took, and the key of a
-    /// hotkey field goes to the spot's own action of that name. A row of any other sheet closes the panel, as a pick does.
     private func give(_ key: String, to item: SpotItem, of entry: Entry) {
         if let settings = entry.spot.settingsSheet, entry.spot.holdsSettings, let field = settings.hotkeyField(of: item.run) {
             sheets[settings.spot]?.set(SpotItem(title: item.title, run: field), to: key)
@@ -237,25 +230,19 @@ extension SpotsModel {
         }
     }
 
-    /// Whether the row that records takes a shake too: a row that says `shake=true`, as a row of Settings that gives a key to
-    /// a command or a float does (W3).
     public var takesShake: Bool {
         guard let recording else { return false }
         return openItems?.shown.first { $0.run == recording }?.takesShake ?? false
     }
 
-    /// The words of the key that records.
     public var recordingWords: String {
         takesShake ? "Press keys or shake" : "Press keys"
     }
 
-    /// Takes a shake for the row of Settings that records, as it takes a key. Any other row goes on recording.
     public func recordShake() {
         recordTrigger(.shake)
     }
 
-    /// Takes a tap of one modifier alone for the row of Settings that records, as it takes a shake. Any other row goes on
-    /// recording.
     public func recordTap(_ modifier: Shortcut.Modifiers) {
         recordTrigger(.tap(modifier))
     }
@@ -266,7 +253,6 @@ extension SpotsModel {
         give(trigger.text, to: item, of: entry)
     }
 
-    /// Takes the keys of the open menu. In a menu that searches, a key with no ⌘ goes to its field, and returns false.
     private func handleMenuKey(_ key: ActionKey) -> Bool {
         let types = menu?.isSearchable == true && !key.isCommand
         switch key {
@@ -274,6 +260,8 @@ extension SpotsModel {
         case ActionKey(name: "up"): menu?.move(by: -1)
         case ActionKey(name: "down"): menu?.move(by: 1)
         case ActionKey(name: "return"): pressMenu()
+        case ActionKey(name: "right") where menu?.selectedRow?.children.isEmpty == false: _ = menu?.enterSelected()
+        case ActionKey(name: "left") where menu?.parent != nil: _ = menu?.back()
         default:
             guard !types, let action = menu?.rows.compactMap(\.action).first(where: { $0.key == key }) else { return !types }
             menu?.select(action)
@@ -282,148 +270,227 @@ extension SpotsModel {
         return true
     }
 
-    /// Highlights the row of the open menu under a point of the panel, as a force click is dragged.
     public func dragMenu(to point: CGPoint) {
         if let row = menuRow(at: point) { self.point(at: .menuRow(row)) }
     }
 
-    /// Runs the row of the open menu under a point of the panel, where a dragged force click ends. Off the rows the menu stays.
     public func releaseMenu(at point: CGPoint) {
         if let row = menuRow(at: point) { pressMenu(row: row) }
     }
 
     private func menuRow(at point: CGPoint) -> Int? {
-        guard let menu, let frame = menuSession?.frame else { return nil }
+        guard let menu, let frame = menuFrame else { return nil }
         return frame.row(at: point, of: menu)
     }
 
-    /// The open menu, which keys and the pointer act on. A closing menu is closed.
     public var menu: ActionMenu? {
         get { menuSession?.phase == .closing ? nil : menuSession?.menu }
         set {
             guard let newValue, menu != nil else { return }
             menuSession?.menu = newValue
+            placeSubmenu()
         }
     }
 
-    /// What the open menu acts on.
+    func placeSubmenu() {
+        var row: CGRect?
+        if let menu, let submenu = menu.submenu, let frame = menuFrame, menuSession?.phase != .closing {
+            row = frame.rowRect(submenu.parent, of: menu)
+        }
+        guard row != menuSession?.submenuRow else { return }
+        menuSession?.submenuRow = row
+        if let row, let menu, let frame = menuFrame {
+            host.showSubmenu(beside: row, of: frame.rect(of: menu))
+        } else {
+            host.hideSubmenu()
+        }
+    }
+
+    public func pointSubmenu(row: Int) {
+        menu?.pointSubmenu(at: row)
+    }
+
+    public func pressSubmenu(row: Int) {
+        menu?.pointSubmenu(at: row)
+        pressMenu()
+    }
+
     public var menuTarget: Target? {
         menu == nil ? nil : menuSession?.target
     }
 
-    /// Keeps where the view placed the open menu.
     public func placeMenu(_ frame: ActionMenuFrame) {
-        guard menu != nil else { return }
-        menuSession?.frame = frame
+        guard menu != nil, frame != menuFrame else { return }
+        menuFrame = frame
+        if menuSession?.phase != .opening { growBackdrop() }
+        placeSubmenu()
+    }
+
+    public func menuItemAtRest(_ item: CGRect) -> CGRect {
+        guard focus(ofCard: selected) == .focused, let size = placements.first(where: { $0.index == selected })?.size else { return item }
+        let width = SpotTokens.width(columns: size.columns) * MotionTokens.focusedScale
+        let height = SpotTokens.height(rows: size.rows) * MotionTokens.focusedScale
+        return CGRect(x: item.midX - width / 2, y: item.midY - height / 2, width: width, height: height)
+    }
+
+    private func growBackdrop() {
+        let height = menuFrame.map { $0.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock } ?? 0
+        if height != menuBackdropHeight { menuBackdropHeight = height }
     }
 
     public func searchMenu(_ text: String) {
         menu?.search(text)
     }
 
-    /// Selects the card at this point of the panel and opens its actions menu, as `⌘K` does, for a right or force click. A
-    /// sheet or Edit Spots takes none.
     public func openMenu(at point: CGPoint) {
-        let origin = SpotTokens.gridOrigin(scrollOffset: gridScroll)
+        let origin = gridOrigin
         guard openList == nil, !isEditing, let id = card(at: CGPoint(x: point.x - origin.x, y: point.y - origin.y)), let index = visible.firstIndex(where: { $0.id == id }) else { return }
         selected = index
         if let target { openMenu(on: target) }
     }
 
     private func openMenu(on target: Target) {
-        menuSession = actionMenu(on: target).map { ActionMenuSession(menu: $0, target: target) }
+        var yes: Set<String> = []
+        menuSession = actionMenu(on: target, yes: &yes, asks: true).map { ActionMenuSession(menu: $0, target: target, hookYes: yes) }
         DispatchQueue.main.async { [weak self] in
             guard let self, menuSession?.phase == .opening else { return }
-            change(.sheet(isOpen: true), { self.menuSession?.phase = .open }, completion: { [weak self] in
+            change(.sheet(isOpen: true), {
+                self.menuSession?.phase = .open
+                self.growBackdrop()
+            }, completion: { [weak self] in
                 if self?.menuSession?.phase == .open { self?.menuSession?.phase = .settled }
             })
         }
     }
 
     private func actionMenu(on target: Target) -> ActionMenu? {
+        var none: Set<String> = []
+        return actionMenu(on: target, yes: &none, asks: false)
+    }
+
+    private func actionMenu(on target: Target, yes: inout Set<String>, asks: Bool) -> ActionMenu? {
         let isOpenList = openList == target.entry.id
         return ActionMenu(
             spot: target.entry.spot,
             item: target.item,
             showsOpen: !isOpenList || target.item != nil,
-            extras: extras(on: target)
+            extras: extras(on: target),
+            offered: offered(on: target, yes: &yes, asks: asks)
         )
     }
 
-    /// The rows that the app adds for a selected card of the grid: Open for a spot whose Return runs it, History for one that
-    /// runs its one command and keeps rows, the commands of its
-    /// header, Share, its Settings, Edit, then Turn off or Delete: first what a person does with the spot, then what changes
-    /// it, and what takes it away last. A row of a list or an open sheet keeps its own Delete.
     private func extras(on target: Target) -> [CommandAction] {
         guard openList == nil, target.item == nil else { return [] }
         let spot = target.entry.spot
         let opens: [CommandAction] = spot.pressRuns && target.entry.kind.opensSheet ? [.open] : []
         let history: [CommandAction] = spot.keepsHistory ? [.history] : []
         let commands = spot.opensToSettings || spot.soleCommand != nil ? [] : spot.offers.map(CommandAction.command)
-        let settings: [CommandAction] = settingsSheet(of: target.entry) == nil ? [] : [.settings]
-        let files = fileActions(on: target.entry)
-        let shares = files.filter { $0 == .share }
-        let changes = files.filter { $0 == .edit }
-        let ends = files.filter { $0 != .share && $0 != .edit }
-        return opens + history + commands + shares + settings + changes + ends
+        return opens + history + commands
     }
 
-    /// The acts on the file of a card: Edit, Share and Delete for a spot of the person, Edit, Share and Turn off for a core
-    /// spot, and Edit, which opens its file, and Delete for a file that does not load. A spot of the app has none.
-    private func fileActions(on entry: Entry) -> [CommandAction] {
-        let command = entry.spot
-        if command.fault != nil { return [.edit, .remove()] }
-        guard command.host == nil, !command.isBuiltIn else { return [] }
-        let edit: [CommandAction] = runs.editsSpots ? [.edit] : []
-        guard !isCore(command) else { return edit + [.share, .turnOff] }
-        return edit + [.share, .remove(widgets: widgets(sharingFileWith: entry))]
-    }
-
-    /// Whether a spot comes with the app, as a core spot that the person turned on.
-    private func isCore(_ spot: Spot) -> Bool {
-        files.folder(Config(text: "")).isCore(spot)
-    }
-
-    /// Opens the Edit sheet of a card, which grows from the card. Returns false for a spot that no Edit sheet changes: a
-    /// spot of the app, a sheet of the app, a file that does not load, or with no spot of the app that edits spots.
     @discardableResult
     public func openEdit(of entry: Entry) -> Bool {
         let spot = entry.spot
         guard entry.item == nil, spot.fault == nil, spot.host == nil, !spot.isBuiltIn,
-              let sheet = runs.editSheet(of: spot, isOwn: !isCore(spot))
+              let sheet = runs.editSheet(of: spot, isOwn: !folder.isCore(spot))
         else { return false }
-        open(sheet.spot.id, moving: true)
+        pushFirst(sheet.spot.id, moving: true)
         return true
     }
 
-    /// How many widgets the file of a widget holds, which go together when it is removed.
-    private func widgets(sharingFileWith entry: Entry) -> Int {
-        entry.kind == .widget ? entries.filter { $0.spot.url == entry.spot.url }.count : 1
+    private func offered(on target: Target, yes: inout Set<String>, asks: Bool) -> [OfferedAction] {
+        guard openList == nil, target.item == nil, let origin = origin(of: target.entry.spot) else { return [] }
+        let word = OfferedAction.originWords.first { $0.value == origin }?.key ?? ""
+        var shown: [OfferedAction] = []
+        for spot in sheets.values.map(\.spot).sorted(by: { $0.id < $1.id }) {
+            var hidden: [String] = []
+            for offer in spot.offeredActions {
+                let id = offer.action.id
+                let shows = offer.fits(origin) && !hidden.contains { id.hasPrefix($0 + ".") } && hookSaysYes(offer, of: spot, on: target, origin: word, yes: &yes, asks: asks)
+                if shows { shown.append(offer) } else { hidden.append(id) }
+            }
+        }
+        return shown
     }
 
-    /// The keys that work on the selected row or card, in words for the bottom of the panel.
+    private func hookSaysYes(_ offer: OfferedAction, of spot: Spot, on target: Target, origin: String, yes: inout Set<String>, asks: Bool) -> Bool {
+        guard let when = offer.when else { return true }
+        let key = "\(spot.id) \(offer.action.id)"
+        if yes.contains(key) { return true }
+        guard asks else { return false }
+        let card = target.entry.id
+        let answer = runs.ask(when, of: spot, card: card, origin: origin) { [weak self] said in
+            guard said, let self, let session = menuSession, session.phase != .closing, session.target.entry.id == card, session.menu.parent == nil else { return }
+            var answers = session.hookYes
+            answers.insert(key)
+            guard var menu = actionMenu(on: session.target, yes: &answers, asks: false) else { return }
+            menu.search(session.menu.query)
+            if let action = session.menu.selectedRow?.action { menu.select(action) }
+            menuSession?.hookYes = answers
+            menuSession?.menu = menu
+        }
+        if answer == true { yes.insert(key) }
+        return answer == true
+    }
+
+    func origin(of spot: Spot) -> SpotOrigin? {
+        if spot.fault != nil { return .mine }
+        guard spot.host == nil else { return nil }
+        if spot.isBuiltIn { return .builtIn }
+        return folder.isCore(spot) ? .core : .mine
+    }
+
+    public func run(_ action: CommandAction, offeredBy owner: String, on target: Target) {
+        if action.after == .close, isShown { host.dismiss() }
+        sheets[owner]?.run(action, item: SpotItem(title: target.entry.state.title, run: target.entry.id))
+    }
+
     public var hint: String {
         if recording != nil, isEditing { return "Press a letter   ⌫ Remove   Esc Cancel" }
         if recording != nil { return "Esc Cancel" }
         if isEditing { return "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done" }
         if spotDrop != nil { return "Nothing runs until you press ⌘⏎" }
+        let escape = flow.behind == nil ? "Close" : "Back"
         if let panel = openPanel, !panel.showsRows || panel.drawsKeys {
             let hasActions = target.flatMap(actionMenu(on:)) != nil
-            return panel.hint(stopping: { work(of: $0) != nil }, actions: hasActions)
+            return panel.hint(escape: escape, stopping: { work(of: $0) != nil }, actions: hasActions)
         }
         if let soleHint { return soleHint }
         let keys = target.flatMap { target in
             let onGrid = openList == nil && target.item == nil
-            let settings = onGrid && settingsSheet(of: target.entry) != nil ? ["\(Self.openLabel) \(CommandAction.settings.title)"] : []
+            let settings = onGrid && settingsSheet(of: target.entry) != nil ? ["\(Self.openLabel) Settings"] : []
             return actionMenu(on: target)?.hint(
                 stopping: { sheets[target.entry.id]?.work(of: $0, item: target.item) != nil },
                 second: settings
             )
-        } ?? "Esc Close"
+        } ?? "Esc \(escape)"
         return selectedGlyphTitle.map { "\($0)  \(keys)" } ?? keys
     }
 
-    /// The name of the selected spot when it shows only a glyph.
+    public func followHint() {
+        guard !followsHint else { return }
+        followsHint = true
+        takeHint()
+    }
+
+    private func takeHint() {
+        hintTakes += 1
+        let words = HintWords(withObservationTracking { hint } onChange: { [weak self] in
+            Task { @MainActor in self?.takeHint() }
+        })
+        let motion: PanelMotion? = isEditing || hintIsForEdit || fieldDrop != nil ? .fade : nil
+        hintIsForEdit = isEditing
+        if openList == nil, spotDrop == nil {
+            if words != gridHint { change(motion, { gridHint = words }) }
+        } else {
+            takeSheetHint(words, motion: motion)
+        }
+    }
+
+    func takeSheetHint(_ words: HintWords, motion: PanelMotion? = nil) {
+        if words != sheetHint { change(motion, { sheetHint = words }) }
+    }
+
     private var selectedGlyphTitle: String? {
         guard openList == nil, let entry = selectedEntry, entry.kind != .widget,
               placements.first(where: { $0.index == selected })?.size == .small
@@ -431,16 +498,21 @@ extension SpotsModel {
         return entry.state.title
     }
 
-    /// Closes the menu at once for keys and the focus, and leaves its look to fade back into its item, then lets it go.
     public func closeMenu() {
         guard menu != nil else { return }
+        if menuSession?.submenuRow != nil {
+            menuSession?.submenuRow = nil
+            host.hideSubmenu()
+        }
         change(.sheet(isOpen: false), { menuSession?.phase = .closing }, completion: { [weak self] in
             if self?.menuSession?.phase == .closing { self?.menuSession = nil }
         })
     }
 
     public func pressMenu(row: Int) {
-        guard let menu else { return }
+        guard let menu, menu.shown.indices.contains(row) else { return }
+        guard menu.shown[row].children.isEmpty else { return point(at: .menuRow(row)) }
+        _ = self.menu?.back()
         self.menu?.move(by: row - menu.selected)
         pressMenu()
     }
@@ -453,7 +525,9 @@ extension SpotsModel {
             return
         }
         closeMenu()
-        if let action = row.action {
+        if let action = row.action, let owner = row.owner {
+            run(action, offeredBy: owner, on: target)
+        } else if let action = row.action {
             run(action, on: target)
         } else if let item = target.item {
             pick(item, of: target.entry)
@@ -462,11 +536,11 @@ extension SpotsModel {
         }
     }
 
-    /// Runs an action on a row or on the whole spot. In a float, an action that asks with a form or for a second press opens
-    /// the spot in the panel, where both work, and any other runs at once and leaves the float open (W8).
     public func run(_ action: CommandAction, on target: Target, in place: SheetPlace = .panel) {
-        if place == .float {
-            if action.isForm || action.confirm != nil {
+        if place.isDetached {
+            if action.isForm || action.confirm != nil, place == .window {
+                host.notify("\(action.title) asks with a form or a second press, which a window does not show yet.")
+            } else if action.isForm || action.confirm != nil {
                 press(target.entry.id)
             } else {
                 sheets[target.entry.id]?.run(action, item: target.item)
@@ -474,24 +548,11 @@ extension SpotsModel {
         } else if action.id == SpotSettings.removeID, let item = target.item, target.entry.spot.holdsSettings,
                   let settings = target.entry.spot.settingsSheet, let field = settings.hotkeyField(of: item.run) {
             sheets[settings.spot]?.set(SpotItem(title: item.title, run: field), to: "")
-        } else if action == .settings {
-            openSettings(of: target.entry)
         } else if action == .open || action == .history {
-            open(target.entry.id, moving: true)
+            presentSheet(of: target.entry.id, moving: true)
         } else if let command = CommandAction.command(of: action) {
             if isShown { host.dismiss() }
             sheets[target.entry.id]?.pressKey(command)
-        } else if action == .share {
-            share(target.entry)
-        } else if action.id == CommandAction.removeID {
-            remove(target.entry)
-        } else if action == .edit, target.entry.spot.fault == nil {
-            openEdit(of: target.entry)
-        } else if action == .edit {
-            if isShown { host.dismiss() }
-            edit(target.entry)
-        } else if action == .turnOff {
-            turnOff(target.entry)
         } else if action.isForm {
             openForm(action, on: target)
         } else if action.after == .stay {
@@ -504,9 +565,10 @@ extension SpotsModel {
         }
     }
 
-    /// Asks the script for the form of an action, and shows it in place of the actions menu once it comes, so that the menu
-    /// stays while the script answers.
     public func openForm(_ action: CommandAction, on target: Target, prefill: String = "") {
+        guard place(ofSheet: target.entry.id) == .panel else {
+            return host.notify("\(action.title) asks with a form, which a window does not show yet.")
+        }
         let ask = UUID()
         formAsk = ask
         Task {
@@ -516,7 +578,7 @@ extension SpotsModel {
                 closeMenu()
                 let opensSheet = openList != target.entry.id
                 if opensSheet {
-                    open(target.entry.id, moving: isShown)
+                    pushFirst(target.entry.id, moving: isShown)
                 }
                 self.form = FormSession(
                     draft: FormDraft(form: form, prefill: prefill),
@@ -532,8 +594,6 @@ extension SpotsModel {
         }
     }
 
-    /// Runs the action of a spot that has the name of its setting, as `openspot setting change` asks. A form that it answers
-    /// with opens on the sheet of that spot, and the panel closes when it is done. Returns false when no spot has the ID.
     public func changeSetting(_ key: String, of id: String) -> Bool {
         guard let entry = entries.first(where: { $0.id == id }), let sheet = sheets[id] else { return false }
         let action = CommandAction(id: key, title: "Change \(key)", scope: .spot, after: .close)
@@ -543,7 +603,7 @@ extension SpotsModel {
             do {
                 switch try await sheet.change(action) {
                 case .form(let form)? where isShown && formAsk == ask:
-                    open(id, moving: true)
+                    pushFirst(id, moving: true)
                     self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: action, item: nil, openedSheet: true)
                 case .done?:
                     if isShown { host.dismiss() }
@@ -557,7 +617,6 @@ extension SpotsModel {
         return true
     }
 
-    /// Takes a click on an option of a form of one choice, and saves the form with it.
     public func chooseFormOption(_ item: SpotItem) {
         form?.draft.choose(item.run)
         submitForm()
@@ -576,9 +635,6 @@ extension SpotsModel {
         }
     }
 
-    /// Saves the form. It stays open with its text when the command refuses the values, and shows the form that the command
-    /// answers with. An action that closes the panel closes it once the command is done. A call that ends after the person
-    /// moved on to another form changes nothing.
     public func submitForm() {
         guard let form else { return }
         if let missing = form.draft.missing {
@@ -588,7 +644,6 @@ extension SpotsModel {
         send(form, form.draft)
     }
 
-    /// Gives a draft of the form to its command. A form that it answers with keeps the selected row.
     private func send(_ form: FormSession, _ draft: FormDraft) {
         Task {
             do {

@@ -1,9 +1,6 @@
 import AppKit
 import SwiftUI
 
-/// The edge of a Control Center surface: light added to what lies behind at the top and bottom, with a narrow
-/// glow inside it, and a thin dark line down the sides. Its radius animates with the surrounding animation. With a `rect`,
-/// it lies at that rect of a view of a fixed size, so that a growing rim moves layers and resizes no view.
 struct SpotRim: View, @preconcurrency Animatable {
     var radius: CGFloat
     var rect: CGRect?
@@ -26,7 +23,6 @@ struct SpotRim: View, @preconcurrency Animatable {
     }
 }
 
-/// The layers behind a `SpotRim`. They change in the same commit as the surface, because nothing draws them first.
 private struct Backing: NSViewRepresentable {
     var radius: CGFloat
     var rect: CGRect?
@@ -37,7 +33,6 @@ private struct Backing: NSViewRepresentable {
                 if radius != oldValue { place() }
             }
         }
-        /// Where the rim lies in the view, or nil for its bounds.
         var shapeRect: CGRect? {
             didSet {
                 if shapeRect != oldValue { place() }
@@ -77,7 +72,6 @@ private struct Backing: NSViewRepresentable {
             applyTheme()
         }
 
-        /// Takes the rim's colours from the theme of this appearance.
         private func applyTheme() {
             CATransaction.begin()
             CATransaction.setDisableActions(true)
@@ -88,7 +82,6 @@ private struct Backing: NSViewRepresentable {
             ends.colors = [alpha, 0, 0, alpha].map { theme.rimEnds.withAlphaComponent($0).cgColor }
         }
 
-        /// Draws the layers at the scale of the window's screen.
         private func applyScale() {
             CATransaction.begin()
             CATransaction.setDisableActions(true)
@@ -148,7 +141,6 @@ private struct Backing: NSViewRepresentable {
             place()
         }
 
-        /// Sets the layers to the rim's rect and radius, with no layout of the view: one path for each width of line.
         private func place() {
             CATransaction.begin()
             CATransaction.setDisableActions(true)
@@ -166,13 +158,11 @@ private struct Backing: NSViewRepresentable {
             glow.path = path(lineWidth: glow.lineWidth, in: local)
         }
 
-        /// The path of a line of this width, which lies inside the edge of the rim.
         private func path(lineWidth: CGFloat, in rect: CGRect) -> CGPath {
             RoundedRectangle(cornerRadius: radius, style: .continuous).inset(by: lineWidth / 2).path(in: rect).cgPath
         }
     }
 
-    /// Fills the surface it lies on, so that a resize asks AppKit for no size of its own.
     func sizeThatFits(_ proposal: ProposedViewSize, nsView: Surface, context: Context) -> CGSize? {
         proposal.replacingUnspecifiedDimensions()
     }

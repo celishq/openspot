@@ -1,14 +1,11 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the 64 KB rule of the calls of the protocol with real processes: the answer to a paste of 1 MB shows in a time that only a slow algorithm misses. It
-/// takes about 0.5 seconds in a Debug build, and each run prints its time.
 @MainActor
 final class BigPasteTests: XCTestCase {
     private static let megabyte = 1_000_000
     private static let runCount = 3
 
-    /// Each form of text that a loop over each byte or each escape makes slow.
     private static let texts: [(name: String, text: String)] = [
         ("letters", String(repeating: "a", count: megabyte)),
         ("lines", String(repeating: "one line\n", count: megabyte / 9)),
@@ -30,7 +27,6 @@ final class BigPasteTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    /// A sheet that answers a change of `input` with its value in `output`, with this body for the answer.
     private func sheet(answer: String) throws -> SpotRun {
         let url = folder.spotFile("script")
         try """
@@ -45,7 +41,6 @@ final class BigPasteTests: XCTestCase {
         return try XCTUnwrap(runs.sheets["script"])
     }
 
-    /// The time from the paste to its answer in the sheet, which holds the pause of 300 ms for text (C4).
     private func answerTime(of sheet: SpotRun, for text: String) async throws -> TimeInterval {
         sheet.open {}
         for _ in 0..<500 where sheet.panel == nil || !sheet.calls.isEmpty { try await Task.sleep(for: .milliseconds(10)) }
@@ -63,7 +58,6 @@ final class BigPasteTests: XCTestCase {
         return time
     }
 
-    /// The time of the first run under the limit, or else the best of the runs. A busy machine can slow one run.
     private func bestTime(of sheet: SpotRun, for text: String, under limit: TimeInterval) async throws -> TimeInterval {
         var best = TimeInterval.infinity
         for _ in 0..<Self.runCount where best >= limit {

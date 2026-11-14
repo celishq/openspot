@@ -1,6 +1,5 @@
 import Foundation
 
-/// A form that a command prints, and Openspot draws.
 public struct ItemForm: Equatable, Sendable {
     public struct Field: Equatable, Sendable {
         public enum Kind: String, Sendable {
@@ -17,11 +16,8 @@ public struct ItemForm: Equatable, Sendable {
         public let value: String?
         public let required: Bool?
         public let placeholder: String?
-        /// The options of a choice.
         public let options: [SpotPart.Option]
-        /// The options that a choice of several has picked, or nil for a choice of one.
         public let picks: Set<String>?
-        /// The lowest and the highest level of a slider.
         public let range: ClosedRange<Double>?
 
         public init(
@@ -46,8 +42,6 @@ public struct ItemForm: Equatable, Sendable {
             self.range = range
         }
 
-        /// Reads a `field`, `choice`, `switch` or `slider` block. A choice starts on its first option, and a slider on its
-        /// lowest level, so that each one sends a value. A choice with `type=multiple` picks each option of a `value` line.
         init?(block: TextBlock) {
             guard let kind = block.fields.first?.key, let name = block.value(kind), let label = block.value("title") else { return nil }
             switch kind {
@@ -81,12 +75,10 @@ public struct ItemForm: Equatable, Sendable {
         self.fields = fields
     }
 
-    /// The choice of a form that has nothing else, whose options show as rows.
     public var soleChoice: Field? {
         fields.count == 1 && fields[0].type == .choice ? fields[0] : nil
     }
 
-    /// Reads a form from what a script prints. It needs a title, and a title for each field.
     public init?(output: SpotOutput) {
         guard let title = output.summary?.value("title") else { return nil }
         let fields = output.fields.compactMap(Field.init(block:))

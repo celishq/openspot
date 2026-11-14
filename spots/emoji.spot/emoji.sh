@@ -4,6 +4,7 @@
 # detail=Copy an emoji or a symbol
 # on=sheet.open
 # uses=clipboard
+# offers=card
 export LC_ALL=en_US.UTF-8
 saved="$OPENSPOT_DATA/tone"
 tones="none light medium-light medium medium-dark dark"
@@ -16,10 +17,13 @@ remember() {
 }
 
 # Prints the rows of the emoji in the tone and of the symbols. It keeps them for each tone, with the times of change of
-# the app, of macOS and of the Mac's preferences, which hold its languages, and makes them again when one of these differs.
+# the app and of macOS and the languages of the Mac, and makes them again when one of these differs.
 glyph_rows() {
   rows="$OPENSPOT_DATA/rows-$tone"
-  stamp=$(stat -n -L -f '%Fc ' "$(command -v openspot)" /System/Library/CoreServices/SystemVersion.plist "$HOME/Library/Preferences/.GlobalPreferences.plist" 2>/dev/null)
+  set -f
+  set -- $(defaults read -g AppleLanguages 2>/dev/null)
+  set +f
+  stamp="$(stat -n -L -f '%Fc ' "$(command -v openspot)" /System/Library/CoreServices/SystemVersion.plist 2>/dev/null)$*"
   kept=''
   [ -f "$rows.stamp" ] && IFS= read -r kept <"$rows.stamp"
   if [ -s "$rows" ] && [ "$stamp" = "$kept" ]; then

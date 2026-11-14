@@ -1,9 +1,3 @@
-"""Writes the CLDR keywords of each emoji and symbol to app/Keywords, one xz file per language of the Mac's emoji names.
-
-Each line holds a glyph, then its keywords, split by tabs. A glyph has no presentation mark and no skin tone.
-Run from the project root: python3 scripts/emoji-keywords.py
-"""
-
 import io
 import json
 import lzma
@@ -28,7 +22,6 @@ OUT = ROOT / "app" / "Keywords"
 
 
 def download():
-    """Fetches each package of the pinned version into the temp folder."""
     shutil.rmtree(TEMP, ignore_errors=True)
     TEMP.mkdir(parents=True)
     for package in PACKAGES.values():
@@ -38,12 +31,10 @@ def download():
 
 
 def plain(glyph):
-    """The glyph with no presentation mark."""
     return "".join(c for c in glyph if ord(c) not in DROPPED)
 
 
 def keywords(language):
-    """Each glyph of a language with its keywords, the derived ones after the plain ones."""
     found = {}
     for folder, package in PACKAGES.items():
         path = TEMP / package / "package" / folder / language / f"{folder}.json"

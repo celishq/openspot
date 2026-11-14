@@ -1,7 +1,6 @@
 import Foundation
 import OpenspotCore
 
-/// The Calendar app of macOS, which `openspot calendar show` opens on a day through its own AppleScript words.
 enum SpotCalendarApp {
     private static let automation = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation")!
     private static let script = [
@@ -20,8 +19,6 @@ enum SpotCalendarApp {
         "end run"
     ]
 
-    /// Opens Calendar on the day of the time, in day view, and prints nothing. macOS asks the person once to let Openspot
-    /// control Calendar, and a refusal links to Automation.
     static func show(_ time: Date) throws -> String {
         let parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: time)
         let seconds = (parts.hour ?? 0) * 3600 + (parts.minute ?? 0) * 60

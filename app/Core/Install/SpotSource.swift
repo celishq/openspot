@@ -1,16 +1,12 @@
 import Foundation
 
-/// Where a spot comes from: a git repository, a folder, or a `.spot` folder or a zip of one (protocol: The openspot command). It
-/// puts the spot in a spot folder at the top of a spots folder, and runs nothing of it.
 public enum SpotSource: Equatable, Sendable {
-    /// A git URL, or the path of a folder that git keeps.
     case git(String)
     case folder(URL)
     case file(URL)
 
     private static let git = URL(fileURLWithPath: "/usr/bin/git")
 
-    /// Reads the words of a source: a path that exists, from `place` when it is relative, or else a git URL.
     public init(text: String, place: URL) {
         let expanded = (text as NSString).expandingTildeInPath
         let url = expanded.hasPrefix("/") ? URL(fileURLWithPath: expanded) : place.appendingPathComponent(expanded)
@@ -29,7 +25,6 @@ public enum SpotSource: Equatable, Sendable {
         }
     }
 
-    /// The source as `spots.lock` keeps it: the URL, or the whole path.
     public var text: String {
         switch self {
         case .git(let text): text
@@ -37,11 +32,6 @@ public enum SpotSource: Equatable, Sendable {
         }
     }
 
-    /// Puts the spot in the folder, a git source at `commit` or else at its newest commit, and returns the commit and the
-    /// paths that it took: the spot folder of a git source or a folder, and each file of a `.spot`, of which an equal one
-    /// stays as it is. A replaced folder that holds files of the new spot keeps its other files, and only those files go. A path that is there already is a fault, unless `replacing` names it:
-    /// then `discard` takes each replaced path, and each one the new version lacks, as the Trash does. `check` sees the whole
-    /// spot in a work folder first, and a throw from it, as any fault or a stop of the task, leaves the folder as it was.
     func add(
         to folder: URL,
         at commit: String?,
@@ -69,7 +59,6 @@ public enum SpotSource: Equatable, Sendable {
         return (commit, paths)
     }
 
-    /// Writes the spot whole into a work folder, so that a failure leaves the spots folder as it was.
     private func stage(in work: URL, from folder: URL, at commit: String?, replacing: [String]) async throws -> (commit: String?, paths: [String]) {
         switch self {
         case .git(let text):
@@ -101,7 +90,6 @@ public enum SpotSource: Equatable, Sendable {
         }
     }
 
-    /// Whether two files hold the same bytes and the same right to run. A folder is never the same.
     private static func isSame(_ one: URL, _ other: URL) -> Bool {
         var isFolder: ObjCBool = false
         guard FileManager.default.fileExists(atPath: other.path, isDirectory: &isFolder), !isFolder.boolValue,
@@ -110,12 +98,10 @@ public enum SpotSource: Equatable, Sendable {
         return FileManager.default.contentsEqual(atPath: one.path, andPath: other.path)
     }
 
-    /// The name of a spot folder for a folder of this name.
     private static func spotName(_ name: String) -> String {
         (name as NSString).pathExtension == SpotPackage.fileExtension ? name : name + "." + SpotPackage.fileExtension
     }
 
-    /// The name of the spot folder of a git source: the last part of its URL or path, with no `.git`.
     private static func name(of text: String) throws -> String {
         var path = text
         while path.hasSuffix("/") { path.removeLast() }
@@ -134,8 +120,6 @@ public enum SpotSource: Equatable, Sendable {
         }
     }
 
-    /// Runs git with no input and no prompt for a password, and returns what it prints, which must fit in a pipe. A failure
-    /// throws its last line on stderr, and a stop of the task ends git and throws.
     @discardableResult
     private static func run(_ arguments: [String]) async throws -> String {
         let process = Process()

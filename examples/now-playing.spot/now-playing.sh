@@ -5,6 +5,8 @@
 # on=panel.open
 # on=clock.5
 # preview=sample
+# offers=card
+# offers=menubar
 . "$OPENSPOT_SH"
 here=$(cd "$(dirname "$0")" && pwd)
 cover="$OPENSPOT_DATA/cover.jpg"

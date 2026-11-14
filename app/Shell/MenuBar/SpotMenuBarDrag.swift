@@ -1,8 +1,6 @@
 import AppKit
 import OpenspotCore
 
-/// A drag of files over the Openspot item in the menu bar. It tells its owner when the drag enters, and the item takes only a
-/// drop of `.spot` files.
 @MainActor
 final class SpotMenuBarDrag: NSObject, NSWindowDelegate, NSDraggingDestination {
     private let onEnter: () -> Void

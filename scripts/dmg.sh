@@ -1,7 +1,4 @@
 #!/bin/sh
-# Makes a disk image with a laid-out Finder window: the app on the left, Applications on the right.
-# Usage: dmg.sh path/to/Openspot.app out.dmg
-# The layout asks Finder, so run this in a logged-in session.
 set -e
 app=$1
 dmg=$2

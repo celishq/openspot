@@ -15,6 +15,20 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertFalse(CommandLineCall.usage.contains("glyphs"))
     }
 
+    func testGridEditOpensEditSpotsAndSpotStoreIsGone() {
+        XCTAssertEqual(CommandLineCall(arguments: ["grid", "edit"]), .gridEdit)
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "store"]), .unknown("spot store"))
+        XCTAssertTrue(CommandLineCall.usage.contains("openspot grid edit"))
+    }
+
+    func testStoreListsItsSpotsAndPublishesOne() {
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "list"]), .storeList(frame: false))
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "list", "--frame"]), .storeList(frame: true))
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "publish", "timer"]), .storePublish("timer"))
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "get", "timer"]), .storeGet("timer"))
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "publish", "timer"], environment: ["OPENSPOT_REASON": "panel.open"]), .refused("`openspot store publish` changes the store, so it cannot run in a read. Run it from a pick or an action."))
+    }
+
     func testEventEmitTakesAnEventNameAndAValue() {
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music.track"]), .eventEmit(name: "music.track", value: nil))
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music.track", "Blue in Green"]), .eventEmit(name: "music.track", value: "Blue in Green"))
@@ -71,6 +85,7 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["render", "--card", "wide", "a.png"]), .renderCard(.wide, "a.png"))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "--card", "huge", "a.png"]), .unknown("render --card huge a.png"))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "--panel", "a.png"]), .renderPanel("a.png"))
+        XCTAssertEqual(CommandLineCall(arguments: ["render", "--store", "a.png"]), .renderStore("a.png"))
         XCTAssertEqual(CommandLineCall(arguments: ["render"]), .unknown("render"))
     }
 
@@ -82,6 +97,10 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "run", "weather"]), .spotRun(id: "weather", arguments: []))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "run", "weather", "open", "today"]), .spotRun(id: "weather", arguments: ["open", "today"]))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "show", "weather"]), .spotShow("weather"))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "edit", "weather"]), .spotAct(.edit, "weather"))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "prompt", "weather"]), .spotAct(.prompt, "weather"))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "share", "weather"]), .spotAct(.share, "weather"))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "delete", "weather"]), .spotAct(.delete, "weather"))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "log", "weather"]), .spotLog("weather"))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "stats"]), .spotStats(days: 1, spot: nil, format: .text))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "stats", "--days", "7", "--spot", "home/coffee", "--json"]), .spotStats(days: 7, spot: "home/coffee", format: .json))
@@ -195,6 +214,7 @@ final class CommandLineCallTests: XCTestCase {
             (["clipboard", "copy", "hi"], "`openspot clipboard copy` changes the clipboard"),
             (["clipboard", "paste"], "`openspot clipboard paste` types in the front app"),
             (["spot", "show", "notes"], "`openspot spot show` opens the panel"),
+            (["spot", "delete", "notes"], "`openspot spot delete` changes your spots folder"),
             (["setting", "set", "key.go", "ctrl+k"], "`openspot setting set key.go` sets a key of your Mac"),
             (["setting", "set", "float", "shake"], "`openspot setting set float` sets a key of your Mac"),
             (["setting", "set", "--spot", "openspot", "panel-key", "ctrl+space"], "`openspot setting set --spot openspot panel-key` sets a key of your Mac"),

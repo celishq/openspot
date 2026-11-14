@@ -6,8 +6,6 @@ final class AppsSpotTests: SampleSpotsCase {
         try XCTUnwrap(try scan.spots.first { $0.name == "Apps" })
     }
 
-    /// Makes an app with a bundle id in a private home, and fake `find`, `ps` and `osascript`. The fake `osascript` writes
-    /// its arguments to `osascript-args`, one on each line.
     private static func fakeApp(in folder: URL, running: Bool) throws -> URL {
         let app = folder.appendingPathComponent("Applications/Zed.app")
         let contents = app.appendingPathComponent("Contents")
@@ -131,6 +129,31 @@ final class AppsSpotTests: SampleSpotsCase {
             XCTAssertEqual(stillKept.items.map(\.title), ["Finder", "Zed"])
             XCTAssertEqual(found.items.map(\.title), ["Alfa", "Finder"])
             XCTAssertEqual(try self.read("scans", in: folder), "scan\nscan\n")
+        }
+    }
+
+    func testAReadWithKeptAppsStartsNoSortAndNoRm() async throws {
+        let apps = try apps()
+        try await withPrivateHome { folder in
+            let app = try Self.fakeApp(in: folder, running: true)
+            try """
+            #!/bin/sh
+            case " $* " in
+              *' -newer '*) ;;
+              *) printf '%s\\n' '\(app.path)' /System/Applications/Notes.app ;;
+            esac
+
+            """.writeScript(to: folder.appendingPathComponent("tools/find"))
+            _ = try await apps.items(timeout: 10)
+            for tool in ["sort", "rm"] {
+                try "#!/bin/sh\necho \(tool) >> '\(folder.path)/started'\nexec /usr/bin/\(tool) \"$@\"\n".writeScript(to: folder.appendingPathComponent("tools/\(tool)"))
+            }
+
+            let lines = try await apps.items(timeout: 10)
+
+            XCTAssertEqual(lines.items.map(\.title), ["Finder", "Notes", "Zed"])
+            XCTAssertEqual(lines.items.filter(\.isOn).map(\.title), ["Zed"])
+            XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("started").path))
         }
     }
 

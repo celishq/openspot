@@ -1,11 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves that each call that the running app now answers gives the same stdout, stderr and exit code through the socket
-/// of the app as through the Core work of a process of its own, so that the router picks only the transport (protocol: The openspot command). A
-/// fake Mac stands in for the clipboard, the windows, the screen, translation and the picks.
 final class CallRouteTests: XCTestCase {
-    /// A Mac that answers each call of the clipboard, the windows, the screen, translation and the picks the same way.
     private final class Host: Mac, @unchecked Sendable {
         func eventStore() -> any EventStore { FakeEventStore() }
         func reminderStore() -> any ReminderStore { FakeReminderStore() }
@@ -28,7 +24,6 @@ final class CallRouteTests: XCTestCase {
         func pickFolder() async -> String { "/Users/a/Repos\n" }
     }
 
-    /// What a call printed and its exit code.
     private struct Answer: Equatable {
         let stdout: String
         let stderr: String
@@ -57,7 +52,6 @@ final class CallRouteTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    /// The answer of the work that a process of its own runs, with the variables and the working folder of the caller.
     private func alone(_ argv: [String], input: String?) async throws -> Answer {
         let environment = ProcessInfo.processInfo.environment.merging(variables) { _, new in new }.merging(["PWD": folder.path]) { _, new in new }
         let call = try XCTUnwrap(CommandLineCall(arguments: argv, environment: environment))
@@ -70,7 +64,6 @@ final class CallRouteTests: XCTestCase {
         return Answer(stdout: printed.stdout, stderr: printed.stderr, code: Int(answer.code))
     }
 
-    /// The answer of the app through its socket.
     private func app(_ argv: [String], input: String?) throws -> Answer {
         let connection = SocketConnection(path: folder.appendingPathComponent(CommandSocket.name).path)
         defer { connection.close() }
@@ -117,7 +110,6 @@ final class CallRouteTests: XCTestCase {
     }
 }
 
-/// What a call printed, which the thread of each print adds to.
 private final class Printed: @unchecked Sendable {
     private let lock = NSLock()
     private var output = ""

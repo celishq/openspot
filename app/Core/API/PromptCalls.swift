@@ -1,7 +1,5 @@
 import Foundation
 
-/// The calls of `openspot prompt`: the prompt that asks a coding agent to build a spot, or with no words, to ask the
-/// person what the spot should do first, and the prompt that asks it to change a spot.
 struct PromptCalls {
     let mac: any Mac
     let environment: [String: String]
@@ -13,8 +11,6 @@ struct PromptCalls {
         }
     }
 
-    /// The prompt that asks an agent to change a spot: as the words say, or with none, after it asks what to change. A core
-    /// spot is copied into the spots folder first, and its copy changes.
     func change(_ id: String, words: String, failure: String?) -> CommandAPI.Work {
         CommandAnswer.work { [mac, environment] in
             let folder = SpotsFolder.standard(environment: environment)

@@ -1,8 +1,10 @@
 #!/bin/sh
 # title=Devices
 # icon=airpods
-# on=clock.60
+# on=clock.300
 # preview=sample
+# offers=card
+# offers=menubar
 if [ "$OPENSPOT_REASON" = spot.preview ]; then
   printf 'graph=devices\ntitle=72%%\ndetail=AirPods Pro\nicon=airpods\nvalue=0.72\n'
   exit 0

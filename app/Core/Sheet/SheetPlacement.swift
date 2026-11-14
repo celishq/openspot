@@ -1,14 +1,11 @@
 import Foundation
 import CoreGraphics
 
-/// Where each part of a sheet lies, in points. The app sets one gap, one row height and each centre here, so a script
-/// has no way to make an uneven sheet.
 public struct SheetPlacement: Equatable, Sendable {
     public enum Side: Equatable, Sendable {
         case fill, start, center, end
     }
 
-    /// The place of one part.
     public struct Frame: Equatable, Sendable {
         public let rect: CGRect
         public let isOnTop: Bool
@@ -18,7 +15,6 @@ public struct SheetPlacement: Equatable, Sendable {
         public let clearTop: CGFloat
         public let clearBottom: CGFloat
 
-        /// Whether it covers two lines or more, where a text shows its detail under its title.
         public var hasDetailUnderTitle: Bool {
             rect.height >= SheetPlacement.rowHeight * 2
         }
@@ -27,23 +23,18 @@ public struct SheetPlacement: Equatable, Sendable {
     public static let width: CGFloat = 263
     public static let maxHeight: CGFloat = 442
     public static let gap: CGFloat = 6
-    /// The gap above a row of buttons that ends the sheet, wider than the gap inside a group, so the acts stand apart.
     public static let groupGap: CGFloat = SpotTokens.padding
     public static let rowHeight: CGFloat = 40
     public static let maxRound: CGFloat = 44
     public static let dividerHeight: CGFloat = 1
-    /// The height of the search field over a sheet that repeats rows, with its gap.
     public static let fieldRoom: CGFloat = 54
-    /// How far text moves from a round button that sits on the divider at its edge.
     private static let seamClearance: CGFloat = 22
 
     public let frames: [String: Frame]
     public let lines: [CGRect]
     public let height: CGFloat
-    /// Where the rows of the script flow.
     public let repeatFrame: CGRect?
 
-    /// Whether the content is taller than the panel, so that it scrolls.
     public var overflows: Bool {
         height > Self.maxHeight - (repeatFrame == nil ? 0 : Self.fieldRoom)
     }
@@ -155,7 +146,6 @@ public struct SheetPlacement: Equatable, Sendable {
         height = rows.isEmpty ? 0 : heights.reduce(0, +) + gaps
     }
 
-    /// Whether the last row holds only buttons that lie in it alone, below a row of other parts.
     private static func endsInButtons(parts: [SpotPart], layout: SheetLayout) -> Bool {
         let last = layout.rows.count - 1
         guard last > 0, !layout.hasDivider(inRow: last) else { return false }

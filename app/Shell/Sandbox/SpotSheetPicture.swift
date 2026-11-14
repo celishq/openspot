@@ -2,7 +2,6 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// A picture of a sheet, drawn by the real renderer in a window that lies off every screen.
 @MainActor
 enum SpotSheetPicture {
     private static let settle = 0.5
@@ -14,8 +13,6 @@ enum SpotSheetPicture {
         return list
     }
 
-    /// Reads a sheet, writes its picture as a PNG and exits. A sheet with neither parts nor rows exits with 1. A Swift file of a view is
-    /// built first, and the view draws in the area of its `view` component. A spot gives the header its name and symbol.
     static func run(text: String, path: String, view source: String? = nil, spot: Spot? = nil) -> Never {
         NSApplication.shared.setActivationPolicy(.prohibited)
         let output = SpotOutput(text: text)
@@ -28,9 +25,7 @@ enum SpotSheetPicture {
         let source = source.map { URL(fileURLWithPath: $0).path }
         let list = Self.list(of: output)
         let size = panel.map { SpotTokens.panelRect($0).size } ?? SpotTokens.floatSize(rows: list.shown.count)
-        let preview = SpotSheetPreview(panel: panel, title: spot?.name ?? "Sheet", subtitle: spot?.subtitle ?? (spot == nil ? "Preview" : ""), symbol: spot?.symbol ?? "square.dashed", list: list, customView: { room, values, _ in
-            source.map { AnyView(SpotCustomView(source: $0, values: values, card: .square, room: room, views: views)) }
-        }, seed: URL(fileURLWithPath: path).lastPathComponent)
+        let preview = SpotSheetPreview(panel: panel, title: spot?.name ?? "Sheet", subtitle: spot?.subtitle ?? (spot == nil ? "Preview" : ""), symbol: spot?.symbol ?? "square.dashed", list: list, viewSource: source, views: views, seed: URL(fileURLWithPath: path).lastPathComponent)
         let view = NSHostingView(rootView: preview
             .padding(margin)
             .preferredColorScheme(.dark))

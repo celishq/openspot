@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves that a spot's call of a use that its header does not name still runs, and shows one toast for each spot, use
-/// and day, while a named use and the person's call show none (protocol: Trust).
 @MainActor
 final class SpotUsesTests: SpotRunsCase {
     private final class NoHost: Mac {
@@ -37,7 +35,6 @@ final class SpotUsesTests: SpotRunsCase {
         try await super.tearDown()
     }
 
-    /// A spot that lists the settings of each spot once for each press, with these header lines.
     private func lister(header: String = "") throws {
         try script(header: header, "OPENSPOT_CONFIG='\(config.path)' '\(client.path)' setting list > /dev/null && echo done >> '\(path("done"))'")
     }
@@ -91,7 +88,6 @@ final class SpotUsesTests: SpotRunsCase {
         XCTAssertEqual(toasts, [])
     }
 
-    /// A spot that runs the client with these words, and writes its code and its stderr.
     private func caller(header: String = "", _ words: String) throws {
         try script(header: header, "OPENSPOT_CONFIG='\(config.path)' '\(client.path)' \(words) > /dev/null 2> '\(path("errors"))'; echo $? >> '\(path("done"))'")
     }

@@ -27,7 +27,6 @@ final class ReleaseLogTests: XCTestCase {
         try XCTUnwrap(try spot.releaseLog(in: "cups.spot"))
     }
 
-    /// The spot with one of its files replaced, as an edit after a signature leaves it.
     private func editing(_ spot: SpotPackage, _ path: String, to text: String) throws -> SpotPackage {
         try SpotPackage(files: spot.files.map { $0.path == path ? SpotPackage.File(path: path, isExecutable: $0.isExecutable, contents: Data(text.utf8)) : $0 })
     }

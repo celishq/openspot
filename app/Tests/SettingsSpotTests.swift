@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Settings spot of the app: it lists only the settings of the app, its keys and the switches of the Mac, and
-/// changes each one through the API. Each spot keeps its own in its own Settings sheet.
 final class SettingsSpotTests: BuiltInCase {
     private var settings: Spot {
         get throws {
@@ -29,7 +27,8 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(spot.kind, .list)
         XCTAssertTrue(spot.isGlobal)
         XCTAssertTrue(spot.isFound)
-        XCTAssertTrue(spot.read?.has(.panel) == true)
+        XCTAssertFalse(spot.read?.has(.panel) == true)
+        XCTAssertTrue(spot.readsOfferedRows)
         XCTAssertTrue(spot.read?.has(.sheet) == true)
         XCTAssertEqual(SpotArrangement().spot(openedBy: ActionKey(name: ",", isCommand: true), over: defaults.arrangement), spot.id)
     }

@@ -1,11 +1,9 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves how typed words split into a title and a date, with the real date finder of macOS and the real time now.
 final class CalendarEntryTests: XCTestCase {
     private let clock = Calendar.current
 
-    /// Tomorrow at the hour and minute, in the zone of the Mac.
     private func tomorrow(_ hour: Int, _ minute: Int = 0) -> Date {
         let day = clock.date(byAdding: .day, value: 1, to: clock.startOfDay(for: Date()))!
         return clock.date(bySettingHour: hour, minute: minute, second: 0, of: day)!

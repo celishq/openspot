@@ -1,11 +1,9 @@
 import Foundation
 
-/// A reminder in a list, open or done.
 public struct Reminder: Equatable, Sendable {
     public let id: String
     public let title: String
     public let due: Date?
-    /// Whether it is due on a day, with no time.
     public let isAllDay: Bool
     public let list: CalendarList
     public let doneAt: Date?
@@ -19,13 +17,11 @@ public struct Reminder: Equatable, Sendable {
         self.doneAt = doneAt
     }
 
-    /// Whether it is open and its time, or its day, has passed.
     func isLate(_ clock: CalendarClock) -> Bool {
         guard doneAt == nil, let due else { return false }
         return isAllDay ? due < clock.startOfToday : due < clock.now
     }
 
-    /// Its row (E2). `done` holds whether it is ticked.
     func row(_ clock: CalendarClock) -> TextBlock {
         let isLate = isLate(clock)
         var fields: [TextBlock.Field] = [
@@ -44,7 +40,6 @@ public struct Reminder: Equatable, Sendable {
         return TextBlock(fields: fields)
     }
 
-    /// When it is due, in words: `Done`, or `Late` and its time, or its day and time with no day for today.
     private func when(_ clock: CalendarClock, isLate: Bool) -> String {
         guard doneAt == nil else { return "Done" }
         guard let due else { return "No date" }

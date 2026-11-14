@@ -1,16 +1,11 @@
 import Foundation
 
-/// The work of each `openspot <noun> <verb>` that Core does. The app gives it over its socket, and a process of its own
-/// gives the same answer when the app does not run (protocol: The openspot command). It hands each call to the calls of its noun, and keeps the
-/// stores of the Mac and the keyword files across calls, so that the app answers each later call from them.
 public final class CommandAPI: @unchecked Sendable {
     public typealias Work = @Sendable () async -> CommandAnswer
 
     private let mac: any Mac
-    /// Raises an event in the running app, or nil in a process with no app to reach.
     private let raise: (@Sendable (SpotEvent) async -> Void)?
     private let app: (any RunningApp)?
-    /// The runs of the app, which know each spot's call by its token, or nil in a process with no app to reach (protocol: Trust).
     private weak var runs: SpotRuns?
     private let calendar: CalendarCalls
     private let reminders: RemindersCalls
@@ -25,15 +20,10 @@ public final class CommandAPI: @unchecked Sendable {
         reminders = RemindersCalls(mac: mac)
     }
 
-    /// The environment of a call from a process: with the token, the ID and the reason of the spot whose process group
-    /// holds it, by the app's own record, and as it came for any other process (protocol: Trust).
     public func environment(of peer: pid_t, over environment: [String: String]) -> [String: String] {
         runs?.tokens.environment(of: peer, over: environment) ?? environment
     }
 
-    /// The call as it may run, after a look at its caller. A spot never changes Careful mode, and while that mode is on, a
-    /// spot's call of a use that its header does not name is refused (protocol: Trust). Else a spot's call of a use is told to the runs,
-    /// so that an undeclared one shows (protocol: Trust). The person's call passes as it is.
     public func admit(_ call: CommandLineCall, arguments: [String], environment: [String: String]) -> CommandLineCall {
         switch call {
         case .refused, .unknown: return call
@@ -57,11 +47,6 @@ public final class CommandAPI: @unchecked Sendable {
         return call
     }
 
-    /// The work that answers a call, or nil for a call that runs in a process of its own: one that draws a picture or runs
-    /// a helper, or a show or a sandbox with no app to reach, and a call that starts scripts for a caller in a sandbox, such
-    /// as a spot in Careful mode, whose process of its own then keeps that sandbox (protocol: Trust). `input` reads stdin, and only a call that takes stdin reads it. `isPiped` says
-    /// whether stdin is a pipe or a file, which `spot run` passes on, and `isSandboxed` whether the caller runs in a sandbox. A call prints to `output` as it runs, and with none,
-    /// its answer holds all that it printed.
     public func work(for call: CommandLineCall, input: @escaping @Sendable () async -> String, environment: [String: String], isPiped: Bool = true, isSandboxed: Bool = false, output: CommandOutput? = nil) -> Work? {
         guard let output else {
             let kept = CommandOutput()
@@ -101,8 +86,15 @@ public final class CommandAPI: @unchecked Sendable {
         case .spotAdd(nil, let isConfirmed): return spots.restore(isConfirmed: isConfirmed)
         case .spotRemove(let id): return spots.remove(id)
         case .spotOpen(let id): return spots.open(id)
+        case .spotPush(let id, let page, let title, let replace): return spots.push(id, page: page, title: title, replace: replace)
+        case .spotPop(let id, let all): return spots.pop(id, all: all)
+        case .spotChoose(let id): return spots.choose(for: id)
+        case .spotAct(let act, let id): return spots.act(act, id)
         case .spotReview(let id): return spots.review(id)
-        case .spotStore: return spots.store()
+        case .gridEdit: return spots.editGrid()
+        case .storeList(let frame): return StoreCalls(environment: environment, app: app).list(frame: frame)
+        case .storeGet(let id): return StoreCalls(environment: environment, app: app).get(id)
+        case .storePublish(let id): return StoreCalls(environment: environment, app: app).publish(id)
         case .spotNew(let name, let starter): return spots.new(name, from: starter)
         case .spotLog(let id): return spots.log(id)
         case .spotStats(let days, let spot, let format): return spots.stats(days: days, spot: spot, format: format)
@@ -147,12 +139,11 @@ public final class CommandAPI: @unchecked Sendable {
         case .translateLanguages: return { [mac] in CommandAnswer(output: await mac.translationLanguages()) }
         case .colorPick: return { [mac] in CommandAnswer(output: await mac.pickColor()) }
         case .folderPick: return { [mac] in CommandAnswer(output: await mac.pickFolder()) }
-        case .renderSpot, .render, .renderCard, .renderPanel, .helper, .glyphBook:
+        case .renderSpot, .render, .renderCard, .renderPanel, .renderStore, .helper, .glyphBook:
             return nil
         }
     }
 
-    /// Whether a call starts scripts or a window, which a caller in a sandbox runs in a process of its own (protocol: Trust).
     private static func startsScripts(_ call: CommandLineCall) -> Bool {
         switch call {
         case .check, .checkJSON, .spotRun, .sandbox: true
@@ -160,13 +151,10 @@ public final class CommandAPI: @unchecked Sendable {
         }
     }
 
-    /// The most uses that Careful mode leaves the scripts that the person's call starts: each spot's own. Nil when Careful
-    /// mode is off (protocol: Trust).
     private func fence(_ environment: [String: String]) -> Set<SpotUse>? {
         runs?.tokens.isCareful == true ? Set(SpotUse.allCases) : nil
     }
 
-    /// The spot that calls and its Careful mode, when that mode keeps it from writing outside its own folders (protocol: Trust).
     private func fence(of environment: [String: String]) -> (caller: CallerTokens.Caller, mode: CarefulMode)? {
         guard let runs, runs.tokens.isCareful, let caller = runs.tokens.caller(of: environment), !caller.uses.contains(.files) else { return nil }
         return (caller, CarefulMode(uses: caller.uses))

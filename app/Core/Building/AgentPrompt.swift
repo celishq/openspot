@@ -1,11 +1,8 @@
 import Foundation
 
-/// The words that ask a coding agent to build or fix a spot, with the places that it needs: the spots folder and the
-/// `openspot` command of this app.
 public struct AgentPrompt: Equatable, Sendable {
     public let folder: URL
     public let guide: URL
-    /// The `openspot` command that the agent runs.
     public let app: String
 
     public init(folder: URL, guide: URL, app: String) {
@@ -14,21 +11,16 @@ public struct AgentPrompt: Equatable, Sendable {
         self.app = app
     }
 
-    /// The `openspot` client in the Helpers of the app, which reaches the running app, or the app's own program when the
-    /// app has no client.
     public static func command(of app: String) -> String {
         let contents = URL(fileURLWithPath: app).deletingLastPathComponent().deletingLastPathComponent()
         let client = contents.appendingPathComponent("Helpers/openspot").path
         return FileManager.default.isExecutableFile(atPath: client) ? client : app
     }
 
-    /// The toast of each copy of a prompt.
     public static let copied = "Prompt copied. Paste it into your agent."
 
-    /// The line that asks the agent to choose for itself and finish the spot, so the person can paste the prompt and leave.
     static let finishAlone = "Don't ask me anything. Choose a short name and sensible defaults yourself, build it to the end, and leave it ready to use in Openspot."
 
-    /// Asks for a new spot in the spots folder that does what the person described, built to the end with no question.
     public func building(_ description: String) -> String {
         """
         Build an Openspot spot that does this: \(description)
@@ -39,7 +31,6 @@ public struct AgentPrompt: Equatable, Sendable {
         """
     }
 
-    /// Asks for a new spot whose work the person has not said yet: the agent asks what it should do, then builds it.
     public func interviewing() -> String {
         """
         Help me build an Openspot spot. Start by asking me what the spot should do: a few short, plain questions, one at a time, and wait for each answer. Then build it.
@@ -49,12 +40,10 @@ public struct AgentPrompt: Equatable, Sendable {
         """
     }
 
-    /// Where a new spot goes and how its ID follows.
     private var writing: String {
         "Write it as a script in a new spot folder in \(folder.path), such as weather.spot/weather.sh. Its ID is the name of the folder with no extension."
     }
 
-    /// Asks to fix the file of a spot that does not load, with each fault that Openspot found.
     public func fixing(_ file: URL, faults: [String]) -> String {
         """
         Fix the Openspot spot in \(file.path). Openspot does not load it, and says:
@@ -64,10 +53,8 @@ public struct AgentPrompt: Equatable, Sendable {
         """
     }
 
-    /// The line that asks the agent to make a change to the end with no question, and to keep what works.
     static let finishChange = "Don't ask me anything. Make the change to the end, keep what already works, and leave the spot ready to use in Openspot."
 
-    /// Asks to change a spot as the person wrote, to the end and with no question.
     public func changing(_ file: URL, wish: String) -> String {
         """
         Change the Openspot spot in \(file.path): \(wish)
@@ -77,13 +64,10 @@ public struct AgentPrompt: Equatable, Sendable {
         """
     }
 
-    /// The step before a change of a spot that comes with Openspot: a copy of its folder into the spots folder, under the
-    /// same name, which then takes the place of the one in the app.
     public func copying(_ core: URL, to copy: URL) -> String {
         "This spot comes with Openspot. First copy its folder \(core.path) to \(copy.path), with the same folder name. The copy takes the place of the built-in spot, so make each change in the copy, and leave the folder in the app as it is."
     }
 
-    /// Asks to change a spot, after the agent asks the person what to change, with the words of its last failed call.
     public func changing(_ file: URL, failure: String?) -> String {
         let failed = failure.map { "Its last call failed, and said: \($0)\n" } ?? ""
         return """
@@ -93,28 +77,6 @@ public struct AgentPrompt: Equatable, Sendable {
         """
     }
 
-    /// Asks to read a spot and tell what it does and what it runs on the person's computer, with no change.
-    public func reviewing(_ file: URL) -> String {
-        """
-        Read the Openspot spot in \(file.path), and change nothing.
-        Tell me what it does, what it runs on my computer, which files it reads or writes, and whether it uses the network.
-        First run "\(app)" guide, so that you know how a spot works.
-        """
-    }
-
-    /// Asks for the store listing of a spot: a readme in its spot folder, a description, and a preview mode with fake data.
-    public func listing(_ file: URL) -> String {
-        let readme = SpotListing.readme(of: file).lastPathComponent
-        return """
-        Write the store listing of the Openspot spot in \(file.path). Do not change what it does.
-        1. Write \(readme) in its folder: what the spot does and how to use it, in two or three short paragraphs, then what it runs on my computer, which files it reads or writes, and whether it uses the network.
-        2. Give its header a detail= line of one short sentence, if it has none.
-        3. Add preview=sample to its header, and make its read print fake rows, with no data of mine, while OPENSPOT_REASON is spot.preview.
-        \(steps(for: SpotID(file: file).description))
-        """
-    }
-
-    /// The steps of each build: the guide, a try, a look, the check and a show.
     private func steps(for id: String) -> String {
         """
         First run "\(app)" guide, and read all of it.
@@ -125,7 +87,6 @@ public struct AgentPrompt: Equatable, Sendable {
         """
     }
 
-    /// Puts the words on the clipboard, and returns the toast that says so.
     func copy(_ text: String) async throws -> String {
         _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["LC_ALL=en_US.UTF-8", "pbcopy"], input: text)
         return Self.copied

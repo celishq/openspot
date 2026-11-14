@@ -1,16 +1,13 @@
 import OpenspotCore
 import SwiftUI
+import UniformTypeIdentifiers
 
-/// The cards of the panel on their grid, over one blur. An open sheet pushes each other card away from its own card, and
-/// fades and shrinks it as it crosses the window's edge. A change of the panel that does not reach these inputs leaves the grid as it is.
 struct SpotGridView: View {
     let model: SpotsModel
     let isSheetOpen: Bool
-    /// The card that the open sheet grows from, and how the sheet pushes the other cards.
     let openID: String?
     let push: SheetPush?
     @Binding var dropTarget: String?
-    /// The card that the person presses.
     @GestureState private var pressed: String?
 
     var body: some View {
@@ -34,10 +31,14 @@ struct SpotGridView: View {
             )
         }
         return ZStack(alignment: .topLeading) {
-            SpotGridGlass(cards: glass, pressable: openID == nil ? glass : [], size: CGSize(width: SpotTokens.gridWidth, height: height), lift: model.lift)
+            if model.isEditing {
+                SidePanelWells(panels: model.panels, height: height)
+            }
+            SpotGridGlass(cards: glass, pressable: openID == nil ? glass : [], size: CGSize(width: SpotTokens.width(columns: model.panels.columns), height: height), lift: model.lift)
             if model.isEditing {
                 landing(of: drag, in: placements)
-                    .frame(width: SpotTokens.gridWidth, height: height)
+                    .frame(width: SpotTokens.width(columns: model.panels.columns), height: height)
+                groupTitles(model.groupBands)
             }
             ForEach(Array(zip(placements, glass)), id: \.1.id) { placement, card in
                 let entry = model.visible[placement.index]
@@ -72,13 +73,11 @@ struct SpotGridView: View {
                 .allowsHitTesting(entry.id != openID)
             }
         }
-        .frame(width: SpotTokens.gridWidth, height: height, alignment: .topLeading)
+        .frame(width: SpotTokens.width(columns: model.panels.columns), height: height, alignment: .topLeading)
         .contentShape(Rectangle())
-        .onDrop(of: [.fileURL], delegate: SpotGridDrop(model: model, target: $dropTarget))
+        .onDrop(of: [.fileURL, .storeCard], delegate: SpotGridDrop(model: model, target: $dropTarget))
     }
 
-    /// Where a card lies in the grid, from its place, or the place a lifted card started at, and the push of an open sheet,
-    /// and how it shrinks and fades on that push.
     private func motion(of placement: SpotPlacement, at place: CGRect, id: String) -> SpotPushedCard {
         let base = CGSize(width: place.minX, height: place.minY)
         let pushed = isSheetOpen ? push?.offset(of: placement) ?? .zero : .zero
@@ -92,15 +91,27 @@ struct SpotGridView: View {
         )
     }
 
-    /// The side of a card that faces the open sheet, which stays in step with the sheet's edge as the card shrinks.
     private func anchor(of placement: SpotPlacement) -> UnitPoint {
         guard let push else { return .center }
         let away = placement.direction(awayFrom: push.open)
         return away.columns < 0 ? .trailing : away.columns > 0 ? .leading : away.rows < 0 ? .bottom : away.rows > 0 ? .top : .center
     }
 
-    /// The faint shape where a release puts the lifted card. With no card lifted it lies under the selected card, unseen, so
-    /// that it shows in place when a drag starts.
+    @ViewBuilder
+    private func groupTitles(_ bands: SpotGroupBands?) -> some View {
+        if let bands {
+            let center = model.panels.firstColumn(of: .center)
+            ZStack(alignment: .topLeading) {
+                GroupTitle(name: "On grid", count: bands.grid)
+                GroupTitle(name: "Search only", count: bands.shelf)
+                    .offset(y: bands.shelfTop)
+            }
+            .offset(x: center == 0 ? 0 : SpotTokens.width(columns: center) + SpotTokens.columnGap)
+            .frame(width: SpotTokens.width(columns: model.panels.columns), alignment: .topLeading)
+            .allowsHitTesting(false)
+        }
+    }
+
     private func landing(of drag: SpotDrag?, in placements: [SpotPlacement]) -> some View {
         let placement = placements.first { $0.index == (drag?.place ?? model.selected) }
         return SpotSurfaceShape(rect: placement?.rect ?? .zero, radius: SpotTokens.corner(for: placement?.size ?? .small))
@@ -109,8 +120,6 @@ struct SpotGridView: View {
             .allowsHitTesting(false)
     }
 
-    /// Moves a card in Edit Spots: it follows the pointer, the other cards make room, and a release puts it in that room. It
-    /// runs beside the card's press and tap. Its moves carry no speed, so a release lands the card from rest.
     private func moveGesture(of entry: SpotsModel.Entry) -> some Gesture {
         DragGesture(coordinateSpace: .named(SpotsView.panelSpace))
             .onChanged { value in
@@ -119,5 +128,41 @@ struct SpotGridView: View {
                 withTransaction(still) { model.dragSpot(entry.id, by: value.translation) }
             }
             .onEnded { model.dropSpot(by: $0.translation) }
+    }
+}
+
+private struct SidePanelWells: View, Equatable {
+    let panels: GridPanels
+    let height: CGFloat
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
+        ZStack(alignment: .topLeading) {
+            ForEach([GridPanel.left, .right].filter { panels[$0] }, id: \.self) { panel in
+                shape
+                    .fill(SpotTheme.ink.opacity(SpotTheme.track))
+                    .frame(width: SpotTokens.gridWidth, height: max(height, SpotTokens.rowHeight))
+                    .offset(x: CGFloat(panels.firstColumn(of: panel)) * (SpotTokens.cell + SpotTokens.columnGap))
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+private struct GroupTitle: View {
+    let name: String
+    let count: Int
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(name)
+                .font(SpotType.title)
+                .foregroundStyle(SpotTheme.ink)
+            Text("\(count)")
+                .font(SpotType.body)
+                .modifier(SpotSecondaryText())
+        }
+        .frame(height: SpotTokens.groupTitleHeight)
+        .padding(.horizontal, SpotTokens.padding)
     }
 }

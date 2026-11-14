@@ -1,7 +1,5 @@
 import Foundation
 
-/// The calls of `openspot calendar`: the events of the Mac (E1-E5). It keeps the store warm across calls once the person
-/// gave it leave.
 final class CalendarCalls: @unchecked Sendable {
     private let mac: any Mac
     private let lock = NSLock()

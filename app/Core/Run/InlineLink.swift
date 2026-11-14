@@ -1,21 +1,14 @@
 import Foundation
 
-/// The link to a JavaScript spot that runs inside the app (protocol: Modes). Each call runs on the thread of the script, which loads at
-/// the first call (A26). The main thread waits 2 ms for its frame, and a later frame lands in a later turn (protocol: Modes). A stopped
-/// call that has not run never runs, and one that ran changes nothing. Each call goes in the call log. A change of the
-/// file loads it again at the next call or scan.
 @MainActor
 final class InlineLink: ScriptLink {
-    private static let frameWait: DispatchTimeInterval = .milliseconds(2)
-
     weak var run: SpotRun?
     let holdsScript = false
     let keepsState = false
     let isReachable = true
     private let runs: SpotRuns
     private var script: InlineScript?
-    /// The date of the file that the script loaded.
-    private var loaded: Date?
+    private var loadedFileDate: Date?
     private var asking: [ScriptCall] = []
 
     init(runs: SpotRuns) {
@@ -24,7 +17,6 @@ final class InlineLink: ScriptLink {
 
     nonisolated deinit {}
 
-    /// Whether the script holds its context and its thread now.
     var isLoaded: Bool {
         script?.isRunning == true
     }
@@ -36,16 +28,24 @@ final class InlineLink: ScriptLink {
     func send(_ call: SpotRun.Call) -> Bool {
         guard let run else { return false }
         let made = ScriptCall(action: call.action, key: call.key, started: runs.now())
-        let inline = InlineCall(arguments: call.action.arguments, variables: call.variables, input: call.input)
+        let inline = InlineCall(arguments: call.action.arguments, variables: run.withPage(call.variables), input: call.input)
         made.halt = { inline.stop() }
         if case .ask(let ask) = call.purpose, !ask.isAnswer { asking.append(made) }
         run.track(made)
         let begin = Date()
         current(for: run).send(inline)
-        let outcome = inline.wait(Self.frameWait) { outcome in
-            Task { @MainActor in self.take(outcome, of: call, made, begin: begin) }
+        let wait = { (deadline: DispatchTime) in
+            if DispatchTime.now() < deadline { self.runs.frameWaits += 1 }
+            let outcome = inline.wait(until: deadline) { outcome in
+                Task { @MainActor in self.take(outcome, of: call, made, begin: begin) }
+            }
+            if let outcome { self.take(outcome, of: call, made, begin: begin) }
         }
-        if let outcome { take(outcome, of: call, made, begin: begin) }
+        if case .ask(.answer) = call.purpose, runs.answerWaits != nil {
+            runs.answerWaits?.append(wait)
+        } else {
+            wait(.now() + runs.frameWait)
+        }
         return true
     }
 
@@ -72,18 +72,17 @@ final class InlineLink: ScriptLink {
     }
 
     func scanned() {
-        guard let loaded, loaded != fileDate else { return }
+        guard let loadedFileDate, loadedFileDate != fileDate else { return }
         end()
     }
 
-    /// The script, which loads at its first call, and again at a call after a change of the file.
     private func current(for run: SpotRun) -> InlineScript {
         let date = fileDate
-        if let script, loaded == date { return script }
+        if let script, loadedFileDate == date { return script }
         script?.end()
         let script = runs.inline(run.spot)
         self.script = script
-        loaded = date
+        loadedFileDate = date
         return script
     }
 
@@ -92,9 +91,6 @@ final class InlineLink: ScriptLink {
         return (try? FileManager.default.attributesOfItem(atPath: run.spot.url.path))?[.modificationDate] as? Date
     }
 
-    /// Takes the outcome of a call. The rows of a text of the main search show at once, and a text with no frame ends with
-    /// no rows. Any other frame takes the path of a frame of a script that runs once, and a call stopped meanwhile changes
-    /// nothing.
     private func take(_ outcome: InlineCall.Outcome, of call: SpotRun.Call, _ made: ScriptCall, begin: Date) {
         guard let run else {
             asking.removeAll { $0 === made }
@@ -136,8 +132,10 @@ final class InlineLink: ScriptLink {
                     await run.takeAnswer(lines, frame: text, to: ask)
                     hasAnswer = true
                 case .work(let work) where lines.isPicture:
+                    run.takeMove(lines)
                     showedPicture = await run.takePicture(lines, frame: text, of: work)
                 default:
+                    if case .work = call.purpose { run.takeMove(lines) }
                     run.takeEffects(lines, frame: text)
                 }
             }
@@ -149,17 +147,15 @@ final class InlineLink: ScriptLink {
         }
     }
 
-    /// What a call that failed says, as a script says it on stderr.
     private static func errors(of end: ScriptCall.End) -> String {
         guard case .failed(let error) = end else { return "" }
         return ((error as? SpotError)?.reason ?? error.localizedDescription) + "\n"
     }
 
-    /// Runs a call to its end, and returns its frame, or nil when it was stopped.
     private func text(of action: SpotAction, key: String, input: String?) async throws -> String? {
         guard let run else { return nil }
         let made = ScriptCall(action: action, key: key, started: runs.now())
-        let inline = InlineCall(arguments: action.arguments, input: input)
+        let inline = InlineCall(arguments: action.arguments, variables: run.withPage([:]), input: input)
         made.halt = { inline.stop() }
         run.track(made)
         let begin = Date()

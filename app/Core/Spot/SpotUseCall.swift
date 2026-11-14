@@ -1,18 +1,12 @@
 import Foundation
 
-/// A call of `openspot` that needs a use, with the use that a spot's header names for it (protocol: Trust). It reads the words of the
-/// call, so that the API and a review of a text that runs nothing know it the same way.
 public struct SpotUseCall: Equatable, Sendable {
     private static let spotWord = "--spot"
 
     public let use: SpotUse
-    /// The noun and the verb of the call, such as `screen.shot`.
     public let name: String
-    /// What the call did, as words after the name of a spot, such as `took a screenshot`.
     public let words: String
 
-    /// The use that a call of this spot with these words needs, or nil for a call that needs none, such as a setting of its
-    /// own spot folder.
     public init?(arguments: [String], of spot: String) {
         let arguments = ReservedSetting.words(of: arguments, spot: spot)
         guard arguments.count >= 2, let (use, words) = Self.use(arguments, spot: spot) else { return nil }
@@ -36,7 +30,14 @@ public struct SpotUseCall: Equatable, Sendable {
         case ("account", "sync"), ("account", "new"), ("account", "words"), ("account", "check"), ("account", "checked"),
              ("account", "phrase"), ("account", "sign-in"), ("account", "sign-out"): (.account, "reached your account key")
         case ("spot", "add"): (.spots, "added a spot")
+        case ("store", "list"): (.spots, "read the store")
+        case ("store", "get"): (.spots, "added a spot")
+        case ("store", "publish"): (.account, "published a spot")
         case ("spot", "remove"): (.spots, "removed a spot")
+        case ("spot", "edit"): (.spots, "opened the file of a spot")
+        case ("spot", "prompt"): (.spots, "copied a prompt to change a spot")
+        case ("spot", "share"): (.spots, "shared a spot")
+        case ("spot", "delete"): (.spots, "deleted a spot")
         case ("spot", "on"): (.spots, "turned on a spot")
         case ("spot", "off"): (.spots, "turned off a spot")
         case ("spot", "new"): (.spots, "wrote a new spot")
@@ -65,7 +66,6 @@ public struct SpotUseCall: Equatable, Sendable {
         }
     }
 
-    /// Whether a spot is the caller or a script of the caller's spot folder, which is one unit.
     private static func isOwn(_ other: String, of spot: String) -> Bool {
         SpotID(other).isSameFolder(as: SpotID(spot))
     }

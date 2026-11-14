@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the floats: a key with no command shows its spot in a window of its own, apart from the panel (W1–W9).
 @MainActor
 final class SpotFloatTests: XCTestCase {
     private var folder: URL!
@@ -52,7 +51,6 @@ final class SpotFloatTests: XCTestCase {
         GlobalKey(spot: spot, act: .float, trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+s"))))
     }
 
-    /// Floats a list of two rows whose pick and action each toast what they got.
     private func floatList() async throws {
         try script("list", header: "on=sheet.open", """
         case "$1" in
@@ -74,6 +72,21 @@ final class SpotFloatTests: XCTestCase {
         XCTAssertNil(model.openList)
         XCTAssertEqual(model.runs.floating, ["list"])
         XCTAssertEqual(model.sheets["list"]?.list.shown.first?.title, "sheet.open")
+    }
+
+    func testAFloatThatOpensDuringADragFollowsItAndOneWithNoDragDoesNot() async throws {
+        try script("list", header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
+        model.reload()
+
+        host.isMouseDown = true
+        model.press(try key("list"))
+        try await wait("the float during the drag") { host.floats == ["list"] }
+        host.isMouseDown = false
+        model.press(try key("list"))
+        model.press(try key("list"))
+
+        try await wait("the float with no drag") { host.floats == ["list", "list"] }
+        XCTAssertEqual(host.floatsFollowingDrag, [true, false])
     }
 
     func testTheSameKeyAgainClosesTheFloatAndDuringADragBringsItToThePointer() async throws {
@@ -226,5 +239,73 @@ final class SpotFloatTests: XCTestCase {
 
         try await wait("the run") { host.confirms == ["Went"] }
         XCTAssertEqual(host.dismissals, 0)
+    }
+
+    private func windowSpot() throws {
+        try script("store", header: "on=sheet.open\noffers=card\noffers=window", "printf 'row=a\\ntitle=Apple\\n'")
+        model.reload()
+    }
+
+    func testAPressOfASpotThatOffersAWindowOpensItsWindowAndNotThePanel() async throws {
+        try windowSpot()
+
+        model.press("store")
+        try await wait("the window") { host.windows == ["store"] }
+
+        XCTAssertEqual(host.shows, 0)
+        XCTAssertNil(model.openList)
+        XCTAssertEqual(model.runs.floating, ["store"])
+        try await wait("its rows") { model.sheets["store"]?.list.shown.first?.title == "Apple" }
+    }
+
+    func testOpenOfASpotThatOffersAWindowOpensItsWindowAndHidesThePanel() async throws {
+        try windowSpot()
+        model.isShown = true
+
+        XCTAssertTrue(model.open("store"))
+        try await wait("the window") { host.windows == ["store"] }
+
+        XCTAssertEqual(host.dismissals, 0)
+        XCTAssertFalse(model.isShown)
+        XCTAssertNil(model.openList)
+    }
+
+    func testAFormOfAWindowSpotSaysItDoesNotShowYetAndOpensNoPanel() async throws {
+        try windowSpot()
+        model.press("store")
+        try await wait("the window") { host.windows == ["store"] }
+        let entry = try XCTUnwrap(model.cards.first { $0.id == "store" })
+        let rename = CommandAction(id: "rename", title: "Rename", isForm: true)
+
+        model.run(rename, on: (entry, model.sheets["store"]?.list.shown.first), in: .window)
+
+        XCTAssertEqual(host.notes, ["Rename asks with a form or a second press, which a window does not show yet."])
+        XCTAssertEqual(host.shows, 0)
+    }
+
+    func testAWindowReadsAgainWhenTheSpotsChange() async throws {
+        let log = folder.appendingPathComponent("reads")
+        try script("store", header: "on=sheet.open\noffers=card\noffers=window", "echo read >> '\(log.path)'\nprintf 'row=a\\ntitle=Apple\\n'")
+        model.reload()
+        model.press("store")
+        let reads = { ((try? String(contentsOf: log, encoding: .utf8)) ?? "").split(separator: "\n").count }
+        try await wait("the first read") { reads() == 1 }
+
+        try script("other", header: "title=Other", "true")
+        model.reload()
+
+        try await wait("a read after the load") { reads() == 2 }
+    }
+
+    func testAWindowThatClosesLandsItsSpotAndAnotherPressOpensItAgain() async throws {
+        try windowSpot()
+        model.press("store")
+        try await wait("the window") { host.windows == ["store"] }
+
+        model.land("store")
+        XCTAssertEqual(model.runs.floating, [])
+
+        model.press("store")
+        try await wait("the window again") { host.windows == ["store", "store"] }
     }
 }

@@ -1,8 +1,6 @@
 import Foundation
 
-/// The setting that opens the app at login.
 public struct LoginItem: Equatable, Sendable {
-    /// The value of its row in a list.
     public static let run = "open_at_login"
 
     public let isOn: @Sendable () -> Bool
@@ -13,7 +11,6 @@ public struct LoginItem: Equatable, Sendable {
         self.set = set
     }
 
-    /// Its row in a list.
     var row: TextBlock {
         TextBlock(fields: [
             .init(key: "row", value: Self.run),
@@ -23,7 +20,6 @@ public struct LoginItem: Equatable, Sendable {
         ])
     }
 
-    /// Turns it on when it is off, and off when it is on.
     func toggle() throws {
         try set(!isOn())
     }

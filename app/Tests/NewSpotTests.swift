@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the New spot sheet: one field to describe a spot, kept as a draft, and a button that copies a prompt for an
-/// agent, which asks the person first when the field is empty, and the guide that it opens teaches a spot that works.
 final class NewSpotTests: BuiltInCase {
     private var guideText = ""
     private var repo: URL {
@@ -20,7 +18,6 @@ final class NewSpotTests: BuiltInCase {
         try fake("open", "echo \"$@\" > '\(root.path)/opened'")
     }
 
-    /// The New spot sheet of the app.
     private func newSpot() throws -> Spot {
         try spot("new")
     }
@@ -137,14 +134,12 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(sheet.panel?.parts.first?.value, "Show the weather here")
     }
 
-    /// The Edit sheet of a spot of the test's folder, as the app makes it from the New spot sheet.
     private func editSheet(of id: String) throws -> Spot {
         let place = SpotsFolder(url: spots, core: core, enabled: ["cups"])
         let owner = try XCTUnwrap(try place.scan().scripts.first { $0.id == id })
         return try XCTUnwrap(try newSpot().editSheet(of: owner, isOwn: !place.isCore(owner)))
     }
 
-    /// Runs one call of an Edit sheet with these values on stdin and these variables, and returns all that it printed.
     private func edit(_ sheet: Spot, _ action: SpotAction, input: String? = nil, variables: [String: String] = [:]) async throws -> String {
         try await SpotRuns().answer(of: sheet, action, input: input, limit: 5, variables: variables)
     }
@@ -256,13 +251,10 @@ final class NewSpotTests: BuiltInCase {
         }
     }
 
-    /// The text of each block in the guide with this fence.
     private func blocks(_ fence: String) -> [String] {
         guideText.components(separatedBy: "```\(fence)\n").dropFirst().map { $0.components(separatedBy: "```")[0] }
     }
 
-    /// Each script of the guide passes the check in a folder of its own. A spot that its card drawing or `to=` names is a stub
-    /// metric beside it, and a script with a view stays out, since a view needs the Command Line Tools to build.
     func testEachExampleScriptInTheGuideLoadsAndAnswers() async throws {
         let scripts = blocks("sh").map { ($0, "sh") } + blocks("js").map { ($0, "js") }
         XCTAssertGreaterThan(scripts.count, 5)
@@ -284,7 +276,6 @@ final class NewSpotTests: BuiltInCase {
         }
     }
 
-    /// The bundled guide is GUIDE.md then PROTOCOL.md, and each link in it goes to a heading of the one page.
     func testTheGuideIsTheGuideThenTheProtocolWithEachLinkInThePage() throws {
         let headings = Set(guideText.split(separator: "\n").filter { $0.hasPrefix("#") && $0.contains("# ") }.map { line in
             String(line.drop { $0 == "#" }.dropFirst()).lowercased().filter { $0.isLetter || $0.isNumber || $0 == " " || $0 == "-" }.replacingOccurrences(of: " ", with: "-")
@@ -306,7 +297,6 @@ final class NewSpotTests: BuiltInCase {
         }
     }
 
-    /// The guide names each key that a part takes, and a part takes each key that the kinds table of the guide gives it.
     func testTheGuideAndThePartsTakeTheSameKeys() {
         let blocks = guideText.components(separatedBy: "## Blocks").dropFirst().first?.components(separatedBy: "## Layouts").first ?? ""
         for key in PartCatalog.keys {
@@ -323,7 +313,6 @@ final class NewSpotTests: BuiltInCase {
         }
     }
 
-    /// The guide that `scripts/guide.sh` joins from `GUIDE.md` and `PROTOCOL.md`, as the app bundles it.
     private func protocolGuide() throws -> String {
         let out = root.appendingPathComponent("built.md")
         let script = Process()

@@ -1,7 +1,6 @@
 import Foundation
 import OpenspotCore
 
-/// The memory of the stand-in helper.
 actor Tally {
     private var count = 0
     private(set) var isHeld = false
@@ -16,9 +15,6 @@ actor Tally {
     }
 }
 
-/// Answers a request: `die` ends the helper with no answer, `slow` waits, `empty` is an empty answer, `echo <text>` gives the
-/// text back, `hold` and `free` start and end work that keeps the helper past its idle time, and anything else gives the
-/// process and how many calls it has answered.
 @Sendable func answer(_ request: Data, tally: Tally) async -> Data {
     let text = String(decoding: request, as: UTF8.self)
     if text == "die" { exit(3) }
@@ -29,8 +25,6 @@ actor Tally {
     return Data("pid=\(getpid())\ncount=\(await tally.next())\n".utf8)
 }
 
-/// A capability for tests, with the idle time and the folder from the environment: `<tool> call <name>` sends stdin as a
-/// request and prints the answer, and `<tool> helper <name>` is the helper. No real capability can run on a test Mac.
 func run() -> Never {
     let arguments = CommandLine.arguments
     let environment = ProcessInfo.processInfo.environment

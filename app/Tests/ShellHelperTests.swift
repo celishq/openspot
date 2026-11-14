@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves `OPENSPOT_SH` with real shells and real processes.
 final class ShellHelperTests: XCTestCase {
     private var folder: URL!
 
@@ -122,7 +121,6 @@ final class ShellHelperTests: XCTestCase {
 
     private static let megabyte = 1_000_000
 
-    /// Each form of text that once made a shell loop slow.
     private static let megabyteTexts = [
         String(repeating: "a", count: megabyte),
         String(repeating: "\\", count: megabyte),
@@ -130,7 +128,6 @@ final class ShellHelperTests: XCTestCase {
         String(repeating: String(repeating: "a", count: 99) + "\\", count: megabyte / 100)
     ]
 
-    /// The shortest time of up to three runs, because other work on this Mac can slow one run.
     private func seconds(of url: URL, input: URL, output: URL) throws -> TimeInterval {
         var best = TimeInterval.infinity
         for _ in 0..<3 where best >= 10 {
@@ -139,7 +136,6 @@ final class ShellHelperTests: XCTestCase {
         return best
     }
 
-    /// Runs a script with a file on stdin and a file on stdout, so that only the script counts, and returns its seconds.
     private func oneRun(of url: URL, input: URL, output: URL) throws -> TimeInterval {
         FileManager.default.createFile(atPath: output.path, contents: nil)
         let process = Process()
@@ -187,8 +183,6 @@ final class ShellHelperTests: XCTestCase {
         }
     }
 
-    /// The body of a spot that prints the three parts of its call: its arguments, a variable, a value of stdin and all of
-    /// stdin.
     private static let shownCall = """
     main() {
       printf 'text=t\\ntitle=%s\\n' "$(esc "$#|$1|$2|${OPENSPOT_REASON-}|$(value note)|$(cat)")"
@@ -196,7 +190,6 @@ final class ShellHelperTests: XCTestCase {
     openspot_serve main "$@"
     """
 
-    /// The frames of a staying script that hold a block, which are what the app draws.
     private static func pictures(_ frames: [String]) -> [[TextBlock]] {
         frames.map { TextBlock.blocks(in: $0) }.filter { blocks in blocks.contains { !["call", "end"].contains($0.fields.first?.key ?? "") } }
     }

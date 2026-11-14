@@ -5,6 +5,7 @@
 # on=sheet.open
 # uses=clipboard
 # edits=spots
+# offers=card
 . "$OPENSPOT_SH"
 folder="${OPENSPOT_SPOTS:-$OPENSPOT_CONFIG/spots}"
 

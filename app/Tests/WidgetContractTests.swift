@@ -16,9 +16,9 @@ final class WidgetContractTests: XCTestCase {
     private func script(_ name: String, _ text: String) throws {
         let url = folder.appendingPathComponent(name.inSpotFolder)
         try text.writeScript(to: url)
+        try FileManager.default.setAttributes([.creationDate: Date(timeIntervalSince1970: 1_700_000_000)], ofItemAtPath: url.path)
     }
 
-    /// A spot whose header draws its card from other spots, at a strip for one line and else large, unless a size is given.
     private func widget(name: String = "Now", grid: [String] = ["power power"], size: String? = nil, more: String = "", file: String = "mine.sh") throws {
         let size = size ?? (grid.count == 1 ? "strip" : "large")
         let lines = grid.map { "# grid.\(size)=\($0)\n" }.joined()
@@ -165,14 +165,15 @@ final class WidgetContractTests: XCTestCase {
         }
     }
 
-    func testEachSpotCanShowInTheMenuBarAndOnlyAMetricOrAStayingScriptShowsAValueThere() throws {
+    func testEachSpotCanShowInTheMenuBarAndOnlyOneThatOffersItWithAValueShowsTheValue() throws {
         try script("one.sh", "#!/bin/sh\n")
         try script("two.sh", "#!/bin/sh\n# on=panel.open\n")
-        try script("three.sh", "#!/bin/sh\n# mode=stay\n")
-        try script("four.sh", "#!/bin/sh\n# on=clock.5\n")
+        try script("three.sh", "#!/bin/sh\n# mode=stay\n# offers=menubar\n")
+        try script("four.sh", "#!/bin/sh\n# on=clock.5\n# offers=menubar\n")
+        try script("five.sh", "#!/bin/sh\n# on=clock.5\n")
 
         XCTAssertEqual(try scan.refused, [])
-        XCTAssertEqual(try scan.scripts.filter(\.canShowInMenuBar).map(\.id), ["four", "one", "three", "two"])
+        XCTAssertEqual(try scan.scripts.filter(\.canShowInMenuBar).map(\.id), ["five", "four", "one", "three", "two"])
         XCTAssertEqual(try scan.scripts.filter(\.showsValueInMenuBar).map(\.id), ["four", "three"])
     }
 

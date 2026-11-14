@@ -4,6 +4,7 @@
 # on=sheet.open
 # on=sheet.text
 # uses=clipboard
+# offers=card
 texts=$(sed -n 's/^search=//p; s/^form=//p')
 . "$OPENSPOT_SH"
 case "$1" in

@@ -1,14 +1,10 @@
 import OpenspotCore
 import SwiftUI
 
-/// A card that its script draws: each component in the area that the card's drawing gives it (protocol: Layouts). A control acts at once,
-/// and a press anywhere else works as on any card.
 struct SpotCardDrawing: View {
-    /// The card's drawing, read into places.
     let layout: WidgetLayout
     let face: CardFace
     let card: SpotSize
-    /// The spot's own view at the size of its area, once it is built (protocol: Views).
     var view: (CGSize) -> SpotCustomView? = { _ in nil }
     let onSlot: (String, String?) -> Void
 

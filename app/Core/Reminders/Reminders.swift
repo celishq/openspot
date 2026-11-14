@@ -1,7 +1,5 @@
 import Foundation
 
-/// The reminders of the person as the rows that `openspot reminders` prints (E1). A read never asks for leave: it says
-/// `status=unasked`, and a call outside a read asks (E6, E7).
 public struct Reminders {
     private static let pane = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Reminders")!
     private static let refusal = "Openspot has no access to your reminders. Allow Openspot in Privacy & Security › Reminders, then try again."
@@ -16,8 +14,6 @@ public struct Reminders {
         self.isRead = isRead
     }
 
-    /// Each open reminder that is late or due through the end of a day, and each one of those days done today, in each list
-    /// but the hidden ones, in the order of its due time, so that a reminder keeps its place when it is ticked (E3).
     public func due(days: Int, hiding hidden: [String]) async throws -> String {
         guard try await isAllowed() else { return CalendarAccess.unaskedText }
         let end = clock.end(ofDay: days)
@@ -35,14 +31,12 @@ public struct Reminders {
         return Self.text(store.lists().map(\.row))
     }
 
-    /// Ticks the reminder with the id of its row, or opens it again, and prints nothing.
     public func done(_ id: String, _ isDone: Bool) async throws -> String {
         _ = try await isAllowed()
         guard case .reminder(let reminder)? = CalendarItemID(id), try store.mark(reminder: reminder, done: isDone) else { throw CalendarItemID.missing(id) }
         return ""
     }
 
-    /// The link that opens Reminders on the reminder whose row has this id.
     public func link(of id: String) async throws -> URL {
         _ = try await isAllowed()
         guard case .reminder(let key)? = CalendarItemID(id), let reminder = store.reminder(key),
@@ -50,8 +44,6 @@ public struct Reminders {
         return link
     }
 
-    /// Adds a reminder from the words, due at their date when they have one, and prints its row. A dry run prints the row it
-    /// would add, with the id `reminder:new` (E5).
     public func add(_ words: String, isDry: Bool) async throws -> String {
         let entry = try CalendarEntry(titled: words)
         guard try await isAllowed() else { return CalendarAccess.unaskedText }

@@ -1,21 +1,16 @@
 import Foundation
 
-/// What the pointer moves onto, which takes the selection: a card of the grid, a row of the open sheet, or a row of the
-/// open menu.
 public enum PointerTarget: Sendable {
     case card(String)
     case item(SpotItem)
     case menuRow(Int)
 }
 
-/// The pointer. While the actions menu is open it owns the pointer, so that only its rows take a move or a click.
 extension SpotsModel {
-    /// Moves the selection to what the pointer moved onto. Edit Spots keeps its selection.
     public func point(at target: PointerTarget) {
         switch target {
         case .menuRow(let row):
-            guard let menu else { return }
-            self.menu?.move(by: row - menu.selected)
+            menu?.point(at: row)
         case .card(let id):
             guard !menuOwnsPointer, !isEditing, let index = visible.firstIndex(where: { $0.id == id }) else { return }
             selected = index

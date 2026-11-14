@@ -2,11 +2,8 @@ import AVFoundation
 import OpenspotCore
 import ScreenCaptureKit
 
-/// One recording in the helper: the stream that writes the video with its sound, the camera that writes its own file, and
-/// the log of the pointer and the keys. It runs until `stop`.
 @MainActor
 final class SpotRecordingSession {
-    /// The largest frame that H.264 encodes; a larger one uses HEVC.
     private static let h264Limit = CGSize(width: 4096, height: 2304)
 
     private let plan: RecordingRequest.Plan
@@ -26,7 +23,6 @@ final class SpotRecordingSession {
         self.events = events
     }
 
-    /// Starts each part of the plan, and stops the ones that started when a later one fails.
     static func start(_ plan: RecordingRequest.Plan) async throws -> SpotRecordingSession {
         let target = try await SpotScreenTarget.find(plan.target)
         let file = URL(fileURLWithPath: plan.file)
@@ -78,12 +74,10 @@ final class SpotRecordingSession {
         return session
     }
 
-    /// The block that `openspot screen record status` prints.
     var status: TextBlock {
         TextBlock(fields: [.init(key: "state", value: "recording")] + files + [.init(key: "seconds", value: String(Int(Date().timeIntervalSince(started))))])
     }
 
-    /// Ends each part, waits until each file is whole, and returns the block of the files.
     func stop() async throws -> TextBlock {
         events?.stop()
         try? await stream.stopCapture()
@@ -102,7 +96,6 @@ final class SpotRecordingSession {
         [("file", plan.file), ("camera", plan.camera), ("events", plan.events)].compactMap { key, value in value.map { .init(key: key, value: $0) } }
     }
 
-    /// The camera of the plan with a movie output to its own file, not started yet.
     private static func cameraParts(_ inputs: [ScreenInput], to path: String) throws -> (AVCaptureSession, AVCaptureMovieFileOutput, SpotFileEnd) {
         let id = inputs.lazy.compactMap { input -> String?? in
             if case .camera(let id) = input { return .some(id) }
