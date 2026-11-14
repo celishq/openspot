@@ -34,10 +34,13 @@ struct SpotGridView: View {
             )
         }
         return ZStack(alignment: .topLeading) {
-            SpotGridGlass(cards: glass, pressable: openID == nil ? glass : [], size: CGSize(width: SpotTokens.gridWidth, height: height), lift: model.lift)
+            if model.isEditing {
+                SidePanelWells(panels: model.panels, height: height)
+            }
+            SpotGridGlass(cards: glass, pressable: openID == nil ? glass : [], size: CGSize(width: SpotTokens.width(columns: model.panels.columns), height: height), lift: model.lift)
             if model.isEditing {
                 landing(of: drag, in: placements)
-                    .frame(width: SpotTokens.gridWidth, height: height)
+                    .frame(width: SpotTokens.width(columns: model.panels.columns), height: height)
             }
             ForEach(Array(zip(placements, glass)), id: \.1.id) { placement, card in
                 let entry = model.visible[placement.index]
@@ -72,7 +75,7 @@ struct SpotGridView: View {
                 .allowsHitTesting(entry.id != openID)
             }
         }
-        .frame(width: SpotTokens.gridWidth, height: height, alignment: .topLeading)
+        .frame(width: SpotTokens.width(columns: model.panels.columns), height: height, alignment: .topLeading)
         .contentShape(Rectangle())
         .onDrop(of: [.fileURL], delegate: SpotGridDrop(model: model, target: $dropTarget))
     }
@@ -119,5 +122,25 @@ struct SpotGridView: View {
                 withTransaction(still) { model.dragSpot(entry.id, by: value.translation) }
             }
             .onEnded { model.dropSpot(by: $0.translation) }
+    }
+}
+
+/// The room of each side panel in Edit Spots, as a faint well under its cards and their glass, so that a card can be dragged
+/// into an empty side. It is as high as the grid, and one row at least.
+private struct SidePanelWells: View, Equatable {
+    let panels: GridPanels
+    let height: CGFloat
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
+        ZStack(alignment: .topLeading) {
+            ForEach([GridPanel.left, .right].filter { panels[$0] }, id: \.self) { panel in
+                shape
+                    .fill(SpotTheme.ink.opacity(SpotTheme.track))
+                    .frame(width: SpotTokens.gridWidth, height: max(height, SpotTokens.rowHeight))
+                    .offset(x: CGFloat(panels.firstColumn(of: panel)) * (SpotTokens.cell + SpotTokens.columnGap))
+            }
+        }
+        .allowsHitTesting(false)
     }
 }

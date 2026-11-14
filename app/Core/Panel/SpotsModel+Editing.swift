@@ -20,7 +20,13 @@ extension SpotsModel {
             query = ""
             isEditing = true
             updateVisible()
-            if dockStamp == folder.stamp() { composeDock() } else { refreshDock(in: folder) }
+            composeDock()
+        }
+        let pending = dockRead
+        dockRead = Task { [weak self] in
+            await withTaskCancellationHandler { await pending?.value } onCancel: { pending?.cancel() }
+            guard !Task.isCancelled else { return }
+            await self?.refreshDockIfChanged(in: folder)
         }
     }
 
@@ -135,6 +141,19 @@ extension SpotsModel {
         composeDock()
     }
 
+    /// Checks the folder's stamp off the main thread, and reads the store again only when the folder changed since its last
+    /// read.
+    func refreshDockIfChanged(in folder: SpotsFolder) async {
+        let stamp = await Task.detached(priority: .userInitiated) { folder.stamp() }.value
+        guard !Task.isCancelled, stamp != dockStamp else { return }
+        let store = files.store
+        let read = await Task.detached(priority: .userInitiated) { Self.readDock(in: folder, store: store) }.value
+        guard !Task.isCancelled else { return }
+        dockStamp = stamp
+        (dockOff, dockPublications) = read
+        composeDock()
+    }
+
     /// Reads what the store needs from this folder off the main thread, so that Edit Spots starts with no read of the disk.
     func readDockLater(in folder: SpotsFolder) {
         dockRead?.cancel()
@@ -144,6 +163,7 @@ extension SpotsModel {
             guard let self, !Task.isCancelled else { return }
             (self.dockOff, self.dockPublications) = read.1
             self.dockStamp = read.0
+            if self.isEditing { self.composeDock() }
         }
     }
 
@@ -337,6 +357,38 @@ extension SpotsModel {
         arrangement.arrange((cards.filter(\.isOnGrid) + cards.filter { !$0.isOnGrid }).map(\.id))
         arrangement.set(isOnGrid: isOn, of: id)
         saveArrangement(selecting: id)
+    }
+
+    /// Shows or hides a side panel of the grid, and saves it. A panel that shows is empty, and no card moves. The cards of a
+    /// panel that hides first move to the end of the center's cards, and the panel goes when they land. A panel that is
+    /// on its way out takes no other change until it is gone.
+    public func show(_ panel: GridPanel, _ isShown: Bool) {
+        guard let key = panel.configKey, panels[panel] != isShown, panelLeaving != panel else { return }
+        let apply: @MainActor () -> Void = { [self] in
+            panelLeaving = nil
+            do {
+                try files.config.set(key, to: isShown)
+                tookOwnWrite()
+            } catch {
+                host.notify("Openspot could not save the panels. \(Self.reason(error))")
+            }
+            panels[panel] = isShown
+            updateVisible()
+        }
+        let kept = cards.filter { $0.panel == panel }.map(\.id)
+        guard !kept.isEmpty else { return apply() }
+        let leaving = isShown ? [] : cards.filter { $0.isOnGrid && $0.panel == panel }.map(\.id)
+        kept.forEach { arrangement.set(panel: .center, of: $0) }
+        guard let first = leaving.first else {
+            try? files.config.write(arrangement)
+            tookOwnWrite()
+            rebuildEntries()
+            return apply()
+        }
+        panelLeaving = panel
+        let onGrid = cards.filter(\.isOnGrid).map(\.id).filter { !leaving.contains($0) }
+        arrangement.arrange(onGrid + leaving + cards.filter { !$0.isOnGrid }.map(\.id))
+        saveArrangement(selecting: first, landed: apply)
     }
 
     /// Takes the letter for the spot that records: a letter or a digit with no modifier gives it, and Delete takes its letter

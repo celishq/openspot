@@ -7,9 +7,11 @@ public struct SpotDrag: Equatable, Sendable {
     public struct Target: Hashable, Sendable {
         public let place: Int
         public let isOnGrid: Bool
+        /// The panel that the card lies in, on the grid.
+        public var panel = GridPanel.center
 
-        public static func onGrid(_ place: Int) -> Target {
-            Target(place: place, isOnGrid: true)
+        public static func onGrid(_ place: Int, panel: GridPanel = .center) -> Target {
+            Target(place: place, isOnGrid: true, panel: panel)
         }
 
         public static func hidden(_ place: Int) -> Target {
@@ -23,6 +25,8 @@ public struct SpotDrag: Equatable, Sendable {
     /// Where a release puts the card.
     public var target: Target
     private let layouts: [Target: [SpotPlacement]]
+    /// How many columns the grid has.
+    private let columns: Int
 
     /// The card's place in the order when the drag started.
     public var start: Int {
@@ -37,13 +41,14 @@ public struct SpotDrag: Equatable, Sendable {
     /// Lays out the grid once for each place in `places` on the grid, with the card moved there from `start` among cards of
     /// these sizes.
     public init(id: String, start: Int, sizes: [SpotSize], places: ClosedRange<Int>, grid: SpotGrid = SpotGrid()) {
-        self.init(id: id, home: .onGrid(start), sizes: sizes, targets: places.map(Target.onGrid), grid: grid)
+        self.init(id: id, home: .onGrid(start), sizes: sizes, targets: places.map { Target.onGrid($0) }, grid: grid)
     }
 
     /// Lays out the grid once for each target, with the card moved there from `home` among cards of these sizes. The cards
     /// on the grid come before the grid's split, the card among them when its home is on the grid; a target moves the split
     /// by the card's change of group.
     public init(id: String, home: Target, sizes: [SpotSize], targets: [Target], grid: SpotGrid) {
+        columns = grid.panels.columns
         self.id = id
         self.home = home
         target = home
@@ -51,7 +56,7 @@ public struct SpotDrag: Equatable, Sendable {
             var moved = sizes
             moved.insert(moved.remove(at: home.place), at: target.place)
             let shift = (target.isOnGrid ? 1 : 0) - (home.isOnGrid ? 1 : 0)
-            return (target, grid.moving(home.place, to: target.place, split: grid.split.map { $0 + shift }).place(moved))
+            return (target, grid.moving(home.place, to: target.place, split: grid.split.map { $0 + shift }).placing(target.place, on: target.panel).place(moved))
         })
     }
 
@@ -69,10 +74,13 @@ public struct SpotDrag: Equatable, Sendable {
         placement(at: target)?.rect ?? .zero
     }
 
-    /// The target whose landing puts the card's centre nearest to this point. A tie keeps the lower place, on the grid first.
+    /// The target whose landing puts the card's centre nearest to this point. A tie keeps the lower place, on the grid first,
+    /// in the center first.
     public func nearest(to point: CGPoint) -> Target {
-        layouts.keys.min { lhs, rhs in
-            (distance(from: point, to: lhs), lhs.place, lhs.isOnGrid ? 0 : 1) < (distance(from: point, to: rhs), rhs.place, rhs.isOnGrid ? 0 : 1)
+        let rank = { (target: Target) in (target.place, target.isOnGrid ? 0 : 1, target.panel == .center ? 0 : target.panel == .left ? 1 : 2) }
+        return layouts.keys.min { lhs, rhs in
+            let (left, right) = (rank(lhs), rank(rhs))
+            return (distance(from: point, to: lhs), left.0, left.1, left.2) < (distance(from: point, to: rhs), right.0, right.1, right.2)
         } ?? home
     }
 
@@ -92,7 +100,7 @@ public struct SpotDrag: Equatable, Sendable {
 
     /// Whether a release at this point lands on the grid: on its cards, or less than half a row past them.
     public func holds(_ point: CGPoint) -> Bool {
-        let grid = CGRect(x: 0, y: 0, width: SpotTokens.gridWidth, height: SpotGrid.height(of: layout(at: home)))
+        let grid = CGRect(x: 0, y: 0, width: SpotTokens.width(columns: columns), height: SpotGrid.height(of: layout(at: home)))
         return grid.insetBy(dx: -SpotTokens.rowHeight / 2, dy: -SpotTokens.rowHeight / 2).contains(point)
     }
 

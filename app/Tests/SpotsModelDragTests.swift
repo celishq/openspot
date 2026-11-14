@@ -323,7 +323,7 @@ final class SpotsModelDragTests: XCTestCase {
 
     /// A point of the panel's space as a point of the grid, which has not scrolled.
     private func inGrid(_ point: CGPoint) -> CGPoint {
-        let origin = SpotTokens.gridOrigin(scrollOffset: 0)
+        let origin = model.gridOrigin
         return CGPoint(x: point.x - origin.x, y: point.y - origin.y)
     }
 
@@ -387,7 +387,7 @@ final class SpotsModelDragTests: XCTestCase {
     /// The pointer's move that takes the centre of the dock's card of a spot to this point of the grid.
     private func dockMove(_ id: String, to point: CGPoint) -> CGSize {
         let start = tile(id)
-        let grid = SpotTokens.gridOrigin(scrollOffset: 0)
+        let grid = model.gridOrigin
         return CGSize(width: point.x + grid.x - start.midX, height: point.y + grid.y - start.midY)
     }
 
@@ -527,6 +527,79 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertNil(savedSize)
     }
 
+    func testASidePanelShowsEmptyAndNoCardMoves() {
+        let before = model.placements.map(\.rect)
+
+        model.show(.left, true)
+
+        XCTAssertEqual(model.panels, GridPanels(hasLeft: true))
+        XCTAssertEqual(files.config.read().panels, GridPanels(hasLeft: true))
+        let shift = CGFloat(SpotTokens.columns) * (SpotTokens.cell + SpotTokens.columnGap)
+        XCTAssertEqual(model.placements.map { $0.rect.offsetBy(dx: -shift, dy: 0) }, before)
+        XCTAssertEqual(model.gridOrigin.x, SpotTokens.halo - shift)
+    }
+
+    func testASearchShowsNoSidePanelAndAnEmptyFieldShowsThemAgain() {
+        model.show(.left, true)
+        XCTAssertEqual(model.shownPanels, GridPanels(hasLeft: true))
+
+        model.query = "a"
+        XCTAssertEqual(model.shownPanels, GridPanels())
+
+        model.query = ""
+        XCTAssertEqual(model.shownPanels, GridPanels(hasLeft: true))
+    }
+
+    func testACardDroppedOnASidePanelStaysThereAndHidingThePanelMovesItBackToTheEnd() async throws {
+        model.show(.right, true)
+        let column = model.panels.firstColumn(of: .right)
+        let point = CGPoint(x: SpotPlacement(index: 0, row: 0, column: column, size: .small).rect.midX, y: model.placements[0].rect.midY)
+
+        let translation = move("a", to: point)
+        model.dragSpot("a", by: translation)
+        model.dropSpot(by: translation)
+
+        XCTAssertEqual(model.visible.first { $0.id == "a" }?.panel, .right)
+        XCTAssertEqual(files.config.read().arrangement.panel(of: "a"), .right)
+        model.show(.right, false)
+        for _ in 0..<500 where model.panels.hasRight { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertFalse(model.panels.hasRight)
+        XCTAssertEqual(model.visible.first { $0.id == "a" }?.panel, .center)
+        XCTAssertEqual(model.visible.filter(\.isOnGrid).last?.id, "a")
+    }
+
+    func testADraggedCardMakesItsRoomInThePanelItWouldLandIn() {
+        model.show(.right, true)
+        let column = model.panels.firstColumn(of: .right)
+        let point = CGPoint(x: SpotPlacement(index: 0, row: 0, column: column, size: .small).rect.midX, y: model.placements[0].rect.midY)
+
+        model.dragSpot("a", by: move("a", to: point))
+
+        let index = model.visible.firstIndex { $0.id == "a" } ?? -1
+        XCTAssertGreaterThanOrEqual(model.placements.first { $0.index == index }?.column ?? -1, column)
+    }
+
+    func testAPanelThatShowsIsEmptyEvenWhenAnOldChoiceNamedIt() throws {
+        var arrangement = files.config.read().arrangement
+        arrangement.set(panel: .right, of: "b")
+        try files.config.write(arrangement)
+        model.reload()
+        XCTAssertLessThan(model.placements.map(\.column).max() ?? 0, SpotTokens.columns)
+
+        model.show(.right, true)
+
+        XCTAssertLessThan(model.placements.map(\.column).max() ?? 0, SpotTokens.columns)
+        XCTAssertNil(files.config.read().arrangement.panel(of: "b"))
+    }
+
+    func testTheGridTakesTheSidePanelsOfTheConfig() throws {
+        try files.config.set("right_panel", to: true)
+
+        model.reload()
+
+        XCTAssertEqual(model.panels, GridPanels(hasRight: true))
+    }
+
     func testTheGridGrowsDownPastTheRowsThePanelShows() throws {
         model.endEditing()
         for name in ["e", "f", "g", "h", "i", "j", "k", "l", "m"] {
@@ -548,13 +621,17 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertNil(model.resize)
     }
 
-    func testTheStoreShowsEverySpotWithItsStateAndOrigin() throws {
+    func testTheStoreShowsEverySpotWithItsStateAndOrigin() async throws {
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("coin.spot/coin.sh"))
         model.setOnGrid(false, for: "d")
 
         model.endEditing()
         model.beginEditing()
+        XCTAssertFalse(model.dock.items.contains { $0.id == "coin" })
+        for _ in 0..<500 where !model.dock.items.contains(where: { $0.id == "coin" }) {
+            try await Task.sleep(for: .milliseconds(10))
+        }
         let states = Dictionary(uniqueKeysWithValues: model.dock.items.map { ($0.id, $0.state) })
         XCTAssertEqual(states, ["a": .onGrid, "b": .onGrid, "c": .onGrid, "d": .searchOnly, "coin": .off, "timer": .off])
         XCTAssertEqual(model.dock.items.first { $0.id == "a" }?.origin, .mine)

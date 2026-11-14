@@ -190,8 +190,9 @@ public enum SpotTokens {
     /// Where the grid's first row starts: under the field, one gap down.
     public static let gridTop: CGFloat = halo + rowHeight + rowGap
 
-    /// Where the grid's top left corner lies in the panel, with the grid scrolled this far.
-    public static func gridOrigin(scrollOffset: CGFloat) -> CGPoint {
-        CGPoint(x: halo, y: gridTop - scrollOffset)
+    /// Where the grid's top left corner lies in the panel, with the grid scrolled this far and reaching this far left of the
+    /// center panel.
+    public static func gridOrigin(scrollOffset: CGFloat, left: CGFloat) -> CGPoint {
+        CGPoint(x: halo - left, y: gridTop - scrollOffset)
     }
 }

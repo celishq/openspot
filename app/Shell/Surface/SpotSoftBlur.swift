@@ -17,6 +17,13 @@ struct SpotSoftBlur: NSViewRepresentable {
     }
 
     let height: CGFloat
+    var width = SpotTokens.panelWidth
+
+    /// The size of a pair of masks.
+    private struct Size: Hashable {
+        let width: CGFloat
+        let height: CGFloat
+    }
 
     final class Surface: NSVisualEffectView {
         private static let filterType = "variableBlur"
@@ -121,51 +128,51 @@ struct SpotSoftBlur: NSViewRepresentable {
         surface.state = .active
         surface.appearance = NSAppearance(named: .darkAqua)
         surface.isDark = context.environment.colorScheme == .dark
-        surface.masks = Self.masks(height: height)
+        surface.masks = Self.masks(Size(width: width, height: height))
         return surface
     }
 
     func updateNSView(_ surface: Surface, context: Context) {
         surface.isDark = context.environment.colorScheme == .dark
-        surface.masks = Self.masks(height: height)
+        surface.masks = Self.masks(Size(width: width, height: height))
     }
 
-    /// The masks of each height, 8 MB beside two of the largest pairs. Each surface asks for its height on each update, so the
-    /// heights in use are the last to go.
-    private static var kept = RecentCache<CGFloat, Masks>(base: 8 << 20)
+    /// The masks of each size, 8 MB beside two of the largest pairs. Each surface asks for its size on each update, so the
+    /// sizes in use are the last to go.
+    private static var kept = RecentCache<Size, Masks>(base: 8 << 20)
 
-    /// Draws the masks of these heights ahead in their order, one in each turn of the main queue, so that an open of a sheet
-    /// finds them. It stops where the next pair would push out a kept one.
-    static func warm(_ heights: [CGFloat]) {
+    /// Draws the masks of these heights at this width ahead in their order, one in each turn of the main queue, so that an
+    /// open of a sheet finds them. It stops where the next pair would push out a kept one.
+    static func warm(_ heights: [CGFloat], width: CGFloat) {
         var left = heights[...]
-        while let height = left.first, kept.value(for: height) != nil { left = left.dropFirst() }
-        guard let height = left.first, cost(of: height) <= kept.room else { return }
-        _ = masks(height: height)
-        DispatchQueue.main.async { warm(Array(left.dropFirst())) }
+        while let height = left.first, kept.value(for: Size(width: width, height: height)) != nil { left = left.dropFirst() }
+        guard let height = left.first, cost(of: Size(width: width, height: height)) <= kept.room else { return }
+        _ = masks(Size(width: width, height: height))
+        DispatchQueue.main.async { warm(Array(left.dropFirst()), width: width) }
     }
 
-    /// The most bytes that the pair of masks of this height can take, with room for the padding of its rows.
-    private static func cost(of height: CGFloat) -> Int {
-        2 * (Int(SpotTokens.panelWidth.rounded(.up)) + 64) * Int(height.rounded(.up))
+    /// The most bytes that the pair of masks of this size can take, with room for the padding of its rows.
+    private static func cost(of size: Size) -> Int {
+        2 * (Int(size.width.rounded(.up)) + 64) * Int(size.height.rounded(.up))
     }
 
-    /// The masks of this height.
-    private static func masks(height: CGFloat) -> Masks {
-        if let masks = kept.value(for: height) { return masks }
+    /// The masks of this size.
+    private static func masks(_ size: Size) -> Masks {
+        if let masks = kept.value(for: size) { return masks }
         let masks = Masks(
-            blur: mask(height: height, inset: blurInset, softness: blurSoftness),
-            tint: mask(height: height, inset: tintInset, softness: tintSoftness)
+            blur: mask(size, inset: blurInset, softness: blurSoftness),
+            tint: mask(size, inset: tintInset, softness: tintSoftness)
         )
-        kept.keep(masks, for: height, cost: [masks.blur, masks.tint].reduce(0) { $0 + ($1.map { $0.bytesPerRow * $0.height } ?? 0) })
+        kept.keep(masks, for: size, cost: [masks.blur, masks.tint].reduce(0) { $0 + ($1.map { $0.bytesPerRow * $0.height } ?? 0) })
         return masks
     }
 
     /// Draws a soft rounded shape and keeps only its alpha, a quarter of the bytes of the drawing.
-    private static func mask(height: CGFloat, inset: CGFloat, softness: CGFloat) -> CGImage? {
+    private static func mask(_ size: Size, inset: CGFloat, softness: CGFloat) -> CGImage? {
         let shape = RoundedRectangle(cornerRadius: SpotTokens.radius + SpotTokens.halo - inset, style: .continuous)
             .fill(Color.black)
             .padding(inset)
-            .frame(width: SpotTokens.panelWidth, height: height)
+            .frame(width: size.width, height: size.height)
             .blur(radius: softness)
         guard let drawn = ImageRenderer(content: shape).cgImage,
               let alpha = CGContext(data: nil, width: drawn.width, height: drawn.height, bitsPerComponent: 8, bytesPerRow: 0,

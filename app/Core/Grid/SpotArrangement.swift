@@ -14,6 +14,8 @@ public struct SpotArrangement: Equatable, Sendable {
         public var letter: String?
         /// A key of the panel that opens the sheet of the spot, such as cmd+n.
         public var key: ActionKey?
+        /// The side panel that the spot lies in, on the grid.
+        public var panel: GridPanel?
 
         public init(id: String, size: SpotSize? = nil, isOnGrid: Bool? = nil, isEnabled: Bool? = nil, isGlobal: Bool? = nil, isInMenuBar: Bool? = nil, letter: String? = nil, key: ActionKey? = nil) {
             self.id = id
@@ -58,6 +60,10 @@ public struct SpotArrangement: Equatable, Sendable {
 
     public func isOnGrid(of id: String) -> Bool? {
         choice(of: id)?.isOnGrid
+    }
+
+    public func panel(of id: String) -> GridPanel? {
+        choice(of: id)?.panel
     }
 
     public func isGlobal(of id: String) -> Bool? {
@@ -125,6 +131,11 @@ public struct SpotArrangement: Equatable, Sendable {
         change(id) { $0.isOnGrid = isOnGrid }
     }
 
+    /// Puts a spot on a side panel, or with the center, takes its side away.
+    public mutating func set(panel: GridPanel, of id: String) {
+        change(id) { $0.panel = panel == .center ? nil : panel }
+    }
+
     public mutating func set(isEnabled: Bool, of id: String) {
         change(id) { $0.isEnabled = isEnabled }
     }
@@ -149,6 +160,7 @@ public struct SpotArrangement: Equatable, Sendable {
             if let isInMenuBar = choice.isInMenuBar { lines.append("tray = \(isInMenuBar)") }
             if let letter = choice.letter { lines.append("letter = \"\(letter)\"") }
             if let key = choice.key { lines.append("key = \"\(key.text)\"") }
+            if let panel = choice.panel { lines.append("side = \"\(panel.rawValue)\"") }
             return lines.joined(separator: "\n")
         }.joined(separator: "\n\n")
     }

@@ -372,7 +372,7 @@ extension SpotsModel {
     /// Selects the card at this point of the panel and opens its actions menu, as `⌘K` does, for a right or force click. A
     /// sheet or Edit Spots takes none.
     public func openMenu(at point: CGPoint) {
-        let origin = SpotTokens.gridOrigin(scrollOffset: gridScroll)
+        let origin = gridOrigin
         guard openList == nil, !isEditing, let id = card(at: CGPoint(x: point.x - origin.x, y: point.y - origin.y)), let index = visible.firstIndex(where: { $0.id == id }) else { return }
         selected = index
         if let target { openMenu(on: target) }

@@ -46,6 +46,23 @@ final class ConfigFileTests: XCTestCase {
         XCTAssertEqual(Config(text: "fix_key = \"f\"\n").faults.count, 1)
     }
 
+    func testTheGridHasNoSidePanelsUntilTheFileAsksForThem() {
+        XCTAssertEqual(Config(text: "").panels, GridPanels())
+        XCTAssertEqual(Config(text: "left_panel = true\nright_panel = true\n").panels, GridPanels(hasLeft: true, hasRight: true))
+        XCTAssertEqual(Config(text: "left_panel = 1\n").faults, ["config.toml: left_panel is true or false."])
+    }
+
+    func testASpotKeepsItsSidePanel() throws {
+        var arrangement = SpotArrangement()
+        arrangement.set(panel: .left, of: "a")
+        arrangement.set(panel: .center, of: "b")
+        try file.write(arrangement)
+
+        XCTAssertEqual(file.read().arrangement.panel(of: "a"), .left)
+        XCTAssertNil(file.read().arrangement.panel(of: "b"))
+        XCTAssertEqual(Config(text: "[[spots]]\nid = \"a\"\nside = \"up\"\n").faults, ["config.toml: a cannot use the side up."])
+    }
+
     func testABadKeyGivesNoKeyAndAFault() {
         let config = Config(text: "panel_key = \"k\"\n")
 
