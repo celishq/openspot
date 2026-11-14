@@ -127,7 +127,7 @@ public struct SpotStore: Sendable {
             size = item.size.name
             origin = item.origin.rawValue
             added = item.isAdded
-            sample = item.spot.previewsSample
+            sample = item.origin == .store ? SpotListing.hasKeptSample(beside: item.spot.url) : item.spot.sample != nil
             published = item.publication?.rawValue
             path = item.package?.path
             let readme = SpotListing.readme(of: item.spot.url).path

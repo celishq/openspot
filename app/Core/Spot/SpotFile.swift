@@ -76,10 +76,6 @@ public struct SpotFile: Equatable, Sendable {
         if let view, URL(fileURLWithPath: view).pathExtension != SwiftProgram.sourceExtension {
             throw SpotError.fault("\(name) needs a Swift file for its view, such as view=\(url.deletingPathExtension().lastPathComponent).swift")
         }
-        let preview = header.value("preview")
-        guard preview == nil || preview == "sample" else {
-            throw SpotError.fault("\(name) has an unknown preview: \(preview!). Use preview=sample, and print fake data while OPENSPOT_REASON is spot.preview")
-        }
         let places: Set<Place> = namedPlaces ?? (offeredActions.isEmpty && !answersOnly ? [.card] : [])
         let kind: SpotKind = mode.stays || places.contains(.search) || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch
         try Place.check(places, read: read, mode: mode, kind: kind, of: name)
@@ -112,14 +108,20 @@ public struct SpotFile: Equatable, Sendable {
             pages: header.values("pages"),
             uses: uses,
             keywords: header.list("keywords"),
-            previewsSample: preview != nil
+            sample: Self.sample(beside: url)
         )
         self.init(id: id, spots: [command])
     }
 
     static func runs(_ url: URL) -> Bool {
+        if SpotListing.isSampleScript(url) { return false }
         if FileManager.default.isExecutableFile(atPath: url.path) { return true }
         return url.pathExtension == inlineExtension && !SpotHeader(url: url).block.fields.isEmpty
+    }
+
+    private static func sample(beside url: URL) -> URL? {
+        let sample = SpotListing.sampleScript(of: url)
+        return FileManager.default.isExecutableFile(atPath: sample.path) ? sample : nil
     }
 
     private static func refuseOldKeys(_ header: TextBlock, of name: String) throws {

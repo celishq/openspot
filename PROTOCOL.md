@@ -20,7 +20,10 @@ press   ─ on a block ─►  <spot> <id>    the user or an agent acts
 ```
 
 - A spot lives in a **spot folder**: a folder `<name>.spot` in the spots folder, such as `coffee.spot/coffee.sh`. The
-  folder holds its scripts, its `readme.md`, its `preview.txt` and any file that they need.
+  folder holds its scripts, its `readme.md`, its `sample.sh` and any file that they need.
+- `sample.sh` prints what the spot would show, with made-up data, so that the store can show the spot before you add it.
+  A click on that sample runs nothing. Publish runs it once and ships what it printed as `sample.txt`, which is all a
+  shared spot shows before you add it. `sample.sh` is never a spot of its own.
 - The id of a script is the name of its folder, such as `coffee`. A script with another name adds it, such as
   `home/lights` for `home.spot/lights.sh`.
 - The folder is shared as one unit, and its scripts share one data folder. A file in it that isn't executable can hold
@@ -75,7 +78,6 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `emits`       | The events the spot raises, split by commas. See [Events](#events).                                                              |
 | `offers`      | A place where the spot can show: `card`, `search`, `menubar`, `float` or `window`. One line each. See [Places](#places).         |
 | `drop`        | The files its card takes: extensions such as `mov,mkv`, `folder`, or `*`. See [The calls](#the-calls).                           |
-| `preview`     | `sample`: when `OPENSPOT_REASON` is `spot.preview`, the spot prints sample data for the store.                                   |
 | `view`        | A SwiftUI file next to the spot, such as `view=cups.swift`. See [Views](#views).                                                 |
 | `mode`        | `once` (the default), `stay` or `always`. See [Modes](#modes).                                                                   |
 | `press`       | `open`: a press of the card sends `<spot> open` though the spot has a sheet, which `⌘` opens. `sheet` is the default.            |
@@ -414,8 +416,7 @@ An event makes Openspot ask a spot what to show. The header lists the events whe
 
 - Openspot also asks a spot for these reasons, which aren't events:
   - `spot.change`: after a call that printed nothing;
-  - `spot.want`: when a spot becomes wanted and no event has asked it yet;
-  - `spot.preview`: for the preview in the store.
+  - `spot.want`: when a spot becomes wanted and no event has asked it yet.
 - `openspot event emit <event> [value]` raises an event, from a spot or a terminal. If Openspot isn't running, it starts
   first.
 - A spot must list each event it raises in `emits`, such as `emits=music.track`. `openspot check` reports an `on` event
@@ -689,8 +690,8 @@ struct SpotView: View {
 
 - The view fills its place, and the whole card when there's no card layout. It can't change the size of its place.
 - In a window (see [Places](#places)), a sheet with one `view` block fills the window. `spot.card(id)` draws the card of
-  any spot by the ID that `openspot store list` prints, as the store does. `spot.sheet(id)` draws its sheet with the data
-  that its [`preview`](#the-header) mode prints, and draws nothing for a spot with no such mode.
+  any spot by the ID that `openspot store list` prints, as the store does. `spot.sheet(id)` draws its sheet with what its
+  `sample.sh` prints (see [A spot](#a-spot)), and draws nothing for a spot with no sample.
 - It gets the keys of its block in each frame. A new frame keeps its `@State`.
 - On a card, the view only draws, and a press works as on any card. In a sheet, it takes clicks and keys, and
   `spot.send(value)` calls the spot with `<id> <value>`, as a field does. A newer send stops the call of the older one.

@@ -207,7 +207,7 @@ public struct SpotsFolder: Sendable {
         let stem = name ?? Self.stem(of: first)
         let file = switch first {
         case stem + "." + SpotListing.readmeExtension: SpotListing.readmeName
-        case stem + SpotListing.previewSuffix: SpotListing.previewName
+        case stem + SpotListing.olderSampleSuffix: SpotListing.olderSampleName
         default: first
         }
         return SpotID(stem).folderName + "/" + file

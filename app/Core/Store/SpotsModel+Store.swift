@@ -24,8 +24,8 @@ extension SpotsModel {
                 host.confirm("\(spot.name) has no change since its last publish.")
                 return .unchanged
             }
-            if spot.previewsSample {
-                try await SpotListing.capturePreview(of: spot, runs: runs)
+            if spot.sample != nil {
+                try await SpotListing.captureSample(of: spot, runs: runs)
                 shared = try await Task.detached(priority: .userInitiated) { try SpotPackage(sharing: spot, from: SpotsFolder(url: folder.url).scan()) }.value
             }
             guard let released = try await release(shared, named: spot.name) else { return .failed }

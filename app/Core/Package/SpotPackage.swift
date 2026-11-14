@@ -133,8 +133,8 @@ public struct SpotPackage: Equatable, Sendable {
         roots.first.flatMap { text(of: SpotListing.readmeName, in: $0) }?.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    public var preview: String? {
-        roots.first.flatMap { text(of: SpotListing.previewName, in: $0) }
+    public var sample: String? {
+        roots.first.flatMap { root in [SpotListing.sampleName, SpotListing.olderSampleName].lazy.compactMap { text(of: $0, in: root) }.first }
     }
 
     func text(of name: String, in root: String) -> String? {

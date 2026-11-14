@@ -629,8 +629,9 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(offInConfig, ["a"])
     }
 
-    func testTheSampleOfASpotIsItsReadWithThePreviewReasonAndNoneWithoutAPreview() async throws {
-        try "#!/bin/sh\n# preview=sample\nif [ \"$OPENSPOT_REASON\" = spot.preview ]; then printf 'row=s\\ntitle=Sample row\\n'; else printf 'row=r\\ntitle=Real row\\n'; fi\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
+    func testTheSampleOfASpotIsWhatItsSampleScriptPrintsAndNoneWithoutOne() async throws {
+        try "#!/bin/sh\nprintf 'row=r\\ntitle=Real row\\n'\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
+        try "#!/bin/sh\nprintf 'row=s\\ntitle=Sample row\\n'\n".writeScript(to: core.appendingPathComponent("timer.spot/sample.sh"))
         try "#!/bin/sh\nprintf 'title=Real row\\n'\n".writeScript(to: core.appendingPathComponent("coin.spot/coin.sh"))
         model.reload()
 
@@ -639,6 +640,23 @@ final class SpotsModelDragTests: XCTestCase {
 
         XCTAssertEqual(sample?.items.map(\.title), ["Sample row"])
         XCTAssertNil(none)
+    }
+
+    func testASharedSpotShowsItsKeptSampleAndRunsNoScript() async throws {
+        let shared = store.appendingPathComponent("shared.spot")
+        try "#!/bin/sh\n# title=Shared\n".writeScript(to: shared.appendingPathComponent("shared.sh"))
+        try "#!/bin/sh\nprintf 'row=s\\ntitle=Ran\\n'\n".writeScript(to: shared.appendingPathComponent("sample.sh"))
+        try "row=s\ntitle=Kept\n".write(to: shared.appendingPathComponent("sample.txt"), atomically: true, encoding: .utf8)
+        let old = store.appendingPathComponent("old.spot")
+        try "#!/bin/sh\n# title=Old\n".writeScript(to: old.appendingPathComponent("old.sh"))
+        try "row=s\ntitle=Older\n".write(to: old.appendingPathComponent("preview.txt"), atomically: true, encoding: .utf8)
+        model.reload()
+
+        let sample = await model.sample("shared")
+        let older = await model.sample("old")
+
+        XCTAssertEqual(sample?.items.map(\.title), ["Kept"])
+        XCTAssertEqual(older?.items.map(\.title), ["Older"])
     }
 
     func testTheStoreFindsTheCardOfASpotThatIsOffByItsStoreID() throws {

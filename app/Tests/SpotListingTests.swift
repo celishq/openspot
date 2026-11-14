@@ -19,24 +19,31 @@ final class SpotListingTests: XCTestCase {
         return try XCTUnwrap(try SpotFile(file: url, id: name)?.spots.first)
     }
 
-    func testPreviewSampleMarksASpotThatPrintsFakeData() throws {
-        XCTAssertTrue(try spot("# preview=sample", named: "sample").previewsSample)
-        XCTAssertFalse(try spot("# title=Timer", named: "plain").previewsSample)
-        let live = folder.spotFile("live")
-        try "#!/bin/sh\n# preview=live\n".writeScript(to: live)
-        XCTAssertThrowsError(try SpotFile(file: live, id: "live"))
+    func testASampleScriptBesideASpotGivesItASampleAndIsNoSpotOfItsOwn() throws {
+        let timer = try spot("# title=Timer")
+        let sample = SpotListing.sampleScript(of: timer.url)
+        try "#!/bin/sh\nprintf 'row=a\\ntitle=Sample\\n'\n".writeScript(to: sample)
+
+        XCTAssertEqual(try spot("# title=Timer").sample, sample)
+        XCTAssertNil(try spot("# title=Plain", named: "plain").sample)
+        XCTAssertNil(try SpotFile(file: sample, id: "timer/sample"))
+    }
+
+    func testAnOldPreviewKeyStillLoadsTheSpot() throws {
+        XCTAssertNil(try spot("# preview=sample").sample)
     }
 
     @MainActor
-    func testTheCaptureRunsThePreviewModeAsTheSpotsCallAndKeepsItsTextBesideTheSpot() async throws {
-        let spot = try self.spot("# preview=sample", body: "[ \"$OPENSPOT_REASON\" = spot.preview ] && [ -n \"$OPENSPOT_TOKEN\" ] && printf 'row=a\\ntitle=Sample\\n' || printf 'row=a\\ntitle=Real\\n'")
+    func testTheCaptureRunsTheSampleScriptAndKeepsItsTextBesideTheSpot() async throws {
+        try "#!/bin/sh\nprintf 'row=a\\ntitle=Sample\\n'\n".writeScript(to: SpotListing.sampleScript(of: folder.spotFile("timer")))
+        let spot = try self.spot("# title=Timer", body: "printf 'row=a\\ntitle=Real\\n'")
         let runs = SpotRuns()
         defer { runs.quit() }
 
-        try await SpotListing.capturePreview(of: spot, runs: runs)
+        try await SpotListing.captureSample(of: spot, runs: runs)
 
-        let preview = try String(contentsOf: SpotListing.preview(of: spot.url), encoding: .utf8)
-        XCTAssertEqual(SpotOutput(text: preview).items.map(\.title), ["Sample"])
+        let sample = try String(contentsOf: SpotListing.sampleText(of: spot.url), encoding: .utf8)
+        XCTAssertEqual(SpotOutput(text: sample).items.map(\.title), ["Sample"])
     }
 
     func testEachCoreSpotHasAReadme() throws {

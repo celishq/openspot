@@ -14,8 +14,10 @@ enum SpotPanelPicture {
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(300))
             await model.waitForReads()
-            for sheet in model.sheets.values where sheet.spot.previewsSample {
-                sheet.read(need: .change, reason: .preview)
+            for sheet in model.sheets.values {
+                guard let sampled = sheet.spot.sampled else { continue }
+                sheet.update(sampled)
+                sheet.read(need: .change)
             }
             try? await Task.sleep(for: .milliseconds(300))
             await model.waitForReads()

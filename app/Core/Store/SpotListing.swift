@@ -2,22 +2,49 @@ import Foundation
 
 public enum SpotListing {
     public static let readmeName = "readme.md"
-    public static let previewName = "preview.txt"
+    public static let sampleScriptName = "sample.sh"
+    public static let sampleName = "sample.txt"
+    public static let olderSampleName = "preview.txt"
     static let readmeExtension = "md"
-    static let previewSuffix = ".preview.txt"
+    static let olderSampleSuffix = ".preview.txt"
+    private static let sampleLimit: TimeInterval = 10
 
     public static func readme(of file: URL) -> URL {
         file.deletingLastPathComponent().appendingPathComponent(readmeName)
     }
 
-    public static func preview(of file: URL) -> URL {
-        file.deletingLastPathComponent().appendingPathComponent(previewName)
+    public static func sampleScript(of file: URL) -> URL {
+        file.deletingLastPathComponent().appendingPathComponent(sampleScriptName)
+    }
+
+    public static func sampleText(of file: URL) -> URL {
+        file.deletingLastPathComponent().appendingPathComponent(sampleName)
+    }
+
+    static func isSampleScript(_ url: URL) -> Bool {
+        url.lastPathComponent == sampleScriptName
     }
 
     @MainActor
-    public static func capturePreview(of spot: Spot, runs: SpotRuns) async throws {
-        guard spot.previewsSample else { throw SpotError.fault("\(spot.name) has no preview mode. Add preview=sample to its header.") }
-        let text = try await runs.answer(of: spot, .read, limit: 10, variables: ReadReason.preview.variables)
-        try text.write(to: preview(of: spot.url), atomically: true, encoding: .utf8)
+    public static func captureSample(of spot: Spot, runs: SpotRuns) async throws {
+        guard let sampled = spot.sampled else { throw SpotError.fault("\(spot.name) has no sample. Add \(sampleScriptName) beside it.") }
+        let text = try await runs.answer(of: sampled, .read, limit: sampleLimit)
+        try text.write(to: sampleText(of: spot.url), atomically: true, encoding: .utf8)
+    }
+
+    @MainActor
+    public static func sample(of spot: Spot, runsScript: Bool, runs: SpotRuns) async -> String? {
+        if runsScript {
+            guard let sampled = spot.sampled else { return nil }
+            return try? await runs.answer(of: sampled, .read, limit: sampleLimit)
+        }
+        let folder = spot.url.deletingLastPathComponent()
+        return await Task.detached(priority: .userInitiated) {
+            [sampleName, olderSampleName].lazy.compactMap { try? String(contentsOf: folder.appendingPathComponent($0), encoding: .utf8) }.first
+        }.value
+    }
+
+    static func hasKeptSample(beside file: URL) -> Bool {
+        [sampleName, olderSampleName].contains { FileManager.default.fileExists(atPath: file.deletingLastPathComponent().appendingPathComponent($0).path) }
     }
 }
