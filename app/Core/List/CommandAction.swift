@@ -1,12 +1,9 @@
-/// One more thing a command can do, which its script prints and its actions menu lists.
 public struct CommandAction: Equatable, Sendable {
-    /// What an action acts on: the selected item, the default, or the whole spot (protocol: Buttons and actions).
     public enum Scope: String, Sendable {
         case item
         case spot
     }
 
-    /// What the panel does after the action runs.
     public enum After: String, Sendable {
         case close
         case stay
@@ -38,7 +35,6 @@ public struct CommandAction: Equatable, Sendable {
         self.confirm = confirm
     }
 
-    /// Reads the block of one action. It needs a title, and a key or a scope it gives must be known.
     public init?(id: String, block: TextBlock) {
         guard let title = block.value("title") else { return nil }
         var key: ActionKey?
