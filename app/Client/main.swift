@@ -1,6 +1,6 @@
 import Darwin
 
-let startWait = getenv("OPENSPOT_START_WAIT").flatMap { Double(String(cString: $0)) } ?? 10
+let startWaitSeconds = getenv("OPENSPOT_START_WAIT").flatMap { Double(String(cString: $0)) } ?? 10
 nonisolated(unsafe) var connection: Int32 = -1
 
 func runAlone(_ app: AppBundle) -> Never {
@@ -40,13 +40,13 @@ func startInBackground(_ app: AppBundle, config: String) {
 func reachStarted(_ app: AppBundle, config: String) -> Int32 {
     startInBackground(app, config: config)
     var waited = 0.0
-    while waited < startWait {
+    while waited < startWaitSeconds {
         let reached = reach(config)
         if reached >= 0 { return reached }
         usleep(50_000)
         waited += 0.05
     }
-    let seconds = startWait == startWait.rounded() ? String(Int(startWait)) : String(startWait)
+    let seconds = startWaitSeconds == startWaitSeconds.rounded() ? String(Int(startWaitSeconds)) : String(startWaitSeconds)
     fail("Openspot did not start within \(seconds) seconds, so this call did not run. Open Openspot, then run it again.")
 }
 
@@ -119,9 +119,9 @@ func put(_ bytes: [UInt8], to descriptor: Int32) {
 guard let app = AppBundle() else { fail("openspot cannot find the path of its own program.") }
 let arguments = Array(CommandLine.arguments.dropFirst())
 let isLive = CommandKind.needsApp(arguments)
-connection = app.config.map(reach) ?? -1
+connection = app.configFolder.map(reach) ?? -1
 if connection < 0 {
-    guard isLive, let config = app.config else { runAlone(app) }
+    guard isLive, let config = app.configFolder else { runAlone(app) }
     connection = reachStarted(app, config: config)
 }
 signal(SIGINT) { _ in

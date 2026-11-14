@@ -18,7 +18,7 @@ struct AppBundle {
         contents + "/MacOS/Openspot"
     }
 
-    var config: String? {
+    var configFolder: String? {
         if let named = getenv("OPENSPOT_CONFIG").map({ String(cString: $0) }), !named.isEmpty { return named }
         if let state = devState, !state.isEmpty { return state }
         return getenv("HOME").map { String(cString: $0) + "/.config/openspot" }

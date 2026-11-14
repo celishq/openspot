@@ -47,11 +47,11 @@ public struct SpotLock: Equatable, Sendable {
         }
 
 
-        var added: String {
+        var addedLine: String {
             commit.map { "Added \(name) at \($0.prefix(7)).\n" } ?? "Added \(name).\n"
         }
 
-        var updated: String {
+        var updatedLine: String {
             commit.map { "Updated \(name) to \($0.prefix(7)).\n" } ?? "Updated \(name).\n"
         }
     }
@@ -121,7 +121,7 @@ public struct SpotLock: Equatable, Sendable {
             }
             let entry = Entry(source: source.text, commit: commit, paths: paths, hash: facts?.hash, uses: facts?.uses, canDo: facts?.canDo, address: facts?.release?.address, key: facts?.release?.publicKey)
             try write(try entries().filter { Set($0.paths).isDisjoint(with: paths) && $0.source != source.text } + [entry])
-            return old == nil ? entry.added : entry.updated
+            return old == nil ? entry.addedLine : entry.updatedLine
         }
     }
 
@@ -147,7 +147,7 @@ public struct SpotLock: Equatable, Sendable {
                 })
                 entries[index] = Entry(source: entry.source, commit: entry.commit, paths: entry.paths, hash: facts?.hash, uses: facts?.uses, canDo: facts?.canDo, address: facts?.release?.address, key: facts?.release?.publicKey)
                 changed[entry.source] = entries[index]
-                added += entry.added
+                added += entry.addedLine
             } catch {
                 faults += "\(entry.name): \((error as? SpotError)?.reason ?? error.localizedDescription)\n"
             }

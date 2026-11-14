@@ -1,7 +1,7 @@
 import Foundation
 
 enum ReservedSetting {
-    static let app = "openspot"
+    static let appSpot = "openspot"
     private static let commandKey = "key."
     static let icon = "icon"
     private static let spotKeys: Set<String> = ["enabled", "menubar", "float", icon]
@@ -16,7 +16,7 @@ enum ReservedSetting {
         func on(_ words: (String) -> [String]) -> Result<[String], Refusal> {
             flag.map { .success(words($0)) } ?? .failure(Refusal("`\(key)` takes `true` or `false`, such as `openspot setting set --spot \(spot) \(key) true`."))
         }
-        if spot == app, appKeys.contains(key) {
+        if spot == appSpot, appKeys.contains(key) {
             switch key {
             case "panel-key", "fix-key":
                 guard let value else { return .failure(Refusal("`\(key)` needs a key, such as `openspot setting set --spot openspot \(key) ctrl+space`.")) }

@@ -21,7 +21,7 @@ public struct ActionMenu: Equatable, Sendable {
 
     public static let key = "⌘K"
 
-    private static let searchFrom = 3
+    private static let rowsForSearch = 3
 
     public let rows: [Row]
     public private(set) var submenu: Submenu?
@@ -100,7 +100,7 @@ public struct ActionMenu: Equatable, Sendable {
     }
 
     public var isSearchable: Bool {
-        rows.count >= Self.searchFrom
+        rows.count >= Self.rowsForSearch
     }
 
     public var lines: Int {

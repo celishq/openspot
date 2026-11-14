@@ -2,8 +2,8 @@ import Foundation
 
 public final class CommandSocket: @unchecked Sendable {
     public static let name = SocketPath.name
-    static let unreadable = -32700
-    static let alone = -32000
+    static let unreadableCode = -32700
+    static let aloneCode = -32000
     private static let queueLength: Int32 = 64
     private static let callerLimit = 5
     private static let chunk = 65_536
@@ -64,13 +64,13 @@ public final class CommandSocket: @unchecked Sendable {
         let (line, rest) = receive(connection)
         let link = CommandConnection(descriptor: connection, rest: rest)
         guard let request = CommandRequest(line: line) else {
-            return link.end(fault(unreadable, "Openspot cannot read this request.", id: nil))
+            return link.end(fault(unreadableCode, "Openspot cannot read this request.", id: nil))
         }
         let environment = api.environment(of: peer(of: connection), over: request.environment(over: ProcessInfo.processInfo.environment))
         let call = CommandLineCall(arguments: request.arguments, environment: environment).map { api.admit($0, arguments: request.arguments, environment: environment) }
         let output = CommandOutput { text, isError in link.notify(isError ? "stderr" : "stdout", text: text) }
         guard let call, let work = api.work(for: call, input: { await link.stdin() }, environment: environment, isPiped: request.isPiped, isSandboxed: CallerTokens.isSandboxedApart(peer(of: connection)), output: output) else {
-            return link.end(fault(alone, "Run this call in a process of its own.", id: request.id))
+            return link.end(fault(aloneCode, "Run this call in a process of its own.", id: request.id))
         }
         let stop = CommandStop()
         link.listen { stop.cancel() }

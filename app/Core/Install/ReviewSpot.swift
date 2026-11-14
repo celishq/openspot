@@ -35,7 +35,7 @@ public struct ReviewSpot: Equatable, Sendable {
         let programs = spot.files.filter { ($0.isExecutable || ViewLibrary.isLibrary($0.path)) && !Self.canShow($0) }.map(\.path)
         let quiet = "Runs only when you use it"
         let release = (logs.first.flatMap { $0 } ?? ReleaseLog(releases: [])).review(over: spot.roots.first.flatMap { ReleaseLog(installed: $0, in: folder) })
-        subtitle = release.isOtherKey ? Self.otherKey
+        subtitle = release.isOtherKey ? Self.otherKeySubtitle
             : !programs.isEmpty ? "Holds a program that you cannot read" : primary.subtitle ?? (runs.isEmpty ? quiet : "Runs by itself")
         let uses = SpotUse.allCases.filter { use in scan.scripts.contains { $0.uses.contains(use) } }
         let present = spot.files.map(\.path).filter { FileManager.default.fileExists(atPath: folder.appendingPathComponent($0).path) }
@@ -122,7 +122,7 @@ public struct ReviewSpot: Equatable, Sendable {
         return try SpotsFolder(url: place).scan()
     }
 
-    static let otherKey = "Signed by another key"
+    static let otherKeySubtitle = "Signed by another key"
 
     private static func selfRuns(in scan: ScanResult) -> [String] {
         let placed = Set(scan.files.flatMap(\.spots).flatMap(\.places))

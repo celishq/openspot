@@ -7,7 +7,7 @@ public struct OfferedAction: Equatable, Sendable {
     public let origins: Set<SpotOrigin>
     public let when: String?
 
-    static let words: [String: SpotOrigin] = ["mine": .mine, "core": .core, "builtin": .builtIn]
+    static let originWords: [String: SpotOrigin] = ["mine": .mine, "core": .core, "builtin": .builtIn]
 
     public init(action: CommandAction, owner: String = "", group: String? = nil, origins: Set<SpotOrigin> = [], when: String? = nil) {
         self.action = action
@@ -50,7 +50,7 @@ public struct OfferedAction: Equatable, Sendable {
 
     private static func origins(_ filter: String, of name: String) throws -> Set<SpotOrigin> {
         try Set(filter.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }.map { word in
-            guard let origin = words[word] else {
+            guard let origin = originWords[word] else {
                 throw SpotError.fault("\(name) offers actions to an unknown card: \(word). Use mine, core or builtin")
             }
             return origin

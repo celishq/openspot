@@ -141,7 +141,7 @@ final class ConfigFileTests: XCTestCase {
         XCTAssertEqual(file.read().keys.map(\.act), [.command("left")])
     }
 
-    func testWritesAtTheSameTimeLoseNoSetting() throws {
+    func test_A51_writesAtTheSameTimeLoseNoSetting() throws {
         let file = file
 
         DispatchQueue.concurrentPerform(iterations: 20) { index in

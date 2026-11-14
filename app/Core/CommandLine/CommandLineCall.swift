@@ -414,8 +414,8 @@ public enum CommandLineCall: Equatable, Sendable {
 
     private static func keyName(_ words: [String]) -> String {
         switch words.first {
-        case "--panel": "--spot \(ReservedSetting.app) panel-key"
-        case "--fix": "--spot \(ReservedSetting.app) fix-key"
+        case "--panel": "--spot \(ReservedSetting.appSpot) panel-key"
+        case "--fix": "--spot \(ReservedSetting.appSpot) fix-key"
         default: words.dropFirst().first == "--float" ? "float" : "key.\(words.dropFirst().first ?? "")"
         }
     }

@@ -34,7 +34,7 @@ public final class CallLog: Sendable {
             case .stopped: frames.isEmpty ? "stopped" : "stopped after its answer"
             case .failed(let reason): reason
             }
-            let head = "\(CallLog.mark)\(started.formatted(.iso8601)) · \(arguments.joined(separator: " ")) · \(ending) · \(String(format: "%.2f", seconds)) s\n"
+            let head = "\(CallLog.recordMark)\(started.formatted(.iso8601)) · \(arguments.joined(separator: " ")) · \(ending) · \(String(format: "%.2f", seconds)) s\n"
             let share = limit / 4
             let printed = frames[CallLog.firstShown(of: frames, within: share)...].joined(separator: CallLog.frameSeparator)
             let parts = [("stdin", input ?? ""), ("stdout", printed), ("stderr", errors)]
@@ -49,7 +49,7 @@ public final class CallLog: Sendable {
         }
     }
 
-    public static let mark = "== "
+    public static let recordMark = "== "
     private static let frameSeparator = "---\n"
 
     public let folder: URL
@@ -87,7 +87,7 @@ public final class CallLog: Sendable {
 
     private static func newest(_ log: Data, within limit: Int) -> Data {
         guard log.count > limit else { return log }
-        let start = Data("\n\(mark)".utf8)
+        let start = Data("\n\(recordMark)".utf8)
         let earliest = log.startIndex + log.count - limit - 1
         guard let cut = log.range(of: start, in: earliest..<log.endIndex) ?? log.range(of: start, options: .backwards) else { return log }
         return log[(cut.lowerBound + 1)...]

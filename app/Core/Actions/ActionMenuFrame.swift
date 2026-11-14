@@ -6,7 +6,7 @@ public struct ActionMenuFrame: Equatable, Sendable {
 
     public static let width = SpotTokens.width(columns: 3)
     public static let gap = SpotTokens.placeGap
-    private static let tie: CGFloat = 1
+    private static let leftTie: CGFloat = 1
     private static let margin: CGFloat = 16
     private static let step = SpotTokens.menuRowHeight + SpotTokens.menuRowGap
 
@@ -19,7 +19,7 @@ public struct ActionMenuFrame: Equatable, Sendable {
     }
 
     public init(item: CGRect, height: CGFloat, bounds: CGRect) {
-        let isOnLeft = item.midX <= bounds.midX + Self.tie
+        let isOnLeft = item.midX <= bounds.midX + Self.leftTie
         var origin: CGPoint
         if item.width <= SpotTokens.cell {
             origin = CGPoint(x: isOnLeft ? item.maxX + Self.gap : item.minX - Self.gap - Self.width, y: item.minY)
