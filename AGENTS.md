@@ -46,6 +46,15 @@ Write a doc that people read, such as `GUIDE.md` and `PROTOCOL.md`, the way Appl
 - Keep the main idea and the edge cases apart. Put limits, errors and rare cases in a short note or in the reference.
 - Write natural English: "you" for the reader, short sentences, common words. Contractions are fine.
 - Use one word for each meaning on the page.
+- `make verify` fails when a doc links to a file or a heading that does not exist, names a repo path or a `make` target
+  that does not exist, or when code cites a protocol heading that does not exist (`DocReferenceTests`).
+- It fails when PROTOCOL.md and Core disagree on a key, a block kind, a call word, an event, a place, a use, a shell
+  helper or an `openspot` command (`ProtocolContractTests`). `scripts/protocol-gaps.txt` lists today's gaps, and it
+  fails on a gap the list lacks and on a listed gap that is gone.
+- It fails when an `sh`, `js` or `swift` example of GUIDE.md, PROTOCOL.md or `app/Help/` does not run (`DocExampleTests`).
+  An example that needs a network, an account or a tool that not every Mac has goes in a `text` fence.
+- `sh scripts/doc-repeats.sh [words]` prints each pair of sentences in the docs that share a run of that many words or
+  more, 6 by default, so that you can say the thing once and link to it.
 
 ## Comments
 
