@@ -53,10 +53,10 @@ struct SpotCalls {
         }
     }
 
-    func open(_ id: String, page: String?) -> CommandAPI.Work {
+    func open(_ id: String) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot open \(id)") }
         return CommandAnswer.work {
-            guard await app.open(id, page: page) else { throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.") }
+            guard await app.open(id) else { throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.") }
             return ""
         }
     }
@@ -125,10 +125,20 @@ struct SpotCalls {
         }
     }
 
-    func back(_ id: String) -> CommandAPI.Work {
-        guard let app else { return CommandAnswer.notRunning("spot back \(id)") }
+    func push(_ id: String, page: String?, title: String?, replace: Bool) -> CommandAPI.Work {
+        guard let app else { return CommandAnswer.notRunning("spot push \(id)") }
         return CommandAnswer.work {
-            guard await app.back(id) else { throw SpotError.failed(1, "The panel shows no page of `\(id)` to go back from.") }
+            guard await app.push(id, page: page, title: title, replace: replace) else {
+                throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.")
+            }
+            return ""
+        }
+    }
+
+    func pop(_ id: String, all: Bool) -> CommandAPI.Work {
+        guard let app else { return CommandAnswer.notRunning("spot pop \(id)") }
+        return CommandAnswer.work {
+            guard await app.pop(id, all: all) else { throw SpotError.failed(1, "The panel shows no sheet of `\(id)` to go back from.") }
             return ""
         }
     }

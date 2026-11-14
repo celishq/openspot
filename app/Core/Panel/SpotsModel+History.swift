@@ -27,6 +27,23 @@ extension SpotsModel {
         return true
     }
 
+    /// Opens the first sheet of a spot as a new flow, with nothing behind it: in the panel that shows, or else in the panel
+    /// that it shows. Returns false when no spot has that ID.
+    public func openFlow(_ id: String) -> Bool {
+        guard entries.contains(where: { $0.id == id }) else { return false }
+        closeHistory()
+        return openSheet(id)
+    }
+
+    /// Pushes a sheet of a spot over the flow that shows, as `openspot spot push` asks: in the panel that shows, or else in
+    /// the panel that it shows. Returns false when no spot has that ID.
+    public func pushSheet(_ id: String, page: String?, title: String?, replace: Bool) -> Bool {
+        guard entries.contains(where: { $0.id == id }) else { return false }
+        if !isShown { host.show() }
+        push(id, page: page, title: title, replace: replace)
+        return true
+    }
+
     /// Shows the sheet some steps before in the history. Returns false when that many do not lie behind.
     @discardableResult
     public func goBack(steps: Int = 1) -> Bool {
@@ -53,7 +70,7 @@ extension SpotsModel {
 
     /// Shows the first sheet of the spot that shows, back through its own pages only. Returns false when none lies behind.
     @discardableResult
-    func goFirst(in id: String) -> Bool {
+    public func goFirst(in id: String) -> Bool {
         guard openList == id else { return false }
         var start = history.index
         while start > 0, history.pages[start].page != nil, history.pages[start - 1].spot == id { start -= 1 }

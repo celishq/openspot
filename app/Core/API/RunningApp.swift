@@ -13,13 +13,16 @@ public protocol RunningApp: Sendable {
     /// Restarts into the downloaded update. Returns false when none waits.
     func installUpdate() async -> Bool
     func quit() async
-    /// Opens the panel on the sheet of a spot, or on a page of it. Returns false when no spot has that ID.
-    func open(_ id: String, page: String?) async -> Bool
+    /// Opens the panel on the first sheet of a spot as a new flow. Returns false when no spot has that ID.
+    func open(_ id: String) async -> Bool
+    /// Pushes a sheet of a spot, or a page of it, over the flow that shows (protocol: Pages). Returns false when no spot has
+    /// that ID.
+    func push(_ id: String, page: String?, title: String?, replace: Bool) async -> Bool
+    /// Pops the sheet of a spot that shows, or with `all` goes back to its first sheet (protocol: Pages). Returns false when
+    /// it moves nothing.
+    func pop(_ id: String, all: Bool) async -> Bool
     /// Shows the whole text of a spot that comes with the app, and what of it runs by itself. Returns false when no such
     /// spot has that ID.
-    /// Shows the sheet before in the panel, when a spot shows and that sheet is a page of it (protocol: Pages). Returns false
-    /// otherwise.
-    func back(_ id: String) async -> Bool
     func review(_ id: String) async -> Bool
     /// Does what the row of a card's actions menu does to a spot. Returns false when no card has that ID.
     func act(_ act: CardAct, on id: String) async -> Bool

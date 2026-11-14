@@ -30,9 +30,16 @@ struct SpotRunningApp: RunningApp {
         await MainActor.run { NSApp.terminate(nil) }
     }
 
-    func open(_ id: String, page: String?) async -> Bool {
-        if let page { return await model.openSheet(id, page: page) }
-        return await model.openSheet(id)
+    func open(_ id: String) async -> Bool {
+        await model.openFlow(id)
+    }
+
+    func push(_ id: String, page: String?, title: String?, replace: Bool) async -> Bool {
+        await model.pushSheet(id, page: page, title: title, replace: replace)
+    }
+
+    func pop(_ id: String, all: Bool) async -> Bool {
+        await all ? model.goFirst(in: id) : model.pop(in: id)
     }
 
     func choose(for id: String) async -> Bool {
@@ -41,10 +48,6 @@ struct SpotRunningApp: RunningApp {
 
     func act(_ act: CardAct, on id: String) async -> Bool {
         await model.act(act, on: id)
-    }
-
-    func back(_ id: String) async -> Bool {
-        await model.pop(in: id)
     }
 
     func review(_ id: String) async -> Bool {

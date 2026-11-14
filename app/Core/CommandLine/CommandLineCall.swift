@@ -27,11 +27,12 @@ public enum CommandLineCall: Equatable, Sendable {
     /// Takes a spot that `spot add` added out of the spots folder.
     case spotRemove(String)
     /// Opens the panel on the sheet of a spot.
-    case spotOpen(String, page: String?)
+    case spotOpen(String)
+    case spotPush(String, page: String?, title: String?, replace: Bool)
+    case spotPop(String, all: Bool)
     case spotChoose(String)
     case spotAct(CardAct, String)
     /// Shows the whole text of a spot that comes with the app.
-    case spotBack(String)
     case spotReview(String)
     /// Opens the panel in Edit Spots with the store.
     case spotStore
@@ -151,8 +152,10 @@ public enum CommandLineCall: Equatable, Sendable {
                                                  its spot. With no source, it adds each spot of spots.lock that is
                                                  missing, at its commit. An update that adds a use needs --yes.
     openspot spot remove <id>                    Moves a spot that spot add added to the Trash, and drops it from spots.lock.
-    openspot spot open <id> [page]               Opens the panel on the sheet of a spot, or on a page of it.
-    openspot spot back <id>                      Goes back one page of a spot that shows.
+    openspot spot open <id>                      Opens the panel on a spot, as a new flow.
+    openspot spot push <id> [page] [--replace] [--title <words>]
+                                                 Pushes a spot, or a page of it, over the flow that shows.
+    openspot spot pop <id> [--all]               Goes back one sheet of a spot that shows, or to its first sheet.
     openspot spot choose <id>                    Asks for files and drops them on a spot that takes them.
     openspot spot edit|prompt|share|delete <id>  Does what the row of a card's menu does: edit, copy a prompt, share or delete.
     openspot spot review <id>                    Shows the whole text of a spot that comes with the app, and what of it
@@ -319,13 +322,16 @@ public enum CommandLineCall: Equatable, Sendable {
                 guard case .settingGet(let spot, let key) = call else { return call }
                 return Self.changing(.settingChange(spot: spot, key: key), "openspot setting change", "opens a form", environment)
             } ?? .unknown(arguments.joined(separator: " "))
-        case ("spot", "open") where rest.count == 2 || rest.count == 3:
-            self = Self.changing(.spotOpen(rest[1], page: rest.count == 3 ? rest[2] : nil), "openspot spot open", "opens the panel", environment)
+        case ("spot", "open") where rest.count == 2: self = Self.changing(.spotOpen(rest[1]), "openspot spot open", "opens the panel", environment)
+        case ("spot", "push") where rest.count >= 2:
+            guard let push = Self.push(Array(rest.dropFirst())) else { self = .unknown(arguments.joined(separator: " ")); return }
+            self = Self.changing(push, "openspot spot push", "opens the panel", environment)
+        case ("spot", "pop") where rest.count == 2 || rest.count == 3 && rest[2] == "--all":
+            self = Self.changing(.spotPop(rest[1], all: rest.count == 3), "openspot spot pop", "moves the panel", environment)
         case ("spot", "choose") where rest.count == 2: self = Self.changing(.spotChoose(rest[1]), "openspot spot choose", "opens a window", environment)
         case ("spot", let verb?) where rest.count == 2 && CardAct(rawValue: verb) != nil:
             let act = CardAct(rawValue: verb)!
             self = Self.changing(.spotAct(act, rest[1]), "openspot spot \(verb)", act == .delete ? "changes your spots folder" : "opens a window", environment)
-        case ("spot", "back") where rest.count == 2: self = Self.changing(.spotBack(rest[1]), "openspot spot back", "moves the panel", environment)
         case ("spot", "review") where rest.count == 2: self = Self.changing(.spotReview(rest[1]), "openspot spot review", "opens the panel", environment)
         case ("spot", "store") where rest.count == 1: self = Self.changing(.spotStore, "openspot spot store", "opens the panel", environment)
         case ("prompt", "new") where rest.count > 1: self = .promptNew(rest.dropFirst().joined(separator: " "))
@@ -577,4 +583,26 @@ public enum CommandLineCall: Equatable, Sendable {
         }
         return options
     }
+
+    /// The push of `spot push <id> [page] [--replace] [--title <words>]`, from the words after `push`, or nil for words it
+    /// does not take.
+    private static func push(_ words: [String]) -> CommandLineCall? {
+        guard let id = words.first else { return nil }
+        var page: String?
+        var title: String?
+        var replace = false
+        var rest = words.dropFirst()
+        while let word = rest.popFirst() {
+            switch word {
+            case "--replace": replace = true
+            case "--title":
+                guard let words = rest.popFirst() else { return nil }
+                title = words
+            case _ where page == nil && !word.hasPrefix("--"): page = word
+            default: return nil
+            }
+        }
+        return .spotPush(id, page: page, title: title, replace: replace)
+    }
+
 }

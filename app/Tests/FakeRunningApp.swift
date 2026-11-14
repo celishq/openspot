@@ -39,13 +39,18 @@ actor FakeRunningApp: RunningApp {
         quits += 1
     }
 
-    func open(_ id: String, page: String?) -> Bool {
-        opened.append((["open", id] + [page].compactMap { $0 }).joined(separator: " "))
+    func open(_ id: String) -> Bool {
+        opened.append("open \(id)")
         return id != "gone"
     }
 
-    func back(_ id: String) -> Bool {
-        opened.append("back \(id)")
+    func push(_ id: String, page: String?, title: String?, replace: Bool) -> Bool {
+        opened.append((["push", id, page, replace ? "replace" : nil, title].compactMap { $0 }).joined(separator: " "))
+        return id != "gone"
+    }
+
+    func pop(_ id: String, all: Bool) -> Bool {
+        opened.append((["pop", id, all ? "all" : nil].compactMap { $0 }).joined(separator: " "))
         return id != "gone"
     }
 

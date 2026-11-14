@@ -327,4 +327,15 @@ final class SheetPagesModelTests: XCTestCase {
         XCTAssertEqual(model.openList, "list")
         XCTAssertEqual(host.notes.last, "Narrow takes no page bad. Add pages=bad to its header")
     }
+
+    func testOpenStartsANewFlowWithNothingBehind() async throws {
+        try await openList()
+        try await openPage()
+
+        XCTAssertTrue(model.openFlow("other"))
+
+        try await wait("the other spot") { model.openList == "other" && titles == ["Other"] }
+        XCTAssertEqual(model.history.pages, [SheetPage(spot: "other")])
+        XCTAssertNil(model.sheets["list"]?.page)
+    }
 }
