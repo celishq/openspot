@@ -65,7 +65,7 @@ extension SpotsModel {
         if openList == nil { endFlow() }
         flow.push(FlowSheet(spot: id, title: title))
         sheets[id]?.show(page: nil)
-        waitPush(from: moving && openList != nil && openList != id ? 1 : nil)
+        waitPush(moving: moving && openList != nil && openList != id)
         present(id, moving: moving)
     }
 
@@ -94,13 +94,15 @@ extension SpotsModel {
     }
 
     func showSheet(_ list: String?, moving: Bool) {
-        guard list != openList else { return }
+        guard list != openList else { return dropWaitingPush() }
         if let list, openList != nil, transition.isOpen {
+            let step = edgeStep
             change(moving ? .sheet(isOpen: true) : nil, {
                 transition.show(list, moves: true)
                 startWaitingPush()
             }) { [weak self] in
                 self?.change(nil) { self?.transition.settle(list) }
+                self?.settleEdges(step)
             }
             return
         }

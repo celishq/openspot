@@ -24,8 +24,7 @@ struct SpotSheetLayer: View {
             hasCardLook: card?.look != nil,
             morph: SheetMorph(card: closedRect, sheet: sheetRect)
         )
-        .id(entry.id)
-        .modifier(FlowPushIn(model: model))
+        .id(FlowSheet(spot: entry.id, page: model.sheets[entry.id]?.page))
         .morph(progress, opacity: contentOpacity)
         .overlay(alignment: .topLeading) {
             if let look = card?.look, let frame {
@@ -113,17 +112,6 @@ private struct MovingLook<Look: View>: View {
 
     var body: some View {
         look(model.transition.phase != .open || model.transition.id != id)
-    }
-}
-
-private struct FlowPushIn: ViewModifier {
-    let model: SpotsModel
-
-    func body(content: Content) -> some View {
-        let offset = model.pushOffset
-        content
-            .offset(x: offset)
-            .opacity(1 - abs(offset) / MotionTokens.pushDistance)
     }
 }
 

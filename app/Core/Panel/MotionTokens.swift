@@ -21,7 +21,6 @@ public enum MotionTokens {
     public static let pressedScale = 1.04
     public static let liftedScale = 1.05
     public static let focusedScale = 1.04
-    public static let pushDistance = Double(SheetPlacement.width)
     public static let pushedScale = 0.4
     public static let pressedGlass = 1.5
     public static let menuStartScale = 0.9

@@ -4,7 +4,7 @@ import Foundation
 @MainActor
 final class TestHost: SpotsHost {
     var dismissals = 0
-    var pushStarts: [Double] = []
+    var edgeChanges: [(motion: PanelMotion?, edges: FlowEdges)] = []
     var shows = 0
     var dragShows = 0
     var notes: [String] = []
@@ -135,7 +135,7 @@ final class TestHost: SpotsHost {
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void) {
         motions.append(motion)
         body()
-        if let offset = model?.pushOffset, offset != 0 { pushStarts.append(offset) }
+        if let edges = model?.flowEdges, edges != edgeChanges.last?.edges { edgeChanges.append((motion, edges)) }
         if let phase = model?.transition.phase { phases.append(phase) }
         openings.append(model?.runs.opening.moving)
         if heldEnds != nil { heldEnds?.append(completion) } else { completion() }

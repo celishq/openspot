@@ -142,8 +142,9 @@ struct SpotsView: View {
     }
 
     private var replacedHeight: CGFloat {
-        guard let replaced = model.transition.replaced else { return 0 }
-        return Self.blurHeight(of: rect(of: replaced))
+        let stand = model.flowEdges.from.map(Self.blurHeight(of:)) ?? 0
+        guard let replaced = model.transition.replaced else { return stand }
+        return max(stand, Self.blurHeight(of: rect(of: replaced)))
     }
 
     private var gridPush: CGFloat {

@@ -23,7 +23,7 @@ enum SpotMotion {
     static func animation(_ motion: PanelMotion) -> Animation {
         switch motion {
         case .sheet(let isOpen): grow(isOpen: isOpen)
-        case .edit, .push: move
+        case .edit: move
         case .fade: fade(isShown: true)
         }
     }
