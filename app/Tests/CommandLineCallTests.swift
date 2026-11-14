@@ -15,6 +15,12 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertFalse(CommandLineCall.usage.contains("glyphs"))
     }
 
+    func testGridEditOpensEditSpotsAndSpotStoreIsGone() {
+        XCTAssertEqual(CommandLineCall(arguments: ["grid", "edit"]), .gridEdit)
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "store"]), .unknown("spot store"))
+        XCTAssertTrue(CommandLineCall.usage.contains("openspot grid edit"))
+    }
+
     func testEventEmitTakesAnEventNameAndAValue() {
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music.track"]), .eventEmit(name: "music.track", value: nil))
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music.track", "Blue in Green"]), .eventEmit(name: "music.track", value: "Blue in Green"))

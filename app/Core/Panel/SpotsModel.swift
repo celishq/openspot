@@ -192,14 +192,8 @@ public final class SpotsModel {
     public let lift = SpotLift()
     /// The card that a release or a cancel of a drag puts in place, until its motion ends.
     public internal(set) var landing: String?
-    /// The card that the window draws over the panel and the dock while the person carries it, until it lands.
+    /// The card that the window draws over the panel while the person carries it, until it lands.
     public internal(set) var carry: SpotCarry?
-    /// Where the dock lies in the panel's space while Edit Spots shows it, and how far it has scrolled.
-    @ObservationIgnored public var dockFrame: CGRect?
-    @ObservationIgnored public internal(set) var dockScroll: CGFloat = 0
-    /// The layouts of the grid for each place that a carried spot of the dock can take. Its card is on the grid while the
-    /// drag holds it there.
-    @ObservationIgnored var arrival: SpotDrag?
     /// The card that the person resizes by its corner in Edit Spots, and the size that a release keeps.
     public internal(set) var resize: SpotResize?
     /// How long the pointer stays near a new place before the other cards make room there.
@@ -212,19 +206,6 @@ public final class SpotsModel {
     @ObservationIgnored public internal(set) var gridScroll: CGFloat = 0
     @ObservationIgnored var scrollAtPress: CGFloat = 0
     @ObservationIgnored var pointerMove: CGSize?
-    /// The spots of Edit Spots' store.
-    public internal(set) var dock = SpotDock(items: [])
-    /// The listing of the spot that the store opened.
-    public internal(set) var dockListing: SpotListing?
-    /// The spots that are off, and the packages of the spots of the spots folder, as the last read of the folder found them.
-    @ObservationIgnored var dockOff: [SpotDock.Item] = []
-    @ObservationIgnored var dockPublications: [String: SpotDock.Publication] = [:]
-    /// The stamp of the folder that `dockOff` and `dockPublications` were read from, and the read that runs in the background.
-    /// A publish changes no stamp, so it reads the store again itself.
-    @ObservationIgnored var dockStamp: SpotsFolder.Stamp?
-    @ObservationIgnored var dockRead: Task<Void, Never>?
-    /// Whether the person types in the dock's search, which then takes each key but Esc.
-    public internal(set) var isSearchingDock = false
     /// Where the person pressed a card's resize handle, in the handle's square.
     @ObservationIgnored var resizeGrip = CGPoint(x: SpotTokens.resizeHandle, y: SpotTokens.resizeHandle)
     public var arrangement = SpotArrangement()
@@ -341,7 +322,6 @@ public final class SpotsModel {
         if panels != config.panels { panels = config.panels }
         scanned = scan.spots
         if let ids, isOnlyNamed { patchEntries(ids) } else { rebuildEntries() }
-        if isEditing { refreshDock(in: folder) } else { readDockLater(in: folder) }
         if problems != self.problems, !problems.isEmpty {
             host.notify(problems.joined(separator: " "))
         }

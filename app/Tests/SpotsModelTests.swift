@@ -1555,14 +1555,14 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the New spot sheet from Edit Spots") { model.openList == "new" }
     }
 
-    func testAKeywordFindsASpotAndTheStoreStartsEditSpotsWithTheSearchCleared() throws {
+    func testAKeywordFindsASpotAndEditGridStartsEditSpotsWithTheSearchCleared() throws {
         try script("store", header: "title=Spots\nkeywords=edit spots", "true")
         model.reload()
 
         model.query = "edit spots"
         XCTAssertEqual(model.visible.first?.id, "store")
 
-        model.openStore()
+        model.editGrid()
         XCTAssertTrue(model.isEditing)
         XCTAssertEqual(model.query, "")
     }

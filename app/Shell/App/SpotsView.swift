@@ -215,7 +215,7 @@ struct SpotsView: View {
 }
 
 /// Scrolls the grid while a lifted card lies in the fade at either end of the grid's clear part, faster the deeper it lies,
-/// once a frame until the drag ends. A card past the panel's bottom or over the dock scrolls nothing.
+/// once a frame until the drag ends. A card past the panel's bottom scrolls nothing.
 private struct GridEdgeScroll: ViewModifier {
     let model: SpotsModel
     @Binding var scroll: ScrollPosition
@@ -234,7 +234,7 @@ private struct GridEdgeScroll: ViewModifier {
     }
 
     private func step(seconds: Double) {
-        guard let drag = model.drag, model.carry?.isOverDock != true else { return }
+        guard let drag = model.drag else { return }
         let window = ScrollWindow(
             top: SpotTokens.halo + SpotTokens.rowHeight + SpotScrollEdges.fadeLength,
             bottom: SpotTokens.panelHeight - SpotsView.gridBottom - SpotScrollEdges.fadeLength,

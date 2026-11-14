@@ -4,7 +4,7 @@ import SwiftUI
 
 /// The rim of a surface of a fixed size, drawn once into a picture for each size and theme. A card moves and shrinks this
 /// picture on each frame of a push, which costs nothing, where a drawn or a layer rim is made again on each frame. It keeps
-/// 8 MB of pictures beside two of its largest, such as the dock's, and lets the least recently used go first.
+/// 8 MB of pictures beside two of its largest, and lets the least recently used go first.
 struct SpotRimPicture: View {
     let size: CGSize
     let radius: CGFloat

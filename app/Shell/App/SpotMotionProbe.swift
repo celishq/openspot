@@ -12,9 +12,9 @@ import ScreenCaptureKit
 /// whether it is on the grid after.
 /// `scripts/motion-perf.sh` starts it with `OPENSPOT_PROBE`. The panel stays almost clear, takes no focus and no clicks,
 /// unless `OPENSPOT_SEEN` asks for a picture. With `OPENSPOT_SHOTS`, a drag saves a picture of each state to that folder
-/// from a panel off every screen, `edit` saves Edit Spots with its dock from the panel at its place, and a card carried to
-/// the dock, and neither times anything. `menu` opens and closes the actions menu, or saves it at its card and row. `tile` pulls the corner of a spot of the dock, or with `OPENSPOT_ROW=grid` of a
-/// card, with mouse events on each frame, and writes how often its size changed.
+/// from a panel off every screen, and `edit` saves Edit Spots from the panel at its place, and neither times anything. `menu`
+/// opens and closes the actions menu, or saves it at its card and row. `tile` pulls the corner of a card, with mouse events
+/// on each frame, and writes how often its size changed.
 @MainActor
 final class SpotMotionProbe: NSObject {
     /// How long each open of the panel is timed: its fade and the reads that land in it.
@@ -151,24 +151,18 @@ final class SpotMotionProbe: NSObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.edit(left: left - 1) }
     }
 
-    /// Saves a picture of Edit Spots with its store a second after it starts, then of the tip of the first card's eye, then of
-    /// the listing of the store's first row, then the pictures of a carried card, then of the panel after Edit Spots ends and
-    /// starts again.
+    /// Saves a picture of Edit Spots a second after it starts, then of the tip of the first card's eye, then of the panel
+    /// after Edit Spots ends and starts again.
     private func shootEdit(into folder: String) {
         model.beginEditing()
         try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            self.save(to: "\(folder)/dock.png")
+            self.save(to: "\(folder)/edit.png")
             self.model.tip = self.model.visible.first.map { SpotTip(id: $0.id, anchor: .trailingCorner, text: "Hide from grid") }
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 self.save(to: "\(folder)/tip.png")
                 self.model.tip = nil
-                if let id = self.model.dock.shown.first?.id { self.model.openListing(id) }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                    self.save(to: "\(folder)/listing.png")
-                    if let id = self.model.dock.opened { self.model.openListing(id) }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.shootCarry(into: folder) }
-                }
+                self.shootEnd(into: folder)
             }
         }
     }
@@ -280,66 +274,7 @@ final class SpotMotionProbe: NSObject {
         }
     }
 
-    /// Saves pictures of `OPENSPOT_SPOT` carried over the dock, a second after its release there, then carried from the dock
-    /// over the grid's first card, a second after its release there, and of the dock's first spot pulled a column wider and
-    /// a row taller.
-    private func shootCarry(into folder: String) {
-        guard let id = spot, let index = model.visible.firstIndex(where: { $0.id == id }), let dock = model.dockFrame else {
-            return finish(with: "shots\n")
-        }
-        let rect = model.placements[index].rect
-        let origin = model.gridOrigin
-        let move = CGSize(width: dock.midX - origin.x - rect.midX, height: dock.midY - origin.y - rect.midY)
-        model.dragSpot(id, by: CGSize(width: 1, height: 1))
-        model.dragSpot(id, by: move)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            self.save(to: "\(folder)/carried.png")
-            self.model.dropSpot(by: move)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                self.save(to: "\(folder)/dropped.png")
-                self.shootArrival(of: id, into: folder)
-            }
-        }
-    }
-
-    /// Carries a spot of the dock over the left half of the grid's first card, and saves a picture of it there and a second
-    /// after its release.
-    private func shootArrival(of id: String, into folder: String) {
-        guard let dock = model.dockFrame, let index = model.dock.shown.firstIndex(where: { $0.id == id }), let first = model.placements.first else {
-            return finish(with: "shots\n")
-        }
-        let tile = model.dock.rects[index]
-        let origin = model.gridOrigin
-        let target = CGPoint(x: origin.x + first.rect.minX + first.rect.width / 4, y: origin.y + first.rect.midY)
-        let start = CGPoint(x: dock.minX + SpotDock.rowsOrigin.x + tile.midX, y: dock.minY + SpotDock.rowsOrigin.y + tile.midY - model.dockScroll)
-        let move = CGSize(width: target.x - start.x, height: target.y - start.y)
-        model.dragDockSpot(id, by: CGSize(width: 1, height: 1))
-        model.dragDockSpot(id, by: move)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            self.save(to: "\(folder)/arriving.png")
-            self.model.dropDockSpot(by: move)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                self.save(to: "\(folder)/arrived.png")
-                self.shootTileResize(into: folder)
-            }
-        }
-    }
-
-    /// Pulls the corner of the dock's first spot one column right and one row down, and saves a picture of it.
-    private func shootTileResize(into folder: String) {
-        guard let id = model.dock.shown.first?.id else { return finish(with: "shots\n") }
-        let move = CGSize(width: SpotTokens.cell + SpotTokens.columnGap, height: SpotTokens.rowHeight + SpotTokens.rowGap)
-        model.resizeSpot(id, by: .zero)
-        model.resizeSpot(id, by: move)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            self.save(to: "\(folder)/tile-resized.png")
-            self.model.cancelResize()
-            self.shootEnd(into: folder)
-        }
-    }
-
-    /// Ends Edit Spots and saves a picture of the panel a second later, at its place with the store put away, then starts it
-    /// again and saves a picture of the store as it comes back.
+    /// Ends Edit Spots and saves a picture of the panel a second later, then starts it again and saves a picture of it.
     private func shootEnd(into folder: String) {
         model.endEditing()
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
@@ -368,7 +303,7 @@ final class SpotMotionProbe: NSObject {
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKey()
         let inset = SpotTokens.keycap / 2
-        let corner = CGPoint(x: window.place.panel.x + window.place.left + end.x - inset, y: window.place.panel.y + end.y - inset)
+        let corner = CGPoint(x: window.place.left + end.x - inset, y: end.y - inset)
         let reach = CGSize(width: 2 * (SpotTokens.cell + SpotTokens.columnGap), height: SpotTokens.rowHeight + SpotTokens.rowGap)
         func post(_ type: NSEvent.EventType, _ share: CGFloat) {
             let point = NSPoint(x: corner.x + reach.width * share, y: view.bounds.height - corner.y - reach.height * share)

@@ -74,36 +74,4 @@ final class ScreenPlaceTests: XCTestCase {
 
         XCTAssertEqual(ScreenPlace.frame(ofBounds: bounds, mainHeight: 967), CGRect(x: -2000, y: 267, width: 800, height: 600))
     }
-
-    func testEditSpotsKeepsThePanelStillAndTheStoreFillsTheAreaUnderIt() {
-        let area = CGRect(x: 0, y: 0, width: 1440, height: 875)
-        let panel = CGRect(x: 575, y: 400, width: 289, height: 385)
-
-        let place = ScreenPlace.edit(under: panel, in: area)
-
-        XCTAssertEqual(place.lift, 0)
-        XCTAssertEqual(place.dock, CGRect(x: 262, y: 20, width: SpotTokens.dockWidth, height: 400 - 40))
-    }
-
-    func testEditSpotsLiftsThePanelOnlyAsFarAsOneLineOfRowsNeeds() {
-        let area = CGRect(x: 0, y: 0, width: 1440, height: 875)
-        let panel = CGRect(x: 575, y: 100, width: 289, height: 385)
-
-        let place = ScreenPlace.edit(under: panel, in: area)
-
-        XCTAssertEqual(place.lift, SpotTokens.dockHeight(rows: 1) + 40 - 100)
-        XCTAssertEqual(place.dock.height, SpotTokens.dockHeight(rows: 1))
-    }
-
-    func testTheStoreKeepsOneLineOfRowsUnderATallPanel() {
-        let area = CGRect(x: 0, y: 0, width: 1440, height: 875)
-
-        XCTAssertEqual(ScreenPlace.edit(under: CGRect(x: 575, y: 50, width: 289, height: 825), in: area).dock.height, SpotTokens.dockHeight(rows: 1))
-    }
-
-    func testTheStoreStaysWholeOnItsScreen() {
-        let panel = CGRect(x: 690, y: 400, width: 289, height: 300)
-
-        XCTAssertEqual(ScreenPlace.edit(under: panel, in: CGRect(x: 0, y: 0, width: 1000, height: 800)).dock.minX, 65)
-    }
 }

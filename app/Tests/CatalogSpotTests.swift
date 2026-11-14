@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 /// Proves the Spots spot of the app: a small card on the grid that a search for "edit spots" finds, whose press opens the
-/// store of Edit Spots through the API.
+/// grid of Edit Spots through the API.
 final class CatalogSpotTests: BuiltInCase {
     override func setUp() async throws {
         try await super.setUp()
@@ -30,11 +30,11 @@ final class CatalogSpotTests: BuiltInCase {
         XCTAssertEqual(defaults.arrangement.choices.first { $0.id == spot.id }?.letter, "p")
     }
 
-    func testAPressOpensTheStoreInTheApp() async throws {
+    func testAPressOpensEditSpotsInTheApp() async throws {
         _ = try await catalog.perform(SpotAction(arguments: ["open"]), timeout: 5)
 
         let opened = await app.opened
-        XCTAssertEqual(opened, ["store"])
+        XCTAssertEqual(opened, ["grid"])
     }
 
     func testTurningOnACoreWidgetLoadsItInAScan() throws {

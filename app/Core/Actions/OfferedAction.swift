@@ -9,13 +9,13 @@ public struct OfferedAction: Equatable, Sendable {
     public let owner: String
     /// The title of its group in the menu: the name of its spot, or nil for a spot of the app, whose actions have none.
     public private(set) var group: String?
-    public let origins: Set<SpotDock.Origin>
+    public let origins: Set<SpotOrigin>
     public let when: String?
 
     /// The words of the filter, each with its origin.
-    static let words: [String: SpotDock.Origin] = ["mine": .mine, "core": .core, "builtin": .builtIn]
+    static let words: [String: SpotOrigin] = ["mine": .mine, "core": .core, "builtin": .builtIn]
 
-    public init(action: CommandAction, owner: String = "", group: String? = nil, origins: Set<SpotDock.Origin> = [], when: String? = nil) {
+    public init(action: CommandAction, owner: String = "", group: String? = nil, origins: Set<SpotOrigin> = [], when: String? = nil) {
         self.action = action
         self.owner = owner
         self.group = group
@@ -57,7 +57,7 @@ public struct OfferedAction: Equatable, Sendable {
     }
 
     /// The origins that a filter's comma list names.
-    private static func origins(_ filter: String, of name: String) throws -> Set<SpotDock.Origin> {
+    private static func origins(_ filter: String, of name: String) throws -> Set<SpotOrigin> {
         try Set(filter.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }.map { word in
             guard let origin = words[word] else {
                 throw SpotError.fault("\(name) offers actions to an unknown card: \(word). Use mine, core or builtin")
@@ -73,7 +73,7 @@ public struct OfferedAction: Equatable, Sendable {
         return offered
     }
 
-    public func fits(_ origin: SpotDock.Origin) -> Bool {
+    public func fits(_ origin: SpotOrigin) -> Bool {
         origins.isEmpty || origins.contains(origin)
     }
 }

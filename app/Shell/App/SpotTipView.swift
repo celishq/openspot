@@ -1,8 +1,8 @@
 import OpenspotCore
 import SwiftUI
 
-/// The tip that the pointer rests on in Edit Spots, centred under its control or its dock card, over the panel and the dock.
-/// It shows after the pointer rests for `delay`, and goes at once. Its place comes from the layout of the grid and the dock.
+/// The tip that the pointer rests on in Edit Spots, centred under its control, over the panel. It shows after the pointer
+/// rests for `delay`, and goes at once. Its place comes from the layout of the grid.
 struct SpotTipView: View {
     static let delay: Duration = .milliseconds(500)
     private static let gap: CGFloat = 4

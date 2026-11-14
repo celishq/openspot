@@ -2,10 +2,8 @@ import Foundation
 
 /// The main search: the cards that its text finds, with the rows and the answers that join them.
 extension SpotsModel {
-    /// The grid of the cards shown, with the size of each card whose size the person chose, and of a card that arrives from
-    /// the store.
+    /// The grid of the cards shown, with the size of each card whose size the person chose.
     var grid: SpotGrid {
-        let arriving = carry?.tile == nil ? nil : carry?.entry.id
         var placed: [Int: GridPanel] = [:]
         if query.isEmpty {
             for index in visible.indices {
@@ -13,7 +11,7 @@ extension SpotsModel {
                 if panel != .center { placed[index] = panel }
             }
         }
-        return SpotGrid(kept: Set(visible.indices.filter { visible[$0].isSizeChosen || visible[$0].id == arriving }), placed: placed, panels: panels)
+        return SpotGrid(kept: Set(visible.indices.filter { visible[$0].isSizeChosen }), placed: placed, panels: panels)
     }
 
     /// The entries that have a card. A sheet that grows out of the field, such as the install screen, has none.
@@ -64,8 +62,7 @@ extension SpotsModel {
     private func found() -> [Entry] {
         let text = query.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else {
-            let arriving = carry.flatMap { $0.tile != nil && drag?.id == $0.entry.id ? [$0.entry] : nil } ?? []
-            return dragged(cards.filter(\.isOnGrid) + arriving)
+            return dragged(cards.filter(\.isOnGrid))
         }
         var ids = Set<String>()
         let answers = entries.filter { $0.spot.answers.map { runs.answerMatches.matches($0, text) } == true }

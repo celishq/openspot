@@ -731,7 +731,7 @@ A spot asks the Mac and Openspot for things through one command, which works the
     `reminders add`, `reminders done`, `spot add`, `spot remove` and `spot delete`;
   - calls that change Openspot or its places: `app quit`, `update install`, and `setting set` of a key that Openspot
     keeps for the user (see [Settings](#settings));
-  - calls that open a window or the panel: `spot show`, `spot open`, `spot choose`, `spot edit`, `spot prompt`, `spot share`, `spot review`, `spot store`, `setting change`,
+  - calls that open a window or the panel: `spot show`, `spot open`, `spot choose`, `spot edit`, `spot prompt`, `spot share`, `spot review`, `grid edit`, `setting change`,
     `update check`, `calendar show` and `reminders show`;
   - `account sync`, which only the user and the spots of Openspot can call.
 - `calendar add --dry-run` and `reminders add --dry-run` change nothing, so they work in a read.
@@ -752,6 +752,7 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot spot add <git url, folder or .spot>`     | Adds a spot, and records it in `spots.lock`. An update that needs a new use also needs `--yes`. |
 | `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                                |
 | `openspot spot stats`                              | Prints what each spot cost and used. See [Stats](#stats).                                       |
+| `openspot grid edit`                               | Opens the panel in Edit Spots, to arrange the grid.                                             |
 
 ### Settings
 

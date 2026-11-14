@@ -25,7 +25,7 @@ final class SpotVerbTests: XCTestCase {
         func open(_ id: String) async -> Bool { false }
         func review(_ id: String) async -> Bool { false }
         func choose(for id: String) async -> Bool { false }
-        func openStore() async {}
+        func editGrid() async {}
         func reveal(_ id: String) async -> Bool { false }
         func sandbox(_ file: URL?, isCareful: Bool) async {}
         func changeSetting(_ key: String, of spot: String) async -> Bool { false }

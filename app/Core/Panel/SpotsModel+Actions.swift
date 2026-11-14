@@ -20,7 +20,6 @@ extension SpotsModel {
             return handleMenuKey(key)
         }
         if isEditing {
-            if isSearchingDock, key.name != "escape" { return false }
             handleEditKey(key)
             return true
         }
@@ -450,7 +449,7 @@ extension SpotsModel {
     }
 
     /// Where a spot comes from, or nil for a sheet that the app draws, such as a review.
-    private func origin(of spot: Spot) -> SpotDock.Origin? {
+    func origin(of spot: Spot) -> SpotOrigin? {
         if spot.fault != nil { return .mine }
         guard spot.host == nil else { return nil }
         if spot.isBuiltIn { return .builtIn }

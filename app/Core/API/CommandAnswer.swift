@@ -21,7 +21,7 @@ public struct CommandAnswer: Equatable, Sendable {
 
 extension CommandAnswer {
     /// The work of a call that only the running app can answer, when no app answers. `call` is its words, such as
-    /// `spot store`.
+    /// `grid edit`.
     static func notRunning(_ call: String) -> CommandAPI.Work {
         {
             let call = "openspot \(call)"

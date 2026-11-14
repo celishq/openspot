@@ -23,8 +23,8 @@ public protocol RunningApp: Sendable {
     /// Asks the person for files for a spot that takes them, and drops the chosen ones on it. Returns false when no such
     /// spot has that ID.
     func choose(for id: String) async -> Bool
-    /// Opens the panel in Edit Spots with the store.
-    func openStore() async
+    /// Opens the panel in Edit Spots.
+    func editGrid() async
     /// Opens the panel with the card of a spot selected. Returns false when no card has that ID.
     func reveal(_ id: String) async -> Bool
     /// Opens the sandbox window on a file, or on typed text with none, and returns once the person closes it. A script that

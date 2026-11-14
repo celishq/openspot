@@ -19,7 +19,7 @@ Code and tests name a rule by its ID.
 | A10 | A dragged `.spot` file shows in the search field, and a drop, a paste or a double-click opens the install screen from there. |
 | A11 | The core spots are the spot folders in `spots/` of this repo. They run in place from the app, so an update updates them. Nothing downloads. |
 | A12 | A first launch turns on each core spot that reads only local data. Each other core spot is off until the person turns it on. A spot in the spots folder with the same ID wins over a core spot, and is always on. |
-| A13 | Spots opens Edit Spots with the store, which shows every spot with its state. A search for "edit spots" finds Spots. |
+| A13 | Spots opens Edit Spots, where the person arranges the grid; the store is a spot of its own. A search for "edit spots" finds Spots. |
 | A14 | A first launch has no config and no spot, opens the panel on the grid once, and does not open at login. |
 | A15 | A toast takes no input, except a failure with a fix (protocol: The life of a call). One fix key, which the person chooses, opens it, and only while the toast shows. |
 | A16 | The main search ranks the best match first. Then the most weight of picks, where each pick weighs 0.9 of the one after it, then the spots, then each list in the order of the grid. A list that the person never picked from shows at most 3 rows. |
@@ -71,7 +71,7 @@ unpacked is refused, the last before it unpacks. A file of the same path replace
 | P14 | The account key comes from 12 BIP-39 words as celis makes it: the BIP-39 seed with no passphrase, then HKDF-SHA256 with salt `celis-identity-v1` and info `account-secp256k1`. The account is the Account spot of `spots/openspot.spot`, with its own view; a Share or publish with no key opens it and stops. Only a spot that ships in the app and declares `uses=account` reaches the key through `openspot account`; the words and a sign-out ask Touch ID, which counts for 5 minutes, and those calls stay out of the call log. A release build keeps the key in the data-protection Keychain, synced through iCloud Keychain, when the app has its Keychain group, and else in the login Keychain. A Debug build or a test keeps it in a file `account` with mode 0600 in its state folder. |
 | P15 | The review of a new install says nothing of its signer. Over an installed copy that has a release, it says `Update to version N` when the same key signed it, and else says first that another key signed it. `spots.lock` keeps the address and the key of each signed spot that `spot add` added, and an update from another key waits for `--yes`. |
 | P9 | A core spot needs no review, because it is signed with the app. |
-| P10 | A drag of a spot of the spots folder onto the store publishes a copy of its spot folder in `store/` of the config folder, with the program of each Swift script. A spot with no `readme.md` opens its listing and is not published. A spot whose files did not change writes nothing. |
+| P10 | A publish of a spot of the spots folder writes a copy of its spot folder in `store/` of the config folder, with the program of each Swift script. A spot with no `readme.md` is not published, and a toast asks for one. A spot whose files did not change writes nothing. |
 | P11 | A preview is the text that a spot prints with `OPENSPOT_REASON=spot.preview`, on the author's Mac at publish. Drawing a preview runs no code. |
 
 ## Floats
