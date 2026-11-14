@@ -73,9 +73,4 @@ final class ScreenPlaceTests: XCTestCase {
 
         XCTAssertEqual(ScreenPlace.frame(ofBounds: bounds, mainHeight: 967), CGRect(x: -2000, y: 267, width: 800, height: 600))
     }
-
-    func testAPanelForADragHoldsThePointerAtADepthUnderItsTopAndStaysWholeOnItsScreen() {
-        XCTAssertEqual(place.origin(of: size, under: CGPoint(x: 700, y: 800), top: 100), CGPoint(x: 380, y: 180))
-        XCTAssertEqual(place.origin(of: size, under: CGPoint(x: 700, y: 930), top: 100), CGPoint(x: 380, y: 218))
-    }
 }

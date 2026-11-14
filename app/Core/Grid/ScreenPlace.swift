@@ -22,10 +22,10 @@ public struct ScreenPlace: Sendable {
         return CGPoint(x: (area.midX - size.width / 2).rounded(.down), y: (area.minY + (area.height - size.height) * 0.75).rounded(.down))
     }
 
-    public func origin(of size: CGSize, under pointer: CGPoint, top: CGFloat? = nil) -> CGPoint? {
+    public func origin(of size: CGSize, under pointer: CGPoint) -> CGPoint? {
         guard let area = screen(window: nil, pointer: pointer)?.area else { return nil }
         let x = min(max(pointer.x - size.width / 2, area.minX), area.maxX - size.width)
-        let y = min(max(pointer.y + (top ?? size.height / 2) - size.height, area.minY), area.maxY - size.height)
+        let y = min(max(pointer.y - size.height / 2, area.minY), area.maxY - size.height)
         return CGPoint(x: x.rounded(.down), y: y.rounded(.down))
     }
 

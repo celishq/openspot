@@ -681,7 +681,7 @@ struct SpotView: View {
 | `spot.accent`       | The accent colour.                                                    |
 | `spot.font`         | The fonts of the cards: `title`, `detail`, `metric` and `value`.      |
 | `spot.send(v)`      | Calls the spot with the view's id and `v`, as a field does.           |
-| `spot.card(id)`     | The card of a spot, at the size it takes on the grid. A drag adds it. |
+| `spot.card(id)`     | The card of a spot, at the size it takes on the grid.                 |
 | `spot.cardSize(id)` | That size, so the view can lay cards out.                             |
 
 - The view fills its place, and the whole card when there's no card layout. It can't change the size of its place.

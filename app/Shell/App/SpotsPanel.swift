@@ -51,14 +51,6 @@ final class SpotsPanel: NSPanel {
         setFrameOrigin(NSPoint(x: origin.x - place.left, y: origin.y))
     }
 
-    func place(under pointer: NSPoint) {
-        guard let model, !model.isShown || model.isWarming else { return }
-        let center = NSSize(width: frame.width - place.left - appliedRight, height: frame.height)
-        let top = SpotTokens.backdropHeight(gridHeight: SpotGrid.height(of: model.placements)) / 2
-        guard let origin = ScreenPlace(screens: ScreenPlace.Screen.all).origin(of: center, under: pointer, top: top) else { return }
-        setFrameOrigin(NSPoint(x: origin.x - place.left, y: origin.y))
-    }
-
     private static func frontWindow(of app: NSRunningApplication) -> CGRect? {
         let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
         let front = windows.first {

@@ -31,7 +31,7 @@ extension SpotsModel {
         follow(target, of: drag)
     }
 
-    func follow(_ target: SpotDrag.Target, of drag: SpotDrag) {
+    private func follow(_ target: SpotDrag.Target, of drag: SpotDrag) {
         guard target != drag.target else { return stopDragWait() }
         guard target != dragTarget else { return }
         stopDragWait()
@@ -151,7 +151,7 @@ extension SpotsModel {
         panels.holding(entry.panel)
     }
 
-    func gridTargets(_ places: ClosedRange<Int>) -> [SpotDrag.Target] {
+    private func gridTargets(_ places: ClosedRange<Int>) -> [SpotDrag.Target] {
         GridPanel.allCases.filter { panels[$0] }.flatMap { panel in places.map { SpotDrag.Target.onGrid($0, panel: panel) } }
     }
 

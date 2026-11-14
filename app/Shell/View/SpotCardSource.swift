@@ -1,6 +1,5 @@
 import OpenspotCore
 import SwiftUI
-import UniformTypeIdentifiers
 
 extension EnvironmentValues {
     @Entry var spotCards = SpotCardSource(model: nil)
@@ -17,26 +16,7 @@ struct SpotCardSource {
             SpotCardView(entry: entry, size: entry.size, index: Self.unselectable, isPressed: false, takesDrag: false, isDropTarget: false, chainLetter: nil, model: model)
                 .background { SpotBlur(radius: SpotTheme.blur).overlay(SpotTheme.glass).clipShape(shape) }
                 .allowsHitTesting(false)
-                .contentShape(.dragPreview, shape)
-                .contentShape(shape)
-                .onDrag {
-                    model.beginStoreDrag()
-                    return Self.dragItem(of: id)
-                }
         )
-    }
-
-    static func dragItem(of id: String) -> NSItemProvider {
-        let item = NSItemProvider()
-        item.registerDataRepresentation(forTypeIdentifier: UTType.storeCard.identifier, visibility: .all) { done in
-            done(Data(id.utf8), nil)
-            return nil
-        }
-        return item
-    }
-
-    static func storeID(on pasteboard: NSPasteboard) -> String? {
-        pasteboard.data(forType: NSPasteboard.PasteboardType(UTType.storeCard.identifier)).map { String(decoding: $0, as: UTF8.self) }
     }
 
     private static let unselectable = Int.min
@@ -45,8 +25,4 @@ struct SpotCardSource {
         guard let size = model?.storeEntry(id)?.size else { return .zero }
         return CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))
     }
-}
-
-extension UTType {
-    static let storeCard = UTType(exportedAs: "dev.openspot.store-card")
 }

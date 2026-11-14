@@ -4,7 +4,6 @@ import Foundation
 public protocol SpotsHost: AnyObject {
     func dismiss()
     func show()
-    func showForDrag()
     func present()
     func takeFocus()
     func notify(_ text: String)
