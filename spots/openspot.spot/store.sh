@@ -37,14 +37,19 @@ about() {
 }
 
 case "$1" in
-  read) gallery ;;
+  read)
+    gallery
+    printf 'answered=read %s\n' "$$"
+    ;;
   gallery)
     case "$2" in
       get:*) get "${2#get:}" ;;
       publish:*) openspot store publish "${2#publish:}" >/dev/null ;;
     esac
     gallery
-    case "$2" in about:*) about "${2#about:}" ;; esac
+    id=${2#*:}
+    if [ "$id" != "$2" ]; then about "$id"; fi
+    printf 'answered=%s %s\n' "$2" "$$"
     ;;
   open)
     [ -n "$2" ] || exit 0

@@ -78,6 +78,28 @@ final class StoreSpotTests: BuiltInCase {
         XCTAssertTrue(values["value"]?.contains { $0.hasPrefix("timer\t") } == true)
     }
 
+    func testGetAndPublishKeepTheReadmeOfTheirSpot() async throws {
+        try "# Timer\n".write(to: core.appendingPathComponent("timer.spot/readme.md"), atomically: true, encoding: .utf8)
+
+        for call in ["get:timer", "publish:timer"] {
+            let text = try await SpotRuns().answer(of: store, SpotAction(arguments: ["gallery", call]), limit: 5)
+
+            let values = SpotOutput(text: text).parts.first?.values ?? [:]
+            XCTAssertEqual(values["about"], ["timer"], call)
+            XCTAssertEqual(values["readme"], ["# Timer"], call)
+            XCTAssertEqual(values["answered"]?.first?.hasPrefix("\(call) "), true, call)
+        }
+    }
+
+    func testEachAnswerCarriesAMarkOfItsOwn() async throws {
+        let first = try await SpotRuns().answer(of: store, .read, limit: 5)
+        let second = try await SpotRuns().answer(of: store, .read, limit: 5)
+
+        let marks = [first, second].map { SpotOutput(text: $0).parts.first?.values["answered"] ?? [] }
+        XCTAssertEqual(marks.map(\.count), [1, 1])
+        XCTAssertNotEqual(marks[0], marks[1])
+    }
+
     func testPublishPublishesYourOwnSpotInTheApp() async throws {
         let rows = try await items()
         let id = try XCTUnwrap(rows.first { $0[2] == "publish" }?[0])

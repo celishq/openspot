@@ -3,7 +3,7 @@ import SwiftUI
 
 /// The store, laid out on 16 columns of the grid: a sidebar of 4 with the search and a row for each origin, and 12 with each
 /// spot as its card at the size it takes on the grid, under the title of its group. A plus on a card gets the spot, an up
-/// arrow publishes your own spot's changes, and a click opens its page with its readme and, when it has sample data, its
+/// arrow publishes your own spot's changes, and a click opens a sheet with its readme and, when it has sample data, its
 /// sheet to try. A footer holds a hint, the sort and Done.
 struct SpotView: View {
     let spot: SpotInput
@@ -12,6 +12,8 @@ struct SpotView: View {
     @State private var order = Order.name
     @State private var opened: String?
     @State private var isTrying = false
+    @State private var pending: String?
+    @State private var readmes: [String: [String]] = [:]
     @State private var hovered: String?
     @State private var tip: String?
 
@@ -102,6 +104,10 @@ struct SpotView: View {
     private static let rowGap: CGFloat = 12
     private static let columns: CGFloat = 16
     private static let sidebarColumns: CGFloat = 4
+    private static let line: CGFloat = 36
+    private static let text: Font = .system(size: 13)
+    private static let heading: Font = .system(size: 13, weight: .semibold)
+    private static let caption: Font = .system(size: 11)
 
     /// The width of the sidebar: 4 of the 16 columns that fill the window.
     private var sidebarWidth: CGFloat {
@@ -115,16 +121,15 @@ struct SpotView: View {
         HStack(spacing: 0) {
             sidebar(all)
             VStack(spacing: 0) {
-                if let opened, let item = all.first(where: { $0.id == opened }) {
-                    page(item)
-                } else {
-                    ZStack {
-                        gallery(items)
-                        if items.isEmpty { empty }
-                    }
+                ZStack {
+                    gallery(items)
+                    if items.isEmpty { empty }
                 }
                 footer
             }
+        }
+        .sheet(isPresented: Binding(get: { opened != nil }, set: { if !$0 { opened = nil } })) {
+            if let opened, let item = all.first(where: { $0.id == opened }) { about(item) }
         }
         .overlayPreferenceValue(TipAnchor.self) { anchor in
             GeometryReader { proxy in
@@ -136,6 +141,10 @@ struct SpotView: View {
                 }
             }
             .allowsHitTesting(false)
+        }
+        .onChange(of: spot["answered"], initial: true) {
+            pending = nil
+            if let about = spot["about"] { readmes[about] = spot.all("readme") }
         }
         .task(id: hovered) {
             tip = nil
@@ -182,6 +191,7 @@ struct SpotView: View {
         }
         .padding([.leading, .top, .bottom], spot.inset)
         .frame(width: sidebarWidth + spot.inset)
+        .padding(.trailing, Self.columnGap)
     }
 
     /// A field whose whole fill takes a click, whose Esc clears it, and whose cross clears it too.
@@ -192,7 +202,6 @@ struct SpotView: View {
             TextField("Search spots", text: $query)
                 .textFieldStyle(.plain)
                 .onExitCommand { query = "" }
-                .onChange(of: query) { opened = nil }
             if !query.isEmpty {
                 tipped("Clear the search", Image(systemName: "xmark.circle.fill")
                     .foregroundStyle(spot.ink.opacity(spot.secondary))
@@ -202,37 +211,34 @@ struct SpotView: View {
                     .accessibilityLabel("Clear the search"))
             }
         }
-        .font(.system(size: 13))
+        .font(Self.text)
         .padding(.horizontal, 10)
-        .frame(height: 32)
+        .frame(height: Self.line)
         .background(spot.ink.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     /// The row of an origin, filled while it is the chosen one.
     private func row(_ each: Origin, count: Int) -> some View {
-        let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
         return tipped(each.tip, HStack(spacing: 10) {
             Image(systemName: each.symbol)
                 .font(.system(size: 14))
                 .foregroundStyle(spot.ink.opacity(spot.secondary))
                 .frame(width: 20)
             Text(each.rawValue)
-                .font(.system(size: 13))
+                .font(Self.text)
                 .foregroundStyle(spot.ink)
             Spacer(minLength: 0)
             Text("\(count)")
-                .font(spot.font.detail)
+                .font(Self.caption)
                 .foregroundStyle(spot.ink.opacity(spot.secondary))
         }
-        .padding(.horizontal, 8)
-        .frame(height: 32)
-        .background(origin == each && opened == nil ? spot.ink.opacity(0.1) : .clear, in: shape)
+        .padding(.horizontal, 10)
+        .frame(height: Self.line)
+        .background(origin == each ? spot.ink.opacity(0.1) : .clear, in: shape)
         .contentShape(shape)
-        .onTapGesture {
-            origin = each
-            opened = nil
-        }
+        .onTapGesture { origin = each }
         .accessibilityAddTraits(origin == each ? [.isButton, .isSelected] : .isButton))
     }
 
@@ -251,10 +257,9 @@ struct SpotView: View {
                             .fill(spot.ink.opacity(0.1))
                             .frame(height: 1)
                     }
-                    section(groups.count > 1 ? group.0 : nil, group.1)
+                    section(group.0, group.1)
                 }
             }
-            .padding(.leading, Self.columnGap)
             .padding([.trailing, .top, .bottom], spot.inset)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -272,10 +277,10 @@ struct SpotView: View {
                 .foregroundStyle(spot.ink.opacity(spot.secondary))
                 .padding(.bottom, 4)
             Text(isSearch ? "No Spots Match “\(query)”" : "No Spots Here")
-                .font(spot.font.title)
+                .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(spot.ink)
             Text(isSearch ? "Check the spelling, or try other words." : origin == .all ? "The store has no spots yet." : "Nothing is in \(origin.rawValue) yet.")
-                .font(spot.font.detail)
+                .font(Self.text)
                 .foregroundStyle(spot.ink.opacity(spot.secondary))
                 .multilineTextAlignment(.center)
             if isSearch {
@@ -294,36 +299,33 @@ struct SpotView: View {
     private var footer: some View {
         HStack(spacing: 12) {
             Text("Click a spot to read about it and try it. The plus adds it to your grid.")
-                .font(spot.font.detail)
+                .font(Self.text)
                 .foregroundStyle(spot.ink.opacity(spot.secondary))
                 .lineLimit(1)
                 .truncationMode(.tail)
             Spacer(minLength: 0)
-            if opened == nil {
-                tipped("Order the cards of each group", Picker("Sort", selection: $order) {
-                    ForEach(Order.allCases) { Text("By \($0.rawValue)").tag($0) }
-                }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .fixedSize())
+            tipped("Order the cards of each group", Picker("Sort", selection: $order) {
+                ForEach(Order.allCases) { Text("By \($0.rawValue)").tag($0) }
             }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .controlSize(.large)
+            .fixedSize())
             tipped("Close the store", Button("Done") { NSApp.keyWindow?.performClose(nil) }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large))
         }
-        .padding(.leading, Self.columnGap)
         .padding([.trailing, .bottom], spot.inset)
-        .padding(.top, 8)
+        .padding(.top, Self.rowGap)
     }
 
-    /// A group of cards, under its title when the store shows more than one group.
-    private func section(_ title: String?, _ list: [Item]) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            if let title {
-                Text(title)
-                    .font(spot.font.title)
-                    .foregroundStyle(spot.ink.opacity(spot.secondary))
-            }
+    /// A group of cards under its title, whose line matches the search field's, so that both columns start on one line.
+    private func section(_ title: String, _ list: [Item]) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title)
+                .font(Self.heading)
+                .foregroundStyle(spot.ink.opacity(spot.secondary))
+                .frame(height: Self.line)
             Flow(gap: Self.columnGap, line: Self.rowGap) {
                 ForEach(list) { tile($0) }
             }
@@ -340,7 +342,7 @@ struct SpotView: View {
             .overlay(alignment: .topLeading) { control(item, card: size) }
     }
 
-    /// Opens the page of a spot, and asks the store for its readme.
+    /// Opens the sheet of a spot, and asks the store for its readme.
     private func open(_ item: Item) {
         hovered = nil
         isTrying = false
@@ -348,113 +350,126 @@ struct SpotView: View {
         spot.send("about:\(item.id)")
     }
 
-    /// The page of a spot: its card, name and description beside what its button does, then its readme, or its sheet with
-    /// sample data while the person tries it.
-    private func page(_ item: Item) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                tipped("Back to all spots", HStack(spacing: 4) {
-                    Image(systemName: "chevron.left")
-                    Text("All Spots")
-                }
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(spot.accent)
-                .contentShape(Rectangle())
-                .onTapGesture { opened = nil }
-                .accessibilityAddTraits(.isButton))
-                HStack(alignment: .center, spacing: 16) {
-                    let size = spot.cardSize(item.id)
-                    spot.card(item.id)
-                        .frame(width: size.width, height: size.height)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(item.name)
-                            .font(.system(size: 22, weight: .semibold))
-                            .foregroundStyle(spot.ink)
-                        if !item.detail.isEmpty {
-                            Text(item.detail)
-                                .font(.system(size: 13))
-                                .foregroundStyle(spot.ink.opacity(spot.secondary))
-                        }
-                        Text(Item.label(of: item.origin))
-                            .font(spot.font.detail)
-                            .foregroundStyle(spot.ink.opacity(spot.secondary))
+    /// The sheet of a spot: its card, name and description, then its readme, or its sheet with sample data while the person
+    /// tries it, and at the bottom Close and what its button does.
+    private func about(_ item: Item) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .center, spacing: 16) {
+                let size = spot.cardSize(item.id)
+                spot.card(item.id)
+                    .frame(width: size.width, height: size.height)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.name)
+                        .font(.system(size: 22, weight: .semibold))
+                    if !item.detail.isEmpty {
+                        Text(item.detail)
+                            .font(Self.text)
+                            .foregroundStyle(.secondary)
                     }
-                    Spacer(minLength: 0)
-                    step(item)
+                    Text(Item.label(of: item.origin))
+                        .font(Self.caption)
+                        .foregroundStyle(.secondary)
                 }
+                Spacer(minLength: 0)
                 if item.hasSample {
-                    tipped(isTrying ? "Show what the spot does" : "Use \(item.name) with sample data. Nothing you do here runs.", Button {
-                        isTrying.toggle()
-                    } label: {
-                        Label(isTrying ? "Back to Readme" : "Try Without Installing", systemImage: isTrying ? "doc.text" : "play.fill")
+                    Picker("Show", selection: $isTrying) {
+                        Text("About").tag(false)
+                        Text("Try").tag(true)
                     }
-                    .controlSize(.large))
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .fixedSize()
+                    .help("Read about \(item.name), or try it with sample data")
                 }
+            }
+            .padding(20)
+            Divider()
+            Group {
                 if isTrying {
                     VStack(spacing: 10) {
                         spot.sheet(item.id)
                         Text("Sample data. Clicks here run nothing and change nothing on your Mac.")
-                            .font(spot.font.detail)
-                            .foregroundStyle(spot.ink.opacity(spot.secondary))
+                            .font(Self.caption)
+                            .foregroundStyle(.secondary)
                     }
-                    .frame(maxWidth: .infinity)
+                    .padding(20)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    readme(item)
+                    ScrollView {
+                        readme(item)
+                            .padding(20)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
             }
-            .padding(.leading, Self.columnGap)
-            .padding([.trailing, .top, .bottom], spot.inset)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxHeight: .infinity)
+            Divider()
+            HStack(spacing: 12) {
+                Spacer(minLength: 0)
+                Button("Close") { opened = nil }
+                    .keyboardShortcut(.cancelAction)
+                    .controlSize(.large)
+                step(item)
+            }
+            .padding(20)
         }
-        .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, _ in
-            hovered = nil
+        .frame(width: 600, height: 640)
+    }
+
+    /// What the button of a spot's sheet does: get it, publish your changes, or nothing once you have it. While its call runs,
+    /// the button says so.
+    @ViewBuilder
+    private func step(_ item: Item) -> some View {
+        let running = pending
+        switch item.state {
+        case "get":
+            Button(running == "get:\(item.id)" ? "Getting…" : "Get") { send("get:\(item.id)") }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .keyboardShortcut(.defaultAction)
+                .disabled(running != nil)
+                .help("Add \(item.name) to your grid")
+        case "publish":
+            Button(running == "publish:\(item.id)" ? "Publishing…" : "Publish") { send("publish:\(item.id)") }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .disabled(running != nil)
+                .help("Publish the changes of \(item.name)")
+        default:
+            Label("Added", systemImage: "checkmark")
+                .font(Self.text.weight(.medium))
+                .foregroundStyle(.secondary)
         }
     }
 
-    /// What the button of a spot's page does: get it, publish your changes, or nothing once you have it.
-    @ViewBuilder
-    private func step(_ item: Item) -> some View {
-        switch item.state {
-        case "get":
-            tipped("Add \(item.name) to your grid", Button("Get") { spot.send("get:\(item.id)") }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large))
-        case "publish":
-            tipped("Publish the changes of \(item.name)", Button("Publish") { spot.send("publish:\(item.id)") }
-                .controlSize(.large))
-        default:
-            Label("Added", systemImage: "checkmark")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(spot.ink.opacity(spot.secondary))
-        }
+    /// Calls the store, and keeps the call until the store answers.
+    private func send(_ call: String) {
+        pending = call
+        spot.send(call)
     }
 
     /// The readme of a spot, with its headings in bold, or a line that says it has none.
     @ViewBuilder
     private func readme(_ item: Item) -> some View {
-        if spot["about"] == item.id {
-            let lines = spot.all("readme")
+        if let lines = readmes[item.id] {
             VStack(alignment: .leading, spacing: 6) {
                 if lines.isEmpty {
                     Text("\(item.name) has no readme yet.")
-                        .foregroundStyle(spot.ink.opacity(spot.secondary))
+                        .foregroundStyle(.secondary)
                 }
                 ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
                     if line.hasPrefix("#") {
                         Text(line.drop { $0 == "#" }.trimmingCharacters(in: .whitespaces))
                             .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(spot.ink)
                             .padding(.top, 6)
                     } else {
                         let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
                         Text((try? AttributedString(markdown: line, options: options)) ?? AttributedString(line))
-                            .foregroundStyle(spot.ink)
                     }
                 }
             }
-            .font(.system(size: 13))
+            .font(Self.text)
             .textSelection(.enabled)
-            .frame(maxWidth: 560, alignment: .leading)
         } else {
             ProgressView()
                 .controlSize(.small)
@@ -466,8 +481,8 @@ struct SpotView: View {
     @ViewBuilder
     private func control(_ item: Item, card: CGSize) -> some View {
         switch item.state {
-        case "get": corner("plus", label: "Add \(item.name) to your grid", card: card) { spot.send("get:\(item.id)") }
-        case "publish": corner("arrow.up", label: "Publish the changes of \(item.name)", card: card) { spot.send("publish:\(item.id)") }
+        case "get": corner("plus", label: "Add \(item.name) to your grid", card: card) { send("get:\(item.id)") }
+        case "publish": corner("arrow.up", label: "Publish the changes of \(item.name)", card: card) { send("publish:\(item.id)") }
         default: EmptyView()
         }
     }
