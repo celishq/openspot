@@ -19,6 +19,11 @@ extension SpotsModel {
         host.float(entry, followsDrag: host.isMouseDown)
     }
 
+    /// The place of a sheet that shows outside the panel: its window, or else its float.
+    func detachedPlace(of id: String) -> SheetPlace {
+        place(ofSheet: id) == .window ? .window : .float
+    }
+
     /// Opens the sheet of a spot that offers a window in its window, and puts the panel away. A spot whose window shows
     /// comes to the front. A spot whose kind comes from its first answer opens once that answer arrives.
     public func openWindow(_ id: String) {
@@ -48,7 +53,7 @@ extension SpotsModel {
             return true
         }
         if let action = sheet.spot.actions(for: item).first(where: { $0.key == key }), let entry = cards.first(where: { $0.id == id }) {
-            run(action, on: (entry, item), in: .float)
+            run(action, on: (entry, item), in: detachedPlace(of: id))
             return true
         }
         switch key {
@@ -57,7 +62,7 @@ extension SpotsModel {
         case ActionKey(name: "down"): sheet.list.move(by: 1)
         case ActionKey(name: "return"):
             guard let item, let entry = cards.first(where: { $0.id == id }) else { return false }
-            pick(item, of: entry, in: .float)
+            pick(item, of: entry, in: detachedPlace(of: id))
         default: return false
         }
         return true

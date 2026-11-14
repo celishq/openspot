@@ -53,16 +53,25 @@ extension SpotsModel {
     /// Opens the sheet of a spot, as `openspot spot open` asks: in the panel that shows, or else in the panel that it shows.
     /// Returns false when no spot has that ID.
     public func openSheet(_ id: String) -> Bool {
-        guard let entry = entries.first(where: { $0.id == id }) else { return false }
-        if entry.spot.offersWindow {
-            openWindow(id)
-            return true
-        }
+        guard entries.contains(where: { $0.id == id }) else { return false }
         let moves = isShown
-        if !moves { host.show() }
-        endEditing(moving: false)
-        open(id, moving: moves)
+        presentSheet(of: id, moving: moves) {
+            if !moves { host.show() }
+            endEditing(moving: false)
+        }
         return true
+    }
+
+    /// Where the sheet of a spot opens: in a window of its own when its header offers one (W10), or else in the panel.
+    public func place(ofSheet id: String) -> SheetPlace {
+        entries.first { $0.id == id }?.spot.offersWindow == true ? .window : .panel
+    }
+
+    /// Opens the sheet of a spot where it opens: in its window, or in the panel once `showingPanel` has shown it.
+    func presentSheet(of id: String, moving: Bool, showingPanel: () -> Void = {}) {
+        guard place(ofSheet: id) == .panel else { return openWindow(id) }
+        showingPanel()
+        open(id, moving: moving)
     }
 
     /// Opens the sheet of the spot that the config gives `⌘,`, the settings key of the Mac.
@@ -75,7 +84,7 @@ extension SpotsModel {
     /// once, or with its first answer. It takes the place of a sheet that shows, grows out of its card when it moves, and
     /// shows in place when it does not move or has no card. A spot that offers a window opens there instead.
     public func open(_ id: String, moving: Bool) {
-        if entries.first(where: { $0.id == id })?.spot.offersWindow == true { return openWindow(id) }
+        if place(ofSheet: id) == .window { return openWindow(id) }
         if let shown = openList, shown != id { stopRecording() }
         sheets[id]?.open(waits: moving) { [weak self] in self?.showSheet(id, moving: moving) }
     }
@@ -265,7 +274,7 @@ extension SpotsModel {
     /// Runs a pick of a row, or an action on it. In the panel, a pick that closes it closes the panel. A float stays open
     /// with the picked row selected, and a pick that asks with a form or records a key opens the spot in the panel (W8).
     public func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil, in place: SheetPlace = .panel) {
-        if place == .float {
+        if place.isDetached {
             if action == nil, entry.spot.pickForm != nil || item.records { return press(entry.id) }
             remember(item, of: entry)
             sheets[entry.id]?.list.select(run: item.run)

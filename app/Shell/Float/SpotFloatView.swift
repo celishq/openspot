@@ -9,6 +9,11 @@ struct SpotFloatView: View {
     let id: String
     var fills = false
     let onSize: (CGSize) -> Void
+
+    /// Where the sheet shows: in a window of its own when it fills one, or else in a float.
+    private var place: SheetPlace {
+        fills ? .window : .float
+    }
     @State private var dropTarget: String?
     @State private var dropWords: String?
 
@@ -26,7 +31,7 @@ struct SpotFloatView: View {
             }
         }
         .overlay { drop(on: entry) }
-        .onDrop(of: [.fileURL], delegate: SpotFloatDrop(id: id, model: model, target: $dropTarget))
+        .onDrop(of: [.fileURL], delegate: SpotFloatDrop(id: id, place: place, model: model, target: $dropTarget))
         .onChange(of: dropTarget) { dropWords = dropTarget.flatMap { model.dropWords(SpotGridDrop.paths, on: $0) } }
         .onChange(of: size, initial: true) { onSize(size) }
         .environment(\.spotIsShown, true)
@@ -61,7 +66,7 @@ struct SpotFloatView: View {
                         if part.closes { model.land(id) }
                     },
                     list: run.list,
-                    onRun: { model.pick($0, of: entry, in: .float) },
+                    onRun: { model.pick($0, of: entry, in: place) },
                     onDragOut: { model.dragOut($0, of: id) },
                     selection: { run.selection },
                     selectedPart: { run.selectedPart?.id },
@@ -74,7 +79,7 @@ struct SpotFloatView: View {
             } else {
                 SpotRowsView(
                     list: run.list,
-                    onRun: { model.pick($0, of: entry, in: .float) },
+                    onRun: { model.pick($0, of: entry, in: place) },
                     selection: { run.selection },
                     onDragOut: { model.dragOut($0, of: id) }
                 )

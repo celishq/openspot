@@ -557,8 +557,8 @@ extension SpotsModel {
     /// Runs an action on a row or on the whole spot. In a float, an action that asks with a form or for a second press opens
     /// the spot in the panel, where both work, and any other runs at once and leaves the float open (W8).
     public func run(_ action: CommandAction, on target: Target, in place: SheetPlace = .panel) {
-        if place == .float {
-            if action.isForm || action.confirm != nil, target.entry.spot.offersWindow {
+        if place.isDetached {
+            if action.isForm || action.confirm != nil, place == .window {
                 host.notify("\(action.title) asks with a form or a second press, which a window does not show yet.")
             } else if action.isForm || action.confirm != nil {
                 press(target.entry.id)
@@ -580,7 +580,7 @@ extension SpotsModel {
     /// Asks the script for the form of an action, and shows it in place of the actions menu once it comes, so that the menu
     /// stays while the script answers.
     public func openForm(_ action: CommandAction, on target: Target, prefill: String = "") {
-        guard !target.entry.spot.offersWindow else {
+        guard place(ofSheet: target.entry.id) == .panel else {
             return host.notify("\(action.title) asks with a form, which a window does not show yet.")
         }
         let ask = UUID()

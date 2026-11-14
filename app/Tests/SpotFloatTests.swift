@@ -264,7 +264,7 @@ final class SpotFloatTests: XCTestCase {
         let entry = try XCTUnwrap(model.cards.first { $0.id == "store" })
         let rename = CommandAction(id: "rename", title: "Rename", isForm: true)
 
-        model.run(rename, on: (entry, model.sheets["store"]?.list.shown.first), in: .float)
+        model.run(rename, on: (entry, model.sheets["store"]?.list.shown.first), in: .window)
 
         XCTAssertEqual(host.notes, ["Rename asks with a form or a second press, which a window does not show yet."])
         XCTAssertEqual(host.shows, 0)
