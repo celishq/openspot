@@ -34,11 +34,11 @@ public struct SheetHistory: Equatable, Sendable {
         index = pages.count - 1
     }
 
-    /// Moves the centre one page back, and returns the page there, or nil at the first page.
-    public mutating func back() -> SheetPage? {
-        guard let page = behind else { return nil }
-        index -= 1
-        return page
+    /// Moves the centre some pages back, and returns the page there, or nil when that many pages do not lie behind.
+    public mutating func back(steps: Int = 1) -> SheetPage? {
+        guard steps > 0, index - steps >= 0 else { return nil }
+        index -= steps
+        return pages[index]
     }
 
     /// Moves the centre one page forward, and returns the page there, or nil at the last page.

@@ -61,7 +61,7 @@ final class SheetPagesModelTests: XCTestCase {
 
     /// Opens a list whose row `a` opens its page, which shows one row named after the page.
     private func openList() async throws {
-        try script("list", header: "on=sheet.open", """
+        try script("list", header: "title=List\non=sheet.open", """
         if [ -n "$OPENSPOT_PAGE" ]; then printf 'row=x\\ntitle=Detail %s\\n' "$OPENSPOT_PAGE"; else printf 'row=a\\ntitle=A\\npage=true\\n'; fi
         """)
         try script("other", header: "on=sheet.open", "printf 'row=o\\ntitle=Other\\n'")
@@ -140,10 +140,12 @@ final class SheetPagesModelTests: XCTestCase {
     func testAPageOpensFromOutsideTheSpot() async throws {
         try await openList()
 
-        XCTAssertTrue(model.openSheet("list", page: "b"))
+        XCTAssertTrue(model.openSheet("list", page: "a"))
 
-        try await wait("the page") { titles == ["Detail b"] }
-        XCTAssertEqual(model.history.pages, [SheetPage(spot: "list"), SheetPage(spot: "list", page: "b")])
+        try await wait("the page") { titles == ["Detail a"] }
+        XCTAssertEqual(model.behindTitles, ["List"])
+        XCTAssertEqual(model.title(of: SheetPage(spot: "list", page: "a")), "A")
+        XCTAssertEqual(model.history.pages, [SheetPage(spot: "list"), SheetPage(spot: "list", page: "a")])
     }
 
     func testTheHintOfAPageSaysThatEscGoesBack() async throws {
@@ -173,5 +175,18 @@ final class SheetPagesModelTests: XCTestCase {
         XCTAssertTrue(model.handleKey(back))
 
         try await wait("the slide from the left to rest") { model.slideOffset == 0 && host.slideStarts.contains { $0 < 0 } }
+    }
+
+    func testEachSheetBehindHasATitleAndAClickOnItsEdgeGoesBackToIt() async throws {
+        try await openList()
+        try await openPage()
+        XCTAssertTrue(model.openSheet("other"))
+        try await wait("the other sheet") { model.openList == "other" && titles == ["Other"] }
+
+        XCTAssertEqual(model.behindTitles, ["A", "List"])
+
+        XCTAssertTrue(model.goBack(steps: 2))
+        try await wait("the first sheet") { model.openList == "list" && titles == ["A"] }
+        XCTAssertEqual(model.behindTitles, [])
     }
 }

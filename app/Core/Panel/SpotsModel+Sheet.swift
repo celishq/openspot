@@ -272,7 +272,7 @@ extension SpotsModel {
     /// with the picked row selected, and a pick that asks with a form or records a key opens the spot in the panel (W8).
     public func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil, in place: SheetPlace = .panel) {
         if action == nil, item.opensPage {
-            _ = openSheet(entry.id, page: item.run)
+            _ = openSheet(entry.id, page: item.run, title: item.title)
             return
         }
         if place == .float {

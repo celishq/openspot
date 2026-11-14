@@ -81,7 +81,16 @@ public final class SpotsModel {
     /// sheet, not with each phase of its motion.
     public private(set) var openList: String?
     /// The sheets that the panel went through since a sheet opened from the grid, with the one that shows at its centre.
-    public internal(set) var history = SheetHistory()
+    public internal(set) var history = SheetHistory() {
+        didSet {
+            let titles = history.pages.prefix(max(history.index, 0)).reversed().map(title(of:))
+            if titles != behindTitles { behindTitles = titles }
+        }
+    }
+    /// The title of each sheet behind the one that shows, the nearest first.
+    public private(set) var behindTitles: [String] = []
+    /// The title of each page that a row opened, which is the title of that row.
+    @ObservationIgnored var pageTitles: [SheetPage: String] = [:]
     /// How far the content of the sheet lies from its place while another page of it slides in, or 0 at rest.
     public internal(set) var slideOffset = 0.0
     /// Where the open sheet is in its motion between its card and its open place.

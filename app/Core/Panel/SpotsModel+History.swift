@@ -8,23 +8,25 @@ extension SpotsModel {
     static let gridKey = ActionKey(name: "escape", isCommand: true)
 
     /// Opens a page of a spot as the newest sheet of the history: in the panel that shows, or else in the panel that it
-    /// shows. Returns false when no spot has that ID.
-    public func openSheet(_ id: String, page: String) -> Bool {
+    /// shows. With no title, the page takes the title of the row of that spot that opens it, when the spot shows one.
+    /// Returns false when no spot has that ID.
+    public func openSheet(_ id: String, page: String, title: String? = nil) -> Bool {
         guard entries.contains(where: { $0.id == id }) else { return false }
         let moves = isShown
         if !moves { host.show() }
         endEditing(moving: false)
         if openList == nil { closeHistory() }
         let next = SheetPage(spot: id, page: page)
+        if let title = title ?? sheets[id]?.list.all.first(where: { $0.run == page })?.title { pageTitles[next] = title }
         history.push(next)
         show(next, moving: moves, from: 1)
         return true
     }
 
-    /// Shows the sheet before in the history. Returns false when there is none.
+    /// Shows the sheet some steps before in the history. Returns false when that many do not lie behind.
     @discardableResult
-    public func goBack() -> Bool {
-        guard openList != nil, let page = history.back() else { return false }
+    public func goBack(steps: Int = 1) -> Bool {
+        guard openList != nil, let page = history.back(steps: steps) else { return false }
         show(page, moving: isShown, from: -1)
         return true
     }
@@ -74,6 +76,12 @@ extension SpotsModel {
     /// Brings each spot of the history back to its first sheet, and empties the history.
     func closeHistory() {
         for page in history.pages where page.page != nil { sheets[page.spot]?.show(page: nil) }
+        pageTitles = [:]
         history.clear()
+    }
+
+    /// The title of a sheet of the history: of the row that opened its page, or else of its spot.
+    func title(of page: SheetPage) -> String {
+        pageTitles[page] ?? (page.page == nil ? entries.first { $0.id == page.spot }?.spot.name : nil) ?? page.page ?? page.spot
     }
 }

@@ -62,9 +62,14 @@ public enum SpotTokens {
     public static let menuPadding: CGFloat = 8
     public static let placeGap: CGFloat = 8
     public static let sideGap: CGFloat = 20
-    /// The width of the mark beside the open sheet of a sheet that waits in the history, and its gap to the sheet.
+    /// The edges of the sheets behind the open one: the width of each, its gap to the sheet, the gap between two, how much
+    /// shorter each further one is, how many show, and how long a pointer rests on one before it names its sheet.
     public static let peekWidth: CGFloat = 8
     public static let peekGap: CGFloat = 8
+    public static let peekStep: CGFloat = 5
+    public static let peekShrink: CGFloat = 28
+    public static let peekCount = 3
+    public static let peekRest: Duration = .milliseconds(250)
     public static let controlPadding: CGFloat = 7
     /// How far the outer edge of the focus ring of a part in a sheet lies outside the part's own box. It leaves clear space
     /// on both sides of the ring, within the gap between two parts, as a system focus ring does.
