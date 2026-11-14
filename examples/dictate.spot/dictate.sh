@@ -10,6 +10,7 @@
 # button=dictate
 # title=Dictate
 # icon=mic
+export LC_ALL=en_US.UTF-8
 export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"
 helper="$OPENSPOT_DATA/dictate"
 pidfile="$OPENSPOT_DATA/dictate.pid"
