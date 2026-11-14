@@ -19,7 +19,7 @@ public struct SpotPackage: Equatable, Sendable {
     }
 
     public static let fileExtension = "spot"
-    static let sizeLimit = 64_000_000
+    static let sizeLimit = 25_000_000
     private static let hiddenOrder: ClosedRange<UInt32> = 0x202A...0x202E
     private static let hiddenIsolate: ClosedRange<UInt32> = 0x2066...0x2069
 

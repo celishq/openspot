@@ -24,10 +24,18 @@ press   ─ on a block ─►  <spot> <id>    the user or an agent acts
 - `sample.sh` prints what the spot would show, with made-up data, so that the store can show the spot before you add it.
   A click on that sample runs nothing. Publish runs it once and ships what it printed as `sample.txt`, which is all a
   shared spot shows before you add it. `sample.sh` is never a spot of its own.
+- A line of `readme.md` that holds only a Markdown image shows a picture or a video from the folder: PNG, JPEG, MOV or
+  MP4. A picture can also be an `https` address, which Openspot fetches once, with no cookies. A video at an `https`
+  address shows as a link that opens in your browser.
+
+```text
+![The sheet](shot.png)
+```
+
 - The id of a script is the name of its folder, such as `coffee`. A script with another name adds it, such as
   `home/lights` for `home.spot/lights.sh`.
-- The folder is shared as one unit, and its scripts share one data folder. A file in it that isn't executable can hold
-  shared code.
+- The folder is shared as one unit of at most 25 MB, and its scripts share one data folder. A file in it that isn't
+  executable can hold shared code.
 - Openspot moves a loose script into a spot folder of its name, with the files of the same name, such as `coffee.md`,
   which becomes `readme.md`.
 - A spot only says what it has. The user decides where it shows and which key opens it.
@@ -688,6 +696,7 @@ struct SpotView: View {
 | `spot.cardSize(id)` | That size, so the view can lay cards out.                             |
 | `spot.sheet(id)`    | The sheet of a spot with its sample data, where a click runs nothing. |
 | `spot.tip(text)`    | A tip in the look of Openspot's own, for the view to show on hover.   |
+| `spot.media(path)`  | A PNG or JPEG picture, or a MOV or MP4 video, at its size or less.    |
 
 - The view fills its place, and the whole card when there's no card layout. It can't change the size of its place.
 - In a window (see [Places](#places)), a sheet with one `view` block fills the window. `spot.card(id)` draws the card of

@@ -13,7 +13,7 @@ struct SpotView: View {
     @State private var opened: String?
     @State private var isTrying = false
     @State private var pending: String?
-    @State private var readmes: [String: [String]] = [:]
+    @State private var readmes: [String: [Line]] = [:]
     @State private var hovered: String?
     @State private var tip: String?
 
@@ -71,6 +71,24 @@ struct SpotView: View {
 
     /// One spot of the store: its id, its name, what its button does, its origin, its description, its size, whether it
     /// has sample data, and the folded words that a search compares, made once.
+    /// A line of a readme: a heading, a line of text with its inline styles, or a picture or a video with its caption.
+    private enum Line {
+        case heading(String)
+        case text(AttributedString)
+        case media(String, caption: String)
+
+        init(_ line: String) {
+            if line.hasPrefix("#") {
+                self = .heading(line.drop { $0 == "#" }.trimmingCharacters(in: .whitespaces))
+            } else if line.hasPrefix("!["), let close = line.range(of: "]("), line.hasSuffix(")") {
+                self = .media(String(line[close.upperBound..<line.index(before: line.endIndex)]), caption: String(line[line.index(line.startIndex, offsetBy: 2)..<close.lowerBound]))
+            } else {
+                let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+                self = .text((try? AttributedString(markdown: line, options: options)) ?? AttributedString(line))
+            }
+        }
+    }
+
     private struct Item: Identifiable {
         let id: String
         let name: String
@@ -145,7 +163,7 @@ struct SpotView: View {
         .onChange(of: spot.answers, initial: true) {
             pending = nil
             readmes = Dictionary(grouping: spot.all("readme").map { $0.split(separator: "\t", maxSplits: 1, omittingEmptySubsequences: false) }, by: { String($0[0]) })
-                .mapValues { $0.map { $0.count > 1 ? String($0[1]) : "" } }
+                .mapValues { $0.map { Line($0.count > 1 ? String($0[1]) : "") } }
         }
         .task(id: hovered) {
             tip = nil
@@ -459,13 +477,23 @@ struct SpotView: View {
                     .foregroundStyle(.secondary)
             }
             ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
-                if line.hasPrefix("#") {
-                    Text(line.drop { $0 == "#" }.trimmingCharacters(in: .whitespaces))
+                switch line {
+                case .heading(let text):
+                    Text(text)
                         .font(.system(size: 15, weight: .semibold))
                         .padding(.top, 6)
-                } else {
-                    let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-                    Text((try? AttributedString(markdown: line, options: options)) ?? AttributedString(line))
+                case .text(let text):
+                    Text(text)
+                case .media(let source, let caption):
+                    VStack(alignment: .leading, spacing: 4) {
+                        spot.media(source)
+                        if !caption.isEmpty {
+                            Text(caption)
+                                .font(Self.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(.vertical, 4)
                 }
             }
         }

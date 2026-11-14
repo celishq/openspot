@@ -30,6 +30,7 @@ public struct ViewLibrary: Sendable {
             let cardSizer: (String) -> CGSize
             let sheetMaker: (String) -> AnyView
             let tipMaker: (String) -> AnyView
+            let mediaMaker: (String) -> AnyView
 
             init(values: [String: [String]], card: [String: Any], sender: @escaping (String) -> Void) {
                 self.values = values
@@ -38,6 +39,7 @@ public struct ViewLibrary: Sendable {
                 cardSizer = card["cardSize"] as? (String) -> CGSize ?? { _ in .zero }
                 sheetMaker = card["sheet"] as? (String) -> AnyView ?? { _ in AnyView(EmptyView()) }
                 tipMaker = card["tip"] as? (String) -> AnyView ?? { AnyView(Text($0)) }
+                mediaMaker = card["media"] as? (String) -> AnyView ?? { _ in AnyView(EmptyView()) }
                 size = card["size"] as? CGSize ?? .zero
                 answers = card["answers"] as? Int ?? 0
                 inset = card["inset"] as? CGFloat ?? 13
@@ -66,6 +68,8 @@ public struct ViewLibrary: Sendable {
             public func sheet(_ id: String) -> AnyView { sheetMaker(id) }
 
             public func tip(_ text: String) -> AnyView { tipMaker(text) }
+
+            public func media(_ source: String) -> AnyView { mediaMaker(source) }
         }
 
         @_cdecl("\(entry)")

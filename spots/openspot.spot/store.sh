@@ -15,7 +15,7 @@ get() {
 }
 
 # Prints the gallery: each spot with its id, its name, what its button does, its origin, its description, its size, and
-# whether it has sample data, then each line of its readme after its id.
+# whether it has sample data, then each line of its readme after its id, with the full path of each picture or video in it.
 gallery() {
   printf 'view=gallery\n'
   openspot store list --frame | awk 'BEGIN { RS = ""; FS = "\n" }
@@ -25,7 +25,15 @@ gallery() {
       if (f["origin"] == "mine" && f["added"] == "true" && f["published"] != "current") state = "publish"
       sample = f["sample"] == "true" ? "sample" : ""
       printf "value=%s\t%s\t%s\t%s\t%s\t%s\t%s\n", f["spot"], f["name"], state, f["origin"], f["detail"], f["size"], sample
-      if (f["readme"] != "") { RS = "\n"; while ((getline line < f["readme"]) > 0) printf "readme=%s\t%s\n", f["spot"], line; close(f["readme"]); RS = "" } }'
+      if (f["readme"] != "") {
+        RS = "\n"; dir = f["readme"]; sub(/\/[^\/]*$/, "", dir)
+        while ((getline line < f["readme"]) > 0) {
+          if (match(line, /^!\[[^]]*\]\(/) && substr(line, RLENGTH + 1, 1) != "/" && substr(line, RLENGTH + 1, 8) != "https://")
+            line = substr(line, 1, RLENGTH) dir "/" substr(line, RLENGTH + 1)
+          printf "readme=%s\t%s\n", f["spot"], line
+        }
+        close(f["readme"]); RS = ""
+      } }'
 }
 
 case "$1" in

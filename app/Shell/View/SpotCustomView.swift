@@ -59,6 +59,10 @@ struct SpotCustomView: View, @MainActor Equatable {
         { text in AnyView(SpotTipPill(text: text)) }
     }
 
+    private var mediaView: (String) -> AnyView {
+        { source in AnyView(SpotMedia(source: source)) }
+    }
+
     private var input: [String: Any] {
         [
             "size": size,
@@ -75,7 +79,8 @@ struct SpotCustomView: View, @MainActor Equatable {
             "card": cardView,
             "cardSize": cardSize,
             "sheet": sheetView,
-            "tip": tipView
+            "tip": tipView,
+            "media": mediaView
         ]
     }
 
