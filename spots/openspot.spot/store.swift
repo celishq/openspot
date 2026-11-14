@@ -1,17 +1,19 @@
 import AppKit
 import SwiftUI
 
-/// The store: a sidebar with the search and a row for each origin, and beside it each spot as its card at the size it takes
-/// on the grid, under the title of its group, in rows that wrap and fade at each end they pass. A plus on a card gets the
-/// spot, an up arrow publishes your own spot's changes, and a click shows its readme. A footer holds a hint, the sort and Done.
+/// The store, laid out on 16 columns of the grid: a sidebar of 4 with the search and a row for each origin, and 12 with each
+/// spot as its card at the size it takes on the grid, under the title of its group. A plus on a card gets the spot, an up
+/// arrow publishes your own spot's changes, and a click opens its page with its readme and, when it has sample data, its
+/// sheet to try. A footer holds a hint, the sort and Done.
 struct SpotView: View {
     let spot: SpotInput
     @State private var query = ""
     @State private var origin = Origin.all
     @State private var order = Order.name
     @State private var opened: String?
-    @State private var edges = Edges()
-    @State private var readmeHeight: CGFloat = 0
+    @State private var isTrying = false
+    @State private var hovered: String?
+    @State private var tip: String?
 
     /// Where the spots that the sidebar keeps come from.
     private enum Origin: String, CaseIterable, Identifiable {
@@ -56,14 +58,17 @@ struct SpotView: View {
         var id: Self { self }
     }
 
-    /// How far the cards have scrolled past each end, from 0 to 1, which sets the strength of the fade at that end.
-    private struct Edges: Equatable {
-        var top = 0.0
-        var bottom = 0.0
+    /// The anchor of the control whose tip shows.
+    private struct TipAnchor: PreferenceKey {
+        static let defaultValue: Anchor<CGRect>? = nil
+
+        static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) {
+            value = value ?? nextValue()
+        }
     }
 
-    /// One spot of the store: its id, its name, what its button does, its origin, its description, its size, and the folded
-    /// words that a search compares, made once.
+    /// One spot of the store: its id, its name, what its button does, its origin, its description, its size, whether it
+    /// has sample data, and the folded words that a search compares, made once.
     private struct Item: Identifiable {
         let id: String
         let name: String
@@ -71,12 +76,14 @@ struct SpotView: View {
         let origin: String
         let detail: String
         let size: String
+        let hasSample: Bool
         let words: String
 
         init?(_ line: String) {
             let parts = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
-            guard parts.count == 6 else { return nil }
+            guard parts.count == 7 else { return nil }
             (id, name, state, origin, detail, size) = (parts[0], parts[1], parts[2], parts[3], parts[4], parts[5])
+            hasSample = parts[6] == "sample"
             words = [name, detail, Self.label(of: origin)].joined(separator: " ").folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
         }
 
@@ -91,8 +98,16 @@ struct SpotView: View {
         }
     }
 
-    private static let sidebarWidth: CGFloat = 200
-    private static let fadeLength: CGFloat = 32
+    private static let columnGap: CGFloat = 11
+    private static let rowGap: CGFloat = 12
+    private static let columns: CGFloat = 16
+    private static let sidebarColumns: CGFloat = 4
+
+    /// The width of the sidebar: 4 of the 16 columns that fill the window.
+    private var sidebarWidth: CGFloat {
+        let column = (spot.size.width - 2 * spot.inset - (Self.columns - 1) * Self.columnGap) / Self.columns
+        return max(Self.sidebarColumns * column + (Self.sidebarColumns - 1) * Self.columnGap, 180)
+    }
 
     var body: some View {
         let all = spot.all("value").compactMap(Item.init)
@@ -100,12 +115,33 @@ struct SpotView: View {
         HStack(spacing: 0) {
             sidebar(all)
             VStack(spacing: 0) {
-                ZStack {
-                    gallery(items)
-                    if items.isEmpty { empty }
+                if let opened, let item = all.first(where: { $0.id == opened }) {
+                    page(item)
+                } else {
+                    ZStack {
+                        gallery(items)
+                        if items.isEmpty { empty }
+                    }
                 }
                 footer
             }
+        }
+        .overlayPreferenceValue(TipAnchor.self) { anchor in
+            GeometryReader { proxy in
+                if let anchor, let tip {
+                    let rect = proxy[anchor]
+                    let below = rect.maxY + 15 < proxy.size.height - 15
+                    spot.tip(tip)
+                        .position(x: min(max(rect.midX, 120), proxy.size.width - 120), y: below ? rect.maxY + 15 : rect.minY - 15)
+                }
+            }
+            .allowsHitTesting(false)
+        }
+        .task(id: hovered) {
+            tip = nil
+            guard let hovered else { return }
+            try? await Task.sleep(for: .milliseconds(500))
+            if !Task.isCancelled { tip = hovered }
         }
     }
 
@@ -121,6 +157,19 @@ struct SpotView: View {
         }
     }
 
+    /// Shows the tip of a control while the pointer rests on it.
+    private func tipped(_ text: String, _ view: some View) -> some View {
+        view
+            .onHover { inside in
+                if inside {
+                    hovered = text
+                } else if hovered == text {
+                    hovered = nil
+                }
+            }
+            .anchorPreference(key: TipAnchor.self, value: .bounds) { tip == text ? $0 : nil }
+    }
+
     /// The search, and under it a row for each origin with its picture and the number of its spots.
     private func sidebar(_ all: [Item]) -> some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -131,8 +180,8 @@ struct SpotView: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(spot.inset)
-        .frame(width: Self.sidebarWidth)
+        .padding([.leading, .top, .bottom], spot.inset)
+        .frame(width: sidebarWidth + spot.inset)
     }
 
     /// A field whose whole fill takes a click, whose Esc clears it, and whose cross clears it too.
@@ -143,14 +192,14 @@ struct SpotView: View {
             TextField("Search spots", text: $query)
                 .textFieldStyle(.plain)
                 .onExitCommand { query = "" }
+                .onChange(of: query) { opened = nil }
             if !query.isEmpty {
-                Image(systemName: "xmark.circle.fill")
+                tipped("Clear the search", Image(systemName: "xmark.circle.fill")
                     .foregroundStyle(spot.ink.opacity(spot.secondary))
                     .contentShape(Circle())
                     .onTapGesture { query = "" }
                     .accessibilityAddTraits(.isButton)
-                    .accessibilityLabel("Clear the search")
-                    .help("Clear the search")
+                    .accessibilityLabel("Clear the search"))
             }
         }
         .font(.system(size: 13))
@@ -158,13 +207,12 @@ struct SpotView: View {
         .frame(height: 32)
         .background(spot.ink.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .help("Search spots by name, description or origin")
     }
 
     /// The row of an origin, filled while it is the chosen one.
     private func row(_ each: Origin, count: Int) -> some View {
         let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
-        return HStack(spacing: 10) {
+        return tipped(each.tip, HStack(spacing: 10) {
             Image(systemName: each.symbol)
                 .font(.system(size: 14))
                 .foregroundStyle(spot.ink.opacity(spot.secondary))
@@ -179,14 +227,16 @@ struct SpotView: View {
         }
         .padding(.horizontal, 8)
         .frame(height: 32)
-        .background(origin == each ? spot.ink.opacity(0.1) : .clear, in: shape)
+        .background(origin == each && opened == nil ? spot.ink.opacity(0.1) : .clear, in: shape)
         .contentShape(shape)
-        .onTapGesture { origin = each }
-        .accessibilityAddTraits(origin == each ? [.isButton, .isSelected] : .isButton)
-        .help(each.tip)
+        .onTapGesture {
+            origin = each
+            opened = nil
+        }
+        .accessibilityAddTraits(origin == each ? [.isButton, .isSelected] : .isButton))
     }
 
-    /// The groups of cards, which scroll to the edge of the window and fade at each end that has cards past it.
+    /// The groups of cards, which scroll to the edges of the window and are cut there.
     private func gallery(_ items: [Item]) -> some View {
         let groups = [
             ("Get more spots", items.filter { $0.state == "get" }),
@@ -204,28 +254,12 @@ struct SpotView: View {
                     section(groups.count > 1 ? group.0 : nil, group.1)
                 }
             }
-            .padding(.horizontal, spot.inset)
-            .padding(.top, spot.inset)
-            .padding(.bottom, Self.fadeLength)
+            .padding(.leading, Self.columnGap)
+            .padding([.trailing, .top, .bottom], spot.inset)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .onScrollGeometryChange(for: Edges.self) { geometry in
-            let below = geometry.contentSize.height - geometry.containerSize.height - geometry.contentOffset.y
-            return Edges(top: min(max(geometry.contentOffset.y / 24, 0), 1), bottom: min(max(below / 24, 0), 1))
-        } action: { _, new in
-            edges = new
-        }
-        .mask(fade)
-    }
-
-    /// The mask of the cards: clear at each end as far as the cards have scrolled past it.
-    private var fade: some View {
-        VStack(spacing: 0) {
-            LinearGradient(colors: [.black.opacity(1 - edges.top), .black], startPoint: .top, endPoint: .bottom)
-                .frame(height: Self.fadeLength)
-            Color.black
-            LinearGradient(colors: [.black, .black.opacity(1 - edges.bottom)], startPoint: .top, endPoint: .bottom)
-                .frame(height: Self.fadeLength)
+        .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, _ in
+            hovered = nil
         }
     }
 
@@ -246,11 +280,9 @@ struct SpotView: View {
                 .multilineTextAlignment(.center)
             if isSearch {
                 Button("Clear Search") { query = "" }
-                    .help("Show the spots again")
                     .padding(.top, 6)
             } else if origin != .all {
                 Button("Show All Spots") { origin = .all }
-                    .help("Show the spots of every origin")
                     .padding(.top, 6)
             }
         }
@@ -258,29 +290,30 @@ struct SpotView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    /// The hint of what a card takes, the order of the cards and Done, which closes the store.
+    /// The hint of what a card does, the order of the cards and Done, which closes the store.
     private var footer: some View {
         HStack(spacing: 12) {
-            Text("Drag a spot onto your grid to add it.")
+            Text("Click a spot to read about it and try it. The plus adds it to your grid.")
                 .font(spot.font.detail)
                 .foregroundStyle(spot.ink.opacity(spot.secondary))
                 .lineLimit(1)
                 .truncationMode(.tail)
             Spacer(minLength: 0)
-            Picker("Sort", selection: $order) {
-                ForEach(Order.allCases) { Text("By \($0.rawValue)").tag($0) }
+            if opened == nil {
+                tipped("Order the cards of each group", Picker("Sort", selection: $order) {
+                    ForEach(Order.allCases) { Text("By \($0.rawValue)").tag($0) }
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .fixedSize())
             }
-            .pickerStyle(.menu)
-            .labelsHidden()
-            .fixedSize()
-            .help("Choose how the cards of each group are ordered")
-            Button("Done") { NSApp.keyWindow?.performClose(nil) }
+            tipped("Close the store", Button("Done") { NSApp.keyWindow?.performClose(nil) }
                 .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .help("Close the store")
+                .controlSize(.large))
         }
-        .padding(.horizontal, spot.inset)
-        .padding(.vertical, 12)
+        .padding(.leading, Self.columnGap)
+        .padding([.trailing, .bottom], spot.inset)
+        .padding(.top, 8)
     }
 
     /// A group of cards, under its title when the store shows more than one group.
@@ -291,81 +324,140 @@ struct SpotView: View {
                     .font(spot.font.title)
                     .foregroundStyle(spot.ink.opacity(spot.secondary))
             }
-            Flow(gap: 16) {
+            Flow(gap: Self.columnGap, line: Self.rowGap) {
                 ForEach(list) { tile($0) }
             }
         }
     }
 
-    /// A card with its corner control, which a click opens to its readme.
+    /// A card with its corner control, which a click opens to its page.
     private func tile(_ item: Item) -> some View {
         let size = spot.cardSize(item.id)
-        return spot.card(item.id)
+        return tipped("Read about \(item.name)", spot.card(item.id)
             .frame(width: size.width, height: size.height)
             .contentShape(Rectangle())
-            .onTapGesture { open(item) }
-            .help("Click to read about \(item.name). Drag it onto your grid to add it.")
+            .onTapGesture { open(item) })
             .overlay(alignment: .topLeading) { control(item, card: size) }
-            .popover(isPresented: Binding(get: { opened == item.id }, set: { if !$0, opened == item.id { opened = nil } }), arrowEdge: .bottom) {
-                about(item)
-            }
     }
 
-    /// Opens the readme of a spot, which the store reads for it.
+    /// Opens the page of a spot, and asks the store for its readme.
     private func open(_ item: Item) {
+        hovered = nil
+        isTrying = false
         opened = item.id
         spot.send("about:\(item.id)")
     }
 
-    /// The name, the description and the readme of a spot, with its headings in bold.
-    private func about(_ item: Item) -> some View {
-        let lines = spot["about"] == item.id ? spot.all("readme") : nil
-        return VStack(alignment: .leading, spacing: 8) {
-            Text(item.name)
-                .font(.headline)
-            if !item.detail.isEmpty {
-                Text(item.detail)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            Divider()
-            if let lines {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 4) {
-                        if lines.isEmpty {
-                            Text("\(item.name) has no readme yet.")
-                                .foregroundStyle(.secondary)
-                        }
-                        ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
-                            readme(line)
-                        }
-                    }
-                    .textSelection(.enabled)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { readmeHeight = $0 }
+    /// The page of a spot: its card, name and description beside what its button does, then its readme, or its sheet with
+    /// sample data while the person tries it.
+    private func page(_ item: Item) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                tipped("Back to all spots", HStack(spacing: 4) {
+                    Image(systemName: "chevron.left")
+                    Text("All Spots")
                 }
-                .frame(height: min(max(readmeHeight, 16), 320))
-            } else {
-                ProgressView()
-                    .controlSize(.small)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(spot.accent)
+                .contentShape(Rectangle())
+                .onTapGesture { opened = nil }
+                .accessibilityAddTraits(.isButton))
+                HStack(alignment: .center, spacing: 16) {
+                    let size = spot.cardSize(item.id)
+                    spot.card(item.id)
+                        .frame(width: size.width, height: size.height)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(item.name)
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundStyle(spot.ink)
+                        if !item.detail.isEmpty {
+                            Text(item.detail)
+                                .font(.system(size: 13))
+                                .foregroundStyle(spot.ink.opacity(spot.secondary))
+                        }
+                        Text(Item.label(of: item.origin))
+                            .font(spot.font.detail)
+                            .foregroundStyle(spot.ink.opacity(spot.secondary))
+                    }
+                    Spacer(minLength: 0)
+                    step(item)
+                }
+                if item.hasSample {
+                    tipped(isTrying ? "Show what the spot does" : "Use \(item.name) with sample data. Nothing you do here runs.", Button {
+                        isTrying.toggle()
+                    } label: {
+                        Label(isTrying ? "Back to Readme" : "Try Without Installing", systemImage: isTrying ? "doc.text" : "play.fill")
+                    }
+                    .controlSize(.large))
+                }
+                if isTrying {
+                    VStack(spacing: 10) {
+                        spot.sheet(item.id)
+                        Text("Sample data. Clicks here run nothing and change nothing on your Mac.")
+                            .font(spot.font.detail)
+                            .foregroundStyle(spot.ink.opacity(spot.secondary))
+                    }
                     .frame(maxWidth: .infinity)
+                } else {
+                    readme(item)
+                }
             }
+            .padding(.leading, Self.columnGap)
+            .padding([.trailing, .top, .bottom], spot.inset)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(16)
-        .frame(width: 360)
+        .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, _ in
+            hovered = nil
+        }
     }
 
-    /// One line of a readme: a heading in bold, and the rest with its inline marks.
+    /// What the button of a spot's page does: get it, publish your changes, or nothing once you have it.
     @ViewBuilder
-    private func readme(_ line: String) -> some View {
-        if line.hasPrefix("#") {
-            Text(line.drop { $0 == "#" }.trimmingCharacters(in: .whitespaces))
-                .font(.headline)
-                .padding(.top, 4)
+    private func step(_ item: Item) -> some View {
+        switch item.state {
+        case "get":
+            tipped("Add \(item.name) to your grid", Button("Get") { spot.send("get:\(item.id)") }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large))
+        case "publish":
+            tipped("Publish the changes of \(item.name)", Button("Publish") { spot.send("publish:\(item.id)") }
+                .controlSize(.large))
+        default:
+            Label("Added", systemImage: "checkmark")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(spot.ink.opacity(spot.secondary))
+        }
+    }
+
+    /// The readme of a spot, with its headings in bold, or a line that says it has none.
+    @ViewBuilder
+    private func readme(_ item: Item) -> some View {
+        if spot["about"] == item.id {
+            let lines = spot.all("readme")
+            VStack(alignment: .leading, spacing: 6) {
+                if lines.isEmpty {
+                    Text("\(item.name) has no readme yet.")
+                        .foregroundStyle(spot.ink.opacity(spot.secondary))
+                }
+                ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
+                    if line.hasPrefix("#") {
+                        Text(line.drop { $0 == "#" }.trimmingCharacters(in: .whitespaces))
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(spot.ink)
+                            .padding(.top, 6)
+                    } else {
+                        let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+                        Text((try? AttributedString(markdown: line, options: options)) ?? AttributedString(line))
+                            .foregroundStyle(spot.ink)
+                    }
+                }
+            }
+            .font(.system(size: 13))
+            .textSelection(.enabled)
+            .frame(maxWidth: 560, alignment: .leading)
         } else {
-            let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-            Text((try? AttributedString(markdown: line, options: options)) ?? AttributedString(line))
+            ProgressView()
+                .controlSize(.small)
         }
     }
 
@@ -374,7 +466,7 @@ struct SpotView: View {
     @ViewBuilder
     private func control(_ item: Item, card: CGSize) -> some View {
         switch item.state {
-        case "get": corner("plus", label: "Get \(item.name)", card: card) { spot.send("get:\(item.id)") }
+        case "get": corner("plus", label: "Add \(item.name) to your grid", card: card) { spot.send("get:\(item.id)") }
         case "publish": corner("arrow.up", label: "Publish the changes of \(item.name)", card: card) { spot.send("publish:\(item.id)") }
         default: EmptyView()
         }
@@ -384,7 +476,7 @@ struct SpotView: View {
     private func corner(_ symbol: String, label: String, card: CGSize, action: @escaping () -> Void) -> some View {
         let radius: CGFloat = card.height <= 64 && card.width < 289 ? card.height / 2 : 26
         let inset = radius * (1 - 0.5.squareRoot()) - 10
-        return Image(systemName: symbol)
+        return tipped(label, Image(systemName: symbol)
             .font(.system(size: 10, weight: .bold))
             .foregroundStyle(spot.ink)
             .frame(width: 20, height: 20)
@@ -393,8 +485,7 @@ struct SpotView: View {
             .contentShape(Circle())
             .onTapGesture(perform: action)
             .accessibilityAddTraits(.isButton)
-            .accessibilityLabel(label)
-            .help(label)
+            .accessibilityLabel(label))
             .offset(x: inset, y: inset)
     }
 }
@@ -402,6 +493,7 @@ struct SpotView: View {
 /// Lays its views in rows that wrap at the width it gets, each row as tall as its tallest view.
 private struct Flow: Layout {
     let gap: CGFloat
+    let line: CGFloat
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let width = proposal.width ?? .infinity
@@ -417,17 +509,17 @@ private struct Flow: Layout {
 
     private func place(_ subviews: Subviews, in width: CGFloat) -> [CGRect] {
         var rects: [CGRect] = []
-        var x: CGFloat = 0, y: CGFloat = 0, line: CGFloat = 0
+        var x: CGFloat = 0, y: CGFloat = 0, height: CGFloat = 0
         for view in subviews {
             let size = view.sizeThatFits(.unspecified)
-            if x > 0, x + size.width > width {
+            if x > 0, x + size.width > width + 0.5 {
                 x = 0
-                y += line + gap
-                line = 0
+                y += height + line
+                height = 0
             }
             rects.append(CGRect(origin: CGPoint(x: x, y: y), size: size))
             x += size.width + gap
-            line = max(line, size.height)
+            height = max(height, size.height)
         }
         return rects
     }

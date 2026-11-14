@@ -45,6 +45,19 @@ struct SpotCustomView: View, @MainActor Equatable {
         return { id in MainActor.assumeIsolated { cards.size(id) } }
     }
 
+    private var sheetView: (String) -> AnyView {
+        let cards = cards
+        return { id in
+            var view = AnyView(EmptyView())
+            MainActor.assumeIsolated { view = cards.sheet(id) }
+            return view
+        }
+    }
+
+    private var tipView: (String) -> AnyView {
+        { text in AnyView(SpotTipPill(text: text)) }
+    }
+
     private var input: [String: Any] {
         [
             "size": size,
@@ -58,7 +71,9 @@ struct SpotCustomView: View, @MainActor Equatable {
             "metric": SpotType.metric,
             "value": SpotType.value,
             "card": cardView,
-            "cardSize": cardSize
+            "cardSize": cardSize,
+            "sheet": sheetView,
+            "tip": tipView
         ]
     }
 

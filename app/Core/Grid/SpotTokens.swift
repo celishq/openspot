@@ -98,7 +98,7 @@ public enum SpotTokens {
         return (Int(lines) + 1) * max(perLine, 1)
     }
 
-    public static let windowSize = CGSize(width: 720, height: 560)
+    public static let windowSize = CGSize(width: width(columns: 16) + 2 * padding, height: 760)
     public static let windowMinSize = CGSize(width: 360, height: 280)
 
     public static func floatSize(rows: Int, perLine: Int = 1, parts: SheetParts? = nil) -> CGSize {

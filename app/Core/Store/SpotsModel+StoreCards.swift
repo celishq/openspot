@@ -5,6 +5,14 @@ extension SpotsModel {
         keptStoreCards()[id]?.entry
     }
 
+    public func sample(_ id: String) async -> SpotOutput? {
+        guard let spot = storeEntry(id)?.spot, spot.previewsSample,
+              let text = try? await runs.answer(of: spot, .read, limit: Self.sampleLimit, variables: ReadReason.preview.variables) else { return nil }
+        return SpotOutput(text: text)
+    }
+
+    private static let sampleLimit: TimeInterval = 10
+
     func storeItem(_ id: String) -> SpotStore.Item? {
         keptStoreCards()[id]?.item
     }

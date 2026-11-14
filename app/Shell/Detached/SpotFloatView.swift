@@ -51,6 +51,7 @@ struct SpotFloatView: View {
                     SpotCustomView(source: view, values: part.values, card: .square, room: area.size, views: .shared) { run.set(part, to: $0) }
                         .equatable()
                 }
+                .ignoresSafeArea()
                 .task(id: view) { await SpotViews.shared.load(view) }
             } else if let parts = run.panel {
                 SheetPartsView(
@@ -146,7 +147,11 @@ private struct FloatSurface: ViewModifier {
 
     func body(content: Content) -> some View {
         if fills {
-            content.background { Color.clear.modifier(SpotGlass(radius: SpotTokens.radius)).ignoresSafeArea() }
+            content.background {
+                Color.clear
+                    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: SpotTokens.radius, style: .continuous))
+                    .ignoresSafeArea()
+            }
         } else {
             content.modifier(SpotGlass())
         }

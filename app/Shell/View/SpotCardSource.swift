@@ -19,6 +19,11 @@ struct SpotCardSource {
         )
     }
 
+    func sheet(_ id: String) -> AnyView {
+        guard let model, let entry = model.storeEntry(id) else { return AnyView(EmptyView()) }
+        return AnyView(SpotSampleSheet(model: model, id: id, entry: entry))
+    }
+
     private static let unselectable = Int.min
 
     func size(_ id: String) -> CGSize {

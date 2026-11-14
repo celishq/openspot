@@ -545,7 +545,8 @@ The user decides where a spot shows. A spot only offers, with one `offers` line 
   small window at the pointer, which stays while the user works in other apps. The spot never learns where it shows.
 - A spot that offers `window` opens its sheet in a normal window, from its card, the main search or `openspot spot open`.
   The user moves, resizes and closes it, and Openspot shows in the Dock while it's open. Use it for a sheet that needs
-  room, such as a catalog.
+  room, such as a catalog. The window has no title bar buttons: Esc closes it, so give a view that fills it a way
+  out, such as a Done button.
 - `on=search.text <pattern>` makes a spot answer the main search. Openspot asks it at each change of a text that the
   pattern matches, with no pause. A newer text stops the older call. The answer should be fast.
 - Its rows show first in the main search until the newest text has an answer, and go at once when the pattern no longer
@@ -683,10 +684,13 @@ struct SpotView: View {
 | `spot.send(v)`      | Calls the spot with the view's id and `v`, as a field does.           |
 | `spot.card(id)`     | The card of a spot, at the size it takes on the grid.                 |
 | `spot.cardSize(id)` | That size, so the view can lay cards out.                             |
+| `spot.sheet(id)`    | The sheet of a spot with its sample data, where a click runs nothing. |
+| `spot.tip(text)`    | A tip in the look of Openspot's own, for the view to show on hover.   |
 
 - The view fills its place, and the whole card when there's no card layout. It can't change the size of its place.
 - In a window (see [Places](#places)), a sheet with one `view` block fills the window. `spot.card(id)` draws the card of
-  any spot by the ID that `openspot store list` prints, as the store does.
+  any spot by the ID that `openspot store list` prints, as the store does. `spot.sheet(id)` draws its sheet with the data
+  that its [`preview`](#the-header) mode prints, and draws nothing for a spot with no such mode.
 - It gets the keys of its block in each frame. A new frame keeps its `@State`.
 - On a card, the view only draws, and a press works as on any card. In a sheet, it takes clicks and keys, and
   `spot.send(value)` calls the spot with `<id> <value>`, as a field does. A newer send stops the call of the older one.

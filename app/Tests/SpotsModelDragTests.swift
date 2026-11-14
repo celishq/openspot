@@ -629,6 +629,18 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(offInConfig, ["a"])
     }
 
+    func testTheSampleOfASpotIsItsReadWithThePreviewReasonAndNoneWithoutAPreview() async throws {
+        try "#!/bin/sh\n# preview=sample\nif [ \"$OPENSPOT_REASON\" = spot.preview ]; then printf 'row=s\\ntitle=Sample row\\n'; else printf 'row=r\\ntitle=Real row\\n'; fi\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
+        try "#!/bin/sh\nprintf 'title=Real row\\n'\n".writeScript(to: core.appendingPathComponent("coin.spot/coin.sh"))
+        model.reload()
+
+        let sample = await model.sample("timer")
+        let none = await model.sample("coin")
+
+        XCTAssertEqual(sample?.items.map(\.title), ["Sample row"])
+        XCTAssertNil(none)
+    }
+
     func testTheStoreFindsTheCardOfASpotThatIsOffByItsStoreID() throws {
         try "#!/bin/sh\n# detail=Counts down\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
         try "#!/bin/sh\n# title=Shared\n".writeScript(to: store.appendingPathComponent("shared.spot/shared.sh"))
