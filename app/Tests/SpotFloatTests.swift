@@ -76,6 +76,21 @@ final class SpotFloatTests: XCTestCase {
         XCTAssertEqual(model.sheets["list"]?.list.shown.first?.title, "sheet.open")
     }
 
+    func test_W5_aFloatThatOpensDuringADragFollowsItAndOneWithNoDragDoesNot() async throws {
+        try script("list", header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
+        model.reload()
+
+        host.isMouseDown = true
+        model.press(try key("list"))
+        try await wait("the float during the drag") { host.floats == ["list"] }
+        host.isMouseDown = false
+        model.press(try key("list"))
+        model.press(try key("list"))
+
+        try await wait("the float with no drag") { host.floats == ["list", "list"] }
+        XCTAssertEqual(host.floatsFollowingDrag, [true, false])
+    }
+
     func test_W6_theSameKeyAgainClosesTheFloatAndDuringADragBringsItToThePointer() async throws {
         try await floatList()
 
