@@ -57,6 +57,7 @@ Tests name a rule by its ID, as in `func test_A4_searchStaysUntilEsc`.
 | A25 | A change that the API writes to the config applies only what changed. A key holds the keys again, a spot that turns on or off adds or removes its card, and a value of a spot reads that spot again. The grid does not build again. |
 | A26 | An inline spot makes its JavaScript context and its thread at its first call, and drops them after 30 seconds with no call. Its calls go in the call log, the CPU time of its thread counts in `spot stats`, and Review shows its text. |
 | A27 | Settings and Updates read with one `openspot` process and no `jq`. |
+| A30 | A value of a call over 64 KB goes on stdin under `value`, not in the arguments, since the system limits the size of the arguments of a process. |
 
 ## Sharing
 

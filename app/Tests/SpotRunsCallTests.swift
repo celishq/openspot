@@ -462,7 +462,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         XCTAssertEqual(TextBlock.blocks(in: got).first?.value("input"), Self.big)
     }
 
-    func testATwoMegabyteRunIsLeftOutOfTheArgumentsAndStdinHoldsItAsValue() async throws {
+    func test_A30_aTwoMegabyteRunGoesOnStdinAsValue() async throws {
         let url = try script(body: "printf '%s\\n' \"$#\"\ncat")
 
         let text = try await runs.answer(of: Spot(id: "script", name: "Script", url: url), .item(SpotItem(title: "A", run: Self.big)))
