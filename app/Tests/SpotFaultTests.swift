@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves that the panel keeps each fault of a spot where the person looks: a file that does not load keeps a card, a failed
-/// run marks its card, and a change of the spots folder shows at once.
 @MainActor
 final class SpotFaultTests: XCTestCase {
     private var folder: URL!
@@ -65,7 +63,6 @@ final class SpotFaultTests: XCTestCase {
         try? String(contentsOf: folder.appendingPathComponent(name), encoding: .utf8)
     }
 
-    /// Opens the sheet of the spot of a file that does not load.
     private func openFault() async throws -> SheetParts {
         try script("weather", header: "mode=huge", "echo")
         model.reload()
@@ -75,7 +72,7 @@ final class SpotFaultTests: XCTestCase {
         return try XCTUnwrap(model.openPanel)
     }
 
-    func testAFileThatDoesNotLoadKeepsAWideCardThatSaysHowToFixIt() throws {
+    func test_A19_aFileThatDoesNotLoadKeepsAWideCardThatSaysHowToFixIt() throws {
         try script("weather", header: "mode=huge", "echo")
 
         model.reload()
@@ -140,7 +137,7 @@ final class SpotFaultTests: XCTestCase {
         XCTAssertNil(entry("weather")?.spot.fault)
     }
 
-    func testAFailedRunMarksItsCardUntilARunSucceeds() async throws {
+    func test_A21_aFailedRunMarksItsCardUntilARunSucceeds() async throws {
         try script("ping", "echo 'Openspot cannot reach the server. Try again when the Mac is online.' >&2; exit 1")
         model.reload()
 
@@ -154,7 +151,7 @@ final class SpotFaultTests: XCTestCase {
         try await wait("the success") { entry("ping")?.failure == nil }
     }
 
-    func testAChangeOfTheFolderShowsANewSpotAtOnce() throws {
+    func test_A20_aChangeOfTheFolderShowsANewSpotAtOnce() throws {
         model.reload()
 
         try script("hello", "echo")

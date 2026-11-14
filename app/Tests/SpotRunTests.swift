@@ -62,7 +62,7 @@ final class SpotRunTests: XCTestCase {
         XCTAssertEqual(partsAtOpen, true)
     }
 
-    func testASheetThatWaitsOpensWithoutAnAnswerThatIsLate() async throws {
+    func test_A9_aSheetThatWaitsOpensWithoutAnAnswerThatIsLate() async throws {
         let sheet = try holding("sleep 5", pause: 0.02)
         var isOpened = false
 
@@ -727,7 +727,6 @@ final class SpotRunTests: XCTestCase {
     }
 }
 
-/// Whether each ranking of a search ran on the main thread, in the order they ran.
 private final class FindThreads: @unchecked Sendable {
     private let lock = NSLock()
     private var kept: [Bool] = []

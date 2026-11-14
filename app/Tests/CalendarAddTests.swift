@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves `openspot calendar add` and `openspot reminders add` through `Events` and `Reminders`, with fake stores and the real
-/// time now.
 final class CalendarAddTests: XCTestCase {
     private let work = CalendarList(id: "A8E2", title: "Work", account: "iCloud", color: "#1BADF8")
     private let family = CalendarList(id: "7D10", title: "Family", account: "iCloud", color: nil)

@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves how the person moves through a flow: a row that opens a page, the keys back, forward and to the grid, the hint,
-/// the push motion, the edges of the sheets behind, and what a run forgets.
 @MainActor
 final class FlowNavigationTests: PanelCase {
     func testARowThatOpensAPagePushesItAndKeepsThePanelOpen() async throws {
@@ -133,8 +131,6 @@ final class FlowNavigationTests: PanelCase {
         XCTAssertEqual(host.pushStarts.first.map { $0 < 0 }, true)
     }
 
-    /// Opens a spot whose buttons move its flow: Done goes back, Top goes to its first sheet, Next pushes a page and Swap
-    /// takes the place of the page that shows.
 
     func testOpenStartsANewFlowWithNothingBehind() async throws {
         try await openList()

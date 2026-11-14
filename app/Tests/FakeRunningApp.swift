@@ -1,8 +1,6 @@
 import Foundation
 @testable import OpenspotCore
 
-/// The running app of a test. It counts each change of the config that the API reports, records each act that the API
-/// asks for, and answers the status that the test sets. A spot called `gone` does not exist.
 actor FakeRunningApp: RunningApp {
     private(set) var changes = 0
     private(set) var checks = 0
@@ -13,7 +11,6 @@ actor FakeRunningApp: RunningApp {
     private var calls = 0
     private var isFirstLaunch = false
 
-    /// Each change of the config that the API reported, in order.
     private(set) var changeList: [ConfigChange] = []
 
     func configChanged(_ change: ConfigChange) {
@@ -93,7 +90,6 @@ actor FakeRunningApp: RunningApp {
     }
 
 
-    /// Each reason that Touch ID was asked for, and whether the person passes it.
     private(set) var asked: [String] = []
     private var allowsActs = true
 

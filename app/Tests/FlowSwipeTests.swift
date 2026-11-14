@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the swipe of a flow: one step back or forward for each horizontal swipe that goes far enough, and none for a
-/// scroll or for the coast after the fingers lift.
 final class FlowSwipeTests: XCTestCase {
     func testASwipeToTheRightGoesBackOnceWhenItGoesFarEnough() {
         var swipe = FlowSwipe()

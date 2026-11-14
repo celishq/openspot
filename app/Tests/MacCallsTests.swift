@@ -1,10 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves that the running app answers the calls of the clipboard, the windows, the screen, translation and the picks
-/// through its socket, with its own Mac, so that the command starts no second app for them (protocol: The openspot command).
 final class MacCallsTests: XCTestCase {
-    /// A Mac that keeps each act that a call asks of it, as a line.
     private final class Host: Mac, @unchecked Sendable {
         private let lock = NSLock()
         private var kept: [String] = []
@@ -80,7 +77,6 @@ final class MacCallsTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    /// Runs the command with the arguments and stdin in a folder, and returns what it prints and its exit code.
     private func run(_ arguments: [String], input: String = "", in place: URL? = nil) throws -> (output: String, errors: String, code: Int32) {
         try Self.run(client, config: config, arguments, input: input, in: place ?? folder)
     }
@@ -157,9 +153,6 @@ final class MacCallsTests: XCTestCase {
         XCTAssertEqual(host.acts, ["shot a.png in talks", "record b.mp4 in talks"])
     }
 
-    /// In Careful mode, a spot with no `files` use takes a capture only into a file of its data folder, a temp folder or a
-    /// folder of its `screen` use, as its own process could write, and a capture into any other file is refused with no ask
-    /// of the screen (protocol: Trust).
     @MainActor
     func testInCarefulModeASpotsCaptureIntoAFileOutsideItsFoldersIsRefused() async throws {
         let runs = SpotRuns()
@@ -203,7 +196,6 @@ final class MacCallsTests: XCTestCase {
         XCTAssertEqual(host.acts, ["translate hola from - to en"])
     }
 
-    /// A pick runs on the main thread of the app, so the test waits for the command off it.
     func testTheAppAsksForAColourAndAFolder() async throws {
         let (client, config, folder) = (client, config, folder!)
         let colour = try await Task.detached { try Self.run(client, config: config, ["color", "pick"], input: "", in: folder) }.value

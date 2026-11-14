@@ -37,8 +37,6 @@ final class SheetStreamTests: XCTestCase {
         XCTAssertNil(reader.finish())
     }
 
-    // MARK: Frames
-
     func testATerminalProgressCodeIsAFrameWithItsValue() {
         var reader = SheetFrameReader()
 

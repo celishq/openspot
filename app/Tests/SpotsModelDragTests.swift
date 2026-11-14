@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the drag of a card in Edit Spots through the panel's model: where the cards go, what a release saves, and what
-/// puts the cards back.
 @MainActor
 final class SpotsModelDragTests: XCTestCase {
     private var folder: URL!
@@ -71,20 +69,17 @@ final class SpotsModelDragTests: XCTestCase {
         model.visible.map(\.id)
     }
 
-    /// The pointer's move that takes the centre of a card to this point of the grid.
     private func move(_ id: String, to point: CGPoint) -> CGSize {
         let index = model.visible.firstIndex { $0.id == id } ?? 0
         let rect = model.placements[index].rect
         return CGSize(width: point.x - rect.midX, height: point.y - rect.midY)
     }
 
-    /// The left half of a card, where a card dropped goes before it.
     private func leftHalf(of id: String) -> CGPoint {
         let rect = model.placements[model.visible.firstIndex { $0.id == id } ?? 0].rect
         return CGPoint(x: rect.minX + rect.width / 4, y: rect.midY)
     }
 
-    /// The spots that the config turns off.
     private var offInConfig: [String] {
         (try? model.files.config.read().arrangement.choices.filter { $0.isEnabled == false }.map(\.id).sorted()) ?? []
     }
@@ -332,13 +327,11 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.lift.offset, .zero)
     }
 
-    /// The pointer's move, since the drag started, that takes the centre of the lifted card to this point of the grid.
     private func dragMove(to point: CGPoint) -> CGSize {
         let rect = model.drag.map { $0.rect(at: $0.home) } ?? .zero
         return CGSize(width: point.x - rect.midX, height: point.y - rect.midY)
     }
 
-    /// A point of the panel's space as a point of the grid, which has not scrolled.
     private func inGrid(_ point: CGPoint) -> CGPoint {
         let origin = model.gridOrigin
         return CGPoint(x: point.x - origin.x, y: point.y - origin.y)
@@ -625,7 +618,7 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertFalse(try model.files.config.read().arrangement.enabled.contains("timer"))
     }
 
-    func testADragFromTheStoreOpensEditSpotsThatStaysAfterTheDrag() {
+    func test_A13_aDragFromTheStoreOpensEditSpotsThatStaysAfterTheDrag() {
         model.endEditing()
         model.isShown = false
 

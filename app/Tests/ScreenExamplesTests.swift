@@ -1,10 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Shot and Record examples with their real scripts and a stand-in for the openspot command.
 final class ScreenExamplesTests: SampleSpotsCase {
-    /// A stand-in for the openspot command that logs each call to `calls`, keeps settings and a recording in files, lists two
-    /// mics, a camera and the sound, and takes the shot that the file `shot` names.
     private func fakeScreen(in folder: URL) throws {
         let path = folder.path
         try """

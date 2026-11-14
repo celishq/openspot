@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the guides that `openspot help <noun>` prints, from the guide folder that the app ships.
 final class CommandGuideTests: XCTestCase {
     private let folder = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Help")
 

@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves where the panel and a float open (A18, W4), with the screens of a Mac whose second screen lies to the left of the main one.
 final class ScreenPlaceTests: XCTestCase {
     private let main = ScreenPlace.Screen(frame: CGRect(x: 0, y: 0, width: 1496, height: 967), area: CGRect(x: 0, y: 86, width: 1496, height: 852))
     private let left = ScreenPlace.Screen(frame: CGRect(x: -2560, y: -288, width: 2560, height: 1440), area: CGRect(x: -2560, y: -288, width: 2560, height: 1410))
@@ -55,7 +54,7 @@ final class ScreenPlaceTests: XCTestCase {
         XCTAssertEqual(place.origin(of: size, window: window, pointer: CGPoint(x: 10, y: 10)), CGPoint(x: -1600, y: 229))
     }
 
-    func testAWindowOnTwoScreensTakesTheScreenThatHoldsMoreOfIt() {
+    func test_A18_aWindowOnTwoScreensTakesTheScreenThatHoldsMoreOfIt() {
         let window = CGRect(x: -300, y: 100, width: 1000, height: 600)
 
         XCTAssertEqual(place.origin(of: size, window: window, pointer: CGPoint(x: -1000, y: 10)), CGPoint(x: 428, y: 185))

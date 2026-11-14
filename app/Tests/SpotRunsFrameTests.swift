@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the one rule of frames: a frame with a block is the whole picture, and a frame of only a head carries
-/// effects.
 @MainActor
 final class SpotRunsFrameTests: SpotRunsCase {
     func testAnActionsFrameWithABlockReplacesTheWholeSheet() async throws {

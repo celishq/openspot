@@ -1,10 +1,8 @@
 import XCTest
 @testable import OpenspotCore
 
-/// The rules of events: a spot lists them in its `read`, and each one reads the wanted spots that list it (protocol: Events).
 @MainActor
 final class SpotEventsTests: SpotRunsCase {
-    /// A Mac that raises what a test tells it, with a clipboard whose count the test sets.
     private final class FakeMac: Mac, @unchecked Sendable {
         var heard: (@MainActor (SpotEvent) -> Void)?
         var count = 0
@@ -210,8 +208,6 @@ final class SpotEventsTests: SpotRunsCase {
         XCTAssertTrue(try sheet().spot.canShowInMenuBar)
     }
 
-    // MARK: Events, the events of the Mac
-
     func testTheMacRaisesTheFrontAppAndTheScreenWake() async throws {
         menuBar.insert("script")
         try script(header: "on=app.front\non=screen.wake\noffers=card\noffers=menubar", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
@@ -336,8 +332,6 @@ final class SpotEventsTests: SpotRunsCase {
         XCTAssertFalse(runs.watchesClipboard)
     }
 
-    // MARK: Events, openspot event emit
-
     func testAnEventFromAShellReadsTheSpotThatListsIt() async throws {
         menuBar.insert("script")
         try script(header: "on=music.track\noffers=card\noffers=menubar", "\(reasons)\nprintf 'text=t\\ntitle=%s\\n' \"$OPENSPOT_VALUE\"")
@@ -364,7 +358,6 @@ final class SpotEventsTests: SpotRunsCase {
     }
 }
 
-/// A Mac of the API that reaches nothing on the Mac.
 private final class NoHost: Mac {
     func eventStore() -> any EventStore { FakeEventStore() }
     func reminderStore() -> any ReminderStore { FakeReminderStore() }

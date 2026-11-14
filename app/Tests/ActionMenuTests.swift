@@ -9,7 +9,6 @@ final class ActionMenuTests: XCTestCase {
     private let share = CommandAction(id: "share", title: "Share", key: ActionKey(text: "cmd+shift+c"), scope: .spot, after: .close)
     private let delete2 = CommandAction(id: "delete", title: "Delete", key: ActionKey(text: "cmd+backspace"), scope: .spot)
 
-    /// The actions of the app's spot, as it offers them to a card.
     private func app(_ actions: CommandAction...) -> [OfferedAction] {
         actions.map { OfferedAction(action: $0, owner: "openspot/actions") }
     }
@@ -72,7 +71,7 @@ final class ActionMenuTests: XCTestCase {
         XCTAssertEqual(two.lines, 2)
     }
 
-    func testEachRowOfAGridCardsMenuActsOnThatCard() throws {
+    func test_A28_eachRowOfAGridCardsMenuActsOnThatCard() throws {
         let menu = try XCTUnwrap(ActionMenu(spot: command(), item: nil, offered: app(share)))
 
         XCTAssertEqual(menu.rows.dropFirst().filter { $0.action == nil }.map(\.title), [])
@@ -107,7 +106,6 @@ final class ActionMenuTests: XCTestCase {
         XCTAssertEqual(ActionMenu(spot: slider, item: nil, offered: app(share))?.rows.map(\.title), ["Share"])
     }
 
-    /// An action of a script that asks for a second press, such as a forget of a network.
     private let forget = CommandAction(id: "forget", title: "Forget", scope: .spot, confirm: "Press again to forget")
 
     func testAnActionWithAConfirmAsksForASecondPress() throws {
@@ -274,7 +272,6 @@ final class ActionMenuTests: XCTestCase {
         XCTAssertEqual(alone.headers, [])
     }
 
-    /// The Icon spot's Change Icon with its three children, by dot notation.
     private func icon() -> [OfferedAction] {
         [("change", "Change Icon"), ("change.draw", "Draw…"), ("change.file", "Choose File…"), ("change.reset", "Reset Icon")].map {
             OfferedAction(action: CommandAction(id: $0.0, title: $0.1, scope: .spot), owner: "openspot/icon")

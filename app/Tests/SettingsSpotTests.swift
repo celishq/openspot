@@ -1,9 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Settings spot of the app: its first sheet lists the keys of the app, the switches of the Mac and a row for each
-/// spot with settings, whose page lists its menu bar place, float, commands and values, and it changes each one through
-/// the API.
 final class SettingsSpotTests: BuiltInCase {
     private var settings: Spot {
         get throws {
@@ -61,7 +58,7 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(changes, 2)
     }
 
-    func testAReadStartsOneOpenspotAndNoJq() async throws {
+    func test_A27_aReadStartsOneOpenspotAndNoJq() async throws {
         try script("cups.sh", "title=Cups\non=clock.60\n\nfield=size")
         let programs = try countPrograms()
 

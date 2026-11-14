@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Shelf example with its real script: it keeps dropped files, gives each one back as a row with its file, and
-/// forgets a file that a drag took out (protocol: Files out).
 final class ShelfExampleTests: SampleSpotsCase {
     private var shelf: Spot {
         get throws {

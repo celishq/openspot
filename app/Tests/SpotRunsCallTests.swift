@@ -1,11 +1,8 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves how long a call runs, how a call stops, and how a big value reaches a script.
 @MainActor
 final class SpotRunsCallTests: SpotRunsCase {
-    // MARK: Section 7
-
     func testAReadAtThePanelThatTakesTooLongMarksItsCardAndTellsNoOne() async throws {
         runs = SpotRuns(readLimit: 0.3)
         try script(header: "on=panel.open", "sleep 30")
@@ -438,8 +435,6 @@ final class SpotRunsCallTests: SpotRunsCase {
 
         try await wait("the old state") { sheet.state.on == false }
     }
-
-    // MARK: The calls
 
     private static let big = String(repeating: "line \\ one=two\n", count: 2_000_000 / 15)
 

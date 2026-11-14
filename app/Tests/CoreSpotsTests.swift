@@ -35,7 +35,7 @@ final class CoreSpotsTests: XCTestCase {
         XCTAssertEqual(try names(enabled: ["files"]), ["Files"])
     }
 
-    func testAFileInTheSpotsFolderWinsOverACoreSpotAndIsAlwaysOn() throws {
+    func test_A12_aFileInTheSpotsFolderWinsOverACoreSpotAndIsAlwaysOn() throws {
         try write("apps.sh", in: core, header: "title=Core apps")
         try write("apps.sh", in: folder, header: "title=My apps")
 
@@ -91,6 +91,15 @@ final class CoreSpotsTests: XCTestCase {
             if let letter = choice.letter { XCTAssertNotNil(CommandKey(name: letter), choice.id) }
         }
         XCTAssertEqual(config.arrangement.letters(over: SpotArrangement()).count, config.arrangement.choices.filter { $0.letter?.isEmpty == false }.count)
+    }
+
+    func test_A11_aCoreSpotRunsInPlaceFromItsFolderInTheApp() throws {
+        try write("apps.sh", in: core)
+
+        let apps = try XCTUnwrap(SpotsFolder(url: folder, core: core, enabled: ["apps"]).scan().spots.first)
+
+        XCTAssertEqual(apps.url.resolvingSymlinksInPath().path, core.appendingPathComponent("apps.spot/apps.sh").resolvingSymlinksInPath().path)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), [])
     }
 
     func testAFaultInACoreSpotThatIsOffStaysQuiet() throws {

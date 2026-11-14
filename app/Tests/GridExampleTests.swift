@@ -1,10 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Grid example: the block of cells it gives `openspot window move`, and how its script runs the grid.
 final class GridExampleTests: SampleSpotsCase {
-    /// A stand-in for the openspot command that logs each call to `calls`, and a stand-in grid in the data folder of the
-    /// spot that runs this body. Its file is newer than the source, so the script does not build it.
     private func fakeGrid(_ body: String, in folder: URL) throws -> URL {
         try "#!/bin/sh\necho \"$*\" >> '\(folder.path)/calls'\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
         let data = folder.appendingPathComponent(".config/openspot/data/grid")

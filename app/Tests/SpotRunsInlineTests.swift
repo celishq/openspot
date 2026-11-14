@@ -1,11 +1,8 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves how a JavaScript spot answers inside the app: in the turn of the text when it is fast, and in a later turn,
-/// with the last rows kept, when it is slow (protocol: Modes).
 @MainActor
 final class SpotRunsInlineTests: SpotRunsCase {
-    /// A host of the API that reaches nothing on the Mac.
     private final class Host: Mac {
         func eventStore() -> any EventStore { FakeEventStore() }
         func reminderStore() -> any ReminderStore { FakeReminderStore() }
@@ -13,7 +10,6 @@ final class SpotRunsInlineTests: SpotRunsCase {
         func open(_ link: URL) -> Bool { false }
     }
 
-    /// Writes a JavaScript spot with these header lines.
     private func inline(_ name: String = "script", header: String, _ body: String) throws {
         let lines = header.split(separator: "\n").map { "// \($0)\n" }.joined()
         let url = folder.spotFile(name, extension: "js")
@@ -21,7 +17,6 @@ final class SpotRunsInlineTests: SpotRunsCase {
         try "\(lines)\(body)\n".write(to: url, atomically: true, encoding: .utf8)
     }
 
-    /// A spot that answers each text with one row of it, and works for 300 ms first on the text `slow`.
     private func answering() throws {
         try inline(header: "on=search.text ^[0-9]", """
         function main([id, row], env) {
@@ -45,7 +40,6 @@ final class SpotRunsInlineTests: SpotRunsCase {
         XCTAssertFalse(sheet.isAnswering)
     }
 
-    /// Writes JavaScript spots that answer each text with one row of it, and work for 300 ms first on the text `12`.
     private func slowAnswering(_ names: [String]) throws -> [SpotRun] {
         let body = """
         function main([id], env) {
@@ -210,7 +204,6 @@ final class SpotRunsInlineTests: SpotRunsCase {
         XCTAssertEqual(SpotOutput(text: text).toast, "Saved a=1")
     }
 
-    /// New runs with this time for a call, this idle time of a script and this log.
     private func runs(limit: TimeInterval = 10, idle: TimeInterval = 30, frameWait: DispatchTimeInterval = .milliseconds(2), log: CallLog? = nil) {
         runs.quit()
         runs = SpotRuns(readLimit: limit, now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50), inlineIdle: idle, frameWait: frameWait, log: log)
@@ -233,7 +226,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
         try await wait("the next answer") { sheet.list.shown.map(\.run) == ["a"] }
     }
 
-    func testTheScriptLoadsAtItsFirstCallAndLetsGoAfterItsIdleTime() async throws {
+    func test_A26_theScriptLoadsAtItsFirstCallAndLetsGoAfterItsIdleTime() async throws {
         runs(idle: 0.3)
         try answering()
         let sheet = try sheet()

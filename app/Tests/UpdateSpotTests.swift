@@ -1,14 +1,12 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Updates spot of the app: search finds it with the version, and the grid shows it with a downloaded update.
-/// A press checks now or restarts into the update, and it warns once before a restart that would stop running calls.
 final class UpdateSpotTests: BuiltInCase {
     private var version: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
     }
 
-    func testAReadStartsOneOpenspotAndNoJq() async throws {
+    func test_A27_aReadStartsOneOpenspotAndNoJq() async throws {
         let programs = try countPrograms()
 
         _ = try await spot("updates").state(timeout: 5)

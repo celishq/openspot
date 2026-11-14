@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the table of the flow's keys: ⌘[ goes back, ⌘] forward and ⌘Esc to the grid, and no other key moves the flow.
 final class FlowKeyTests: XCTestCase {
     func testEachKeyOfTheFlowHasOneMove() {
         XCTAssertEqual(FlowKey(ActionKey(name: "[", isCommand: true)), .back)

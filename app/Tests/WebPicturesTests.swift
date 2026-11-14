@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the pictures that an `icon` names by an https URL: each one is fetched once and kept, and a failed or too large
-/// fetch keeps nothing.
 final class WebPicturesTests: XCTestCase {
     private final class Fetches: @unchecked Sendable {
         private let lock = NSLock()

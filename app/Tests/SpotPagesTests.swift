@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the pages of a run: each call of a page names it in `OPENSPOT_PAGE` in each mode, and a page that comes back
-/// shows what it last showed at once.
 @MainActor
 final class SpotPagesTests: SpotRunsCase {
     private func titles(_ sheet: SpotRun) -> [String] {

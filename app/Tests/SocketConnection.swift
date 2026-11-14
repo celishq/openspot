@@ -1,6 +1,5 @@
 import XCTest
 
-/// One connection to the socket, which reads the lines that come back one at a time.
 final class SocketConnection {
     let descriptor: Int32
     private var buffer = Data()
@@ -29,7 +28,6 @@ final class SocketConnection {
         XCTAssertEqual(write(descriptor, bytes, bytes.count), bytes.count)
     }
 
-    /// The next line as a JSON object, or nil at the end of the stream or after 10 seconds with none.
     func next() throws -> [String: Any]? {
         var chunk = [UInt8](repeating: 0, count: 4096)
         while !buffer.contains(UInt8(ascii: "\n")) {
@@ -47,7 +45,6 @@ final class SocketConnection {
         Darwin.close(descriptor)
     }
 
-    /// What one call printed, and the reply that ended it.
     struct Exchange {
         var stdout = ""
         var stderr = ""
@@ -58,7 +55,6 @@ final class SocketConnection {
         }
     }
 
-    /// Reads the stream of a call to its reply, and answers a pull of stdin with the input.
     func exchange(input: [String] = []) throws -> Exchange {
         var exchange = Exchange()
         while let line = try next() {

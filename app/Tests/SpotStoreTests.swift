@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the store: each spot that comes with the app, each spot of the spots folder and each package of the store, with
-/// whether the person has it and whether the store holds their own spot as it is, and the get of one.
 final class SpotStoreTests: XCTestCase {
     private var folder: URL!
 

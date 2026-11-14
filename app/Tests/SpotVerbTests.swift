@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the acts that the app adds to each spot of the person: they open its file, copy a prompt for an agent, and delete
-/// it so that `⌘Z` puts it back.
 @MainActor
 final class SpotVerbTests: XCTestCase {
     private final class Host: Mac {
@@ -12,7 +10,6 @@ final class SpotVerbTests: XCTestCase {
         func open(_ link: URL) -> Bool { false }
     }
 
-    /// The model as the API reaches it, as the running app gives it, for the acts on a card and nothing else.
     private struct ModelApp: RunningApp {
         let model: SpotsModel
 
@@ -79,7 +76,6 @@ final class SpotVerbTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    /// The folder of the repo's spots, which holds the app's own spots.
     private var repoSpots: URL {
         URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
     }
@@ -109,7 +105,6 @@ final class SpotVerbTests: XCTestCase {
         try? String(contentsOf: folder.appendingPathComponent(name), encoding: .utf8)
     }
 
-    /// Shows the panel with the card of this spot selected.
     private func select(_ id: String) throws -> SpotsModel.Target {
         model.reload()
         model.isShown = true
@@ -118,7 +113,7 @@ final class SpotVerbTests: XCTestCase {
         return (entry, nil)
     }
 
-    func testTheMenuOfASpotOfThePersonOffersEachActWithItsKey() throws {
+    func test_A24_theMenuOfASpotOfThePersonOffersEachActWithItsKey() throws {
         try script("weather", header: "title=Weather")
         _ = try select("weather")
 
@@ -384,7 +379,7 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertTrue(prompt.contains("Openspot cannot reach the server."))
     }
 
-    func testDeleteAsksNothingKeepsThePanelAndCommandZPutsTheSpotBack() async throws {
+    func test_A24_deleteAsksNothingKeepsThePanelAndCommandZPutsTheSpotBack() async throws {
         try script("weather", header: "title=Weather")
         _ = try select("weather")
 

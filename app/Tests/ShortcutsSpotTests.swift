@@ -1,15 +1,11 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Shortcuts spot with its real script in a private home and a fake `shortcuts` command.
 final class ShortcutsSpotTests: SampleSpotsCase {
     private func shortcuts() throws -> Spot {
         try XCTUnwrap(try scan.spots.first { $0.name == "Shortcuts" })
     }
 
-    /// Puts a fake `shortcuts` on the path. It lists one folder, and a run or a view writes its arguments to `shortcuts-args`,
-    /// one on each line. A run gives the file `result` as its result, and fails when the file `fail` is there. Each call
-    /// adds a line to `shortcuts-calls`.
     private static func fakeShortcuts(in folder: URL, loose: String = "printf '%s\\n' 'Say \\ \"hi\" (now)' 'Take a break'") throws {
         let script = """
         #!/bin/sh
@@ -57,7 +53,6 @@ final class ShortcutsSpotTests: SampleSpotsCase {
         }
     }
 
-    /// The frames of one read of the spot, with its own data folder.
     private static func frames(of shortcuts: Spot) async throws -> [String] {
         var frames: [String] = []
         for try await frame in ScriptProcess(url: shortcuts.url, arguments: ["read"], limit: 10, dataName: shortcuts.dataName).start() {

@@ -2,7 +2,6 @@ import XCTest
 @testable import OpenspotCore
 
 final class IconBodyTests: XCTestCase {
-    /// An alpha grid of this side, opaque inside the rectangle.
     private func alpha(side: Int, opaque: CGRect) -> [UInt8] {
         (0..<side * side).map { opaque.contains(CGPoint(x: CGFloat($0 % side) + 0.5, y: CGFloat($0 / side) + 0.5)) ? 255 : 0 }
     }

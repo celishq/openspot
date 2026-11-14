@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the row key `to`: a pick of the row goes to another spot as `<spot> open <row id>`, with the row on stdin (protocol: Rows).
 final class SpotRunsToTests: SpotRunsCase {
     private var reports: [(id: String, report: SpotRun.Report)] = []
 

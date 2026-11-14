@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the calls of `openspot` that the spots of the app make: the list of spots, a spot turned on or off, and the
-/// values that the spots keep.
 final class SpotAPITests: XCTestCase {
     private final class Login: @unchecked Sendable {
         var isOn = false

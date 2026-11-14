@@ -1,9 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-/// The scan of the repo spots and the fakes and helpers of the tests that run them.
 class SampleSpotsCase: XCTestCase {
-    /// The folder of the example spots, which the app does not ship.
     var examples: URL {
         URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("examples")
     }
@@ -14,12 +12,10 @@ class SampleSpotsCase: XCTestCase {
         }
     }
 
-    /// The example spot with this name.
     func example(_ name: String) throws -> Spot {
         try XCTUnwrap(try exampleScan.spots.first { $0.name == name })
     }
 
-    /// The Swift example with this name, built by `swiftc` into a new folder in the temp folder.
     func built(_ name: String) async throws -> (folder: URL, program: URL) {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-\(name)-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -28,7 +24,6 @@ class SampleSpotsCase: XCTestCase {
         return (folder, program)
     }
 
-    /// Waits up to ten seconds for a fact.
     @nonobjc func waitUntil(_ fact: () -> Bool) async throws {
         for _ in 0..<200 where !fact() {
             try await Task.sleep(for: .milliseconds(50))
@@ -46,7 +41,6 @@ class SampleSpotsCase: XCTestCase {
         }
     }
 
-    /// The arguments that Windows passes to `openspot` for a slot, one per line.
     func windowCall(_ slot: String) throws -> String {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-windows-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -83,9 +77,6 @@ class SampleSpotsCase: XCTestCase {
         XCTAssertEqual(stopped.on, false)
     }
 
-    /// Runs with an empty home and temp folder and with fake clipboard, open and caffeinate tools, so a test touches nothing
-    /// of the person's. The fake caffeinate is a process of that name that only waits, and `pbcopy` and `pbpaste` add their
-    /// names to the file `direct`.
     func withPrivateHome(_ body: (URL) async throws -> Void) async throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-home-\(UUID().uuidString)")
         let tools = folder.appendingPathComponent("tools")
@@ -117,9 +108,6 @@ class SampleSpotsCase: XCTestCase {
         try await body(folder)
     }
 
-    /// The openspot command: a sum prints the file `calc-answer` and adds its words to `calc-asked`, a copy writes the file
-    /// `clipboard`, a read prints it, and a paste copies it to `pasted`. A setting is the file
-    /// `setting-<key>`, and a folder pick prints the file `picked`.
     static func fakeOpenspot(in folder: URL) -> String {
         """
         case "$1 $2" in
@@ -134,7 +122,6 @@ class SampleSpotsCase: XCTestCase {
         """
     }
 
-    /// Answers a query with the saved answer, or else with one pull request in each state.
     static func fakeGh(answer: String) -> String {
         """
         [ -f '\(answer)' ] && { cat '\(answer)'; exit 0; }
@@ -154,7 +141,6 @@ class SampleSpotsCase: XCTestCase {
         """
     }
 
-    /// A web with one site: icons.test names a small image on its page, and each other site has no image at all.
     static func fakeCurl(log: String) -> String {
         """
         out=""
@@ -187,7 +173,6 @@ class SampleSpotsCase: XCTestCase {
         _ = try await links.submit(new, item: nil, draft: draft, timeout: 5)
     }
 
-    /// Reads a script to find the action that it prints.
     func action(_ id: String, of spot: Spot) async throws -> CommandAction {
         let actions = try await spot.items(timeout: 5).actions
         return try XCTUnwrap(actions.first { $0.id == id })
@@ -197,8 +182,6 @@ class SampleSpotsCase: XCTestCase {
         try String(contentsOf: folder.appendingPathComponent(name), encoding: .utf8)
     }
 
-    /// Runs the color picker with a stand-in for the openspot command, which prints this answer and copies as the fake of
-    /// `withPrivateHome` does.
     func pickColor(answer: String, in folder: URL) async throws -> String? {
         let script = "#!/bin/sh\n[ \"$1 $2\" = 'color pick' ] && { printf '%s' '\(answer)'; exit 0; }\n\(Self.fakeOpenspot(in: folder))\n"
         try script.writeScript(to: folder.appendingPathComponent("tools/openspot"))
@@ -206,8 +189,6 @@ class SampleSpotsCase: XCTestCase {
         return try await picker.perform(picker.click, timeout: 5)
     }
 
-    /// Puts a stand-in for the openspot command on the path. It knows two languages, translates to upper case, and copies as
-    /// the fake of `withPrivateHome` does.
     func fakeTranslate(in folder: URL, status: String? = nil) throws -> Spot {
         let reply = status.map { "printf 'status=\($0)\\nfrom=ru\\nto=en\\n'" } ?? #"""
         case "$text" in *[а-я]*) found=ru ;; *) found=en ;; esac
@@ -240,8 +221,6 @@ class SampleSpotsCase: XCTestCase {
         output.parts.first { $0.id == id }?.value
     }
 
-    /// Runs a handler through the calls as an open sheet does: one run for each, with the values of the sheet on stdin.
-    /// Returns the answer to the last one.
     @MainActor
     static func drive(_ spot: Spot, _ actions: [SpotAction]) async throws -> SpotOutput {
         var last = try await spot.items(timeout: 10)
@@ -254,8 +233,6 @@ class SampleSpotsCase: XCTestCase {
         return last
     }
 
-    /// Puts a stand-in for the openspot command on the path, which prints one emoji and one symbol, and a `defaults` that
-    /// prints the languages in the file `languages`, or English.
     func fakeEmoji(in folder: URL) throws -> Spot {
         let script = """
         #!/bin/sh
@@ -271,7 +248,6 @@ class SampleSpotsCase: XCTestCase {
         return try XCTUnwrap(try scan.spots.first { $0.name == "Emojis & Symbols" })
     }
 
-    /// Reads a sheet, and returns the options of its target menu with its first parts, and after `release` appears.
     @MainActor
     static func targetOptions(of spot: Spot, release: URL) async throws -> (first: Int, last: Int) {
         let runs = SpotRuns()

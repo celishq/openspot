@@ -1,7 +1,6 @@
 import Foundation
 @testable import OpenspotCore
 
-/// One call of a script through the owner of all runs, for a test that proves what a script answers.
 @MainActor
 extension Spot {
     private func output(_ action: SpotAction, input: String? = nil, variables: [String: String] = [:], timeout: TimeInterval) async throws -> SpotOutput {
@@ -42,7 +41,6 @@ extension Spot {
         try await output(action, input: input, timeout: timeout).summary?.value("toast")
     }
 
-    /// The answer of a hook of this JavaScript spot about a card, however long it takes.
     func hook(_ function: String, card: String, origin: String) async -> Bool {
         let runs = SpotRuns()
         let answer = await withCheckedContinuation { continuation in
@@ -61,7 +59,6 @@ extension Spot {
 }
 
 extension ScanResult {
-    /// The scripts with a number in their `read`.
     var metrics: [Spot] {
         scripts.filter { $0.read?.seconds != nil }
     }

@@ -2,11 +2,8 @@ import Observation
 import XCTest
 @testable import OpenspotCore
 
-/// Proves what wants a script, each moment, search, the main search and the sandbox.
 @MainActor
 final class SpotRunsWantTests: SpotRunsCase {
-    // MARK: K5
-
     func test_K5_closingThePanelClosesASheetOfPartsAndTheNextOpenReads() async throws {
         try script(header: "on=sheet.open", "printf 'field=a\\nvalue=one\\n'")
         let sheet = try sheet()
@@ -34,8 +31,6 @@ final class SpotRunsWantTests: SpotRunsCase {
         XCTAssertTrue(sheet.isOpen)
         XCTAssertEqual(sheet.list.shown.count, 1)
     }
-
-    // MARK: Places
 
     func testAWidgetCanPlaceAnyScriptWithARead() async throws {
         try script("onpanel", header: "on=panel.open", log: "onpanel", "printf 'text=m\\ntitle=P\\n'")
@@ -105,8 +100,6 @@ final class SpotRunsWantTests: SpotRunsCase {
 
         await fulfillment(of: [changed], timeout: 2)
     }
-
-    // MARK: Events, moments
 
     func testEachMomentReadsOnlyTheScriptsThatListIt() async throws {
         try script("onsheet", header: "on=sheet.open", log: "onsheet", "printf 'row=s\\ntitle=S\\n'")
@@ -228,8 +221,6 @@ final class SpotRunsWantTests: SpotRunsCase {
 
         try await wait("the read from the clock") { self.blocks().filter { $0 == "arg=read" }.count == 2 }
     }
-
-    // MARK: C4, the main search, sandbox
 
     func test_C4_searchTextReachesTheScriptAfterAPause() async throws {
         try script(header: "on=sheet.open\non=sheet.text", "printf 'row=a\\ntitle=%s\\n' \"${OPENSPOT_VALUE:-none}\"")

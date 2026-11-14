@@ -13,8 +13,6 @@ final class PictureFileTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    /// The first time that the changes of a file give, while `write` runs again and again until one comes, or nil after
-    /// 10 seconds.
     private func firstChange(of file: URL, writing write: @escaping @Sendable () throws -> Void) async throws -> Double?? {
         let changes = PictureFile(path: file.path).changes
         let next = Task { () -> Double?? in

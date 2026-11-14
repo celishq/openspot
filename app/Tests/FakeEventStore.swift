@@ -1,7 +1,6 @@
 import Foundation
 @testable import OpenspotCore
 
-/// A store of events in memory that answers as EventKit does: each event that overlaps a range.
 final class FakeEventStore: EventStore {
     struct Range: Equatable {
         let start: Date
@@ -49,7 +48,6 @@ final class FakeEventStore: EventStore {
         calendar
     }
 
-    /// Keeps the event in the default calendar with the next id, as EventKit gives a new one.
     func add(_ event: Event) throws -> Event {
         added.append(event)
         return Event(id: "saved-\(added.count)", title: event.title, start: event.start, end: event.end, isAllDay: event.isAllDay, calendar: calendar!, location: nil, url: nil, notes: nil)

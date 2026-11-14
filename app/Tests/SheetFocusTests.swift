@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves where the arrows move the focus among the parts of a sheet (A29).
 final class SheetFocusTests: XCTestCase {
     private func panel(_ text: String) throws -> SheetParts {
         try XCTUnwrap(SheetParts(output: SpotOutput(text: text)))
@@ -42,7 +41,7 @@ final class SheetFocusTests: XCTestCase {
     shortcut=cmd+shift+v
     """
 
-    func testTheArrowsReachEachDrawnPartInTheOrderItIsDrawnAndNoAction() throws {
+    func test_A29_theArrowsReachEachDrawnPartInTheOrderItIsDrawnAndNoAction() throws {
         var sheet = try panel(confetti)
 
         XCTAssertEqual(sheet.focusOrder.map(\.id), ["look", "key", "make", "play"])

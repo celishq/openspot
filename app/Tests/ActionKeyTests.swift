@@ -13,7 +13,7 @@ final class ActionKeyTests: XCTestCase {
         XCTAssertNil(ActionKey(text: ""))
     }
 
-    func testACommandKeyOnANonLatinLayoutGoesByTheLatinLetterOfTheSameKey() {
+    func test_A17_aCommandKeyOnANonLatinLayoutGoesByTheLatinLetterOfTheSameKey() {
         let latin = KeyLayout(keys: [14: "e", 45: "n"])
         XCTAssertEqual(ActionKey(typed: "у", code: 14, isCommand: true, isShift: false, latin: latin), ActionKey(name: "e", isCommand: true))
         XCTAssertEqual(ActionKey(typed: "Т", code: 45, isCommand: true, isShift: true, latin: latin), ActionKey(name: "n", isCommand: true, isShift: true))

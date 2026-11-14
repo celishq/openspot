@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the `openspot account` calls: anyone reads the public facts, and only a spot shipped in the app that declares
-/// `uses=account` reaches the key, after Touch ID for the words and for a sign-out.
 @MainActor
 final class AccountCallsTests: XCTestCase {
     private final class Host: Mac {
@@ -39,7 +37,6 @@ final class AccountCallsTests: XCTestCase {
         return isBuiltIn ? spot.builtIn() : spot
     }
 
-    /// The answer to a call from a spot, or from the person with no spot.
     private func call(_ arguments: [String], from spot: Spot? = nil, input: String = "") async throws -> CommandAnswer {
         var environment = ["OPENSPOT_CONFIG": folder.path]
         if let spot { environment[CallerTokens.variable] = runs.tokens.issue(for: spot) }
