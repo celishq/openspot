@@ -29,8 +29,10 @@ public protocol SpotsHost: AnyObject {
     /// Shows the float of a spot at the pointer, or brings its float there when it shows (W4, W6). During a drag it takes no
     /// focus, so that the drag goes on (W5).
     func float(_ entry: SpotsModel.Entry, followsDrag: Bool)
-    /// Closes the float of a spot, when it shows.
+    /// Closes the float or the window of a spot, when it shows.
     func land(_ id: String)
+    /// Shows the sheet of a spot in a window of its own, or brings its window to the front when it shows.
+    func window(_ entry: SpotsModel.Entry)
     /// Whether the pointer lies on the panel or the menu bar item.
     var isPointerOverDrop: Bool { get }
     /// The files of the drag in progress.

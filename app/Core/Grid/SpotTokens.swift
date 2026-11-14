@@ -115,6 +115,10 @@ public enum SpotTokens {
 
     /// The size of a float's sheet: its header, then its parts or its rows, with no search field. A tall one stops at the
     /// height of the panel's sheet, and its rows scroll.
+    /// The size that the window of a spot opens at, and the least it can be resized to.
+    public static let windowSize = CGSize(width: 720, height: 560)
+    public static let windowMinSize = CGSize(width: 360, height: 280)
+
     public static func floatSize(rows: Int, perLine: Int = 1, parts: SheetParts? = nil) -> CGSize {
         let content: CGFloat
         if let parts {

@@ -53,7 +53,11 @@ extension SpotsModel {
     /// Opens the sheet of a spot, as `openspot spot open` asks: in the panel that shows, or else in the panel that it shows.
     /// Returns false when no spot has that ID.
     public func openSheet(_ id: String) -> Bool {
-        guard entries.contains(where: { $0.id == id }) else { return false }
+        guard let entry = entries.first(where: { $0.id == id }) else { return false }
+        if entry.spot.offersWindow {
+            openWindow(id)
+            return true
+        }
         let moves = isShown
         if !moves { host.show() }
         endEditing(moving: false)
@@ -69,8 +73,9 @@ extension SpotsModel {
 
     /// Opens a sheet, which closes the run of the sheet before and stops a recording in it, and shows it once it is ready: at
     /// once, or with its first answer. It takes the place of a sheet that shows, grows out of its card when it moves, and
-    /// shows in place when it does not move or has no card.
+    /// shows in place when it does not move or has no card. A spot that offers a window opens there instead.
     public func open(_ id: String, moving: Bool) {
+        if entries.first(where: { $0.id == id })?.spot.offersWindow == true { return openWindow(id) }
         if let shown = openList, shown != id { stopRecording() }
         sheets[id]?.open(waits: moving) { [weak self] in self?.showSheet(id, moving: moving) }
     }

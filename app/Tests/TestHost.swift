@@ -16,6 +16,7 @@ final class TestHost: SpotsHost {
     /// The spots that the model floated, and the ones whose float it closed, in order.
     var floats: [String] = []
     var landings: [String] = []
+    var windows: [String] = []
     /// The phase of the sheet's transition after each change.
     var phases: [SheetTransition.Phase] = []
     /// The sheet whose open motion runs, after each change.
@@ -110,6 +111,10 @@ final class TestHost: SpotsHost {
 
     func land(_ id: String) {
         landings.append(id)
+    }
+
+    func window(_ entry: SpotsModel.Entry) {
+        windows.append(entry.id)
     }
 
     func copy(_ file: URL) {}

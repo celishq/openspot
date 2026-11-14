@@ -227,4 +227,45 @@ final class SpotFloatTests: XCTestCase {
         try await wait("the run") { host.confirms == ["Went"] }
         XCTAssertEqual(host.dismissals, 0)
     }
+
+    /// Loads a spot that offers a window, with one row.
+    private func windowSpot() throws {
+        try script("store", header: "on=sheet.open\noffers=card\noffers=window", "printf 'row=a\\ntitle=Apple\\n'")
+        model.reload()
+    }
+
+    func testAPressOfASpotThatOffersAWindowOpensItsWindowAndNotThePanel() async throws {
+        try windowSpot()
+
+        model.press("store")
+        try await wait("the window") { host.windows == ["store"] }
+
+        XCTAssertEqual(host.shows, 0)
+        XCTAssertNil(model.openList)
+        XCTAssertEqual(model.runs.floating, ["store"])
+        try await wait("its rows") { model.sheets["store"]?.list.shown.first?.title == "Apple" }
+    }
+
+    func testSpotOpenOfASpotThatOffersAWindowOpensItsWindowAndHidesThePanel() async throws {
+        try windowSpot()
+        model.isShown = true
+
+        XCTAssertTrue(model.openSheet("store"))
+        try await wait("the window") { host.windows == ["store"] }
+
+        XCTAssertEqual(host.dismissals, 1)
+        XCTAssertNil(model.openList)
+    }
+
+    func testAWindowThatClosesLandsItsSpotAndAnotherPressOpensItAgain() async throws {
+        try windowSpot()
+        model.press("store")
+        try await wait("the window") { host.windows == ["store"] }
+
+        model.land("store")
+        XCTAssertEqual(model.runs.floating, [])
+
+        model.press("store")
+        try await wait("the window again") { host.windows == ["store", "store"] }
+    }
 }

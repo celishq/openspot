@@ -45,6 +45,8 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var openedAtLaunch: [URL] = []
     /// The window of each float, by the ID of its spot.
     var floats: [String: SpotFloatPanel] = [:]
+    /// The window of each spot that offers one and shows, by the ID of its spot.
+    var spotWindows: [String: SpotSheetWindow] = [:]
     /// The watch of the pointer, while a key holds the shake or a row of Settings records one.
     private var shakeWatch: SpotShakeWatch?
     private var tapWatch: SpotTapWatch?

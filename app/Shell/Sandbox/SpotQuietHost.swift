@@ -26,6 +26,7 @@ final class SpotQuietHost: SpotsHost {
     func hideSubmenu() {}
     func float(_ entry: SpotsModel.Entry, followsDrag: Bool) {}
     func land(_ id: String) {}
+    func window(_ entry: SpotsModel.Entry) {}
     var isPointerOverDrop: Bool { false }
     var draggedPaths: [String] { [] }
     var isMouseDown: Bool { false }

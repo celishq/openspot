@@ -2,10 +2,12 @@ import OpenspotCore
 import SwiftUI
 
 /// The content of a float: the spot's sheet with its header, its rows or parts and a close button, or its card when it has
-/// no sheet. It tells its window the size that it needs.
+/// no sheet. It tells its window the size that it needs. In a window of its own it fills the window, whose title bar holds
+/// the name and the close button.
 struct SpotFloatView: View {
     let model: SpotsModel
     let id: String
+    var fills = false
     let onSize: (CGSize) -> Void
     @State private var dropTarget: String?
     @State private var dropWords: String?
@@ -41,7 +43,7 @@ struct SpotFloatView: View {
 
     private func sheet(_ entry: SpotsModel.Entry, _ run: SpotRun, size: CGSize) -> some View {
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
-            header(entry, run)
+            if !fills { header(entry, run) }
             if let parts = run.panel {
                 SheetPartsView(
                     panel: parts,
@@ -72,8 +74,9 @@ struct SpotFloatView: View {
             }
         }
         .padding(SpotTokens.padding)
-        .frame(width: size.width, height: size.height, alignment: .topLeading)
-        .modifier(SpotGlass())
+        .frame(width: fills ? nil : size.width, height: fills ? nil : size.height, alignment: .topLeading)
+        .frame(maxWidth: fills ? .infinity : nil, maxHeight: fills ? .infinity : nil, alignment: .topLeading)
+        .modifier(FloatSurface(fills: fills))
     }
 
     private func header(_ entry: SpotsModel.Entry, _ run: SpotRun) -> some View {
@@ -128,5 +131,14 @@ struct SpotFloatView: View {
                 .background(SpotTheme.accent, in: RoundedRectangle(cornerRadius: SpotTokens.radius, style: .continuous))
                 .allowsHitTesting(false)
         }
+    }
+}
+
+/// The glass of a float, which a window of its own leaves out: the window draws its own background.
+private struct FloatSurface: ViewModifier {
+    let fills: Bool
+
+    func body(content: Content) -> some View {
+        if fills { content } else { content.modifier(SpotGlass()) }
     }
 }

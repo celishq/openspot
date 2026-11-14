@@ -498,6 +498,7 @@ The user decides where a spot shows. A spot only offers, with one `offers` line 
 | `search`  | its rows in the main search.                                            | `on=panel.open`, `on=sheet.open` or a `clock`       |
 | `menubar` | its main block in the menu bar.                                         | a `clock`, another event, or `mode=stay` or `always` |
 | `float`   | in a small window at the pointer, which a hotkey or a shake opens.      | a sheet                                             |
+| `window`  | its sheet in a window of its own, in place of the panel.                | a sheet                                             |
 | `actions` | a `button` of its header in the ⌘K menu of every card.                  | a line in the `button` block, not in the header     |
 | `none`    | nowhere, until another spot opens its sheet with `openspot spot open`.  | no other `offers` line                              |
 
@@ -512,6 +513,9 @@ The user decides where a spot shows. A spot only offers, with one `offers` line 
   rows by the user's picks.
 - The user can give a spot that offers `float` a hotkey, or a shake of the pointer, in Settings. It shows the spot in a
   small window at the pointer, which stays while the user works in other apps. The spot never learns where it shows.
+- A spot that offers `window` opens its sheet in a normal window, from its card, the main search or `openspot spot open`.
+  The user moves, resizes and closes it, and Openspot shows in the Dock while it's open. Use it for a sheet that needs
+  room, such as a catalog.
 - `on=search.text <pattern>` makes a spot answer the main search. Openspot asks it at each change of a text that the
   pattern matches, with no pause. A newer text stops the older call. The answer should be fast.
 - Its rows show first in the main search until the newest text has an answer, and go at once when the pattern no longer

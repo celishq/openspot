@@ -58,6 +58,13 @@ extension OpenspotApp: SpotsHost {
 
     func land(_ id: String) {
         floats.removeValue(forKey: id)?.orderOut(nil)
+        spotWindows.removeValue(forKey: id)?.close()
+    }
+
+    func window(_ entry: SpotsModel.Entry) {
+        let window = spotWindows[entry.id] ?? SpotSheetWindow.make(model: model, entry: entry)
+        spotWindows[entry.id] = window
+        window.show()
     }
 
     func hold(_ keys: [GlobalKey]) {

@@ -29,6 +29,7 @@ final class SpotHeaderTests: XCTestCase {
         let none = try spot("# on=sheet.open\n")
         let search = try spot("# on=panel.open\n# offers=search\n")
         let nowhere = try spot("# on=sheet.open\n# offers=none\n")
+        let window = try spot("# on=sheet.open\n# offers=card\n# offers=window\n")
 
         XCTAssertEqual([all.offersCard, all.headerState.isOnGrid, all.isGlobal, all.canShowInMenuBar, all.offersFloat], [true, true, true, true, false])
         XCTAssertEqual([float.offersCard, float.headerState.isOnGrid, float.isGlobal, float.canShowInMenuBar, float.offersFloat], [false, false, false, false, true])
@@ -37,6 +38,7 @@ final class SpotHeaderTests: XCTestCase {
         XCTAssertEqual([search.offersCard, search.headerState.isOnGrid, search.isGlobal], [false, false, true])
         XCTAssertTrue(search.isFound)
         XCTAssertEqual([nowhere.offersCard, nowhere.headerState.isOnGrid, nowhere.isGlobal, nowhere.canShowInMenuBar, nowhere.offersFloat], [false, false, false, false, false])
+        XCTAssertEqual([window.offersCard, window.offersWindow, nowhere.offersWindow], [true, true, false])
         let both = folder.appendingPathComponent("both.sh")
         try "#!/bin/sh\n# on=sheet.open\n# offers=none\n# offers=card\n".writeScript(to: both)
         XCTAssertThrowsError(try SpotFile(file: both, id: "both"))
@@ -119,6 +121,7 @@ final class SpotHeaderTests: XCTestCase {
     func testAPlaceThatTheSpotCannotFillRefusesIt() throws {
         let cases = [
             ("# offers=float\n", "a sheet"),
+            ("# offers=window\n", "a sheet"),
             ("# on=sheet.open\n# offers=menubar\n", "a clock"),
             ("# offers=card, search\n", "one place on each line")
         ]
@@ -161,7 +164,7 @@ final class SpotHeaderTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: url) }
 
         XCTAssertThrowsError(try SpotFile(file: url, id: "script")) { error in
-            XCTAssertTrue((error as? SpotError)?.reason.contains("Use card, search, menubar, float or none") == true, "\(error)")
+            XCTAssertTrue((error as? SpotError)?.reason.contains("Use card, search, menubar, float, window or none") == true, "\(error)")
         }
     }
 
