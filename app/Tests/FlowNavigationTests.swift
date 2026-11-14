@@ -133,6 +133,18 @@ final class FlowNavigationTests: PanelCase {
         XCTAssertEqual(host.edgeChanges.last?.edges.coming, .some(nil))
     }
 
+    func testAStepCutBeforeItsSwapLeavesNoSwapForTheNextStep() async throws {
+        try await openList()
+        host.heldEnds = []
+        XCTAssertTrue(model.push(FlowSheet(spot: "list", page: "a")))
+        try await waitFor("the step to fade out") { self.model.flowEdges.isMoving }
+
+        XCTAssertTrue(model.handleKey(back))
+        XCTAssertTrue(model.push(FlowSheet(spot: "list", page: "b")))
+
+        XCTAssertNil(model.sheets["list"]?.page)
+    }
+
     func testBackPutsThePageItLeavesInABarAheadThatAClickGoesForwardTo() async throws {
         try await openList()
         try await openPage()

@@ -10,7 +10,6 @@ struct SpotSheetLayer: View {
     let isOpen: Bool
     let fade: SpotScrollFade
     let fadeHeight: CGFloat
-    var edges = FlowEdges()
     var showsField = false
 
     var body: some View {
@@ -43,7 +42,7 @@ struct SpotSheetLayer: View {
             }
         }
         .modifier(SpotSheetFrame(
-            rect: isOpen ? edges.sheetStart?.rect(around: edges.from ?? sheetRect) ?? sheetRect : closedRect,
+            rect: isOpen ? model.flowEdges.sheetStart?.rect(around: model.flowEdges.from ?? sheetRect) ?? sheetRect : closedRect,
             radius: isOpen ? SpotTokens.radius : isInstall ? SpotTokens.corner(for: .strip) : SpotTokens.corner(for: card?.placement.size ?? entry.size),
             sheetRect: sheetRect,
             shift: isOpen ? .zero : shift(to: closedRect),
@@ -60,6 +59,7 @@ struct SpotSheetLayer: View {
 
     private var step: SheetStep {
         guard isOpen else { return SheetStep() }
+        let edges = model.flowEdges
         let isStepping = edges.coming != nil
         return SheetStep(
             marks: edges.edges,

@@ -8,12 +8,13 @@ extension SpotsModel {
 
     func waitPush(moving: Bool) {
         waitingPush = moving
-        if moving { beginStep() } else { showEdges() }
+        if !moving { showEdges() }
     }
 
     func takeWaitingPush(_ swap: @escaping () -> Void) -> Bool {
         guard waitingPush else { return false }
         waitingPush = false
+        beginStep()
         offerSwap(swap)
         return true
     }
@@ -21,11 +22,13 @@ extension SpotsModel {
     func dropWaitingPush() {
         guard waitingPush else { return }
         waitingPush = false
-        offerSwap {}
+        showEdges()
     }
 
     func showEdges() {
         edgeStep += 1
+        stepSwap = nil
+        isStepFaded = false
         let next = FlowEdges(flow: flow, title: title(of:))
         if next != flowEdges { flowEdges = next }
     }

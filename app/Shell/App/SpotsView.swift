@@ -64,7 +64,6 @@ struct SpotsView: View {
                     isOpen: sheetOpen,
                     fade: fade,
                     fadeHeight: cardHeight,
-                    edges: model.flowEdges,
                     showsField: showsSearchField && fieldIsInSheet
                 )
             }
@@ -77,7 +76,7 @@ struct SpotsView: View {
                 surfaceIsOut: surfaceIsOut,
                 sheet: fieldSheet(on: card, at: frame)
             )
-            .opacity(isStepping && fieldIsInSheet ? MotionTokens.hiddenOpacity : 1)
+            .modifier(FlowFieldHide(model: model, isInSheet: fieldIsInSheet))
             if model.isMenuOpen {
                 Color.clear
                     .contentShape(Rectangle())
@@ -102,7 +101,7 @@ struct SpotsView: View {
     }
 
     private var softBlur: some View {
-        SpotBackdrop(model: model, gridHeight: gridHeight, sheetHeight: max(sheetHeight, replacedHeight), stepHeight: stepHeight, menuHeight: menuHeight, drawsBlur: drawsBlur)
+        SpotBackdrop(model: model, gridHeight: gridHeight, sheetHeight: max(sheetHeight, replacedHeight), menuHeight: menuHeight, drawsBlur: drawsBlur)
             .environment(\.spotPanels, model.shownPanels)
             .modifier(PanelSpan(panels: model.shownPanels))
     }
@@ -136,7 +135,7 @@ struct SpotsView: View {
         return [gridHeight(of: model), blurHeight(of: SpotTokens.sheetRect(rows: 0)), SpotTokens.panelHeight] + sheets
     }
 
-    private static func blurHeight(of sheet: CGRect) -> CGFloat {
+    static func blurHeight(of sheet: CGRect) -> CGFloat {
         sheet.height + 2 * SpotTokens.halo + SpotTokens.hintBlock
     }
 
@@ -151,14 +150,6 @@ struct SpotsView: View {
 
     private var gridPush: CGFloat {
         coversGrid ? sheetRect.maxY - SpotFieldView.rect.maxY : 0
-    }
-
-    private var stepHeight: CGFloat? {
-        model.flowEdges.from.map(Self.blurHeight(of:))
-    }
-
-    private var isStepping: Bool {
-        model.flowEdges.coming != nil
     }
 
     private var surfaceIsOut: Bool {
@@ -202,6 +193,15 @@ struct SpotsView: View {
         if model.formRect != nil { return model.formHasChoices }
         guard sheetOpen else { return true }
         return model.sheets[sheetID ?? ""]?.showsField ?? true
+    }
+}
+
+private struct FlowFieldHide: ViewModifier {
+    let model: SpotsModel
+    let isInSheet: Bool
+
+    func body(content: Content) -> some View {
+        content.opacity(isInSheet && model.flowEdges.coming != nil ? MotionTokens.hiddenOpacity : 1)
     }
 }
 
