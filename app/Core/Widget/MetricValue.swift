@@ -1,15 +1,12 @@
 import Foundation
 
-/// What a metric prints when it is read.
 public struct MetricValue: Equatable, Sendable {
-    /// A meaning that a mark may show in colour.
     public enum Tone: String, Sendable {
         case good
         case warn
         case bad
     }
 
-    /// One line of a metric of the rows kind.
     public struct Row: Equatable, Sendable {
         public let title: String
         public let detail: String?
@@ -54,8 +51,6 @@ public struct MetricValue: Equatable, Sendable {
         self.isHidden = isHidden
     }
 
-    /// Reads what a metric prints: its value when that is a `text`, `gauge` or `graph` (protocol: The main block and the card), or its rows. Nothing means nothing to show. Rows
-    /// count themselves, and all else needs a title.
     public init?(output: SpotOutput) {
         let rows = output.rows.compactMap { block in
             block.value("row").map { Row(title: block.value("title") ?? $0, detail: block.value("detail"), tone: block.value("tone").flatMap(Tone.init)) }
@@ -80,8 +75,6 @@ public struct MetricValue: Equatable, Sendable {
         )
     }
 
-    /// The level or the bars that a block holds in its `value` lines. A graph, or a text with `max`, has a bar for each line,
-    /// another kind has the level of its first line, and a number has neither.
     static func data(of block: TextBlock) -> (value: Double?, points: [Double]?) {
         let kind = block.fields.first?.key
         if kind == "number" { return (nil, nil) }
@@ -92,7 +85,6 @@ public struct MetricValue: Equatable, Sendable {
         return (block.number("value"), nil)
     }
 
-    /// How a place draws this value, which follows from what the script printed.
     public var kind: MetricKind {
         if rows != nil { return .rows }
         if value != nil { return .gauge }
@@ -100,12 +92,10 @@ public struct MetricValue: Equatable, Sendable {
         return tone != nil && symbol == nil ? .status : .value
     }
 
-    /// The part of a gauge that is full, from 0 to 1.
     public var fill: Double {
         Swift.min(Swift.max(value ?? 0, 0), 1)
     }
 
-    /// The points of a trend, from 0 at zero to 1 at the top value, or at the highest point when there is none.
     public var scaledPoints: [Double] {
         let points = points ?? []
         guard let top = self.max ?? points.max(), top > 0 else { return points.map { _ in 0 } }

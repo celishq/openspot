@@ -1,7 +1,5 @@
 import Foundation
 
-/// A key with the modifiers held over it, as a person writes it, such as ctrl+space.
-/// It holds cmd, ctrl or option, so that it never takes over normal typing.
 public struct Shortcut: Hashable, Sendable {
     public struct Modifiers: OptionSet, Hashable, Sendable {
         public let rawValue: Int
@@ -15,18 +13,15 @@ public struct Shortcut: Hashable, Sendable {
         public static let shift = Modifiers(rawValue: 4)
         public static let command = Modifiers(rawValue: 8)
 
-        /// One modifier by its word, such as option.
         public init?(word: String) {
             guard let found = Shortcut.modifierWords.first(where: { $0.word == word.lowercased() }) else { return nil }
             self = found.modifier
         }
 
-        /// The word of one modifier for the config file, such as option.
         public var word: String? {
             Shortcut.modifierWords.first { $0.modifier == self }?.word
         }
 
-        /// One modifier as the Mac writes it, such as ⌥ Option.
         public var label: String? {
             Shortcut.modifierWords.first { $0.modifier == self }.map { "\($0.mark) \($0.name)" }
         }
@@ -38,9 +33,7 @@ public struct Shortcut: Hashable, Sendable {
     private static let markOrder: [Modifiers] = [.control, .option, .shift, .command]
     private static let namedCodes: [String: UInt32] = ["space": 49, "return": 36, "tab": 48, "left": 123, "right": 124, "down": 125, "up": 126]
 
-    /// The key that opens the panel until the person chooses another.
     public static let standard = Shortcut(name: "space", code: 49, modifiers: .control)
-    /// The key that opens the link of a failure toast, until the person picks another.
     public static let fix = Shortcut(name: "o", code: 31, modifiers: [.command, .option])
 
     public let name: String
@@ -65,7 +58,6 @@ public struct Shortcut: Hashable, Sendable {
         self.init(name: name, code: code, modifiers: modifiers)
     }
 
-    /// Reads a press by its place on the keyboard.
     public init?(code: UInt32, modifiers: Modifiers) {
         guard let name = Self.namedCodes.first(where: { $0.value == code })?.key ?? CommandKey(code: code)?.name,
               Self.isHeld(modifiers) else { return nil }
@@ -76,19 +68,14 @@ public struct Shortcut: Hashable, Sendable {
         !modifiers.isDisjoint(with: [.command, .control, .option])
     }
 
-    /// Whether only ⌘, or ⌘ with ⇧, holds it, as the shortcuts of each app do, such as ⌘C. A key for the whole Mac must
-    /// not take one.
     public var isAppKey: Bool {
         modifiers == .command || modifiers == [.command, .shift]
     }
 
-    /// The words for the config file, in one order.
     public var text: String {
         (Self.modifierWords.filter { modifiers.contains($0.modifier) }.map(\.word) + [name]).joined(separator: "+")
     }
 
-    /// The key as the Mac writes it, such as ⌃Space.
-    /// The words that tell a person how to open the panel.
     public var openHint: String {
         "Press `\(label)` to open Openspot"
     }
@@ -100,7 +87,6 @@ public struct Shortcut: Hashable, Sendable {
         return marks.joined() + (name.count == 1 ? name.uppercased() : name.capitalized)
     }
 
-    /// Whether this press holds the same modifiers as this key, and is the letter of a spot.
     public func chains(to key: CommandKey, code: UInt32, modifiers: Modifiers) -> Bool {
         modifiers == self.modifiers && code == key.code
     }

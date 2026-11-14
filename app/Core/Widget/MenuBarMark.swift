@@ -1,8 +1,6 @@
 import Foundation
 
-/// What a menu bar item shows for a reading, or nothing before the first value or when the metric hides it.
 public struct MenuBarMark: Equatable, Sendable {
-    /// How many rows of a metric have one tone.
     public struct Count: Equatable, Sendable {
         public let tone: MetricValue.Tone?
         public let count: Int

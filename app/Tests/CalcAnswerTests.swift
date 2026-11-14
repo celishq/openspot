@@ -149,7 +149,7 @@ final class CalcAnswerTests: XCTestCase {
         XCTAssertEqual(answer("0.5 eth in btc", rates: rates()), nil, "the rates of the test know no ETH")
     }
 
-    func testRatesAreAskedOnlyForACurrency() {
+    func test_A42_ratesAreAskedOnlyForACurrency() {
         var asks = 0
         let count: () -> Result<CalcRates, CalcRateFailure> = {
             asks += 1
