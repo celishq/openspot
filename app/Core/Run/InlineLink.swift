@@ -142,10 +142,10 @@ final class InlineLink: ScriptLink {
                     await run.takeAnswer(lines, frame: text, to: ask)
                     hasAnswer = true
                 case .work(let work) where lines.isPicture:
-                    run.takeGo(lines)
+                    run.takeMove(lines)
                     showedPicture = await run.takePicture(lines, frame: text, of: work)
                 default:
-                    if case .work = call.purpose { run.takeGo(lines) }
+                    if case .work = call.purpose { run.takeMove(lines) }
                     run.takeEffects(lines, frame: text)
                 }
             }

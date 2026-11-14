@@ -24,7 +24,8 @@ public struct SpotItem: Equatable, Sendable {
     public let tone: MetricValue.Tone?
     /// The file that the row stands for, which a drag takes out of the sheet (protocol: Files out).
     public let file: String?
-    /// The ID of the other spot that a pick goes to, as `<spot> open <row id>` (protocol: Rows).
+    /// The ID of the other spot that a pick pushes, from `push.spot=`, or that gets `<spot> open <row id>` when it has no
+    /// sheet (protocol: Pages).
     public let to: String?
     /// The whole block of the row, which a pick sends on stdin to the spot that `to` names. Only such a row keeps it.
     public let fields: String?
@@ -46,10 +47,10 @@ public struct SpotItem: Equatable, Sendable {
     public let openTitle: String?
     /// Whether the panel stays open after Return on this row, from `close=false`.
     public let staysOnPick: Bool
-    /// Whether a pick opens the row as a page of its spot, from `page=true`, in place of `<spot> open <row id>`.
-    public let opensPage: Bool
+    /// The push that a pick makes in place of `<spot> open <row id>`, from `push=`, `push.spot=` and `push.title=`.
+    public let move: SheetMove?
 
-    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, to: String? = nil, fields: String? = nil, card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, focusSubtitle: String? = nil, opensPage: Bool = false) {
+    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, to: String? = nil, fields: String? = nil, card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, focusSubtitle: String? = nil, move: SheetMove? = nil) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
@@ -70,7 +71,7 @@ public struct SpotItem: Equatable, Sendable {
         self.openTitle = openTitle
         self.focusSubtitle = focusSubtitle
         self.staysOnPick = staysOnPick
-        self.opensPage = opensPage
+        self.move = move
     }
 
     /// Reads the block of one row: `row=<id>`, which a pick sends, and `title`, which is the id when it has none.
@@ -92,13 +93,13 @@ public struct SpotItem: Equatable, Sendable {
             isOn: block.flag("value") ?? false,
             tone: block.value("tone").flatMap(MetricValue.Tone.init),
             file: block.value("file").flatMap { $0.hasPrefix("/") ? $0 : nil },
-            to: block.value("to"),
-            fields: block.value("to") == nil ? nil : block.text,
+            to: block.value("push.spot"),
+            fields: block.value("push.spot") == nil ? nil : block.text,
             pin: block.value("pin").flatMap(Pin.init(rawValue:)),
             openTitle: block.value("open"),
             staysOnPick: block.flag("close") == false,
             focusSubtitle: block.value("focus"),
-            opensPage: block.flag("page") == true
+            move: SheetMove(block: block, own: run).flatMap { if case .push = $0 { $0 } else { nil } }
         )
     }
 

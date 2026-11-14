@@ -278,8 +278,8 @@ extension SpotsModel {
     /// Runs a pick of a row, or an action on it. In the panel, a pick that closes it closes the panel. A float stays open
     /// with the picked row selected, and a pick that asks with a form or records a key opens the spot in the panel (W8).
     public func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil, in place: SheetPlace = .panel) {
-        if action == nil, item.opensPage {
-            _ = openSheet(entry.id, page: item.run, title: item.title)
+        if action == nil, case .push(let spot, let page, let title, _)? = item.move, spot.map(opensSheet) ?? true {
+            push(spot ?? entry.id, page: page, title: title ?? (page == nil ? nil : item.title), replace: false)
             return
         }
         if place == .float {

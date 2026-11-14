@@ -62,7 +62,7 @@ final class SheetPagesModelTests: XCTestCase {
     /// Opens a list whose row `a` opens its page, which shows one row named after the page.
     private func openList() async throws {
         try script("list", header: "title=List\non=sheet.open", """
-        if [ -n "$OPENSPOT_PAGE" ]; then printf 'row=x\\ntitle=Detail %s\\n' "$OPENSPOT_PAGE"; else printf 'row=a\\ntitle=A\\npage=true\\n'; fi
+        if [ -n "$OPENSPOT_PAGE" ]; then printf 'row=x\\ntitle=Detail %s\\n' "$OPENSPOT_PAGE"; else printf 'row=a\\ntitle=A\\npush=true\\n'; fi
         """)
         try script("other", header: "on=sheet.open", "printf 'row=o\\ntitle=Other\\n'")
         model.reload()
@@ -150,7 +150,7 @@ final class SheetPagesModelTests: XCTestCase {
 
     func testTheHintOfAPageSaysThatEscGoesBack() async throws {
         try script("info", header: "on=sheet.open", """
-        if [ -n "$OPENSPOT_PAGE" ]; then printf 'text=detail\\ntitle=Detail\\n'; else printf 'text=first\\ntitle=First\\n\\nrow=a\\ntitle=A\\npage=true\\n'; fi
+        if [ -n "$OPENSPOT_PAGE" ]; then printf 'text=detail\\ntitle=Detail\\n'; else printf 'text=first\\ntitle=First\\n\\nrow=a\\ntitle=A\\npush=true\\n'; fi
         """)
         model.reload()
         model.isShown = true
@@ -213,24 +213,25 @@ final class SheetPagesModelTests: XCTestCase {
         model.isShown = true
         model.panelWillShow(holding: [])
         model.press("flow")
-        try await wait("the flow") { model.transition.phase == .open && titles == ["Page first"] && model.sheets["flow"]?.spot.actions.count == 4 }
+        try await wait("the flow") { model.transition.phase == .open && titles == ["Page first"] && model.sheets["flow"]?.spot.actions.count == 5 }
     }
 
     private func writeFlow() throws {
         try script("flow", header: "title=Flow\non=sheet.open", """
         case "$1" in
-          read) printf 'button=done\\ntitle=Done\\nscope=spot\\n\\nbutton=top\\ntitle=Top\\nscope=spot\\n\\nbutton=next\\ntitle=Next\\nscope=spot\\n\\nbutton=swap\\ntitle=Swap\\nscope=spot\\n\\nrow=x\\ntitle=Page %s\\n' "${OPENSPOT_PAGE-first}" ;;
-          done) printf 'go=back\\n' ;;
-          top) printf 'go=first\\n' ;;
-          next) printf 'go=n%s\\n' "${#OPENSPOT_PAGE}" ;;
-          swap) printf 'go=swapped\\nreplace=true\\n' ;;
+          read) printf 'button=done\\ntitle=Done\\nscope=spot\\n\\nbutton=top\\ntitle=Top\\nscope=spot\\n\\nbutton=next\\ntitle=Next\\nscope=spot\\n\\nbutton=swap\\ntitle=Swap\\nscope=spot\\n\\nbutton=hand\\ntitle=Hand\\nscope=spot\\n\\nrow=x\\ntitle=Page %s\\n' "${OPENSPOT_PAGE-first}" ;;
+          done) printf 'pop=true\\n' ;;
+          top) printf 'pop=all\\n' ;;
+          next) printf 'push=n%s\\n' "${#OPENSPOT_PAGE}" ;;
+          swap) printf 'push=swapped\\npush.replace=true\\n' ;;
+          hand) printf 'push.spot=other\\n' ;;
         esac
         """)
     }
 
     /// Writes the flow spot beside an open list, and waits for its sheet over the list.
     private func openFlowSheetInPlace() async throws {
-        try await wait("the flow over the list") { model.openList == "flow" && titles == ["Page first"] && model.sheets["flow"]?.spot.actions.count == 4 }
+        try await wait("the flow over the list") { model.openList == "flow" && titles == ["Page first"] && model.sheets["flow"]?.spot.actions.count == 5 }
     }
 
     private func pressFlow(_ id: String) throws {
@@ -265,22 +266,36 @@ final class SheetPagesModelTests: XCTestCase {
         XCTAssertEqual(model.history.pages, [SheetPage(spot: "flow"), SheetPage(spot: "flow", page: "swapped")])
     }
 
-    func testAPressCannotGoBackPastTheFirstSheetOfItsSpot() async throws {
+    func testAllOnTheFirstSheetStaysAndOnePopReturnsToTheSpotThatPushedIt() async throws {
         try writeFlow()
         try await openList()
         XCTAssertTrue(model.openSheet("flow"))
         try await openFlowSheetInPlace()
 
-        try pressFlow("done")
         try pressFlow("top")
-        try await wait("the end of both presses") { model.sheets["flow"]?.calls.isEmpty == true && !model.runs.isReading }
-
+        try await wait("the end of the press") { model.sheets["flow"]?.calls.isEmpty == true && !model.runs.isReading }
         XCTAssertEqual(model.openList, "flow")
-        XCTAssertEqual(model.history.pages, [SheetPage(spot: "list"), SheetPage(spot: "flow")])
+
+        try pressFlow("done")
+
+        try await wait("the list") { model.openList == "list" && titles == ["A"] }
+        XCTAssertEqual(model.history.ahead, SheetPage(spot: "flow"))
+    }
+
+    func testAPressPushesAnotherSpotOverItsSheet() async throws {
+        try writeFlow()
+        try await openList()
+        XCTAssertTrue(model.openSheet("flow"))
+        try await openFlowSheetInPlace()
+
+        try pressFlow("hand")
+
+        try await wait("the other spot") { model.openList == "other" && titles == ["Other"] }
+        XCTAssertEqual(model.behindTitles, ["Flow", "List"])
     }
 
     func testAReadThatSaysGoMovesNothing() async throws {
-        try script("reader", header: "title=Reader\non=sheet.open", "printf 'go=elsewhere\\n\\nrow=r\\ntitle=R\\n'")
+        try script("reader", header: "title=Reader\non=sheet.open", "printf 'push=elsewhere\\n\\nrow=r\\ntitle=R\\n'")
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
@@ -295,10 +310,10 @@ final class SheetPagesModelTests: XCTestCase {
         try await openList()
         try await openPage()
 
-        XCTAssertFalse(model.goBack(in: "other"))
-        XCTAssertTrue(model.goBack(in: "list"))
+        XCTAssertFalse(model.pop(in: "other"))
+        XCTAssertTrue(model.pop(in: "list"))
 
         XCTAssertEqual(titles, ["A"])
-        XCTAssertFalse(model.goBack(in: "list"))
+        XCTAssertFalse(model.pop(in: "list"))
     }
 }

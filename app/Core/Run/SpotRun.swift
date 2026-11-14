@@ -22,8 +22,8 @@ public final class SpotRun {
         case landed
         /// The sheet closed by itself, as when the panel closed or its script left the folder.
         case closed
-        /// A press asked to move the spot's flow, by a `go` effect (protocol: Pages).
-        case go(String, replace: Bool)
+        /// A press asked to move the spot's flow, by a `push` or `pop` effect (protocol: Pages).
+        case move(SheetMove)
     }
 
     /// Why a read is asked. A `panel` or a `sheet` moment can use a young answer. The clock and an event always run and report

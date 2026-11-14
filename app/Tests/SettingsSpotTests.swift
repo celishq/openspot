@@ -43,7 +43,7 @@ final class SettingsSpotTests: BuiltInCase {
 
         let first = try await items()
         XCTAssertEqual(first.filter { $0.run.hasPrefix("spot:") }.map(\.run), ["spot:cups", "spot:relay"])
-        XCTAssertEqual(first.filter { $0.run.hasPrefix("spot:") }.map(\.opensPage), [true, true])
+        XCTAssertEqual(first.filter { $0.run.hasPrefix("spot:") }.map { $0.move != nil }, [true, true])
         let before = try await items(page: "spot:cups")
         XCTAssertEqual(before.map(\.run), ["menubar:cups"])
         XCTAssertEqual(before.first?.isOn, false)

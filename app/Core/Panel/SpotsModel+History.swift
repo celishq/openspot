@@ -39,11 +39,11 @@ extension SpotsModel {
         return true
     }
 
-    /// Shows the sheet before, when the spot shows and that sheet is a page of it, so that a spot never steps out of its own
-    /// flow. Returns false otherwise.
+    /// Pops the sheet of a spot that shows: back to the sheet before it, a page of the spot or the sheet that pushed it.
+    /// Returns false when the spot does not show or nothing lies behind, since a spot never closes the panel.
     @discardableResult
-    public func goBack(in id: String) -> Bool {
-        guard openList == id, history.behind?.spot == id else { return false }
+    public func pop(in id: String) -> Bool {
+        guard openList == id, history.current?.spot == id, history.behind != nil else { return false }
         return goBack()
     }
 
@@ -56,22 +56,36 @@ extension SpotsModel {
         return start < history.index && goBack(steps: history.index - start)
     }
 
-    /// Moves the flow of the spot that shows, as a `go` effect of its press asks: back, to its first sheet, or to a page,
-    /// which takes the place of the page that shows when it replaces (protocol: Pages). A spot that does not show moves nothing.
-    func go(_ target: String, replace: Bool, in id: String) {
+    /// Moves the flow of the spot that shows, as a `push` or `pop` effect of its press asks (protocol: Pages). A spot that
+    /// does not show moves nothing.
+    func move(_ move: SheetMove, in id: String) {
         guard openList == id else { return }
-        switch target {
-        case "back": goBack(in: id)
-        case "first": goFirst(in: id)
-        default:
-            guard replace, history.current?.spot == id, history.current?.page != nil else {
-                _ = openSheet(id, page: target)
-                return
-            }
-            let next = SheetPage(spot: id, page: target)
-            history.replaceCurrent(with: next)
-            show(next, moving: isShown, from: 1)
+        switch move {
+        case .pop(let all): all ? goFirst(in: id) : pop(in: id)
+        case .push(let spot, let page, let title, let replace): push(spot ?? id, page: page, title: title, replace: replace)
         }
+    }
+
+    /// Pushes a sheet of a spot over the sheet that shows: its first sheet, or a page. With `replace`, it takes the place of
+    /// the sheet that shows. A spot with no sheet gets the call `<spot> open <page>` instead.
+    func push(_ id: String, page: String?, title: String?, replace: Bool) {
+        guard opensSheet(id) else {
+            sheets[id]?.pick(SpotItem(title: title ?? page ?? id, run: page ?? ""))
+            return
+        }
+        let next = SheetPage(spot: id, page: page)
+        if let title { pageTitles[next] = title }
+        guard replace, history.current != nil else {
+            if let page { _ = openSheet(id, page: page, title: title) } else { open(id, moving: isShown) }
+            return
+        }
+        history.replaceCurrent(with: next)
+        show(next, moving: isShown, from: 1)
+    }
+
+    /// Whether the spot has a sheet that a push can show.
+    func opensSheet(_ id: String) -> Bool {
+        entries.first { $0.id == id }?.kind.opensSheet == true
     }
 
     /// Takes ⌘[, ⌘] and ⌘Esc while a sheet shows. Returns nil for any other key.

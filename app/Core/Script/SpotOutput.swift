@@ -43,10 +43,8 @@ public struct SpotOutput: Equatable, Sendable {
     private var checkedFaults: [String] = []
     /// The row that a `select` effect selects when the call ends, such as the row that a drop added (protocol: The calls).
     public private(set) var select: String?
-    /// Where a `go` effect moves the spot's flow: `back`, `first`, or the id of a page to open (protocol: Pages).
-    public private(set) var go: String?
-    /// Whether the page of a `go` effect takes the place of the page that shows, from `replace=true`.
-    public private(set) var replaces = false
+    /// The move of the spot's flow that a `push` or `pop` effect asks for (protocol: Pages).
+    public private(set) var move: SheetMove?
     /// Whether it holds a block, so that it is the whole picture of the spot.
     public let isPicture: Bool
 
@@ -83,7 +81,7 @@ public struct SpotOutput: Equatable, Sendable {
 
     /// The keys that start the head. A block whose first key is neither a kind nor one of them is of an unknown kind, which
     /// is skipped and reported (protocol: The head).
-    private static let headKeys: Set<String> = ["grid", "main", "title", "detail", "active", "recents", "toast", "link", "progress", "select", "go", "replace", "end", "call", "search"]
+    private static let headKeys: Set<String> = ["grid", "main", "title", "detail", "active", "recents", "toast", "link", "progress", "select", "push", "push.spot", "push.title", "push.replace", "pop", "end", "call", "search"]
 
     private static func isHead(_ key: String) -> Bool {
         headKeys.contains(key) || key.hasPrefix("grid.")
@@ -291,8 +289,7 @@ public struct SpotOutput: Equatable, Sendable {
         output.toast = nil
         output.link = nil
         output.select = nil
-        output.go = nil
-        output.replaces = false
+        output.move = nil
         output.ends = []
         output.start = nil
         return output
@@ -341,8 +338,7 @@ public struct SpotOutput: Equatable, Sendable {
         toast = block.value("toast") ?? toast
         link = block.value("link") ?? link
         select = block.value("select") ?? select
-        go = block.value("go") ?? go
-        replaces = block.flag("replace") ?? replaces
+        move = SheetMove(block: block) ?? move
         if let end = block.value("end") { ends.append(end) }
         start = block.value("call") ?? start
     }

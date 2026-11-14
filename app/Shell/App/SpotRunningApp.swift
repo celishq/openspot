@@ -44,7 +44,7 @@ struct SpotRunningApp: RunningApp {
     }
 
     func back(_ id: String) async -> Bool {
-        await model.goBack(in: id)
+        await model.pop(in: id)
     }
 
     func review(_ id: String) async -> Bool {

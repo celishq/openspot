@@ -150,7 +150,7 @@ EOF
   [ -z "$link" ] || printf '\nrow=command_link\ntitle=Use openspot in Terminal\ndetail=The command line tool\nicon=terminal\nvalue=%s\n' "$link"
   for spot in $has; do
     named_spot "$spot"
-    printf '\nrow=spot:%s\ntitle=%s\nicon=%s\nopen=Open\nhides=clear\npage=true\n' "$spot" "$name" "$icon"
+    printf '\nrow=spot:%s\ntitle=%s\nicon=%s\nopen=Open\nhides=clear\npush=true\n' "$spot" "$name" "$icon"
   done
 }
 
