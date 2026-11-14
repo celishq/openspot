@@ -181,6 +181,7 @@
 		455627C75661370DA1B744B1 /* SpotSheetWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1423F8A2B3AD04A2B45F8A8E /* SpotSheetWindow.swift */; };
 		467F1134177144246732FE1E /* MacCallsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F7550D4A89B7A892745DC4B /* MacCallsTests.swift */; };
 		4781C8C5AACB459217630E7D /* SpotMenuBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A35A1257346DBCF67B5B62 /* SpotMenuBar.swift */; };
+		479BB72BAB2B93899BC7C35E /* DocExampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B87806A2C3C0BDB3048132D4 /* DocExampleTests.swift */; };
 		47BB544E21B4D4DEE2213447 /* SpotStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 760307B29C010F23402225B1 /* SpotStoreTests.swift */; };
 		47DA4466694B28C3F3ACD4FA /* ScreenInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = E67E13CFE4B49E14BA385775 /* ScreenInput.swift */; };
 		47EBA99BEED435232B58DC04 /* SpotSandboxModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDBE21A8D855CE6229E4AC1C /* SpotSandboxModel.swift */; };
@@ -1169,6 +1170,7 @@
 		B64BB648C6984AED8D1192F3 /* ScrollWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollWindow.swift; sourceTree = "<group>"; };
 		B7484DFD73153CAE638A8708 /* SearchPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPrompt.swift; sourceTree = "<group>"; };
 		B85FFD8E808ABCBA2E1F9EBA /* SheetParts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetParts.swift; sourceTree = "<group>"; };
+		B87806A2C3C0BDB3048132D4 /* DocExampleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocExampleTests.swift; sourceTree = "<group>"; };
 		B8C8E91BF5940C14E3C95304 /* SpotAddDrop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotAddDrop.swift; sourceTree = "<group>"; };
 		BA30B4D7D22143B47BCEA8BD /* CalculatorSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorSpotTests.swift; sourceTree = "<group>"; };
 		BA3E267D6A1D5752DCBC051D /* CallerTokensTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallerTokensTests.swift; sourceTree = "<group>"; };
@@ -1784,6 +1786,7 @@
 				F6FD2BEB19EFA48253618461 /* ConfigFileTests.swift */,
 				BA6B0D4E912ED2F8DDF8428A /* CoreSpotsTests.swift */,
 				BDFAF7E845B4F79DE6964673 /* DictateExampleTests.swift */,
+				B87806A2C3C0BDB3048132D4 /* DocExampleTests.swift */,
 				8AC903AF79CAC37C5D9EEBD0 /* DocReferenceTests.swift */,
 				DEA51B4D1510652701D2C7AD /* DoomExampleTests.swift */,
 				4CF096BD2E9025B33FF465C8 /* EmojiCatalogTests.swift */,
@@ -3334,6 +3337,7 @@
 				7BC0C70985AB0064E9D7068D /* ConfigFileTests.swift in Sources */,
 				6B08DAE4383D074596964CA5 /* CoreSpotsTests.swift in Sources */,
 				73D7C1638B9E6765A5D14E10 /* DictateExampleTests.swift in Sources */,
+				479BB72BAB2B93899BC7C35E /* DocExampleTests.swift in Sources */,
 				CE10EE38A467AA3B37AC4DBD /* DocReferenceTests.swift in Sources */,
 				C69DB272404DB383002E5EB0 /* DoomExampleTests.swift in Sources */,
 				C624547B076FE8A68F13BF37 /* EmojiCatalogTests.swift in Sources */,
