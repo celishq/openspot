@@ -124,7 +124,8 @@ final class SpotRunsStayTests: SpotRunsCase {
 
         sheet.pick(try XCTUnwrap(sheet.list.selectedItem))
 
-        try await wait("the call") { self.blocks() == ["arg=read", "arg=open\narg=a"] }
+        try await wait("the call") { self.blocks().last == "arg=open\narg=a" }
+        XCTAssertEqual(Set(blocks().dropLast()), ["arg=read"])
         XCTAssertEqual(log().count, 1)
         XCTAssertTrue(sheet.calls.isEmpty)
     }

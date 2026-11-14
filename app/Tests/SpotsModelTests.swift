@@ -1089,6 +1089,7 @@ final class SpotsModelTests: XCTestCase {
         model.panelWillShow(holding: [])
         model.press("fruit")
         try await wait("the open list") { model.openList == "fruit" && model.openItems?.shown.count == 100 }
+        try await wait("the end of the open motion") { model.transition.phase == .open }
         let rect = try XCTUnwrap(model.openSheet?.sheetRect)
         nonisolated(unsafe) var told = false
         trackPanelAndField { told = true }
