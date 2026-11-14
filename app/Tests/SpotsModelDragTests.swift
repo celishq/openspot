@@ -215,7 +215,7 @@ final class SpotsModelDragTests: XCTestCase {
 
         model.handleEditKey(ActionKey(name: "h"))
 
-        XCTAssertEqual(order, ["b", "c", "d"])
+        XCTAssertEqual(order, ["b", "c", "d", "a"])
         XCTAssertEqual(model.cards.first { $0.id == "a" }?.isOnGrid, false)
         XCTAssertEqual(model.hint, "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done")
     }
@@ -244,12 +244,38 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(savedOrder(), ["a", "b", "c", "d"])
     }
 
-    func testInEditSpotsTheGridShowsOnlyTheCardsOnTheGrid() {
+    func testInEditSpotsTheCardsInSearchOnlyLieOnAShelfUnderTheGrid() {
         model.setOnGrid(false, for: "a")
 
+        XCTAssertEqual(order, ["b", "c", "d", "a"])
+        XCTAssertEqual(model.placements.map(\.top), [SpotTokens.groupTitleBand, SpotTokens.groupTitleBand, SpotTokens.groupTitleBand, 2 * SpotTokens.groupTitleBand])
+        XCTAssertGreaterThan(model.placements[3].rect.minY, model.placements[0].rect.maxY)
+
+        model.endEditing()
         XCTAssertEqual(order, ["b", "c", "d"])
-        XCTAssertEqual(model.placements.map(\.top), [0, 0, 0])
-        XCTAssertEqual(model.cards.first { $0.id == "a" }?.isOnGrid, false)
+    }
+
+    func testACardDraggedUnderTheGridGoesToSearchOnly() {
+        let below = CGPoint(x: SpotTokens.cell / 2, y: SpotGrid.height(of: model.placements) + SpotTokens.rowHeight)
+        let translation = move("b", to: below)
+
+        model.dragSpot("b", by: translation)
+        model.dropSpot(by: translation)
+
+        XCTAssertEqual(order, ["a", "c", "d", "b"])
+        XCTAssertEqual(model.cards.first { $0.id == "b" }?.isOnGrid, false)
+        XCTAssertEqual(savedOrder(), ["a", "c", "d"])
+    }
+
+    func testACardDraggedFromTheShelfOntoTheGridGoesOnTheGridThere() {
+        model.setOnGrid(false, for: "d")
+        let translation = move("d", to: leftHalf(of: "b"))
+
+        model.dragSpot("d", by: translation)
+        model.dropSpot(by: translation)
+
+        XCTAssertEqual(order, ["a", "d", "b", "c"])
+        XCTAssertEqual(model.cards.first { $0.id == "d" }?.isOnGrid, true)
     }
 
     func testATipGoesWhenItsControlActsOrEditSpotsEnds() {

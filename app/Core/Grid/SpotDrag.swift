@@ -98,9 +98,11 @@ public struct SpotDrag: Equatable, Sendable {
         return CGSize(width: x, height: y)
     }
 
-    /// Whether a release at this point lands on the grid: on its cards, or less than half a row past them.
+    /// Whether a release at this point lands on the grid: on the cards of any of its layouts, such as the group of search
+    /// only that a target opens under the grid, or less than half a row past them.
     public func holds(_ point: CGPoint) -> Bool {
-        let grid = CGRect(x: 0, y: 0, width: SpotTokens.width(columns: columns), height: SpotGrid.height(of: layout(at: home)))
+        let height = layouts.values.map(SpotGrid.height(of:)).max() ?? 0
+        let grid = CGRect(x: 0, y: 0, width: SpotTokens.width(columns: columns), height: height)
         return grid.insetBy(dx: -SpotTokens.rowHeight / 2, dy: -SpotTokens.rowHeight / 2).contains(point)
     }
 

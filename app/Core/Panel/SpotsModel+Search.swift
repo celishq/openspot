@@ -2,16 +2,25 @@ import Foundation
 
 /// The main search: the cards that its text finds, with the rows and the answers that join them.
 extension SpotsModel {
-    /// The grid of the cards shown, with the size of each card whose size the person chose.
+    /// Where the cards in search only start in the order of Edit Spots, after the cards on the grid. A dragged card counts
+    /// in the group of its target. It is nil out of Edit Spots and while the search has text.
+    var hiddenStart: Int? {
+        guard isEditing, query.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
+        let hidden = cards.filter { !$0.isOnGrid && $0.id != drag?.id }.count + (drag?.target.isOnGrid == false ? 1 : 0)
+        return visible.count - hidden
+    }
+
+    /// The grid of the cards shown: in the two groups of Edit Spots, with the size of each card whose size the person chose.
     var grid: SpotGrid {
         var placed: [Int: GridPanel] = [:]
+        let split = hiddenStart
         if query.isEmpty {
-            for index in visible.indices {
+            for index in visible.indices where index < (split ?? visible.count) {
                 let panel = visible[index].id == drag?.id ? drag?.target.panel ?? .center : panel(of: visible[index])
                 if panel != .center { placed[index] = panel }
             }
         }
-        return SpotGrid(kept: Set(visible.indices.filter { visible[$0].isSizeChosen }), placed: placed, panels: panels)
+        return SpotGrid(split: split, kept: Set(visible.indices.filter { visible[$0].isSizeChosen }), placed: placed, panels: panels)
     }
 
     /// The entries that have a card. A sheet that grows out of the field, such as the install screen, has none.
@@ -62,7 +71,7 @@ extension SpotsModel {
     private func found() -> [Entry] {
         let text = query.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else {
-            return dragged(cards.filter(\.isOnGrid))
+            return dragged(cards.filter(\.isOnGrid) + (isEditing ? cards.filter { !$0.isOnGrid } : []))
         }
         var ids = Set<String>()
         let answers = entries.filter { $0.spot.answers.map { runs.answerMatches.matches($0, text) } == true }
