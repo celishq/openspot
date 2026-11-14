@@ -63,10 +63,12 @@ struct SpotsView: View {
                     sheetRect: sheetRect,
                     isOpen: sheetOpen,
                     fade: fade,
-                    fadeHeight: cardHeight
+                    fadeHeight: cardHeight,
+                    isStepping: isStepping,
+                    showsField: showsSearchField && fieldIsInSheet
                 )
                 .id(FlowSheet(spot: entry.id, page: model.sheets[entry.id]?.page))
-                .transition(arrival)
+                .transition(flowLine)
             }
             SpotFieldView(
                 model: model,
@@ -77,6 +79,7 @@ struct SpotsView: View {
                 surfaceIsOut: surfaceIsOut,
                 sheet: fieldSheet(on: card, at: frame)
             )
+            .opacity(isStepping && fieldIsInSheet ? MotionTokens.hiddenOpacity : 1)
             if model.isMenuOpen {
                 Color.clear
                     .contentShape(Rectangle())
@@ -118,14 +121,16 @@ struct SpotsView: View {
         return SheetPush(open: card.placement, sheet: sheetRect.offsetBy(dx: -origin.x, dy: -origin.y), window: window)
     }
 
-    private var arrival: AnyTransition {
-        guard let side = model.flowEdges.coming else { return .identity }
+    private var flowLine: AnyTransition {
+        let edges = model.flowEdges
+        guard let coming = edges.coming, let leaving = edges.leaving else { return .identity }
         let rect = sheetRect
-        let anchor = UnitPoint(x: (side == .ahead ? rect.minX : rect.maxX) / model.panels.frame.width, y: rect.midY / SpotTokens.panelHeight)
-        let shift = (rect.width + SpotTokens.edgeGap) * (side == .ahead ? 1 : -1)
         return .asymmetric(
-            insertion: .modifier(active: FlowArrival(scale: MotionTokens.arrivalScale, shift: shift, opacity: MotionTokens.hiddenOpacity, anchor: anchor), identity: FlowArrival(anchor: anchor)),
-            removal: .opacity
+            insertion: .modifier(active: FlowLine(progress: 0, line: FlowEdge.Place.bar(coming, 0).rect(around: rect), sheet: rect), identity: FlowLine(progress: 1, line: rect, sheet: rect)),
+            removal: .modifier(
+                active: FlowLine(progress: 0, line: leaving.rect(around: rect), sheet: rect, fadeStart: MotionTokens.cardShare),
+                identity: FlowLine(progress: 1, line: rect, sheet: rect, fadeStart: MotionTokens.cardShare)
+            )
         )
     }
 
@@ -162,6 +167,10 @@ struct SpotsView: View {
 
     private var gridPush: CGFloat {
         coversGrid ? sheetRect.maxY - SpotFieldView.rect.maxY : 0
+    }
+
+    private var isStepping: Bool {
+        model.flowEdges.coming != nil
     }
 
     private var surfaceIsOut: Bool {

@@ -24,6 +24,7 @@ enum SpotMotion {
         switch motion {
         case .sheet(let isOpen): grow(isOpen: isOpen)
         case .edit: move
+        case .flow: grow(isOpen: false)
         case .fade: fade(isShown: true)
         }
     }

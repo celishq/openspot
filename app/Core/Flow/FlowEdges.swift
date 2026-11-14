@@ -5,6 +5,7 @@ public struct FlowEdges: Equatable, Sendable {
     public private(set) var shown: FlowSheet?
     public private(set) var from: CGRect?
     public private(set) var coming: FlowEdge.Side?
+    public private(set) var leaving: FlowEdge.Place?
 
     public init() {}
 
@@ -20,12 +21,17 @@ public struct FlowEdges: Equatable, Sendable {
         edges.filter { !$0.isFading && $0.place.side == side }.map(\.title)
     }
 
-    func standing(at rect: CGRect, title: String, in flow: Flow) -> FlowEdges {
+    func standing(at rect: CGRect, in flow: Flow, title: (FlowSheet) -> String) -> FlowEdges {
         var next = settled
         guard let shown, !next.edges.contains(where: { $0.sheet == shown }) else { return next }
-        let left = flow.pages.firstIndex(of: shown) ?? -1
-        next.coming = left > flow.index ? .behind : .ahead
-        next.edges.append(FlowEdge(sheet: shown, title: title, place: .stand(rect)))
+        let left = flow.pages.firstIndex(of: shown)
+        let coming: FlowEdge.Side = left.map { $0 > flow.index ? .behind : .ahead } ?? .behind
+        next.coming = coming
+        next.leaving = left == nil ? .stand(FlowEdge.Place.bar(.ahead, 0).rect(around: rect).insetBy(dx: SpotTokens.edgeWidth / 2, dy: 0)) : .bar(coming == .ahead ? .behind : .ahead, 0)
+        next.edges.append(FlowEdge(sheet: shown, title: title(shown), place: .stand(rect)))
+        if let current = flow.current, current != shown, !next.edges.contains(where: { $0.sheet == current }) {
+            next.edges.append(FlowEdge(sheet: current, title: title(current), place: .bar(coming, 0), isFading: true))
+        }
         next.from = rect
         return next
     }
@@ -34,10 +40,16 @@ public struct FlowEdges: Equatable, Sendable {
         var next = rest
         next.from = from
         next.coming = coming
+        next.leaving = leaving
         for edge in edges where !rest.edges.contains(where: { $0.sheet == edge.sheet }) {
             var gone = edge
-            if edge.sheet == rest.shown { gone.place = .sheet }
-            gone.isFading = true
+            if edge.sheet == rest.shown {
+                gone.place = .sheet
+                gone.isFading = false
+            } else {
+                if edge.sheet == shown, let leaving { gone.place = leaving }
+                gone.isFading = true
+            }
             next.edges.append(gone)
         }
         return next
@@ -45,9 +57,10 @@ public struct FlowEdges: Equatable, Sendable {
 
     var settled: FlowEdges {
         var next = self
-        next.edges.removeAll(where: \.isFading)
+        next.edges.removeAll { $0.isFading || $0.place == .sheet }
         next.from = nil
         next.coming = nil
+        next.leaving = nil
         return next
     }
 }

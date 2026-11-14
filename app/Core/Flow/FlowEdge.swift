@@ -21,7 +21,18 @@ public struct FlowEdge: Equatable, Identifiable, Sendable {
     }
 
     public func rect(around sheetRect: CGRect) -> CGRect {
-        switch place {
+        place.rect(around: sheetRect)
+    }
+
+    public var radius: CGFloat {
+        if case .bar = place { return SpotTokens.edgeWidth / 2 }
+        return SpotTokens.radius
+    }
+}
+
+extension FlowEdge.Place {
+    public func rect(around sheetRect: CGRect) -> CGRect {
+        switch self {
         case .bar(let side, let index):
             let height = max(sheetRect.height - 2 * SpotTokens.radius - CGFloat(index) * SpotTokens.edgeShrink, SpotTokens.edgeWidth)
             let reach = SpotTokens.edgeGap + CGFloat(index) * (SpotTokens.edgeWidth + SpotTokens.edgeStep)
@@ -32,10 +43,5 @@ public struct FlowEdge: Equatable, Identifiable, Sendable {
         case .sheet:
             return sheetRect
         }
-    }
-
-    public var radius: CGFloat {
-        if case .bar = place { return SpotTokens.edgeWidth / 2 }
-        return SpotTokens.radius
     }
 }

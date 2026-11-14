@@ -10,6 +10,8 @@ struct SpotSheetLayer: View {
     let isOpen: Bool
     let fade: SpotScrollFade
     let fadeHeight: CGFloat
+    var isStepping = false
+    var showsField = false
 
     var body: some View {
         SpotSheetView(
@@ -50,8 +52,14 @@ struct SpotSheetLayer: View {
             },
             progress: progress,
             arrow: showsArrow ? AnyView(arrow) : nil,
-            arrowBox: frame?.size ?? .zero
+            arrowBox: frame?.size ?? .zero,
+            glass: isStepping ? MotionTokens.hiddenOpacity : 1
         ))
+        .overlay(alignment: .topLeading) {
+            if isStepping, showsField {
+                SpotFieldLook(model: model, title: entry.state.title)
+            }
+        }
         .modifier(SheetFadeMask(fade: fade, height: fadeHeight, isOpen: isOpen))
     }
 

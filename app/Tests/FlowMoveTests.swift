@@ -74,7 +74,7 @@ final class FlowMoveTests: PanelCase {
         try pressFlow("done")
 
         try await waitFor("the list") { self.model.openList == "list" && self.titles == ["A"] }
-        XCTAssertEqual(model.flow.ahead, FlowSheet(spot: "flow"))
+        XCTAssertNil(model.flow.ahead)
     }
 
     func testAPressPushesAnotherSpotOverItsSheet() async throws {

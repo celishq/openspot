@@ -111,8 +111,8 @@ case "$OPENSPOT_PAGE" in
 esac
 ```
 
-Pick **Apple**, and its page opens in place of the list, with one row, **Color**. Press `⌘[` or Esc to go back to the list,
-and `⌘]` to go forward to the page again. `⌘Esc` goes back to the grid.
+Pick **Apple**, and its page opens in place of the list, with one row, **Color**. Press `⌘[` to go back to the list,
+and `⌘]` to go forward to the page again. Esc takes the page off, so `⌘]` has nothing to go to. `⌘Esc` goes back to the grid.
 
 Each call of a page gets its id in `OPENSPOT_PAGE`, so a press on the page knows which page it came from. A press can
 move the flow too: print `pop=true` after it saves, and the list shows again. A row or a press with `push.spot=` pushes

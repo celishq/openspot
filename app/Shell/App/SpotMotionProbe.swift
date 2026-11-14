@@ -74,7 +74,7 @@ final class SpotMotionProbe: NSObject {
             switch action {
             case "typing": self.type(left: self.presses)
             case "pick": self.pick()
-            case "flow": self.step(through: ["[", "]"])
+            case "flow": self.step(through: [ActionKey(name: "[", isCommand: true), ActionKey(name: "]", isCommand: true), ActionKey(name: "escape")])
             default: self.arrow(left: self.presses)
             }
         }
@@ -390,11 +390,11 @@ final class SpotMotionProbe: NSObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.end() }
     }
 
-    private func step(through keys: [String]) {
+    private func step(through keys: [ActionKey]) {
         if let item = model.openItems?.shown.first(where: { $0.run == row }) { model.runItem(item) }
         for (index, key) in keys.enumerated() {
             DispatchQueue.main.asyncAfter(deadline: .now() + pause * Double(index + 1)) {
-                _ = self.model.handleKey(ActionKey(name: key, isCommand: true))
+                _ = self.model.handleKey(key)
             }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + pause * Double(keys.count + 1)) { self.end() }

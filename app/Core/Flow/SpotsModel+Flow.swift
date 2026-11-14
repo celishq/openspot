@@ -40,10 +40,17 @@ extension SpotsModel {
     @discardableResult
     public func pop(in id: String, all: Bool = false) -> Bool {
         guard openList == id, flow.current?.spot == id else { return false }
-        guard all else { return flow.behind != nil && back() }
+        guard all else { return flow.behind != nil && popPage() }
         var start = flow.index
         while start > 0, flow.pages[start].page != nil, flow.pages[start - 1].spot == id { start -= 1 }
-        return start < flow.index && back(steps: flow.index - start)
+        return start < flow.index && popPage(steps: flow.index - start)
+    }
+
+    @discardableResult
+    public func popPage(steps: Int = 1) -> Bool {
+        guard openList != nil, let page = flow.pop(steps: steps) else { return false }
+        show(page, moving: isShown)
+        return true
     }
 
     @discardableResult

@@ -5,7 +5,7 @@ extension SpotsModel {
         self.change(nil) { standEdges() }
         let step = edgeStep
         DispatchQueue.main.async { [weak self] in
-            self?.change(.sheet(isOpen: true), {
+            self?.change(.flow, {
                 change()
                 self?.moveEdges()
             }) { self?.settleEdges(step) }
@@ -42,8 +42,8 @@ extension SpotsModel {
 
     private func standEdges() {
         edgeStep += 1
-        guard let shown = flowEdges.shown, let rect = shownSheetRect else { return }
-        flowEdges = flowEdges.standing(at: rect, title: title(of: shown), in: flow)
+        guard flowEdges.shown != nil, let rect = shownSheetRect else { return }
+        flowEdges = flowEdges.standing(at: rect, in: flow, title: title(of:))
     }
 
     private func moveEdges() {

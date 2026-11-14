@@ -346,7 +346,8 @@ went through. A spot pushes a sheet onto the flow and pops its own sheet off it.
   sheet gets the call `<spot> open <page id>` instead of a push.
 - A spot takes off only its own sheets. It never takes off another spot's sheet and never closes the panel.
 - The panel keeps the last 20 sheets. `⌘[` or a swipe to the right goes back, `⌘]` or a swipe to the left goes forward, Esc
-  goes back one sheet, and `⌘Esc` goes back to the grid. An edge left of the sheet stands for each sheet behind it. A sheet
+  and `pop=` take the sheet off so that nothing waits ahead, and `⌘Esc` goes back to the grid. A line left of the sheet
+  stands for each sheet behind it, and a line right of it for each sheet ahead. A sheet
   that comes back shows what it last showed at once, and reads again.
 - `openspot spot open <id>` starts a new flow on a spot. `openspot spot push <id> [page] [--replace] [--title <words>]` and
   `openspot spot pop <id> [--all]` move the flow that shows, as the keys do.

@@ -10,13 +10,14 @@ struct SpotSheetFrame: ViewModifier {
     let progress: Double
     var arrow: AnyView?
     var arrowBox: CGSize = .zero
+    var glass = 1.0
     @Environment(\.spotIsShown) private var isShown
     @Environment(\.spotPanels) private var panels
 
     func body(content: Content) -> some View {
         let shape = SpotSurfaceShape(rect: rect, radius: radius)
         ZStack(alignment: .topLeading) {
-            SpotSurface(rect: rect, radius: radius)
+            SpotSurface(rect: rect, radius: radius, glass: glass)
             content
                 .frame(width: sheetRect.width, height: sheetRect.height, alignment: .topLeading)
                 .offset(x: sheetRect.minX + shift.width, y: sheetRect.minY + shift.height)

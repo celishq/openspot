@@ -101,7 +101,7 @@ final class FlowNavigationTests: PanelCase {
         let places = host.edgeChanges.map { $0.edges.edges.first { $0.sheet == list }?.place }
         XCTAssertEqual(places.first, .stand(try XCTUnwrap(host.edgeChanges.first?.edges.from)))
         XCTAssertEqual(Array(places.dropFirst()), [.bar(.behind, 0), .bar(.behind, 0)])
-        XCTAssertEqual(host.edgeChanges.map(\.motion), [nil, .sheet(isOpen: true), nil])
+        XCTAssertEqual(host.edgeChanges.map(\.motion), [nil, .flow, nil])
     }
 
     func testAStepSaysWhichSideItsNewPageComesFromUntilItEnds() async throws {
@@ -115,8 +115,8 @@ final class FlowNavigationTests: PanelCase {
         XCTAssertTrue(model.handleKey(back))
 
         try await waitFor("the back to settle") { self.model.flowEdges.from == nil && self.model.flowEdges.titles(on: .ahead) == ["A"] }
-        XCTAssertEqual(pushed, [.ahead, .ahead, nil])
-        XCTAssertEqual(host.edgeChanges.map(\.edges.coming), [.behind, .behind, nil])
+        XCTAssertEqual(Array(pushed.prefix(3)), [.ahead, .ahead, nil])
+        XCTAssertEqual(Array(host.edgeChanges.map(\.edges.coming).prefix(3)), [.behind, .behind, nil])
     }
 
     func testBackPutsThePageItLeavesInABarAheadThatAClickGoesForwardTo() async throws {
@@ -131,7 +131,7 @@ final class FlowNavigationTests: PanelCase {
         try await waitFor("the page again") { self.titles == ["Detail a"] && self.model.flowEdges.titles(on: .behind) == ["List"] }
     }
 
-    func testTheBarThatBecomesTheSheetFadesIntoItAndLeavesWhenTheStepEnds() async throws {
+    func testTheLineBehindScalesOutIntoTheSheetAndThePageLeftScalesIntoALineAhead() async throws {
         try await openList()
         try await openPage()
         try await waitFor("the step to settle") { self.model.flowEdges.from == nil }
@@ -141,10 +141,40 @@ final class FlowNavigationTests: PanelCase {
 
         try await waitFor("the step to settle") { self.model.flowEdges.from == nil && self.model.flowEdges.titles(on: .ahead) == ["A"] }
         let list = FlowSheet(spot: "list")
-        let moved = try XCTUnwrap(host.edgeChanges.first { $0.motion == .sheet(isOpen: true) }?.edges.edges.first { $0.sheet == list })
-        XCTAssertEqual(moved.place, .sheet)
-        XCTAssertTrue(moved.isFading)
+        let moving = try XCTUnwrap(host.edgeChanges.first { $0.motion == .flow })
+        XCTAssertEqual(moving.edges.edges.first { $0.sheet == list }?.place, .sheet)
+        XCTAssertEqual(moving.edges.edges.first { $0.sheet == list }?.isFading, false)
+        XCTAssertEqual(host.edgeChanges.first?.edges.leaving, .bar(.ahead, 0))
         XCTAssertFalse(model.flowEdges.edges.contains { $0.sheet == list })
+    }
+
+    func testAPushScalesANewLineOnTheRightOutIntoTheSheet() async throws {
+        try await openList()
+        host.edgeChanges = []
+
+        try await openPage()
+
+        try await waitFor("the step to settle") { self.model.flowEdges.from == nil && self.model.flowEdges.titles(on: .behind) == ["List"] }
+        let page = FlowSheet(spot: "list", page: "a")
+        let places = host.edgeChanges.map { $0.edges.edges.first { $0.sheet == page }?.place }
+        XCTAssertEqual(Array(places.prefix(3)), [.bar(.ahead, 0), .sheet, nil])
+        XCTAssertEqual(host.edgeChanges.first?.edges.leaving, .bar(.behind, 0))
+    }
+
+    func testEscPopsThePageSoNothingWaitsAheadAndItLeavesNoLine() async throws {
+        try await openList()
+        try await openPage()
+        try await waitFor("the step to settle") { self.model.flowEdges.from == nil }
+        host.edgeChanges = []
+
+        XCTAssertTrue(model.handleKey(escape))
+
+        try await waitFor("the step to settle") { self.titles == ["A"] && self.model.flowEdges.from == nil }
+        XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "list")])
+        XCTAssertEqual(model.flowEdges.titles(on: .ahead), [])
+        guard case .stand? = host.edgeChanges.first?.edges.leaving else { return XCTFail("the page leaves into no line") }
+        XCTAssertTrue(model.handleKey(forward))
+        XCTAssertEqual(model.flow.index, 0)
     }
 
     func testEachSheetBehindHasATitleAndAClickOnItsEdgeGoesBackToIt() async throws {
@@ -171,8 +201,8 @@ final class FlowNavigationTests: PanelCase {
         let list = FlowSheet(spot: "list")
         let places = host.edgeChanges.compactMap { change in change.edges.edges.first { $0.sheet == list }.map { (change.motion, $0.place) } }
         XCTAssertEqual(places.first?.1, .stand(try XCTUnwrap(host.edgeChanges.first?.edges.from)))
-        XCTAssertEqual(places.dropFirst().first?.0, .sheet(isOpen: true))
-        XCTAssertEqual(places.dropFirst().first?.1, .bar(.behind, 0))
+        XCTAssertEqual(places.dropFirst().first?.0, .flow)
+        XCTAssertEqual(places.last?.1, .bar(.behind, 0))
     }
 
     func testOpenStartsANewFlowWithNothingBehind() async throws {

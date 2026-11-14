@@ -36,7 +36,7 @@ extension SpotsModel {
     public func stepBack() -> Bool {
         if !searchText.isEmpty {
             searchText = ""
-        } else if back() {
+        } else if popPage() {
         } else if openList != nil {
             closeList(moving: isShown)
         } else {
@@ -97,7 +97,7 @@ extension SpotsModel {
         guard list != openList else { return dropWaitingPush() }
         if let list, openList != nil, transition.isOpen {
             let step = edgeStep
-            change(moving ? .sheet(isOpen: true) : nil, {
+            change(moving ? (waitingPush ? .flow : .sheet(isOpen: true)) : nil, {
                 transition.show(list, moves: true)
                 startWaitingPush()
             }) { [weak self] in

@@ -30,9 +30,9 @@ struct SpotFieldView: View {
     }
 
     private var searchField: some View {
-        let place = isInSheet ? fieldRowRect : Self.rect
-        let top = SpotTokens.halo + (isInSheet ? SpotTokens.sheetFieldDrop - (SpotTokens.rowHeight - SpotTokens.listRowHeight) / 2 : 0)
-        let glyphLeft = SpotTokens.halo + SpotTokens.padding + (isInSheet ? SpotTokens.padding + (SpotTokens.listIconSize - SpotTokens.glyphSize) / 2 : 0)
+        let place = isInSheet ? Self.sheetRow : Self.rect
+        let top = isInSheet ? Self.sheetTop : SpotTokens.halo
+        let glyphLeft = isInSheet ? Self.sheetGlyphLeft : SpotTokens.halo + SpotTokens.padding
         return ZStack(alignment: .topLeading) {
             SpotSurface(rect: place, radius: fieldRadius, glass: isInSheet || isInstall ? 0 : 1)
                 .mask { outsideSheet }
@@ -88,21 +88,20 @@ struct SpotFieldView: View {
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
     }
 
-    private var fieldRowRect: CGRect {
-        CGRect(
-            x: SpotTokens.halo + SpotTokens.padding,
-            y: SpotTokens.halo + SpotTokens.sheetFieldDrop,
-            width: SpotTokens.gridWidth - 2 * SpotTokens.padding,
-            height: SpotTokens.listRowHeight
-        )
-    }
-
-    private static let fieldTextWidth = SpotTokens.gridWidth - 4 * SpotTokens.padding - SpotTokens.listIconSize - gap
+    static let sheetRow = CGRect(
+        x: SpotTokens.halo + SpotTokens.padding,
+        y: SpotTokens.halo + SpotTokens.sheetFieldDrop,
+        width: SpotTokens.gridWidth - 2 * SpotTokens.padding,
+        height: SpotTokens.listRowHeight
+    )
+    static let sheetTop = SpotTokens.halo + SpotTokens.sheetFieldDrop - (SpotTokens.rowHeight - SpotTokens.listRowHeight) / 2
+    static let sheetGlyphLeft = SpotTokens.halo + 2 * SpotTokens.padding + (SpotTokens.listIconSize - SpotTokens.glyphSize) / 2
+    static let sheetTextLeft = SpotTokens.halo + 2 * SpotTokens.padding + SpotTokens.listIconSize + gap
+    static let sheetRadius = SpotTokens.radius - SpotTokens.padding
+    static let fieldTextWidth = SpotTokens.gridWidth - 4 * SpotTokens.padding - SpotTokens.listIconSize - gap
 
     private var fieldTextLeft: CGFloat {
-        isInSheet
-            ? SpotTokens.halo + 2 * SpotTokens.padding + SpotTokens.listIconSize + Self.gap
-            : SpotTokens.halo + SpotTokens.padding + SpotTokens.glyphSize + Self.gap
+        isInSheet ? Self.sheetTextLeft : SpotTokens.halo + SpotTokens.padding + SpotTokens.glyphSize + Self.gap
     }
 
     private var searchText: some View {
@@ -166,7 +165,7 @@ struct SpotFieldView: View {
     }
 
     private var promptLayer: some View {
-        let top = SpotTokens.halo + (isInSheet ? SpotTokens.sheetFieldDrop - (SpotTokens.rowHeight - SpotTokens.listRowHeight) / 2 : 0)
+        let top = isInSheet ? Self.sheetTop : SpotTokens.halo
         let left = fieldTextLeft
         return promptWords
             .frame(height: SpotTokens.rowHeight)
@@ -242,7 +241,7 @@ struct SpotFieldView: View {
     }
 
     private var fieldRadius: CGFloat {
-        isInSheet ? SpotTokens.radius - SpotTokens.padding : SpotTokens.corner(for: .strip)
+        isInSheet ? Self.sheetRadius : SpotTokens.corner(for: .strip)
     }
 
 }
