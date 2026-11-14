@@ -125,6 +125,14 @@ struct SpotCalls {
         }
     }
 
+    func back(_ id: String) -> CommandAPI.Work {
+        guard let app else { return CommandAnswer.notRunning("spot back \(id)") }
+        return CommandAnswer.work {
+            guard await app.back(id) else { throw SpotError.failed(1, "The panel shows no page of `\(id)` to go back from.") }
+            return ""
+        }
+    }
+
     func review(_ id: String) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot review \(id)") }
         return CommandAnswer.work {

@@ -17,6 +17,9 @@ public protocol RunningApp: Sendable {
     func open(_ id: String, page: String?) async -> Bool
     /// Shows the whole text of a spot that comes with the app, and what of it runs by itself. Returns false when no such
     /// spot has that ID.
+    /// Shows the sheet before in the panel, when a spot shows and that sheet is a page of it (protocol: Pages). Returns false
+    /// otherwise.
+    func back(_ id: String) async -> Bool
     func review(_ id: String) async -> Bool
     /// Does what the row of a card's actions menu does to a spot. Returns false when no card has that ID.
     func act(_ act: CardAct, on id: String) async -> Bool

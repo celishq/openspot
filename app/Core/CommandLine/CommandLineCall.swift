@@ -31,6 +31,7 @@ public enum CommandLineCall: Equatable, Sendable {
     case spotChoose(String)
     case spotAct(CardAct, String)
     /// Shows the whole text of a spot that comes with the app.
+    case spotBack(String)
     case spotReview(String)
     /// Opens the panel in Edit Spots with the store.
     case spotStore
@@ -151,6 +152,7 @@ public enum CommandLineCall: Equatable, Sendable {
                                                  missing, at its commit. An update that adds a use needs --yes.
     openspot spot remove <id>                    Moves a spot that spot add added to the Trash, and drops it from spots.lock.
     openspot spot open <id> [page]               Opens the panel on the sheet of a spot, or on a page of it.
+    openspot spot back <id>                      Goes back one page of a spot that shows.
     openspot spot choose <id>                    Asks for files and drops them on a spot that takes them.
     openspot spot edit|prompt|share|delete <id>  Does what the row of a card's menu does: edit, copy a prompt, share or delete.
     openspot spot review <id>                    Shows the whole text of a spot that comes with the app, and what of it
@@ -323,6 +325,7 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("spot", let verb?) where rest.count == 2 && CardAct(rawValue: verb) != nil:
             let act = CardAct(rawValue: verb)!
             self = Self.changing(.spotAct(act, rest[1]), "openspot spot \(verb)", act == .delete ? "changes your spots folder" : "opens a window", environment)
+        case ("spot", "back") where rest.count == 2: self = Self.changing(.spotBack(rest[1]), "openspot spot back", "moves the panel", environment)
         case ("spot", "review") where rest.count == 2: self = Self.changing(.spotReview(rest[1]), "openspot spot review", "opens the panel", environment)
         case ("spot", "store") where rest.count == 1: self = Self.changing(.spotStore, "openspot spot store", "opens the panel", environment)
         case ("prompt", "new") where rest.count > 1: self = .promptNew(rest.dropFirst().joined(separator: " "))

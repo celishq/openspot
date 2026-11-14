@@ -113,8 +113,9 @@ esac
 Pick **Apple**, and its page opens in place of the list, with one row, **Color**. Press `⌘[` or Esc to go back to the list,
 and `⌘]` to go forward to the page again. `⌘Esc` goes back to the grid.
 
-Each call of a page gets its id in `OPENSPOT_PAGE`, so a press on the page knows which page it came from. A page can
-open another page, and `openspot spot open <id> [page]` opens a page from anywhere.
+Each call of a page gets its id in `OPENSPOT_PAGE`, so a press on the page knows which page it came from. A press can
+move the flow too: print `go=back` after it saves, and the list shows again. `openspot spot open <id> [page]` opens a
+page from anywhere.
 
 Learn more in [Pages](PROTOCOL.md#pages).
 

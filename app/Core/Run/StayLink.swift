@@ -368,6 +368,7 @@ final class StayLink: ScriptLink {
                 }
                 let ends = lines.ends.compactMap { Int($0) }
                 if let start = lines.start.flatMap(Int.init) { current = start }
+                if let current, calls[String(current)] != nil { run.takeGo(lines) }
                 defer { if let current, ends.contains(current) { self.current = nil } }
                 if let id = ends.first(where: { asks[$0] != nil }), let ask = asks.removeValue(forKey: id) {
                     slowAsks = 0

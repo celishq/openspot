@@ -24,6 +24,7 @@ final class CommandClientTests: XCTestCase {
         func allows(_ reason: String) async -> Bool { false }
         func quit() async {}
         func open(_ id: String, page: String?) async -> Bool { true }
+        func back(_ id: String) async -> Bool { true }
         func review(_ id: String) async -> Bool { true }
         func act(_ act: CardAct, on id: String) async -> Bool { true }
         func choose(for id: String) async -> Bool { true }

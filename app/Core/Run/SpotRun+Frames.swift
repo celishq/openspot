@@ -172,6 +172,11 @@ extension SpotRun {
     }
 
     /// Takes a frame of only a head: its effects act, and the picture stays.
+    /// Tells the owner of a `go` effect in a frame of a press. A read never moves the flow.
+    func takeGo(_ lines: SpotOutput) {
+        if let go = lines.go { onReport(.go(go, replace: lines.replaces)) }
+    }
+
     func takeEffects(_ lines: SpotOutput, frame: String) {
         report(toastOf: lines)
         onReport(.frame(frame))

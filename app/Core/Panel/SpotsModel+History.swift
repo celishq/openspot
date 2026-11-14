@@ -39,6 +39,41 @@ extension SpotsModel {
         return true
     }
 
+    /// Shows the sheet before, when the spot shows and that sheet is a page of it, so that a spot never steps out of its own
+    /// flow. Returns false otherwise.
+    @discardableResult
+    public func goBack(in id: String) -> Bool {
+        guard openList == id, history.behind?.spot == id else { return false }
+        return goBack()
+    }
+
+    /// Shows the first sheet of the spot that shows, back through its own pages only. Returns false when none lies behind.
+    @discardableResult
+    func goFirst(in id: String) -> Bool {
+        guard openList == id else { return false }
+        var start = history.index
+        while start > 0, history.pages[start].page != nil, history.pages[start - 1].spot == id { start -= 1 }
+        return start < history.index && goBack(steps: history.index - start)
+    }
+
+    /// Moves the flow of the spot that shows, as a `go` effect of its press asks: back, to its first sheet, or to a page,
+    /// which takes the place of the page that shows when it replaces (protocol: Pages). A spot that does not show moves nothing.
+    func go(_ target: String, replace: Bool, in id: String) {
+        guard openList == id else { return }
+        switch target {
+        case "back": goBack(in: id)
+        case "first": goFirst(in: id)
+        default:
+            guard replace, history.current?.spot == id, history.current?.page != nil else {
+                _ = openSheet(id, page: target)
+                return
+            }
+            let next = SheetPage(spot: id, page: target)
+            history.replaceCurrent(with: next)
+            show(next, moving: isShown, from: 1)
+        }
+    }
+
     /// Takes ⌘[, ⌘] and ⌘Esc while a sheet shows. Returns nil for any other key.
     func handleHistoryKey(_ key: ActionKey) -> Bool? {
         switch key {

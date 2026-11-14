@@ -48,6 +48,17 @@ public struct SheetHistory: Equatable, Sendable {
         return page
     }
 
+    /// Puts a page in the place of the one at the centre, and drops the pages ahead and any other copy of it.
+    public mutating func replaceCurrent(with page: SheetPage) {
+        guard current != nil else { return push(page) }
+        pages.removeSubrange((index + 1)...)
+        pages[index] = page
+        if let copy = pages.indices.first(where: { $0 != index && pages[$0] == page }) {
+            pages.remove(at: copy)
+            index -= 1
+        }
+    }
+
     public mutating func clear() {
         pages = []
         index = -1

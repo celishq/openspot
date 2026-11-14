@@ -332,6 +332,17 @@ for an example.
 - A pick of a row with `page=true` opens its page. Its id is the id of the row.
 - Each call of a page, a read or a press, gets the page's id in `OPENSPOT_PAGE`. The first sheet of a spot gets none.
 - `openspot spot open <id> [page]` opens a spot's sheet, or a page of it, over the sheet that shows.
+- A press moves its own flow with `go=` in the head of its frame:
+
+| Effect                     | Does                                                                 |
+| -------------------------- | -------------------------------------------------------------------- |
+| `go=<page id>`             | Opens that page of the spot, over the page that shows.               |
+| `go=<page id>` and `replace=true` | Opens that page in the place of the page that shows, so back skips it. |
+| `go=back`                  | Goes back one page.                                                  |
+| `go=first`                 | Goes back to the spot's first sheet.                                 |
+
+- `go` acts only in a press, never in a read, and only while the spot's sheet shows. It never goes back past the spot's
+  first sheet, so `back` and `first` are no page ids. `openspot spot back <id>` goes back one page as `go=back` does.
 - The panel keeps the last 20 sheets. `⌘[` or a swipe to the right goes back, `⌘]` or a swipe to the left goes forward, Esc
   goes back one sheet, and `⌘Esc` goes back to the grid. An edge left of the sheet stands for each sheet behind it. A sheet that comes back shows what it last showed at once, and reads again.
 
@@ -346,6 +357,7 @@ effects of the frame.
   - `link=<url>` opens the URL;
   - `progress=<0 to 1>` shows progress. With it, `title` and `detail` show only while the call runs;
   - `select=<row id>` asks the spot again with that row selected;
+  - `go=` moves the spot's flow after a press: see [Pages](#pages);
   - `call=<n>` and `end=<n>` mark the calls of a staying spot (see [Modes](#modes)).
 - The head can come anywhere in the frame. Openspot skips and reports a second head.
 
@@ -757,6 +769,7 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot guide`                                   | Prints the guide, then this protocol.                                                           |
 | `openspot spot show <id>`                          | Opens the panel with the spot selected.                                                         |
 | `openspot spot open <id> [page]`                   | Opens the panel on the sheet of a spot, or on a page of it. See [Pages](#pages).                |
+| `openspot spot back <id>`                          | Goes back one page of a spot that shows. See [Pages](#pages).                                   |
 | `openspot spot choose <id>`                        | Asks for files, and drops the chosen ones on a spot that takes them, as a press of its card does. |
 | `openspot spot edit <id>`                          | Opens the file of a spot in the text editor, as Edit in its ⌘K menu does.                       |
 | `openspot spot prompt <id>`                        | Copies a prompt that asks a coding agent to change a spot.                                      |

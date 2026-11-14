@@ -102,6 +102,7 @@ public final class CommandAPI: @unchecked Sendable {
         case .spotOpen(let id, let page): return spots.open(id, page: page)
         case .spotChoose(let id): return spots.choose(for: id)
         case .spotAct(let act, let id): return spots.act(act, id)
+        case .spotBack(let id): return spots.back(id)
         case .spotReview(let id): return spots.review(id)
         case .spotStore: return spots.store()
         case .spotNew(let name, let starter): return spots.new(name, from: starter)

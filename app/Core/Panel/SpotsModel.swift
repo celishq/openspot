@@ -541,6 +541,8 @@ public final class SpotsModel {
             }
         case .chooseFiles:
             _ = chooseFiles(for: id)
+        case .go(let target, let replace):
+            go(target, replace: replace, in: id)
         }
     }
 

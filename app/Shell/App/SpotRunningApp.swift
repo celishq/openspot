@@ -43,6 +43,10 @@ struct SpotRunningApp: RunningApp {
         await model.act(act, on: id)
     }
 
+    func back(_ id: String) async -> Bool {
+        await model.goBack(in: id)
+    }
+
     func review(_ id: String) async -> Bool {
         await model.reviewCore(id)
     }
