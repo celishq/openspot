@@ -1,8 +1,5 @@
 import Foundation
 
-/// Splits what a script prints into frames. A line `---` ends a frame. It keeps a line that has not ended, so a chunk can
-/// stop anywhere, even inside a character. A terminal's progress code (OSC 9;4) and notification code (OSC 9) each give a
-/// frame of their own, and each other escape code leaves the text (protocol: Frames).
 public struct SheetFrameReader: Sendable {
     public static let mark = "---"
 
@@ -21,8 +18,6 @@ public struct SheetFrameReader: Sendable {
 
     public init() {}
 
-    /// Takes the next chunk, and returns each frame it completes. A chunk with no escape code and none open is split at
-    /// each new line by `memchr`.
     public mutating func read(_ data: Data) -> [String] {
         guard escape == .none else { return readEscaped(data) }
         return data.withUnsafeBytes { raw -> [String]? in
@@ -41,7 +36,6 @@ public struct SheetFrameReader: Sendable {
         } ?? readEscaped(data)
     }
 
-    /// Ends the line that it keeps: a mark ends the frame, and any other line joins it.
     private mutating func endLine(into frames: inout [String]) {
         let text = String(decoding: line, as: UTF8.self)
         line.removeAll(keepingCapacity: true)
@@ -53,7 +47,6 @@ public struct SheetFrameReader: Sendable {
         }
     }
 
-    /// Takes a chunk byte by byte, through each escape code.
     private mutating func readEscaped(_ data: Data) -> [String] {
         var frames: [String] = []
         for byte in data {
@@ -88,7 +81,6 @@ public struct SheetFrameReader: Sendable {
         return frames
     }
 
-    /// Returns what is left when the output ends, or nil when nothing is.
     public mutating func finish() -> String? {
         if !line.isEmpty {
             frame += String(decoding: line, as: UTF8.self)
@@ -98,8 +90,6 @@ public struct SheetFrameReader: Sendable {
         return frame.isEmpty ? nil : frame
     }
 
-    /// The frame of one operating system command: `progress` from a progress code that sets a percent, `toast` from a
-    /// notification, and none from any other.
     private static func frame(of command: Data) -> [String] {
         let text = String(decoding: command, as: UTF8.self)
         if text.hasPrefix("9;4;") {

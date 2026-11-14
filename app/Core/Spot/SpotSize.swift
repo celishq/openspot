@@ -10,7 +10,6 @@ public struct SpotSize: Equatable, Sendable {
     public static let strip = SpotSize(columns: 4, rows: 1)
     public static let large = SpotSize(columns: 4, rows: 2)
 
-    /// Each size a person can prefer, from the smallest.
     public static let all: [SpotSize] = [.small, .wide, .square, .strip, .large]
 
     public init(columns: Int, rows: Int) {
@@ -18,13 +17,11 @@ public struct SpotSize: Equatable, Sendable {
         self.rows = rows
     }
 
-    /// Whether a card of this size can take a larger size, or a smaller one, among these sizes.
     public func reach(among sizes: [SpotSize]) -> (grows: Bool, shrinks: Bool) {
         let area = columns * rows
         return (sizes.contains { $0.columns * $0.rows > area }, sizes.contains { $0.columns * $0.rows < area })
     }
 
-    /// The word a file uses for this size.
     public var name: String {
         switch self {
         case .small: "small"
@@ -36,7 +33,6 @@ public struct SpotSize: Equatable, Sendable {
         }
     }
 
-    /// The size a file names: small, wide, square, strip or large.
     public init?(name: String) {
         switch name {
         case "small": self = .small

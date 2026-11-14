@@ -1,12 +1,9 @@
 import Foundation
 import os
 
-/// What the link of a run gives back: each call it starts and ends, and each frame of a call or of the script.
 extension SpotRun {
-    /// The app log, in which a failure that tells no one shows at info.
     static let appLog = Logger(subsystem: Bundle.main.bundleIdentifier ?? "openspot", category: "spots")
 
-    /// Lists a call that the link started, and shows it as running work once its second has passed.
     func track(_ call: ScriptCall) {
         calls.append(call)
         guard call.doesWork else { return }
@@ -17,22 +14,17 @@ extension SpotRun {
         }
     }
 
-    /// Lets go of a call that ended, and starts a drop or a key press that waited for it.
     func callEnded(_ call: ScriptCall) {
         forget(call)
         startWaitingFiles()
         startWaitingKey()
     }
 
-    /// Drops a call from the running calls. A call that is already gone tells no reader of the work.
     func forget(_ call: ScriptCall) {
         calls.removeAll { $0 === call }
         if let index = workCalls.firstIndex(where: { $0 === call }) { workCalls.remove(at: index) }
     }
 
-    /// Takes the end of a call. A read or a search that ended with no answer changes nothing when it was stopped, and tells
-    /// of its failure. A call of work that ended is followed by a read: with the row that a `select` effect named selected
-    /// (protocol: The calls), or else when it showed no picture (protocol: Frames). A stopped toggle goes back.
     func ended(_ call: ScriptCall, _ purpose: Purpose, _ end: ScriptCall.End, hadAnswer: Bool, showedPicture: Bool, selected: String?) {
         let isAnswer = if case .ask(let ask) = purpose { ask.isAnswer } else { false }
         if case .ended = end, failure != nil, !isAnswer { failure = nil }
@@ -67,8 +59,6 @@ extension SpotRun {
         readAgainIfAsked()
     }
 
-    /// Takes the failure of a read or a search, such as one that a staying script did not answer in time, and reads again
-    /// when a change came meanwhile.
     func askFailed(_ ask: Ask, _ error: Error) {
         take(error, of: ask)
         readAgainIfAsked()
@@ -91,30 +81,21 @@ extension SpotRun {
         }
     }
 
-    /// The script that held its own state ended by itself: its value dims, its answer is old, and a sheet that waited for it
-    /// closes.
     func lost() {
         scriptEnded()
         changeReading { $0.markStale() }
         dropUnshownSheet()
     }
 
-    /// Openspot ended the script that held its own state: its answer is old, so the next open waits for a new one.
     func scriptEnded() {
         answered = nil
         list.stopLoading()
     }
 
-    /// Who searches the rows of this frame: no one with `search=off`, the spot with `on=sheet.text`, or else Openspot.
     static func search(of lines: SpotOutput, in spot: Spot) -> ItemSearch {
         lines.hidesSearch ? .off : spot.read?.searchesSheet == true ? .script : .local
     }
 
-    /// Takes the answer of a read or of a search: a frame of it with a block, the head of one that ended with no picture, or
-    /// the frame that ends a call of a staying script. A read's answer replaces all that the spot shows, and a search's
-    /// answer replaces its rows (protocol: Modes). `keeping` names a part whose text the person owns while they type. A picture that
-    /// answers no read, such as the frame of an action, leaves the age of the answer and a sheet that waits for a read. The
-    /// rows that answer a text of the main search leave all else as it is (protocol: Places).
     func takeAnswer(_ lines: SpotOutput, frame: String, to ask: Ask, keeping: String? = nil, answers: Bool = true) async {
         if case .answer(let query) = ask { return takeAnswers(lines.answers, to: query) }
         let next: ItemList.Rows? = if case .read = ask { await newRows(lines.items, search: Self.search(of: lines, in: spot)) } else { nil }
@@ -157,9 +138,6 @@ extension SpotRun {
         }
     }
 
-    /// Takes a frame with a block of a call that is not a read or a search, or of a staying script by itself: the whole
-    /// picture, unless a newer change has outdated its call (protocol: Frames). Returns whether it showed. The state of a spot that reads
-    /// no state of its own takes the value of its control from it.
     @discardableResult
     func takePicture(_ lines: SpotOutput, frame: String, of work: Work?) async -> Bool {
         if let generation = work?.generation, let current = panel?.generation, generation != current {
@@ -171,8 +149,6 @@ extension SpotRun {
         return true
     }
 
-    /// Takes a frame of only a head: its effects act, and the picture stays.
-    /// Tells the owner of a `push` or `pop` effect in a frame of a press. A read never moves the flow.
     func takeMove(_ lines: SpotOutput) {
         if let move = lines.move { onReport(.move(move)) }
     }
@@ -182,27 +158,21 @@ extension SpotRun {
         onReport(.frame(frame))
     }
 
-    /// The part that the person is typing in, whose text a later frame of a read keeps.
     var typedPart: String? {
         editing
     }
 
-    /// Fresh rows compared with the rows of the list and indexed off the main thread, so that the main thread takes them in
-    /// one write.
     private func newRows(_ items: [SpotItem], search: ItemSearch) async -> ItemList.Rows {
         let list = rows
         return await Task.detached(priority: .userInitiated) { list.ready(items, search: search) }.value
     }
 
-    /// Makes the pictures of the list ready: the first screen of its rows, and the colour glyphs of all of them, which it
-    /// collects again only when the rows changed.
     private func preparePictures() async {
         let rows = list.all
         if rows != glyphs.rows { glyphs = (rows, rows.compactMap(\.glyph)) }
         await prepare(firstScreen(of: list.shown), glyphs.glyphs)
     }
 
-    /// The first of these rows, as many as the sheet shows before it scrolls. A later row draws its picture when it shows.
     private func firstScreen(of items: [SpotItem]) -> [SpotItem] {
         Array(items.prefix(SpotTokens.firstScreen(perLine: list.perLine)))
     }
@@ -215,7 +185,6 @@ extension SpotRun {
         state = keepingLevel(next)
     }
 
-    /// The state with the level that the person set, while the call of that level waits or runs.
     private func keepingLevel(_ next: SpotState) -> SpotState {
         guard running(Self.levelKey) != nil || pauses[Self.levelKey] != nil, let level = state.level else { return next }
         return next.withLevel(level)
@@ -229,7 +198,6 @@ extension SpotRun {
         }
     }
 
-    /// Shows the toast of a frame.
     func report(toastOf lines: SpotOutput) {
         if let text = lines.toast { onReport(.toast(text)) }
     }
@@ -246,7 +214,6 @@ extension SpotRun {
         list = next
     }
 
-    /// Shows the parts a script printed. An answer that a newer change outdated does not show.
     private func takePanel(_ lines: SpotOutput, generation: Int?, keeping: String?) {
         if lines.parts.isEmpty {
             panel = nil
@@ -257,8 +224,6 @@ extension SpotRun {
         }
     }
 
-    /// Marks the spot with a failed call: the script's own message when it gave one, or else what Openspot saw. It tells the
-    /// person when `tells`, and else only writes it to the app log at info.
     func fail(_ error: Error, tells: Bool = true) {
         let text = switch error as? SpotError {
         case .failed(_, let message) where !message.isEmpty, .failedWithFix(_, let message, _) where !message.isEmpty: message

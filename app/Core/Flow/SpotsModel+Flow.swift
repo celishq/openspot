@@ -1,10 +1,6 @@
 import Foundation
 
-/// The flow of the panel: a page or a spot that opens over the sheet that shows, and the keys that move back, forward
-/// and to the grid.
 extension SpotsModel {
-    /// Opens a spot as a new flow, with nothing behind it: in the panel that shows, or else in the panel that it shows.
-    /// Returns false when no spot has that ID.
     @discardableResult
     public func open(_ id: String) -> Bool {
         guard entries.contains(where: { $0.id == id }) else { return false }
@@ -12,10 +8,6 @@ extension SpotsModel {
         return push(FlowSheet(spot: id))
     }
 
-    /// Pushes a sheet over the flow that shows: in the panel that shows, or else in the panel that it shows. A page that the
-    /// spot takes no `pages` line for moves nothing and says so, and a page of a spot with no sheet is the call
-    /// `<spot> open <page>`. With `replace`, the sheet takes the place of the one that shows. A spot that offers a window
-    /// opens in its window (W10). Returns false when no spot has that ID.
     @discardableResult
     public func push(_ sheet: FlowSheet, replace: Bool = false) -> Bool {
         guard let spot = entries.first(where: { $0.id == sheet.spot })?.spot else { return false }
@@ -45,9 +37,6 @@ extension SpotsModel {
         return true
     }
 
-    /// Pops the sheet of a spot that shows: back to the sheet before it, a page of the spot or the sheet that pushed it.
-    /// With `all`, back through its own pages to its first sheet. Returns false when it moves nothing, since a spot never
-    /// closes the panel.
     @discardableResult
     public func pop(in id: String, all: Bool = false) -> Bool {
         guard openList == id, flow.current?.spot == id else { return false }
@@ -57,7 +46,6 @@ extension SpotsModel {
         return start < flow.index && back(steps: flow.index - start)
     }
 
-    /// Shows the sheet some steps before in the flow. Returns false when that many do not lie behind.
     @discardableResult
     public func back(steps: Int = 1) -> Bool {
         guard openList != nil, let page = flow.back(steps: steps) else { return false }
@@ -65,7 +53,6 @@ extension SpotsModel {
         return true
     }
 
-    /// Shows the sheet after in the flow. Returns false when there is none.
     @discardableResult
     public func forward() -> Bool {
         guard openList != nil, let page = flow.forward() else { return false }
@@ -73,8 +60,6 @@ extension SpotsModel {
         return true
     }
 
-    /// Moves the flow of the spot that shows, as a `push` or `pop` effect of its press asks (protocol: Pages). A spot that
-    /// does not show moves nothing.
     func move(_ move: FlowMove, in id: String) {
         guard openList == id else { return }
         switch move {
@@ -83,12 +68,10 @@ extension SpotsModel {
         }
     }
 
-    /// Whether the spot has a sheet that a push can show.
     func opensSheet(_ id: String) -> Bool {
         entries.first { $0.id == id }?.kind.opensSheet == true
     }
 
-    /// Takes ⌘[, ⌘] and ⌘Esc while a sheet shows. Returns nil for any other key.
     func handleFlowKey(_ key: ActionKey) -> Bool? {
         switch FlowKey(key) {
         case .back: back()
@@ -99,9 +82,6 @@ extension SpotsModel {
         return true
     }
 
-    /// Shows a sheet of the flow: its page in its run, in the place of the sheet that shows. Another page of the sheet
-    /// that shows slides in from `side`, -1 for the left and 1 for the right, when it moves. A spot that left the folder
-    /// leaves the flow, which then shows the page at its centre, or closes when it is empty.
     private func show(_ page: FlowSheet, moving: Bool, from side: Double) {
         guard let sheet = sheets[page.spot] else {
             flow.remove(spot: page.spot)
@@ -117,13 +97,11 @@ extension SpotsModel {
         pushIn(from: side) { sheet.show(page: page.page) }
     }
 
-    /// Brings each spot of the flow back to its first sheet, and empties the flow.
     func endFlow() {
         for page in flow.pages where page.page != nil { sheets[page.spot]?.show(page: nil) }
         flow.clear()
     }
 
-    /// The title of a sheet of the flow: its own, or else the name of its spot for a first sheet, or else its page.
     func title(of sheet: FlowSheet) -> String {
         sheet.title ?? (sheet.page == nil ? entries.first { $0.id == sheet.spot }?.spot.name : nil) ?? sheet.page ?? sheet.spot
     }

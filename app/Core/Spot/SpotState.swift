@@ -7,13 +7,9 @@ public struct SpotState: Equatable, Sendable {
     public let level: Double?
     public let min: Double?
     public let max: Double?
-    /// Whether the grid shows the spot. Search and its key find it either way.
     public let isOnGrid: Bool
-    /// Each value of the head of its last read by key, in order, which its view draws (protocol: Views).
     public let values: [String: [String]]
-    /// The id of the switch or the slider that its card changes, which a change of the card sends (protocol: The main block and the card).
     public let control: String?
-    /// The drawings of its card, with the components that they place (protocol: Layouts).
     public private(set) var face: CardFace
 
     public init(
@@ -40,9 +36,6 @@ public struct SpotState: Equatable, Sendable {
         self.face = face
     }
 
-    /// Reads how a spot looks from what its script printed: the words of its head, and `active` in its head or the switch that is its
-    /// whole card, which says whether its card is on, and its main slider, which says at what level. A spot whose output is one switch or one slider takes that control's words for its card (protocol: The main block and the card).
-    /// What the output leaves out comes from the header.
     public init(output: SpotOutput, header: SpotState) {
         let block = output.summary
         let control = output.control
@@ -64,15 +57,11 @@ public struct SpotState: Equatable, Sendable {
         )
     }
 
-    /// This state with each value of a block, which a view draws.
     public func holding(_ block: TextBlock?) -> SpotState {
         let values = Dictionary(grouping: block?.fields ?? [], by: \.key).mapValues { $0.map(\.value) }
         return SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, values: values, control: control, face: face)
     }
 
-    /// This state with what a frame of a running call changes: whether its card's switch is on, and the level of its
-    /// card's slider or of its main slider.
-    /// Its words stay the spot's own.
     public func taking(_ output: SpotOutput) -> SpotState {
         var on = self.on
         var level = self.level
@@ -82,24 +71,20 @@ public struct SpotState: Equatable, Sendable {
         return SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, values: values, control: control, face: face)
     }
 
-    /// This state with a value that the person set on a component of its card, before the script answers.
     public func setting(_ value: String, of id: String) -> SpotState {
         var next = self
         next.face.set(value, of: id)
         return next
     }
 
-    /// This state with its switch set, as a press of its card sets it before the script answers.
     public func switched(on: Bool) -> SpotState {
         SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, values: values, control: control, face: face)
     }
 
-    /// This state with the words of a running call over its own. A word the call leaves out stays.
     public func showing(title: String?, detail: String?) -> SpotState {
         SpotState(title: title ?? self.title, subtitle: detail ?? subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, values: values, control: control, face: face)
     }
 
-    /// This state, on the grid or off it.
     func onGrid(_ isOnGrid: Bool) -> SpotState {
         SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, values: values, control: control, face: face)
     }

@@ -59,6 +59,7 @@ Tests name a rule by its ID, as in `func test_A4_searchStaysUntilEsc`.
 | A27 | Settings and Updates read with one `openspot` process and no `jq`. |
 | A50 | The account key comes from its 12 BIP-39 words the same way celis makes it, so the same words give the same account in both apps. |
 | A51 | Each write of `config.toml` holds a lock beside the file, so the app and a script that runs `openspot setting` never lose each other's change. |
+| A30 | A value of a call over 64 KB goes on stdin under `value`, not in the arguments, since the system limits the size of the arguments of a process. |
 
 ## Sharing
 
