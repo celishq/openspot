@@ -329,7 +329,7 @@ extension SpotsModel {
     }
 
     /// Where the grid's top left corner lies in the panel, as the grid has scrolled.
-    var gridOrigin: CGPoint {
+    public var gridOrigin: CGPoint {
         SpotTokens.gridOrigin(scrollOffset: gridScroll, left: panels.leftExtent)
     }
 }

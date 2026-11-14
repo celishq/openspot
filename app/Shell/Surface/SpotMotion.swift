@@ -5,10 +5,8 @@ extension EnvironmentValues {
     @Entry var spotIsShown = true
     /// Whether a blur of the desktop draws. A picture turns it off, since the system blur draws grey into a picture.
     @Entry var spotDrawsBlur = true
-    /// The width of the panel with its side panels, and how far it reaches left of the center panel, where a surface of a
-    /// side panel lies.
-    @Entry var spotPanelWidth = SpotTokens.panelWidth
-    @Entry var spotPanelLeft: CGFloat = 0
+    /// The side panels that the panel spans, left and right of the center panel, which a surface of a side panel lies in.
+    @Entry var spotPanels = GridPanels()
 }
 
 /// The five curves of the app, one for each kind of motion, from the numbers of `MotionTokens`. A part of a surface that

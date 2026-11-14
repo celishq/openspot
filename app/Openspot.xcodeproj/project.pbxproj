@@ -529,6 +529,7 @@
 		D6941DD74277E9AFBBA2CE8B /* CalcRateFailure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9447205042159420F5563CF7 /* CalcRateFailure.swift */; };
 		D76F7916D5206BF1C167FCA1 /* openspot.sh in Resources */ = {isa = PBXBuildFile; fileRef = 94B0E4567AE631D558192FF8 /* openspot.sh */; };
 		D780233D72D94732060B07C1 /* SpotPackage+Release.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0FD2E4AE61ADD248A6B84BA /* SpotPackage+Release.swift */; };
+		D7D3E70D6854D2B02993DC25 /* PanelSpan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B383898EBB18E715FB418D9 /* PanelSpan.swift */; };
 		D81371BCEA7BA1D45FF16691 /* SpotsModelDragTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AECA7E4958B376D25475BDFB /* SpotsModelDragTests.swift */; };
 		D8146746E1EB9C6FE5E2D733 /* SpotBlur.swift in Sources */ = {isa = PBXBuildFile; fileRef = A16D81BC1C192B2BA575CD34 /* SpotBlur.swift */; };
 		D85FE0618F2B39D7E38F91BA /* ReservedSetting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6D6EBAD594004DD27C4CC4 /* ReservedSetting.swift */; };
@@ -984,6 +985,7 @@
 		8A564A8D2623D8AB8446F8EA /* ModifierTapTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModifierTapTests.swift; sourceTree = "<group>"; };
 		8AE7333AFB1BE8B127EE7D7B /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
 		8AFFAE1292EF44932A4115BD /* SpotRecording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotRecording.swift; sourceTree = "<group>"; };
+		8B383898EBB18E715FB418D9 /* PanelSpan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanelSpan.swift; sourceTree = "<group>"; };
 		8B894C1134E1A0D2F7204CCD /* CalcRatesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalcRatesTests.swift; sourceTree = "<group>"; };
 		8C1AD818DAD0892B880BF962 /* CalcRates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalcRates.swift; sourceTree = "<group>"; };
 		8C51593209225A5BD92A8319 /* AccountWords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountWords.swift; sourceTree = "<group>"; };
@@ -2032,6 +2034,7 @@
 		B38747948502DEE56071C00A /* Surface */ = {
 			isa = PBXGroup;
 			children = (
+				8B383898EBB18E715FB418D9 /* PanelSpan.swift */,
 				A16D81BC1C192B2BA575CD34 /* SpotBlur.swift */,
 				4958C896F9317151F9D988A2 /* SpotFill.swift */,
 				6BE566EA52FD95472C996740 /* SpotFloatGlass.swift */,
@@ -2910,6 +2913,7 @@
 				AB371E421B7AD912D259B7AB /* OpenspotApp+Host.swift in Sources */,
 				D4FCC1ED72664CC622423052 /* OpenspotApp.swift in Sources */,
 				2D51CC9D9FE59E9DF47125C3 /* OpenspotItem.swift in Sources */,
+				D7D3E70D6854D2B02993DC25 /* PanelSpan.swift in Sources */,
 				0A8E2048318FEB0B036B9FCE /* ScreenPlace+Mac.swift in Sources */,
 				9F44FE0E902094859A3CAABD /* SheetPartsView.swift in Sources */,
 				800F797EA7153CC50C9D3EEB /* SpotActionMenuView.swift in Sources */,

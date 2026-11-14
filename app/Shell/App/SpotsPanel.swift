@@ -162,7 +162,7 @@ final class SpotsPanel: NSPanel {
         } else {
             resize(to: widened(frame))
         }
-        SpotSoftBlur.warm(SpotsView.blurHeights(of: model), width: SpotTokens.panelWidth + panels.leftExtent + panels.rightExtent)
+        SpotSoftBlur.warm(SpotsView.blurHeights(of: model), width: panels.frame.width)
         SpotSoftBlur.warm(SpotsView.blurHeights(of: model), width: SpotTokens.panelWidth)
     }
 

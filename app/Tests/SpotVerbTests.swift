@@ -103,7 +103,7 @@ final class SpotVerbTests: XCTestCase {
         let index = try XCTUnwrap(model.visible.firstIndex { $0.id == "weather" })
         let card = try XCTUnwrap(model.placements.first { $0.index == index }).rect
 
-        let origin = SpotTokens.gridOrigin(scrollOffset: model.gridScroll)
+        let origin = model.gridOrigin
         model.openMenu(at: CGPoint(x: origin.x + card.midX, y: origin.y + card.midY))
         model.tap("weather")
 

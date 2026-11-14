@@ -257,7 +257,7 @@ final class SpotMotionProbe: NSObject {
             return finish(with: "shots\n")
         }
         let rect = model.placements[index].rect
-        let origin = SpotTokens.gridOrigin(scrollOffset: model.gridScroll, left: model.panels.leftExtent)
+        let origin = model.gridOrigin
         let move = CGSize(width: dock.midX - origin.x - rect.midX, height: dock.midY - origin.y - rect.midY)
         model.dragSpot(id, by: CGSize(width: 1, height: 1))
         model.dragSpot(id, by: move)
@@ -278,7 +278,7 @@ final class SpotMotionProbe: NSObject {
             return finish(with: "shots\n")
         }
         let tile = model.dock.rects[index]
-        let origin = SpotTokens.gridOrigin(scrollOffset: model.gridScroll, left: model.panels.leftExtent)
+        let origin = model.gridOrigin
         let target = CGPoint(x: origin.x + first.rect.minX + first.rect.width / 4, y: origin.y + first.rect.midY)
         let start = CGPoint(x: dock.minX + SpotDock.rowsOrigin.x + tile.midX, y: dock.minY + SpotDock.rowsOrigin.y + tile.midY - model.dockScroll)
         let move = CGSize(width: target.x - start.x, height: target.y - start.y)
@@ -331,7 +331,7 @@ final class SpotMotionProbe: NSObject {
             return finish(with: "no card to resize\n")
         }
         let id = model.visible[card].id
-        let grid = SpotTokens.gridOrigin(scrollOffset: model.gridScroll, left: model.panels.leftExtent)
+        let grid = model.gridOrigin
         let end = CGPoint(x: grid.x + model.placements[card].rect.maxX, y: grid.y + model.placements[card].rect.maxY)
         panel.ignoresMouseEvents = false
         NSApp.activate(ignoringOtherApps: true)

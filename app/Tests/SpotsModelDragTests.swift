@@ -323,7 +323,7 @@ final class SpotsModelDragTests: XCTestCase {
 
     /// A point of the panel's space as a point of the grid, which has not scrolled.
     private func inGrid(_ point: CGPoint) -> CGPoint {
-        let origin = SpotTokens.gridOrigin(scrollOffset: 0)
+        let origin = model.gridOrigin
         return CGPoint(x: point.x - origin.x, y: point.y - origin.y)
     }
 
@@ -387,7 +387,7 @@ final class SpotsModelDragTests: XCTestCase {
     /// The pointer's move that takes the centre of the dock's card of a spot to this point of the grid.
     private func dockMove(_ id: String, to point: CGPoint) -> CGSize {
         let start = tile(id)
-        let grid = SpotTokens.gridOrigin(scrollOffset: 0)
+        let grid = model.gridOrigin
         return CGSize(width: point.x + grid.x - start.midX, height: point.y + grid.y - start.midY)
     }
 

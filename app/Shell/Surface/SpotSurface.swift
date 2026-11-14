@@ -11,11 +11,10 @@ struct SpotSurface: View {
     /// How strong the fill of a row is, from 0 to 1.
     var fill = 0.0
     @Environment(\.spotIsShown) private var isShown
-    @Environment(\.spotPanelWidth) private var panelWidth
-    @Environment(\.spotPanelLeft) private var left
+    @Environment(\.spotPanels) private var panels
 
     var body: some View {
-        let rect = rect.offsetBy(dx: left, dy: 0)
+        let rect = rect.offsetBy(dx: -panels.frame.minX, dy: 0)
         let shape = SpotSurfaceShape(rect: rect, radius: radius)
         ZStack(alignment: .topLeading) {
             SpotBlur(radius: SpotTheme.blur)
@@ -28,8 +27,7 @@ struct SpotSurface: View {
                 .opacity(isShown ? glass : MotionTokens.hiddenOpacity)
                 .animation(SpotMotion.fade(isShown: isShown), value: isShown)
         }
-        .frame(width: panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
-        .offset(x: -left)
+        .modifier(PanelSpan(panels: panels))
         .allowsHitTesting(false)
     }
 }

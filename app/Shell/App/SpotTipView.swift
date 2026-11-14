@@ -44,7 +44,7 @@ struct SpotTipView: View {
               let placement = model.placements.first(where: { $0.index == index }) else { return nil }
         let rect = placement.rect
         let inset = SpotTokens.corner(for: placement.size) * SpotTokens.rimPoint
-        let origin = SpotTokens.gridOrigin(scrollOffset: model.gridScroll, left: model.panels.leftExtent)
+        let origin = model.gridOrigin
         let x = tip.anchor == .trailingCorner ? rect.maxX - inset : rect.minX + inset
         return CGPoint(x: origin.x + x, y: origin.y + rect.minY + inset + SpotTokens.keycap / 2)
     }

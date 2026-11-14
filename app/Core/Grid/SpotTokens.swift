@@ -192,7 +192,7 @@ public enum SpotTokens {
 
     /// Where the grid's top left corner lies in the panel, with the grid scrolled this far and reaching this far left of the
     /// center panel.
-    public static func gridOrigin(scrollOffset: CGFloat, left: CGFloat = 0) -> CGPoint {
+    public static func gridOrigin(scrollOffset: CGFloat, left: CGFloat) -> CGPoint {
         CGPoint(x: halo - left, y: gridTop - scrollOffset)
     }
 }
