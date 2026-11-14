@@ -141,7 +141,8 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
 - Each buffer, log and cache has a limit in bytes. A kept tail is cut back when it holds twice its limit. A loop that reads a
   stream wraps each pass in `autoreleasepool`.
 - Each collection kept per call, page or frame drops an entry when the thing it tracks ends, and has a limit in count.
-- The panel stays warm while hidden. Cut the waste around it, not the panel. A view that the panel hides stays built.
+- The panel stays warm while hidden. Cut the waste around it, not the panel. A view that the panel hides stays built,
+  except a spot's own view, which can run work of its own.
 - A framework that the panel does not need, such as translation or screen capture, runs in a helper process, not in the app.
 
 ### Proving a speed fix

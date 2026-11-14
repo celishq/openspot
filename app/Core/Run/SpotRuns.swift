@@ -8,7 +8,14 @@ public final class SpotRuns {
     public internal(set) var isPanelOpen = false
     public private(set) var openID: String?
     public private(set) var floating: Set<String> = []
-    public var draggedPaths: [String] = []
+    public var draggedPaths: [String] = [] {
+        didSet {
+            guard draggedPaths != oldValue else { return }
+            let takers = draggedPaths.isEmpty ? [] : Set(sheets.filter { $0.value.spot.accepts(draggedPaths) }.keys)
+            if takers != dragTakers { dragTakers = takers }
+        }
+    }
+    private var dragTakers: Set<String> = []
     @ObservationIgnored public var onReport: (String, SpotRun.Report) -> Void = { _, _ in }
     @ObservationIgnored public var partsArrival: (String, () -> Void) -> Void = { _, bring in bring() }
     @ObservationIgnored public let opening: SheetOpening
@@ -206,7 +213,7 @@ public final class SpotRuns {
     }
 
     public func takesDrag(_ id: String) -> Bool {
-        sheets[id]?.spot.accepts(draggedPaths) == true
+        dragTakers.contains(id)
     }
 
     public func answer(of spot: Spot, _ action: SpotAction, input: String? = nil, limit: TimeInterval? = nil, variables: [String: String] = [:]) async throws -> String {

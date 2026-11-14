@@ -1102,6 +1102,20 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(changed)
     }
 
+    func testAMoveInTheActionsMenuTellsNoReaderOfACardsFocus() throws {
+        try script("weather", header: "title=Weather", ":")
+        model.reload()
+        model.isShown = true
+        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "weather" })
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = model.focus(ofCard: 0) } onChange: { changed = true }
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+
+        XCTAssertFalse(changed)
+    }
+
     func testAMoveInTheActionsMenuTellsNoReaderThatTheMenuIsOpen() throws {
         try script("weather", header: "title=Weather", ":")
         model.reload()
