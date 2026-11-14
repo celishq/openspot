@@ -2,8 +2,8 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// The window of a spot that offers one: its sheet in a normal titled window that the person moves, resizes and closes. The
-/// app shows in the Dock and in Command-Tab while it is open.
+/// The window of a spot that offers one: its sheet on the panel's glass, in a window that the person moves, resizes and
+/// closes by the buttons of its clear title bar. The app shows in the Dock and in Command-Tab while it is open.
 final class SpotSheetWindow: NSWindow, NSWindowDelegate {
     private var model: SpotsModel?
     private var id = ""
@@ -40,13 +40,19 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
     static func make(model: SpotsModel, entry: SpotsModel.Entry) -> SpotSheetWindow {
         let window = SpotSheetWindow(
             contentRect: NSRect(origin: .zero, size: SpotTokens.windowSize),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
         window.model = model
         window.id = entry.id
         window.title = entry.spot.name
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.isOpaque = false
+        window.backgroundColor = .clear
+        window.hasShadow = true
+        window.isMovableByWindowBackground = true
         window.isReleasedWhenClosed = false
         window.minSize = SpotTokens.windowMinSize
         window.delegate = window

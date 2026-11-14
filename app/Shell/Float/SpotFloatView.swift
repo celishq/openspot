@@ -81,6 +81,7 @@ struct SpotFloatView: View {
             }
         }
         .padding(SpotTokens.padding)
+        .padding(.top, fills ? SpotTokens.windowTitleBar : 0)
         .frame(width: fills ? nil : size.width, height: fills ? nil : size.height, alignment: .topLeading)
         .frame(maxWidth: fills ? .infinity : nil, maxHeight: fills ? .infinity : nil, alignment: .topLeading)
         .modifier(FloatSurface(fills: fills))
@@ -141,11 +142,15 @@ struct SpotFloatView: View {
     }
 }
 
-/// The glass of a float, which a window of its own leaves out: the window draws its own background.
+/// The glass of a float, and of a window of its own, which fills the window and takes the window's corners.
 private struct FloatSurface: ViewModifier {
     let fills: Bool
 
     func body(content: Content) -> some View {
-        if fills { content } else { content.modifier(SpotGlass()) }
+        if fills {
+            content.modifier(SpotGlass(radius: SpotTokens.radius))
+        } else {
+            content.modifier(SpotGlass())
+        }
     }
 }

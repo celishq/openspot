@@ -18,7 +18,7 @@ struct SpotCardSource {
         guard let model, let entry = model.storeEntry(id) else { return AnyView(EmptyView()) }
         let shape = RoundedRectangle(cornerRadius: SpotTokens.corner(for: entry.size), style: .continuous)
         return AnyView(
-            SpotCardView(entry: entry, size: entry.size, index: -1, isPressed: false, takesDrag: false, isDropTarget: false, chainLetter: nil, model: model)
+            SpotCardView(entry: entry, size: entry.size, index: Self.unselectable, isPressed: false, takesDrag: false, isDropTarget: false, chainLetter: nil, model: model)
                 .background { SpotBlur(radius: SpotTheme.blur).overlay(SpotTheme.glass).clipShape(shape) }
                 .allowsHitTesting(false)
                 .contentShape(.dragPreview, shape)
@@ -41,6 +41,9 @@ struct SpotCardSource {
     }
 
     private static let dragPrefix = "openspot-store:"
+
+    /// The place in the grid that a store card stands for: none that a selection reaches, so it never shows a ring.
+    private static let unselectable = Int.min
 
     /// The size of the card of the spot with this store ID on the grid.
     func size(_ id: String) -> CGSize {

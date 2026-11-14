@@ -118,6 +118,8 @@ public enum SpotTokens {
     /// The size that the window of a spot opens at, and the least it can be resized to.
     public static let windowSize = CGSize(width: 720, height: 560)
     public static let windowMinSize = CGSize(width: 360, height: 280)
+    /// The height of the clear title bar of a spot's window, which its content keeps free.
+    public static let windowTitleBar: CGFloat = 28
 
     public static func floatSize(rows: Int, perLine: Int = 1, parts: SheetParts? = nil) -> CGSize {
         let content: CGFloat
