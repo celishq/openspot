@@ -41,7 +41,7 @@ struct SpotGridView: View {
             if model.isEditing {
                 landing(of: drag, in: placements)
                     .frame(width: SpotTokens.width(columns: model.panels.columns), height: height)
-                groupTitles(of: placements)
+                groupTitles(model.groupBands)
             }
             ForEach(Array(zip(placements, glass)), id: \.1.id) { placement, card in
                 let entry = model.visible[placement.index]
@@ -105,21 +105,19 @@ struct SpotGridView: View {
 
     /// The title over each group of Edit Spots, with the number of its cards, at the top of the group's band over the
     /// center panel. It shows while the grid has two groups, and moves with the cards.
-    private func groupTitles(of placements: [SpotPlacement]) -> some View {
-        let band = SpotTokens.groupTitleBand
-        let hidden = placements.filter { $0.top == 2 * band }
-        let shown = placements.filter { $0.top == band }
-        let hiddenTop = (hidden.map(\.rect.minY).min() ?? band) - band
-        let center = model.panels.firstColumn(of: .center)
-        return ZStack(alignment: .topLeading) {
-            GroupTitle(name: "On grid", count: shown.count)
-            GroupTitle(name: "Search only", count: hidden.count)
-                .offset(y: hiddenTop)
+    @ViewBuilder
+    private func groupTitles(_ bands: SpotGroupBands?) -> some View {
+        if let bands {
+            let center = model.panels.firstColumn(of: .center)
+            ZStack(alignment: .topLeading) {
+                GroupTitle(name: "On grid", count: bands.onGrid)
+                GroupTitle(name: "Search only", count: bands.searchOnly)
+                    .offset(y: bands.shelfTop)
+            }
+            .offset(x: center == 0 ? 0 : SpotTokens.width(columns: center) + SpotTokens.columnGap)
+            .frame(width: SpotTokens.width(columns: model.panels.columns), alignment: .topLeading)
+            .allowsHitTesting(false)
         }
-        .offset(x: center == 0 ? 0 : SpotTokens.width(columns: center) + SpotTokens.columnGap)
-        .frame(width: SpotTokens.width(columns: model.panels.columns), alignment: .topLeading)
-        .opacity(hidden.isEmpty ? 0 : 1)
-        .allowsHitTesting(false)
     }
 
     /// The faint shape where a release puts the lifted card. With no card lifted it lies under the selected card, unseen, so

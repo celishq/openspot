@@ -255,6 +255,15 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(order, ["b", "c", "d"])
     }
 
+    func testAReportOfASpotOnTheShelfMovesNoCard() {
+        model.setOnGrid(false, for: "a")
+
+        XCTAssertFalse(model.mayMove("a"))
+        XCTAssertFalse(model.mayMove("b"))
+        XCTAssertEqual(model.groupBands?.onGrid, 3)
+        XCTAssertEqual(model.groupBands?.searchOnly, 1)
+    }
+
     func testTheShelfLeavesOutASpotWithNoCardOfItsOwn() throws {
         try "#!/bin/sh\n# on=panel.open\n# offers=search\n".writeScript(to: spots.appendingPathComponent("rows.spot/rows.sh"))
         model.reload()
@@ -567,18 +576,6 @@ final class SpotsModelDragTests: XCTestCase {
         let third = await model.publish("a")
         XCTAssertEqual(third, .published)
         XCTAssertEqual(publication(of: "a"), .current)
-    }
-
-    func testShareCopiesTheStoresPackageAsOneZipThatOpensWithItsReadme() async throws {
-        try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
-        _ = try model.files.account.keyMadeOnce()
-        XCTAssertNil(model.sharePackage("a"))
-        _ = await model.publish("a")
-
-        let file = try XCTUnwrap(model.sharePackage("a"))
-
-        XCTAssertEqual(file.pathExtension, "spot")
-        XCTAssertEqual(try SpotPackage(contentsOf: file).files.first { $0.path == "a.spot/readme.md" }?.text, "Does a.")
     }
 
     func testAPublishWithNoAccountAsksToSetOneUpAndWritesNothing() async throws {

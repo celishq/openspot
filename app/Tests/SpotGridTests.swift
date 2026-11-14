@@ -227,6 +227,17 @@ final class SpotGridTests: XCTestCase {
         XCTAssertEqual(placed.map(\.size), [.small, .wide, .small])
     }
 
+    func testTheBandsCountEachGroupAndStartTheShelfOverItsFirstCard() {
+        let band = SpotTokens.groupTitleBand
+        let placed = SpotGrid(split: 2).place([.small, .wide, .small])
+        let bands = try? XCTUnwrap(SpotGroupBands(placed))
+
+        XCTAssertEqual(bands?.onGrid, 2)
+        XCTAssertEqual(bands?.searchOnly, 1)
+        XCTAssertEqual(bands?.shelfTop, placed[2].rect.minY - band)
+        XCTAssertNil(SpotGroupBands(SpotGrid().place([.small, .wide])))
+    }
+
     func testAnEmptyGridHasNoHeight() {
         XCTAssertEqual(SpotGrid.height(of: []), 0)
     }

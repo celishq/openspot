@@ -75,8 +75,12 @@ public final class SpotsModel {
         didSet {
             let height = SpotTokens.backdropHeight(gridHeight: SpotGrid.height(of: placements))
             if height != gridHeight { gridHeight = height }
+            let bands = SpotGroupBands(placements)
+            if bands != groupBands { groupBands = bands }
         }
     }
+    /// The titles of the two groups of Edit Spots, while the grid has both.
+    public internal(set) var groupBands: SpotGroupBands?
     /// The side panels beside the grid's center panel.
     public internal(set) var panels = GridPanels() {
         didSet { showPanels() }

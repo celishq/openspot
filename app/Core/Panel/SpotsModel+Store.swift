@@ -69,27 +69,6 @@ extension SpotsModel {
         return nil
     }
 
-    /// Copies the store's copy of a spot as one `.spot` file, a zip that a chat can carry, and returns the file. A spot that
-    /// the store lacks copies nothing. The zip holds only its own spot folder.
-    @discardableResult
-    public func sharePackage(_ id: String) -> URL? {
-        guard let spot = entries.first(where: { $0.id == id && $0.item == nil })?.spot, origin(of: spot) == .mine else { return nil }
-        let stored = files.store.appendingPathComponent(SpotID(file: spot.url).folderName)
-        guard FileManager.default.fileExists(atPath: stored.path) else { return nil }
-        let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-shared/\(UUID().uuidString)", isDirectory: true)
-        let file = place.appendingPathComponent(SpotPackage.fileName(for: spot.name))
-        do {
-            try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
-            try SpotPackage(contentsOf: stored).zip(to: file)
-        } catch {
-            host.notify("\(spot.name) was not copied. \(Self.reason(error))")
-            return nil
-        }
-        host.copy(file)
-        host.confirm("Copied \(spot.name) as a file. Paste it into a chat or a mail. Its files travel as they are.")
-        return file
-    }
-
     /// Whether the store's copy of each spot of the spots folder holds its files as they are now.
     nonisolated static func publications(of scan: ScanResult, in folder: SpotsFolder, store: URL) -> [String: SpotPublication] {
         var result: [String: SpotPublication] = [:]

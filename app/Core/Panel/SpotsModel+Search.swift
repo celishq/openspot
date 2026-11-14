@@ -61,10 +61,16 @@ extension SpotsModel {
     }
 
     /// Whether a change of the rows or the state of a spot can change the cards that show: with no search, when it moves its
-    /// card on or off the grid, and with a search, when the search finds the spot, its rows or its answers.
+    /// card on or off the grid, in Edit Spots between the grid and the shelf, and with a search, when the search finds the
+    /// spot, its rows or its answers.
     func mayMove(_ id: String) -> Bool {
         guard let entry = entries.first(where: { $0.id == id }) else { return false }
-        guard !query.trimmingCharacters(in: .whitespaces).isEmpty else { return entry.isOnGrid != visible.contains { $0.id == id } }
+        guard !query.trimmingCharacters(in: .whitespaces).isEmpty else {
+            guard isEditing, let index = visible.firstIndex(where: { $0.id == id }), placements.indices.contains(index) else {
+                return entry.isOnGrid != visible.contains { $0.id == id }
+            }
+            return entry.isOnGrid == (placements[index].top == 2 * SpotTokens.groupTitleBand)
+        }
         return entry.spot.isFound || entry.spot.isGlobal || entry.spot.answers != nil
     }
 
