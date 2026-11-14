@@ -1,7 +1,7 @@
 #!/bin/sh
 # title=Account
 # icon=person.crop.circle
-# detail=12 words that are your account
+# detail=The key that signs what you publish
 # on=sheet.open
 # uses=app,account
 # offers=card
@@ -34,22 +34,11 @@ EOF
 step() {
   [ -z "${OPENSPOT_REASON-}" ] || [ "$(cat "$data/step" 2>/dev/null)" != words ] || rm -f "$data/step"
   saved=$(cat "$data/step" 2>/dev/null)
-  if [ -n "$publishing" ] && [ "$signed" != true ]; then
-    if [ "$saved" = restore ]; then echo restore; else echo publish; fi
-    return
-  fi
   case "$saved:$signed:$backed" in
-    choose:false:* | restore:false:* | about:false:*) echo "$saved"; return ;;
-    about:true:false | words:true:* | check:true:false | restore:true:*) echo "$saved"; return ;;
-    account:true:true | leave:true:*) echo "$saved"; return ;;
+    how:*:* | restore:*:*) echo "$saved"; return ;;
+    about:true:* | words:true:* | check:true:false | account:true:* | leave:true:*) echo "$saved"; return ;;
   esac
-  if [ "$signed" != true ]; then
-    echo choose
-  elif [ "$backed" != true ]; then
-    echo about
-  else
-    echo account
-  fi
+  if [ "$signed" != true ]; then echo choose; else echo account; fi
 }
 
 # Publishes the spot of the publish page, and takes the page off.
@@ -190,24 +179,19 @@ sheet() {
   case $current in
     restore) restore; return ;;
     check) check; return ;;
-    publish)
-      printf 'search=off\n'
-      line head 'Sign what you publish' signature '' 'Openspot signs your spots with a key, so people know an update is from you.'
-      printf '\nrow=new\n'
-      openspot_kv title 'Create a new key'
-      printf 'icon=plus.circle\nclose=false\n'
-      printf '\nrow=own\n'
-      openspot_kv title 'Use my words or nsec'
-      printf 'icon=key\nclose=false\n'
-      return
+    choose) printf 'search=off\n' ;;
+    how) printf 'grid=head\ngrid=head\ngrid=people\ngrid=icloud\ngrid=words\ngrid=private\ngrid=reset\ngrid=done\n' ;;
+    about)
+      printf 'grid=head\ngrid=head\ngrid=private\ngrid=reset\n'
+      [ "$sync" != true ] || printf 'grid=icloud\n'
+      printf 'grid=show\n'
       ;;
-    choose) printf 'grid=head\ngrid=head\ngrid=create\ngrid=sign_in\n' ;;
-    about) printf 'grid=head\ngrid=head\ngrid=private\ngrid=reset\ngrid=show\n' ;;
     words) printf 'grid=head head\n'; word_grid 12; printf 'grid=wrote wrote\ngrid=later later\n' ;;
     account)
-      printf 'grid=head\ngrid=head\ngrid=backup\n'
+      printf 'grid=head\ngrid=head\n'
+      [ "$sync" = true ] || printf 'grid=backup\n'
       [ -z "$sync" ] || printf 'grid=sync\n'
-      printf 'grid=done\ngrid=show\ngrid=leave\n'
+      printf 'grid=done\ngrid=about\ngrid=leave\n'
       ;;
     leave)
       printf 'grid=head\ngrid=head\n'
@@ -218,14 +202,28 @@ sheet() {
   [ -z "$toast" ] || openspot_kv toast "$toast"
   case $current in
     choose)
-      line head 'Set up your account' signature '' 'Openspot signs what you publish with it, so people can tell an update is yours.'
-      button create 'Create account' main
-      button sign_in 'Use existing account'
+      line head 'Sign what you publish' signature '' 'Openspot signs your spots with a key, so people know an update is from you.'
+      printf '\nrow=new\n'
+      openspot_kv title 'Create a new key'
+      printf 'icon=plus.circle\nclose=false\n'
+      printf '\nrow=own\n'
+      openspot_kv title 'Use my words or nsec'
+      printf 'icon=key\nclose=false\n'
+      ;;
+    how)
+      line head 'How your key works' key '' 'Openspot signs each spot you publish with your key. There is no email, password or server.'
+      line people 'People can tell an update is from you' checkmark.seal
+      line icloud 'iCloud Keychain keeps it on your Macs' icloud
+      line words 'Your 12 words bring it back on any Mac' list.number
+      line private 'Anyone with the words is you' eye.slash
+      line reset 'Nobody can reset them' exclamationmark.triangle warn
+      button done Done main
       ;;
     about)
-      line head 'Your account is 12 words' key '' 'No email, password or server. Write the words down: they are the only way back in.'
+      line head 'Your 12 words are your key' key '' 'They bring your key back on any Mac.'
       line private 'Anyone with them is you' eye.slash
       line reset 'Nobody can reset them' exclamationmark.triangle warn
+      [ "$sync" != true ] || line icloud 'iCloud Keychain keeps a copy' icloud
       button show 'Show my words' main
       ;;
     words)
@@ -244,7 +242,9 @@ sheet() {
       ;;
     account)
       line head 'Your account' person.crop.circle '' "$npub"
-      if [ "$backed" = true ]; then
+      if [ "$sync" = true ]; then
+        :
+      elif [ "$backed" = true ]; then
         line backup 'Your 12 words are backed up' checkmark.shield good
       else
         line backup 'Your 12 words are not backed up' exclamationmark.triangle warn
@@ -252,7 +252,7 @@ sheet() {
       if [ -n "$sync" ]; then printf '\nswitch=sync\ntitle=Keep in iCloud Keychain\nicon=icloud\nlook=tile\nvalue=%s\n' "$sync"; fi
       button done Done main
       printf 'close=true\n'
-      button show 'Show my words'
+      button about 'Show my words'
       button leave 'Sign out…'
       ;;
     leave)
@@ -264,6 +264,7 @@ sheet() {
       button cancel Cancel
       ;;
   esac
+  [ "$current" = how ] || { button how 'How it works'; printf 'scope=spot\n'; }
 }
 
 # Picks 2 places of the 12 words, the first one before the second.
@@ -274,7 +275,6 @@ places() {
 toast= phrase=
 case "$1" in
   read) sheet ;;
-  create) go about; sheet ;;
   sign_in)
     facts
     if [ "$(step)" = restore ]; then
@@ -292,20 +292,21 @@ case "$1" in
   phrase) phrase=$2; sheet ;;
   open)
     case $2 in
-      new) openspot account new || exit 1; publish ;;
+      new) openspot account new || exit 1; [ -z "$publishing" ] || publish ;;
       own) go restore ;;
     esac
     sheet
     ;;
-  show)
+  how) go how; sheet ;;
+  about) go about; sheet ;;
+  show) go words; sheet ;;
+  wrote)
     facts
-    if [ "$signed" != true ]; then openspot account new || exit 1; fi
-    go words
+    if [ "$sync" = true ]; then rm -f "$data/step"; else go check; places > "$data/places"; fi
     sheet
     ;;
-  wrote) go check; places > "$data/places"; sheet ;;
   again) go words; sheet ;;
-  back) go choose; sheet ;;
+  back) rm -f "$data/step"; sheet ;;
   leave) go leave; sheet ;;
   cancel | done | later) rm -f "$data/step"; sheet ;;
   sign_out)

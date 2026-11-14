@@ -48,12 +48,39 @@ final class AccountSpotTests: BuiltInCase {
         XCTAssertNil(spot.view)
     }
 
-    func testWithNoAccountItOffersToSetOneUpWithTheMainButtonOnTop() async throws {
+    func testWithNoAccountItOffersANewKeyOrYourOwnAsRows() async throws {
         let read = try await frame(["read"])
 
-        XCTAssertTrue(read.hasPrefix("grid=head\ngrid=head\ngrid=create\ngrid=sign_in\n"), read)
-        XCTAssertEqual(block("head", in: read)["title"], "Set up your account")
-        XCTAssertEqual(block("create", in: read)["look"], "strong")
+        XCTAssertEqual(block("head", in: read)["title"], "Sign what you publish")
+        XCTAssertEqual(read.split(separator: "\n").filter { $0.hasPrefix("row=") }, ["row=new", "row=own"])
+    }
+
+    func testANewKeyOpensTheAccountWithNoStepAboutTheWords() async throws {
+        let made = try await frame(["open", "new"])
+
+        XCTAssertNotNil(try store.key())
+        XCTAssertEqual(block("head", in: made)["title"], "Your account")
+        XCTAssertEqual(block("backup", in: made)["title"], "Your 12 words are not backed up")
+        XCTAssertFalse(made.contains("pop=true"), made)
+    }
+
+    func testAKeyNotBackedUpOpensOnTheAccountNotOnTheWords() async throws {
+        _ = try store.keyMadeOnce()
+
+        let read = try await frame(["read"])
+
+        XCTAssertEqual(block("head", in: read)["title"], "Your account")
+    }
+
+    func testHowItWorksIsAnActionThatExplainsTheKey() async throws {
+        let read = try await frame(["read"])
+        let how = try await frame(["how"])
+        let done = try await frame(["done"])
+
+        XCTAssertEqual(block("how", in: read)["title"], "How it works")
+        XCTAssertFalse(read.contains("grid=how"), read)
+        XCTAssertEqual(block("head", in: how)["title"], "How your key works")
+        XCTAssertEqual(block("head", in: done)["title"], "Sign what you publish")
     }
 
     func testThePublishPageSaysWhatTheKeyIsAndOffersANewKeyOrYourOwnAsRows() async throws {
@@ -97,10 +124,12 @@ final class AccountSpotTests: BuiltInCase {
         XCTAssertEqual(block("new", in: back)["title"], "Create a new key")
     }
 
-    func testCreateSaysWhatTheWordsAreThenShowsTheWordsOfANewKey() async throws {
-        let about = try await frame(["create"])
-        XCTAssertEqual(block("head", in: about)["title"], "Your account is 12 words")
-        XCTAssertNil(try store.key())
+    func testShowMyWordsSaysWhatTheWordsAreThenShowsThem() async throws {
+        _ = try store.keyMadeOnce()
+        let about = try await frame(["about"])
+        XCTAssertEqual(block("head", in: about)["title"], "Your 12 words are your key")
+        XCTAssertEqual(block("private", in: about)["title"], "Anyone with them is you")
+        XCTAssertEqual(block("reset", in: about)["title"], "Nobody can reset them")
 
         let shown = try await frame(["show"])
 
@@ -186,7 +215,7 @@ final class AccountSpotTests: BuiltInCase {
         let after = await app.asked
         XCTAssertEqual(after, before)
         XCTAssertTrue(words(in: launch).isEmpty)
-        XCTAssertEqual(block("show", in: sheet)["title"], "Show my words")
+        XCTAssertEqual(block("about", in: sheet)["title"], "Show my words")
     }
 
     func testAReadAsTheSheetOpensNeverAsksForTouchID() async throws {
@@ -209,7 +238,7 @@ final class AccountSpotTests: BuiltInCase {
         let check = try await frame(["read"])
 
         XCTAssertTrue(words(in: reopened).isEmpty)
-        XCTAssertEqual(block("show", in: reopened)["title"], "Show my words")
+        XCTAssertEqual(block("about", in: reopened)["title"], "Show my words")
         XCTAssertEqual(picks(in: check).count, 8)
     }
 
@@ -222,7 +251,7 @@ final class AccountSpotTests: BuiltInCase {
 
         XCTAssertEqual(block("head", in: leave)["title"], "Sign out of your account?")
         XCTAssertNil(try store.key())
-        XCTAssertEqual(block("head", in: out)["title"], "Set up your account")
+        XCTAssertEqual(block("head", in: out)["title"], "Sign what you publish")
         XCTAssertEqual(toast(in: out), "Signed out")
         let asked = await app.asked
         XCTAssertEqual(asked, ["sign out of your account"])
