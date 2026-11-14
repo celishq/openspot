@@ -111,7 +111,8 @@ EOF
   set -- $words
   printf 'grid=phrase phrase\n'
   word_grid $#
-  printf 'grid=status status\ngrid=sign_in back\n'
+  [ -z "$phrase" ] || printf 'grid=status status\n'
+  printf 'grid=back sign_in\n'
   [ -z "$toast" ] || openspot_kv toast "$toast"
   printf '\nfield=phrase\ntype=multiline\nplaceholder=Your 12 words, or an nsec\n'
   openspot_kv value "$phrase"
@@ -128,8 +129,8 @@ EOF
     line status 'Signs in as' checkmark.circle good "$(short "$account")"
   elif [ -n "$completion" ]; then
     line status "Did you mean $completion?" questionmark.circle
-  else
-    line status "${counter:-0 of 12}" textformat.123
+  elif [ -n "$phrase" ]; then
+    line status "$counter"
   fi
   button sign_in 'Sign in' main
   button back Back

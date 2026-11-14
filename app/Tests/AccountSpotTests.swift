@@ -108,6 +108,16 @@ final class AccountSpotTests: BuiltInCase {
         XCTAssertFalse(try store.isBackedUp())
     }
 
+    func testTheSignInPageShowsNoCountBeforeTypingAndPutsSignInOnTheRight() async throws {
+        let empty = try await frame(["sign_in"])
+        let typing = try await frame(["phrase", "abandon"])
+
+        XCTAssertTrue(empty.contains("grid=back sign_in\n"), empty)
+        XCTAssertFalse(empty.contains("grid=status"), empty)
+        XCTAssertEqual(block("status", in: typing)["title"], "1 of 12")
+        XCTAssertNil(block("status", in: typing)["icon"])
+    }
+
     func testThePhraseNumbersItsWordsAsItIsTypedAndSignsIn() async throws {
         _ = try await frame(["sign_in"])
 
