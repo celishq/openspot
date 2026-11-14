@@ -80,7 +80,7 @@ extension SpotsModel {
     @discardableResult
     public func openSelected() -> Bool {
         guard isOnGrid, let entry = selectedEntry, entry.item == nil, entry.spot.pressRuns, entry.kind.opensSheet else { return false }
-        open(entry.id, moving: true)
+        pushFirst(entry.id, moving: true)
         return true
     }
 
@@ -97,7 +97,7 @@ extension SpotsModel {
         }
         let moving = isShown
         host.show()
-        open(id, moving: moving)
+        pushFirst(id, moving: moving)
     }
 
     /// Notes which modifiers the person holds. The letters show once they have matched the entry key for a moment, so that
@@ -142,7 +142,7 @@ extension SpotsModel {
     public func run(_ entry: Entry) {
         if let item = entry.item, let list = entries.first(where: { $0.id == entry.spot.id }) {
             if item.records, openList != list.id {
-                open(list.id, moving: true)
+                pushFirst(list.id, moving: true)
             }
             pick(item, of: list)
             return
@@ -166,7 +166,7 @@ extension SpotsModel {
             } else if let command = entry.spot.soleCommand {
                 runSole(command, of: entry)
             } else {
-                open(entry.id, moving: true)
+                pushFirst(entry.id, moving: true)
             }
         case .slider:
             break
@@ -179,7 +179,7 @@ extension SpotsModel {
     /// rows of its own read beside it. It is false for any other spot, so the key goes on to the actions and the forms.
     public func openSoleSettings() -> Bool {
         guard openList == nil, let entry = selectedEntry, entry.spot.soleCommand != nil else { return false }
-        open(entry.id, moving: true)
+        pushFirst(entry.id, moving: true)
         return true
     }
 
@@ -201,7 +201,7 @@ extension SpotsModel {
             if isShown { host.dismiss() }
             press(key)
         } else {
-            open(entry.id, moving: true)
+            pushFirst(entry.id, moving: true)
             toggleRecording(id: KeyList.keyRun(spot: entry.id, command: command))
         }
     }

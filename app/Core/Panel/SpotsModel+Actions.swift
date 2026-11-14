@@ -89,7 +89,7 @@ extension SpotsModel {
     func openSheet(on key: ActionKey) -> Bool {
         guard openList == nil, let id = spot(openedBy: key) else { return false }
         endEditing(moving: false)
-        open(id, moving: true)
+        pushFirst(id, moving: true)
         return true
     }
 
@@ -115,7 +115,7 @@ extension SpotsModel {
             return true
         }
         if key == ActionKey(name: "escape") {
-            if !goBack() { closeList(moving: true) }
+            if !back() { closeList(moving: true) }
             return true
         }
         if panel.scrollsByArrows, key == ActionKey(name: "up") || key == ActionKey(name: "down") {
@@ -590,7 +590,7 @@ extension SpotsModel {
                 closeMenu()
                 let opensSheet = openList != target.entry.id
                 if opensSheet {
-                    open(target.entry.id, moving: isShown)
+                    pushFirst(target.entry.id, moving: isShown)
                 }
                 self.form = FormSession(
                     draft: FormDraft(form: form, prefill: prefill),
@@ -617,7 +617,7 @@ extension SpotsModel {
             do {
                 switch try await sheet.change(action) {
                 case .form(let form)? where isShown && formAsk == ask:
-                    open(id, moving: true)
+                    pushFirst(id, moving: true)
                     self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: action, item: nil, openedSheet: true)
                 case .done?:
                     if isShown { host.dismiss() }

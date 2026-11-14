@@ -267,8 +267,8 @@ final class SpotsPanel: NSPanel {
         }
         let dx = Double(event.scrollingDeltaX) * (event.isDirectionInvertedFromDevice ? 1 : -1)
         switch swipe.take(dx: dx, dy: Double(event.scrollingDeltaY), phase: phase) {
-        case .back: return model.goBack()
-        case .forward: return model.goForward()
+        case .back: return model.back()
+        case .forward: return model.forward()
         case nil: return false
         }
     }

@@ -153,7 +153,7 @@ final class SpotVerbTests: XCTestCase {
         try script("weather", header: "title=Weather")
         model.reload()
 
-        XCTAssertTrue(model.openSheet("openspot/icon"))
+        XCTAssertTrue(model.push(FlowSheet(spot: "openspot/icon")))
 
         XCTAssertEqual(model.openList, "openspot/icon")
     }

@@ -7,45 +7,59 @@ extension SpotsModel {
     static let forwardKey = ActionKey(name: "]", isCommand: true)
     static let gridKey = ActionKey(name: "escape", isCommand: true)
 
-    /// Opens a page of a spot as the newest sheet of the flow: in the panel that shows, or else in the panel that it
-    /// shows. With no title, the page takes the title of the row of that spot that opens it, when the spot shows one.
+    /// Opens a spot as a new flow, with nothing behind it: in the panel that shows, or else in the panel that it shows.
     /// Returns false when no spot has that ID.
-    public func openSheet(_ id: String, page: String, title: String? = nil) -> Bool {
-        guard let spot = entries.first(where: { $0.id == id })?.spot else { return false }
-        guard spot.takes(page: page) else {
+    @discardableResult
+    public func open(_ id: String) -> Bool {
+        guard entries.contains(where: { $0.id == id }) else { return false }
+        endFlow()
+        return push(FlowSheet(spot: id))
+    }
+
+    /// Pushes a sheet over the flow that shows: in the panel that shows, or else in the panel that it shows. A page that the
+    /// spot takes no `pages` line for moves nothing and says so, and a page of a spot with no sheet is the call
+    /// `<spot> open <page>`. With `replace`, the sheet takes the place of the one that shows. Returns false when no spot has
+    /// that ID.
+    @discardableResult
+    public func push(_ sheet: FlowSheet, replace: Bool = false) -> Bool {
+        guard let spot = entries.first(where: { $0.id == sheet.spot })?.spot else { return false }
+        if let page = sheet.page, !opensSheet(sheet.spot) {
+            sheets[sheet.spot]?.pick(SpotItem(title: sheet.title ?? page, run: page))
+            return true
+        }
+        if let page = sheet.page, !spot.takes(page: page) {
             host.notify("\(spot.name) takes no page \(page). Add pages=\(page) to its header")
             return true
         }
         let moves = isShown
         if !moves { host.show() }
         endEditing(moving: false)
+        guard let page = sheet.page else {
+            pushFirst(sheet.spot, moving: moves, title: sheet.title)
+            return true
+        }
         if openList == nil { endFlow() }
-        let next = FlowSheet(spot: id, page: page, title: title ?? sheets[id]?.list.all.first { $0.run == page }?.title)
-        flow.push(next)
+        let next = FlowSheet(spot: sheet.spot, page: page, title: sheet.title ?? sheets[sheet.spot]?.list.all.first { $0.run == page }?.title)
+        if replace, flow.current != nil { flow.replaceCurrent(with: next) } else { flow.push(next) }
         show(next, moving: moves, from: 1)
         return true
     }
 
-    /// Opens the first sheet of a spot as a new flow, with nothing behind it: in the panel that shows, or else in the panel
-    /// that it shows. Returns false when no spot has that ID.
-    public func openFlow(_ id: String) -> Bool {
-        guard entries.contains(where: { $0.id == id }) else { return false }
-        endFlow()
-        return openSheet(id)
-    }
-
-    /// Pushes a sheet of a spot over the flow that shows, as `openspot spot push` asks: in the panel that shows, or else in
-    /// the panel that it shows. Returns false when no spot has that ID.
-    public func pushSheet(_ id: String, page: String?, title: String?, replace: Bool) -> Bool {
-        guard entries.contains(where: { $0.id == id }) else { return false }
-        if !isShown { host.show() }
-        push(id, page: page, title: title, replace: replace)
-        return true
+    /// Pops the sheet of a spot that shows: back to the sheet before it, a page of the spot or the sheet that pushed it.
+    /// With `all`, back through its own pages to its first sheet. Returns false when it moves nothing, since a spot never
+    /// closes the panel.
+    @discardableResult
+    public func pop(in id: String, all: Bool = false) -> Bool {
+        guard openList == id, flow.current?.spot == id else { return false }
+        guard all else { return flow.behind != nil && back() }
+        var start = flow.index
+        while start > 0, flow.pages[start].page != nil, flow.pages[start - 1].spot == id { start -= 1 }
+        return start < flow.index && back(steps: flow.index - start)
     }
 
     /// Shows the sheet some steps before in the flow. Returns false when that many do not lie behind.
     @discardableResult
-    public func goBack(steps: Int = 1) -> Bool {
+    public func back(steps: Int = 1) -> Bool {
         guard openList != nil, let page = flow.back(steps: steps) else { return false }
         show(page, moving: isShown, from: -1)
         return true
@@ -53,27 +67,10 @@ extension SpotsModel {
 
     /// Shows the sheet after in the flow. Returns false when there is none.
     @discardableResult
-    public func goForward() -> Bool {
+    public func forward() -> Bool {
         guard openList != nil, let page = flow.forward() else { return false }
         show(page, moving: isShown, from: 1)
         return true
-    }
-
-    /// Pops the sheet of a spot that shows: back to the sheet before it, a page of the spot or the sheet that pushed it.
-    /// Returns false when the spot does not show or nothing lies behind, since a spot never closes the panel.
-    @discardableResult
-    public func pop(in id: String) -> Bool {
-        guard openList == id, flow.current?.spot == id, flow.behind != nil else { return false }
-        return goBack()
-    }
-
-    /// Shows the first sheet of the spot that shows, back through its own pages only. Returns false when none lies behind.
-    @discardableResult
-    public func goFirst(in id: String) -> Bool {
-        guard openList == id else { return false }
-        var start = flow.index
-        while start > 0, flow.pages[start].page != nil, flow.pages[start - 1].spot == id { start -= 1 }
-        return start < flow.index && goBack(steps: flow.index - start)
     }
 
     /// Moves the flow of the spot that shows, as a `push` or `pop` effect of its press asks (protocol: Pages). A spot that
@@ -81,25 +78,9 @@ extension SpotsModel {
     func move(_ move: FlowMove, in id: String) {
         guard openList == id else { return }
         switch move {
-        case .pop(let all): all ? goFirst(in: id) : pop(in: id)
-        case .push(let spot, let page, let title, let replace): push(spot ?? id, page: page, title: title, replace: replace)
+        case .pop(let all): pop(in: id, all: all)
+        case .push(let spot, let page, let title, let replace): push(FlowSheet(spot: spot ?? id, page: page, title: title), replace: replace)
         }
-    }
-
-    /// Pushes a sheet of a spot over the sheet that shows: its first sheet, or a page. With `replace`, it takes the place of
-    /// the sheet that shows. A spot with no sheet gets the call `<spot> open <page>` instead.
-    func push(_ id: String, page: String?, title: String?, replace: Bool) {
-        guard opensSheet(id) else {
-            sheets[id]?.pick(SpotItem(title: title ?? page ?? id, run: page ?? ""))
-            return
-        }
-        let next = FlowSheet(spot: id, page: page, title: title)
-        guard replace, flow.current != nil else {
-            if let page { _ = openSheet(id, page: page, title: title) } else { open(id, moving: isShown, title: title) }
-            return
-        }
-        flow.replaceCurrent(with: next)
-        show(next, moving: isShown, from: 1)
     }
 
     /// Whether the spot has a sheet that a push can show.
@@ -110,8 +91,8 @@ extension SpotsModel {
     /// Takes ⌘[, ⌘] and ⌘Esc while a sheet shows. Returns nil for any other key.
     func handleFlowKey(_ key: ActionKey) -> Bool? {
         switch key {
-        case Self.backKey: goBack()
-        case Self.forwardKey: goForward()
+        case Self.backKey: back()
+        case Self.forwardKey: forward()
         case Self.gridKey: closeList(moving: isShown)
         default: return nil
         }

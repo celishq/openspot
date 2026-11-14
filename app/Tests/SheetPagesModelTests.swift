@@ -129,7 +129,7 @@ final class SheetPagesModelTests: XCTestCase {
     func testASpotThatOpensAnotherPushesItAndBackComesHome() async throws {
         try await openList()
 
-        XCTAssertTrue(model.openSheet("other"))
+        XCTAssertTrue(model.push(FlowSheet(spot: "other")))
         try await wait("the other sheet") { model.openList == "other" && titles == ["Other"] }
 
         XCTAssertTrue(model.handleKey(back))
@@ -140,7 +140,7 @@ final class SheetPagesModelTests: XCTestCase {
     func testAPageOpensFromOutsideTheSpot() async throws {
         try await openList()
 
-        XCTAssertTrue(model.openSheet("list", page: "a"))
+        XCTAssertTrue(model.push(FlowSheet(spot: "list", page: "a")))
 
         try await wait("the page") { titles == ["Detail a"] }
         XCTAssertEqual(model.behindTitles, ["List"])
@@ -157,7 +157,7 @@ final class SheetPagesModelTests: XCTestCase {
         model.panelWillShow(holding: [])
         model.press("info")
         try await wait("the first sheet") { model.openPanel?.parts.first?.title == "First" }
-        XCTAssertTrue(model.openSheet("info", page: "a"))
+        XCTAssertTrue(model.push(FlowSheet(spot: "info", page: "a")))
 
         try await wait("the page of parts") { model.openPanel?.parts.first?.title == "Detail" }
 
@@ -180,12 +180,12 @@ final class SheetPagesModelTests: XCTestCase {
     func testEachSheetBehindHasATitleAndAClickOnItsEdgeGoesBackToIt() async throws {
         try await openList()
         try await openPage()
-        XCTAssertTrue(model.openSheet("other"))
+        XCTAssertTrue(model.push(FlowSheet(spot: "other")))
         try await wait("the other sheet") { model.openList == "other" && titles == ["Other"] }
 
         XCTAssertEqual(model.behindTitles, ["A", "List"])
 
-        XCTAssertTrue(model.goBack(steps: 2))
+        XCTAssertTrue(model.back(steps: 2))
         try await wait("the first sheet") { model.openList == "list" && titles == ["A"] }
         XCTAssertEqual(model.behindTitles, [])
     }
@@ -194,7 +194,7 @@ final class SheetPagesModelTests: XCTestCase {
         try await openList()
         host.pushStarts = []
 
-        XCTAssertTrue(model.openSheet("other"))
+        XCTAssertTrue(model.push(FlowSheet(spot: "other")))
         try await wait("the push to rest") { model.openList == "other" && model.pushOffset == 0 && !host.pushStarts.isEmpty }
         XCTAssertEqual(host.pushStarts.first.map { $0 > 0 }, true)
         host.pushStarts = []
@@ -207,7 +207,7 @@ final class SheetPagesModelTests: XCTestCase {
 
     /// Opens a spot whose buttons move its flow: Done goes back, Top goes to its first sheet, Next pushes a page and Swap
     /// takes the place of the page that shows.
-    private func openFlow() async throws {
+    private func open() async throws {
         try writeFlow()
         model.reload()
         model.isShown = true
@@ -240,7 +240,7 @@ final class SheetPagesModelTests: XCTestCase {
     }
 
     func testAPressPushesAPageOfItsSpotAndGoesBackAndToTheFirstSheet() async throws {
-        try await openFlow()
+        try await open()
 
         try pressFlow("next")
         try await wait("the first page") { titles == ["Page n0"] }
@@ -256,7 +256,7 @@ final class SheetPagesModelTests: XCTestCase {
     }
 
     func testAPressThatReplacesTakesThePlaceOfThePageThatShows() async throws {
-        try await openFlow()
+        try await open()
         try pressFlow("next")
         try await wait("the first page") { titles == ["Page n0"] }
 
@@ -269,7 +269,7 @@ final class SheetPagesModelTests: XCTestCase {
     func testAllOnTheFirstSheetStaysAndOnePopReturnsToTheSpotThatPushedIt() async throws {
         try writeFlow()
         try await openList()
-        XCTAssertTrue(model.openSheet("flow"))
+        XCTAssertTrue(model.push(FlowSheet(spot: "flow")))
         try await openFlowSheetInPlace()
 
         try pressFlow("top")
@@ -285,7 +285,7 @@ final class SheetPagesModelTests: XCTestCase {
     func testAPressPushesAnotherSpotOverItsSheet() async throws {
         try writeFlow()
         try await openList()
-        XCTAssertTrue(model.openSheet("flow"))
+        XCTAssertTrue(model.push(FlowSheet(spot: "flow")))
         try await openFlowSheetInPlace()
 
         try pressFlow("hand")
@@ -322,7 +322,7 @@ final class SheetPagesModelTests: XCTestCase {
         try script("narrow", header: "title=Narrow\non=sheet.open\npages=ok:*", "printf 'row=n\\ntitle=N\\n'")
         model.reload()
 
-        XCTAssertTrue(model.openSheet("narrow", page: "bad"))
+        XCTAssertTrue(model.push(FlowSheet(spot: "narrow", page: "bad")))
 
         XCTAssertEqual(model.openList, "list")
         XCTAssertEqual(host.notes.last, "Narrow takes no page bad. Add pages=bad to its header")
@@ -332,7 +332,7 @@ final class SheetPagesModelTests: XCTestCase {
         try await openList()
         try await openPage()
 
-        XCTAssertTrue(model.openFlow("other"))
+        XCTAssertTrue(model.open("other"))
 
         try await wait("the other spot") { model.openList == "other" && titles == ["Other"] }
         XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "other")])

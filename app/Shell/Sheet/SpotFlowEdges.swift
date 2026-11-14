@@ -40,7 +40,7 @@ struct SpotFlowEdges: View {
             .padding(.horizontal, SpotTokens.edgeStep / 2)
             .contentShape(Rectangle())
             .onHover { inside in hover(index, inside) }
-            .onTapGesture { model.goBack(steps: index + 1) }
+            .onTapGesture { model.back(steps: index + 1) }
             .offset(x: edgeX(index) - SpotTokens.edgeStep / 2, y: rect.midY - height / 2)
     }
 

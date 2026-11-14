@@ -43,7 +43,7 @@ extension SpotsModel {
     public func stepBack() -> Bool {
         if !searchText.isEmpty {
             searchText = ""
-        } else if goBack() {
+        } else if back() {
         } else if openList != nil {
             closeList(moving: isShown)
         } else {
@@ -52,27 +52,16 @@ extension SpotsModel {
         return true
     }
 
-    /// Opens the sheet of a spot, as `openspot spot open` asks: in the panel that shows, or else in the panel that it shows.
-    /// Returns false when no spot has that ID.
-    public func openSheet(_ id: String) -> Bool {
-        guard entries.contains(where: { $0.id == id }) else { return false }
-        let moves = isShown
-        if !moves { host.show() }
-        endEditing(moving: false)
-        open(id, moving: moves)
-        return true
-    }
-
     /// Opens the sheet of the spot that the config gives `⌘,`, the settings key of the Mac.
     public func openSettings() {
         guard let id = spot(openedBy: ActionKey(name: ",", isCommand: true)) else { return }
-        open(id, moving: true)
+        pushFirst(id, moving: true)
     }
 
     /// Opens a sheet, which closes the run of the sheet before and stops a recording in it, and shows it once it is ready: at
     /// once, or with its first answer. It takes the place of a sheet that shows, grows out of its card when it moves, and
     /// shows in place when it does not move or has no card.
-    public func open(_ id: String, moving: Bool, title: String? = nil) {
+    public func pushFirst(_ id: String, moving: Bool, title: String? = nil) {
         if openList == nil { endFlow() }
         flow.push(FlowSheet(spot: id, title: title))
         sheets[id]?.show(page: nil)
@@ -279,7 +268,7 @@ extension SpotsModel {
     /// with the picked row selected, and a pick that asks with a form or records a key opens the spot in the panel (W8).
     public func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil, in place: SheetPlace = .panel) {
         if action == nil, case .push(let spot, let page, let title, _)? = item.move, spot.map(opensSheet) ?? true {
-            push(spot ?? entry.id, page: page, title: title ?? (page == nil ? nil : item.title), replace: false)
+            push(FlowSheet(spot: spot ?? entry.id, page: page, title: title ?? (page == nil ? nil : item.title)))
             return
         }
         if place == .float {
