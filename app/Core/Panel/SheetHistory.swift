@@ -1,0 +1,62 @@
+import Foundation
+
+/// The sheets that the panel went through, with one at its centre. A push drops the sheets ahead of the centre and moves a
+/// page that is already in it to the top. Past `limit`, the oldest page drops.
+public struct SheetHistory: Equatable, Sendable {
+    public static let limit = 20
+
+    public private(set) var pages: [SheetPage] = []
+    /// The index of the page at the centre.
+    public private(set) var index = -1
+
+    public init() {}
+
+    public var current: SheetPage? {
+        pages.indices.contains(index) ? pages[index] : nil
+    }
+
+    /// The page that a step back shows.
+    public var behind: SheetPage? {
+        pages.indices.contains(index - 1) ? pages[index - 1] : nil
+    }
+
+    /// The page that a step forward shows.
+    public var ahead: SheetPage? {
+        pages.indices.contains(index + 1) ? pages[index + 1] : nil
+    }
+
+    public mutating func push(_ page: SheetPage) {
+        guard page != current else { return }
+        pages.removeSubrange((index + 1)...)
+        pages.removeAll { $0 == page }
+        pages.append(page)
+        if pages.count > Self.limit { pages.removeFirst(pages.count - Self.limit) }
+        index = pages.count - 1
+    }
+
+    /// Moves the centre one page back, and returns the page there, or nil at the first page.
+    public mutating func back() -> SheetPage? {
+        guard let page = behind else { return nil }
+        index -= 1
+        return page
+    }
+
+    /// Moves the centre one page forward, and returns the page there, or nil at the last page.
+    public mutating func forward() -> SheetPage? {
+        guard let page = ahead else { return nil }
+        index += 1
+        return page
+    }
+
+    public mutating func clear() {
+        pages = []
+        index = -1
+    }
+
+    /// Drops each page of a spot, and keeps the centre on the nearest page before it that stays.
+    public mutating func remove(spot: String) {
+        let kept = pages.enumerated().filter { $0.element.spot != spot }
+        index = kept.lastIndex { $0.offset <= index } ?? (kept.isEmpty ? -1 : 0)
+        pages = kept.map(\.element)
+    }
+}
