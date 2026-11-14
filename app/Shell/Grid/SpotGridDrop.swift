@@ -31,7 +31,10 @@ struct SpotGridDrop: DropDelegate {
     }
 
     func dropUpdated(info: DropInfo) -> DropProposal? {
-        if Self.storeID != nil { return DropProposal(operation: .copy) }
+        if let id = Self.storeID {
+            model.dragStoreSpot(id, at: info.location)
+            return DropProposal(operation: .copy)
+        }
         let taker = model.card(at: info.location).flatMap { model.takesDrag($0) ? $0 : nil }
         if target != taker { target = taker }
         return DropProposal(operation: taker != nil || SpotPackage.isFile(model.dragPaths) ? .copy : .forbidden)
@@ -39,6 +42,7 @@ struct SpotGridDrop: DropDelegate {
 
     func dropExited(info: DropInfo) {
         target = nil
+        if Self.storeID != nil { model.cancelStoreDrag() }
     }
 
     func performDrop(info: DropInfo) -> Bool {

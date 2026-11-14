@@ -67,7 +67,10 @@ extension SpotsModel {
     private func found() -> [Entry] {
         let text = query.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else {
-            return dragged(cards.filter(\.isOnGrid) + (isEditing ? shelfCards : []))
+            let grid = cards.filter(\.isOnGrid)
+            let shelf = isEditing ? shelfCards : []
+            let added = incoming.flatMap { entry in (grid + shelf).contains { $0.id == entry.id } ? nil : entry }
+            return dragged(grid + (added.map { [$0] } ?? []) + shelf)
         }
         var ids = Set<String>()
         let answers = entries.filter { $0.spot.answers.map { runs.answerMatches.matches($0, text) } == true }

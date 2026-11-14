@@ -640,6 +640,38 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertTrue(try model.files.config.read().arrangement.enabled.contains("timer"))
     }
 
+    func testASpotDraggedFromTheStoreMakesRoomWhereItWouldLandAndALeaveTakesTheRoomBack() throws {
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
+        model.reload()
+
+        model.dragStoreSpot("timer", at: leftHalf(of: "b"))
+
+        XCTAssertEqual(order, ["a", "timer", "b", "c", "d"])
+        XCTAssertEqual(model.drag?.place, 1)
+        XCTAssertEqual(model.incoming?.id, "timer")
+
+        model.cancelStoreDrag()
+
+        XCTAssertEqual(order, ["a", "b", "c", "d"])
+        XCTAssertNil(model.drag)
+        XCTAssertNil(model.incoming)
+        XCTAssertFalse(try model.files.config.read().arrangement.enabled.contains("timer"))
+    }
+
+    func testASpotReleasedFromTheStoreLandsWhereItsRoomWas() throws {
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
+        model.reload()
+        let point = leftHalf(of: "c")
+        model.dragStoreSpot("timer", at: point)
+
+        XCTAssertTrue(model.dropStoreSpot("timer", at: point))
+
+        XCTAssertEqual(order, ["a", "b", "timer", "c", "d"])
+        XCTAssertNil(model.drag)
+        XCTAssertNil(model.incoming)
+        XCTAssertTrue(try model.files.config.read().arrangement.enabled.contains("timer"))
+    }
+
     func testASpotDroppedFromTheStoreOnTheShelfGoesInSearchOnly() throws {
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
         model.setOnGrid(false, for: "d")

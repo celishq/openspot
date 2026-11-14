@@ -243,10 +243,10 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
     }
 
-    func showPanelForDrag(beside window: NSRect? = nil) {
+    func showPanelForDrag(under pointer: NSPoint? = nil) {
         guard !model.isShown || model.isWarming else { return model.followDrag() }
         previousApp = nil
-        if let window { panel?.place(beside: window) } else { panel?.place(over: nil) }
+        if let pointer { panel?.place(under: pointer) } else { panel?.place(over: nil) }
         panel?.showForDrag()
     }
 

@@ -74,12 +74,8 @@ final class ScreenPlaceTests: XCTestCase {
         XCTAssertEqual(ScreenPlace.frame(ofBounds: bounds, mainHeight: 967), CGRect(x: -2000, y: 267, width: 800, height: 600))
     }
 
-    func testAPanelBesideAWindowGoesRightOfItAndElseLeftOfIt() {
-        let screen = ScreenPlace.Screen(frame: CGRect(x: 0, y: 0, width: 1440, height: 900), area: CGRect(x: 0, y: 0, width: 1440, height: 875))
-        let place = ScreenPlace(screens: [screen])
-        let size = CGSize(width: 289, height: 500)
-
-        XCTAssertEqual(place.origin(of: size, beside: CGRect(x: 300, y: 200, width: 600, height: 500)), CGPoint(x: 912, y: 200))
-        XCTAssertEqual(place.origin(of: size, beside: CGRect(x: 900, y: 200, width: 500, height: 500)), CGPoint(x: 599, y: 200))
+    func testAPanelForADragHoldsThePointerAtADepthUnderItsTopAndStaysWholeOnItsScreen() {
+        XCTAssertEqual(place.origin(of: size, under: CGPoint(x: 700, y: 800), top: 100), CGPoint(x: 380, y: 180))
+        XCTAssertEqual(place.origin(of: size, under: CGPoint(x: 700, y: 930), top: 100), CGPoint(x: 380, y: 218))
     }
 }

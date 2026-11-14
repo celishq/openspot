@@ -159,6 +159,7 @@ public final class SpotsModel {
     public let lift = SpotLift()
     public internal(set) var landing: String?
     public internal(set) var carry: SpotCarry?
+    public internal(set) var incoming: Entry?
     public internal(set) var resize: SpotResize?
     @ObservationIgnored public var dragRest: Duration = .milliseconds(100)
     @ObservationIgnored var dragTarget: SpotDrag.Target?

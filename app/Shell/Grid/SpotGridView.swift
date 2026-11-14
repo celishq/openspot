@@ -14,7 +14,8 @@ struct SpotGridView: View {
         let placements = model.placements
         let drag = model.drag
         let height = SpotGrid.height(of: placements)
-        let glass = placements.map { placement in
+        let drawn = model.incoming.map { incoming in placements.filter { model.visible[$0.index].id != incoming.id } } ?? placements
+        let glass = drawn.map { placement in
             let entry = model.visible[placement.index]
             let isLifted = drag?.id == entry.id
             let isHeld = isLifted || model.landing == entry.id
@@ -40,7 +41,7 @@ struct SpotGridView: View {
                     .frame(width: SpotTokens.width(columns: model.panels.columns), height: height)
                 groupTitles(model.groupBands)
             }
-            ForEach(Array(zip(placements, glass)), id: \.1.id) { placement, card in
+            ForEach(Array(zip(drawn, glass)), id: \.1.id) { placement, card in
                 let entry = model.visible[placement.index]
                 SpotCardView(
                     entry: entry,

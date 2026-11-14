@@ -58,7 +58,7 @@ extension OpenspotApp: SpotsHost {
     }
 
     func showForDrag() {
-        showPanelForDrag(beside: spotWindows.values.first(where: \.isVisible)?.frame)
+        showPanelForDrag(under: NSEvent.mouseLocation)
     }
 
     func window(_ entry: SpotsModel.Entry) {

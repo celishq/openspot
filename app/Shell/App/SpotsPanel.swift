@@ -51,10 +51,11 @@ final class SpotsPanel: NSPanel {
         setFrameOrigin(NSPoint(x: origin.x - place.left, y: origin.y))
     }
 
-    func place(beside window: NSRect) {
-        guard model?.isShown != true || model?.isWarming == true else { return }
+    func place(under pointer: NSPoint) {
+        guard let model, !model.isShown || model.isWarming else { return }
         let center = NSSize(width: frame.width - place.left - appliedRight, height: frame.height)
-        guard let origin = ScreenPlace(screens: ScreenPlace.Screen.all).origin(of: center, beside: window) else { return }
+        let top = SpotTokens.backdropHeight(gridHeight: SpotGrid.height(of: model.placements)) / 2
+        guard let origin = ScreenPlace(screens: ScreenPlace.Screen.all).origin(of: center, under: pointer, top: top) else { return }
         setFrameOrigin(NSPoint(x: origin.x - place.left, y: origin.y))
     }
 
