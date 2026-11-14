@@ -29,7 +29,7 @@ struct MainSearch {
                 let texts = texts(of: list, before: before)
                 let count = min(limit, index > 0 && list.recent.isEmpty ? unpickedLimit : .max)
                 let among = before?.matches(of: query, in: list)
-                let offsets = among ?? Array(list.all.indices)
+                let offsets = list.search == .off ? [] : among ?? Array(list.all.indices)
                 rankedCount += offsets.count
                 let matches = query.ranked(texts, items: list.all, among: offsets, weights: list.weights)
                 kept.append(Kept(query: query, items: list.all, texts: texts, search: list.search, recent: list.recent, matches: matches.map(\.offset)))
