@@ -2,7 +2,7 @@ import Foundation
 
 struct AccountFrame {
     enum Look {
-        case plain, main, mainClosing, close, picked
+        case plain, main, close, picked
     }
 
     private var head: [TextBlock.Field] = []
@@ -49,7 +49,6 @@ struct AccountFrame {
         switch look {
         case .plain: break
         case .main: fields += [.init(key: "shortcut", value: "cmd+return"), .init(key: "look", value: "strong")]
-        case .mainClosing: fields += [.init(key: "shortcut", value: "cmd+return"), .init(key: "look", value: "strong"), .init(key: "close", value: "true")]
         case .close: fields.append(.init(key: "close", value: "true"))
         case .picked: fields.append(.init(key: "look", value: "strong"))
         }

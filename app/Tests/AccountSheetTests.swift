@@ -79,6 +79,7 @@ final class AccountSheetTests: BuiltInCase {
         let asked = try await frame(["new"])
         XCTAssertNil(try store.key())
         XCTAssertEqual(block("handle", in: asked)["value"], "tonypinkevych")
+        XCTAssertEqual(block("handle", in: asked)["grow"], "false")
         XCTAssertEqual(block("label", in: asked)["title"], "Handle")
         XCTAssertTrue(asked.contains("grid=back create\n"), asked)
 
@@ -88,7 +89,7 @@ final class AccountSheetTests: BuiltInCase {
         XCTAssertEqual(try store.record()?.handle, "tony")
         XCTAssertEqual(block("card", in: made)["handle"], "tony")
         XCTAssertEqual(block("card", in: made)["npub"], try store.key()?.npub)
-        XCTAssertEqual(block("backup", in: made)["title"], "Your 12 words are not backed up")
+        XCTAssertEqual(block("about", in: made)["detail"], "Not saved yet")
         XCTAssertFalse(made.contains("pop=true"), made)
     }
 
@@ -115,6 +116,17 @@ final class AccountSheetTests: BuiltInCase {
         XCTAssertEqual(block("status", in: refused)["title"], AccountHandle.rule)
     }
 
+    func testTheAccountPageGroupsBackupThenHowItWorksAndSignOutWithNoDone() async throws {
+        _ = try store.keyMadeOnce(handle: "tony")
+
+        let read = try await frame(["read"])
+
+        XCTAssertEqual(block("card", in: read)["grow"], "false")
+        XCTAssertEqual(block("backup", in: read)["title"], "Backup")
+        XCTAssertTrue(read.contains("grid=- -\ngrid=how leave\n"), read)
+        XCTAssertFalse(read.contains("button=done"), read)
+    }
+
     func testAKeyNotBackedUpOpensOnTheAccountNotOnTheWords() async throws {
         _ = try store.keyMadeOnce()
 
@@ -132,7 +144,7 @@ final class AccountSheetTests: BuiltInCase {
 
         XCTAssertEqual(block("how", in: read)["title"], "How it works")
         XCTAssertTrue(read.contains("grid=own how\n"), read)
-        XCTAssertTrue(account.contains("grid=about how\n"), account)
+        XCTAssertTrue(account.contains("grid=how leave\n"), account)
         XCTAssertEqual(block("head", in: how)["title"], "How your key works")
         XCTAssertEqual(block("head", in: done)["title"], "You need a key to publish")
     }
@@ -233,27 +245,28 @@ final class AccountSheetTests: BuiltInCase {
         XCTAssertFalse(try store.record()?.isBackedUp == true)
     }
 
-    func testTheSignInPageShowsTwelveNumberedSlotsAndNoCountAndPutsSignInOnTheRight() async throws {
+    func testTheSignInPageIsAFieldOfThreeLinesThatCountsTheWordsWithSignInOnTheRight() async throws {
         let empty = try await frame(["sign_in"])
         let typing = try await frame(["phrase", "abandon"])
 
+        XCTAssertTrue(empty.contains("grid=phrase phrase\ngrid=phrase phrase\ngrid=phrase phrase\n"), empty)
+        XCTAssertEqual(block("phrase", in: empty)["grow"], "false")
         XCTAssertTrue(empty.contains("grid=back sign_in\n"), empty)
-        XCTAssertTrue(empty.contains("grid=w11 w12\n"), empty)
-        XCTAssertEqual(block("w12", in: empty)["icon"], "12.circle")
-        XCTAssertFalse(typing.contains("grid=status"), typing)
-        XCTAssertEqual(words(in: typing), ["abandon"])
+        XCTAssertFalse(empty.contains("grid=status"), empty)
+        XCTAssertNil(block("w1", in: typing)["title"])
+        XCTAssertEqual(block("status", in: typing)["title"], "1 of 12")
     }
 
-    func testThePhraseNumbersItsWordsAsItIsTypedAndSignsIn() async throws {
+    func testThePhraseSaysWhatIsWrongAsItIsTypedAndSignsIn() async throws {
         _ = try await frame(["sign_in"])
 
         let typing = try await frame(["phrase", "abandon abuot abso"])
+        let completing = try await frame(["phrase", "abandon abso"])
         let ready = try await frame(["phrase", phrase])
         let signedIn = try await frame(["sign_in"], input: "phrase=\(phrase)\n")
 
-        XCTAssertEqual(words(in: typing), ["abandon", "abuot", "abso"])
-        XCTAssertEqual(block("w2", in: typing)["tone"], "bad")
-        XCTAssertEqual(block("status", in: typing)["title"], "Did you mean absorb?")
+        XCTAssertEqual(block("status", in: typing)["title"], "abuot isn't an account word")
+        XCTAssertEqual(block("status", in: completing)["title"], "Did you mean absorb?")
         XCTAssertEqual(block("status", in: ready)["title"], "Signs in as")
         XCTAssertEqual(toast(in: signedIn), "Signed in")
         XCTAssertTrue(try store.record()?.isBackedUp == true)
@@ -270,7 +283,7 @@ final class AccountSheetTests: BuiltInCase {
         let after = await app.asked
         XCTAssertEqual(after, before)
         XCTAssertTrue(words(in: launch).isEmpty)
-        XCTAssertEqual(block("about", in: sheet)["title"], "Show my words")
+        XCTAssertEqual(block("about", in: sheet)["title"], "Recovery words")
     }
 
     func testAReadAsTheSheetOpensNeverAsksForTouchID() async throws {
@@ -293,7 +306,7 @@ final class AccountSheetTests: BuiltInCase {
         let check = try await frame(["read"])
 
         XCTAssertTrue(words(in: reopened).isEmpty)
-        XCTAssertEqual(block("about", in: reopened)["title"], "Show my words")
+        XCTAssertEqual(block("about", in: reopened)["title"], "Recovery words")
         XCTAssertEqual(picks(in: check).count, 8)
     }
 

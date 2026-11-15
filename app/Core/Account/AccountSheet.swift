@@ -211,7 +211,7 @@ public actor AccountSheet {
         frame.toast(toast)
         frame.line("head", "Pick your handle", icon: "at", detail: "It names you on the spots you publish, and in their links.")
         frame.block(["section": "label", "title": "Handle"], order: ["section", "title"])
-        frame.block(["field": "handle", "placeholder": "yourname", "value": value], order: ["field", "placeholder", "value"])
+        frame.block(["field": "handle", "grow": "false", "placeholder": "yourname", "value": value], order: ["field", "grow", "placeholder", "value"])
         if let problem { frame.line("status", problem, icon: "exclamationmark.triangle", tone: "bad") }
         frame.button("back", "Back")
         frame.button("create", "Create key", .main)
@@ -261,30 +261,27 @@ public actor AccountSheet {
     }
 
     private func account(_ frame: inout AccountFrame, _ facts: AccountStatus, toast: String?) {
-        frame.grid("card card", "card card", "card card", "card card")
-        if facts.sync != true { frame.grid("backup backup") }
+        frame.grid("card card", "card card", "card card", "card card", "backup backup")
         if facts.sync != nil { frame.grid("sync sync") }
-        frame.grid("done done", "about how", "leave leave")
+        frame.grid("about about", "- -", "how leave")
         frame.toast(toast)
         let npub = facts.npub ?? ""
-        var card = ["view": "card", "npub": npub, "short": facts.shortNpub ?? ""]
-        var order = ["view", "npub", "short"]
+        var card = ["view": "card", "grow": "false", "npub": npub, "short": facts.shortNpub ?? ""]
+        var order = ["view", "grow", "npub", "short"]
         if let handle = facts.handle { card["handle"] = handle; order.append("handle") }
         if let since = facts.since.flatMap(Self.month) { card["since"] = since; order.append("since") }
         frame.block(card, order: order)
-        if facts.sync == true {
-        } else if facts.backedUp == true {
-            frame.line("backup", "Your 12 words are backed up", icon: "checkmark.shield", tone: "good")
-        } else {
-            frame.line("backup", "Your 12 words are not backed up", icon: "exclamationmark.triangle", tone: "warn")
-        }
+        frame.block(["section": "backup", "title": "Backup"], order: ["section", "title"])
         if let sync = facts.sync {
             frame.block(["switch": "sync", "title": "Keep in iCloud Keychain", "icon": "icloud", "look": "tile", "value": String(sync)], order: ["switch", "title", "icon", "look", "value"])
         }
-        frame.button("done", "Done", .mainClosing)
-        frame.button("about", "Show my words")
+        let saved: (detail: String, tone: String?) = facts.backedUp == true ? ("Saved", "good") : facts.sync == true ? ("In iCloud Keychain", nil) : ("Not saved yet", "warn")
+        var words = ["button": "about", "title": "Recovery words", "detail": saved.detail, "icon": "key", "look": "tile"]
+        var keys = ["button", "title", "detail", "icon", "look"]
+        if let tone = saved.tone { words["tone"] = tone; keys.append("tone") }
+        frame.block(words, order: keys)
+        frame.button("how", "How it works")
         frame.button("leave", "Sign out…")
-        frame.howAction()
     }
 
     private func leave(_ frame: inout AccountFrame, _ facts: AccountStatus, toast: String?) {
@@ -303,30 +300,26 @@ public actor AccountSheet {
 
     private func restore(_ frame: inout AccountFrame, _ facts: AccountStatus, phrase: String, toast: String?) {
         let typed = phrase.isEmpty ? nil : AccountPhrase(phrase)
-        let words = typed?.typed ?? []
-        var status: (title: String, icon: String, tone: String?, detail: String?)?
+        let finished = (typed?.typed ?? []).dropLast(phrase.last?.isWhitespace == true ? 0 : 1)
+        var status: (title: String, icon: String?, tone: String?, detail: String?)?
         if let problem = typed?.problem {
             status = (problem, "exclamationmark.triangle", "bad", nil)
         } else if let account = typed?.account {
             status = facts.signedIn
                 ? ("Replaces the account on this Mac", "exclamationmark.triangle", "warn", AccountKey.short(account))
                 : ("Signs in as", "checkmark.circle", "good", AccountKey.short(account))
+        } else if let unknown = finished.first(where: { !$0.isKnown }) {
+            status = ("\(unknown.text) isn't an account word", "exclamationmark.triangle", "bad", nil)
         } else if let completion = typed?.completion {
             status = ("Did you mean \(completion)?", "questionmark.circle", nil, nil)
+        } else if let typed {
+            status = (typed.counter, nil, nil, nil)
         }
-        frame.grid("phrase phrase")
-        frame.wordGrid()
+        frame.grid("phrase phrase", "phrase phrase", "phrase phrase")
         if status != nil { frame.grid("status status") }
         frame.grid("back sign_in")
         frame.toast(toast)
-        frame.block(["field": "phrase", "type": "multiline", "placeholder": "Your 12 words, or an nsec", "value": phrase], order: ["field", "type", "placeholder", "value"])
-        for place in 1...AccountPhrase.wordCount {
-            if place <= words.count {
-                frame.word(place, words[place - 1].text, tone: words[place - 1].isKnown ? nil : "bad")
-            } else {
-                frame.word(place, " ")
-            }
-        }
+        frame.block(["field": "phrase", "type": "multiline", "grow": "false", "placeholder": "Your 12 words, or an nsec", "value": phrase], order: ["field", "type", "grow", "placeholder", "value"])
         if let status { frame.line("status", status.title, icon: status.icon, tone: status.tone, detail: status.detail) }
         frame.button("sign_in", "Sign in", .main)
         frame.button("back", "Back")
