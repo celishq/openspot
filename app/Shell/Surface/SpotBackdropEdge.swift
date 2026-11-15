@@ -1,50 +1,37 @@
 import OpenspotCore
 import SwiftUI
 
-struct SpotBackdropEdge: View, @preconcurrency Animatable {
-    struct Look: Hashable, Sendable {
-        let inset: CGFloat
-        let softness: CGFloat
+struct SpotBackdropEdge: View {
+    let edge: BackdropEdge
+    let rect: CGRect
 
-        var cap: CGFloat {
-            (inset + corner + SpotTheme.backdropEdgeReach * softness).rounded(.up)
-        }
-
-        var corner: CGFloat {
-            SpotTokens.radius + SpotTokens.halo - inset
-        }
-    }
-
-    let look: Look
-    var rect: CGRect
-
-    @MainActor private static var pictures: [Look: Image] = [:]
-    private static let middle: CGFloat = 2
-
-    var animatableData: AnimatablePair<CGFloat, AnimatablePair<CGFloat, CGFloat>> {
-        get { AnimatablePair(rect.minX, AnimatablePair(rect.width, rect.height)) }
-        set { rect = CGRect(x: newValue.first, y: rect.minY, width: newValue.second.first, height: newValue.second.second) }
-    }
+    @MainActor private static let blur = pictures(of: .blur)
+    @MainActor private static let shade = pictures(of: .shade)
 
     var body: some View {
-        let cap = look.cap
-        Self.picture(of: look)
-            .resizable(capInsets: EdgeInsets(top: cap, leading: cap, bottom: cap, trailing: cap), resizingMode: .stretch)
-            .frame(width: rect.width, height: rect.height)
-            .offset(x: rect.minX, y: rect.minY)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        let pictures = edge == .blur ? Self.blur : Self.shade
+        ZStack(alignment: .topLeading) {
+            ForEach(Array(edge.pieces(in: rect).enumerated()), id: \.offset) { index, piece in
+                pictures[index]
+                    .frame(width: piece.source.width, height: piece.source.height)
+                    .scaleEffect(x: piece.scale.width, y: piece.scale.height, anchor: .topLeading)
+                    .offset(x: piece.origin.x, y: piece.origin.y)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    @MainActor private static func picture(of look: Look) -> Image {
-        if let picture = pictures[look] { return picture }
-        let side = 2 * look.cap + middle
-        let renderer = ImageRenderer(content: RoundedRectangle(cornerRadius: look.corner, style: .continuous)
+    @MainActor private static func pictures(of edge: BackdropEdge) -> [Image] {
+        let size = edge.pictureSize
+        let renderer = ImageRenderer(content: RoundedRectangle(cornerRadius: edge.corner, style: .continuous)
             .fill(Color.black)
-            .padding(look.inset)
-            .frame(width: side, height: side)
-            .blur(radius: look.softness))
-        let picture = renderer.cgImage.map { Image(decorative: $0, scale: 1).renderingMode(.template) } ?? Image(systemName: "square.fill")
-        pictures[look] = picture
-        return picture
+            .padding(edge.inset)
+            .frame(width: size.width, height: size.height)
+            .blur(radius: edge.softness))
+        let whole = renderer.cgImage
+        return edge.pieces(in: CGRect(origin: .zero, size: size)).map { piece in
+            guard let part = whole?.cropping(to: piece.source) else { return Image(systemName: "square.fill") }
+            return Image(decorative: part, scale: 1).resizable().renderingMode(.template)
+        }
     }
 }

@@ -55,6 +55,7 @@ public final class SpotsModel {
             selected = 0
             askAnswers()
             updateVisible()
+            spanBackdrop()
         }
     }
     public internal(set) var visible: [Entry] = []
@@ -81,7 +82,11 @@ public final class SpotsModel {
         }
     }
     public internal(set) var groupBands: SpotGroupBands?
-    public internal(set) var panels = GridPanels()
+    public internal(set) var panels = GridPanels() {
+        didSet { spanBackdrop() }
+    }
+    public internal(set) var backdropPanels = GridPanels()
+    public internal(set) var backdropSheet: SpotRun?
     @ObservationIgnored var panelLeaving: GridPanel?
     public private(set) var gridHeight = SpotTokens.contentHeight(gridHeight: 0)
     public var selected = 0
@@ -97,6 +102,7 @@ public final class SpotsModel {
     public internal(set) var transition = SheetTransition() {
         didSet {
             if transition.id != nil, transition.id != oldValue.id || (transition.phase == .closing && oldValue.phase != .closing), cardScroll != gridScroll { cardScroll = gridScroll }
+            holdBackdropSheet()
             let shown = transition.shown
             if shown != openSheetID {
                 openSheetID = shown

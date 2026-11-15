@@ -11,8 +11,8 @@ struct SpotBackdrop: View {
             let rect = model.backdrop.offsetBy(dx: -model.panels.frame.minX, dy: 0)
             ZStack(alignment: .topLeading) {
                 SpotBackdropBlur()
-                    .mask { SpotBackdropEdge(look: SpotTheme.backdropBlurEdge, rect: rect) }
-                SpotBackdropEdge(look: SpotTheme.backdropShadeEdge, rect: rect)
+                    .mask { SpotBackdropEdge(edge: .blur, rect: rect) }
+                SpotBackdropEdge(edge: .shade, rect: rect)
                     .foregroundStyle(SpotTheme.shade)
             }
             .modifier(PanelSpan(panels: model.panels))

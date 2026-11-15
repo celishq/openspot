@@ -3,6 +3,7 @@ set -e
 cd "$(dirname "$0")/.."
 app=${OPENSPOT_APP:-.temp/dd/Build/Products/Debug/Openspot.app/Contents/MacOS/Openspot}
 work=$PWD/.temp/docs-images
+echo "This shows each picture in the middle of the main screen and takes the keyboard focus for about a second per picture. A key typed then is lost."
 rm -rf "$work"
 mkdir -p "$work/spots" "$work/config" "$work/core" "$work/examples" docs/images
 awk -v out="$work/examples" '

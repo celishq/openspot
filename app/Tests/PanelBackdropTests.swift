@@ -62,6 +62,20 @@ final class PanelBackdropTests: PanelCase {
         XCTAssertEqual(model.backdrop.height, model.gridHeight)
     }
 
+    func testATypedKeyThatLeavesTheBackdropAsItIsTellsNoReaderOfIt() async throws {
+        try script("list", header: "title=List\non=sheet.open", "printf 'row=a\\ntitle=A\\n'")
+        await model.reload()
+        model.query = "l"
+        let rect = model.backdrop
+        nonisolated(unsafe) var told = false
+        withObservationTracking { _ = model.backdrop } onChange: { told = true }
+
+        model.query = "li"
+
+        XCTAssertEqual(model.backdrop, rect)
+        XCTAssertFalse(told)
+    }
+
     func testTheBackdropSpansTheSidePanelsAndASearchNarrowsItToTheMainPanel() async throws {
         try script("list", header: "title=List\non=sheet.open", "printf 'row=a\\ntitle=A\\n'")
         await model.reload()

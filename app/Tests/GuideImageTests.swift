@@ -59,7 +59,7 @@ final class GuideImageTests: XCTestCase {
     }
 
     private static let margin = 96
-    private static let rimLevel = 8
+    private static let rimLevel = 40
     private static let lineLevel = 25
 
     private func pixels(of name: String) throws -> Pixels {
@@ -69,6 +69,7 @@ final class GuideImageTests: XCTestCase {
     func testTheCardOfDiskHasNoStraightLineAtItsSides() throws {
         let image = try pixels(of: "show-a-value")
         let middle = image.height / 2
+        XCTAssertGreaterThanOrEqual(image.light(Self.margin + 8, middle) - image.light(Self.margin - 8, middle), Self.lineLevel, "the picture holds no card")
         for row in [middle - 28, middle + 28] {
             for (edge, out) in [(Self.margin, -1), (image.width - Self.margin - 1, 1)] {
                 let ground = image.light(edge + 8 * out, row)
@@ -79,13 +80,33 @@ final class GuideImageTests: XCTestCase {
         }
     }
 
-    func testTheTopEdgeOfEachSurfaceHasTheDarkLineOfSystemGlassOverItsBody() throws {
+    func testTheTopEdgeOfEachSurfaceHasTheBrightRimOfFocusedGlassOverItsBody() throws {
         for name in try images().map(\.name) where name != "panel" {
             let image = try pixels(of: name)
             let centre = image.width / 2
-            let line = (Self.margin - 3...Self.margin + 2).map { image.light(centre, $0) }.min() ?? 0
-            let body = image.light(centre, Self.margin + 6)
-            XCTAssertGreaterThanOrEqual(body - line, Self.rimLevel, "\(name).png has no edge of system glass on its top")
+            let rim = (Self.margin...Self.margin + 3).map { image.light(centre, $0) }.max() ?? 0
+            let body = image.light(centre, Self.margin + 12)
+            XCTAssertGreaterThanOrEqual(rim - body, Self.rimLevel, "\(name).png has no rim of focused glass on its top")
         }
+    }
+
+    private static let panelRims = [(name: "field", x: 469, y: 180), (name: "first card", x: 469, y: 332), (name: "round card", x: 244, y: 940), (name: "pill", x: 469, y: 1092)]
+    private static let ridgeRows = 150...600
+    private static let softLevel = 4
+
+    func testThePanelShowsTheRimOfTheFieldTheCardsAndThePill() throws {
+        let image = try pixels(of: "panel")
+        for place in Self.panelRims {
+            let rim = (place.y...place.y + 3).map { image.light(place.x, $0) }.max() ?? 0
+            XCTAssertGreaterThanOrEqual(rim - image.light(place.x, place.y + 12), Self.rimLevel, "the \(place.name) has no rim of focused glass on its top")
+        }
+    }
+
+    func testThePanelsBackdropSoftensTheWallpaperBesideTheCardsAndNotAtThePicturesEdge() throws {
+        let image = try pixels(of: "panel")
+        let step = { (column: Int) in
+            zip(Self.ridgeRows, Self.ridgeRows.dropFirst()).map { abs(image.light(column, $0) - image.light(column, $1)) }.max() ?? 0
+        }
+        XCTAssertGreaterThanOrEqual(step(10) - step(172), Self.softLevel, "the ridge of the wallpaper is as sharp beside the cards as at the edge")
     }
 }

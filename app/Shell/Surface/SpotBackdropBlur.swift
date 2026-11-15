@@ -7,11 +7,11 @@ struct SpotBackdropBlur: NSViewRepresentable {
         private static let log = Logger(subsystem: Bundle.main.bundleIdentifier ?? "openspot", category: "glass")
         private static var isReported = false
         private static let filter: NSObject? = {
-            let filter = (NSClassFromString("CAFilter") as? NSObject.Type)?
-                .perform(NSSelectorFromString("filterWithType:"), with: "gaussianBlur")?
-                .takeUnretainedValue() as? NSObject
-            filter?.setValue(SpotTheme.backdropBlur, forKey: "inputRadius")
-            filter?.setValue(true, forKey: "inputNormalizeEdges")
+            let make = NSSelectorFromString("filterWithType:")
+            guard let type = NSClassFromString("CAFilter") as? NSObject.Type, type.responds(to: make),
+                  let filter = type.perform(make, with: "gaussianBlur")?.takeUnretainedValue() as? NSObject else { return nil }
+            filter.setValue(SpotTheme.backdropBlur, forKey: "inputRadius")
+            filter.setValue(true, forKey: "inputNormalizeEdges")
             return filter
         }()
 
@@ -46,7 +46,7 @@ struct SpotBackdropBlur: NSViewRepresentable {
             let parts = layer?.sublayers?.flatMap { $0.sublayers ?? [] } ?? []
             guard let filter = Self.filter, let backdrop = parts.first(where: { $0.name == "backdrop" }) else {
                 alphaValue = 0
-                if reports { Self.report(Self.filter == nil ? "macOS has no CAFilter class" : "the visual effect view has no layer named backdrop") }
+                if reports { Self.report(Self.filter == nil ? "macOS makes no CAFilter of the type gaussianBlur" : "the visual effect view has no layer named backdrop") }
                 return
             }
             alphaValue = 1

@@ -91,7 +91,8 @@ Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these 
   `make verify` runs `scripts/check-glass.sh`, which fails on `NSVisualEffectView` or a private Core Animation name in
   `Shell/`, outside `Shell/Surface/SpotBackdropBlur.swift`.
 - The soft backdrop of the panel is one fixed `SpotBackdropBlur` under the glass. Its soft edge is a picture drawn once
-  and stretched (`SpotBackdropEdge`), and it hides by opacity alone.
+  and laid as nine fixed pieces that only move and scale (`SpotBackdropEdge`, by `BackdropEdge` in Core), and it hides by
+  opacity alone.
 - A picture drawn off screen cannot hold system glass. It goes through `SpotPicture`, which turns the glass off, and the
   glass check fails on a file of `Shell/Sandbox` that draws one another way.
 
@@ -216,7 +217,7 @@ make test T=SpotRunsTests  # one test class, while you work on it
 make perf N=3              # times a Release sheet that opens and closes 20 times, 3 runs; ACTION picks another motion
 make film SPOT=caffeinate  # films the open and close of a sheet 10x slower (SLOW=1 for real speed) into .temp/film
 make shots                 # saves pictures of the actions menu in the running panel into .temp/shots
-make docs-images           # shows each GUIDE.md example on screen and takes its image; GuideImageTests fail when one is out of date
+make docs-images           # shows each GUIDE.md example on screen, focused, and takes its image; GuideImageTests fail when one is out of date
 make eval-agent N=1        # gives N tasks to claude -p with only `openspot guide`, and checks each spot; it costs money
 ```
 

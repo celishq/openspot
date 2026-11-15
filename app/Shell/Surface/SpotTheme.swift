@@ -1,5 +1,4 @@
 import AppKit
-import OpenspotCore
 import SwiftUI
 
 struct SpotTheme {
@@ -77,9 +76,6 @@ struct SpotTheme {
 
     static let pictureRim = Color.white.opacity(0.25)
     static let backdropBlur: CGFloat = 3
-    static let backdropBlurEdge = SpotBackdropEdge.Look(inset: SpotTokens.halo - 5, softness: 20)
-    static let backdropShadeEdge = SpotBackdropEdge.Look(inset: SpotTokens.halo * 0.58, softness: SpotTokens.halo / 4.7)
-    static let backdropEdgeReach: CGFloat = 2.5
     static let glassFadeReach = 3.0
 
     static func glassStrength(at fade: Double) -> Double {

@@ -76,6 +76,7 @@
 		176EFEDFD14C131FF1BFBFDC /* AccountKeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E7B57E206D38CD8333B57E9 /* AccountKeyTests.swift */; };
 		17D080086AA5F15C23AF1247 /* PlaygroundCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8154CD722F25157477CF454F /* PlaygroundCall.swift */; };
 		188DA828A7BB2490589D4706 /* SpotReminderStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 212290B63B7D0AE43BF65CD5 /* SpotReminderStore.swift */; };
+		18B51BEFB18B067DE8D0FB9E /* BackdropEdgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAE4CA7447AA8222F838F68D /* BackdropEdgeTests.swift */; };
 		18DD79BD12D3403783A9E77B /* CalcFormats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97653D56352C01CC432CACF0 /* CalcFormats.swift */; };
 		1A3DD648929F8758B5C3230A /* ConfigDocumentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B111F36D10ABCCFFA327E84A /* ConfigDocumentTests.swift */; };
 		1A9EE2687483E9A6322551A0 /* CalendarStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4A9335ED3170AEC3B728749 /* CalendarStore.swift */; };
@@ -470,6 +471,7 @@
 		9B463355B58413F63BFD5F43 /* AppStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60AA24474C6BE91457517FC1 /* AppStatus.swift */; };
 		9BB2BF2BD5D9269B75CF30D0 /* SpotPictureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C224266FB08D7D98CBD42A79 /* SpotPictureStore.swift */; };
 		9BC6B9BA59662D6A26F95691 /* SpotRun+Reads.swift in Sources */ = {isa = PBXBuildFile; fileRef = F587FEFF19E6D462668417C1 /* SpotRun+Reads.swift */; };
+		9BDD85E596B6F85FAB28829E /* BackdropEdge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F0B93899AB75660556596CF /* BackdropEdge.swift */; };
 		9C3E0CDAFE8AAB6404C9E241 /* CalculatorSpotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA30B4D7D22143B47BCEA8BD /* CalculatorSpotTests.swift */; };
 		9CC101A98EA61AFFDA36137A /* PlaygroundPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B51F0F601C6825E0B9796809 /* PlaygroundPanel.swift */; };
 		9CC119A8CA10A615457FBC7A /* ScreenTarget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75FF590ED1AF143A7A6771B5 /* ScreenTarget.swift */; };
@@ -1278,6 +1280,7 @@
 		8DD1CBB3F005A6C8F9880C86 /* SettingCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingCall.swift; sourceTree = "<group>"; };
 		8E3B3580731E96642B131B68 /* TestEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestEnvironment.swift; sourceTree = "<group>"; };
 		8ECD07D7A1B423B03FD16BB5 /* IconTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconTests.swift; sourceTree = "<group>"; };
+		8F0B93899AB75660556596CF /* BackdropEdge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackdropEdge.swift; sourceTree = "<group>"; };
 		8F72464EEB95757724FD6356 /* SpotRecordingSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotRecordingSession.swift; sourceTree = "<group>"; };
 		8F99DEC42898AF5970046749 /* RecordingRequestTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingRequestTests.swift; sourceTree = "<group>"; };
 		8FB9239E84C07B0125DB7DE6 /* TextBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextBlock.swift; sourceTree = "<group>"; };
@@ -1370,6 +1373,7 @@
 		AA48912BB9570727D62BD2E2 /* SheetExamples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetExamples.swift; sourceTree = "<group>"; };
 		AA855F91CE295A32B5360770 /* SpotsModel+Search.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Search.swift"; sourceTree = "<group>"; };
 		AAAEB8D4CB33BC4297EA9F2B /* FrameHead.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameHead.swift; sourceTree = "<group>"; };
+		AAE4CA7447AA8222F838F68D /* BackdropEdgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackdropEdgeTests.swift; sourceTree = "<group>"; };
 		AB4C876B74746CC1FF5730EC /* SpotEmptyField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotEmptyField.swift; sourceTree = "<group>"; };
 		AB84E5714FEF2B0FAB42FE77 /* PanelViewReadsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanelViewReadsTests.swift; sourceTree = "<group>"; };
 		AC083DA5BD24D21A2377BAE2 /* SearchIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchIndex.swift; sourceTree = "<group>"; };
@@ -2121,6 +2125,7 @@
 				5A979E9E11372D4D4D2B77F8 /* AppCallsSocketTests.swift */,
 				F84CF3184ED56FA56D25C402 /* AppPlaces+Test.swift */,
 				49C48F05AFABA5992D73C68E /* AppsSpotTests.swift */,
+				AAE4CA7447AA8222F838F68D /* BackdropEdgeTests.swift */,
 				54721534E4A59D8BE9117831 /* BigPasteTests.swift */,
 				6B88DACC35ADD24D5E1647C2 /* BuiltInCase.swift */,
 				48F7451264C08B48BD7F2B65 /* CalcAnswerTests.swift */,
@@ -2635,6 +2640,7 @@
 			isa = PBXGroup;
 			children = (
 				0C61FD75A81E3E043BED3219 /* AppPlaces.swift */,
+				8F0B93899AB75660556596CF /* BackdropEdge.swift */,
 				2F879BAF9F25DE9FFF84989F /* KeyRow.swift */,
 				67D401B5A9ACE369B0FAE465 /* MotionTokens.swift */,
 				FD976DD868930EE4BFE7D84E /* PanelMode.swift */,
@@ -3307,6 +3313,7 @@
 				64B36997ED36E518E468DBDE /* AppCalls.swift in Sources */,
 				170CE7910CFBBB643A780511 /* AppPlaces.swift in Sources */,
 				9B463355B58413F63BFD5F43 /* AppStatus.swift in Sources */,
+				9BDD85E596B6F85FAB28829E /* BackdropEdge.swift in Sources */,
 				962CD63F2B4A27133739A464 /* BatchCall.swift in Sources */,
 				784665FA36BAC00E868CF29F /* BatchCalls.swift in Sources */,
 				C55E9DD8E1D674A683E0E69F /* Bech32.swift in Sources */,
@@ -3857,6 +3864,7 @@
 				0FD29095CBF2E44DCEA9028B /* AppCallsSocketTests.swift in Sources */,
 				FE2BE6BEB1D5D8BBD19E0520 /* AppPlaces+Test.swift in Sources */,
 				B34A155F568AA723C2FD1D2D /* AppsSpotTests.swift in Sources */,
+				18B51BEFB18B067DE8D0FB9E /* BackdropEdgeTests.swift in Sources */,
 				F35D6B0382CED10EFB06974F /* BigPasteTests.swift in Sources */,
 				4DB5550E64EA786AD61DDF71 /* Board+Arrange.swift in Sources */,
 				1F17F206B156E8A4D81D4E3B /* Board+Bundle.swift in Sources */,
