@@ -35,7 +35,7 @@ public enum SpotCall: NounCall {
             "stats", "[--days n] [--spot id] [--frame|--json]",
             "Prints what each spot cost and used today, or over the last n days: its runs, failures, CPU time, disk bytes, wakeups, each call that needs a use and its last fault, then each such call. --frame prints a row for each spot and a use block for each call; --json prints the days."
         ) { stats($0.rest) },
-        CommandVerb("show", "<id>", "Opens the panel with the spot selected.", rule: CallRule(read: .changes(panel))) { $0.one.map(Self.show) },
+        CommandVerb("show", "<id>", "Opens the panel with the spot selected.", rule: CallRule(read: .changes(panel), flags: .needsApp)) { $0.one.map(Self.show) },
         CommandVerb(
             "list", "[--core] [--frame]",
             "Prints each spot that the app loads as JSON, with its buttons, its fields and their keys. --core prints each spot that comes with the app, and whether it is on. --frame prints a spot=<id> block for each spot, with a button=<id> or field=<id> block for each of its own."
@@ -52,7 +52,7 @@ public enum SpotCall: NounCall {
             return Self.add(sources.first, isConfirmed: sources.count < words.rest.count)
         },
         CommandVerb("remove", "<id>", "Moves a spot that spot add added to the Trash, and drops it from spots.lock.", rule: CallRule(use: .spots, used: "removed a spot", read: .changes(folder))) { $0.one.map(Self.remove) },
-        CommandVerb("open", "<id>", "Opens the panel on a spot, as a new flow.", rule: CallRule(read: .changes(panel))) { $0.one.map(Self.open) },
+        CommandVerb("open", "<id>", "Opens the panel on a spot, as a new flow.", rule: CallRule(read: .changes(panel), flags: .needsApp)) { $0.one.map(Self.open) },
         CommandVerb("push", "<id> [page] [--replace] [--title <words>]", "Pushes a spot, or a page of it, over the flow that shows.", rule: CallRule(read: .changes(panel))) { push($0.rest) },
         CommandVerb("pop", "<id> [--all]", "Goes back one sheet of a spot that shows, or to its first sheet.", rule: CallRule(read: .changes("moves the panel"))) { words in
             switch words.rest.count {
@@ -67,7 +67,7 @@ public enum SpotCall: NounCall {
         act(.prompt, "Copies a prompt to change a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "copied a prompt to change a spot", read: .changes(window))),
         act(.share, "Shares a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "shared a spot", read: .changes(window))),
         act(.delete, "Deletes a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "deleted a spot", read: .changes(folder))),
-        CommandVerb("review", "<id>", "Shows the whole text of a spot that comes with the app, and what of it runs by itself.", rule: CallRule(read: .changes(panel))) { $0.one.map(Self.review) }
+        CommandVerb("review", "<id>", "Shows the whole text of a spot that comes with the app, and what of it runs by itself.", rule: CallRule(read: .changes(panel), flags: .needsApp)) { $0.one.map(Self.review) }
     ])
 
     private static func act(_ act: CardAct, _ about: String, rule: CallRule) -> CommandVerb {

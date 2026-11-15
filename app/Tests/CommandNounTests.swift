@@ -31,7 +31,7 @@ final class CommandNounTests: XCTestCase {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         runs = SpotRuns()
-        api = CommandAPI(mac: FakeMac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: FakeRunningApp(), runs: runs, nouns: nouns)
+        api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: FakeRunningApp(), runs: runs, nouns: nouns)
     }
 
     override func tearDown() async throws {

@@ -1,7 +1,7 @@
 import Foundation
 
 struct PromptCalls {
-    let mac: any Mac
+    let mac: Mac
     let environment: [String: String]
 
     func new(_ words: String) -> CommandAPI.Work {
@@ -26,7 +26,7 @@ struct PromptCalls {
         }
     }
 
-    private static func prompt(in folder: URL, mac: any Mac) -> AgentPrompt {
+    private static func prompt(in folder: URL, mac: Mac) -> AgentPrompt {
         AgentPrompt(folder: folder, guide: mac.guide ?? folder, app: AgentPrompt.command(of: Bundle.main.executablePath ?? "openspot"))
     }
 }

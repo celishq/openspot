@@ -65,7 +65,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
         let update = AppUpdate { [model] in model.updateIsReady($0) }
         self.update = update
-        let api = CommandAPI(mac: mac, places: model.files, raise: { [model] event in
+        let api = CommandAPI(mac: mac.mac, places: model.files, raise: { [model] event in
             await MainActor.run { model.runs.raise(event) }
         }, app: SpotRunningApp(model: model, update: update), runs: model.runs)
         model.runs.api = api

@@ -1,31 +1,26 @@
+import os
 import XCTest
 @testable import OpenspotCore
 
 final class CommandAPITests: XCTestCase {
-    private final class Host: Mac, @unchecked Sendable {
+    private final class Host: MacCalendar, @unchecked Sendable {
         var made = 0
-        var opened: [URL] = []
         var access = CalendarAccess.allowed
 
-        func eventStore() -> any EventStore {
+        func store() -> any EventStore {
             made += 1
             return FakeEventStore(calendars: [CalendarList(id: "A8E2", title: "Work", account: "iCloud", color: "#1BADF8")], access: access)
         }
 
-        func reminderStore() -> any ReminderStore {
-            FakeReminderStore()
-        }
-
-        func showCalendar(at time: Date) throws {}
-
-        func open(_ link: URL) -> Bool {
-            opened.append(link)
-            return true
-        }
+        func show(_ time: Date) throws {}
     }
 
     private var folder: URL!
-    private let host = Host()
+    private let calendar = Host()
+
+    private var host: Mac {
+        Mac(calendar: calendar, reminders: FakeReminders())
+    }
 
     override func setUpWithError() throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("api-\(UUID().uuidString.prefix(8))")
@@ -98,6 +93,36 @@ final class CommandAPITests: XCTestCase {
         XCTAssertEqual(answer.code, 0)
     }
 
+    func testACurrencyIsAnsweredFromTheDatedFileOfTheRatesAndASumAsksForNone() async throws {
+        let fetches = OSAllocatedUnfairLock(initialState: 0)
+        let file = folder.appendingPathComponent("rates.json")
+        let rates = CalcRateCache(file: file, now: { Date() }) {
+            fetches.withLock { $0 += 1 }
+            return CalcRatesTests.file
+        }
+        let api = CommandAPI(mac: host, places: .test(environment), rates: rates)
+
+        let sum = try await XCTUnwrap(api.work(for: .test(["calc", "solve", "2+2"]), input: { "" }))()
+        XCTAssertEqual(TextBlock.blocks(in: sum.output).first?.value("title"), "4")
+        XCTAssertEqual(fetches.withLock { $0 }, 0)
+
+        for _ in 0..<2 {
+            let answer = try await XCTUnwrap(api.work(for: .test(["calc", "solve", "15 usd in eur"]), input: { "" }))()
+            XCTAssertEqual(TextBlock.blocks(in: answer.output).first?.value("detail"), "15 USD in EUR")
+        }
+        XCTAssertEqual(fetches.withLock { $0 }, 1)
+        XCTAssertNotNil(CalcRates(file: try Data(contentsOf: file)))
+    }
+
+    func testACurrencyWithNoRatesSaysWhy() async throws {
+        let rates = CalcRateCache(file: folder.appendingPathComponent("rates.json"), now: { Date() }) { throw URLError(.notConnectedToInternet) }
+        let api = CommandAPI(mac: host, places: .test(environment), rates: rates)
+
+        let answer = try await XCTUnwrap(api.work(for: .test(["calc", "solve", "15 usd in eur"]), input: { "" }))()
+
+        XCTAssertEqual(answer.output, "status=offline\n")
+    }
+
     func testAnUnknownCallPrintsTheUsageWithCode2() async throws {
         let answer = try await answer(["calc", "2+2"])
 
@@ -127,7 +152,7 @@ final class CommandAPITests: XCTestCase {
         let answer = try await answer(["calendar", "calendars"])
 
         XCTAssertEqual(TextBlock.blocks(in: answer.output).first?.value("title"), "Work")
-        XCTAssertEqual(host.made, 1)
+        XCTAssertEqual(calendar.made, 1)
     }
 
     func testTenCallsShareOneEventStore() async throws {
@@ -138,20 +163,20 @@ final class CommandAPITests: XCTestCase {
             _ = await api.work(for: call, request: .test(), input: { "" })?()
         }
 
-        XCTAssertEqual(host.made, 1)
+        XCTAssertEqual(calendar.made, 1)
     }
 
     func testAStoreWithNoLeaveIsMadeAgainAtTheNextCall() async throws {
-        host.access = .denied
+        calendar.access = .denied
         let api = CommandAPI(mac: host, places: .test(environment))
         let call = try XCTUnwrap(CommandLineCall(arguments: ["calendar", "calendars"], environment: environment))
 
         _ = await api.work(for: call, request: .test(), input: { "" })?()
-        host.access = .allowed
+        calendar.access = .allowed
         _ = await api.work(for: call, request: .test(), input: { "" })?()
         _ = await api.work(for: call, request: .test(), input: { "" })?()
 
-        XCTAssertEqual(host.made, 2)
+        XCTAssertEqual(calendar.made, 2)
     }
 
     func testAnEventReachesTheRunningApp() async throws {

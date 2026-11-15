@@ -825,6 +825,9 @@ A spot asks the Mac and Openspot for things through one command, which works the
 - `openspot help` lists each capability. `openspot help <noun>` prints the guide of a noun, such as `screen` or
   `calendar`.
 - A capability that can't answer prints `status=<word>`. A capability that keeps state keeps it in its own helper.
+- `openspot translate` prints `status=unknown` when it cannot tell the language of the text, `status=missing` when macOS
+  has not downloaded a language, `status=unsupported` when it knows no way between the two, and `status=failed` for any
+  other fault. `openspot calc solve` prints `status=offline` or `status=unavailable` for a currency with no rates.
 - When macOS already has a command, such as `open`, use it. For the screen and the clipboard, use `openspot screen` and
   `openspot clipboard`, so that the user sees each use.
 - These calls fail in a read, so that a read changes nothing and opens nothing:

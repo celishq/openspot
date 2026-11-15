@@ -95,7 +95,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testOpenspotCallAsksTheAPIInTheApp() async throws {
-        runs.api = CommandAPI(mac: FakeMac(opens: false), places: .test(), runs: runs)
+        runs.api = CommandAPI(mac: Mac(), places: .test(), runs: runs)
         try inline(header: "on=search.text ^[0-9]", """
         function main([id, row], env) {
           const text = id === "open" ? row : env.OPENSPOT_VALUE

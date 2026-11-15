@@ -20,8 +20,14 @@ enum TranslateCall: NounCall {
 
     func work(in context: CallContext) -> CommandAPI.Work? {
         switch self {
-        case .text(let from, let to): CommandAnswer.work { [mac = context.mac, input = context.input] in try await mac.translate(await input(), from: from, to: to) }
-        case .languages: { [mac = context.mac] in CommandAnswer(output: await mac.translationLanguages()) }
+        case .text(let from, let to): CommandAnswer.work { [mac = context.mac.translation, input = context.input] in
+            guard let mac else { throw SpotError.fault("This Mac cannot translate.") }
+            return try await mac.translate(await input(), from: from, to: to).block.text
+        }
+        case .languages: CommandAnswer.work { [mac = context.mac.translation] in
+            guard let mac else { return "" }
+            return TranslatedText.languages(try await mac.languages())
+        }
         }
     }
 }

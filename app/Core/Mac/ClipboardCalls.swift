@@ -1,27 +1,28 @@
 import Foundation
 
 struct ClipboardCalls {
-    let mac: any Mac
+    let mac: (any MacClipboard)?
     let folder: URL
 
     func copy(_ path: String?, input: @escaping @Sendable () async -> String) -> CommandAPI.Work {
         CommandAnswer.work { [mac, folder] in
+            let clipboard = try Mac.part(mac, "clipboard")
             if let path {
-                try mac.copy(file: URL(fileURLWithPath: path, relativeTo: folder).standardizedFileURL)
+                try clipboard.copy(file: URL(fileURLWithPath: path, relativeTo: folder).standardizedFileURL)
             } else {
-                try mac.copy(text: await input())
+                try clipboard.copy(text: await input())
             }
             return ""
         }
     }
 
     func read() -> CommandAPI.Work {
-        CommandAnswer.work { [mac] in mac.clipboardText() }
+        CommandAnswer.work { [mac] in mac?.text() ?? "" }
     }
 
     func paste() -> CommandAPI.Work {
         CommandAnswer.work { [mac] in
-            try mac.paste()
+            try Mac.part(mac, "clipboard").paste()
             return ""
         }
     }

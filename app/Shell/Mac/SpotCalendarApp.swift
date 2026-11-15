@@ -1,7 +1,7 @@
 import Foundation
 import OpenspotCore
 
-enum SpotCalendarApp {
+struct SpotCalendarApp: MacCalendar {
     private static let automation = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation")!
     private static let script = [
         "on run argv",
@@ -19,19 +19,22 @@ enum SpotCalendarApp {
         "end run"
     ]
 
-    static func show(_ time: Date) throws -> String {
+    func store() -> any EventStore {
+        SpotEventStore()
+    }
+
+    func show(_ time: Date) throws {
         let parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: time)
         let seconds = (parts.hour ?? 0) * 3600 + (parts.minute ?? 0) * 60
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-        process.arguments = script.flatMap { ["-e", $0] } + [parts.year, parts.month, parts.day, seconds].map { String($0 ?? 0) }
+        process.arguments = Self.script.flatMap { ["-e", $0] } + [parts.year, parts.month, parts.day, seconds].map { String($0 ?? 0) }
         process.standardOutput = FileHandle.nullDevice
         process.standardError = FileHandle.nullDevice
         try process.run()
         process.waitUntilExit()
         guard process.terminationStatus == 0 else {
-            throw SpotError.failedWithFix(1, "Openspot cannot open Calendar. Allow Openspot to control Calendar in Privacy & Security › Automation, then try again.", automation)
+            throw SpotError.failedWithFix(1, "Openspot cannot open Calendar. Allow Openspot to control Calendar in Privacy & Security › Automation, then try again.", Self.automation)
         }
-        return ""
     }
 }

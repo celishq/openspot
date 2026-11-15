@@ -110,6 +110,7 @@ func put(_ bytes: [UInt8], to descriptor: Int32) {
 
 guard let app = AppBundle() else { fail("openspot cannot find the path of its own program.") }
 let arguments = Array(CommandLine.arguments.dropFirst())
+if CommandKind.isPure(arguments) { runAlone(app) }
 let isLive = CommandKind.needsApp(arguments)
 connection = app.configFolder.map(reach) ?? -1
 if connection < 0 {

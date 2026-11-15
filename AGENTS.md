@@ -194,7 +194,7 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
   tool that changes the Mac, such as `caffeinate` or `system_profiler`.
 - Wait with `wait(_:until:)`, which fails with the name of the fact. Give a process its environment as a value, through
   `TestEnvironment`, and never change the environment of the test process.
-- Build on the shared helpers: `temporaryFolder()`, `TestSpot`, `FakeMac`, `FakeHost`, and `PanelCase` for a test of the model.
+- Build on the shared helpers: `temporaryFolder()`, `TestSpot`, `FakeHost`, and `PanelCase` for a test of the model.
 - `make verify` runs `scripts/check-tests.sh`, which fails on a test that reads the real home or the clipboard, or that
   blocks its thread with a sleep, and on a new `Task.sleep` or `setenv` outside the shared helpers.
 

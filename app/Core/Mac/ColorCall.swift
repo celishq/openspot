@@ -8,6 +8,6 @@ public enum ColorCall: NounCall {
     ])
 
     func work(in context: CallContext) -> CommandAPI.Work? {
-        { [mac = context.mac] in CommandAnswer(output: await mac.pickColor()) }
+        { [pick = context.mac.pickColor] in CommandAnswer(output: await pick?().map { $0.text + "\n" } ?? "") }
     }
 }

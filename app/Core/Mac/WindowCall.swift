@@ -13,9 +13,9 @@ enum WindowCall: NounCall {
 
     func work(in context: CallContext) -> CommandAPI.Work? {
         switch self {
-        case .frame: CommandAnswer.work { [mac = context.mac] in try await mac.windowFrame() }
-        case .move(let move): CommandAnswer.work { [mac = context.mac] in
-            try await mac.moveWindow(move)
+        case .frame: CommandAnswer.work { [mac = context.mac.windows] in try await Mac.part(mac, "windows").frame().text }
+        case .move(let move): CommandAnswer.work { [mac = context.mac.windows] in
+            try await Mac.part(mac, "windows").move(move)
             return ""
         }
         }

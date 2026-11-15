@@ -74,11 +74,11 @@ final class SpotRecordingSession {
         return session
     }
 
-    var status: TextBlock {
-        TextBlock(fields: [.init(key: "state", value: "recording")] + files + [.init(key: "seconds", value: String(Int(Date().timeIntervalSince(started))))])
+    var status: ScreenRecording {
+        ScreenRecording(file: plan.file, camera: plan.camera, events: plan.events, seconds: Int(Date().timeIntervalSince(started)))
     }
 
-    func stop() async throws -> TextBlock {
+    func stop() async throws -> ScreenRecording {
         events?.stop()
         try? await stream.stopCapture()
         var failure: Error?
@@ -89,11 +89,7 @@ final class SpotRecordingSession {
             camera.session.stopRunning()
         }
         if let failure { throw SpotError.fault("The recording stopped with a fault: \(failure.localizedDescription) What it wrote is in \(plan.file).") }
-        return TextBlock(fields: files)
-    }
-
-    private var files: [TextBlock.Field] {
-        [("file", plan.file), ("camera", plan.camera), ("events", plan.events)].compactMap { key, value in value.map { .init(key: key, value: $0) } }
+        return status
     }
 
     private static func cameraParts(_ inputs: [ScreenInput], to path: String) throws -> (AVCaptureSession, AVCaptureMovieFileOutput, SpotFileEnd) {

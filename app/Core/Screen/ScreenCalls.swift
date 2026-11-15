@@ -1,20 +1,23 @@
 import Foundation
 
 struct ScreenCalls {
-    let mac: any Mac
+    let mac: (any MacScreen)?
     let folder: URL
     let fence: (caller: CallerTokens.Caller, mode: CarefulMode)?
 
     func sources() -> CommandAPI.Work {
-        { [mac] in CommandAnswer(output: await mac.screenSources()) }
+        CommandAnswer.work { [mac] in ScreenDevice.rows(of: try await Self.screen(mac).devices()) }
     }
 
     func shot(_ capture: ScreenCapture) -> CommandAPI.Work {
-        refusal(of: capture) ?? CommandAnswer.work { [mac, folder] in try await mac.screenShot(capture, in: folder) }
+        refusal(of: capture) ?? CommandAnswer.work { [mac, folder] in try await Self.screen(mac).shot(capture, in: folder).map { $0.path + "\n" } ?? "" }
     }
 
     func start(_ capture: ScreenCapture) -> CommandAPI.Work {
-        refusal(of: capture) ?? CommandAnswer.work { [mac, folder] in try await mac.startRecording(capture, in: folder) }
+        refusal(of: capture) ?? CommandAnswer.work { [mac, folder] in
+            try await Self.screen(mac).startRecording(capture, in: folder)
+            return ""
+        }
     }
 
     private func refusal(of capture: ScreenCapture) -> CommandAPI.Work? {
@@ -32,10 +35,14 @@ struct ScreenCalls {
     }
 
     func stop() -> CommandAPI.Work {
-        CommandAnswer.work { [mac] in try await mac.stopRecording() }
+        CommandAnswer.work { [mac] in try await Self.screen(mac).stopRecording().paths }
     }
 
     func status() -> CommandAPI.Work {
-        CommandAnswer.work { [mac] in try await mac.recordingStatus() }
+        CommandAnswer.work { [mac] in ScreenRecording.status(of: try await Self.screen(mac).recording()) }
+    }
+
+    private static func screen(_ mac: (any MacScreen)?) throws -> any MacScreen {
+        try Mac.part(mac, "screen")
     }
 }

@@ -5,13 +5,15 @@ public final class CommandSocket: @unchecked Sendable {
     static let unreadableCode = -32700
     static let aloneCode = -32000
     private static let queueLength: Int32 = 64
-    private static let callerLimit = 5
-    private static let chunk = 65_536
 
     private let path: String
     private let source: any DispatchSourceRead
 
-    public init?(folder: URL, api: CommandAPI) {
+    public convenience init?(folder: URL, api: CommandAPI) {
+        self.init(folder: folder, api: api, limits: CommandConnection.Limits())
+    }
+
+    init?(folder: URL, api: CommandAPI, limits: CommandConnection.Limits) {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         guard let real = realpath(folder.path, nil) else { return nil }
         path = SocketPath.of(config: String(cString: real))
@@ -43,7 +45,9 @@ public final class CommandSocket: @unchecked Sendable {
         source.setEventHandler {
             while case let connection = accept(listener, nil, nil), connection >= 0 {
                 _ = fcntl(connection, F_SETFD, FD_CLOEXEC)
-                DispatchQueue.global().async { Self.answer(connection, api) }
+                _ = CommandConnection(descriptor: connection, limits: limits) { link, line in
+                    DispatchQueue.global().async { Self.answer(line, on: link, of: connection, api) }
+                }
             }
         }
         source.setCancelHandler { Darwin.close(listener) }
@@ -55,14 +59,7 @@ public final class CommandSocket: @unchecked Sendable {
         unlink(path)
     }
 
-    private static func answer(_ connection: Int32, _ api: CommandAPI) {
-        _ = fcntl(connection, F_SETFL, fcntl(connection, F_GETFL) & ~O_NONBLOCK)
-        var on: Int32 = 1
-        setsockopt(connection, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
-        var time = timeval(tv_sec: callerLimit, tv_usec: 0)
-        setsockopt(connection, SOL_SOCKET, SO_RCVTIMEO, &time, socklen_t(MemoryLayout<timeval>.size))
-        let (line, rest) = receive(connection)
-        let link = CommandConnection(descriptor: connection, rest: rest)
+    private static func answer(_ line: Data, on link: CommandConnection, of connection: Int32, _ api: CommandAPI) {
         guard let asked = CommandRequest(line: line) else {
             return link.end(fault(unreadableCode, "Openspot cannot read this request.", id: nil))
         }
@@ -91,21 +88,5 @@ public final class CommandSocket: @unchecked Sendable {
         var id: pid_t = 0
         var size = socklen_t(MemoryLayout<pid_t>.size)
         return getsockopt(connection, SOL_LOCAL, LOCAL_PEERPID, &id, &size) == 0 ? id : 0
-    }
-
-    private static func receive(_ connection: Int32) -> (Data, Data) {
-        var data = Data()
-        var buffer = [UInt8](repeating: 0, count: chunk)
-        while true {
-            let count = read(connection, &buffer, buffer.count)
-            if count > 0 {
-                data.append(contentsOf: buffer[..<count])
-                if buffer[..<count].contains(UInt8(ascii: "\n")) { break }
-            } else if count == 0 || errno != EINTR {
-                break
-            }
-        }
-        guard let end = data.firstIndex(of: UInt8(ascii: "\n")) else { return (data, Data()) }
-        return (data[data.startIndex..<end], Data(data[(end + 1)...]))
     }
 }

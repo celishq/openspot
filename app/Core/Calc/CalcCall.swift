@@ -14,6 +14,6 @@ enum CalcCall: NounCall {
 
     func work(in context: CallContext) -> CommandAPI.Work? {
         guard case .solve(let words) = self else { return nil }
-        return CalcCalls().solve(words)
+        return CalcCalls(rates: context.rates).solve(words)
     }
 }

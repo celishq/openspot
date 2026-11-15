@@ -1,11 +1,11 @@
 import Foundation
 
 final class RemindersCalls: @unchecked Sendable {
-    private let mac: any Mac
+    private let mac: (any MacReminders)?
     private let lock = NSLock()
     private var store: (any ReminderStore)?
 
-    init(mac: any Mac) {
+    init(mac: (any MacReminders)?) {
         self.mac = mac
     }
 
@@ -28,14 +28,15 @@ final class RemindersCalls: @unchecked Sendable {
     func show(_ id: String, isRead: Bool) -> CommandAPI.Work {
         CommandAnswer.work {
             let link = try await self.reminders(isRead).link(of: id)
-            guard self.mac.open(link) else { throw SpotError.failed(1, "Openspot cannot open Reminders, so it cannot show \(id).") }
+            guard try Mac.part(self.mac, "reminders").open(link) else { throw SpotError.failed(1, "Openspot cannot open Reminders, so it cannot show \(id).") }
             return ""
         }
     }
 
-    private func reminders(_ isRead: Bool) -> Reminders {
+    private func reminders(_ isRead: Bool) throws -> Reminders {
+        let mac = try Mac.part(mac, "reminders")
         let store = lock.withLock {
-            let store = self.store ?? mac.reminderStore()
+            let store = self.store ?? mac.store()
             self.store = store.access() == .allowed ? store : nil
             return store
         }

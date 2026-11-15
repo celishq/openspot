@@ -30,7 +30,7 @@ public enum ScreenCall: NounCall {
     ])
 
     func work(in context: CallContext) -> CommandAPI.Work? {
-        let screen = ScreenCalls(mac: context.mac, folder: context.folder, fence: context.fence)
+        let screen = ScreenCalls(mac: context.mac.screen, folder: context.folder, fence: context.fence)
         return switch self {
         case .sources: screen.sources()
         case .shot(let capture): screen.shot(capture)
