@@ -138,7 +138,7 @@ private struct SidePanelWells: View, Equatable {
     let height: CGFloat
 
     var body: some View {
-        let shape = SpotRoundShape(radius: SpotTokens.radius - SpotTokens.padding)
+        let shape = SpotRoundShape(SurfaceEdge.sheet.inner())
         ZStack(alignment: .topLeading) {
             ForEach([GridPanel.left, .right].filter { panels[$0] }, id: \.self) { panel in
                 shape

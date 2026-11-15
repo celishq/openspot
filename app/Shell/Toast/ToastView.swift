@@ -23,7 +23,7 @@ struct ToastView: View {
         }
         .padding(.horizontal, ToastPanel.margin)
         .padding(.vertical, 10)
-        .modifier(SpotGlass(radius: SpotTokens.rowHeight / 3))
+        .modifier(SpotGlass(shape: SpotRoundShape(radius: SpotTokens.rowHeight / 3)))
         .contentShape(Rectangle())
         .onTapGesture { toast.open?() }
         .padding(ToastPanel.margin)

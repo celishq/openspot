@@ -2,15 +2,16 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotSubmenuView: View {
+    @Environment(\.spotSurfaceEdge) private var surface
     let model: SpotsModel
 
-    private var shape: RoundedRectangle {
-        RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
+    private var shape: SpotRoundShape {
+        SpotRoundShape(surface.inner())
     }
 
     var body: some View {
         let rows = model.menuSession?.menu.submenu?.rows ?? []
-        let outline = RoundedRectangle(cornerRadius: SpotActionMenuView.radius, style: .continuous)
+        let outline = SpotRoundShape(radius: SpotActionMenuView.radius)
         VStack(spacing: SpotTokens.menuRowGap) {
             ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
                 button(row, at: index)

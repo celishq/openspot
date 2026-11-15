@@ -22,8 +22,8 @@ enum SpotPanelPicture {
             try? await Task.sleep(for: .milliseconds(300))
             await model.waitForReads()
             model.selected = -1
-            let shapes = [(SpotFieldView.rect, SpotTokens.corner(for: .strip))] + model.placements.map {
-                ($0.rect.offsetBy(dx: SpotTokens.halo, dy: SpotTokens.gridTop), SpotTokens.corner(for: $0.size))
+            let shapes = [(SpotFieldView.rect, SurfaceEdge(card: .strip).radius)] + model.placements.map {
+                ($0.rect.offsetBy(dx: SpotTokens.halo, dy: SpotTokens.gridTop), SurfaceEdge(card: $0.size).radius)
             }
             let bottom = (shapes.map(\.0.maxY).max() ?? SpotTokens.gridTop) + SpotTokens.hintBlock + SpotTokens.halo
             let size = CGSize(width: SpotTokens.panelWidth, height: min(bottom, SpotTokens.panelHeight))

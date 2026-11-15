@@ -3,7 +3,6 @@ import SwiftUI
 
 struct SpotSelectionRing<Edge: InsettableShape>: ViewModifier {
     static var width: CGFloat { SpotTokens.ring }
-    static var thinWidth: CGFloat { 1.5 }
 
     let isSelected: Bool
     let shape: Edge

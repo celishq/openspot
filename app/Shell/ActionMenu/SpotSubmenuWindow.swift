@@ -34,6 +34,7 @@ final class SpotSubmenuWindow: NSPanel {
         let area = panel.screen?.visibleFrame ?? .infinite
         let x = right + size.width <= area.maxX || left < area.minX ? right : left
         setFrame(NSRect(x: x, y: top - size.height, width: size.width, height: size.height), display: false)
+        take(SurfaceEdge(radius: SpotActionMenuView.radius))
         level = panel.level
         if parent !== panel {
             parent?.removeChildWindow(self)

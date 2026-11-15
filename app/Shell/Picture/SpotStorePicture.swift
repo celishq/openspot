@@ -30,7 +30,7 @@ enum SpotStorePicture {
         let size = SpotTokens.windowSize
         let whole = CGSize(width: size.width + 2 * margin, height: size.height + 2 * margin)
         let seed = URL(fileURLWithPath: path).lastPathComponent
-        let edge = SpotRoundShape(radius: SpotTokens.radius)
+        let edge = SpotRoundShape(.window)
         let store = ZStack {
             if !SpotPicture.isOnScreen {
                 SpotWallpaper(seed: seed)

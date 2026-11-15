@@ -25,10 +25,12 @@ final class SpotFloatPanel: NSPanel {
     }
 
     func fit(_ size: CGSize) {
-        guard size != frame.size else { return }
-        var next = NSRect(x: frame.minX, y: frame.maxY - size.height, width: size.width, height: size.height)
-        if let area = screen?.visibleFrame, next.minY < area.minY { next.origin.y = area.minY }
-        setFrame(next, display: true)
+        if size != frame.size {
+            var next = NSRect(x: frame.minX, y: frame.maxY - size.height, width: size.width, height: size.height)
+            if let area = screen?.visibleFrame, next.minY < area.minY { next.origin.y = area.minY }
+            setFrame(next, display: true)
+        }
+        if let entry = model?.card(id: id) { take(SurfaceEdge(float: entry.kind, size: entry.size)) }
     }
 
     static func make(model: SpotsModel, id: String) -> SpotFloatPanel {

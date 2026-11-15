@@ -15,10 +15,6 @@ struct SpotGlass: ViewModifier {
         self.isBare = isBare
     }
 
-    init(radius: CGFloat, isSolid: Bool? = nil, isBare: Bool = false) {
-        self.init(shape: SpotRoundShape(radius: radius), isSolid: isSolid, isBare: isBare)
-    }
-
     func body(content: Content) -> some View {
         let fade = fade
         let edge = edge

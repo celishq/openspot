@@ -1,14 +1,5 @@
 app/Shell/Account/PublisherCard.swift
-app/Shell/ActionMenu/SpotActionMenuView.swift
-app/Shell/ActionMenu/SpotSubmenuView.swift
-app/Shell/Field/SpotSearchField.swift
-app/Shell/Field/SpotSteadyField.swift
-app/Shell/Sheet/SheetPartsView.swift
 app/Shell/Sheet/SpotBars.swift
 app/Shell/Sheet/SpotColorBar.swift
-app/Shell/Sheet/SpotFormView.swift
-app/Shell/Sheet/SpotRowGrid.swift
-app/Shell/Sheet/SpotRowsView.swift
-app/Shell/Sheet/SpotSheetView.swift
 app/Shell/Sheet/SpotWorkMark.swift
 app/Shell/Surface/SpotBackdropEdge.swift

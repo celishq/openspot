@@ -46,4 +46,26 @@ final class SurfaceEdgeTests: XCTestCase {
         XCTAssertEqual(edge.corner(in: CGRect(x: 0, y: 0, width: 100, height: 100)), 0)
         XCTAssertEqual(edge.place(in: CGRect(x: 0, y: 0, width: 100, height: 100)), CGRect(x: 6, y: 6, width: 88, height: 88))
     }
+
+    func testEachMarkOfACardTakesTheEdgeOfItsGlassForEachSize() {
+        for size in SpotSize.all {
+            for mark in CardMark.allCases {
+                XCTAssertEqual(SurfaceEdge(card: size, mark: mark), SurfaceEdge(card: size, mark: .glass), "\(size.name) \(mark)")
+            }
+            XCTAssertEqual(SurfaceEdge(card: size, mark: .glass), SurfaceEdge(card: size), size.name)
+        }
+    }
+
+    func testAFloatOfASheetHasTheEdgeOfASheetAndAFloatOfACardTheEdgeOfThatCard() {
+        XCTAssertEqual(SurfaceEdge(float: .list, size: .small), .sheet)
+        XCTAssertEqual(SurfaceEdge(float: .launch, size: .small), SurfaceEdge(card: .small))
+        XCTAssertEqual(SurfaceEdge(float: .toggle, size: .large), SurfaceEdge(card: .large))
+    }
+
+    func testAPartInsideASurfaceHasTheCornerOfTheSurfaceLessThePadding() {
+        XCTAssertEqual(SurfaceEdge.sheet.inner().radius, SpotTokens.radius - SpotTokens.padding)
+        XCTAssertEqual(SurfaceEdge.window.inner().radius, SurfaceEdge.window.radius - SpotTokens.padding)
+        XCTAssertEqual(SurfaceEdge(radius: 8).inner().radius, 0)
+        XCTAssertEqual(SurfaceEdge.sheet.inner(by: 4).radius, SpotTokens.radius - 4)
+    }
 }

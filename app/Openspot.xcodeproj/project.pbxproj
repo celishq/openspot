@@ -181,6 +181,7 @@
 		389518599B2CABD450A604E7 /* SpotFileDrag.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9A5AD3DBEC01F673E33B784 /* SpotFileDrag.swift */; };
 		38C08245D8B08ACDD85B7A7E /* SpotsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DDCDFD7FA971F9107B9E74C /* SpotsPanel.swift */; };
 		38CB80632A5224FBC427877C /* PromptCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8C3AE04507D6A8F95CB6B0D /* PromptCall.swift */; };
+		3900FB072CB279FD4EEA3674 /* NSWindow+Edge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001B0478911956D505B163A8 /* NSWindow+Edge.swift */; };
 		39B80775CA2412FECD0BA21E /* Figure+Form.swift in Sources */ = {isa = PBXBuildFile; fileRef = B447E2DCEC0DBCB0EF4D3536 /* Figure+Form.swift */; };
 		39EBDA4CCD7C9C98AC973E07 /* SpotMedia.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C2B0B8FA6B8EA28BECE5386 /* SpotMedia.swift */; };
 		3A1B2A1D026E6447A60F777E /* TestChild.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF899C0D68313BD1ACB2ECD8 /* TestChild.swift */; };
@@ -461,6 +462,7 @@
 		94CD72A9F32F21CE8D3B5960 /* SpotAddTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4374EE54070A419614E4233D /* SpotAddTests.swift */; };
 		956E7B50645AC5AF11834F79 /* FlowEdges.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8184F15CDEF8277660D2E61 /* FlowEdges.swift */; };
 		95C1F39365169D5EF49AEA1C /* SpotRunsFrameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD185DC9EA26F1015F708A8F /* SpotRunsFrameTests.swift */; };
+		95E9AF05A4ABDF4FA9AE2075 /* CardMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89B6FBC67648B13F55341FB8 /* CardMark.swift */; };
 		962CD63F2B4A27133739A464 /* BatchCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A7B8E371C45A7B465711B71 /* BatchCall.swift */; };
 		9638AFF34B3EF9A6DF3B2D40 /* GlobalKeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A19AD00D49BBCD936BA0EF5A /* GlobalKeyTests.swift */; };
 		963E23E2EBB2EE341650F104 /* SpotSampleSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4EA03B49F061A9C31FE0C4B /* SpotSampleSheet.swift */; };
@@ -886,6 +888,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		001B0478911956D505B163A8 /* NSWindow+Edge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSWindow+Edge.swift"; sourceTree = "<group>"; };
 		00716A802A4E5E42D6F2EFEA /* MacReminders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacReminders.swift; sourceTree = "<group>"; };
 		00873A3125CD49F10A1570BB /* SpotGlass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotGlass.swift; sourceTree = "<group>"; };
 		00C657D3F5ECF7B0FA02E349 /* CommandRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandRequest.swift; sourceTree = "<group>"; };
@@ -1296,6 +1299,7 @@
 		8907E98F00C0A89599F148E6 /* RepeatDrawing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepeatDrawing.swift; sourceTree = "<group>"; };
 		8975CD677A24BB55FD2AD7CC /* SpotDropView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotDropView.swift; sourceTree = "<group>"; };
 		89A4279B4B30C21243B90110 /* StatsReport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsReport.swift; sourceTree = "<group>"; };
+		89B6FBC67648B13F55341FB8 /* CardMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardMark.swift; sourceTree = "<group>"; };
 		8A38FF55DF7A8FEABDA80146 /* IconSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconSpotTests.swift; sourceTree = "<group>"; };
 		8A564A8D2623D8AB8446F8EA /* ModifierTapTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModifierTapTests.swift; sourceTree = "<group>"; };
 		8AC903AF79CAC37C5D9EEBD0 /* DocReferenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocReferenceTests.swift; sourceTree = "<group>"; };
@@ -2703,6 +2707,7 @@
 		B38747948502DEE56071C00A /* Surface */ = {
 			isa = PBXGroup;
 			children = (
+				001B0478911956D505B163A8 /* NSWindow+Edge.swift */,
 				8B383898EBB18E715FB418D9 /* PanelSpan.swift */,
 				A6E0B4816FA459ABFDA4CCAF /* SpotBackdrop.swift */,
 				343B74F47009E908B1316B6B /* SpotBackdropBlur.swift */,
@@ -2769,6 +2774,7 @@
 			isa = PBXGroup;
 			children = (
 				E01B2D24D06C55E9B25CBEFD /* CardFocus.swift */,
+				89B6FBC67648B13F55341FB8 /* CardMark.swift */,
 				0D50478A53DB8348510EBFE6 /* CardPush.swift */,
 				FFD8983A5D718934384188E9 /* FocusLoss.swift */,
 				F149558E8ADB4907416DAEE7 /* GridPanel.swift */,
@@ -3432,6 +3438,7 @@
 				DDB6FE0002E5003CA66C1972 /* CardAct.swift in Sources */,
 				986E3267E26CB47C0E5DA515 /* CardFace.swift in Sources */,
 				147920A050A1CBA355C444A4 /* CardFocus.swift in Sources */,
+				95E9AF05A4ABDF4FA9AE2075 /* CardMark.swift in Sources */,
 				115B455C4123F78170847C47 /* CardPush.swift in Sources */,
 				98E41C4BD5B83F021124F27C /* CardTilt.swift in Sources */,
 				7F7090061FCDE536C49D8E31 /* CarefulMode.swift in Sources */,
@@ -3766,6 +3773,7 @@
 				263C01EB7C13448ABCEB8866 /* MenuBarHost.swift in Sources */,
 				62D1A945819C4B956583987D /* MenuBarMarkItem.swift in Sources */,
 				4691F0F3F98E01ED573A438D /* NSEvent+Key.swift in Sources */,
+				3900FB072CB279FD4EEA3674 /* NSWindow+Edge.swift in Sources */,
 				4A5F1E4CF5526F7E62FCA758 /* NSWindow+Text.swift in Sources */,
 				AB371E421B7AD912D259B7AB /* OpenspotApp+Host.swift in Sources */,
 				D4FCC1ED72664CC622423052 /* OpenspotApp.swift in Sources */,

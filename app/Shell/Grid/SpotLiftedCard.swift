@@ -7,7 +7,7 @@ struct SpotLiftedCard: ViewModifier {
     let size: SpotSize
 
     func body(content: Content) -> some View {
-        let shape = SpotRoundShape(SurfaceEdge(card: size))
+        let shape = SpotRoundShape(SurfaceEdge(card: size, mark: .lift))
         return content
             .background {
                 ZStack {

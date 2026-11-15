@@ -9,8 +9,27 @@ public struct SurfaceEdge: Equatable, Sendable {
         self.inset = inset
     }
 
+    public static let sheet = SurfaceEdge(radius: SpotTokens.radius)
+    public static let window = SurfaceEdge(radius: 16)
+
     public init(card size: SpotSize) {
         self.init(radius: SpotTokens.corner(for: size))
+    }
+
+    public init(float kind: SpotKind, size: SpotSize) {
+        self = kind.opensSheet ? .sheet : SurfaceEdge(card: size)
+    }
+
+    public init(card size: SpotSize, mark: CardMark) {
+        self.init(card: size)
+    }
+
+    public var rim: CGFloat {
+        radius * SpotTokens.rimPoint
+    }
+
+    public func inner(by padding: CGFloat = SpotTokens.padding) -> SurfaceEdge {
+        SurfaceEdge(radius: max(radius - padding, 0))
     }
 
     public func inset(by amount: CGFloat) -> SurfaceEdge {

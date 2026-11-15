@@ -3,6 +3,7 @@ import OpenspotCore
 import SwiftUI
 
 struct SheetPartsView: View {
+    @Environment(\.spotSurfaceEdge) private var surface
     let panel: SheetParts
     var work: (SpotPart) -> ScriptCall? = { _ in nil }
     let onSet: (SpotPart, String) -> Void
@@ -32,8 +33,8 @@ struct SheetPartsView: View {
     private static let markValueWidth: CGFloat = 36
     private static let symbolWidth: CGFloat = 22
 
-    private var shape: RoundedRectangle {
-        RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
+    private var shape: SpotRoundShape {
+        SpotRoundShape(surface.inner())
     }
 
     var body: some View {
@@ -511,7 +512,7 @@ struct SheetPartsView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(space)
                 }
-                .clipShape(RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous))
+                .clipShape(SpotRoundShape(surface.inner()))
             } else {
                 TextEditor(text: Binding(get: { text }, set: { onSet(part, $0) }))
                     .scrollContentBackground(.hidden)
@@ -544,16 +545,17 @@ private struct FocusOnShow: ViewModifier {
 }
 
 private struct PartRing: ViewModifier {
+    @Environment(\.spotSurfaceEdge) private var surface
     let id: String
     let selectedID: () -> String?
     let hasBox: Bool
-    let shape: RoundedRectangle
+    let shape: SpotRoundShape
 
     func body(content: Content) -> some View {
         let isSelected = selectedID() == id
         if hasBox {
             let gap = SpotTokens.focusGap
-            let ring = RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding + gap, style: .continuous)
+            let ring = SpotRoundShape(surface.inner(by: SpotTokens.padding - gap))
             content.modifier(SpotSelectionRing(isSelected: isSelected, shape: ring)).padding(-gap)
         } else {
             content.modifier(SpotSelectionRing(isSelected: isSelected, shape: shape)).padding(.horizontal, -SpotTokens.controlPadding)
@@ -571,6 +573,7 @@ private struct FocusOnSelect: ViewModifier {
 }
 
 private struct TileLook: ViewModifier {
+    @Environment(\.spotSurfaceEdge) private var surface
     let isOn: Bool
 
     func body(content: Content) -> some View {
@@ -578,7 +581,7 @@ private struct TileLook: ViewModifier {
             content
                 .padding(.horizontal, SpotTokens.padding)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(SpotTheme.ink.opacity(SpotTheme.fill), in: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous))
+                .background(SpotTheme.ink.opacity(SpotTheme.fill), in: SpotRoundShape(surface.inner()))
         } else {
             content
         }

@@ -17,6 +17,7 @@ public enum SpotTokens {
     public static let keycap: CGFloat = 20
     public static let keycapRadius: CGFloat = 6
     public static let ring: CGFloat = 2
+    public static let thinRing: CGFloat = 1.5
     public static let resizeHandle: CGFloat = 28
     public static let resizeHandleLine: CGFloat = 5
     public static let toastGap: CGFloat = 10
@@ -148,7 +149,7 @@ public enum SpotTokens {
         return min(2 * halo + rowHeight + cards + hintBlock, panelHeight)
     }
 
-    public static func corner(for size: SpotSize) -> CGFloat {
+    static func corner(for size: SpotSize) -> CGFloat {
         size.rows == 1 && size.columns < columns ? rowHeight / 2 : radius
     }
 

@@ -20,8 +20,8 @@ struct SpotCardView: View, @MainActor Equatable {
 
     private static let lineReach: CGFloat = 6
 
-    private var shape: SpotRoundShape {
-        SpotRoundShape(SurfaceEdge(card: size))
+    private func shape(of mark: CardMark) -> SpotRoundShape {
+        SpotRoundShape(SurfaceEdge(card: size, mark: mark))
     }
 
     var body: some View {
@@ -30,14 +30,14 @@ struct SpotCardView: View, @MainActor Equatable {
             .environment(\.spotViewPlace, SpotViewPlace(model: model))
             .padding(drawnView != nil && !isDrawn ? 0 : SpotTokens.cardPadding(for: size, isWidget: entry.kind == .widget || isDrawn))
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
-            .background(shape.fill(SpotTheme.accent).opacity(dropFill))
-            .modifier(CardPress(shape: shape, isFilled: isFilled, showsPress: showsPress))
+            .background(shape(of: .dropFill).fill(SpotTheme.accent).opacity(dropFill))
+            .modifier(CardPress(shape: shape(of: .press), isFilled: isFilled, showsPress: showsPress))
             .modifier(SpotPointerMove { model.point(at: .card(entry.id)) })
-            .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape)).allowsHitTesting(false))
+            .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape(of: .ring))).allowsHitTesting(false))
             .overlay(alignment: .topTrailing) { chainLetter.map { ChainKeycap(model: model, letter: $0, size: size) } }
             .overlay(alignment: .topTrailing) { FailureMark(entry: entry, size: size) }
-            .modifier(SpotGlass(shape: shape, isSolid: isFilled))
-            .contentShape(shape)
+            .modifier(SpotGlass(shape: shape(of: .glass), isSolid: isFilled))
+            .contentShape(shape(of: .hit))
             .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id, opening: NSEvent.modifierFlags.contains(.command)) } }
             .animation(SpotMotion.fade(isShown: isFilled), value: isFilled)
             .scaleEffect(showsPress ? MotionTokens.pressedScale : 1)
@@ -242,7 +242,7 @@ private struct FailureMark: View {
 
     var body: some View {
         if entry.failure != nil {
-            let inset = SpotTokens.corner(for: size) * SpotTokens.rimPoint - SpotTokens.keycap / 2
+            let inset = SurfaceEdge(card: size).rim - SpotTokens.keycap / 2
             let cap = SpotRoundShape(radius: SpotTokens.keycapRadius)
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(SpotType.cornerFault)
@@ -263,7 +263,7 @@ private struct ChainKeycap: View {
     let size: SpotSize
 
     var body: some View {
-        let inset = SpotTokens.corner(for: size) * SpotTokens.rimPoint - SpotTokens.keycap / 2
+        let inset = SurfaceEdge(card: size).rim - SpotTokens.keycap / 2
         let cap = SpotRoundShape(radius: SpotTokens.keycapRadius)
         return Text(letter)
             .font(SpotType.keycap)

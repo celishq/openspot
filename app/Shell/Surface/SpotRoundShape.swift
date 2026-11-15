@@ -20,3 +20,7 @@ struct SpotRoundShape: InsettableShape {
         SpotRoundShape(edge.inset(by: amount))
     }
 }
+
+extension EnvironmentValues {
+    @Entry var spotSurfaceEdge = SurfaceEdge.sheet
+}
