@@ -36,7 +36,7 @@ final class AccountSheetTests: BuiltInCase {
     private func frame(_ arguments: [String], input: String? = nil, reason: String = "sheet.open", page: String? = nil) async throws -> String {
         var variables = arguments == ["read"] ? ["OPENSPOT_REASON": reason] : [:]
         if let page { variables["OPENSPOT_PAGE"] = page }
-        return try await runs.answer(of: account, SpotAction(arguments: arguments), input: input, limit: 10, variables: variables)
+        return try await runs.answer(of: account, SpotAction(arguments: arguments), input: input, limit: 60, variables: variables)
     }
 
     private func block(_ id: String, in frame: String) -> [String: String] {

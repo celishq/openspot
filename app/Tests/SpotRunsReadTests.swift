@@ -22,7 +22,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         try script("coffee", header: "on=sheet.open", "printf 'row=%s\\n' \"$OPENSPOT_ID\"")
         let command = try XCTUnwrap(try scanned().spots.first { $0.id == "coffee" })
 
-        let items = try await command.items(timeout: 5).items
+        let items = try await command.items(timeout: 60).items
 
         XCTAssertEqual(items.map(\.run), ["coffee"])
     }

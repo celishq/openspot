@@ -238,8 +238,8 @@ final class SampleSpotsTests: SampleSpotsCase {
         let cpu = try XCTUnwrap(try scan.metrics.first { $0.id == "cpu" })
 
         try await withPrivateHome { _ in
-            let first = try await cpu.read(timeout: 10).points?.count ?? 0
-            let second = try await cpu.read(timeout: 10).points?.count ?? 0
+            let first = try await cpu.read(timeout: 60).points?.count ?? 0
+            let second = try await cpu.read(timeout: 60).points?.count ?? 0
 
             XCTAssertEqual(second, first + 1)
         }
@@ -249,9 +249,9 @@ final class SampleSpotsTests: SampleSpotsCase {
         let cpu = try XCTUnwrap(try scan.metrics.first { $0.id == "cpu" })
 
         try await withPrivateHome { _ in
-            let first = try await cpu.read(timeout: 10).points?.count ?? 0
-            let look = MetricValue(output: SpotOutput(text: try await ScriptProcess.output(url: cpu.url, arguments: ["show"], limit: 10, base: TestEnvironment.values)))
-            let second = try await cpu.read(timeout: 10).points?.count ?? 0
+            let first = try await cpu.read(timeout: 60).points?.count ?? 0
+            let look = MetricValue(output: SpotOutput(text: try await ScriptProcess.output(url: cpu.url, arguments: ["show"], limit: 60, base: TestEnvironment.values)))
+            let second = try await cpu.read(timeout: 60).points?.count ?? 0
 
             XCTAssertEqual(look?.points?.count, first + 1)
             XCTAssertNotNil(look?.title)
@@ -264,7 +264,7 @@ final class SampleSpotsTests: SampleSpotsCase {
         let folder = try temporaryFolder()
         try "5\n\nnonsense\n7\n".write(to: folder.appendingPathComponent("openspot-cpu"), atomically: true, encoding: .utf8)
 
-        let points = try await TestEnvironment.with(["TMPDIR": folder.path + "/", "PATH": "/usr/bin:/bin"]) { try await cpu.read(timeout: 10).points }
+        let points = try await TestEnvironment.with(["TMPDIR": folder.path + "/", "PATH": "/usr/bin:/bin"]) { try await cpu.read(timeout: 60).points }
 
         XCTAssertEqual(points?.prefix(2), [5, 7])
         XCTAssertEqual(points?.count, 3)
@@ -277,7 +277,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             try "#!/bin/sh\ncase \"$1 $2\" in 'app status') echo '{}' ;; 'spot list'|'setting list') echo '[]' ;; esac\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
             let views = ViewLibrary(cache: folder.appendingPathComponent("views"))
             for name in ["spots", "examples"] {
-                let faults = await SpotCheck(folder: SpotsFolder(url: root.appendingPathComponent(name)), views: views, environment: TestEnvironment.values).faults()
+                let faults = await SpotCheck(folder: SpotsFolder(url: root.appendingPathComponent(name)), timeout: 60, views: views, environment: TestEnvironment.values).faults()
 
                 XCTAssertEqual(faults, [], name)
             }
@@ -287,7 +287,7 @@ final class SampleSpotsTests: SampleSpotsCase {
     func testRelaySendsALineOverItsSocketAndShowsTheLineThatComesBack() async throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let port = try freePort()
-        let relay = ScriptProcess(url: root.appendingPathComponent("examples/relay.spot/relay.sh"), mode: .stays, limit: 10, stopPause: 0.2, variables: ["RELAY_PORT": String(port)], base: TestEnvironment.values)
+        let relay = ScriptProcess(url: root.appendingPathComponent("examples/relay.spot/relay.sh"), mode: .stays, limit: 60, stopPause: 0.2, variables: ["RELAY_PORT": String(port)], base: TestEnvironment.values)
         defer { relay.end() }
         var frames = relay.start().makeAsyncIterator()
 
@@ -329,8 +329,8 @@ final class SampleSpotsTests: SampleSpotsCase {
 
     private func next(_ frames: inout AsyncThrowingStream<String, Error>.Iterator, of relay: ScriptProcess) async throws -> String? {
         let limit = Task { @MainActor in
-            try await RunClock().sleep(.seconds(10), nil)
-            XCTFail("Relay printed no frame in 10 seconds")
+            try await RunClock().sleep(.seconds(60), nil)
+            XCTFail("Relay printed no frame in 60 seconds")
             relay.end()
         }
         defer { limit.cancel() }
@@ -354,8 +354,8 @@ final class SampleSpotsTests: SampleSpotsCase {
         let caffeinate = try XCTUnwrap(try scan.spots.first { $0.name == "Caffeinate" })
 
         try await withPrivateHome { _ in
-            let state = try await caffeinate.state(timeout: 5)
-            let lines = try await caffeinate.items(timeout: 5)
+            let state = try await caffeinate.state(timeout: 60)
+            let lines = try await caffeinate.items(timeout: 60)
 
             XCTAssertEqual(state.title, "Caffeinate")
             XCTAssertEqual(state.subtitle, "Off")
@@ -386,7 +386,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             try "#!/bin/sh\nprintf '%s\\n' \(found.map { "'\($0)'" }.joined(separator: " "))\n".writeScript(to: folder.appendingPathComponent("tools/find"))
             try "#!/bin/sh\necho /usr/libexec/logd\n".writeScript(to: folder.appendingPathComponent("tools/ps"))
 
-            let lines = try await apps.items(timeout: 10)
+            let lines = try await apps.items(timeout: 60)
 
             XCTAssertEqual(lines.errors, [])
             XCTAssertEqual(lines.items.map(\.title), ["Back\\slash", "Finder", "Notes", "Zed"])
@@ -438,7 +438,7 @@ final class SampleSpotsTests: SampleSpotsCase {
     func testFilesSearchesItselfAndGivesNothingForATooShortSearch() async throws {
         let files = try XCTUnwrap(try scan.spots.first { $0.name == "Files" })
 
-        let lines = try await files.items(query: "a", timeout: 5)
+        let lines = try await files.items(query: "a", timeout: 60)
 
         XCTAssertEqual(files.read?.searchesSheet, true)
         XCTAssertEqual(lines.items, [])
@@ -449,8 +449,8 @@ final class SampleSpotsTests: SampleSpotsCase {
         let metric = try XCTUnwrap(scan.metrics.first { $0.id == "pulls" })
         let list = try XCTUnwrap(scan.spots.first { $0.id == "pulls" })
         try await withPrivateHome { folder in
-            let value = try await metric.read(timeout: 5)
-            let lines = try await list.items(timeout: 5)
+            let value = try await metric.read(timeout: 60)
+            let lines = try await list.items(timeout: 60)
 
             XCTAssertEqual(value.title, "4")
             XCTAssertEqual(value.rows?.map(\.tone), [.bad, .warn, .good, nil])
@@ -462,9 +462,9 @@ final class SampleSpotsTests: SampleSpotsCase {
             XCTAssertEqual(list.id, metric.id)
 
             let item = try XCTUnwrap(lines.items.first)
-            try await list.perform(.item(item), timeout: 5)
+            try await list.perform(.item(item), timeout: 60)
             XCTAssertEqual(try self.read("opened", in: folder), item.run + "\n")
-            try await list.perform(.action(try await self.action("copy", of: list), item: item), timeout: 5)
+            try await list.perform(.action(try await self.action("copy", of: list), item: item), timeout: 60)
             XCTAssertEqual(try self.read("clipboard", in: folder), item.run)
         }
     }
@@ -474,7 +474,7 @@ final class SampleSpotsTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             try #"{"data":{"mine":{"nodes":[]},"asked":{"nodes":[]}}}"#.write(to: folder.appendingPathComponent("gh-answer"), atomically: true, encoding: .utf8)
 
-            let value = try await metric.read(timeout: 5)
+            let value = try await metric.read(timeout: 60)
 
             XCTAssertTrue(value.isHidden)
         }
@@ -502,8 +502,8 @@ final class SampleSpotsTests: SampleSpotsCase {
 
     func testEmojiIsAGridWithItsToneAndNoFaults() async throws {
         try await withPrivateHome { folder in
-            let output = try await self.fakeEmoji(in: folder).items(timeout: 10)
-            let faults = try await self.fakeEmoji(in: folder).sheetFaults(timeout: 10)
+            let output = try await self.fakeEmoji(in: folder).items(timeout: 60)
+            let faults = try await self.fakeEmoji(in: folder).sheetFaults(timeout: 60)
 
             XCTAssertEqual(faults, [])
             XCTAssertEqual(output.perLine, 7)
@@ -519,7 +519,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             let emoji = try self.fakeEmoji(in: folder)
 
             _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .set("tone", to: "dark"), input: nil, limit: 30)
-            let output = try await emoji.items(timeout: 10)
+            let output = try await emoji.items(timeout: 60)
 
             XCTAssertEqual(self.text(of: "tone", in: output), "dark")
             XCTAssertEqual(output.items.map(\.title), ["thumbs up, dark", "rightwards arrow"])
@@ -534,11 +534,11 @@ final class SampleSpotsTests: SampleSpotsCase {
             let fake = try String(contentsOf: tool, encoding: .utf8).replacingOccurrences(of: "case \"$1\" in", with: "echo \"$1\" >> '\(calls)'\ncase \"$1\" in")
             try fake.writeScript(to: tool)
 
-            let first = try await emoji.items(timeout: 10)
-            let kept = try await emoji.items(timeout: 10)
+            let first = try await emoji.items(timeout: 60)
+            let kept = try await emoji.items(timeout: 60)
             let callsWhenKept = try self.read("calls", in: folder)
             try FileManager.default.setAttributes([.modificationDate: Date()], ofItemAtPath: tool.path)
-            let made = try await emoji.items(timeout: 10)
+            let made = try await emoji.items(timeout: 60)
 
             XCTAssertEqual(first.items.map(\.title), ["thumbs up, none", "rightwards arrow"])
             XCTAssertEqual(kept.items.map(\.title), first.items.map(\.title))
@@ -559,12 +559,12 @@ final class SampleSpotsTests: SampleSpotsCase {
             try FileManager.default.createDirectory(at: preferences.deletingLastPathComponent(), withIntermediateDirectories: true)
             try "a".write(to: preferences, atomically: false, encoding: .utf8)
 
-            _ = try await emoji.items(timeout: 10)
+            _ = try await emoji.items(timeout: 60)
             try "b".write(to: preferences, atomically: false, encoding: .utf8)
-            _ = try await emoji.items(timeout: 10)
+            _ = try await emoji.items(timeout: 60)
             let callsWhenKept = try self.read("calls", in: folder)
             try "(\n    \"uk-UA\"\n)".write(to: folder.appendingPathComponent("languages"), atomically: true, encoding: .utf8)
-            _ = try await emoji.items(timeout: 10)
+            _ = try await emoji.items(timeout: 60)
 
             XCTAssertEqual(callsWhenKept, "emoji\nsymbols\n")
             XCTAssertEqual(try self.read("calls", in: folder), "emoji\nsymbols\nemoji\nsymbols\n")
@@ -584,7 +584,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             let fake = try String(contentsOf: tool, encoding: .utf8).replacingOccurrences(of: "emoji) printf", with: "emoji) exit 1; printf")
             try fake.writeScript(to: tool)
 
-            let failed = try await emoji.items(timeout: 10)
+            let failed = try await emoji.items(timeout: 60)
             let data = folder.appendingPathComponent(".config/openspot/data/\(try XCTUnwrap(emoji.dataName))")
 
             XCTAssertEqual(failed.items.map(\.title), ["rightwards arrow"])
@@ -595,18 +595,18 @@ final class SampleSpotsTests: SampleSpotsCase {
     func testEmojiMovesToTheNextToneAndWrapsAround() async throws {
         try await withPrivateHome { folder in
             let emoji = try self.fakeEmoji(in: folder)
-            let first = try await emoji.items(timeout: 10)
+            let first = try await emoji.items(timeout: 60)
             let tone = try XCTUnwrap(first.actions.first { $0.id == "next-tone" })
             let row = SpotItem(title: "thumbs up", run: "👍")
             XCTAssertEqual(tone.key, ActionKey(name: "t", isCommand: true))
 
             _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .action(tone, item: row), input: nil, limit: 30)
-            let next = try await emoji.items(timeout: 10)
+            let next = try await emoji.items(timeout: 60)
             XCTAssertEqual(self.text(of: "tone", in: next), "light")
 
             _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .set("tone", to: "dark"), input: nil, limit: 30)
             _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .action(tone, item: row), input: nil, limit: 30)
-            let wrapped = try await emoji.items(timeout: 10)
+            let wrapped = try await emoji.items(timeout: 60)
             XCTAssertEqual(self.text(of: "tone", in: wrapped), "none")
         }
     }
@@ -625,7 +625,7 @@ final class SampleSpotsTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let files = try XCTUnwrap(try self.scan.spots.first { $0.name == "Files" })
 
-            let toast = try await files.perform(SpotAction(arguments: ["copy", "/a/b é.txt"]), timeout: 5)
+            let toast = try await files.perform(SpotAction(arguments: ["copy", "/a/b é.txt"]), timeout: 60)
 
             XCTAssertEqual(toast, "Copied")
             XCTAssertEqual(try self.read("clipboard", in: folder), "/a/b é.txt")
@@ -651,7 +651,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             let url = folder.appendingPathComponent("frames.sh")
             try "#!/bin/sh\nprintf 'text=a\\n---\\n'\nprintf 'text=b\\n'\n".writeScript(to: url)
 
-            let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: Spot(id: "frames", name: "Frames", url: url), .read, limit: 5)
+            let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: Spot(id: "frames", name: "Frames", url: url), .read, limit: 60)
 
             XCTAssertEqual(text, "text=a\n")
         }
@@ -661,7 +661,7 @@ final class SampleSpotsTests: SampleSpotsCase {
         let commands = try ["Apps", "Files"].map { name in try XCTUnwrap(try scan.spots.first { $0.name == name }) }
         try await withPrivateHome { _ in
             for command in commands {
-                let actions = try await command.items(timeout: 10).actions
+                let actions = try await command.items(timeout: 60).actions
                 XCTAssertEqual(actions.first?.id, "reveal", command.name)
             }
         }

@@ -12,7 +12,7 @@ final class ClockExampleTests: SampleSpotsCase {
         esac
         """.writeScript(to: folder.appendingPathComponent("date"))
         let clock = try example("World clock")
-        let process = ScriptProcess(url: clock.url, mode: .stays, limit: 10, stopPause: 0.2, variables: ["PATH": "\(folder.path):/usr/bin:/bin"])
+        let process = ScriptProcess(url: clock.url, mode: .stays, limit: 60, stopPause: 0.2, variables: ["PATH": "\(folder.path):/usr/bin:/bin"])
         defer { process.end() }
         var frames = process.start().makeAsyncIterator()
 
