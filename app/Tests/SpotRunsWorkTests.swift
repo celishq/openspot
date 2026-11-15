@@ -99,10 +99,9 @@ final class SpotRunsWorkTests: SpotRunsCase {
         let before = sheet.state
 
         sheet.pick(SpotItem(title: "A", run: "a"))
-        try await wait("the call") { self.blocks() == ["arg=read", "arg=open\narg=a"] }
+        try await wait("the call and its end") { self.blocks() == ["arg=read", "arg=open\narg=a"] && sheet.calls.isEmpty }
         time += 5
 
-        XCTAssertTrue(sheet.calls.isEmpty)
         XCTAssertTrue(sheet.work.isEmpty)
         XCTAssertNil(runs.runningSummary)
         XCTAssertNil(runs.workSpot)

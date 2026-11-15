@@ -55,11 +55,14 @@ extension SpotRun {
     }
 
     func close(_ call: OpenCall, _ end: ScriptCall.End, errors: String = "") async {
-        if case .ended = end, !call.hasAnswer, case .ask(let ask) = call.request.purpose {
-            call.hasAnswer = true
-            await takeAnswer((call.pushed ?? call.lastHead)?.withoutEffects() ?? .empty, frame: "", to: ask)
-        }
+        await takeEnd(of: call, end)
         finish(call, end, errors: errors)
+    }
+
+    func takeEnd(of call: OpenCall, _ end: ScriptCall.End) async {
+        guard case .ended = end, !call.hasAnswer, case .ask(let ask) = call.request.purpose else { return }
+        call.hasAnswer = true
+        await takeAnswer((call.pushed ?? call.lastHead)?.withoutEffects() ?? .empty, frame: "", to: ask)
     }
 
     func finish(_ call: OpenCall, _ end: ScriptCall.End, errors: String = "") {

@@ -394,9 +394,8 @@ final class SpotDropTests: XCTestCase {
 
         XCTAssertTrue(sheet.drop([spaced, dashed]))
 
-        try await wait("the call") { self.blocks() == ["arg=read", "arg=drop\narg=\(spaced)\narg=\(dashed)"] }
+        try await wait("the call and its end") { self.blocks() == ["arg=read", "arg=drop\narg=\(spaced)\narg=\(dashed)"] && sheet.calls.isEmpty }
         XCTAssertEqual(log().count, 1)
-        XCTAssertTrue(sheet.calls.isEmpty)
     }
 
     func testADropStartsOneCopyOfAStayingScriptThatNothingWants() async throws {

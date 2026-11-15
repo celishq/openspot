@@ -18,6 +18,18 @@ final class SpotRunsReadTests: SpotRunsCase {
         XCTAssertEqual(try String(contentsOfFile: path("runs"), encoding: .utf8), "run\n")
     }
 
+    func testAReadThatAnswersWithItsHeadAtItsEndIsReadingUntilTheAnswerIsIn() async throws {
+        try script(header: "on=panel.open", "printf 'title=Read\\n'")
+        let sheet = try sheet()
+
+        runs.panelOpened()
+        let limit = ContinuousClock.now + .seconds(60)
+        while runs.isReading, ContinuousClock.now < limit { await Task.yield() }
+
+        XCTAssertFalse(runs.isReading)
+        XCTAssertEqual(sheet.state.title, "Read")
+    }
+
     func testEachCallKnowsTheIDOfItsSpot() async throws {
         try script("coffee", header: "on=sheet.open", "printf 'row=%s\\n' \"$OPENSPOT_ID\"")
         let command = try XCTUnwrap(try scanned().spots.first { $0.id == "coffee" })
@@ -235,6 +247,18 @@ final class SpotRunsReadTests: SpotRunsCase {
         sheet.open {}
 
         try await wait("the sheet read") { self.log("reasons") == ["panel.open", "sheet.open"] }
+    }
+
+    func testASheetOpenBetweenTheFrameOfAPanelReadAndItsEndReadsAsTheSheetOpen() async throws {
+        try script(header: "on=panel.open\non=sheet.open", "echo \"$OPENSPOT_REASON\" >> '\(path("reasons"))'\nprintf 'row=a\\ntitle=A\\n---\\n'\n\(untilRelease)")
+        let sheet = try sheet()
+
+        runs.panelOpened()
+        try await wait("the row") { sheet.list.shown.count == 1 }
+        sheet.open {}
+        openGate()
+
+        try await wait("the sheet read", seconds: 20) { self.log("reasons") == ["panel.open", "sheet.open"] }
     }
 
     func testASheetOpenThatTheSpotListsDuringAPanelReadReadsAgain() async throws {

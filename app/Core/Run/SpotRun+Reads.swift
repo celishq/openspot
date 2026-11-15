@@ -12,7 +12,7 @@ extension SpotRun {
         if let run { selecting = run }
         if link.isAsking {
             if need == .change || wantsSheetAnswer { readsAgain = true }
-            if reason.isEvent { eventAgain = reason }
+            if reason.isEvent || wantsSheetAnswer { eventAgain = reason }
             return
         }
         if need == .moment, !wantsSheetAnswer, let answered, runs.now().timeIntervalSince(answered) < Self.answerAge {
