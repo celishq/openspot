@@ -15,6 +15,15 @@ struct SpotView: View {
             card(look, size: size, tilt: tilt.next(toward: pointer, at: context.date.timeIntervalSinceReferenceDate))
         }
         .frame(width: spot.size.width, height: spot.size.height)
+        .contentShape(Rectangle())
+        .onContinuousHover { phase in
+            switch phase {
+            case .active(let at):
+                let x = (at.x - spot.size.width / 2) / (size.width / 2), y = (at.y - spot.size.height / 2) / (size.height / 2)
+                pointer = CGPoint(x: min(max(x, -1), 1), y: min(max(y, -1), 1))
+            case .ended: pointer = nil
+            }
+        }
     }
 
     /// The largest card of the shape of a bank card that fits the place.
@@ -40,12 +49,6 @@ struct SpotView: View {
         .frame(width: size.width, height: size.height)
         .clipShape(shape)
         .overlay(shape.strokeBorder(.white.opacity(0.3), lineWidth: 1))
-        .onContinuousHover { phase in
-            switch phase {
-            case .active(let at): pointer = CGPoint(x: at.x / size.width * 2 - 1, y: at.y / size.height * 2 - 1)
-            case .ended: pointer = nil
-            }
-        }
         .rotation3DEffect(.degrees(tilt.x * 12), axis: (x: 0, y: 1, z: 0), perspective: 0.6)
         .rotation3DEffect(.degrees(-tilt.y * 9), axis: (x: 1, y: 0, z: 0), perspective: 0.6)
         .shadow(color: .black.opacity(0.5), radius: 12, x: -tilt.x * 8, y: 8 - tilt.y * 6)
