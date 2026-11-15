@@ -18,6 +18,7 @@ struct SheetPartsView: View {
     var menuOpening: () -> SheetParts.MenuOpening? = { nil }
     var onFocus: (SpotPart) -> Void = { _ in }
     var viewSource: String?
+    var viewDate: Date?
     var views = SpotViews.shared
     @FocusState private var focus: String?
     @Environment(\.spotIsHeld) private var isHeld
@@ -131,7 +132,7 @@ struct SheetPartsView: View {
     private func drawn(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         if part.isOpen {
             if let viewSource {
-                SpotCustomView(source: viewSource, values: part.values, card: .square, room: frame.rect.size, answers: panel.answered, views: views) { onSet(part, $0) }
+                SpotCustomView(source: viewSource, values: part.values, card: .square, room: frame.rect.size, answers: panel.answered, date: viewDate, views: views) { onSet(part, $0) }
                     .equatable()
             }
         } else {

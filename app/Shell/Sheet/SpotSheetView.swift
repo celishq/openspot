@@ -69,7 +69,8 @@ struct SpotSheetView: View {
                         nudge: { [held] in held == nil ? model.sheets[entry.id]?.nudge ?? SheetParts.Nudge.rest : SheetParts.Nudge.rest },
                         menuOpening: { [held] in held == nil ? model.sheets[entry.id]?.menuOpening : nil },
                         onFocus: { model.focusPart($0) },
-                        viewSource: entry.spot.view
+                        viewSource: entry.spot.view,
+                        viewDate: entry.spot.viewDate
                     )
                 } else if let form {
                     if form.choices != nil { Color.clear.frame(height: SpotTokens.listRowHeight) }

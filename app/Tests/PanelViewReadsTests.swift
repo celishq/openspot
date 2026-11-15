@@ -55,13 +55,25 @@ final class PanelViewReadsTests: XCTestCase {
         XCTAssertEqual(model.gridScroll, 40)
     }
 
-    func testASheetGrowsFromWhereItsCardWasScrolledToAndFollowsAScrollWhileItShows() async throws {
+    func testASheetGrowsFromWhereItsCardWasScrolledToAndAScrollWhileItShowsTellsNoReader() async throws {
         model.gridScrolled(to: 40)
 
         try await openList()
 
         XCTAssertEqual(model.cardScroll, 40)
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = model.cardScroll } onChange: { changed = true }
         model.gridScrolled(to: 60)
+        XCTAssertFalse(changed)
+    }
+
+    func testASheetClosesToWhereItsCardIsScrolledToNow() async throws {
+        try await openList()
+        model.gridScrolled(to: 60)
+
+        model.transition.hide(moves: true)
+
+        XCTAssertEqual(model.transition.phase, .closing)
         XCTAssertEqual(model.cardScroll, 60)
     }
 }

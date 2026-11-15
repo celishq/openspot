@@ -81,15 +81,39 @@ final class ViewBuildsTests: XCTestCase {
         XCTAssertEqual(count("compiles"), 1)
     }
 
-    func testAMacWithNoDeveloperToolsIsAskedAgainSinceTheSourceIsNotAtFault() async throws {
+    func testAFailureThatDoesNotNameTheSourceIsBuiltAgain() async throws {
+        let builds = try builds(compiler: "echo 'error: you have not agreed to the Xcode license' >&2; exit 1")
+        let source = try source()
+
+        _ = await fault(of: builds, source)
+        _ = await fault(of: builds, source)
+
+        XCTAssertEqual(count("compiles"), 2)
+    }
+
+    func testAMacWithNoDeveloperToolsStartsNoProcessWhenAViewIsAskedForAgain() async throws {
         let builds = try builds(selector: "exit 1", compiler: writes)
         let source = try source()
 
         let first = await fault(of: builds, source)
-        _ = await fault(of: builds, source)
+        let second = await fault(of: builds, source)
+        let other = await fault(of: builds, try self.source(view + "\n"))
 
         XCTAssertEqual(first, "To draw a view, install the Command Line Tools: xcode-select --install")
-        XCTAssertEqual(count("asks"), 2)
+        XCTAssertEqual(second, first)
+        XCTAssertEqual(other, first)
+        XCTAssertEqual(count("asks"), 1)
+    }
+
+    func testAViewThatWasBuiltBeforeIsFoundOnAMacWithNoDeveloperTools() async throws {
+        let source = try source()
+        let built = try await builds(compiler: writes).library(of: source)
+        let builds = try builds(selector: "exit 1", compiler: writes)
+        _ = await fault(of: builds, try self.source(view + "\n"))
+
+        let found = try await builds.library(of: try self.source())
+
+        XCTAssertEqual(found, built)
     }
 
     func testOnlyTheLatestFaultsAreKept() async throws {

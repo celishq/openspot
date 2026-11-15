@@ -96,7 +96,7 @@ public final class SpotsModel {
     @ObservationIgnored var waitingPush = false
     public internal(set) var transition = SheetTransition() {
         didSet {
-            if transition.id != nil, transition.id != oldValue.id, cardScroll != gridScroll { cardScroll = gridScroll }
+            if transition.id != nil, transition.id != oldValue.id || (transition.phase == .closing && oldValue.phase != .closing), cardScroll != gridScroll { cardScroll = gridScroll }
             let shown = transition.shown
             if shown != openSheetID {
                 openSheetID = shown

@@ -7,6 +7,7 @@ public actor ViewBuilds {
     private var building: [String: Task<URL, Error>] = [:]
     private var faults: [String: SpotError] = [:]
     private var faultOrder: [String] = []
+    private var toolsFault: SpotError?
 
     public init(library: ViewLibrary = .standard()) {
         self.library = library
@@ -23,13 +24,16 @@ public actor ViewBuilds {
         let name = ViewLibrary.name(of: text)
         if let fault = faults[name] { throw fault }
         if let build = building[name] { return try await build.value }
+        if let kept = library.kept(of: source, text: text) { return kept }
+        if let toolsFault { throw toolsFault }
         let build = Task { [library] in try await library.library(of: source, text: text) }
         building[name] = build
         defer { building[name] = nil }
         do {
             return try await build.value
-        } catch let fault as SpotError where fault.reason.hasPrefix(ViewLibrary.sourceFault) {
-            keep(fault, of: name)
+        } catch let fault as SpotError {
+            if fault.reason == ViewLibrary.toolsFault { toolsFault = fault }
+            if fault.reason.hasPrefix("\(ViewLibrary.sourceFault) \(source.lastPathComponent):"), fault.reason.contains("error:") { keep(fault, of: name) }
             throw fault
         }
     }

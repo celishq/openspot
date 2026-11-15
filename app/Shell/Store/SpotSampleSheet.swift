@@ -24,6 +24,7 @@ struct SpotSampleSheet: View {
         .modifier(SpotGlass())
         .environment(\.spotIsShown, true)
         .task(id: entry.id) {
+            if let view = entry.spot.view { await SpotViews.shared.load(view) }
             guard let output = await model.sample(id) else { return }
             sample = (SheetParts(output: output), SpotSheetPicture.list(of: output))
         }
