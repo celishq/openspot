@@ -16,8 +16,8 @@ public enum AccountCall: Equatable, Sendable {
         case (nil, _): self = .status(frame: false)
         case ("--frame", 1): self = .status(frame: true)
         case ("new", _):
-            let name = words.dropFirst().joined(separator: " ").trimmingCharacters(in: .whitespaces)
-            self = .new(name.isEmpty ? nil : name)
+            let handle = words.dropFirst().joined(separator: " ").trimmingCharacters(in: .whitespaces)
+            self = .new(handle.isEmpty ? nil : handle)
         case ("words", 1): self = .words
         case ("check", 2...):
             let places = words.dropFirst().compactMap { Int($0) }.filter { (1...AccountPhrase.wordCount).contains($0) }

@@ -12,7 +12,7 @@ struct AccountCalls {
         switch call {
         case .status(let frame): status(frame: frame)
         case .sync(let isOn): sync(isOn)
-        case .new(let name): new(name: name)
+        case .new(let handle): new(handle: handle)
         case .words: words()
         case .check(let places): check(places)
         case .checked: checked(input)
@@ -35,9 +35,9 @@ struct AccountCalls {
         }
     }
 
-    func new(name: String?) -> CommandAPI.Work {
+    func new(handle: String?) -> CommandAPI.Work {
         CommandAnswer.work { [account] in
-            try account.make(name: name)
+            try account.make(handle: handle)
             return ""
         }
     }

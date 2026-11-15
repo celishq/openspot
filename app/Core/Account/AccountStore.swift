@@ -29,10 +29,10 @@ public struct AccountStore: Sendable {
         try record()?.key
     }
 
-    public func keyMadeOnce(name: String? = nil, on date: Date = Date()) throws -> AccountKey {
+    public func keyMadeOnce(handle: String? = nil, on date: Date = Date()) throws -> AccountKey {
         if let key = try key() { return key }
         let key = try AccountKey.make()
-        try keep(AccountRecord(key: key, name: name, since: date.formatted(.iso8601.year().month().day().dateSeparator(.dash))))
+        try keep(AccountRecord(key: key, handle: handle, since: date.formatted(.iso8601.year().month().day().dateSeparator(.dash))))
         return key
     }
 

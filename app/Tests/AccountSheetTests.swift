@@ -22,7 +22,7 @@ final class AccountSheetTests: BuiltInCase {
                 allows: { await app.allows($0) },
                 copy: { mac.copied.append($0); return true },
                 publish: { await publishes.add($0) },
-                userName: { "Tony" }
+                userName: { "Tony Pinkevych" }
             ))
             sheet = made
             return made.spot
@@ -75,29 +75,44 @@ final class AccountSheetTests: BuiltInCase {
         XCTAssertEqual(block("own", in: read)["title"], "Use my own key")
     }
 
-    func testANewKeyAsksForANameThenOpensTheAccountWithNoStepAboutTheWords() async throws {
+    func testANewKeyAsksForAHandleUnderItsTitleThenOpensTheAccount() async throws {
         let asked = try await frame(["new"])
         XCTAssertNil(try store.key())
-        XCTAssertTrue(asked.contains("field=name\n"), asked)
+        XCTAssertEqual(block("handle", in: asked)["value"], "tonypinkevych")
+        XCTAssertEqual(block("label", in: asked)["title"], "Handle")
         XCTAssertTrue(asked.contains("grid=back create\n"), asked)
 
-        let made = try await frame(["create"], input: "name=Tony Pinkevych\n")
+        let made = try await frame(["create"], input: "handle=tony\n")
 
         XCTAssertNotNil(try store.key())
-        XCTAssertEqual(try store.record()?.name, "Tony Pinkevych")
-        XCTAssertEqual(block("card", in: made)["name"], "Tony Pinkevych")
+        XCTAssertEqual(try store.record()?.handle, "tony")
+        XCTAssertEqual(block("card", in: made)["handle"], "tony")
         XCTAssertEqual(block("card", in: made)["npub"], try store.key()?.npub)
         XCTAssertEqual(block("backup", in: made)["title"], "Your 12 words are not backed up")
         XCTAssertFalse(made.contains("pop=true"), made)
     }
 
     func testThePillOfTheCardCopiesTheKeyAndSaysSo() async throws {
-        let key = try store.keyMadeOnce(name: "Tony")
+        let key = try store.keyMadeOnce(handle: "tony")
 
         let copied = try await frame(["card", "copy"])
 
         XCTAssertEqual(mac.copied, [key.npub])
         XCTAssertEqual(toast(in: copied), "Copied your key")
+    }
+
+    func testTypingAHandleCleansItAndATooShortOneKeepsThePageAndSaysTheRule() async throws {
+        _ = try await frame(["new"])
+
+        let typed = try await frame(["handle", "Tony P!"])
+        let short = try await frame(["handle", "T."])
+        let refused = try await frame(["create"], input: "handle=T.\n")
+
+        XCTAssertEqual(block("handle", in: typed)["value"], "tonyp")
+        XCTAssertNil(block("status", in: typed)["title"])
+        XCTAssertEqual(block("status", in: short)["title"], AccountHandle.rule)
+        XCTAssertNil(try store.key())
+        XCTAssertEqual(block("status", in: refused)["title"], AccountHandle.rule)
     }
 
     func testAKeyNotBackedUpOpensOnTheAccountNotOnTheWords() async throws {
@@ -135,7 +150,7 @@ final class AccountSheetTests: BuiltInCase {
     func testANewKeyOnThePublishPageMakesTheKeyPublishesAndGoesBack() async throws {
 
         _ = try await frame(["new"], page: "publish:a")
-        let done = try await frame(["create"], input: "name=Tony\n", page: "publish:a")
+        let done = try await frame(["create"], input: "handle=tony\n", page: "publish:a")
 
         XCTAssertNotNil(try store.key())
         let published = await publishes.ids

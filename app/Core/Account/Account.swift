@@ -9,15 +9,16 @@ struct Account: Sendable {
         return AccountStatus(
             signedIn: record != nil,
             npub: record?.key.npub,
-            name: record?.name,
+            handle: record?.handle,
             since: record?.since,
             backedUp: record?.isBackedUp,
             sync: record == nil || !store.canSync ? nil : try store.isSyncing()
         )
     }
 
-    func make(name: String?) throws {
-        _ = try store.keyMadeOnce(name: name)
+    func make(handle: String?) throws {
+        if let handle, AccountHandle(handle) == nil { throw SpotError.failed(1, AccountHandle.rule) }
+        _ = try store.keyMadeOnce(handle: handle)
     }
 
     func words() async throws -> [String] {

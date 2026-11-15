@@ -32,7 +32,7 @@ public actor AccountSheet {
     }
 
     private enum Step: Equatable {
-        case choose, name, how, about, words, check(WordCheck), account, leave, restore
+        case choose, handle, how, about, words, check(WordCheck), account, leave, restore
     }
 
     public static let id = "openspot/account"
@@ -63,6 +63,7 @@ public actor AccountSheet {
         let reason = variables["OPENSPOT_REASON"]
         var toast: String?
         var phrase = ""
+        var handle: String?
         var pops = false
         let action = arguments.first ?? ""
         switch action {
@@ -85,10 +86,16 @@ public actor AccountSheet {
         case "phrase":
             phrase = arguments.count > 1 ? arguments[1] : ""
         case "new":
-            saved = .name
+            saved = .handle
+        case "handle":
+            handle = AccountHandle.suggestion(from: arguments.dropFirst().first ?? "")
         case "create":
-            let name = (fields?.value("name") ?? "").trimmingCharacters(in: .whitespaces)
-            try account.make(name: name.isEmpty ? nil : name)
+            let typed = AccountHandle.suggestion(from: fields?.value("handle") ?? "")
+            guard AccountHandle(typed) != nil else {
+                handle = typed
+                break
+            }
+            try account.make(handle: typed)
             saved = nil
             if let publishing { pops = await publish(publishing) }
         case "own":
@@ -122,14 +129,14 @@ public actor AccountSheet {
         default:
             throw SpotError.failed(1, "Account cannot do that.")
         }
-        return try await sheet(reason: action == "read" ? reason : nil, toast: toast, phrase: phrase, pops: pops)
+        return try await sheet(reason: action == "read" ? reason : nil, toast: toast, phrase: phrase, handle: handle, pops: pops)
     }
 
     private func step(reason: String?, _ facts: AccountStatus) throws -> Step {
         if reason != nil, saved == .words { saved = nil }
         switch (saved, facts.signedIn) {
         case let (step?, _) where [.how, .restore].contains(step): return step
-        case (.name?, false): return .name
+        case (.handle?, false): return .handle
         case let (step?, true) where [.about, .words, .account, .leave].contains(step): return step
         case let (.check(check)?, true) where facts.backedUp != true: return .check(check)
         default: return facts.signedIn ? .account : .choose
@@ -168,7 +175,7 @@ public actor AccountSheet {
         Array((1...AccountPhrase.wordCount).shuffled().prefix(2)).sorted()
     }
 
-    private func sheet(reason: String?, toast: String?, phrase: String, pops: Bool) async throws -> String {
+    private func sheet(reason: String?, toast: String?, phrase: String, handle: String?, pops: Bool) async throws -> String {
         let facts = try account.status()
         var frame = AccountFrame()
         if pops { frame.head("pop", "true") }
@@ -176,7 +183,7 @@ public actor AccountSheet {
         case .restore: restore(&frame, facts, phrase: phrase, toast: toast)
         case .check(let check): self.check(&frame, check, toast: toast)
         case .choose: choose(&frame, toast: toast)
-        case .name: name(&frame, toast: toast)
+        case .handle: self.handle(&frame, typed: handle, toast: toast)
         case .how: how(&frame, toast: toast)
         case .about: about(&frame, facts, toast: toast)
         case .words: await words(&frame, facts, toast: toast)
@@ -195,11 +202,17 @@ public actor AccountSheet {
         frame.howAction()
     }
 
-    private func name(_ frame: inout AccountFrame, toast: String?) {
-        frame.grid("head head", "head head", "name name", "back create")
+    private func handle(_ frame: inout AccountFrame, typed: String?, toast: String?) {
+        let value = typed ?? AccountHandle.suggestion(from: links.userName())
+        let problem = typed != nil && AccountHandle(value) == nil ? AccountHandle.rule : nil
+        frame.grid("head head", "head head", "label label", "handle handle")
+        if problem != nil { frame.grid("status status") }
+        frame.grid("back create")
         frame.toast(toast)
-        frame.line("head", "Who publishes?", icon: "person.crop.circle", detail: "People see this name on the spots you publish.")
-        frame.block(["field": "name", "placeholder": "Your name", "value": links.userName()], order: ["field", "placeholder", "value"])
+        frame.line("head", "Pick your handle", icon: "at", detail: "It names you on the spots you publish, and in their links.")
+        frame.block(["section": "label", "title": "Handle"], order: ["section", "title"])
+        frame.block(["field": "handle", "placeholder": "yourname", "value": value], order: ["field", "placeholder", "value"])
+        if let problem { frame.line("status", problem, icon: "exclamationmark.triangle", tone: "bad") }
         frame.button("back", "Back")
         frame.button("create", "Create key", .main)
         frame.howAction()
@@ -256,7 +269,7 @@ public actor AccountSheet {
         let npub = facts.npub ?? ""
         var card = ["view": "card", "npub": npub, "short": facts.shortNpub ?? ""]
         var order = ["view", "npub", "short"]
-        if let name = facts.name { card["name"] = name; order.append("name") }
+        if let handle = facts.handle { card["handle"] = handle; order.append("handle") }
         if let since = facts.since.flatMap(Self.month) { card["since"] = since; order.append("since") }
         frame.block(card, order: order)
         if facts.sync == true {

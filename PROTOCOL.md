@@ -948,11 +948,12 @@ openspot app quit
 - Without Careful mode, the data folder is no boundary.
 - A spot folder can hold `releases.jsonl`, the signed releases of the spot. Openspot writes it when the user shares or
   publishes the spot, and refuses a shared spot whose files don't match its last release. A spot reads nothing from it.
-- `openspot account` tells any spot the public facts: whether an account is signed in, its `npub`, the `name` it was made
-  with, the day it was made (`since`), whether its words are backed up, and whether it syncs. `openspot account new <name>`
-  makes the key with that name. Every other call of `account` reaches the key, so it answers only a spot that ships
-  inside Openspot and names `account` in its uses. `words` and `sign-out` ask for Touch ID first, which counts for 5
-  minutes. The calls of such a spot stay out of the call log and the playground.
+- `openspot account` tells any spot the public facts: whether an account is signed in, its `npub`, the `handle` it was
+  made with, the day it was made (`since`), whether its words are backed up, and whether it syncs.
+- `openspot account new <handle>` makes the key with that handle: 3 to 20 of a–z, 0–9, `-` and `_`. It and every other
+  call of `account` reach the key, so they answer only a spot that ships inside Openspot and names `account` in its uses.
+  `words` and `sign-out` ask for Touch ID first, which counts for 5 minutes. The calls of such a spot stay out of the
+  call log and the playground.
 
 ## Messages
 

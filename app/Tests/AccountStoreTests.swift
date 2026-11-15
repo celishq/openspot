@@ -25,20 +25,20 @@ final class AccountStoreTests: XCTestCase {
         XCTAssertEqual(try store.key(), key)
     }
 
-    func testAMadeKeyKeepsItsNameAndTheDayItWasMadeThroughABackup() throws {
-        _ = try store.keyMadeOnce(name: "Tony Pinkevych", on: Date(timeIntervalSince1970: 1_794_700_800))
+    func testAMadeKeyKeepsItsHandleAndTheDayItWasMadeThroughABackup() throws {
+        _ = try store.keyMadeOnce(handle: "tony", on: Date(timeIntervalSince1970: 1_794_700_800))
 
         try store.markBackedUp()
 
-        XCTAssertEqual(try store.record()?.name, "Tony Pinkevych")
+        XCTAssertEqual(try store.record()?.handle, "tony")
         XCTAssertEqual(try store.record()?.since, "2026-11-15")
         XCTAssertTrue(try store.record()?.isBackedUp == true)
     }
 
-    func testAKeyKeptFromItsWordsHasNoNameNorDay() throws {
+    func testAKeyKeptFromItsWordsHasNoHandleNorDay() throws {
         try store.keep(try AccountKey.make(), isBackedUp: true)
 
-        XCTAssertNil(try store.record()?.name)
+        XCTAssertNil(try store.record()?.handle)
         XCTAssertNil(try store.record()?.since)
     }
 

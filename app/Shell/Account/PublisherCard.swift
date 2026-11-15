@@ -66,8 +66,8 @@ struct PublisherCard: View {
         VStack(alignment: .leading, spacing: 0) {
             top(look)
             Spacer(minLength: 0)
-            if let name = value("name") {
-                Text(name).font(.system(size: 24, weight: .bold)).lineLimit(1).minimumScaleFactor(0.6)
+            if let handle = value("handle") {
+                Text("@\(handle)").font(.system(size: 24, weight: .bold)).lineLimit(1).minimumScaleFactor(0.6)
             }
             bottom.padding(.top, 8)
         }

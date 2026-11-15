@@ -85,13 +85,15 @@ final class AccountCallsTests: XCTestCase {
         XCTAssertEqual(asked, ["show your account words", "show your account words"])
     }
 
-    func testNewKeepsTheNameItIsGivenAndAnyoneReadsItWithTheDay() async throws {
-        let made = try await call(["account", "new", "Tony", "Pinkevych"], from: account)
+    func testNewKeepsTheHandleItIsGivenAndAnyoneReadsItWithTheDay() async throws {
+        let refused = try await call(["account", "new", "Tony P"], from: account)
+        let made = try await call(["account", "new", "tony"], from: account)
 
         let facts = try await call(["account", "--frame"], from: spot(uses: [], isBuiltIn: false))
 
+        XCTAssertNotEqual(refused.code, 0)
         XCTAssertEqual(made.code, 0, made.errors)
-        XCTAssertTrue(facts.output.contains("\nname=Tony Pinkevych\n"), facts.output)
+        XCTAssertTrue(facts.output.contains("\nhandle=tony\n"), facts.output)
         XCTAssertNotNil(facts.output.range(of: "\nsince=\\d{4}-\\d{2}-\\d{2}\n", options: .regularExpression), facts.output)
     }
 
