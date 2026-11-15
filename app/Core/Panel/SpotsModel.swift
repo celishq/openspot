@@ -79,13 +79,11 @@ public final class SpotsModel {
     public internal(set) var flow = Flow() {
         didSet {
             for gone in Set(oldValue.pages).subtracting(flow.pages) { sheets[gone.spot]?.forget(page: gone.page) }
-            let titles = flow.pages.prefix(max(flow.index, 0)).reversed().map(title(of:))
-            if titles != behindTitles { behindTitles = titles }
         }
     }
-    public private(set) var behindTitles: [String] = []
-    public internal(set) var pushOffset = 0.0
-    @ObservationIgnored var waitingPush: Double?
+    public internal(set) var flowEdges = FlowEdges()
+    @ObservationIgnored var edgeStep = 0
+    @ObservationIgnored var waitingPush = false
     public internal(set) var transition = SheetTransition() {
         didSet {
             let shown = transition.shown

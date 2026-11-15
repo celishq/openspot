@@ -74,7 +74,7 @@ final class FlowMoveTests: PanelCase {
         try pressFlow("done")
 
         try await waitFor("the list") { self.model.openList == "list" && self.titles == ["A"] }
-        XCTAssertEqual(model.flow.ahead, FlowSheet(spot: "flow"))
+        XCTAssertNil(model.flow.ahead)
     }
 
     func testAPressPushesAnotherSpotOverItsSheet() async throws {
@@ -86,7 +86,7 @@ final class FlowMoveTests: PanelCase {
         try pressFlow("hand")
 
         try await waitFor("the other spot") { self.model.openList == "other" && self.titles == ["Other"] }
-        XCTAssertEqual(model.behindTitles, ["Flow", "List"])
+        try await waitFor("the bars behind") { self.model.flowEdges.titles(on: .behind) == ["Flow", "List"] }
     }
 
     func testAReadThatPushesMovesNothing() async throws {
@@ -108,7 +108,7 @@ final class FlowMoveTests: PanelCase {
         XCTAssertFalse(model.pop(in: "other"))
         XCTAssertTrue(model.pop(in: "list"))
 
-        XCTAssertEqual(titles, ["A"])
+        try await waitFor("the sheet before") { self.titles == ["A"] }
         XCTAssertFalse(model.pop(in: "list"))
     }
 

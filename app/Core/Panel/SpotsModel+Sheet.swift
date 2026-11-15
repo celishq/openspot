@@ -43,7 +43,7 @@ extension SpotsModel {
     public func stepBack() -> Bool {
         if !searchText.isEmpty {
             searchText = ""
-        } else if back() {
+        } else if popPage() {
         } else if openList != nil {
             closeList(moving: isShown)
         } else {
@@ -78,7 +78,7 @@ extension SpotsModel {
         if openList == nil { endFlow() }
         flow.push(FlowSheet(spot: id, title: title))
         sheets[id]?.show(page: nil)
-        waitPush(from: moving && openList != nil && openList != id ? 1 : nil)
+        waitPush(moving: moving && openList != nil && openList != id)
         present(id, moving: moving)
     }
 
@@ -107,11 +107,15 @@ extension SpotsModel {
     }
 
     func showSheet(_ list: String?, moving: Bool) {
-        guard list != openList else { return }
+        guard list != openList else { return dropWaitingPush() }
         if let list, openList != nil, transition.isOpen {
+            let swapped = takeWaitingPush { [weak self] in
+                self?.transition.show(list, moves: true)
+                self?.transition.settle(list)
+            }
+            guard !swapped else { return }
             change(moving ? .sheet(isOpen: true) : nil, {
                 transition.show(list, moves: true)
-                startWaitingPush()
             }) { [weak self] in
                 self?.change(nil) { self?.transition.settle(list) }
             }

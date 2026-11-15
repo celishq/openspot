@@ -1,32 +1,82 @@
 import Foundation
 
 extension SpotsModel {
-    func pushIn(from side: Double, _ change: () -> Void) {
-        self.change(nil) {
-            change()
-            pushOffset = side * MotionTokens.pushDistance
+    func pushIn(_ swap: () -> SpotRun?) {
+        step(swap)
+    }
+
+    func waitPush(moving: Bool) {
+        waitingPush = moving
+        if !moving { showEdges() }
+    }
+
+    func takeWaitingPush(_ swap: () -> Void) -> Bool {
+        guard waitingPush else { return false }
+        waitingPush = false
+        step {
+            swap()
+            return nil
         }
-        settlePush()
-    }
-
-    func waitPush(from side: Double?) {
-        waitingPush = side
-    }
-
-    func startWaitingPush() {
-        guard let side = waitingPush else { return }
-        waitingPush = nil
-        pushOffset = side * MotionTokens.pushDistance
-        settlePush()
+        return true
     }
 
     func dropWaitingPush() {
-        waitingPush = nil
+        guard waitingPush else { return }
+        waitingPush = false
+        showEdges()
+        showQueued()
     }
 
-    private func settlePush() {
-        DispatchQueue.main.async { [weak self] in
-            self?.change(.push) { self?.pushOffset = 0 }
+    var isStepping: Bool {
+        waitingPush || flowEdges.from != nil
+    }
+
+    func showEdges() {
+        edgeStep += 1
+        let next = FlowEdges(flow: flow, title: title(of:))
+        if next != flowEdges { flowEdges = next }
+    }
+
+    private func step(_ swap: () -> SpotRun?) {
+        var loading: SpotRun?
+        let target = flow
+        change(nil) {
+            standEdges()
+            loading = swap()
         }
+        let step = edgeStep
+        let move = { [weak self] in
+            DispatchQueue.main.async { [weak self] in
+                guard let self, step == edgeStep else { return }
+                change(.flow, { moveEdges(to: target) }) { [weak self] in self?.settleEdges(step) }
+            }
+        }
+        if let loading { loading.holdPageMotion(start: move) } else { move() }
+    }
+
+    private func settleEdges(_ step: Int) {
+        guard step == edgeStep else { return }
+        if flowEdges.settled != flowEdges { change(nil) { flowEdges = flowEdges.settled } }
+        showQueued()
+    }
+
+    private func showQueued() {
+        guard let current = flow.current, current != flowEdges.shown, openList != nil else { return }
+        show(current, moving: isShown)
+    }
+
+    private func standEdges() {
+        edgeStep += 1
+        guard flowEdges.shown != nil, let open = openList, let run = sheets[open], let rect = shownSheetRect else { return }
+        let page = formRect == nil ? SheetPage(run: run, rect: rect, query: searchText) : nil
+        flowEdges = flowEdges.standing(at: rect, holding: page, in: flow, title: title(of:))
+    }
+
+    private func moveEdges(to target: Flow) {
+        flowEdges = flowEdges.moved(to: FlowEdges(flow: target, title: title(of:)))
+    }
+
+    private var shownSheetRect: CGRect? {
+        formRect ?? openList.flatMap { sheets[$0]?.sheetRect }
     }
 }

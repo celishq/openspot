@@ -49,7 +49,7 @@ struct SpotsView: View {
             .modifier(GridFadeMask(fade: fade, height: cardHeight))
             .morph(coversGrid ? 0 : 1, opacity: { SheetMorph.sheetLook(at: $0) })
             .modifier(PanelSpan(panels: model.panels))
-            SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: max(gridHeight, model.menuBackdropHeight), sheetHeight: max(sheetID == nil ? gridHeight : sheetHeight, model.menuBackdropHeight))
+            SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: max(gridHeight, model.menuBackdropHeight), sheetHeight: sheetID == nil ? gridHeight : sheetHeight, sheetRect: sheetRect, menuHeight: model.menuBackdropHeight)
                 .modifier(SpotShownFade(isShown: model.isShown))
             if sheetOpen, sheetID != nil {
                 SpotFlowEdges(model: model, rect: sheetRect)
@@ -63,7 +63,8 @@ struct SpotsView: View {
                     sheetRect: sheetRect,
                     isOpen: sheetOpen,
                     fade: fade,
-                    fadeHeight: cardHeight
+                    fadeHeight: cardHeight,
+                    showsField: showsSearchField && fieldIsInSheet
                 )
             }
             SpotFieldView(
@@ -75,6 +76,7 @@ struct SpotsView: View {
                 surfaceIsOut: surfaceIsOut,
                 sheet: fieldSheet(on: card, at: frame)
             )
+            .modifier(FlowFieldHide(model: model, isInSheet: fieldIsInSheet))
             if model.isMenuOpen {
                 Color.clear
                     .contentShape(Rectangle())
@@ -99,7 +101,7 @@ struct SpotsView: View {
     }
 
     private var softBlur: some View {
-        SpotBackdrop(model: model, gridHeight: gridHeight, sheetHeight: max(sheetHeight, replacedHeight), menuHeight: menuHeight, drawsBlur: drawsBlur)
+        SpotBackdrop(model: model, gridHeight: gridHeight, sheetHeight: sheetHeight, sheetRect: sheetRect, menuHeight: menuHeight, drawsBlur: drawsBlur)
             .environment(\.spotPanels, model.shownPanels)
             .modifier(PanelSpan(panels: model.shownPanels))
     }
@@ -121,29 +123,11 @@ struct SpotsView: View {
     }
 
     private func rect(of id: String?) -> CGRect {
-        Self.rect(of: id, in: model)
-    }
-
-    private static func rect(of id: String?, in model: SpotsModel) -> CGRect {
         model.sheets[id ?? ""]?.sheetRect ?? SpotTokens.sheetRect(rows: 0)
-    }
-
-    static func blurHeights(of model: SpotsModel) -> [CGFloat] {
-        let sheets = model.sheets.keys.map { blurHeight(of: rect(of: $0, in: model)) }
-        return [gridHeight(of: model), blurHeight(of: SpotTokens.sheetRect(rows: 0)), SpotTokens.panelHeight] + sheets
     }
 
     private static func blurHeight(of sheet: CGRect) -> CGFloat {
         sheet.height + 2 * SpotTokens.halo + SpotTokens.hintBlock
-    }
-
-    private static func gridHeight(of model: SpotsModel) -> CGFloat {
-        SpotTokens.backdropHeight(gridHeight: SpotGrid.height(of: model.placements))
-    }
-
-    private var replacedHeight: CGFloat {
-        guard let replaced = model.transition.replaced else { return 0 }
-        return Self.blurHeight(of: rect(of: replaced))
     }
 
     private var gridPush: CGFloat {
@@ -191,6 +175,15 @@ struct SpotsView: View {
         if model.formRect != nil { return model.formHasChoices }
         guard sheetOpen else { return true }
         return model.sheets[sheetID ?? ""]?.showsField ?? true
+    }
+}
+
+private struct FlowFieldHide: ViewModifier {
+    let model: SpotsModel
+    let isInSheet: Bool
+
+    func body(content: Content) -> some View {
+        content.opacity(isInSheet && model.flowEdges.coming != nil ? MotionTokens.hiddenOpacity : 1)
     }
 }
 

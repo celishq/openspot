@@ -74,6 +74,8 @@ final class SpotMotionProbe: NSObject {
             switch action {
             case "typing": self.type(left: self.presses)
             case "pick": self.pick()
+            case "flow": self.step(through: [ActionKey(name: "[", isCommand: true), ActionKey(name: "]", isCommand: true), ActionKey(name: "escape")])
+            case "history": self.step(through: self.history, reopening: target.id)
             default: self.arrow(left: self.presses)
             }
         }
@@ -387,6 +389,28 @@ final class SpotMotionProbe: NSObject {
     private func pick() {
         if let item = model.openItems?.shown.first(where: { $0.run == row }) { model.runItem(item) }
         DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.end() }
+    }
+
+    private var history: [ActionKey] {
+        let steps = (0..<presses).map { ActionKey(name: $0 % 2 == 0 ? "[" : "]", isCommand: true) }
+        return steps + [ActionKey(name: "escape"), ActionKey(name: "escape")]
+    }
+
+    private func step(through keys: [ActionKey], reopening id: String? = nil) {
+        if let item = model.openItems?.shown.first(where: { $0.run == row }) { model.runItem(item) }
+        let first = id == nil ? pause : 1
+        for (index, key) in keys.enumerated() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + first + pause * Double(index)) {
+                _ = self.model.handleKey(key)
+            }
+        }
+        let after = first + pause * Double(keys.count) + 1
+        guard let id else {
+            return DispatchQueue.main.asyncAfter(deadline: .now() + pause * Double(keys.count + 1)) { self.end() }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + after) { self.model.press(id) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + after + 1.5) { self.model.closeList(moving: true) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + after + 3) { self.end() }
     }
 
     private func end() {

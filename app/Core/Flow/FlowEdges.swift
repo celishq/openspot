@@ -1,0 +1,92 @@
+import Foundation
+
+public struct FlowEdges: Equatable, Sendable {
+    public private(set) var edges: [FlowEdge] = []
+    public private(set) var shown: FlowSheet?
+    public private(set) var from: CGRect?
+    public private(set) var coming: FlowEdge.Side?
+    public private(set) var leaving: FlowEdge.Place?
+    public private(set) var isMoving = false
+    public private(set) var leavingSheet: FlowSheet?
+    public private(set) var sheetStart: FlowEdge.Place?
+    public private(set) var leavingPage: SheetPage?
+
+    public init() {}
+
+    init(flow: Flow, title: (FlowSheet) -> String) {
+        let behind = flow.pages.prefix(max(flow.index, 0)).reversed().prefix(SpotTokens.edgeCount)
+        let ahead = flow.pages.dropFirst(flow.index + 1).prefix(SpotTokens.edgeCount)
+        edges = behind.enumerated().map { FlowEdge(sheet: $0.element, title: title($0.element), place: .bar(.behind, $0.offset)) }
+            + ahead.enumerated().map { FlowEdge(sheet: $0.element, title: title($0.element), place: .bar(.ahead, $0.offset)) }
+        shown = flow.current
+    }
+
+    public func room(around sheetRect: CGRect) -> CGRect {
+        isMoving ? sheetRect : from ?? sheetRect
+    }
+
+    public func heldHeight(of sheetRect: CGRect) -> CGFloat {
+        room(around: sheetRect).height - sheetRect.height
+    }
+
+    public var leavingEdge: FlowEdge? {
+        edges.first { $0.sheet == leavingSheet }
+    }
+
+    public func titles(on side: FlowEdge.Side) -> [String] {
+        edges.filter { !$0.isFading && $0.place.side == side }.map(\.title)
+    }
+
+    func standing(at rect: CGRect, holding page: SheetPage?, in flow: Flow, title: (FlowSheet) -> String) -> FlowEdges {
+        var next = settled
+        guard let shown, !next.edges.contains(where: { $0.sheet == shown }) else { return next }
+        let left = flow.pages.firstIndex(of: shown)
+        let coming: FlowEdge.Side = left.map { $0 > flow.index ? .behind : .ahead } ?? .behind
+        next.coming = coming
+        next.leaving = left == nil ? .line(.ahead) : .bar(coming == .ahead ? .behind : .ahead, 0)
+        next.edges.removeAll { $0.sheet == flow.current }
+        next.edges.append(FlowEdge(sheet: shown, title: title(shown), place: .stand(rect)))
+        next.leavingSheet = shown
+        next.sheetStart = .bar(coming, 0)
+        next.leavingPage = page
+        next.from = rect
+        return next
+    }
+
+    func moved(to rest: FlowEdges) -> FlowEdges {
+        var next = rest
+        next.from = from
+        next.coming = coming
+        next.leaving = leaving
+        next.isMoving = true
+        next.leavingSheet = leavingSheet
+        next.leavingPage = leavingPage
+        for edge in edges where !rest.edges.contains(where: { $0.sheet == edge.sheet }) {
+            var gone = edge
+            if edge.sheet == leavingSheet, let leaving { gone.place = leaving }
+            gone.isFading = true
+            next.edges.append(gone)
+        }
+        return next
+    }
+
+    var settled: FlowEdges {
+        var next = self
+        next.edges.removeAll(where: \.isFading)
+        next.from = nil
+        next.coming = nil
+        next.leaving = nil
+        next.isMoving = false
+        next.leavingSheet = nil
+        next.sheetStart = nil
+        next.leavingPage = nil
+        return next
+    }
+}
+
+extension FlowEdge.Place {
+    public var side: FlowEdge.Side? {
+        if case .bar(let side, _) = self { return side }
+        return nil
+    }
+}
