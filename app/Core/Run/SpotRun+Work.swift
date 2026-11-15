@@ -84,7 +84,8 @@ extension SpotRun {
     }
 
     public func pressKey(_ call: String) {
-        if waitingKeys.count < Self.waitingLimit { waitingKeys.append(call) }
+        let held = script.keepsState ? calls.count { $0.key == Self.globalKey } : 0
+        if waitingKeys.count + held < Self.waitingLimit { waitingKeys.append(call) }
         startWaitingKey()
     }
 
@@ -126,7 +127,7 @@ extension SpotRun {
         let call = SpotAction.action(action, item: item)
         let key = Self.key(call: call)
         if let running = running(key) {
-            pressAgain(running)
+            stopPressed(running)
             return nil
         }
         guard let output = try await answer(to: call, key: key, input: nil) else { return nil }
@@ -138,7 +139,7 @@ extension SpotRun {
         let call = SpotAction.action(action, item: nil)
         let key = Self.key(call: call)
         if let running = running(key) {
-            pressAgain(running)
+            stopPressed(running)
             return nil
         }
         guard let output = try await answer(to: call, key: key, input: nil) else { return nil }
@@ -151,7 +152,7 @@ extension SpotRun {
         let call = SpotAction.action(action, item: item)
         let key = Self.key(call: call)
         if let running = running(key) {
-            pressAgain(running)
+            stopPressed(running)
             return nil
         }
         guard !script.keepsState else {
@@ -174,6 +175,11 @@ extension SpotRun {
     }
 
     private func pressAgain(_ call: ScriptCall) {
+        guard script.keepsState else { return stopPressed(call) }
+        if runs.now().timeIntervalSince(call.started) >= Self.pressPause { call.halt() }
+    }
+
+    private func stopPressed(_ call: ScriptCall) {
         if runs.now().timeIntervalSince(call.started) >= Self.pressPause { stop(call) }
     }
 

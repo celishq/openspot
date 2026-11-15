@@ -173,7 +173,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("clipboard").path))
     }
 
-    func testASecondPressFrontsTheEditorAndAStopClosesItWithNoCopy() async throws {
+    func testASecondPressFrontsTheEditorAndOnlyItsCloseEndsTheCall() async throws {
         let folder = try temporaryFolder()
         let picture = try png(in: folder)
         let (script, frames) = try await shot(in: folder, picture: picture.path, holds: true)
@@ -184,9 +184,9 @@ final class ScreenExamplesTests: SampleSpotsCase {
         script.send(text: "call=2\narg=open\n\n")
         try await wait("the end of the second press") { frames.ends == ["2"] }
         script.send(text: "stop=1\n\n")
-        try await wait("the end of the first press") { frames.ends == ["2", "1"] }
+        try await wait("the editor in front again") { self.notes(in: folder) == "edit a.png\nfront\nfront\n" }
 
-        XCTAssertEqual(notes(in: folder), "edit a.png\nfront\nclose\n")
+        XCTAssertEqual(frames.ends, ["2"])
         XCTAssertEqual(try read("calls", in: folder), "screen shot\n")
         XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("clipboard").path))
     }

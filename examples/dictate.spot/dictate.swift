@@ -17,6 +17,9 @@
 // menu bar shows Dictate, or while a dictation or the download of the speech model runs. Each of those two is one call
 // that stays open until it ends. A second press of the Dictate key finishes a dictation, and a second press of the card
 // or of the download row stops it. The texts, the model and the place of the pill stay in the data folder.
+//
+// The speech model loads with the first dictation and stays loaded only while the process runs. Put Dictate in the menu
+// bar to keep it loaded, so that each dictation starts at once.
 import AppKit
 
 let data = URL(fileURLWithPath: ProcessInfo.processInfo.environment["OPENSPOT_DATA"] ?? FileManager.default.currentDirectoryPath)
@@ -99,6 +102,7 @@ func fetch(in id: String, toast: String? = nil) {
         switch end {
         case .landed: Link.frame("toast=Dictate is ready. Press your Dictate key to speak.")
         case .failed: Link.frame("toast=Openspot cannot download the speech model. Press Download again to go on from where it stopped.")
+        case .wrongSize: Link.frame("toast=The speech model came in the wrong size, so Dictate removed it. Press Download to fetch it again.")
         case .stopped: break
         }
         release()
@@ -157,6 +161,9 @@ func serve() {
             dictate(call.id)
         case "open" where row == "whisper" && download == nil && !FileManager.default.fileExists(atPath: model.path):
             fetch(in: call.id)
+        case "open" where row == "whisper" && download != nil:
+            download?.stop()
+            answer(call.id)
         case "open" where row != "whisper":
             copy(row, in: call.id)
         case "delete":
@@ -203,6 +210,13 @@ case "remember":
 case "wave":
     let samples = arguments.dropFirst(2).compactMap(Float.init)
     FileHandle.standardOutput.write(Wave(samples: samples, rate: Recording.rate).data)
+case "paste":
+    guard arguments.count == 4 else { exit(2) }
+    Dictation.paste(arguments[3], on: NSPasteboard(name: .init(arguments[2]))) { fault in
+        print(fault ?? "")
+        exit(0)
+    }
+    dispatchMain()
 case "key":
     print(Dictation.label(of: arguments.count > 2 ? arguments[2] : "") ?? "")
 case "preview":

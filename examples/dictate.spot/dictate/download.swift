@@ -2,12 +2,14 @@ import Foundation
 
 /// The download of the Whisper model into the spot's data folder by `curl`, with its share from 0 to 1. The bytes go to a
 /// `.part` file beside the model, so a download that breaks, or a spot that ends, goes on later from the bytes it has. A
-/// server that cannot resume sends the whole file again. The model lands only whole, and a stop leaves no part file.
+/// server that cannot resume sends the whole file again. The model lands only at its full size, and a stop or a part of
+/// another size leaves no part file.
 final class Download {
-    enum End { case landed, failed, stopped }
+    enum End { case landed, failed, stopped, wrongSize }
 
     static let source = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin"
-    static let size: Int64 = 1_624_555_275
+    /// The size of the model in bytes, or `DICTATE_SIZE` for a test.
+    static let size = Int64(ProcessInfo.processInfo.environment["DICTATE_SIZE"] ?? "") ?? 1_624_555_275
     /// The code of `curl` for a server that cannot send the rest of a file.
     private static let cannotResume: Int32 = 33
 
@@ -82,6 +84,11 @@ final class Download {
             return fetch(again: false)
         }
         guard code == 0 else { return end(.failed) }
+        let have = (try? FileManager.default.attributesOfItem(atPath: part.path)[.size] as? Int64) ?? 0
+        guard have == Self.size else {
+            try? FileManager.default.removeItem(at: part)
+            return end(.wrongSize)
+        }
         try? FileManager.default.removeItem(at: target)
         try? FileManager.default.moveItem(at: part, to: target)
         end(FileManager.default.fileExists(atPath: target.path) ? .landed : .failed)

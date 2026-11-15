@@ -8,8 +8,8 @@
 // source=shot
 
 // Openspot builds this file with the Swift files of `shot/`. A press takes a picture with `openspot screen shot`, and
-// its call stays open while the editor shows. Closing the editor copies the picture; a second press of the card closes
-// it and copies nothing.
+// its call stays open while the editor shows. Closing the editor copies the picture and ends the call; a second press of
+// the card brings the editor to the front.
 import AppKit
 
 var editor: Editor?
@@ -82,8 +82,7 @@ Link.listen { call in
     }
 } stop: { id in
     guard id == editing else { return }
-    editor?.close()
-    editor = nil
+    if let editor { return editor.front() }
     editing = nil
     Link.end(id)
 } end: {

@@ -1,3 +1,4 @@
+import AppKit
 import XCTest
 @testable import OpenspotCore
 
@@ -37,12 +38,12 @@ final class DictateExampleTests: SampleSpotsCase {
         return tools
     }
 
-    private func staying(in folder: URL, rest: String = "600") async throws -> ScriptProcess {
+    private func staying(in folder: URL, size: Int = 300_000) async throws -> ScriptProcess {
         let program = try await Self.program.value
         let data = folder.appendingPathComponent("data")
         try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
         let tools = try tools(in: folder)
-        return ScriptProcess(url: program, name: spotFile.path, mode: .stays, variables: ["OPENSPOT_DATA": data.path, "DICTATE_REST": rest], base: ["PATH": "\(tools.path):/usr/bin:/bin", "HOME": folder.path])
+        return ScriptProcess(url: program, name: spotFile.path, mode: .stays, variables: ["OPENSPOT_DATA": data.path, "DICTATE_SIZE": String(size)], base: ["PATH": "\(tools.path):/usr/bin:/bin", "HOME": folder.path])
     }
 
     private func source(in folder: URL) throws -> Data {
@@ -186,6 +187,93 @@ final class DictateExampleTests: SampleSpotsCase {
         return try XCTUnwrap(pid_t(try read("server", in: folder).trimmingCharacters(in: .whitespacesAndNewlines)))
     }
 
+    func testADownloadOfTheWrongSizeLandsNothingAndSaysSo() async throws {
+        let folder = try temporaryFolder()
+        _ = try source(in: folder)
+        let script = try await staying(in: folder, size: 250_000)
+        defer { script.stop() }
+
+        let frames = try await frames(script, sending: "call=1\narg=open\narg=whisper\n\n", until: ["1"])
+
+        XCTAssertTrue(frames.contains { SpotOutput(text: $0).toast?.hasPrefix("The speech model came in the wrong size") == true })
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("data/\(Self.model)").path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("data/\(Self.model).part").path))
+    }
+
+    func testTheDownloadRowStopsADownloadThatTheKeyStarted() async throws {
+        let folder = try temporaryFolder()
+        _ = try source(in: folder)
+        FileManager.default.createFile(atPath: folder.appendingPathComponent("hold").path, contents: Data())
+        let script = try await staying(in: folder)
+        defer { script.stop() }
+        try whisperServer(in: folder)
+        let pidFile = folder.appendingPathComponent("curl.pid")
+
+        var frames = script.start().makeAsyncIterator()
+        script.send(text: "call=1\narg=dictate\n\n")
+        try await wait("curl") { FileManager.default.fileExists(atPath: pidFile.path) }
+        let curl = try XCTUnwrap(pid_t(try read("curl.pid", in: folder).trimmingCharacters(in: .whitespacesAndNewlines)))
+        defer { kill(curl, SIGKILL) }
+        script.send(text: "call=2\narg=open\narg=whisper\n\n")
+        _ = try await Self.collect(&frames, until: ["1", "2"])
+
+        XCTAssertNotEqual(kill(curl, 0), 0)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("data/\(Self.model).part").path))
+    }
+
+    private static func paste(_ text: String, on board: String, in folder: URL) async throws -> String {
+        let tools = folder.appendingPathComponent("tools")
+        try """
+        #!/bin/sh
+        [ "$1 $2" = "clipboard paste" ] || exit 0
+        touch '\(folder.path)/pasting'
+        n=0; while [ ! -f '\(folder.path)/go' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done
+        """.writeScript(to: tools.appendingPathComponent("openspot"))
+        var base = TestEnvironment.values
+        base["PATH"] = "\(tools.path):/usr/bin:/bin"
+        return try await ScriptProcess.output(url: try await Self.program.value, arguments: ["paste", board, text], base: base)
+    }
+
+    func testAPastePutsBackEachItemThatTheClipboardHeld() async throws {
+        let folder = try temporaryFolder()
+        let board = NSPasteboard(name: .init("openspot-test-\(UUID().uuidString)"))
+        defer { board.releaseGlobally() }
+        let picture = NSPasteboardItem()
+        picture.setData(Data([1, 2, 3]), forType: .png)
+        let words = NSPasteboardItem()
+        words.setString("Before", forType: .string)
+        board.clearContents()
+        board.writeObjects([picture, words])
+        FileManager.default.createFile(atPath: folder.appendingPathComponent("go").path, contents: Data())
+
+        let fault = try await Self.paste("Spoken words", on: board.name.rawValue, in: folder)
+
+        XCTAssertEqual(fault, "\n")
+        XCTAssertEqual(board.pasteboardItems?.count, 2)
+        XCTAssertEqual(board.pasteboardItems?.first?.data(forType: .png), Data([1, 2, 3]))
+        XCTAssertEqual(board.pasteboardItems?.last?.string(forType: .string), "Before")
+    }
+
+    func testAPasteLeavesACopyThatThePersonMadeDuringIt() async throws {
+        let folder = try temporaryFolder()
+        let board = NSPasteboard(name: .init("openspot-test-\(UUID().uuidString)"))
+        defer { board.releaseGlobally() }
+        board.clearContents()
+        board.setString("Before", forType: .string)
+
+        let name = board.name.rawValue
+        async let fault = Self.paste("Spoken words", on: name, in: folder)
+        try await wait("the paste") { FileManager.default.fileExists(atPath: folder.appendingPathComponent("pasting").path) }
+        let pasted = board.string(forType: .string)
+        board.clearContents()
+        board.setString("Mine", forType: .string)
+        FileManager.default.createFile(atPath: folder.appendingPathComponent("go").path, contents: Data())
+        _ = try await fault
+
+        XCTAssertEqual(pasted, "Spoken words")
+        XCTAssertEqual(board.string(forType: .string), "Mine")
+    }
+
     func testTheEndOfStdinEndsTheSpotAndItsWhisperServer() async throws {
         let folder = try temporaryFolder()
         let script = try await staying(in: folder)
@@ -198,20 +286,6 @@ final class DictateExampleTests: SampleSpotsCase {
         script.end()
 
         try await wait("the end of the spot and its server") { !script.isRunning && kill(server, 0) != 0 }
-    }
-
-    func testAWhisperServerThatHeardNoRecordingStopsAfterItsRest() async throws {
-        let folder = try temporaryFolder()
-        let script = try await staying(in: folder, rest: "3")
-        defer { script.stop() }
-        try whisperServer(in: folder)
-
-        _ = try await frames(script, sending: "call=1\narg=serve\n\n", until: ["1"])
-        let server = try await server(in: folder)
-        defer { kill(server, SIGKILL) }
-
-        try await wait("the end of the server") { kill(server, 0) != 0 }
-        XCTAssertTrue(script.isRunning)
     }
 
     func testThePillShowsTheKeyOfTheCommandAsTheMacWritesIt() async throws {

@@ -600,7 +600,8 @@ start ──► frame ──► frame ──► ... ──► end        exit 0:
 - A `read` has 10 seconds to print its first frame or end. Other calls have no time limit.
 - A frame holds at most 32 MB. Openspot stops a call that prints more in one frame, and the call fails.
 - A new value of a block stops the older call of that block. A second press of a running call stops it: its process
-  group gets the terminate signal, then the kill signal. When Openspot quits, it stops every call.
+  group gets the terminate signal, then the kill signal, and a staying spot gets a stop block instead. When Openspot
+  quits, it stops every call.
 - A call ends when its output closes. A stopped call changes nothing.
 - Exit code 0 means success. Any other code is a failure, and the user sees the last line of stderr. A failure can print
   `link=<url>`, a page that helps fix it.
@@ -726,8 +727,10 @@ input=message=Hello\n
   `end=<n>` after it. The same `main` works in every mode.
 - The spot can print frames at any time. It must end each call with `end=<n>` in a head. A frame of only `call=<n>`
   starts the output of that call.
-- A second press sends the block `stop=<n>`. A newer search text sends `stop=<n>` for the read of the older text, so only
-  the newest answer shows. A read after the first gets `stop=<n>` after 10 seconds, and fails as a slow read.
+- A second press sends the block `stop=<n>`, and its call runs on until the spot prints its `end`, so the spot decides
+  what a second press does, such as to bring its window to the front. A newer search text sends `stop=<n>` for the read
+  of the older text, so only the newest answer shows. A read after the first gets `stop=<n>` after 10 seconds, and fails
+  as a slow read.
 - With `mode=stay`, the process runs while the spot is wanted, or while a call waits for its `end`. When the spot is no
   longer wanted, Openspot closes its stdin, and the spot must end, with every process it started. After 2 seconds its
   process group gets the terminate signal, and 2 seconds later the kill signal.

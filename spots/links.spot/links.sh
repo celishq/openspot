@@ -67,13 +67,15 @@ trap 'rm -f "$icons"/.*."$$"; exit 143' TERM INT
 # Saves one image from the address to a host's icon file. Fails when the address gives no image Openspot can read.
 save_icon() {
   file="$icons/.$2.$$"
+  png="$icons/.$2.png.$$"
   kind=$(curl -fsSL -m 5 -A "$agent" -o "$file" -w '%{content_type}' "$1" 2>/dev/null) || kind=""
   case "$kind" in
     image/*)
-      if sips -s format png "$file" --out "$icons/$2.png" >/dev/null 2>&1; then
+      if sips -s format png "$file" --out "$png" >/dev/null 2>&1 && mv "$png" "$icons/$2.png"; then
         rm -f "$file"
         return 0
       fi
+      rm -f "$png"
       ;;
   esac
   rm -f "$file"
@@ -107,12 +109,13 @@ fetch_icon() {
   touch "$icons/$host.none"
 }
 
-# Looks for the icon of each web link that has none, inside the call that saved a link, so that Openspot ends the
-# fetch with the call. A site with no icon is tried again at a save a week or more after the last try.
+# Looks for the icon of the saved link's site when it has none, inside the call that saved the link, so that Openspot
+# ends the fetch with the call. A site with no icon is tried again at a save of a link to it a week or more after the
+# last try.
 fetch_missing() {
-  [ -d "$icons" ] && find "$icons" -name '*.none' -mtime +7 -delete
-  load | jq -r '.[].url | capture("^(?<origin>https?://(?<host>[^/?#]+))") | "\(.origin) \(.host)"' | sort -u |
+  printf '%s' "$1" | jq -r '.url | capture("^(?<origin>https?://(?<host>[^/?#]+))") | "\(.origin) \(.host)"' |
     while read -r origin host; do
+      [ -d "$icons" ] && find "$icons" -name "$host.none" -mtime +7 -delete
       if [ ! -e "$icons/$host.png" ] && [ ! -e "$icons/$host.none" ]; then
         fetch_icon "$origin" "$host"
       fi
@@ -164,7 +167,7 @@ case "$1" in
     id=$(uuidgen)
     values=$(checked) || exit 1
     load | jq -c --arg id "$id" --argjson v "$values" '. + [{id: $id, title: $v.title, url: $v.url}]' | store
-    fetch_missing >/dev/null 2>&1 </dev/null
+    fetch_missing "$values" >/dev/null 2>&1 </dev/null
     printf 'select=%s\n' "$id"
     ;;
   edit)
@@ -174,7 +177,7 @@ case "$1" in
     fi
     values=$(checked) || exit 1
     load | jq -c --arg id "$2" --argjson v "$values" 'map(if .id == $id then .title = $v.title | .url = $v.url else . end)' | store
-    fetch_missing >/dev/null 2>&1 </dev/null
+    fetch_missing "$values" >/dev/null 2>&1 </dev/null
     printf 'select=%s\n' "$2"
     ;;
   delete)

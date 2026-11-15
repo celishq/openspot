@@ -101,18 +101,55 @@ final class LinksSpotTests: SampleSpotsCase {
     func testASaveTriesAgainASiteThatHadNoIconAWeekAgo() async throws {
         let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
         try await withPrivateHome { folder in
-            let data = folder.appendingPathComponent(".config/openspot/data/links")
-            let icons = data.appendingPathComponent("icons")
+            let icons = folder.appendingPathComponent(".config/openspot/data/links/icons")
             try FileManager.default.createDirectory(at: icons, withIntermediateDirectories: true)
-            try #"[{"id":"1","title":"Site","url":"https://icons.test"}]"#.write(to: data.appendingPathComponent("links.json"), atomically: true, encoding: .utf8)
             let marker = icons.appendingPathComponent("icons.test.none")
             FileManager.default.createFile(atPath: marker.path, contents: Data())
             try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(-8 * 86400)], ofItemAtPath: marker.path)
 
-            try await self.savedLink("https://none.test", in: links)
+            try await self.savedLink("https://icons.test/page", in: links)
 
             XCTAssertFalse(links.read?.has(.event(SpotEvent.appLaunch)) == true)
             XCTAssertTrue(FileManager.default.fileExists(atPath: icons.appendingPathComponent("icons.test.png").path))
+        }
+    }
+
+    func testASaveFetchesOnlyTheIconOfTheSiteItSaved() async throws {
+        let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
+        try await withPrivateHome { folder in
+            let data = folder.appendingPathComponent(".config/openspot/data/links")
+            try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
+            try #"[{"id":"1","title":"Other","url":"https://other.test"}]"#.write(to: data.appendingPathComponent("links.json"), atomically: true, encoding: .utf8)
+
+            try await self.savedLink("https://icons.test", in: links)
+
+            XCTAssertTrue(FileManager.default.fileExists(atPath: data.appendingPathComponent("icons/icons.test.png").path))
+            XCTAssertFalse(try self.read("fetched", in: folder).contains("other.test"))
+        }
+    }
+
+    func testAStopWhileTheIconIsWrittenLeavesNoIcon() async throws {
+        let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
+        try await withPrivateHome { folder in
+            try """
+            #!/bin/sh
+            out=""
+            for a; do [ "$previous" = "--out" ] && out=$a; previous=$a; done
+            printf part > "$out"
+            echo $$ > '\(folder.path)/sips.pid'
+            exec /bin/sleep 600
+            """.writeScript(to: folder.appendingPathComponent("tools/sips"))
+            let icons = folder.appendingPathComponent(".config/openspot/data/links/icons")
+            let save = ScriptProcess(url: links.url, arguments: ["new"], mode: .once(input: "title=Site\nurl=https://icons.test\n"), stopPause: 0.5, dataName: links.dataName, base: TestEnvironment.values)
+            let frames = save.start()
+
+            try await self.wait("sips") { FileManager.default.fileExists(atPath: folder.appendingPathComponent("sips.pid").path) }
+            save.stop()
+            for try await _ in frames {}
+            try await self.wait("the end of the save") { !save.isRunning }
+
+            XCTAssertFalse(FileManager.default.fileExists(atPath: icons.appendingPathComponent("icons.test.png").path))
+            XCTAssertEqual((try? FileManager.default.contentsOfDirectory(atPath: icons.path))?.filter { $0.hasPrefix(".") }, [])
         }
     }
 

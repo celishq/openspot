@@ -109,8 +109,7 @@ struct Wave {
 }
 
 /// One Whisper server that keeps the model loaded, so a phrase takes about a second and not the load of 1.6 GB.
-/// It starts with the first recording, which hides its load, and stops after `rest` without use to free its memory.
-/// It never outlives the spot, however the spot ends.
+/// It starts with the first recording, which hides its load, and runs until the spot ends, however the spot ends.
 final class Whisper {
     /// Runs the server until the spot's end of its input closes, and ends when the server ends.
     private static let watch = """
@@ -121,21 +120,17 @@ final class Whisper {
         kill $link
         """
     private let model: String
-    /// The time without use after which the server stops: 600 seconds, or `DICTATE_REST`.
-    private let rest = TimeInterval(ProcessInfo.processInfo.environment["DICTATE_REST"] ?? "") ?? 600
     private var process: Process?
     /// The input of the server's watch, whose end only the spot holds.
     private var link: Pipe?
     private var port = 0
-    private var restTimer: Timer?
 
     init(model: String) {
         self.model = model
     }
 
-    /// Starts the server if it is not running, and its rest.
+    /// Starts the server if it is not running.
     func start() {
-        rested()
         guard process?.isRunning != true else { return }
         port = Self.freePort()
         let link = Pipe()
@@ -153,7 +148,6 @@ final class Whisper {
     /// The words in this sound. It waits up to a minute for the model to load.
     func transcribe(_ wave: Wave) async throws -> String {
         start()
-        defer { DispatchQueue.main.async { self.rested() } }
         let boundary = UUID().uuidString
         var body = Data()
         body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"response_format\"\r\n\r\ntext\r\n".utf8))
@@ -180,11 +174,6 @@ final class Whisper {
         try? link?.fileHandleForWriting.close()
         link = nil
         process = nil
-    }
-
-    private func rested() {
-        restTimer?.invalidate()
-        restTimer = Timer.scheduledTimer(withTimeInterval: rest, repeats: false) { [weak self] _ in self?.stop() }
     }
 
     private static func freePort() -> Int {
@@ -397,17 +386,29 @@ final class Dictation {
         }
     }
 
-    /// Pastes the text into the front app through the clipboard, then puts back the text that the clipboard held. A paste
-    /// that fails leaves the text on the clipboard, and `done` gets its fault.
-    static func paste(_ text: String, done: @escaping (String?) -> Void) {
-        Tool.run(["openspot", "clipboard", "read"]) { _, held, _ in
-            Tool.run(["openspot", "clipboard", "copy"], input: text) { _, _, _ in
-                Tool.run(["openspot", "clipboard", "paste"], limit: 5) { code, _, fault in
-                    guard code == 0 else { return done(fault.isEmpty ? "The paste took too long." : fault) }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        Tool.run(["openspot", "clipboard", "copy"], input: held) { _, _, _ in done(nil) }
+    /// Pastes the text into the front app through the clipboard, then puts back each item that the clipboard held, unless
+    /// something else changed the clipboard since. A paste that fails leaves the text on the clipboard, and `done` gets
+    /// its fault.
+    static func paste(_ text: String, on board: NSPasteboard = .general, done: @escaping (String?) -> Void) {
+        let kept = (board.pasteboardItems ?? []).map { item in
+            item.types.compactMap { type in item.data(forType: type).map { (type, $0) } }
+        }
+        board.clearContents()
+        board.setString(text, forType: .string)
+        let mark = board.changeCount
+        Tool.run(["openspot", "clipboard", "paste"], limit: 5) { code, _, fault in
+            guard code == 0 else { return done(fault.isEmpty ? "The paste took too long." : fault) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                if board.changeCount == mark {
+                    board.clearContents()
+                    let items = kept.map { types in
+                        let item = NSPasteboardItem()
+                        for (type, data) in types { item.setData(data, forType: type) }
+                        return item
                     }
+                    if !items.isEmpty { board.writeObjects(items) }
                 }
+                done(nil)
             }
         }
     }

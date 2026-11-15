@@ -10,6 +10,7 @@
 held=
 watcher=
 until=0
+secs=
 
 awake() {
   [ -n "$watcher" ] && kill -0 "$watcher" 2>/dev/null
@@ -30,22 +31,33 @@ left() {
   fi
 }
 
+# Prints the row of one duration. The row of the duration that runs carries the id of its call, so that a pick of it
+# is a new call that starts it again, and not a second press that would stop it.
+duration() {
+  if awake && [ "$1" = "$secs" ]; then
+    printf 'row=%s.%s\ntitle=%s\n' "$1" "$held" "$2"
+  else
+    printf 'row=%s\ntitle=%s\n' "$1" "$2"
+  fi
+}
+
 # Prints the rows of the sheet, with Turn off first while the Mac is kept awake.
 sheet() {
   printf 'recents=false\n\n'
   printf 'button=open\ntitle=Select\n\n'
   awake && printf 'row=off\ntitle=Turn off\n\n'
-  printf 'row=1800\ntitle=30 minutes\n\n'
-  printf 'row=3600\ntitle=1 hour\n\n'
-  printf 'row=7200\ntitle=2 hours\n\n'
-  printf 'row=14400\ntitle=4 hours\n\n'
-  printf 'row=28800\ntitle=8 hours\n\n'
-  printf 'row=0\ntitle=Until turned off\n'
+  duration 1800 '30 minutes'; echo
+  duration 3600 '1 hour'; echo
+  duration 7200 '2 hours'; echo
+  duration 14400 '4 hours'; echo
+  duration 28800 '8 hours'; echo
+  duration 0 'Until turned off'
 }
 
 # Runs `caffeinate` for that many seconds, or until it is stopped, in a watcher that ends the call when it ends by itself.
 hold() {
   held=$1
+  secs=$2
   if [ "$2" = 0 ]; then until=0; else until=$(( $(date +%s) + $2 )); fi
   (
     awake=
@@ -93,8 +105,8 @@ serve() {
       ;;
     open\ [0-9]*)
       release
-      hold "$call" "$2"
-      printf '%s%s\n---\ncall=%s\n---\ntoast=%s\ndetail=%s\n---\n' "$ended" "$(sheet)" "$call" "$(toast "$2")" "$(left)"
+      hold "$call" "${2%%.*}"
+      printf '%s%s\n---\ncall=%s\n---\ntoast=%s\ndetail=%s\n---\n' "$ended" "$(sheet)" "$call" "$(toast "$secs")" "$(left)"
       ;;
     *)
       now=

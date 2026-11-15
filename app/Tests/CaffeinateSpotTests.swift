@@ -94,6 +94,20 @@ final class CaffeinateSpotTests: XCTestCase {
         XCTAssertEqual(running(), [awake()[1]])
     }
 
+    func testAPickOfTheDurationThatRunsStartsItAgain() async throws {
+        let sheet = try sheet()
+        try await pick("3600", in: sheet)
+        try await wait("caffeinate") { self.running().count == 1 }
+        try await wait("the rows with Turn off") { sheet.list.all.first?.run == "off" }
+
+        sheet.pick(try XCTUnwrap(sheet.list.all.first { $0.title == "1 hour" }))
+
+        try await wait("one new caffeinate") { self.awake().count == 2 && self.running().count == 1 }
+        try await wait("the one call") { sheet.calls.count == 1 }
+        try await wait("the toast again") { self.toasts == ["Caffeinate is on for 1 hour", "Caffeinate is on for 1 hour"] }
+        XCTAssertEqual(running(), [awake()[1]])
+    }
+
     func testATimeThatEndsByItselfEndsTheCallAndShowsOff() async throws {
         FileManager.default.createFile(atPath: folder.appendingPathComponent("short").path, contents: Data())
         let sheet = try sheet()

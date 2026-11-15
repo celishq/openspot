@@ -107,7 +107,7 @@ final class StayLink: ScriptLink {
 
     func restart() {
         guard script != nil else { return }
-        end()
+        end(because: "Openspot restarted it")
         settle()
     }
 
@@ -116,6 +116,13 @@ final class StayLink: ScriptLink {
         script = nil
         loseAll(.stopped)
         run?.scriptEnded()
+    }
+
+    private func end(because why: String) {
+        let held = records.values.contains(where: \.isWork)
+        end()
+        guard held, let run else { return }
+        run.onReport(.toast("\(run.spot.name) stopped, since \(why). Start it again to go on."))
     }
 
     func leave() {
@@ -192,7 +199,7 @@ final class StayLink: ScriptLink {
         if isAsk { slowAsks += 1 }
         run?.finish(record.call, .failed(SpotError.timedOut))
         if isAsk, slowAsks >= Self.slowLimit {
-            end()
+            end(because: "it answered too slowly")
             failed(SpotError.timedOut, telling: false)
         }
         settle()

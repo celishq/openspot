@@ -23,8 +23,8 @@ final class SpotRunStateTests: XCTestCase {
         runs.quit()
     }
 
-    private func sheet(kind: SpotKind = .list, read: SpotRead? = .sheet) -> (SpotRun, FakeLink) {
-        let sheet = runs.sheet(for: Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), kind: kind, read: read))
+    private func sheet(kind: SpotKind = .list, read: SpotRead? = .sheet, mode: SpotMode = .once) -> (SpotRun, FakeLink) {
+        let sheet = runs.sheet(for: Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), kind: kind, read: read, mode: mode))
         return (sheet, links["script"]!)
     }
 
@@ -331,6 +331,18 @@ final class SpotRunStateTests: XCTestCase {
         }
 
         XCTAssertEqual(link.sent.count, 1 + SpotRun.waitingLimit)
+    }
+
+    func testAStayingSpotHoldsNoMoreKeyPressesThanTheLimit() async throws {
+        let (sheet, link) = sheet(kind: .launch, read: nil, mode: .stay)
+
+        for _ in 0..<50 { sheet.pressKey("go") }
+        XCTAssertEqual(link.sent.count, SpotRun.waitingLimit)
+        XCTAssertEqual(sheet.calls.count, SpotRun.waitingLimit)
+        await link.end(link.sent[0])
+        sheet.pressKey("go")
+
+        XCTAssertEqual(link.sent.count, SpotRun.waitingLimit + 1)
     }
 
     func testWorkThatWakesBeforeItsTimeSleepsForTheTimeLeft() async throws {
