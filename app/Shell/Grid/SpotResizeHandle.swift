@@ -14,9 +14,10 @@ struct SpotResizeHandle: View {
 
     private static func rim(of size: SpotSize) -> Path {
         if let rim = rims[size.name] { return rim }
-        let radius = SpotTokens.corner(for: size)
+        let shape = SurfaceEdge(card: size)
+        let radius = shape.radius
         let card = CGRect(x: 0, y: 0, width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))
-        let edge = RoundedRectangle(cornerRadius: radius, style: .continuous).path(in: card)
+        let edge = SpotRoundShape(shape).path(in: card)
         let centre = CGPoint(x: card.maxX - radius, y: card.maxY - radius)
         let steps = 720
         let corner = (0...steps).map { Double($0) / Double(steps) }.filter { share in

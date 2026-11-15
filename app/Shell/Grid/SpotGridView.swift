@@ -116,7 +116,7 @@ struct SpotGridView: View {
 
     private func landing(of drag: SpotDrag?, in placements: [SpotPlacement]) -> some View {
         let placement = placements.first { $0.index == (drag?.place ?? model.selected) }
-        return SpotSurfaceShape(rect: placement?.rect ?? .zero, radius: SpotTokens.corner(for: placement?.size ?? .small))
+        return SpotSurfaceShape(rect: placement?.rect ?? .zero, radius: SurfaceEdge(card: placement?.size ?? .small).radius)
             .fill(SpotTheme.ink.opacity(SpotTheme.fill))
             .opacity(drag == nil ? 0.001 : 1)
             .allowsHitTesting(false)
@@ -138,7 +138,7 @@ private struct SidePanelWells: View, Equatable {
     let height: CGFloat
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
+        let shape = SpotRoundShape(radius: SpotTokens.radius - SpotTokens.padding)
         ZStack(alignment: .topLeading) {
             ForEach([GridPanel.left, .right].filter { panels[$0] }, id: \.self) { panel in
                 shape

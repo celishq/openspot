@@ -33,7 +33,7 @@ struct SpotCustomView: View, @MainActor Equatable {
     var body: some View {
         content
             .frame(width: size.width, height: size.height, alignment: .topLeading)
-            .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
+            .clipShape(SpotRoundShape(radius: corner))
             .allowsHitTesting(send != nil)
             .task(id: isHeld ? nil : loadKey) {
                 if !isHeld { await views.load(source) }

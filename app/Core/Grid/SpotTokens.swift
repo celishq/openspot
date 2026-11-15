@@ -16,6 +16,7 @@ public enum SpotTokens {
     public static let workMark: CGFloat = 16
     public static let keycap: CGFloat = 20
     public static let keycapRadius: CGFloat = 6
+    public static let ring: CGFloat = 2
     public static let resizeHandle: CGFloat = 28
     public static let resizeHandleLine: CGFloat = 5
     public static let toastGap: CGFloat = 10

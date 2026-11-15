@@ -1,8 +1,8 @@
 import XCTest
 
 final class CheckScriptTests: XCTestCase {
-    private static let checks = ["core", "tests", "comments", "motion", "names", "files", "getters", "spots", "processes", "glass", "tools"]
-    private static let lists = ["names", "files", "getters", "test-pauses", "spot-clocks", "spot-state", "processes"]
+    private static let checks = ["core", "tests", "comments", "motion", "names", "files", "getters", "spots", "processes", "glass", "shapes", "tools"]
+    private static let lists = ["names", "files", "getters", "test-pauses", "spot-clocks", "spot-state", "processes", "shapes"]
 
     private static let breaches: [(check: String, file: String, text: String)] = [
         ("core", "app/Core/Panel.swift", "@preconcurrency import AppKit\n"),
@@ -28,6 +28,8 @@ final class CheckScriptTests: XCTestCase {
         ("glass", "app/Shell/Panel.swift", "part.setValue(24, forKeyPath: \"filters.gaussian" + "Blur.inputRadius\")\n"),
         ("glass", "app/Shell/Picture/PanelPicture.swift", "view.cache" + "Display(in: view.bounds, to: bitmap)\n"),
         ("glass", "app/Shell/Surface/SpotGlass.swift", "let blur = NSVisual" + "EffectView()\n"),
+        ("shapes", "app/Shell/Panel.swift", "let edge = Rounded" + "Rectangle(cornerRadius: 8, style: .continuous)\n"),
+        ("shapes", "app/Shell/Grid/Card.swift", "content.overlay(Rounded" + "Rectangle(cornerRadius: SpotTokens.radius).strokeBorder(.red))\n"),
         ("tools", "app/Shell/Panel.swift", "let output = environment[\"OPENSPOT_" + "PROBE\"]\n"),
         ("tools", "app/Shell/Panel.swift", "#if OPENSPOT_TOOLS\n#if DEBUG\n#endif\n#endif\nlet probe = SpotMotion" + "Probe()\n"),
         ("tools", "app/Core/Panel.swift", "let probe = SpotMotion" + "Probe()\n"),
@@ -121,6 +123,15 @@ final class CheckScriptTests: XCTestCase {
         try ("let blur = NSVisual" + "EffectView()\nlet filter = NSClassFromString(\"CA" + "Filter\")\n").write(to: file, atomically: true, encoding: .utf8)
 
         XCTAssertEqual(try status(of: "glass", in: root), 0)
+    }
+
+    func testTheShapesCheckAllowsARoundedRectangleInTheOneShapeFileAlone() throws {
+        let root = try cleanTree()
+        let file = root.appendingPathComponent("app/Shell/Surface/SpotRoundShape.swift")
+        try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try ("Rounded" + "Rectangle(cornerRadius: 8).path(in: rect)\n").write(to: file, atomically: true, encoding: .utf8)
+
+        XCTAssertEqual(try status(of: "shapes", in: root), 0)
     }
 
     func testEachCheckFailsWhenAFolderItScansIsMissing() throws {
