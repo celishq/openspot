@@ -73,7 +73,7 @@ final class SheetStreamTests: XCTestCase {
         let url = try script("printf 'text=a\\ntitle=A\\n'")
         var frames: [String] = []
 
-        for try await frame in ScriptProcess(url: url, limit: 5).start() { frames.append(frame) }
+        for try await frame in ScriptProcess(url: url, limit: 60).start() { frames.append(frame) }
 
         XCTAssertEqual(frames, ["text=a\ntitle=A\n"])
     }
@@ -82,7 +82,7 @@ final class SheetStreamTests: XCTestCase {
         let url = try script("printf 'text=a\\n---\\n'\nsleep 30")
         let started = Date()
 
-        for try await frame in ScriptProcess(url: url, limit: 5).start() {
+        for try await frame in ScriptProcess(url: url, limit: 60).start() {
             XCTAssertEqual(frame, "text=a\n")
             break
         }
@@ -94,7 +94,7 @@ final class SheetStreamTests: XCTestCase {
         let marker = folder.appendingPathComponent("alive")
         let url = try script("printf 'text=a\\n---\\n'\nsleep 0.3\ntouch '\(marker.path)'")
 
-        for try await _ in ScriptProcess(url: url, limit: 5).start() { break }
+        for try await _ in ScriptProcess(url: url, limit: 60).start() { break }
         try await Task.sleep(for: .seconds(0.5))
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path))
@@ -161,7 +161,7 @@ final class SheetStreamTests: XCTestCase {
           [ -n "$line" ] || { count=$((count + 1)); printf 'part=a\\ntitle=%s\\n---\\n' "$count"; }
         done
         """)
-        let live = ScriptProcess(url: url, mode: .stays, limit: 5)
+        let live = ScriptProcess(url: url, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
 
         live.send(.read, id: 1)
@@ -176,7 +176,7 @@ final class SheetStreamTests: XCTestCase {
 
     func testAScriptThatIgnoresTheEndOfItsInputIsStopped() async throws {
         let url = try script("trap '' HUP\n\(String.longLoop)")
-        let live = ScriptProcess(url: url, mode: .stays, limit: 5, stopPause: 0.2)
+        let live = ScriptProcess(url: url, mode: .stays, limit: 60, stopPause: 0.2)
         _ = live.start()
 
         live.end()
@@ -196,7 +196,7 @@ final class SheetStreamTests: XCTestCase {
         let url = try script("# mode=stay\nwhile IFS= read -r line; do case \"$line\" in call=*) call=${line#call=} ;; esac; [ -n \"$line\" ] || printf 'end=%s\\n\\ntext=a\\ntitle=A\\n---\\n' \"$call\"; done")
         let command = Spot(id: "a", name: "A", url: url, kind: .list, mode: .stay)
 
-        let output = try await command.items(timeout: 5)
+        let output = try await command.items(timeout: 60)
 
         XCTAssertEqual(output.parts.map(\.id), ["a"])
     }

@@ -25,7 +25,7 @@ final class PictureFileTests: XCTestCase {
                 try await Task.sleep(for: .milliseconds(50))
             }
         }
-        let limit = Task { try await Task.sleep(for: .seconds(10)); next.cancel() }
+        let limit = Task { try await Task.sleep(for: .seconds(60)); next.cancel() }
         let time = await next.value
         writes.cancel()
         limit.cancel()

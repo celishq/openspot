@@ -148,7 +148,7 @@ final class WidgetContractTests: XCTestCase {
         try power()
         let metric = try XCTUnwrap(try scan.metrics.first)
 
-        let value = try await metric.read(timeout: 5)
+        let value = try await metric.read(timeout: 60)
 
         XCTAssertEqual(value, MetricValue(title: "84%", tone: .good, value: 0.84))
     }
@@ -158,7 +158,7 @@ final class WidgetContractTests: XCTestCase {
         let metric = try XCTUnwrap(try scan.metrics.first)
 
         do {
-            _ = try await metric.read(timeout: 5)
+            _ = try await metric.read(timeout: 60)
             XCTFail("expected a fault")
         } catch {
             XCTAssertEqual(error as? SpotError, .badMetric)

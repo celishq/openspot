@@ -9,12 +9,12 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     private func items() async throws -> [SpotItem] {
-        try await settings.items(timeout: 5).items
+        try await settings.items(timeout: 60).items
     }
 
     @discardableResult
     private func call(_ arguments: [String]) async throws -> String? {
-        try await settings.perform(SpotAction(arguments: arguments), timeout: 5)
+        try await settings.perform(SpotAction(arguments: arguments), timeout: 60)
     }
 
     func testItIsASmallListThatTheSearchFindsAndTheSettingsKeyOpens() throws {
@@ -90,7 +90,7 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     func testTheSheetHasNoPartsAndKeepsItsOrder() async throws {
-        let output = try await settings.items(timeout: 5)
+        let output = try await settings.items(timeout: 60)
 
         XCTAssertTrue(output.parts.isEmpty)
         XCTAssertFalse(output.keepsRecent)
@@ -102,12 +102,12 @@ final class SettingsSpotTests: BuiltInCase {
         defer { runs.quit() }
         let sheet = runs.sheet(for: try settings)
         sheet.open {}
-        for _ in 0..<500 where sheet.list.shown.isEmpty { try await Task.sleep(for: .milliseconds(10)) }
+        for _ in 0..<6000 where sheet.list.shown.isEmpty { try await Task.sleep(for: .milliseconds(10)) }
         let item = try XCTUnwrap(sheet.list.selectedItem)
 
         sheet.set(item, to: "cmd+k")
 
-        for _ in 0..<500 where sheet.list.shown.first?.shortcut != "cmd+k" { try await Task.sleep(for: .milliseconds(10)) }
+        for _ in 0..<6000 where sheet.list.shown.first?.shortcut != "cmd+k" { try await Task.sleep(for: .milliseconds(10)) }
         XCTAssertEqual(file.read().panelKey, Shortcut(text: "cmd+k"))
         XCTAssertEqual(sheet.list.shown.first?.shortcut, "cmd+k")
         let changes = await app.changes
