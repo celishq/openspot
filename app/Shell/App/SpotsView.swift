@@ -101,7 +101,7 @@ struct SpotsView: View {
     }
 
     private var softBlur: some View {
-        SpotBackdrop(model: model, gridHeight: gridHeight, sheetHeight: max(sheetHeight, replacedHeight), menuHeight: menuHeight, drawsBlur: drawsBlur)
+        SpotBackdrop(model: model, gridHeight: gridHeight, sheetHeight: sheetHeight, menuHeight: menuHeight, drawsBlur: drawsBlur)
             .environment(\.spotPanels, model.shownPanels)
             .modifier(PanelSpan(panels: model.shownPanels))
     }
@@ -123,29 +123,11 @@ struct SpotsView: View {
     }
 
     private func rect(of id: String?) -> CGRect {
-        Self.rect(of: id, in: model)
-    }
-
-    private static func rect(of id: String?, in model: SpotsModel) -> CGRect {
         model.sheets[id ?? ""]?.sheetRect ?? SpotTokens.sheetRect(rows: 0)
     }
 
-    static func blurHeights(of model: SpotsModel) -> [CGFloat] {
-        let sheets = model.sheets.keys.map { blurHeight(of: rect(of: $0, in: model)) }
-        return [gridHeight(of: model), blurHeight(of: SpotTokens.sheetRect(rows: 0)), SpotTokens.panelHeight] + sheets
-    }
-
-    static func blurHeight(of sheet: CGRect) -> CGFloat {
+    private static func blurHeight(of sheet: CGRect) -> CGFloat {
         sheet.height + 2 * SpotTokens.halo + SpotTokens.hintBlock
-    }
-
-    private static func gridHeight(of model: SpotsModel) -> CGFloat {
-        SpotTokens.backdropHeight(gridHeight: SpotGrid.height(of: model.placements))
-    }
-
-    private var replacedHeight: CGFloat {
-        guard let replaced = model.transition.replaced else { return 0 }
-        return Self.blurHeight(of: rect(of: replaced))
     }
 
     private var gridPush: CGFloat {
