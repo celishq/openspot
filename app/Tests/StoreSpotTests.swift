@@ -17,9 +17,11 @@ final class StoreSpotTests: BuiltInCase {
     }
 
     private func items() async throws -> [[String]] {
-        let parts = try await store.items(timeout: 60).parts
-        XCTAssertEqual(parts.map(\.id), ["gallery"])
-        return (parts.first?.values["value"] ?? []).map { $0.split(separator: "\t", omittingEmptySubsequences: false).map(String.init) }
+        let text = try await runs.answer(of: store, .read, limit: 60)
+        XCTAssertEqual(SpotOutput(text: text).parts.map(\.id), ["gallery"])
+        return TextBlock.blocks(in: text).compactMap { row in
+            row.value("row").map { [$0, row.value("title") ?? "", row.value("step") ?? "", row.value("origin") ?? "", row.value("detail") ?? "", row.value("size") ?? "", row.value("sample") == "true" ? "sample" : ""] }
+        }
     }
 
     @discardableResult
@@ -68,22 +70,25 @@ final class StoreSpotTests: BuiltInCase {
         XCTAssertEqual(file.read().arrangement.disabled, [])
     }
 
-    func testEachAnswerCarriesTheReadmeOfEachSpotLineByLine() async throws {
+    func testOnlyTheSheetOfASpotGetsItsReadmeLineByLine() async throws {
         try "# Timer\n\nCounts down.\n".write(to: core.appendingPathComponent("timer.spot/readme.md"), atomically: true, encoding: .utf8)
+        try "# Mine\n".write(to: spots.appendingPathComponent("mine.spot/readme.md"), atomically: true, encoding: .utf8)
 
         for action in [SpotAction.read, SpotAction(arguments: ["gallery", "get:timer"]), SpotAction(arguments: ["gallery", "publish:timer"])] {
             let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, action, limit: 60)
-
-            let values = SpotOutput(text: text).parts.first?.values ?? [:]
-            XCTAssertEqual(values["readme"], ["timer\t# Timer", "timer\t", "timer\tCounts down."], "\(action.arguments)")
+            XCTAssertNil(SpotOutput(text: text).parts.first?.values["readme"], "\(action.arguments)")
         }
+        let asked = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, SpotAction(arguments: ["gallery", "readme:timer"]), limit: 60)
+
+        XCTAssertEqual(SpotOutput(text: asked).parts.first?.values["readme"], ["timer", "timer\t# Timer", "timer\t", "timer\tCounts down."])
+        XCTAssertEqual(TextBlock.blocks(in: asked).compactMap { $0.value("row") }, ["mine", "shared", "timer"])
     }
 
     func testAReadmePictureOrVideoInTheSpotsFolderGetsItsFullPath() async throws {
         let folder = core.appendingPathComponent("timer.spot")
         try "![The sheet](shot.png)\n![](/tmp/a.mov)\n![Web](https://example.com/a.jpg)\n".write(to: folder.appendingPathComponent("readme.md"), atomically: true, encoding: .utf8)
 
-        let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, .read, limit: 60)
+        let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, SpotAction(arguments: ["gallery", "readme:timer"]), limit: 60)
 
         let lines = (SpotOutput(text: text).parts.first?.values["readme"] ?? []).filter { $0.hasPrefix("timer\t") }
         XCTAssertEqual(lines, ["timer\t![The sheet](\(folder.path)/shot.png)", "timer\t![](/tmp/a.mov)", "timer\t![Web](https://example.com/a.jpg)"])

@@ -524,7 +524,8 @@ out.
 - A new default id reaches only a spot that asks for it.
 - A drop on a card waits for the card's running call. A drop on a card with rows opens its sheet, and the frame can
   select the new row with `select=`.
-- A spot's hotkeys run one at a time, in order, and never stop a call. Only the user gives a command a hotkey.
+- A spot's hotkeys run one at a time, in order, and never stop a call. A staying spot gets each press at once, in
+  order, so a second press can end the call of the first. Only the user gives a command a hotkey.
 
 Each call has three parts:
 

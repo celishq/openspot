@@ -19,6 +19,7 @@ final class Canvas: NSView {
     private var marks: [Mark] = []
     private var drawing: Mark?
     private var tool = Tool.arrow
+    var done: () -> Void = {}
 
     init(picture: NSImage, file: URL) {
         self.picture = picture
@@ -65,10 +66,10 @@ final class Canvas: NSView {
         }
     }
 
-    /// Writes the picture with its marks at the pixels of the file when asked, and ends the editor.
+    /// Writes the picture with its marks at the pixels of the file when asked, and closes the editor.
     func finish(saving: Bool) {
         if saving, !marks.isEmpty, let data = rendered() { try? data.write(to: file, options: .atomic) }
-        exit(0)
+        done()
     }
 
     private func rendered() -> Data? {
@@ -106,23 +107,49 @@ final class Canvas: NSView {
     }
 }
 
-let file = URL(fileURLWithPath: CommandLine.arguments.dropFirst().first ?? "")
-guard let picture = NSImage(contentsOf: file) else {
-    FileHandle.standardError.write(Data("Openspot cannot open \(file.lastPathComponent) to mark it.\n".utf8))
-    exit(1)
+/// The window of one picture, which shows the app in the Dock while it is open. Each way out of it tells `closed`
+/// once; `close` closes it with no word.
+final class Editor {
+    private let window: NSWindow
+    private let closed: () -> Void
+    private var watch: Any?
+
+    init(picture: NSImage, file: URL, closed: @escaping () -> Void) {
+        self.closed = closed
+        let area = NSScreen.main?.visibleFrame.insetBy(dx: 80, dy: 80) ?? CGRect(x: 0, y: 0, width: 1200, height: 800)
+        let fit = min(1, area.width / picture.size.width, area.height / picture.size.height)
+        window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: picture.size.width * fit, height: picture.size.height * fit), styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        let canvas = Canvas(picture: picture, file: file)
+        window.title = "Return saves · Escape closes · A arrow · B box · ⌘Z undo"
+        window.contentView = canvas
+        canvas.bounds = CGRect(origin: .zero, size: picture.size)
+        canvas.done = { [unowned self] in shut() }
+        watch = NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { [unowned self] _ in shut() }
+        NSApp.setActivationPolicy(.regular)
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        window.makeFirstResponder(canvas)
+        NSApp.activate()
+    }
+
+    /// Brings the window to the front.
+    func front() {
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate()
+    }
+
+    func close() {
+        guard let watch else { return }
+        NotificationCenter.default.removeObserver(watch)
+        self.watch = nil
+        window.orderOut(nil)
+        NSApp.setActivationPolicy(.accessory)
+    }
+
+    private func shut() {
+        guard watch != nil else { return }
+        close()
+        closed()
+    }
 }
-let app = NSApplication.shared
-app.setActivationPolicy(.regular)
-let area = NSScreen.main?.visibleFrame.insetBy(dx: 80, dy: 80) ?? CGRect(x: 0, y: 0, width: 1200, height: 800)
-let fit = min(1, area.width / picture.size.width, area.height / picture.size.height)
-let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: picture.size.width * fit, height: picture.size.height * fit), styleMask: [.titled, .closable], backing: .buffered, defer: false)
-let canvas = Canvas(picture: picture, file: file)
-window.title = "Return saves · Escape closes · A arrow · B box · ⌘Z undo"
-window.contentView = canvas
-canvas.bounds = CGRect(origin: .zero, size: picture.size)
-window.center()
-window.makeKeyAndOrderFront(nil)
-window.makeFirstResponder(canvas)
-let closing = NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { _ in exit(0) }
-app.activate()
-app.run()

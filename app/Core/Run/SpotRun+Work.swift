@@ -89,8 +89,9 @@ extension SpotRun {
     }
 
     func startWaitingKey() {
-        guard !waitingKeys.isEmpty, running(Self.globalKey) == nil else { return }
-        work(.press(waitingKeys.removeFirst()), key: Self.globalKey)
+        while !waitingKeys.isEmpty, script.keepsState || running(Self.globalKey) == nil {
+            work(.press(waitingKeys.removeFirst()), key: Self.globalKey)
+        }
     }
 
     public func setLevel(_ value: Double) {

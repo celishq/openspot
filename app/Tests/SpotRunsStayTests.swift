@@ -39,6 +39,71 @@ final class SpotRunsStayTests: SpotRunsCase {
     done
     """
 
+    private static let holds = """
+    trap 'touch "%@"' EXIT
+    while IFS= read -r line; do
+      printf '%%s\\n' "$line" >> '%@'
+      case "$line" in
+        call=*) call=${line#call=} ;;
+        arg=hold) name=hold ;;
+        arg=*) [ -n "$name" ] || name=${line#arg=} ;;
+        '')
+          case "$name" in
+            hold) sleep 600 > /dev/null 2>&1 & echo $! >> '%@' ;;
+            ?*) printf 'end=%%s\\n\\nrow=a\\ntitle=A\\n---\\n' "$call" ;;
+          esac
+          name= ;;
+      esac
+    done
+    """
+
+    private func holding() throws {
+        try script(header: "mode=stay\non=sheet.open\noffers=card", String(format: Self.holds, path("ended"), path("blocks"), path("children")))
+    }
+
+    func testAHeldCallKeepsItsStayingScriptPastTheReadLimitTheSheetAndThePanel() async throws {
+        try holding()
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 }
+
+        sheet.pick(SpotItem(title: "Hold", run: "hold"))
+        let child = try await pid("children")
+        sheet.close()
+        runs.panelClosed()
+        time += 60
+        try await pause()
+
+        XCTAssertEqual(sheet.calls.map(\.action.arguments), [["open", "hold"]])
+        XCTAssertFalse(exists("ended"))
+        XCTAssertEqual(kill(child, 0), 0)
+    }
+
+    func testASecondPressOfAKeyReachesAStayingScriptWhoseFirstCallIsHeld() async throws {
+        try holding()
+        let sheet = try sheet()
+
+        sheet.pressKey("hold")
+        try await wait("the held call") { self.blocks().contains("arg=hold") }
+        sheet.pressKey("hold")
+
+        try await wait("the second press") { self.blocks().filter { $0 == "arg=hold" }.count == 2 }
+        XCTAssertEqual(sheet.calls.count, 2)
+    }
+
+    func testAQuitEndsTheProcessesThatAHeldCallStarted() async throws {
+        try holding()
+        let sheet = try sheet()
+        sheet.pressKey("hold")
+        let child = try await pid("children")
+
+        runs.quit()
+
+        try await wait("the end of the child") { kill(child, 0) != 0 }
+        XCTAssertTrue(exists("ended"))
+    }
+
     func testEachCallOfAStayingScriptHasItsOwnId() async throws {
         try staying()
         let sheet = try sheet()

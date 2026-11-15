@@ -5,12 +5,17 @@
 # uses=screen,clipboard
 # offers=card
 state=$(openspot screen record status | head -n 1)
-if [ "$state" = "state=recording" ]; then
-  files=$(openspot screen record stop) || exit 1
-  file=$(printf '%s\n' "$files" | head -n 1)
-  openspot clipboard copy "$file" && echo "toast=Copied the recording."
-  exit 0
-fi
+# A recording that macOS ended still waits for its stop, which names its files and says why it ended.
+case "$state" in
+  state=recording | state=ended)
+    files=$(openspot screen record stop)
+    code=$?
+    file=$(printf '%s\n' "$files" | head -n 1)
+    [ -n "$file" ] || exit 1
+    openspot clipboard copy "$file" && echo "toast=Copied the recording."
+    exit "$code"
+    ;;
+esac
 inputs=$(openspot setting get --spot record/inputs inputs)
 openspot screen record start $inputs || exit 1
 state=$(openspot screen record status | head -n 1)

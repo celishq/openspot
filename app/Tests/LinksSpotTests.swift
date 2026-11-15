@@ -98,7 +98,7 @@ final class LinksSpotTests: SampleSpotsCase {
         }
     }
 
-    func testALaunchTriesAgainASiteThatHadNoIconAWeekAgo() async throws {
+    func testASaveTriesAgainASiteThatHadNoIconAWeekAgo() async throws {
         let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
         try await withPrivateHome { folder in
             let data = folder.appendingPathComponent(".config/openspot/data/links")
@@ -108,15 +108,51 @@ final class LinksSpotTests: SampleSpotsCase {
             let marker = icons.appendingPathComponent("icons.test.none")
             FileManager.default.createFile(atPath: marker.path, contents: Data())
             try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(-8 * 86400)], ofItemAtPath: marker.path)
-            let expected = icons.appendingPathComponent("icons.test.png").path
 
-            _ = try await TestEnvironment.with(["OPENSPOT_REASON": "app.launch"]) { try await links.items(timeout: 60) }
-            for _ in 0..<600 where !FileManager.default.fileExists(atPath: expected) {
-                try await Task.sleep(nanoseconds: 100_000_000)
-            }
+            try await self.savedLink("https://none.test", in: links)
 
-            XCTAssertTrue(links.read?.has(.event(SpotEvent.appLaunch)) == true)
-            XCTAssertTrue(FileManager.default.fileExists(atPath: expected))
+            XCTAssertFalse(links.read?.has(.event(SpotEvent.appLaunch)) == true)
+            XCTAssertTrue(FileManager.default.fileExists(atPath: icons.appendingPathComponent("icons.test.png").path))
+        }
+    }
+
+    func testASaveFetchesTheIconInsideItsCall() async throws {
+        let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
+        try await withPrivateHome { folder in
+            let curl = folder.appendingPathComponent("tools/curl")
+            let fake = try String(contentsOf: curl, encoding: .utf8)
+            try fake.replacingOccurrences(of: "#!/bin/sh\n", with: "#!/bin/sh\n/bin/sleep 1\n").writeScript(to: curl)
+
+            try await self.savedLink("https://icons.test", in: links)
+
+            XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent(".config/openspot/data/links/icons/icons.test.png").path))
+        }
+    }
+
+    func testAStopInTheMiddleOfADownloadLeavesNoPartOfTheIcon() async throws {
+        let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
+        try await withPrivateHome { folder in
+            try """
+            #!/bin/sh
+            out=""
+            for a; do [ "$previous" = "-o" ] && out=$a; previous=$a; url=$a; done
+            case "$url" in
+              https://slow.test/) echo '<link rel="icon" href="/a.png">' ;;
+              *) printf part > "$out"; exec /bin/sleep 600 ;;
+            esac
+            """.writeScript(to: folder.appendingPathComponent("tools/curl"))
+            let icons = folder.appendingPathComponent(".config/openspot/data/links/icons")
+            let parts = { (try? FileManager.default.contentsOfDirectory(atPath: icons.path))?.filter { $0.hasPrefix(".") } ?? [] }
+            let save = ScriptProcess(url: links.url, arguments: ["new"], mode: .once(input: "title=Slow\nurl=https://slow.test\n"), stopPause: 0.5, dataName: links.dataName, base: TestEnvironment.values)
+            let frames = save.start()
+
+            try await self.wait("the part of the icon") { !parts().isEmpty }
+            save.stop()
+            for try await _ in frames {}
+            try await self.wait("the end of the save") { !save.isRunning }
+
+            XCTAssertEqual(parts(), [])
+            XCTAssertFalse(FileManager.default.fileExists(atPath: icons.appendingPathComponent("slow.test.png").path))
         }
     }
 

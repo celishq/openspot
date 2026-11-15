@@ -49,26 +49,6 @@ class SampleSpotsCase: XCTestCase {
         return String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
     }
 
-    func turnCaffeinateOnAndOff(_ caffeinate: Spot) async throws {
-        let toast = try await caffeinate.perform(.item(SpotItem(title: "1 minute", run: "60")), timeout: 60)
-        XCTAssertEqual(toast, "Caffeinate is on for 1 minute")
-        var started = try await caffeinate.state(timeout: 60)
-        for _ in 0..<1200 where started.subtitle == "Off" {
-            try await Task.sleep(for: .milliseconds(50))
-            started = try await caffeinate.state(timeout: 60)
-        }
-        let first = try await caffeinate.items(timeout: 60).items.first
-        XCTAssertEqual(started.subtitle, "1m left")
-        XCTAssertEqual(started.on, true)
-        XCTAssertEqual(first?.run, "off")
-
-        let stopToast = try await caffeinate.perform(.item(try XCTUnwrap(first)), timeout: 60)
-        XCTAssertEqual(stopToast, "Caffeinate is off")
-        let stopped = try await caffeinate.state(timeout: 60)
-        XCTAssertEqual(stopped.subtitle, "Off")
-        XCTAssertEqual(stopped.on, false)
-    }
-
     func withPrivateHome(_ more: [String: String] = [:], _ body: (URL) async throws -> Void) async throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-home-\(UUID().uuidString)")
         let tools = folder.appendingPathComponent("tools")
@@ -81,7 +61,6 @@ class SampleSpotsCase: XCTestCase {
             ("gh", Self.fakeGh(answer: folder.appendingPathComponent("gh-answer").path)),
             ("osascript", "cp '\(folder.path)/clipboard' '\(folder.path)/pasted'"),
             ("openspot", Self.fakeOpenspot(in: folder)),
-            ("caffeinate", "exec /bin/bash -c 'exec -a caffeinate /bin/sleep 30'"),
             ("say", "exit 0")
         ] {
             let tool = tools.appendingPathComponent(name)

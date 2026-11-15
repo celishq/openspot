@@ -1,6 +1,4 @@
 import AppKit
-import Carbon
-import ImageIO
 import QuartzCore
 
 /// How light falls on a piece: one plain colour, paper that bends, or polished foil.
@@ -450,149 +448,39 @@ func window(on screen: NSScreen, shower: Shower) -> NSWindow {
     return window
 }
 
-/// Draws the shower as it looks `seconds` after it starts, over a pale ground, into a PNG at `path`, with no window.
-func still(_ look: Look, seconds: Double, path: String) -> Bool {
-    let size = CGSize(width: 1512, height: 982)
-    let shower = Shower(look: look, bounds: CGRect(origin: .zero, size: size), scale: 1)
-    for _ in 0..<Int(seconds * 120) { shower.advance(1.0 / 120) }
-    let context = CGContext(data: nil, width: Int(size.width), height: Int(size.height), bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
-    context.setFillColor(rgb(0xF3F4F7).cgColor)
-    context.fill(CGRect(origin: .zero, size: size))
-    shower.root.render(in: context)
-    guard let image = context.makeImage(), let file = CGImageDestinationCreateWithURL(URL(fileURLWithPath: path) as CFURL, "public.png" as CFString, 1, nil) else { return false }
-    CGImageDestinationAddImage(file, image, nil)
-    return CGImageDestinationFinalize(file)
-}
+/// One play of a look: a shower on each screen, each in its own window until its last piece leaves.
+final class Play {
+    private var windows: [ObjectIdentifier: (window: NSWindow, shower: Shower)] = [:]
+    private var done: (() -> Void)?
 
-/// The windows of each shower that plays now, kept until its last piece leaves.
-var playing: [ObjectIdentifier: NSWindow] = [:]
-
-/// Plays the look once on each screen, and calls `done` when every screen is clear.
-func play(_ look: Look, done: @escaping () -> Void) {
-    var left = NSScreen.screens.count
-    for screen in NSScreen.screens {
-        let shower = Shower(look: look, bounds: CGRect(origin: .zero, size: screen.frame.size), scale: screen.backingScaleFactor)
-        let id = ObjectIdentifier(shower)
-        shower.finished = {
-            playing[id]?.orderOut(nil)
-            playing[id] = nil
-            left -= 1
-            if left == 0 { done() }
+    /// Starts the look on each screen, and calls `done` once every screen is clear or the play is stopped.
+    init(_ look: Look, done: @escaping () -> Void) {
+        self.done = done
+        for screen in NSScreen.screens {
+            let shower = Shower(look: look, bounds: CGRect(origin: .zero, size: screen.frame.size), scale: screen.backingScaleFactor)
+            let id = ObjectIdentifier(shower)
+            shower.finished = { [weak self] in self?.clear(id) }
+            windows[id] = (window(on: screen, shower: shower), shower)
         }
-        playing[id] = window(on: screen, shower: shower)
+        if windows.isEmpty { finish() }
+    }
+
+    /// Takes every piece off the screens at once.
+    func stop() {
+        for id in Array(windows.keys) {
+            windows[id]?.shower.link?.invalidate()
+            clear(id)
+        }
+    }
+
+    private func clear(_ id: ObjectIdentifier) {
+        windows.removeValue(forKey: id)?.window.orderOut(nil)
+        if windows.isEmpty { finish() }
+    }
+
+    private func finish() {
+        let done = self.done
+        self.done = nil
+        done?()
     }
 }
-
-/// The key code and the modifiers of a key such as `ctrl+option+c`, as Openspot's key recorder writes it.
-func hotKey(_ text: String) -> (UInt32, UInt32)? {
-    let codes: [String: UInt32] = [
-        "a": 0, "s": 1, "d": 2, "f": 3, "h": 4, "g": 5, "z": 6, "x": 7, "c": 8, "v": 9, "b": 11, "q": 12, "w": 13, "e": 14,
-        "r": 15, "y": 16, "t": 17, "1": 18, "2": 19, "3": 20, "4": 21, "6": 22, "5": 23, "=": 24, "9": 25, "7": 26, "-": 27,
-        "8": 28, "0": 29, "]": 30, "o": 31, "u": 32, "[": 33, "i": 34, "p": 35, "return": 36, "l": 37, "j": 38, "'": 39,
-        "k": 40, ";": 41, "\\": 42, ",": 43, "/": 44, "n": 45, "m": 46, ".": 47, "tab": 48, "space": 49, "`": 50,
-        "backspace": 51, "delete": 51, "escape": 53, "left": 123, "right": 124, "down": 125, "up": 126,
-        "f1": 122, "f2": 120, "f3": 99, "f4": 118, "f5": 96, "f6": 97, "f7": 98, "f8": 100, "f9": 101, "f10": 109,
-        "f11": 103, "f12": 111,
-    ]
-    let flags: [String: Int] = ["cmd": cmdKey, "command": cmdKey, "ctrl": controlKey, "control": controlKey, "option": optionKey, "opt": optionKey, "alt": optionKey, "shift": shiftKey]
-    let parts = text.lowercased().split(separator: "+").map(String.init)
-    guard let last = parts.last, let code = codes[last] else { return nil }
-    var modifiers = 0
-    for part in parts.dropLast() {
-        guard let flag = flags[part] else { return nil }
-        modifiers |= flag
-    }
-    return modifiers == 0 ? nil : (code, UInt32(modifiers))
-}
-
-/// The look the person picked, from the data folder's `default` file and its `looks` folder, else from the built-in looks.
-func chosen(data: String, builtIn: String) -> Look? {
-    let id = (try? String(contentsOfFile: data + "/default", encoding: .utf8))?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-    let name = id.isEmpty ? "colorful" : id
-    let mine = data + "/looks/" + name + ".look"
-    let path = FileManager.default.fileExists(atPath: mine) ? mine : builtIn + "/" + name + ".look"
-    let (look, faults) = Look.read(path)
-    return faults.isEmpty ? look : Look.read(builtIn + "/colorful.look").0
-}
-
-var listening: (data: String, builtIn: String) = ("", "")
-
-/// The watch of the process whose end ends the listener.
-var parentWatch: DispatchSourceProcess?
-
-/// Ends this program when the process `parent` ends, or at once when it has ended.
-func end(with parent: pid_t) {
-    let watch = DispatchSource.makeProcessSource(identifier: parent, eventMask: .exit, queue: .main)
-    watch.setEventHandler { exit(0) }
-    watch.resume()
-    parentWatch = watch
-    if kill(parent, 0) != 0, errno == ESRCH { exit(0) }
-}
-
-/// Waits for the key in the background, and plays the picked look each time it is pressed. With a `parent`, it ends when
-/// that process ends.
-func listen(key: String, data: String, builtIn: String, parent: pid_t?) -> Never {
-    guard let (code, modifiers) = hotKey(key) else {
-        FileHandle.standardError.write("Openspot cannot use the key \(key). Hold cmd, ctrl or option with a letter, a digit or a key such as space.\n".data(using: .utf8)!)
-        exit(2)
-    }
-    if let parent { end(with: parent) }
-    listening = (data, builtIn)
-    let app = NSApplication.shared
-    app.setActivationPolicy(.accessory)
-    var spec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
-    InstallEventHandler(GetApplicationEventTarget(), { _, _, _ in
-        if let look = chosen(data: listening.data, builtIn: listening.builtIn) { play(look) {} }
-        return noErr
-    }, 1, &spec, nil, nil)
-    var reference: EventHotKeyRef?
-    let status = RegisterEventHotKey(code, modifiers, EventHotKeyID(signature: OSType(0x434E_4654), id: 1), GetApplicationEventTarget(), 0, &reference)
-    guard status == noErr else {
-        FileHandle.standardError.write("Another app already uses \(key). Pick another key.\n".data(using: .utf8)!)
-        exit(3)
-    }
-    app.run()
-    exit(0)
-}
-
-let usage = """
-    confetti <file.look>                             Plays the look on each screen.
-    confetti check <file.look>                       Says whether the look file can play, or what to fix.
-    confetti still <file.look> <seconds> <file.png>  Draws the look as it is that many seconds in.
-    confetti listen <key> <data folder> <looks folder> [parent pid]  Plays the picked look each time the key is pressed,
-                                                     until the parent ends.
-    """
-let arguments = Array(CommandLine.arguments.dropFirst())
-let command = arguments.first ?? ""
-if command == "listen" {
-    guard arguments.count == 4 || arguments.count == 5 else {
-        print(usage)
-        exit(2)
-    }
-    listen(key: arguments[1], data: arguments[2], builtIn: arguments[3], parent: arguments.count == 5 ? pid_t(arguments[4]) : nil)
-}
-let path = command == "check" || command == "still" ? arguments.dropFirst().first : arguments.first
-guard let path, !path.isEmpty else {
-    print(usage)
-    exit(2)
-}
-let (look, faults) = Look.read(path)
-if !faults.isEmpty {
-    FileHandle.standardError.write((faults.joined(separator: "\n") + "\n").data(using: .utf8)!)
-    exit(1)
-}
-if command == "check" {
-    print("\(look.title) can play: \(look.colors.count) colours, \(look.kinds.count) kinds of piece, a \(look.finish.rawValue) finish.")
-    exit(0)
-}
-if command == "still" {
-    guard arguments.count == 4, let seconds = Double(arguments[2]) else {
-        print(usage)
-        exit(2)
-    }
-    exit(still(look, seconds: seconds, path: arguments[3]) ? 0 : 1)
-}
-let app = NSApplication.shared
-app.setActivationPolicy(.accessory)
-play(look) { exit(0) }
-app.run()

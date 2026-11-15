@@ -68,7 +68,8 @@ public struct SwiftProgram: Sendable {
     }
 
     func build(of spot: Spot) -> (@Sendable () async throws -> URL)? {
-        let (script, names) = (spot.url, spot.sources)
+        let script = spot.url
+        let names = script.pathExtension == Self.sourceExtension ? spot.sources : []
         if !names.isEmpty { return { [self] in try await built(script, with: names) } }
         guard script.pathExtension == Self.sourceExtension, !isShipped(script), let name = try? Self.name(of: script, with: []),
               let carried = Self.carried(of: script, named: name)

@@ -1,10 +1,9 @@
-import AppKit
 import SwiftUI
 
 /// The store, laid out on 16 columns of the grid: a sidebar of 4 with the search and a row for each origin, and 12 with each
 /// spot as its card at the size it takes on the grid, under the title of its group. A plus on a card gets the spot, an up
-/// arrow publishes your own spot's changes, and a click opens a sheet with its readme and, when it has sample data, its
-/// sheet to try. A footer holds a hint, the sort and Done.
+/// arrow publishes your own spot's changes, and a click opens a sheet with its readme, which it asks for then, and, when
+/// it has sample data, its sheet to try. A footer holds a hint, the sort and Done. Each spot is a row of the frame.
 struct SpotView: View {
     let spot: SpotInput
     @State private var query = ""
@@ -87,8 +86,8 @@ struct SpotView: View {
         }
     }
 
-    /// One spot of the store: its id, its name, what its button does, its origin, its description, its size, whether it
-    /// has sample data, and the folded words that a search compares, made once.
+    /// One spot of the store, from its row: its id, its name, what its button does, its origin, its description, its size,
+    /// whether it has sample data, and the folded words that a search compares, made once.
     private struct Item: Identifiable {
         let id: String
         let name: String
@@ -99,11 +98,10 @@ struct SpotView: View {
         let hasSample: Bool
         let words: String
 
-        init?(_ line: String) {
-            let parts = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
-            guard parts.count == 7 else { return nil }
-            (id, name, state, origin, detail, size) = (parts[0], parts[1], parts[2], parts[3], parts[4], parts[5])
-            hasSample = parts[6] == "sample"
+        init?(_ row: SpotRow) {
+            guard !row.id.isEmpty, let state = row["step"] else { return nil }
+            (id, name, self.state, origin, detail, size) = (row.id, row["title"] ?? row.id, state, row["origin"] ?? "", row["detail"] ?? "", row["size"] ?? "")
+            hasSample = row["sample"] == "true"
             words = [name, detail, Self.label(of: origin)].joined(separator: " ").folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
         }
 
@@ -127,7 +125,7 @@ struct SpotView: View {
     }
 
     var body: some View {
-        let all = spot.all("value").compactMap(Item.init)
+        let all = spot.rows.compactMap(Item.init)
         let items = kept(all)
         HStack(spacing: 0) {
             sidebar(all)
@@ -155,8 +153,10 @@ struct SpotView: View {
         }
         .onChange(of: spot.answers, initial: true) {
             pending = nil
-            readmes = Dictionary(grouping: spot.all("readme").map { $0.split(separator: "\t", maxSplits: 1, omittingEmptySubsequences: false) }, by: { String($0[0]) })
-                .mapValues { $0.map { Line($0.count > 1 ? String($0[1]) : "") } }
+            let lines = spot.all("readme").map { $0.split(separator: "\t", maxSplits: 1, omittingEmptySubsequences: false) }
+            for (id, parts) in Dictionary(grouping: lines, by: { String($0[0]) }) {
+                readmes[id] = parts.filter { $0.count > 1 }.map { Line(String($0[1])) }
+            }
         }
         .task(id: hovered) {
             tip = nil
@@ -329,7 +329,7 @@ struct SpotView: View {
             .labelsHidden()
             .controlSize(.large)
             .fixedSize())
-            tipped("Close the store", Button("Done") { NSApp.keyWindow?.performClose(nil) }
+            tipped("Close the store", Button("Done") { spot.close() }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large))
         }
@@ -360,11 +360,12 @@ struct SpotView: View {
             .overlay(alignment: .topLeading) { control(item) }
     }
 
-    /// Opens the sheet of a spot.
+    /// Opens the sheet of a spot, and asks the store for its readme the first time.
     private func open(_ item: Item) {
         hovered = nil
         isTrying = false
         opened = item.id
+        if readmes[item.id] == nil { spot.send("readme:\(item.id)") }
     }
 
     /// The sheet of a spot: its card, name and description, then its readme, or its sheet with sample data while the person
@@ -467,11 +468,11 @@ struct SpotView: View {
         spot.send(call)
     }
 
-    /// The readme of a spot, with its headings in bold, or a line that says it has none.
+    /// The readme of a spot, with its headings in bold, or a line that says it has none once the store has answered.
     private func readme(_ item: Item) -> some View {
         let lines = readmes[item.id] ?? []
         return VStack(alignment: .leading, spacing: 6) {
-            if lines.isEmpty {
+            if lines.isEmpty, readmes[item.id] != nil {
                 Text("\(item.name) has no readme yet.")
                     .foregroundStyle(.secondary)
             }
