@@ -97,7 +97,7 @@ final class SpotUsesTests: SpotRunsCase {
         let (code, errors) = try await pressed()
 
         XCTAssertEqual(code, "1")
-        XCTAssertEqual(errors, "Only Openspot's Account and Store spots can reach your account key.\n")
+        XCTAssertEqual(errors, "Only Openspot's Store can reach your account key.\n")
         XCTAssertEqual(found.scripts.first?.uses, [])
     }
 
@@ -110,16 +110,6 @@ final class SpotUsesTests: SpotRunsCase {
         XCTAssertEqual(code, "1")
         XCTAssertEqual(errors, "Script cannot change Careful mode. Only you can, in Settings or with `openspot setting set --spot openspot careful true` in Terminal.\n")
         XCTAssertFalse(FileManager.default.fileExists(atPath: config.appendingPathComponent("config.toml").path))
-    }
-
-    func testASpotCannotChangeWhereTheAccountIsKept() async throws {
-        try caller(header: "uses=app", "account sync off")
-        _ = try scanned()
-
-        let (code, errors) = try await pressed()
-
-        XCTAssertEqual(code, "1")
-        XCTAssertEqual(errors, "Only Openspot's Account and Store spots can reach your account key.\n")
     }
 
     func testInCarefulModeAnUndeclaredUseIsRefused() async throws {

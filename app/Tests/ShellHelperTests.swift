@@ -51,16 +51,40 @@ final class ShellHelperTests: XCTestCase {
     }
 
     func testEscValueAndServeWorkWhereNoTempFileCanBeWritten() async throws {
-        let fence = "(version 1)(allow default)(deny file-write* (subpath \"/private/var/tmp\") (subpath \"/private/tmp\") (subpath \"/private/var/folders\"))"
+        let fence = "(version 1)(allow default)(deny file-write* (require-all (vnode-type REGULAR-FILE) (require-any (subpath \"/private/var/tmp\") (subpath \"/private/tmp\") (subpath \"/private/var/folders\"))))"
         let once = try script("printf '[%s][%s][%s]' \"$(esc 'a\\b\nc')\" \"$(value a)\" \"$(value b)\"")
-        let stays = try script("main() { printf '%s|%s|%s' \"$(esc \"$1\")\" \"$2\" \"$#\"; }\nopenspot_serve main", header: "# mode=stay\n")
+        let served = try script("main() { printf '%s|%s|' \"$1\" \"$(value secret)\"; /bin/cat; kept=yes; return 3; }\nopenspot_serve main \"$@\"\nprintf '|%s|%s' \"$?\" \"$kept\"")
+        let stays = try script("count=0\nmain() { count=$((count + 1)); printf '%s|%s|%s|%s|' \"$count\" \"$(esc \"$1\")\" \"$#\" \"$(value secret)\"; /bin/cat; }\nopenspot_serve main", header: "# mode=stay\n")
         let tool = URL(fileURLWithPath: "/usr/bin/sandbox-exec")
+        let calls = "call=1\narg=a\\\\b\\nc\narg=\ninput=secret=hunter2\\nb=1\n\ncall=2\n\ncall=3\ninput=secret=two\n\n"
 
-        let read = try await ScriptProcess.output(url: tool, arguments: ["-p", fence, "/bin/sh", once.path], input: "a=one\\ntwo\nb=1\nc=2\nb=3\n", limit: 60)
-        let served = try await ScriptProcess.output(url: tool, arguments: ["-p", fence, "/bin/sh", stays.path], input: "call=1\narg=a\\\\b\\nc\narg=\n\n", limit: 60)
+        for shell in ["/bin/sh", "/bin/dash"] {
+            let read = try await ScriptProcess.output(url: tool, arguments: ["-p", fence, shell, once.path], input: "a=one\\ntwo\nb=1\nc=2\nb=3\n", limit: 60)
+            let ran = try await ScriptProcess.output(url: tool, arguments: ["-p", fence, shell, served.path, "open"], input: "secret=hunter2\nb=1\n", limit: 60)
+            let stayed = try await ScriptProcess.output(url: tool, arguments: ["-p", fence, shell, stays.path], input: calls, limit: 60)
 
-        XCTAssertEqual(read, "[a\\\\b\\nc][one\ntwo][1\n3]")
-        XCTAssertTrue(served.contains("a\\\\b\\nc||2"), served)
+            XCTAssertEqual(read, "[a\\\\b\\nc][one\ntwo][1\n3]", shell)
+            XCTAssertEqual(ran, "open|hunter2|secret=hunter2\nb=1\n|3|yes", shell)
+            XCTAssertTrue(stayed.contains("1|a\\\\b\\nc|2|hunter2|secret=hunter2\nb=1\n"), stayed)
+            XCTAssertTrue(stayed.contains("2||0||"), stayed)
+            XCTAssertTrue(stayed.contains("3||0|two|secret=two\n"), stayed)
+        }
+    }
+
+    func testServeLeavesNoFolderOfItsPipeBehind() async throws {
+        let temp = folder.appendingPathComponent("temp")
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        let once = try script("main() { /bin/cat; }\nopenspot_serve main")
+        let stays = try script("main() { /bin/cat; }\nopenspot_serve main", header: "# mode=stay\n")
+        var base = ProcessInfo.processInfo.environment
+        base["TMPDIR"] = temp.path
+
+        let ran = try await ScriptProcess.output(url: once, input: "a=1\n", limit: 60, base: base)
+        let stayed = try await ScriptProcess.output(url: URL(fileURLWithPath: "/bin/sh"), arguments: [stays.path], input: "call=1\ninput=a=1\n\ncall=2\ninput=a=2\n\n", limit: 60, base: base)
+
+        XCTAssertEqual(ran, "a=1\n")
+        XCTAssertTrue(stayed.contains("a=1\n") && stayed.contains("a=2\n"), stayed)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: temp.path), [])
     }
 
     func testEscLeavesTheStateOfTheScriptAlone() async throws {

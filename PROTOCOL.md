@@ -928,8 +928,7 @@ A spot asks the Mac and Openspot for things through one command, which works the
   - calls that change Openspot or its places: `app quit`, `update install`, and `setting set` of a key that Openspot
     keeps for the user (see [Settings](#settings));
   - calls that open a window or the panel: `spot show`, `spot open`, `spot choose`, `spot settings`, `spot edit`, `spot prompt`, `spot share`, `spot review`, `grid edit`, `setting change`,
-    `update check`, `calendar show` and `reminders show`;
-  - `account sync`, which only the user and the spots of Openspot can call.
+    `update check`, `calendar show` and `reminders show`.
 - `calendar add --dry-run` and `reminders add --dry-run` change nothing, so they work in a read.
 - `openspot batch` runs one call for each line of stdin, and prints `---` after each. It stops at the first failure.
 - `--frame` makes `app status`, `account`, `spot list`, `store list` and `setting list` print blocks instead of JSON.
@@ -967,7 +966,7 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot emoji [--tone name]`                     | Prints each emoji as a row, with its name in the language of the Mac.                           |
 | `openspot symbols`                                 | Prints each symbol of the Character Viewer as a row.                                            |
 | `openspot translate [--from code] [--to code]`     | Translates the text on stdin. `openspot translate languages` prints the languages it knows.     |
-| `openspot account <verb>`                          | Reaches the account key with `new`, `sign-out` or `sync`. No verb prints or takes an account word. See [Trust](#trust). |
+| `openspot account [--frame]`                       | Prints the public facts of the account that signs what you publish. See [Trust](#trust).        |
 
 ### Settings
 
@@ -1078,7 +1077,7 @@ openspot app quit
 | `calendar`  | each call of `calendar` and `reminders`                                                                                                                         |
 | `network`   | No call. The spot reaches the network.                                                                                                                          |
 | `files`     | No call. The spot writes outside its data folder.                                                                                                               |
-| `account`   | `account new`, `sign-out` and `sync`, and `store publish`. Only a spot that ships inside Openspot can have it.                                                  |
+| `account`   | `store publish`. Only a spot that ships inside Openspot can have it.                                                                                            |
 
 - A call that needs a use the header doesn't name still runs, and shows one toast for each spot, use and day.
   `openspot check` can't report it, because only a run shows it.
@@ -1102,11 +1101,11 @@ openspot app quit
   publishes the spot, and refuses a shared spot whose files don't match its last release. A spot reads nothing from it.
 - `openspot account` tells any spot the public facts: whether an account is signed in, its `npub`, the `handle` it was
   made with, the day it was made (`since`), whether its words are backed up, and whether it syncs.
-- `openspot account new <handle>` makes the key with that handle: 3 to 20 of a–z, 0–9, `-` and `_`. It and every other
-  call of `account` reach the key, so they answer only a spot that ships inside Openspot and names `account` in its uses,
-  and only while the app runs. `sign-out` and `sync` ask for Touch ID first, which counts for 5 minutes. No call prints
-  or takes the 12 words: only the Account sheet of the app shows and checks them. The calls of such a spot stay out of
-  the call log and the playground.
+- No call makes, changes or removes the account key, and none prints or takes the 12 words. Only the Account sheet of
+  the app does, and it asks for Touch ID or the Mac's password before each act on the key. An unlock counts for 5
+  minutes, and only for the act it was asked for. A Mac with neither a password nor Touch ID cannot unlock the key.
+- `store publish` signs with the key, so it answers only a spot that ships inside Openspot and names `account` in its
+  uses, and only while the app runs. The calls of such a spot stay out of the call log and the playground.
 - The 12 words of an account give its key as NIP-06 says, so they open the same account in another Nostr client.
 
 ## Messages

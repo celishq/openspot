@@ -226,6 +226,7 @@ public final class SpotsModel {
     @ObservationIgnored public unowned let host: SpotsHost
     @ObservationIgnored public let files: AppPlaces
     @ObservationIgnored public private(set) var account: AccountSheet!
+    @ObservationIgnored var waitingPublish: String?
     @ObservationIgnored private(set) var assignedKeys: [GlobalKey] = []
 
     public init(host: SpotsHost, files: AppPlaces = .standard, runs: SpotRuns? = nil) {
@@ -248,7 +249,7 @@ public final class SpotsModel {
         account = AccountSheet(store: files.account, links: AccountSheet.Links(
             allows: { [weak self] reason in await self?.allows(reason) ?? false },
             copy: { text in (try? await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["LC_ALL=en_US.UTF-8", "pbcopy"], input: text, base: environment)) != nil },
-            publish: { [weak self] id in _ = await self?.publish(id) },
+            publish: { [weak self] in await self?.publishWaiting() ?? false },
             userName: { NSFullUserName() }
         ))
     }

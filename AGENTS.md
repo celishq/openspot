@@ -18,7 +18,7 @@
   into the app.
 - `spots/` holds the source of the core spots, each a `<name>.spot` folder. The build copies it into the app, and they run
   from there. `spots/openspot.spot/` holds the spots of the app itself, such as Settings, which are always on and use only the `openspot`
-  API. No code outside that folder names one of them. [spots/AGENTS.md](spots/AGENTS.md) holds the rules of a spot and of an
+  API. No code outside that folder names one of them. They run only from the app, so a change to one needs a build. [spots/AGENTS.md](spots/AGENTS.md) holds the rules of a spot and of an
   example.
 - `examples/` holds spots that show a feature, such as a view. The app does not ship them, and a test checks them.
   `make examples` copies them into the spots of a Debug build.

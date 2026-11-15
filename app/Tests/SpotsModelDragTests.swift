@@ -579,7 +579,7 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(host.notes.last, "A was not published. Touch ID didn't pass, so Openspot signed nothing.")
     }
 
-    func testAPublishWithNoAccountOpensThePublishPageOfTheAccountSpot() async throws {
+    func testAPublishWithNoAccountOpensAccountAndWaitsForTheKey() async throws {
         try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
         await model.reload()
         try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
@@ -587,8 +587,41 @@ final class SpotsModelDragTests: XCTestCase {
         let result = await model.publish("a")
 
         XCTAssertEqual(result, .failed)
-        XCTAssertEqual(model.flow.current, FlowSheet(spot: AccountSheet.id, page: "publish:a"))
+        XCTAssertEqual(model.flow.current, FlowSheet(spot: AccountSheet.id))
         XCTAssertEqual(host.notes, [])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
+
+        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["new"]), limit: 60)
+        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["create"]), input: "handle=tony\n", limit: 60)
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
+    }
+
+    func testAPushOfAPublishPageFromACallerPublishesNothing() async throws {
+        try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
+        await model.reload()
+        try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
+
+        model.push(FlowSheet(spot: AccountSheet.id, page: "publish:a"))
+        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["new"]), limit: 60, variables: ["OPENSPOT_PAGE": "publish:a"])
+        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["create"]), input: "handle=tony\n", limit: 60, variables: ["OPENSPOT_PAGE": "publish:a"])
+
+        XCTAssertNotNil(try model.files.account.key())
+        XCTAssertNotEqual(model.flow.current?.page, "publish:a")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
+        XCTAssertEqual(host.asked, [])
+    }
+
+    func testAPublishThatWaitsIsForgottenWhenItsSheetsClose() async throws {
+        try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
+        await model.reload()
+        try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
+        _ = await model.publish("a")
+
+        model.open(AccountSheet.id)
+        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["new"]), limit: 60)
+        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["create"]), input: "handle=tony\n", limit: 60)
+
         XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
     }
 

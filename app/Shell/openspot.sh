@@ -1,6 +1,7 @@
 # The shell helper of Openspot. `. "$OPENSPOT_SH"` gives `esc`, `value`, `openspot_value`, `openspot_kv`, `openspot_row`,
 # `openspot_rows`, `openspot_serve`, `openspot_keep` and `openspot_paste`.
 # Loading starts `cat` once, and each function starts `sed`, `tr` or `awk` only above 1 KB, where a shell loop is too slow.
+# `openspot_serve` starts `mktemp` and `mkfifo` once for a script that gets stdin, and `rm` when it ends.
 
 # Whether the header of the script says `mode=stay` or `mode=always`: the comment lines at its top, read with no process.
 _openspot_stays=
@@ -169,16 +170,36 @@ _openspot_next() {
   return 1
 }
 
-# Runs the function in `_openspot_main` with these arguments, and with `_openspot_stdin` as its stdin.
+# Runs the function in `_openspot_main` with these arguments, and with `_openspot_stdin` as its stdin. The text goes
+# through a pipe with a name, in a folder that only the user reads, so it touches no file: `sh` writes a here-document
+# to a file. A script that runs once removes the folder before the function starts, and a staying script keeps it for
+# its next calls.
+_openspot_pipe=
 _openspot_run() {
   if [ -z "$_openspot_stdin" ]; then
     "$_openspot_main" "$@" </dev/null
     return
   fi
-  _openspot_feed=${_openspot_stdin%"$_openspot_nl"}
-  "$_openspot_main" "$@" <<EOF_OPENSPOT
-$_openspot_feed
-EOF_OPENSPOT
+  if [ -z "$_openspot_pipe" ]; then
+    _openspot_pipe=$(/usr/bin/mktemp -d 2>/dev/null) && /usr/bin/mkfifo -m 600 "$_openspot_pipe/stdin" 2>/dev/null || {
+      _openspot_close
+      "$_openspot_main" "$@" </dev/null
+      return
+    }
+  fi
+  printf '%s\n' "${_openspot_stdin%"$_openspot_nl"}" > "$_openspot_pipe/stdin" &
+  exec 8< "$_openspot_pipe/stdin"
+  [ -n "$_openspot_stays" ] || _openspot_close
+  "$_openspot_main" "$@" <&8
+  _openspot_code=$?
+  exec 8<&-
+  return "$_openspot_code"
+}
+
+# Removes the folder of the pipe.
+_openspot_close() {
+  [ -z "$_openspot_pipe" ] || /bin/rm -rf "$_openspot_pipe"
+  _openspot_pipe=
 }
 
 # Runs a function with the three parts of each call: its arguments, its variables and its stdin (protocol: Modes). A script that runs
@@ -206,6 +227,7 @@ openspot_serve() {
     _openspot_run "$@"
     printf '\n---\nend=%s\n---\n' "$_openspot_call"
   done
+  _openspot_close
 }
 
 # Prints one line of a block with its value written for you, so that a new line or a backslash in the value stays in it (protocol: The calls).

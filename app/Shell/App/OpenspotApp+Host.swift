@@ -93,12 +93,15 @@ extension OpenspotApp: SpotsHost {
     }
 
     func allows(_ reason: String) async -> Bool {
-        if let passed = Self.touchIDPassed, Date().timeIntervalSince(passed) < Self.touchIDReuse { return true }
+        if Self.unlocks.covers(reason, at: Date()) { return true }
         let context = LAContext()
         var error: NSError?
-        guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else { return true }
+        guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else {
+            notify("Openspot cannot guard your account key on this Mac. Set a login password or Touch ID in System Settings, then try again.")
+            return false
+        }
         guard (try? await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason)) == true else { return false }
-        Self.touchIDPassed = Date()
+        Self.unlocks.pass(reason, at: Date())
         return true
     }
 

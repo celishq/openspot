@@ -4,9 +4,17 @@ import XCTest
 final class AccountSheetTests: BuiltInCase {
     private actor Publishes {
         var ids: [String] = []
+        var waiting: String?
 
-        func add(_ id: String) {
+        func wait(for id: String) {
+            waiting = id
+        }
+
+        func publishWaiting() -> Bool {
+            guard let id = waiting else { return false }
+            waiting = nil
             ids.append(id)
+            return true
         }
     }
 
@@ -21,7 +29,7 @@ final class AccountSheetTests: BuiltInCase {
             let made = AccountSheet(store: store, links: AccountSheet.Links(
                 allows: { await app.allows($0) },
                 copy: { mac.copied.append($0); return true },
-                publish: { await publishes.add($0) },
+                publish: { await publishes.publishWaiting() },
                 userName: { "Tony Pinkevych" }
             ))
             sheet = made
@@ -149,20 +157,11 @@ final class AccountSheetTests: BuiltInCase {
         XCTAssertEqual(block("head", in: done)["title"], "You need a key to publish")
     }
 
-    func testThePublishPageSaysWhatTheKeyIsAndOffersANewKeyOrYourOwn() async throws {
-        let read = try await frame(["read"], page: "publish:a")
+    func testWithAPublishThatWaitsANewKeyPublishesItAndGoesBack() async throws {
+        await publishes.wait(for: "a")
 
-        XCTAssertEqual(block("head", in: read)["title"], "You need a key to publish")
-        XCTAssertTrue(read.hasPrefix("grid=head head\ngrid=head head\ngrid=new new\ngrid=own how\n"), read)
-        XCTAssertEqual(block("new", in: read)["title"], "Create a new key")
-        XCTAssertEqual(block("new", in: read)["look"], "strong")
-        XCTAssertEqual(block("own", in: read)["title"], "Use my own key")
-    }
-
-    func testANewKeyOnThePublishPageMakesTheKeyPublishesAndGoesBack() async throws {
-
-        _ = try await frame(["new"], page: "publish:a")
-        let done = try await frame(["create"], input: "handle=tony\n", page: "publish:a")
+        _ = try await frame(["new"])
+        let done = try await frame(["create"], input: "handle=tony\n")
 
         XCTAssertNotNil(try store.key())
         let published = await publishes.ids
@@ -170,10 +169,11 @@ final class AccountSheetTests: BuiltInCase {
         XCTAssertTrue(done.contains("pop=true\n"), done)
     }
 
-    func testYourOwnWordsOnThePublishPageSignInPublishesAndGoesBack() async throws {
+    func testWithAPublishThatWaitsYourOwnWordsSignInPublishItAndGoBack() async throws {
+        await publishes.wait(for: "a")
 
-        let restore = try await frame(["own"], page: "publish:a")
-        let done = try await frame(["sign_in"], input: "phrase=\(phrase)\n", page: "publish:a")
+        let restore = try await frame(["own"])
+        let done = try await frame(["sign_in"], input: "phrase=\(phrase)\n")
 
         XCTAssertTrue(restore.contains("field=phrase"), restore)
         XCTAssertEqual(try store.key()?.words?.joined(separator: " "), phrase)
@@ -182,10 +182,26 @@ final class AccountSheetTests: BuiltInCase {
         XCTAssertTrue(done.contains("pop=true\n"), done)
     }
 
-    func testBackFromSignInOnThePublishPageShowsItsTwoChoicesAgain() async throws {
-        _ = try await frame(["own"], page: "publish:a")
+    func testAPageThatACallerNamesPublishesNothing() async throws {
+        XCTAssertEqual(try account.pages, [])
 
-        let back = try await frame(["back"], page: "publish:a")
+        _ = try await frame(["new"], page: "publish:evil")
+        let made = try await frame(["create"], input: "handle=tony\n", page: "publish:evil")
+        _ = try await frame(["leave"], page: "publish:evil")
+        _ = try await frame(["sign_out"], page: "publish:evil")
+        _ = try await frame(["own"], page: "publish:evil")
+        let signedIn = try await frame(["sign_in"], input: "phrase=\(phrase)\n", page: "publish:evil")
+
+        let published = await publishes.ids
+        XCTAssertEqual(published, [])
+        XCTAssertFalse(made.contains("pop=true\n"), made)
+        XCTAssertFalse(signedIn.contains("pop=true\n"), signedIn)
+    }
+
+    func testBackFromSignInShowsTheTwoChoicesAgain() async throws {
+        _ = try await frame(["own"])
+
+        let back = try await frame(["back"])
 
         XCTAssertEqual(block("new", in: back)["title"], "Create a new key")
     }

@@ -29,7 +29,7 @@ final class AccountMarkerTests: BuiltInCase {
         let verbs = [
             ["account"], ["account", "--frame"], ["account", "words"], ["account", "choices", "1", "2"], ["account", "choices", "3", "4"],
             ["account", "checked"], ["account", "phrase"], ["account", "sign-in"], ["account", "new"], ["account", "new", "tony"],
-            ["account", "sync", "off"], ["account", "key"], ["account", "show"], ["help", "account"]
+            ["account", "sign-out"], ["account", "sync", "off"], ["account", "key"], ["account", "show"], ["help", "account"]
         ]
         var said: [String] = []
         for caller in callers {
@@ -90,7 +90,7 @@ final class AccountMarkerTests: BuiltInCase {
         let sheet = AccountSheet(store: store, links: AccountSheet.Links(
             allows: { await app.allows($0) },
             copy: { mac.copied.append($0); return true },
-            publish: { _ = await app.publish($0) },
+            publish: { false },
             userName: { "Tony Pinkevych" }
         ))
         var lines: [String] = []
@@ -155,7 +155,7 @@ final class AccountMarkerTests: BuiltInCase {
         _ = await frame(["show"], nil, nil)
         _ = await frame(["sign_out"], nil, nil)
         await app.set(allows: true)
-        _ = await frame(["new"], nil, "publish:a")
+        _ = await frame(["new"], nil, "publish:evil")
         let published = try await runs.answer(of: try spot("store"), SpotAction(arguments: ["gallery", "publish:a"]), limit: 60)
         let opened = await app.opened
         XCTAssertTrue(opened.contains("publish a"), "\(opened)")

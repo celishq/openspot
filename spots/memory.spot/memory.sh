@@ -18,12 +18,13 @@ draw() {
   printf 'graph=memory\ntitle=%s%%\ndetail=%s\nvalue=%s\ntone=%s\n' "$used" "$detail" "$value" "$tone"
 }
 
-# `show <percent>` draws the share that is given, such as the one of sample.sh. With none, as when another spot such as
-# System details looks, it measures the memory now.
+# Prints the memory in use now, as a percent.
 measure() {
   printf '%s' "$((100 - $(/usr/sbin/sysctl -n kern.memorystatus_level)))"
 }
 
+# `show <percent>` draws the share that is given, such as the one of sample.sh. With none, as when another spot such as
+# System details looks, it measures the memory now.
 if [ "$1" = show ]; then
   draw "${2:-$(measure)}"
   exit 0
