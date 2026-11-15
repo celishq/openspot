@@ -88,6 +88,7 @@ struct SpotsView: View {
             SpotMenuLayer(model: model, item: item, fieldIsInSheet: fieldIsInSheet)
         }
         .environment(\.spotIsShown, model.isShown)
+        .environment(\.spotViewPlace, SpotViewPlace(model: model))
         .environment(\.spotPanels, model.panels)
         .onChange(of: model.isShown) { _, isShown in
             if !isShown { dropTarget = nil }

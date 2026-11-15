@@ -4,6 +4,7 @@ import SwiftUI
 struct SpotCustomView: View, @MainActor Equatable {
     let source: String
     let values: [String: [String]]
+    var rows: [[String]] = []
     let card: SpotSize
     var room: CGSize?
     var answers = 0
@@ -12,10 +13,11 @@ struct SpotCustomView: View, @MainActor Equatable {
     var send: ((String) -> Void)?
     @Environment(\.spotIsShown) private var isShown
     @Environment(\.spotCards) private var cards
+    @Environment(\.spotViewPlace) private var place
     @Environment(\.spotIsHeld) private var isHeld
 
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.source == rhs.source && lhs.values == rhs.values && lhs.card == rhs.card && lhs.room == rhs.room && lhs.answers == rhs.answers && lhs.date == rhs.date && lhs.views === rhs.views
+        lhs.source == rhs.source && lhs.values == rhs.values && lhs.rows == rhs.rows && lhs.card == rhs.card && lhs.room == rhs.room && lhs.answers == rhs.answers && lhs.date == rhs.date && lhs.views === rhs.views
             && (lhs.send == nil) == (rhs.send == nil)
     }
 
@@ -83,8 +85,23 @@ struct SpotCustomView: View, @MainActor Equatable {
         }
     }
 
+    private var close: () -> Void {
+        let place = place
+        return { MainActor.assumeIsolated { place.close() } }
+    }
+
+    private var bodyTime: (Duration) -> Void {
+        let place = place
+        let source = source
+        return { time in MainActor.assumeIsolated { place.drew(source, in: time) } }
+    }
+
     private var input: [String: Any] {
         [
+            "isShown": isShown,
+            "rows": rows,
+            "close": close,
+            "bodyTime": bodyTime,
             "size": size,
             "answers": answers,
             "inset": SpotTokens.padding,
@@ -114,7 +131,7 @@ struct SpotCustomView: View, @MainActor Equatable {
         switch views.phase(of: source) {
         case .building:
             Color.clear
-        case .ready(let make) where isShown:
+        case .ready(let make) where isShown || views.isKept(source):
             make(values, input, isHeld ? { _ in } : send ?? { _ in })
         case .ready:
             Color.clear

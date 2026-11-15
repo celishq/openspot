@@ -13,6 +13,7 @@ public final class SpotUsage: @unchecked Sendable {
         public var calls: [String: Int] = [:]
         public var network = false
         public var fault: String?
+        public var view: ViewTime?
 
         mutating func add(_ time: ProcessTime) {
             cpu += time.cpu
@@ -34,7 +35,17 @@ public final class SpotUsage: @unchecked Sendable {
             sum.calls.merge(older.calls, uniquingKeysWith: +)
             sum.network = network || older.network
             sum.fault = fault ?? older.fault
+            sum.view = view.map { $0.adding(older.view) } ?? older.view
             return sum
+        }
+    }
+
+    public struct ViewTime: Codable, Equatable, Sendable {
+        public var bodies = 0
+        public var seconds: TimeInterval = 0
+
+        func adding(_ other: ViewTime?) -> ViewTime {
+            ViewTime(bodies: bodies + (other?.bodies ?? 0), seconds: seconds + (other?.seconds ?? 0))
         }
     }
 
@@ -62,6 +73,7 @@ public final class SpotUsage: @unchecked Sendable {
     private var today: Day
     private var isDirty = false
     private var isWaiting = false
+    private var views: [String: (id: String, name: String)] = [:]
     private var live: [ObjectIdentifier: (spot: String, process: ScriptProcess, counted: ProcessTime)] = [:]
     let now: () -> Date
 
@@ -89,6 +101,19 @@ public final class SpotUsage: @unchecked Sendable {
             let name = day(of: Calendar.current.date(byAdding: .day, value: -back, to: date) ?? date)
             if let today, today.day == name { return today }
             return folder.flatMap { read(name, in: $0) }
+        }
+    }
+
+    func take(views spots: [Spot]) {
+        let views = Dictionary(spots.compactMap { spot in spot.view.map { ($0, (id: spot.id, name: spot.name)) } }) { first, _ in first }
+        lock.withLock { self.views = views }
+    }
+
+    public func drew(view source: String, seconds: TimeInterval) {
+        change { day in
+            guard let spot = views[source] else { return }
+            day.spots[spot.id, default: Count()].name = spot.name
+            day.spots[spot.id, default: Count()].view = ViewTime(bodies: 1, seconds: seconds).adding(day.spots[spot.id]?.view)
         }
     }
 

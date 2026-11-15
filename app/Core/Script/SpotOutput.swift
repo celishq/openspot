@@ -74,13 +74,13 @@ public struct SpotOutput: Equatable, Sendable {
         if let (block, _) = repeated { drawing = RepeatDrawing(block: block) }
         let placed = Self.placed(by: head)
         var runs = Set<String>()
-        var hasRows = false
+        var rows: [TextBlock] = []
         var values: [(block: TextBlock, kind: BlockKind)] = []
         for (index, block) in blocks.enumerated() {
             let word = block.fields.first?.key
             if word == BlockKind.repeated { continue }
             if word == BlockKind.row {
-                hasRows = true
+                rows.append(block)
                 if let item = SpotItem(block: block) {
                     if runs.insert(item.run).inserted { items.append(item) }
                 } else {
@@ -105,11 +105,12 @@ public struct SpotOutput: Equatable, Sendable {
             }
         }
         let repeating = repeated.map { (area: $0.1, perLine: drawing.perLine ?? drawing.columns) }
-            ?? (hasRows && !parts.isEmpty ? (area: Self.rowsArea, perLine: 1) : nil)
+            ?? (!rows.isEmpty && !parts.isEmpty ? (area: Self.rowsArea, perLine: 1) : nil)
         let layout = SheetLayout(block: head, repeating: repeating, repeats: repeats.count)
             ?? repeating.map { SheetLayout(flat: parts, repeating: $0) }
         self.layout = layout
-        parts = parts.map { $0.drawn(in: layout) }
+        let fields = rows.map { $0.fields.flatMap { [$0.key, $0.value] } }
+        parts = parts.map { $0.drawn(in: layout).holding(rows: fields) }
         face = CardFace(head: head, parts: parts)
         let main = head?.value(HeadKey.main)
         let held = main.map { id in values.first { $0.block.fields.first?.value == id } } ?? (values.count == 1 ? values.first : nil)

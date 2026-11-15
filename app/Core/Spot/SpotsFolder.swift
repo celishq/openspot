@@ -25,8 +25,7 @@ public struct SpotsFolder: Sendable {
         enabled: Set<String>? = nil,
         disabled: Set<String>? = nil
     ) -> SpotsFolder {
-        let core = environment["OPENSPOT_CORE"].flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0, isDirectory: true) }
-            ?? Bundle.main.resourceURL?.appendingPathComponent(coreName, isDirectory: true)
+        let core = core(environment: environment)
         let arrangement = enabled == nil || disabled == nil ? ConfigFile.standard(environment: environment, home: home).read().arrangement : nil
         let enabled = enabled ?? arrangement?.enabled ?? []
         let disabled = disabled ?? arrangement?.disabled ?? []
@@ -37,6 +36,11 @@ public struct SpotsFolder: Sendable {
             url = config(environment: environment, home: home).appendingPathComponent(folderName, isDirectory: true)
         }
         return SpotsFolder(url: url, core: core, enabled: enabled, disabled: disabled, wrapsLooseFiles: true)
+    }
+
+    static func core(environment: [String: String]) -> URL? {
+        environment["OPENSPOT_CORE"].flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0, isDirectory: true) }
+            ?? Bundle.main.resourceURL?.appendingPathComponent(coreName, isDirectory: true)
     }
 
     static let folderName = "spots"
@@ -67,7 +71,8 @@ public struct SpotsFolder: Sendable {
         let roots = [url.path, url.resolvingSymlinksInPath().path].map { $0.hasSuffix("/") ? String($0.dropLast()) : $0 }
         guard let root = roots.first(where: { path == $0 || path.hasPrefix($0 + "/") }) else { return false }
         let parts = path.dropFirst(root.count).split(separator: "/")
-        return parts.count <= 2 && !parts.contains { $0.hasPrefix(".") }
+        let isSource = parts.count > 2 && (parts[0] as NSString).pathExtension == SpotPackage.fileExtension && (path as NSString).pathExtension == SwiftProgram.sourceExtension
+        return (parts.count <= 2 || isSource) && !parts.contains { $0.hasPrefix(".") }
     }
 
     public func coreChoices() -> [Spot] {

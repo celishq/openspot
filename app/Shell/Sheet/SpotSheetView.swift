@@ -97,6 +97,7 @@ struct SpotSheetView: View {
         .padding(SpotTokens.padding)
         .frame(width: rect.width, height: rect.height, alignment: .topLeading)
         .overlay(alignment: .topLeading) { fileDrag }
+        .environment(\.spotViewPlace, SpotViewPlace(model: model, place: .sheet(entry.id)))
     }
 
     private var header: some View {
