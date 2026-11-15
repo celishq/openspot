@@ -1,3 +1,4 @@
+import OpenspotCore
 import SwiftUI
 
 struct PublisherCard: View {
@@ -9,7 +10,7 @@ struct PublisherCard: View {
     @State private var isOnPill = false
 
     var body: some View {
-        let look = FoilLook(key: value("npub") ?? "")
+        let look = KeyLook(key: value("npub") ?? "")
         let size = Self.fit(in: place)
         TimelineView(.animation) { context in
             card(look, size: size, tilt: tilt.next(toward: pointer, at: context.date.timeIntervalSinceReferenceDate))
@@ -40,7 +41,7 @@ struct PublisherCard: View {
         return CGSize(width: width, height: width / ratio)
     }
 
-    private func card(_ look: FoilLook, size: CGSize, tilt: CGPoint) -> some View {
+    private func card(_ look: KeyLook, size: CGSize, tilt: CGPoint) -> some View {
         let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
         let pill = pillSize
         return ZStack {
@@ -61,7 +62,7 @@ struct PublisherCard: View {
         .shadow(color: .black.opacity(0.5), radius: 12, x: -tilt.x * 8, y: 8 - tilt.y * 6)
     }
 
-    private func face(_ look: FoilLook, tilt: CGPoint) -> some View {
+    private func face(_ look: KeyLook, tilt: CGPoint) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             top(look)
             Spacer(minLength: 0)
@@ -75,7 +76,7 @@ struct PublisherCard: View {
         .shadow(color: look.catchLight, radius: 0, x: -tilt.x * 0.8, y: 1 - tilt.y * 0.8)
     }
 
-    private func top(_ look: FoilLook) -> some View {
+    private func top(_ look: KeyLook) -> some View {
         HStack(alignment: .top) {
             Text("OPENSPOT PUBLISHER").font(.system(size: 9.5, weight: .bold)).tracking(1.9)
             Spacer()
@@ -95,7 +96,7 @@ struct PublisherCard: View {
         CGSize(width: Double((value("short") ?? "").count) * 6.3 + 33, height: 22)
     }
 
-    private func glassPill(_ look: FoilLook, size: CGSize) -> some View {
+    private func glassPill(_ look: KeyLook, size: CGSize) -> some View {
         HStack(spacing: 5) {
             Text(value("short") ?? "").font(.system(size: 10.5, weight: .medium, design: .monospaced))
             Image(systemName: "doc.on.doc").font(.system(size: 9, weight: .semibold))
