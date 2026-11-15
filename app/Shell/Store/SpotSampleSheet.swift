@@ -5,22 +5,18 @@ struct SpotSampleSheet: View {
     let model: SpotsModel
     let id: String
     let entry: SpotsModel.Entry
-    @State private var output: SpotOutput?
+    @State private var sample: (panel: SheetParts?, list: ItemList)?
     @State private var selected = 0
 
     var body: some View {
-        let panel = output.flatMap(SheetParts.init(output:))
-        let list = output.map(SpotSheetPicture.list(of:)) ?? ItemList()
-        let size = panel.map { SpotTokens.panelRect($0).size } ?? SpotTokens.floatSize(rows: list.shown.count)
+        let size = SpotSheetBody.size(of: sample?.panel, rows: sample?.list.shown.count ?? 0)
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             HStack(spacing: SpotTokens.padding - 5) {
                 SpotGlyph(entry: entry)
                 SpotSheetTitle(title: entry.spot.name, subtitle: entry.spot.subtitle)
             }
-            if let panel {
-                SheetPartsView(panel: panel, onSet: { _, _ in }, onPress: { _ in }, list: list, onRun: pick(in: list), selection: { selected }, viewSource: entry.spot.view)
-            } else if output != nil {
-                SpotRowsView(list: list, onRun: pick(in: list), onPoint: pick(in: list), selection: { selected })
+            if let sample {
+                SpotSheetBody(panel: sample.panel, list: sample.list, onPick: pick(in: sample.list), selection: { selected }, viewSource: entry.spot.view)
             }
         }
         .padding(SpotTokens.padding)
@@ -29,7 +25,8 @@ struct SpotSampleSheet: View {
         .environment(\.spotIsShown, true)
         .task(id: entry.id) {
             if let view = entry.spot.view { await SpotViews.shared.load(view) }
-            output = await model.sample(id)
+            guard let output = await model.sample(id) else { return }
+            sample = (SheetParts(output: output), SpotSheetPicture.list(of: output))
         }
     }
 

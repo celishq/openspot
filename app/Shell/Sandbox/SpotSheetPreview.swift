@@ -14,7 +14,7 @@ struct SpotSheetPreview: View {
     var seed = ""
 
     var body: some View {
-        let frame = panel.map { SpotTokens.panelRect($0).size } ?? SpotTokens.floatSize(rows: list.shown.count)
+        let frame = SpotSheetBody.size(of: panel, rows: list.shown.count)
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             HStack(spacing: SpotTokens.padding - 5) {
                 Image(systemName: symbol)
@@ -29,12 +29,7 @@ struct SpotSheetPreview: View {
                 Spacer()
                 SpotRoundButton(symbol: "xmark", label: "Close") {}
             }
-            if let panel {
-                if panel.showsRows { Color.clear.frame(height: SpotTokens.listRowHeight) }
-                SheetPartsView(panel: panel, onSet: onSet, onPress: onPress, list: list, viewSource: viewSource, views: views)
-            } else {
-                SpotRowsView(list: list, onRun: { _ in })
-            }
+            SpotSheetBody(panel: panel, list: list, onSet: onSet, onPress: onPress, viewSource: viewSource, views: views)
         }
         .padding(SpotTokens.padding)
         .frame(width: frame.width, height: frame.height, alignment: .topLeading)
