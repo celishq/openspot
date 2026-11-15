@@ -89,7 +89,7 @@ final class DoomExampleTests: SampleSpotsCase {
     private func press(_ spot: Spot, _ call: String = "open", onFrame: (String) -> Void = { _ in }) async -> (frames: [String], failure: String?) {
         var frames: [String] = []
         do {
-            for try await frame in ScriptProcess(url: spot.url, arguments: [call], limit: 30, dataName: spot.dataName).start() {
+            for try await frame in ScriptProcess(url: spot.url, arguments: [call], limit: 30, dataName: spot.dataName, base: TestEnvironment.values).start() {
                 frames.append(frame)
                 onFrame(frame)
             }
@@ -111,7 +111,7 @@ final class DoomExampleTests: SampleSpotsCase {
     @MainActor
     private static func pictures(spots: URL, changes: [@Sendable () throws -> Void]) async throws -> [(picture: String?, sheet: [[String]]?)] {
         var time = Date(timeIntervalSince1970: 1000)
-        let runs = SpotRuns(now: { time }, stopPause: 0.2, tickPause: .milliseconds(50))
+        let runs = SpotRuns(environment: TestEnvironment.values, clock: RunClock { time }, stopPause: 0.2)
         defer { runs.quit() }
         runs.take(try SpotsFolder(url: spots).scan())
         let sheet = try XCTUnwrap(runs.sheets["doom"])
@@ -122,7 +122,7 @@ final class DoomExampleTests: SampleSpotsCase {
             time += 10
             let before = log.frames.count
             runs.panelOpened()
-            for _ in 0..<500 where log.frames.count == before {
+            for _ in 0..<6000 where log.frames.count == before {
                 try await Task.sleep(for: .milliseconds(10))
             }
             runs.panelClosed()

@@ -2,26 +2,29 @@ import XCTest
 @testable import OpenspotCore
 
 final class CallRouteTests: XCTestCase {
-    private final class Host: Mac, @unchecked Sendable {
-        func eventStore() -> any EventStore { FakeEventStore() }
-        func reminderStore() -> any ReminderStore { FakeReminderStore() }
-        func showCalendar(at time: Date) throws {}
-        func open(_ link: URL) -> Bool { true }
+    private struct Clipboard: MacClipboard {
         func copy(text: String) throws {}
         func copy(file: URL) throws { throw SpotError.fault("Openspot cannot copy \(file.lastPathComponent).") }
-        func clipboardText() -> String { "kept text" }
+        func text() -> String { "kept text" }
         func paste() throws {}
-        func windowFrame() async throws -> String { "10 20 300 400 0 33 1728 1084\n" }
-        func moveWindow(_ move: WindowMove) async throws {}
-        func screenSources() async -> String { "row=display:1\n" }
-        func screenShot(_ capture: ScreenCapture, in folder: URL) async throws -> String { "\(folder.appendingPathComponent(capture.file ?? "shot.png").path)\n" }
-        func startRecording(_ capture: ScreenCapture, in folder: URL) async throws -> String { "" }
-        func stopRecording() async throws -> String { "/shots/a.mp4\n" }
-        func recordingStatus() async throws -> String { "state=idle\n" }
-        func translate(_ text: String, from: String?, to: String?) async throws -> String { "text=\(text.uppercased())\n" }
-        func translationLanguages() async -> String { "preferred=en\n" }
-        func pickColor() async -> String { "#FF8800\n" }
-        func pickFolder() async -> String { "/Users/a/Repos\n" }
+    }
+
+    private struct Windows: MacWindows {
+        func frame() async throws -> WindowFrame { WindowFrame(window: CGRect(x: 10, y: 20, width: 300, height: 400), area: CGRect(x: 0, y: 33, width: 1728, height: 1084)) }
+        func move(_ move: WindowMove) async throws {}
+    }
+
+    private struct Screen: MacScreen {
+        func devices() async -> [ScreenDevice] { [ScreenDevice(kind: .display, id: "1", name: "Built-in", detail: "1728×1117")] }
+        func shot(_ capture: ScreenCapture, in folder: URL) async throws -> URL? { folder.appendingPathComponent(capture.file ?? "shot.png") }
+        func startRecording(_ capture: ScreenCapture, in folder: URL) async throws {}
+        func stopRecording() async throws -> ScreenRecording { ScreenRecording(file: "/shots/a.mp4") }
+        func recording() async throws -> ScreenRecording? { nil }
+    }
+
+    private struct FakeTranslation: MacTranslation {
+        func translate(_ text: String, from: String?, to: String?) async throws -> TranslatedText { TranslatedText(text: text.uppercased()) }
+        func languages() async throws -> [String] { ["en"] }
     }
 
     private struct Answer: Equatable {
@@ -32,7 +35,10 @@ final class CallRouteTests: XCTestCase {
 
     private var folder: URL!
     private var socket: CommandSocket?
-    private let host = Host()
+    private let host = Mac(
+        calendar: FakeCalendar(), reminders: FakeReminders(), clipboard: Clipboard(), windows: Windows(), screen: Screen(), translation: FakeTranslation(),
+        pickColor: { HexColor(red: 1, green: 0x88 / 255.0, blue: 0) }, pickFolder: { URL(fileURLWithPath: "/Users/a/Repos") }
+    )
 
     private var config: URL { folder.appendingPathComponent("config", isDirectory: true) }
     private var spots: URL { config.appendingPathComponent("spots", isDirectory: true) }
@@ -44,7 +50,7 @@ final class CallRouteTests: XCTestCase {
         folder = URL(fileURLWithPath: String(cString: temp), isDirectory: true).appendingPathComponent("cr-\(UUID().uuidString.prefix(8))", isDirectory: true)
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         let runs = await SpotRuns()
-        socket = CommandSocket(folder: folder, api: CommandAPI(mac: host, app: FakeRunningApp(), runs: runs))
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: host, places: .test(ProcessInfo.processInfo.environment.merging(variables) { _, new in new }), app: FakeRunningApp(), runs: runs, rates: .offline))
     }
 
     override func tearDown() async throws {
@@ -57,7 +63,8 @@ final class CallRouteTests: XCTestCase {
         let call = try XCTUnwrap(CommandLineCall(arguments: argv, environment: environment))
         let printed = Printed()
         let output = CommandOutput { text, isError in printed.add(text, isError: isError) }
-        let work = try XCTUnwrap(CommandAPI(mac: host).work(for: call, input: { input ?? "" }, environment: environment, isPiped: input != nil, output: output))
+        let request = CommandRequest(arguments: argv, folder: folder.path, isPiped: input != nil)
+        let work = try XCTUnwrap(CommandAPI(mac: host, places: .test(environment), rates: .offline).work(for: call, request: request, input: { input ?? "" }, output: output))
         let answer = await work()
         output.print(answer.output)
         output.report(answer.errors)
@@ -67,7 +74,7 @@ final class CallRouteTests: XCTestCase {
     private func app(_ argv: [String], input: String?) throws -> Answer {
         let connection = SocketConnection(path: folder.appendingPathComponent(CommandSocket.name).path)
         defer { connection.close() }
-        try connection.send(["jsonrpc": "2.0", "id": 1, "method": "ask", "params": ["argv": argv, "cwd": folder.path, "env": variables, "piped": input != nil]])
+        try connection.send(["jsonrpc": "2.0", "id": 1, "method": "ask", "params": ["argv": argv, "cwd": folder.path, "piped": input != nil]])
         let exchange = try connection.exchange(input: input.map { [$0] } ?? [])
         return Answer(stdout: exchange.stdout, stderr: exchange.stderr, code: exchange.code ?? -1)
     }

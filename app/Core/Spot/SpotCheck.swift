@@ -4,17 +4,21 @@ public struct SpotCheck: Sendable {
     public let folder: SpotsFolder
     public let timeout: TimeInterval
     public let views: ViewLibrary
+    let programs: SwiftProgram
     let careful: Set<SpotUse>?
     let tokens: CallerTokens?
+    let environment: [String: String]
 
-    public init(folder: SpotsFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard()) {
-        self.init(folder: folder, timeout: timeout, views: views, careful: nil, tokens: nil)
+    public init(folder: SpotsFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard(), programs: SwiftProgram = SwiftProgram(), environment: [String: String] = ProcessInfo.processInfo.environment) {
+        self.init(folder: folder, timeout: timeout, views: views, programs: programs, careful: nil, tokens: nil, environment: environment)
     }
 
-    init(folder: SpotsFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard(), careful: Set<SpotUse>?, tokens: CallerTokens?) {
+    init(folder: SpotsFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard(), programs: SwiftProgram = SwiftProgram(), careful: Set<SpotUse>?, tokens: CallerTokens?, environment: [String: String] = ProcessInfo.processInfo.environment) {
+        self.environment = environment
         self.folder = folder
         self.timeout = timeout
         self.views = views
+        self.programs = programs
         self.careful = careful
         self.tokens = tokens
     }
@@ -58,24 +62,40 @@ public struct SpotCheck: Sendable {
                 findings.append(Finding(spot: script.id, file: script.url.path, fault: fault))
             }
         }
-        let runs = await SpotRuns(tokens: tokens ?? CallerTokens())
+        var unbuilt = Set<String>()
+        for script in scan.scripts where !script.sources.isEmpty {
+            guard !Task.isCancelled else { return findings }
+            do {
+                _ = try await programs.built(script.url, with: script.sources)
+            } catch {
+                unbuilt.insert(script.id)
+                findings.append(Finding(spot: script.id, file: script.url.path, fault: Self.reason(error)))
+            }
+        }
+        let runs = await SpotRuns(environment: environment, swift: programs, tokens: tokens ?? CallerTokens())
         if careful != nil { await MainActor.run { runs.isCareful = true } }
-        for var script in scan.scripts where script.read != nil {
+        for var script in scan.scripts where script.read != nil && !unbuilt.contains(script.id) {
             guard !Task.isCancelled else { return findings }
             if let careful { script.uses.formIntersection(careful) }
             func found(_ fault: String) -> Finding { Finding(spot: script.id, file: script.url.path, fault: fault) }
             do {
                 let text = try await runs.answer(of: script, .read, limit: timeout)
-                let output = SpotOutput(text: text)
+                let check = FrameCheck(text: text)
+                let output = check.output
                 _ = try script.state(of: output)
                 if script.read?.seconds != nil, MetricValue(output: output) == nil { throw SpotError.badMetric }
                 findings += output.errors.map { found("cannot read the item \($0)") }
                 findings += Self.brokenBlocks(in: text).map(found)
-                findings += output.partFaults.map(found)
+                findings += check.partFaults.map(found)
                 findings += Self.moveFaults(of: output, in: script, among: scan.scripts).map(found)
             } catch {
                 findings.append(found(Self.reason(error)))
             }
+        }
+        for script in scan.scripts where !script.isBuiltIn {
+            guard SpotRead.words(SpotHeader(url: script.url).block.value(HeaderKey.uses)).contains(SpotUse.account.rawValue) else { continue }
+            let fault = "\(script.name) has uses=account, which only a spot of Openspot takes. Remove it"
+            findings.append(Finding(spot: script.id, file: script.url.path, fault: fault))
         }
         for script in scan.scripts {
             guard !Task.isCancelled else { return findings }
@@ -106,23 +126,21 @@ public struct SpotCheck: Sendable {
     }
 
     public static func json(_ findings: [Finding]) -> String {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
-        return String(decoding: (try? encoder.encode(findings)) ?? Data("[]".utf8), as: UTF8.self) + "\n"
+        (try? PrintForm.json(findings)) ?? "[]\n"
     }
 
     static func brokenBlocks(in text: String) -> [String] {
         let fix = "as a value with a new line prints. Print each value from data with openspot_kv, openspot_row or esc"
         let lists: Set<String> = ["grid", "value", "hides", "color"]
         var faults: [String] = []
-        let blocks = text.components(separatedBy: "\n").split { $0.isEmpty || $0 == SheetFrameReader.mark }
+        let blocks = text.components(separatedBy: "\n").split { $0.isEmpty || $0 == SheetFrames.mark }
         for block in blocks {
             let name = block.first ?? ""
             if block.contains(where: { !$0.contains("=") }) { faults.append("the block \(name) has a line with no =, \(fix)") }
             var seen: Set<String> = []
             var told: Set<String> = []
             for line in block {
-                guard let key = line.split(separator: "=", maxSplits: 1).first.map(String.init), !lists.contains(key), !key.hasPrefix("grid.") else { continue }
+                guard let key = line.split(separator: "=", maxSplits: 1).first.map(String.init), !lists.contains(key), !HeaderKey.isDrawing(key) else { continue }
                 if !seen.insert(key).inserted, told.insert(key).inserted { faults.append("the block \(name) has \(key) twice, \(fix)") }
             }
         }

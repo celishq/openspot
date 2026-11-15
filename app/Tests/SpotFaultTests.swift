@@ -6,9 +6,8 @@ final class SpotFaultTests: XCTestCase {
     private var folder: URL!
     private var defaults: UserDefaults!
     private var suite = ""
-    private var host: TestHost!
+    private var host: FakeHost!
     private var model: SpotsModel!
-    private let path = ProcessInfo.processInfo.environment["PATH"]
 
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-fault-\(UUID().uuidString)")
@@ -18,22 +17,20 @@ final class SpotFaultTests: XCTestCase {
         for (name, body) in [("pbcopy", "cat > '\(folder.path)/clipboard'"), ("open", "echo \"$@\" > '\(folder.path)/opened'")] {
             try "#!/bin/sh\n\(body)\n".writeScript(to: tools.appendingPathComponent(name))
         }
-        setenv("PATH", "\(tools.path):/usr/bin:/bin", 1)
         suite = "openspot-fault-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
-        host = TestHost()
+        host = FakeHost()
         let files = AppPlaces(
             environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
             home: folder,
             defaults: defaults
         )
-        model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
+        model = SpotsModel(host: host, files: files, runs: SpotRuns(environment: ProcessInfo.processInfo.environment.merging(["PATH": "\(tools.path):/usr/bin:/bin"]) { _, new in new }, stopPause: 0.2))
         host.model = model
     }
 
     override func tearDown() async throws {
         model.quit()
-        if let path { setenv("PATH", path, 1) }
         defaults.removePersistentDomain(forName: suite)
         try? FileManager.default.removeItem(at: folder)
     }
@@ -43,16 +40,7 @@ final class SpotFaultTests: XCTestCase {
     }
 
     private func script(_ name: String, header: String = "", _ body: String) throws {
-        let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: spots.spotFile(name))
-    }
-
-    private func wait(_ what: String, until condition: () -> Bool) async throws {
-        for _ in 0..<500 {
-            if condition() { return }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTFail("waited for \(what)")
+        try TestSpot(header: header, body: "\(body)").write(to: spots.spotFile(name))
     }
 
     private func entry(_ id: String) -> SpotsModel.Entry? {
@@ -65,17 +53,17 @@ final class SpotFaultTests: XCTestCase {
 
     private func openFault() async throws -> SheetParts {
         try script("weather", header: "mode=huge", "echo")
-        model.reload()
+        await model.reload()
         model.isShown = true
         model.press("weather")
-        try await wait("the fault sheet") { model.openPanel != nil }
-        return try XCTUnwrap(model.openPanel)
+        try await wait("the fault sheet") { model.openParts != nil }
+        return try XCTUnwrap(model.openParts)
     }
 
-    func testAFileThatDoesNotLoadKeepsAWideCardThatSaysHowToFixIt() throws {
+    func testAFileThatDoesNotLoadKeepsAWideCardThatSaysHowToFixIt() async throws {
         try script("weather", header: "mode=huge", "echo")
 
-        model.reload()
+        await model.reload()
 
         let card = try XCTUnwrap(entry("weather"))
         XCTAssertEqual(card.state.title, "Fix")
@@ -85,9 +73,9 @@ final class SpotFaultTests: XCTestCase {
         XCTAssertEqual(host.notes, [])
     }
 
-    func testAFaultCardStaysWideWhenThePersonChoseTheSmallSize() throws {
+    func testAFaultCardStaysWideWhenThePersonChoseTheSmallSize() async throws {
         try script("weather", header: "mode=huge", "echo")
-        model.reload()
+        await model.reload()
 
         model.prefer(.small, for: "weather")
 
@@ -126,12 +114,12 @@ final class SpotFaultTests: XCTestCase {
         XCTAssertEqual(saved("opened"), "-t \(spots.spotFile("weather").path)\n")
     }
 
-    func testAFileThatLoadsAgainTakesBackItsCard() throws {
+    func testAFileThatLoadsAgainTakesBackItsCard() async throws {
         try script("weather", header: "mode=huge", "echo")
-        model.reload()
+        await model.reload()
 
         try script("weather", header: "mode=once", "echo")
-        model.spotsChanged()
+        await model.spotsChanged()
 
         XCTAssertEqual(entry("weather")?.state.title, "Weather")
         XCTAssertNil(entry("weather")?.spot.fault)
@@ -139,36 +127,36 @@ final class SpotFaultTests: XCTestCase {
 
     func testAFailedRunMarksItsCardUntilARunSucceeds() async throws {
         try script("ping", "echo 'Openspot cannot reach the server. Try again when the Mac is online.' >&2; exit 1")
-        model.reload()
+        await model.reload()
 
         model.tap("ping")
         try await wait("the failure") { entry("ping")?.failure != nil }
         XCTAssertEqual(entry("ping")?.failure, "Openspot cannot reach the server. Try again when the Mac is online.")
 
         try script("ping", "exit 0")
-        model.spotsChanged()
+        await model.spotsChanged()
         model.tap("ping")
         try await wait("the success") { entry("ping")?.failure == nil }
     }
 
-    func testAChangeOfTheFolderShowsANewSpotAtOnce() throws {
-        model.reload()
+    func testAChangeOfTheFolderShowsANewSpotAtOnce() async throws {
+        await model.reload()
 
         try script("hello", "echo")
-        model.spotsChanged()
+        await model.spotsChanged()
 
         XCTAssertTrue(model.visible.contains { $0.id == "hello" })
     }
 
     func testAChangedScriptReadsAgainWhileTheOpenPanelShowsIt() async throws {
         try script("cups", header: "on=panel.open", "printf 'title=One cup\\n'")
-        model.reload()
+        await model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
         try await wait("the first read") { entry("cups")?.state.title == "One cup" }
 
         try script("cups", header: "on=panel.open", "printf 'title=Two cups\\n'")
-        model.spotsChanged()
+        await model.spotsChanged()
 
         try await wait("the read of the changed script") { entry("cups")?.state.title == "Two cups" }
     }

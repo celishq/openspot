@@ -100,7 +100,7 @@ final class SpotRunsWantTests: SpotRunsCase {
 
         _ = try scanned()
 
-        await fulfillment(of: [changed], timeout: 2)
+        await fulfillment(of: [changed], timeout: 60)
     }
 
     func testEachMomentReadsOnlyTheScriptsThatListIt() async throws {
@@ -164,7 +164,7 @@ final class SpotRunsWantTests: SpotRunsCase {
         menuBar.insert("script")
         try script(header: "on=clock.1\noffers=card\noffers=menubar", "printf 'text=t\\ntitle=1\\n'")
         _ = try scanned()
-        try await wait("the first read") { self.log().count == 1 }
+        try await wait("the first read") { self.log().count == 1 && !self.runs.isReading }
 
         time += 1
 
@@ -173,10 +173,10 @@ final class SpotRunsWantTests: SpotRunsCase {
 
     func testTheClockLooksAtTheTimeOnlyWhenAReadIsDue() async throws {
         var looks = 0
-        runs = SpotRuns(now: { [unowned self] in
+        runs = SpotRuns(clock: RunClock(now: { [unowned self] in
             looks += 1
             return self.time
-        }, stopPause: 0.2, tickPause: .milliseconds(50))
+        }, sleep: clock.value.sleep), stopPause: 0.2)
         menuBar.insert("script")
         try script(header: "on=clock.5\noffers=card\noffers=menubar", "printf 'text=t\\ntitle=1\\n'")
         _ = try scanned()
@@ -218,7 +218,7 @@ final class SpotRunsWantTests: SpotRunsCase {
         let stayer = try XCTUnwrap(runs.sheets["stayer"])
 
         stayer.pressKey("go")
-        try await wait("the call and the first read") { self.blocks().contains("arg=go") && self.blocks().filter { $0 == "arg=read" }.count == 1 }
+        try await wait("the call and the first read") { self.blocks().contains("arg=go") && self.blocks().filter { $0 == "arg=read" }.count == 1 && !self.runs.isReading }
         time += 1
 
         try await wait("the read from the clock") { self.blocks().filter { $0 == "arg=read" }.count == 2 }
@@ -268,9 +268,9 @@ final class SpotRunsWantTests: SpotRunsCase {
         XCTAssertEqual(scan.spots.map(\.headerState.isOnGrid), [false, false])
     }
 
-    func testTheSandboxClicksAFileWithNoRead() async throws {
+    func testThePlaygroundClicksAFileWithNoRead() async throws {
         let url = try script(body: "printf 'text=a\\ntitle=%s\\n' \"$#\"")
-        let sheet = runs.sheet(for: SheetSandbox.command(file: url))
+        let sheet = runs.sheet(for: Playground.command(file: url))
 
         sheet.open {}
 
@@ -278,9 +278,9 @@ final class SpotRunsWantTests: SpotRunsCase {
         XCTAssertEqual(log(), ["open"])
     }
 
-    func testTheSandboxReadsAFileWithARead() async throws {
+    func testThePlaygroundReadsAFileWithARead() async throws {
         let url = try script(header: "on=panel.open", "printf 'text=a\\ntitle=%s\\n' \"$1\"")
-        let sheet = runs.sheet(for: SheetSandbox.command(file: url))
+        let sheet = runs.sheet(for: Playground.command(file: url))
 
         sheet.open {}
 

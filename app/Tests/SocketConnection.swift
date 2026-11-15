@@ -2,20 +2,23 @@ import XCTest
 
 final class SocketConnection {
     let descriptor: Int32
+    let isConnected: Bool
     private var buffer = Data()
 
-    init(path: String) {
+    init(path: String, mustConnect: Bool = true) {
         var address = sockaddr_un()
         address.sun_family = sa_family_t(AF_UNIX)
         let bytes = Array(path.utf8)
         withUnsafeMutableBytes(of: &address.sun_path) { $0.copyBytes(from: bytes) }
-        descriptor = Darwin.socket(AF_UNIX, SOCK_STREAM, 0)
+        let descriptor = Darwin.socket(AF_UNIX, SOCK_STREAM, 0)
+        self.descriptor = descriptor
         var time = timeval(tv_sec: 10, tv_usec: 0)
         setsockopt(descriptor, SOL_SOCKET, SO_RCVTIMEO, &time, socklen_t(MemoryLayout<timeval>.size))
         let connected = withUnsafePointer(to: address) {
             $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { Darwin.connect(descriptor, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) }
         }
-        XCTAssertEqual(connected, 0)
+        isConnected = connected == 0
+        if mustConnect { XCTAssertEqual(connected, 0) }
     }
 
     func send(_ object: [String: Any]) throws {
@@ -39,6 +42,12 @@ final class SocketConnection {
         let line = buffer[buffer.startIndex..<end]
         buffer = Data(buffer[(end + 1)...])
         return try XCTUnwrap(JSONSerialization.jsonObject(with: line) as? [String: Any])
+    }
+
+    func take(_ count: Int) {
+        var chunk = [UInt8](repeating: 0, count: count)
+        let taken = read(descriptor, &chunk, count)
+        if taken > 0 { buffer.append(contentsOf: chunk[..<taken]) }
     }
 
     func close() {

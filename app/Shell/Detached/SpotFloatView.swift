@@ -26,12 +26,12 @@ struct SpotFloatView: View {
                 }
             }
         }
-        .overlay { drop(on: entry) }
         .onDrop(of: [.fileURL], delegate: SpotFloatDrop(id: id, place: place, model: model, target: $dropTarget))
         .onChange(of: dropTarget) { dropWords = dropTarget.flatMap { model.dropWords(SpotGridDrop.paths, on: $0) } }
         .onChange(of: size, initial: true) { onSize(size) }
         .environment(\.spotIsShown, true)
         .environment(\.spotCards, SpotCardSource(model: model))
+        .environment(\.spotViewPlace, SpotViewPlace(model: model, place: .detached(id)))
     }
 
     private func size(_ entry: SpotsModel.Entry?, _ run: SpotRun?) -> CGSize {
@@ -43,16 +43,15 @@ struct SpotFloatView: View {
     }
 
     private func sheet(_ entry: SpotsModel.Entry, _ run: SpotRun, size: CGSize) -> some View {
-        let sole = fills ? run.panel.flatMap { $0.parts.count == 1 ? $0.parts.first : nil }.flatMap { $0.kind == "view" ? $0 : nil } : nil
+        let sole = fills ? run.panel.flatMap { $0.parts.count == 1 ? $0.parts.first : nil }.flatMap { $0.isOpen ? $0 : nil } : nil
         return VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             if !fills { header(entry, run) }
             if let part = sole, let view = entry.spot.view {
                 GeometryReader { area in
-                    SpotCustomView(source: view, values: part.values, card: .square, room: area.size, answers: run.panel?.answered ?? 0, views: .shared) { run.set(part, to: $0) }
+                    SpotCustomView(source: view, values: part.values, rows: part.rows, card: .square, room: area.size, answers: run.panel?.answered ?? 0, date: entry.spot.viewDate, views: .shared) { run.set(part, to: $0) }
                         .equatable()
                 }
                 .ignoresSafeArea()
-                .task(id: view) { await SpotViews.shared.load(view) }
             } else if let parts = run.panel {
                 SheetPartsView(
                     panel: parts,
@@ -68,11 +67,9 @@ struct SpotFloatView: View {
                     selection: { run.selection },
                     selectedPart: { run.selectedPart?.id },
                     nudge: { run.nudge },
-                    viewSource: entry.spot.view
+                    viewSource: entry.spot.view,
+                    viewDate: entry.spot.viewDate
                 )
-                .task(id: parts.parts.contains { $0.kind == "view" } ? entry.spot.view : nil) {
-                    if let view = entry.spot.view, parts.parts.contains(where: { $0.kind == "view" }) { await SpotViews.shared.load(view) }
-                }
             } else {
                 SpotRowsView(
                     list: run.list,
@@ -85,7 +82,7 @@ struct SpotFloatView: View {
         .padding(sole == nil ? SpotTokens.padding : 0)
         .frame(width: fills ? nil : size.width, height: fills ? nil : size.height, alignment: .topLeading)
         .frame(maxWidth: fills ? .infinity : nil, maxHeight: fills ? .infinity : nil, alignment: .topLeading)
-        .modifier(FloatSurface(fills: fills))
+        .modifier(FloatSurface(fills: fills, dropWords: dropWords))
     }
 
     private func header(_ entry: SpotsModel.Entry, _ run: SpotRun) -> some View {
@@ -99,8 +96,7 @@ struct SpotFloatView: View {
     }
 
     private func card(_ entry: SpotsModel.Entry) -> some View {
-        let shape = RoundedRectangle(cornerRadius: SpotTokens.corner(for: entry.size), style: .continuous)
-        return SpotCardView(
+        SpotCardView(
             entry: entry,
             size: entry.size,
             index: -1,
@@ -111,36 +107,56 @@ struct SpotFloatView: View {
             model: model,
             onTap: { model.pressFloatCard(id) }
         )
-        .background { SpotBlur(radius: SpotTheme.blur).overlay(SpotTheme.glass).clipShape(shape) }
-    }
-
-    @ViewBuilder
-    private func drop(on entry: SpotsModel.Entry?) -> some View {
-        if let dropWords, entry?.kind.opensSheet == true {
-            Text(dropWords)
-                .font(SpotType.body)
-                .foregroundStyle(SpotTheme.onSolid)
-                .lineLimit(1)
-                .padding(.horizontal, SpotTokens.padding)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(SpotTheme.accent, in: RoundedRectangle(cornerRadius: SpotTokens.radius, style: .continuous))
-                .allowsHitTesting(false)
-        }
     }
 }
 
 private struct FloatSurface: ViewModifier {
     let fills: Bool
+    let dropWords: String?
+    @State private var window = SurfaceEdge.window
+
+    @ViewBuilder
+    private var corner: some View {
+        if #available(macOS 27.0, *) {
+            GeometryReader { room in
+                Color.clear.onChange(of: room.concentricCornerRadii?.bottomTrailing, initial: true) { _, radius in
+                    if let radius, radius != window.radius { window = SurfaceEdge(radius: radius) }
+                }
+            }
+        }
+    }
 
     func body(content: Content) -> some View {
         if fills {
-            content.background {
-                Color.clear
-                    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: SpotTokens.radius, style: .continuous))
-                    .ignoresSafeArea()
-            }
+            let shape = ConcentricRectangle()
+            content
+                .environment(\.spotSurfaceEdge, window)
+                .background { Color.clear.spotGlass(in: shape).ignoresSafeArea() }
+                .background { corner.ignoresSafeArea() }
+                .overlay { FloatDropWords(words: dropWords, shape: shape).ignoresSafeArea() }
         } else {
-            content.modifier(SpotGlass())
+            let shape = SpotRoundShape(.sheet)
+            content
+                .modifier(SpotGlass(shape: shape))
+                .overlay { FloatDropWords(words: dropWords, shape: shape) }
+        }
+    }
+}
+
+private struct FloatDropWords<Edge: Shape>: View {
+    let words: String?
+    let shape: Edge
+
+    var body: some View {
+        if let words {
+            Text(words)
+                .font(SpotType.body)
+                .foregroundStyle(SpotTheme.onSolid)
+                .lineLimit(1)
+                .padding(.horizontal, SpotTokens.padding)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(SpotTheme.accent, in: shape)
+                .allowsHitTesting(false)
         }
     }
 }

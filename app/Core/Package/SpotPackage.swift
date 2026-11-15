@@ -75,9 +75,13 @@ public struct SpotPackage: Equatable, Sendable {
         var total = 0
         var files: [File] = []
         for root in Self.roots(of: spot, in: scan) {
-            files += try Self.files(at: root.url, path: root.path, total: &total, limit: Self.shareLimit)
+            files += try Self.files(at: root.url, path: root.path, total: &total, limit: Self.shareLimit, shares: true)
         }
-        try self.init(files: files)
+        let sources = files.filter { $0.path.hasSuffix(".\(SwiftProgram.sourceExtension)") }
+        try self.init(files: files.filter { file in
+            if SwiftProgram.isProgram(URL(fileURLWithPath: file.path)) { return false }
+            return !ViewLibrary.isLibrary(file.path) || sources.contains { ViewLibrary.path(beside: $0.path, text: $0.contents) == file.path }
+        })
     }
 
     init(paths: [String], in folder: URL) throws {
@@ -91,31 +95,35 @@ public struct SpotPackage: Equatable, Sendable {
 
     public func compiled(by program: SwiftProgram = SwiftProgram(), views: ViewLibrary = .standard()) async throws -> SpotPackage {
         var all = files
-        for (file, path) in uncompiled {
-            all.append(File(path: path, isExecutable: true, contents: try await program.build(source: file.contents)))
+        for (file, path, more) in uncompiled {
+            all.append(File(path: path, isExecutable: true, contents: try await program.build(source: file.contents, with: more)))
         }
         for (file, path) in unbuiltViews {
             let name = URL(fileURLWithPath: file.path).lastPathComponent
-            all.append(File(path: path, isExecutable: false, contents: try await views.build(source: file.contents, named: name, kinds: SwiftProgram.kinds)))
+            all.append(File(path: path, isExecutable: false, contents: try await views.build(source: file.contents, named: name, kinds: SwiftBuild.kinds)))
         }
         return try SpotPackage(files: all)
     }
 
-    private var uncompiled: [(file: File, path: String)] {
+    private var uncompiled: [(file: File, path: String, more: [SwiftBuild.File])] {
         files.compactMap { file in
-            guard file.isExecutable, let path = SwiftProgram.path(beside: file.path), !files.contains(where: { $0.path == path }) else { return nil }
-            return (file, path)
+            guard file.isExecutable, file.path.hasSuffix(".\(SwiftProgram.sourceExtension)") else { return nil }
+            let program = Self.program(of: file, in: files)
+            return files.contains { $0.path == program.path } ? nil : (file, program.path, program.more)
         }
     }
 
+    private static func program(of script: File, in files: [File]) -> (path: String, more: [SwiftBuild.File]) {
+        let more = SwiftProgram.sources(of: script, in: files)
+        return (SwiftProgram.path(beside: script.path, hash: SwiftProgram.name(of: script.contents, with: more)), more)
+    }
+
     private var unbuiltViews: [(file: File, path: String)] {
-        files.compactMap { script in
-            guard script.isExecutable, let text = script.text, let name = SpotHeader(text: text).block.value("view"), !name.hasPrefix("/") else { return nil }
-            let folder = (script.path as NSString).deletingLastPathComponent
-            let source = folder.isEmpty ? name : "\(folder)/\(name)"
-            let path = ViewLibrary.path(beside: source)
-            guard let file = files.first(where: { $0.path == source }), !files.contains(where: { $0.path == path }) else { return nil }
-            return (file, path)
+        let roles = SpotFiles(package: self)
+        return roles.scripts.compactMap { script in
+            guard let source = roles.view(of: script), let file = files.first(where: { $0.path == source }) else { return nil }
+            let path = ViewLibrary.path(beside: source, text: file.contents)
+            return files.contains(where: { $0.path == path }) ? nil : (file, path)
         }
     }
 
@@ -277,15 +285,23 @@ public struct SpotPackage: Equatable, Sendable {
         return roots
     }
 
-    private static func files(at url: URL, path: String, total: inout Int, limit: Int) throws -> [File] {
+    static let testsFolder = "tests"
+
+    private static func isTests(_ path: String) -> Bool {
+        let parts = path.split(separator: "/")
+        return parts.count == 2 && parts[1] == testsFolder
+    }
+
+    private static func files(at url: URL, path: String, total: inout Int, limit: Int, shares: Bool = false) throws -> [File] {
         var isFolder: ObjCBool = false
         guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isFolder) else { return [] }
         if isFolder.boolValue {
+            if shares, isTests(path) { return [] }
             if path.contains("/"), type(of: url) == .typeSymbolicLink { return [] }
             let names = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
                 .map(\.lastPathComponent)
                 .sorted()
-            return try names.flatMap { try files(at: url.appendingPathComponent($0), path: "\(path)/\($0)", total: &total, limit: limit) }
+            return try names.flatMap { try files(at: url.appendingPathComponent($0), path: "\(path)/\($0)", total: &total, limit: limit, shares: shares) }
         }
         total += (try FileManager.default.attributesOfItem(atPath: url.resolvingSymlinksInPath().path)[.size] as? Int) ?? 0
         guard total <= limit else { throw tooLarge(limit) }

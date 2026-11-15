@@ -11,16 +11,7 @@ public struct SpotSetting: Hashable, Sendable {
         self.value = value
     }
 
-    var text: String {
-        "[[settings]]\nspot = \(Self.quoted(spot))\nkey = \(Self.quoted(key))\nvalue = \(Self.quoted(value))"
-    }
-
-    private static func quoted(_ text: String) -> String {
-        let escaped = text
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "\"", with: "\\\"")
-            .replacingOccurrences(of: "\n", with: "\\n")
-            .replacingOccurrences(of: "\t", with: "\\t")
-        return "\"\(escaped)\""
+    var table: ConfigDocument.Table {
+        ConfigDocument.Table("settings", [("spot", .string(spot)), ("key", .string(key)), ("value", .string(value))])
     }
 }

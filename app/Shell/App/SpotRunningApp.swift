@@ -5,8 +5,12 @@ struct SpotRunningApp: RunningApp {
     let model: SpotsModel
     let update: AppUpdate?
 
-    func configChanged(_ change: ConfigChange) async {
-        await model.configChanged(change)
+    func configChanged(_ change: ConfigChange, to config: KeptConfig) async {
+        await model.configChanged(change, to: config)
+    }
+
+    func spotsChanged() async {
+        await model.spotsChanged()
     }
 
     func status() async -> (update: String?, calls: Int, isFirstLaunch: Bool) {
@@ -65,8 +69,8 @@ struct SpotRunningApp: RunningApp {
         await model.reveal(id)
     }
 
-    func sandbox(_ file: URL?, isCareful: Bool) async {
-        await SpotSandbox.show(path: file?.path, isCareful: isCareful)
+    func playground(_ file: URL?, isCareful: Bool) async {
+        await SpotPlayground.show(path: file?.path, isCareful: isCareful)
     }
 
     func changeSetting(_ key: String, of spot: String) async -> Bool {

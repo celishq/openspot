@@ -1,15 +1,61 @@
 import Foundation
 
 public struct FlowEdges: Equatable, Sendable {
+    struct Stand: Equatable, Sendable {
+        let from: CGRect
+        let coming: FlowEdge.Side
+        let leaving: FlowEdge.Place
+        let sheet: FlowSheet
+        let page: SheetPage?
+    }
+
+    enum Step: Equatable, Sendable {
+        case rest
+        case standing(Stand, start: FlowEdge.Place)
+        case moving(Stand?)
+    }
+
     public private(set) var edges: [FlowEdge] = []
     public private(set) var shown: FlowSheet?
-    public private(set) var from: CGRect?
-    public private(set) var coming: FlowEdge.Side?
-    public private(set) var leaving: FlowEdge.Place?
-    public private(set) var isMoving = false
-    public private(set) var leavingSheet: FlowSheet?
-    public private(set) var sheetStart: FlowEdge.Place?
-    public private(set) var leavingPage: SheetPage?
+    private(set) var step = Step.rest
+
+    private var stand: Stand? {
+        switch step {
+        case .rest: nil
+        case .standing(let stand, _): stand
+        case .moving(let stand): stand
+        }
+    }
+
+    public var from: CGRect? {
+        stand?.from
+    }
+
+    public var coming: FlowEdge.Side? {
+        stand?.coming
+    }
+
+    public var leaving: FlowEdge.Place? {
+        stand?.leaving
+    }
+
+    public var leavingSheet: FlowSheet? {
+        stand?.sheet
+    }
+
+    public var leavingPage: SheetPage? {
+        stand?.page
+    }
+
+    public var isMoving: Bool {
+        if case .moving = step { return true }
+        return false
+    }
+
+    public var sheetStart: FlowEdge.Place? {
+        if case .standing(_, let start) = step { return start }
+        return nil
+    }
 
     public init() {}
 
@@ -42,25 +88,16 @@ public struct FlowEdges: Equatable, Sendable {
         guard let shown, !next.edges.contains(where: { $0.sheet == shown }) else { return next }
         let left = flow.pages.firstIndex(of: shown)
         let coming: FlowEdge.Side = left.map { $0 > flow.index ? .behind : .ahead } ?? .behind
-        next.coming = coming
-        next.leaving = left == nil ? .line(.ahead) : .bar(coming == .ahead ? .behind : .ahead, 0)
         next.edges.removeAll { $0.sheet == flow.current }
         next.edges.append(FlowEdge(sheet: shown, title: title(shown), place: .stand(rect)))
-        next.leavingSheet = shown
-        next.sheetStart = .bar(coming, 0)
-        next.leavingPage = page
-        next.from = rect
+        let leaving: FlowEdge.Place = left == nil ? .line(.ahead) : .bar(coming == .ahead ? .behind : .ahead, 0)
+        next.step = .standing(Stand(from: rect, coming: coming, leaving: leaving, sheet: shown, page: page), start: .bar(coming, 0))
         return next
     }
 
     func moved(to rest: FlowEdges) -> FlowEdges {
         var next = rest
-        next.from = from
-        next.coming = coming
-        next.leaving = leaving
-        next.isMoving = true
-        next.leavingSheet = leavingSheet
-        next.leavingPage = leavingPage
+        next.step = .moving(stand)
         for edge in edges where !rest.edges.contains(where: { $0.sheet == edge.sheet }) {
             var gone = edge
             if edge.sheet == leavingSheet, let leaving { gone.place = leaving }
@@ -73,13 +110,7 @@ public struct FlowEdges: Equatable, Sendable {
     var settled: FlowEdges {
         var next = self
         next.edges.removeAll(where: \.isFading)
-        next.from = nil
-        next.coming = nil
-        next.leaving = nil
-        next.isMoving = false
-        next.leavingSheet = nil
-        next.sheetStart = nil
-        next.leavingPage = nil
+        next.step = .rest
         return next
     }
 }

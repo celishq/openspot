@@ -2,14 +2,15 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotFormView: View {
+    @Environment(\.spotSurfaceEdge) private var surface
     let draft: FormDraft
     let onValue: (String, String) -> Void
     var onChoose: (SpotItem) -> Void = { _ in }
     var selection: (() -> Int)?
     @FocusState private var focus: String?
 
-    private var shape: RoundedRectangle {
-        RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
+    private var shape: SpotRoundShape {
+        SpotRoundShape(surface.inner())
     }
 
     var body: some View {
@@ -44,13 +45,16 @@ struct SpotFormView: View {
     @ViewBuilder
     private func control(for field: ItemForm.Field) -> some View {
         switch field.type {
-        case .text:
+        case .text, .secret:
             HStack(spacing: 0) {
-                TextField(
-                    field.label,
-                    text: value(of: field),
-                    prompt: Text(field.placeholder ?? field.label).foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
-                )
+                let prompt = Text(field.placeholder ?? field.label).foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
+                Group {
+                    if field.type == .secret {
+                        SecureField(field.label, text: value(of: field), prompt: prompt)
+                    } else {
+                        TextField(field.label, text: value(of: field), prompt: prompt)
+                    }
+                }
                 .labelsHidden()
                 .textFieldStyle(.plain)
                 .focused($focus, equals: field.name)
@@ -90,7 +94,7 @@ struct SpotFormView: View {
                 .frame(height: SpotTokens.listRowHeight)
         case .slider:
             let range = field.range ?? 0...100
-            FormSlider(text: draft.values[field.name] ?? "", level: Double(draft.values[field.name] ?? "") ?? range.lowerBound, range: range) {
+            SpotSlider(level: Double(draft.values[field.name] ?? "") ?? range.lowerBound, range: range, words: draft.values[field.name] ?? "") {
                 onValue(String(Int($0.rounded())), field.name)
             }
             .frame(height: SpotTokens.listRowHeight)
@@ -101,28 +105,5 @@ struct SpotFormView: View {
         let fields = draft.form.fields
         guard let index = fields.firstIndex(of: field) else { return }
         focus = fields[(index + 1) % fields.count].name
-    }
-}
-
-private struct FormSlider: View {
-    let text: String
-    let level: Double
-    let range: ClosedRange<Double>
-    let onEnd: (Double) -> Void
-    @State private var dragged: Double?
-
-    var body: some View {
-        HStack(spacing: SpotTokens.padding) {
-            Slider(value: Binding(get: { dragged ?? level }, set: { dragged = $0 }), in: range) { editing in
-                if !editing, let dragged { onEnd(dragged); self.dragged = nil }
-            }
-            .controlSize(.small)
-            .tint(SpotTheme.ink)
-            .labelsHidden()
-            Text(dragged.map { String(Int($0.rounded())) } ?? text)
-                .font(SpotType.detail)
-                .monospacedDigit()
-                .modifier(SpotSecondaryText())
-        }
     }
 }

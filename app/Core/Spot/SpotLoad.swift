@@ -1,0 +1,108 @@
+import Foundation
+
+public struct SpotLoad: Sendable {
+    enum Origin: Sendable {
+        case own
+        case core
+        case app
+    }
+
+    struct Entry: Sendable {
+        let id: String
+        let file: URL
+        let origin: Origin
+        let spots: [Spot]?
+        let refusal: String?
+        let added: Date?
+
+        func add(to result: inout ScanResult) {
+            if let refusal { result.refused.append(ScanResult.Refusal(file: id, reason: refusal)) }
+            guard let spots else { return }
+            result.files.append(SpotFile(id: id, spots: spots))
+        }
+
+        func placed(_ spot: Spot) -> Spot {
+            switch origin {
+            case .app:
+                return spot.builtIn()
+            case .own, .core:
+                var own = added.map(spot.added(at:)) ?? spot
+                own.uses.remove(.account)
+                return own
+            }
+        }
+    }
+
+    let entries: [Entry]
+    let loose: [ScanResult.Refusal]
+    let failure: String?
+    public let stamp: [String: [Int]]
+    let sources: [String: [String]]
+    public let hasAppSpots: Bool
+
+    public static let empty = SpotLoad(entries: [], loose: [], failure: nil, stamp: [:], sources: [:], hasAppSpots: false)
+
+    public func result(enabled: Set<String>, disabled: Set<String>, hosted: [Spot] = []) throws -> ScanResult {
+        if let failure { throw SpotError.fault(failure) }
+        var result = ScanResult(files: hosted.isEmpty ? [] : [SpotFile(id: "openspot", spots: hosted)], refused: loose)
+        let ownIDs = Set(entries.filter { $0.origin == .own }.map(\.id))
+        for entry in entries where entry.origin == .own && !disabled.contains(entry.id) {
+            entry.add(to: &result)
+        }
+        for entry in wantedCore(after: result, hiding: ownIDs, enabled: enabled) {
+            entry.add(to: &result)
+        }
+        for entry in entries where entry.origin == .app {
+            entry.add(to: &result)
+        }
+        result.removeWidgetsWithLostParts()
+        result.keepOpenedOffTheGrid()
+        return result
+    }
+
+    public var coreChoices: [Spot] {
+        let files = entries.filter { $0.origin == .core }.compactMap { entry in entry.spots.map { SpotFile(id: entry.id, spots: $0) } }
+        let commands = ScanResult(files: files, refused: []).spots
+        let opened = Set(commands.compactMap(\.opens))
+        return commands.filter { !opened.contains($0.id) && $0.read?.seconds == nil }
+    }
+
+    public func stamp(of spot: Spot) -> [Int]? {
+        guard let own = stamp[spot.url.path] else { return nil }
+        return (sources[spot.url.path] ?? []).reduce(own) { $0 + (stamp[$1] ?? []) }
+    }
+
+    public func faultSpots(of scan: ScanResult, prompt: AgentPrompt) -> [Spot] {
+        let loaded = Set(scan.files.filter { !$0.spots.isEmpty }.map(\.id))
+        let faults = Dictionary(grouping: scan.refused.filter { !loaded.contains($0.file) }, by: \.file)
+        return faults.keys.sorted().compactMap { id in
+            guard let entry = entries.first(where: { $0.origin == .own && $0.id == id }) else { return nil }
+            let name = SpotFile.name(of: entry.file)
+            let spot = Spot(
+                id: id,
+                name: "Fix",
+                url: entry.file,
+                kind: .list,
+                symbol: "exclamationmark.triangle",
+                subtitle: name,
+                read: .sheet,
+                host: .fault(FaultSpot(file: entry.file, name: name, faults: faults[id]?.map(\.reason) ?? [], prompt: prompt))
+            )
+            return entry.added.map(spot.added(at:)) ?? spot
+        }
+    }
+
+    private func wantedCore(after result: ScanResult, hiding ownIDs: Set<String>, enabled: Set<String>) -> [Entry] {
+        let files = entries.filter { $0.origin == .core && !ownIDs.contains($0.id) }
+        var wanted = Set(files.map(\.id).filter(enabled.contains))
+        var waiting = result.files.flatMap(\.spots) + files.filter { wanted.contains($0.id) }.flatMap { $0.spots ?? [] }
+        while let command = waiting.popLast() {
+            for id in command.places + (command.opens.map { [$0] } ?? []) where !wanted.contains(id) {
+                guard let file = files.first(where: { $0.id == id }) else { continue }
+                wanted.insert(id)
+                waiting += file.spots ?? []
+            }
+        }
+        return files.filter { wanted.contains($0.id) }
+    }
+}

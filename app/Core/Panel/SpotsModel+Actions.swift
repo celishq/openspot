@@ -2,138 +2,38 @@ import Foundation
 import Observation
 
 extension SpotsModel {
-    private var target: Target? {
+    var target: Target? {
         if let entry = openEntry {
             return (entry, openSheet?.selectedItem)
         }
         guard let entry = selectedEntry else { return nil }
-        if let item = entry.item, let list = entries.first(where: { $0.id == entry.spot.id }) { return (list, item) }
+        if let item = entry.item, let list = self.entry(entry.spot.id) { return (list, item) }
         return (entry, nil)
     }
 
-    public func handleKey(_ key: ActionKey) -> Bool {
-        if menu != nil {
-            return handleMenuKey(key)
-        }
-        if isEditing {
-            handleEditKey(key)
-            return true
-        }
-        if let form {
-            let isList = form.draft.choices != nil
-            switch key {
-            case ActionKey(name: "return", isCommand: true): submitForm()
-            case ActionKey(name: "return") where isList: submitForm()
-            case ActionKey(name: "a", isCommand: true, isShift: true) where form.draft.isMultiple:
-                if let all = form.draft.selectingAll() { send(form, all) }
-            case ActionKey(name: "up") where isList: self.form?.draft.move(by: -1)
-            case ActionKey(name: "down") where isList: self.form?.draft.move(by: 1)
-            case ActionKey(name: "escape") where form.draft.choices?.query.isEmpty == false: self.form?.draft.search("")
-            case ActionKey(name: "escape"): cancelForm()
-            default: return false
-            }
-            return true
-        }
-        openSheet?.landRows()
-        if openList != nil, let handled = handleFlowKey(key) { return handled }
-        if key == Self.undoKey, openList == nil, searchText.isEmpty, undoRemoval() { return true }
-        if key == ActionKey(name: "return", isCommand: true), openSelectedSettings() { return true }
-        if let panel = openPanel, !panel.showsRows { return handlePanelKey(key, panel) }
-        if let panel = openPanel, handleRowsPanelKey(key, panel) { return true }
-        if let part = openPanel?.parts.first(where: { $0.key == key }) {
-            pressPart(part)
-            return true
-        }
-        if key == ActionKey(name: "escape"), let target, let action = target.entry.spot.actions(for: target.item).first(where: { $0.key == key }) {
-            run(action, on: target)
-            return true
-        }
-        if key == ActionKey(name: "escape") {
-            if !stepBack() { host.dismiss() }
-            return true
-        }
-        guard let target else { return openSheet(on: key) }
-        if key == ActionKey(name: "k", isCommand: true) {
-            guard actionMenu(on: target)?.holdsMore == true else { return false }
-            openMenu(on: target)
-            return menu != nil
-        }
-        let typesKey = !searchText.isEmpty && Self.editsText(key)
-        var noHooks: Set<String> = []
-        if !typesKey, !target.entry.spot.actions(for: target.item).contains(where: { $0.key == key }),
-           let offer = offered(on: target, yes: &noHooks, asks: false).first(where: { $0.action.key == key }) {
-            if offer.action.confirm != nil {
-                openMenu(on: target)
-                menu?.select(offer.action)
-                pressMenu()
-            } else {
-                run(offer.action, offeredBy: offer.owner, on: target)
-            }
-            return true
-        }
-        let quiet = typesKey ? [] : extras(on: target)
-        guard let action = (target.entry.spot.actions(for: target.item) + quiet).first(where: { $0.key == key }) else { return openSheet(on: key) }
-        if action.confirm != nil {
-            openMenu(on: target)
-            menu?.select(action)
-            pressMenu()
-        } else {
-            run(action, on: target)
-        }
-        return true
-    }
-
     func openSheet(on key: ActionKey) -> Bool {
-        guard openList == nil, let id = spot(openedBy: key) else { return false }
+        guard openSheetID == nil, let id = spot(openedBy: key) else { return false }
         endEditing(moving: false)
         pushFirst(id, moving: true)
         return true
     }
 
     func spot(openedBy key: ActionKey) -> String? {
-        arrangement.spot(openedBy: key, over: defaultArrangement).flatMap { id in entries.contains { $0.id == id } ? id : nil }
+        arrangement.spot(openedBy: key, over: defaultArrangement).flatMap { id in entry(id) == nil ? nil : id }
     }
 
     static func editsText(_ key: ActionKey) -> Bool {
         key.isCommand && !key.isShift && ["backspace", "a", "c", "v", "x", "z"].contains(key.name)
     }
 
-    static let openLabel = "⌘⏎"
-
-    public func pressHint(_ label: String) {
-        guard let key = ActionKey(label: label) else { return }
-        if !handleKey(key), key == ActionKey(name: "return") { runSelected() }
-    }
-
-    private func handlePanelKey(_ key: ActionKey, _ panel: SheetParts) -> Bool {
-        if let part = panel.parts.first(where: { $0.key == key }) {
-            pressPart(part)
-            return true
-        }
-        if key == ActionKey(name: "k", isCommand: true), let target {
-            openMenu(on: target)
-            return menu != nil
-        }
-        if key == ActionKey(name: "escape") {
-            if !back() { closeList(moving: true) }
-            return true
-        }
-        if panel.scrollsByArrows, key == ActionKey(name: "up") || key == ActionKey(name: "down") {
-            openSheet?.scrollPanel(by: key.name == "up" ? -1 : 1)
-            return true
-        }
-        guard let part = panel.selectedPart else { return false }
-        return handleFocusKey(key, part)
-    }
-
-    private func handleRowsPanelKey(_ key: ActionKey, _ panel: SheetParts) -> Bool {
+    func handleRowsPanelKey(_ key: ActionKey, _ panel: SheetParts) -> Bool {
         if let part = panel.selectedPart { return handleFocusKey(key, part) }
         openSheet?.landRows()
         guard key == ActionKey(name: "down"), openItems?.isOnLastLine != false else { return false }
         return openSheet?.leaveRows() == true
     }
 
-    private func handleFocusKey(_ key: ActionKey, _ part: SpotPart) -> Bool {
+    func handleFocusKey(_ key: ActionKey, _ part: SpotPart) -> Bool {
         switch key {
         case ActionKey(name: "up"), ActionKey(name: "down"):
             let moved = openSheet?.movePartLine(by: key.name == "up" ? -1 : 1) ?? false
@@ -208,7 +108,7 @@ extension SpotsModel {
             host.notify("`\(shortcut.label)` belongs to the apps on the Mac. Hold `⌥` or `⌃` with a key, or tap one key such as `⌥`.")
             return
         }
-        let part = openPanel?.parts.first { $0.id == recording }
+        let part = openParts?.parts.first { $0.id == recording }
         let item = openItems?.shown.first { $0.run == recording }
         stopRecording()
         if let part { setPart(part, to: shortcut.text) }
@@ -216,10 +116,6 @@ extension SpotsModel {
     }
 
     private func give(_ key: String, to item: SpotItem, of entry: Entry) {
-        if let settings = entry.spot.settingsSheet, entry.spot.holdsSettings, let field = settings.hotkeyField(of: item.run) {
-            sheets[settings.spot]?.set(SpotItem(title: item.title, run: field), to: key)
-            return
-        }
         sheets[entry.id]?.set(item, to: key)
         guard !entry.spot.holdsSettings else { return }
         closingPick = (item, entry)
@@ -251,23 +147,6 @@ extension SpotsModel {
         guard takesShake, let recording, let entry = openEntry, let item = openItems?.shown.first(where: { $0.run == recording }) else { return }
         stopRecording()
         give(trigger.text, to: item, of: entry)
-    }
-
-    private func handleMenuKey(_ key: ActionKey) -> Bool {
-        let types = menu?.isSearchable == true && !key.isCommand
-        switch key {
-        case ActionKey(name: "k", isCommand: true), ActionKey(name: "escape"): closeMenu()
-        case ActionKey(name: "up"): menu?.move(by: -1)
-        case ActionKey(name: "down"): menu?.move(by: 1)
-        case ActionKey(name: "return"): pressMenu()
-        case ActionKey(name: "right") where menu?.selectedRow?.children.isEmpty == false: _ = menu?.enterSelected()
-        case ActionKey(name: "left") where menu?.parent != nil: _ = menu?.back()
-        default:
-            guard !types, let action = menu?.rows.compactMap(\.action).first(where: { $0.key == key }) else { return !types }
-            menu?.select(action)
-            pressMenu()
-        }
-        return true
     }
 
     public func dragMenu(to point: CGPoint) {
@@ -322,7 +201,7 @@ extension SpotsModel {
     public func placeMenu(_ frame: ActionMenuFrame) {
         guard menu != nil, frame != menuFrame else { return }
         menuFrame = frame
-        if menuSession?.phase != .opening { growBackdrop() }
+        if menuSession?.phase != .opening { fitMenuContent() }
         placeSubmenu()
     }
 
@@ -333,9 +212,9 @@ extension SpotsModel {
         return CGRect(x: item.midX - width / 2, y: item.midY - height / 2, width: width, height: height)
     }
 
-    private func growBackdrop() {
+    private func fitMenuContent() {
         let height = menuFrame.map { $0.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock } ?? 0
-        if height != menuBackdropHeight { menuBackdropHeight = height }
+        if height != menuContentHeight { menuContentHeight = height }
     }
 
     public func searchMenu(_ text: String) {
@@ -344,32 +223,32 @@ extension SpotsModel {
 
     public func openMenu(at point: CGPoint) {
         let origin = gridOrigin
-        guard openList == nil, !isEditing, let id = card(at: CGPoint(x: point.x - origin.x, y: point.y - origin.y)), let index = visible.firstIndex(where: { $0.id == id }) else { return }
+        guard openSheetID == nil, !isEditing, let id = card(at: CGPoint(x: point.x - origin.x, y: point.y - origin.y)), let index = visible.firstIndex(where: { $0.id == id }) else { return }
         selected = index
         if let target { openMenu(on: target) }
     }
 
-    private func openMenu(on target: Target) {
+    func openMenu(on target: Target) {
         var yes: Set<String> = []
         menuSession = actionMenu(on: target, yes: &yes, asks: true).map { ActionMenuSession(menu: $0, target: target, hookYes: yes) }
         DispatchQueue.main.async { [weak self] in
             guard let self, menuSession?.phase == .opening else { return }
             change(.sheet(isOpen: true), {
                 self.menuSession?.phase = .open
-                self.growBackdrop()
+                self.fitMenuContent()
             }, completion: { [weak self] in
                 if self?.menuSession?.phase == .open { self?.menuSession?.phase = .settled }
             })
         }
     }
 
-    private func actionMenu(on target: Target) -> ActionMenu? {
+    func actionMenu(on target: Target) -> ActionMenu? {
         var none: Set<String> = []
         return actionMenu(on: target, yes: &none, asks: false)
     }
 
     private func actionMenu(on target: Target, yes: inout Set<String>, asks: Bool) -> ActionMenu? {
-        let isOpenList = openList == target.entry.id
+        let isOpenList = openSheetID == target.entry.id
         return ActionMenu(
             spot: target.entry.spot,
             item: target.item,
@@ -379,8 +258,8 @@ extension SpotsModel {
         )
     }
 
-    private func extras(on target: Target) -> [CommandAction] {
-        guard openList == nil, target.item == nil else { return [] }
+    func extras(on target: Target) -> [CommandAction] {
+        guard openSheetID == nil, target.item == nil else { return [] }
         let spot = target.entry.spot
         let opens: [CommandAction] = spot.pressRuns && target.entry.kind.opensSheet ? [.open] : []
         let history: [CommandAction] = spot.keepsHistory ? [.history] : []
@@ -398,11 +277,11 @@ extension SpotsModel {
         return true
     }
 
-    private func offered(on target: Target, yes: inout Set<String>, asks: Bool) -> [OfferedAction] {
-        guard openList == nil, target.item == nil, let origin = origin(of: target.entry.spot) else { return [] }
+    func offered(on target: Target, yes: inout Set<String>, asks: Bool) -> [OfferedAction] {
+        guard openSheetID == nil, target.item == nil, let origin = origin(of: target.entry.spot) else { return [] }
         let word = OfferedAction.originWords.first { $0.value == origin }?.key ?? ""
         var shown: [OfferedAction] = []
-        for spot in sheets.values.map(\.spot).sorted(by: { $0.id < $1.id }) {
+        for spot in sheets.values.lazy.map(\.spot).filter({ !$0.offeredActions.isEmpty }).sorted(by: { $0.id < $1.id }) {
             var hidden: [String] = []
             for offer in spot.offeredActions {
                 let id = offer.action.id
@@ -445,28 +324,6 @@ extension SpotsModel {
         sheets[owner]?.run(action, item: SpotItem(title: target.entry.state.title, run: target.entry.id))
     }
 
-    public var hint: String {
-        if recording != nil, isEditing { return "Press a letter   ⌫ Remove   Esc Cancel" }
-        if recording != nil { return "Esc Cancel" }
-        if isEditing { return "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done" }
-        if spotDrop != nil { return "Nothing runs until you press ⌘⏎" }
-        let escape = flow.behind == nil ? "Close" : "Back"
-        if let panel = openPanel, !panel.showsRows || panel.drawsKeys {
-            let hasActions = target.flatMap(actionMenu(on:)) != nil
-            return panel.hint(escape: escape, stopping: { work(of: $0) != nil }, actions: hasActions)
-        }
-        if let soleHint { return soleHint }
-        let keys = target.flatMap { target in
-            let onGrid = openList == nil && target.item == nil
-            let settings = onGrid && settingsSheet(of: target.entry) != nil ? ["\(Self.openLabel) Settings"] : []
-            return actionMenu(on: target)?.hint(
-                stopping: { sheets[target.entry.id]?.work(of: $0, item: target.item) != nil },
-                second: settings
-            )
-        } ?? "Esc \(escape)"
-        return selectedGlyphTitle.map { "\($0)  \(keys)" } ?? keys
-    }
-
     public func followHint() {
         guard !followsHint else { return }
         followsHint = true
@@ -480,7 +337,7 @@ extension SpotsModel {
         })
         let motion: PanelMotion? = isEditing || hintIsForEdit || fieldDrop != nil ? .fade : nil
         hintIsForEdit = isEditing
-        if openList == nil, spotDrop == nil {
+        if openSheetID == nil, spotDrop == nil {
             if words != gridHint { change(motion, { gridHint = words }) }
         } else {
             takeSheetHint(words, motion: motion)
@@ -491,8 +348,8 @@ extension SpotsModel {
         if words != sheetHint { change(motion, { sheetHint = words }) }
     }
 
-    private var selectedGlyphTitle: String? {
-        guard openList == nil, let entry = selectedEntry, entry.kind != .widget,
+    var selectedGlyphTitle: String? {
+        guard openSheetID == nil, let entry = selectedEntry, entry.kind != .widget,
               placements.first(where: { $0.index == selected })?.size == .small
         else { return nil }
         return entry.state.title
@@ -517,7 +374,7 @@ extension SpotsModel {
         pressMenu()
     }
 
-    private func pressMenu() {
+    func pressMenu() {
         let isRunning = menu?.selectedRow.map { work(of: $0) != nil } ?? false
         guard let row = menu?.press(isRunning: isRunning), let target = menuTarget else { return }
         if !isRunning, let action = row.action, action.isForm {
@@ -545,9 +402,6 @@ extension SpotsModel {
             } else {
                 sheets[target.entry.id]?.run(action, item: target.item)
             }
-        } else if action.id == SpotSettings.removeID, let item = target.item, target.entry.spot.holdsSettings,
-                  let settings = target.entry.spot.settingsSheet, let field = settings.hotkeyField(of: item.run) {
-            sheets[settings.spot]?.set(SpotItem(title: item.title, run: field), to: "")
         } else if action == .open || action == .history {
             presentSheet(of: target.entry.id, moving: true)
         } else if let command = CommandAction.command(of: action) {
@@ -576,7 +430,7 @@ extension SpotsModel {
                 guard let form = try await sheets[target.entry.id]?.form(action, item: target.item), formAsk == ask else { return }
                 formAsk = nil
                 closeMenu()
-                let opensSheet = openList != target.entry.id
+                let opensSheet = openSheetID != target.entry.id
                 if opensSheet {
                     pushFirst(target.entry.id, moving: isShown)
                 }
@@ -595,7 +449,14 @@ extension SpotsModel {
     }
 
     public func changeSetting(_ key: String, of id: String) -> Bool {
-        guard let entry = entries.first(where: { $0.id == id }), let sheet = sheets[id] else { return false }
+        guard let entry = entry(id), let sheet = sheets[id] else { return false }
+        if let field = entry.spot.settings.first(where: { $0.id == key && $0.isSecret }) {
+            pushFirst(id, moving: true)
+            let form = ItemForm(title: field.title, fields: [ItemForm.Field(name: key, label: field.title, type: .secret)])
+            let action = CommandAction(id: Self.secretPrefix + key, title: "Change \(field.title)", scope: .spot, after: .stay)
+            self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: action, item: nil, openedSheet: true)
+            return true
+        }
         let action = CommandAction(id: key, title: "Change \(key)", scope: .spot, after: .close)
         let ask = UUID()
         formAsk = ask
@@ -631,7 +492,7 @@ extension SpotsModel {
         guard let form else { return }
         self.form = nil
         if form.openedSheet {
-            closeList(moving: true)
+            closeSheet(moving: true)
         }
     }
 
@@ -644,7 +505,39 @@ extension SpotsModel {
         send(form, form.draft)
     }
 
-    private func send(_ form: FormSession, _ draft: FormDraft) {
+    private static let secretPrefix = "openspot.secret."
+
+    private func keepSecret(_ form: FormSession, _ draft: FormDraft) {
+        let key = String(form.action.id.dropFirst(Self.secretPrefix.count))
+        let spot = form.entry.id
+        let value = draft.values[key] ?? ""
+        if !value.isEmpty, value.count < SecretStore.shortest {
+            return host.notify("Openspot didn't keep this secret, because it is shorter than \(SecretStore.shortest) characters. Type the whole value.")
+        }
+        let secrets = files.secrets
+        Task {
+            if let failure = await Self.keep(value.isEmpty ? nil : value, key: key, of: spot, in: secrets) {
+                return host.notify("\(form.action.title) failed. \(failure)")
+            }
+            guard self.form?.id == form.id else { return }
+            self.form = nil
+            closeSheet(moving: true)
+            configChanged(.value(spot: spot, caller: nil), to: kept)
+        }
+    }
+
+    @concurrent
+    private nonisolated static func keep(_ value: String?, key: String, of spot: String, in secrets: SecretStore) async -> String? {
+        do {
+            try secrets.keep(value, key: key, of: spot)
+            return nil
+        } catch {
+            return reason(error)
+        }
+    }
+
+    func send(_ form: FormSession, _ draft: FormDraft) {
+        if form.action.id.hasPrefix(Self.secretPrefix) { return keepSecret(form, draft) }
         Task {
             do {
                 switch try await sheets[form.entry.id]?.submit(form.action, item: form.item, draft: draft) {

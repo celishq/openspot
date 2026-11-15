@@ -5,11 +5,11 @@ import XCTest
 final class FlowMoveTests: PanelCase {
     func openFlowSpot() async throws {
         try writeFlow()
-        model.reload()
+        await model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
         model.press("flow")
-        try await waitFor("the flow") { self.model.transition.phase == .open && self.titles == ["Page first"] && self.model.sheets["flow"]?.spot.actions.count == 5 }
+        try await wait("the flow") { self.model.transition.phase == .open && self.titles == ["Page first"] && self.model.sheets["flow"]?.spot.actions.count == 5 }
     }
 
     private func writeFlow() throws {
@@ -26,7 +26,7 @@ final class FlowMoveTests: PanelCase {
     }
 
     private func openFlowSheetInPlace() async throws {
-        try await waitFor("the flow over the list") { self.model.openList == "flow" && self.titles == ["Page first"] && self.model.sheets["flow"]?.spot.actions.count == 5 }
+        try await wait("the flow over the list") { self.model.openSheetID == "flow" && self.titles == ["Page first"] && self.model.sheets["flow"]?.spot.actions.count == 5 }
     }
 
     private func pressFlow(_ id: String) throws {
@@ -38,26 +38,26 @@ final class FlowMoveTests: PanelCase {
         try await openFlowSpot()
 
         try pressFlow("next")
-        try await waitFor("the first page") { self.titles == ["Page n0"] }
+        try await wait("the first page") { self.titles == ["Page n0"] }
         try pressFlow("next")
-        try await waitFor("the second page") { self.titles == ["Page n2"] }
+        try await wait("the second page") { self.titles == ["Page n2"] }
         try pressFlow("done")
-        try await waitFor("the first page again") { self.titles == ["Page n0"] }
+        try await wait("the first page again") { self.titles == ["Page n0"] }
         try pressFlow("next")
-        try await waitFor("the second page again") { self.titles == ["Page n2"] && self.model.flow.pages.count == 3 }
+        try await wait("the second page again") { self.titles == ["Page n2"] && self.model.flow.pages.count == 3 }
         try pressFlow("top")
 
-        try await waitFor("the first sheet") { self.titles == ["Page first"] && self.model.flow.index == 0 }
+        try await wait("the first sheet") { self.titles == ["Page first"] && self.model.flow.index == 0 }
     }
 
     func testAPressThatReplacesTakesThePlaceOfThePageThatShows() async throws {
         try await openFlowSpot()
         try pressFlow("next")
-        try await waitFor("the first page") { self.titles == ["Page n0"] }
+        try await wait("the first page") { self.titles == ["Page n0"] }
 
         try pressFlow("swap")
 
-        try await waitFor("the swapped page") { self.titles == ["Page swapped"] }
+        try await wait("the swapped page") { self.titles == ["Page swapped"] }
         XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "flow"), FlowSheet(spot: "flow", page: "swapped")])
     }
 
@@ -68,12 +68,12 @@ final class FlowMoveTests: PanelCase {
         try await openFlowSheetInPlace()
 
         try pressFlow("top")
-        try await waitFor("the end of the press") { self.model.sheets["flow"]?.calls.isEmpty == true && !self.model.runs.isReading }
-        XCTAssertEqual(model.openList, "flow")
+        try await wait("the end of the press") { self.model.sheets["flow"]?.calls.isEmpty == true && !self.model.runs.isReading }
+        XCTAssertEqual(model.openSheetID, "flow")
 
         try pressFlow("done")
 
-        try await waitFor("the list") { self.model.openList == "list" && self.titles == ["A"] }
+        try await wait("the list") { self.model.openSheetID == "list" && self.titles == ["A"] }
         XCTAssertNil(model.flow.ahead)
     }
 
@@ -85,18 +85,18 @@ final class FlowMoveTests: PanelCase {
 
         try pressFlow("hand")
 
-        try await waitFor("the other spot") { self.model.openList == "other" && self.titles == ["Other"] }
-        try await waitFor("the bars behind") { self.model.flowEdges.titles(on: .behind) == ["Flow", "List"] }
+        try await wait("the other spot") { self.model.openSheetID == "other" && self.titles == ["Other"] }
+        try await wait("the bars behind") { self.model.flowEdges.titles(on: .behind) == ["Flow", "List"] }
     }
 
     func testAReadThatPushesMovesNothing() async throws {
         try script("reader", header: "title=Reader\non=sheet.open", "printf 'push=elsewhere\\n\\nrow=r\\ntitle=R\\n'")
-        model.reload()
+        await model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
         model.press("reader")
 
-        try await waitFor("the reader") { self.titles == ["R"] && !self.model.runs.isReading }
+        try await wait("the reader") { self.titles == ["R"] && !self.model.runs.isReading }
 
         XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "reader")])
     }
@@ -108,18 +108,18 @@ final class FlowMoveTests: PanelCase {
         XCTAssertFalse(model.pop(in: "other"))
         XCTAssertTrue(model.pop(in: "list"))
 
-        try await waitFor("the sheet before") { self.titles == ["A"] }
+        try await wait("the sheet before") { self.titles == ["A"] }
         XCTAssertFalse(model.pop(in: "list"))
     }
 
     func testAPushOfAPageThatTheSpotDoesNotTakeMovesNothingAndSaysSo() async throws {
         try await openList()
         try script("narrow", header: "title=Narrow\non=sheet.open\npages=ok:*", "printf 'row=n\\ntitle=N\\n'")
-        model.reload()
+        await model.reload()
 
         XCTAssertTrue(model.push(FlowSheet(spot: "narrow", page: "bad")))
 
-        XCTAssertEqual(model.openList, "list")
+        XCTAssertEqual(model.openSheetID, "list")
         XCTAssertEqual(host.notes.last, "Narrow takes no page bad. Add pages=bad to its header")
     }
 }

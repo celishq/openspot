@@ -136,7 +136,7 @@ final class ReleaseLogTests: XCTestCase {
         XCTAssertEqual(try store.keyMadeOnce(), key)
         let file = folder.appendingPathComponent("account")
         XCTAssertEqual(try FileManager.default.attributesOfItem(atPath: file.path)[.posixPermissions] as? Int, 0o600)
-        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8).split(separator: "\n").first.map(String.init), key.words?.joined(separator: " "))
+        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8).split(separator: "\n").first.map(String.init), key.words.map { "nip06 " + $0.joined(separator: " ") })
         try store.keep(try AccountKey(nsec: mine.nsec))
         XCTAssertEqual(try store.key(), mine)
     }

@@ -69,13 +69,14 @@ final class PlaygroundCallTests: SpotRunsCase {
         try await wait("the second call") { sheet.calls.count == 1 }
         time += 2
         sheet.run(action, item: nil)
-        try await wait("the stop") { calls.count == 3 }
+        try "".write(toFile: path("done"), atomically: true, encoding: .utf8)
+        try await wait("the end after the stop") { calls.count == 3 }
 
         XCTAssertEqual(calls[0].lines.first, "$ read · OPENSPOT_REASON=sheet.open")
         XCTAssertTrue(calls[0].lines.contains("> button=go"), "\(calls[0].lines)")
         XCTAssertEqual(calls[0].lines.last, "= exit 0")
         XCTAssertEqual(calls[1].lines, ["$ go", "> end=2", "= exit 0"])
-        XCTAssertEqual(calls[2].lines, ["$ go", "= stopped"])
+        XCTAssertEqual(calls[2].lines, ["$ go", "> end=3", "= exit 0"])
     }
 
     func testACallPrintsEachArgumentAndHowItEnded() {
@@ -84,20 +85,20 @@ final class PlaygroundCallTests: SpotRunsCase {
         XCTAssertEqual(PlaygroundCall(record: record, reason: nil).lines, ["$ move 'row 1' true", "> toast=Hi", "> ---", "> text=t", "= It took too long."])
     }
 
-    func testTheSandboxKeepsTheNewestCallsFirst() {
-        var sandbox = SheetSandbox()
+    func testThePlaygroundKeepsTheNewestCallsFirst() {
+        var playground = Playground()
         let record = { (id: String) in CallLog.Record(spot: "a", arguments: [id], input: nil, frames: [], errors: "", end: .exited(0), started: Date(), seconds: 0) }
 
-        for index in 0..<30 { sandbox.take(call: PlaygroundCall(record: record("c\(index)"), reason: nil)) }
+        for index in 0..<30 { playground.take(call: PlaygroundCall(record: record("c\(index)"), reason: nil)) }
 
-        XCTAssertEqual(sandbox.calls.count, 20)
-        XCTAssertEqual(sandbox.calls.first?.lines.first, "$ c29")
+        XCTAssertEqual(playground.calls.count, 20)
+        XCTAssertEqual(playground.calls.first?.lines.first, "$ c29")
     }
 
     func testThePresetsAreTheRunnableExamplesOfTheGuideAndEachSheetAsASpot() {
         let guide = "# Guide\n\n```sh\n#!/bin/sh\n# title=Hello\nsay hi\n```\n\n```text\nnot run\n```\n\n```js\n// title=Sum\nfunction main() { return '' }\n```\n"
 
-        let presets = SheetSandbox.presets(guide: guide)
+        let presets = Playground.presets(guide: guide)
 
         XCTAssertEqual(presets.prefix(2).map(\.name), ["Hello", "Sum"])
         XCTAssertEqual(presets[1].text, "// title=Sum\nfunction main() { return '' }\n")
@@ -107,7 +108,7 @@ final class PlaygroundCallTests: SpotRunsCase {
     }
 
     func testAFileOfJavaScriptRunsAsJavaScript() {
-        XCTAssertEqual(SheetSandbox.fileExtension(of: "// title=Sum\n"), "js")
-        XCTAssertEqual(SheetSandbox.fileExtension(of: "#!/bin/sh\n"), "sh")
+        XCTAssertEqual(Playground.fileExtension(of: "// title=Sum\n"), "js")
+        XCTAssertEqual(Playground.fileExtension(of: "#!/bin/sh\n"), "sh")
     }
 }

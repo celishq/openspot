@@ -4,21 +4,31 @@ public struct AppPlaces {
     public let environment: [String: String]
     public let home: URL
     public let defaults: UserDefaults
-    public let trash: (URL) throws -> URL
+    public let trash: @Sendable (URL) throws -> URL
+    public let kinds: @Sendable ([String]) -> FileKinds
     public let defaultConfig: URL?
+    public let account: AccountStore
+    public let secrets: SecretStore
+    public let config: ConfigFile
 
     public init(
         environment: [String: String],
         home: URL,
         defaults: UserDefaults,
-        trash: @escaping (URL) throws -> URL = AppPlaces.systemTrash,
-        defaultConfig: URL? = Bundle.main.url(forResource: "defaults", withExtension: "toml")
+        trash: @escaping @Sendable (URL) throws -> URL = AppPlaces.systemTrash,
+        kinds: @escaping @Sendable ([String]) -> FileKinds = { FileKinds.Disk().read($0) },
+        defaultConfig: URL? = Bundle.main.url(forResource: "defaults", withExtension: "toml"),
+        disk: any ConfigDisk = LocalDisk()
     ) {
         self.environment = environment
         self.home = home
         self.defaults = defaults
         self.trash = trash
+        self.kinds = kinds
         self.defaultConfig = defaultConfig
+        account = .standard(environment: environment, home: home)
+        secrets = .standard(environment: environment, home: home)
+        config = ConfigFile(url: ConfigFile.standard(environment: environment, home: home).url, disk: disk)
     }
 
     public static func systemTrash(_ url: URL) throws -> URL {
@@ -31,25 +41,13 @@ public struct AppPlaces {
         AppPlaces(environment: ProcessInfo.processInfo.environment, home: FileManager.default.homeDirectoryForCurrentUser, defaults: .standard)
     }
 
-    public var config: ConfigFile {
-        .standard(environment: environment, home: home)
-    }
-
-    public var defaultArrangement: SpotArrangement {
+    public func readDefaultArrangement() -> SpotArrangement {
         guard let defaultConfig, let text = try? String(contentsOf: defaultConfig, encoding: .utf8) else { return SpotArrangement() }
         return Config(text: text).arrangement
     }
 
     public func folder(_ config: Config) -> SpotsFolder {
         .standard(environment: environment, home: home, enabled: config.arrangement.enabled, disabled: config.arrangement.disabled)
-    }
-
-    public var folder: SpotsFolder {
-        folder(config.read())
-    }
-
-    public var account: AccountStore {
-        .standard(environment: environment, home: home)
     }
 
     public var store: URL {

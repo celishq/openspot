@@ -56,18 +56,19 @@ final class CardFaceTests: XCTestCase {
     }
 
     func testTheHeadCanNameASwitchAsMain() {
-        let output = SpotOutput(text: "main=power\n\nswitch=power\nvalue=true\n\ntext=bar\ntitle=Bar\n")
+        let outputCheck = FrameCheck(text: "main=power\n\nswitch=power\nvalue=true\n\ntext=bar\ntitle=Bar\n")
+        let output = outputCheck.output
         XCTAssertEqual(output.value?.value("switch"), "power")
-        XCTAssertEqual(output.partFaults, [])
+        XCTAssertEqual(outputCheck.partFaults, [])
     }
 
     func testANameThatNoValueHasAndAnUnknownPlaceAreFaults() {
-        XCTAssertEqual(SpotOutput(text: "main=gone\n\nbutton=go\ntitle=Go\n").partFaults, ["the head names gone as main, which no text, number, gauge, graph, switch or slider has"])
-        XCTAssertEqual(SpotOutput(text: "grid.tray=a\n\ntext=a\ntitle=A\n").partFaults, ["the head draws grid.tray, which is not a place"])
+        XCTAssertEqual(FrameCheck(text: "main=gone\n\nbutton=go\ntitle=Go\n").partFaults, ["the head names gone as main, which no text, number, gauge, graph, switch or slider has"])
+        XCTAssertEqual(FrameCheck(text: "grid.tray=a\n\ntext=a\ntitle=A\n").partFaults, ["the head draws grid.tray, which is not a place"])
     }
 
     func testACardDrawingThatNamesNoComponentIsAFault() {
-        XCTAssertEqual(SpotOutput(text: "grid.wide=a b\n\ntext=a\ntitle=A\n").partFaults, ["the card drawing names b, which no component has"])
+        XCTAssertEqual(FrameCheck(text: "grid.wide=a b\n\ntext=a\ntitle=A\n").partFaults, ["the card drawing names b, which no component has"])
     }
 
     func testAChangeOnTheCardShowsBeforeTheAnswer() {
@@ -109,7 +110,7 @@ final class CardFaceTests: XCTestCase {
         XCTAssertEqual(price?.numberPieces.map(\.text), ["$", "13.46"])
         XCTAssertEqual(price?.numberPieces.map(\.isUnit), [true, false])
         XCTAssertEqual(plain?.numberPieces.map(\.text), ["14"])
-        XCTAssertEqual(SpotOutput(text: "number=a\nvalue=1\nunit=kg\n").partFaults, [])
+        XCTAssertEqual(FrameCheck(text: "number=a\nvalue=1\nunit=kg\n").partFaults, [])
     }
 
     func testAnAnswerWithNoMainValueOrNoFullWidthDrawingIsItsRows() {

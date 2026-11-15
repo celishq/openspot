@@ -3,6 +3,7 @@ import OpenspotCore
 import SwiftUI
 
 struct SheetPartsView: View {
+    @Environment(\.spotSurfaceEdge) private var surface
     let panel: SheetParts
     var work: (SpotPart) -> ScriptCall? = { _ in nil }
     let onSet: (SpotPart, String) -> Void
@@ -18,8 +19,10 @@ struct SheetPartsView: View {
     var menuOpening: () -> SheetParts.MenuOpening? = { nil }
     var onFocus: (SpotPart) -> Void = { _ in }
     var viewSource: String?
+    var viewDate: Date?
     var views = SpotViews.shared
     @FocusState private var focus: String?
+    @Environment(\.spotIsHeld) private var isHeld
 
     private static let swatchSize: CGFloat = 22
     private static let smallSwatch: CGFloat = 16
@@ -29,10 +32,9 @@ struct SheetPartsView: View {
     private static let narrowGap: CGFloat = 2
     private static let markValueWidth: CGFloat = 36
     private static let symbolWidth: CGFloat = 22
-    private static let numberFont = Font.system(size: 24, weight: .semibold, design: .rounded).monospacedDigit()
 
-    private var shape: RoundedRectangle {
-        RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
+    private var shape: SpotRoundShape {
+        SpotRoundShape(surface.inner())
     }
 
     var body: some View {
@@ -49,7 +51,7 @@ struct SheetPartsView: View {
         .modifier(FocusOnShow(focus: focusSelectedField))
         .modifier(FocusOnSelect(selectedID: selectedID, focus: focusSelectedField))
         .onChange(of: focus) { _, id in
-            if let part = panel.parts.first(where: { $0.id == id }) { onFocus(part) }
+            if !isHeld, let part = panel.parts.first(where: { $0.id == id }) { onFocus(part) }
         }
     }
 
@@ -121,16 +123,16 @@ struct SheetPartsView: View {
     }
 
     private func focusSelectedField() {
-        guard !panel.showsRows else { return }
+        guard !isHeld, !panel.showsRows else { return }
         let id = selectedID()
         DispatchQueue.main.async { focus = panel.parts.first { $0.id == id && $0.isEditable }?.id }
     }
 
     @ViewBuilder
     private func drawn(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
-        if part.kind == "view" {
+        if part.isOpen {
             if let viewSource {
-                SpotCustomView(source: viewSource, values: part.values, card: .square, room: frame.rect.size, answers: panel.answered, views: views) { onSet(part, $0) }
+                SpotCustomView(source: viewSource, values: part.values, rows: part.rows, card: .square, room: frame.rect.size, answers: panel.answered, date: viewDate, views: views) { onSet(part, $0) }
                     .equatable()
             }
         } else {
@@ -366,7 +368,7 @@ struct SheetPartsView: View {
                     .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)
                 Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(SpotType.mark)
                     .modifier(SpotSecondaryText())
             }
             .padding(.horizontal, frame.isOnTop ? 10 : 0)
@@ -461,7 +463,7 @@ struct SheetPartsView: View {
     }
 
     private func number(_ part: SpotPart) -> some View {
-        SpotNumberView(part: part, font: Self.numberFont, leastScale: 0.6, alignment: part.look == .bare ? .trailing : .leading)
+        SpotNumberView(part: part, font: SpotType.number, leastScale: 0.6, alignment: part.look == .bare ? .trailing : .leading)
             .padding(.horizontal, part.look == .bare ? 0 : SpotTokens.padding)
             .background(SpotTheme.ink.opacity(part.look == .bare ? 0 : SpotTheme.fill), in: shape)
     }
@@ -510,7 +512,7 @@ struct SheetPartsView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(space)
                 }
-                .clipShape(RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous))
+                .clipShape(SpotRoundShape(surface.inner()))
             } else {
                 TextEditor(text: Binding(get: { text }, set: { onSet(part, $0) }))
                     .scrollContentBackground(.hidden)
@@ -543,16 +545,17 @@ private struct FocusOnShow: ViewModifier {
 }
 
 private struct PartRing: ViewModifier {
+    @Environment(\.spotSurfaceEdge) private var surface
     let id: String
     let selectedID: () -> String?
     let hasBox: Bool
-    let shape: RoundedRectangle
+    let shape: SpotRoundShape
 
     func body(content: Content) -> some View {
         let isSelected = selectedID() == id
         if hasBox {
             let gap = SpotTokens.focusGap
-            let ring = RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding + gap, style: .continuous)
+            let ring = SpotRoundShape(surface.inner(by: SpotTokens.padding - gap))
             content.modifier(SpotSelectionRing(isSelected: isSelected, shape: ring)).padding(-gap)
         } else {
             content.modifier(SpotSelectionRing(isSelected: isSelected, shape: shape)).padding(.horizontal, -SpotTokens.controlPadding)
@@ -570,6 +573,7 @@ private struct FocusOnSelect: ViewModifier {
 }
 
 private struct TileLook: ViewModifier {
+    @Environment(\.spotSurfaceEdge) private var surface
     let isOn: Bool
 
     func body(content: Content) -> some View {
@@ -577,7 +581,7 @@ private struct TileLook: ViewModifier {
             content
                 .padding(.horizontal, SpotTokens.padding)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(SpotTheme.ink.opacity(SpotTheme.fill), in: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous))
+                .background(SpotTheme.ink.opacity(SpotTheme.fill), in: SpotRoundShape(surface.inner()))
         } else {
             content
         }
@@ -588,6 +592,7 @@ private struct SheetPicture: View {
     let arrived: SpotPictureStore.Key
     @State private var followed: (from: SpotPictureStore.Key, changed: Double?)?
     @State private var loaded: (key: SpotPictureStore.Key, image: CGImage)?
+    @Environment(\.spotIsHeld) private var isHeld
 
     private var key: SpotPictureStore.Key {
         followed.flatMap { $0.from == arrived ? SpotPictureStore.Key(path: arrived.path, changed: $0.changed) : nil } ?? arrived
@@ -604,9 +609,10 @@ private struct SheetPicture: View {
                 }
             }
             .task(id: key) {
-                if let image = await SpotPictureStore.shared.image(key) { loaded = (key, image) }
+                if !isHeld, let image = await SpotPictureStore.shared.image(key) { loaded = (key, image) }
             }
             .task(id: arrived) {
+                guard !isHeld else { return }
                 for await changed in PictureFile(path: arrived.path).changes { followed = (arrived, changed) }
             }
     }

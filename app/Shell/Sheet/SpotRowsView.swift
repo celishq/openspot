@@ -2,6 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotRowsView: View {
+    @Environment(\.spotSurfaceEdge) private var surface
     let list: ItemList
     var recording: String?
     var recordingWords = "Press keys"
@@ -12,8 +13,8 @@ struct SpotRowsView: View {
 
     private static let bottomFade = 2 * SpotTokens.padding
 
-    private var row: RoundedRectangle {
-        RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
+    private var row: SpotRoundShape {
+        SpotRoundShape(surface.inner())
     }
 
     private var selected: () -> Int {
@@ -68,7 +69,7 @@ struct SpotRowsView: View {
 
     private var emptyText: String {
         if list.isWaiting { return "Searching" }
-        if list.isLoading { return "Loading…" }
+        if list.isLoading { return list.loadingWords ?? "Loading…" }
         if list.hasFailed { return "Could not load" }
         if list.search == .script && list.query.isEmpty { return "Type to search" }
         return list.query.isEmpty ? "Nothing here yet" : "No results"
@@ -150,6 +151,10 @@ struct SpotRowsView: View {
                 .padding(.bottom, bottomInset)
             }
             .modifier(RowsFollow(selection: selected, items: list.shown, proxy: proxy, motion: SpotMotion.move))
+            .onChange(of: list.landedSearches) {
+                guard let run = list.shown.first?.run else { return }
+                DispatchQueue.main.async { proxy.scrollTo(run, anchor: .top) }
+            }
         }
     }
 
@@ -244,6 +249,7 @@ private struct RowsFade: ViewModifier {
 }
 
 private struct BentoRing: View {
+    @Environment(\.spotSurfaceEdge) private var surface
     let selection: () -> Int
     let count: Int
     let drawing: RepeatDrawing
@@ -256,7 +262,7 @@ private struct BentoRing: View {
             let size = SpotRowsView.size(of: area, step: step)
             Color.clear
                 .frame(width: size.width, height: size.height)
-                .modifier(SpotSelectionRing(isSelected: true, shape: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous), marksMenu: true))
+                .modifier(SpotSelectionRing(isSelected: true, shape: SpotRoundShape(surface.inner()), marksMenu: true))
                 .offset(x: CGFloat(area.x0) * step, y: CGFloat(area.y0) * step)
         }
     }

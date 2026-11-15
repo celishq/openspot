@@ -2,22 +2,14 @@ import XCTest
 @testable import OpenspotCore
 
 final class SpotAddTests: XCTestCase {
-    private final class Host: Mac {
-        func eventStore() -> any EventStore { FakeEventStore() }
-        func reminderStore() -> any ReminderStore { FakeReminderStore() }
-        func showCalendar(at time: Date) throws {}
-        func open(_ link: URL) -> Bool { true }
-    }
-
     private var root: URL!
     private var spots: URL!
 
     private var environment: [String: String] {
-        ["OPENSPOT_CONFIG": root.path, "OPENSPOT_SPOTS": spots.path, "OPENSPOT_CORE": root.appendingPathComponent("core").path, "PWD": root.path]
+        ["OPENSPOT_CONFIG": root.path, "OPENSPOT_SPOTS": spots.path, "OPENSPOT_CORE": root.appendingPathComponent("core").path, "PWD": root.path, "PATH": "/usr/bin:/bin", "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_NOSYSTEM": "1"]
     }
 
     override func setUpWithError() throws {
-        GitRepo.isolate()
         root = FileManager.default.temporaryDirectory.appendingPathComponent("spot-add-\(UUID().uuidString.prefix(8))")
         spots = root.appendingPathComponent("spots")
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
@@ -29,7 +21,7 @@ final class SpotAddTests: XCTestCase {
 
     private func answer(_ arguments: [String]) async throws -> CommandAnswer {
         let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: environment))
-        let work = try XCTUnwrap(CommandAPI(mac: Host()).work(for: call, input: { "" }, environment: environment))
+        let work = try XCTUnwrap(CommandAPI(mac: Mac(), places: .test(environment), rates: .offline).work(for: call, request: .test(arguments, in: environment), input: { "" }))
         return await work()
     }
 
@@ -132,7 +124,7 @@ final class SpotAddTests: XCTestCase {
             }
         }
         let port = UInt16(bigEndian: address.sin_port)
-        let lock = SpotLock(url: root.appendingPathComponent("spots.lock"))
+        let lock = SpotLock(url: root.appendingPathComponent("spots.lock"), environment: environment)
         let adding = Task { [spots] in try await lock.add(.git("git://127.0.0.1:\(port)/coffee"), to: spots!) }
         let connection = await Task.detached { Self.accepted(on: listener) }.value
         XCTAssertGreaterThanOrEqual(connection, 0, "git reached the fake server")
@@ -212,8 +204,8 @@ final class SpotAddTests: XCTestCase {
     func testAddAndRemoveCannotRunInARead() throws {
         let read = environment.merging(["OPENSPOT_REASON": "sheet"]) { _, new in new }
 
-        XCTAssertEqual(CommandLineCall(arguments: ["spot", "add", "x"], environment: read), .refused("`openspot spot add` changes your spots folder, so it cannot run in a read. Run it from a pick or an action."))
-        XCTAssertEqual(CommandLineCall(arguments: ["spot", "remove", "x"], environment: read), .refused("`openspot spot remove` changes your spots folder, so it cannot run in a read. Run it from a pick or an action."))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "add", "x"], environment: read)?.value as? CallFault, .refused("`openspot spot add` changes your spots folder, so it cannot run in a read. Run it from a pick or an action."))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "remove", "x"], environment: read)?.value as? CallFault, .refused("`openspot spot remove` changes your spots folder, so it cannot run in a read. Run it from a pick or an action."))
     }
 
     private func files(in folder: URL) throws -> [String: Data] {

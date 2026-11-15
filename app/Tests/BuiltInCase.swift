@@ -3,24 +3,6 @@ import XCTest
 
 @MainActor
 class BuiltInCase: XCTestCase {
-    private final class Host: Mac {
-        let mac: MacSettings
-        let guide: URL?
-
-        init(mac: MacSettings, guide: URL?) {
-            self.mac = mac
-            self.guide = guide
-        }
-
-        var login: LoginItem? { mac.login }
-        var link: CommandLink? { mac.link }
-
-        func eventStore() -> any EventStore { FakeEventStore() }
-        func reminderStore() -> any ReminderStore { FakeReminderStore() }
-        func showCalendar(at time: Date) throws {}
-        func open(_ link: URL) -> Bool { true }
-    }
-
     final class MacSettings: @unchecked Sendable {
         var isOn = false
         var login: LoginItem?
@@ -29,17 +11,14 @@ class BuiltInCase: XCTestCase {
         var copied: [String] = []
     }
 
-    private static let names = ["PATH", "OPENSPOT_CONFIG", "OPENSPOT_SPOTS", "OPENSPOT_CORE"]
-
     var root: URL!
     var spots: URL!
     var core: URL!
     var tools: URL!
     let app = FakeRunningApp()
-    let runs = SpotRuns()
+    private(set) var runs: SpotRuns!
     let mac = MacSettings()
     private var socket: CommandSocket?
-    private var before: [String: String] = [:]
 
     var file: ConfigFile {
         ConfigFile(url: root.appendingPathComponent("config.toml"))
@@ -84,30 +63,34 @@ class BuiltInCase: XCTestCase {
         mac.link = CommandLink(link: linkFile, target: root.appendingPathComponent("Openspot.app/Contents/Helpers/openspot"), elevated: { mac.elevated.append($0) })
     }
 
+    nonisolated override func invokeTest() {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("bi-\(UUID().uuidString.prefix(8))")
+        let environment = ProcessInfo.processInfo.environment.merging([
+            "PATH": root.appendingPathComponent("tools").path + ":/usr/bin:/bin",
+            "OPENSPOT_CONFIG": root.path,
+            "OPENSPOT_SPOTS": root.appendingPathComponent("spots").path,
+            "OPENSPOT_CORE": root.appendingPathComponent("core").path
+        ]) { _, new in new }
+        TestEnvironment.$values.withValue(environment) { super.invokeTest() }
+    }
+
     override func setUp() async throws {
-        root = FileManager.default.temporaryDirectory.appendingPathComponent("bi-\(UUID().uuidString.prefix(8))")
+        root = URL(fileURLWithPath: try XCTUnwrap(TestEnvironment.values["OPENSPOT_CONFIG"]))
+        root = try XCTUnwrap(root.lastPathComponent.hasPrefix("bi-") ? root : nil, "the environment of the case did not reach setUp")
         spots = root.appendingPathComponent("spots")
         core = root.appendingPathComponent("core")
         tools = root.appendingPathComponent("tools")
+        runs = SpotRuns(environment: TestEnvironment.values, log: CallLog(folder: root.appendingPathComponent("logs")), stats: root.appendingPathComponent("stats"))
         for folder in [spots!, core!, tools!] {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         }
         let built = Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot")
         try FileManager.default.copyItem(at: built, to: tools.appendingPathComponent("openspot"))
-        let environment = ProcessInfo.processInfo.environment
-        before = environment.filter { Self.names.contains($0.key) }
-        setenv("PATH", "\(tools.path):/usr/bin:/bin", 1)
-        setenv("OPENSPOT_CONFIG", root.path, 1)
-        setenv("OPENSPOT_SPOTS", spots.path, 1)
-        setenv("OPENSPOT_CORE", core.path, 1)
-        socket = CommandSocket(folder: root, api: CommandAPI(mac: Host(mac: mac, guide: guide), app: app, runs: runs))
+        socket = CommandSocket(folder: root, api: CommandAPI(mac: Mac(calendar: FakeCalendar(), reminders: FakeReminders(), login: { [mac] in mac.login }, link: { [mac] in mac.link }, guide: guide), places: .test(TestEnvironment.values), app: app, runs: runs, rates: .offline))
     }
 
     override func tearDown() async throws {
         socket?.close()
-        for name in Self.names {
-            if let value = before[name] { setenv(name, value, 1) } else { unsetenv(name) }
-        }
         try? FileManager.default.removeItem(at: root)
     }
 

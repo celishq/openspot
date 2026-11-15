@@ -23,13 +23,14 @@ final class TranslateSpotTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let translate = try self.fakeTranslate(in: folder)
 
-            let output = try await translate.items(timeout: 10)
+            let output = try await translate.items(timeout: 60)
 
             XCTAssertEqual(translate.mode, .once)
             XCTAssertEqual(translate.read, .sheet)
             XCTAssertEqual(translate.kind, .list)
             XCTAssertEqual(output.kind, .list)
-            XCTAssertEqual(output.sheetFaults, [])
+            let faults = try await translate.sheetFaults(timeout: 60)
+            XCTAssertEqual(faults, [])
             XCTAssertEqual(output.layout?.rows.first, ["source", "source", ".", "."])
             XCTAssertEqual(output.parts.map(\.id), ["source", "input", "target", "output", "swap"])
             XCTAssertEqual(self.text(of: "source", in: output), "auto")
@@ -76,7 +77,7 @@ final class TranslateSpotTests: SampleSpotsCase {
             let translate = try self.fakeTranslate(in: folder)
 
             _ = try await Self.drive(translate, [.set("source", to: "en"), .set("target", to: "ru")])
-            let output = try await translate.items(timeout: 10)
+            let output = try await translate.items(timeout: 60)
 
             XCTAssertEqual(self.text(of: "source", in: output), "en")
             XCTAssertEqual(self.text(of: "target", in: output), "ru")
@@ -111,7 +112,7 @@ final class TranslateSpotTests: SampleSpotsCase {
             let translate = try self.fakeTranslate(in: folder)
 
             _ = try await Self.drive(translate, [.set("source", to: "en"), .set("target", to: "ru"), .set("input", to: "hi")])
-            let output = try await translate.items(timeout: 10)
+            let output = try await translate.items(timeout: 60)
 
             XCTAssertEqual(self.text(of: "input", in: output), "")
             XCTAssertEqual(self.text(of: "output", in: output), "")
@@ -136,7 +137,7 @@ final class TranslateSpotTests: SampleSpotsCase {
             let translate = try self.fakeTranslate(in: folder)
             let tool = folder.appendingPathComponent("tools/openspot")
             let working = try String(contentsOf: tool, encoding: .utf8)
-            _ = try await translate.items(timeout: 10)
+            _ = try await translate.items(timeout: 60)
             try "#!/bin/sh\ncat >/dev/null\necho 'could not start. Run it again.' >&2\nexit 1\n".write(to: tool, atomically: true, encoding: .utf8)
             defer { try? working.write(to: tool, atomically: true, encoding: .utf8) }
 

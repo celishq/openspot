@@ -15,8 +15,7 @@ final class TerminalRunTests: XCTestCase {
     }
 
     private func spot(_ name: String, header: String = "", _ body: String) throws -> Spot {
-        let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: folder.spotFile(name))
+        try TestSpot(header: header, body: "\(body)").write(to: folder.spotFile(name))
         return try XCTUnwrap(SpotsFolder(url: folder).scan().scripts.first { $0.id == name })
     }
 
@@ -30,6 +29,20 @@ final class TerminalRunTests: XCTestCase {
         XCTAssertEqual(frames.last, "note=hi\n")
         XCTAssertEqual(end.code, 2)
         XCTAssertEqual(end.errors, "Nothing to send.\n")
+    }
+
+    func testARunRefusesASpotThatReachesTheAccountKey() async throws {
+        let ran = folder.appendingPathComponent("ran")
+        var store = try spot("store", header: "uses=account", "touch '\(ran.path)'; echo title=Store")
+        store = store.builtIn()
+        store.uses.insert(.account)
+        var frames: [String] = []
+
+        let end = await TerminalRun(spot: store, arguments: ["read"], input: nil).start { frames.append($0) }
+
+        XCTAssertEqual(end, TerminalRun.End(code: 1, errors: "Store reaches your account key, so it runs only in the Openspot panel. Open it there.\n"))
+        XCTAssertEqual(frames, [])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: ran.path))
     }
 
     func testARunReturnsAllOfALongStderr() async throws {

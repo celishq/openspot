@@ -4,13 +4,13 @@ import XCTest
 @MainActor
 final class PlaygroundPlaceTests: XCTestCase {
     private var folder: URL!
-    private var host: TestHost!
+    private var host: FakeHost!
     private var panel: PlaygroundPanel!
 
     override func setUp() async throws {
         try await super.setUp()
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("playground-\(UUID().uuidString)")
-        host = TestHost()
+        host = FakeHost()
         panel = PlaygroundPanel(host: host, scratch: folder, defaults: UserDefaults(suiteName: "playground-\(UUID().uuidString)")!)
         host.model = panel.model
     }
@@ -21,48 +21,41 @@ final class PlaygroundPlaceTests: XCTestCase {
         try await super.tearDown()
     }
 
-    private func wait(_ what: String, until condition: @escaping () -> Bool) async throws {
-        for _ in 0..<500 {
-            if condition() { return }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTFail("waited for \(what)")
-    }
-
     private let answering = "#!/bin/sh\n# title=Twice\n# on=sheet.open\n# on=clock.60\n# on=search.text ^[0-9]\nprintf 'text=t\\ntitle=%s\\n' \"$OPENSPOT_REASON\"\n[ -n \"$OPENSPOT_VALUE\" ] && printf '\\nrow=%s\\ntitle=Twice %s\\n' \"$OPENSPOT_VALUE\" \"$OPENSPOT_VALUE\"\n"
 
-    func testATypedSpotLiesOnTheGridOfItsOwnPanel() throws {
-        let id = try panel.place(file: nil, text: answering)
+    func testATypedSpotLiesOnTheGridOfItsOwnPanel() async throws {
+        let id = try await panel.place(file: nil, text: answering)
 
         XCTAssertEqual(id, "playground")
         XCTAssertEqual(panel.model.visible.map(\.id), ["playground"])
     }
 
     func testTheSheetOpensAndTheCardClosesIt() async throws {
-        let id = try panel.place(file: nil, text: answering)
+        let id = try await panel.place(file: nil, text: answering)
 
         panel.show(.sheet, id: id)
-        try await wait("the open sheet") { self.panel.model.openList == id }
+        try await wait("the open sheet") { self.panel.model.openSheetID == id }
         panel.show(.card, id: id)
 
-        try await wait("the closed sheet") { self.panel.model.openList == nil }
+        try await wait("the closed sheet") { self.panel.model.openSheetID == nil }
     }
 
     func testTheMainSearchShowsTheRowsThatTheSpotAnswers() async throws {
-        let id = try panel.place(file: nil, text: answering)
+        let id = try await panel.place(file: nil, text: answering)
 
         panel.show(.card, id: id)
         panel.model.searchText = "21"
+        panel.model.landSearch()
 
         try await wait("the answer") { self.panel.model.visible.contains { $0.item?.title == "Twice 21" } }
     }
 
-    func testANamedFileRunsFromACopyWithTheIdOfItsSpotsFolder() throws {
+    func testANamedFileRunsFromACopyWithTheIdOfItsSpotsFolder() async throws {
         let spots = folder.appendingPathComponent("real-spots", isDirectory: true)
         let file = spots.spotFile("home/coffee")
         try "#!/bin/sh\n# title=Coffee\n".writeScript(to: file)
 
-        let id = try panel.place(file: file, text: "#!/bin/sh\n# title=Coffee\n", spots: spots)
+        let id = try await panel.place(file: file, text: "#!/bin/sh\n# title=Coffee\n", spots: spots)
 
         XCTAssertEqual(id, "home/coffee")
         XCTAssertEqual(panel.model.visible.map(\.id), ["home/coffee"])

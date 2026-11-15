@@ -2,6 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotSearchField: View {
+    @Environment(\.spotSurfaceEdge) private var surface
     let prompt: String
     let text: String
     let onSearch: @MainActor @Sendable (String) -> Void
@@ -22,7 +23,7 @@ struct SpotSearchField: View {
             .simultaneousGesture(TapGesture().onEnded { isFocused.wrappedValue = true })
     }
 
-    private var shape: RoundedRectangle {
-        RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
+    private var shape: SpotRoundShape {
+        SpotRoundShape(surface.inner())
     }
 }

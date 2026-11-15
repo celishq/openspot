@@ -11,7 +11,8 @@ extension SpotRun {
         let wantsSheetAnswer = reason == .sheet && spot.read?.has(.sheet) == true && readReason != .sheet
         if let run { selecting = run }
         if link.isAsking {
-            if need == .change || wantsSheetAnswer { readsAgain = true }
+            if need == .change { readsAgain = true }
+            if wantsSheetAnswer { sheetAgain = true }
             if reason.isEvent { eventAgain = reason }
             return
         }
@@ -19,17 +20,16 @@ extension SpotRun {
             selectKept()
             return
         }
-        let query = list.search == .script && !link.keepsState ? list.query : ""
+        let query = list.search == .script && !script.keepsState ? list.query : ""
         let read = SpotAction.read
         let action = spot.read == nil ? spot.click : read
         let values = [showsSheet ? panel?.values : nil, query.isEmpty ? nil : SearchQuery(text: query).input].compactMap { $0 }
-        let isSent = link.send(Call(
+        let isSent = send(Call(
             action: action,
             key: Self.readKey,
             input: values.isEmpty ? nil : values.joined(),
             limit: action == read ? runs.readLimit : nil,
-            reason: reason,
-            variables: action == read ? reason.variables : [:],
+            reason: action == read ? reason : nil,
             purpose: .ask(.read(generation: panel?.generation, reports: need != .clock, query: query, tells: reason != .panel))
         ))
         if isSent {
@@ -48,10 +48,16 @@ extension SpotRun {
     private func find(_ text: String) {
         guard list.beginFinding(text) else { return }
         let asked = rows
-        Task { [weak self] in
-            let found = await Task.detached(priority: .userInitiated) { asked.found() }.value
+        finding?.cancel()
+        finding = Task { [weak self] in
+            guard let found = await Self.found(asked), !Task.isCancelled else { return }
             self?.list.take(found)
         }
+    }
+
+    @concurrent
+    private nonisolated static func found(_ list: ItemList) async -> ItemList.Found? {
+        Task.isCancelled ? nil : list.found()
     }
 
     func ask() {
@@ -59,13 +65,12 @@ extension SpotRun {
         if let older = running(Self.searchKey) { stop(older) }
         pauses[Self.searchKey]?.cancel()
         pauses[Self.searchKey] = nil
-        link.send(Call(
+        send(Call(
             action: .read,
             key: Self.searchKey,
             input: (showsSheet ? panel?.values ?? "" : "") + SearchQuery(text: query).input,
             limit: runs.readLimit,
             reason: .text(query, inSheet: true),
-            variables: ReadReason.text(query, inSheet: true).variables,
             purpose: .ask(.search(query))
         ))
     }
@@ -80,13 +85,12 @@ extension SpotRun {
             takeAnswers([])
             return
         }
-        link.send(Call(
+        send(Call(
             action: .read,
             key: Self.answerKey,
             input: runs.search(of: text).input,
             limit: runs.readLimit,
             reason: .text(text, inSheet: false),
-            variables: ReadReason.text(text, inSheet: false).variables,
             purpose: .ask(.answer(text))
         ))
     }
@@ -135,7 +139,14 @@ extension SpotRun {
     }
 
     func readAgainIfAsked() {
-        guard readsAgain || eventAgain != nil, !link.isAsking else { return }
+        guard !link.isAsking else { return }
+        if sheetAgain {
+            sheetAgain = false
+            readsAgain = false
+            read(need: .change, reason: .sheet)
+            guard !link.isAsking else { return }
+        }
+        guard readsAgain || eventAgain != nil else { return }
         let need: ReadNeed = readsAgain ? .change : .clock
         let reason = eventAgain
         readsAgain = false

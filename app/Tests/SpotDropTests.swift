@@ -10,7 +10,7 @@ final class SpotDropTests: XCTestCase {
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot drop \(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        runs = SpotRuns(now: { [unowned self] in self.time })
+        runs = SpotRuns(clock: RunClock { [unowned self] in self.time })
     }
 
     override func tearDown() async throws {
@@ -42,20 +42,11 @@ final class SpotDropTests: XCTestCase {
 
     private func sheet(header: String = "", _ body: String = "") throws -> SpotRun {
         let url = folder.spotFile("script")
-        let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\necho $$ >> '\(path("pids"))'\necho \"$*\" >> '\(path("log"))'\n\(body)\n".writeScript(to: url)
+        try TestSpot(header: header, body: "echo $$ >> '\(path("pids"))'\necho \"$*\" >> '\(path("log"))'\n\(body)").write(to: url)
         let scan = try SpotsFolder(url: folder).scan()
         XCTAssertEqual(scan.refused, [])
         runs.take(scan)
         return try XCTUnwrap(runs.sheets["script"])
-    }
-
-    private func wait(_ what: String, until condition: () -> Bool) async throws {
-        for _ in 0..<500 {
-            if condition() { return }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTFail("waited for \(what)")
     }
 
     private func allEnded() async throws {
@@ -169,26 +160,26 @@ final class SpotDropTests: XCTestCase {
         try addScript("plain", header: "title=Plain")
         XCTAssertEqual(cardsThatTakeTheDrag(), [])
 
-        runs.draggedPaths = [file("a.mov")]
+        runs.dragged = FileKinds.Disk().read([file("a.mov")])
         XCTAssertEqual(cardsThatTakeTheDrag(), ["movies", "clips", "all"])
 
-        runs.draggedPaths = [file("a.mov"), file("b.mkv")]
+        runs.dragged = FileKinds.Disk().read([file("a.mov"), file("b.mkv")])
         XCTAssertEqual(cardsThatTakeTheDrag(), ["clips", "all"])
 
-        runs.draggedPaths = [file("a.mov"), file("b.txt")]
+        runs.dragged = FileKinds.Disk().read([file("a.mov"), file("b.txt")])
         XCTAssertEqual(cardsThatTakeTheDrag(), ["all"])
 
-        runs.draggedPaths = [try directory("plain folder")]
+        runs.dragged = FileKinds.Disk().read([try directory("plain folder")])
         XCTAssertEqual(cardsThatTakeTheDrag(), ["all", "folders"])
 
-        runs.draggedPaths = []
+        runs.dragged = FileKinds.Disk().read([])
         XCTAssertEqual(cardsThatTakeTheDrag(), [])
     }
 
     func testACardKnowsItTakesTheDragFromTheStartOfTheDragWithNoNewLookAtTheFiles() throws {
         try addScript("movies", header: "drop=mov")
         let movie = file("a.mov")
-        runs.draggedPaths = [movie]
+        runs.dragged = FileKinds.Disk().read([movie])
 
         try FileManager.default.removeItem(atPath: movie)
 
@@ -196,7 +187,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testACardThatIsNotAScriptNeverTakesADrag() {
-        runs.draggedPaths = [file("a.mov")]
+        runs.dragged = FileKinds.Disk().read([file("a.mov")])
 
         XCTAssertFalse(runs.takesDrag("gone"))
     }
@@ -204,7 +195,7 @@ final class SpotDropTests: XCTestCase {
     func testADragRunsNoScript() async throws {
         try addScript("movies", header: "drop=mov")
         let frames = FrameLog(try XCTUnwrap(runs.sheets["movies"]))
-        runs.draggedPaths = [file("a.mov")]
+        runs.dragged = FileKinds.Disk().read([file("a.mov")])
 
         XCTAssertTrue(runs.takesDrag("movies"))
 
@@ -403,9 +394,8 @@ final class SpotDropTests: XCTestCase {
 
         XCTAssertTrue(sheet.drop([spaced, dashed]))
 
-        try await wait("the call") { self.blocks() == ["arg=read", "arg=drop\narg=\(spaced)\narg=\(dashed)"] }
+        try await wait("the call and its end") { self.blocks() == ["arg=read", "arg=drop\narg=\(spaced)\narg=\(dashed)"] && sheet.calls.isEmpty }
         XCTAssertEqual(log().count, 1)
-        XCTAssertTrue(sheet.calls.isEmpty)
     }
 
     func testADropStartsOneCopyOfAStayingScriptThatNothingWants() async throws {
@@ -513,7 +503,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testADropHasNoTimeLimitAndGoesOnWithThePanelClosed() async throws {
-        runs = SpotRuns(readLimit: 0.2, now: { [unowned self] in self.time })
+        runs = SpotRuns(readLimit: 0.2, clock: RunClock { [unowned self] in self.time })
         let sheet = try sheet(header: "drop=mov", "sleep 0.5\ntouch '\(path("done"))'")
         runs.panelOpened()
         var failures: [String] = []

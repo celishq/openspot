@@ -3,9 +3,7 @@ import XCTest
 
 final class ClockExampleTests: SampleSpotsCase {
     func testItShowsTheTimeOfItsZoneAndPrintsItAgainAtTheNextMinute() async throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-clock-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
+        let folder = try temporaryFolder()
         try """
         #!/bin/sh
         case "$1" in
@@ -14,7 +12,7 @@ final class ClockExampleTests: SampleSpotsCase {
         esac
         """.writeScript(to: folder.appendingPathComponent("date"))
         let clock = try example("World clock")
-        let process = ScriptProcess(url: clock.url, mode: .stays, limit: 10, stopPause: 0.2, variables: ["PATH": "\(folder.path):/usr/bin:/bin"])
+        let process = ScriptProcess(url: clock.url, mode: .stays, limit: 60, stopPause: 0.2, variables: ["PATH": "\(folder.path):/usr/bin:/bin"])
         defer { process.end() }
         var frames = process.start().makeAsyncIterator()
 

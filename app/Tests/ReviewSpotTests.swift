@@ -215,6 +215,12 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertNotNil(try sheet(review).parts.first { $0.id == "install" }, "a review warns and never refuses")
     }
 
+    func testASettingOfAnotherSpotWithAShellValueNeedsSpots() throws {
+        let text = try shown(review("title=Coffee", body: "openspot setting set --spot \"$id\" enabled \"$on\"\n"))
+
+        XCTAssertTrue(text.contains("Call openspot setting set without uses=spots"), text)
+    }
+
     func testANamedNetworkIsNoCanAlso() throws {
         let text = try shown(review("title=Coffee\nuses=network", body: "curl -s https://example.com\n"))
 

@@ -52,13 +52,15 @@ public struct SpotLock: Equatable, Sendable {
     private static let lockPause: Duration = .milliseconds(20)
 
     public let url: URL
+    public let environment: [String: String]
 
-    public init(url: URL) {
+    public init(url: URL, environment: [String: String] = ProcessInfo.processInfo.environment) {
         self.url = url
+        self.environment = environment
     }
 
     public static func standard(environment: [String: String], home: URL = FileManager.default.homeDirectoryForCurrentUser) -> SpotLock {
-        SpotLock(url: SpotsFolder.config(environment: environment, home: home).appendingPathComponent(name))
+        SpotLock(url: SpotsFolder.config(environment: environment, home: home).appendingPathComponent(name), environment: environment)
     }
 
     public func entries() throws -> [Entry] {
@@ -80,7 +82,7 @@ public struct SpotLock: Equatable, Sendable {
         try await locked {
             let old = try entries().first { $0.source == source.text }
             var facts: Facts?
-            let (commit, paths) = try await source.add(to: folder, at: nil, replacing: (old?.paths ?? []) + replaces, discard: discard) { work, paths in
+            let (commit, paths) = try await source.add(to: folder, at: nil, base: environment, replacing: (old?.paths ?? []) + replaces, discard: discard) { work, paths in
                 if let expecting, try SpotPackage(paths: paths, in: work) != expecting {
                     throw SpotError.fault("The file changed after you looked at it, so Openspot added nothing. Open it again to see it.")
                 }
@@ -122,7 +124,7 @@ public struct SpotLock: Equatable, Sendable {
             do {
                 let place = URL(fileURLWithPath: "/", isDirectory: true)
                 var facts: Facts?
-                _ = try await SpotSource(text: entry.source, place: place).add(to: folder, at: entry.commit, check: { work, paths in
+                _ = try await SpotSource(text: entry.source, place: place).add(to: folder, at: entry.commit, base: environment, check: { work, paths in
                     let new = try Self.facts(of: paths, in: work)
                     if !isConfirmed, new.hash != entry.hash {
                         try Self.refuseGrowth(from: entry.uses, entry.canDo, to: new, confirm: "openspot spot add --yes")

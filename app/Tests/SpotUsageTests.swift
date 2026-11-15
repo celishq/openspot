@@ -41,7 +41,7 @@ final class SpotUsageTests: SpotRunsCase {
 
     func testAStayingProcessPutsItsCPUTimeOnTheDayItWasSpent() async throws {
         runs.quit()
-        runs = SpotRuns(now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50), stats: folder.appendingPathComponent("stats"))
+        runs = SpotRuns(clock: clock.value, stopPause: 0.2, stats: folder.appendingPathComponent("stats"))
         try script(header: "mode=stay\non=sheet.open\noffers=card\noffers=menubar", """
         \(Self.busyLoop)
         touch '\(path("busy"))'
@@ -134,7 +134,7 @@ final class SpotUsageTests: SpotRunsCase {
     }
 
     func testTheMacGoingToSleepWritesTheDay() throws {
-        runs = SpotRuns(now: { [unowned self] in self.time }, stats: stats)
+        runs = SpotRuns(clock: clock.value, stats: stats)
         runs.usage.called(spot("a", "Alpha"), seconds: 1, isFailure: false, at: time)
         XCTAssertFalse(FileManager.default.fileExists(atPath: stats.path))
 
@@ -192,6 +192,16 @@ final class SpotUsageTests: SpotRunsCase {
         XCTAssertEqual(again.counts["a"]?.network, true)
         XCTAssertEqual(again.days(1, at: day).first?.uses.map(\.declared), [false, false, false])
         XCTAssertEqual(again.days(1, at: day).first?.uses.first?.call, "app.quit")
+    }
+
+    func testTheRunsTellTheUsageWhichSpotOwnsEachView() throws {
+        try script(header: "on=sheet.open\nview=cups.swift", "printf 'view=cups\n'")
+        let view = try XCTUnwrap(try scanned().scripts.first?.view)
+
+        runs.usage.drew(view: view, seconds: 0.5)
+
+        XCTAssertEqual(runs.usage.counts["script"]?.view, SpotUsage.ViewTime(bodies: 1, seconds: 0.5))
+        XCTAssertEqual(runs.usage.counts["script"]?.name, "Script")
     }
 
     func testAProcessReadsItsDiskBytes() throws {

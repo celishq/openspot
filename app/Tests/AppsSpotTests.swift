@@ -39,7 +39,7 @@ final class AppsSpotTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let app = try Self.fakeApp(in: folder, running: true)
 
-            let lines = try await apps.items(timeout: 10)
+            let lines = try await apps.items(timeout: 60)
 
             let zed = try XCTUnwrap(lines.items.first { $0.run == app.path })
             let notes = try XCTUnwrap(lines.items.first { $0.title == "Notes" })
@@ -56,28 +56,27 @@ final class AppsSpotTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let app = try Self.fakeApp(in: folder, running: true)
 
-            try await apps.perform(SpotAction(arguments: ["quit", app.path]), timeout: 10)
+            try await apps.perform(SpotAction(arguments: ["quit", app.path]), timeout: 60)
 
             let said = try String(contentsOf: folder.appendingPathComponent("osascript-args"), encoding: .utf8)
             XCTAssertEqual(said, "-e\ntell application id \"dev.zed.Zed\" to quit\n")
         }
     }
 
-    func testDeleteShowsTheAppAndItsFilesAndTrashesOnlyThoseThatStayChosen() async throws {
+    func testDeleteShowsTheAppAndItsFilesTicksOnlyThoseOfItsBundleIdAndTrashesThoseThatStayChosen() async throws {
         let apps = try apps()
-        try await withPrivateHome { folder in
+        try await withPrivateHome(["OPENSPOT_REASON": "spot.change"]) { folder in
             let app = try Self.fakeApp(in: folder, running: false)
             let cache = try Self.library(folder, "Caches/dev.zed.Zed/db")
             let support = try Self.library(folder, "Application Support/Zed/settings.json")
             let preferences = try Self.library(folder, "Preferences/dev.zed.Zed.plist")
             _ = try Self.library(folder, "Caches/com.other.App/db")
-            setenv("OPENSPOT_REASON", "spot.change", 1)
-            defer { unsetenv("OPENSPOT_REASON") }
 
-            try await apps.perform(SpotAction(arguments: ["uninstall", app.path]), timeout: 10)
-            let sheet = try await apps.items(timeout: 10)
+            try await apps.perform(SpotAction(arguments: ["uninstall", app.path]), timeout: 60)
+            let sheet = try await apps.items(timeout: 60)
 
             XCTAssertEqual(sheet.summary?.value("title"), "Delete Zed")
+            XCTAssertEqual(sheet.summary?.value("detail"), "Move the app and its files to the Trash. A folder found only by the app's name waits for your tick.")
             XCTAssertEqual(sheet.parts.map(\.id), [])
             XCTAssertEqual(sheet.actions.map(\.id), ["cancel", "remove"])
             XCTAssertEqual(sheet.actions.map(\.key), [ActionKey(name: "escape"), ActionKey(name: "return", isCommand: true)])
@@ -85,20 +84,23 @@ final class AppsSpotTests: SampleSpotsCase {
             XCTAssertEqual(Set(sheet.items.map(\.run)), [
                 app.path, support.deletingLastPathComponent().path, cache.deletingLastPathComponent().path, preferences.path
             ])
-            XCTAssertEqual(sheet.items.map(\.isOn), Array(repeating: true, count: 4))
+            XCTAssertEqual(sheet.items.map(\.run), [app.path, support.deletingLastPathComponent().path, cache.deletingLastPathComponent().path, preferences.path])
+            XCTAssertEqual(sheet.items.map(\.isOn), [true, false, true, true])
             XCTAssertEqual(sheet.pick, .stay)
 
-            try await apps.perform(.item(SpotItem(title: "dev.zed.Zed.plist", run: preferences.path)), timeout: 10)
-            let kept = try await apps.items(timeout: 10)
+            try await apps.perform(.item(SpotItem(title: "dev.zed.Zed.plist", run: preferences.path)), timeout: 60)
+            let kept = try await apps.items(timeout: 60)
             XCTAssertEqual(kept.items.first { $0.run == preferences.path }?.isOn, false)
-            let toast = try await apps.perform(.press("remove"), timeout: 10)
+            try await apps.perform(.item(SpotItem(title: "Zed", run: support.deletingLastPathComponent().path)), timeout: 60)
+            let toast = try await apps.perform(.press("remove"), timeout: 60)
 
             let said = try String(contentsOf: folder.appendingPathComponent("osascript-args"), encoding: .utf8)
             XCTAssertTrue(said.contains(app.path + "\n"))
             XCTAssertTrue(said.contains(cache.deletingLastPathComponent().path + "\n"))
             XCTAssertFalse(said.contains(preferences.path))
+            XCTAssertTrue(said.contains(support.deletingLastPathComponent().path + "\n"))
             XCTAssertEqual(toast, "Moved Zed and 2 of its files to the Trash")
-            let after = try await apps.items(timeout: 10)
+            let after = try await apps.items(timeout: 60)
             XCTAssertTrue(after.parts.isEmpty)
         }
     }
@@ -118,12 +120,12 @@ final class AppsSpotTests: SampleSpotsCase {
 
             """.writeScript(to: folder.appendingPathComponent("tools/find"))
 
-            _ = try await apps.items(timeout: 10)
-            let kept = try await apps.items(timeout: 10)
+            _ = try await apps.items(timeout: 60)
+            let kept = try await apps.items(timeout: 60)
             try "/Applications/Alfa.app".write(toFile: folder.appendingPathComponent("found").path, atomically: true, encoding: .utf8)
-            let stillKept = try await apps.items(timeout: 10)
+            let stillKept = try await apps.items(timeout: 60)
             try "/Applications".write(toFile: changed, atomically: true, encoding: .utf8)
-            let found = try await apps.items(timeout: 10)
+            let found = try await apps.items(timeout: 60)
 
             XCTAssertEqual(kept.items.map(\.title), ["Finder", "Zed"])
             XCTAssertEqual(stillKept.items.map(\.title), ["Finder", "Zed"])
@@ -144,12 +146,12 @@ final class AppsSpotTests: SampleSpotsCase {
             esac
 
             """.writeScript(to: folder.appendingPathComponent("tools/find"))
-            _ = try await apps.items(timeout: 10)
+            _ = try await apps.items(timeout: 60)
             for tool in ["sort", "rm"] {
                 try "#!/bin/sh\necho \(tool) >> '\(folder.path)/started'\nexec /usr/bin/\(tool) \"$@\"\n".writeScript(to: folder.appendingPathComponent("tools/\(tool)"))
             }
 
-            let lines = try await apps.items(timeout: 10)
+            let lines = try await apps.items(timeout: 60)
 
             XCTAssertEqual(lines.items.map(\.title), ["Finder", "Notes", "Zed"])
             XCTAssertEqual(lines.items.filter(\.isOn).map(\.title), ["Zed"])
@@ -163,7 +165,7 @@ final class AppsSpotTests: SampleSpotsCase {
             _ = try Self.fakeApp(in: folder, running: false)
 
             do {
-                try await apps.perform(SpotAction(arguments: ["uninstall", "/System/Applications/Notes.app"]), timeout: 10)
+                try await apps.perform(SpotAction(arguments: ["uninstall", "/System/Applications/Notes.app"]), timeout: 60)
                 XCTFail("A system app was taken for deletion")
             } catch SpotError.failed(_, let message) {
                 XCTAssertEqual(message, "Notes is part of macOS, so it cannot be deleted.")

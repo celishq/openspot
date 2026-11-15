@@ -4,16 +4,22 @@ import SwiftUI
 struct SpotCustomView: View, @MainActor Equatable {
     let source: String
     let values: [String: [String]]
+    var rows: [[String]] = []
     let card: SpotSize
     var room: CGSize?
     var answers = 0
+    var date: Date?
     let views: SpotViews
     var send: ((String) -> Void)?
     @Environment(\.spotIsShown) private var isShown
+    @Environment(\.spotIsStill) private var isStill
     @Environment(\.spotCards) private var cards
+    @Environment(\.spotViewPlace) private var place
+    @Environment(\.spotIsHeld) private var isHeld
+    @Environment(\.spotSurfaceEdge) private var surface
 
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.source == rhs.source && lhs.values == rhs.values && lhs.card == rhs.card && lhs.room == rhs.room && lhs.answers == rhs.answers && lhs.views === rhs.views
+        lhs.source == rhs.source && lhs.values == rhs.values && lhs.rows == rhs.rows && lhs.card == rhs.card && lhs.room == rhs.room && lhs.answers == rhs.answers && lhs.date == rhs.date && lhs.views === rhs.views
             && (lhs.send == nil) == (rhs.send == nil)
     }
 
@@ -22,14 +28,23 @@ struct SpotCustomView: View, @MainActor Equatable {
     }
 
     private var corner: CGFloat {
-        room == nil ? SpotTokens.corner(for: card) : SpotTokens.radius - SpotTokens.padding
+        room == nil ? SurfaceEdge(card: card, mark: .view).radius : surface.inner().radius
     }
 
     var body: some View {
         content
             .frame(width: size.width, height: size.height, alignment: .topLeading)
-            .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
+            .clipShape(SpotRoundShape(radius: corner))
             .allowsHitTesting(send != nil)
+            .task(id: isHeld ? nil : loadKey) {
+                if !isHeld { await views.load(source) }
+            }
+    }
+
+    private var loadKey: String? {
+        var hasFailed = false
+        if case .failed = views.phase(of: source) { hasFailed = true }
+        return "\(source)\n\(date?.timeIntervalSince1970 ?? 0)\n\(date == nil || hasFailed ? isShown : true)"
     }
 
     private var cardView: (String) -> AnyView {
@@ -72,8 +87,23 @@ struct SpotCustomView: View, @MainActor Equatable {
         }
     }
 
+    private var close: () -> Void {
+        let place = place
+        return { MainActor.assumeIsolated { place.close() } }
+    }
+
+    private var bodyTime: (Duration) -> Void {
+        let place = place
+        let source = source
+        return { time in MainActor.assumeIsolated { place.drew(source, in: time) } }
+    }
+
     private var input: [String: Any] {
         [
+            "isShown": isShown && !isStill,
+            "rows": rows,
+            "close": close,
+            "bodyTime": bodyTime,
             "size": size,
             "answers": answers,
             "inset": SpotTokens.padding,
@@ -102,11 +132,11 @@ struct SpotCustomView: View, @MainActor Equatable {
     private var content: some View {
         switch views.phase(of: source) {
         case .building:
-            EmptyView()
-        case .ready(let make) where isShown:
-            make(values, input, send ?? { _ in })
+            Color.clear
+        case .ready(let make) where isShown || views.isKept(source):
+            make(values, input, isHeld ? { _ in } : send ?? { _ in })
         case .ready:
-            EmptyView()
+            Color.clear
         case .failed(let reason):
             Text(reason)
                 .font(SpotType.detail)

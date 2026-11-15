@@ -31,8 +31,8 @@ Fleet
 Android Studio'
 finder=/System/Library/CoreServices/Finder.app
 
-folder=$(openspot setting get folder)
-editor=$(openspot setting get editor)
+folder=${OPENSPOT_SETTING_FOLDER-}
+editor=${OPENSPOT_SETTING_EDITOR-}
 [ -d "$folder" ] || folder=""
 [ -d "$editor" ] || editor=""
 
@@ -200,6 +200,7 @@ case "$1" in
     printf 'button=folder\ntitle=Change folder\nscope=spot\nclose=true\n\n'
     printf '%s' "$repos" | while IFS="$tab" read -r repo url; do
       openspot_row "$repo" "${repo##*/}" "$(branch "$repo")" "$repo"
+      [ -z "$url" ] || openspot_kv page "$url"
       own=$( [ -z "$url" ] || host "$url")
       index=0
       printf '%s\n' "$hosts" | while IFS= read -r each; do
@@ -225,7 +226,7 @@ case "$1" in
     open -a "$editor" "$2"
     ;;
   page-*)
-    open "$(page "$2")"
+    open "$(value page)"
     ;;
   in-*)
     app=$(installed | sed -n "${1#in-}p")

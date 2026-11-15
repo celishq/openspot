@@ -52,17 +52,14 @@ public struct MetricValue: Equatable, Sendable {
     }
 
     public init?(output: SpotOutput) {
-        let rows = output.rows.compactMap { block in
-            block.value("row").map { Row(title: block.value("title") ?? $0, detail: block.value("detail"), tone: block.value("tone").flatMap(Tone.init)) }
-        }
-        guard let block = output.metric else {
+        let rows = output.items.map { Row(title: $0.title, detail: $0.subtitle, tone: $0.tone) }
+        guard let block = output.metric, let data = output.metricData else {
             guard output.errors.isEmpty || !rows.isEmpty else { return nil }
             self.init(title: rows.isEmpty ? "–" : String(rows.count), rows: rows.isEmpty ? nil : rows, isHidden: rows.isEmpty)
             return
         }
-        let isNumber = block.fields.first?.key == "number"
+        let isNumber = output.valueKind == .number
         guard let title = (isNumber ? block.value("value") : block.value("title")) ?? (rows.isEmpty ? nil : String(rows.count)) else { return nil }
-        let data = Self.data(of: block)
         self.init(
             title: title,
             detail: isNumber ? block.value("title") : block.value("detail"),
@@ -73,16 +70,6 @@ public struct MetricValue: Equatable, Sendable {
             max: block.number("max"),
             rows: rows.isEmpty ? nil : rows
         )
-    }
-
-    static func data(of block: TextBlock) -> (value: Double?, points: [Double]?) {
-        let kind = block.fields.first?.key
-        if kind == "number" { return (nil, nil) }
-        if kind == "graph" || (kind == "text" && block.value("max") != nil) {
-            let points = block.values("value").compactMap(Double.init).filter(\.isFinite)
-            return (nil, points.isEmpty ? nil : points)
-        }
-        return (block.number("value"), nil)
     }
 
     public var kind: MetricKind {

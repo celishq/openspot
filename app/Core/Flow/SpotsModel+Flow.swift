@@ -3,14 +3,14 @@ import Foundation
 extension SpotsModel {
     @discardableResult
     public func open(_ id: String) -> Bool {
-        guard entries.contains(where: { $0.id == id }) else { return false }
+        guard entry(id) != nil else { return false }
         endFlow()
         return push(FlowSheet(spot: id))
     }
 
     @discardableResult
     public func push(_ sheet: FlowSheet, replace: Bool = false) -> Bool {
-        guard let spot = entries.first(where: { $0.id == sheet.spot })?.spot else { return false }
+        guard let spot = entry(sheet.spot)?.spot else { return false }
         if sheet.page == nil, place(ofSheet: sheet.spot) == .window {
             openWindow(sheet.spot)
             return true
@@ -30,7 +30,7 @@ extension SpotsModel {
             pushFirst(sheet.spot, moving: moves, title: sheet.title)
             return true
         }
-        if openList == nil { endFlow() }
+        if openSheetID == nil { endFlow() }
         let next = FlowSheet(spot: sheet.spot, page: page, title: sheet.title ?? sheets[sheet.spot]?.list.all.first { $0.run == page }?.title)
         if replace, flow.current != nil { flow.replaceCurrent(with: next) } else { flow.push(next) }
         show(next, moving: moves)
@@ -39,7 +39,7 @@ extension SpotsModel {
 
     @discardableResult
     public func pop(in id: String, all: Bool = false) -> Bool {
-        guard openList == id, flow.current?.spot == id else { return false }
+        guard openSheetID == id, flow.current?.spot == id else { return false }
         guard all else { return flow.behind != nil && popPage() }
         var start = flow.index
         while start > 0, flow.pages[start].page != nil, flow.pages[start - 1].spot == id { start -= 1 }
@@ -48,27 +48,27 @@ extension SpotsModel {
 
     @discardableResult
     public func popPage(steps: Int = 1) -> Bool {
-        guard openList != nil, let page = flow.pop(steps: steps) else { return false }
+        guard openSheetID != nil, let page = flow.pop(steps: steps) else { return false }
         show(page, moving: isShown)
         return true
     }
 
     @discardableResult
     public func back(steps: Int = 1) -> Bool {
-        guard openList != nil, let page = flow.back(steps: steps) else { return false }
+        guard openSheetID != nil, let page = flow.back(steps: steps) else { return false }
         show(page, moving: isShown)
         return true
     }
 
     @discardableResult
     public func forward(steps: Int = 1) -> Bool {
-        guard openList != nil, let page = flow.forward(steps: steps) else { return false }
+        guard openSheetID != nil, let page = flow.forward(steps: steps) else { return false }
         show(page, moving: isShown)
         return true
     }
 
     func move(_ move: FlowMove, in id: String) {
-        guard openList == id else { return }
+        guard openSheetID == id else { return }
         switch move {
         case .pop(let all): pop(in: id, all: all)
         case .push(let spot, let page, let title, let replace): push(FlowSheet(spot: spot ?? id, page: page, title: title), replace: replace)
@@ -76,14 +76,14 @@ extension SpotsModel {
     }
 
     func opensSheet(_ id: String) -> Bool {
-        entries.first { $0.id == id }?.kind.opensSheet == true
+        entry(id)?.kind.opensSheet == true
     }
 
     func handleFlowKey(_ key: ActionKey) -> Bool? {
         switch FlowKey(key) {
         case .back: back()
         case .forward: forward()
-        case .grid: closeList(moving: isShown)
+        case .grid: closeSheet(moving: isShown)
         case nil: return nil
         }
         return true
@@ -93,10 +93,10 @@ extension SpotsModel {
         guard !(moving && isStepping) else { return }
         guard let sheet = sheets[page.spot] else {
             flow.remove(spot: page.spot)
-            if let current = flow.current { show(current, moving: moving) } else { closeList(moving: moving) }
+            if let current = flow.current { show(current, moving: moving) } else { closeSheet(moving: moving) }
             return
         }
-        guard openList == page.spot else {
+        guard openSheetID == page.spot else {
             sheet.show(page: page.page)
             waitPush(moving: moving)
             return present(page.spot, moving: moving)
@@ -111,10 +111,11 @@ extension SpotsModel {
     func endFlow() {
         for page in flow.pages where page.page != nil { sheets[page.spot]?.show(page: nil) }
         flow.clear()
+        waitingPublish = nil
         showEdges()
     }
 
     func title(of sheet: FlowSheet) -> String {
-        sheet.title ?? (sheet.page == nil ? entries.first { $0.id == sheet.spot }?.spot.name : nil) ?? sheet.page ?? sheet.spot
+        sheet.title ?? (sheet.page == nil ? entry(sheet.spot)?.spot.name : nil) ?? sheet.page ?? sheet.spot
     }
 }

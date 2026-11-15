@@ -31,12 +31,6 @@ struct SpotHintLine: View {
     }
 
     private var sheetWords: HintWords {
-        guard model.formRect != nil else { return model.sheetHint }
-        if model.formIsMultiple { return Self.multipleForm }
-        return model.formHasChoices ? Self.choiceForm : Self.form
+        model.formRect == nil ? model.sheetHint : model.formHint
     }
-
-    private static let multipleForm = HintWords("⏎ Select   ⌘⇧A Select all   Esc Done")
-    private static let choiceForm = HintWords("⏎ Save   Esc Cancel")
-    private static let form = HintWords("⌘⏎ Save   Esc Cancel")
 }

@@ -19,7 +19,7 @@ final class SpotReleaseTests: XCTestCase {
         XCTAssertTrue(release.isAuthentic)
         XCTAssertEqual(release.address, "4f6f2c1e9a8b4d2c8e7f6a5b4c3d2e1f")
         XCTAssertEqual(release.version, 1)
-        XCTAssertEqual(release.publicKey, try key().publicKey)
+        XCTAssertEqual(release.publicKey, "b39f080e7ee987d882b14592c63889b20541057278e8d74182f6ed14a12265b1")
         XCTAssertEqual(try release.manifest().sorted, [SpotManifest.File(path: "cups.spot/cups.sh", sha256: "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", size: 4, isExecutable: true)])
         XCTAssertEqual(release.line, signedByCelis)
     }

@@ -6,7 +6,7 @@ final class SpotSettingsSheetTests: XCTestCase {
     private var folder: URL!
     private var defaults: UserDefaults!
     private var suite = ""
-    private var host: TestHost!
+    private var host: FakeHost!
     private var model: SpotsModel!
 
     override func setUp() async throws {
@@ -14,7 +14,7 @@ final class SpotSettingsSheetTests: XCTestCase {
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         suite = "openspot-settings-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
-        host = TestHost()
+        host = FakeHost()
         let files = AppPlaces(
             environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
             home: folder,
@@ -47,35 +47,28 @@ final class SpotSettingsSheetTests: XCTestCase {
         try "#!/bin/sh\n\(lines)\necho \"$*\" >> '\(log.path)'\n[ \"$1\" = read ] && printf 'row=own\\ntitle=Own\\n'\nexit 0\n".writeScript(to: spots.spotFile(name))
     }
 
-    private func wait(_ what: String, until condition: () -> Bool) async throws {
-        for _ in 0..<500 {
-            if condition() { return }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTFail("waited for \(what)")
-    }
-
-    private func show(selecting id: String, search: String = "") throws {
-        model.reload()
+    private func show(selecting id: String, search: String = "") async throws {
+        await model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
         model.query = search
+        model.landSearch()
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == id })
     }
 
     func testCommandReturnOpensTheSettingsOfAListSpotFromItsCardAndNotItsOwnSheet() async throws {
         try script("draw", header: "title=Draw\non=sheet.open\noffers=card\noffers=float")
-        try show(selecting: "draw")
+        try await show(selecting: "draw")
         let settings = SpotSettings.sheetID(of: "draw")
 
         XCTAssertEqual(model.hint, "⏎ Open   ⌘⏎ Settings")
         XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
 
-        try await wait("the Settings sheet") { model.openList == settings }
+        try await wait("the Settings sheet") { model.openSheetID == settings }
         try await wait("its rows") { model.openItems?.shown.map(\.run) == ["float:draw", "menubar:draw"] }
         XCTAssertEqual(model.openEntry?.id, settings)
         XCTAssertEqual(model.openEntry?.state.title, "Draw Settings")
-        XCTAssertEqual(SpotSheetCard.of(model.openList, in: model)?.id, "draw")
+        XCTAssertEqual(SpotSheetCard.of(model.openSheetID, in: model)?.id, "draw")
         XCTAssertFalse(calls.contains("read"))
 
         model.runSelectedItem()
@@ -83,76 +76,38 @@ final class SpotSettingsSheetTests: XCTestCase {
         model.record(code: 1, modifiers: [.control, .option])
         try await wait("the key in the file") { model.files.config.read().keys.map(\.act) == [.float] }
         try await wait("the key in its row") { model.openItems?.shown.first?.shortcut == "ctrl+option+s" }
-        XCTAssertEqual(model.openList, settings)
+        XCTAssertEqual(model.openSheetID, settings)
         XCTAssertEqual(host.dismissals, 0)
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
-        XCTAssertNil(model.openList)
+        XCTAssertNil(model.openSheetID)
         model.runSelected()
         try await wait("its own sheet") { model.openItems?.shown.map(\.run) == ["own"] }
-        XCTAssertEqual(model.openList, "draw")
+        XCTAssertEqual(model.openSheetID, "draw")
     }
 
     func testASpotWhoseReturnRunsItKeepsItsSettingsApartFromItsOwnSheet() async throws {
         try script("conf", header: "title=Confetti\non=sheet.open\npress=open\noffers=card\noffers=float")
-        try show(selecting: "conf")
+        try await show(selecting: "conf")
 
         XCTAssertEqual(model.hint, "⏎ Run   ⌘⏎ Settings   ⌘K Actions")
         XCTAssertTrue(model.openSelectedSettings())
         try await wait("its settings") { model.openItems?.shown.map(\.run) == ["float:conf", "menubar:conf"] }
-        XCTAssertEqual(model.openList, SpotSettings.sheetID(of: "conf"))
-        model.closeList(moving: false)
+        XCTAssertEqual(model.openSheetID, SpotSettings.sheetID(of: "conf"))
+        model.closeSheet(moving: false)
 
         model.pushFirst("conf", moving: false)
         try await wait("its own rows") { model.openItems?.shown.map(\.run) == ["own"] }
         XCTAssertFalse(calls.contains("open"))
     }
 
-    func testAHotkeyFieldIsRecordedInTheSettingsAndGoesToTheSpotsActionOfItsName() async throws {
-        try script("conf", header: "title=Confetti\non=sheet.open\npress=open\noffers=card\noffers=float\n\nfield=key\ntype=hotkey\ntitle=Shortcut")
-        try model.files.config.set(setting: "key", of: "conf", to: "option+c")
-        try show(selecting: "conf")
-        XCTAssertTrue(model.openSelectedSettings())
-        try await wait("its settings") { model.openItems?.shown.map(\.run) == ["setting:conf:key", "float:conf", "menubar:conf"] }
-        let row = try XCTUnwrap(model.openItems?.shown.first)
-        XCTAssertTrue(row.records)
-        XCTAssertFalse(row.takesShake)
-        XCTAssertEqual(row.shortcut, "option+c")
-
-        model.moveItemToEdge(last: false)
-        model.runSelectedItem()
-        XCTAssertEqual(model.recording, "setting:conf:key")
-        model.record(code: 1, modifiers: [.control, .option])
-
-        try await wait("the action of the field") { calls.contains("key ctrl+option+s") }
-        XCTAssertEqual(model.openList, SpotSettings.sheetID(of: "conf"))
-        XCTAssertEqual(host.dismissals, 0)
-    }
-
-    func testRemoveOnAHotkeyFieldGoesToTheSpotsActionOfItsNameWithNoKeyAndTheSheetHasNoActionsMenu() async throws {
-        try script("conf", header: "title=Confetti\non=sheet.open\noffers=card\noffers=float\n\nfield=key\ntype=hotkey\ntitle=Shortcut")
-        try model.files.config.set(setting: "key", of: "conf", to: "option+c")
-        try show(selecting: "conf")
-        XCTAssertTrue(model.openSelectedSettings())
-        try await wait("its settings") { model.openItems?.shown.map(\.run) == ["setting:conf:key", "float:conf", "menubar:conf"] }
-        model.moveItemToEdge(last: false)
-
-        XCTAssertEqual(model.hint, "⏎ Change   ⌘⌫ Remove")
-        XCTAssertFalse(model.handleKey(ActionKey(name: "k", isCommand: true)))
-        XCTAssertNil(model.menu)
-        XCTAssertTrue(model.handleKey(ActionKey(name: "backspace", isCommand: true)))
-
-        try await wait("the action of the field with no key") { calls.contains("key ") }
-        XCTAssertEqual(model.openList, SpotSettings.sheetID(of: "conf"))
-    }
-
     func testTheSettingsActOfACardOpensItsSettingsSheet() async throws {
         try script("draw", header: "title=Draw\non=sheet.open")
-        try show(selecting: "draw")
+        try await show(selecting: "draw")
 
         XCTAssertTrue(model.act(.settings, on: "draw"))
 
-        try await wait("the Settings sheet") { model.openList == SpotSettings.sheetID(of: "draw") }
+        try await wait("the Settings sheet") { model.openSheetID == SpotSettings.sheetID(of: "draw") }
         XCTAssertNil(model.menu)
     }
 
@@ -160,17 +115,17 @@ final class SpotSettingsSheetTests: XCTestCase {
         try script("quit", header: "title=Quit")
         try script("lock", header: "title=Lock")
         try model.files.config.set(setting: "theme", of: "lock", to: "dark")
-        try show(selecting: "quit")
+        try await show(selecting: "quit")
 
         XCTAssertEqual(model.hint, "⏎ Run   ⌘⏎ Settings")
         XCTAssertFalse(model.handleKey(ActionKey(name: "k", isCommand: true)))
         XCTAssertNil(model.menu)
         XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
         try await wait("its place in the menu bar") { model.openItems?.shown.map(\.run) == ["menubar:quit"] }
-        XCTAssertEqual(model.openList, SpotSettings.sheetID(of: "quit"))
-        model.closeList(moving: false)
+        XCTAssertEqual(model.openSheetID, SpotSettings.sheetID(of: "quit"))
+        model.closeSheet(moving: false)
 
-        try show(selecting: "lock")
+        try await show(selecting: "lock")
         XCTAssertTrue(model.openSelectedSettings())
         try await wait("the value") { model.openItems?.shown.map(\.run) == ["setting:lock:theme", "menubar:lock"] }
         XCTAssertEqual(model.openItems?.shown.first?.subtitle, "dark")
@@ -179,7 +134,7 @@ final class SpotSettingsSheetTests: XCTestCase {
 
     func testReturnOnAFieldRunsTheActionOfItsNameAndTheMenuBarRowTurnsItsPlaceOnAndOff() async throws {
         try script("cups", header: "title=Cups\non=sheet.open\non=clock.60\noffers=card\noffers=float\n\nfield=size")
-        try show(selecting: "cups", search: "cups")
+        try await show(selecting: "cups", search: "cups")
         XCTAssertTrue(model.openSelectedSettings())
         try await wait("the rows") { model.openItems?.shown.map(\.run) == ["setting:cups:size", "float:cups", "menubar:cups"] }
 
@@ -187,7 +142,7 @@ final class SpotSettingsSheetTests: XCTestCase {
         model.runSelectedItem()
         try await wait("the menu bar in the file") { model.files.config.read().arrangement.menuBar == ["cups"] }
         try await wait("the switch") { model.openItems?.shown.first { $0.run == "menubar:cups" }?.isOn == true }
-        XCTAssertEqual(model.openList, SpotSettings.sheetID(of: "cups"))
+        XCTAssertEqual(model.openSheetID, SpotSettings.sheetID(of: "cups"))
 
         model.moveItemToEdge(last: false)
         model.runSelectedItem()

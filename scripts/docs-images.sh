@@ -3,11 +3,16 @@ set -e
 cd "$(dirname "$0")/.."
 app=${OPENSPOT_APP:-.temp/dd/Build/Products/Debug/Openspot.app/Contents/MacOS/Openspot}
 work=$PWD/.temp/docs-images
+echo "This shows each picture in the middle of the main screen and takes the keyboard focus for about a second per picture. A key typed then is lost."
 rm -rf "$work"
 mkdir -p "$work/spots" "$work/config" "$work/core" "$work/examples" docs/images
 awk -v out="$work/examples" '
-  /^```(sh|js)$/ { inside = 1; text = ""; kind = substr($0, 4); next }
-  inside && /^```$/ { inside = 0; last = text; lastkind = kind; draw = ""; card = ""; next }
+  /^```(sh|js|swift)$/ { inside = 1; text = ""; kind = substr($0, 4); next }
+  inside && /^```$/ {
+    inside = 0
+    if (text !~ /^(#!|\/\/)/) { more[++extras] = text; next }
+    last = text; lastkind = kind; draw = ""; card = ""; extras = 0; next
+  }
   inside { text = text $0 "\n"; next }
   /^<!-- draw: .* -->$/ { draw = $0; sub(/^<!-- draw: /, "", draw); sub(/ -->$/, "", draw); next }
   /^<!-- card: [a-z]+ -->$/ { card = $3; next }
@@ -17,7 +22,8 @@ awk -v out="$work/examples" '
     printf "%s", lastkind > (out "/" name ".kind"); close(out "/" name ".kind")
     printf "%s", draw > (out "/" name ".draw"); close(out "/" name ".draw")
     printf "%s", card > (out "/" name ".card"); close(out "/" name ".card")
-    last = ""; draw = ""; card = ""
+    for (i = 1; i <= extras; i++) { printf "%s", more[i] > (out "/" name ".more." i); close(out "/" name ".more." i) }
+    last = ""; draw = ""; card = ""; extras = 0
   }
 ' GUIDE.md
 stub() {
@@ -36,24 +42,31 @@ for example in "$work"/examples/*.example; do
   draw=$(cat "$work/examples/$name.draw")
   card=$(cat "$work/examples/$name.card")
   rm -rf "$work"/spots/*
+  spot="$work/spots/$name.spot"
+  mkdir -p "$spot"
   if [ -n "$draw" ]; then
-    cp "$example" "$work/spots/$name.source"
+    cp "$example" "$work/$name.source"
     {
       printf '#!/bin/sh\n'
       sed '1{/^#!/d;}' "$example" | sed -E -n '/^(#|\/\/)/!q; p' | sed 's|^//|#|'
-      printf 'EXAMPLE="%s"\n%s\n' "$work/spots/$name.source" "$draw"
-    } > "$work/spots/$name.sh"
-    chmod +x "$work/spots/$name.sh"
+      printf 'EXAMPLE="%s"\n%s\n' "$work/$name.source" "$draw"
+    } > "$spot/$name.sh"
+    chmod +x "$spot/$name.sh"
   else
-    cp "$example" "$work/spots/$name.$kind"
-    [ "$kind" = js ] || chmod +x "$work/spots/$name.$kind"
+    cp "$example" "$spot/$name.$kind"
+    [ "$kind" = js ] || chmod +x "$spot/$name.$kind"
   fi
+  number=0
+  for file in $(sed -n -E 's/^(#|\/\/) (view|source)=//p' "$example"); do
+    number=$((number + 1))
+    cp "$work/examples/$name.more.$number" "$spot/$file"
+  done
   for word in $(sed -n -e 's/^# grid\.[a-z]*=//p' -e 's/^# to=//p' "$example"); do
     [ -f "$work/spots/$word.sh" ] || stub "$word"
   done
   size=""
   [ -n "$card" ] && size="--card $card"
-  OPENSPOT_SPOTS="$work/spots" OPENSPOT_CONFIG="$work/config" OPENSPOT_CORE="$work/core" \
+  OPENSPOT_PICTURE_ON_SCREEN=1 OPENSPOT_SPOTS="$work/spots" OPENSPOT_CONFIG="$work/config" OPENSPOT_CORE="$work/core" \
     "$app" render --spot "$name" $size "docs/images/$name.png"
   cp "$example" "docs/images/$name.example"
   echo "docs/images/$name.png"
@@ -65,6 +78,6 @@ for spot in system system-info battery cpu memory devices; do cp -R "spots/$spot
 cp -R examples/now-playing.spot "$work/spots/"
 cp docs/sample/config.toml "$work/config/config.toml"
 OPENSPOT_SPOTS="$work/spots" OPENSPOT_CONFIG="$work/config" OPENSPOT_CORE="$work/core" "$app" check >/dev/null
-OPENSPOT_SPOTS="$work/spots" OPENSPOT_CONFIG="$work/config" OPENSPOT_CORE="$work/core" \
+OPENSPOT_PICTURE_ON_SCREEN=1 OPENSPOT_SPOTS="$work/spots" OPENSPOT_CONFIG="$work/config" OPENSPOT_CORE="$work/core" \
   "$app" render --panel docs/images/panel.png
 echo docs/images/panel.png

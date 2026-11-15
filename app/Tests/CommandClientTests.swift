@@ -2,17 +2,11 @@ import XCTest
 @testable import OpenspotCore
 
 final class CommandClientTests: XCTestCase {
-    private final class Host: Mac {
-        func eventStore() -> any EventStore { FakeEventStore() }
-        func reminderStore() -> any ReminderStore { FakeReminderStore() }
-        func showCalendar(at time: Date) throws {}
-        func open(_ link: URL) -> Bool { true }
-    }
-
     private struct SlowApp: RunningApp {
         let folder: URL
 
-        func configChanged(_ change: ConfigChange) async {}
+        func configChanged(_ change: ConfigChange, to config: KeptConfig) async {}
+        func spotsChanged() async {}
         func status() async -> (update: String?, calls: Int, isFirstLaunch: Bool) { (nil, 0, false) }
         func checkUpdate() async -> Bool { true }
         func installUpdate() async -> Bool { true }
@@ -27,7 +21,7 @@ final class CommandClientTests: XCTestCase {
         func editGrid() async {}
         func publish(_ id: String) async -> SpotPublish { .notOwn }
         func reveal(_ id: String) async -> Bool { true }
-        func sandbox(_ file: URL?, isCareful: Bool) async {}
+        func playground(_ file: URL?, isCareful: Bool) async {}
 
         func changeSetting(_ key: String, of spot: String) async -> Bool {
             FileManager.default.createFile(atPath: folder.appendingPathComponent("started").path, contents: nil)
@@ -62,17 +56,17 @@ final class CommandClientTests: XCTestCase {
     }
 
     private func listen() {
-        socket = CommandSocket(folder: config, api: CommandAPI(mac: Host()))
+        socket = CommandSocket(folder: config, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), rates: .offline))
     }
 
-    private func run(_ program: URL, _ arguments: [String], input: String = "") throws -> (output: String, errors: String, code: Int32) {
+    private func run(_ program: URL, _ arguments: [String], input: String = "", variables: [String: String] = [:]) throws -> (output: String, errors: String, code: Int32) {
         let process = Process()
         let output = Pipe()
         let errors = Pipe()
         let stdin = Pipe()
         process.executableURL = program
         process.arguments = arguments
-        process.environment = ["OPENSPOT_CONFIG": config.path, "PATH": "/usr/bin:/bin"]
+        process.environment = ["OPENSPOT_CONFIG": config.path, "PATH": "/usr/bin:/bin"].merging(variables) { _, new in new }
         process.standardOutput = output
         process.standardError = errors
         process.standardInput = stdin
@@ -83,6 +77,40 @@ final class CommandClientTests: XCTestCase {
         let said = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
         process.waitUntilExit()
         return (printed, said, process.terminationStatus)
+    }
+
+    func testTheTokenOfACallerNamesItsSpotAndNoOtherVariableDoes() async throws {
+        let runs = await SpotRuns()
+        socket = CommandSocket(folder: config, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), runs: runs, rates: .offline))
+        let token = runs.tokens.issue(for: Spot(id: "home/coffee", name: "Coffee", url: folder.appendingPathComponent("coffee.sh")))
+
+        let named = try run(client, ["setting", "set", "tone", "warm"], variables: [CallerTokens.variable: token])
+        let claimed = try run(client, ["setting", "set", "tone", "cold"], variables: ["OPENSPOT_ID": "home/tea"])
+
+        XCTAssertEqual(named.code, 0, named.errors)
+        XCTAssertNotEqual(claimed.code, 0)
+        let kept = ConfigFile(url: config.appendingPathComponent("config.toml")).read()
+        XCTAssertEqual(kept.setting("tone", of: "home/coffee"), "warm")
+        XCTAssertNil(kept.setting("tone", of: "home/tea"))
+    }
+
+    func testAPersonInTerminalAndACopiedTokenOfABuiltInReachNoKey() async throws {
+        let runs = await SpotRuns()
+        let app = FakeRunningApp()
+        socket = CommandSocket(folder: config, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: app, runs: runs, rates: .offline))
+        let account = Spot(id: "openspot/account", name: "Account", url: folder.appendingPathComponent("account.sh"), uses: [.account]).builtIn()
+        let copied = [CallerTokens.variable: runs.tokens.issue(for: account)]
+        let refused = "Only Openspot's Store can reach your account key.\n"
+
+        XCTAssertEqual(try run(client, ["store", "publish", "mine"]).errors, refused)
+        XCTAssertEqual(try run(client, ["store", "publish", "mine"], variables: copied).errors, refused)
+        for verb in ["new", "sign-out", "sync"] {
+            XCTAssertEqual(try run(client, ["account", verb], variables: copied).code, 2, verb)
+        }
+
+        let opened = await app.opened
+        XCTAssertEqual(opened, [])
+        XCTAssertNil(try AccountStore.standard(environment: ["OPENSPOT_CONFIG": config.path], home: folder, devState: nil).key())
     }
 
     func testTheRunningAppAnswersACalcSum() throws {
@@ -140,7 +168,7 @@ final class CommandClientTests: XCTestCase {
         let printed = String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
         process.waitUntilExit()
 
-        XCTAssertEqual(printed, "the sheet has no parts\n1 faults.\n")
+        XCTAssertEqual(printed, "the sheet has no parts\nthe head has an unknown key: text\n2 faults.\n")
     }
 
     func testWithNoSocketItStartsTheAppWithTheSameArguments() throws {
@@ -165,14 +193,6 @@ final class CommandClientTests: XCTestCase {
         process.standardInput = FileHandle.nullDevice
         try process.run()
         return (process, output, errors)
-    }
-
-    private func wait(_ what: String, until fact: () -> Bool) async throws {
-        for _ in 0..<1000 {
-            if fact() { return }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTFail("waited for \(what)")
     }
 
     private func exists(_ name: String) -> Bool {
@@ -214,7 +234,7 @@ final class CommandClientTests: XCTestCase {
     }
 
     func testCtrlCStopsTheWorkOfTheCallInTheAppAndItChangesNothing() async throws {
-        socket = CommandSocket(folder: config, api: CommandAPI(mac: Host(), app: SlowApp(folder: folder)))
+        socket = CommandSocket(folder: config, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: SlowApp(folder: folder), rates: .offline))
         let run = try start(["setting", "change", "--spot", "repos", "folder"])
         try await wait("the start of the work") { exists("started") }
 
@@ -232,6 +252,31 @@ final class CommandClientTests: XCTestCase {
         }
         for files in [["spot", "list"], ["setting", "get", "k"], ["calc", "solve", "1"], ["setting", "set", "--spot", "openspot", "login", "true"], ["app", "quit"], ["spot", "stats"], ["guide"], ["screen", "shot"], []] {
             XCTAssertFalse(CommandKind.needsApp(files), files.joined(separator: " "))
+        }
+    }
+
+    func testTheListsOfTheClientAreTheFlagsOfTheVerbTable() {
+        var live: Set<String> = []
+        var pure: Set<String> = []
+        for noun in CommandNoun.all {
+            for verb in noun.verbs {
+                let words = [noun.name] + verb.words
+                if verb.rule.flags.contains(.needsApp) { live.insert(words.joined(separator: " ")) }
+                if verb.rule.flags.contains(.pure) { pure.insert(words.joined(separator: " ")) }
+                XCTAssertEqual(CommandKind.needsApp(words + ["x"]), verb.rule.flags.contains(.needsApp), words.joined(separator: " "))
+                XCTAssertEqual(CommandKind.isPure(words + ["x"]), verb.rule.flags.contains(.pure), words.joined(separator: " "))
+            }
+        }
+
+        XCTAssertEqual(CommandKind.live, live)
+        XCTAssertEqual(CommandKind.pure, pure)
+    }
+
+    func testAPureCallOpensNoSocketAndRunsInItsOwnProcess() throws {
+        listen()
+
+        for call in [["emoji", "--tone", "dark"], ["symbols"]] {
+            XCTAssertEqual(try run(client, call).output, "app: \(call.joined(separator: " "))\n")
         }
     }
 

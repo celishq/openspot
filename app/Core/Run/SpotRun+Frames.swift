@@ -8,10 +8,23 @@ extension SpotRun {
         calls.append(call)
         guard call.doesWork else { return }
         workCalls.append(call)
-        Task { [weak self] in
-            try? await Task.sleep(for: .seconds(Self.workPause))
-            self?.workPauses += 1
+        Task { [weak self, sleep = runs.clock.sleep] in
+            var left = Self.workPause
+            while left > 0 {
+                try? await sleep(.seconds(left), .seconds(left / 10))
+                guard !Task.isCancelled, let self, workCalls.contains(where: { $0 === call }) else { return }
+                left = Self.workPause - runs.now().timeIntervalSince(call.started)
+            }
+            self?.showWork()
         }
+    }
+
+    func showWork() {
+        let time = runs.now()
+        let shown = workCalls.filter { time.timeIntervalSince($0.started) >= Self.workPause }
+        guard !shown.elementsEqual(work, by: ===) else { return }
+        work = shown
+        runs.showWork()
     }
 
     func callEnded(_ call: ScriptCall) {
@@ -21,54 +34,17 @@ extension SpotRun {
     }
 
     func drewFrame(_ call: ScriptCall) {
-        if let index = workCalls.firstIndex(where: { $0 === call }) { workCalls.remove(at: index) }
+        guard let index = workCalls.firstIndex(where: { $0 === call }) else { return }
+        workCalls.remove(at: index)
+        showWork()
     }
 
     func forget(_ call: ScriptCall) {
         calls.removeAll { $0 === call }
-        if let index = workCalls.firstIndex(where: { $0 === call }) { workCalls.remove(at: index) }
+        drewFrame(call)
     }
 
-    func ended(_ call: ScriptCall, _ purpose: Purpose, _ end: ScriptCall.End, hadAnswer: Bool, showedPicture: Bool, selected: String?) {
-        let isAnswer = if case .ask(let ask) = purpose { ask.isAnswer } else { false }
-        if case .ended = end, failure != nil, !isAnswer { failure = nil }
-        switch (purpose, end) {
-        case (.ask(.read), .stopped):
-            list.stopLoading()
-            if !hadAnswer {
-                waiter = nil
-                readsAgain = false
-                eventAgain = nil
-            }
-        case (.ask(let ask), .failed(let error)):
-            take(error, of: ask)
-        case (.work(let work), .stopped):
-            if let undo = work.undo { state = undo }
-        case (.work(let work), .ended):
-            answered = nil
-            if let selected, spot.read != nil {
-                read(selecting: selected, need: .change)
-            } else if !showedPicture, work.readsAfter {
-                readOnce()
-            }
-        case (.work(let work), .failed(let error)):
-            answered = nil
-            if let undo = work.undo { state = undo }
-            fail(error)
-            if work.readsAfter { readOnce() }
-        default:
-            break
-        }
-        callEnded(call)
-        readAgainIfAsked()
-    }
-
-    func askFailed(_ ask: Ask, _ error: Error) {
-        take(error, of: ask)
-        readAgainIfAsked()
-    }
-
-    private func take(_ error: Error, of ask: Ask) {
+    func take(_ error: Error, of ask: Ask) {
         switch ask {
         case .read(_, let reports, _, let tells):
             answered = nil
@@ -102,8 +78,10 @@ extension SpotRun {
 
     func takeAnswer(_ lines: SpotOutput, frame: String, to ask: Ask, keeping: String? = nil, answers: Bool = true) async {
         if case .answer(let query) = ask { return takeAnswers(lines.answers, to: query) }
+        if case .read = ask, !frame.isEmpty, frame == shownFrame, lines.parts.isEmpty, panel == nil, !list.hasFailed { return takeRepeat(lines, answers: answers) }
         let next: ItemList.Rows? = if case .read = ask { await newRows(lines.items, search: Self.search(of: lines, in: spot)) } else { nil }
-        lastAnswer = lines.withoutBlocks()
+        lastAnswer = lines
+        shownFrame = if case .read = ask, !frame.isEmpty, frame.utf8.count <= Self.shownFrameLimit { frame } else { nil }
         report(toastOf: lines)
         spot = spot.taking(lines)
         switch ask {
@@ -140,6 +118,24 @@ extension SpotRun {
         if !lines.errors.isEmpty {
             onReport(.failure("\(spot.name) sent \(lines.errors.count) items Openspot cannot read."))
         }
+    }
+
+    private static let shownFrameLimit = 256 * 1024
+
+    private func takeRepeat(_ lines: SpotOutput, answers: Bool) {
+        report(toastOf: lines)
+        if answers { answered = runs.now() }
+        takeValue(lines)
+        let kept = selecting
+        selecting = nil
+        if list.isLoading || kept != nil {
+            changeList {
+                $0.stopLoading()
+                if let kept { $0.select(run: kept) }
+            }
+        }
+        if answers { answerArrived() }
+        readAgainIfAsked()
     }
 
     @discardableResult
@@ -203,7 +199,7 @@ extension SpotRun {
     }
 
     func report(toastOf lines: SpotOutput) {
-        if let text = lines.toast { onReport(.toast(text)) }
+        if let text = lines.toast { onReport(.toast(fieldValues.hiding(text))) }
     }
 
     private func changeReading(_ change: (inout MetricReading) -> Void) {
@@ -229,13 +225,14 @@ extension SpotRun {
     }
 
     func fail(_ error: Error, tells: Bool = true) {
-        let text = switch error as? SpotError {
+        let said = switch error as? SpotError {
         case .failed(_, let message) where !message.isEmpty, .failedWithFix(_, let message, _) where !message.isEmpty: message
         case .timedOut: "\(spot.name) took too long, so Openspot stopped it."
         case .tooLarge: "\(spot.name) printed more than 32 MB in one frame, so Openspot stopped it."
         case let error?: "\(spot.name) failed. \(error.reason)"
         case nil: "\(spot.name) failed. \(error.localizedDescription)"
         }
+        let text = fieldValues.hiding(said)
         failure = text
         runs.usage.failed(spot, fault: text, at: runs.now())
         guard tells else { return Self.appLog.info("\(text, privacy: .public)") }

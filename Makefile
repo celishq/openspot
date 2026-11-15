@@ -5,6 +5,15 @@ verify:
 	sh scripts/check-tests.sh
 	sh scripts/check-comments.sh
 	sh scripts/check-motion.sh
+	sh scripts/check-names.sh
+	sh scripts/check-files.sh
+	sh scripts/check-getters.sh
+	sh scripts/check-spots.sh
+	sh scripts/check-processes.sh
+	sh scripts/check-glass.sh
+	sh scripts/check-shapes.sh
+	sh scripts/check-tools.sh
+	sh scripts/spot-tests.sh
 	cd app && xcodegen generate >/dev/null
 	cd app && DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project Openspot.xcodeproj -scheme Openspot -destination 'platform=macOS' test
 
@@ -30,8 +39,9 @@ docs-images:
 	sh scripts/docs-images.sh
 
 spots:
-	mkdir -p $(HOME)/.config/openspot
-	ln -sfn $(CURDIR)/spots $(HOME)/.config/openspot/spots
+	[ ! -L $(HOME)/.config/openspot/spots ] || rm $(HOME)/.config/openspot/spots
+	mkdir -p $(HOME)/.config/openspot/spots
+	for spot in spots/*.spot; do [ "$$spot" = spots/openspot.spot ] || ln -sfn "$(CURDIR)/$$spot" $(HOME)/.config/openspot/spots/; done
 
 dev-state:
 	rm -rf .temp/openspot

@@ -50,11 +50,11 @@ prompt() {
 
 # The words of the field: the ones on stdin when the sheet sends them, or else the draft that a last call kept. A draft that
 # was copied is done, so the sheet opens empty.
-case "$nl$_openspot_stdin" in
+case "$nl$(openspot_input)" in
   *"${nl}describe="*)
     typed=$(value describe; printf x)
     typed=${typed%x}
-    mkdir -p "${draft%/*}" && printf '%s' "$typed" > "$draft"
+    mkdir -p "${draft%/*}" && printf '%s' "$typed" > "$draft.$$" && mv "$draft.$$" "$draft"
     ;;
   *)
     typed=$(cat "$draft" 2>/dev/null; printf x)
@@ -72,7 +72,7 @@ case "$1" in
     text=$(printf '%s' "$typed" | awk '{ lines[NR] = $0 } END { s = ""; for (i = 1; i <= NR; i++) s = s (i > 1 ? "\n" : "") lines[i]; sub(/^[ \t\n]+/, "", s); sub(/[ \t\n]+$/, "", s); printf "%s", s }')
     words=$(prompt "$text") || exit 1
     printf '%s' "$words" | openspot clipboard copy || exit 1
-    mkdir -p "${copied%/*}" && printf '%s' "$typed" > "$copied"
+    mkdir -p "${copied%/*}" && printf '%s' "$typed" > "$copied.$$" && mv "$copied.$$" "$copied"
     sheet "$typed" "toast=Prompt copied. Paste it into your agent.$nl" "✓ Copied"
     printf -- '---\n'
     sleep 1.5

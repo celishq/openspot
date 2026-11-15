@@ -87,8 +87,8 @@ public struct AgentPrompt: Equatable, Sendable {
         """
     }
 
-    func copy(_ text: String) async throws -> String {
-        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["LC_ALL=en_US.UTF-8", "pbcopy"], input: text)
+    func copy(_ text: String, base: [String: String]? = nil) async throws -> String {
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["LC_ALL=en_US.UTF-8", "pbcopy"], input: text, base: base)
         return Self.copied
     }
 }

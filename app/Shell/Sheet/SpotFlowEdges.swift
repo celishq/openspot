@@ -49,7 +49,7 @@ struct SpotFlowEdges: View {
             .lineLimit(1)
             .padding(.horizontal, SpotTokens.hintEndPadding)
             .frame(height: SpotTokens.hintPillHeight)
-            .modifier(SpotGlass(radius: SpotTokens.hintPillHeight / 2))
+            .modifier(SpotGlass(shape: SpotRoundShape(radius: SpotTokens.hintPillHeight / 2)))
             .fixedSize()
             .offset(x: place.minX - SpotTokens.hintEndPadding, y: rect.minY - SpotTokens.hintPillHeight - SpotTokens.placeGap)
             .allowsHitTesting(false)

@@ -5,6 +5,7 @@ import SwiftUI
 struct SpotMedia: View {
     private static let pictures: Set<String> = ["png", "jpg", "jpeg"]
     private static let videos: Set<String> = ["mov", "mp4"]
+    private static let edge = SpotRoundShape(radius: 8)
 
     let source: String
     @State private var picture: NSImage?
@@ -20,12 +21,12 @@ struct SpotMedia: View {
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(maxWidth: picture.size.width)
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .clipShape(Self.edge)
         } else if let video {
             VideoPlayer(player: video.player)
                 .aspectRatio(video.size, contentMode: .fit)
                 .frame(maxWidth: video.size.width)
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .clipShape(Self.edge)
         } else if WebPictures.isWeb(source), Self.videos.contains(kind), let url = URL(string: source) {
             Link(destination: url) { Label("Watch the video", systemImage: "play.rectangle") }
         } else {

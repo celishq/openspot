@@ -20,7 +20,7 @@ extension SpotsModel {
     }
 
     public func openWindow(_ id: String) {
-        guard let entry = cards.first(where: { $0.id == id }) else { return }
+        guard let entry = card(id: id) else { return }
         if let sheet = sheets[id], sheet.awaitsAnswer, !runs.floating.contains(id) {
             sheet.afterAnswer { [weak self] in self?.openWindow(id) }
             return
@@ -40,25 +40,44 @@ extension SpotsModel {
 
     public func handleFloatKey(_ key: ActionKey, in id: String) -> Bool {
         guard runs.floating.contains(id), let sheet = sheets[id] else { return false }
+        for row in floatRows(of: sheet, id) where row.takes(key) {
+            if let handled = row.act(key) { return handled }
+        }
+        return false
+    }
+
+    private func floatRows(of sheet: SpotRun, _ id: String) -> [KeyRow] {
         let item = sheet.selectedItem
-        if let part = sheet.panel?.parts.first(where: { $0.key == key }) {
-            sheet.press(part)
-            return true
+        let entry = card(id: id)
+        let move = { (step: Int) -> @MainActor (ActionKey) -> Bool? in
+            { _ in
+                sheet.list.move(by: step)
+                return true
+            }
         }
-        if let action = sheet.spot.actions(for: item).first(where: { $0.key == key }), let entry = cards.first(where: { $0.id == id }) {
-            run(action, on: (entry, item), in: detachedPlace(of: id))
-            return true
-        }
-        switch key {
-        case ActionKey(name: "escape"): land(id)
-        case ActionKey(name: "up"): sheet.list.move(by: -1)
-        case ActionKey(name: "down"): sheet.list.move(by: 1)
-        case ActionKey(name: "return"):
-            guard let item, let entry = cards.first(where: { $0.id == id }) else { return false }
-            pick(item, of: entry, in: detachedPlace(of: id))
-        default: return false
-        }
-        return true
+        return [
+            .any { key in
+                guard let part = sheet.panel?.parts.first(where: { $0.key == key }) else { return nil }
+                sheet.press(part)
+                return true
+            },
+            .any { [self] key in
+                guard let entry, let action = sheet.spot.actions(for: item).first(where: { $0.key == key }) else { return nil }
+                run(action, on: (entry, item), in: detachedPlace(of: id))
+                return true
+            },
+            KeyRow("escape") { [self] _ in
+                land(id)
+                return true
+            },
+            KeyRow("up", act: move(-1)),
+            KeyRow("down", act: move(1)),
+            KeyRow("return") { [self] _ in
+                guard let item, let entry else { return false }
+                pick(item, of: entry, in: detachedPlace(of: id))
+                return true
+            },
+        ]
     }
 
     public func dropWords(_ paths: [String], on id: String) -> String? {
@@ -67,7 +86,7 @@ extension SpotsModel {
     }
 
     public func pressFloatCard(_ id: String) {
-        guard let entry = cards.first(where: { $0.id == id }) else { return }
+        guard let entry = card(id: id) else { return }
         switch entry.kind {
         case .toggle, .launch: sheets[id]?.pressCard()
         case .list, .slider, .widget: break

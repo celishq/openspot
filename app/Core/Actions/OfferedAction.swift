@@ -7,6 +7,8 @@ public struct OfferedAction: Equatable, Sendable {
     public let origins: Set<SpotOrigin>
     public let when: String?
 
+    static let place = "actions"
+
     static let originWords: [String: SpotOrigin] = ["mine": .mine, "core": .core, "builtin": .builtIn]
 
     public init(action: CommandAction, owner: String = "", group: String? = nil, origins: Set<SpotOrigin> = [], when: String? = nil) {
@@ -18,8 +20,8 @@ public struct OfferedAction: Equatable, Sendable {
     }
 
     static func read(_ buttons: [TextBlock], owner: String, of name: String, isInline: Bool) throws -> [OfferedAction] {
-        if let block = buttons.first(where: { $0.values("offers").contains { $0.split(separator: " ").first != "actions" } }) {
-            let word = block.values("offers").first { $0.split(separator: " ").first != "actions" } ?? ""
+        if let block = buttons.first(where: { $0.values("offers").contains { $0.split(separator: " ").first.map(String.init) != place } }) {
+            let word = block.values("offers").first { $0.split(separator: " ").first.map(String.init) != place } ?? ""
             throw SpotError.fault("\(name) has offers=\(word) on the button \(block.value("button") ?? ""). A button offers only offers=actions")
         }
         var offered: [OfferedAction] = []
@@ -42,7 +44,7 @@ public struct OfferedAction: Equatable, Sendable {
                 throw SpotError.fault("\(name) has when=\(when) on the button \(button). Name a function of the spot, such as when=hasIcon")
             }
             let menuAction = CommandAction(id: action.id, title: action.title, key: action.key, scope: .spot, after: action.after, isForm: action.isForm, confirm: action.confirm)
-            let origins = try parent?.origins ?? Self.origins(String((line ?? "actions").dropFirst("actions".count)), of: name)
+            let origins = try parent?.origins ?? Self.origins(String((line ?? place).dropFirst(place.count)), of: name)
             offered.append(OfferedAction(action: menuAction, owner: owner, group: name, origins: origins, when: when))
         }
         return offered

@@ -1,23 +1,21 @@
 import Foundation
 
 public struct CommandGuide: Sendable {
-    private static let files = ["calendar": "calendar", "reminders": "calendar", "screen": "screen"]
+    public let folder: URL
+    let nouns: [CommandNoun]
 
-    public static var nouns: [String] {
-        files.keys.sorted()
+    public init(folder: URL, nouns: [CommandNoun] = CommandNoun.all) {
+        self.folder = folder
+        self.nouns = nouns
     }
 
-    public let folder: URL
-
-    public init(folder: URL) {
-        self.folder = folder
+    public var names: [String] {
+        nouns.filter { $0.guide != nil }.map(\.name).sorted()
     }
 
     public func text(of noun: String) throws -> String {
-        guard let file = Self.files[noun] else {
-            let runs = Self.nouns.map { "openspot help \($0)" }
-            let list = runs.dropLast().joined(separator: ", ") + " or " + runs.last!
-            throw SpotError.fault("openspot has no guide for \(noun). Run \(list).")
+        guard let file = nouns.first(where: { $0.name == noun })?.guide else {
+            throw SpotError.fault("openspot has no guide for \(noun). Run \(CommandNoun.listed(names.map { "openspot help \($0)" })).")
         }
         return try String(contentsOf: folder.appendingPathComponent("\(file).md"), encoding: .utf8)
     }

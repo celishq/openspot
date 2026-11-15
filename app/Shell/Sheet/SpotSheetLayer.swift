@@ -44,7 +44,7 @@ struct SpotSheetLayer: View {
         }
         .modifier(SpotSheetFrame(
             rect: isOpen ? step.fit ?? sheetRect : closedRect,
-            radius: isOpen ? SpotTokens.radius : isInstall ? SpotTokens.corner(for: .strip) : SpotTokens.corner(for: card?.placement.size ?? entry.size),
+            radius: isOpen ? SpotTokens.radius : isInstall ? SurfaceEdge(card: .strip).radius : SurfaceEdge(card: card?.placement.size ?? entry.size).radius,
             sheetRect: sheetRect,
             shift: isOpen ? .zero : shift(to: closedRect),
             isSelected: { [model, id = card?.look?.id ?? entry.id] in
@@ -93,6 +93,7 @@ struct SpotSheetLayer: View {
                 SpotFieldLook(query: page.query, title: page.fieldTitle)
             }
         }
+        .environment(\.spotIsHeld, true)
         return SheetStep.Leaving(look: AnyView(look), from: page.rect, rect: edge.rect(around: room))
     }
 
@@ -166,7 +167,7 @@ private struct SheetFadeMask: ViewModifier {
         content.mask {
             ZStack {
                 fade.edges.gradient(height: height)
-                Color.black.opacity(isOpen ? 1 : 0)
+                isOpen ? Color.black : Color.clear
             }
             .padding(.leading, panels.leftExtent)
             .offset(x: panels.frame.minX)

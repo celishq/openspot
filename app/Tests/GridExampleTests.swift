@@ -2,24 +2,61 @@ import XCTest
 @testable import OpenspotCore
 
 final class GridExampleTests: SampleSpotsCase {
-    private func fakeGrid(_ body: String, in folder: URL) throws -> URL {
-        try "#!/bin/sh\necho \"$*\" >> '\(folder.path)/calls'\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
-        let data = folder.appendingPathComponent(".config/openspot/data/grid")
-        try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
-        try "#!/bin/sh\n\(body)\n".writeScript(to: data.appendingPathComponent("grid"))
-        return data
+    private static let link = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+
+    private func standIn(_ folder: URL) -> [String: String] {
+        ["board.swift": """
+        import Foundation
+        \(Self.note(to: folder))
+        final class Grid {
+            private var picked: ((Pick?) -> Void)?
+            func warm() { note("warm") }
+            func show(picked: @escaping (Pick?) -> Void) {
+                note("show")
+                let given = ProcessInfo.processInfo.environment["GRID_PICK"] ?? ""
+                let corners = given.split(separator: " ").compactMap { Int($0) }
+                if given == "cancel" { return DispatchQueue.main.async { picked(nil) } }
+                guard corners.count == 4 else { return self.picked = picked }
+                DispatchQueue.main.async { picked(Pick(columns: 6, rows: 6, from: (corners[0], corners[1]), to: (corners[2], corners[3]))) }
+            }
+            func hide() {
+                note("hide")
+                let done = picked
+                picked = nil
+                done?(nil)
+            }
+            func land() { note("land") }
+        }
+        """]
+    }
+
+    private func grid(in folder: URL, pick: String = "", openspot: String = "echo \"$*\" >> '%@/calls'") async throws -> (ScriptProcess, SpotFrames) {
+        try "#!/bin/sh\n\(openspot.replacingOccurrences(of: "%@", with: folder.path))\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
+        try "#!/bin/sh\necho \"$*\" >> '\(folder.path)/opened'\n".writeScript(to: folder.appendingPathComponent("tools/open"))
+        let program = try await swiftSpot("grid", in: folder, standIns: standIn(folder))
+        let script = staying(program, as: "grid", home: folder, variables: ["GRID_PICK": pick])
+        return (script, SpotFrames(script.start()))
     }
 
     private func calls(in folder: URL) -> String {
         (try? read("calls", in: folder)) ?? ""
     }
 
+    func testItIsAStayingSwiftSpotThatThePanelKeepsReady() throws {
+        let grid = try example("Grid")
+
+        XCTAssertEqual(grid.mode, .stay)
+        XCTAssertEqual(grid.read, .panel)
+        XCTAssertEqual(grid.sources, ["grid"])
+        XCTAssertEqual(grid.offeredPlaces, [.card])
+    }
+
     func testTheGridGivesTheBlockBetweenTwoCornersAsPartsOfTheScreen() async throws {
-        let (folder, grid) = try await built("grid")
-        defer { try? FileManager.default.removeItem(at: folder) }
+        let folder = try temporaryFolder()
+        let grid = try await swiftSpot("grid", in: folder)
 
         func pick(_ numbers: Int...) async throws -> String {
-            try await ScriptProcess.output(url: grid, arguments: ["pick"] + numbers.map(String.init))
+            try await ScriptProcess.output(url: grid, arguments: ["pick"] + numbers.map(String.init), base: TestEnvironment.values)
         }
 
         let forward = try await pick(6, 6, 1, 1, 4, 3)
@@ -35,8 +72,8 @@ final class GridExampleTests: SampleSpotsCase {
     }
 
     func testTheGreyBlockOfEachPickIsTheFrameThatTheMoveGivesTheWindowOnEachScreen() async throws {
-        let (folder, grid) = try await built("grid")
-        defer { try? FileManager.default.removeItem(at: folder) }
+        let folder = try temporaryFolder()
+        let grid = try await swiftSpot("grid", in: folder)
         let areas = [
             CGRect(x: 0, y: 33, width: 1728, height: 1084),
             CGRect(x: 0, y: 25, width: 1440, height: 875),
@@ -48,7 +85,7 @@ final class GridExampleTests: SampleSpotsCase {
 
         for area in areas {
             let numbers = [6, 6, area.minX, area.minY, area.width, area.height].map { String(Int($0)) }
-            let lines = try await ScriptProcess.output(url: grid, arguments: ["frames"] + numbers).split(separator: "\n")
+            let lines = try await ScriptProcess.output(url: grid, arguments: ["frames"] + numbers, base: TestEnvironment.values).split(separator: "\n")
             for line in lines {
                 let parts = line.split(separator: "|")
                 let drawn = parts[1].split(separator: " ").compactMap { Double($0) }
@@ -62,134 +99,98 @@ final class GridExampleTests: SampleSpotsCase {
         XCTAssertEqual(checked, 5 * 666)
     }
 
-    func testARunMovesTheFrontWindowToTheBlockThatThePersonPicks() async throws {
-        let grid = try example("Grid")
-        try await withPrivateHome { folder in
-            _ = try self.fakeGrid("echo '0 0 1/2 1'", in: folder)
+    func testAPressHoldsItsCallUntilThePickAndMovesTheFrontWindowToTheBlock() async throws {
+        let folder = try temporaryFolder()
+        let (script, frames) = try await grid(in: folder, pick: "0 0 2 5")
+        defer { script.stop() }
 
-            _ = try await grid.perform(.open, timeout: 5)
+        script.send(text: "call=1\narg=open\n\n")
+        try await wait("the end of the press") { frames.ends == ["1"] }
 
-            XCTAssertEqual(self.calls(in: folder), "window move 0 0 1/2 1\n")
-        }
+        XCTAssertEqual(calls(in: folder), "window move 0 0 3/6 1\n")
+        XCTAssertEqual(notes(in: folder), "show\nland\n")
+        XCTAssertEqual(frames.toasts, [])
     }
 
-    func testARunWithoutAccessibilityOpensItsSettingsAndShowsNoFailure() async throws {
-        let grid = try example("Grid")
-        try await withPrivateHome { folder in
-            _ = try self.fakeGrid("echo '0 0 1/2 1'", in: folder)
-            let link = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-            try "#!/bin/sh\necho link=\(link)\necho 'Openspot cannot move the window.' >&2\nexit 1\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
-            try "#!/bin/sh\necho \"$*\" >> '\(folder.path)/opened'\n".writeScript(to: folder.appendingPathComponent("tools/open"))
+    func testAMoveWithoutAccessibilityOpensItsSettingsAndShowsNoFailure() async throws {
+        let folder = try temporaryFolder()
+        let refused = "echo link=\(Self.link)\necho 'Openspot cannot move the window.' >&2\nexit 1"
+        let (script, frames) = try await grid(in: folder, pick: "0 0 2 5", openspot: refused)
+        defer { script.stop() }
 
-            _ = try await grid.perform(.open, timeout: 5)
+        script.send(text: "call=1\narg=open\n\n")
+        try await wait("the end of the press") { frames.ends == ["1"] }
 
-            XCTAssertEqual(try self.read("opened", in: folder), "\(link)\n")
-        }
+        XCTAssertEqual(try read("opened", in: folder), "\(Self.link)\n")
+        XCTAssertEqual(frames.toasts, [])
     }
 
-    func testARunThatThePersonCancelsMovesNothing() async throws {
-        let grid = try example("Grid")
-        try await withPrivateHome { folder in
-            _ = try self.fakeGrid("true", in: folder)
+    func testAMoveThatFailsForAnotherReasonSaysWhy() async throws {
+        let folder = try temporaryFolder()
+        let (script, frames) = try await grid(in: folder, pick: "0 0 2 5", openspot: "echo 'Openspot cannot find a window to move.' >&2\nexit 1")
+        defer { script.stop() }
 
-            _ = try await grid.perform(.open, timeout: 5)
+        script.send(text: "call=1\narg=open\n\n")
+        try await wait("the end of the press") { frames.ends == ["1"] }
 
-            XCTAssertEqual(self.calls(in: folder), "")
-        }
+        XCTAssertEqual(frames.toasts, ["Openspot cannot find a window to move."])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("opened").path))
     }
 
-    func testARunShowsTheGridThatWaitsAndMovesNothingItself() async throws {
-        let grid = try example("Grid")
-        try await withPrivateHome { folder in
-            let shown = folder.appendingPathComponent("shown")
-            let data = try self.fakeGrid("echo '0 0 1 1'", in: folder)
-            let waiting = try TestChild("/bin/sh", ["-c", "trap 'touch \(shown.path)' USR1; while [ ! -f \(shown.path) ]; do sleep 0.05; done"])
-            defer { waiting.stop() }
-            try String(waiting.processIdentifier).write(to: data.appendingPathComponent("grid.pid"), atomically: true, encoding: .utf8)
+    func testAPressThatThePersonCancelsMovesNothing() async throws {
+        let folder = try temporaryFolder()
+        let (script, frames) = try await grid(in: folder, pick: "cancel")
+        defer { script.stop() }
 
-            _ = try await grid.perform(.open, timeout: 5)
-            try await self.waitUntil { FileManager.default.fileExists(atPath: shown.path) }
+        script.send(text: "call=1\narg=open\n\n")
+        try await wait("the end of the press") { frames.ends == ["1"] }
 
-            XCTAssertTrue(FileManager.default.fileExists(atPath: shown.path))
-            XCTAssertEqual(self.calls(in: folder), "")
-        }
+        XCTAssertEqual(calls(in: folder), "")
+        XCTAssertEqual(notes(in: folder), "show\n")
     }
 
-    func testASecondGridThatWouldWaitEndsAtOnceAndLeavesTheOneThatWaits() async throws {
-        let (folder, grid) = try await built("grid")
-        defer { try? FileManager.default.removeItem(at: folder) }
-        let pidfile = folder.appendingPathComponent("grid.pid")
-        try "1".write(to: pidfile, atomically: true, encoding: .utf8)
-        let held = open(folder.appendingPathComponent("grid.lock").path, O_RDWR | O_CREAT, 0o644)
-        defer { close(held) }
-        XCTAssertEqual(flock(held, LOCK_EX), 0)
-        let parent = try TestChild("/bin/sleep", ["600"])
-        defer { parent.stop() }
+    func testASecondPressWhileTheGridShowsEndsAtOnceAndAStopHidesTheGrid() async throws {
+        let folder = try temporaryFolder()
+        let (script, frames) = try await grid(in: folder)
+        defer { script.stop() }
 
-        let second = Process()
-        second.executableURL = grid
-        second.arguments = ["stay", String(parent.processIdentifier)]
-        try second.run()
-        defer { kill(second.processIdentifier, SIGKILL) }
-        try await waitUntil { !second.isRunning }
+        script.send(text: "call=1\narg=open\n\ncall=2\narg=open\n\n")
+        try await wait("the end of the second press") { frames.ends == ["2"] }
+        XCTAssertEqual(notes(in: folder), "show\n")
+        script.send(text: "stop=1\n\n")
+        try await wait("the end of the first press") { frames.ends == ["2", "1"] }
 
-        XCTAssertFalse(second.isRunning)
-        XCTAssertEqual(try String(contentsOf: pidfile, encoding: .utf8), "1")
+        XCTAssertEqual(notes(in: folder), "show\nhide\n")
+        XCTAssertEqual(calls(in: folder), "")
     }
 
-    func testAReadAfterARebuildStartsTheNewGridOnceTheOldOneHasEnded() async throws {
-        let (folder, grid) = try await built("grid")
-        defer { try? FileManager.default.removeItem(at: folder) }
-        let data = folder.appendingPathComponent("data")
-        try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
-        let holder = folder.appendingPathComponent("holder.py")
-        try """
-        import fcntl, os, signal, sys, time
-        lock = open(sys.argv[1] + '/grid.lock', 'a')
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        pidfile = open(sys.argv[1] + '/grid.pid', 'w')
-        fcntl.flock(pidfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        signal.signal(signal.SIGTERM, lambda *_: (time.sleep(0.5), os._exit(0)))
-        pidfile.write(str(os.getpid()))
-        pidfile.flush()
-        while True:
-            signal.pause()
-        """.write(to: holder, atomically: true, encoding: .utf8)
-        let old = Process()
-        old.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
-        old.arguments = [holder.path, data.path]
-        try old.run()
-        defer { old.terminate() }
-        let pidfile = data.appendingPathComponent("grid.pid")
-        func named() -> pid_t? { pid_t((try? String(contentsOf: pidfile, encoding: .utf8)) ?? "") }
-        try await waitUntil { named() != nil }
-        let copy = data.appendingPathComponent("grid")
-        try FileManager.default.copyItem(at: grid, to: copy)
-        try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(5)], ofItemAtPath: copy.path)
+    func testOnlyAReadOfAnEventWarmsTheGrid() async throws {
+        let folder = try temporaryFolder()
+        let (script, frames) = try await grid(in: folder)
+        defer { script.stop() }
 
-        let read = Process()
-        read.executableURL = URL(fileURLWithPath: "/bin/sh")
-        read.arguments = [examples.appendingPathComponent("grid.spot/grid.sh").path, "read"]
-        read.environment = ["PATH": "/usr/bin:/bin", "OPENSPOT_DATA": data.path, "OPENSPOT_REASON": "panel.open"]
-        try read.run()
-        defer { read.terminate() }
-        try await waitUntil { !old.isRunning && named().map { $0 == old.processIdentifier || kill($0, 0) != 0 } == false }
-        defer { if let new = named() { kill(new, SIGKILL) } }
+        script.send(text: "call=1\narg=read\n\n")
+        try await wait("the end of the plain read") { frames.ends == ["1"] }
+        XCTAssertEqual(notes(in: folder), "")
+        script.send(text: "call=2\narg=read\nenv.OPENSPOT_REASON=panel.open\n\n")
+        try await wait("the end of the read") { frames.ends == ["1", "2"] }
 
-        XCTAssertFalse(old.isRunning)
-        XCTAssertNotEqual(named(), old.processIdentifier)
-        XCTAssertEqual(named().map { kill($0, 0) }, 0)
+        XCTAssertEqual(notes(in: folder), "warm\n")
     }
 
-    func testAReadWithNoReasonStartsNoGrid() async throws {
-        let grid = try example("Grid")
-        try await withPrivateHome { folder in
-            let data = try self.fakeGrid("touch '\(folder.path)/started'", in: folder)
+    func testTheEndOfStdinEndsTheSpotWhileTheGridShows() async throws {
+        let folder = try temporaryFolder()
+        let (script, frames) = try await grid(in: folder)
+        defer { script.stop() }
 
-            _ = try await grid.items(timeout: 5)
+        script.send(text: "call=1\narg=open\n\n")
+        try await wait("the grid") { self.notes(in: folder) == "show\n" }
+        script.end()
 
-            XCTAssertFalse(FileManager.default.fileExists(atPath: data.appendingPathComponent("grid.pid").path))
-            XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("started").path))
-        }
+        try await wait("the end of the spot") { !script.isRunning && frames.ended }
+    }
+
+    func testTheRealGridTypeChecks() async throws {
+        try await typechecks("grid")
     }
 }

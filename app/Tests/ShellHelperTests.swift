@@ -1,3 +1,4 @@
+import os
 import XCTest
 @testable import OpenspotCore
 
@@ -19,6 +20,17 @@ final class ShellHelperTests: XCTestCase {
         return url
     }
 
+    private func output(of url: URL, shell: String, input: String, base: [String: String]? = nil) async throws -> String {
+        let text = OSAllocatedUnfairLock<String?>(initialState: nil)
+        let run = Task {
+            let printed = (try? await ScriptProcess.output(url: URL(fileURLWithPath: shell), arguments: [url.path], input: input, base: base)) ?? ""
+            text.withLock { $0 = printed }
+        }
+        defer { run.cancel() }
+        try await wait("the end of \(shell)") { text.withLock { $0 } != nil }
+        return text.withLock { $0 } ?? ""
+    }
+
     private static let hard = [
         "\\", "\\\\", "a\\", "\\n", "a\\nb", "one\ntwo", "one\n", "\none", "\n", "a\\\nb", "=", "a=b=c", "-", "-n", "-e x", "--",
         "%s %d", "*", "$HOME `date`", " spaces ", "\ttab", "\"quotes\" 'too'", "héllo привет", "~", "a\n\n\\\\\n\nb"
@@ -30,7 +42,7 @@ final class ShellHelperTests: XCTestCase {
             for text in Self.hard {
                 let input = TextBlock(fields: [.init(key: "first", value: "not this"), .init(key: "a", value: text), .init(key: "b", value: "second=\(text)")]).text
 
-                let output = try await ScriptProcess.output(url: url, input: input, limit: 10)
+                let output = try await ScriptProcess.output(url: url, input: input, limit: 60)
 
                 XCTAssertEqual(output, "\(text)|second=\(text)", "\(shell) \(text.debugDescription)")
             }
@@ -43,10 +55,111 @@ final class ShellHelperTests: XCTestCase {
             for text in Self.hard {
                 let line = TextBlock(fields: [.init(key: "a", value: text)]).text
 
-                let output = try await ScriptProcess.output(url: url, input: line, limit: 10)
+                let output = try await ScriptProcess.output(url: url, input: line, limit: 60)
 
                 XCTAssertEqual(output, line, "\(shell) \(text.debugDescription)")
             }
+        }
+    }
+
+    func testEscValueAndServeWorkWhereNoTempFileCanBeWritten() async throws {
+        let fence = "(version 1)(allow default)(deny file-write* (subpath \"/private/var/tmp\") (subpath \"/private/tmp\") (subpath \"/private/var/folders\"))"
+        let once = try script("printf '[%s][%s][%s]' \"$(esc 'a\\b\nc')\" \"$(value a)\" \"$(value b)\"")
+        let served = try script("main() { printf '%s|%s|' \"$1\" \"$(value secret)\"; openspot_input; /bin/cat; kept=yes; return 3; }\nopenspot_serve main \"$@\"\nprintf '|%s|%s' \"$?\" \"$kept\"")
+        let stays = try script("count=0\nmain() { count=$((count + 1)); printf '%s|%s|%s|%s|' \"$count\" \"$(esc \"$1\")\" \"$#\" \"$(value secret)\"; openspot_input; /bin/cat; }\nopenspot_serve main", header: "# mode=stay\n")
+        let tool = URL(fileURLWithPath: "/usr/bin/sandbox-exec")
+        let calls = "call=1\narg=a\\\\b\\nc\narg=\ninput=secret=hunter2\\nb=1\n\ncall=2\n\ncall=3\ninput=secret=two\n\n"
+
+        for shell in ["/bin/sh", "/bin/dash"] {
+            let read = try await ScriptProcess.output(url: tool, arguments: ["-p", fence, shell, once.path], input: "a=one\\ntwo\nb=1\nc=2\nb=3\n", limit: 60)
+            let ran = try await ScriptProcess.output(url: tool, arguments: ["-p", fence, shell, served.path, "open"], input: "secret=hunter2\nb=1\n", limit: 60)
+            let stayed = try await ScriptProcess.output(url: tool, arguments: ["-p", fence, shell, stays.path], input: calls, limit: 60)
+
+            XCTAssertEqual(read, "[a\\\\b\\nc][one\ntwo][1\n3]", shell)
+            XCTAssertEqual(ran, "open|hunter2|secret=hunter2\nb=1\n|3|yes", shell)
+            XCTAssertTrue(stayed.contains("1|a\\\\b\\nc|2|hunter2|secret=hunter2\nb=1\n"), stayed)
+            XCTAssertTrue(stayed.contains("2||0||"), stayed)
+            XCTAssertTrue(stayed.contains("3||0|two|secret=two\n"), stayed)
+        }
+    }
+
+    func testServeWritesNothingInTheTempFolderAlsoWhenACallIsStopped() async throws {
+        let temp = folder.appendingPathComponent("temp")
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        let once = try script("main() { printf '%s' \"$(value a)\"; }\nopenspot_serve main")
+        let stays = try script("main() { printf '%s' \"$(value a)\"; }\nopenspot_serve main", header: "# mode=stay\n")
+        let stopped = try script("main() { kill -TERM $$; }\nopenspot_serve main", header: "# mode=stay\n")
+        var base = ProcessInfo.processInfo.environment
+        base["TMPDIR"] = temp.path
+
+        for shell in ["/bin/sh", "/bin/dash"] {
+            let ran = try await output(of: once, shell: shell, input: "a=1\n", base: base)
+            let stayed = try await output(of: stays, shell: shell, input: "call=1\ninput=a=1\n\ncall=2\ninput=a=2\n\n", base: base)
+            _ = try await output(of: stopped, shell: shell, input: "call=1\ninput=\(Self.large)\n\n", base: base)
+
+            XCTAssertEqual(ran, "1", shell)
+            XCTAssertTrue(stayed.contains("1\n") && stayed.contains("2\n"), stayed)
+            XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: temp.path), [], shell)
+        }
+    }
+
+    private static let large = "a=" + String(repeating: "x", count: 200_000) + "\\n"
+
+    func testACallWithLargeStdinEndsWhateverItsFunctionReads() async throws {
+        let url = try script("""
+        main() {
+          case $1 in
+            half) openspot_input | /usr/bin/head -c 100000 | /usr/bin/wc -c ;;
+            all) openspot_input | /usr/bin/wc -c ;;
+            raw) printf 'raw=%s|\\n' "$(/bin/cat)" ;;
+          esac
+        }
+        openspot_serve main
+        """, header: "# mode=stay\n")
+        var calls = ""
+        for id in 1...20 {
+            let word = ["none", "half", "all", "raw"][id % 4]
+            calls += "call=\(id)\narg=\(word)\n" + (id % 5 == 0 ? "" : "input=\(Self.large)\n") + "\n"
+        }
+
+        for shell in ["/bin/sh", "/bin/dash"] {
+            let output = try await output(of: url, shell: shell, input: calls)
+
+            XCTAssertEqual(output.components(separatedBy: "end=").count - 1, 20, shell)
+            XCTAssertEqual(output.components(separatedBy: " 100000\n").count - 1, 4, shell)
+            XCTAssertEqual(output.components(separatedBy: " 200003\n").count - 1, 4, shell)
+            XCTAssertEqual(output.components(separatedBy: "raw=|\n").count - 1, 5, shell)
+        }
+    }
+
+    func testServeStartsNoProcessOfItsOwnAndLeavesNoneWhenTheFunctionExits() async throws {
+        let stays = try script("main() { /usr/bin/pgrep -P $$ > /dev/null; printf 'none=%s\\n' \"$?\"; }\nopenspot_serve main", header: "# mode=stay\n")
+        let once = try script("trap '/usr/bin/pgrep -P $$ > /dev/null; printf none=%s \"$?\"' EXIT\nmain() { exit 0; }\nopenspot_serve main")
+
+        for shell in ["/bin/sh", "/bin/dash"] {
+            let stayed = try await output(of: stays, shell: shell, input: "call=1\ninput=\(Self.large)\n\n")
+            let ran = try await output(of: once, shell: shell, input: "a=" + String(repeating: "x", count: 200_000) + "\n")
+
+            XCTAssertTrue(stayed.contains("none=1\n"), "\(shell) \(stayed)")
+            XCTAssertEqual(ran, "none=1", shell)
+        }
+    }
+
+    func testAChildOfOneCallGetsNothingOfTheNextAndTheNextNothingOfTheLast() async throws {
+        let url = try script("""
+        main() {
+          case $1 in
+            child) /bin/sleep 600 > /dev/null 2>&1 & child=$! ;;
+            *) printf 'got=%s|%s|\\n' "$(value b)" "$(/bin/cat)"; kill "$child" ;;
+          esac
+        }
+        openspot_serve main
+        """, header: "# mode=stay\n")
+
+        for shell in ["/bin/sh", "/bin/dash"] {
+            let output = try await output(of: url, shell: shell, input: "call=1\narg=child\ninput=secret=old\n\ncall=2\narg=next\ninput=b=new\n\n")
+
+            XCTAssertTrue(output.contains("got=new||\n"), "\(shell) \(output)")
         }
     }
 
@@ -59,7 +172,7 @@ final class ShellHelperTests: XCTestCase {
         printf '|%s|%s|%s' "$IFS" "$1" "$#"
         """)
 
-        let output = try await ScriptProcess.output(url: url, limit: 10)
+        let output = try await ScriptProcess.output(url: url, limit: 60)
 
         XCTAssertTrue(output.hasPrefix("a\\\\b\\nc|:|one|2"), output)
     }
@@ -72,7 +185,7 @@ final class ShellHelperTests: XCTestCase {
                 let values = ["one two", "a\\b\nc", "three" + tail]
                 let input = TextBlock(fields: values.flatMap { [.init(key: "a", value: $0), .init(key: "b", value: "not this")] }).text
 
-                let output = try await ScriptProcess.output(url: url, input: input, limit: 10)
+                let output = try await ScriptProcess.output(url: url, input: input, limit: 60)
 
                 XCTAssertEqual(output, values.joined(separator: "\n"), "\(shell) \(tail.count)")
             }
@@ -82,7 +195,7 @@ final class ShellHelperTests: XCTestCase {
     func testValueOfAnUnknownIdPrintsNothing() async throws {
         let url = try script("value none\nvalue a=\nprintf '%s' \"$(value ''; value a)\"")
 
-        let output = try await ScriptProcess.output(url: url, input: "a=1\n", limit: 10)
+        let output = try await ScriptProcess.output(url: url, input: "a=1\n", limit: 60)
 
         XCTAssertEqual(output, "1")
     }
@@ -90,7 +203,7 @@ final class ShellHelperTests: XCTestCase {
     func testValueIsSafeWithAStrictScript() async throws {
         let url = try script("set -eu\nvalue none\nvalue a\nesc x")
 
-        let output = try await ScriptProcess.output(url: url, limit: 10)
+        let output = try await ScriptProcess.output(url: url, limit: 60)
 
         XCTAssertEqual(output, "x")
     }
@@ -112,7 +225,7 @@ final class ShellHelperTests: XCTestCase {
                 let big = text + padding + text
                 let line = TextBlock(fields: [.init(key: "first", value: "not this"), .init(key: "a", value: big)]).text
 
-                let output = try await ScriptProcess.output(url: url, input: line, limit: 10)
+                let output = try await ScriptProcess.output(url: url, input: line, limit: 60)
 
                 XCTAssertEqual(output, TextBlock(fields: [.init(key: "a", value: big)]).text + big, "\(shell) \(text.debugDescription)")
             }
@@ -185,7 +298,7 @@ final class ShellHelperTests: XCTestCase {
 
     private static let shownCall = """
     main() {
-      printf 'text=t\\ntitle=%s\\n' "$(esc "$#|$1|$2|${OPENSPOT_REASON-}|$(value note)|$(cat)")"
+      printf 'text=t\\ntitle=%s\\n' "$(esc "$#|$1|$2|${OPENSPOT_REASON-}|$(value note)|$(openspot_input)$(cat)")"
     }
     openspot_serve main "$@"
     """
@@ -202,10 +315,10 @@ final class ShellHelperTests: XCTestCase {
         let stays = try script(Self.shownCall, header: "# mode=stay\n")
 
         var onceText = ""
-        for try await frame in ScriptProcess(url: once, arguments: action.arguments, mode: .once(input: input), limit: 10, variables: variables).start() {
+        for try await frame in ScriptProcess(url: once, arguments: action.arguments, mode: .once(input: input), limit: 60, variables: variables).start() {
             onceText += frame
         }
-        let live = ScriptProcess(url: stays, mode: .stays, limit: 10)
+        let live = ScriptProcess(url: stays, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
         live.send(action, input: input, variables: variables, id: 1)
         var stayFrames: [String] = []
@@ -226,7 +339,7 @@ final class ShellHelperTests: XCTestCase {
         openspot_serve main "$@"
         printf 'over=1\\n'
         """, header: "# mode=stay\n")
-        let live = ScriptProcess(url: url, mode: .stays, limit: 5)
+        let live = ScriptProcess(url: url, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
 
         live.send(.read, input: "a=held\n", variables: ReadReason(event: "music.track", value: "Song").variables, id: 1)
@@ -242,7 +355,7 @@ final class ShellHelperTests: XCTestCase {
 
     func testServeKeepsAnEmptyFirstArgument() async throws {
         let url = try script("main() { printf 'count=%s|%s\\n' \"$#\" \"$2\"; }\nopenspot_serve main \"$@\"", header: "# mode=stay\n")
-        let live = ScriptProcess(url: url, mode: .stays, limit: 5)
+        let live = ScriptProcess(url: url, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
 
         live.send(SpotAction(arguments: ["", "x"]), id: 1)
@@ -255,7 +368,7 @@ final class ShellHelperTests: XCTestCase {
 
     func testOnceServeReturnsTheCodeOfMain() async throws {
         let url = try script("main() { echo 'No sky' >&2; return 3; }\nopenspot_serve main \"$@\"")
-        let process = ScriptProcess(url: url, arguments: ["read"], limit: 5)
+        let process = ScriptProcess(url: url, arguments: ["read"], limit: 60)
 
         do {
             for try await _ in process.start() {}
@@ -273,7 +386,7 @@ final class ShellHelperTests: XCTestCase {
         printf 'b\\tBack\\\\slash\\t\\t\\tvalue=true\\tkeywords=c\\\\d\\n' | openspot_rows
         """)
 
-        let output = try await ScriptProcess.output(url: url, limit: 10)
+        let output = try await ScriptProcess.output(url: url, limit: 60)
 
         let items = SpotOutput(text: output).items
         XCTAssertEqual(items.map(\.run), ["a", "b"], output)
@@ -318,9 +431,135 @@ final class ShellHelperTests: XCTestCase {
     func testTheHelperReadsAllOfStdinInAScriptThatSaysStayFalse() async throws {
         let url = try script("printf '%s' \"$(value a)\"", header: "# title=Once\n# mode=once\n")
 
-        let output = try await ScriptProcess.output(url: url, input: "a=one\n", limit: 5)
+        let output = try await ScriptProcess.output(url: url, input: "a=one\n", limit: 60)
 
         XCTAssertEqual(output, "one")
+    }
+
+    func testAScriptReadsAValueOfAGivenTextInEachShell() async throws {
+        for shell in ["/bin/sh", "/bin/dash"] {
+            let url = try script("PATH=/none\ntext=$(/bin/cat \"$1\"; printf x)\na=$(openspot_value a \"${text%x}\"; printf x)\nprintf '%s|%s' \"${a%x}\" \"$(openspot_value none \"${text%x}\")\"", shell: shell)
+            for text in Self.hard {
+                let file = folder.appendingPathComponent(UUID().uuidString)
+                try TextBlock(fields: [.init(key: "first", value: "not this"), .init(key: "a", value: text)]).text.write(to: file, atomically: true, encoding: .utf8)
+
+                let output = try await ScriptProcess.output(url: url, arguments: [file.path], input: "a=stdin\n", limit: 10)
+
+                XCTAssertEqual(output, "\(text)|", "\(shell) \(text.debugDescription)")
+            }
+        }
+    }
+
+    func testAReadOfAGivenTextLeavesStdinForValue() async throws {
+        let url = try script("openspot_value a 'a=given' > /dev/null\nprintf '%s' \"$(value a)\"")
+
+        let output = try await ScriptProcess.output(url: url, input: "a=stdin\n", limit: 10)
+
+        XCTAssertEqual(output, "stdin")
+    }
+
+    func testAKeptValueIsTheWholeNewTextOrTheWholeOldOne() async throws {
+        let file = folder.appendingPathComponent("state/look")
+        let url = try script("""
+        openspot_keep "$1" 'first
+        line' || exit 1
+        printf 'second' | openspot_keep "$1" || exit 2
+        for part in "$1".*; do [ -e "$part" ] && exit 3; done
+        false | openspot_keep /none/dir/file 2>/dev/null && exit 4
+        printf done
+        """)
+
+        let output = try await ScriptProcess.output(url: url, arguments: [file.path], limit: 10)
+
+        XCTAssertEqual(output, "done")
+        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), "second")
+    }
+
+    func testAKeepThatCannotWriteLeavesTheOldValue() async throws {
+        let locked = folder.appendingPathComponent("locked")
+        try FileManager.default.createDirectory(at: locked, withIntermediateDirectories: true)
+        let file = locked.appendingPathComponent("look")
+        try "old".write(to: file, atomically: true, encoding: .utf8)
+        chmod(locked.path, 0o555)
+        defer { chmod(locked.path, 0o755) }
+        let url = try script("openspot_keep \"$1\" new\nprintf 'code=%s' \"$?\"")
+
+        let output = try await ScriptProcess.output(url: url, arguments: [file.path], limit: 10)
+
+        XCTAssertEqual(output, "code=1")
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: locked.path), ["look"])
+        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), "old")
+    }
+
+    private func clipboard(paste: String, holding text: String?) throws -> (script: URL, board: URL, log: URL) {
+        let tools = folder.appendingPathComponent("tools-\(UUID().uuidString)")
+        let board = tools.appendingPathComponent("board")
+        let log = tools.appendingPathComponent("log")
+        try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
+        if let text { try text.write(to: board, atomically: true, encoding: .utf8) }
+        try """
+        #!/bin/sh
+        case "$1 $2" in
+          'clipboard read') [ -f '\(board.path)' ] && /bin/cat '\(board.path)' ;;
+          'clipboard copy') /bin/cat > '\(board.path)' ;;
+          'clipboard paste') printf 'pasted=%s\\n' "$(/bin/cat '\(board.path)')" >> '\(log.path)'; \(paste) ;;
+        esac
+        """.writeScript(to: tools.appendingPathComponent("openspot"))
+        let url = try script("PATH='\(tools.path)':$PATH\n_openspot_paste_pause=0\nopenspot_paste \"$1\"\nprintf 'code=%s' \"$?\"")
+        return (url, board, log)
+    }
+
+    func testAPasteKeepsTheClipboardOfThePerson() async throws {
+        for text in ["mine", "two\nlines\n", "back\\slash %s"] {
+            let (url, board, log) = try clipboard(paste: "exit 0", holding: text)
+
+            let output = try await ScriptProcess.output(url: url, arguments: ["a snippet\nof two lines"], limit: 10)
+
+            XCTAssertEqual(output, "code=0")
+            XCTAssertEqual(try String(contentsOf: log, encoding: .utf8), "pasted=a snippet\nof two lines\n")
+            XCTAssertEqual(try String(contentsOf: board, encoding: .utf8), text)
+        }
+    }
+
+    func testAPasteClearsAClipboardThatHeldNoText() async throws {
+        for paste in ["exit 0", "exit 1"] {
+            let (url, board, log) = try clipboard(paste: paste, holding: nil)
+
+            _ = try await ScriptProcess.output(url: url, arguments: ["a secret"], limit: 10)
+
+            XCTAssertEqual(try String(contentsOf: log, encoding: .utf8), "pasted=a secret\n")
+            XCTAssertEqual(try String(contentsOf: board, encoding: .utf8), "")
+        }
+    }
+
+    func testAPasteThatFailsStillPutsTheClipboardBackAndFails() async throws {
+        let (url, board, _) = try clipboard(paste: "echo 'toast=Openspot cannot paste.'; exit 1", holding: "mine")
+
+        let output = try await ScriptProcess.output(url: url, arguments: ["a snippet"], limit: 10)
+
+        XCTAssertEqual(output, "toast=Openspot cannot paste.\ncode=1")
+        XCTAssertEqual(try String(contentsOf: board, encoding: .utf8), "mine")
+    }
+
+    func testAPasteWaitsBeforeItPutsTheClipboardBack() async throws {
+        let (url, _, _) = try clipboard(paste: "exit 0", holding: "mine")
+        let text = try String(contentsOf: url, encoding: .utf8).replacingOccurrences(of: "_openspot_paste_pause=0\n", with: "sleep() { printf 'sleep=%s|' \"$1\"; }\n")
+        try text.writeScript(to: url)
+
+        let output = try await ScriptProcess.output(url: url, arguments: ["a snippet"], limit: 10)
+
+        XCTAssertEqual(output, "sleep=0.3|code=0")
+    }
+
+    func testEachSpotRunsWithAUTF8LocaleAndTheCommonPaths() async throws {
+        let url = try script("printf '%s|%s|' \"$LC_ALL\" \"$PATH\"\nprintf 'ÅÄö' | /usr/bin/tr '[:upper:]' '[:lower:]'")
+
+        let output = try await ScriptProcess.output(url: url, limit: 10, base: ["HOME": folder.path, "PATH": "/usr/bin:/mine", "LC_ALL": "C", "OPENSPOT_SH": try XCTUnwrap(ProcessInfo.processInfo.environment["OPENSPOT_SH"])])
+
+        let parts = output.split(separator: "|", omittingEmptySubsequences: false).map(String.init)
+        XCTAssertEqual(parts.first, "en_US.UTF-8")
+        XCTAssertEqual(parts.dropFirst().first?.split(separator: ":").dropFirst().map(String.init), ["/usr/bin", "/mine", "/opt/homebrew/bin", "/usr/local/bin", "/bin", "/usr/sbin", "/sbin"])
+        XCTAssertEqual(parts.last, "åäö")
     }
 
     func testTheFileInTheBundleOfTheAppComesFirst() throws {

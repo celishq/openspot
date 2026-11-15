@@ -72,10 +72,28 @@ final class AccountStoreTests: XCTestCase {
     func testAFileStoreNeverSyncs() throws {
         _ = try store.keyMadeOnce()
 
-        XCTAssertFalse(store.canSync)
+        XCTAssertFalse(store.canSync())
         XCTAssertFalse(try store.isSyncing())
         XCTAssertThrowsError(try store.setSyncing(true)) { error in
             XCTAssertEqual((error as? SpotError)?.reason, "This copy of Openspot keeps your account on this Mac only.")
         }
+    }
+
+    func testThePlacesOfATestKeepTheKeyInAFolderOfTheirOwn() {
+        let one = AppPlaces.test()
+        let two = AppPlaces.test(["OPENSPOT_SPOTS": "/none"])
+
+        XCTAssertNotNil(one.account.file)
+        XCTAssertNotNil(two.account.file)
+        XCTAssertNotEqual(one.account.file, two.account.file)
+        XCTAssertNotEqual(one.home, two.home)
+    }
+
+    func testARecordMadeTheOldWayReadsAsNoKey() throws {
+        let words = try XCTUnwrap(try AccountKey.make().words).joined(separator: " ")
+        try "\(words)\nbacked-up\nhandle tony\n".write(to: folder.appendingPathComponent("account"), atomically: true, encoding: .utf8)
+
+        XCTAssertNil(try store.record())
+        XCTAssertNil(try store.key())
     }
 }

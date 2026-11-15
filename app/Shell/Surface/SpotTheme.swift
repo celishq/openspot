@@ -7,14 +7,13 @@ struct SpotTheme {
     let onSolid: NSColor
     let glyphOnSolid: NSColor
     let glass: NSColor
-    let isMaterialTinted: Bool
     let shade: NSColor
+    let dim: NSColor
     let keycap: NSColor
     let window: NSColor
     let preview: NSColor
     let confirm: NSColor
     let onConfirm: NSColor
-    let rimEnds: NSColor
     let fillStrength: Double
     let selectedStrength: Double
     let discStrength: Double
@@ -28,14 +27,13 @@ struct SpotTheme {
         onSolid: .black,
         glyphOnSolid: .controlAccentColor,
         glass: .clear,
-        isMaterialTinted: true,
         shade: .black.withAlphaComponent(0.2),
+        dim: NSColor(white: 0.37, alpha: 0.65),
         keycap: NSColor(white: 0.2, alpha: 1),
         window: NSColor(white: 0.16, alpha: 1),
         preview: NSColor(white: 0.3, alpha: 1),
         confirm: NSColor(red: 0.78, green: 0.16, blue: 0.14, alpha: 1),
         onConfirm: .white,
-        rimEnds: .white,
         fillStrength: 0.1,
         selectedStrength: 0.22,
         discStrength: 0.2,
@@ -50,14 +48,13 @@ struct SpotTheme {
         onSolid: .white,
         glyphOnSolid: .white,
         glass: .white.withAlphaComponent(0.5),
-        isMaterialTinted: false,
         shade: .black.withAlphaComponent(0.08),
+        dim: NSColor(white: 0.925, alpha: 0.65),
         keycap: NSColor(white: 0.98, alpha: 1),
         window: NSColor(white: 0.93, alpha: 1),
         preview: NSColor(white: 0.98, alpha: 1),
         confirm: NSColor(red: 0.78, green: 0.16, blue: 0.14, alpha: 1),
         onConfirm: .white,
-        rimEnds: .white.withAlphaComponent(0.5),
         fillStrength: 0.08,
         selectedStrength: 0.12,
         discStrength: 0,
@@ -70,10 +67,6 @@ struct SpotTheme {
         appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
     }
 
-    static func palette(for scheme: ColorScheme) -> SpotTheme {
-        scheme == .dark ? dark : light
-    }
-
     @MainActor private static var current: SpotTheme {
         let appearance = NSApp?.effectiveAppearance ?? NSAppearance.currentDrawing()
         if let chosen, chosen.appearance === appearance { return chosen.theme }
@@ -84,11 +77,17 @@ struct SpotTheme {
 
     @MainActor private static var chosen: (appearance: NSAppearance, theme: SpotTheme)?
 
-    static let blur: CGFloat = 24
+    static let pictureRim = Color.white.opacity(0.25)
     static let backdropBlur: CGFloat = 3
-    static let rimSides = NSColor.black
-    static let rimSideStrengths: [CGFloat] = [0, 0.3, 0.3, 0]
+    static let glassFadeReach = 3.0
+
+    static func glassStrength(at fade: Double) -> Double {
+        min(fade * glassFadeReach, 1)
+    }
     static let accent = Color.accentColor
+    static let good = Color.green
+    static let warn = Color.orange
+    static let bad = Color.red
     static let secondaryLight = 0.7
     static let dragFill = 0.4
     static let hover = 0.08
@@ -108,6 +107,8 @@ struct SpotTheme {
     static let onSolid = color(\.onSolid)
     static let glyphOnSolid = color(\.glyphOnSolid)
     static let glass = color(\.glass)
+    static let shade = color(\.shade)
+    static let dim = color(\.dim)
     static let keycap = color(\.keycap)
     static let window = color(\.window)
     static let preview = color(\.preview)

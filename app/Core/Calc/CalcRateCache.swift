@@ -6,8 +6,6 @@ public actor CalcRateCache {
     static let staleness: TimeInterval = 24 * 3600
     static let patience: Duration = .seconds(1)
 
-    public static let capability = Capability(name: "calc")
-
     private let file: URL
     private let now: @Sendable () -> Date
     private let fetch: @Sendable () async throws -> Data
@@ -84,7 +82,7 @@ public actor CalcRateCache {
         return task
     }
 
-    public static var standard: CalcRateCache {
+    public static let standard: CalcRateCache = {
         let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first ?? FileManager.default.temporaryDirectory
         return CalcRateCache(file: caches.appendingPathComponent("openspot/calc-rates.json"), now: { Date() }) {
             try await CalcRates.download { url in
@@ -93,22 +91,5 @@ public actor CalcRateCache {
                 return try await URLSession.shared.data(for: request).0
             }
         }
-    }
-
-    public static func serve() -> Never {
-        let cache = standard
-        capability.serve { _ in
-            switch await cache.answer() {
-            case .success(let rates): rates.file
-            case .failure(let failure): Data(TextBlock(fields: [.init(key: "status", value: failure.rawValue)]).text.utf8)
-            }
-        }
-    }
-
-    public static func ask() -> Result<CalcRates, CalcRateFailure> {
-        guard let answer = try? capability.call(Data("rates".utf8)) else { return .failure(.unavailable) }
-        if let rates = CalcRates(file: answer) { return .success(rates) }
-        let status = TextBlock.blocks(in: String(decoding: answer, as: UTF8.self)).first?.value("status")
-        return .failure(status.flatMap(CalcRateFailure.init(rawValue:)) ?? .unavailable)
-    }
+    }()
 }

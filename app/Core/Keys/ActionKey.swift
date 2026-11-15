@@ -20,52 +20,36 @@ public struct ActionKey: Hashable, Sendable {
     }
 
     public init?(text: String) {
-        var parts = text.lowercased().split(separator: "+").map(String.init)
-        guard let last = parts.popLast() else { return nil }
-        guard parts.allSatisfy({ $0 == "cmd" || $0 == "shift" }) else { return nil }
-        if last == "escape" {
-            guard parts.isEmpty else { return nil }
-            self.init(name: last)
-            return
-        }
-        let isNamed = last == "return" || last == "backspace" || last == ","
-        guard isNamed || (last.count == 1 && last.first?.isLetter == true) || (last.count == 1 && last.first?.isNumber == true) else { return nil }
-        self.init(name: last, isCommand: parts.contains("cmd"), isShift: parts.contains("shift"))
+        guard let key = KeyText(text: text) else { return nil }
+        self.init(key)
     }
 
     public init?(label: String) {
-        if label == "Esc" {
-            self.init(name: "escape")
-            return
+        guard let key = KeyText(label: label) else { return nil }
+        self.init(key)
+    }
+
+    private init?(_ key: KeyText) {
+        guard key.modifiers.isSubset(of: [.command, .shift]) else { return nil }
+        let name = key.name
+        let isNamed = name == "return" || name == "backspace" || name == ","
+        if name == "escape" {
+            guard key.modifiers.isEmpty else { return nil }
+        } else {
+            guard isNamed || (name.count == 1 && (name.first?.isLetter == true || name.first?.isNumber == true)) else { return nil }
         }
-        var rest = Substring(label)
-        let isCommand = rest.hasPrefix("⌘")
-        if isCommand { rest = rest.dropFirst() }
-        let isShift = rest.hasPrefix("⇧")
-        if isShift { rest = rest.dropFirst() }
-        let name: String
-        switch rest {
-        case "⏎", "↩": name = "return"
-        case "⌫": name = "backspace"
-        default:
-            guard rest.count == 1, let first = rest.first, first.isLetter || first.isNumber else { return nil }
-            name = rest.lowercased()
-        }
-        self.init(name: name, isCommand: isCommand, isShift: isShift)
+        self.init(name: name, isCommand: key.modifiers.contains(.command), isShift: key.modifiers.contains(.shift))
+    }
+
+    private var key: KeyText {
+        KeyText(modifiers: Shortcut.Modifiers(rawValue: (isCommand ? Shortcut.Modifiers.command.rawValue : 0) | (isShift ? Shortcut.Modifiers.shift.rawValue : 0)), name: name)
     }
 
     public var text: String {
-        (isCommand ? "cmd+" : "") + (isShift ? "shift+" : "") + name
+        key.text
     }
 
     public var label: String {
-        let key: String
-        switch name {
-        case "return": key = "⏎"
-        case "backspace": key = "⌫"
-        case "escape": return "Esc"
-        default: key = name.uppercased()
-        }
-        return (isCommand ? "⌘" : "") + (isShift ? "⇧" : "") + key
+        key.label
     }
 }

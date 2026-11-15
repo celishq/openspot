@@ -43,6 +43,7 @@ public final class SpotRun {
     enum Purpose {
         case ask(Ask)
         case work(Work)
+        case form(CheckedContinuation<SpotOutput?, Error>)
     }
 
     struct Call {
@@ -51,23 +52,31 @@ public final class SpotRun {
         var input: String?
         var limit: TimeInterval?
         var reason: ReadReason?
-        var variables: [String: String] = [:]
-        let purpose: Purpose
+        var purpose: Purpose
+
+        var variables: [String: String] {
+            reason?.variables ?? [:]
+        }
     }
 
     static let answerAge: TimeInterval = 5
     static let textPause: Duration = .milliseconds(300)
     static let sliderPause: Duration = .milliseconds(100)
+    static let buildPause: Duration = .milliseconds(500)
     static let pressPause: TimeInterval = 1
     static let workPause: TimeInterval = 1
+    static let waitingLimit = 8
     static let readKey = "read"
     static let searchKey = "search"
     static let answerKey = "answer"
     static let cardKey = "card"
     static let levelKey = "level"
     static let globalKey = "global"
+    static let buildKey = "build"
 
-    public internal(set) var spot: Spot
+    public internal(set) var spot: Spot {
+        didSet { runs.showMarks(of: spot.id) }
+    }
     public internal(set) var answers: [SpotItem] = []
     var answerQuery = ""
     var answeredQuery = ""
@@ -98,8 +107,12 @@ public final class SpotRun {
         }
     }
 
+    @ObservationIgnored var finding: Task<Void, Never>?
+
     public func landRows() {
-        if rows.isFinding { list.landFinding() }
+        guard rows.isFinding else { return }
+        finding?.cancel()
+        list.landFinding()
     }
 
     public var query: String {
@@ -173,13 +186,15 @@ public final class SpotRun {
         }
     }
     public private(set) var isOn = false
-    public internal(set) var reading: MetricReading
+    public internal(set) var reading: MetricReading {
+        didSet { runs.showMarks(of: spot.id) }
+    }
     public internal(set) var failure: String?
     @ObservationIgnored public internal(set) var calls: [ScriptCall] = []
-    var workCalls: [ScriptCall] = []
+    @ObservationIgnored var workCalls: [ScriptCall] = []
+    public internal(set) var work: [ScriptCall] = []
     @ObservationIgnored public var onReport: (Report) -> Void = { _ in }
     @ObservationIgnored public var partsArrival: (() -> Void) -> Void = { $0() }
-    var workPauses = 0
     @ObservationIgnored let runs: SpotRuns
     @ObservationIgnored let prepare: ([SpotItem], [String]) async -> Void
     @ObservationIgnored var glyphs: (rows: [SpotItem], glyphs: [String]) = ([], [])
@@ -188,17 +203,20 @@ public final class SpotRun {
         didSet { settle() }
     }
     @ObservationIgnored var lastAnswer: SpotOutput?
+    @ObservationIgnored var shownFrame: String?
     @ObservationIgnored var readReason: ReadReason?
     @ObservationIgnored var finishesRead = false
     @ObservationIgnored var hasAsked = false
     @ObservationIgnored var waiter: (() -> Void)?
     @ObservationIgnored var selecting: String?
     @ObservationIgnored var readsAgain = false
+    @ObservationIgnored var sheetAgain = false
     @ObservationIgnored var eventAgain: ReadReason?
     @ObservationIgnored var pauses: [String: Task<Void, Never>] = [:]
     @ObservationIgnored var editing: String?
     @ObservationIgnored var waitingFiles: [SpotAction] = []
     @ObservationIgnored var waitingKeys: [String] = []
+    @ObservationIgnored var clockRead: Date?
     public internal(set) var page: String?
     @ObservationIgnored var pageStates: [(page: String?, state: PageState)] = []
 
@@ -218,22 +236,29 @@ public final class SpotRun {
     nonisolated deinit {}
 
     private static func link(for spot: Spot, runs: SpotRuns) -> ScriptLink {
-        switch spot.mode {
-        case .once: OnceLink(runs: runs)
-        case .stay, .always: StayLink(runs: runs)
+        if let link = runs.standIn?(spot) { return link }
+        return switch ScriptKind(of: spot) {
+        case .once, .settings, .host: OnceLink(runs: runs)
+        case .stay: StayLink(runs: runs)
         case .inline: InlineLink(runs: runs)
         }
+    }
+
+    var script: ScriptKind {
+        ScriptKind(of: spot)
     }
 
     public func update(_ new: Spot) {
         let header = spot.headerState
         if new.answers != spot.answers { answer("") }
-        if new.mode.stays != spot.mode.stays || (new.mode == .inline) != (spot.mode == .inline) {
+        let next = ScriptKind(of: new)
+        if next.keepsState != script.keepsState || (next == .inline) != (script == .inline) {
             let old = link
             link = Self.link(for: new, runs: runs)
             link.run = self
             old.end()
         }
+        shownFrame = nil
         spot = lastAnswer.map(new.taking) ?? new
         if reading.label != new.name || reading.headerSymbol != new.headerSymbol {
             reading = MetricReading(label: new.name, headerSymbol: new.headerSymbol)
@@ -242,9 +267,7 @@ public final class SpotRun {
     }
 
     func restartScript() {
-        guard spot.mode.stays || spot.mode == .inline, link.isReachable else { return }
-        link.end()
-        link.settle()
+        link.restart()
     }
 
     public var awaitsAnswer: Bool {

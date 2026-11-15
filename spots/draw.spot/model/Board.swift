@@ -5,8 +5,12 @@ import Foundation
 /// An arrow end that holds a shape follows it, and an arrow that passes ties runs through each of them beside the other
 /// arrows of that tie, so the board works out the path of each arrow when it is drawn.
 struct Board: Codable, Equatable {
-    var title = "Untitled board"
-    var figures: [Figure] = []
+    static let untitled = "Untitled board"
+
+    var title = Board.untitled
+    private(set) var figures: [Figure] = []
+    /// Where each figure lies in `figures`, by its id.
+    private var places: [UUID: Int] = [:]
 
     private enum CodingKeys: String, CodingKey {
         case title, figures
@@ -15,20 +19,31 @@ struct Board: Codable, Equatable {
     /// The gap between the tip of an arrow and the outline of the shape that it holds.
     static let gap: CGFloat = 8
 
-    init(title: String = "Untitled board", figures: [Figure] = []) {
+    init(title: String = Board.untitled, figures: [Figure] = []) {
         self.title = title
         self.figures = figures
+        index()
     }
 
-    /// Reads a board, and turns each junction of an older board, where arrows merged into one, into a tie.
+    static func == (one: Board, other: Board) -> Bool {
+        one.title == other.title && one.figures == other.figures
+    }
+
+    /// Reads a board, gives the later of two figures with one id a new id, and turns each junction of an older board,
+    /// where arrows merged into one, into a tie.
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
-        title = try values.decodeIfPresent(String.self, forKey: .title) ?? "Untitled board"
+        title = try values.decodeIfPresent(String.self, forKey: .title) ?? Board.untitled
         figures = try values.decode([Figure].self, forKey: .figures)
+        // A file that a hand or an agent wrote can repeat an id. The later figure takes a new one, so that each id
+        // finds one figure.
+        var seen: Set<UUID> = []
+        for place in figures.indices where !seen.insert(figures[place].id).inserted { figures[place].id = UUID() }
+        index()
         for junction in figures where junction.kind == .tie && junction.members.isEmpty {
             let branches = figures.filter { $0.kind == .arrow && $0.end == junction.id }
             guard let trunk = figures.first(where: { $0.kind == .arrow && $0.start == junction.id }), branches.count > 1 else {
-                figures.removeAll { $0.id == junction.id }
+                drop(junction.id)
                 continue
             }
             for branch in branches {
@@ -39,8 +54,16 @@ struct Board: Codable, Equatable {
                 }
             }
             update(junction.id) { $0.members = branches.map(\.id) }
-            figures.removeAll { $0.id == trunk.id }
+            drop(trunk.id)
         }
+    }
+
+    /// The title of the board in a file, read without its figures.
+    static func title(at url: URL) throws -> String {
+        struct Head: Decodable {
+            var title: String?
+        }
+        return try JSONDecoder().decode(Head.self, from: Data(contentsOf: url)).title ?? Board.untitled
     }
 
     static func load(from url: URL) throws -> Board {
@@ -54,17 +77,34 @@ struct Board: Codable, Equatable {
     }
 
     subscript(id: UUID) -> Figure? {
-        figures.first { $0.id == id }
+        places[id].map { figures[$0] }
     }
 
     mutating func add(_ figure: Figure) {
+        if places[figure.id] == nil { places[figure.id] = figures.count }
         figures.append(figure)
     }
 
     /// Changes the figure with this id in place.
     mutating func update(_ id: UUID, _ change: (inout Figure) -> Void) {
-        guard let index = figures.firstIndex(where: { $0.id == id }) else { return }
+        guard let index = places[id] else { return }
         change(&figures[index])
+    }
+
+    /// Takes one figure off the board and leaves each other figure as it is.
+    mutating func drop(_ id: UUID) {
+        figures.removeAll { $0.id == id }
+        index()
+    }
+
+    /// Puts these figures in place of the board's own.
+    mutating func replace(_ figures: [Figure]) {
+        self.figures = figures
+        index()
+    }
+
+    private mutating func index() {
+        places = Dictionary(figures.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
     // MARK: Paths
@@ -304,5 +344,6 @@ struct Board: Codable, Equatable {
         for index in figures.indices where figures[index].kind == .arrow {
             figures[index].ties.removeAll { gone.contains($0) }
         }
+        index()
     }
 }

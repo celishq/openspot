@@ -4,7 +4,7 @@ import Foundation
 @MainActor
 extension Spot {
     private func output(_ action: SpotAction, input: String? = nil, variables: [String: String] = [:], timeout: TimeInterval) async throws -> SpotOutput {
-        SpotOutput(text: try await SpotRuns().answer(of: self, action, input: input, limit: timeout, variables: variables))
+        SpotOutput(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: self, action, input: input, limit: timeout, variables: variables))
     }
 
     func state(timeout: TimeInterval) async throws -> SpotState {
@@ -21,7 +21,7 @@ extension Spot {
     func items(query: String = "", input: String? = nil, page: String? = nil, timeout: TimeInterval) async throws -> SpotOutput {
         let typed = query.isEmpty ? nil : TextBlock(fields: [.init(key: "search", value: query)]).text
         let lines = [input, typed].compactMap { $0 }
-        let reason = query.isEmpty ? [:] : ReadReason.text(query, inSheet: answers == nil).variables
+        let reason = query.isEmpty ? [:] : ReadReason.text(query, inSheet: self.answers == nil).variables
         let variables = reason.merging(page.map { ["OPENSPOT_PAGE": $0] } ?? [:]) { _, new in new }
         return try await output(.read, input: lines.isEmpty ? nil : lines.joined(), variables: variables, timeout: timeout)
     }
@@ -30,14 +30,17 @@ extension Spot {
         try await output(action, input: input, timeout: timeout)
     }
 
+    func sheetFaults(timeout: TimeInterval) async throws -> [String] {
+        FrameCheck(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: self, .read, limit: timeout)).sheetFaults
+    }
+
     func form(_ action: CommandAction, item: SpotItem?, timeout: TimeInterval) async throws -> ItemForm {
         guard let form = ItemForm(output: try await output(.action(action, item: item), timeout: timeout)) else { throw SpotError.badForm }
         return form
     }
 
     func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft, timeout: TimeInterval) async throws -> String {
-        let text = try await SpotRuns().answer(of: self, .action(action, item: item), input: draft.text, limit: timeout)
-        return text.trimmingCharacters(in: .whitespacesAndNewlines)
+        try await output(.action(action, item: item), input: draft.text, timeout: timeout).select ?? ""
     }
 
     @discardableResult
@@ -46,7 +49,7 @@ extension Spot {
     }
 
     func hook(_ function: String, card: String, origin: String) async -> Bool {
-        let runs = SpotRuns()
+        let runs = SpotRuns(environment: TestEnvironment.values)
         let answer = await withCheckedContinuation { continuation in
             if let now = runs.ask(function, of: self, card: card, origin: origin, later: { continuation.resume(returning: $0) }) {
                 continuation.resume(returning: now)

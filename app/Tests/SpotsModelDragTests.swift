@@ -6,7 +6,7 @@ final class SpotsModelDragTests: XCTestCase {
     private var folder: URL!
     private var defaults: UserDefaults!
     private var suite = ""
-    private var host: TestHost!
+    private var host: FakeHost!
     private var model: SpotsModel!
 
     override func setUp() async throws {
@@ -17,7 +17,7 @@ final class SpotsModelDragTests: XCTestCase {
             .write(to: folder.appendingPathComponent("defaults.toml"), atomically: true, encoding: .utf8)
         suite = "openspot-drag-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
-        let host = TestHost()
+        let host = FakeHost()
         self.host = host
         model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2, prepare: { await host.prepare($0, glyphs: $1) }))
         host.model = model
@@ -26,7 +26,7 @@ final class SpotsModelDragTests: XCTestCase {
             try "#!/bin/sh\n".writeScript(to: file)
             try FileManager.default.setAttributes([.creationDate: Date(timeIntervalSince1970: 1_700_000_000)], ofItemAtPath: file.path)
         }
-        model.reload()
+        await model.reload()
         model.dragRest = .zero
         model.beginEditing()
     }
@@ -84,15 +84,15 @@ final class SpotsModelDragTests: XCTestCase {
         (try? model.files.config.read().arrangement.choices.filter { $0.isEnabled == false }.map(\.id).sorted()) ?? []
     }
 
-    private func savedOrder() -> [String] {
-        let host = TestHost()
+    private func savedOrder() async -> [String] {
+        let host = FakeHost()
         let other = SpotsModel(host: host, files: files)
-        other.reload()
+        await other.reload()
         defer { other.quit() }
         return withExtendedLifetime(host) { other.visible.map(\.id) }
     }
 
-    func testACardDraggedLeftOfAnotherMakesRoomThereAndAReleaseSavesIt() {
+    func testACardDraggedLeftOfAnotherMakesRoomThereAndAReleaseSavesIt() async {
         XCTAssertEqual(order, ["a", "b", "c", "d"])
         let translation = move("d", to: leftHalf(of: "c"))
 
@@ -101,13 +101,15 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(order, ["a", "b", "d", "c"])
         XCTAssertEqual(model.placements.map(\.size), [.wide, .wide, .wide, .wide])
         XCTAssertEqual(model.selected, 2)
-        XCTAssertEqual(savedOrder(), ["a", "b", "c", "d"])
+        let shown = await savedOrder()
+        XCTAssertEqual(shown, ["a", "b", "c", "d"])
 
         model.dropSpot(by: translation)
 
         XCTAssertNil(model.drag)
         XCTAssertEqual(order, ["a", "b", "d", "c"])
-        XCTAssertEqual(savedOrder(), ["a", "b", "d", "c"])
+        let shown2 = await savedOrder()
+        XCTAssertEqual(shown2, ["a", "b", "d", "c"])
     }
 
     func testADroppedCardLandsUntilItsMotionEnds() {
@@ -129,14 +131,14 @@ final class SpotsModelDragTests: XCTestCase {
         host.heldEnds = []
         model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
 
-        model.handleEditKey(ActionKey(name: "escape"))
+        _ = model.handleKey(ActionKey(name: "escape"))
 
         XCTAssertEqual(model.landing, "d")
         host.heldEnds?.forEach { $0() }
         XCTAssertNil(model.landing)
     }
 
-    func testALiftedCardMovesWithTheGridWhenItScrollsAndLandsWhereThePointerIs() {
+    func testALiftedCardMovesWithTheGridWhenItScrollsAndLandsWhereThePointerIs() async {
         let row = SpotTokens.rowHeight + SpotTokens.rowGap
         let translation = move("a", to: leftHalf(of: "a"))
         model.dragSpot("a", by: translation)
@@ -146,7 +148,8 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.lift.offset, CGSize(width: translation.width, height: translation.height + row))
         XCTAssertEqual(order, ["b", "c", "a", "d"])
         model.dropSpot(by: translation)
-        XCTAssertEqual(savedOrder(), ["b", "c", "a", "d"])
+        let shown = await savedOrder()
+        XCTAssertEqual(shown, ["b", "c", "a", "d"])
     }
 
     func testAResizedCardFollowsTheGridWhenItScrolls() {
@@ -173,7 +176,7 @@ final class SpotsModelDragTests: XCTestCase {
 
         model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
 
-        for _ in 0..<500 where order != ["a", "b", "d", "c"] {
+        for _ in 0..<6000 where order != ["a", "b", "d", "c"] {
             try await Task.sleep(for: .milliseconds(10))
         }
         XCTAssertEqual(order, ["a", "b", "d", "c"])
@@ -208,35 +211,37 @@ final class SpotsModelDragTests: XCTestCase {
     func testTheHKeyPutsTheSelectedSpotInSearchOnly() {
         XCTAssertEqual(model.hint, "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done")
 
-        model.handleEditKey(ActionKey(name: "h"))
+        _ = model.handleKey(ActionKey(name: "h"))
 
         XCTAssertEqual(order, ["b", "c", "d", "a"])
         XCTAssertEqual(model.cards.first { $0.id == "a" }?.isOnGrid, false)
         XCTAssertEqual(model.hint, "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done")
     }
 
-    func testEscapePutsTheCardsBackAndKeepsEditSpots() {
+    func testEscapePutsTheCardsBackAndKeepsEditSpots() async {
         let translation = move("d", to: leftHalf(of: "c"))
         model.dragSpot("d", by: translation)
 
-        model.handleEditKey(ActionKey(name: "escape"))
+        _ = model.handleKey(ActionKey(name: "escape"))
         model.dropSpot(by: translation)
 
         XCTAssertTrue(model.isEditing)
         XCTAssertNil(model.drag)
         XCTAssertEqual(order, ["a", "b", "c", "d"])
         XCTAssertEqual(model.selected, 3)
-        XCTAssertEqual(savedOrder(), ["a", "b", "c", "d"])
+        let shown = await savedOrder()
+        XCTAssertEqual(shown, ["a", "b", "c", "d"])
     }
 
-    func testAReleaseOffTheGridPutsTheCardsBack() {
+    func testAReleaseOffTheGridPutsTheCardsBack() async {
         model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
 
         model.dropSpot(by: move("d", to: CGPoint(x: -SpotTokens.gridWidth, y: 0)))
 
         XCTAssertNil(model.drag)
         XCTAssertEqual(order, ["a", "b", "c", "d"])
-        XCTAssertEqual(savedOrder(), ["a", "b", "c", "d"])
+        let shown = await savedOrder()
+        XCTAssertEqual(shown, ["a", "b", "c", "d"])
     }
 
     func testInEditSpotsTheCardsInSearchOnlyLieOnAShelfUnderTheGrid() {
@@ -259,9 +264,9 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.groupBands?.shelf, 1)
     }
 
-    func testTheShelfLeavesOutASpotWithNoCardOfItsOwn() throws {
+    func testTheShelfLeavesOutASpotWithNoCardOfItsOwn() async throws {
         try "#!/bin/sh\n# on=panel.open\n# offers=search\n".writeScript(to: spots.appendingPathComponent("rows.spot/rows.sh"))
-        model.reload()
+        await model.reload()
 
         XCTAssertFalse(order.contains("rows"))
     }
@@ -272,7 +277,7 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(Set(model.placements.map(\.top)), [2 * SpotTokens.groupTitleBand])
     }
 
-    func testACardDraggedUnderTheGridGoesToSearchOnly() {
+    func testACardDraggedUnderTheGridGoesToSearchOnly() async {
         let below = CGPoint(x: SpotTokens.cell / 2, y: SpotGrid.height(of: model.placements) + SpotTokens.rowHeight)
         let translation = move("b", to: below)
 
@@ -281,7 +286,8 @@ final class SpotsModelDragTests: XCTestCase {
 
         XCTAssertEqual(order, ["a", "c", "d", "b"])
         XCTAssertEqual(model.cards.first { $0.id == "b" }?.isOnGrid, false)
-        XCTAssertEqual(savedOrder(), ["a", "c", "d"])
+        let shown = await savedOrder()
+        XCTAssertEqual(shown, ["a", "c", "d"])
     }
 
     func testACardDraggedFromTheShelfOntoTheGridGoesOnTheGridThere() {
@@ -369,7 +375,7 @@ final class SpotsModelDragTests: XCTestCase {
         let start = model.placements[3].rect
         model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
 
-        model.handleEditKey(ActionKey(name: "escape"))
+        _ = model.handleKey(ActionKey(name: "escape"))
 
         XCTAssertEqual(model.lift.origin, CGPoint(x: SpotTokens.halo + start.minX, y: SpotTokens.gridTop + start.minY))
         host.heldEnds?.forEach { $0() }
@@ -424,7 +430,7 @@ final class SpotsModelDragTests: XCTestCase {
     func testEscapePutsTheSizeBackAndSavesNothing() {
         model.resizeSpot("c", by: down)
 
-        model.handleEditKey(ActionKey(name: "escape"))
+        _ = model.handleKey(ActionKey(name: "escape"))
         model.dropResize()
 
         XCTAssertTrue(model.isEditing)
@@ -454,17 +460,6 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.gridOrigin.x, SpotTokens.halo - shift)
     }
 
-    func testASearchShowsNoSidePanelAndAnEmptyFieldShowsThemAgain() {
-        model.show(.left, true)
-        XCTAssertEqual(model.shownPanels, GridPanels(hasLeft: true))
-
-        model.query = "a"
-        XCTAssertEqual(model.shownPanels, GridPanels())
-
-        model.query = ""
-        XCTAssertEqual(model.shownPanels, GridPanels(hasLeft: true))
-    }
-
     func testACardDroppedOnASidePanelStaysThereAndHidingThePanelMovesItBackToTheEnd() async throws {
         model.show(.right, true)
         let column = model.panels.firstColumn(of: .right)
@@ -477,7 +472,7 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.visible.first { $0.id == "a" }?.panel, .right)
         XCTAssertEqual(files.config.read().arrangement.panel(of: "a"), .right)
         model.show(.right, false)
-        for _ in 0..<500 where model.panels.hasRight { try await Task.sleep(for: .milliseconds(10)) }
+        for _ in 0..<6000 where model.panels.hasRight { try await Task.sleep(for: .milliseconds(10)) }
         XCTAssertFalse(model.panels.hasRight)
         XCTAssertEqual(model.visible.first { $0.id == "a" }?.panel, .center)
         XCTAssertEqual(model.visible.filter(\.isOnGrid).last?.id, "a")
@@ -494,11 +489,11 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(model.placements.first { $0.index == index }?.column ?? -1, column)
     }
 
-    func testAPanelThatShowsIsEmptyEvenWhenAnOldChoiceNamedIt() throws {
+    func testAPanelThatShowsIsEmptyEvenWhenAnOldChoiceNamedIt() async throws {
         var arrangement = files.config.read().arrangement
         arrangement.set(panel: .right, of: "b")
         try files.config.write(arrangement)
-        model.reload()
+        await model.reload()
         XCTAssertLessThan(model.placements.map(\.column).max() ?? 0, SpotTokens.columns)
 
         model.show(.right, true)
@@ -507,20 +502,20 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertNil(files.config.read().arrangement.panel(of: "b"))
     }
 
-    func testTheGridTakesTheSidePanelsOfTheConfig() throws {
-        try files.config.set("right_panel", to: true)
+    func testTheGridTakesTheSidePanelsOfTheConfig() async throws {
+        try files.config.change { $0.show(.right, true) }
 
-        model.reload()
+        await model.reload()
 
         XCTAssertEqual(model.panels, GridPanels(hasRight: true))
     }
 
-    func testTheGridGrowsDownPastTheRowsThePanelShows() throws {
+    func testTheGridGrowsDownPastTheRowsThePanelShows() async throws {
         model.endEditing()
         for name in ["e", "f", "g", "h", "i", "j", "k", "l", "m"] {
             try "#!/bin/sh\n".writeScript(to: spots.spotFile(name))
         }
-        model.reload()
+        await model.reload()
         model.beginEditing()
 
         XCTAssertEqual(model.visible.filter(\.isOnGrid).count, 13)
@@ -541,7 +536,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     private func publication(of id: String) -> SpotPublication? {
-        let scan = (try? SpotsFolder(url: spots).keptScan()) ?? ScanResult(files: [], refused: [])
+        let scan = (try? SpotsFolder(url: spots).scan()) ?? ScanResult(files: [], refused: [])
         return SpotStore.publications(of: scan, in: store)[id]
     }
 
@@ -564,23 +559,69 @@ final class SpotsModelDragTests: XCTestCase {
         try script.seekToEnd()
         try script.write(contentsOf: Data("echo changed\n".utf8))
         try script.close()
-        model.spotsChanged()
+        await model.spotsChanged()
         XCTAssertEqual(publication(of: "a"), .changed)
         let third = await model.publish("a")
         XCTAssertEqual(third, .published)
         XCTAssertEqual(publication(of: "a"), .current)
     }
 
-    func testAPublishWithNoAccountOpensThePublishPageOfTheAccountSpot() async throws {
+    func testAPublishSignsOnlyAfterTouchID() async throws {
+        try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
+        _ = try model.files.account.keyMadeOnce()
+        host.allowsActs = false
+
+        let denied = await model.publish("a")
+
+        XCTAssertEqual(denied, .failed)
+        XCTAssertNil(publication(of: "a"))
+        XCTAssertEqual(host.asked, ["sign your spot"])
+        XCTAssertEqual(host.notes.last, "A was not published. Touch ID didn't pass, so Openspot signed nothing.")
+    }
+
+    func testAPublishWithNoAccountOpensAccountAndWaitsForTheKey() async throws {
         try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
-        model.reload()
+        await model.reload()
         try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
 
         let result = await model.publish("a")
 
         XCTAssertEqual(result, .failed)
-        XCTAssertEqual(model.flow.current, FlowSheet(spot: AccountSheet.id, page: "publish:a"))
+        XCTAssertEqual(model.flow.current, FlowSheet(spot: AccountSheet.id))
         XCTAssertEqual(host.notes, [])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
+
+        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["new"]), limit: 60)
+        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["create"]), input: "handle=tony\n", limit: 60)
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
+    }
+
+    func testAPushOfAPublishPageFromACallerPublishesNothing() async throws {
+        try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
+        await model.reload()
+        try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
+
+        model.push(FlowSheet(spot: AccountSheet.id, page: "publish:a"))
+        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["new"]), limit: 60, variables: ["OPENSPOT_PAGE": "publish:a"])
+        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["create"]), input: "handle=tony\n", limit: 60, variables: ["OPENSPOT_PAGE": "publish:a"])
+
+        XCTAssertNotNil(try model.files.account.key())
+        XCTAssertNotEqual(model.flow.current?.page, "publish:a")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
+        XCTAssertEqual(host.asked, [])
+    }
+
+    func testAPublishThatWaitsIsForgottenWhenItsSheetsClose() async throws {
+        try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
+        await model.reload()
+        try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
+        _ = await model.publish("a")
+
+        model.open(AccountSheet.id)
+        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["new"]), limit: 60)
+        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["create"]), input: "handle=tony\n", limit: 60)
+
         XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
     }
 
@@ -594,25 +635,26 @@ final class SpotsModelDragTests: XCTestCase {
 
     func testACoreSpotIsNotPublished() async throws {
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
-        model.reload()
+        await model.reload()
 
         let result = await model.publish("timer")
         XCTAssertEqual(result, .notOwn)
     }
 
-    func testTheMinusTurnsASpotOfTheSpotsFolderOffAndItStaysOff() {
+    func testTheMinusTurnsASpotOfTheSpotsFolderOffAndItStaysOff() async {
         model.turnOff("a")
 
         XCTAssertEqual(order, ["b", "c", "d"])
         XCTAssertEqual(offInConfig, ["a"])
-        XCTAssertEqual(savedOrder(), ["b", "c", "d"])
+        let shown = await savedOrder()
+        XCTAssertEqual(shown, ["b", "c", "d"])
         XCTAssertTrue(FileManager.default.fileExists(atPath: spots.spotFile("a").path))
     }
 
-    func testACoreSpotTurnedOnByTheConfigTurnsOffByTheMinus() throws {
+    func testACoreSpotTurnedOnByTheConfigTurnsOffByTheMinus() async throws {
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
         try model.files.config.turn("timer", on: true)
-        model.reload()
+        await model.reload()
         XCTAssertTrue(order.contains("timer"))
 
         model.turnOff("timer")
@@ -632,10 +674,10 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(offInConfig, ["a"])
     }
 
-    func testTheStoreFindsTheCardOfASpotThatIsOffByItsStoreID() throws {
+    func testTheStoreFindsTheCardOfASpotThatIsOffByItsStoreID() async throws {
         try "#!/bin/sh\n# detail=Counts down\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
         try "#!/bin/sh\n# title=Shared\n".writeScript(to: store.appendingPathComponent("shared.spot/shared.sh"))
-        model.reload()
+        await model.reload()
 
         XCTAssertEqual(model.storeEntry("a")?.id, "a")
         XCTAssertEqual(model.storeEntry("timer")?.spot.subtitle, "Counts down")

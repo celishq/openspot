@@ -16,7 +16,7 @@ extension SpotsModel {
         let store = files.store
         do {
             let read = try await Task.detached(priority: .userInitiated) {
-                let shared = try SpotPackage(sharing: spot, from: SpotsFolder(url: folder.url).keptScan())
+                let shared = try SpotPackage(sharing: spot, from: SpotsFolder(url: folder.url).scan())
                 return (shared: shared, isCurrent: SpotStore.publication(of: shared, in: store) == .current)
             }.value
             var shared = read.shared
@@ -50,22 +50,26 @@ extension SpotsModel {
     }
 
     func ownSpot(_ id: String) -> Spot? {
-        (try? SpotsFolder(url: folder.url).keptScan())?.files.first { $0.id == id }?.spots.first
+        (try? SpotsFolder(url: folder.url).scan())?.files.first { $0.id == id }?.spots.first
     }
 
     func accountKey(publishing id: String?) async throws -> AccountKey? {
-        let account = files.account
-        if let key = try await Task.detached(priority: .userInitiated, operation: { try account.key() }).value { return key }
-        let page = id.map { AccountSheet.publishPrefix + $0 }
+        let account = Account(store: files.account, allows: { [weak self] reason in await self?.allows(reason) ?? false })
+        if let key = try await Task.detached(priority: .userInitiated, operation: { try await account.signing() }).value { return key }
         if let account = entries.first(where: { $0.id == AccountSheet.id }) {
             host.present()
-            if let page, account.spot.takes(page: page) {
-                _ = push(FlowSheet(spot: account.id, page: page))
-                return nil
-            }
             _ = push(FlowSheet(spot: account.id))
+            waitingPublish = id
+            if id != nil { return nil }
         }
         host.notify("Set up your account, then publish again.")
         return nil
+    }
+
+    func publishWaiting() async -> Bool {
+        guard let id = waitingPublish else { return false }
+        waitingPublish = nil
+        await publish(id)
+        return true
     }
 }

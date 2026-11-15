@@ -17,7 +17,7 @@ struct RepoDoc {
     }
 
     static func all() throws -> [RepoDoc] {
-        try ["", "app/", "app/Help/"].flatMap { folder in
+        try ["", "app/", "app/Help/", "spots/"].flatMap { folder in
             try FileManager.default.contentsOfDirectory(atPath: repo.appendingPathComponent(folder).path)
                 .filter { $0.hasSuffix(".md") }.sorted().map { try RepoDoc(folder + $0) }
         }

@@ -7,22 +7,13 @@ public struct RecentCache<Key: Hashable, Value> {
         var use: Int
     }
 
-    private let base: Int
+    public let limit: Int
     private var kept: [Key: Kept] = [:]
     private var uses = 0
-    private var largest = 0
     public private(set) var bytes = 0
 
-    public init(base: Int) {
-        self.base = base
-    }
-
-    public var limit: Int {
-        base + 2 * largest
-    }
-
-    public var room: Int {
-        limit - bytes
+    public init(limit: Int) {
+        self.limit = limit
     }
 
     public mutating func value(for key: Key) -> Value? {
@@ -35,7 +26,6 @@ public struct RecentCache<Key: Hashable, Value> {
 
     public mutating func keep(_ value: Value, for key: Key, cost: Int) {
         if let old = kept.removeValue(forKey: key) { bytes -= old.cost }
-        largest = max(largest, cost)
         uses += 1
         kept[key] = Kept(value: value, cost: cost, use: uses)
         bytes += cost

@@ -1,31 +1,26 @@
+import os
 import XCTest
 @testable import OpenspotCore
 
 final class CommandAPITests: XCTestCase {
-    private final class Host: Mac, @unchecked Sendable {
+    private final class Host: MacCalendar, @unchecked Sendable {
         var made = 0
-        var opened: [URL] = []
         var access = CalendarAccess.allowed
 
-        func eventStore() -> any EventStore {
+        func store() -> any EventStore {
             made += 1
             return FakeEventStore(calendars: [CalendarList(id: "A8E2", title: "Work", account: "iCloud", color: "#1BADF8")], access: access)
         }
 
-        func reminderStore() -> any ReminderStore {
-            FakeReminderStore()
-        }
-
-        func showCalendar(at time: Date) throws {}
-
-        func open(_ link: URL) -> Bool {
-            opened.append(link)
-            return true
-        }
+        func show(_ time: Date) throws {}
     }
 
     private var folder: URL!
-    private let host = Host()
+    private let calendar = Host()
+
+    private var host: Mac {
+        Mac(calendar: calendar, reminders: FakeReminders())
+    }
 
     override func setUpWithError() throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("api-\(UUID().uuidString.prefix(8))")
@@ -43,7 +38,7 @@ final class CommandAPITests: XCTestCase {
     private func answer(_ arguments: [String], input: String = "", environment: [String: String]? = nil) async throws -> CommandAnswer {
         let environment = environment ?? self.environment
         let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: environment))
-        let work = try XCTUnwrap(CommandAPI(mac: host).work(for: call, input: { input }, environment: environment))
+        let work = try XCTUnwrap(CommandAPI(mac: host, places: .test(environment), rates: .offline).work(for: call, request: .test(arguments, in: environment), input: { input }))
         return await work()
     }
 
@@ -56,10 +51,10 @@ final class CommandAPITests: XCTestCase {
     }
 
     func testAStoppedBatchRunsNoMoreLines() async throws {
-        let work = try XCTUnwrap(CommandAPI(mac: host).work(for: .batch, input: {
+        let work = try XCTUnwrap(CommandAPI(mac: host, places: .test(environment), rates: .offline).work(for: .test(["batch"]), input: {
             withUnsafeCurrentTask { $0?.cancel() }
             return "calc solve 2+2\ncalc solve 3+3\n"
-        }, environment: environment))
+        }))
 
         let answer = await Task { await work() }.value
 
@@ -98,6 +93,36 @@ final class CommandAPITests: XCTestCase {
         XCTAssertEqual(answer.code, 0)
     }
 
+    func testACurrencyIsAnsweredFromTheDatedFileOfTheRatesAndASumAsksForNone() async throws {
+        let fetches = OSAllocatedUnfairLock(initialState: 0)
+        let file = folder.appendingPathComponent("rates.json")
+        let rates = CalcRateCache(file: file, now: { Date() }) {
+            fetches.withLock { $0 += 1 }
+            return CalcRatesTests.file
+        }
+        let api = CommandAPI(mac: host, places: .test(environment), rates: rates)
+
+        let sum = try await XCTUnwrap(api.work(for: .test(["calc", "solve", "2+2"]), input: { "" }))()
+        XCTAssertEqual(TextBlock.blocks(in: sum.output).first?.value("title"), "4")
+        XCTAssertEqual(fetches.withLock { $0 }, 0)
+
+        for _ in 0..<2 {
+            let answer = try await XCTUnwrap(api.work(for: .test(["calc", "solve", "15 usd in eur"]), input: { "" }))()
+            XCTAssertEqual(TextBlock.blocks(in: answer.output).first?.value("detail"), "15 USD in EUR")
+        }
+        XCTAssertEqual(fetches.withLock { $0 }, 1)
+        XCTAssertNotNil(CalcRates(file: try Data(contentsOf: file)))
+    }
+
+    func testACurrencyWithNoRatesSaysWhy() async throws {
+        let rates = CalcRateCache(file: folder.appendingPathComponent("rates.json"), now: { Date() }) { throw URLError(.notConnectedToInternet) }
+        let api = CommandAPI(mac: host, places: .test(environment), rates: rates)
+
+        let answer = try await XCTUnwrap(api.work(for: .test(["calc", "solve", "15 usd in eur"]), input: { "" }))()
+
+        XCTAssertEqual(answer.output, "status=offline\n")
+    }
+
     func testAnUnknownCallPrintsTheUsageWithCode2() async throws {
         let answer = try await answer(["calc", "2+2"])
 
@@ -116,6 +141,28 @@ final class CommandAPITests: XCTestCase {
         XCTAssertEqual(get.output, "warm\n")
     }
 
+    func testASecretIsNeverPrintedAndOnlyOpenspotsFormChangesIt() async throws {
+        let spots = folder.appendingPathComponent("spots", isDirectory: true)
+        try TestSpot(header: "title=Weather\n\nfield=token\ntype=secret\n\nfield=key\ntype=secret", body: "echo").write(to: spots.spotFile("weather"))
+        let places = environment.merging(["OPENSPOT_SPOTS": spots.path]) { _, new in new }
+        let spot = places.merging(["OPENSPOT_ID": "weather"]) { _, new in new }
+        try AppPlaces.test(places).secrets.keep("MARKER-7f3c", key: "token", of: "weather")
+
+        let get = try await answer(["setting", "get", "token"], environment: spot)
+        let list = try await answer(["setting", "list"], environment: places)
+        let set = try await answer(["setting", "set", "token", "other"], environment: spot)
+        let unset = try await answer(["setting", "set", "key", "other"], environment: spot)
+
+        XCTAssertEqual(get.output, "•••\n")
+        XCTAssertFalse(list.output.contains("MARKER"), list.output)
+        XCTAssertTrue(list.output.contains("•••"), list.output)
+        XCTAssertEqual(set.code, 1)
+        XCTAssertEqual(set.errors, "Openspot keeps `token` of weather as a secret, so only its own form changes it. Open the Settings of weather, and press Return on its row.\n")
+        XCTAssertEqual(unset.code, 1)
+        XCTAssertEqual(try AppPlaces.test(places).secrets.read(), ["weather": ["token": "MARKER-7f3c"]])
+        XCTAssertNil(ConfigFile.standard(environment: places).read().setting("key", of: "weather"))
+    }
+
     func testASheetOnStdinIsChecked() async throws {
         let answer = try await answer(["check", "--sheet"], input: "title=Hi\n")
 
@@ -127,37 +174,37 @@ final class CommandAPITests: XCTestCase {
         let answer = try await answer(["calendar", "calendars"])
 
         XCTAssertEqual(TextBlock.blocks(in: answer.output).first?.value("title"), "Work")
-        XCTAssertEqual(host.made, 1)
+        XCTAssertEqual(calendar.made, 1)
     }
 
     func testTenCallsShareOneEventStore() async throws {
-        let api = CommandAPI(mac: host)
+        let api = CommandAPI(mac: host, places: .test(environment), rates: .offline)
         let call = try XCTUnwrap(CommandLineCall(arguments: ["calendar", "calendars"], environment: environment))
 
         for _ in 0..<10 {
-            _ = await api.work(for: call, input: { "" }, environment: environment)?()
+            _ = await api.work(for: call, request: .test(), input: { "" })?()
         }
 
-        XCTAssertEqual(host.made, 1)
+        XCTAssertEqual(calendar.made, 1)
     }
 
     func testAStoreWithNoLeaveIsMadeAgainAtTheNextCall() async throws {
-        host.access = .denied
-        let api = CommandAPI(mac: host)
+        calendar.access = .denied
+        let api = CommandAPI(mac: host, places: .test(environment), rates: .offline)
         let call = try XCTUnwrap(CommandLineCall(arguments: ["calendar", "calendars"], environment: environment))
 
-        _ = await api.work(for: call, input: { "" }, environment: environment)?()
-        host.access = .allowed
-        _ = await api.work(for: call, input: { "" }, environment: environment)?()
-        _ = await api.work(for: call, input: { "" }, environment: environment)?()
+        _ = await api.work(for: call, request: .test(), input: { "" })?()
+        calendar.access = .allowed
+        _ = await api.work(for: call, request: .test(), input: { "" })?()
+        _ = await api.work(for: call, request: .test(), input: { "" })?()
 
-        XCTAssertEqual(host.made, 2)
+        XCTAssertEqual(calendar.made, 2)
     }
 
     func testAnEventReachesTheRunningApp() async throws {
         let raised = LockedEvents()
         let call = try XCTUnwrap(CommandLineCall(arguments: ["event", "emit", "music.track", "Song"], environment: [:]))
-        let work = try XCTUnwrap(CommandAPI(mac: host, raise: { await raised.add($0) }).work(for: call, input: { "" }, environment: [:]))
+        let work = try XCTUnwrap(CommandAPI(mac: host, places: .test(), raise: { await raised.add($0) }, rates: .offline).work(for: call, request: .test(), input: { "" }))
 
         let answer = await work()
 
@@ -178,7 +225,7 @@ final class CommandAPITests: XCTestCase {
         let runs = SpotRuns()
         runs.usage.called(Spot(id: "a", name: "Alpha", url: folder), seconds: 1, isFailure: false, at: Date())
         let call = try XCTUnwrap(CommandLineCall(arguments: ["spot", "stats", "--frame"], environment: environment))
-        let work = try XCTUnwrap(CommandAPI(mac: host, runs: runs).work(for: call, input: { "" }, environment: environment))
+        let work = try XCTUnwrap(CommandAPI(mac: host, places: .test(environment), runs: runs, rates: .offline).work(for: call, request: .test(), input: { "" }))
 
         let answer = await work()
 
@@ -197,17 +244,17 @@ final class CommandAPITests: XCTestCase {
     }
 
     func testACallThatTheShellDoesOrThatNeedsTheAppHasNoWorkInCoreWithNoApp() throws {
-        for arguments in [["render", "a.png"], ["helper", "calc"], ["spot", "show", "notes"], ["sandbox"]] {
+        for arguments in [["render", "a.png"], ["helper", "calc"], ["spot", "show", "notes"], ["playground"]] {
             let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: [:]))
-            XCTAssertNil(CommandAPI(mac: host).work(for: call, input: { "" }, environment: [:]), arguments.joined(separator: " "))
+            XCTAssertNil(CommandAPI(mac: host, places: .test(), rates: .offline).work(for: call, request: .test(), input: { "" }), arguments.joined(separator: " "))
         }
     }
 
     func testACallThatStartsScriptsForASandboxedCallerRunsAloneInItsSandbox() throws {
-        for arguments in [["check"], ["check", "--json"], ["spot", "run", "notes"], ["sandbox"]] {
+        for arguments in [["check"], ["check", "--json"], ["spot", "run", "notes"], ["playground"]] {
             let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: [:]))
-            XCTAssertNil(CommandAPI(mac: host, app: FakeRunningApp()).work(for: call, input: { "" }, environment: [:], isSandboxed: true), arguments.joined(separator: " "))
-            XCTAssertNotNil(CommandAPI(mac: host, app: FakeRunningApp()).work(for: call, input: { "" }, environment: [:]), arguments.joined(separator: " "))
+            XCTAssertNil(CommandAPI(mac: host, places: .test(), app: FakeRunningApp(), rates: .offline).work(for: call, request: .test(), input: { "" }, isSandboxed: true), arguments.joined(separator: " "))
+            XCTAssertNotNil(CommandAPI(mac: host, places: .test(), app: FakeRunningApp(), rates: .offline).work(for: call, request: .test(), input: { "" }), arguments.joined(separator: " "))
         }
     }
 }

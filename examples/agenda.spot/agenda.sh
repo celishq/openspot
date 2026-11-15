@@ -13,7 +13,7 @@
 # icon=calendar
 . "$OPENSPOT_SH"
 
-hidden=$(openspot setting get calendars </dev/null)
+hidden=${OPENSPOT_SETTING_CALENDARS-}
 
 # Prints a --hide flag for each calendar and list that the person hides in the calendars setting.
 hides() { for id in $hidden; do printf -- '--hide %s ' "$id"; done; }
@@ -167,11 +167,9 @@ adding() {
   printf 'row=add-%s\ntitle=%s\ndetail=%s · %s\nicon=plus.circle\nhides=join\nhides=tick\n\n' "$3" "$4" "$(field title "$made")" "$(field detail "$made")"
 }
 
-# Asks macOS for leave with a call outside a read, and shows the link to the fix when the person said no.
+# Asks macOS for leave with a call outside a read. When the person said no, Openspot shows the link to the fix.
 allow() {
-  out=$(openspot "$@" </dev/null) && return 0
-  printf '%s\n' "$out" | grep '^link='
-  exit 1
+  openspot "$@" </dev/null >/dev/null || exit 1
 }
 
 case "$1" in
@@ -211,7 +209,7 @@ case "$1" in
     calendars_form
     ;;
   tick)
-    state=$(reminders | awk -v id="$2" 'BEGIN { RS = ""; FS = "\n" } $1 == "row=" id { for (i = 2; i <= NF; i++) if ($i ~ /^done=/) print substr($i, 6) }')
+    state=$(value done)
     to=true
     [ "$state" = true ] && to=false
     openspot reminders done "$2" "$to" </dev/null
@@ -223,7 +221,7 @@ case "$1" in
     open "$link"
     ;;
   join)
-    link=$(events | awk -v id="$2" 'BEGIN { RS = ""; FS = "\n" } $1 == "row=" id { for (i = 2; i <= NF; i++) if ($i ~ /^meeting=/) print substr($i, 9) }')
+    link=$(value meeting)
     [ -n "$link" ] || { echo 'This event has no call link.' >&2; exit 1; }
     open "$link"
     ;;

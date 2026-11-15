@@ -31,9 +31,10 @@ public enum SpotSample {
     @MainActor
     public static func output(of item: SpotStore.Item, runs: SpotRuns) async -> SpotOutput? {
         if item.runsSample, let sampled = item.spot.sampled {
-            return (try? await runs.answer(of: sampled, .read, limit: limit)).map(SpotOutput.init(text:))
+            guard let text = try? await runs.answer(of: sampled, .read, limit: limit) else { return nil }
+            return await SpotOutput.reading(text)
         }
         let kept = text(beside: item.spot.url)
-        return await Task.detached(priority: .userInitiated) { (try? String(contentsOf: kept, encoding: .utf8)).map(SpotOutput.init(text:)) }.value
+        return await Task.detached(priority: .userInitiated) { (try? String(contentsOf: kept, encoding: .utf8)).map { SpotOutput(text: $0) } }.value
     }
 }

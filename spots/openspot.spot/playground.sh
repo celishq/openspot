@@ -4,4 +4,4 @@
 # detail=Try a spot and see each call
 # keywords=sandbox
 # offers=card
-exec openspot sandbox
+exec openspot playground

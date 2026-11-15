@@ -1,7 +1,8 @@
 import Foundation
 
 public protocol RunningApp: Sendable {
-    func configChanged(_ change: ConfigChange) async
+    func configChanged(_ change: ConfigChange, to config: KeptConfig) async
+    func spotsChanged() async
     func status() async -> (update: String?, calls: Int, isFirstLaunch: Bool)
     func checkUpdate() async -> Bool
     func installUpdate() async -> Bool
@@ -15,7 +16,7 @@ public protocol RunningApp: Sendable {
     func editGrid() async
     func publish(_ id: String) async -> SpotPublish
     func reveal(_ id: String) async -> Bool
-    func sandbox(_ file: URL?, isCareful: Bool) async
+    func playground(_ file: URL?, isCareful: Bool) async
     func changeSetting(_ key: String, of spot: String) async -> Bool
     func allows(_ reason: String) async -> Bool
 }

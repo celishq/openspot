@@ -13,13 +13,17 @@ public enum SpotEvent: Equatable, Sendable {
     public static let screenWake = "screen.wake"
     public static let appUpdate = "app.update"
     public static let appLaunch = "app.launch"
+    public static let systemLoad = "system.load"
+    public static let powerChange = "power.change"
+    public static let diskMount = "disk.mount"
+    public static let deviceConnect = "device.connect"
 
     public static let sheetOpen = "sheet.open"
     public static let panelOpen = "panel.open"
     public static let searchText = "search.text"
     public static let sheetText = "sheet.text"
     public static let clockPrefix = "clock."
-    public static let known = [sheetOpen, panelOpen, searchText, sheetText, clipboard, frontApp, appUpdate, appLaunch, screenWake]
+    public static let known = [sheetOpen, panelOpen, searchText, sheetText, clipboard, frontApp, appUpdate, appLaunch, screenWake, systemLoad, powerChange, diskMount, deviceConnect]
     public static let valueless = [sheetOpen, panelOpen, sheetText, clipboard, screenWake, appLaunch]
 
     public static func isName(_ word: String) -> Bool {

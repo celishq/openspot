@@ -16,6 +16,8 @@ public enum SpotTokens {
     public static let workMark: CGFloat = 16
     public static let keycap: CGFloat = 20
     public static let keycapRadius: CGFloat = 6
+    public static let ring: CGFloat = 2
+    public static let thinRing: CGFloat = 1.5
     public static let resizeHandle: CGFloat = 28
     public static let resizeHandleLine: CGFloat = 5
     public static let toastGap: CGFloat = 10
@@ -142,12 +144,12 @@ public enum SpotTokens {
         CGFloat(rows) * menuRowHeight + CGFloat(max(rows - 1, 0)) * menuRowGap + 2 * menuPadding
     }
 
-    public static func backdropHeight(gridHeight: CGFloat) -> CGFloat {
+    public static func contentHeight(gridHeight: CGFloat) -> CGFloat {
         let cards = gridHeight > 0 ? rowGap + gridHeight : 0
         return min(2 * halo + rowHeight + cards + hintBlock, panelHeight)
     }
 
-    public static func corner(for size: SpotSize) -> CGFloat {
+    static func corner(for size: SpotSize) -> CGFloat {
         size.rows == 1 && size.columns < columns ? rowHeight / 2 : radius
     }
 

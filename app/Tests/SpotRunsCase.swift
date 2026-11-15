@@ -5,13 +5,21 @@ import XCTest
 class SpotRunsCase: XCTestCase {
     var folder: URL!
     var runs: SpotRuns!
-    var time = Date(timeIntervalSince1970: 1000)
+    let clock = FakeClock(isReal: true)
+    var time: Date {
+        get { clock.time }
+        set { clock.advance(by: newValue.timeIntervalSince(clock.time)) }
+    }
     var menuBar: Set<String> = []
 
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-runs-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        runs = SpotRuns(now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50))
+        runs = runs(environment: ProcessInfo.processInfo.environment)
+    }
+
+    func runs(environment: [String: String]) -> SpotRuns {
+        SpotRuns(environment: environment, clock: clock.value, stopPause: 0.2)
     }
 
     override func tearDown() async throws {
@@ -34,8 +42,7 @@ class SpotRunsCase: XCTestCase {
     @discardableResult
     func script(_ name: String = "script", header: String = "", log: String = "log", _ body: String = "") throws -> URL {
         let url = folder.spotFile(name)
-        let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\necho $$ >> '\(path("pids"))'\necho \"$*\" >> '\(path(log))'\n\(body)\n".writeScript(to: url)
+        try TestSpot(header: header, body: "echo $$ >> '\(path("pids"))'\necho \"$*\" >> '\(path(log))'\n\(body)").write(to: url)
         return url
     }
 
@@ -45,23 +52,18 @@ class SpotRunsCase: XCTestCase {
     }
 
     func scanned() throws -> ScanResult {
-        let scan = try SpotsFolder(url: folder).scan()
+        let load = KeptScan.shared.load(SpotsFolder(url: folder))
+        let scan = try load.result(enabled: [], disabled: [], hosted: [])
         XCTAssertEqual(scan.refused, [])
-        runs.take(scan, menuBar: menuBar)
+        var stamps: [String: [Int]] = [:]
+        for script in scan.scripts { stamps[script.id] = load.stamp(of: script) }
+        runs.take(scan, menuBar: menuBar, stamps: stamps)
         return scan
     }
 
     func sheet(_ id: String = "script") throws -> SpotRun {
         _ = try scanned()
         return try XCTUnwrap(runs.sheets[id])
-    }
-
-    func wait(_ what: String, until condition: @escaping () -> Bool) async throws {
-        for _ in 0..<500 {
-            if condition() { return }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTFail("waited for \(what)")
     }
 
     func allEnded() async throws {

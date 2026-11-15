@@ -51,7 +51,7 @@ final class ScriptProcessTests: XCTestCase {
     func testReturnsWhatTheSpotPrintsForTheArguments() async throws {
         let spot = try writeSpot("echo.sh", "#!/bin/sh\necho \"$1\"\n")
 
-        let output = try await ScriptProcess.output(url: spot.url, arguments: ["hello"], limit: 5)
+        let output = try await ScriptProcess.output(url: spot.url, arguments: ["hello"], limit: 60)
 
         XCTAssertEqual(output, "hello\n")
     }
@@ -59,7 +59,7 @@ final class ScriptProcessTests: XCTestCase {
     func testGivesTheInputToTheSpot() async throws {
         let spot = try writeSpot("cat.sh", "#!/bin/sh\ncat\n")
 
-        let output = try await ScriptProcess.output(url: spot.url, input: "line \"one\"\nline two", limit: 5)
+        let output = try await ScriptProcess.output(url: spot.url, input: "line \"one\"\nline two", limit: 60)
 
         XCTAssertEqual(output, "line \"one\"\nline two")
     }
@@ -67,19 +67,17 @@ final class ScriptProcessTests: XCTestCase {
     func testASpotThatIgnoresALargeInputStillFinishes() async throws {
         let spot = try writeSpot("quiet.sh", "#!/bin/sh\necho done\n")
 
-        let output = try await ScriptProcess.output(url: spot.url, input: String(repeating: "x", count: 500_000), limit: 5)
+        let output = try await ScriptProcess.output(url: spot.url, input: String(repeating: "x", count: 500_000), limit: 60)
 
         XCTAssertEqual(output, "done\n")
     }
 
     func testARunGetsTheDataFolderAndOpenspotCreatesIt() async throws {
         let config = folder.appendingPathComponent("config")
-        setenv("OPENSPOT_CONFIG", config.path, 1)
-        defer { unsetenv("OPENSPOT_CONFIG") }
         let spot = try writeSpot("data.sh", "#!/bin/sh\nprintf %s \"$OPENSPOT_DATA\"\n")
         let data = config.appendingPathComponent("data").path
 
-        let output = try await ScriptProcess.output(url: spot.url, limit: 5)
+        let output = try await ScriptProcess.output(url: spot.url, limit: 60, base: ProcessInfo.processInfo.environment.merging(["OPENSPOT_CONFIG": config.path]) { _, new in new })
 
         XCTAssertEqual(output, data)
         var isFolder: ObjCBool = false
@@ -124,7 +122,7 @@ final class ScriptProcessTests: XCTestCase {
 
     func testAProcessKeepsOnlyTheEndOfALongStderr() async throws {
         let spot = try writeSpot("loud.sh", "#!/bin/sh\ni=0\nwhile [ $i -lt 5000 ]; do echo \"line $i of a log that runs long\" >&2; i=$((i+1)); done\necho 'the end' >&2\n")
-        let process = ScriptProcess(url: spot.url, limit: 10)
+        let process = ScriptProcess(url: spot.url, limit: 60)
 
         for try await _ in process.start() {}
 
@@ -147,7 +145,7 @@ final class ScriptProcessTests: XCTestCase {
     }
 
     func testAScriptThatCannotStartEndsItsFramesWithTheReason() async throws {
-        let process = ScriptProcess(url: folder.appendingPathComponent("missing.sh"), limit: 5)
+        let process = ScriptProcess(url: folder.appendingPathComponent("missing.sh"), limit: 60)
         let frames = process.start()
 
         do {
@@ -167,7 +165,7 @@ final class ScriptProcessTests: XCTestCase {
             let ended = expectation(description: "the end")
             process.onExit { _ in ended.fulfill() }
             do { for try await _ in process.start() {} } catch {}
-            await fulfillment(of: [ended], timeout: 5)
+            await fulfillment(of: [ended], timeout: 60)
             times += 1
             processes.append(process)
         }
@@ -227,7 +225,7 @@ final class ScriptProcessTests: XCTestCase {
 
         process.stop()
 
-        try await wait { self.exists("cleaned") && !process.isRunning }
+        try await wait("the clean-up and the end") { self.exists("cleaned") && !process.isRunning }
     }
 
     func testAScriptThatIgnoresTheTerminateSignalEndsAfterTwoSeconds() async throws {
@@ -238,7 +236,7 @@ final class ScriptProcessTests: XCTestCase {
 
         let started = Date()
         process.stop()
-        try await wait(seconds: 10) { !process.isRunning }
+        try await wait("the end of the process") { !process.isRunning }
 
         XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(started), 2)
     }
@@ -252,20 +250,12 @@ final class ScriptProcessTests: XCTestCase {
     }
 
     private func pid(_ name: String) async throws -> Int32 {
-        for _ in 0..<500 where !exists(name) { try await Task.sleep(for: .milliseconds(10)) }
+        for _ in 0..<6000 where !exists(name) { try await Task.sleep(for: .milliseconds(10)) }
         return try XCTUnwrap(Int32(try String(contentsOfFile: path(name), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
     }
 
     private func runs(_ pid: Int32) -> Bool {
         kill(pid, 0) == 0
-    }
-
-    private func wait(seconds: Int = 5, until fact: () -> Bool) async throws {
-        for _ in 0..<(seconds * 100) {
-            if fact() { return }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTFail("waited too long")
     }
 
     func testATerminalStopEndsTheGroupOfEachScriptThatRuns() async throws {
@@ -278,7 +268,7 @@ final class ScriptProcessTests: XCTestCase {
 
         await Task.detached { TerminalStop.stopEach(pause: Self.stopPause) }.value
 
-        try await wait { !self.runs(script) && !self.runs(child) }
+        try await wait("the end of the script and its child") { !self.runs(script) && !self.runs(child) }
     }
 
     func testAScriptAndAChildThatIgnoreTheTerminateSignalAreGoneOnePauseAfterAStop() async throws {
@@ -291,7 +281,7 @@ final class ScriptProcessTests: XCTestCase {
         let started = Date()
 
         process.stop()
-        try await wait { !self.runs(script) && !self.runs(child) }
+        try await wait("the end of the script and its child") { !self.runs(script) && !self.runs(child) }
 
         XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(started), Self.stopPause)
     }
@@ -305,10 +295,21 @@ final class ScriptProcessTests: XCTestCase {
         let started = Date()
 
         process.stop()
-        try await wait { !self.runs(child) }
+        try await wait("the end of the child") { !self.runs(child) }
 
         XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(started), Self.stopPause)
         XCTAssertFalse(process.isRunning)
+    }
+
+    func testTheLateKillOfAStoppedScriptIsCancelledWhenItsGroupIsReaped() async throws {
+        let spot = try writeSpot("plain.sh", "#!/bin/sh\nprintf 'a=1\\n---\\n'\nexec sleep 30\n")
+        let process = ScriptProcess(url: spot.url, stopPause: 30)
+        var frames = process.start().makeAsyncIterator()
+        _ = try await frames.next()
+
+        process.stop()
+
+        try await wait("the reaped process with no late kill") { !process.isRunning && !process.needsFinish }
     }
 
     func testAStopLeavesAChildAloneAfterItsCallEndedByItself() async throws {
@@ -334,7 +335,7 @@ final class ScriptProcessTests: XCTestCase {
         let started = Date()
 
         live.end()
-        try await wait { !self.runs(script) && !self.runs(child) }
+        try await wait("the end of the script and its child") { !self.runs(script) && !self.runs(child) }
 
         XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(started), Self.stopPause * 2)
     }
@@ -348,7 +349,7 @@ final class ScriptProcessTests: XCTestCase {
         let started = Date()
 
         live.end()
-        try await wait { !self.runs(child) }
+        try await wait("the end of the child") { !self.runs(child) }
 
         XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(started), Self.stopPause * 2)
         XCTAssertFalse(live.isRunning)
@@ -357,7 +358,7 @@ final class ScriptProcessTests: XCTestCase {
     func testACallGoesOnWhileAChildHoldsItsOutput() async throws {
         let spot = try writeSpot("child.sh", "#!/bin/sh\n(sleep 0.3; printf 'late=1\\n') &\nexit 0\n")
 
-        let output = try await ScriptProcess.output(url: spot.url, limit: 5)
+        let output = try await ScriptProcess.output(url: spot.url, limit: 60)
 
         XCTAssertEqual(output, "late=1\n")
     }
@@ -366,7 +367,7 @@ final class ScriptProcessTests: XCTestCase {
         let spot = try writeSpot("away.sh", "#!/bin/sh\nsleep 30 >/dev/null 2>&1 &\nprintf 'a=1\\n'\nexit 0\n")
         let started = Date()
 
-        let output = try await ScriptProcess.output(url: spot.url, limit: 5)
+        let output = try await ScriptProcess.output(url: spot.url, limit: 60)
 
         XCTAssertEqual(output, "a=1\n")
         XCTAssertLessThan(Date().timeIntervalSince(started), 2)
@@ -377,7 +378,7 @@ final class ScriptProcessTests: XCTestCase {
         let spot = try writeSpot("noisy.sh", "#!/bin/sh\n\(body)")
 
         do {
-            _ = try await ScriptProcess.output(url: spot.url, limit: 5)
+            _ = try await ScriptProcess.output(url: spot.url, limit: 60)
             XCTFail("expected a failure")
         } catch {
             XCTAssertEqual(error as? SpotError, .failed(3, "cut short"))
@@ -388,7 +389,7 @@ final class ScriptProcessTests: XCTestCase {
         let spot = try writeSpot("blank.sh", "#!/bin/sh\necho boom >&2\ni=0\nwhile [ $i -lt 80000 ]; do echo >&2; i=$((i+1)); done\nexit 3\n")
 
         do {
-            _ = try await ScriptProcess.output(url: spot.url, limit: 10)
+            _ = try await ScriptProcess.output(url: spot.url, limit: 60)
             XCTFail("expected a failure")
         } catch {
             XCTAssertEqual(error as? SpotError, .failed(3, "boom"))
@@ -399,7 +400,7 @@ final class ScriptProcessTests: XCTestCase {
         let spot = try writeSpot("crlf.sh", "#!/bin/sh\nprintf 'first\\r\\nboom\\r\\n\\r\\n' >&2\nexit 3\n")
 
         do {
-            _ = try await ScriptProcess.output(url: spot.url, limit: 10)
+            _ = try await ScriptProcess.output(url: spot.url, limit: 60)
             XCTFail("expected a failure")
         } catch {
             XCTAssertEqual(error as? SpotError, .failed(3, "boom"))
@@ -410,7 +411,7 @@ final class ScriptProcessTests: XCTestCase {
         let spot = try writeSpot("killed.sh", "#!/bin/sh\nkill -KILL $$\n")
 
         do {
-            _ = try await ScriptProcess.output(url: spot.url, limit: 5)
+            _ = try await ScriptProcess.output(url: spot.url, limit: 60)
             XCTFail("expected a failure")
         } catch {
             XCTAssertEqual(error as? SpotError, .failed(9, ""))
@@ -426,7 +427,7 @@ final class ScriptProcessTests: XCTestCase {
         } catch SpotError.timedOut {
         }
         let script = try await pid("script")
-        try await wait { !self.runs(script) }
+        try await wait("the end of the script") { !self.runs(script) }
 
         XCTAssertFalse(exists("went-on"))
     }

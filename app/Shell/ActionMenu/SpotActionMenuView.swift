@@ -2,6 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotActionMenuView: View, @MainActor Equatable {
+    @Environment(\.spotSurfaceEdge) private var surface
     let menu: ActionMenu
     let frame: ActionMenuFrame
     var isSettled = true
@@ -11,10 +12,10 @@ struct SpotActionMenuView: View, @MainActor Equatable {
     var onSearch: @MainActor @Sendable (String) -> Void = { _ in }
     let selection: () -> Int
 
-    static let radius = SpotTokens.radius - SpotTokens.padding + SpotTokens.menuPadding
+    static let radius = SurfaceEdge.sheet.inner(by: SpotTokens.padding - SpotTokens.menuPadding).radius
 
-    private var shape: RoundedRectangle {
-        RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
+    private var shape: SpotRoundShape {
+        SpotRoundShape(surface.inner())
     }
 
     var body: some View {
@@ -60,7 +61,7 @@ struct SpotActionMenuView: View, @MainActor Equatable {
                         .modifier(SpotSecondaryText())
                 } else {
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(SpotType.chevron)
                         .modifier(SpotSecondaryText())
                 }
             }

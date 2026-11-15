@@ -72,7 +72,7 @@ extension SpotsModel {
         }
 
         @MainActor public var showsHeaderPicture: Bool {
-            item?.symbol == nil && (spot.icon != nil || spot.glyph != nil)
+            item?.symbol == nil && (spot.fileIcon != nil || spot.glyph != nil)
         }
 
         @MainActor public var state: SpotState {

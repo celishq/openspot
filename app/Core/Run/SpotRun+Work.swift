@@ -30,12 +30,6 @@ extension SpotRun {
         running(Self.cardKey) != nil
     }
 
-    public var work: [ScriptCall] {
-        _ = workPauses
-        let time = runs.now()
-        return workCalls.filter { time.timeIntervalSince($0.started) >= Self.workPause }
-    }
-
     public var cardWork: ScriptCall? {
         shown(Self.cardKey)
     }
@@ -71,8 +65,8 @@ extension SpotRun {
     }
 
     @discardableResult
-    public func drop(_ paths: [String]) -> Bool {
-        guard spot.accepts(paths) else { return false }
+    public func drop(_ paths: [String], files: FileKinds? = nil) -> Bool {
+        guard files.map(spot.accepts) ?? spot.accepts(paths) else { return false }
         waitingFiles.append(.drop(paths: paths))
         startWaitingFiles()
         return true
@@ -90,13 +84,19 @@ extension SpotRun {
     }
 
     public func pressKey(_ call: String) {
-        waitingKeys.append(call)
+        let held = script.keepsState ? calls.count { $0.key == Self.globalKey } : 0
+        if waitingKeys.count + held < Self.waitingLimit {
+            waitingKeys.append(call)
+        } else if held > 0 {
+            onReport(.toast("\(spot.name) is still busy with \(Self.waitingLimit) presses, so Openspot dropped this one. Wait for one to end, then press again."))
+        }
         startWaitingKey()
     }
 
     func startWaitingKey() {
-        guard !waitingKeys.isEmpty, running(Self.globalKey) == nil else { return }
-        work(.press(waitingKeys.removeFirst()), key: Self.globalKey)
+        while !waitingKeys.isEmpty, script.keepsState || running(Self.globalKey) == nil {
+            work(.press(waitingKeys.removeFirst()), key: Self.globalKey)
+        }
     }
 
     public func setLevel(_ value: Double) {
@@ -115,8 +115,8 @@ extension SpotRun {
             guard let other = runs.sheets[to] else { return fail(SpotError.failed(1, "\(spot.name) hands this row to `\(to)`, which is not on. Turn it on, then try again.")) }
             return other.press(.item(item), input: item.fields)
         }
-        guard list.search == .script, !list.query.isEmpty else { return press(.item(item)) }
-        press(.item(item), input: TextBlock(fields: [.init(key: "search", value: list.query)]).text)
+        guard list.search == .script, !list.query.isEmpty else { return press(.item(item), input: item.fields) }
+        press(.item(item), input: (item.fields ?? "") + TextBlock(fields: [.init(key: "search", value: list.query)]).text)
     }
 
     public func set(_ item: SpotItem, to value: String) {
@@ -124,18 +124,18 @@ extension SpotRun {
     }
 
     public func run(_ action: CommandAction, item: SpotItem?) {
-        press(.action(action, item: item))
+        press(.action(action, item: item), input: item?.fields)
     }
 
     public func form(_ action: CommandAction, item: SpotItem?) async throws -> ItemForm? {
         let call = SpotAction.action(action, item: item)
         let key = Self.key(call: call)
         if let running = running(key) {
-            pressAgain(running)
+            stopPressed(running)
             return nil
         }
-        guard let text = try await link.form(call, key: key) else { return nil }
-        guard let form = ItemForm(output: SpotOutput(text: text)) else { throw SpotError.badForm }
+        guard let output = try await answer(to: call, key: key, input: nil) else { return nil }
+        guard let form = ItemForm(output: output) else { throw SpotError.badForm }
         return form
     }
 
@@ -143,11 +143,11 @@ extension SpotRun {
         let call = SpotAction.action(action, item: nil)
         let key = Self.key(call: call)
         if let running = running(key) {
-            pressAgain(running)
+            stopPressed(running)
             return nil
         }
-        guard let text = try await link.form(call, key: key) else { return nil }
-        if let form = ItemForm(output: SpotOutput(text: text)), !form.fields.isEmpty { return .form(form) }
+        guard let output = try await answer(to: call, key: key, input: nil) else { return nil }
+        if let form = ItemForm(output: output), !form.fields.isEmpty { return .form(form) }
         read(need: .change)
         return .done
     }
@@ -156,17 +156,19 @@ extension SpotRun {
         let call = SpotAction.action(action, item: item)
         let key = Self.key(call: call)
         if let running = running(key) {
-            pressAgain(running)
+            stopPressed(running)
             return nil
         }
-        guard let text = try await link.submit(call, key: key, values: draft.text) else { return nil }
-        guard !link.keepsState else { return .done }
-        if let form = ItemForm(output: SpotOutput(text: text)), !form.fields.isEmpty {
+        guard !script.keepsState else {
+            work(call, key: key, input: draft.text)
+            return .done
+        }
+        guard let output = try await answer(to: call, key: key, input: draft.text) else { return nil }
+        if let form = ItemForm(output: output), !form.fields.isEmpty {
             if draft.isMultiple { read(need: .change) }
             return .form(form)
         }
-        let run = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        read(selecting: run.isEmpty ? nil : run, need: .change)
+        read(selecting: output.select, need: .change)
         return .done
     }
 
@@ -177,6 +179,17 @@ extension SpotRun {
     }
 
     private func pressAgain(_ call: ScriptCall) {
+        guard script.keepsState else { return stopPressed(call) }
+        guard runs.now().timeIntervalSince(call.started) >= Self.pressPause else { return }
+        let heard = call.heard
+        call.halt()
+        after(.seconds(runs.stopPause), key: "stop:\(call.key)") { [weak self] in
+            guard let self, call.heard == heard, calls.contains(where: { $0 === call }) else { return }
+            stop(call)
+        }
+    }
+
+    private func stopPressed(_ call: ScriptCall) {
         if runs.now().timeIntervalSince(call.started) >= Self.pressPause { stop(call) }
     }
 
@@ -198,8 +211,8 @@ extension SpotRun {
 
     func after(_ pause: Duration, key: String, _ work: @escaping () -> Void) {
         pauses[key]?.cancel()
-        pauses[key] = Task { [weak self] in
-            try? await Task.sleep(for: pause)
+        pauses[key] = Task { [weak self, sleep = runs.clock.sleep] in
+            try? await sleep(pause, pause / 10)
             guard !Task.isCancelled else { return }
             self?.pauses[key] = nil
             work()
@@ -219,6 +232,6 @@ extension SpotRun {
 
     private func work(_ action: SpotAction, key: String, input: String? = nil, as work: Work = Work()) {
         answered = nil
-        link.send(Call(action: action, key: key, input: input, purpose: .work(work)))
+        send(Call(action: action, key: key, input: input, purpose: .work(work)))
     }
 }

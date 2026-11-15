@@ -35,6 +35,7 @@ public enum SpotSource: Equatable, Sendable {
     func add(
         to folder: URL,
         at commit: String?,
+        base: [String: String],
         replacing: [String] = [],
         discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) },
         check: (URL, [String]) throws -> Void = { _, _ in }
@@ -42,7 +43,7 @@ public enum SpotSource: Equatable, Sendable {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let work = try FileManager.default.url(for: .itemReplacementDirectory, in: .userDomainMask, appropriateFor: folder, create: true)
         defer { try? FileManager.default.removeItem(at: work) }
-        let (commit, paths) = try await stage(in: work, from: folder, at: commit, replacing: replacing)
+        let (commit, paths) = try await stage(in: work, from: folder, at: commit, base: base, replacing: replacing)
         try check(work, paths)
         try Task.checkCancellation()
         let kept = paths.filter { Self.isSame(work.appendingPathComponent($0), folder.appendingPathComponent($0)) }
@@ -59,7 +60,7 @@ public enum SpotSource: Equatable, Sendable {
         return (commit, paths)
     }
 
-    private func stage(in work: URL, from folder: URL, at commit: String?, replacing: [String]) async throws -> (commit: String?, paths: [String]) {
+    private func stage(in work: URL, from folder: URL, at commit: String?, base: [String: String], replacing: [String]) async throws -> (commit: String?, paths: [String]) {
         switch self {
         case .git(let text):
             if text.hasPrefix("/"), !FileManager.default.fileExists(atPath: text) { throw SpotError.fault("Openspot cannot find \(text).") }
@@ -67,9 +68,9 @@ public enum SpotSource: Equatable, Sendable {
             try Self.checkFree([name], in: folder, replacing: replacing)
             let clone = work.appendingPathComponent(name)
             do {
-                try await Self.run(["clone", "--quiet", text, clone.path])
-                if let commit { try await Self.run(["-C", clone.path, "checkout", "--quiet", "--detach", commit]) }
-                let head = try await Self.run(["-C", clone.path, "rev-parse", "HEAD"]).trimmingCharacters(in: .whitespacesAndNewlines)
+                try await Self.run(["clone", "--quiet", text, clone.path], base: base)
+                if let commit { try await Self.run(["-C", clone.path, "checkout", "--quiet", "--detach", commit], base: base) }
+                let head = try await Self.run(["-C", clone.path, "rev-parse", "HEAD"], base: base).trimmingCharacters(in: .whitespacesAndNewlines)
                 try FileManager.default.removeItem(at: clone.appendingPathComponent(".git"))
                 return (head, [name])
             } catch let error as SpotError {
@@ -121,38 +122,14 @@ public enum SpotSource: Equatable, Sendable {
     }
 
     @discardableResult
-    private static func run(_ arguments: [String]) async throws -> String {
-        let process = Process()
-        process.executableURL = git
-        process.arguments = arguments
-        process.standardInput = FileHandle.nullDevice
-        process.environment = ProcessInfo.processInfo.environment.merging(["GIT_TERMINAL_PROMPT": "0"]) { _, new in new }
-        let output = Pipe()
-        let errors = Pipe()
-        process.standardOutput = output
-        process.standardError = errors
-        let printed: String = try await withTaskCancellationHandler {
-            try await withCheckedThrowingContinuation { continuation in
-                let ended = DispatchSemaphore(value: 0)
-                process.terminationHandler = { _ in ended.signal() }
-                do {
-                    try process.run()
-                } catch {
-                    continuation.resume(throwing: SpotError.fault("Openspot cannot start git. Run `xcode-select --install`, then try again."))
-                    return
-                }
-                if Task.isCancelled { process.terminate() }
-                DispatchQueue.global().async {
-                    let failure = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-                    let printed = String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-                    ended.wait()
-                    guard process.terminationStatus != 0 else { return continuation.resume(returning: printed) }
-                    let line = failure.split(separator: "\n").last.map(String.init) ?? "git stopped with code \(process.terminationStatus)."
-                    continuation.resume(throwing: SpotError.fault(line))
-                }
-            }
-        } onCancel: {
-            if process.isRunning { process.terminate() }
+    private static func run(_ arguments: [String], base: [String: String]) async throws -> String {
+        let printed: String
+        do {
+            printed = try await ScriptProcess.output(url: git, arguments: arguments, base: base.merging(["GIT_TERMINAL_PROMPT": "0"]) { _, new in new })
+        } catch SpotError.failed(let code, let line) {
+            throw SpotError.fault(line.isEmpty ? "git stopped with code \(code)." : line)
+        } catch is CocoaError {
+            throw SpotError.fault("Openspot cannot start git. Run `xcode-select --install`, then try again.")
         }
         try Task.checkCancellation()
         return printed

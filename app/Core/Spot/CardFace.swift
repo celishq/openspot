@@ -20,12 +20,12 @@ public struct CardFace: Equatable, Sendable {
 
     public init(head: TextBlock?, parts: [SpotPart]) {
         var drawings: [String: [[String]]] = [:]
-        for field in head?.fields ?? [] where field.key.hasPrefix("grid.") && !field.value.isEmpty {
-            let place = String(field.key.dropFirst(5))
+        for field in head?.fields ?? [] where HeaderKey.isDrawing(field.key) && !field.value.isEmpty {
+            let place = String(field.key.dropFirst(HeaderKey.drawing.count))
             guard Self.places.contains(place) else { continue }
             drawings[place, default: []].append(field.value.split(whereSeparator: \.isWhitespace).map(String.init))
         }
-        self.init(drawings: drawings, parts: drawings.isEmpty ? parts.filter { $0.kind == "view" } : parts)
+        self.init(drawings: drawings, parts: drawings.isEmpty ? parts.filter { $0.isOpen } : parts)
     }
 
     public func drawing(for size: SpotSize) -> [[String]]? {
@@ -42,7 +42,7 @@ public struct CardFace: Equatable, Sendable {
     }
 
     public var hasView: Bool {
-        parts.contains { $0.kind == "view" }
+        parts.contains { $0.isOpen }
     }
 
     public mutating func set(_ value: String, of id: String) {

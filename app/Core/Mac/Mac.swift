@@ -1,51 +1,49 @@
 import Foundation
 
-public protocol Mac: AnyObject, Sendable {
-    func eventStore() -> any EventStore
-    func reminderStore() -> any ReminderStore
-    func showCalendar(at time: Date) throws
-    func open(_ link: URL) -> Bool
-    var login: LoginItem? { get }
-    var link: CommandLink? { get }
-    var guide: URL? { get }
-    @MainActor func listen(_ heard: @escaping @MainActor (SpotEvent) -> Void)
-    @MainActor var clipboardCount: Int { get }
-    func copy(text: String) throws
-    func copy(file: URL) throws
-    func clipboardText() -> String
-    func paste() throws
-    func windowFrame() async throws -> String
-    func moveWindow(_ move: WindowMove) async throws
-    func screenSources() async -> String
-    func screenShot(_ capture: ScreenCapture, in folder: URL) async throws -> String
-    func startRecording(_ capture: ScreenCapture, in folder: URL) async throws -> String
-    func stopRecording() async throws -> String
-    func recordingStatus() async throws -> String
-    func translate(_ text: String, from: String?, to: String?) async throws -> String
-    func translationLanguages() async -> String
-    @MainActor func pickColor() async -> String
-    @MainActor func pickFolder() async -> String
-}
+public struct Mac: Sendable {
+    public var calendar: (any MacCalendar)?
+    public var reminders: (any MacReminders)?
+    public var clipboard: (any MacClipboard)?
+    public var windows: (any MacWindows)?
+    public var screen: (any MacScreen)?
+    public var translation: (any MacTranslation)?
+    public var events: (any MacEvents)?
+    public var login: @Sendable () -> LoginItem?
+    public var link: @Sendable () -> CommandLink?
+    public var pickColor: (@MainActor @Sendable () async -> HexColor?)?
+    public var pickFolder: (@MainActor @Sendable () async -> URL?)?
+    public var guide: URL?
 
-extension Mac {
-    public var login: LoginItem? { nil }
-    public var link: CommandLink? { nil }
-    public var guide: URL? { Bundle.main.url(forResource: "GUIDE", withExtension: "md") }
-    @MainActor public func listen(_ heard: @escaping @MainActor (SpotEvent) -> Void) {}
-    @MainActor public var clipboardCount: Int { 0 }
-    public func copy(text: String) throws { throw SpotError.fault("This Mac has no clipboard.") }
-    public func copy(file: URL) throws { throw SpotError.fault("This Mac has no clipboard.") }
-    public func clipboardText() -> String { "" }
-    public func paste() throws { throw SpotError.fault("This Mac has no clipboard.") }
-    public func windowFrame() async throws -> String { throw SpotError.fault("This Mac has no windows.") }
-    public func moveWindow(_ move: WindowMove) async throws { throw SpotError.fault("This Mac has no windows.") }
-    public func screenSources() async -> String { "" }
-    public func screenShot(_ capture: ScreenCapture, in folder: URL) async throws -> String { throw SpotError.fault("This Mac has no screen.") }
-    public func startRecording(_ capture: ScreenCapture, in folder: URL) async throws -> String { throw SpotError.fault("This Mac has no screen.") }
-    public func stopRecording() async throws -> String { throw SpotError.fault("This Mac has no screen.") }
-    public func recordingStatus() async throws -> String { throw SpotError.fault("This Mac has no screen.") }
-    public func translate(_ text: String, from: String?, to: String?) async throws -> String { throw SpotError.fault("This Mac cannot translate.") }
-    public func translationLanguages() async -> String { "" }
-    @MainActor public func pickColor() async -> String { "" }
-    @MainActor public func pickFolder() async -> String { "" }
+    public init(
+        calendar: (any MacCalendar)? = nil,
+        reminders: (any MacReminders)? = nil,
+        clipboard: (any MacClipboard)? = nil,
+        windows: (any MacWindows)? = nil,
+        screen: (any MacScreen)? = nil,
+        translation: (any MacTranslation)? = nil,
+        events: (any MacEvents)? = nil,
+        login: @escaping @Sendable () -> LoginItem? = { nil },
+        link: @escaping @Sendable () -> CommandLink? = { nil },
+        pickColor: (@MainActor @Sendable () async -> HexColor?)? = nil,
+        pickFolder: (@MainActor @Sendable () async -> URL?)? = nil,
+        guide: URL? = Bundle.main.url(forResource: "GUIDE", withExtension: "md")
+    ) {
+        self.calendar = calendar
+        self.reminders = reminders
+        self.clipboard = clipboard
+        self.windows = windows
+        self.screen = screen
+        self.translation = translation
+        self.events = events
+        self.login = login
+        self.link = link
+        self.pickColor = pickColor
+        self.pickFolder = pickFolder
+        self.guide = guide
+    }
+
+    static func part<Part>(_ part: Part?, _ name: String) throws -> Part {
+        guard let part else { throw SpotError.fault("This Mac has no \(name).") }
+        return part
+    }
 }

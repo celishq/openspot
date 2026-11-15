@@ -8,7 +8,7 @@ final class CallLogTests: SpotRunsCase {
     override func setUp() async throws {
         try await super.setUp()
         log = CallLog(folder: folder.appendingPathComponent("logs"))
-        runs = SpotRuns(now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50), log: log)
+        runs = SpotRuns(clock: clock.value, stopPause: 0.2, log: log)
     }
 
     func testACallLeavesItsArgumentsItsInputItsFramesItsErrorsAndItsExit() async throws {
@@ -34,6 +34,22 @@ final class CallLogTests: SpotRunsCase {
         try await wait("the record of one") { self.log.text(of: "one").contains("exit 0") }
 
         XCTAssertEqual(log.text(of: "two"), "")
+    }
+
+    func testTheCallsOfASpotThatReachesTheAccountKeyStayOutOfTheLog() async throws {
+        try script("vault", "echo secret-words")
+        try script("plain", "echo plain")
+        let found = try scanned()
+        var vault = try XCTUnwrap(found.scripts.first { $0.id == "vault" })
+        vault.uses = [.account]
+
+        runs.sheet(for: vault.builtIn()).pressCard()
+        try await wait("the call of the vault") { !self.log().isEmpty }
+        try await allEnded()
+        runs.sheets["plain"]?.pressCard()
+        try await wait("the record of the plain spot") { self.log.text(of: "plain").contains("exit 0") }
+
+        XCTAssertEqual(log.text(of: "vault"), "")
     }
 
     func testATimedReadThatEndsWellLeavesNoRecordAndAPanelReadDoes() async throws {

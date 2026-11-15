@@ -3,7 +3,7 @@ import XCTest
 
 final class RecentCacheTests: XCTestCase {
     func testAValuePastTheLimitLetsGoOnlyTheLeastRecentlyUsed() {
-        var cache = RecentCache<String, Int>(base: 10)
+        var cache = RecentCache<String, Int>(limit: 30)
         cache.keep(1, for: "a", cost: 10)
         cache.keep(2, for: "b", cost: 10)
         _ = cache.value(for: "a")
@@ -17,14 +17,13 @@ final class RecentCacheTests: XCTestCase {
         XCTAssertEqual(cache.bytes, 30)
     }
 
-    func testTheLargestValueTwiceFitsBesideTheBase() {
-        var cache = RecentCache<String, Int>(base: 30)
-        cache.keep(1, for: "card", cost: 10)
-        cache.keep(2, for: "dock sides", cost: 100)
-        cache.keep(3, for: "dock ends", cost: 100)
+    func testALargeValueRaisesNoLimit() {
+        var cache = RecentCache<String, Int>(limit: 30)
+        cache.keep(1, for: "dock", cost: 100)
+        cache.keep(2, for: "card", cost: 10)
 
-        XCTAssertEqual(cache.value(for: "card"), 1)
-        XCTAssertEqual(cache.limit, 230)
-        XCTAssertEqual(cache.room, 20)
+        XCTAssertNil(cache.value(for: "dock"))
+        XCTAssertEqual(cache.value(for: "card"), 2)
+        XCTAssertEqual(cache.bytes, 10)
     }
 }

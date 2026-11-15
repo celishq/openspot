@@ -2,68 +2,96 @@ import XCTest
 @testable import OpenspotCore
 
 final class PenExampleTests: SampleSpotsCase {
-    private func dataFolder() throws -> URL {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-pen-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        return folder
+    private func standIn(_ folder: URL) -> [String: String] {
+        ["overlay.swift": """
+        import Foundation
+        \(Self.note(to: folder))
+        final class Overlay {
+            private let closed: () -> Void
+            init(closed: @escaping () -> Void) { self.closed = closed }
+            func show() {
+                note("show")
+                guard ProcessInfo.processInfo.environment["PEN_ESCAPE"] == "1" else { return }
+                DispatchQueue.main.async {
+                    self.close()
+                    self.closed()
+                }
+            }
+            func close() { note("close") }
+        }
+        """]
     }
 
-    private func press(_ data: URL) throws {
-        let press = Process()
-        press.executableURL = URL(fileURLWithPath: "/bin/sh")
-        press.arguments = [examples.appendingPathComponent("pen.spot/pen.sh").path, "draw"]
-        press.environment = ["PATH": "/usr/bin:/bin", "OPENSPOT_DATA": data.path]
-        try press.run()
-        press.waitUntilExit()
-        XCTAssertEqual(press.terminationStatus, 0)
+    private func pen(in folder: URL, escape: Bool = false) async throws -> (ScriptProcess, SpotFrames) {
+        let program = try await swiftSpot("pen", in: folder, standIns: standIn(folder))
+        let script = staying(program, as: "pen", home: folder, variables: ["PEN_ESCAPE": escape ? "1" : ""])
+        return (script, SpotFrames(script.start()))
     }
 
-    private func pid(in data: URL) -> pid_t? {
-        pid_t((try? String(contentsOf: data.appendingPathComponent("pen.pid"), encoding: .utf8)) ?? "")
-    }
-
-    func testThePenLoadsAsAnExample() throws {
+    func testItIsAStayingSwiftSpotWhoseDrawIsACommandAndNoEventStartsIt() throws {
         let pen = try example("Pen")
 
-        XCTAssertEqual(pen.id, "pen")
+        XCTAssertEqual(pen.mode, .stay)
+        XCTAssertNil(pen.read)
+        XCTAssertEqual(pen.sources, ["pen"])
+        XCTAssertEqual(pen.offers.map(\.id), ["draw"])
+        XCTAssertEqual(pen.soleCommand, "draw")
     }
 
-    func testAPressStartsTheOverlayAndKeepsItsProcess() async throws {
-        let data = try dataFolder()
-        defer { try? FileManager.default.removeItem(at: data) }
-        let started = data.appendingPathComponent("started")
-        try "#!/bin/sh\ntouch '\(started.path)'\n\(String.longLoop)\n".writeScript(to: data.appendingPathComponent("pen-overlay"))
+    func testAPressHoldsItsCallWhileTheOverlayShowsAndASecondPressClosesItAndEndsBoth() async throws {
+        let folder = try temporaryFolder()
+        let (script, frames) = try await pen(in: folder)
+        defer { script.stop() }
 
-        try press(data)
-        try await waitUntil { FileManager.default.fileExists(atPath: started.path) }
-        defer { if let overlay = pid(in: data) { kill(overlay, SIGKILL) } }
+        script.send(text: "call=1\narg=draw\n\n")
+        try await wait("the overlay") { self.notes(in: folder) == "show\n" }
+        XCTAssertEqual(frames.ends, [])
+        script.send(text: "call=2\narg=draw\n\n")
+        try await wait("the end of both presses") { frames.ends == ["1", "2"] }
+        XCTAssertEqual(notes(in: folder), "show\nclose\n")
+        script.send(text: "call=3\narg=open\n\n")
+        try await wait("a new overlay") { self.notes(in: folder) == "show\nclose\nshow\n" }
 
-        XCTAssertTrue(FileManager.default.fileExists(atPath: started.path))
-        XCTAssertEqual(pid(in: data).map { kill($0, 0) }, 0)
+        XCTAssertEqual(frames.ends, ["1", "2"])
     }
 
-    func testASecondPressClosesTheOverlayAndStartsNoOther() async throws {
-        let data = try dataFolder()
-        defer { try? FileManager.default.removeItem(at: data) }
-        let overlay = data.appendingPathComponent("pen-overlay")
-        let source = data.appendingPathComponent("wait.swift")
-        try "import Foundation\nsleep(600)\n".write(to: source, atomically: true, encoding: .utf8)
-        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-o", overlay.path, source.path])
-        let running = try TestChild(overlay.path, [])
-        defer { running.stop() }
-        try String(running.processIdentifier).write(to: data.appendingPathComponent("pen.pid"), atomically: true, encoding: .utf8)
+    func testAStopOfThePressClosesTheOverlay() async throws {
+        let folder = try temporaryFolder()
+        let (script, frames) = try await pen(in: folder)
+        defer { script.stop() }
 
-        try press(data)
-        try await waitUntil { kill(running.processIdentifier, 0) != 0 }
+        script.send(text: "call=1\narg=draw\n\n")
+        try await wait("the overlay") { self.notes(in: folder) == "show\n" }
+        script.send(text: "stop=1\n\n")
+        try await wait("the end of the press") { frames.ends == ["1"] }
 
-        XCTAssertNotEqual(kill(running.processIdentifier, 0), 0)
-        XCTAssertNil(pid(in: data))
+        XCTAssertEqual(notes(in: folder), "show\nclose\n")
     }
 
-    func testTheOverlayBuilds() async throws {
-        let (folder, pen) = try await built("pen")
-        defer { try? FileManager.default.removeItem(at: folder) }
+    func testAnOverlayThatThePersonClosesEndsItsCall() async throws {
+        let folder = try temporaryFolder()
+        let (script, frames) = try await pen(in: folder, escape: true)
+        defer { script.stop() }
 
-        XCTAssertTrue(FileManager.default.isExecutableFile(atPath: pen.path))
+        script.send(text: "call=1\narg=draw\n\n")
+        try await wait("the end of the press") { frames.ends == ["1"] }
+
+        XCTAssertEqual(notes(in: folder), "show\nclose\n")
+    }
+
+    func testTheEndOfStdinEndsTheSpotWhileTheOverlayShows() async throws {
+        let folder = try temporaryFolder()
+        let (script, frames) = try await pen(in: folder)
+        defer { script.stop() }
+
+        script.send(text: "call=1\narg=draw\n\n")
+        try await wait("the overlay") { self.notes(in: folder) == "show\n" }
+        script.end()
+
+        try await wait("the end of the spot") { !script.isRunning && frames.ended }
+    }
+
+    func testTheRealOverlayTypeChecks() async throws {
+        try await typechecks("pen")
     }
 }

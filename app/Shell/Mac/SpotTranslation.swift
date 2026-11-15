@@ -3,48 +3,53 @@ import NaturalLanguage
 import OpenspotCore
 import Translation
 
-enum SpotTranslation {
+struct SpotTranslation: MacTranslation {
+    static let capability = Capability(name: "translate")
     private static let fallback = "en"
+    private static let languagesAsk = "languages"
 
-    static func languages() async -> String {
-        let preferred = TranslationTargets(preferred: Locale.preferredLanguages, source: "").codes
-        let found = await LanguageAvailability().supportedLanguages
-            .map { (code: $0.minimalIdentifier, name: Locale.current.localizedString(forIdentifier: $0.minimalIdentifier) ?? $0.minimalIdentifier) }
-            .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
-        let summary = TextBlock(fields: preferred.map { .init(key: "preferred", value: $0) })
-        let blocks = found.map { TextBlock(fields: [.init(key: "language", value: $0.code), .init(key: "name", value: $0.name)]) }
-        return ([summary] + blocks).map(\.text).joined(separator: "\n")
+    func translate(_ text: String, from: String?, to: String?) async throws -> TranslatedText {
+        let pairs = [("from", from), ("to", to), ("text", text)]
+        let request = TextBlock(fields: pairs.compactMap { key, value in value.map { .init(key: key, value: $0) } })
+        return TranslatedText(block: try await Self.ask(request))
     }
 
-    static let capability = Capability(name: "translate")
+    func languages() async throws -> [String] {
+        try await Self.ask(TextBlock(fields: [.init(key: "do", value: Self.languagesAsk)])).values("language")
+    }
 
-    static func call(text: String, from: String?, to: String?) throws -> String {
-        let pairs = [("from", from), ("to", to), ("text", text)]
-        let request = TextBlock(fields: pairs.compactMap { key, value in value.map { .init(key: key, value: $0) } }).text
-        return String(decoding: try capability.call(Data(request.utf8)), as: UTF8.self)
+    private static func ask(_ request: TextBlock) async throws -> TextBlock {
+        try await SpotBlocking.run {
+            let answer = String(decoding: try capability.call(Data(request.text.utf8)), as: UTF8.self)
+            return TextBlock.blocks(in: answer).first ?? TextBlock(fields: [])
+        }
     }
 
     static func serve() -> Never {
         capability.serve { request in
             let block = TextBlock.blocks(in: String(decoding: request, as: UTF8.self)).first ?? TextBlock(fields: [])
+            if block.value("do") == languagesAsk {
+                let codes = await LanguageAvailability().supportedLanguages.map(\.minimalIdentifier)
+                return Data(TextBlock(fields: codes.map { .init(key: "language", value: $0) }).text.utf8)
+            }
             let answer = try? await answer(to: block.value("text") ?? "", from: block.value("from"), to: block.value("to"))
-            return Data((answer ?? reply(status: "failed")).utf8)
+            return Data((answer ?? TranslatedText(status: .failed)).block.text.utf8)
         }
     }
 
-    private static func answer(to text: String, from: String?, to: String?) async throws -> String {
-        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return "" }
+    private static func answer(to text: String, from: String?, to: String?) async throws -> TranslatedText {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return TranslatedText() }
         guard let code = from ?? NLLanguageRecognizer.dominantLanguage(for: text)?.rawValue else {
-            return reply(status: "unknown")
+            return TranslatedText(status: .unknown)
         }
         let target = to ?? TranslationTargets(preferred: Locale.preferredLanguages, source: base(of: code)).codes.first ?? fallback
-        guard base(of: code) != base(of: target) else { return reply(text: text, from: code, to: target) }
+        guard base(of: code) != base(of: target) else { return TranslatedText(text: text, from: code, to: target) }
         let source = Locale.Language(identifier: code)
         let output = Locale.Language(identifier: target)
         switch await LanguageAvailability().status(from: source, to: output) {
-        case .installed: return reply(text: try await translation(of: text, from: source, to: output), from: code, to: target)
-        case .supported: return reply(status: "missing", from: code, to: target)
-        default: return reply(status: "unsupported", from: code, to: target)
+        case .installed: return TranslatedText(text: try await translation(of: text, from: source, to: output), from: code, to: target)
+        case .supported: return TranslatedText(status: .missing, from: code, to: target)
+        default: return TranslatedText(status: .unsupported, from: code, to: target)
         }
     }
 
@@ -64,11 +69,6 @@ enum SpotTranslation {
             return TranslationSession(installedSource: from, target: to, preferredStrategy: .highFidelity)
         }
         return TranslationSession(installedSource: from, target: to)
-    }
-
-    private static func reply(text: String? = nil, status: String? = nil, from: String? = nil, to: String? = nil) -> String {
-        let pairs = [("text", text), ("status", status), ("from", from), ("to", to)]
-        return TextBlock(fields: pairs.compactMap { key, value in value.map { .init(key: key, value: $0) } }).text
     }
 
     private static func base(of code: String) -> String {

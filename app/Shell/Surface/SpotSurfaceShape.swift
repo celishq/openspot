@@ -1,3 +1,4 @@
+import OpenspotCore
 import SwiftUI
 
 struct SpotSurfaceShape: InsettableShape {
@@ -14,13 +15,7 @@ struct SpotSurfaceShape: InsettableShape {
     }
 
     func path(in bounds: CGRect) -> Path {
-        let place = rect.insetBy(dx: inset, dy: inset)
-        let corner = min(max(radius - inset, 0), min(place.width, place.height) / 2)
-        return RoundedRectangle(cornerRadius: corner, style: Self.style(corner: corner, in: place)).path(in: place)
-    }
-
-    static func style(corner: CGFloat, in rect: CGRect) -> RoundedCornerStyle {
-        2 * corner >= min(rect.width, rect.height) ? .circular : .continuous
+        SpotRoundShape(SurfaceEdge(radius: radius, inset: inset)).path(in: rect)
     }
 
     func inset(by amount: CGFloat) -> SpotSurfaceShape {

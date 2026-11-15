@@ -4,12 +4,13 @@
 
 - `app/` is the Mac app, built with XcodeGen from `app/project.yml`. Run `xcodegen generate` in `app/` after you
   add or move a file. Targets:
-  - `Core/` — the spot contract and loading. Imports Foundation only.
+  - `Core/` — the spot contract and loading. It imports no UI framework; see [Core and Shell](#core-and-shell).
   - `Shell/` — the menu bar app, the panel and the hotkey. Imports AppKit and SwiftUI.
   - `Client/` — the `openspot` command, which talks to the running app.
   - `StandIn/` — a small program for tests: a capability that needs no Mac feature. It does not ship.
-  - `Views/` — `openspot-views`, which a Release build runs to compile each view of the core spots into a `.view` beside
-    its source, so that it draws on a Mac with no developer tools. It does not ship. Debug compiles a view at its first use.
+  - `Views/` — `openspot-views`, which a Release build runs to compile each view of the core spots into a `.view`, and each
+    Swift spot into a `.program`, beside its source, so that it runs on a Mac with no developer tools. It does not ship.
+    Debug compiles each at its first use.
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
 - `app/Keywords/` holds the CLDR keywords of emoji and symbols, one xz file per language. `scripts/emoji-keywords.py` writes
   it from a pinned CLDR version, and the build copies it into the app.
@@ -17,7 +18,8 @@
   into the app.
 - `spots/` holds the source of the core spots, each a `<name>.spot` folder. The build copies it into the app, and they run
   from there. `spots/openspot.spot/` holds the spots of the app itself, such as Settings, which are always on and use only the `openspot`
-  API. No code outside that folder names one of them.
+  API. No code outside that folder names one of them. They run only from the app, so a change to one needs a build. [spots/AGENTS.md](spots/AGENTS.md) holds the rules of a spot and of an
+  example.
 - `examples/` holds spots that show a feature, such as a view. The app does not ship them, and a test checks them.
   `make examples` copies them into the spots of a Debug build.
 - `plans/` holds design plans. It is git-ignored.
@@ -29,8 +31,10 @@
 
 - Say each thing once, in one place, and link to it from other places. Use the fewest words that keep the meaning. Short
   sentences, never fragments.
-- A name is a noun for what a thing is. No `-er`/`-or` suffix (`Manager`, `Handler`, `Renderer`).
-- One primary type per file. The filename matches it.
+- A name is a noun for what a thing is. No `-er`/`-or` suffix (`Manager`, `Handler`, `Renderer`). `scripts/check-names.sh`
+  fails on a type with such a suffix.
+- One primary type per file. The filename matches it. A file of extensions is named `Type+Topic.swift`.
+  `scripts/check-files.sh` fails on a file that breaks this.
 - Nouns own their data. Verbs are methods on the noun that owns the data.
 - A toast or a failure line follows "Messages" in `PROTOCOL.md`.
 
@@ -52,13 +56,13 @@ Write a doc that people read, such as `GUIDE.md` and `PROTOCOL.md`, the way Appl
   fails on a gap the list lacks and on a listed gap that is gone.
 - It fails when an `sh`, `js` or `swift` example of GUIDE.md, PROTOCOL.md or `app/Help/` does not run (`DocExampleTests`).
   An example that needs a network, an account or a tool that not every Mac has goes in a `text` fence.
-- The docs are `AGENTS.md`, `GUIDE.md`, `PROTOCOL.md`, `CONTRIBUTING.md`, `README.md` and `app/Help/`. The code is the
+- The docs are `AGENTS.md`, `spots/AGENTS.md`, `GUIDE.md`, `PROTOCOL.md`, `CONTRIBUTING.md`, `README.md` and `app/Help/`. The code is the
   truth for how the app works, so no doc describes the app's code. Before you add a sentence, look for one that says it
   already, and link to it, since no check finds a repeat.
 
 ## Comments
 
-- Code and the scripts in `scripts/` hold no comment and no docstring. A name, a type or a test says what a comment would.
+- Code and the scripts in `scripts/` hold no comment and no docstring. A spot may; see [spots/AGENTS.md](spots/AGENTS.md). A name, a type or a test says what a comment would.
 - The one exception is a `// @todo #<id>` puzzle. The header of a spot script is not a comment: it is part of the spot.
 - `make verify` runs `scripts/check-comments.sh`, which fails on a comment.
 
@@ -76,9 +80,29 @@ Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these 
 
 ## Core and Shell
 
-- `Core/` imports neither AppKit nor SwiftUI. `make verify` runs `scripts/check-core.sh`, which fails when it does.
+- `Core/` imports only Foundation, CoreGraphics, CryptoKit, CommonCrypto, JavaScriptCore, Observation, os, P256K, Security
+  and Synchronization. `make verify` runs `scripts/check-core.sh`, which fails on any other import, also after an attribute
+  such as `@preconcurrency`.
 - Logic that a window needs goes in `Core/`. Only drawing and window handling go in `Shell/`.
-- Each colour, strength and blur radius of the panel is in `Shell/Surface/SpotTheme.swift`, and a new theme is one more value there.
+- Each colour and strength of the panel is in `Shell/Surface/SpotTheme.swift`, and a new theme is one more value there.
+- Glass is system glass, drawn by `spotGlass`, which wraps `glassEffect`. Each shape draws its own glass, outside a
+  `GlassEffectContainer`, since a container drops an opacity after `glassEffect`, and the grid hides an open card and
+  hides the panel by opacity. The grid's scroll edge is one gradient mask over the scroll view, so it cuts each card and
+  its marks row by row. A fade dims the content before `glassEffect` (`spotFade`) and
+  keeps the glass whole until its last third (`SpotTheme.glassStrength`), so faded glass never shows a sharp page.
+  `make verify` runs `scripts/check-glass.sh`, which fails on `NSVisualEffectView` or a private Core Animation name in
+  `Shell/`, outside `Shell/Surface/SpotBackdropBlur.swift`.
+- A surface has one shape, a `SurfaceEdge` of Core drawn by `SpotRoundShape`, and its glass, its clip, its ring and its
+  other marks take that value. A part inside it takes `inner()` of the edge it reads from `spotSurfaceEdge`. A titled
+  window follows the corner that macOS gives it: its glass is a `ConcentricRectangle`. A borderless window gives its
+  content view the edge of its surface (`NSWindow.take`). `make verify` runs `scripts/check-shapes.sh`, which fails on a
+  `RoundedRectangle` in `Shell/` outside `Shell/Surface/SpotRoundShape.swift`.
+- The soft backdrop of the panel is a progressive blur under the glass: fixed `SpotBackdropBlur` views of rising radius,
+  each under a soft edge further in, so the blur grows weaker toward its edge. Each soft edge is a picture drawn once and
+  laid as nine fixed pieces that only move and scale (`SpotBackdropEdge`, by `BackdropEdge` in Core), and the backdrop
+  hides by opacity alone.
+- A picture drawn off screen cannot hold system glass. It goes through `SpotPicture`, which turns the glass off, and the
+  glass check fails on a file of `Shell/Picture` that draws one another way.
 
 ## Performance
 
@@ -97,9 +121,12 @@ below is one a reviewer can check in a diff.
 ### Where work lives
 
 - A getter, a computed property and a static factory read only memory. They touch no disk, start no process and change no
-  state. Work that reads the disk is a method named for it, such as `read()` or `scan()`.
-- The model and the views do not read the disk. A loader, such as `SpotScan` or `ConfigFile`, reads it at a load, and the
+  state. Work that reads the disk is a method named for it, such as `read()` or `scan()`. `scripts/check-getters.sh` fails on
+  a getter or a static factory that reads the disk.
+- The model and the views do not read the disk. A loader, such as `KeptScan` or `ConfigFile`, reads it at a load, and the
   rest read the value it kept.
+- Code starts a process only through `ScriptProcess`, which gives it a limit, a stop and the end of its group.
+  `scripts/check-processes.sh` fails on another `Process()`.
 - A stamp holds only what changes the result it guards. A choice that filters the result, such as which spots are on, is
   applied after the kept result, not put in the stamp.
 
@@ -130,14 +157,16 @@ below is one a reviewer can check in a diff.
 Each motion is one of five kinds, each with one curve in `Shell/Surface/SpotMotion.swift`: grow (and its way back), move,
 fade and press. Each duration, bounce and motion scale is in `Core/Panel/MotionTokens.swift`. A part of a surface that grows
 takes its look from the surface's progress, by `SheetMorph`, and keeps no curve of its own. `make verify` runs
-`scripts/check-motion.sh`, which fails on a curve written anywhere else.
+`scripts/check-motion.sh`, which fails on a curve written anywhere else in `app/` or `scripts/`.
 
 - Move a view with FLIP: lay it out at its last place, then animate only `offset`, `scaleEffect` and `opacity` from its
   first place. Do not animate a frame, a padding, a font, a text width or a blur radius.
-- Grow a surface with an animated shape that clips its content, masks its blur and places its rim. Do not scale a surface
-  that has corners, a rim or words.
+- Grow a surface with an animated shape that clips its content and shapes its glass. Do not scale a surface that has corners,
+  a rim or words.
+- A fade of many glass surfaces is one layer over them, such as `SpotGridShade`. A glass holds still during a motion it is
+  not the subject of, since the system draws a glass again on each frame in which its content or its opacity changes.
 - Change words by a crossfade of two laid-out copies, not by a reflow.
-- Draw blur from one fixed view behind the moving shapes. Do not put an AppKit view in a view that moves or resizes.
+- Do not put an AppKit view in a view that moves or resizes.
 - The model starts a motion where its cause happens, not a view: no `onChange` chain, and no `.animation(_:value:)` on a
   container. A view that is just built lies at its first place for one turn, and its motion starts on the next turn.
 - During a motion, no state is written from a measure, such as `onGeometryChange` or a scroll's geometry. Compute frames
@@ -149,7 +178,7 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
 
 - Nothing wakes while the panel is hidden unless work is due. A sleep has a tolerance, and a write to disk waits to merge
   with others.
-- A shipped spot does no work all day. A spot that polls goes in `examples/`.
+- A shipped spot does no work all day; see [spots/AGENTS.md](spots/AGENTS.md).
 - Each buffer, log and cache has a limit in bytes. A kept tail is cut back when it holds twice its limit. A loop that reads a
   stream wraps each pass in `autoreleasepool`.
 - Each collection kept per call, page or frame drops an entry when the thing it tracks ends, and has a limit in count.
@@ -184,22 +213,28 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
 - A test is the same on each Mac. It reads no state of the person, such as the home folder, the clipboard or a record in
   `TMPDIR`, no installed app, and no system data whose content changes with macOS. A fake on the `PATH` stands in for a
   tool that changes the Mac, such as `caffeinate` or `system_profiler`.
+- Wait with `wait(_:until:)`, which fails with the name of the fact. Give a process its environment as a value, through
+  `TestEnvironment`, and never change the environment of the test process.
+- Build on the shared helpers: `temporaryFolder()`, `TestSpot`, `FakeHost`, and `PanelCase` for a test of the model.
 - `make verify` runs `scripts/check-tests.sh`, which fails on a test that reads the real home or the clipboard, or that
-  blocks its thread with a sleep.
+  blocks its thread with a sleep, and on a new `Task.sleep` or `setenv` outside the shared helpers.
 
 ## Verify
 
 ```sh
-make verify                # the Core, Tests, Comments and Motion checks, then the XCTest suite, with test classes in parallel
+make verify                # the checks in scripts/check-*.sh, then the XCTest suite, with test classes in parallel
 make test T=SpotRunsTests  # one test class, while you work on it
 make perf N=3              # times a Release sheet that opens and closes 20 times, 3 runs; ACTION picks another motion
 make film SPOT=caffeinate  # films the open and close of a sheet 10x slower (SLOW=1 for real speed) into .temp/film
 make shots                 # saves pictures of the actions menu in the running panel into .temp/shots
-make docs-images           # draws the image under each GUIDE.md example; GuideImageTests fail when one is out of date
+make docs-images           # shows each GUIDE.md example on screen, focused, and takes its image; GuideImageTests fail when one is out of date
 make eval-agent N=1        # gives N tasks to claude -p with only `openspot guide`, and checks each spot; it costs money
 ```
 
-`make verify` runs `xcodegen generate` before it builds, so the project file matches the folders on disk. `make perf` is
+`make verify` runs `xcodegen generate` before it builds, so the project file matches the folders on disk.
+
+Each check runs from any folder and takes the repo root as its argument. A check whose rule the code does not meet yet keeps
+today's breaks in `scripts/breaks/`. It fails on a new break and on a listed break that is gone, so a fix removes its line. `make perf` is
 under "Proving a speed fix".
 
 ## Signing

@@ -127,8 +127,8 @@ final class CarefulModeTests: SpotRunsCase {
         try FileManager.default.createDirectory(at: bin, withIntermediateDirectories: true)
         try "#!/bin/sh\necho a > '\(outside.path)/written' 2>/dev/null && echo files || echo kept\n".writeScript(to: bin.appendingPathComponent("openspot"))
         let path = ProcessInfo.processInfo.environment["PATH"] ?? ""
-        setenv("PATH", "\(bin.path):\(path)", 1)
-        defer { setenv("PATH", path, 1) }
+        runs.quit()
+        runs = runs(environment: ProcessInfo.processInfo.environment.merging(["PATH": "\(bin.path):\(path)"]) { _, new in new })
         let script = folder.spotFile("script", extension: "js")
         try FileManager.default.createDirectory(at: script.deletingLastPathComponent(), withIntermediateDirectories: true)
         try "// on=sheet.open\nfunction main() { return `text=t\\ntitle=${openspot.call([\"color\", \"pick\"]).stdout.trim()}\\n` }\n"

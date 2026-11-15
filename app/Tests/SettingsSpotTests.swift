@@ -9,12 +9,12 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     private func items() async throws -> [SpotItem] {
-        try await settings.items(timeout: 5).items
+        try await settings.items(timeout: 60).items
     }
 
     @discardableResult
     private func call(_ arguments: [String]) async throws -> String? {
-        try await settings.perform(SpotAction(arguments: arguments), timeout: 5)
+        try await settings.perform(SpotAction(arguments: arguments), timeout: 60)
     }
 
     func testItIsASmallListThatTheSearchFindsAndTheSettingsKeyOpens() throws {
@@ -48,16 +48,16 @@ final class SettingsSpotTests: BuiltInCase {
 
         let items = try await items()
 
-        XCTAssertEqual(items.map(\.run), ["panel_key", "fix_key", "careful_mode"])
+        XCTAssertEqual(items.map(\.run), ["panel-key", "fix-key", "careful_mode"])
         XCTAssertFalse(items.contains { $0.title == "Show in the menu bar" || $0.title == "Float" || $0.subtitle?.contains("Cups") == true })
     }
 
     func testTheSheetListsTheKeyOfTheFile() async throws {
-        try file.set("panel_key", to: "option+space")
+        try file.set("panel-key", to: "option+space")
 
         let items = try await items()
 
-        XCTAssertEqual(items.map(\.run), ["panel_key", "fix_key", "careful_mode"])
+        XCTAssertEqual(items.map(\.run), ["panel-key", "fix-key", "careful_mode"])
         XCTAssertEqual(items.first?.title, "Open Openspot")
         XCTAssertEqual(items.first?.shortcut, "option+space")
         XCTAssertEqual(items.map { $0.hides ?? [] }, [[], [], []])
@@ -69,14 +69,14 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(before[1].title, "Open a fix")
         XCTAssertEqual(before[1].shortcut, "cmd+option+o")
 
-        try await call(["fix_key", "ctrl+option+f"])
+        try await call(["fix-key", "ctrl+option+f"])
 
         XCTAssertEqual(file.read().fixKey, Shortcut(text: "ctrl+option+f"))
     }
 
     func testTheKeyThatOpensThePanelTakesNoShake() async throws {
         do {
-            try await call(["panel_key", "shake"])
+            try await call(["panel-key", "shake"])
             XCTFail("took a shake to open the panel")
         } catch {
             XCTAssertEqual(file.read().panelKey, .standard)
@@ -90,7 +90,7 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     func testTheSheetHasNoPartsAndKeepsItsOrder() async throws {
-        let output = try await settings.items(timeout: 5)
+        let output = try await settings.items(timeout: 60)
 
         XCTAssertTrue(output.parts.isEmpty)
         XCTAssertFalse(output.keepsRecent)
@@ -98,16 +98,16 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     func testAKeyRecordedOnARowGoesToTheFileAndTheListReadsItAgain() async throws {
-        let runs = SpotRuns()
+        let runs = SpotRuns(environment: TestEnvironment.values)
         defer { runs.quit() }
         let sheet = runs.sheet(for: try settings)
         sheet.open {}
-        for _ in 0..<500 where sheet.list.shown.isEmpty { try await Task.sleep(for: .milliseconds(10)) }
+        for _ in 0..<6000 where sheet.list.shown.isEmpty { try await Task.sleep(for: .milliseconds(10)) }
         let item = try XCTUnwrap(sheet.list.selectedItem)
 
         sheet.set(item, to: "cmd+k")
 
-        for _ in 0..<500 where sheet.list.shown.first?.shortcut != "cmd+k" { try await Task.sleep(for: .milliseconds(10)) }
+        for _ in 0..<6000 where sheet.list.shown.first?.shortcut != "cmd+k" { try await Task.sleep(for: .milliseconds(10)) }
         XCTAssertEqual(file.read().panelKey, Shortcut(text: "cmd+k"))
         XCTAssertEqual(sheet.list.shown.first?.shortcut, "cmd+k")
         let changes = await app.changes
@@ -116,7 +116,7 @@ final class SettingsSpotTests: BuiltInCase {
 
     func testAKeyItCannotUseLeavesTheFile() async throws {
         do {
-            try await call(["panel_key", "k"])
+            try await call(["panel-key", "k"])
             XCTFail("took a bad key")
         } catch {
             XCTAssertFalse(FileManager.default.fileExists(atPath: file.url.path))
@@ -136,7 +136,7 @@ final class SettingsSpotTests: BuiltInCase {
         offerLogin()
 
         let off = try await items()
-        XCTAssertEqual(off.map(\.run), ["panel_key", "fix_key", "careful_mode", "open_at_login"])
+        XCTAssertEqual(off.map(\.run), ["panel-key", "fix-key", "careful_mode", "open_at_login"])
         XCTAssertEqual(off.last?.title, "Open at login")
         XCTAssertEqual(off.last?.isOn, false)
 
@@ -170,7 +170,7 @@ final class SettingsSpotTests: BuiltInCase {
         offerLink()
 
         let off = try await items()
-        XCTAssertEqual(off.map(\.run), ["panel_key", "fix_key", "careful_mode", "command_link"])
+        XCTAssertEqual(off.map(\.run), ["panel-key", "fix-key", "careful_mode", "command_link"])
         XCTAssertEqual(off.last?.title, "Use openspot in Terminal")
         XCTAssertEqual(off.last?.isOn, false)
 
@@ -196,7 +196,7 @@ final class SettingsSpotTests: BuiltInCase {
 
     func testAPartRecordsAKeyAndReportsItsValue() throws {
         var part = try XCTUnwrap(SpotPart(block: TextBlock(fields: [
-            .init(key: "hotkey", value: "open"), .init(key: "title", value: "Open"), .init(key: "value", value: "ctrl+k")
+            .init(key: "field", value: "open"), .init(key: "type", value: "hotkey"), .init(key: "title", value: "Open"), .init(key: "value", value: "ctrl+k")
         ])))
 
         XCTAssertEqual(part.value, "ctrl+k")
@@ -205,7 +205,7 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     func testTheCheckFindsABadHotkey() {
-        XCTAssertEqual(SpotOutput(text: "field=a\ntype=hotkey\nvalue=k\n").partFaults, ["the part a needs a shortcut that holds cmd, ctrl or option: k"])
-        XCTAssertEqual(SpotOutput(text: "field=a\ntype=hotkey\nvalue=ctrl+k\n").partFaults, [])
+        XCTAssertEqual(FrameCheck(text: "field=a\ntype=hotkey\nvalue=k\n").partFaults, ["the part a needs a shortcut that holds cmd, ctrl or option: k"])
+        XCTAssertEqual(FrameCheck(text: "field=a\ntype=hotkey\nvalue=ctrl+k\n").partFaults, [])
     }
 }

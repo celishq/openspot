@@ -6,7 +6,7 @@ final class FilesOutTests: XCTestCase {
     private var folder: URL!
     private var defaults: UserDefaults!
     private var suite = ""
-    private var host: TestHost!
+    private var host: FakeHost!
     private var model: SpotsModel!
 
     override func setUp() async throws {
@@ -14,7 +14,7 @@ final class FilesOutTests: XCTestCase {
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         suite = "openspot-out-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
-        host = TestHost()
+        host = FakeHost()
         let files = AppPlaces(
             environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
             home: folder,
@@ -34,27 +34,20 @@ final class FilesOutTests: XCTestCase {
         folder.appendingPathComponent("spots", isDirectory: true)
     }
 
-    private func wait(_ what: String, until condition: () -> Bool) async throws {
-        for _ in 0..<500 {
-            if condition() { return }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTFail("waited for \(what)")
-    }
-
     func testARowCarriesTheFileThatItNamesFromTheRoot() {
-        let output = SpotOutput(text: "row=a\nfile=/Users/me/a.png\n\nrow=b\nfile=b.png\n\nrow=c\n")
+        let outputCheck = FrameCheck(text: "row=a\nfile=/Users/me/a.png\n\nrow=b\nfile=b.png\n\nrow=c\n")
+        let output = outputCheck.output
 
         XCTAssertEqual(output.items.map(\.file), ["/Users/me/a.png", nil, nil])
-        XCTAssertTrue(output.partFaults.contains("the row b names the file b.png, which does not start with /"))
+        XCTAssertTrue(outputCheck.partFaults.contains("the row b names the file b.png, which does not start with /"))
     }
 
     func testAComponentCannotTakeTheIdDragBesideRowsWithFiles() {
-        let files = SpotOutput(text: "row=a\nfile=/a.png\n\nbutton=drag\ntitle=Drag\n\nfield=note\n")
-        let none = SpotOutput(text: "row=a\n\nbutton=drag\ntitle=Drag\n\nfield=note\n")
+        let filesCheck = FrameCheck(text: "row=a\nfile=/a.png\n\nbutton=drag\ntitle=Drag\n\nfield=note\n")
+        let noneCheck = FrameCheck(text: "row=a\n\nbutton=drag\ntitle=Drag\n\nfield=note\n")
 
-        XCTAssertTrue(files.partFaults.contains("an action cannot be called drag"))
-        XCTAssertFalse(none.partFaults.contains("an action cannot be called drag"))
+        XCTAssertTrue(filesCheck.partFaults.contains("an action cannot be called drag"))
+        XCTAssertFalse(noneCheck.partFaults.contains("an action cannot be called drag"))
     }
 
     func testTheDragCallNamesEachRow() {
@@ -69,7 +62,7 @@ final class FilesOutTests: XCTestCase {
         esac
         """
         try "#!/bin/sh\n# on=sheet.open\n\(body)\n".writeScript(to: spots.spotFile("shelf"))
-        model.reload()
+        await model.reload()
         model.press(GlobalKey(spot: "shelf", act: .float, trigger: .shake))
         try await wait("the rows") { model.sheets["shelf"]?.list.shown.count == 3 }
         let rows = try XCTUnwrap(model.sheets["shelf"]?.list.shown)

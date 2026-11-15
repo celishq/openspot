@@ -4,16 +4,22 @@ public struct CommandAnswer: Equatable, Sendable {
     public let output: String
     public let errors: String
     public let code: Int32
+    let fix: URL?
 
     public init(output: String = "", errors: String = "", code: Int32 = 0) {
+        self.init(output: output, errors: errors, code: code, fix: nil)
+    }
+
+    private init(output: String, errors: String, code: Int32, fix: URL?) {
         self.output = output
         self.errors = errors
         self.code = code
+        self.fix = fix
     }
 
     init(failure error: Error) {
-        let link = if case SpotError.failedWithFix(_, _, let link) = error { "link=\(link.absoluteString)\n" } else { "" }
-        self.init(output: link, errors: "\((error as? SpotError)?.reason ?? error.localizedDescription)\n", code: 1)
+        let fix: URL? = if case SpotError.failedWithFix(_, _, let link) = error { link } else { nil }
+        self.init(output: fix.map { "link=\($0.absoluteString)\n" } ?? "", errors: "\((error as? SpotError)?.reason ?? error.localizedDescription)\n", code: 1, fix: fix)
     }
 }
 

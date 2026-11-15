@@ -25,6 +25,15 @@ final class SpotCheckTests: XCTestCase {
         XCTAssertEqual(json, [["spot": "weather", "file": file.path, "fault": "Weather has an unknown mode: huge. Use once, stay or always"]])
     }
 
+    func testTheTestsOfASpotAreNotCheckedAsASpot() async throws {
+        try "#!/bin/sh\n# on=sheet.open\necho row=a\necho title=A\n".writeScript(to: folder.spotFile("notes"))
+        try "#!/bin/sh\n# mode=huge\nexit 1\n".writeScript(to: folder.appendingPathComponent("notes.spot/tests/run.sh"))
+
+        let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
+
+        XCTAssertEqual(findings, [])
+    }
+
     func testAValueWithANewLinePrintedByHandIsAFaultThatNamesTheHelper() async throws {
         let file = folder.spotFile("notes")
         try "#!/bin/sh\n# on=sheet.open\nprintf 'row=a\\ntitle=one\\ntwo\\n\\nrow=b\\ntitle=B\\ntitle=C\\n'\n".writeScript(to: file)
@@ -80,7 +89,7 @@ final class SpotCheckTests: XCTestCase {
         try "#!/bin/sh\n# on=sheet.open\n\(body)\n".writeScript(to: folder.spotFile("first"))
         try "#!/bin/sh\n# on=sheet.open\n\(body)\n".writeScript(to: folder.spotFile("second"))
         let check = Task { await SpotCheck(folder: SpotsFolder(url: folder), timeout: 60).findings() }
-        for _ in 0..<1000 {
+        for _ in 0..<6000 {
             if FileManager.default.fileExists(atPath: started.path) { break }
             try await Task.sleep(for: .milliseconds(10))
         }

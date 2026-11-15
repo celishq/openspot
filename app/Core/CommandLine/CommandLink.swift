@@ -1,7 +1,6 @@
 import Foundation
 
 public struct CommandLink: Equatable, Sendable {
-    public static let run = "command_link"
     public static let standard = URL(fileURLWithPath: "/usr/local/bin/openspot")
 
     public let link: URL
@@ -16,16 +15,6 @@ public struct CommandLink: Equatable, Sendable {
 
     public var isOn: Bool {
         (try? FileManager.default.destinationOfSymbolicLink(atPath: link.path)) == target.path
-    }
-
-    var row: TextBlock {
-        TextBlock(fields: [
-            .init(key: "row", value: Self.run),
-            .init(key: "title", value: "Use openspot in Terminal"),
-            .init(key: "detail", value: "The command line tool"),
-            .init(key: "icon", value: "terminal"),
-            .init(key: "value", value: String(isOn))
-        ])
     }
 
     func toggle() throws -> String {

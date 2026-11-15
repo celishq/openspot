@@ -19,8 +19,8 @@ openspot clipboard copy "$file" && echo "toast=Copied the picture."
 | `openspot screen sources`                                                              | Prints each display, window, microphone and camera as a row.      |
 | `openspot screen shot [source] [--cursor] [file]`                                      | Takes a picture, and prints its path.                                  |
 | `openspot screen record start [source] [input]... [--cursor] [--events <file>] [file]` | Starts a recording, and prints nothing.                                |
-| `openspot screen record stop`                                                          | Ends the recording, and prints the path of each file, the video first. |
-| `openspot screen record status`                                                        | Prints one block: `state=recording` with its files and `seconds`, or `state=idle`. |
+| `openspot screen record stop`                                                          | Ends the recording, and prints the path of each file, the video first. After a recording that ended by itself, it prints its files and why it ended. |
+| `openspot screen record status`                                                        | Prints one block: `state=recording` with its files and `seconds`, `state=ended` with the files of a recording that ended by itself until you stop it, or `state=idle`. |
 
 ## Sources
 
@@ -66,7 +66,7 @@ records, one JSON object on each line (S5):
 
 The first line gives the size of the video in points and its pixels for each point. `t` is the second of the video, and
 `x` and `y` are points from its top left. A key needs Input Monitoring: the first recording with `--events` asks macOS
-for it, and until the person allows it, the file has no keys (S6).
+for it, and until the person allows it, the file has no keys (S6). The file stops at 64 MB, and `record stop` says so.
 
 ## Files
 

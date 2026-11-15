@@ -5,11 +5,10 @@ public final class PlaygroundPanel {
     public let model: SpotsModel
     public private(set) var file: URL?
     private let spots: URL
-    private let config: URL
 
     public init(host: SpotsHost, scratch: URL, defaults: UserDefaults) {
         spots = scratch.appendingPathComponent("spots", isDirectory: true)
-        config = scratch.appendingPathComponent("config", isDirectory: true)
+        let config = scratch.appendingPathComponent("config", isDirectory: true)
         let core = scratch.appendingPathComponent("core", isDirectory: true)
         for folder in [spots, config, core] {
             try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -23,8 +22,8 @@ public final class PlaygroundPanel {
     }
 
     @discardableResult
-    public func place(file: URL?, text: String, spots real: URL? = nil) throws -> String {
-        let (source, id) = SheetSandbox.place(of: file, text: text, spots: real ?? spots, scratch: spots)
+    public func place(file: URL?, text: String, spots real: URL? = nil) async throws -> String {
+        let (source, id) = Playground.place(of: file, text: text, spots: real ?? spots, scratch: spots)
         let target = SpotID(id).file(in: spots, extension: source.pathExtension)
         let manager = FileManager.default
         for old in (try? manager.contentsOfDirectory(at: spots, includingPropertiesForKeys: nil)) ?? [] {
@@ -40,8 +39,8 @@ public final class PlaygroundPanel {
             try manager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: target.path)
         }
         self.file = target
-        try "[[spots]]\nid = \"\(id)\"\ngrid = true\n".write(to: config.appendingPathComponent("config.toml"), atomically: true, encoding: .utf8)
-        model.reload()
+        try model.files.config.change { $0.arrangement = SpotArrangement(choices: [SpotArrangement.Choice(id: id, isOnGrid: true)]) }
+        await model.reload()
         model.panelWillShow(holding: [])
         return id
     }
@@ -49,9 +48,9 @@ public final class PlaygroundPanel {
     public func show(_ place: PlaygroundPlace, id: String) {
         switch place {
         case .sheet:
-            if model.openList != id { _ = model.push(FlowSheet(spot: id)) }
+            if model.openSheetID != id { _ = model.push(FlowSheet(spot: id)) }
         case .card:
-            if model.openList != nil { model.closeList(moving: false) }
+            if model.openSheetID != nil { model.closeSheet(moving: false) }
         }
     }
 }

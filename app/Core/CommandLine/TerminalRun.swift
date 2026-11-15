@@ -37,17 +37,21 @@ public struct TerminalRun {
     }
 
     public func start(isolation: isolated (any Actor)? = #isolation, frame: (String) -> Void) async -> End {
+        if spot.reachesAccountKey {
+            return End(code: 1, errors: "\(spot.name) reaches your account key, so it runs only in the Openspot panel. Open it there.\n")
+        }
         let isRead = action == .read
         if spot.mode == .inline { return await inline(isRead: isRead, frame: frame) }
-        let program = SwiftProgram().runnable(for: spot.url, builds: false)
+        let swift = SwiftProgram()
+        let program = swift.runnable(for: spot, builds: false)
         let token = tokens?.issue(for: spot)
         let variables = ["OPENSPOT_ID": spot.id].merging(isRead ? ReadReason.sheet.variables : [:]) { _, new in new }.merging(token.map { [CallerTokens.variable: $0] } ?? [:]) { _, new in new }
         let process: ScriptProcess
         if spot.mode.stays {
-            process = ScriptProcess(url: program, name: spot.url.path, mode: .stays, limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder)
+            process = ScriptProcess(url: program, name: spot.url.path, mode: .stays, limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder, build: swift.build(of: spot))
         } else {
             let sent = action.sent(input: input)
-            process = ScriptProcess(url: program, name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder)
+            process = ScriptProcess(url: program, name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder, build: swift.build(of: spot))
         }
         if let tokens, let token {
             process.onStart { group in tokens.enter(group, token: token) }
@@ -59,8 +63,9 @@ public struct TerminalRun {
                 let frames = process.start()
                 if spot.mode.stays { process.send(action, input: input, variables: isRead ? ReadReason.sheet.variables : [:], id: Self.callID) }
                 for try await text in frames {
-                    if !spot.mode.stays || !SpotOutput(text: text).isMark { frame(text) }
-                    if spot.mode.stays, SpotOutput(text: text).summary?.value("end") == String(Self.callID) { process.end() }
+                    let head = spot.mode.stays ? FrameHead(text: text) : nil
+                    if head?.isMark != true { frame(text) }
+                    if head?.end == String(Self.callID) { process.end() }
                 }
             } catch {
                 if let last = process.failedFrame { frame(last) }
@@ -83,7 +88,7 @@ public struct TerminalRun {
     private func inline(isolation: isolated (any Actor)? = #isolation, isRead: Bool, frame: (String) -> Void) async -> End {
         let script = InlineScript(spot: spot, api: nil, tokens: tokens, careful: careful, limit: Self.readLimit)
         defer { script.end() }
-        let call = InlineCall(arguments: action.arguments, variables: ["OPENSPOT_ID": spot.id].merging(isRead ? ReadReason.sheet.variables : [:]) { _, new in new }, input: input)
+        let call = InlineCall(arguments: action.arguments, variables: ["OPENSPOT_ID": spot.id].merging(isRead ? ReadReason.sheet.variables : [:]) { _, new in new }, input: input, limit: isRead ? Self.readLimit : nil)
         script.send(call)
         let outcome = await withTaskCancellationHandler {
             await call.outcome(limit: isRead ? Self.readLimit : nil)

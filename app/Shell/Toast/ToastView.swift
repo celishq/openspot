@@ -11,7 +11,7 @@ struct ToastView: View {
                 SpotWorkMark(call: nil, side: Self.markSide)
             } else if let symbol = toast.kind.symbol {
                 Image(systemName: symbol)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(SpotType.strong)
                     .foregroundStyle(SpotTheme.ink)
             }
             Self.styled(toast.message)
@@ -23,7 +23,7 @@ struct ToastView: View {
         }
         .padding(.horizontal, ToastPanel.margin)
         .padding(.vertical, 10)
-        .modifier(SpotGlass(radius: SpotTokens.rowHeight / 3))
+        .modifier(SpotGlass(shape: SpotRoundShape(radius: SpotTokens.rowHeight / 3)))
         .contentShape(Rectangle())
         .onTapGesture { toast.open?() }
         .padding(ToastPanel.margin)

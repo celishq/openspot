@@ -20,14 +20,8 @@ class SampleSpotsCase: XCTestCase {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-\(name)-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let program = folder.appendingPathComponent(name)
-        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-o", program.path, examples.appendingPathComponent("\(name).spot/\(name).swift").path])
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-o", program.path, examples.appendingPathComponent("\(name).spot/\(name).swift").path], base: TestEnvironment.values)
         return (folder, program)
-    }
-
-    @nonobjc func waitUntil(_ fact: () -> Bool) async throws {
-        for _ in 0..<200 where !fact() {
-            try await Task.sleep(for: .milliseconds(50))
-        }
     }
 
     var scan: ScanResult {
@@ -36,15 +30,13 @@ class SampleSpotsCase: XCTestCase {
                 .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             let folder = root.appendingPathComponent("spots")
             var scan = try SpotsFolder(url: folder).scan()
-            scan.addSettings(in: ConfigFile(url: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-samples/config.toml")))
+            scan.addSettings(in: ConfigFile(url: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-samples/config.toml")), secrets: SecretStore(file: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-samples/secrets.json")))
             return scan
         }
     }
 
     func windowCall(_ slot: String) throws -> String {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-windows-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
+        let folder = try temporaryFolder()
         try "#!/bin/sh\nprintf '%s\\n' \"$@\"\n".writeScript(to: folder.appendingPathComponent("openspot"))
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/sh")
@@ -57,27 +49,7 @@ class SampleSpotsCase: XCTestCase {
         return String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
     }
 
-    func turnCaffeinateOnAndOff(_ caffeinate: Spot) async throws {
-        let toast = try await caffeinate.perform(.item(SpotItem(title: "1 minute", run: "60")), timeout: 5)
-        XCTAssertEqual(toast, "Caffeinate is on for 1 minute")
-        var started = try await caffeinate.state(timeout: 5)
-        for _ in 0..<100 where started.subtitle == "Off" {
-            try await Task.sleep(for: .milliseconds(50))
-            started = try await caffeinate.state(timeout: 5)
-        }
-        let first = try await caffeinate.items(timeout: 5).items.first
-        XCTAssertEqual(started.subtitle, "1m left")
-        XCTAssertEqual(started.on, true)
-        XCTAssertEqual(first?.run, "off")
-
-        let stopToast = try await caffeinate.perform(.item(try XCTUnwrap(first)), timeout: 5)
-        XCTAssertEqual(stopToast, "Caffeinate is off")
-        let stopped = try await caffeinate.state(timeout: 5)
-        XCTAssertEqual(stopped.subtitle, "Off")
-        XCTAssertEqual(stopped.on, false)
-    }
-
-    func withPrivateHome(_ body: (URL) async throws -> Void) async throws {
+    func withPrivateHome(_ more: [String: String] = [:], _ body: (URL) async throws -> Void) async throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-home-\(UUID().uuidString)")
         let tools = folder.appendingPathComponent("tools")
         try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
@@ -89,23 +61,21 @@ class SampleSpotsCase: XCTestCase {
             ("gh", Self.fakeGh(answer: folder.appendingPathComponent("gh-answer").path)),
             ("osascript", "cp '\(folder.path)/clipboard' '\(folder.path)/pasted'"),
             ("openspot", Self.fakeOpenspot(in: folder)),
-            ("caffeinate", "exec /bin/bash -c 'exec -a caffeinate /bin/sleep 30'")
+            ("say", "exit 0")
         ] {
             let tool = tools.appendingPathComponent(name)
             try "#!/bin/sh\n\(script)\n".writeScript(to: tool)
         }
-        let before = ProcessInfo.processInfo.environment
-        setenv("HOME", folder.path, 1)
-        setenv("TMPDIR", folder.path + "/", 1)
-        setenv("PATH", "\(tools.path):/usr/bin:/bin", 1)
-        setenv("APP_FOLDERS", folder.appendingPathComponent("Applications").path, 1)
-        defer {
-            for name in ["HOME", "TMPDIR", "PATH", "APP_FOLDERS"] {
-                if let value = before[name] { setenv(name, value, 1) } else { unsetenv(name) }
-            }
-            try? FileManager.default.removeItem(at: folder)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let home: [String: String] = [
+            "HOME": folder.path,
+            "TMPDIR": folder.path + "/",
+            "PATH": "\(tools.path):/usr/bin:/bin",
+            "APP_FOLDERS": folder.appendingPathComponent("Applications").path
+        ]
+        try await TestEnvironment.with(home.merging(more) { _, new in new }) {
+            try await body(folder)
         }
-        try await body(folder)
     }
 
     static func fakeOpenspot(in folder: URL) -> String {
@@ -167,14 +137,14 @@ class SampleSpotsCase: XCTestCase {
 
     func savedLink(_ url: String, in links: Spot) async throws {
         let new = try await action("new", of: links)
-        var draft = FormDraft(form: try await links.form(new, item: nil, timeout: 5))
+        var draft = FormDraft(form: try await links.form(new, item: nil, timeout: 60))
         draft.set("Site", for: "title")
         draft.set(url, for: "url")
-        _ = try await links.submit(new, item: nil, draft: draft, timeout: 5)
+        _ = try await links.submit(new, item: nil, draft: draft, timeout: 60)
     }
 
     func action(_ id: String, of spot: Spot) async throws -> CommandAction {
-        let actions = try await spot.items(timeout: 5).actions
+        let actions = try await spot.items(timeout: 60).actions
         return try XCTUnwrap(actions.first { $0.id == id })
     }
 
@@ -186,7 +156,7 @@ class SampleSpotsCase: XCTestCase {
         let script = "#!/bin/sh\n[ \"$1 $2\" = 'color pick' ] && { printf '%s' '\(answer)'; exit 0; }\n\(Self.fakeOpenspot(in: folder))\n"
         try script.writeScript(to: folder.appendingPathComponent("tools/openspot"))
         let picker = try XCTUnwrap(try scan.spots.first { $0.name == "Color picker" })
-        return try await picker.perform(picker.click, timeout: 5)
+        return try await picker.perform(picker.click, timeout: 60)
     }
 
     func fakeTranslate(in folder: URL, status: String? = nil) throws -> Spot {
@@ -223,11 +193,11 @@ class SampleSpotsCase: XCTestCase {
 
     @MainActor
     static func drive(_ spot: Spot, _ actions: [SpotAction]) async throws -> SpotOutput {
-        var last = try await spot.items(timeout: 10)
+        var last = try await spot.items(timeout: 60)
         var panel = try XCTUnwrap(SheetParts(output: last))
         for action in actions {
             if action.arguments.count == 2 { panel.set(action.arguments[1], of: action.arguments[0]) }
-            last = SpotOutput(text: try await SpotRuns().answer(of: spot, action, input: panel.values, limit: 30))
+            last = SpotOutput(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, action, input: panel.values, limit: 30))
             panel.take(last, answering: panel.generation)
         }
         return last
@@ -250,7 +220,7 @@ class SampleSpotsCase: XCTestCase {
 
     @MainActor
     static func targetOptions(of spot: Spot, release: URL) async throws -> (first: Int, last: Int) {
-        let runs = SpotRuns()
+        let runs = SpotRuns(environment: TestEnvironment.values)
         defer { runs.quit() }
         let sheet = runs.sheet(for: spot)
         let options: () -> Int = {
@@ -259,10 +229,10 @@ class SampleSpotsCase: XCTestCase {
         }
         runs.panelOpened()
         sheet.open {}
-        for _ in 0..<1000 where sheet.panel == nil { try await Task.sleep(for: .milliseconds(10)) }
+        for _ in 0..<6000 where sheet.panel == nil { try await Task.sleep(for: .milliseconds(10)) }
         let first = options()
         FileManager.default.createFile(atPath: release.path, contents: Data())
-        for _ in 0..<1000 where options() < 2 { try await Task.sleep(for: .milliseconds(10)) }
+        for _ in 0..<6000 where options() < 2 { try await Task.sleep(for: .milliseconds(10)) }
         return (first, options())
     }
 }

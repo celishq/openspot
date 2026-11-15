@@ -148,7 +148,7 @@ final class ActionMenuTests: XCTestCase {
     }
 
     func testAKeyLabelOfTheFooterNamesItsKey() {
-        XCTAssertEqual(ActionKey(label: "⌘⇧N"), ActionKey(name: "n", isCommand: true, isShift: true))
+        XCTAssertEqual(ActionKey(label: "⇧⌘N"), ActionKey(name: "n", isCommand: true, isShift: true))
         XCTAssertEqual(ActionKey(label: "⌘⏎"), ActionKey(name: "return", isCommand: true))
         XCTAssertEqual(ActionKey(label: "⏎"), ActionKey(name: "return"))
         XCTAssertEqual(ActionKey(label: "↩"), ActionKey(name: "return"))

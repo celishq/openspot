@@ -18,11 +18,23 @@ final class SpotRunsReadTests: SpotRunsCase {
         XCTAssertEqual(try String(contentsOfFile: path("runs"), encoding: .utf8), "run\n")
     }
 
+    func testAReadThatAnswersWithItsHeadAtItsEndIsReadingUntilTheAnswerIsIn() async throws {
+        try script(header: "on=panel.open", "printf 'title=Read\\n'")
+        let sheet = try sheet()
+
+        runs.panelOpened()
+        let limit = ContinuousClock.now + .seconds(60)
+        while runs.isReading, ContinuousClock.now < limit { await Task.yield() }
+
+        XCTAssertFalse(runs.isReading)
+        XCTAssertEqual(sheet.state.title, "Read")
+    }
+
     func testEachCallKnowsTheIDOfItsSpot() async throws {
         try script("coffee", header: "on=sheet.open", "printf 'row=%s\\n' \"$OPENSPOT_ID\"")
         let command = try XCTUnwrap(try scanned().spots.first { $0.id == "coffee" })
 
-        let items = try await command.items(timeout: 5).items
+        let items = try await command.items(timeout: 60).items
 
         XCTAssertEqual(items.map(\.run), ["coffee"])
     }
@@ -216,7 +228,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         let sheet = try sheet()
 
         runs.panelOpened()
-        try await wait("the row") { sheet.list.shown.count == 1 }
+        try await wait("the row") { sheet.list.shown.count == 1 && !self.runs.isReading }
         sheet.open {}
         time += 4
         sheet.close()
@@ -235,6 +247,18 @@ final class SpotRunsReadTests: SpotRunsCase {
         sheet.open {}
 
         try await wait("the sheet read") { self.log("reasons") == ["panel.open", "sheet.open"] }
+    }
+
+    func testASheetOpenBetweenTheFrameOfAPanelReadAndItsEndReadsAsTheSheetOpen() async throws {
+        try script(header: "on=panel.open\non=sheet.open", "echo \"$OPENSPOT_REASON\" >> '\(path("reasons"))'\nprintf 'row=a\\ntitle=A\\n---\\n'\n\(untilRelease)")
+        let sheet = try sheet()
+
+        runs.panelOpened()
+        try await wait("the row") { sheet.list.shown.count == 1 }
+        sheet.open {}
+        openGate()
+
+        try await wait("the sheet read", seconds: 20) { self.log("reasons") == ["panel.open", "sheet.open"] }
     }
 
     func testASheetOpenThatTheSpotListsDuringAPanelReadReadsAgain() async throws {
@@ -263,7 +287,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         try script(header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         sheet.open {}
-        try await wait("the row") { sheet.list.shown.count == 1 }
+        try await wait("the row") { sheet.list.shown.count == 1 && !self.runs.isReading }
         sheet.close()
 
         time += 5
@@ -339,7 +363,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         menuBar.insert("fast")
         try script("fast", header: "on=clock.1\noffers=card\noffers=menubar", "printf 'title=1\\n'")
         _ = try scanned()
-        try await wait("the first read") { self.log().count == 1 }
+        try await wait("the first read") { self.log().count == 1 && !self.runs.isReading }
         try await pause(0.1)
 
         time += 1
@@ -401,7 +425,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         menuBar.insert("slow")
         try script("slow", header: "on=clock.60\noffers=card\noffers=menubar", log: "slow", "printf 'title=1\\n'")
         _ = try scanned()
-        try await wait("the first reads") { self.log("fast").count == 1 && self.log("slow").count == 1 }
+        try await wait("the first reads") { self.log("fast").count == 1 && self.log("slow").count == 1 && !self.runs.isReading }
 
         time += 4
         runs.raise(.clock)

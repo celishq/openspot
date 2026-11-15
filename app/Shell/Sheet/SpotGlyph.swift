@@ -8,10 +8,10 @@ struct SpotGlyph: View {
 
     var body: some View {
         if entry.showsHeaderPicture {
-            SpotItemIcon(icon: entry.spot.icon, glyph: entry.spot.glyph, symbol: nil, size: SpotTokens.glyphSize)
+            SpotItemIcon(icon: entry.spot.fileIcon, glyph: entry.spot.glyph, symbol: nil, size: SpotTokens.glyphSize)
         } else {
             Image(systemName: entry.symbol)
-                .font(.system(size: 17, weight: .semibold))
+                .font(SpotType.glyph)
                 .foregroundStyle(isOnSolid ? SpotTheme.glyphOnSolid : SpotTheme.ink)
                 .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
                 .background(SpotTheme.ink.opacity(showsDisc ? SpotTheme.disc : 0), in: Circle())

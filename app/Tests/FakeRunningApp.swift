@@ -3,6 +3,7 @@ import Foundation
 
 actor FakeRunningApp: RunningApp {
     private(set) var changes = 0
+    private(set) var spotChanges = 0
     private(set) var checks = 0
     private(set) var installs = 0
     private(set) var quits = 0
@@ -13,9 +14,13 @@ actor FakeRunningApp: RunningApp {
 
     private(set) var changeList: [ConfigChange] = []
 
-    func configChanged(_ change: ConfigChange) {
+    func configChanged(_ change: ConfigChange, to config: KeptConfig) {
         changes += 1
         changeList.append(change)
+    }
+
+    func spotsChanged() {
+        spotChanges += 1
     }
 
     func status() -> (update: String?, calls: Int, isFirstLaunch: Bool) {
@@ -72,7 +77,7 @@ actor FakeRunningApp: RunningApp {
 
     func publish(_ id: String) -> SpotPublish {
         opened.append("publish \(id)")
-        return .published
+        return id == "unread" ? .needsReadme : .published
     }
 
     func reveal(_ id: String) -> Bool {
@@ -80,8 +85,8 @@ actor FakeRunningApp: RunningApp {
         return id != "gone"
     }
 
-    func sandbox(_ file: URL?, isCareful: Bool) {
-        opened.append("sandbox \(file?.path ?? "") careful=\(isCareful)")
+    func playground(_ file: URL?, isCareful: Bool) {
+        opened.append("playground \(file?.path ?? "") careful=\(isCareful)")
     }
 
     func changeSetting(_ key: String, of spot: String) -> Bool {

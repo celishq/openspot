@@ -5,12 +5,12 @@ public enum FlowMove: Equatable, Sendable {
     case pop(all: Bool)
 
     init?(block: TextBlock, own: String? = nil) {
-        let push = block.value("push").flatMap { $0 == "true" ? own : $0 }
-        let spot = block.value("push.spot")
-        let pop = block.value("pop")
+        let push = block.value(HeadKey.push).flatMap { $0 == "true" ? own : $0 }
+        let spot = block.value(HeadKey.pushSpot)
+        let pop = block.value(HeadKey.pop)
         switch (push != nil || spot != nil, pop) {
         case (true, nil):
-            self = .push(spot: spot, page: push, title: block.value("push.title"), replace: block.flag("push.replace") == true)
+            self = .push(spot: spot, page: push, title: block.value(HeadKey.pushTitle), replace: block.flag(HeadKey.pushReplace) == true)
         case (false, "true"?):
             self = .pop(all: false)
         case (false, "all"?):

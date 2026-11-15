@@ -39,6 +39,71 @@ final class SpotRunsStayTests: SpotRunsCase {
     done
     """
 
+    private static let holds = """
+    trap 'touch "%@"' EXIT
+    while IFS= read -r line; do
+      printf '%%s\\n' "$line" >> '%@'
+      case "$line" in
+        call=*) call=${line#call=} ;;
+        arg=hold) name=hold ;;
+        arg=*) [ -n "$name" ] || name=${line#arg=} ;;
+        '')
+          case "$name" in
+            hold) sleep 600 > /dev/null 2>&1 & echo $! >> '%@' ;;
+            ?*) printf 'end=%%s\\n\\nrow=a\\ntitle=A\\n---\\n' "$call" ;;
+          esac
+          name= ;;
+      esac
+    done
+    """
+
+    private func holding() throws {
+        try script(header: "mode=stay\non=sheet.open\noffers=card", String(format: Self.holds, path("ended"), path("blocks"), path("children")))
+    }
+
+    func testAHeldCallKeepsItsStayingScriptPastTheReadLimitTheSheetAndThePanel() async throws {
+        try holding()
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 }
+
+        sheet.pick(SpotItem(title: "Hold", run: "hold"))
+        let child = try await pid("children")
+        sheet.close()
+        runs.panelClosed()
+        time += 60
+        try await pause()
+
+        XCTAssertEqual(sheet.calls.map(\.action.arguments), [["open", "hold"]])
+        XCTAssertFalse(exists("ended"))
+        XCTAssertEqual(kill(child, 0), 0)
+    }
+
+    func testASecondPressOfAKeyReachesAStayingScriptWhoseFirstCallIsHeld() async throws {
+        try holding()
+        let sheet = try sheet()
+
+        sheet.pressKey("hold")
+        try await wait("the held call") { self.blocks().contains("arg=hold") }
+        sheet.pressKey("hold")
+
+        try await wait("the second press") { self.blocks().filter { $0 == "arg=hold" }.count == 2 }
+        XCTAssertEqual(sheet.calls.count, 2)
+    }
+
+    func testAQuitEndsTheProcessesThatAHeldCallStarted() async throws {
+        try holding()
+        let sheet = try sheet()
+        sheet.pressKey("hold")
+        let child = try await pid("children")
+
+        runs.quit()
+
+        try await wait("the end of the child") { kill(child, 0) != 0 }
+        XCTAssertTrue(exists("ended"))
+    }
+
     func testEachCallOfAStayingScriptHasItsOwnId() async throws {
         try staying()
         let sheet = try sheet()
@@ -78,8 +143,23 @@ final class SpotRunsStayTests: SpotRunsCase {
 
         sheet.run(action, item: nil)
 
-        XCTAssertTrue(sheet.calls.isEmpty)
+        XCTAssertEqual(sheet.calls.count, 1)
         try await wait("the stop") { self.blocks(ids: true).last == "stop=2" }
+        try await wait("the end that the script prints") { sheet.calls.isEmpty }
+    }
+
+    func testAHeldCallThatOpenspotEndsByARestartSaysThatTheSpotStopped() async throws {
+        try holding()
+        let sheet = try sheet()
+        var toasts: [String] = []
+        sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
+        sheet.pressKey("hold")
+        _ = try await pid("children")
+
+        runs.isCareful = true
+
+        try await wait("the end of the held call") { sheet.calls.isEmpty }
+        XCTAssertEqual(toasts, ["Script stopped, since Openspot restarted it. Start it again to go on."])
     }
 
     func testEachFrameWithABlockReplacesAllAndOnlyTheFrameThatEndsAReadAnswersIt() async throws {
@@ -119,10 +199,23 @@ final class SpotRunsStayTests: SpotRunsCase {
 
         sheet.pick(try XCTUnwrap(sheet.list.selectedItem))
 
-        try await wait("the call") { self.blocks().last == "arg=open\narg=a" }
+        try await wait("the call and its end") { self.blocks().last == "arg=open\narg=a" && sheet.calls.isEmpty }
         XCTAssertEqual(Set(blocks().dropLast()), ["arg=read"])
         XCTAssertEqual(log().count, 1)
-        XCTAssertTrue(sheet.calls.isEmpty)
+    }
+
+    func testAReadOfAStayingScriptIsReadingUntilItsAnswerIsIn() async throws {
+        try staying()
+        let sheet = try sheet()
+        runs.panelOpened()
+
+        sheet.open {}
+        XCTAssertTrue(sheet.isReading)
+        let limit = ContinuousClock.now + .seconds(60)
+        while sheet.isReading, ContinuousClock.now < limit { await Task.yield() }
+
+        XCTAssertFalse(sheet.isReading)
+        XCTAssertEqual(sheet.list.shown.count, 1)
     }
 
     func testAnActionReachesTheRunningStayingScript() async throws {
@@ -159,6 +252,47 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertEqual(answer, .done)
         try await wait("the blocks") { self.blocks() == ["arg=read", "arg=new", "arg=new\ninput=a=one\\n"] }
         XCTAssertEqual(log().count, 1)
+    }
+
+    func testEachFrameOfASpotIsParsedOnceAndOffTheMainThread() async throws {
+        let parses = FrameParses()
+        try await FrameParses.$meter.withValue(parses) {
+            try script("stay", header: "mode=stay\noffers=card\non=sheet.open", """
+            while read -r line; do
+              case "$line" in
+                call=*) id=${line#call=} ;;
+                "") printf 'call=%s\\n\\nrow=a\\ntitle=A\\n---\\nrow=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n---\\nend=%s\\n---\\n' "$id" "$id" ;;
+              esac
+            done
+            """)
+            try script("once", header: "on=sheet.open", """
+            case "$1" in
+              read) printf 'button=add\\ntitle=Add\\nform=true\\nscope=spot\\n\\nrow=a\\ntitle=A\\n' ;;
+              add) case "$(cat)" in *name=*) printf 'select=a\\n' ;; *) printf 'title=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
+            esac
+            """)
+            let stay = try sheet("stay")
+            let once = try sheet("once")
+            runs.panelOpened()
+            stay.open {}
+            try await wait("the three frames of the staying spot") { stay.list.all.count == 2 && parses.count == 3 }
+            let stayed = parses.count
+
+            once.open {}
+            try await wait("the read of the spot that runs once") { once.spot.actions.count == 1 && once.calls.isEmpty }
+            XCTAssertEqual(parses.count, stayed + 1)
+
+            let action = try XCTUnwrap(once.spot.actions.first)
+            let asked = try await once.form(action, item: nil)
+            XCTAssertEqual(parses.count, stayed + 2)
+            var draft = FormDraft(form: try XCTUnwrap(asked))
+            draft.set("x", for: "name")
+            _ = try await once.submit(action, item: nil, draft: draft)
+            try await wait("the read after the submit") { once.calls.isEmpty && !once.list.isLoading }
+            XCTAssertEqual(parses.count, stayed + 3)
+        }
+
+        XCTAssertEqual(parses.countOnMain, 0)
     }
 
     func testASecondAskForAFormOfAStayingScriptLeavesTheFirstWaiting() async throws {
@@ -210,6 +344,72 @@ final class SpotRunsStayTests: SpotRunsCase {
         } catch {
             XCTAssertEqual(error as? SpotError, .badForm)
         }
+    }
+
+    private static let silentForm = """
+    while IFS= read -r line; do
+      printf '%%s\\n' "$line" >> '%@'
+      case "$line" in
+        call=*) call=${line#call=} ;;
+        arg=new) ;;
+        arg=done) printf 'toast=Done already\\nend=%%s\\n---\\n' "$call" ;;
+        arg=read) printf 'end=%%s\\n\\nbutton=new\\ntitle=New\\nscope=spot\\nform=true\\n\\nbutton=done\\ntitle=Done\\nscope=spot\\nform=true\\n---\\n' "$call" ;;
+      esac
+    done
+    """
+
+    private func silentFormSheet(limit: TimeInterval = 10) async throws -> (SpotRun, CommandAction, CommandAction) {
+        runs.quit()
+        runs = SpotRuns(environment: ProcessInfo.processInfo.environment, readLimit: limit, clock: clock.value, stopPause: 0.2)
+        try script(header: "mode=stay\noffers=card\noffers=menubar", String(format: Self.silentForm, path("asked")))
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the actions") { sheet.spot.actions.count == 2 }
+        return (sheet, try XCTUnwrap(sheet.spot.actions.first { $0.id == "new" }), try XCTUnwrap(sheet.spot.actions.first { $0.id == "done" }))
+    }
+
+    func testAFormOfAStayingScriptThatNeverAnswersEndsAtTheLimitAndStopsItsCall() async throws {
+        let (sheet, new, _) = try await silentFormSheet(limit: 0.5)
+
+        do {
+            _ = try await sheet.form(new, item: nil)
+            XCTFail("It should time out.")
+        } catch {
+            XCTAssertEqual(error as? SpotError, .timedOut)
+        }
+
+        try await wait("the stop of the form") { self.log("asked").contains { $0.hasPrefix("stop=") } }
+        XCTAssertTrue(sheet.calls.isEmpty)
+    }
+
+    func testAFormOfAStayingScriptWhoseCallEndsWithNoFieldIsABadForm() async throws {
+        let (sheet, _, done) = try await silentFormSheet()
+        var toasts: [String] = []
+        sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
+
+        do {
+            _ = try await sheet.form(done, item: nil)
+            XCTFail("It should have no form.")
+        } catch {
+            XCTAssertEqual(error as? SpotError, .badForm)
+        }
+        XCTAssertTrue(sheet.calls.isEmpty)
+        XCTAssertEqual(toasts, ["Done already"])
+    }
+
+    func testAPressAgainStopsAFormOfAStayingScript() async throws {
+        let (sheet, new, _) = try await silentFormSheet()
+
+        async let first = sheet.form(new, item: nil)
+        try await wait("the ask") { self.log("asked").contains("arg=new") }
+        time = time.addingTimeInterval(SpotRun.pressPause)
+        let second = try await sheet.form(new, item: nil)
+        let answer = try await first
+
+        XCTAssertNil(second)
+        XCTAssertNil(answer)
+        try await wait("the stop of the form") { self.log("asked").contains { $0.hasPrefix("stop=") } }
     }
 
     func testASearchReachesTheRunningStayingScript() async throws {
@@ -308,6 +508,128 @@ final class SpotRunsStayTests: SpotRunsCase {
 
         try await wait("the answer") { sheet.answers.map(\.run) == ["12"] }
         XCTAssertEqual(sheet.list.shown.map(\.run), ["a"])
+    }
+
+    func testAToggleOfAStayingScriptThatFailsIsUndone() async throws {
+        try script(header: "mode=stay\noffers=card\noffers=menubar", #"""
+        while IFS= read -r line; do
+          case "$line" in
+            call=*) id=${line#call=}; name= ;;
+            arg=*) [ -n "$name" ] || name=${line#arg=} ;;
+            '')
+              [ "$name" = power ] && exit 3
+              [ -f '\#(path("started"))' ] || printf 'end=%s\n\nrow=a\ntitle=A\n---\n' "$id"
+              touch '\#(path("started"))' ;;
+          esac
+        done
+        """#)
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 }
+        let before = sheet.state
+        sheet.state = before.switched(on: true)
+
+        sheet.send(SpotRun.Call(action: .press("power"), key: SpotRun.cardKey, purpose: .work(SpotRun.Work(undo: before))))
+
+        XCTAssertTrue(sheet.isCardRunning)
+        try await wait("the undo of the switch") { sheet.state == before }
+        XCTAssertFalse(sheet.isCardRunning)
+    }
+
+    private func answeringOnce() throws {
+        try script(header: "mode=stay\noffers=card\noffers=menubar", #"""
+        while IFS= read -r line; do
+          case "$line" in
+            call=*) id=${line#call=} ;;
+            '')
+              [ -f '\#(path("started"))' ] || printf 'end=%s\n\nrow=a\ntitle=A\n---\n' "$id"
+              touch '\#(path("started"))' ;;
+          esac
+        done
+        """#)
+    }
+
+    func testRemovingARecordDropsItsAskItsTimerAndItsFrames() async throws {
+        let clock = FakeClock()
+        var logged: [CallLog.Record] = []
+        runs.quit()
+        runs = SpotRuns(clock: clock.value, stopPause: 0.2)
+        runs.onCall = { record, _ in logged.append(record) }
+        try answeringOnce()
+        let (sheet, told) = try toldSheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 }
+        let link = try XCTUnwrap(sheet.link as? StayLink)
+        sheet.read(need: .change)
+        let timer = try XCTUnwrap(link.records.values.first?.timer)
+
+        link.end()
+        await timer.value
+        clock.advance(by: 60)
+
+        XCTAssertTrue(link.records.isEmpty)
+        XCTAssertFalse(sheet.isReading)
+        XCTAssertEqual(told(), [])
+        XCTAssertEqual(logged.map(\.end), [.exited(0), .stopped])
+        XCTAssertEqual(logged.last?.frames, [])
+    }
+
+    func testAReadOfAStayingScriptFailsAsSlowWhenTheClockPassesItsLimit() async throws {
+        let clock = FakeClock()
+        runs.quit()
+        runs = SpotRuns(clock: clock.value, stopPause: 0.2)
+        try answeringOnce()
+        let (sheet, told) = try toldSheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 }
+        let link = try XCTUnwrap(sheet.link as? StayLink)
+        sheet.read(need: .change)
+        let timer = try XCTUnwrap(link.records.values.first?.timer)
+        try await wait("the sleep of the timer") { clock.isSleeping(for: 10) }
+
+        clock.advance(by: 9)
+        XCTAssertEqual(told(), [])
+        clock.advance(by: 1)
+        await timer.value
+
+        XCTAssertEqual(told(), ["Script took too long, so Openspot stopped it."])
+        XCTAssertFalse(sheet.isReading)
+        XCTAssertEqual(link.records.values.map(\.isDropped), [true])
+    }
+
+    func testAnAnswerBeingAppliedIsNotFailedAsSlow() async throws {
+        let clock = FakeClock()
+        nonisolated(unsafe) var holds = false
+        runs.quit()
+        runs = SpotRuns(clock: clock.value, stopPause: 0.2, prepare: { _, _ in
+            guard holds else { return }
+            holds = false
+            await MainActor.run { clock.advance(by: 10) }
+            for _ in 0..<5 { await MainActor.run {} }
+        })
+        try script(header: "mode=stay\noffers=card\noffers=menubar", #"""
+        while IFS= read -r line; do
+          case "$line" in
+            call=*) id=${line#call=} ;;
+            '') printf 'end=%s\n\nrow=a\ntitle=A\n---\n' "$id" ;;
+          esac
+        done
+        """#)
+        let (sheet, told) = try toldSheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 && !sheet.isReading }
+        let link = try XCTUnwrap(sheet.link as? StayLink)
+
+        holds = true
+        sheet.read(need: .change)
+        try await wait("the answer") { !holds && !sheet.isReading && link.records.isEmpty }
+
+        XCTAssertEqual(told(), [])
+        XCTAssertNil(sheet.failure)
     }
 
     func testACardCallOfAStayingScriptReachesIt() async throws {
@@ -469,7 +791,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testACallStartsAStayingScriptThatNothingWantsAndItEndsAfterTheCall() async throws {
-        runs = SpotRuns(now: { [unowned self] in self.time }, stopPause: 30, tickPause: .milliseconds(50))
+        runs = SpotRuns(clock: clock.value, stopPause: 30)
         try staying()
         let sheet = try sheet()
 
@@ -651,7 +973,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
     private func slowStaying(limit: TimeInterval = 1) throws -> (sheet: SpotRun, told: () -> [String]) {
         runs.quit()
-        runs = SpotRuns(readLimit: limit, now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50))
+        runs = SpotRuns(readLimit: limit, clock: clock.value, stopPause: 0.2)
         try script(header: "mode=stay\non=sheet.open\noffers=card\noffers=menubar", """
         first=; [ -f '\(path("started"))' ] || first=1; touch '\(path("started"))'
         while IFS= read -r line; do
@@ -741,7 +1063,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testTheRecordOfALongCallOfAStayingScriptKeepsOnlyTheFramesTheLogShows() async throws {
-        runs = SpotRuns(now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50), log: CallLog(folder: folder.appendingPathComponent("logs"), limit: 2_000))
+        runs = SpotRuns(clock: clock.value, stopPause: 0.2, log: CallLog(folder: folder.appendingPathComponent("logs"), limit: 2_000))
         nonisolated(unsafe) var kept: [Int] = []
         runs.onCall = { record, _ in if record.arguments.first == "go" { kept.append(record.frames.count) } }
         try script(header: "mode=stay\noffers=card\noffers=menubar", #"""
@@ -794,12 +1116,11 @@ final class SpotRunsStayTests: SpotRunsCase {
         for round in 1...150 {
             sheet.list.search("t\(round)")
             sheet.ask()
-            try await wait("the picture of search \(round)") { link.sent.keys.max().map(link.pictured.contains) == true }
+            try await wait("the picture of search \(round)") { link.records.keys.max().flatMap { link.records[$0] }?.isPictured == true }
         }
 
-        XCTAssertLessThanOrEqual(link.sent.count, 1)
-        XCTAssertLessThanOrEqual(link.pictured.count, 1)
-        XCTAssertLessThanOrEqual(link.dropped.count, StayLink.droppedLimit)
+        XCTAssertLessThanOrEqual(link.records.values.filter { !$0.isDropped }.count, 1)
+        XCTAssertLessThanOrEqual(link.records.values.filter(\.isDropped).count, StayLink.droppedLimit)
     }
 
     func testALateAnswerToACallPastTheLimitOfStoppedCallsChangesNothing() async throws {

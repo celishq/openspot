@@ -29,6 +29,10 @@ public actor WebPictures {
         text.hasPrefix("https://") && URL(string: text)?.host != nil
     }
 
+    public nonisolated static func named(in frame: String) -> [String] {
+        TextBlock.blocks(in: frame).compactMap { $0.value("icon") }.filter(isWeb)
+    }
+
     public func path(of text: String) async -> String? {
         guard Self.isWeb(text), let url = URL(string: text) else { return text }
         let file = folder.appendingPathComponent(Self.name(of: url))

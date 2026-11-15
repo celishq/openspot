@@ -3,13 +3,6 @@ import XCTest
 
 @MainActor
 final class SpotUsesTests: SpotRunsCase {
-    private final class NoHost: Mac {
-        func eventStore() -> any EventStore { FakeEventStore() }
-        func reminderStore() -> any ReminderStore { FakeReminderStore() }
-        func showCalendar(at time: Date) throws {}
-        func open(_ link: URL) -> Bool { false }
-    }
-
     private var config: URL!
     private var client: URL!
     private var socket: CommandSocket?
@@ -21,7 +14,7 @@ final class SpotUsesTests: SpotRunsCase {
         client = folder.appendingPathComponent("A.app/Contents/Helpers/openspot")
         try FileManager.default.createDirectory(at: client.deletingLastPathComponent(), withIntermediateDirectories: true)
         try FileManager.default.copyItem(at: Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot"), to: client)
-        let api = CommandAPI(mac: NoHost(), runs: runs)
+        let api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: FakeRunningApp(), runs: runs, rates: .offline)
         runs.api = api
         socket = try XCTUnwrap(CommandSocket(folder: config, api: api))
         runs.onReport = { [unowned self] _, report in
@@ -97,6 +90,17 @@ final class SpotUsesTests: SpotRunsCase {
         return (log("done").last ?? "", (try? String(contentsOfFile: path("errors"), encoding: .utf8)) ?? "")
     }
 
+    func testASpotOfThePersonThatNamesTheAccountUseCannotPublish() async throws {
+        try caller(header: "uses=account", "store publish script")
+        let found = try scanned()
+
+        let (code, errors) = try await pressed()
+
+        XCTAssertEqual(code, "1")
+        XCTAssertEqual(errors, "Only Openspot's Store can reach your account key.\n")
+        XCTAssertEqual(found.scripts.first?.uses, [])
+    }
+
     func testASpotCannotChangeCarefulMode() async throws {
         try caller(header: "uses=app", "setting set --spot openspot careful false")
         _ = try scanned()
@@ -106,16 +110,6 @@ final class SpotUsesTests: SpotRunsCase {
         XCTAssertEqual(code, "1")
         XCTAssertEqual(errors, "Script cannot change Careful mode. Only you can, in Settings or with `openspot setting set --spot openspot careful true` in Terminal.\n")
         XCTAssertFalse(FileManager.default.fileExists(atPath: config.appendingPathComponent("config.toml").path))
-    }
-
-    func testASpotCannotChangeWhereTheAccountIsKept() async throws {
-        try caller(header: "uses=app", "account sync off")
-        _ = try scanned()
-
-        let (code, errors) = try await pressed()
-
-        XCTAssertEqual(code, "1")
-        XCTAssertEqual(errors, "Only Openspot's Account spot can reach your account key.\n")
     }
 
     func testInCarefulModeAnUndeclaredUseIsRefused() async throws {

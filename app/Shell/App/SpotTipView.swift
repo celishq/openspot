@@ -14,7 +14,7 @@ struct SpotTipView: View {
             if let tip = model.tip, model.isEditing, model.carry == nil, model.resize == nil, let top = top(of: tip) {
                 SpotTipPill(text: tip.text)
                     .position(x: panelOrigin.x + top.x, y: panelOrigin.y + top.y + Self.gap + SpotTokens.hintPillHeight / 2)
-                    .opacity(isShown ? 1 : 0)
+                    .opacity(isShown ? 1 : MotionTokens.hiddenOpacity)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -31,7 +31,7 @@ struct SpotTipView: View {
         guard let index = model.visible.firstIndex(where: { $0.id == tip.id }),
               let placement = model.placements.first(where: { $0.index == index }) else { return nil }
         let rect = placement.rect
-        let inset = SpotTokens.corner(for: placement.size) * SpotTokens.rimPoint
+        let inset = SurfaceEdge(card: placement.size).rim
         let origin = model.gridOrigin
         let x = tip.anchor == .trailingCorner ? rect.maxX - inset : rect.minX + inset
         return CGPoint(x: origin.x + x, y: origin.y + rect.minY + inset + SpotTokens.keycap / 2)

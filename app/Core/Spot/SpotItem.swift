@@ -57,28 +57,28 @@ public struct SpotItem: Equatable, Sendable {
     }
 
     public init?(block: TextBlock) {
-        guard let run = block.value("row") else { return nil }
-        let title = block.value("title") ?? run
-        let hides = block.values("hides")
+        guard let run = block.value(RowKey.row) else { return nil }
+        let title = block.value(RowKey.title) ?? run
+        let hides = block.values(RowKey.hides)
         self.init(
             title: title,
-            subtitle: block.value("detail"),
+            subtitle: block.value(RowKey.detail),
             run: run,
-            picture: Icon(text: block.value("icon")),
-            parent: block.value("parent"),
+            picture: Icon(text: block.value(RowKey.icon)),
+            parent: block.value(RowKey.parent),
             hides: hides.isEmpty ? nil : hides,
-            keywords: block.list("keywords"),
-            shortcut: block.value("shortcut"),
-            records: block.value("type") == "hotkey",
-            takesShake: block.flag("shake") ?? false,
-            isOn: block.flag("value") ?? false,
-            tone: block.value("tone").flatMap(MetricValue.Tone.init),
-            file: block.value("file").flatMap { $0.hasPrefix("/") ? $0 : nil },
-            fields: block.value("push.spot") == nil ? nil : block.text,
-            pin: block.value("pin").flatMap(Pin.init(rawValue:)),
-            openTitle: block.value("open"),
-            staysOnPick: block.flag("close") == false,
-            focusSubtitle: block.value("focus"),
+            keywords: block.list(RowKey.keywords),
+            shortcut: block.value(RowKey.shortcut),
+            records: block.value(RowKey.type) == RowKey.hotkey,
+            takesShake: block.flag(RowKey.shake) ?? false,
+            isOn: block.flag(RowKey.value) ?? false,
+            tone: block.value(RowKey.tone).flatMap(MetricValue.Tone.init),
+            file: block.value(RowKey.file).flatMap { $0.hasPrefix("/") ? $0 : nil },
+            fields: block.value(RowKey.pushSpot) != nil || block.fields.contains { RowKey(rawValue: $0.key) == nil } ? block.text : nil,
+            pin: block.value(RowKey.pin).flatMap(Pin.init(rawValue:)),
+            openTitle: block.value(RowKey.open),
+            staysOnPick: block.flag(RowKey.close) == false,
+            focusSubtitle: block.value(RowKey.focus),
             move: FlowMove(block: block, own: run).flatMap { if case .push = $0 { $0 } else { nil } }
         )
     }

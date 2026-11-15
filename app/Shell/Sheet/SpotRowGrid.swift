@@ -2,6 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotRowGrid: View {
+    @Environment(\.spotSurfaceEdge) private var surface
     let list: ItemList
     let selection: () -> Int
     let bottomInset: CGFloat
@@ -33,7 +34,7 @@ struct SpotRowGrid: View {
                     let index = first + (slot - first % slots + slots) % slots
                     if index < end {
                         let item = list.shown[index]
-                        SpotGridCell(item: item, side: side)
+                        SpotGridCell(item: item, side: side, surface: surface)
                             .equatable()
                             .accessibilityAction { onRun(item) }
                             .layoutValue(key: CellIndex.self, value: index)
@@ -124,9 +125,10 @@ private struct CellIndex: LayoutValueKey {
 private struct SpotGridCell: View, Equatable {
     let item: SpotItem
     let side: CGFloat
+    let surface: SurfaceEdge
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
+        let shape = SpotRoundShape(surface.inner())
         SpotItemIcon(item: item, size: SpotTokens.listIconSize)
             .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: SpotTokens.listIconSize) }
             .frame(width: side, height: side)
@@ -190,6 +192,7 @@ private final class GridReading {
 }
 
 private struct GridRing: View {
+    @Environment(\.spotSurfaceEdge) private var surface
     let selection: () -> Int
     let count: Int
     let perLine: Int
@@ -203,8 +206,8 @@ private struct GridRing: View {
                 .frame(width: side, height: side)
                 .modifier(SpotSelectionRing(
                     isSelected: true,
-                    shape: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous),
-                    width: SpotSelectionRing<RoundedRectangle>.thinWidth,
+                    shape: SpotRoundShape(surface.inner()),
+                    width: SpotTokens.thinRing,
                     marksMenu: true
                 ))
                 .offset(x: CGFloat(index % perLine) * step, y: CGFloat(index / perLine) * step)

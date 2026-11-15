@@ -48,10 +48,6 @@ final class AccountPhraseTests: XCTestCase {
         XCTAssertEqual(AccountPhrase("nsec1" + String(repeating: "q", count: 58)).problem, "This is not an nsec.")
     }
 
-    func testTheFactsSayHowFarThePhraseIs() {
-        XCTAssertEqual(AccountPhrase("abandon abuot abso").facts, "counter=3 of 12\nword=abandon\nword=abuot\nword=abso\nunknown=2\ncompletion=absorb\n")
-    }
-
     func testABoxSuggestsTheWordsThatStartWithItsLetters() {
         XCTAssertEqual(AccountPhrase.suggestions(for: "abs"), ["absent", "absorb", "abstract", "absurd"])
         XCTAssertEqual(AccountPhrase.suggestions(for: ""), [])

@@ -17,6 +17,7 @@ public final class ScriptCall: Identifiable {
     public private(set) var isStopped = false
     @ObservationIgnored let key: String
     @ObservationIgnored var halt: () -> Void = {}
+    @ObservationIgnored private(set) var heard = 0
 
     init(action: SpotAction, key: String, started: Date) {
         self.action = action
@@ -43,6 +44,7 @@ public final class ScriptCall: Identifiable {
     }
 
     func take(_ output: SpotOutput) {
+        heard += 1
         guard !output.isPicture else { return }
         status = output.summary
     }

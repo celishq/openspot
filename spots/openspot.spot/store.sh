@@ -9,23 +9,38 @@
 # offers=card
 # offers=window
 
-# Gets spot $1 from the store, and says so in a toast.
-get() {
-  added=$(openspot store get "$1") && printf 'toast=%s\n\n' "$added"
+# Prints a toast of the last line of a text, such as what a failed `openspot` call said.
+toast() {
+  printf 'toast=%s\n\n' "$(printf '%s\n' "$1" | tail -n 1)"
 }
 
-# Prints the gallery: each spot with its id, its name, its step, its origin, its description, its size, and
-# whether it has sample data, then each line of its readme after its id.
+# Gets spot $1 from the store, and says in a toast that it did, or why it did not.
+get() {
+  if said=$(openspot store get "$1" 2>&1); then toast "$said"; else toast "$said"; return 1; fi
+}
+
+# Publishes spot $1, and says in a toast why it did not. Openspot says itself that it did, and opens Account
+# when no key signs it yet.
+publish() {
+  said=$(openspot store publish "$1" 2>&1 >/dev/null) && return 0
+  openspot account --frame | grep -qx 'signedIn=true' || return 0
+  toast "$said"
+}
+
+# Prints the gallery: a row for each spot with its id, its name, its step, its origin, its description, its size and
+# whether it has sample data, and the readme of the spot that $1 names, a line after its id, when its sheet asks.
 gallery() {
-  printf 'view=gallery\n'
-  openspot store list --frame | awk 'BEGIN { RS = ""; FS = "\n" }
+  openspot store list --frame | awk -v want="${1-}" 'BEGIN { RS = ""; FS = "\n" }
     { delete f
       for (i = 1; i <= NF; i++) {
         n = index($i, "="); key = substr($i, 1, n - 1); f[key] = substr($i, n + 1)
-        if (key == "readme") printf "readme=%s\t%s\n", f["spot"], f[key]
+        if (key == "readme" && f["spot"] == want) readme = readme "readme=" want "\t" f[key] "\n"
       }
-      sample = f["sample"] == "true" ? "sample" : ""
-      printf "value=%s\t%s\t%s\t%s\t%s\t%s\t%s\n", f["spot"], f["name"], f["step"], f["origin"], f["detail"], f["size"], sample }'
+      rows = rows "\nrow=" f["spot"] "\ntitle=" f["name"] "\nstep=" f["step"] "\norigin=" f["origin"] "\n"
+      if (f["detail"] != "") rows = rows "detail=" f["detail"] "\n"
+      rows = rows "size=" f["size"] "\n"
+      if (f["sample"] == "true") rows = rows "sample=true\n" }
+    END { printf "view=gallery\n"; if (want != "") printf "readme=%s\n%s", want, readme; printf "%s", rows }'
 }
 
 case "$1" in
@@ -35,7 +50,8 @@ case "$1" in
   gallery)
     case "$2" in
       get:*) get "${2#get:}" ;;
-      publish:*) openspot store publish "${2#publish:}" >/dev/null ;;
+      publish:*) publish "${2#publish:}" ;;
+      readme:*) gallery "${2#readme:}"; exit 0 ;;
     esac
     gallery
     ;;

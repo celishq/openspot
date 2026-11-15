@@ -2,6 +2,7 @@ import SwiftUI
 import OpenspotCore
 
 struct SpotSheetView: View {
+    @Environment(\.spotSurfaceEdge) private var surface
     let model: SpotsModel
     let entry: SpotsModel.Entry
     let cardSize: SpotSize
@@ -43,8 +44,8 @@ struct SpotSheetView: View {
         held == nil && model.form?.entry.id == entry.id ? model.form?.draft : nil
     }
 
-    private var row: RoundedRectangle {
-        RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
+    private var row: SpotRoundShape {
+        SpotRoundShape(surface.inner())
     }
 
     var body: some View {
@@ -69,11 +70,9 @@ struct SpotSheetView: View {
                         nudge: { [held] in held == nil ? model.sheets[entry.id]?.nudge ?? SheetParts.Nudge.rest : SheetParts.Nudge.rest },
                         menuOpening: { [held] in held == nil ? model.sheets[entry.id]?.menuOpening : nil },
                         onFocus: { model.focusPart($0) },
-                        viewSource: entry.spot.view
+                        viewSource: entry.spot.view,
+                        viewDate: entry.spot.viewDate
                     )
-                    .task(id: panel.parts.contains { $0.kind == "view" } ? entry.spot.view : nil) {
-                        if let view = entry.spot.view, panel.parts.contains(where: { $0.kind == "view" }) { await SpotViews.shared.load(view) }
-                    }
                 } else if let form {
                     if form.choices != nil { Color.clear.frame(height: SpotTokens.listRowHeight) }
                     SpotFormView(
@@ -99,6 +98,7 @@ struct SpotSheetView: View {
         .padding(SpotTokens.padding)
         .frame(width: rect.width, height: rect.height, alignment: .topLeading)
         .overlay(alignment: .topLeading) { fileDrag }
+        .environment(\.spotViewPlace, SpotViewPlace(model: model, place: .sheet(entry.id)))
     }
 
     private var header: some View {
@@ -172,7 +172,7 @@ struct SpotSheetView: View {
     @ViewBuilder
     private var closeButton: some View {
         let button = SpotRoundButton(symbol: "xmark", label: "Close") {
-            model.closeList(moving: true)
+            model.closeSheet(moving: true)
         }
         if let closeShift {
             button
@@ -245,7 +245,7 @@ struct SpotSheetView: View {
 private struct CreateLabel: View {
     let model: SpotsModel
     let title: String
-    let shape: RoundedRectangle
+    let shape: SpotRoundShape
 
     var body: some View {
         Text("\(title): \(model.searchText)")

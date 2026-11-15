@@ -7,55 +7,52 @@ enum SpotCommandLine {
 
     static func run(_ call: CommandLineCall) -> Never {
         enterBundle()
-        let environment = ProcessInfo.processInfo.environment.merging(["PWD": FileManager.default.currentDirectoryPath]) { _, real in real }
         let output = CommandOutput { text, isError in (isError ? FileHandle.standardError : FileHandle.standardOutput).write(Data(text.utf8)) }
-        if runsScripts(call) { TerminalStop.watch() }
+        if call.rule.flags.contains(.startsScripts), !(call.value is PlaygroundCommand) { TerminalStop.watch() }
         var info = stat()
         let isPiped = fstat(0, &info) == 0 && (info.st_mode & S_IFMT == S_IFIFO || info.st_mode & S_IFMT == S_IFREG)
-        if let work = CommandAPI(mac: SpotMac()).work(for: call, input: { standardInput }, environment: environment, isPiped: isPiped, output: output) {
+        let request = CommandRequest(arguments: Array(CommandLine.arguments.dropFirst()), folder: FileManager.default.currentDirectoryPath, isPiped: isPiped)
+        if let work = CommandAPI(mac: SpotMac().mac, places: .standard, rates: .standard).work(for: call, request: request, input: { standardInput }, output: output) {
             Task {
                 let answer = await work()
                 output.print(answer.output)
                 output.report(answer.errors)
-                if call == .clipboardPaste { try? await Task.sleep(for: postedKeysPause) }
+                if call.value as? ClipboardCall == .paste { try? await Task.sleep(for: postedKeysPause) }
                 exit(answer.code)
             }
-            if needsEvents(call) {
+            if call.rule.flags.contains(.events) {
                 NSApplication.shared.setActivationPolicy(.accessory)
                 NSApplication.shared.run()
             }
             dispatchMain()
         }
-        switch call {
-        case .spotShow(let id):
+        switch call.value {
+        case SpotCall.show(let id) as SpotCall:
             SpotShowLink.send(id)
-        case .renderSpot(let id, let size?, let path):
+        case RenderCall.spot(let id, let size?, let path) as RenderCall:
             SpotCardPicture.run(spot: id, size: size, path: path)
-        case .renderSpot(let id, nil, let path):
+        case RenderCall.spot(let id, nil, let path) as RenderCall:
             renderSheet(of: id, to: path)
-        case .sandbox(let path):
-            SpotSandbox.run(path: path)
-        case .render(let path, let view):
+        case PlaygroundCommand.open(let path) as PlaygroundCommand:
+            SpotPlayground.run(path: path)
+        case RenderCall.sheet(let path, let view) as RenderCall:
             SpotSheetPicture.run(text: standardInput, path: path, view: view)
-        case .renderCard(let size, let path):
+        case RenderCall.card(let size, let path) as RenderCall:
             SpotCardPicture.run(text: standardInput, size: size, path: path)
-        case .renderPanel(let path):
+        case RenderCall.panel(let path) as RenderCall:
             SpotPanelPicture.run(path: path)
-        case .renderStore(let path):
+        case RenderCall.store(let path) as RenderCall:
             SpotStorePicture.run(path: path)
-        case .helper(SpotTranslation.capability.name):
+        case HelperCall.capability(SpotTranslation.capability.name) as HelperCall:
             SpotTranslation.serve()
-        case .helper(SpotRecording.capability.name):
+        case HelperCall.capability(SpotRecording.capability.name) as HelperCall:
             SpotRecording.serve()
-        case .helper(CalcRateCache.capability.name):
-            CalcRateCache.serve()
-        case .helper(let name):
-            run(.unknown("helper \(name)"))
-        case .glyphBook(let side, let fontSize, let path):
+        case HelperCall.glyphs(let side, let fontSize, let path) as HelperCall:
             let glyphs = standardInput.split(separator: "\n").map(String.init)
             exit(SpotGlyphBook.write(GlyphBook(glyphs: glyphs, side: side, fontSize: fontSize), to: path) ? 0 : 1)
         default:
-            preconditionFailure("CommandAPI answers \(call).")
+            FileHandle.standardError.write(Data("openspot cannot do this: \(CommandLine.arguments.dropFirst().joined(separator: " "))\n\n\(CommandLineCall.usage)".utf8))
+            exit(2)
         }
     }
 
@@ -75,7 +72,12 @@ enum SpotCommandLine {
 
     private static func renderSheet(of id: String, to path: String) -> Never {
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
-        model.reload()
+        var loaded = false
+        Task {
+            await model.reload()
+            loaded = true
+        }
+        while !loaded { RunLoop.main.run(mode: .default, before: .distantFuture) }
         guard let spot = model.entries.first(where: { $0.id == id })?.spot else {
             FileHandle.standardError.write(Data("Openspot has no spot \(id). Run `openspot check` to see each file that does not load.\n".utf8))
             exit(1)
@@ -91,19 +93,5 @@ enum SpotCommandLine {
             exit(1)
         }
         SpotSheetPicture.run(text: text, path: path, view: spot.view, spot: spot)
-    }
-
-    private static func runsScripts(_ call: CommandLineCall) -> Bool {
-        switch call {
-        case .check, .checkJSON, .spotRun: true
-        default: false
-        }
-    }
-
-    private static func needsEvents(_ call: CommandLineCall) -> Bool {
-        switch call {
-        case .colorPick, .folderPick, .screenShot, .screenRecordStart, .screenRecordStop, .screenRecordStatus: true
-        default: false
-        }
     }
 }

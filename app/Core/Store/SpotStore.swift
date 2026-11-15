@@ -47,12 +47,12 @@ public struct SpotStore: Sendable {
     }
 
     public func items(publications reads: Bool) -> [Item] {
-        let own = (try? SpotsFolder(url: folder.url).keptScan()) ?? ScanResult(files: [], refused: [])
+        let own = (try? SpotsFolder(url: folder.url).scan()) ?? ScanResult(files: [], refused: [])
         let ownIDs = Set(own.files.map(\.id))
         let publications = reads ? Self.publications(of: own, in: url) : [:]
         let enabled = arrangement.enabled.union(folder.enabled)
         let disabled = arrangement.disabled.union(folder.disabled)
-        let core = folder.keptCoreChoices().filter { !ownIDs.contains(SpotsFolder.coreID(of: $0)) }.map { spot in
+        let core = folder.coreChoices().filter { !ownIDs.contains(SpotsFolder.coreID(of: $0)) }.map { spot in
             item(spot, id: SpotsFolder.coreID(of: spot), origin: .core, isAdded: enabled.contains(SpotsFolder.coreID(of: spot)))
         }
         let mine = own.files.compactMap { file in
@@ -86,7 +86,7 @@ public struct SpotStore: Sendable {
         }
         guard !item.isAdded else { return item }
         if item.origin == .store { try await add(item, environment: environment) } else {
-            try config.turn(item.id, on: true)
+            try config.change { $0.arrangement.set(isEnabled: true, of: item.id) }
         }
         return item
     }
@@ -105,28 +105,22 @@ public struct SpotStore: Sendable {
         return stored.manifest(of: root).written == spot.manifest(of: root).written ? .current : .changed
     }
 
-    func json() throws -> String {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
-        return String(decoding: try encoder.encode(items.map(Printed.init)), as: UTF8.self) + "\n"
+    func text(_ form: PrintForm) throws -> String {
+        try form.text(of: items.map(Printed.init))
     }
 
-    func frame() -> String {
-        items.map(Printed.init).map { printed in
-            let pairs: [(String, String?)] = [
-                ("spot", printed.id), ("name", printed.name), ("icon", printed.icon), ("detail", printed.detail), ("size", printed.size),
-                ("origin", printed.origin), ("added", String(printed.added)), ("step", printed.step), ("published", printed.published), ("path", printed.path),
-                ("sample", printed.sample ? "true" : nil)
-            ] + printed.readme.map { ("readme", $0) }
-            return TextBlock(fields: pairs.compactMap { key, value in value.map { TextBlock.Field(key: key, value: $0) } }).text + "\n"
-        }.joined()
-    }
-
-    private struct Printed: Encodable {
+    private struct Printed: PrintedRecord {
         let id, name, icon, size, origin, step: String
         let detail, published, path: String?
         let readme: [String]
         let added, sample: Bool
+
+        var blocks: [[(String, String?)]] {
+            [[
+                ("spot", id), ("name", name), ("icon", icon), ("detail", detail), ("size", size), ("origin", origin), ("added", String(added)), ("step", step),
+                ("published", published), ("path", path), ("sample", sample ? "true" : nil)
+            ] + readme.map { ("readme", $0) }]
+        }
 
         init(_ item: Item) {
             id = item.id

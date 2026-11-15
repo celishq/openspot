@@ -132,18 +132,19 @@ public struct SpotArrangement: Equatable, Sendable {
         choices.indices.filter { choices[$0].id == id }.forEach { work(&choices[$0]) }
     }
 
-    var text: String {
+    var tables: [ConfigDocument.Table] {
         choices.map { choice in
-            var lines = ["[[spots]]", "id = \"\(choice.id)\""]
-            if let name = choice.size?.name { lines.append("size = \"\(name)\"") }
-            if let isOnGrid = choice.isOnGrid { lines.append("grid = \(isOnGrid)") }
-            if let isEnabled = choice.isEnabled { lines.append("enabled = \(isEnabled)") }
-            if let isGlobal = choice.isGlobal { lines.append("global = \(isGlobal)") }
-            if let isInMenuBar = choice.isInMenuBar { lines.append("tray = \(isInMenuBar)") }
-            if let letter = choice.letter { lines.append("letter = \"\(letter)\"") }
-            if let key = choice.key { lines.append("key = \"\(key.text)\"") }
-            if let panel = choice.panel { lines.append("side = \"\(panel.rawValue)\"") }
-            return lines.joined(separator: "\n")
-        }.joined(separator: "\n\n")
+            ConfigDocument.Table("spots", [
+                ("id", .string(choice.id)),
+                ("size", (choice.size?.name).map { .string($0) }),
+                ("grid", choice.isOnGrid.map { .boolean($0) }),
+                ("enabled", choice.isEnabled.map { .boolean($0) }),
+                ("global", choice.isGlobal.map { .boolean($0) }),
+                ("tray", choice.isInMenuBar.map { .boolean($0) }),
+                ("letter", choice.letter.map { .string($0) }),
+                ("key", (choice.key?.text).map { .string($0) }),
+                ("side", (choice.panel?.rawValue).map { .string($0) })
+            ])
+        }
     }
 }

@@ -6,18 +6,29 @@ extension SpotRun {
         settle()
         list.selectFirst()
         if panel == nil, answered != nil { panel = lastAnswer.flatMap(SheetParts.init(output:)) }
-        if answered == nil, link.keepsState || (waits && list.search == .local) {
-            runs.opening.holdMotion(of: spot.id, limited: !link.keepsState, start: onReady)
+        let keepsState = script.keepsState
+        if answered == nil, keepsState || (waits && list.search == .local) {
+            runs.opening.holdMotion(of: spot.id, limited: !keepsState, start: onReady)
         } else {
             onReady()
         }
         read(need: need)
-        if !link.isReachable { dropUnshownSheet() }
+        if !isReading, answered == nil { dropUnshownSheet() }
+        if answered == nil, runs.isBuilding(spot) {
+            after(Self.buildPause, key: Self.buildKey) { [weak self] in self?.sayBuilding() }
+        }
         runs.updateClock()
+    }
+
+    private func sayBuilding() {
+        guard isOpen, answered == nil, runs.isBuilding(spot) else { return }
+        list.beginLoading(saying: "Openspot is building \(spot.name). This takes about half a minute, once.")
+        runs.opening.startMotion(of: spot.id)
     }
 
     public func close() {
         guard isOpen else { return }
+        sheetAgain = false
         runs.didClose(self)
         settle()
         for (key, pause) in pauses where key != Self.levelKey {
@@ -70,10 +81,11 @@ extension SpotRun {
     }
 
     func leftPlace() {
-        if !isInView, panel != nil || link.keepsState {
+        let keepsState = script.keepsState
+        if !isInView, panel != nil || keepsState {
             let wasOpen = isOpen
             close()
-            if link.keepsState || panel?.parts.contains(where: \.isEditable) == true {
+            if keepsState || panel?.parts.contains(where: \.isEditable) == true {
                 panel = nil
                 answered = nil
             }
@@ -88,8 +100,8 @@ extension SpotRun {
         link.settle()
     }
 
-    func scanned() {
-        link.scanned()
+    func scanned(_ stamp: [Int]?) {
+        link.scanned(stamp)
     }
 
     func stopReads() {
@@ -103,7 +115,7 @@ extension SpotRun {
     }
 
     var isWanted: Bool {
-        isInView || runs.wants(spot) || link.holdsScript
+        isInView || runs.wants(spot) || (!calls.isEmpty && script.keepsState)
     }
 
     func settleScript() {
@@ -116,6 +128,7 @@ extension SpotRun {
         waitingFiles = []
         waitingKeys = []
         readsAgain = false
+        sheetAgain = false
         eventAgain = nil
         calls.forEach(stop)
         link.leave()

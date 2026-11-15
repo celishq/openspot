@@ -8,23 +8,29 @@ struct SpotGridView: View {
     let openID: String?
     let push: SheetPush?
     @Binding var dropTarget: String?
-    @GestureState private var pressed: String?
+
+    struct Card: Identifiable {
+        let id: String
+        let size: SpotSize
+        let motion: SpotPushedCard
+        let isLifted: Bool
+        let isHeld: Bool
+        let focus: CardFocus
+    }
 
     var body: some View {
         let placements = model.placements
         let drag = model.drag
         let height = SpotGrid.height(of: placements)
-        let glass = placements.map { placement in
+        let cards = placements.map { placement in
             let entry = model.visible[placement.index]
             let isLifted = drag?.id == entry.id
             let isHeld = isLifted || model.landing == entry.id
             let shown = isLifted ? drag.flatMap { $0.placement(at: $0.home) } ?? placement : placement
-            return SpotGridGlass.Card(
+            return Card(
                 id: entry.id,
                 size: shown.size,
                 motion: motion(of: placement, at: shown.rect, id: entry.id),
-                isCovered: entry.id == openID || SpotCardView.isFilled(entry, takesDrag: model.takesDrag(entry.id), isDropTarget: dropTarget == entry.id),
-                isPressed: pressed == entry.id && !isHeld && SpotCardView.showsPress(of: entry),
                 isLifted: isLifted,
                 isHeld: isHeld,
                 focus: model.focus(ofCard: placement.index)
@@ -33,27 +39,23 @@ struct SpotGridView: View {
         return ZStack(alignment: .topLeading) {
             if model.isEditing {
                 SidePanelWells(panels: model.panels, height: height)
-            }
-            SpotGridGlass(cards: glass, pressable: openID == nil ? glass : [], size: CGSize(width: SpotTokens.width(columns: model.panels.columns), height: height), lift: model.lift)
-            if model.isEditing {
                 landing(of: drag, in: placements)
                     .frame(width: SpotTokens.width(columns: model.panels.columns), height: height)
                 groupTitles(model.groupBands)
             }
-            ForEach(Array(zip(placements, glass)), id: \.1.id) { placement, card in
+            ForEach(Array(zip(placements, cards)), id: \.1.id) { placement, card in
                 let entry = model.visible[placement.index]
-                SpotCardView(
+                SpotGridCard(
                     entry: entry,
                     size: card.size,
                     index: placement.index,
-                    isPressed: pressed == entry.id && !card.isHeld,
+                    isHeld: card.isHeld,
                     takesDrag: model.takesDrag(entry.id),
                     isDropTarget: dropTarget == entry.id,
                     chainLetter: model.chainLetter(of: entry),
                     model: model
                 )
                 .equatable()
-                .simultaneousGesture(DragGesture(minimumDistance: 0).updating($pressed) { _, pressed, _ in pressed = entry.id })
                 .simultaneousGesture(moveGesture(of: entry), including: model.isEditing ? .all : .subviews)
                 .modifier(SpotEditControls(
                     model: model,
@@ -72,6 +74,7 @@ struct SpotGridView: View {
                 .animation(nil) { $0.opacity(model.carry?.entry.id == entry.id ? 0.001 : 1) }
                 .allowsHitTesting(entry.id != openID)
             }
+            SpotGridShade(model: model)
         }
         .frame(width: SpotTokens.width(columns: model.panels.columns), height: height, alignment: .topLeading)
         .contentShape(Rectangle())
@@ -114,7 +117,7 @@ struct SpotGridView: View {
 
     private func landing(of drag: SpotDrag?, in placements: [SpotPlacement]) -> some View {
         let placement = placements.first { $0.index == (drag?.place ?? model.selected) }
-        return SpotSurfaceShape(rect: placement?.rect ?? .zero, radius: SpotTokens.corner(for: placement?.size ?? .small))
+        return SpotSurfaceShape(rect: placement?.rect ?? .zero, radius: SurfaceEdge(card: placement?.size ?? .small).radius)
             .fill(SpotTheme.ink.opacity(SpotTheme.fill))
             .opacity(drag == nil ? 0.001 : 1)
             .allowsHitTesting(false)
@@ -136,7 +139,7 @@ private struct SidePanelWells: View, Equatable {
     let height: CGFloat
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
+        let shape = SpotRoundShape(SurfaceEdge.sheet.inner())
         ZStack(alignment: .topLeading) {
             ForEach([GridPanel.left, .right].filter { panels[$0] }, id: \.self) { panel in
                 shape

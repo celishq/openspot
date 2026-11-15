@@ -2,8 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotSelectionRing<Edge: InsettableShape>: ViewModifier {
-    static var width: CGFloat { 2 }
-    static var thinWidth: CGFloat { 1.5 }
+    static var width: CGFloat { SpotTokens.ring }
 
     let isSelected: Bool
     let shape: Edge
@@ -14,7 +13,7 @@ struct SpotSelectionRing<Edge: InsettableShape>: ViewModifier {
     func body(content: Content) -> some View {
         content.overlay(ring.allowsHitTesting(false))
         .transformAnchorPreference(key: SpotMenuAnchor.self, value: .bounds) { item, bounds in
-            if isSelected, marksMenu { item = SpotMenuAnchor.Item(bounds: bounds, corner: (shape as? RoundedRectangle)?.cornerSize.width ?? 0) }
+            if isSelected, marksMenu { item = SpotMenuAnchor.Item(bounds: bounds) }
         }
     }
 

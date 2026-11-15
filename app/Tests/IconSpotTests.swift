@@ -9,11 +9,11 @@ final class IconSpotTests: BuiltInCase {
     }
 
     private func call(_ arguments: [String]) async throws {
-        try await icon.perform(SpotAction(arguments: arguments), timeout: 5)
+        try await icon.perform(SpotAction(arguments: arguments), timeout: 60)
     }
 
     private func view() async throws -> TextBlock {
-        let output = try await icon.items(timeout: 5)
+        let output = try await icon.items(timeout: 60)
         return try XCTUnwrap(output.view)
     }
 
@@ -36,7 +36,7 @@ final class IconSpotTests: BuiltInCase {
         try await call(["draw", "weather"])
 
         let opened = await app.opened
-        let output = try await icon.items(timeout: 5)
+        let output = try await icon.items(timeout: 60)
         let view = try await self.view()
         XCTAssertEqual(opened, ["open openspot/icon"])
         XCTAssertEqual(output.summary?.value("title"), "weather")

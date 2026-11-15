@@ -5,6 +5,7 @@ public struct ItemForm: Equatable, Sendable {
         public enum Kind: String, Sendable {
             case text
             case multiline
+            case secret
             case choice
             case `switch`
             case slider
@@ -41,30 +42,6 @@ public struct ItemForm: Equatable, Sendable {
             self.picks = picks
             self.range = range
         }
-
-        init?(block: TextBlock) {
-            guard let kind = block.fields.first?.key, let name = block.value(kind), let label = block.value("title") else { return nil }
-            switch kind {
-            case "field":
-                let type = block.value("type").flatMap(Kind.init).flatMap { [.text, .multiline].contains($0) ? $0 : nil } ?? .text
-                self.init(name: name, label: label, type: type, value: block.value("value"), required: block.flag("required"), placeholder: block.value("placeholder"))
-            case "choice" where block.value("type") == "multiple":
-                let options = SpotPart.options(of: block)
-                self.init(name: name, label: label, type: .choice, value: options.first?.id, options: options, picks: Set(block.values("value")))
-            case "choice":
-                let options = SpotPart.options(of: block)
-                self.init(name: name, label: label, type: .choice, value: block.value("value") ?? options.first?.id, options: options)
-            case "switch":
-                self.init(name: name, label: label, type: .switch, value: block.flag("value") == true ? "true" : "false")
-            case "slider":
-                let low = block.number("min") ?? 0
-                let range = low...max(block.number("max") ?? 100, low + 1)
-                let level = min(max(block.number("value") ?? low, range.lowerBound), range.upperBound)
-                self.init(name: name, label: label, type: .slider, value: String(Int(level.rounded())), range: range)
-            default:
-                return nil
-            }
-        }
     }
 
     public let title: String
@@ -80,8 +57,8 @@ public struct ItemForm: Equatable, Sendable {
     }
 
     public init?(output: SpotOutput) {
-        guard let title = output.summary?.value("title") else { return nil }
-        let fields = output.fields.compactMap(Field.init(block:))
+        guard let title = output.summary?.value(HeadKey.title) else { return nil }
+        let fields = output.fields.compactMap { $0.kind.formField(of: $0.block) }
         guard fields.count == output.fields.count else { return nil }
         self.init(title: title, fields: fields)
     }

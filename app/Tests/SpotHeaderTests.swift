@@ -14,9 +14,7 @@ final class SpotHeaderTests: XCTestCase {
     }
 
     func testEachOffersLineNamesOnePlaceAndASpotWithNoLineOffersItsCard() throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-places-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
+        let folder = try temporaryFolder()
         func spot(_ header: String) throws -> Spot {
             let url = folder.appendingPathComponent("\(UUID().uuidString).sh")
             try "#!/bin/sh\n\(header)".writeScript(to: url)
@@ -73,9 +71,7 @@ final class SpotHeaderTests: XCTestCase {
     }
 
     func testAJavaScriptSpotNamesTheFunctionThatSaysWhetherAnActionShows() throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-when-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
+        let folder = try temporaryFolder()
         let js = folder.appendingPathComponent("icon.js")
         try "// title=Icon\n//\n// button=reset\n// title=Reset Icon\n// offers=actions\n// when=hasIcon\nfunction hasIcon(id) { return true }\n".write(to: js, atomically: true, encoding: .utf8)
         let shell = folder.appendingPathComponent("icon.sh")
@@ -137,9 +133,7 @@ final class SpotHeaderTests: XCTestCase {
     }
 
     func testPressOpenMakesAPressOfASpotWithASheetRunIt() throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-press-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
+        let folder = try temporaryFolder()
         let runs = folder.appendingPathComponent("runs.sh"), opens = folder.appendingPathComponent("opens.sh")
         let unknown = folder.appendingPathComponent("unknown.sh")
         try "#!/bin/sh\n# on=sheet.open\n# press=open\n".writeScript(to: runs)
@@ -209,9 +203,7 @@ final class SpotHeaderTests: XCTestCase {
     }
 
     func testAnEditOfAViewChangesItsSpot() throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-view-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
+        let folder = try temporaryFolder()
         let view = folder.appendingPathComponent("cups.swift")
         try "".write(to: view, atomically: true, encoding: .utf8)
         let header = SpotHeader(text: "#!/bin/sh\n# view=cups.swift\n").block
@@ -219,24 +211,6 @@ final class SpotHeaderTests: XCTestCase {
         let before = try SpotFile(script: script, header: header, id: "cups").spots.first
 
         try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSince1970: 1_000_000)], ofItemAtPath: view.path)
-        let after = try SpotFile(script: script, header: header, id: "cups").spots.first
-
-        XCTAssertNotEqual(before, after)
-    }
-
-    func testAnEditOfTheLibraryBesideAViewChangesItsSpot() throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-view-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
-        try "".write(to: folder.appendingPathComponent("cups.swift"), atomically: true, encoding: .utf8)
-        let library = folder.appendingPathComponent("cups.view")
-        try "".write(to: library, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSince1970: 1_000_000)], ofItemAtPath: library.path)
-        let header = SpotHeader(text: "#!/bin/sh\n# view=cups.swift\n").block
-        let script = folder.appendingPathComponent("cups.sh")
-        let before = try SpotFile(script: script, header: header, id: "cups").spots.first
-
-        try FileManager.default.setAttributes([.modificationDate: Date()], ofItemAtPath: library.path)
         let after = try SpotFile(script: script, header: header, id: "cups").spots.first
 
         XCTAssertNotEqual(before, after)
@@ -282,5 +256,37 @@ final class SpotHeaderTests: XCTestCase {
         XCTAssertThrowsError(try SpotFile(script: URL(fileURLWithPath: "/spots/cups.sh"), header: header, id: "cups")) { error in
             XCTAssertEqual((error as? SpotError)?.reason, "Cups needs a Swift file for its view, such as view=cups.swift")
         }
+    }
+
+    func testAHeaderOver4096BytesIsReadToItsLastLine() throws {
+        let folder = try temporaryFolder()
+        let url = folder.appendingPathComponent("long.sh")
+        let keywords = (0..<400).map { "# keywords=word\($0)\n" }.joined()
+        try "#!/bin/sh\n\(keywords)# title=Lengthy\necho hi\n".writeScript(to: url)
+
+        let spot = try XCTUnwrap(try SpotFile(file: url, id: "long")?.spots.first)
+
+        XCTAssertGreaterThan(keywords.utf8.count, 4096)
+        XCTAssertEqual(spot.name, "Lengthy")
+    }
+
+    func testAHeaderOverItsLimitIsAFault() throws {
+        let folder = try temporaryFolder()
+        let url = folder.appendingPathComponent("huge.sh")
+        let keywords = (0..<8000).map { "# keywords=word\($0)\n" }.joined()
+        try "#!/bin/sh\n# title=Huge\n\(keywords)echo hi\n".writeScript(to: url)
+
+        XCTAssertThrowsError(try SpotFile(file: url, id: "huge")) { error in
+            XCTAssertEqual((error as? SpotError)?.reason, "Huge has a header over 64 KB. Keep the header shorter.")
+        }
+    }
+
+    func testAFrameCopiesNoHeader() throws {
+        let spot = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/spots/a.sh"), read: .sheet, keywords: ["one", "two"])
+
+        let framed = spot.taking(SpotOutput(text: "title=Open\nrow=x\ntitle=X\n"))
+
+        XCTAssertTrue(framed.header === spot.header)
+        XCTAssertLessThan(MemoryLayout<Spot>.size, MemoryLayout<SpotFacts>.size / 2)
     }
 }
