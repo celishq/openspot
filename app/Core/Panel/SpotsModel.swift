@@ -314,7 +314,8 @@ public final class SpotsModel {
         return true
     }
 
-    public func configChanged(_ change: ConfigChange, to next: KeptConfig) {
+    public func configChanged(_ change: ConfigChange, to sent: KeptConfig) {
+        let next = files.config.readKept(unlessCurrent: sent)
         if case .spots(let ids) = change {
             let id = selectedEntry?.id
             reload(patching: Set(ids), to: next)

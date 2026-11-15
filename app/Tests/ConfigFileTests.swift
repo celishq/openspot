@@ -282,4 +282,33 @@ final class ConfigFileTests: XCTestCase {
         XCTAssertEqual(file.read().arrangement.enabled, ["a", "b"])
         XCTAssertEqual(next.config, file.read())
     }
+
+    func testAValueWithACombiningMarkAfterAQuoteABackslashOrANewLineSurvivesASave() throws {
+        let values = ["\u{301}x", "a\\\u{301}", "a\n\u{301}b", "\"\u{FE0F}", "\u{200D}\u{1F467}", "a\t\u{308}"]
+
+        for (index, value) in values.enumerated() {
+            try file.set(setting: "k\(index)", of: value, to: value)
+            try file.turn(value, on: true)
+        }
+
+        let config = file.read()
+        XCTAssertEqual(config.faults, [])
+        XCTAssertEqual(config.settings.map(\.value).map { Array($0.unicodeScalars) }, values.map { Array($0.unicodeScalars) })
+        XCTAssertEqual(config.settings.map(\.spot).map { Array($0.unicodeScalars) }, values.map { Array($0.unicodeScalars) })
+        XCTAssertEqual(config.arrangement.enabled.count, values.count)
+    }
+
+    func testAFileThatIsNotTextIsAFaultAndIsNotWritten() throws {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let bytes = Data([0xFF, 0xFE, 0x00, 0x41])
+        try bytes.write(to: file.url)
+
+        XCTAssertFalse(file.read().isReadable)
+        XCTAssertEqual(file.read().faults.count, 1)
+        XCTAssertNil(file.read().panelKey)
+        XCTAssertThrowsError(try file.turn("a", on: true))
+        XCTAssertThrowsError(try file.change(from: file.readKept()) { $0.set(isCareful: true) })
+        XCTAssertThrowsError(try file.begin(enabling: ["a"]))
+        XCTAssertEqual(try Data(contentsOf: file.url), bytes)
+    }
 }

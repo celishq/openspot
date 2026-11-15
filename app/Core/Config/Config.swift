@@ -27,11 +27,14 @@ public struct Config: Equatable, Sendable {
         do {
             self.init(document: try ConfigDocument(text: text))
         } catch {
-            self.init()
-            isReadable = false
-            panelKey = nil
-            faults = ["config.toml: \((error as? SpotError)?.reason ?? String(describing: error))"]
+            self.init(unreadable: (error as? SpotError)?.reason ?? String(describing: error))
         }
+    }
+
+    public init(unreadable reason: String) {
+        isReadable = false
+        panelKey = nil
+        faults = ["config.toml: \(reason)"]
     }
 
     public init(document: ConfigDocument) {

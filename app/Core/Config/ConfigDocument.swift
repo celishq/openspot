@@ -57,7 +57,8 @@ public struct ConfigDocument: Equatable, Sendable {
     public init() {}
 
     public init(text: String) throws {
-        for (index, raw) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
+        for (index, scalars) in text.unicodeScalars.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
+            let raw = String(scalars)
             let line = raw.trimmingCharacters(in: .whitespaces)
             let fault = { (reason: String) in SpotError.fault("line \(index + 1): \(reason)") }
             if line.hasPrefix("[") {
@@ -67,12 +68,12 @@ public struct ConfigDocument: Equatable, Sendable {
                 tables.append(Table(String(line[line.index(line.startIndex, offsetBy: 2)..<end.lowerBound])))
                 continue
             }
-            if tables.isEmpty { head.append(String(raw)) }
+            if tables.isEmpty { head.append(raw) }
             if line.isEmpty || line.hasPrefix("#") { continue }
-            guard let equals = line.firstIndex(of: "=") else { throw fault("expected a key and a value") }
-            let key = line[..<equals].trimmingCharacters(in: .whitespaces)
+            guard let equals = line.unicodeScalars.firstIndex(of: "=") else { throw fault("expected a key and a value") }
+            let key = String(line.unicodeScalars[..<equals]).trimmingCharacters(in: .whitespaces)
             guard !key.isEmpty, !key.contains(" ") else { throw fault("expected a key and a value") }
-            guard let value = Self.value(line[line.index(after: equals)...]) else { throw fault("\(key) has a value that cannot be read") }
+            guard let value = Self.value(line.unicodeScalars[line.unicodeScalars.index(after: equals)...]) else { throw fault("\(key) has a value that cannot be read") }
             if tables.isEmpty {
                 guard values[key] == nil else { throw fault("\(key) is set twice") }
                 values[key] = value
@@ -103,13 +104,24 @@ public struct ConfigDocument: Equatable, Sendable {
         return parts.isEmpty ? "" : parts.joined(separator: "\n\n") + "\n"
     }
 
-    private static func value(_ source: Substring) -> Value? {
-        let text = source.trimmingCharacters(in: .whitespaces)
-        if text.hasPrefix("\"") { return string(text) }
-        if text.hasPrefix("[") { return strings(text) }
-        if text.hasPrefix("{") { return table(text) }
-        let bare = (text.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false).first ?? "")
-            .trimmingCharacters(in: .whitespaces)
+    private static func value(_ source: Substring.UnicodeScalarView) -> Value? {
+        let text = String(source).trimmingCharacters(in: .whitespaces)
+        var rest = text.unicodeScalars[...]
+        switch rest.first {
+        case "\"":
+            rest.removeFirst()
+            guard let result = quoted(&rest) else { return nil }
+            return isEnd(rest) ? .string(result) : nil
+        case "[":
+            rest.removeFirst()
+            return strings(rest)
+        case "{":
+            rest.removeFirst()
+            return table(rest)
+        default:
+            break
+        }
+        let bare = String(rest.prefix { $0 != "#" }).trimmingCharacters(in: .whitespaces)
         switch bare {
         case "true": return .boolean(true)
         case "false": return .boolean(false)
@@ -117,26 +129,23 @@ public struct ConfigDocument: Equatable, Sendable {
         }
     }
 
-    private static func string(_ text: String) -> Value? {
-        var rest = text.dropFirst()
-        guard let result = quoted(&rest) else { return nil }
-        let tail = rest.trimmingCharacters(in: .whitespaces)
-        return tail.isEmpty || tail.hasPrefix("#") ? .string(result) : nil
+    private static func isEnd(_ rest: Substring.UnicodeScalarView) -> Bool {
+        let tail = String(rest).trimmingCharacters(in: .whitespaces)
+        return tail.isEmpty || tail.unicodeScalars.first == "#"
     }
 
-    private static func strings(_ text: String) -> Value? {
+    private static func strings(_ text: Substring.UnicodeScalarView) -> Value? {
         var result: [String] = []
-        var rest = text.dropFirst()
-        while let character = rest.popFirst() {
-            switch character {
+        var rest = text
+        while let scalar = rest.popFirst() {
+            switch scalar {
             case " ", "\t", ",":
                 continue
             case "\"":
                 guard let item = quoted(&rest) else { return nil }
                 result.append(item)
             case "]":
-                let tail = rest.trimmingCharacters(in: .whitespaces)
-                return tail.isEmpty || tail.hasPrefix("#") ? .strings(result) : nil
+                return isEnd(rest) ? .strings(result) : nil
             default:
                 return nil
             }
@@ -144,12 +153,12 @@ public struct ConfigDocument: Equatable, Sendable {
         return nil
     }
 
-    private static func table(_ text: String) -> Value? {
+    private static func table(_ text: Substring.UnicodeScalarView) -> Value? {
         var result: [String: String] = [:]
-        var rest = text.dropFirst()
+        var rest = text
         var key = ""
-        while let character = rest.popFirst() {
-            switch character {
+        while let scalar = rest.popFirst() {
+            switch scalar {
             case " ", "\t", ",":
                 continue
             case "=":
@@ -158,33 +167,32 @@ public struct ConfigDocument: Equatable, Sendable {
                 result[key] = item
                 key = ""
             case "}":
-                let tail = rest.trimmingCharacters(in: .whitespaces)
-                return key.isEmpty && (tail.isEmpty || tail.hasPrefix("#")) ? .table(result) : nil
+                return key.isEmpty && isEnd(rest) ? .table(result) : nil
             default:
-                key.append(character)
+                key.unicodeScalars.append(scalar)
             }
         }
         return nil
     }
 
-    private static func quoted(_ rest: inout Substring) -> String? {
-        var result = ""
+    private static func quoted(_ rest: inout Substring.UnicodeScalarView) -> String? {
+        var result = String.UnicodeScalarView()
         var escaped = false
-        while let character = rest.popFirst() {
+        while let scalar = rest.popFirst() {
             if escaped {
-                switch character {
+                switch scalar {
                 case "n": result.append("\n")
                 case "t": result.append("\t")
-                case "\"", "\\": result.append(character)
+                case "\"", "\\": result.append(scalar)
                 default: return nil
                 }
                 escaped = false
-            } else if character == "\\" {
+            } else if scalar == "\\" {
                 escaped = true
-            } else if character == "\"" {
-                return result
+            } else if scalar == "\"" {
+                return String(result)
             } else {
-                result.append(character)
+                result.append(scalar)
             }
         }
         return nil

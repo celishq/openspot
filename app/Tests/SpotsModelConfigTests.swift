@@ -106,4 +106,45 @@ final class SpotsModelConfigTests: PanelCase {
         XCTAssertEqual(host.notes.count, 4)
         XCTAssertTrue(host.notes.allSatisfy { $0.hasPrefix("Openspot could not save the ") })
     }
+
+    func testAChangeThatArrivesLateDoesNotPutBackAnOldConfig() throws {
+        model.beginEditing()
+        let trigger = try XCTUnwrap(Trigger(text: "ctrl+option+l"))
+        let early = try model.files.config.change { $0.assign(trigger, to: "a", act: .float) }
+        let first = try model.files.config.change { $0.arrangement.set(isEnabled: true, of: "x") }
+        let second = try model.files.config.change { $0.arrangement.set(isEnabled: true, of: "y") }
+        model.configChanged(.spots(["y"]), to: second)
+        model.prefer(.small, for: "a")
+        let config = model.config
+
+        model.configChanged(.keys, to: early)
+        model.configChanged(.spots(["x"]), to: first)
+
+        XCTAssertEqual(model.config, config)
+        XCTAssertEqual(model.visible.first { $0.id == "a" }?.size, .small)
+        model.prefer(.small, for: "b")
+        let written = Config(text: disk.text ?? "")
+        XCTAssertEqual(written.arrangement.size(of: "a"), .small)
+        XCTAssertEqual(written.arrangement.size(of: "b"), .small)
+        XCTAssertEqual(written.arrangement.enabled, ["x", "y"])
+        XCTAssertEqual(written.keys.map(\.trigger), [trigger])
+    }
+
+    func testAnEditKeepsTheChangeOfAnotherCallerThatTheModelHasNotSeen() throws {
+        model.beginEditing()
+        try model.files.config.change { $0.arrangement.set(isInMenuBar: true, of: "z") }
+
+        model.prefer(.small, for: "a")
+        try model.files.config.change { $0.arrangement.set(isEnabled: true, of: "y") }
+        model.setOnGrid(false, for: "b")
+        try model.files.config.change { $0.arrangement.set(isEnabled: true, of: "w") }
+        model.moveSpot("c", to: 0)
+
+        let written = Config(text: disk.text ?? "")
+        XCTAssertEqual(written.arrangement.menuBar, ["z"])
+        XCTAssertEqual(written.arrangement.enabled, ["y", "w"])
+        XCTAssertEqual(written.arrangement.size(of: "a"), .small)
+        XCTAssertEqual(written.arrangement.isOnGrid(of: "b"), false)
+        XCTAssertEqual(host.notes, [])
+    }
 }

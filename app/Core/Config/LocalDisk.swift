@@ -3,8 +3,9 @@ import Foundation
 public struct LocalDisk: ConfigDisk {
     public init() {}
 
-    public func read(_ url: URL) -> String? {
-        try? String(contentsOf: url, encoding: .utf8)
+    public func read(_ url: URL) throws -> String? {
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+        return try String(contentsOf: url, encoding: .utf8)
     }
 
     public func write(_ text: String, to url: URL) throws {

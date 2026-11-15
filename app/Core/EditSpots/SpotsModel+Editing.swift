@@ -103,9 +103,7 @@ extension SpotsModel {
         guard let from = order.firstIndex(of: id), order.indices.contains(place), place != from else { return }
         order.remove(at: from)
         order.insert(id, at: place)
-        var next = arrangement
-        next.arrange(order)
-        saveArrangement(next, selecting: id)
+        saveArrangement({ $0.arrange(order) }, selecting: id)
     }
 
     private func stepSelectedSize() {
@@ -120,18 +118,20 @@ extension SpotsModel {
     }
 
     public func prefer(_ size: SpotSize, for id: String) {
-        var next = arrangement
-        next.arrange(visible.map(\.id))
-        next.set(size: size, of: id)
-        saveArrangement(next, selecting: id)
+        let order = visible.map(\.id)
+        saveArrangement({
+            $0.arrange(order)
+            $0.set(size: size, of: id)
+        }, selecting: id)
     }
 
     public func setOnGrid(_ isOn: Bool, for id: String) {
         tip = nil
-        var next = arrangement
-        next.arrange((cards.filter(\.isOnGrid) + cards.filter { !$0.isOnGrid }).map(\.id))
-        next.set(isOnGrid: isOn, of: id)
-        saveArrangement(next, selecting: id)
+        let order = (cards.filter(\.isOnGrid) + cards.filter { !$0.isOnGrid }).map(\.id)
+        saveArrangement({
+            $0.arrange(order)
+            $0.set(isOnGrid: isOn, of: id)
+        }, selecting: id)
     }
 
     public func show(_ panel: GridPanel, _ isShown: Bool) {
@@ -149,16 +149,18 @@ extension SpotsModel {
         let held = cards.filter { $0.panel == panel }.map(\.id)
         guard !held.isEmpty else { return apply() }
         let leaving = isShown ? [] : cards.filter { $0.isOnGrid && $0.panel == panel }.map(\.id)
-        var next = arrangement
-        held.forEach { next.set(panel: .center, of: $0) }
         guard let first = leaving.first else {
-            guard save(next) else { return }
+            guard save({ next in held.forEach { next.set(panel: .center, of: $0) } }) else { return }
             rebuildEntries()
             return apply()
         }
         let onGrid = cards.filter(\.isOnGrid).map(\.id).filter { !leaving.contains($0) }
-        next.arrange(onGrid + leaving + cards.filter { !$0.isOnGrid }.map(\.id))
-        guard save(next) else { return }
+        let order = onGrid + leaving + cards.filter { !$0.isOnGrid }.map(\.id)
+        let isSaved = save { next in
+            held.forEach { next.set(panel: .center, of: $0) }
+            next.arrange(order)
+        }
+        guard isSaved else { return }
         panelLeaving = panel
         land(selecting: first, landed: apply)
     }
@@ -171,10 +173,13 @@ extension SpotsModel {
             return
         }
         stopRecording()
-        var next = arrangement
-        next.arrange(visible.map(\.id))
-        let holder = next.give(code == Self.deleteCode ? nil : letter, to: id, over: defaultArrangement)
-        guard save(next) else { return }
+        let order = visible.map(\.id)
+        var holder: String?
+        let isSaved = save { next in
+            next.arrange(order)
+            holder = next.give(code == Self.deleteCode ? nil : letter, to: id, over: self.defaultArrangement)
+        }
+        guard isSaved else { return }
         if let holder, let letter {
             let name = { (spot: String) in self.entries.first { $0.id == spot }?.spot.name ?? spot }
             host.notify("\(letter.name.uppercased()) now runs \(name(id)), so \(name(holder)) has no letter.")
@@ -182,15 +187,15 @@ extension SpotsModel {
         land(selecting: id)
     }
 
-    func saveArrangement(_ next: SpotArrangement, selecting id: String, ending: () -> Void = {}, landed: @escaping @MainActor () -> Void = {}) {
-        save(next)
+    func saveArrangement(_ edit: (inout SpotArrangement) -> Void, selecting id: String, ending: () -> Void = {}, landed: @escaping @MainActor () -> Void = {}) {
+        save(edit)
         land(selecting: id, ending: ending, landed: landed)
     }
 
     @discardableResult
-    private func save(_ next: SpotArrangement) -> Bool {
+    private func save(_ edit: (inout SpotArrangement) -> Void) -> Bool {
         do {
-            try write(.spots) { $0.arrangement = next }
+            try write(.spots) { edit(&$0.arrangement) }
             return true
         } catch {
             host.notify("Openspot could not save the spots. \(Self.reason(error))")

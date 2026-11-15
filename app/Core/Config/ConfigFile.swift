@@ -21,12 +21,20 @@ public struct ConfigFile: Equatable, Sendable {
     }
 
     public func read() -> Config {
-        Config(text: disk.read(url) ?? "")
+        do {
+            return Config(text: try disk.read(url) ?? "")
+        } catch {
+            return Config(unreadable: error.localizedDescription)
+        }
     }
 
     public func readKept() -> KeptConfig {
         let stamp = disk.readStamp(of: url)
         return KeptConfig(config: read(), stamp: stamp)
+    }
+
+    public func readKept(unlessCurrent kept: KeptConfig) -> KeptConfig {
+        kept.stamp == disk.readStamp(of: url) ? kept : readKept()
     }
 
     @discardableResult
@@ -35,7 +43,7 @@ public struct ConfigFile: Equatable, Sendable {
             let old = if let kept, kept.config.isReadable, kept.stamp == disk.readStamp(of: url) {
                 kept.config
             } else {
-                Config(document: try ConfigDocument(text: disk.read(url) ?? ""))
+                Config(document: try ConfigDocument(text: try disk.read(url) ?? ""))
             }
             var config = old
             try work(&config)
@@ -48,7 +56,7 @@ public struct ConfigFile: Equatable, Sendable {
 
     public func begin(enabling ids: [String]) throws {
         try locked {
-            guard disk.read(url) == nil else { return }
+            guard try disk.read(url) == nil else { return }
             var config = Config()
             ids.forEach { config.arrangement.set(isEnabled: true, of: $0) }
             try disk.write(config.text, to: url)
