@@ -12,28 +12,35 @@ struct SpotSheetView: View {
     let cardWidth: CGFloat
     var hasCardLook = false
     let morph: SheetMorph
+    var held: SheetPage?
 
     private var progress: Double {
         isOpen ? 1 : 0
     }
 
     private var panel: SheetParts? {
-        model.shownParts(of: entry.id)
+        if let held { return held.panel }
+        return model.shownParts(of: entry.id)
     }
 
     private var list: ItemList {
-        model.sheets[entry.id]?.list ?? ItemList()
+        held?.list ?? model.sheets[entry.id]?.list ?? ItemList()
+    }
+
+    private var state: SpotState {
+        held?.state ?? entry.shownState
     }
 
     private var selection: () -> Int {
-        { [model, id = entry.id] in
+        if let held { return { held.selection } }
+        return { [model, id = entry.id] in
             guard let sheet = model.sheets[id] else { return 0 }
             return sheet.panel?.selectedPart == nil ? sheet.selection : Int.max
         }
     }
 
     private var form: FormDraft? {
-        model.form?.entry.id == entry.id ? model.form?.draft : nil
+        held == nil && model.form?.entry.id == entry.id ? model.form?.draft : nil
     }
 
     private var row: RoundedRectangle {
@@ -49,18 +56,18 @@ struct SpotSheetView: View {
                     if panel.showsRows { Color.clear.frame(height: SpotTokens.listRowHeight) }
                     SheetPartsView(
                         panel: panel,
-                        work: { model.work(of: $0) },
+                        work: { [held] in held == nil ? model.work(of: $0) : nil },
                         onSet: { model.setPart($0, to: $1) },
                         onPress: { model.pressPart($0) },
-                        recordingPart: model.recording,
+                        recordingPart: held == nil ? model.recording : nil,
                         onRecord: { model.toggleRecording($0) },
                         list: list,
                         onRun: { model.runItem($0) },
                         onDragOut: { model.dragOut($0, of: entry.id) },
                         selection: selection,
-                        selectedPart: { [model, id = entry.id] in model.sheets[id]?.selectedPart?.id },
-                        nudge: { model.sheets[entry.id]?.nudge ?? SheetParts.Nudge.rest },
-                        menuOpening: { model.sheets[entry.id]?.menuOpening },
+                        selectedPart: { [model, id = entry.id, held] in held.map(\.selectedPart) ?? model.sheets[id]?.selectedPart?.id },
+                        nudge: { [held] in held == nil ? model.sheets[entry.id]?.nudge ?? SheetParts.Nudge.rest : SheetParts.Nudge.rest },
+                        menuOpening: { [held] in held == nil ? model.sheets[entry.id]?.menuOpening : nil },
                         onFocus: { model.focusPart($0) },
                         viewSource: entry.spot.view
                     )
@@ -77,13 +84,13 @@ struct SpotSheetView: View {
                     )
                 } else {
                     if list.search != .off { Color.clear.frame(height: SpotTokens.listRowHeight) }
-                    if let create = model.createAction {
+                    if held == nil, let create = model.createAction {
                         Button { model.createFromSearch() } label: {
                             CreateLabel(model: model, title: create.title, shape: row)
                         }
                         .buttonStyle(.plain)
                     } else {
-                        SpotRowsView(list: list, recording: model.recording, recordingWords: model.recordingWords, onRun: { model.runItem($0) }, onPoint: { model.point(at: .item($0)) }, selection: selection, onDragOut: { model.dragOut($0, of: entry.id) })
+                        SpotRowsView(list: list, recording: held == nil ? model.recording : nil, recordingWords: model.recordingWords, onRun: { model.runItem($0) }, onPoint: { model.point(at: .item($0)) }, selection: selection, onDragOut: { model.dragOut($0, of: entry.id) })
                     }
                 }
             }
@@ -99,12 +106,12 @@ struct SpotSheetView: View {
                 glyph
                 ZStack(alignment: .topLeading) {
                     if showsCardWords {
-                        words(subtitle: entry.shownState.subtitle)
+                        words(subtitle: state.subtitle)
                             .environment(\.spotIsOnSolid, showsFill)
                             .frame(width: max(cardWordsWidth, 0), alignment: .leading)
                             .morph(progress, opacity: SheetMorph.cardLook(at:))
                     }
-                    words(subtitle: list.perLine > 1 ? nil : entry.shownState.subtitle, selectedName: list.perLine > 1)
+                    words(subtitle: list.perLine > 1 ? nil : state.subtitle, selectedName: list.perLine > 1)
                         .frame(width: max(sheetWordsWidth, 0), alignment: .leading)
                         .morph(progress, opacity: sheetWordsOpacity)
                 }
@@ -117,13 +124,13 @@ struct SpotSheetView: View {
 
     private func words(subtitle: String?, selectedName: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: SpotType.lineGap) {
-            Text(form?.form.title ?? entry.shownState.title)
+            Text(form?.form.title ?? state.title)
                 .font(SpotType.title)
                 .frame(height: SpotType.titleLine)
                 .modifier(SpotInk())
                 .lineLimit(1)
             if form == nil, selectedName {
-                SelectedName(list: list, selection: selection, fallback: entry.shownState.subtitle)
+                SelectedName(list: list, selection: selection, fallback: state.subtitle)
             } else if form == nil, let subtitle {
                 Text(subtitle)
                     .font(SpotType.detail)
@@ -147,7 +154,7 @@ struct SpotSheetView: View {
     }
 
     private var wordsWidth: CGFloat {
-        SpotWordsWidth.of(title: form?.form.title ?? entry.shownState.title, detail: entry.shownState.subtitle)
+        SpotWordsWidth.of(title: form?.form.title ?? state.title, detail: state.subtitle)
     }
 
     private static let wordsGap = SpotTokens.padding - 5
@@ -193,7 +200,7 @@ struct SpotSheetView: View {
 
     @ViewBuilder
     private var fileDrag: some View {
-        if isOpen, list.hasFiles {
+        if isOpen, held == nil, list.hasFiles {
             Color.clear
                 .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
                 .contentShape(Rectangle())
@@ -224,7 +231,7 @@ struct SpotSheetView: View {
 
     private var tallCardShift: CGSize {
         guard !hasCardLook, cardSize.rows > 1 else { return .zero }
-        let hasSubtitle = form == nil && (entry.shownState.subtitle != nil || (list.perLine > 1 && !list.shown.isEmpty))
+        let hasSubtitle = form == nil && (state.subtitle != nil || (list.perLine > 1 && !list.shown.isEmpty))
         let wordsHeight = SpotType.titleLine + (hasSubtitle ? SpotType.lineGap + SpotType.detailLine : 0)
         let row = max(SpotTokens.glyphSize, wordsHeight)
         let top = SpotTokens.padding + (row - wordsHeight) / 2

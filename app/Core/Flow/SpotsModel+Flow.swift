@@ -33,30 +33,37 @@ extension SpotsModel {
         if openList == nil { endFlow() }
         let next = FlowSheet(spot: sheet.spot, page: page, title: sheet.title ?? sheets[sheet.spot]?.list.all.first { $0.run == page }?.title)
         if replace, flow.current != nil { flow.replaceCurrent(with: next) } else { flow.push(next) }
-        show(next, moving: moves, from: 1)
+        show(next, moving: moves)
         return true
     }
 
     @discardableResult
     public func pop(in id: String, all: Bool = false) -> Bool {
         guard openList == id, flow.current?.spot == id else { return false }
-        guard all else { return flow.behind != nil && back() }
+        guard all else { return flow.behind != nil && popPage() }
         var start = flow.index
         while start > 0, flow.pages[start].page != nil, flow.pages[start - 1].spot == id { start -= 1 }
-        return start < flow.index && back(steps: flow.index - start)
+        return start < flow.index && popPage(steps: flow.index - start)
+    }
+
+    @discardableResult
+    public func popPage(steps: Int = 1) -> Bool {
+        guard openList != nil, let page = flow.pop(steps: steps) else { return false }
+        show(page, moving: isShown)
+        return true
     }
 
     @discardableResult
     public func back(steps: Int = 1) -> Bool {
         guard openList != nil, let page = flow.back(steps: steps) else { return false }
-        show(page, moving: isShown, from: -1)
+        show(page, moving: isShown)
         return true
     }
 
     @discardableResult
-    public func forward() -> Bool {
-        guard openList != nil, let page = flow.forward() else { return false }
-        show(page, moving: isShown, from: 1)
+    public func forward(steps: Int = 1) -> Bool {
+        guard openList != nil, let page = flow.forward(steps: steps) else { return false }
+        show(page, moving: isShown)
         return true
     }
 
@@ -82,24 +89,29 @@ extension SpotsModel {
         return true
     }
 
-    private func show(_ page: FlowSheet, moving: Bool, from side: Double) {
+    func show(_ page: FlowSheet, moving: Bool) {
+        guard !(moving && isStepping) else { return }
         guard let sheet = sheets[page.spot] else {
             flow.remove(spot: page.spot)
-            if let current = flow.current { show(current, moving: moving, from: side) } else { closeList(moving: moving) }
+            if let current = flow.current { show(current, moving: moving) } else { closeList(moving: moving) }
             return
         }
         guard openList == page.spot else {
             sheet.show(page: page.page)
-            waitPush(from: moving ? side : nil)
+            waitPush(moving: moving)
             return present(page.spot, moving: moving)
         }
-        guard moving, sheet.page != page.page else { return sheet.show(page: page.page) }
-        pushIn(from: side) { sheet.show(page: page.page) }
+        guard moving, sheet.page != page.page else {
+            sheet.show(page: page.page)
+            return showEdges()
+        }
+        pushIn { sheet.show(page: page.page) ? nil : sheet }
     }
 
     func endFlow() {
         for page in flow.pages where page.page != nil { sheets[page.spot]?.show(page: nil) }
         flow.clear()
+        showEdges()
     }
 
     func title(of sheet: FlowSheet) -> String {

@@ -95,8 +95,6 @@ final class SpotsPanel: NSPanel {
         place.left = panels.leftExtent
         appliedRight = panels.rightExtent
         resize(to: widened(frame))
-        SpotSoftBlur.warm(SpotsView.blurHeights(of: model), width: panels.frame.width)
-        SpotSoftBlur.warm(SpotsView.blurHeights(of: model), width: SpotTokens.panelWidth)
     }
 
     private func resize(to frame: NSRect) {

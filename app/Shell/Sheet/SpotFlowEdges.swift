@@ -4,44 +4,45 @@ import SwiftUI
 struct SpotFlowEdges: View {
     let model: SpotsModel
     let rect: CGRect
-    @State private var resting: Int?
-    @State private var named: Int?
+    @State private var resting: FlowSheet?
+    @State private var named: FlowSheet?
     @State private var pause: Task<Void, Never>?
 
     var body: some View {
-        let titles = model.behindTitles
+        let edges = model.flowEdges.edges
         ZStack(alignment: .topLeading) {
-            ForEach(Array(titles.prefix(SpotTokens.edgeCount).enumerated()), id: \.offset) { index, _ in
-                edge(index)
+            ForEach(edges.filter { !$0.isFading && $0.place.side != nil }) { edge in
+                target(edge)
             }
-            if let named, titles.indices.contains(named) {
-                tip(titles[named], over: named)
+            if let edge = edges.first(where: { $0.sheet == named && !$0.isFading }) {
+                tip(edge.title, at: edge.rect(around: rect))
             }
         }
-        .onChange(of: titles) { _, _ in
+        .onChange(of: model.flowEdges.shown) { _, _ in
             resting = nil
             named = nil
         }
     }
 
-    private func edgeX(_ index: Int) -> CGFloat {
-        rect.minX - SpotTokens.edgeGap - SpotTokens.edgeWidth - CGFloat(index) * (SpotTokens.edgeWidth + SpotTokens.edgeStep)
-    }
-
-    private func edge(_ index: Int) -> some View {
-        let height = max(rect.height - 2 * SpotTokens.radius - CGFloat(index) * SpotTokens.edgeShrink, SpotTokens.edgeWidth)
+    private func target(_ edge: FlowEdge) -> some View {
+        let place = edge.rect(around: rect)
         return Color.clear
-            .frame(width: SpotTokens.edgeWidth, height: height)
-            .modifier(SpotGlass(radius: SpotTokens.edgeWidth / 2))
-            .opacity(SpotTheme.edgeStrengths[index])
-            .padding(.horizontal, SpotTokens.edgeStep / 2)
+            .frame(width: place.width + SpotTokens.edgeStep, height: place.height)
             .contentShape(Rectangle())
-            .onHover { inside in hover(index, inside) }
-            .onTapGesture { model.back(steps: index + 1) }
-            .offset(x: edgeX(index) - SpotTokens.edgeStep / 2, y: rect.midY - height / 2)
+            .onHover { inside in hover(edge.sheet, inside) }
+            .onTapGesture { go(to: edge) }
+            .offset(x: place.minX - SpotTokens.edgeStep / 2, y: place.minY)
     }
 
-    private func tip(_ title: String, over index: Int) -> some View {
+    private func go(to edge: FlowEdge) {
+        switch edge.place {
+        case .bar(.behind, let index): model.back(steps: index + 1)
+        case .bar(.ahead, let index): model.forward(steps: index + 1)
+        default: break
+        }
+    }
+
+    private func tip(_ title: String, at place: CGRect) -> some View {
         Text(title)
             .font(SpotType.detail)
             .foregroundStyle(SpotTheme.ink)
@@ -50,21 +51,21 @@ struct SpotFlowEdges: View {
             .frame(height: SpotTokens.hintPillHeight)
             .modifier(SpotGlass(radius: SpotTokens.hintPillHeight / 2))
             .fixedSize()
-            .offset(x: edgeX(index) - SpotTokens.hintEndPadding, y: rect.minY - SpotTokens.hintPillHeight - SpotTokens.placeGap)
+            .offset(x: place.minX - SpotTokens.hintEndPadding, y: rect.minY - SpotTokens.hintPillHeight - SpotTokens.placeGap)
             .allowsHitTesting(false)
     }
 
-    private func hover(_ index: Int, _ inside: Bool) {
+    private func hover(_ sheet: FlowSheet, _ inside: Bool) {
         pause?.cancel()
         guard inside else {
-            if resting == index { resting = nil; named = nil }
+            if resting == sheet { resting = nil; named = nil }
             return
         }
-        resting = index
+        resting = sheet
         pause = Task { @MainActor in
             try? await Task.sleep(for: SpotTokens.edgeRest)
-            guard !Task.isCancelled, resting == index else { return }
-            named = index
+            guard !Task.isCancelled, resting == sheet else { return }
+            named = sheet
         }
     }
 }

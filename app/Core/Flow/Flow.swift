@@ -35,10 +35,17 @@ public struct Flow: Equatable, Sendable {
         return pages[index]
     }
 
-    public mutating func forward() -> FlowSheet? {
-        guard let page = ahead else { return nil }
-        index += 1
-        return page
+    public mutating func pop(steps: Int = 1) -> FlowSheet? {
+        guard steps > 0, index - steps >= 0 else { return nil }
+        pages.removeSubrange((index - steps + 1)...)
+        index -= steps
+        return pages[index]
+    }
+
+    public mutating func forward(steps: Int = 1) -> FlowSheet? {
+        guard steps > 0, index + steps < pages.count else { return nil }
+        index += steps
+        return pages[index]
     }
 
     public mutating func replaceCurrent(with page: FlowSheet) {

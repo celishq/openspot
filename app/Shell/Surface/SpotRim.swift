@@ -150,7 +150,9 @@ private struct Backing: NSViewRepresentable {
             for part in [sides, ends, sideLine, endLines, glowClip, glow, wideLine, thinLine] as [CALayer] {
                 part.frame = part === sides || part === ends ? rect : local
             }
-            glowClip.cornerRadius = radius
+            let corner = min(radius, min(local.width, local.height) / 2)
+            glowClip.cornerRadius = corner
+            glowClip.cornerCurve = SpotSurfaceShape.style(corner: corner, in: local) == .circular ? .circular : .continuous
             let thin = path(lineWidth: sideLine.lineWidth, in: local)
             sideLine.path = thin
             thinLine.path = thin
@@ -159,7 +161,8 @@ private struct Backing: NSViewRepresentable {
         }
 
         private func path(lineWidth: CGFloat, in rect: CGRect) -> CGPath {
-            RoundedRectangle(cornerRadius: radius, style: .continuous).inset(by: lineWidth / 2).path(in: rect).cgPath
+            let corner = min(radius, min(rect.width, rect.height) / 2)
+            return RoundedRectangle(cornerRadius: corner, style: SpotSurfaceShape.style(corner: corner, in: rect)).inset(by: lineWidth / 2).path(in: rect).cgPath
         }
     }
 
