@@ -6,7 +6,7 @@ public struct Spot: Equatable, Sendable {
 
     public let id: String
     public let name: String
-    public let url: URL
+    public private(set) var url: URL
     public private(set) var kind: SpotKind
     public let size: SpotSize
     public private(set) var symbol: String
@@ -27,7 +27,7 @@ public struct Spot: Equatable, Sendable {
     public let opens: String?
     public let host: HostSheet?
     public let growsFromField: Bool
-    public let mode: SpotMode
+    public private(set) var mode: SpotMode
     public let pressRuns: Bool
     public let drop: [String]
     public var offersFloat: Bool { offeredPlaces.contains(.float) }
@@ -56,9 +56,9 @@ public struct Spot: Equatable, Sendable {
         SpotUse.reachesAccountKey(uses, isBuiltIn: isBuiltIn)
     }
     public let keywords: [String]
+    public let sample: URL?
     public let editsSpots: Bool
     public private(set) var editedFile: URL?
-    public let previewsSample: Bool
 
     public init(
         id: String,
@@ -99,7 +99,7 @@ public struct Spot: Equatable, Sendable {
         pages: [String] = [],
         uses: Set<SpotUse> = [],
         keywords: [String] = [],
-        previewsSample: Bool = false,
+        sample: URL? = nil,
         editsSpots: Bool = false
     ) {
         self.editsSpots = editsSpots
@@ -107,7 +107,7 @@ public struct Spot: Equatable, Sendable {
         self.pages = pages
         self.uses = uses
         self.keywords = keywords
-        self.previewsSample = previewsSample
+        self.sample = sample
         self.id = id
         self.name = name
         self.url = url
@@ -259,6 +259,14 @@ public struct Spot: Equatable, Sendable {
         var spot = self
         spot.isBuiltIn = true
         spot.offeredActions = offeredActions.map { $0.ofTheApp() }
+        return spot
+    }
+
+    public var sampled: Spot? {
+        guard let sample else { return nil }
+        var spot = self
+        spot.url = sample
+        spot.mode = .once
         return spot
     }
 

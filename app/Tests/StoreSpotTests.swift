@@ -11,6 +11,7 @@ final class StoreSpotTests: BuiltInCase {
     override func setUp() async throws {
         try await super.setUp()
         try "#!/bin/sh\n# detail=Counts down\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/sample.sh"))
         try "#!/bin/sh\n# title=Shared\n".writeScript(to: root.appendingPathComponent("store/shared.spot/shared.sh"))
         try "#!/bin/sh\n# title=Mine\n".writeScript(to: spots.appendingPathComponent("mine.spot/mine.sh"))
     }
@@ -41,6 +42,7 @@ final class StoreSpotTests: BuiltInCase {
 
         XCTAssertEqual(rows.map { Array($0.prefix(4)) }, [["mine", "Mine", "publish", "mine"], ["shared", "Shared", "get", "store"], ["timer", "Timer", "get", "core"]])
         XCTAssertEqual(rows.first { $0[0] == "timer" }?[4], "Counts down")
+        XCTAssertEqual(rows.map { $0[6] }, ["", "", "sample"])
     }
 
     func testGetTurnsOnACoreSpotAndAddsAStoredOne() async throws {
@@ -64,6 +66,27 @@ final class StoreSpotTests: BuiltInCase {
         try await call(["gallery", "get:mine"])
 
         XCTAssertEqual(file.read().arrangement.disabled, [])
+    }
+
+    func testEachAnswerCarriesTheReadmeOfEachSpotLineByLine() async throws {
+        try "# Timer\n\nCounts down.\n".write(to: core.appendingPathComponent("timer.spot/readme.md"), atomically: true, encoding: .utf8)
+
+        for action in [SpotAction.read, SpotAction(arguments: ["gallery", "get:timer"]), SpotAction(arguments: ["gallery", "publish:timer"])] {
+            let text = try await SpotRuns().answer(of: store, action, limit: 5)
+
+            let values = SpotOutput(text: text).parts.first?.values ?? [:]
+            XCTAssertEqual(values["readme"], ["timer\t# Timer", "timer\t", "timer\tCounts down."], "\(action.arguments)")
+        }
+    }
+
+    func testAReadmePictureOrVideoInTheSpotsFolderGetsItsFullPath() async throws {
+        let folder = core.appendingPathComponent("timer.spot")
+        try "![The sheet](shot.png)\n![](/tmp/a.mov)\n![Web](https://example.com/a.jpg)\n".write(to: folder.appendingPathComponent("readme.md"), atomically: true, encoding: .utf8)
+
+        let text = try await SpotRuns().answer(of: store, .read, limit: 5)
+
+        let lines = (SpotOutput(text: text).parts.first?.values["readme"] ?? []).filter { $0.hasPrefix("timer\t") }
+        XCTAssertEqual(lines, ["timer\t![The sheet](\(folder.path)/shot.png)", "timer\t![](/tmp/a.mov)", "timer\t![Web](https://example.com/a.jpg)"])
     }
 
     func testPublishPublishesYourOwnSpotInTheApp() async throws {

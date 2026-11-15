@@ -8,8 +8,10 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
     private var isPresent = false
 
     override func sendEvent(_ event: NSEvent) {
-        if event.type == .keyDown, !event.modifierFlags.contains(.command), let model, let key = SpotsPanel.actionKey(of: event),
-           key.name != "escape", model.handleFloatKey(key, in: id) { return }
+        if event.type == .keyDown, !event.modifierFlags.contains(.command), let model, let key = SpotsPanel.actionKey(of: event) {
+            if key.name == "escape", !(firstResponder is NSText) { return performClose(nil) }
+            if key.name != "escape", model.handleFloatKey(key, in: id) { return }
+        }
         super.sendEvent(event)
     }
 
@@ -46,6 +48,7 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         window.backgroundColor = .clear
         window.hasShadow = true
         window.isMovableByWindowBackground = true
+        for button in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] { window.standardWindowButton(button)?.isHidden = true }
         window.isReleasedWhenClosed = false
         window.minSize = SpotTokens.windowMinSize
         window.delegate = window

@@ -27,14 +27,6 @@ final class ReservedSettingTests: XCTestCase {
         XCTAssertEqual(call("setting", "set", "--spot", "repos", "folder", "/tmp"), .settingSet(spot: "repos", key: "folder", value: "/tmp"))
     }
 
-    func testEachOldCallNamesItsNewForm() {
-        XCTAssertEqual(call("menubar", "on", "notes"), .refused("`openspot menubar on notes` is now `openspot setting set --spot notes menubar true`."))
-        XCTAssertEqual(call("spot", "off", "notes"), .refused("`openspot spot off notes` is now `openspot setting set --spot notes enabled false`."))
-        XCTAssertEqual(call("app", "login", "on"), .refused("`openspot app login on` is now `openspot setting set --spot openspot login true`."))
-        XCTAssertEqual(call("key", "set", "move", "left", "ctrl+left"), .refused("`openspot key set move left ctrl+left` is now `openspot setting set --spot move key.left ctrl+left`."))
-        XCTAssertEqual(call("key", "set", "--panel", "ctrl+space"), .refused("`openspot key set --panel ctrl+space` is now `openspot setting set --spot openspot panel-key ctrl+space`."))
-    }
-
     func testTheUseOfASettingIsTheUseOfTheCallThatItRuns() {
         XCTAssertEqual(SpotUseCall(arguments: ["setting", "set", "--spot", "openspot", "login", "true"], of: "a")?.use, .app)
         XCTAssertEqual(SpotUseCall(arguments: ["setting", "set", "--spot", "notes", "menubar", "true"], of: "a")?.use, .app)

@@ -23,17 +23,35 @@ public struct ViewLibrary: Sendable {
             public let secondary: Double
             public let accent: Color
             public let font: SpotFonts
+            public let answers: Int
+            public let columnGap: CGFloat
+            public let rowGap: CGFloat
+            public let columns: Int
+            public let tipDelay: Duration
             let values: [String: [String]]
             let sender: (String) -> Void
             let cardMaker: (String) -> AnyView
             let cardSizer: (String) -> CGSize
+            let sheetMaker: (String) -> AnyView
+            let tipMaker: (String) -> AnyView
+            let mediaMaker: (String) -> AnyView
+            let cornerMaker: (String, String, String, @escaping () -> Void) -> AnyView
 
             init(values: [String: [String]], card: [String: Any], sender: @escaping (String) -> Void) {
                 self.values = values
                 self.sender = sender
                 cardMaker = card["card"] as? (String) -> AnyView ?? { _ in AnyView(EmptyView()) }
                 cardSizer = card["cardSize"] as? (String) -> CGSize ?? { _ in .zero }
+                sheetMaker = card["sheet"] as? (String) -> AnyView ?? { _ in AnyView(EmptyView()) }
+                tipMaker = card["tip"] as? (String) -> AnyView ?? { AnyView(Text($0)) }
+                mediaMaker = card["media"] as? (String) -> AnyView ?? { _ in AnyView(EmptyView()) }
+                cornerMaker = card["cornerButton"] as? (String, String, String, @escaping () -> Void) -> AnyView ?? { _, _, _, _ in AnyView(EmptyView()) }
+                columnGap = card["columnGap"] as? CGFloat ?? 11
+                rowGap = card["rowGap"] as? CGFloat ?? 12
+                columns = card["columns"] as? Int ?? 16
+                tipDelay = card["tipDelay"] as? Duration ?? .milliseconds(500)
                 size = card["size"] as? CGSize ?? .zero
+                answers = card["answers"] as? Int ?? 0
                 inset = card["inset"] as? CGFloat ?? 13
                 corner = card["corner"] as? CGFloat ?? 20
                 ink = card["ink"] as? Color ?? .primary
@@ -56,6 +74,14 @@ public struct ViewLibrary: Sendable {
             public func card(_ id: String) -> AnyView { cardMaker(id) }
 
             public func cardSize(_ id: String) -> CGSize { cardSizer(id) }
+
+            public func sheet(_ id: String) -> AnyView { sheetMaker(id) }
+
+            public func tip(_ text: String) -> AnyView { tipMaker(text) }
+
+            public func media(_ source: String) -> AnyView { mediaMaker(source) }
+
+            public func cornerButton(_ symbol: String, label: String, card id: String, action: @escaping () -> Void) -> AnyView { cornerMaker(symbol, label, id, action) }
         }
 
         @_cdecl("\(entry)")

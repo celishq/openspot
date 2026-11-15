@@ -20,11 +20,22 @@ press   ─ on a block ─►  <spot> <id>    the user or an agent acts
 ```
 
 - A spot lives in a **spot folder**: a folder `<name>.spot` in the spots folder, such as `coffee.spot/coffee.sh`. The
-  folder holds its scripts, its `readme.md`, its `preview.txt` and any file that they need.
+  folder holds its scripts, its `readme.md`, its `sample.sh` and any file that they need.
+- `sample.sh` prints what the spot would show, with made-up data, so that the store can show the spot before you add it.
+  A click on that sample runs nothing. Publish runs it once and ships what it printed as `sample.txt`, which is all a
+  shared spot shows before you add it. `sample.sh` is a spot of its own only in `sample.spot`.
+- A line of `readme.md` that holds only a Markdown image shows a picture or a video from the folder: PNG, JPEG, MOV or
+  MP4. A picture can also be an `https` address, which Openspot fetches once, with no cookies. A video at an `https`
+  address shows as a link that opens in your browser.
+
+```text
+![The sheet](shot.png)
+```
+
 - The id of a script is the name of its folder, such as `coffee`. A script with another name adds it, such as
   `home/lights` for `home.spot/lights.sh`.
-- The folder is shared as one unit, and its scripts share one data folder. A file in it that isn't executable can hold
-  shared code.
+- The folder is shared as one unit of at most 25 MB, and its scripts share one data folder. A file in it that isn't
+  executable can hold shared code.
 - Openspot moves a loose script into a spot folder of its name, with the files of the same name, such as `coffee.md`,
   which becomes `readme.md`.
 - A spot only says what it has. The user decides where it shows and which key opens it.
@@ -101,7 +112,6 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `emits`       | The events the spot raises, split by commas. See [Events](#events).                                                              |
 | `offers`      | A place where the spot can show: `card`, `search`, `menubar`, `float` or `window`. One line each. See [Places](#places).         |
 | `drop`        | The files its card takes: extensions such as `mov,mkv`, `folder`, or `*`. See [The calls](#the-calls).                           |
-| `preview`     | `sample`: when `OPENSPOT_REASON` is `spot.preview`, the spot prints sample data for the store.                                   |
 | `edits`       | `spots`: its sheet is also the Edit sheet of each spot, which grows from that spot's card. Only a spot of the app takes it.      |
 | `view`        | A SwiftUI file next to the spot, such as `view=cups.swift`. See [Views](#views).                                                 |
 | `mode`        | `once` (the default), `stay` or `always`. See [Modes](#modes).                                                                   |
@@ -444,8 +454,7 @@ An event makes Openspot ask a spot what to show. The header lists the events whe
 
 - Openspot also asks a spot for these reasons, which aren't events:
   - `spot.change`: after a call that printed nothing;
-  - `spot.want`: when a spot becomes wanted and no event has asked it yet;
-  - `spot.preview`: for the preview in the store.
+  - `spot.want`: when a spot becomes wanted and no event has asked it yet.
 - `openspot event emit <event> [value]` raises an event, from a spot or a terminal. If Openspot isn't running, it starts
   first.
 - A spot must list each event it raises in `emits`, such as `emits=music.track`. `openspot check` reports an `on` event
@@ -575,7 +584,8 @@ The user decides where a spot shows. A spot only offers, with one `offers` line 
   small window at the pointer, which stays while the user works in other apps. The spot never learns where it shows.
 - A spot that offers `window` opens its sheet in a normal window, from its card, the main search or `openspot spot open`.
   The user moves, resizes and closes it, and Openspot shows in the Dock while it's open. Use it for a sheet that needs
-  room, such as a catalog.
+  room, such as a catalog. The window has no title bar buttons: Esc closes it, so give a view that fills it a way
+  out, such as a Done button.
 - `on=search.text <pattern>` makes a spot answer the main search. Openspot asks it at each change of a text that the
   pattern matches, with no pause. A newer text stops the older call. The answer should be fast.
 - Its rows show first in the main search until the newest text has an answer, and go at once when the pattern no longer
@@ -697,7 +707,7 @@ struct SpotView: View {
 ```
 
 - `view=<file>` in the header names a SwiftUI file next to the spot. A `view=<id>` block draws it in its place.
-- The spot and its view must be in a folder of their own, such as `cups/cups.sh` and `cups/cups.swift`.
+- The spot and its view must be in a folder of their own, such as `cups.spot/cups.sh` and `cups.spot/cups.swift`.
 - The file declares `struct SpotView: View` with `let spot: SpotInput`, and has no top-level code.
 
 | Member              | Gives                                                                 |
@@ -712,12 +722,22 @@ struct SpotView: View {
 | `spot.accent`       | The accent colour.                                                    |
 | `spot.font`         | The fonts of the cards: `title`, `detail`, `metric` and `value`.      |
 | `spot.send(v)`      | Calls the spot with the view's id and `v`, as a field does.           |
-| `spot.card(id)`     | The card of a spot, at the size it takes on the grid. A drag adds it. |
+| `spot.answers`      | Changes each time the spot answers a new send, to end a busy state.   |
+| `spot.card(id)`     | The card of a spot, at the size it takes on the grid.                 |
 | `spot.cardSize(id)` | That size, so the view can lay cards out.                             |
+| `spot.sheet(id)`    | The sheet of a spot with its sample data, where a click runs nothing. |
+| `spot.tip(text)`    | A tip in the look of Openspot's own, for the view to show on hover.   |
+| `spot.media(path)`  | A PNG or JPEG picture, or a MOV or MP4 video, at its size or less.    |
+| `spot.cornerButton` | The round button on the rim of a card, by its id and an action.       |
+| `spot.columnGap`    | The gap between the columns of the grid.                              |
+| `spot.rowGap`       | The gap between the rows of the grid.                                 |
+| `spot.columns`      | How many columns a window holds.                                      |
+| `spot.tipDelay`     | How long the pointer rests on a control before its tip shows.         |
 
 - The view fills its place, and the whole card when there's no card layout. It can't change the size of its place.
 - In a window (see [Places](#places)), a sheet with one `view` block fills the window. `spot.card(id)` draws the card of
-  any spot by the ID that `openspot store list` prints, as the store does.
+  any spot by the ID that `openspot store list` prints, as the store does. `spot.sheet(id)` draws its sheet with what its
+  `sample.sh` prints (see [A spot](#a-spot)), and draws nothing for a spot with no sample.
 - It gets the keys of its block in each frame. A new frame keeps its `@State`.
 - On a card, the view only draws, and a press works as on any card. In a sheet, it takes clicks and keys, and
   `spot.send(value)` calls the spot with `<id> <value>`, as a field does. A newer send stops the call of the older one.
@@ -826,7 +846,7 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                                |
 | `openspot spot stats`                              | Prints what each spot cost and used. See [Stats](#stats).                                       |
 | `openspot grid edit`                               | Opens the panel in Edit Spots, to arrange the grid.                                             |
-| `openspot store list [--frame]`                    | Prints each spot of the store, whether you have it, and if it's yours, whether it's published.  |
+| `openspot store list [--frame]`                    | Prints each spot of the store and its step: `get`, `publish`, or `added` once you have it.      |
 | `openspot store get <id>`                          | Gets a spot of the store: turns it on, or adds its package to your spots folder.                |
 | `openspot store publish <id>`                      | Publishes a spot of your spots folder to the store. It needs a `readme.md` beside its script.   |
 

@@ -194,14 +194,6 @@ final class WidgetContractTests: XCTestCase {
         XCTAssertEqual(widget.places, ["power"])
     }
 
-    func testAWidgetFileIsRefusedAndToldToBeASpot() throws {
-        let file = folder.spotFile("mine", extension: "toml")
-        try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try "[[widgets]]\ntitle = \"Now\"\ngrid = [\"power\"]\n".write(to: file, atomically: true, encoding: .utf8)
-
-        XCTAssertEqual(try scan.refused.first?.reason, "mine.toml holds widgets, which Openspot no longer reads. Write a spot whose header draws its card from other spots, such as grid.large=cpu cpu memory")
-    }
-
     func testACardDrawnAtTwoSizesIsRefused() throws {
         try power()
         try widget(grid: ["power"], more: "# grid.large=power\n")
@@ -242,13 +234,6 @@ final class WidgetContractTests: XCTestCase {
 
         XCTAssertNil(still.openTitle(hasItem: false))
         XCTAssertEqual(opening.openTitle(hasItem: false), "Open")
-    }
-
-    func testAWidgetWithAShortcutIsRefusedBecauseThePersonGivesTheLetter() throws {
-        try power()
-        try widget(more: "# shortcut=w\n")
-
-        XCTAssertEqual(try scan.refused.first?.reason, "Now has shortcut, which Openspot no longer reads. The person gives each spot its letter in Edit Spots")
     }
 
     func testEveryLayoutFillsItsSizeWithNoOverlap() {

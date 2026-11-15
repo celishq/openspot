@@ -51,13 +51,6 @@ final class SpotsPanel: NSPanel {
         setFrameOrigin(NSPoint(x: origin.x - place.left, y: origin.y))
     }
 
-    func place(beside window: NSRect) {
-        guard model?.isShown != true || model?.isWarming == true else { return }
-        let center = NSSize(width: frame.width - place.left - appliedRight, height: frame.height)
-        guard let origin = ScreenPlace(screens: ScreenPlace.Screen.all).origin(of: center, beside: window) else { return }
-        setFrameOrigin(NSPoint(x: origin.x - place.left, y: origin.y))
-    }
-
     private static func frontWindow(of app: NSRunningApplication) -> CGRect? {
         let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
         let front = windows.first {

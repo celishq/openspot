@@ -37,7 +37,6 @@ public struct SwiftProgram: Sendable {
         if let program = Self.file(beside: script) { return program }
         guard script.pathExtension == Self.sourceExtension, let name = Self.hash(of: script) else { return script }
         let program = cache.appendingPathComponent(name)
-        if !Self.isWhole(program) { adopt(name) }
         if Self.isWhole(program) {
             markUsed(program)
             return program
@@ -67,25 +66,7 @@ public struct SwiftProgram: Sendable {
                 guard !kept.contains(name) || isStale, !running.contains(Self.real(program)) else { continue }
                 try? FileManager.default.removeItem(at: program)
             }
-            let shared = cache.deletingLastPathComponent()
-            for name in (try? FileManager.default.contentsOfDirectory(atPath: shared.path)) ?? [] where Self.isBuildName(name) {
-                let program = shared.appendingPathComponent(name)
-                let isStale = date.timeIntervalSince(Self.changed(program) ?? date) > Self.unusedDays * Self.day
-                guard isStale, !running.contains(Self.real(program)) else { continue }
-                try? FileManager.default.removeItem(at: program)
-            }
         }
-    }
-
-    private func adopt(_ name: String) {
-        let old = cache.deletingLastPathComponent().appendingPathComponent(name)
-        guard Self.isWhole(old) else { return }
-        try? FileManager.default.createDirectory(at: cache, withIntermediateDirectories: true)
-        _ = rename(old.path, cache.appendingPathComponent(name).path)
-    }
-
-    private static func isBuildName(_ name: String) -> Bool {
-        name.count == 64 && name.allSatisfy(\.isHexDigit)
     }
 
     private func markUsed(_ program: URL) {

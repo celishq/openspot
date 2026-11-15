@@ -13,7 +13,6 @@ public enum SpotTokens {
     public static let groupTitleBand: CGFloat = groupTitleHeight + placeGap
     public static let glyphSize: CGFloat = 36
     public static let glyphInset: CGFloat = 9
-    public static let iconInset: CGFloat = 3
     public static let workMark: CGFloat = 16
     public static let keycap: CGFloat = 20
     public static let keycapRadius: CGFloat = 6
@@ -98,7 +97,8 @@ public enum SpotTokens {
         return (Int(lines) + 1) * max(perLine, 1)
     }
 
-    public static let windowSize = CGSize(width: 720, height: 560)
+    public static let windowColumns = 16
+    public static let windowSize = CGSize(width: width(columns: windowColumns) + 2 * padding, height: 760)
     public static let windowMinSize = CGSize(width: 360, height: 280)
 
     public static func floatSize(rows: Int, perLine: Int = 1, parts: SheetParts? = nil) -> CGSize {

@@ -6,8 +6,8 @@ rm -rf "$out/build"
 mkdir -p "$out/build" "$out/data"
 if [ ! -s "$out/data/settings.txt" ]; then
   for name in apps settings; do
-    mkdir -p "$out/plugin-data/$name"
-    OPENSPOT_SH="$PWD/app/Shell/openspot.sh" OPENSPOT_DATA="$PWD/$out/plugin-data/$name" sh "spots/$name.spot/$name.sh" read >"$out/data/$name.txt"
+    mkdir -p "$out/spot-data/$name"
+    OPENSPOT_SH="$PWD/app/Shell/openspot.sh" OPENSPOT_DATA="$PWD/$out/spot-data/$name" sh "spots/$name.spot/$name.sh" read >"$out/data/$name.txt"
   done
 fi
 if [ ! -s "$out/data/spots.txt" ]; then

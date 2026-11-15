@@ -6,13 +6,14 @@ struct SpotCustomView: View, @MainActor Equatable {
     let values: [String: [String]]
     let card: SpotSize
     var room: CGSize?
+    var answers = 0
     let views: SpotViews
     var send: ((String) -> Void)?
     @Environment(\.spotIsShown) private var isShown
     @Environment(\.spotCards) private var cards
 
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.source == rhs.source && lhs.values == rhs.values && lhs.card == rhs.card && lhs.room == rhs.room && lhs.views === rhs.views
+        lhs.source == rhs.source && lhs.values == rhs.values && lhs.card == rhs.card && lhs.room == rhs.room && lhs.answers == rhs.answers && lhs.views === rhs.views
             && (lhs.send == nil) == (rhs.send == nil)
     }
 
@@ -45,9 +46,36 @@ struct SpotCustomView: View, @MainActor Equatable {
         return { id in MainActor.assumeIsolated { cards.size(id) } }
     }
 
+    private var sheetView: (String) -> AnyView {
+        let cards = cards
+        return { id in
+            var view = AnyView(EmptyView())
+            MainActor.assumeIsolated { view = cards.sheet(id) }
+            return view
+        }
+    }
+
+    private var tipView: (String) -> AnyView {
+        { text in AnyView(SpotTipPill(text: text)) }
+    }
+
+    private var mediaView: (String) -> AnyView {
+        { source in AnyView(SpotMedia(source: source)) }
+    }
+
+    private var cornerButton: (String, String, String, @escaping () -> Void) -> AnyView {
+        let cards = cards
+        return { symbol, label, id, action in
+            var view = AnyView(EmptyView())
+            MainActor.assumeIsolated { view = cards.cornerButton(symbol, label: label, card: id, action: action) }
+            return view
+        }
+    }
+
     private var input: [String: Any] {
         [
             "size": size,
+            "answers": answers,
             "inset": SpotTokens.padding,
             "corner": corner,
             "ink": SpotTheme.ink,
@@ -58,7 +86,15 @@ struct SpotCustomView: View, @MainActor Equatable {
             "metric": SpotType.metric,
             "value": SpotType.value,
             "card": cardView,
-            "cardSize": cardSize
+            "cardSize": cardSize,
+            "sheet": sheetView,
+            "tip": tipView,
+            "media": mediaView,
+            "cornerButton": cornerButton,
+            "columnGap": SpotTokens.columnGap,
+            "rowGap": SpotTokens.rowGap,
+            "columns": SpotTokens.windowColumns,
+            "tipDelay": SpotTipView.delay
         ]
     }
 

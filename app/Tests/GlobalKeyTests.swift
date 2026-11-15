@@ -25,23 +25,12 @@ final class GlobalKeyTests: XCTestCase {
         }
     }
 
-    func testACommandInTheOldFormIsRefusedWithTheNewForm() {
-        for header in ["# command=full:Full screen", "# title=Move\n# command=full:Full screen"] {
-            XCTAssertThrowsError(try command(header: header), header) { error in
-                XCTAssertEqual((error as? SpotError)?.reason, "Move has command=full:Full screen, which Openspot no longer reads. Write each command as a button block after a blank comment line, such as button=left with title=Left side")
-            }
-        }
-    }
-
     func testASettingIsABlockWithATitleOrItsKey() throws {
         let spot = try command(header: "# title=Repos\n#\n# field=folder\n#\n# field=editor\n# title=Default app\n# icon=app.badge")
 
         XCTAssertEqual(spot.settings.map(\.id), ["folder", "editor"])
         XCTAssertEqual(spot.settings.map(\.title), ["Folder", "Default app"])
         XCTAssertEqual(spot.settings.map(\.icon), [nil, "app.badge"])
-        XCTAssertThrowsError(try command(header: "# title=Repos\n# settings=folder")) { error in
-            XCTAssertEqual((error as? SpotError)?.reason, "Repos has settings, which Openspot no longer reads. Write each setting as a field block after a blank comment line, such as field=folder with title=Folder")
-        }
     }
 
     func testOnlyACommandThatAScriptListsTakesItsKey() throws {

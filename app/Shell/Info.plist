@@ -44,9 +44,9 @@
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>Openspot shows and adds your events when a spot that you use asks for them.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Openspot records the camera when a plugin records the screen with your camera.</string>
+	<string>Openspot records the camera when a spot records the screen with your camera.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Openspot records the microphone when a plugin records the screen with your voice, or when you dictate.</string>
+	<string>Openspot records the microphone when a spot records the screen with your voice, or when you dictate.</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
 	<string>Openspot shows, adds and ticks your reminders when a spot that you use asks for them.</string>
 	<key>OpenspotDevState</key>
@@ -80,16 +80,6 @@
 					<string>spot</string>
 				</array>
 			</dict>
-		</dict>
-		<dict>
-			<key>UTTypeConformsTo</key>
-			<array>
-				<string>public.data</string>
-			</array>
-			<key>UTTypeDescription</key>
-			<string>Openspot store card</string>
-			<key>UTTypeIdentifier</key>
-			<string>dev.openspot.store-card</string>
 		</dict>
 	</array>
 </dict>
