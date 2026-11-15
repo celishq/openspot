@@ -171,7 +171,7 @@ struct Shelf {
         let folders = items.filter(Self.isFolder).sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
             .map { Node(url: $0, title: $0.lastPathComponent, edited: Self.edited($0), isFolder: true, children: nodes(in: $0)) }
         let boards = items.filter { !Self.isFolder($0) }
-            .map { Node(url: $0, title: (try? Board.load(from: $0).title) ?? "Untitled board", edited: Self.edited($0), isFolder: false) }
+            .map { Node(url: $0, title: Titles.shared.title(of: $0), edited: Self.edited($0), isFolder: false) }
             .sorted { $0.edited > $1.edited }
         return folders + boards
     }
@@ -179,7 +179,7 @@ struct Shelf {
     private func boards(in place: URL) -> [Entry] {
         contents(of: place).flatMap { item -> [Entry] in
             if Self.isFolder(item) { return boards(in: item) }
-            return [Entry(file: item, title: (try? Board.load(from: item).title) ?? "Untitled board", edited: Self.edited(item))]
+            return [Entry(file: item, title: Titles.shared.title(of: item), edited: Self.edited(item))]
         }
     }
 }

@@ -259,15 +259,17 @@ final class DrawBoardTests: XCTestCase {
         var (board, _, _) = fan()
         board.title = "Flows"
         board.bundle(along: cut)
-        board.figures[0].form = .star
-        board.figures[3].heads = .both
-        board.figures[1].align = .right
-        board.figures[1].place = .bottom
-        board.figures[3].startAt = CGPoint(x: 0.25, y: 0.75)
+        board.update(board.figures[0].id) { $0.form = .star }
+        board.update(board.figures[3].id) { $0.heads = .both }
+        board.update(board.figures[1].id) {
+            $0.align = .right
+            $0.place = .bottom
+        }
+        board.update(board.figures[3].id) { $0.startAt = CGPoint(x: 0.25, y: 0.75) }
         var image = Figure(kind: .image, points: [.zero, CGPoint(x: 40, y: 30)])
         image.source = "picture.png"
         board.add(image)
-        let folder = try temporaryFolder()
+        let folder = try emptyFolder()
         let file = folder.appendingPathComponent("board.json")
 
         try board.save(to: file)
@@ -317,5 +319,53 @@ final class DrawBoardTests: XCTestCase {
         XCTAssertEqual(board.figure(at: CGPoint(x: 450, y: 130))?.id, target.id)
         XCTAssertEqual(board.figure(at: middle + CGPoint(x: 0, y: 3))?.id, arrows[0].id)
         XCTAssertNil(board.figure(at: CGPoint(x: 700, y: 700)))
+    }
+
+    func testAFigureIsFoundByItsIDAfterFiguresComeAndGo() throws {
+        let boxes = (0..<6).map { box(CGFloat($0) * 200, 0) }
+        var board = Board(figures: boxes)
+
+        board.remove([boxes[1].id, boxes[4].id])
+        board.drop(boxes[0].id)
+        let late = box(0, 400)
+        board.add(late)
+        board.update(boxes[5].id) { $0.text = "last" }
+
+        XCTAssertNil(board[boxes[0].id])
+        XCTAssertNil(board[boxes[1].id])
+        XCTAssertEqual(board[boxes[2].id], boxes[2])
+        XCTAssertEqual(board[boxes[5].id]?.text, "last")
+        XCTAssertEqual(board[late.id], late)
+        XCTAssertEqual(board.figures.map(\.id), [boxes[2].id, boxes[3].id, boxes[5].id, late.id])
+    }
+
+    func testALoadedBoardFindsEachFigureByItsID() throws {
+        let boxes = (0..<4).map { box(CGFloat($0) * 200, 0) }
+        let file = try emptyFolder().appendingPathComponent("board.json")
+        try Board(figures: boxes).save(to: file)
+
+        let board = try Board.load(from: file)
+
+        XCTAssertEqual(boxes.map { board[$0.id] }, boxes)
+    }
+
+    func testFindingEachFigureOfALargeBoardByItsIDTakesOneStepEach() {
+        let count = 40_000
+        let board = Board(figures: (0..<count).map { box(CGFloat($0), 0) })
+        let ids = board.figures.map(\.id)
+        let start = Date()
+
+        let found = ids.reduce(0) { $0 + (board[$1] == nil ? 0 : 1) }
+
+        XCTAssertEqual(found, count)
+        XCTAssertLessThan(Date().timeIntervalSince(start), 10)
+    }
+
+    func testTheTitleOfABoardIsReadWithoutItsFigures() throws {
+        let file = try emptyFolder().appendingPathComponent("board.json")
+        try Data(#"{"title":"Plan","figures":"none"}"#.utf8).write(to: file)
+
+        XCTAssertEqual(try Board.title(at: file), "Plan")
+        XCTAssertThrowsError(try Board.load(from: file))
     }
 }
