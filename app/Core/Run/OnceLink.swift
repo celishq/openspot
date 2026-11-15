@@ -41,7 +41,10 @@ final class OnceLink: ScriptLink {
             case .work(let work):
                 run.takeMove(lines)
                 if lines.isPicture {
-                    if await run.takePicture(lines, frame: text, of: work) { showedPicture = true }
+                    if await run.takePicture(lines, frame: text, of: work) {
+                        showedPicture = true
+                        run.drewFrame(made)
+                    }
                 } else {
                     run.takeEffects(lines, frame: text)
                 }

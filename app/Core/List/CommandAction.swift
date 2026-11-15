@@ -9,6 +9,20 @@ public struct CommandAction: Equatable, Sendable {
         case stay
     }
 
+    public static let history = CommandAction(id: "openspot.history", title: "History", key: ActionKey(text: "cmd+y"), scope: .spot, after: .stay)
+
+    public static let open = CommandAction(id: "openspot.open", title: "Open", scope: .spot, after: .stay)
+
+    private static let commandPrefix = "openspot.command."
+
+    public static func command(_ offer: CommandOffer) -> CommandAction {
+        CommandAction(id: commandPrefix + offer.id, title: offer.title, scope: .spot, after: .close)
+    }
+
+    public static func command(of action: CommandAction) -> String? {
+        action.id.hasPrefix(commandPrefix) ? String(action.id.dropFirst(commandPrefix.count)) : nil
+    }
+
     public let id: String
     public let title: String
     public let key: ActionKey?

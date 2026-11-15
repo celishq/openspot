@@ -16,9 +16,16 @@ extension SpotsModel {
     public func act(_ act: CardAct, on id: String) -> Bool {
         guard let entry = cards.first(where: { $0.id == id && $0.item == nil }) else { return false }
         switch act {
+        case .settings:
+            if !isShown { host.show() }
+            if !openSettings(of: entry) { host.notify("\(entry.state.title) has nothing to set.") }
         case .edit:
-            if isShown { host.dismiss() }
-            edit(entry)
+            if openEdit(of: entry) {
+                if !isShown { host.show() }
+            } else {
+                if isShown { host.dismiss() }
+                edit(entry)
+            }
         case .prompt: copyPrompt(changing: entry)
         case .share: share(entry)
         case .delete: remove(entry)

@@ -58,6 +58,7 @@ final class FormDraftTests: XCTestCase {
 
         XCTAssertEqual(draft.choices?.shown.map(\.title), ["A", "B", "C"])
         XCTAssertEqual(draft.choices?.selectedItem?.run, "b")
+        XCTAssertEqual(draft.choices?.shown.map(\.isOn), [false, true, false])
         draft.move(by: 1)
         XCTAssertEqual(draft.values["editor"], "c")
         draft.move(by: 3)
@@ -65,6 +66,7 @@ final class FormDraftTests: XCTestCase {
         draft.choose("a")
         XCTAssertEqual(draft.values["editor"], "a")
         XCTAssertEqual(draft.choices?.selectedItem?.run, "a")
+        XCTAssertEqual(draft.choices?.shown.map(\.isOn), [false, true, false])
         let longer = try XCTUnwrap(ItemForm(output: SpotOutput(text: "title=Editor\n\nchoice=editor\ntitle=Editor\n\noption=a\n\noption=b\n\noption=c\n\noption=d\n")))
         XCTAssertLessThan(SpotTokens.formRect(form).height, SpotTokens.formRect(longer).height)
     }

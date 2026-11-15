@@ -177,7 +177,7 @@ public final class SpotsModel {
     @ObservationIgnored private var lastScan = ScanResult(files: [], refused: [])
     @ObservationIgnored private var lastRead: (config: Config, folder: SpotsFolder)?
     @ObservationIgnored private var loadedStamp: SpotsFolder.Stamp?
-    @ObservationIgnored private var loadedConfig: Config?
+    @ObservationIgnored private(set) var loadedConfig: Config?
     @ObservationIgnored private(set) var gridBuilds = 0
     @ObservationIgnored var removal: Removal?
     @ObservationIgnored private var fileStamps: [String: String] = [:]
@@ -243,7 +243,7 @@ public final class SpotsModel {
         let faults = folder.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
         if !faults.isEmpty { scan.files.append(SpotFile(id: FaultSpot.fileID, spots: faults)) }
         guard spotScan.stamp != loadedStamp || config != loadedConfig else { return holdAssignedKeys(config) }
-        scan.listKeys(in: files.config, read: config)
+        scan.addSettings(in: files.config, read: config)
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
         runs.isCareful = config.isCareful
@@ -323,6 +323,7 @@ public final class SpotsModel {
                 loadedConfig = config
             }
             if caller != spot, let sheet = sheets[spot], sheet.isWanted { sheet.read(need: .change) }
+            if let settings = sheets[SpotSettings.sheetID(of: spot)], settings.isOpen { settings.read(need: .change) }
         }
         if case .spots = change { return }
         runs.readOfferedRows()
@@ -421,10 +422,8 @@ public final class SpotsModel {
             if mayMove(id) { updateVisible() }
         case .frame(let frame):
             markFound(id)
-            if sheets[id]?.spot.setsKeys == true, keyFrames.updateValue(frame, forKey: id) != frame {
-                let config = files.config.read()
-                host.applyConfig(config)
-                holdAssignedKeys(config)
+            if let spot = sheets[id]?.spot, spot.holdsSettings, let owner = spot.settingsSheet?.spot, keyFrames.updateValue(frame, forKey: id) != frame {
+                settingsChanged(of: owner)
             }
         case .landed:
             host.land(id)
@@ -438,6 +437,18 @@ public final class SpotsModel {
         case .move(let move):
             self.move(move, in: id)
         }
+    }
+
+    private func settingsChanged(of spot: String) {
+        let config = files.config.read()
+        let loaded = loadedConfig
+        if config.arrangement.menuBar != loaded?.arrangement.menuBar {
+            configChanged(.spots([spot]))
+        } else {
+            host.applyConfig(config)
+            holdAssignedKeys(config)
+        }
+        if config.settings != loaded?.settings { configChanged(.value(spot: spot, caller: nil)) }
     }
 
     public func chooseFiles(for id: String) -> Bool {

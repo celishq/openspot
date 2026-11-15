@@ -17,15 +17,31 @@ public struct AgentPrompt: Equatable, Sendable {
         return FileManager.default.isExecutableFile(atPath: client) ? client : app
     }
 
-    public static let copied = "Copied a prompt for your agent. Paste it into Claude Code, Codex or another agent."
+    public static let copied = "Prompt copied. Paste it into your agent."
+
+    static let finishAlone = "Don't ask me anything. Choose a short name and sensible defaults yourself, build it to the end, and leave it ready to use in Openspot."
 
     public func building(_ description: String) -> String {
         """
         Build an Openspot spot that does this: \(description)
+        \(Self.finishAlone)
 
-        Write it as a script in a new spot folder in \(folder.path), such as weather.spot/weather.sh. Its ID is the name of the folder with no extension.
+        \(writing)
         \(steps(for: "<id>"))
         """
+    }
+
+    public func interviewing() -> String {
+        """
+        Help me build an Openspot spot. Start by asking me what the spot should do: a few short, plain questions, one at a time, and wait for each answer. Then build it.
+
+        \(writing)
+        \(steps(for: "<id>"))
+        """
+    }
+
+    private var writing: String {
+        "Write it as a script in a new spot folder in \(folder.path), such as weather.spot/weather.sh. Its ID is the name of the folder with no extension."
     }
 
     public func fixing(_ file: URL, faults: [String]) -> String {
@@ -35,6 +51,21 @@ public struct AgentPrompt: Equatable, Sendable {
 
         \(steps(for: SpotID(file: file).description))
         """
+    }
+
+    static let finishChange = "Don't ask me anything. Make the change to the end, keep what already works, and leave the spot ready to use in Openspot."
+
+    public func changing(_ file: URL, wish: String) -> String {
+        """
+        Change the Openspot spot in \(file.path): \(wish)
+        \(Self.finishChange)
+
+        \(steps(for: SpotID(file: file).description))
+        """
+    }
+
+    public func copying(_ core: URL, to copy: URL) -> String {
+        "This spot comes with Openspot. First copy its folder \(core.path) to \(copy.path), with the same folder name. The copy takes the place of the built-in spot, so make each change in the copy, and leave the folder in the app as it is."
     }
 
     public func changing(_ file: URL, failure: String?) -> String {

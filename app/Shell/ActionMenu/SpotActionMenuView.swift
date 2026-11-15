@@ -83,6 +83,8 @@ struct SpotActionMenuView: View, @MainActor Equatable {
         let text = Text(menu.title(of: row, isRunning: isRunning)).font(SpotType.body).lineLimit(1)
         if isConfirming {
             text.foregroundStyle(SpotTheme.onConfirm)
+        } else if row.isDestructive {
+            text.foregroundStyle(SpotTheme.confirm)
         } else {
             text
         }

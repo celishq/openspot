@@ -5,11 +5,11 @@ final class ActionsSpotTests: BuiltInCase {
     func testEachCommandFitsTheCardsOfItsOriginAndHasNoCard() throws {
         let actions = try spot("actions")
 
-        XCTAssertEqual(actions.offeredActions.map(\.action.title), ["Edit", "Copy prompt for AI", "Share", "Delete", "Turn off", "Change Icon", "Draw…", "Choose File…", "Reset Icon"])
-        XCTAssertEqual(actions.offeredActions.map(\.origins), [[.mine], [.mine], [.mine, .core], [.mine], [.core], [], [], [], []])
-        XCTAssertEqual(actions.offeredActions.map { $0.action.key?.label ?? "" }, ["⌘E", "", "⌘⇧C", "⌘⌫", "⌘⌫", "", "", "", ""])
-        XCTAssertEqual(actions.offeredActions.map(\.when), [nil, nil, nil, nil, nil, nil, nil, nil, "hasIcon"])
-        XCTAssertNil(actions.offeredActions[3].action.confirm)
+        XCTAssertEqual(actions.offeredActions.map(\.action.title), ["Share", "Settings", "Edit", "Change Icon", "Draw…", "Choose File…", "Reset Icon", "Delete", "Turn off"])
+        XCTAssertEqual(actions.offeredActions.map(\.origins), [[.mine, .core], [], [.mine, .core], [], [], [], [], [.mine], [.core]])
+        XCTAssertEqual(actions.offeredActions.map { $0.action.key?.label ?? "" }, ["⌘⇧C", "⌘⏎", "⌘E", "", "", "", "", "⌘⌫", "⌘⌫"])
+        XCTAssertEqual(actions.offeredActions.map(\.when), [nil, nil, nil, nil, nil, nil, "hasIcon", nil, nil])
+        XCTAssertNil(actions.offeredActions[7].action.confirm)
         XCTAssertFalse(actions.offersCard)
     }
 
@@ -17,14 +17,14 @@ final class ActionsSpotTests: BuiltInCase {
         let actions = try spot("actions")
         try "#!/bin/sh\n# title=Caffeinate\n".writeScript(to: core.appendingPathComponent("caffeinate.spot/caffeinate.sh"))
 
-        for act in ["edit", "prompt", "share", "delete"] {
+        for act in ["settings", "edit", "share", "delete"] {
             try await actions.perform(SpotAction(arguments: [act, "weather"]), timeout: 5)
         }
         try await actions.perform(SpotAction(arguments: ["off", "caffeinate"]), timeout: 5)
 
         let opened = await app.opened
         let changes = await app.changeList
-        XCTAssertEqual(opened, ["edit weather", "prompt weather", "share weather", "delete weather"])
+        XCTAssertEqual(opened, ["settings weather", "edit weather", "share weather", "delete weather"])
         XCTAssertEqual(changes.last, .spots(["caffeinate"]))
     }
 

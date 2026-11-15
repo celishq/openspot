@@ -1,18 +1,7 @@
 // title=Card actions
 // icon=ellipsis.circle
-// detail=Edit, share, delete, turn off or change the icon of a spot
+// detail=Share, set, edit, change the icon of, delete or turn off a spot
 // uses=spots
-//
-// button=edit
-// title=Edit
-// shortcut=cmd+e
-// close=true
-// offers=actions mine
-//
-// button=prompt
-// title=Copy prompt for AI
-// close=true
-// offers=actions mine
 //
 // button=share
 // title=Share
@@ -20,16 +9,15 @@
 // close=true
 // offers=actions mine, core
 //
-// button=delete
-// title=Delete
-// shortcut=cmd+backspace
-// offers=actions mine
+// button=settings
+// title=Settings
+// shortcut=cmd+return
+// offers=actions
 //
-// button=off
-// title=Turn off
-// shortcut=cmd+backspace
-// close=true
-// offers=actions core
+// button=edit
+// title=Edit
+// shortcut=cmd+e
+// offers=actions mine, core
 //
 // button=icon
 // title=Change Icon
@@ -44,9 +32,20 @@
 // button=icon.reset
 // title=Reset Icon
 // when=hasIcon
+//
+// button=delete
+// title=Delete
+// shortcut=cmd+backspace
+// offers=actions mine
+//
+// button=off
+// title=Turn off
+// shortcut=cmd+backspace
+// close=true
+// offers=actions core
 const calls = {
+  settings: (id) => ["spot", "settings", id],
   edit: (id) => ["spot", "edit", id],
-  prompt: (id) => ["spot", "prompt", id],
   share: (id) => ["spot", "share", id],
   delete: (id) => ["spot", "delete", id],
   off: (id) => ["setting", "set", "--spot", id, "enabled", "false"],

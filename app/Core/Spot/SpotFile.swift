@@ -65,6 +65,8 @@ public struct SpotFile: Equatable, Sendable {
         if let view, URL(fileURLWithPath: view).pathExtension != SwiftProgram.sourceExtension {
             throw SpotError.fault("\(name) needs a Swift file for its view, such as view=\(url.deletingPathExtension().lastPathComponent).swift")
         }
+        let edits = header.value("edits")
+        guard edits == nil || edits == "spots" else { throw SpotError.fault("\(name) has an unknown edits: \(edits!). Use edits=spots") }
         let places: Set<Place> = namedPlaces ?? (offeredActions.isEmpty && !answersOnly ? [.card] : [])
         let kind: SpotKind = mode.stays || places.contains(.search) || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch
         try Place.check(places, read: read, mode: mode, kind: kind, of: name)
@@ -97,7 +99,8 @@ public struct SpotFile: Equatable, Sendable {
             pages: header.values("pages"),
             uses: uses,
             keywords: header.list("keywords"),
-            sample: Self.sample(beside: url)
+            sample: Self.sample(beside: url),
+            editsSpots: edits != nil
         )
         self.init(id: id, spots: [command])
     }
