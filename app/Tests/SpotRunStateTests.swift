@@ -271,13 +271,26 @@ final class SpotRunStateTests: XCTestCase {
         XCTAssertEqual(clock.sleepCount, 1)
     }
 
-    func testAPanelOpenPassesOverTheClockOnce() {
-        _ = inMenuBar(read: SpotRead(moments: [.every(60)]))
-        let passes = runs.clockPasses
+    func testAPanelOpenLooksAtTheClockOnce() async throws {
+        runs.quit()
+        let fake = clock.value
+        nonisolated(unsafe) var looks = 0
+        runs = SpotRuns(clock: RunClock(now: {
+            looks += 1
+            return fake.now()
+        }, sleep: fake.sleep))
+        runs.standIn = { [unowned self] spot in
+            let link = FakeLink()
+            links[spot.id] = link
+            return link
+        }
+        let (_, link) = inMenuBar(read: SpotRead(moments: [.every(60)]))
+        await link.end(link.sent[0])
+        let before = looks
 
         runs.raise(.panel)
 
-        XCTAssertEqual(runs.clockPasses - passes, 1)
+        XCTAssertEqual(looks - before, 1)
     }
 
     func testTheClockSleepsUntilTheNextReadIsDue() async throws {
@@ -307,16 +320,42 @@ final class SpotRunStateTests: XCTestCase {
         XCTAssertEqual(links["script"]?.sent.count, 1)
     }
 
-    func testAHeldKeyWaitsAsOneCall() async throws {
+    func testQuickPressesOfAKeyWaitUpToTheirLimit() async throws {
         let (sheet, link) = sheet(kind: .launch, read: nil)
 
-        sheet.pressKey("go")
-        sheet.pressKey("go")
-        sheet.pressKey("go")
-        await link.end(link.sent[0])
-        await link.end(link.sent[1])
+        for _ in 0..<10 { sheet.pressKey("go") }
+        var ended = 0
+        while ended < link.sent.count {
+            await link.end(link.sent[ended])
+            ended += 1
+        }
 
-        XCTAssertEqual(link.arguments(), [["go"], ["go"]])
+        XCTAssertEqual(link.sent.count, 1 + SpotRun.waitingLimit)
+    }
+
+    func testWorkThatWakesBeforeItsTimeSleepsForTheTimeLeft() async throws {
+        runs.quit()
+        let fake = clock.value
+        nonisolated(unsafe) var early = true
+        runs = SpotRuns(clock: RunClock(now: fake.now, sleep: { duration, tolerance in
+            if early {
+                early = false
+                return
+            }
+            try await fake.sleep(duration, tolerance)
+        }))
+        runs.standIn = { [unowned self] spot in
+            let link = FakeLink()
+            links[spot.id] = link
+            return link
+        }
+        let (sheet, _) = sheet(kind: .launch, read: nil)
+
+        sheet.pressCard()
+        try await sleeps()
+        clock.advance(by: 1)
+
+        try await wait("the shown work") { !sheet.work.isEmpty }
     }
 
     func testAFormCallAnswersWithItsFrameOfFieldsAndTheRowItNames() async throws {

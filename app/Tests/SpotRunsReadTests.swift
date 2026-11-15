@@ -216,7 +216,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         let sheet = try sheet()
 
         runs.panelOpened()
-        try await wait("the row") { sheet.list.shown.count == 1 }
+        try await wait("the row") { sheet.list.shown.count == 1 && !self.runs.isReading }
         sheet.open {}
         time += 4
         sheet.close()
@@ -263,7 +263,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         try script(header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         sheet.open {}
-        try await wait("the row") { sheet.list.shown.count == 1 }
+        try await wait("the row") { sheet.list.shown.count == 1 && !self.runs.isReading }
         sheet.close()
 
         time += 5
@@ -339,7 +339,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         menuBar.insert("fast")
         try script("fast", header: "on=clock.1\noffers=card\noffers=menubar", "printf 'title=1\\n'")
         _ = try scanned()
-        try await wait("the first read") { self.log().count == 1 }
+        try await wait("the first read") { self.log().count == 1 && !self.runs.isReading }
         try await pause(0.1)
 
         time += 1
@@ -401,7 +401,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         menuBar.insert("slow")
         try script("slow", header: "on=clock.60\noffers=card\noffers=menubar", log: "slow", "printf 'title=1\\n'")
         _ = try scanned()
-        try await wait("the first reads") { self.log("fast").count == 1 && self.log("slow").count == 1 }
+        try await wait("the first reads") { self.log("fast").count == 1 && self.log("slow").count == 1 && !self.runs.isReading }
 
         time += 4
         runs.raise(.clock)

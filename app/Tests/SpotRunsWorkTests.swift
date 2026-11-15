@@ -61,7 +61,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertEqual(log(), ["a"])
 
         touch("go")
-        try await wait("each press") { self.log() == ["a", "a", "b"] }
+        try await wait("each press") { self.log() == ["a", "a", "b", "a"] }
     }
 
     func testAQuickCallNeverShows() async throws {

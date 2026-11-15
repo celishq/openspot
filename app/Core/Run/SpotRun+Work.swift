@@ -84,7 +84,7 @@ extension SpotRun {
     }
 
     public func pressKey(_ call: String) {
-        if !waitingKeys.contains(call) { waitingKeys.append(call) }
+        if waitingKeys.count < Self.waitingLimit { waitingKeys.append(call) }
         startWaitingKey()
     }
 

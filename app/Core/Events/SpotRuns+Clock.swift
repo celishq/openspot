@@ -7,7 +7,6 @@ extension SpotRuns {
     }
 
     private func tick() -> Date? {
-        clockPasses += 1
         let time = now()
         var due: Date?
         for sheet in sheets.values {

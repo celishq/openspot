@@ -51,7 +51,6 @@ public final class SpotRuns {
     public private(set) var workSpot: String?
     @ObservationIgnored var ticks: Task<Void, Never>?
     @ObservationIgnored var nextRead: Date?
-    @ObservationIgnored var clockPasses = 0
     @ObservationIgnored var answerMatches = AnswerMatches()
     @ObservationIgnored private var lastSearch: SearchQuery?
     @ObservationIgnored private(set) var searchBuilds = 0

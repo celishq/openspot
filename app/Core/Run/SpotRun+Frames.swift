@@ -9,7 +9,12 @@ extension SpotRun {
         guard call.doesWork else { return }
         workCalls.append(call)
         Task { [weak self, sleep = runs.clock.sleep] in
-            try? await sleep(.seconds(Self.workPause), .seconds(Self.workPause / 10))
+            var left = Self.workPause
+            while left > 0 {
+                try? await sleep(.seconds(left), .seconds(left / 10))
+                guard !Task.isCancelled, let self, workCalls.contains(where: { $0 === call }) else { return }
+                left = Self.workPause - runs.now().timeIntervalSince(call.started)
+            }
             self?.showWork()
         }
     }

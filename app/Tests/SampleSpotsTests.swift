@@ -286,30 +286,55 @@ final class SampleSpotsTests: SampleSpotsCase {
 
     func testRelaySendsALineOverItsSocketAndShowsTheLineThatComesBack() async throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        let port = Int.random(in: 40000...60000)
+        let port = try freePort()
         let relay = ScriptProcess(url: root.appendingPathComponent("examples/relay.spot/relay.sh"), mode: .stays, limit: 10, stopPause: 0.2, variables: ["RELAY_PORT": String(port)], base: TestEnvironment.values)
         defer { relay.end() }
         var frames = relay.start().makeAsyncIterator()
 
         relay.send(.read, id: 1)
-        var sheet = try await frames.next()
-        while FrameHead(text: sheet ?? "").isMark { sheet = try await frames.next() }
+        var sheet = try await next(&frames, of: relay)
+        while FrameHead(text: sheet ?? "").isMark { sheet = try await next(&frames, of: relay) }
         XCTAssertTrue(sheet?.contains("title=No message yet") == true, sheet ?? "")
 
         var call = 2
         var seen: [String] = []
         while !seen.contains(where: { $0.contains("title=hello") }), call < 40 {
             relay.send(SpotAction(arguments: ["send"]), input: "peer=127.0.0.1:\(port)\nmessage=hello\n", id: call)
-            while let frame = try await frames.next() {
+            while let frame = try await next(&frames, of: relay) {
                 seen.append(frame)
                 if SpotOutput(text: frame).ends == [String(call)] { break }
             }
-            if seen.contains(where: { $0.hasPrefix("toast=Sent") }) { seen.append(try await frames.next() ?? "") }
+            if seen.contains(where: { $0.hasPrefix("toast=Sent") }) { seen.append(try await next(&frames, of: relay) ?? "") }
             call += 1
         }
 
         XCTAssertTrue(seen.contains("toast=Sent\n\n"), "\(seen)")
         XCTAssertTrue(seen.contains { $0.contains("text=last\ntitle=hello\ndetail=From a peer") }, "\(seen)")
+    }
+
+    private func freePort() throws -> Int {
+        let socket = Darwin.socket(AF_INET, SOCK_STREAM, 0)
+        guard socket >= 0 else { throw POSIXError(.EBADF) }
+        defer { Darwin.close(socket) }
+        var address = sockaddr_in()
+        address.sin_family = sa_family_t(AF_INET)
+        address.sin_addr.s_addr = inet_addr("127.0.0.1")
+        var size = socklen_t(MemoryLayout<sockaddr_in>.size)
+        let bound = withUnsafeMutablePointer(to: &address) { pointer in
+            pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) { Darwin.bind(socket, $0, size) == 0 && Darwin.getsockname(socket, $0, &size) == 0 }
+        }
+        guard bound else { throw POSIXError(.EADDRINUSE) }
+        return Int(UInt16(bigEndian: address.sin_port))
+    }
+
+    private func next(_ frames: inout AsyncThrowingStream<String, Error>.Iterator, of relay: ScriptProcess) async throws -> String? {
+        let limit = Task { @MainActor in
+            try await RunClock().sleep(.seconds(10), nil)
+            XCTFail("Relay printed no frame in 10 seconds")
+            relay.end()
+        }
+        defer { limit.cancel() }
+        return try await frames.next()
     }
 
     func testWindowsPlacesEachSlotWithOneMoveOfTemplates() throws {

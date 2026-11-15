@@ -64,6 +64,7 @@ public final class SpotRun {
     static let sliderPause: Duration = .milliseconds(100)
     static let pressPause: TimeInterval = 1
     static let workPause: TimeInterval = 1
+    static let waitingLimit = 8
     static let readKey = "read"
     static let searchKey = "search"
     static let answerKey = "answer"
