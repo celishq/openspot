@@ -21,7 +21,7 @@ final class CommandClientTests: XCTestCase {
         func editGrid() async {}
         func publish(_ id: String) async -> SpotPublish { .notOwn }
         func reveal(_ id: String) async -> Bool { true }
-        func sandbox(_ file: URL?, isCareful: Bool) async {}
+        func playground(_ file: URL?, isCareful: Bool) async {}
 
         func changeSetting(_ key: String, of spot: String) async -> Bool {
             FileManager.default.createFile(atPath: folder.appendingPathComponent("started").path, contents: nil)
@@ -100,7 +100,7 @@ final class CommandClientTests: XCTestCase {
         socket = CommandSocket(folder: config, api: CommandAPI(mac: FakeMac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: app, runs: runs))
         let account = Spot(id: "openspot/account", name: "Account", url: folder.appendingPathComponent("account.sh"), uses: [.account]).builtIn()
         let copied = [CallerTokens.variable: runs.tokens.issue(for: account)]
-        let refused = "Only Openspot's Account spot can reach your account key.\n"
+        let refused = "Only Openspot's Account and Store spots can reach your account key.\n"
 
         XCTAssertEqual(try run(client, ["store", "publish", "mine"]).errors, refused)
         XCTAssertEqual(try run(client, ["store", "publish", "mine"], variables: copied).errors, refused)

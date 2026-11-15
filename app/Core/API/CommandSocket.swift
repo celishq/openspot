@@ -67,9 +67,8 @@ public final class CommandSocket: @unchecked Sendable {
             return link.end(fault(unreadableCode, "Openspot cannot read this request.", id: nil))
         }
         let request = api.request(asked, from: peer(of: connection))
-        let call = api.call(of: request).map { api.admit($0, request: request) }
         let output = CommandOutput { text, isError in link.notify(isError ? "stderr" : "stdout", text: text) }
-        guard let call, let work = api.work(for: call, request: request, input: { await link.stdin() }, isSandboxed: CallerTokens.isSandboxedApart(peer(of: connection)), output: output) else {
+        guard let work = api.work(for: request, input: { await link.stdin() }, isSandboxed: CallerTokens.isSandboxedApart(peer(of: connection)), output: output) else {
             return link.end(fault(aloneCode, "Run this call in a process of its own.", id: request.id))
         }
         let stop = CommandStop()

@@ -222,7 +222,7 @@ final class InlineScript: @unchecked Sendable {
     private func ask(_ arguments: [String], input: String?) -> CommandAnswer {
         guard !condition.withLock({ isOverdue }) else { return Self.late }
         let environment = environment.merging(variables) { _, new in new }
-        guard let call = CommandLineCall(arguments: arguments, environment: environment) else {
+        guard let call = CommandLineCall(arguments: arguments, spot: environment[CallWords.spotVariable], reason: environment[CallWords.reasonVariable]) else {
             return CommandAnswer(errors: "openspot needs a call, such as calc solve 2+2.\n", code: 2)
         }
         let request = CommandRequest(arguments: arguments, folder: environment["PWD"] ?? FileManager.default.currentDirectoryPath, token: token, isBound: true)

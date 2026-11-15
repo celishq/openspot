@@ -19,10 +19,10 @@ struct SettingCalls {
         }
     }
 
-    func list(frame: Bool) -> CommandAPI.Work {
+    func list(_ form: PrintForm) -> CommandAPI.Work {
         CommandAnswer.work { [environment] in
             let list = SpotList(folder: SpotsFolder.standard(environment: environment), config: ConfigFile.standard(environment: environment).read())
-            return try frame ? list.valuesFrame() : list.values()
+            return try list.values(form)
         }
     }
 

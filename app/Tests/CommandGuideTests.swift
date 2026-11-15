@@ -15,7 +15,7 @@ final class CommandGuideTests: XCTestCase {
     func testEachNounHasAGuideFileThatKeepsItsRuleIDs() throws {
         let guides = CommandGuide(folder: folder)
 
-        for noun in CommandGuide.nouns {
+        for noun in guides.names {
             XCTAssertFalse(try guides.text(of: noun).isEmpty, noun)
         }
         XCTAssertTrue(try guides.text(of: "screen").contains("(S11)"))

@@ -8,7 +8,7 @@ enum SpotCommandLine {
     static func run(_ call: CommandLineCall) -> Never {
         enterBundle()
         let output = CommandOutput { text, isError in (isError ? FileHandle.standardError : FileHandle.standardOutput).write(Data(text.utf8)) }
-        if runsScripts(call) { TerminalStop.watch() }
+        if call.rule.flags.contains(.startsScripts), !(call.value is PlaygroundCommand) { TerminalStop.watch() }
         var info = stat()
         let isPiped = fstat(0, &info) == 0 && (info.st_mode & S_IFMT == S_IFIFO || info.st_mode & S_IFMT == S_IFREG)
         let request = CommandRequest(arguments: Array(CommandLine.arguments.dropFirst()), folder: FileManager.default.currentDirectoryPath, isPiped: isPiped)
@@ -17,7 +17,7 @@ enum SpotCommandLine {
                 let answer = await work()
                 output.print(answer.output)
                 output.report(answer.errors)
-                if call == .clipboardPaste { try? await Task.sleep(for: postedKeysPause) }
+                if call.value as? ClipboardCall == .paste { try? await Task.sleep(for: postedKeysPause) }
                 exit(answer.code)
             }
             if needsEvents(call) {
@@ -26,36 +26,35 @@ enum SpotCommandLine {
             }
             dispatchMain()
         }
-        switch call {
-        case .spotShow(let id):
+        switch call.value {
+        case SpotCall.show(let id) as SpotCall:
             SpotShowLink.send(id)
-        case .renderSpot(let id, let size?, let path):
+        case RenderCall.spot(let id, let size?, let path) as RenderCall:
             SpotCardPicture.run(spot: id, size: size, path: path)
-        case .renderSpot(let id, nil, let path):
+        case RenderCall.spot(let id, nil, let path) as RenderCall:
             renderSheet(of: id, to: path)
-        case .sandbox(let path):
+        case PlaygroundCommand.open(let path) as PlaygroundCommand:
             SpotSandbox.run(path: path)
-        case .render(let path, let view):
+        case RenderCall.sheet(let path, let view) as RenderCall:
             SpotSheetPicture.run(text: standardInput, path: path, view: view)
-        case .renderCard(let size, let path):
+        case RenderCall.card(let size, let path) as RenderCall:
             SpotCardPicture.run(text: standardInput, size: size, path: path)
-        case .renderPanel(let path):
+        case RenderCall.panel(let path) as RenderCall:
             SpotPanelPicture.run(path: path)
-        case .renderStore(let path):
+        case RenderCall.store(let path) as RenderCall:
             SpotStorePicture.run(path: path)
-        case .helper(SpotTranslation.capability.name):
+        case HelperCall.capability(SpotTranslation.capability.name) as HelperCall:
             SpotTranslation.serve()
-        case .helper(SpotRecording.capability.name):
+        case HelperCall.capability(SpotRecording.capability.name) as HelperCall:
             SpotRecording.serve()
-        case .helper(CalcRateCache.capability.name):
+        case HelperCall.capability(CalcRateCache.capability.name) as HelperCall:
             CalcRateCache.serve()
-        case .helper(let name):
-            run(.unknown("helper \(name)"))
-        case .glyphBook(let side, let fontSize, let path):
+        case HelperCall.glyphs(let side, let fontSize, let path) as HelperCall:
             let glyphs = standardInput.split(separator: "\n").map(String.init)
             exit(SpotGlyphBook.write(GlyphBook(glyphs: glyphs, side: side, fontSize: fontSize), to: path) ? 0 : 1)
         default:
-            preconditionFailure("CommandAPI answers \(call).")
+            FileHandle.standardError.write(Data("openspot cannot do this: \(CommandLine.arguments.dropFirst().joined(separator: " "))\n\n\(CommandLineCall.usage)".utf8))
+            exit(2)
         }
     }
 
@@ -98,17 +97,7 @@ enum SpotCommandLine {
         SpotSheetPicture.run(text: text, path: path, view: spot.view, spot: spot)
     }
 
-    private static func runsScripts(_ call: CommandLineCall) -> Bool {
-        switch call {
-        case .check, .checkJSON, .spotRun: true
-        default: false
-        }
-    }
-
     private static func needsEvents(_ call: CommandLineCall) -> Bool {
-        switch call {
-        case .colorPick, .folderPick, .screenShot, .screenRecordStart, .screenRecordStop, .screenRecordStatus: true
-        default: false
-        }
+        call.value is ColorCall || call.value is FolderCall || call.value is ScreenCall && call.value as? ScreenCall != .sources
     }
 }

@@ -52,7 +52,7 @@ with **Last at 14:20** at the end of the line.
 
 Try each example of this page in the playground before you put it in the spots folder.
 
-- **Playground.** Open the Playground spot, or run `openspot sandbox [file]`. Type a spot, or pick one from Examples.
+- **Playground.** Open the Playground spot, or run `openspot playground [file]`. Type a spot, or pick one from Examples.
   It runs in a panel of its own: pick its sheet or its card, and type in the panel's search to try its answers. Under
   it, you see each call with its arguments, its stdin, what it printed, its stderr and how it ended. When you open a
   file, edits go straight to the file.

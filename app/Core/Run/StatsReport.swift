@@ -94,9 +94,6 @@ public struct StatsReport: Sendable {
 
     private var json: String {
         get throws {
-            let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .iso8601
-            encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
             struct Shown: Encodable {
                 let day: String
                 let spots: [String: SpotUsage.Count]
@@ -105,7 +102,7 @@ public struct StatsReport: Sendable {
             let kept = days.map { day in
                 Shown(day: day.day, spots: day.spots.filter { spot == nil || $0.key == spot }, uses: day.uses.filter { spot == nil || $0.spot == spot })
             }
-            return String(decoding: try encoder.encode(kept), as: UTF8.self) + "\n"
+            return try PrintForm.json(kept, dates: .iso8601)
         }
     }
 

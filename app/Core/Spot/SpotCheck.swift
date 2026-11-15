@@ -114,9 +114,7 @@ public struct SpotCheck: Sendable {
     }
 
     public static func json(_ findings: [Finding]) -> String {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
-        return String(decoding: (try? encoder.encode(findings)) ?? Data("[]".utf8), as: UTF8.self) + "\n"
+        (try? PrintForm.json(findings)) ?? "[]\n"
     }
 
     static func brokenBlocks(in text: String) -> [String] {

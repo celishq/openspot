@@ -9,8 +9,8 @@ struct AccountCalls {
         return CommandAnswer.work { [caller] in
             if call.reachesKey { try account.admit(caller) }
             switch call {
-            case .status(let frame):
-                return try account.status().text(frame: frame)
+            case .status(let form):
+                return try form.text(of: account.status())
             case .sync(let isOn):
                 try await account.sync(isOn)
             case .new(let handle):

@@ -56,7 +56,7 @@ final class CommandAPITests: XCTestCase {
     }
 
     func testAStoppedBatchRunsNoMoreLines() async throws {
-        let work = try XCTUnwrap(CommandAPI(mac: host, places: .test(environment)).work(for: .batch, request: .test(), input: {
+        let work = try XCTUnwrap(CommandAPI(mac: host, places: .test(environment)).work(for: .test(["batch"]), input: {
             withUnsafeCurrentTask { $0?.cancel() }
             return "calc solve 2+2\ncalc solve 3+3\n"
         }))
@@ -197,14 +197,14 @@ final class CommandAPITests: XCTestCase {
     }
 
     func testACallThatTheShellDoesOrThatNeedsTheAppHasNoWorkInCoreWithNoApp() throws {
-        for arguments in [["render", "a.png"], ["helper", "calc"], ["spot", "show", "notes"], ["sandbox"]] {
+        for arguments in [["render", "a.png"], ["helper", "calc"], ["spot", "show", "notes"], ["playground"]] {
             let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: [:]))
             XCTAssertNil(CommandAPI(mac: host, places: .test()).work(for: call, request: .test(), input: { "" }), arguments.joined(separator: " "))
         }
     }
 
     func testACallThatStartsScriptsForASandboxedCallerRunsAloneInItsSandbox() throws {
-        for arguments in [["check"], ["check", "--json"], ["spot", "run", "notes"], ["sandbox"]] {
+        for arguments in [["check"], ["check", "--json"], ["spot", "run", "notes"], ["playground"]] {
             let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: [:]))
             XCTAssertNil(CommandAPI(mac: host, places: .test(), app: FakeRunningApp()).work(for: call, request: .test(), input: { "" }, isSandboxed: true), arguments.joined(separator: " "))
             XCTAssertNotNil(CommandAPI(mac: host, places: .test(), app: FakeRunningApp()).work(for: call, request: .test(), input: { "" }), arguments.joined(separator: " "))

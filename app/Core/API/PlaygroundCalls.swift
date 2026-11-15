@@ -1,6 +1,6 @@
 import Foundation
 
-struct SandboxCalls {
+struct PlaygroundCalls {
     let folder: URL
     let app: (any RunningApp)?
 
@@ -8,7 +8,7 @@ struct SandboxCalls {
         guard let app else { return nil }
         let file = path.map { URL(fileURLWithPath: $0, relativeTo: folder).absoluteURL }
         return {
-            await app.sandbox(file, isCareful: isCareful)
+            await app.playground(file, isCareful: isCareful)
             return CommandAnswer()
         }
     }

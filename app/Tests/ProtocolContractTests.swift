@@ -100,16 +100,26 @@ final class ProtocolContractTests: XCTestCase {
                     .replacingOccurrences(of: #"<[^>]*>"#, with: "x", options: .regularExpression)
                     .replacingOccurrences(of: "...", with: "")
                 let words = filled.split(separator: " ").map(String.init)
-                let parsed: Bool
-                switch CommandLineCall(arguments: Array(words.dropFirst()), environment: [:]) {
-                case .unknown(_)?, nil: parsed = false
-                default: parsed = true
-                }
+                let call = CommandLineCall(arguments: Array(words.dropFirst()))
+                let parsed: Bool = if case .unknown(_)? = call?.value as? CallFault { false } else { call != nil }
                 let literal = command.split(separator: " ").prefix { !$0.hasPrefix("<") && !$0.hasPrefix("[") && !$0.hasPrefix("-") }.map(String.init)
                 let named = usage.contains { form in
                     form.count >= literal.count && zip(form, literal).allSatisfy { pair in pair.0.split(separator: "|").contains { $0 == pair.1 } }
                 }
                 XCTAssertTrue(parsed || named, "\(doc.path) names `\(command)`, which openspot does not take")
+            }
+        }
+    }
+
+    func testEachVerbOfTheTableIsOneThatPROTOCOLOrTheGuideOfItsNounNames() throws {
+        let protocolText = try RepoDoc("PROTOCOL.md").text
+        for noun in CommandNoun.all {
+            let text = try protocolText + (noun.guide.map { try RepoDoc("app/Help/\($0).md").text } ?? "")
+            for verb in noun.verbs where !verb.about.isEmpty {
+                let phrase = ([noun.name] + verb.words).joined(separator: " ")
+                let listed = text.contains("`openspot \(phrase)") || text.contains("`\(phrase)")
+                    || text.contains("`openspot \(noun.name) <verb>`") && text.contains("`\(verb.words.joined(separator: " "))`")
+                XCTAssertTrue(listed, "PROTOCOL.md and the guide of \(noun.name) do not name `openspot \(phrase)`")
             }
         }
     }

@@ -6,15 +6,17 @@ struct SpotCalls {
     let app: (any RunningApp)?
     let runs: SpotRuns?
 
-    func list(core: Bool, frame: Bool) -> CommandAPI.Work {
+    init(_ context: CallContext) {
+        environment = context.environment
+        folder = context.folder
+        app = context.app
+        runs = context.runs
+    }
+
+    func list(core: Bool, form: PrintForm) -> CommandAPI.Work {
         CommandAnswer.work { [environment] in
             let list = SpotList(folder: SpotsFolder.standard(environment: environment), config: ConfigFile.standard(environment: environment).read())
-            switch (core, frame) {
-            case (true, true): return list.coreFrame()
-            case (true, false): return try list.core()
-            case (false, true): return try list.loadedFrame()
-            case (false, false): return try list.loaded()
-            }
+            return try core ? list.core(form) : list.loaded(form)
         }
     }
 

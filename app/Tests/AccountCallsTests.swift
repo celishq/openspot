@@ -51,7 +51,7 @@ final class AccountCallsTests: XCTestCase {
 
     func testOnlyABuiltInSpotThatUsesAccountReachesTheKey() async throws {
         _ = try store.keyMadeOnce()
-        let refused = "Only Openspot's Account spot can reach your account key.\n"
+        let refused = "Only Openspot's Account and Store spots can reach your account key.\n"
 
         for caller in [nil, spot(uses: [.account], isBuiltIn: false), spot(uses: [.app], isBuiltIn: true)] {
             for arguments in [["account", "words"], ["account", "new"], ["account", "checked"], ["account", "phrase"], ["account", "sign-in"], ["account", "sign-out"], ["account", "sync", "off"]] {

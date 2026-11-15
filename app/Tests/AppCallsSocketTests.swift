@@ -174,10 +174,10 @@ final class AppCallsSocketTests: XCTestCase {
         let app = FakeRunningApp()
         listen(app: app)
 
-        let answer = try ask(["sandbox", "sheet.txt"], cwd: outside)
+        let answer = try ask(["playground", "sheet.txt"], cwd: outside)
 
         XCTAssertEqual(answer.code, 0)
         let opened = await app.opened
-        XCTAssertEqual(opened, ["sandbox \(outside.appendingPathComponent("sheet.txt").path) careful=false"])
+        XCTAssertEqual(opened, ["playground \(outside.appendingPathComponent("sheet.txt").path) careful=false"])
     }
 }

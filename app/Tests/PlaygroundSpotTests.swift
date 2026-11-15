@@ -8,7 +8,7 @@ final class PlaygroundSpotTests: BuiltInCase {
         _ = try await spot.perform(spot.click, timeout: 5)
 
         let opened = await app.opened
-        XCTAssertEqual(opened, ["sandbox  careful=false"])
+        XCTAssertEqual(opened, ["playground  careful=false"])
     }
 
     func testSearchFindsItAndItLeavesTheGrid() throws {

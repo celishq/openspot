@@ -8,11 +8,8 @@ struct StoreCalls {
         SpotStore(url: SpotStore.url(environment: environment), folder: SpotsFolder.standard(environment: environment), arrangement: ConfigFile.standard(environment: environment).read().arrangement)
     }
 
-    func list(frame: Bool) -> CommandAPI.Work {
-        CommandAnswer.work { [environment] in
-            let store = Self.store(in: environment)
-            return frame ? store.frame() : try store.json()
-        }
+    func list(_ form: PrintForm) -> CommandAPI.Work {
+        CommandAnswer.work { [environment] in try Self.store(in: environment).text(form) }
     }
 
     func get(_ id: String) -> CommandAPI.Work {

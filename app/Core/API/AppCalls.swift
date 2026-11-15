@@ -5,11 +5,11 @@ struct AppCalls {
     let environment: [String: String]
     let app: (any RunningApp)?
 
-    func status(frame: Bool) -> CommandAPI.Work {
+    func status(_ form: PrintForm) -> CommandAPI.Work {
         CommandAnswer.work { [mac, environment, app] in
             let config = ConfigFile.standard(environment: environment).read()
             let running = await app?.status()
-            return try AppStatus(
+            return try form.text(of: AppStatus(
                 version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "",
                 panelKey: (config.panelKey ?? .standard).text,
                 fixKey: (config.fixKey ?? .fix).text,
@@ -19,7 +19,7 @@ struct AppCalls {
                 update: running?.update,
                 calls: running?.calls,
                 firstLaunch: running?.isFirstLaunch
-            ).text(frame: frame)
+            ))
         }
     }
 

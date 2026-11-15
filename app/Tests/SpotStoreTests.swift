@@ -52,8 +52,8 @@ final class SpotStoreTests: XCTestCase {
         XCTAssertEqual(list().items.first { $0.id == "mine" }?.publication, .changed)
     }
 
-    func testTheFramePrintsASpotBlockForEach() {
-        let frame = list().frame()
+    func testTheFramePrintsASpotBlockForEach() throws {
+        let frame = try list().text(.frame)
 
         XCTAssertTrue(frame.contains("spot=timer\nname=Timer\n"), frame)
         XCTAssertTrue(frame.contains("origin=core\nadded=false\n"), frame)

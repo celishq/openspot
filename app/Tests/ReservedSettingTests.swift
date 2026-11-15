@@ -7,24 +7,24 @@ final class ReservedSettingTests: XCTestCase {
     }
 
     func testASettingOfAPlaceOfASpotRunsTheCallThatDoesTheWork() {
-        XCTAssertEqual(call("setting", "set", "--spot", "notes", "menubar", "true"), .menuBar(id: "notes", isShown: true))
-        XCTAssertEqual(call("setting", "set", "--spot", "notes", "enabled", "false"), .spotTurn(ids: ["notes"], on: false))
-        XCTAssertEqual(call("setting", "set", "--spot", "shelf", "float", "shake"), .keySet(spot: "shelf", act: .float, key: "shake"))
-        XCTAssertEqual(call("setting", "set", "--spot", "move", "key.left", "ctrl+left"), .keySet(spot: "move", act: .command("left"), key: "ctrl+left"))
-        XCTAssertEqual(call("setting", "set", "--spot", "move", "key.left"), .keySet(spot: "move", act: .command("left"), key: nil))
+        XCTAssertEqual(call("setting", "set", "--spot", "notes", "menubar", "true")?.value as? SettingCall, .menuBar(spot: "notes", isShown: true))
+        XCTAssertEqual(call("setting", "set", "--spot", "notes", "enabled", "false")?.value as? SettingCall, .turn(spot: "notes", on: false))
+        XCTAssertEqual(call("setting", "set", "--spot", "shelf", "float", "shake")?.value as? SettingCall, .key(spot: "shelf", act: .float, key: "shake"))
+        XCTAssertEqual(call("setting", "set", "--spot", "move", "key.left", "ctrl+left")?.value as? SettingCall, .key(spot: "move", act: .command("left"), key: "ctrl+left"))
+        XCTAssertEqual(call("setting", "set", "--spot", "move", "key.left")?.value as? SettingCall, .key(spot: "move", act: .command("left"), key: nil))
     }
 
     func testASettingOfTheAppRunsTheCallThatDoesTheWork() {
-        XCTAssertEqual(call("setting", "set", "--spot", "openspot", "login", "true"), .appLogin(true))
-        XCTAssertEqual(call("setting", "set", "--spot", "openspot", "link", "false"), .appLink(false))
-        XCTAssertEqual(call("setting", "set", "--spot", "openspot", "careful", "true"), .appCareful(true))
-        XCTAssertEqual(call("setting", "set", "--spot", "openspot", "panel-key", "ctrl+space"), .appKeySet(name: "panel-key", key: "ctrl+space"))
-        XCTAssertEqual(call("setting", "set", "--spot", "openspot", "fix-key", "ctrl+f"), .appKeySet(name: "fix-key", key: "ctrl+f"))
-        XCTAssertEqual(call("setting", "set", "--spot", "openspot", "login", "yes"), .refused("`login` takes `true` or `false`, such as `openspot setting set --spot openspot login true`."))
+        XCTAssertEqual(call("setting", "set", "--spot", "openspot", "login", "true")?.value as? SettingCall, .login(true))
+        XCTAssertEqual(call("setting", "set", "--spot", "openspot", "link", "false")?.value as? SettingCall, .link(false))
+        XCTAssertEqual(call("setting", "set", "--spot", "openspot", "careful", "true")?.value as? SettingCall, .careful(true))
+        XCTAssertEqual(call("setting", "set", "--spot", "openspot", "panel-key", "ctrl+space")?.value as? SettingCall, .appKey(name: "panel-key", key: "ctrl+space"))
+        XCTAssertEqual(call("setting", "set", "--spot", "openspot", "fix-key", "ctrl+f")?.value as? SettingCall, .appKey(name: "fix-key", key: "ctrl+f"))
+        XCTAssertEqual(call("setting", "set", "--spot", "openspot", "login", "yes")?.value as? CallFault, .refused("`login` takes `true` or `false`, such as `openspot setting set --spot openspot login true`."))
     }
 
     func testAnOwnValueOfASpotStaysAValue() {
-        XCTAssertEqual(call("setting", "set", "--spot", "repos", "folder", "/tmp"), .settingSet(spot: "repos", key: "folder", value: "/tmp"))
+        XCTAssertEqual(call("setting", "set", "--spot", "repos", "folder", "/tmp")?.value as? SettingCall, .set(spot: "repos", key: "folder", value: "/tmp"))
     }
 
     func testTheUseOfASettingIsTheUseOfTheCallThatItRuns() {

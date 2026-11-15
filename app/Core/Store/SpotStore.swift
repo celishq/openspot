@@ -105,28 +105,22 @@ public struct SpotStore: Sendable {
         return stored.manifest(of: root).written == spot.manifest(of: root).written ? .current : .changed
     }
 
-    func json() throws -> String {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
-        return String(decoding: try encoder.encode(items.map(Printed.init)), as: UTF8.self) + "\n"
+    func text(_ form: PrintForm) throws -> String {
+        try form.text(of: items.map(Printed.init))
     }
 
-    func frame() -> String {
-        items.map(Printed.init).map { printed in
-            let pairs: [(String, String?)] = [
-                ("spot", printed.id), ("name", printed.name), ("icon", printed.icon), ("detail", printed.detail), ("size", printed.size),
-                ("origin", printed.origin), ("added", String(printed.added)), ("step", printed.step), ("published", printed.published), ("path", printed.path),
-                ("sample", printed.sample ? "true" : nil)
-            ] + printed.readme.map { ("readme", $0) }
-            return TextBlock(fields: pairs.compactMap { key, value in value.map { TextBlock.Field(key: key, value: $0) } }).text + "\n"
-        }.joined()
-    }
-
-    private struct Printed: Encodable {
+    private struct Printed: PrintedRecord {
         let id, name, icon, size, origin, step: String
         let detail, published, path: String?
         let readme: [String]
         let added, sample: Bool
+
+        var blocks: [[(String, String?)]] {
+            [[
+                ("spot", id), ("name", name), ("icon", icon), ("detail", detail), ("size", size), ("origin", origin), ("added", String(added)), ("step", step),
+                ("published", published), ("path", path), ("sample", sample ? "true" : nil)
+            ] + readme.map { ("readme", $0) }]
+        }
 
         init(_ item: Item) {
             id = item.id

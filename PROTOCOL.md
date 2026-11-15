@@ -839,7 +839,7 @@ A spot asks the Mac and Openspot for things through one command, which works the
   - `account sync`, which only the user and the spots of Openspot can call.
 - `calendar add --dry-run` and `reminders add --dry-run` change nothing, so they work in a read.
 - `openspot batch` runs one call for each line of stdin, and prints `---` after each. It stops at the first failure.
-- `--frame` makes `app status`, `account`, `spot list` and `setting list` print blocks instead of JSON.
+- `--frame` makes `app status`, `account`, `spot list`, `store list` and `setting list` print blocks instead of JSON.
 
 The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The others:
 
@@ -862,7 +862,19 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot grid edit`                               | Opens the panel in Edit Spots, to arrange the grid.                                             |
 | `openspot store list [--frame]`                    | Prints each spot of the store and its step: `get`, `publish`, or `added` once you have it.      |
 | `openspot store get <id>`                          | Gets a spot of the store: turns it on, or adds its package to your spots folder.                |
-| `openspot store publish <id>`                      | Publishes a spot of your spots folder to the store. It needs a `readme.md` beside its script.   |
+| `openspot store publish <id>`                      | Publishes a spot of your spots folder to the store. It needs a `readme.md` beside its script. Only the Store spot can run it, so you publish from the Store spot. |
+| `openspot playground [file]`                       | Opens the Playground on a spot that you type or on a file.                                      |
+| `openspot check --sheet`                           | Reports the faults of a sheet on stdin.                                                         |
+| `openspot render --card <size> <file.png>`         | Draws the card of the sheet on stdin at a size, such as `wide`, to a picture.                   |
+| `openspot render --spot <id> <file.png>`           | Draws the sheet of an installed spot, or with `--card <size>` its card, to a picture.           |
+| `openspot render --panel <file.png>`               | Draws the panel with each installed spot on its grid.                                           |
+| `openspot render --store <file.png>`               | Draws the window of the Store with each spot as its card.                                       |
+| `openspot prompt new [words]...`                   | Prints a prompt that asks a coding agent to build a spot that does what the words say.          |
+| `openspot prompt change <id> [words]...`           | Prints a prompt that asks a coding agent to change a spot as the words say.                     |
+| `openspot emoji [--tone name]`                     | Prints each emoji as a row, with its name in the language of the Mac.                           |
+| `openspot symbols`                                 | Prints each symbol of the Character Viewer as a row.                                            |
+| `openspot translate [--from code] [--to code]`     | Translates the text on stdin. `openspot translate languages` prints the languages it knows.     |
+| `openspot account <verb>`                          | Reaches the account key with `new`, `words`, `checked`, `phrase`, `sign-in` or `sign-out`. Only Openspot's Account spot can run them. |
 
 ### Settings
 

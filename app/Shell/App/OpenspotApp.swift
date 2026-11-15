@@ -6,7 +6,8 @@ import os
 @MainActor
 final class OpenspotApp: NSObject, NSApplicationDelegate {
     static func main() {
-        if let call = CommandLineCall(arguments: Array(CommandLine.arguments.dropFirst())) {
+        let environment = ProcessInfo.processInfo.environment
+        if let call = CommandLineCall(arguments: Array(CommandLine.arguments.dropFirst()), spot: environment[CallWords.spotVariable], reason: environment[CallWords.reasonVariable]) {
             SpotCommandLine.run(call)
         }
         let app = NSApplication.shared

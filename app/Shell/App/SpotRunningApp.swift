@@ -69,7 +69,7 @@ struct SpotRunningApp: RunningApp {
         await model.reveal(id)
     }
 
-    func sandbox(_ file: URL?, isCareful: Bool) async {
+    func playground(_ file: URL?, isCareful: Bool) async {
         await SpotSandbox.show(path: file?.path, isCareful: isCareful)
     }
 

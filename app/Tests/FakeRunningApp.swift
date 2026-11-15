@@ -85,8 +85,8 @@ actor FakeRunningApp: RunningApp {
         return id != "gone"
     }
 
-    func sandbox(_ file: URL?, isCareful: Bool) {
-        opened.append("sandbox \(file?.path ?? "") careful=\(isCareful)")
+    func playground(_ file: URL?, isCareful: Bool) {
+        opened.append("playground \(file?.path ?? "") careful=\(isCareful)")
     }
 
     func changeSetting(_ key: String, of spot: String) -> Bool {
