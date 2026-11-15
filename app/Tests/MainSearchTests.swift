@@ -13,6 +13,16 @@ final class MainSearchTests: XCTestCase {
         XCTAssertEqual(found.map(\.item.title), ["Safari"])
     }
 
+    func testTheRowsOfAListWithSearchOffAreNotSearched() {
+        let off = ItemList(items: items(["Create a new key", "Use my words"]), search: .off)
+        let list = ItemList(items: items(["Safe"]))
+        var search = MainSearch()
+
+        let found = search.matching(SearchQuery(text: "s", layouts: []), in: [off, list])
+
+        XCTAssertEqual(found.map(\.item.title), ["Safe"])
+    }
+
     func testAKeyThatDoesNotNarrowRanksEachItem() {
         let list = ItemList(items: items(["Safe", "Notes", "Signal"]))
         var search = MainSearch()

@@ -5,8 +5,6 @@ public struct AccountStore: Sendable {
     private static let service = "dev.openspot.account"
     private static let account = "key"
     private static let fileName = "account"
-    private static let backedUpLine = "backed-up"
-
     let file: URL?
 
     init(file: URL?) {
@@ -23,29 +21,33 @@ public struct AccountStore: Sendable {
         return AccountStore(file: isOwnState ? folder.appendingPathComponent(fileName) : nil)
     }
 
-    public func key() throws -> AccountKey? {
-        guard let line = try lines()?.first, !line.isEmpty else { return nil }
-        return line.hasPrefix("nsec") ? try AccountKey(nsec: line) : try AccountKey(words: line.split(separator: " ").map(String.init))
+    public func record() throws -> AccountRecord? {
+        try lines().flatMap(AccountRecord.init(lines:))
     }
 
-    public func keyMadeOnce() throws -> AccountKey {
+    public func key() throws -> AccountKey? {
+        try record()?.key
+    }
+
+    public func keyMadeOnce(handle: String? = nil, on date: Date = Date()) throws -> AccountKey {
         if let key = try key() { return key }
         let key = try AccountKey.make()
-        try keep(key)
+        try keep(AccountRecord(key: key, handle: handle, since: date.formatted(.iso8601.year().month().day().dateSeparator(.dash))))
         return key
     }
 
     public func keep(_ key: AccountKey, isBackedUp: Bool = false) throws {
-        try write([key.words?.joined(separator: " ") ?? key.nsec] + (isBackedUp ? [Self.backedUpLine] : []))
+        try keep(AccountRecord(key: key, isBackedUp: isBackedUp))
     }
 
-    public func isBackedUp() throws -> Bool {
-        try lines()?.dropFirst().contains(Self.backedUpLine) == true
+    public func keep(_ record: AccountRecord) throws {
+        try write(record.lines)
     }
 
     public func markBackedUp() throws {
-        guard let key = try key() else { return }
-        try keep(key, isBackedUp: true)
+        guard var record = try record() else { return }
+        record.isBackedUp = true
+        try keep(record)
     }
 
     public func remove() throws {

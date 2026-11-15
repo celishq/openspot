@@ -17,12 +17,29 @@ final class AccountStoreTests: XCTestCase {
 
     func testAMadeKeyIsNotBackedUpUntilItIsMarked() throws {
         let key = try store.keyMadeOnce()
-        XCTAssertFalse(try store.isBackedUp())
+        XCTAssertFalse(try store.record()?.isBackedUp == true)
 
         try store.markBackedUp()
 
-        XCTAssertTrue(try store.isBackedUp())
+        XCTAssertTrue(try store.record()?.isBackedUp == true)
         XCTAssertEqual(try store.key(), key)
+    }
+
+    func testAMadeKeyKeepsItsHandleAndTheDayItWasMadeThroughABackup() throws {
+        _ = try store.keyMadeOnce(handle: "tony", on: Date(timeIntervalSince1970: 1_794_700_800))
+
+        try store.markBackedUp()
+
+        XCTAssertEqual(try store.record()?.handle, "tony")
+        XCTAssertEqual(try store.record()?.since, "2026-11-15")
+        XCTAssertTrue(try store.record()?.isBackedUp == true)
+    }
+
+    func testAKeyKeptFromItsWordsHasNoHandleNorDay() throws {
+        try store.keep(try AccountKey.make(), isBackedUp: true)
+
+        XCTAssertNil(try store.record()?.handle)
+        XCTAssertNil(try store.record()?.since)
     }
 
     func testAKeyKeptFromItsWordsIsBackedUp() throws {
@@ -30,7 +47,7 @@ final class AccountStoreTests: XCTestCase {
 
         try store.keep(key, isBackedUp: true)
 
-        XCTAssertTrue(try store.isBackedUp())
+        XCTAssertTrue(try store.record()?.isBackedUp == true)
         XCTAssertEqual(try store.key(), key)
     }
 
@@ -39,7 +56,7 @@ final class AccountStoreTests: XCTestCase {
 
         try store.keep(try AccountKey.make())
 
-        XCTAssertFalse(try store.isBackedUp())
+        XCTAssertFalse(try store.record()?.isBackedUp == true)
     }
 
     func testARemovedKeyIsGone() throws {
@@ -48,7 +65,7 @@ final class AccountStoreTests: XCTestCase {
         try store.remove()
 
         XCTAssertNil(try store.key())
-        XCTAssertFalse(try store.isBackedUp())
+        XCTAssertFalse(try store.record()?.isBackedUp == true)
         XCTAssertNoThrow(try store.remove())
     }
 

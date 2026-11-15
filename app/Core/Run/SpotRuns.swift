@@ -369,7 +369,7 @@ public final class SpotRuns {
             return (stream, halt, nil)
         }
         if let sheet = spot.host {
-            let (stream, halt) = answered { try await sheet.answer(action.arguments) }
+            let (stream, halt) = answered { try await sheet.answer(action.arguments, input: input, variables: variables) }
             return (stream, halt, nil)
         }
         if spot.mode == .inline {

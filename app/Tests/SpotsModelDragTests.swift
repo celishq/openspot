@@ -571,13 +571,16 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(publication(of: "a"), .current)
     }
 
-    func testAPublishWithNoAccountAsksToSetOneUpAndWritesNothing() async throws {
+    func testAPublishWithNoAccountOpensThePublishPageOfTheAccountSpot() async throws {
+        try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
+        model.reload()
         try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
 
         let result = await model.publish("a")
 
         XCTAssertEqual(result, .failed)
-        XCTAssertEqual(host.notes, ["Set up your account, then publish again."])
+        XCTAssertEqual(model.flow.current, FlowSheet(spot: AccountSheet.id, page: "publish:a"))
+        XCTAssertEqual(host.notes, [])
         XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
     }
 

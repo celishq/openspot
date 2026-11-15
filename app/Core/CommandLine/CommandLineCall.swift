@@ -153,8 +153,8 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot update check                        Asks for a new version of the app now.
     openspot update install                      Restarts the app into the update that it downloaded.
     openspot account [--frame]                   Prints the account that signs what you publish as JSON: signedIn,
-                                                 npub, backedUp and sync. --frame prints them as one block.
-    openspot account new                         Makes an account key when the Mac holds none. The calls from here
+                                                 npub, handle, since, backedUp and sync. --frame prints them as one block.
+    openspot account new [handle]                Makes an account key, with that handle, when the Mac holds none. The calls from here
                                                  to sign-out answer only Openspot's Account spot.
     openspot account words                       Prints the 12 words, after Touch ID.
     openspot account check <place> <place>       Prints 4 choices for each place of the words.

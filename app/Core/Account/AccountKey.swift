@@ -51,6 +51,10 @@ public struct AccountKey: Equatable, Sendable {
         Data((try? P256K.Schnorr.PrivateKey(dataRepresentation: secret))?.xonly.bytes ?? []).hex
     }
 
+    static func short(_ npub: String) -> String {
+        "\(npub.prefix(9))…\(npub.suffix(4))"
+    }
+
     public var npub: String {
         Bech32.encode("npub", Data(hex: publicKey) ?? Data())
     }

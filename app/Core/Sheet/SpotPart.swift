@@ -56,6 +56,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let press: Press
     public let key: ActionKey?
     public let closes: Bool
+    let grows: Bool
     public let align: Align?
     public let look: Look?
     public let mark: MetricValue?
@@ -78,6 +79,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         detail = block.value("detail")
         key = kind == "hotkey" ? nil : block.value("shortcut").flatMap(ActionKey.init(text:))
         closes = block.flag("close") ?? false
+        grows = block.flag("grow") ?? true
         align = block.value("align").flatMap(Align.init(rawValue:))
         look = block.value("look").flatMap(Look.init(rawValue:))
         let icon = Icon(text: block.value("icon"))
@@ -204,6 +206,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     }
 
     var growsRow: Bool {
+        guard grows else { return false }
         if kind == "view" { return true }
         return switch control {
         case .text, .list, .chart, .image: true

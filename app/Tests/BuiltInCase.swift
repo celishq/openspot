@@ -26,6 +26,7 @@ class BuiltInCase: XCTestCase {
         var login: LoginItem?
         var link: CommandLink?
         var elevated: [String] = []
+        var copied: [String] = []
     }
 
     private static let names = ["PATH", "OPENSPOT_CONFIG", "OPENSPOT_SPOTS", "OPENSPOT_CORE"]

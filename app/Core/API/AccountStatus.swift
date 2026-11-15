@@ -3,8 +3,14 @@ import Foundation
 struct AccountStatus: Encodable {
     let signedIn: Bool
     let npub: String?
+    let handle: String?
+    let since: String?
     let backedUp: Bool?
     let sync: Bool?
+
+    var shortNpub: String? {
+        npub.map(AccountKey.short)
+    }
 
     func text(frame: Bool) throws -> String {
         guard frame else {
@@ -12,7 +18,7 @@ struct AccountStatus: Encodable {
             encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
             return String(decoding: try encoder.encode(self), as: UTF8.self) + "\n"
         }
-        let pairs: [(String, String?)] = [("signedIn", String(signedIn)), ("npub", npub), ("backedUp", backedUp.map(String.init)), ("sync", sync.map(String.init))]
+        let pairs: [(String, String?)] = [("signedIn", String(signedIn)), ("npub", npub), ("handle", handle), ("since", since), ("backedUp", backedUp.map(String.init)), ("sync", sync.map(String.init))]
         return TextBlock(fields: pairs.compactMap { key, value in value.map { TextBlock.Field(key: key, value: $0) } }).text
     }
 }

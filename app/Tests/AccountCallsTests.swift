@@ -54,7 +54,7 @@ final class AccountCallsTests: XCTestCase {
 
         let facts = try await call(["account", "--frame"], from: spot(uses: [], isBuiltIn: false))
 
-        XCTAssertEqual(facts.output, "signedIn=true\nnpub=\(key.npub)\nbackedUp=false\n")
+        XCTAssertEqual(facts.output, "signedIn=true\nnpub=\(key.npub)\nsince=\(try XCTUnwrap(try store.record()?.since))\nbackedUp=false\n")
     }
 
     func testOnlyABuiltInSpotThatUsesAccountReachesTheKey() async throws {
@@ -85,6 +85,18 @@ final class AccountCallsTests: XCTestCase {
         XCTAssertEqual(asked, ["show your account words", "show your account words"])
     }
 
+    func testNewKeepsTheHandleItIsGivenAndAnyoneReadsItWithTheDay() async throws {
+        let refused = try await call(["account", "new", "Tony P"], from: account)
+        let made = try await call(["account", "new", "tony"], from: account)
+
+        let facts = try await call(["account", "--frame"], from: spot(uses: [], isBuiltIn: false))
+
+        XCTAssertNotEqual(refused.code, 0)
+        XCTAssertEqual(made.code, 0, made.errors)
+        XCTAssertTrue(facts.output.contains("\nhandle=tony\n"), facts.output)
+        XCTAssertNotNil(facts.output.range(of: "\nsince=\\d{4}-\\d{2}-\\d{2}\n", options: .regularExpression), facts.output)
+    }
+
     func testNewMakesAKeyOnce() async throws {
         let first = try await call(["account", "new"], from: account)
         let key = try store.key()
@@ -112,7 +124,7 @@ final class AccountCallsTests: XCTestCase {
         XCTAssertEqual(blocks[0].components(separatedBy: "choice=").count - 1, 4)
         XCTAssertEqual(wrong.errors, "That isn't word 4. Look at your words again.\n")
         XCTAssertEqual(right.code, 0, right.errors)
-        XCTAssertTrue(try store.isBackedUp())
+        XCTAssertTrue(try store.record()?.isBackedUp == true)
     }
 
     func testAPhraseSaysHowFarItIsAndSignsIn() async throws {
@@ -123,7 +135,7 @@ final class AccountCallsTests: XCTestCase {
         XCTAssertEqual(typing.output, "counter=3 of 12\nword=abandon\nword=abuot\nword=abso\nunknown=2\ncompletion=absorb\n")
         XCTAssertEqual(ready.output, "counter=12 of 12\n" + Array(repeating: "word=abandon\n", count: 11).joined() + "word=about\naccount=\(try AccountKey(words: phrase.split(separator: " ").map(String.init)).npub)\n")
         XCTAssertEqual(signedIn.code, 0, signedIn.errors)
-        XCTAssertTrue(try store.isBackedUp())
+        XCTAssertTrue(try store.record()?.isBackedUp == true)
     }
 
     func testASignInThatIsNoAccountSaysWhy() async throws {
