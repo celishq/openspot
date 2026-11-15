@@ -20,17 +20,6 @@ struct SpotScrollEdges: Equatable {
         LinearGradient(stops: levels(height: height).map { .init(color: .black.opacity($0.strength), location: $0.location) }, startPoint: .top, endPoint: .bottom)
     }
 
-    func strength(at y: CGFloat, height: CGFloat) -> Double {
-        let levels = levels(height: height)
-        let place = y / SpotTokens.panelHeight
-        guard let after = levels.firstIndex(where: { $0.location >= place }) else { return levels.last?.strength ?? 1 }
-        guard after > 0 else { return levels[0].strength }
-        let low = levels[after - 1]
-        let high = levels[after]
-        let share = high.location > low.location ? (place - low.location) / (high.location - low.location) : 1
-        return low.strength + (high.strength - low.strength) * share
-    }
-
     private func levels(height: CGFloat) -> [(location: CGFloat, strength: Double)] {
         let start = (SpotTokens.halo + SpotTokens.rowHeight) / SpotTokens.panelHeight
         let end = (height - SpotTokens.halo - SpotTokens.hintBlock) / SpotTokens.panelHeight

@@ -86,8 +86,9 @@ Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these 
 - Logic that a window needs goes in `Core/`. Only drawing and window handling go in `Shell/`.
 - Each colour and strength of the panel is in `Shell/Surface/SpotTheme.swift`, and a new theme is one more value there.
 - Glass is system glass, drawn by `spotGlass`, which wraps `glassEffect`. Each shape draws its own glass, outside a
-  `GlassEffectContainer`, since a container drops an opacity after `glassEffect`, and the grid hides an open card, fades
-  cards at the scroll edge and hides the panel by opacity. A fade dims the content before `glassEffect` (`spotFade`) and
+  `GlassEffectContainer`, since a container drops an opacity after `glassEffect`, and the grid hides an open card and
+  hides the panel by opacity. The grid's scroll edge is one gradient mask over the scroll view, so it cuts each card and
+  its marks row by row. A fade dims the content before `glassEffect` (`spotFade`) and
   keeps the glass whole until its last third (`SpotTheme.glassStrength`), so faded glass never shows a sharp page.
   `make verify` runs `scripts/check-glass.sh`, which fails on `NSVisualEffectView` or a private Core Animation name in
   `Shell/`, outside `Shell/Surface/SpotBackdropBlur.swift`.
