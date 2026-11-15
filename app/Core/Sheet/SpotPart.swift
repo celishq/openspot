@@ -65,15 +65,12 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let mark: MetricValue?
     public private(set) var values: [String: [String]]
 
-    static let rowsKey = "row"
+    public private(set) var rows: [[String]] = []
 
-    func holding(rows: [TextBlock]) -> SpotPart {
+    func holding(rows: [[String]]) -> SpotPart {
         guard isOpen, !rows.isEmpty else { return self }
         var part = self
-        part.values[Self.rowsKey] = rows.map { $0.fields.first?.value ?? "" }
-        for (index, row) in rows.enumerated() {
-            part.values["\(Self.rowsKey).\(index)"] = row.fields.flatMap { [$0.key, $0.value] }
-        }
+        part.rows = rows
         return part
     }
 

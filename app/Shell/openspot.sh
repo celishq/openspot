@@ -253,14 +253,15 @@ openspot_keep() {
   return 1
 }
 
-# Pastes a text into the front app, then puts back the text that the clipboard held, also when the paste fails. It returns
-# the code of the paste, and prints what the paste prints. It needs `uses=clipboard`.
+# Pastes a text into the front app, then puts back the text that the clipboard held, also when the paste fails. A clipboard
+# that held no text is cleared, so the pasted text does not stay on it. It returns the code of the paste, and prints what
+# the paste prints. It needs `uses=clipboard`.
 openspot_paste() {
   _openspot_held=$(openspot clipboard read </dev/null 2>/dev/null; printf x)
   printf %s "${1-}" | openspot clipboard copy > /dev/null || return
   openspot clipboard paste </dev/null
   _openspot_code=$?
   [ "$_openspot_code" != 0 ] || sleep "${_openspot_paste_pause:-0.3}"
-  [ "$_openspot_held" = x ] || printf %s "${_openspot_held%x}" | openspot clipboard copy > /dev/null
+  printf %s "${_openspot_held%x}" | openspot clipboard copy > /dev/null
   return "$_openspot_code"
 }

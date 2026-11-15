@@ -91,6 +91,9 @@ public struct SpotFile: Equatable, Sendable {
         if let source = sources.first(where: { !SpotPackage.isSafe(entry: $0) || $0.isEmpty }) {
             throw SpotError.fault("\(name) has source=\(source), which is outside its folder. Name a Swift file or a folder beside the spot, such as source=model")
         }
+        if let source = sources.first(where: { $0.split(separator: "/", omittingEmptySubsequences: false).contains { $0.isEmpty || $0 == "." } }) {
+            throw SpotError.fault("\(name) has `source=\(source)`, which is not a plain path. Write it with no `.`, no `..` and no `/` at its start or end, such as `source=model`.")
+        }
         let edits = header.value(HeaderKey.edits)
         guard edits == nil || edits == "spots" else { throw SpotError.fault("\(name) has an unknown edits: \(edits!). Use edits=spots") }
         let places: Set<Place> = namedPlaces ?? (offeredActions.isEmpty && !answersOnly ? [.card] : [])

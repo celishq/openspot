@@ -182,18 +182,22 @@ final class SwiftProgramTests: XCTestCase {
         XCTAssertEqual(compiled, spot)
     }
 
-    func testSharingTakesTheProgramBesideATopLevelScript() throws {
+    func testAShareLeavesOutEachProgramAndBuildsOneFromTheSourcesItShips() async throws {
         let built = program(of: "#!/bin/sh\n# title=Hello\n")
         try script("hello.swift", "#!/bin/sh\n# title=Hello\n")
-        try script(built, "#!/bin/sh\n")
+        try script(built, "#!/bin/sh\necho unproven\n")
         try script("hello.program", "#!/bin/sh\n")
         try script("hello.\(String(repeating: "0", count: 64)).program", "#!/bin/sh\n")
         let place = SpotsFolder(url: folder)
         let scan = try place.scan()
 
         let spot = try SpotPackage(sharing: try XCTUnwrap(scan.spots.first), from: scan)
+        let compiled = try await spot.compiled(by: tools())
 
-        XCTAssertEqual(spot.files.map(\.path), ["hello.spot/\(built)", "hello.spot/hello.swift"])
+        XCTAssertEqual(spot.files.map(\.path), ["hello.spot/hello.swift"])
+        XCTAssertTrue(spot.needsCompile)
+        XCTAssertEqual(compiled.files.map(\.path), ["hello.spot/hello.swift", "hello.spot/\(built)"])
+        XCTAssertEqual(compiled.files.last?.contents, Data("built".utf8))
     }
 
     func testAProgramIsNotASpotOfItsOwn() throws {
@@ -206,12 +210,175 @@ final class SwiftProgramTests: XCTestCase {
         XCTAssertEqual(scan.refused, [])
     }
 
-    func testAProgramRunsInPlaceOfItsSource() async throws {
+    private func counting(selector: String = "exit 0", compiler: String? = nil, shipped: URL? = nil) throws -> SwiftProgram {
+        _ = try caching()
+        let place = folder.appendingPathComponent("tools")
+        try "#!/bin/sh\necho x >> '\(folder.path)/asks'\n\(selector)\n".writeScript(to: place.appendingPathComponent("xcode-select"))
+        if let compiler { try "#!/bin/sh\necho x >> '\(folder.path)/builds'\n\(compiler)\n".writeScript(to: place.appendingPathComponent("swiftc")) }
+        let clock = clock
+        return SwiftProgram(tools: place, cache: cache, shipped: shipped, now: { clock.now })
+    }
+
+    private var asks: Int {
+        ((try? String(contentsOf: folder.appendingPathComponent("asks"), encoding: .utf8)) ?? "").split(separator: "\n").count
+    }
+
+    private func carriedSpots() throws -> (several: Spot, single: Spot) {
+        let several = try spotOfSeveralFiles()
+        try script(program(of: main, with: severalFiles), "#!/bin/sh\necho text=carried\n")
+        try script("one.swift", "#!/bin/sh\n# title=One\n# on=sheet.open\necho text=source\n")
+        try script(program(of: "#!/bin/sh\n# title=One\n# on=sheet.open\necho text=source\n", named: "one.swift"), "#!/bin/sh\necho text=carried\n")
+        let single = try XCTUnwrap(try SpotsFolder(url: folder).scan().spots.first { $0.id == "one" })
+        return (several, single)
+    }
+
+    func testOnAMacWithTheToolsASpotFromOutsideIsBuiltFromItsSourcesAndItsCarriedProgramDoesNotRun() async throws {
+        let spots = try carriedSpots()
+        let runs = SpotRuns(swift: try counting())
+        defer { runs.quit() }
+
+        let several = try await runs.answer(of: spots.several, .read)
+        let single = try await runs.answer(of: spots.single, .read)
+
+        XCTAssertEqual([several, single], ["text=program\n", "text=source\n"])
+        try await wait("the build of the spot of one file") { self.builds == 2 }
+    }
+
+    func testOnAMacWithNoToolsASpotFromOutsideRunsItsCarriedProgram() async throws {
+        let spots = try carriedSpots()
+        let runs = SpotRuns(swift: try counting(selector: "exit 2", compiler: "exit 2"))
+        defer { runs.quit() }
+
+        let several = try await runs.answer(of: spots.several, .read)
+        let single = try await runs.answer(of: spots.single, .read)
+        let again = try await runs.answer(of: spots.several, .read)
+
+        XCTAssertEqual([several, single, again], ["text=carried\n", "text=carried\n", "text=carried\n"])
+        XCTAssertEqual(asks, 1)
+    }
+
+    func testASpotThatShipsInsideOpenspotRunsItsCarriedProgramOnAMacWithTheTools() async throws {
+        let spots = try carriedSpots()
+        let runs = SpotRuns(swift: try counting(shipped: folder))
+        defer { runs.quit() }
+
+        let several = try await runs.answer(of: spots.several, .read)
+        let single = try await runs.answer(of: spots.single, .read)
+
+        XCTAssertEqual([several, single], ["text=carried\n", "text=carried\n"])
+        XCTAssertEqual(builds, 0)
+        XCTAssertEqual(asks, 0)
+    }
+
+    private func fault(of swift: SwiftProgram, _ spot: Spot) async -> String? {
+        do {
+            _ = try await swift.built(spot.url, with: spot.sources)
+            return nil
+        } catch {
+            return (error as? SpotError)?.reason
+        }
+    }
+
+    func testASpotThatDoesNotCompileIsNotBuiltAgainUntilOneOfItsFilesChanges() async throws {
+        let spot = try spotOfSeveralFiles()
+        let swift = try counting(compiler: "echo '/tmp/x/more/more/Mark.swift:1:1: error: bad mark' >&2; exit 1")
+
+        let first = await fault(of: swift, spot)
+        let second = await fault(of: swift, spot)
+        let built = builds
+        try Data("func mark() -> String { \"?\" }\n".utf8).write(to: folder.appendingPathComponent("hello.spot/more/Mark.swift"))
+        _ = await fault(of: swift, spot)
+
+        XCTAssertEqual(first, "This Swift spot does not compile. Mark.swift:1:1: error: bad mark")
+        XCTAssertEqual(second, first)
+        XCTAssertEqual(built, 1)
+        XCTAssertEqual(builds, 2)
+        XCTAssertEqual(asks, 1)
+    }
+
+    func testAFailedBuildThatNamesNoSourceIsBuiltAgain() async throws {
+        let spot = try spotOfSeveralFiles()
+        let swift = try counting(compiler: "echo 'error: you have not agreed to the Xcode license' >&2; exit 1")
+
+        _ = await fault(of: swift, spot)
+        _ = await fault(of: swift, spot)
+
+        XCTAssertEqual(builds, 2)
+        XCTAssertEqual(asks, 1)
+    }
+
+    func testAMacWithNoToolsIsAskedForThemOncePerRun() async throws {
+        let spot = try spotOfSeveralFiles()
+        let swift = try counting(selector: "exit 1")
+
+        let first = await fault(of: swift, spot)
+        let second = await fault(of: swift, spot)
+
+        XCTAssertEqual(first, "To build a Swift spot, install the Command Line Tools: xcode-select --install")
+        XCTAssertEqual(second, first)
+        XCTAssertEqual(asks, 1)
+        XCTAssertEqual(builds, 0)
+    }
+
+    func testTheNameOfAProgramIsReadAgainOnlyWhenTheStampOfOneOfItsFilesChanges() throws {
+        let spot = try spotOfSeveralFiles()
+        let mark = folder.appendingPathComponent("hello.spot/more/Mark.swift")
+        let first = try SwiftProgram.name(of: spot.url, with: spot.sources)
+        var info = stat()
+        XCTAssertEqual(stat(mark.path, &info), 0)
+        let handle = try FileHandle(forWritingTo: mark)
+        try handle.write(contentsOf: Data("func mark() -> String { \"?\" }\n".utf8))
+        try handle.close()
+        let times = [info.st_atimespec, info.st_mtimespec]
+        XCTAssertEqual(utimensat(AT_FDCWD, mark.path, times, 0), 0)
+
+        let unstamped = try SwiftProgram.name(of: spot.url, with: spot.sources)
+        try Data("func mark() -> String { \"?!\" }\n".utf8).write(to: mark)
+        let changed = try SwiftProgram.name(of: spot.url, with: spot.sources)
+
+        XCTAssertEqual(first, SwiftProgram.name(of: Data(main.utf8), with: severalFiles))
+        XCTAssertEqual(unstamped, first)
+        XCTAssertNotEqual(changed, first)
+    }
+
+    func testTheStampOfASwiftSpotChangesWithAnEditOfEachSourceItNames() throws {
+        let spot = try spotOfSeveralFiles()
+        let kept = KeptScan()
+        let spots = SpotsFolder(url: folder)
+        let first = kept.load(spots)
+
+        XCTAssertEqual(kept.load(spots).stamp(of: spot), first.stamp(of: spot))
+        for (path, text) in [("hello.spot/words.swift", "let word = \"changed\"\n"), ("hello.spot/more/Mark.swift", "func mark() -> String { \"changed\" }\n")] {
+            let before = kept.load(spots)
+            try text.write(to: folder.appendingPathComponent(path), atomically: false, encoding: .utf8)
+            let after = kept.load(spots)
+
+            XCTAssertNotEqual(after.stamp(of: spot), before.stamp(of: spot), path)
+            XCTAssertNotEqual(after.stamp, before.stamp, path)
+            XCTAssertTrue(spots.reads(folder.appendingPathComponent(path).path), path)
+        }
+        XCTAssertFalse(spots.reads(folder.appendingPathComponent("hello.spot/more/notes.txt").path))
+        XCTAssertFalse(spots.reads(folder.appendingPathComponent("hello.spot/.build/Mark.swift").path))
+    }
+
+    func testASourceThatIsNotAPlainPathIsRefusedByName() throws {
+        for (index, source) in ["./words.swift", "more/", "more//Mark.swift", "."].enumerated() {
+            try script("s\(index).swift", "#!/usr/bin/env swift\n// title=S\(index)\n// source=\(source)\n")
+        }
+
+        let refused = try SpotsFolder(url: folder).scan().refused
+
+        XCTAssertEqual(refused.map(\.reason), ["./words.swift", "more/", "more//Mark.swift", "."].enumerated().map { index, source in
+            "S\(index) has `source=\(source)`, which is not a plain path. Write it with no `.`, no `..` and no `/` at its start or end, such as `source=model`."
+        })
+    }
+
+    func testAProgramRunsInPlaceOfItsSourceOnAMacWithNoTools() async throws {
         try script("hello.swift", "#!/bin/sh\necho source\n")
         try script(program(of: "#!/bin/sh\necho source\n"), "#!/bin/sh\necho program\n")
         let command = try XCTUnwrap(try SpotsFolder(url: folder).scan().spots.first)
 
-        let answer = try await SpotRuns().answer(of: command, .open)
+        let answer = try await SpotRuns(swift: try tools(selector: "exit 2", compiler: "exit 2")).answer(of: command, .open)
 
         XCTAssertEqual(answer.trimmingCharacters(in: .newlines), "program")
     }
@@ -432,7 +599,7 @@ final class SwiftProgramTests: XCTestCase {
         let none = folder.appendingPathComponent("no-tools")
         try FileManager.default.createDirectory(at: none, withIntermediateDirectories: true)
         for tool in ["xcode-select", "swiftc", "lipo"] { try "#!/bin/sh\necho \"$*\" >> '\(folder.path)/builds'\nexit 2\n".writeScript(to: none.appendingPathComponent(tool)) }
-        let runs = SpotRuns(swift: SwiftProgram(tools: none, cache: folder.appendingPathComponent("empty-cache")))
+        let runs = SpotRuns(swift: SwiftProgram(tools: none, cache: folder.appendingPathComponent("empty-cache"), shipped: folder))
         defer { runs.quit() }
 
         let several = try await runs.answer(of: spot, .read)

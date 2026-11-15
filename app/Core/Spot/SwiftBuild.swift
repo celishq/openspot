@@ -12,7 +12,7 @@ struct SwiftBuild: Sendable {
     let tools: URL
 
     func output(of files: [File], flags: [String], kinds: [String?], toolsFault: String?, fault: String) async throws -> Data {
-        if let toolsFault, (try? await run("xcode-select", ["-p"])) == nil { throw SpotError.fault(toolsFault) }
+        if let toolsFault, !(await hasTools()) { throw SpotError.fault(toolsFault) }
         let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-build-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: place) }
@@ -38,6 +38,10 @@ struct SwiftBuild: Sendable {
         let joined = place.appendingPathComponent("joined")
         try await run("lipo", ["-create"] + parts + ["-output", joined.path])
         return try Data(contentsOf: joined)
+    }
+
+    func hasTools() async -> Bool {
+        (try? await run("xcode-select", ["-p"])) != nil
     }
 
     private func run(_ name: String, _ arguments: [String]) async throws {

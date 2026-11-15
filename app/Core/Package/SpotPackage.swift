@@ -78,9 +78,8 @@ public struct SpotPackage: Equatable, Sendable {
             files += try Self.files(at: root.url, path: root.path, total: &total, limit: Self.shareLimit)
         }
         let sources = files.filter { $0.path.hasSuffix(".\(SwiftProgram.sourceExtension)") }
-        let programs = Set(sources.filter(\.isExecutable).map { Self.program(of: $0, in: files).path })
         try self.init(files: files.filter { file in
-            if SwiftProgram.isProgram(URL(fileURLWithPath: file.path)) { return programs.contains(file.path) }
+            if SwiftProgram.isProgram(URL(fileURLWithPath: file.path)) { return false }
             return !ViewLibrary.isLibrary(file.path) || sources.contains { ViewLibrary.path(beside: $0.path, text: $0.contents) == file.path }
         })
     }

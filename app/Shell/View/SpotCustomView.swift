@@ -4,6 +4,7 @@ import SwiftUI
 struct SpotCustomView: View, @MainActor Equatable {
     let source: String
     let values: [String: [String]]
+    var rows: [[String]] = []
     let card: SpotSize
     var room: CGSize?
     var answers = 0
@@ -16,7 +17,7 @@ struct SpotCustomView: View, @MainActor Equatable {
     @Environment(\.spotIsHeld) private var isHeld
 
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.source == rhs.source && lhs.values == rhs.values && lhs.card == rhs.card && lhs.room == rhs.room && lhs.answers == rhs.answers && lhs.date == rhs.date && lhs.views === rhs.views
+        lhs.source == rhs.source && lhs.values == rhs.values && lhs.rows == rhs.rows && lhs.card == rhs.card && lhs.room == rhs.room && lhs.answers == rhs.answers && lhs.date == rhs.date && lhs.views === rhs.views
             && (lhs.send == nil) == (rhs.send == nil)
     }
 
@@ -84,12 +85,6 @@ struct SpotCustomView: View, @MainActor Equatable {
         }
     }
 
-    private var keep: () -> Void {
-        let views = views
-        let source = source
-        return { MainActor.assumeIsolated { views.keep(source) } }
-    }
-
     private var close: () -> Void {
         let place = place
         return { MainActor.assumeIsolated { place.close() } }
@@ -104,7 +99,7 @@ struct SpotCustomView: View, @MainActor Equatable {
     private var input: [String: Any] {
         [
             "isShown": isShown,
-            "keep": keep,
+            "rows": rows,
             "close": close,
             "bodyTime": bodyTime,
             "size": size,

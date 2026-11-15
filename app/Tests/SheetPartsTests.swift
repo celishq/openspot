@@ -115,19 +115,35 @@ final class SheetPartsTests: XCTestCase {
     func testAViewBlockAlsoGetsEachRowOfItsFrameWithItsKeysInOrder() {
         let output = SpotOutput(text: "view=gallery\nmode=all\n\nrow=a\ntitle=One\ntag=x\ntag=y\n\nrow=b\ndetail=two\\nlines\n\ntext=note\ntitle=Hi\n")
 
-        let values = output.parts.first { $0.id == "gallery" }?.values
-        XCTAssertEqual(values?["row"], ["a", "b"])
-        XCTAssertEqual(values?["row.0"], ["row", "a", "title", "One", "tag", "x", "tag", "y"])
-        XCTAssertEqual(values?["row.1"], ["row", "b", "detail", "two\nlines"])
-        XCTAssertEqual(values?["mode"], ["all"])
-        XCTAssertEqual(output.parts.first { $0.id == "note" }?.values, [:])
+        let gallery = output.parts.first { $0.id == "gallery" }
+        XCTAssertEqual(gallery?.rows, [["row", "a", "title", "One", "tag", "x", "tag", "y"], ["row", "b", "detail", "two\nlines"]])
+        XCTAssertEqual(gallery?.values, ["view": ["gallery"], "mode": ["all"]])
+        XCTAssertEqual(output.parts.first { $0.id == "note" }?.rows, [])
         XCTAssertEqual(output.items.map(\.run), ["a", "b"])
     }
 
-    func testAViewBlockOfAFrameWithNoRowGetsNoRowKey() {
+    func testTheRowsOfAFrameAreBuiltOnceForAllItsViewBlocks() {
+        let output = SpotOutput(text: "view=one\n\nview=two\n\nrow=a\ntitle=One\n\nrow=b\n")
+
+        let places = output.parts.map { $0.rows.withUnsafeBufferPointer { $0.baseAddress } }
+
+        XCTAssertEqual(output.parts.map(\.rows.count), [2, 2])
+        XCTAssertEqual(places[0], places[1])
+    }
+
+    func testAViewBlockOfAFrameWithNoRowGetsNoRows() {
         let output = SpotOutput(text: "view=gallery\nmode=all\n")
 
         XCTAssertEqual(output.parts.first?.values, ["view": ["gallery"], "mode": ["all"]])
+        XCTAssertEqual(output.parts.first?.rows, [])
+    }
+
+    func testARowKeyOnAViewBlockIsAFaultAndIsKeptAsItWasPrinted() {
+        let check = FrameCheck(text: "view=gallery\nrow=mine\n\nrow=a\ntitle=One\n")
+
+        XCTAssertEqual(check.partFaults, ["the view gallery has the key `row`, which starts a row block. Give the key another name."])
+        XCTAssertEqual(check.output.parts.first?.values["row"], ["mine"])
+        XCTAssertEqual(check.output.parts.first?.rows, [["row", "a", "title", "One"]])
     }
 
     func testATextsToneColoursItsWordsAndAGaugeKeepsItsOwn() {

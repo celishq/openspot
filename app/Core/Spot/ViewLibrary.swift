@@ -18,14 +18,25 @@ public struct ViewLibrary: Sendable {
         }
 
         public struct SpotRow: Identifiable {
-            public let id: String
             let fields: [String]
+
+            public var id: String { fields.count > 1 ? fields[1] : "" }
 
             public subscript(key: String) -> String? { all(key).last }
 
             public func all(_ key: String) -> [String] {
                 stride(from: 0, to: fields.count - 1, by: 2).filter { fields[$0] == key }.map { fields[$0 + 1] }
             }
+        }
+
+        public struct SpotRows: RandomAccessCollection {
+            let fields: [[String]]
+
+            public var startIndex: Int { 0 }
+
+            public var endIndex: Int { fields.count }
+
+            public subscript(index: Int) -> SpotRow { SpotRow(fields: fields[index]) }
         }
 
         public struct SpotInput {
@@ -41,9 +52,8 @@ public struct ViewLibrary: Sendable {
             public let rowGap: CGFloat
             public let columns: Int
             public let tipDelay: Duration
-            public let rows: [SpotRow]
-            let shown: Bool
-            let keeper: () -> Void
+            public let rows: SpotRows
+            public let isShown: Bool
             let closer: () -> Void
             let timer: (Duration) -> Void
             let values: [String: [String]]
@@ -64,9 +74,8 @@ public struct ViewLibrary: Sendable {
                 tipMaker = card["tip"] as? (String) -> AnyView ?? { AnyView(Text($0)) }
                 mediaMaker = card["media"] as? (String) -> AnyView ?? { _ in AnyView(EmptyView()) }
                 cornerMaker = card["cornerButton"] as? (String, String, String, @escaping () -> Void) -> AnyView ?? { _, _, _, _ in AnyView(EmptyView()) }
-                rows = (values["row"] ?? []).enumerated().map { SpotRow(id: $1, fields: values["row.\\($0)"] ?? []) }
-                shown = card["isShown"] as? Bool ?? true
-                keeper = card["keep"] as? () -> Void ?? {}
+                rows = SpotRows(fields: card["rows"] as? [[String]] ?? [])
+                isShown = card["isShown"] as? Bool ?? true
                 closer = card["close"] as? () -> Void ?? {}
                 timer = card["bodyTime"] as? (Duration) -> Void ?? { _ in }
                 columnGap = card["columnGap"] as? CGFloat ?? 11
@@ -92,14 +101,11 @@ public struct ViewLibrary: Sendable {
 
             public func all(_ key: String) -> [String] { values[key] ?? [] }
 
-            public var isShown: Bool {
-                keeper()
-                return shown
-            }
-
             public func send(_ value: String) { sender(value) }
 
-            public func close() { closer() }
+            public func close() {
+                if Thread.isMainThread { closer() } else { DispatchQueue.main.async(execute: closer) }
+            }
 
             public func card(_ id: String) -> AnyView { cardMaker(id) }
 

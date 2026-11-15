@@ -27,6 +27,7 @@ struct SpotCardView: View, @MainActor Equatable {
     var body: some View {
         ZStack(alignment: .topLeading) { content }
             .environment(\.spotIsOnSolid, isFilled)
+            .environment(\.spotViewPlace, SpotViewPlace(model: model))
             .padding(drawnView != nil && !isDrawn ? 0 : SpotTokens.cardPadding(for: size, isWidget: entry.kind == .widget || isDrawn))
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
             .background(shape.fill(SpotTheme.accent).opacity(dropFill))

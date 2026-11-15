@@ -408,6 +408,17 @@ final class ShellHelperTests: XCTestCase {
         }
     }
 
+    func testAPasteClearsAClipboardThatHeldNoText() async throws {
+        for paste in ["exit 0", "exit 1"] {
+            let (url, board, log) = try clipboard(paste: paste, holding: nil)
+
+            _ = try await ScriptProcess.output(url: url, arguments: ["a secret"], limit: 10)
+
+            XCTAssertEqual(try String(contentsOf: log, encoding: .utf8), "pasted=a secret\n")
+            XCTAssertEqual(try String(contentsOf: board, encoding: .utf8), "")
+        }
+    }
+
     func testAPasteThatFailsStillPutsTheClipboardBackAndFails() async throws {
         let (url, board, _) = try clipboard(paste: "echo 'toast=Openspot cannot paste.'; exit 1", holding: "mine")
 

@@ -8,19 +8,14 @@ extension EnvironmentValues {
 @MainActor
 struct SpotViewPlace: @MainActor Equatable {
     let model: SpotsModel?
-    var detached: String?
+    var place = ViewPlace.card
 
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.model === rhs.model && lhs.detached == rhs.detached
+        lhs.model === rhs.model && lhs.place == rhs.place
     }
 
     func close() {
-        guard let model else { return }
-        if let detached {
-            model.land(detached)
-        } else {
-            model.closeSheet(moving: true)
-        }
+        model?.close(place)
     }
 
     func drew(_ source: String, in time: Duration) {

@@ -533,7 +533,9 @@ Each call has three parts:
 - **Variables:** `OPENSPOT_REASON` and `OPENSPOT_VALUE` of a read, `OPENSPOT_PAGE`, the page that shows, `OPENSPOT_SETTING_<KEY>`, the value of each
   `field` of the header that has one, with its key in capitals and `_` for any other sign (see [Settings](#settings)), `OPENSPOT_ID`, the spot's id, `OPENSPOT_DATA`, a
   folder for its files that one spot folder shares, `OPENSPOT_SH`, the shell helper, `PATH`, and `LC_ALL`, which is
-  `en_US.UTF-8`, so each tool reads text as UTF-8 and writes numbers and dates one way on every Mac. `PATH` holds the
+  `en_US.UTF-8`, so each tool reads text as UTF-8 and writes numbers and dates one way on every Mac. A command that
+  handles raw bytes or needs byte order sets `LC_ALL=C` for itself, such as `LC_ALL=C sort`, since `sed` and `tr` fail
+  on text that isn't UTF-8, and `sort` and `[a-z]` follow the locale. `PATH` holds the
   `openspot` command first, then the paths of the user, then `/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin`, `/bin`,
   `/usr/sbin` and `/sbin`. Five more are for the spots that ship inside Openspot: `OPENSPOT_CONFIG`, the folder of the config,
   `OPENSPOT_SPOTS`, the spots folder when it isn't `spots` in that folder, and for the sheet that changes a spot,
@@ -565,12 +567,13 @@ The shell helper reads and writes values for you:
 | `openspot_rows [kind]`                      | Prints a row, or a block of that kind, for each tab-separated line of stdin: id, title, detail, icon. |
 | `openspot_serve <function> "$@"`            | Runs the function with the three parts of each call, in each mode.                                    |
 | `openspot_keep <file> [text]`               | Keeps the text, or all of stdin, in the file as a whole, so a reader never gets half of it.           |
-| `openspot_paste <text>`                     | Pastes the text into the front app, then puts back the text that the clipboard held.                  |
+| `openspot_paste <text>`                     | Pastes the text into the front app, then puts back the text that the clipboard held, or clears it.    |
 
 - Loading the helper reads all of stdin, except in a staying spot.
 - `openspot_keep` makes the folder of the file. When it can't write, it fails and the old file stays as it was.
 - `openspot_paste` needs `uses=clipboard`. It fails when the paste fails, and puts the clipboard back first. It puts
-  back only text: a picture that the clipboard held is gone.
+  back the text that the clipboard held. A clipboard that held a picture, a file or nothing is cleared, so the pasted
+  text never stays on it.
 
 ```sh
 #!/bin/sh
@@ -750,14 +753,17 @@ let cups = 3
 - A Swift file with `#!/usr/bin/env swift` on its first line is a spot, with its header in `//` lines.
 - Each `source=` line names one more Swift file, or a folder whose Swift files it takes, next to the spot. Openspot
   builds them into one program with the spot's file, which holds the code that runs first. Only a Swift spot takes
-  `source`, and a source is inside the spot's folder.
-- To build it, Openspot needs the Command Line Tools. It builds again when one of the files changes. A spot with no
-  `source` runs as a script until its first build is done. A spot with a `source` waits for its build, and a build
-  that fails is the failure of the call.
+  `source`, and a source is a plain path inside the spot's folder, such as `source=model` or
+  `source=model/cups.swift`: no `.`, no `..`, and no `/` at its start or end.
+- To build it, Openspot needs the Command Line Tools. It builds again when one of the files changes, and a staying
+  spot starts again then. A spot with no `source` runs as a script until its first build is done. A spot with a
+  `source` waits for its build, and a build that fails is the failure of the call. Openspot doesn't build a spot
+  that failed to compile again until one of its files changes.
 - A shared spot carries the built program as `<name>.<hash>.program`, where the hash is the SHA-256 of its Swift
-  files. Openspot runs it instead of building only while that hash matches, so a Mac with no Command Line Tools runs
-  a shared Swift spot. The review of an add says that the spot holds a program (see [Trust](#trust)).
-- The spots that ship inside Openspot are built with the app, the same way.
+  files. A share always builds that program from the sources it ships. A Mac with the Command Line Tools builds the
+  spot from its sources and never runs the carried program. A Mac with no tools runs it while that hash matches (see
+  [Trust](#trust)).
+- The spots that ship inside Openspot are built with the app, the same way, and run the program that the app carries.
 
 ## Views
 
@@ -817,7 +823,7 @@ struct SpotView: View {
 | `spot.tipDelay`     | How long the pointer rests on a control before its tip shows.         |
 | `spot.rows`         | Each `row` block of the frame, in a sheet or a window, in order.      |
 | `spot.isShown`      | Whether its place shows now. It's false while the panel is hidden.    |
-| `spot.close()`      | Closes the sheet or the window that holds the view.                   |
+| `spot.close()`      | Closes the sheet, the float or the window of its spot.                |
 
 - The view fills its place, and the whole card when there's no card layout. It can't change the size of its place.
 - In a window (see [Places](#places)), a sheet with one `view` block fills the window. `spot.card(id)` draws the card of
@@ -832,10 +838,16 @@ struct SpotView: View {
   code and the source. Openspot uses it instead of the source only while that hash matches.
 - Each row of `spot.rows` has its `id`, `row["key"]` for the last value of a key and `row.all("key")` for each
   value, as the view's own block has. In a sheet, Openspot still draws the rows under the view. In a window that one
-  view fills, only the view draws them. A card gets no rows.
+  view fills, only the view draws them. A card gets no rows. A `view` block takes no `row` key of its own, and
+  `openspot check` reports one.
+- `spot.close()` closes only the open sheet, the float or the window of the view's own spot. It does nothing on a card,
+  in the sheet that `spot.sheet(id)` draws, and in a card that `spot.card(id)` draws. A view can call it from any thread.
 - Openspot removes a view while its place is hidden, and builds it again at the next show, so its `@State` starts
   anew. A view that reads `spot.isShown` stays built instead, and must stop its timers and its motion while it's false.
-- `openspot spot stats` counts each run of a view's `body` and its time (see [Stats](#stats)).
+- `openspot spot stats` counts each run of the `body` of `SpotView` and the time of that one `body` (see
+  [Stats](#stats)). It doesn't time the bodies of the views inside it, which SwiftUI runs later.
+- `SpotView` must not declare a method named `update()`: Openspot keeps that name, and SwiftUI would call it before
+  each `body`.
 - The view runs inside Openspot, so a crash quits Openspot. Do the work in the spot, and only draw in `body`.
 
 ## Cards of other spots
@@ -1033,7 +1045,7 @@ openspot spot stats --days 7 --frame
 | `wakeups`            | The times its processes woke the CPU.                                 |
 | `call.<noun>.<verb>` | The count of one call that needs a use, such as `call.screen.shot=2`. |
 | `network`            | `declared` when its header names `network`.                           |
-| `bodies`, `body`     | The runs of the `body` of its view, and their seconds in all.         |
+| `bodies`, `body`     | The runs of the `body` of its `SpotView`, and their seconds in all.   |
 | `fault`, `tone`      | Its last error, with `tone=bad`.                                      |
 
 - A `use` block holds `time`, `spot`, `call`, such as `app.quit`, and `declared`, `true` or `false`.
@@ -1076,6 +1088,10 @@ openspot app quit
   view, and says that it can do all that the user can. For a built file, it says that the source beside it may not
   match. Openspot can't prove that a built file comes from its source: it only skips one whose name doesn't hold the
   hash of the source that is there now.
+- So Openspot runs the program that a Swift spot carries only in two cases: the spot ships inside Openspot, or the Mac
+  has no Command Line Tools, where the review has said that the program may not match its source. On a Mac with the
+  tools, a spot that the user added runs only what Openspot built there from the source the user can read. A share
+  never passes a carried program on: it builds a new one from the sources it ships.
 - An update with no new use applies quietly. An update with a new use waits for `--yes`.
 - Careful mode is a setting of the user, off by default. It runs each process of a spot in a sandbox: no network unless
   `uses=network`, and writes only to its data folder and the temp folders unless `uses=files`. With `uses=screen`, it

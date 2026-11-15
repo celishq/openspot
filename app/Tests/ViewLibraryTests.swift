@@ -1,4 +1,5 @@
 import SwiftUI
+import Synchronization
 import XCTest
 @testable import OpenspotCore
 
@@ -84,29 +85,48 @@ final class ViewLibraryTests: XCTestCase {
         }
 
         """
-        let values = ["view": ["words"], "row": ["a", "b"], "row.0": ["row", "a", "title", "One", "tag", "x", "tag", "y"], "row.1": ["row", "b"]]
-        var kept = 0
+        let rows = [["row", "a", "title", "One", "tag", "x", "tag", "y"], ["row", "b"]]
         var closed = 0
         var times: [Duration] = []
-        let card: [String: Any] = ["isShown": false, "keep": { kept += 1 }, "close": { closed += 1 }, "bodyTime": { (time: Duration) in times.append(time) }]
+        let card: [String: Any] = ["isShown": false, "rows": rows, "close": { closed += 1 }, "bodyTime": { (time: Duration) in times.append(time) }]
 
-        let sent = try await drawn(text, values: values, card: card)
+        let sent = try await drawn(text, values: ["view": ["words"], "row": ["mine"]], card: card)
 
         XCTAssertEqual(sent, ["state false a:One:x+y,b:-:"])
         XCTAssertEqual(closed, 1)
-        XCTAssertGreaterThan(kept, 0)
         XCTAssertEqual(times.count, 1)
         XCTAssertGreaterThan(times.first ?? .zero, .zero)
     }
 
     @MainActor
-    func testAViewThatNeverAsksWhetherItShowsIsNotKeptAndShowsWithNoHostWords() async throws {
-        var kept = 0
+    func testAViewWithNoHostWordsShowsAndHasNoRows() async throws {
+        let sent = try await drawn(view.replacingOccurrences(of: "Text(", with: "let _ = spot.send(\"\\(spot.rows.count) \\(spot.isShown) \\(spot[\"row\"] ?? \"-\")\")\n        Text("), values: ["title": ["Hi"], "row": ["mine"]], card: [:])
 
-        let sent = try await drawn(view.replacingOccurrences(of: "Text(", with: "let _ = spot.send(\"\\(spot.rows.count)\")\n        Text("), values: ["title": ["Hi"]], card: ["keep": { kept += 1 }])
+        XCTAssertEqual(sent, ["0 true mine"])
+    }
 
-        XCTAssertEqual(sent, ["0"])
-        XCTAssertEqual(kept, 0)
+    @MainActor
+    func testAViewThatClosesFromAnotherThreadClosesOnTheMainThread() async throws {
+        let text = """
+        import SwiftUI
+
+        struct SpotView: View {
+            let spot: SpotInput
+
+            var body: some View {
+                let _ = Thread.detachNewThread { spot.close() }
+                Text("close")
+            }
+        }
+
+        """
+        let threads = Mutex<[Bool]>([])
+        let close: @Sendable () -> Void = { threads.withLock { $0.append(Thread.isMainThread) } }
+
+        _ = try await drawn(text, values: [:], card: ["close": close as () -> Void])
+        try await wait("the close") { !threads.withLock { $0 }.isEmpty }
+
+        XCTAssertFalse(threads.withLock { $0 }.contains(false))
     }
 
     func testEachViewThatAScriptUnderAFolderNamesIsBuiltBesideItsSourceForBothKindsOfMac() async throws {

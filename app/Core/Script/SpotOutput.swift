@@ -109,7 +109,8 @@ public struct SpotOutput: Equatable, Sendable {
         let layout = SheetLayout(block: head, repeating: repeating, repeats: repeats.count)
             ?? repeating.map { SheetLayout(flat: parts, repeating: $0) }
         self.layout = layout
-        parts = parts.map { $0.drawn(in: layout).holding(rows: rows) }
+        let fields = rows.map { $0.fields.flatMap { [$0.key, $0.value] } }
+        parts = parts.map { $0.drawn(in: layout).holding(rows: fields) }
         face = CardFace(head: head, parts: parts)
         let main = head?.value(HeadKey.main)
         let held = main.map { id in values.first { $0.block.fields.first?.value == id } } ?? (values.count == 1 ? values.first : nil)
