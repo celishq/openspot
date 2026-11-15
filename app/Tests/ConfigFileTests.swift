@@ -157,4 +157,129 @@ final class ConfigFileTests: XCTestCase {
 
         XCTAssertEqual(file.read().faults, ["config.toml: a setting needs a spot, a key and a value."])
     }
+
+    func testASpotNameWithAQuoteSurvivesASave() throws {
+        try file.turn("a\"b\\c", on: true)
+        try file.set(setting: "x", of: "y", to: "z")
+
+        XCTAssertEqual(file.read().arrangement.enabled, ["a\"b\\c"])
+        XCTAssertEqual(file.read().faults, [])
+    }
+
+    func testAKeyEntryThatCannotBeReadSurvivesASave() throws {
+        try write("[[keys]]\nspot = \"a\"\nkey = \"hyper+k\"\nwhen = \"held\"\n")
+
+        try file.turn("x", on: true)
+
+        let text = try String(contentsOf: file.url, encoding: .utf8)
+        XCTAssertTrue(text.contains("[[keys]]\nspot = \"a\"\nkey = \"hyper+k\"\nwhen = \"held\"\n"), text)
+        XCTAssertEqual(file.read().arrangement.enabled, ["x"])
+    }
+
+    func testATableWithAnUnknownNameSurvivesASave() throws {
+        try write("[[themes]]\nname = \"dark\"\ntones = [\"a\", \"b\"]\n")
+
+        try file.turn("x", on: true)
+
+        let text = try String(contentsOf: file.url, encoding: .utf8)
+        XCTAssertTrue(text.contains("[[themes]]\nname = \"dark\"\ntones = [\"a\", \"b\"]\n"), text)
+        XCTAssertEqual(file.read().faults, ["config.toml: themes is not a setting."])
+    }
+
+    func testAKeyWithAQuoteInItsSpotAndCommandSurvivesASave() throws {
+        let key = GlobalKey(spot: "a\"b", command: "c\\d\"", shortcut: try XCTUnwrap(Shortcut(text: "ctrl+left")))
+
+        try file.write(keys: [key])
+
+        XCTAssertEqual(file.read().keys, [key])
+        XCTAssertEqual(file.read().faults, [])
+    }
+
+    func testAChangeReadsOnceAndWritesOnce() throws {
+        let disk = FakeDisk(text: "panel_key = \"cmd+k\"\n\n[[spots]]\nid = \"a\"\n")
+        let file = ConfigFile(url: file.url, disk: disk)
+
+        try file.change { config in
+            config.arrangement.set(isEnabled: true, of: "b")
+            config.assign(.shake, to: "a", act: .float)
+            config.set(setting: "folder", of: "a", to: "~/Code")
+            config.set(isCareful: true)
+        }
+
+        XCTAssertEqual(disk.reads, 1)
+        XCTAssertEqual(disk.writes, 1)
+        let config = Config(text: disk.text ?? "")
+        XCTAssertEqual(config.arrangement.enabled, ["b"])
+        XCTAssertEqual(config.keys.map(\.trigger), [.shake])
+        XCTAssertEqual(config.setting("folder", of: "a"), "~/Code")
+        XCTAssertTrue(config.isCareful)
+        XCTAssertEqual(config.panelKey, Shortcut(text: "cmd+k"))
+    }
+
+    func testAChangeThatChangesNothingWritesNothing() throws {
+        let disk = FakeDisk(text: "careful = true\n")
+        let file = ConfigFile(url: file.url, disk: disk)
+
+        try file.change { $0.set(isCareful: true) }
+
+        XCTAssertEqual(disk.writes, 0)
+    }
+
+    func testAChangeFromAKeptConfigReadsNoFileUntilAnotherWriteChangesIt() throws {
+        let disk = FakeDisk(text: "[[spots]]\nid = \"a\"\n")
+        let file = ConfigFile(url: file.url, disk: disk)
+        let kept = file.readKept()
+        let reads = disk.reads
+
+        let next = try file.change(from: kept) { $0.arrangement.set(isEnabled: true, of: "a") }
+
+        XCTAssertEqual(disk.reads, reads)
+        XCTAssertEqual(next.config, Config(text: disk.text ?? ""))
+
+        disk.put((disk.text ?? "") + "\n[[settings]]\nspot = \"a\"\nkey = \"k\"\nvalue = \"v\"\n")
+        let last = try file.change(from: next) { $0.arrangement.set(isEnabled: true, of: "b") }
+
+        XCTAssertEqual(disk.reads, reads + 1)
+        XCTAssertEqual(last.config.setting("k", of: "a"), "v")
+        XCTAssertEqual(last.config.arrangement.enabled, ["a", "b"])
+    }
+
+    func testAFileThatCannotBeReadIsNotWrittenFromAKeptConfig() throws {
+        let disk = FakeDisk(text: "panel_key\n")
+        let file = ConfigFile(url: file.url, disk: disk)
+
+        XCTAssertThrowsError(try file.change(from: file.readKept()) { $0.set(isCareful: true) })
+        XCTAssertEqual(disk.text, "panel_key\n")
+    }
+
+    func testTheSectionsThatDifferNameEachFieldAndTheRest() {
+        let config = Config(text: "")
+
+        XCTAssertEqual(Config(text: "panel_key = \"cmd+k\"\n").sections(differingFrom: config), [.keys])
+        XCTAssertEqual(Config(text: "[[keys]]\nspot = \"a\"\nkey = \"shake\"\n").sections(differingFrom: config), [.keys])
+        XCTAssertEqual(Config(text: "[[spots]]\nid = \"a\"\n").sections(differingFrom: config), [.spots])
+        XCTAssertEqual(Config(text: "[[settings]]\nspot = \"a\"\nkey = \"k\"\nvalue = \"v\"\n").sections(differingFrom: config), [.settings])
+        XCTAssertEqual(Config(text: "careful = true\n").sections(differingFrom: config), [.careful])
+        XCTAssertEqual(Config(text: "left_panel = true\n").sections(differingFrom: config), [.panels])
+        XCTAssertEqual(Config(text: "theme = \"dark\"\n").sections(differingFrom: config), [.rest])
+        XCTAssertEqual(Config(text: "[[keys]]\nspot = \"a\"\n").sections(differingFrom: config), [.rest])
+        XCTAssertEqual(Config(text: "[[themes]]\nname = \"dark\"\n").sections(differingFrom: Config(text: "[[themes]]\nname = \"light\"\n")), [.rest])
+        XCTAssertEqual(config.sections(differingFrom: config), [])
+    }
+
+    func testTheStampOfTheFileHoldsUntilAWriteAndAKeptConfigSeesTheWriteOfAnother() throws {
+        try file.turn("a", on: true)
+        let kept = file.readKept()
+
+        XCTAssertEqual(LocalDisk().readStamp(of: file.url), LocalDisk().readStamp(of: file.url))
+        XCTAssertEqual(try file.change(from: kept) { _ in }, kept)
+
+        try file.set(setting: "k", of: "a", to: "v")
+        let next = try file.change(from: kept) { $0.arrangement.set(isEnabled: true, of: "b") }
+
+        XCTAssertNotEqual(next, kept)
+        XCTAssertEqual(file.read().setting("k", of: "a"), "v")
+        XCTAssertEqual(file.read().arrangement.enabled, ["a", "b"])
+        XCTAssertEqual(next.config, file.read())
+    }
 }

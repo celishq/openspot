@@ -508,7 +508,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testTheGridTakesTheSidePanelsOfTheConfig() throws {
-        try files.config.set("right_panel", to: true)
+        try files.config.change { $0.show(.right, true) }
 
         model.reload()
 

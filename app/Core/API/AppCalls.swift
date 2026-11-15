@@ -41,8 +41,8 @@ struct AppCalls {
 
     func careful(_ isOn: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [environment, app] in
-            try ConfigFile.standard(environment: environment).set("careful", to: isOn)
-            await app?.configChanged(.careful)
+            let config = try ConfigFile.standard(environment: environment).change { $0.set(isCareful: isOn) }
+            await app?.configChanged(.careful, to: config)
             return ""
         }
     }

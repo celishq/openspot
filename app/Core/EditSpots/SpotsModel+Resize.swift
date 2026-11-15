@@ -34,9 +34,10 @@ extension SpotsModel {
         guard let resize else { return }
         pointerMove = nil
         guard resize.size != resize.start else { return cancelResize() }
-        arrangement.arrange(visible.map(\.id))
-        arrangement.set(size: resize.size, of: resize.id)
-        saveArrangement(selecting: resize.id) { self.resize = nil }
+        var next = arrangement
+        next.arrange(visible.map(\.id))
+        next.set(size: resize.size, of: resize.id)
+        saveArrangement(next, selecting: resize.id) { self.resize = nil }
     }
 
     public func cancelResize() {

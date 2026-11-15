@@ -87,7 +87,7 @@ final class SpotArrangementTests: XCTestCase {
 
         XCTAssertEqual(config.faults, ["config.toml: bad cannot use the letter ??."])
         XCTAssertEqual(config.arrangement.choices.map(\.letter), ["m", "", nil])
-        XCTAssertEqual(Config(text: config.arrangement.text).arrangement.choices.map(\.letter), ["m", "", nil])
+        XCTAssertEqual(Config(text: config.text).arrangement.choices.map(\.letter), ["m", "", nil])
     }
 
     func testThePersonsLettersWinOverTheDefaultLetters() {
@@ -205,6 +205,8 @@ final class SpotArrangementTests: XCTestCase {
         XCTAssertNil(moved.spot(openedBy: n, over: defaults))
         XCTAssertNil(SpotArrangement().spot(openedBy: ActionKey(name: "m", isCommand: true), over: defaults))
         XCTAssertEqual(Config(text: "[[spots]]\nid = \"a\"\nkey = \"cmd+space+\"\n").faults, ["config.toml: a cannot use the key cmd+space+."])
-        XCTAssertTrue(mine.text.contains("key = \"cmd+n\""))
+        var config = Config()
+        config.arrangement = mine
+        XCTAssertTrue(config.text.contains("key = \"cmd+n\""))
     }
 }

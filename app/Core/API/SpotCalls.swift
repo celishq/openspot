@@ -20,8 +20,8 @@ struct SpotCalls {
 
     func turn(_ ids: [String], on isOn: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [environment, app] in
-            try SpotsFolder.standard(environment: environment).turn(ids, on: isOn, in: ConfigFile.standard(environment: environment))
-            await app?.configChanged(.spots(ids))
+            let config = try SpotsFolder.standard(environment: environment).turn(ids, on: isOn, in: ConfigFile.standard(environment: environment))
+            await app?.configChanged(.spots(ids), to: config)
             return ""
         }
     }

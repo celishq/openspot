@@ -70,7 +70,7 @@ final class SpotsModelTests: XCTestCase {
         let trigger = try XCTUnwrap(Trigger(text: "ctrl+option+l"))
         try model.files.config.assign(trigger, to: "move", act: .command("left"))
 
-        model.configChanged(.keys)
+        model.configChanged(.keys, to: model.files.config.readKept())
 
         XCTAssertEqual(model.gridBuilds, builds)
         XCTAssertEqual(host.held.last, [GlobalKey(spot: "move", act: .command("left"), trigger: trigger)])
@@ -84,7 +84,7 @@ final class SpotsModelTests: XCTestCase {
         let trigger = try XCTUnwrap(Trigger(text: "ctrl+option+l"))
         try model.files.config.assign(trigger, to: "offer", act: .command("open"))
 
-        model.configChanged(.keys)
+        model.configChanged(.keys, to: model.files.config.readKept())
 
         try await wait("the read of the change") { ((try? String(contentsOfFile: reads, encoding: .utf8)) ?? "") == "read\nread\n" }
     }
@@ -118,9 +118,9 @@ final class SpotsModelTests: XCTestCase {
         let entries = model.entries
 
         try model.files.config.showInMenuBar("cups", true)
-        model.configChanged(.spots(["cups"]))
+        model.configChanged(.spots(["cups"]), to: model.files.config.readKept())
         try model.files.config.set(setting: "size", of: "cups", to: "big")
-        model.configChanged(.value(spot: "cups", caller: nil))
+        model.configChanged(.value(spot: "cups", caller: nil), to: model.files.config.readKept())
         model.reload()
 
         XCTAssertEqual(model.gridBuilds, builds)
@@ -133,7 +133,7 @@ final class SpotsModelTests: XCTestCase {
         try script("notes", header: "title=Notes", ":")
         try script("cups", header: "title=Mugs\non=clock.60\noffers=card\noffers=menubar", "printf 'text=c\\ntitle=3\\n'")
 
-        model.configChanged(.spots(["other"]))
+        model.configChanged(.spots(["other"]), to: model.files.config.readKept())
         model.spotsChanged()
 
         XCTAssertEqual(Set(model.entries.map { $0.spot.name }), ["Mugs", "Notes"])

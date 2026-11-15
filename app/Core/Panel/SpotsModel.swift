@@ -165,7 +165,6 @@ public final class SpotsModel {
     @ObservationIgnored var scrollAtPress: CGFloat = 0
     @ObservationIgnored var pointerMove: CGSize?
     @ObservationIgnored var resizeGrip = CGPoint(x: SpotTokens.resizeHandle, y: SpotTokens.resizeHandle)
-    public var arrangement = SpotArrangement()
     @ObservationIgnored public private(set) var defaultArrangement = SpotArrangement()
     public internal(set) var flashSymbol: String?
     @ObservationIgnored public var flashPause: Duration = .milliseconds(1500)
@@ -173,9 +172,9 @@ public final class SpotsModel {
     @ObservationIgnored private var scanned: [Spot] = []
     @ObservationIgnored private var spotScan = SpotScan()
     @ObservationIgnored private var lastScan = ScanResult(files: [], refused: [])
-    @ObservationIgnored private var lastRead: (config: Config, folder: SpotsFolder)?
+    @ObservationIgnored private var keptFolder: SpotsFolder?
     @ObservationIgnored private var loadedStamp: SpotsFolder.Stamp?
-    @ObservationIgnored private(set) var loadedConfig: Config?
+    @ObservationIgnored private(set) var kept = KeptConfig()
     @ObservationIgnored private(set) var gridBuilds = 0
     @ObservationIgnored var removal: Removal?
     @ObservationIgnored private var fileStamps: [String: String] = [:]
@@ -210,11 +209,15 @@ public final class SpotsModel {
     }
 
     public var config: Config {
-        lastRead?.config ?? files.config.read()
+        kept.config
+    }
+
+    public var arrangement: SpotArrangement {
+        kept.config.arrangement
     }
 
     public var folder: SpotsFolder {
-        lastRead?.folder ?? files.folder
+        keptFolder ?? files.folder
     }
 
     public var sheets: [String: SpotRun] {
@@ -231,24 +234,30 @@ public final class SpotsModel {
 
     public func beginFirstLaunch() {
         isFirstLaunch = true
-        try? files.config.begin(enabling: folder.startingSpots())
+        do {
+            try files.config.begin(enabling: folder.startingSpots())
+        } catch {
+            host.notify("Openspot could not save the spots. \(Self.reason(error))")
+        }
         reload()
         host.present()
     }
 
     public func reload() {
-        reload(patching: nil)
+        reload(patching: nil, to: files.config.readKept())
     }
 
-    private func reload(patching ids: Set<String>?) {
-        let config = files.config.read()
+    func reload(patching ids: Set<String>?, to next: KeptConfig) {
+        let config = next.config
+        let isSameConfig = config == kept.config
         host.applyConfig(config)
         let folder = files.folder(config)
-        lastRead = (config, folder)
+        kept = next
+        keptFolder = folder
         var scan = spotScan.look(at: folder, hosted: (folder.findsAppSpots() ? [account.spot] : []) + (reviewed.map { [$0.spot] } ?? []))
         let faults = folder.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
         if !faults.isEmpty { scan.files.append(SpotFile(id: FaultSpot.fileID, spots: faults)) }
-        guard spotScan.stamp != loadedStamp || config != loadedConfig else { return holdAssignedKeys(config) }
+        guard spotScan.stamp != loadedStamp || !isSameConfig else { return holdAssignedKeys(config) }
         scan.addSettings(in: files.config, read: config)
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
@@ -256,13 +265,11 @@ public final class SpotsModel {
         runs.take(scan, menuBar: config.arrangement.menuBar)
         lastScan = scan
         loadedStamp = spotScan.stamp
-        loadedConfig = config
         let stamps = Self.stamps(of: scan)
         let others = ids.map { ids in { (stamps: [String: String]) in stamps.filter { !ids.contains($0.key) } } }
         let isOnlyNamed = others.map { $0(stamps) == $0(fileStamps) } ?? false
         fileStamps = stamps
         holdAssignedKeys(config)
-        arrangement = config.arrangement
         if panels != config.panels { panels = config.panels }
         scanned = scan.spots
         if let ids, isOnlyNamed { patchEntries(ids) } else { rebuildEntries() }
@@ -307,38 +314,43 @@ public final class SpotsModel {
         return true
     }
 
-    public func configChanged(_ change: ConfigChange) {
-        let config = files.config.read()
-        let arrangement = lastRead?.config.arrangement
-        let isSameFolder = arrangement?.enabled == config.arrangement.enabled && arrangement?.disabled == config.arrangement.disabled
-        lastRead = (config, lastRead.flatMap { isSameFolder ? $0.folder : nil } ?? files.folder(config))
-        switch change {
-        case .keys:
-            host.applyConfig(config)
-            holdAssignedKeys(config)
-            if let loaded = loadedConfig, loaded.arrangement == config.arrangement, loaded.settings == config.settings { loadedConfig = config }
-        case .spots(let ids):
+    public func configChanged(_ change: ConfigChange, to next: KeptConfig) {
+        if case .spots(let ids) = change {
             let id = selectedEntry?.id
-            reload(patching: Set(ids))
+            reload(patching: Set(ids), to: next)
             if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
-        case .careful:
-            runs.isCareful = config.isCareful
-            if let loaded = loadedConfig, loaded.arrangement == config.arrangement, loaded.keys == config.keys, loaded.settings == config.settings { loadedConfig = config }
-        case .value(let spot, let caller):
-            if let loaded = loadedConfig, loaded.arrangement == config.arrangement, loaded.keys == config.keys, loaded.panelKey == config.panelKey, loaded.fixKey == config.fixKey {
-                loadedConfig = config
+            return
+        }
+        if take(next, changing: change.sections) {
+            switch change {
+            case .keys:
+                host.applyConfig(config)
+                holdAssignedKeys(config)
+            case .careful:
+                runs.isCareful = config.isCareful
+            case .spots, .value:
+                break
             }
+        }
+        if case .value(let spot, let caller) = change {
             if caller != spot, let sheet = sheets[spot], sheet.isWanted { sheet.read(need: .change) }
             if let settings = sheets[SpotSettings.sheetID(of: spot)], settings.isOpen { settings.read(need: .change) }
         }
-        if case .spots = change { return }
         runs.readOfferedRows()
     }
 
-    func tookOwnWrite() {
-        let config = files.config.read()
-        loadedConfig = config
-        lastRead = (config, lastRead?.folder ?? files.folder(config))
+    func write(_ section: Config.Section, _ work: (inout Config) throws -> Void) throws {
+        take(try files.config.change(from: kept, work), changing: [section])
+    }
+
+    @discardableResult
+    private func take(_ next: KeptConfig, changing sections: Set<Config.Section>) -> Bool {
+        guard next.config.sections(differingFrom: config).isSubset(of: sections) else {
+            reload(patching: nil, to: next)
+            return false
+        }
+        kept = next
+        return true
     }
 
     private func patchEntries(_ ids: Set<String>) {
@@ -446,15 +458,15 @@ public final class SpotsModel {
     }
 
     private func settingsChanged(of spot: String) {
-        let config = files.config.read()
-        let loaded = loadedConfig
-        if config.arrangement.menuBar != loaded?.arrangement.menuBar {
-            configChanged(.spots([spot]))
-        } else {
+        let next = files.config.readKept()
+        let isNewValue = next.config.settings != config.settings
+        if next.config.arrangement.menuBar != arrangement.menuBar {
+            configChanged(.spots([spot]), to: next)
+        } else if take(next, changing: [.keys, .settings]) {
             host.applyConfig(config)
             holdAssignedKeys(config)
         }
-        if config.settings != loaded?.settings { configChanged(.value(spot: spot, caller: nil)) }
+        if isNewValue { configChanged(.value(spot: spot, caller: nil), to: next) }
     }
 
     public func chooseFiles(for id: String) -> Bool {

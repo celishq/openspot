@@ -35,15 +35,17 @@ extension SpotsModel {
 
     @discardableResult
     func turn(_ spot: Spot, on isOn: Bool, ending: () -> Void = {}) -> Bool {
+        let id = folder.fileID(of: spot)
+        let next: KeptConfig
         do {
-            try files.config.turn(folder.fileID(of: spot), on: isOn)
+            next = try files.config.change(from: kept) { $0.arrangement.set(isEnabled: isOn, of: id) }
         } catch {
             host.notify("\(spot.name) was not turned \(isOn ? "on" : "off"). \(Self.reason(error))")
             return false
         }
         change(.edit) {
             ending()
-            reload()
+            reload(patching: nil, to: next)
         }
         return true
     }
@@ -101,8 +103,9 @@ extension SpotsModel {
         guard let from = order.firstIndex(of: id), order.indices.contains(place), place != from else { return }
         order.remove(at: from)
         order.insert(id, at: place)
-        arrangement.arrange(order)
-        saveArrangement(selecting: id)
+        var next = arrangement
+        next.arrange(order)
+        saveArrangement(next, selecting: id)
     }
 
     private func stepSelectedSize() {
@@ -117,45 +120,47 @@ extension SpotsModel {
     }
 
     public func prefer(_ size: SpotSize, for id: String) {
-        arrangement.arrange(visible.map(\.id))
-        arrangement.set(size: size, of: id)
-        saveArrangement(selecting: id)
+        var next = arrangement
+        next.arrange(visible.map(\.id))
+        next.set(size: size, of: id)
+        saveArrangement(next, selecting: id)
     }
 
     public func setOnGrid(_ isOn: Bool, for id: String) {
         tip = nil
-        arrangement.arrange((cards.filter(\.isOnGrid) + cards.filter { !$0.isOnGrid }).map(\.id))
-        arrangement.set(isOnGrid: isOn, of: id)
-        saveArrangement(selecting: id)
+        var next = arrangement
+        next.arrange((cards.filter(\.isOnGrid) + cards.filter { !$0.isOnGrid }).map(\.id))
+        next.set(isOnGrid: isOn, of: id)
+        saveArrangement(next, selecting: id)
     }
 
     public func show(_ panel: GridPanel, _ isShown: Bool) {
-        guard let key = panel.configKey, panels[panel] != isShown, panelLeaving != panel else { return }
+        guard panel.configKey != nil, panels[panel] != isShown, panelLeaving != panel else { return }
         let apply: @MainActor () -> Void = { [self] in
             panelLeaving = nil
             do {
-                try files.config.set(key, to: isShown)
-                tookOwnWrite()
+                try write(.panels) { $0.show(panel, isShown) }
             } catch {
-                host.notify("Openspot could not save the panels. \(Self.reason(error))")
+                return host.notify("Openspot could not save the panels. \(Self.reason(error))")
             }
-            panels[panel] = isShown
+            if panels[panel] != isShown { panels[panel] = isShown }
             updateVisible()
         }
-        let kept = cards.filter { $0.panel == panel }.map(\.id)
-        guard !kept.isEmpty else { return apply() }
+        let held = cards.filter { $0.panel == panel }.map(\.id)
+        guard !held.isEmpty else { return apply() }
         let leaving = isShown ? [] : cards.filter { $0.isOnGrid && $0.panel == panel }.map(\.id)
-        kept.forEach { arrangement.set(panel: .center, of: $0) }
+        var next = arrangement
+        held.forEach { next.set(panel: .center, of: $0) }
         guard let first = leaving.first else {
-            try? files.config.write(arrangement)
-            tookOwnWrite()
+            guard save(next) else { return }
             rebuildEntries()
             return apply()
         }
-        panelLeaving = panel
         let onGrid = cards.filter(\.isOnGrid).map(\.id).filter { !leaving.contains($0) }
-        arrangement.arrange(onGrid + leaving + cards.filter { !$0.isOnGrid }.map(\.id))
-        saveArrangement(selecting: first, landed: apply)
+        next.arrange(onGrid + leaving + cards.filter { !$0.isOnGrid }.map(\.id))
+        guard save(next) else { return }
+        panelLeaving = panel
+        land(selecting: first, landed: apply)
     }
 
     func recordLetter(code: UInt32, modifiers: Shortcut.Modifiers) {
@@ -166,22 +171,34 @@ extension SpotsModel {
             return
         }
         stopRecording()
-        arrangement.arrange(visible.map(\.id))
-        let holder = arrangement.give(code == Self.deleteCode ? nil : letter, to: id, over: defaultArrangement)
+        var next = arrangement
+        next.arrange(visible.map(\.id))
+        let holder = next.give(code == Self.deleteCode ? nil : letter, to: id, over: defaultArrangement)
+        guard save(next) else { return }
         if let holder, let letter {
             let name = { (spot: String) in self.entries.first { $0.id == spot }?.spot.name ?? spot }
             host.notify("\(letter.name.uppercased()) now runs \(name(id)), so \(name(holder)) has no letter.")
         }
-        saveArrangement(selecting: id)
+        land(selecting: id)
     }
 
-    func saveArrangement(selecting id: String, ending: () -> Void = {}, landed: @escaping @MainActor () -> Void = {}) {
+    func saveArrangement(_ next: SpotArrangement, selecting id: String, ending: () -> Void = {}, landed: @escaping @MainActor () -> Void = {}) {
+        save(next)
+        land(selecting: id, ending: ending, landed: landed)
+    }
+
+    @discardableResult
+    private func save(_ next: SpotArrangement) -> Bool {
         do {
-            try files.config.write(arrangement)
-            tookOwnWrite()
+            try write(.spots) { $0.arrangement = next }
+            return true
         } catch {
             host.notify("Openspot could not save the spots. \(Self.reason(error))")
+            return false
         }
+    }
+
+    private func land(selecting id: String, ending: () -> Void = {}, landed: @escaping @MainActor () -> Void = {}) {
         change(.edit, {
             ending()
             rebuildEntries()

@@ -17,8 +17,9 @@ struct StoreCalls {
 
     func get(_ id: String) -> CommandAPI.Work {
         CommandAnswer.work { [environment, app] in
-            let item = try await Self.store(in: environment).get(id, config: ConfigFile.standard(environment: environment), environment: environment)
-            await app?.configChanged(.spots([id]))
+            let file = ConfigFile.standard(environment: environment)
+            let item = try await Self.store(in: environment).get(id, config: file, environment: environment)
+            await app?.configChanged(.spots([id]), to: file.readKept())
             return "Added \(item.spot.name).\n"
         }
     }

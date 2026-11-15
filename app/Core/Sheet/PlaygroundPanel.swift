@@ -5,11 +5,10 @@ public final class PlaygroundPanel {
     public let model: SpotsModel
     public private(set) var file: URL?
     private let spots: URL
-    private let config: URL
 
     public init(host: SpotsHost, scratch: URL, defaults: UserDefaults) {
         spots = scratch.appendingPathComponent("spots", isDirectory: true)
-        config = scratch.appendingPathComponent("config", isDirectory: true)
+        let config = scratch.appendingPathComponent("config", isDirectory: true)
         let core = scratch.appendingPathComponent("core", isDirectory: true)
         for folder in [spots, config, core] {
             try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -40,7 +39,7 @@ public final class PlaygroundPanel {
             try manager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: target.path)
         }
         self.file = target
-        try "[[spots]]\nid = \"\(id)\"\ngrid = true\n".write(to: config.appendingPathComponent("config.toml"), atomically: true, encoding: .utf8)
+        try model.files.config.change { $0.arrangement = SpotArrangement(choices: [SpotArrangement.Choice(id: id, isOnGrid: true)]) }
         model.reload()
         model.panelWillShow(holding: [])
         return id

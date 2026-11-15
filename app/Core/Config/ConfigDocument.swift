@@ -1,45 +1,106 @@
 import Foundation
 
-public struct TomlDocument: Equatable, Sendable {
+public struct ConfigDocument: Equatable, Sendable {
     public enum Value: Equatable, Sendable {
         case string(String)
         case integer(Int)
         case boolean(Bool)
         case strings([String])
         case table([String: String])
+
+        var text: String {
+            switch self {
+            case .string(let text): Self.quoted(text)
+            case .integer(let number): String(number)
+            case .boolean(let isOn): String(isOn)
+            case .strings(let items): "[\(items.map(Self.quoted).joined(separator: ", "))]"
+            case .table(let pairs): "{ \(pairs.sorted { $0.key < $1.key }.map { "\($0.key) = \(Self.quoted($0.value))" }.joined(separator: ", ")) }"
+            }
+        }
+
+        private static func quoted(_ text: String) -> String {
+            let escapes: [Unicode.Scalar: String] = ["\\": "\\\\", "\"": "\\\"", "\n": "\\n", "\t": "\\t"]
+            return "\"\(text.unicodeScalars.map { escapes[$0] ?? String($0) }.joined())\""
+        }
     }
 
+    public struct Table: Equatable, Sendable {
+        public let name: String
+        public private(set) var keys: [String] = []
+        private var values: [String: Value] = [:]
+
+        public init(_ name: String, _ fields: [(String, Value?)] = []) {
+            self.name = name
+            for (key, value) in fields {
+                if let value { self[key] = value }
+            }
+        }
+
+        public subscript(key: String) -> Value? {
+            get { values[key] }
+            set {
+                if values[key] == nil, newValue != nil { keys.append(key) }
+                if newValue == nil { keys.removeAll { $0 == key } }
+                values[key] = newValue
+            }
+        }
+
+        var text: String {
+            (["[[\(name)]]"] + keys.map { "\($0) = \(values[$0]!.text)" }).joined(separator: "\n")
+        }
+    }
+
+    public private(set) var head: [String] = []
     public private(set) var values: [String: Value] = [:]
-    public private(set) var arrays: [String: [[String: Value]]] = [:]
+    public var tables: [Table] = []
+
+    public init() {}
 
     public init(text: String) throws {
-        var array: String?
         for (index, raw) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
             let line = raw.trimmingCharacters(in: .whitespaces)
             let fault = { (reason: String) in SpotError.fault("line \(index + 1): \(reason)") }
-            if line.isEmpty || line.hasPrefix("#") { continue }
             if line.hasPrefix("[") {
                 guard line.hasPrefix("[["), let end = line.range(of: "]]") else {
                     throw fault("only arrays of tables are allowed, as in [[commands]]")
                 }
-                let name = String(line[line.index(line.startIndex, offsetBy: 2)..<end.lowerBound])
-                arrays[name, default: []].append([:])
-                array = name
+                tables.append(Table(String(line[line.index(line.startIndex, offsetBy: 2)..<end.lowerBound])))
                 continue
             }
+            if tables.isEmpty { head.append(String(raw)) }
+            if line.isEmpty || line.hasPrefix("#") { continue }
             guard let equals = line.firstIndex(of: "=") else { throw fault("expected a key and a value") }
             let key = line[..<equals].trimmingCharacters(in: .whitespaces)
             guard !key.isEmpty, !key.contains(" ") else { throw fault("expected a key and a value") }
             guard let value = Self.value(line[line.index(after: equals)...]) else { throw fault("\(key) has a value that cannot be read") }
-            if let array {
-                let last = arrays[array]!.count - 1
-                guard arrays[array]![last][key] == nil else { throw fault("\(key) is set twice") }
-                arrays[array]![last][key] = value
-            } else {
+            if tables.isEmpty {
                 guard values[key] == nil else { throw fault("\(key) is set twice") }
                 values[key] = value
+            } else {
+                guard tables[tables.count - 1][key] == nil else { throw fault("\(key) is set twice") }
+                tables[tables.count - 1][key] = value
             }
         }
+        while head.last?.trimmingCharacters(in: .whitespaces) == "" { head.removeLast() }
+    }
+
+    public func tables(named name: String) -> [Table] {
+        tables.filter { $0.name == name }
+    }
+
+    public mutating func set(_ key: String, to value: Value) {
+        let line = "\(key) = \(value.text)"
+        if let index = head.firstIndex(where: { $0.split(separator: "=", maxSplits: 1).first?.trimmingCharacters(in: .whitespaces) == key }) {
+            head[index] = line
+        } else {
+            head.append(line)
+        }
+        values[key] = value
+    }
+
+    public var text: String {
+        let parts = (head.isEmpty ? [] : [head.joined(separator: "\n")]) + tables.map(\.text)
+        return parts.isEmpty ? "" : parts.joined(separator: "\n\n") + "\n"
     }
 
     private static func value(_ source: Substring) -> Value? {

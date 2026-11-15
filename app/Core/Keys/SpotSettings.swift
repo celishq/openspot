@@ -56,11 +56,11 @@ public struct SpotSettings: Equatable, Sendable {
             try clear(row ?? "")
             return ""
         case Self.open where row == menuBarRun:
-            try file.showInMenuBar(spot, !file.read().arrangement.menuBar.contains(spot))
+            try file.change { $0.arrangement.set(isInMenuBar: !$0.arrangement.menuBar.contains(spot), of: spot) }
             return ""
         case let run? where command(of: run) != nil || run == floatRun:
             guard let trigger = row.flatMap(Trigger.init(text:)) else { throw SpotError.failed(1, "Openspot cannot use this key.") }
-            try file.assign(trigger, to: spot, act: command(of: run).map(GlobalKey.Act.command) ?? .float)
+            try file.change { $0.assign(trigger, to: spot, act: command(of: run).map(GlobalKey.Act.command) ?? .float) }
             return ""
         default:
             throw SpotError.failed(1, "This sheet cannot do that.")
@@ -69,13 +69,13 @@ public struct SpotSettings: Equatable, Sendable {
 
     private func clear(_ run: String) throws {
         if let command = command(of: run) {
-            try file.assign(nil, to: spot, act: .command(command))
+            try file.change { $0.assign(nil, to: spot, act: .command(command)) }
         } else if run == floatRun {
-            try file.assign(nil, to: spot, act: .float)
+            try file.change { $0.assign(nil, to: spot, act: .float) }
         } else if run == menuBarRun {
-            try file.showInMenuBar(spot, false)
+            try file.change { $0.arrangement.set(isInMenuBar: false, of: spot) }
         } else if let key = field(of: run) {
-            try file.set(setting: key, of: spot, to: nil)
+            try file.change { $0.set(setting: key, of: spot, to: nil) }
         }
     }
 

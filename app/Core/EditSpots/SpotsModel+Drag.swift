@@ -60,10 +60,11 @@ extension SpotsModel {
         var order = (cards.filter(\.isOnGrid) + cards.filter { !$0.isOnGrid }).map(\.id)
         order.removeAll { $0 == drag.id }
         order.insert(drag.id, at: target.place)
-        arrangement.arrange(order)
-        if target.isOnGrid != drag.home.isOnGrid { arrangement.set(isOnGrid: target.isOnGrid, of: drag.id) }
-        arrangement.set(panel: target.panel, of: drag.id)
-        saveArrangement(selecting: drag.id, ending: {
+        var next = arrangement
+        next.arrange(order)
+        if target.isOnGrid != drag.home.isOnGrid { next.set(isOnGrid: target.isOnGrid, of: drag.id) }
+        next.set(panel: target.panel, of: drag.id)
+        saveArrangement(next, selecting: drag.id, ending: {
             self.drag = nil
             landing = drag.id
         }, landed: { self.endLanding(of: drag.id) })

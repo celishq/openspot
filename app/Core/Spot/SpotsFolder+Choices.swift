@@ -5,7 +5,8 @@ extension SpotsFolder {
         Set(((try? SpotsFolder(url: url).keptScan())?.files ?? []).map(\.id))
     }
 
-    public func turn(_ ids: [String], on isOn: Bool, in config: ConfigFile) throws {
+    @discardableResult
+    public func turn(_ ids: [String], on isOn: Bool, in config: ConfigFile) throws -> KeptConfig {
         let choices = Set(keptCoreChoices().map(Self.coreID(of:)))
         let own = ownIDs
         if let id = ids.first(where: { !choices.contains($0) && !(isOn && own.contains($0)) }) {
@@ -14,8 +15,6 @@ extension SpotsFolder {
         if !isOn, let id = ids.first(where: own.contains) {
             throw SpotError.failed(1, "`\(id)` is a file in your spots folder, so it is always on.")
         }
-        var arrangement = config.read().arrangement
-        ids.forEach { arrangement.set(isEnabled: isOn, of: $0) }
-        try config.write(arrangement)
+        return try config.change { config in ids.forEach { config.arrangement.set(isEnabled: isOn, of: $0) } }
     }
 }

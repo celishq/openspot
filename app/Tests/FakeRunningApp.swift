@@ -13,7 +13,7 @@ actor FakeRunningApp: RunningApp {
 
     private(set) var changeList: [ConfigChange] = []
 
-    func configChanged(_ change: ConfigChange) {
+    func configChanged(_ change: ConfigChange, to config: KeptConfig) {
         changes += 1
         changeList.append(change)
     }

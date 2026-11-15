@@ -7,8 +7,8 @@ struct KeyCalls {
     func set(app name: String, to key: String) -> CommandAPI.Work {
         CommandAnswer.work { [environment, app] in
             guard let shortcut = Shortcut(text: key) else { throw SpotError.failed(1, "Openspot cannot use `\(key)`. Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.") }
-            try ConfigFile.standard(environment: environment).set(name, to: shortcut.text)
-            await app?.configChanged(.keys)
+            let config = try ConfigFile.standard(environment: environment).change { $0.set(shortcut, for: name) }
+            await app?.configChanged(.keys, to: config)
             return ""
         }
     }
@@ -19,8 +19,8 @@ struct KeyCalls {
                 guard let trigger = Trigger(text: key) else { throw SpotError.failed(1, "Openspot cannot use `\(key)`. Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab, or use shake.") }
                 return trigger
             }
-            try ConfigFile.standard(environment: environment).assign(trigger, to: spot, act: act)
-            await app?.configChanged(.keys)
+            let config = try ConfigFile.standard(environment: environment).change { $0.assign(trigger, to: spot, act: act) }
+            await app?.configChanged(.keys, to: config)
             return ""
         }
     }

@@ -1,7 +1,7 @@
 import Foundation
 
 public protocol RunningApp: Sendable {
-    func configChanged(_ change: ConfigChange) async
+    func configChanged(_ change: ConfigChange, to config: KeptConfig) async
     func status() async -> (update: String?, calls: Int, isFirstLaunch: Bool)
     func checkUpdate() async -> Bool
     func installUpdate() async -> Bool

@@ -163,7 +163,7 @@ extension SpotsModel {
     }
 
     public func settingsSheet(of entry: Entry) -> String? {
-        guard entry.item == nil, let settings = entry.spot.settingsSheet, settings.hasRows(in: loadedConfig ?? Config(text: "")) else { return nil }
+        guard entry.item == nil, let settings = entry.spot.settingsSheet, settings.hasRows(in: config) else { return nil }
         return SpotSettings.sheetID(of: entry.id)
     }
 

@@ -177,7 +177,9 @@ final class CoreSpotsTests: XCTestCase {
         arrangement.set(isEnabled: true, of: "links")
         arrangement.set(isEnabled: false, of: "apps")
         XCTAssertEqual(arrangement.enabled, ["links"])
-        XCTAssertEqual(Config(text: arrangement.text).arrangement.enabled, ["links"])
+        var changed = config
+        changed.arrangement = arrangement
+        XCTAssertEqual(Config(text: changed.text).arrangement.enabled, ["links"])
     }
 
     func testTheStandardFolderTakesTheEnabledSpotsFromTheConfig() throws {

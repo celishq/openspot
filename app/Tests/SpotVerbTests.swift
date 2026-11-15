@@ -7,7 +7,7 @@ final class SpotVerbTests: XCTestCase {
         let model: SpotsModel
 
         func act(_ act: CardAct, on id: String) async -> Bool { await model.act(act, on: id) }
-        func configChanged(_ change: ConfigChange) async { await model.configChanged(change) }
+        func configChanged(_ change: ConfigChange, to config: KeptConfig) async { await model.configChanged(change, to: config) }
         func status() async -> (update: String?, calls: Int, isFirstLaunch: Bool) { (nil, 0, false) }
         func checkUpdate() async -> Bool { false }
         func installUpdate() async -> Bool { false }

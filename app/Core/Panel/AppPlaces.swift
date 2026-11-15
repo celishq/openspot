@@ -7,13 +7,15 @@ public struct AppPlaces {
     public let trash: (URL) throws -> URL
     public let defaultConfig: URL?
     public let account: AccountStore
+    public let config: ConfigFile
 
     public init(
         environment: [String: String],
         home: URL,
         defaults: UserDefaults,
         trash: @escaping (URL) throws -> URL = AppPlaces.systemTrash,
-        defaultConfig: URL? = Bundle.main.url(forResource: "defaults", withExtension: "toml")
+        defaultConfig: URL? = Bundle.main.url(forResource: "defaults", withExtension: "toml"),
+        disk: any ConfigDisk = LocalDisk()
     ) {
         self.environment = environment
         self.home = home
@@ -21,6 +23,7 @@ public struct AppPlaces {
         self.trash = trash
         self.defaultConfig = defaultConfig
         account = .standard(environment: environment, home: home)
+        config = ConfigFile(url: ConfigFile.standard(environment: environment, home: home).url, disk: disk)
     }
 
     public static func systemTrash(_ url: URL) throws -> URL {
@@ -31,10 +34,6 @@ public struct AppPlaces {
 
     public static var standard: AppPlaces {
         AppPlaces(environment: ProcessInfo.processInfo.environment, home: FileManager.default.homeDirectoryForCurrentUser, defaults: .standard)
-    }
-
-    public var config: ConfigFile {
-        .standard(environment: environment, home: home)
     }
 
     public var defaultArrangement: SpotArrangement {

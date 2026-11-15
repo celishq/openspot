@@ -13,8 +13,8 @@ struct SettingCalls {
 
     func set(_ key: String, of spot: String, to value: String?) -> CommandAPI.Work {
         CommandAnswer.work { [environment, caller, app] in
-            try ConfigFile.standard(environment: environment).set(setting: key, of: spot, to: value)
-            await app?.configChanged(key == ReservedSetting.icon ? .spots([spot]) : .value(spot: spot, caller: caller))
+            let config = try ConfigFile.standard(environment: environment).change { $0.set(setting: key, of: spot, to: value) }
+            await app?.configChanged(key == ReservedSetting.icon ? .spots([spot]) : .value(spot: spot, caller: caller), to: config)
             return ""
         }
     }

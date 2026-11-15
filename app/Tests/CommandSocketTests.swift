@@ -5,7 +5,7 @@ final class CommandSocketTests: XCTestCase {
     private struct SlowApp: RunningApp {
         let folder: URL
 
-        func configChanged(_ change: ConfigChange) async {}
+        func configChanged(_ change: ConfigChange, to config: KeptConfig) async {}
         func status() async -> (update: String?, calls: Int, isFirstLaunch: Bool) { (nil, 0, false) }
         func checkUpdate() async -> Bool { true }
         func installUpdate() async -> Bool { true }

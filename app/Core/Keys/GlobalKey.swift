@@ -20,8 +20,8 @@ public struct GlobalKey: Hashable, Sendable {
         self.init(spot: spot, act: .command(command), trigger: .key(shortcut))
     }
 
-    var text: String {
-        let command = if case .command(let id) = act { "command = \"\(id)\"\n" } else { "" }
-        return "[[keys]]\nspot = \"\(spot)\"\n\(command)key = \"\(trigger.text)\""
+    var table: ConfigDocument.Table {
+        let command: String? = if case .command(let id) = act { id } else { nil }
+        return ConfigDocument.Table("keys", [("spot", .string(spot)), ("command", command.map { .string($0) }), ("key", .string(trigger.text))])
     }
 }

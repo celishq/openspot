@@ -5,8 +5,8 @@ struct SpotRunningApp: RunningApp {
     let model: SpotsModel
     let update: AppUpdate?
 
-    func configChanged(_ change: ConfigChange) async {
-        await model.configChanged(change)
+    func configChanged(_ change: ConfigChange, to config: KeptConfig) async {
+        await model.configChanged(change, to: config)
     }
 
     func status() async -> (update: String?, calls: Int, isFirstLaunch: Bool) {

@@ -86,7 +86,7 @@ public struct SpotStore: Sendable {
         }
         guard !item.isAdded else { return item }
         if item.origin == .store { try await add(item, environment: environment) } else {
-            try config.turn(item.id, on: true)
+            try config.change { $0.arrangement.set(isEnabled: true, of: item.id) }
         }
         return item
     }

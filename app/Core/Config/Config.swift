@@ -1,30 +1,51 @@
 import Foundation
 
 public struct Config: Equatable, Sendable {
+    public enum Section: Hashable, Sendable {
+        case keys
+        case spots
+        case settings
+        case careful
+        case panels
+        case rest
+    }
+
     public private(set) var panelKey: Shortcut? = .standard
     public private(set) var fixKey: Shortcut? = .fix
     public private(set) var faults: [String] = []
-    public private(set) var arrangement = SpotArrangement()
-    public private(set) var keys: [GlobalKey] = []
+    public var arrangement = SpotArrangement()
+    public var keys: [GlobalKey] = []
     public private(set) var settings: [SpotSetting] = []
     public private(set) var isCareful = false
     public private(set) var panels = GridPanels()
+    public private(set) var isReadable = true
+    private var kept = ConfigDocument()
+
+    public init() {}
 
     public init(text: String) {
-        let document: TomlDocument
         do {
-            document = try TomlDocument(text: text)
+            self.init(document: try ConfigDocument(text: text))
         } catch {
+            self.init()
+            isReadable = false
             panelKey = nil
             faults = ["config.toml: \((error as? SpotError)?.reason ?? String(describing: error))"]
-            return
         }
-        for key in (Array(document.values.keys) + Array(document.arrays.keys)).sorted() where !(["panel_key", "fix_key", "careful", "spots", "keys", "settings"] + GridPanel.allCases.compactMap(\.configKey)).contains(key) {
+    }
+
+    public init(document: ConfigDocument) {
+        kept = document
+        kept.tables = []
+        let known = ["spots", "keys", "settings"]
+        let names = Array(document.values.keys) + Set(document.tables.map(\.name))
+        for key in names.sorted() where !(["panel_key", "fix_key", "careful"] + known + GridPanel.allCases.compactMap(\.configKey)).contains(key) {
             faults.append("config.toml: \(key) is not a setting.")
         }
-        arrangement = SpotArrangement(choices: (document.arrays["spots"] ?? []).compactMap { choice(of: $0) })
-        keys = (document.arrays["keys"] ?? []).compactMap { key(of: $0) }
-        settings = (document.arrays["settings"] ?? []).compactMap { setting(of: $0) }
+        arrangement = SpotArrangement(choices: document.tables(named: "spots").compactMap { choice(of: $0) })
+        keys = document.tables(named: "keys").compactMap { key(of: $0) }
+        settings = document.tables(named: "settings").compactMap { setting(of: $0) }
+        kept.tables += document.tables.filter { !known.contains($0.name) }
         panelKey = shortcut(document.values["panel_key"], named: "panel_key", or: .standard)
         fixKey = shortcut(document.values["fix_key"], named: "fix_key", or: .fix)
         switch document.values["careful"] {
@@ -42,19 +63,93 @@ public struct Config: Equatable, Sendable {
         }
     }
 
+    public var text: String {
+        var document = kept
+        document.tables = arrangement.tables + keys.map(\.table) + settings.map(\.table) + kept.tables
+        return document.text
+    }
+
+    public func sections(differingFrom other: Config) -> Set<Section> {
+        var sections = Set<Section>()
+        var same = other
+        if panelKey != other.panelKey || fixKey != other.fixKey || keys != other.keys { sections.insert(.keys) }
+        if arrangement != other.arrangement { sections.insert(.spots) }
+        if settings != other.settings { sections.insert(.settings) }
+        if isCareful != other.isCareful { sections.insert(.careful) }
+        if panels != other.panels { sections.insert(.panels) }
+        same.panelKey = panelKey
+        same.fixKey = fixKey
+        same.keys = keys
+        same.arrangement = arrangement
+        same.settings = settings
+        same.isCareful = isCareful
+        same.panels = panels
+        same.kept = kept
+        same.kept.tables = other.kept.tables
+        if same != self { sections.insert(.rest) }
+        return sections
+    }
+
+    public mutating func set(_ shortcut: Shortcut, for name: String) {
+        switch name {
+        case "panel_key": panelKey = shortcut
+        case "fix_key": fixKey = shortcut
+        default: return
+        }
+        kept.set(name, to: .string(shortcut.text))
+    }
+
+    public mutating func set(isCareful: Bool) {
+        self.isCareful = isCareful
+        kept.set("careful", to: .boolean(isCareful))
+    }
+
+    public mutating func show(_ panel: GridPanel, _ isShown: Bool) {
+        guard let key = panel.configKey else { return }
+        panels[panel] = isShown
+        kept.set(key, to: .boolean(isShown))
+    }
+
+    public mutating func set(setting key: String, of spot: String, to value: String?) {
+        let new = value.map { SpotSetting(spot: spot, key: key, value: $0) }
+        if let place = settings.firstIndex(where: { $0.spot == spot && $0.key == key }) {
+            settings.removeAll { $0.spot == spot && $0.key == key }
+            if let new { settings.insert(new, at: place) }
+        } else if let new {
+            settings.append(new)
+        }
+    }
+
+    public mutating func assign(_ trigger: Trigger?, to spot: String, act: GlobalKey.Act) {
+        if trigger == .shake { keys.removeAll { $0.trigger == .shake && ($0.spot != spot || $0.act != act) } }
+        let place = keys.firstIndex { $0.spot == spot && $0.act == act }
+        let key = trigger.map { GlobalKey(spot: spot, act: act, trigger: $0) }
+        switch (place, key) {
+        case (let place?, let key?): keys[place] = key
+        case (let place?, nil): keys.remove(at: place)
+        case (nil, let key?): keys.append(key)
+        case (nil, nil): break
+        }
+    }
+
+    private mutating func unread<Value>(_ table: ConfigDocument.Table, _ fault: String) -> Value? {
+        faults.append(fault)
+        kept.tables.append(table)
+        return nil
+    }
+
     public func setting(_ key: String, of spot: String) -> String? {
         settings.first { $0.spot == spot && $0.key == key }?.value
     }
 
-    private mutating func setting(of table: [String: TomlDocument.Value]) -> SpotSetting? {
+    private mutating func setting(of table: ConfigDocument.Table) -> SpotSetting? {
         guard case .string(let spot)? = table["spot"], case .string(let key)? = table["key"], case .string(let value)? = table["value"] else {
-            faults.append("config.toml: a setting needs a spot, a key and a value.")
-            return nil
+            return unread(table, "config.toml: a setting needs a spot, a key and a value.")
         }
         return SpotSetting(spot: spot, key: key, value: value)
     }
 
-    private mutating func shortcut(_ value: TomlDocument.Value?, named name: String, or standard: Shortcut) -> Shortcut? {
+    private mutating func shortcut(_ value: ConfigDocument.Value?, named name: String, or standard: Shortcut) -> Shortcut? {
         guard let value else { return standard }
         if case .string(let text) = value, let shortcut = Shortcut(text: text) { return shortcut }
         let word = if case .string(let text) = value { text } else { "this value" }
@@ -62,24 +157,21 @@ public struct Config: Equatable, Sendable {
         return nil
     }
 
-    private mutating func key(of table: [String: TomlDocument.Value]) -> GlobalKey? {
+    private mutating func key(of table: ConfigDocument.Table) -> GlobalKey? {
         guard case .string(let spot)? = table["spot"], case .string(let text)? = table["key"] else {
-            faults.append("config.toml: a key needs a spot and a key.")
-            return nil
+            return unread(table, "config.toml: a key needs a spot and a key.")
         }
         let act: GlobalKey.Act = if case .string(let command)? = table["command"] { .command(command) } else { .float }
         guard let trigger = Trigger(text: text) else {
             let name = if case .command(let command) = act { "\(spot) \(command)" } else { spot }
-            faults.append("config.toml: \(name) cannot use \(text).")
-            return nil
+            return unread(table, "config.toml: \(name) cannot use \(text).")
         }
         return GlobalKey(spot: spot, act: act, trigger: trigger)
     }
 
-    private mutating func choice(of table: [String: TomlDocument.Value]) -> SpotArrangement.Choice? {
+    private mutating func choice(of table: ConfigDocument.Table) -> SpotArrangement.Choice? {
         guard case .string(let id)? = table["id"] else {
-            faults.append("config.toml: a spot needs an id.")
-            return nil
+            return unread(table, "config.toml: a spot needs an id.")
         }
         var choice = SpotArrangement.Choice(id: id)
         if case .string(let name)? = table["size"] {
