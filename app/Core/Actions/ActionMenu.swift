@@ -9,6 +9,10 @@ public struct ActionMenu: Equatable, Sendable {
         public var owner: String?
         var group: String?
         public var children: [Row] = []
+
+        public var isDestructive: Bool {
+            group == nil && owner != nil && action?.id == CardAct.delete.rawValue
+        }
     }
 
     public struct Header: Equatable, Sendable {
@@ -36,13 +40,14 @@ public struct ActionMenu: Equatable, Sendable {
     public private(set) var selected = 0
     public private(set) var confirming: String?
 
-    public init?(spot: Spot, item: SpotItem?, showsOpen: Bool = true, offered: [OfferedAction] = []) {
+    public init?(spot: Spot, item: SpotItem?, showsOpen: Bool = true, extras: [CommandAction] = [], offered: [OfferedAction] = []) {
         var rows: [Row] = []
-        let keyTitle = item.flatMap { $0.records ? ($0.shortcut == KeyList.unset ? Self.setTitle : Self.changeTitle) : nil }
+        let keyTitle = item.flatMap { $0.records ? ($0.shortcut == SpotSettings.unset ? Self.setTitle : Self.changeTitle) : nil }
         if showsOpen, let title = item?.openTitle ?? keyTitle ?? spot.openTitle(hasItem: item != nil) {
             rows.append(Row(title: title, keyLabel: "⏎", action: nil))
         }
         rows += spot.actions(for: item).map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0) }
+        rows += extras.map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0, isQuiet: true) }
         let sorted = offered.enumerated().sorted {
             ($0.element.group == nil ? 0 : 1, $0.element.group ?? "", $0.offset) < ($1.element.group == nil ? 0 : 1, $1.element.group ?? "", $1.offset)
         }.map(\.element)
@@ -148,13 +153,20 @@ public struct ActionMenu: Equatable, Sendable {
         hint(stopping: { _ in false })
     }
 
-    public func hint(stopping isRunning: (Row) -> Bool, second: String? = nil) -> String {
+    public func hint(stopping isRunning: (Row) -> Bool, second: [String] = []) -> String {
+        var keys = footerRows.map { "\($0.keyLabel) \(isRunning($0) ? Self.stopTitle(of: $0) : $0.title)" }
+        keys.insert(contentsOf: second, at: min(1, keys.count))
+        return (keys + (holdsMore ? ["\(Self.key) Actions"] : [])).joined(separator: "   ")
+    }
+
+    public var holdsMore: Bool {
+        rows.count > footerRows.count
+    }
+
+    private var footerRows: [Row] {
         let keyed = rows.filter { !$0.keyLabel.isEmpty && !$0.isQuiet }
         let isEscape = { (row: Row) in row.action?.key == ActionKey(name: "escape") }
-        let shown = Array(keyed.filter { !isEscape($0) }.prefix(2)) + keyed.filter(isEscape)
-        var keys = shown.map { "\($0.keyLabel) \(isRunning($0) ? Self.stopTitle(of: $0) : $0.title)" }
-        if let second { keys.insert(second, at: min(1, keys.count)) }
-        return (keys + ["\(Self.key) Actions"]).joined(separator: "   ")
+        return Array(keyed.filter { !isEscape($0) }.prefix(2)) + keyed.filter(isEscape)
     }
 
     public mutating func move(by step: Int) {

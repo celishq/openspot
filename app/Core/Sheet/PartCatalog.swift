@@ -12,10 +12,7 @@ public enum PartCatalog {
     public static func faults(in block: TextBlock) -> [String] {
         let name = block.fields.first?.value ?? ""
         let isOpen = open.contains(block.fields.first?.key ?? "")
-        var faults = isOpen ? [] : block.fields.dropFirst().map(\.key).filter { !keys.contains($0) && $0 != "option" }.map { "the part \(name) has an unknown key: \($0)" }
-        if !block.values("option").isEmpty {
-            faults.append("the part \(name) has option lines, which Openspot no longer reads. Print each option as a block after its choice, such as option=en with title=English")
-        }
+        var faults = isOpen ? [] : block.fields.dropFirst().map(\.key).filter { !keys.contains($0) }.map { "the part \(name) has an unknown key: \($0)" }
         for option in block.children {
             let id = option.value("option") ?? ""
             faults += option.fields.map(\.key).filter { !optionKeys.contains($0) }.map { "the option \(id) of \(name) has an unknown key: \($0)" }
@@ -53,7 +50,6 @@ public enum PartCatalog {
         var faults = (block.value("title") == nil ? ["the button \(id) needs a title"] : []) + shortcutFaults(in: block)
         switch block.value("scope") {
         case nil, CommandAction.Scope.item.rawValue, CommandAction.Scope.spot.rawValue: break
-        case "command": faults.append("the button \(id) has scope=command, which Openspot no longer reads. Write scope=spot")
         case let scope?: faults.append("the button \(id) has an unknown scope: \(scope). Use item or spot")
         }
         return faults

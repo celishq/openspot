@@ -41,7 +41,6 @@ public struct SpotsFolder: Sendable {
             url = URL(fileURLWithPath: path, isDirectory: true)
         } else {
             url = config(environment: environment, home: home).appendingPathComponent(folderName, isDirectory: true)
-            moveOldFolder(to: url)
         }
         let spots = SpotsFolder(url: url, core: core, enabled: enabled, disabled: disabled)
         try? spots.wrap()
@@ -49,12 +48,6 @@ public struct SpotsFolder: Sendable {
     }
 
     static let folderName = "spots"
-
-    static func moveOldFolder(to url: URL) {
-        let old = url.deletingLastPathComponent().appendingPathComponent("plugins", isDirectory: true)
-        guard !FileManager.default.fileExists(atPath: url.path), FileManager.default.fileExists(atPath: old.path) else { return }
-        try? FileManager.default.moveItem(at: old, to: url)
-    }
 
     static func config(
         environment: [String: String],
@@ -199,18 +192,8 @@ public struct SpotsFolder: Sendable {
         }
     }
 
-    static func wrapped(_ path: String, into name: String? = nil) -> String {
-        let parts = path.split(separator: "/", maxSplits: 1).map(String.init)
-        guard let first = parts.first, (first as NSString).pathExtension != SpotPackage.fileExtension else { return path }
-        if parts.count > 1 { return SpotID(first).folderName + "/" + parts[1] }
-        guard first.contains(".") || name != nil else { return SpotID(first).folderName }
-        let stem = name ?? Self.stem(of: first)
-        let file = switch first {
-        case stem + "." + SpotListing.readmeExtension: SpotListing.readmeName
-        case stem + SpotListing.previewSuffix: SpotListing.previewName
-        default: first
-        }
-        return SpotID(stem).folderName + "/" + file
+    private static func wrapped(_ file: String, into name: String) -> String {
+        SpotID(name).folderName + "/" + (file == name + "." + SpotReadme.fileExtension ? SpotReadme.name : file)
     }
 
     private static func stem(of name: String) -> String {

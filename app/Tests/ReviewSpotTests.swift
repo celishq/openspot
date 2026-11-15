@@ -303,12 +303,12 @@ final class ReviewSpotTests: XCTestCase {
 
     func testAFaultThatStopsAPartOfItShows() throws {
         let review = try ReviewSpot(
-            spot: spot([("good.spot/good.sh", "#!/bin/sh\n", true), ("bad.spot/bad.sh", "#!/bin/sh\n# read=never\n", true)]),
+            spot: spot([("good.spot/good.sh", "#!/bin/sh\n", true), ("bad.spot/bad.sh", "#!/bin/sh\n# mode=never\n", true)]),
             folder: folder
         )
 
         let text = try shown(review)
-        XCTAssertTrue(text.contains("Will not load\nbad: Bad has read=never, which Openspot no longer reads."), text)
+        XCTAssertTrue(text.contains("Will not load\nbad: Bad has an unknown mode: never."), text)
     }
 
     func testAClashWithAFolderIsRefusedBeforeTheReviewShows() throws {
@@ -430,7 +430,7 @@ final class ReviewSpotTests: XCTestCase {
         let shared = try spot([
             ("timer.spot/timer.sh", "#!/bin/sh\n# title=Timer\n", true),
             ("timer.spot/readme.md", "Counts down from a time you pick.\n", false),
-            ("timer.spot/preview.txt", "row=a\ntitle=5 minutes\n", false)
+            ("timer.spot/sample.txt", "row=a\ntitle=5 minutes\n", false)
         ])
         let store = folder.appendingPathComponent("store")
         try shared.write(to: store)
@@ -444,8 +444,8 @@ final class ReviewSpotTests: XCTestCase {
 
         _ = try await review.add()
         XCTAssertEqual(try String(contentsOf: spots.appendingPathComponent("timer.spot/readme.md"), encoding: .utf8), "Counts down from a time you pick.\n")
-        XCTAssertEqual(try String(contentsOf: spots.appendingPathComponent("timer.spot/preview.txt"), encoding: .utf8), "row=a\ntitle=5 minutes\n")
-        XCTAssertEqual(try lock.entries().map(\.paths), [["timer.spot/preview.txt", "timer.spot/readme.md", "timer.spot/timer.sh"]])
+        XCTAssertEqual(try String(contentsOf: spots.appendingPathComponent("timer.spot/sample.txt"), encoding: .utf8), "row=a\ntitle=5 minutes\n")
+        XCTAssertEqual(try lock.entries().map(\.paths), [["timer.spot/readme.md", "timer.spot/sample.txt", "timer.spot/timer.sh"]])
         XCTAssertEqual(try lock.entries().map(\.source), [package.path])
     }
 }

@@ -16,6 +16,7 @@ public struct SheetParts: Equatable, Sendable {
 
     public private(set) var parts: [SpotPart]
     public private(set) var generation = 0
+    public private(set) var answered = 0
     public private(set) var layout: SheetLayout?
     public private(set) var placement: SheetPlacement
     public private(set) var pictureTimes: [String: Double]
@@ -80,8 +81,9 @@ public struct SheetParts: Equatable, Sendable {
         hint(stopping: { _ in false })
     }
 
-    public func hint(escape: String = "Close", stopping isRunning: (SpotPart) -> Bool) -> String {
+    public func hint(escape: String = "Close", stopping isRunning: (SpotPart) -> Bool, actions: Bool = false) -> String {
         let keys = parts.compactMap { part in part.key.map { "\($0.label) \(isRunning(part) ? "Stop" : part.title ?? part.id.capitalized)" } }
+        if actions { return (keys + ["\(ActionMenu.key) Actions"]).joined(separator: "   ") }
         let close = parts.contains { $0.key == ActionKey(name: "escape") } ? [] : ["Esc \(escape)"]
         return (keys + close).joined(separator: "   ")
     }
@@ -198,6 +200,7 @@ public struct SheetParts: Equatable, Sendable {
         if let id, let kept, let index = parts.firstIndex(where: { $0.id == id }) { parts[index].set(kept) }
         pictureTimes = Self.pictureTimes(of: parts)
         place()
+        answered = generation
         return true
     }
 }

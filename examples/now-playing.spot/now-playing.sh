@@ -4,11 +4,9 @@
 # detail=The song in Music, with its controls
 # on=panel.open
 # on=clock.5
-# preview=sample
 # offers=card
 # offers=menubar
 . "$OPENSPOT_SH"
-here=$(cd "$(dirname "$0")" && pwd)
 cover="$OPENSPOT_DATA/cover.jpg"
 
 # Prints the card: the cover, the song and its artist, how far it played, and the controls. It takes the title, the
@@ -30,10 +28,6 @@ music() {
 
 case "$1" in
   read)
-    if [ "$OPENSPOT_REASON" = spot.preview ]; then
-      card "Midnight Drive" "Neon Coast" 0.42 "1:42" playing "$here/cover.jpg"
-      exit 0
-    fi
     state=$(music "player state as text")
     if [ -z "$state" ] || [ "$state" = stopped ]; then
       printf 'text=song\ntitle=Nothing playing\ndetail=Open Music to play a song\n'

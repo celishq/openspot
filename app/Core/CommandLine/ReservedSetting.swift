@@ -42,26 +42,6 @@ enum ReservedSetting {
         }
     }
 
-    static func replacement(of arguments: [String]) -> String? {
-        form(of: arguments)?.replacingOccurrences(of: "  ", with: " ").trimmingCharacters(in: .whitespaces)
-    }
-
-    private static func form(of arguments: [String]) -> String? {
-        let words = arguments + ["", "", ""]
-        switch (words[0], words[1]) {
-        case ("key", "set"):
-            switch words[2] {
-            case "--panel": return "openspot setting set --spot openspot panel-key \(words[3])"
-            case "--fix": return "openspot setting set --spot openspot fix-key \(words[3])"
-            default: return words[3] == "--float" ? "openspot setting set --spot \(words[2]) float \(words[4])" : "openspot setting set --spot \(words[2]) key.\(words[3]) \(words[4])"
-            }
-        case ("menubar", "on"), ("menubar", "off"): return "openspot setting set --spot \(words[2]) menubar \(words[1] == "on")"
-        case ("spot", "on"), ("spot", "off"): return "openspot setting set --spot \(words[2]) enabled \(words[1] == "on")"
-        case ("app", "login"), ("app", "link"), ("app", "careful"): return "openspot setting set --spot openspot \(words[1]) \(words[2] == "on")"
-        default: return nil
-        }
-    }
-
     static func call(of arguments: [String], spot: String?) -> Result<[String], Refusal>? {
         guard arguments.count >= 3, arguments[0] == "setting", arguments[1] == "set" else { return nil }
         var words = Array(arguments.dropFirst(2))

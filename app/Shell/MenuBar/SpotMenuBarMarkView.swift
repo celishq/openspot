@@ -58,6 +58,8 @@ struct SpotMenuBarMarkView: View {
         case .status(let title):
             dot(markColour)
             Text(title)
+        case .icon:
+            EmptyView()
         }
     }
 

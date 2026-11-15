@@ -5,7 +5,6 @@ public struct ReadReason: Equatable, Sendable {
     public static let sheet = ReadReason(rawValue: SpotEvent.sheetOpen)
     public static let want = ReadReason(rawValue: "spot.want")
     public static let change = ReadReason(rawValue: "spot.change")
-    public static let preview = ReadReason(rawValue: "spot.preview")
 
     public let rawValue: String
     public let value: String?

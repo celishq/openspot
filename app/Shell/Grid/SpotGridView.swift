@@ -75,7 +75,7 @@ struct SpotGridView: View {
         }
         .frame(width: SpotTokens.width(columns: model.panels.columns), height: height, alignment: .topLeading)
         .contentShape(Rectangle())
-        .onDrop(of: [.fileURL, .storeCard], delegate: SpotGridDrop(model: model, target: $dropTarget))
+        .onDrop(of: [.fileURL], delegate: SpotGridDrop(model: model, target: $dropTarget))
     }
 
     private func motion(of placement: SpotPlacement, at place: CGRect, id: String) -> SpotPushedCard {

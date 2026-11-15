@@ -48,6 +48,22 @@ final class SheetPartsTests: XCTestCase {
         try XCTUnwrap(SheetParts(output: SpotOutput(text: text)))
     }
 
+    func testThePartsMarkTheAnswerToEachChangeAndAnEqualPollChangesNothing() throws {
+        var parts = try panel(lights)
+        let first = parts
+
+        parts.take(SpotOutput(text: lights), answering: parts.generation)
+        XCTAssertEqual(parts, first)
+
+        parts.set("90", of: "brightness")
+        parts.take(SpotOutput(text: lights), answering: parts.generation)
+        let answered = parts.answered
+        parts.take(SpotOutput(text: lights), answering: parts.generation - 1)
+
+        XCTAssertNotEqual(answered, first.answered)
+        XCTAssertEqual(parts.answered, answered)
+    }
+
     func testThePartsKeepTheTimeOfTheLastChangeOfEachPictureWhenTheyArrive() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-pictures-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -241,7 +257,7 @@ final class SheetPartsTests: XCTestCase {
         let action = SpotOutput(text: "text=t\n\nbutton=b\ntitle=B\nshortcut=ctrl+k\n\nbutton=c\nicon=trash\n\nrow=r\nshortcut=⌃⌥K\n")
 
         XCTAssertEqual(action.actions, [])
-        XCTAssertEqual(action.unreadable, [])
+        XCTAssertEqual(action.errors, [])
         XCTAssertEqual(action.sheetFaults, [key, "the button c needs a title"])
         XCTAssertEqual(SpotOutput(text: "grid=b\n\nbutton=b\ntitle=B\nshortcut=ctrl+k\n").partFaults, [key])
     }
@@ -270,7 +286,7 @@ final class SheetPartsTests: XCTestCase {
     func testTheCatalogReportsWhatAPartCannotHold() {
         XCTAssertEqual(SpotOutput(text: lights).partFaults, [])
         XCTAssertEqual(SpotOutput(text: "text=a\ncolour=red\n").partFaults, ["the part a has an unknown key: colour"])
-        XCTAssertEqual(SpotOutput(text: "choice=a\noption=en:English\n").partFaults, ["the part a has option lines, which Openspot no longer reads. Print each option as a block after its choice, such as option=en with title=English"])
+        XCTAssertEqual(SpotOutput(text: "choice=a\noption=en:English\n").partFaults, ["the part a has an unknown key: option"])
         XCTAssertEqual(SpotOutput(text: "choice=a\ncolor=red\n").partFaults, ["the part a needs a color as #rrggbb: red"])
         XCTAssertEqual(SpotOutput(text: "text=a\nshortcut=nope+a\n").partFaults, ["the part a has an unknown key combination: nope+a"])
         XCTAssertEqual(SpotOutput(text: "text=a\ntitle=A\ndetail=9%\nvalue=0.09\ntone=bad\n").partFaults, [])

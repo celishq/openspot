@@ -43,7 +43,7 @@ public struct ReviewSpot: Equatable, Sendable {
         let grown = spot.replaced(in: folder).isEmpty ? [] : uses.filter { !installed.contains($0) }
         let canAlso = Self.canAlso(spot, uses: Set(uses), id: primary.id)
         let readme = spot.readme
-        let rows = spot.preview.map { SpotOutput(text: $0).items.map(\.title) } ?? []
+        let rows = spot.sampleText.map { SpotOutput(text: $0).items.map(\.title) } ?? []
         canDo = canAlso.map { "Can also: \($0)" } + runs.map { "Runs by itself: \($0)" }
         trust = [
             Self.section("Uses", uses.isEmpty ? [] : [uses.map(\.rawValue).joined(separator: ", ")]),
@@ -62,7 +62,7 @@ public struct ReviewSpot: Equatable, Sendable {
             runs.isEmpty ? "\(quiet)\n\n" : Self.section("Runs by itself", runs),
             Self.section("Replaces, and moves the old file to the Trash", spot.replaced(in: folder)),
             Self.section("Will not load", scan.refused.map { "\($0.file): \($0.reason)" }),
-            readme.map { "\($0)\n\n" },
+            readme.map { "\(SpotReadme.shown($0))\n\n" },
             Self.section("Preview", rows)
         ].compactMap { $0 }.joined() + spot.files.filter { !$0.path.hasSuffix("/\(ReleaseLog.fileName)") }.map(Self.shown).joined(separator: "\n")
     }

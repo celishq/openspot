@@ -40,7 +40,7 @@ extension SpotsModel {
     public func tap(_ id: String, opening: Bool = false) {
         guard !menuOwnsPointer, let position = visible.firstIndex(where: { $0.id == id }) else { return }
         selected = position
-        if !opening || !openSelected() { runSelected() }
+        if !opening || !openSelectedSettings() { runSelected() }
     }
 
     public func setLevel(_ id: String, to value: Double) {
@@ -66,13 +66,6 @@ extension SpotsModel {
             return
         }
         run(entry)
-    }
-
-    @discardableResult
-    public func openSelected() -> Bool {
-        guard isOnGrid, let entry = selectedEntry, entry.item == nil, entry.spot.pressRuns, entry.kind.opensSheet else { return false }
-        presentSheet(of: entry.id, moving: true)
-        return true
     }
 
     public func press(_ id: String) {
@@ -113,7 +106,7 @@ extension SpotsModel {
     }
 
     public func handleChain(code: UInt32, modifiers: Shortcut.Modifiers) -> Bool {
-        guard isOnGrid, let entry = entries.first(where: { entry in
+        guard isChainHeld, isOnGrid, let entry = entries.first(where: { entry in
             entry.letter.map { entryKey.chains(to: $0, code: code, modifiers: modifiers) } ?? false
         }) else { return false }
         press(entry.id)
@@ -157,10 +150,21 @@ extension SpotsModel {
         }
     }
 
-    public func openSoleSettings() -> Bool {
-        guard openList == nil, let entry = selectedEntry, entry.spot.soleCommand != nil else { return false }
-        pushFirst(entry.id, moving: true)
+    public func openSelectedSettings() -> Bool {
+        guard isOnGrid, let entry = selectedEntry else { return false }
+        return openSettings(of: entry)
+    }
+
+    @discardableResult
+    public func openSettings(of entry: Entry) -> Bool {
+        guard let id = settingsSheet(of: entry) else { return false }
+        pushFirst(id, moving: true)
         return true
+    }
+
+    public func settingsSheet(of entry: Entry) -> String? {
+        guard entry.item == nil, let settings = entry.spot.settingsSheet, settings.hasRows(in: loadedConfig ?? Config(text: "")) else { return nil }
+        return SpotSettings.sheetID(of: entry.id)
     }
 
     var soleHint: String? {
@@ -177,8 +181,8 @@ extension SpotsModel {
             if isShown { host.dismiss() }
             press(key)
         } else {
-            pushFirst(entry.id, moving: true)
-            toggleRecording(id: KeyList.keyRun(spot: entry.id, command: command))
+            openSettings(of: entry)
+            toggleRecording(id: SpotSettings.keyRun(spot: entry.id, command: command))
         }
     }
 
@@ -212,6 +216,11 @@ extension SpotsModel {
     }
 
     public func openFromMenuBar(_ id: String) {
+        if let entry = entries.first(where: { $0.id == id && $0.item == nil }), !entry.spot.showsValueInMenuBar, !entry.spot.opensOnReturn {
+            let recordsFirst = entry.spot.soleCommand.map { command in !assignedKeys.contains { $0.spot == id && $0.act == .command(command) } } ?? false
+            if recordsFirst { host.show() }
+            return run(entry)
+        }
         let opens = entries.first { $0.id == id && $0.kind.opensSheet }?.id
         if isShown, opens == nil || openList == opens {
             host.dismiss()
@@ -222,10 +231,5 @@ extension SpotsModel {
             host.show()
             selected = visible.firstIndex { $0.spot.places.contains(id) } ?? 0
         }
-    }
-
-    public func openBigView() {
-        guard let entry = selectedEntry else { return }
-        host.notify("\(entry.state.title) has no big view yet.")
     }
 }

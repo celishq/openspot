@@ -3,7 +3,7 @@ import Foundation
 public struct SpotHeader: Equatable, Sendable {
     private static let limit = 4096
     private static let marks = ["//", "--", "#"]
-    private static let kinds: Set<String> = ["button", "field", "command", "setting"]
+    private static let kinds: Set<String> = ["button", "field"]
 
     public let block: TextBlock
 

@@ -14,12 +14,6 @@ final class SpotTests: XCTestCase {
         XCTAssertEqual(try dataName(id: "home/coffee"), "home")
     }
 
-    func testADataKeyRefusesTheSpotAndSaysThatAFolderSharesItsData() throws {
-        XCTAssertThrowsError(try dataName(id: "links", header: [.init(key: "data", value: "notes")])) { error in
-            XCTAssertTrue((error as? SpotError)?.reason.contains("OPENSPOT_DATA") == true, "\(error)")
-        }
-    }
-
     private var folder: URL!
 
     override func setUpWithError() throws {

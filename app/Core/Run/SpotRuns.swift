@@ -107,7 +107,13 @@ public final class SpotRuns {
         placed = Set(scan.spots.flatMap(\.places))
         self.menuBar = menuBar
         order = scripts.map(\.id)
+        let owners = Dictionary(scan.spots.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         for (id, sheet) in sheets where !order.contains(id) {
+            if let settings = SpotSettings.owner(of: id).flatMap({ owners[$0] })?.settingsSpot {
+                sheet.update(settings)
+                continue
+            }
+            if let owner = OwnedSheet.owner(of: id), owner.sheet == .edit, owners[owner.spot] != nil, editor != nil { continue }
             sheets[id] = nil
             if sheet.isOpen { onReport(id, .closed) }
             if floating.remove(id) != nil { onReport(id, .landed) }
@@ -134,6 +140,24 @@ public final class SpotRuns {
         }
         sheets[id] = sheet
         return sheet
+    }
+
+    @discardableResult
+    public func settingsSheet(of spot: Spot) -> SpotRun? {
+        spot.settingsSpot.map(sheet(for:))
+    }
+
+    public var editsSpots: Bool {
+        editor != nil
+    }
+
+    private var editor: Spot? {
+        sheets.values.lazy.map(\.spot).first { $0.editsSpots && $0.isBuiltIn }
+    }
+
+    @discardableResult
+    public func editSheet(of spot: Spot, isOwn: Bool) -> SpotRun? {
+        editor?.editSheet(of: spot, isOwn: isOwn).map(sheet(for:))
     }
 
     func willOpen(_ sheet: SpotRun) {
@@ -188,8 +212,9 @@ public final class SpotRuns {
 
     public var menuBarMarks: [(id: String, mark: MenuBarMark)] {
         order.compactMap { id in
-            guard let sheet = sheets[id], isInMenuBar(sheet.spot), let mark = MenuBarMark(reading: sheet.reading) else { return nil }
-            return (id, mark)
+            guard let sheet = sheets[id], isInMenuBar(sheet.spot) else { return nil }
+            guard sheet.spot.showsValueInMenuBar else { return (id, MenuBarMark(icon: sheet.spot.symbol, name: sheet.spot.name)) }
+            return MenuBarMark(reading: sheet.reading).map { (id, $0) }
         }
     }
 
@@ -290,7 +315,7 @@ public final class SpotRuns {
             }
             let ending: ScriptCall.End = call.isStopped ? .stopped : end
             self?.dropFinished()
-            if let self { usage.called(spot, seconds: Date().timeIntervalSince(begin), isFailure: { if case .failed = ending { true } else { false } }(), at: now()) }
+            if let self, OwnedSheet.owner(of: id) == nil { usage.called(spot, seconds: Date().timeIntervalSince(begin), isFailure: { if case .failed = ending { true } else { false } }(), at: now()) }
             if let process {
                 self?.record(spot, action, input: input, frames: printed + (process.failedFrame.map { [$0] } ?? []), errors: process.errors, end: ending, reason: reason, started: call.started, begin: begin)
             }
@@ -337,14 +362,10 @@ public final class SpotRuns {
         return (script, frames, token)
     }
 
-    private func frames(of spot: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, variables: [String: String] = [:], withKeys: Bool = true) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void, process: ScriptProcess?) {
-        let isOwnRead = spot.listsKeysAbove && action.arguments.first == "read"
-        if withKeys, isOwnRead, let keyList = spot.keyList {
-            let own = frames(of: spot, action, input: input, limit: limit, variables: variables, withKeys: false)
-            return (Self.prefixed(own.stream) { (try? keyList.answer(["read"])) ?? "" }, own.halt, own.process)
-        }
-        if !isOwnRead, let keyList = spot.keyList, keyList.answers(action.arguments) {
-            let (stream, halt) = answered { try keyList.answer(action.arguments) }
+    private func frames(of spot: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, variables given: [String: String] = [:]) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void, process: ScriptProcess?) {
+        let variables = given.merging(editing(spot)) { given, _ in given }
+        if spot.holdsSettings, let settings = spot.settingsSheet {
+            let (stream, halt) = answered { try settings.answer(action.arguments) }
             return (stream, halt, nil)
         }
         if let sheet = spot.host {
@@ -377,54 +398,12 @@ public final class SpotRuns {
         return (stream, { process.stop() }, process)
     }
 
-    static func joined(keys: String, own frame: String) -> String {
-        let keyBlocks = TextBlock.blocks(in: keys)
-        let ownBlocks = TextBlock.blocks(in: frame)
-        func ids(_ blocks: [TextBlock]) -> [String] {
-            blocks.compactMap { $0.fields.first?.key == "button" ? $0.fields.first?.value : nil }
-        }
-        let ownActions = ids(ownBlocks)
-        let keyActions = ids(keyBlocks).filter { !ownActions.contains($0) }
-        func hiding(_ actions: [String], pin: Bool) -> (TextBlock) -> TextBlock? {
-            { block in
-                guard let kind = block.fields.first?.key else { return block }
-                if kind == "button", keyBlocks.contains(block), ownActions.contains(block.fields.first?.value ?? "") { return nil }
-                guard kind == "row" else { return block }
-                let place = block.value("shortcut") == KeyList.unset ? SpotItem.Pin.top : .bottom
-                let pinned = pin ? [TextBlock.Field(key: "pin", value: place.rawValue)] : []
-                return TextBlock(fields: block.fields + actions.map { TextBlock.Field(key: "hides", value: $0) } + pinned)
-            }
-        }
-        func isHead(_ block: TextBlock) -> Bool {
-            block.fields.first.map { !SpotOutput.isKind($0.key) && $0.key != "button" } ?? false
-        }
-        let ownHead = ownBlocks.first(where: isHead)
-        let keyHead = keyBlocks.first(where: isHead)
-        let headFields = (ownHead?.fields ?? []) + (keyHead?.fields ?? []).filter { field in ownHead?.value(field.key) == nil }
-        let head = headFields.isEmpty ? [] : [TextBlock(fields: headFields)]
-        let rest = ownBlocks.filter { !isHead($0) }.compactMap(hiding(keyActions, pin: false))
-            + keyBlocks.filter { !isHead($0) }.compactMap(hiding(ownActions, pin: true))
-        return (head + rest).map(\.text).joined(separator: "\n")
-    }
-
-    private static func prefixed(_ frames: AsyncThrowingStream<String, Error>, head: @escaping @Sendable () -> String) -> AsyncThrowingStream<String, Error> {
-        let (stream, continuation) = AsyncThrowingStream.makeStream(of: String.self)
-        let task = Task {
-            let rows = head()
-            var printed = false
-            do {
-                for try await frame in frames {
-                    printed = true
-                    continuation.yield(rows.isEmpty ? frame : Self.joined(keys: rows, own: frame))
-                }
-                if !printed, !rows.isEmpty { continuation.yield(rows) }
-                continuation.finish()
-            } catch {
-                continuation.finish(throwing: error)
-            }
-        }
-        continuation.onTermination = { _ in task.cancel() }
-        return stream
+    private func editing(_ spot: Spot) -> [String: String] {
+        guard let owner = OwnedSheet.owner(of: spot.id), owner.sheet == .edit else { return [:] }
+        var variables = ["OPENSPOT_EDIT": owner.spot]
+        variables["OPENSPOT_EDIT_FILE"] = spot.editedFile?.path
+        variables["OPENSPOT_EDIT_FAILURE"] = sheets[owner.spot]?.failure
+        return variables
     }
 
     private func answered(by work: @escaping @Sendable () async throws -> String) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void) {

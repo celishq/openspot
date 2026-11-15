@@ -43,13 +43,15 @@ struct SpotFloatView: View {
     }
 
     private func sheet(_ entry: SpotsModel.Entry, _ run: SpotRun, size: CGSize) -> some View {
-        VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
+        let sole = fills ? run.panel.flatMap { $0.parts.count == 1 ? $0.parts.first : nil }.flatMap { $0.kind == "view" ? $0 : nil } : nil
+        return VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             if !fills { header(entry, run) }
-            if fills, let parts = run.panel, parts.parts.count == 1, let part = parts.parts.first, part.kind == "view", let view = entry.spot.view {
+            if let part = sole, let view = entry.spot.view {
                 GeometryReader { area in
-                    SpotCustomView(source: view, values: part.values, card: .square, room: area.size, views: .shared) { run.set(part, to: $0) }
+                    SpotCustomView(source: view, values: part.values, card: .square, room: area.size, answers: run.panel?.answered ?? 0, views: .shared) { run.set(part, to: $0) }
                         .equatable()
                 }
+                .ignoresSafeArea()
                 .task(id: view) { await SpotViews.shared.load(view) }
             } else if let parts = run.panel {
                 SheetPartsView(
@@ -80,7 +82,7 @@ struct SpotFloatView: View {
                 )
             }
         }
-        .padding(SpotTokens.padding)
+        .padding(sole == nil ? SpotTokens.padding : 0)
         .frame(width: fills ? nil : size.width, height: fills ? nil : size.height, alignment: .topLeading)
         .frame(maxWidth: fills ? .infinity : nil, maxHeight: fills ? .infinity : nil, alignment: .topLeading)
         .modifier(FloatSurface(fills: fills))
@@ -90,20 +92,7 @@ struct SpotFloatView: View {
         HStack(spacing: SpotTokens.padding - 5) {
             SpotGlyph(entry: entry)
                 .modifier(SpotFileDragSource(items: run.list.shown, hasFiles: run.list.hasFiles, onDrop: { model.dragOut($0, of: id) }))
-            VStack(alignment: .leading, spacing: SpotType.lineGap) {
-                Text(entry.shownState.title)
-                    .font(SpotType.title)
-                    .frame(height: SpotType.titleLine)
-                    .foregroundStyle(SpotTheme.ink)
-                    .lineLimit(1)
-                if let subtitle = entry.shownState.subtitle {
-                    Text(subtitle)
-                        .font(SpotType.detail)
-                        .frame(height: SpotType.detailLine)
-                        .modifier(SpotSecondaryText())
-                        .lineLimit(1)
-                }
-            }
+            SpotSheetTitle(title: entry.shownState.title, subtitle: entry.shownState.subtitle)
             Spacer(minLength: 0)
             SpotRoundButton(symbol: "xmark", label: "Close") { model.land(id) }
         }
@@ -145,7 +134,11 @@ private struct FloatSurface: ViewModifier {
 
     func body(content: Content) -> some View {
         if fills {
-            content.background { Color.clear.modifier(SpotGlass(radius: SpotTokens.radius)).ignoresSafeArea() }
+            content.background {
+                Color.clear
+                    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: SpotTokens.radius, style: .continuous))
+                    .ignoresSafeArea()
+            }
         } else {
             content.modifier(SpotGlass())
         }

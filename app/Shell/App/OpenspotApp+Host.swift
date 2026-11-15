@@ -57,10 +57,6 @@ extension OpenspotApp: SpotsHost {
         spotWindows.removeValue(forKey: id)?.close()
     }
 
-    func showForDrag() {
-        showPanelForDrag(beside: spotWindows.values.first(where: \.isVisible)?.frame)
-    }
-
     func window(_ entry: SpotsModel.Entry) {
         if model.isShown { panel?.hide() }
         let window = spotWindows[entry.id] ?? SpotSheetWindow.make(model: model, entry: entry)

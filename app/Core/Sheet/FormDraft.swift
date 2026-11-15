@@ -15,7 +15,7 @@ public struct FormDraft: Equatable, Sendable {
             choices = ItemList(items: choice.options.map { option in
                 SpotItem(
                     title: option.title, run: option.id, picture: Icon(text: option.icon),
-                    isOn: choice.picks?.contains(option.id) ?? false
+                    isOn: choice.picks?.contains(option.id) ?? (option.id == choice.value)
                 )
             })
             choices?.select(run: values[choice.name] ?? "")

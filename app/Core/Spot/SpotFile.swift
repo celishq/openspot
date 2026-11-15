@@ -1,7 +1,6 @@
 import Foundation
 
 public struct SpotFile: Equatable, Sendable {
-    private static let widgetExtension = "toml"
     public static let inlineExtension = "js"
 
     public let id: String
@@ -14,13 +13,7 @@ public struct SpotFile: Equatable, Sendable {
 
     public init?(file url: URL, id: String) throws {
         if SwiftProgram.isProgram(url) { return nil }
-        if url.pathExtension == Self.widgetExtension {
-            let document = try TomlDocument(text: try String(contentsOf: url, encoding: .utf8))
-            guard document.arrays["widgets"] == nil else {
-                throw SpotError.fault("\(url.lastPathComponent) holds widgets, which Openspot no longer reads. Write a spot whose header draws its card from other spots, such as grid.large=cpu cpu memory")
-            }
-            return nil
-        } else if Self.runs(url) {
+        if Self.runs(url) {
             try self.init(script: url, header: SpotHeader(url: url).block, id: id)
         } else {
             return nil
@@ -35,7 +28,6 @@ public struct SpotFile: Equatable, Sendable {
         }
         let icon = Icon(text: header.value("icon"))
         let symbol = icon?.symbol
-        try Self.refuseOldKeys(header, of: name)
         let on = try SpotRead(on: header.values("on"), of: name)
         let read = on?.moments.isEmpty == false ? on : nil
         let emits = SpotRead.words(header.value("emits"))
@@ -46,9 +38,6 @@ public struct SpotFile: Equatable, Sendable {
         let isInline = url.pathExtension == Self.inlineExtension && !FileManager.default.isExecutableFile(atPath: url.path)
         let modeName = header.value("mode") ?? SpotMode.once.rawValue
         guard let named = SpotMode(rawValue: modeName), named != .inline else {
-            if modeName == SpotMode.inline.rawValue {
-                throw SpotError.fault("\(name) has mode=inline, which Openspot no longer reads. A .js file runs inline, so remove the line")
-            }
             throw SpotError.fault("\(name) has an unknown mode: \(modeName). Use once, stay or always")
         }
         if isInline, named != .once {
@@ -76,10 +65,8 @@ public struct SpotFile: Equatable, Sendable {
         if let view, URL(fileURLWithPath: view).pathExtension != SwiftProgram.sourceExtension {
             throw SpotError.fault("\(name) needs a Swift file for its view, such as view=\(url.deletingPathExtension().lastPathComponent).swift")
         }
-        let preview = header.value("preview")
-        guard preview == nil || preview == "sample" else {
-            throw SpotError.fault("\(name) has an unknown preview: \(preview!). Use preview=sample, and print fake data while OPENSPOT_REASON is spot.preview")
-        }
+        let edits = header.value("edits")
+        guard edits == nil || edits == "spots" else { throw SpotError.fault("\(name) has an unknown edits: \(edits!). Use edits=spots") }
         let places: Set<Place> = namedPlaces ?? (offeredActions.isEmpty && !answersOnly ? [.card] : [])
         let kind: SpotKind = mode.stays || places.contains(.search) || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch
         try Place.check(places, read: read, mode: mode, kind: kind, of: name)
@@ -112,72 +99,21 @@ public struct SpotFile: Equatable, Sendable {
             pages: header.values("pages"),
             uses: uses,
             keywords: header.list("keywords"),
-            previewsSample: preview != nil
+            sample: Self.sample(beside: url),
+            editsSpots: edits != nil
         )
         self.init(id: id, spots: [command])
     }
 
     static func runs(_ url: URL) -> Bool {
+        if SpotSample.isScript(url) { return false }
         if FileManager.default.isExecutableFile(atPath: url.path) { return true }
         return url.pathExtension == inlineExtension && !SpotHeader(url: url).block.fields.isEmpty
     }
 
-    private static func refuseOldKeys(_ header: TextBlock, of name: String) throws {
-        if let read = header.value("read") {
-            let events = SpotRead.words(read).compactMap { ["panel": "on=panel.open", "sheet": "on=sheet.open"][$0] }
-            let fix = events.isEmpty ? "an event, such as on=sheet.open" : events.joined(separator: " and ")
-            throw SpotError.fault("\(name) has read=\(read), which Openspot no longer reads. Write \(fix)")
-        }
-        if let every = header.value("every") {
-            throw SpotError.fault("\(name) has every=\(every), which Openspot no longer reads. Write on=clock.\(every)")
-        }
-        if let answers = header.value("answers") {
-            throw SpotError.fault("\(name) has answers=\(answers), which Openspot no longer reads. Write on=search.text \(answers)")
-        }
-        if header.value("stay") != nil {
-            throw SpotError.fault("\(name) has stay, which Openspot no longer reads. Use mode=stay or mode=always")
-        }
-        let commands = header.values("command") + header.children.compactMap { $0.value("command") }
-        if let command = commands.first {
-            throw SpotError.fault("\(name) has command=\(command), which Openspot no longer reads. Write each command as a button block after a blank comment line, such as button=left with title=Left side")
-        }
-        let settings = header.values("setting") + header.children.compactMap { $0.value("setting") }
-        if let setting = settings.first {
-            throw SpotError.fault("\(name) has setting=\(setting), which Openspot no longer reads. Write each setting as a field block after a blank comment line, such as field=folder with title=Folder")
-        }
-        if header.value("settings") != nil {
-            throw SpotError.fault("\(name) has settings, which Openspot no longer reads. Write each setting as a field block after a blank comment line, such as field=folder with title=Folder")
-        }
-        if let global = header.value("global") {
-            throw SpotError.fault("\(name) has global=\(global), which Openspot no longer reads. Use offers=search")
-        }
-        if header.value("float") != nil {
-            throw SpotError.fault("\(name) has float, which Openspot no longer reads. Write offers=float")
-        }
-        if header.value("tray") != nil {
-            throw SpotError.fault("\(name) has tray, which Openspot no longer reads. Write offers=menubar")
-        }
-        if header.value("data") != nil {
-            throw SpotError.fault("\(name) has data, which Openspot no longer reads. The scripts of one folder share OPENSPOT_DATA, so move them into one folder")
-        }
-        try refuseLetter(header.value("shortcut"), of: name)
-        try refuseKeyword(header, of: name)
-        try refuseSize(header, of: name)
-    }
-
-    private static func refuseLetter(_ text: String?, of name: String) throws {
-        guard text != nil else { return }
-        throw SpotError.fault("\(name) has shortcut, which Openspot no longer reads. The person gives each spot its letter in Edit Spots")
-    }
-
-    private static func refuseKeyword(_ header: TextBlock, of name: String) throws {
-        guard let keyword = header.value("keyword") else { return }
-        throw SpotError.fault("\(name) has keyword=\(keyword), which Openspot no longer reads. Write keywords=a, b")
-    }
-
-    private static func refuseSize(_ header: TextBlock, of name: String) throws {
-        guard let size = header.value("size") else { return }
-        throw SpotError.fault("\(name) has size=\(size), which Openspot no longer reads. Openspot sizes a card by the person's choice, so remove it")
+    private static func sample(beside url: URL) -> URL? {
+        let sample = SpotSample.script(beside: url)
+        return SpotSample.isScript(sample) && FileManager.default.isExecutableFile(atPath: sample.path) ? sample : nil
     }
 
     private static func viewDate(of view: String, script: URL) -> Date? {
@@ -204,9 +140,6 @@ public struct SpotFile: Equatable, Sendable {
     private static let cardKeys: Set<String> = ["title", "icon", "detail", "keywords", "to"]
 
     private static func drawn(_ header: TextBlock, name: String, id: String, url: URL) throws -> Spot {
-        try refuseLetter(header.value("shortcut"), of: name)
-        try refuseKeyword(header, of: name)
-        try refuseSize(header, of: name)
         if let key = header.fields.map(\.key).first(where: { !$0.hasPrefix(drawingPrefix) && !cardKeys.contains($0) }) {
             throw SpotError.fault("\(name) draws a card of other spots, so it takes no \(key). Keep title, icon, detail, keywords, to and its grid lines, or draw its own blocks with grid lines in its output")
         }

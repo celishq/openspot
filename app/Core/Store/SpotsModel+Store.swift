@@ -8,7 +8,7 @@ extension SpotsModel {
             host.notify("\(spot.name) comes with Openspot, so the store has it already.")
             return .notOwn
         }
-        guard FileManager.default.fileExists(atPath: SpotListing.readme(of: spot.url).path) else {
+        guard FileManager.default.fileExists(atPath: SpotReadme.url(beside: spot.url).path) else {
             host.notify("Write a readme for \(spot.name), then publish it again.")
             return .needsReadme
         }
@@ -24,8 +24,8 @@ extension SpotsModel {
                 host.confirm("\(spot.name) has no change since its last publish.")
                 return .unchanged
             }
-            if spot.previewsSample {
-                try await SpotListing.capturePreview(of: spot, runs: runs)
+            if spot.sample != nil {
+                try await SpotSample.capture(of: spot, runs: runs)
                 shared = try await Task.detached(priority: .userInitiated) { try SpotPackage(sharing: spot, from: SpotsFolder(url: folder.url).scan()) }.value
             }
             guard let released = try await release(shared, named: spot.name, publishing: id) else { return .failed }

@@ -131,16 +131,15 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(result.refused.map(\.reason), ["weather.sh is outside a spot folder. Move it into weather.spot."])
     }
 
-    func testOpeningTheFolderWrapsALooseScriptWithItsReadmePreviewAndProgramIntoASpotFolder() throws {
+    func testOpeningTheFolderWrapsALooseScriptWithItsReadmeIntoASpotFolder() throws {
         try write("weather.sh", loose: true)
         try "Shows the weather.".write(to: folder.appendingPathComponent("weather.md"), atomically: true, encoding: .utf8)
-        try "row=a\n".write(to: folder.appendingPathComponent("weather.preview.txt"), atomically: true, encoding: .utf8)
         try "notes".write(to: folder.appendingPathComponent("notes.txt"), atomically: true, encoding: .utf8)
 
         XCTAssertEqual(try opened.scan().spots.map(\.id), ["weather"])
 
         let names = try FileManager.default.contentsOfDirectory(atPath: folder.appendingPathComponent("weather.spot").path).sorted()
-        XCTAssertEqual(names, ["preview.txt", "readme.md", "weather.sh"])
+        XCTAssertEqual(names, ["readme.md", "weather.sh"])
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path).sorted(), ["notes.txt", "weather.spot"])
     }
 
@@ -311,21 +310,6 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(read.seconds, 30)
     }
 
-    func testRefusesTheOldReadKeysAndNamesTheEvents() throws {
-        try write("a.sh", header: "read=launch")
-        try write("b.sh", header: "read=panel,sheet")
-        try write("c.sh", header: "every=30")
-        try write("d.sh", header: "answers=^[0-9]")
-
-        XCTAssertEqual(try scan.files, [])
-        XCTAssertEqual(try scan.refused, [
-            ScanResult.Refusal(file: "a", reason: "A has read=launch, which Openspot no longer reads. Write an event, such as on=sheet.open"),
-            ScanResult.Refusal(file: "b", reason: "B has read=panel,sheet, which Openspot no longer reads. Write on=panel.open and on=sheet.open"),
-            ScanResult.Refusal(file: "c", reason: "C has every=30, which Openspot no longer reads. Write on=clock.30"),
-            ScanResult.Refusal(file: "d", reason: "D has answers=^[0-9], which Openspot no longer reads. Write on=search.text ^[0-9]")
-        ])
-    }
-
     func testModeIsOnceStayOrAlways() throws {
         try write("a.sh", header: "mode=stay\noffers=card\noffers=menubar")
         try write("b.sh", header: "mode=always\noffers=card\noffers=menubar")
@@ -343,13 +327,11 @@ final class SpotsFolderTests: XCTestCase {
             try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
             try text.write(to: file, atomically: true, encoding: .utf8)
         }
-        try write("a.sh", header: "mode=inline")
 
         let scan = try scan
         XCTAssertEqual(scan.spots.map(\.id), ["sum"])
         XCTAssertEqual(scan.spots.map(\.mode), [.inline])
         XCTAssertEqual(scan.refused, [
-            ScanResult.Refusal(file: "a", reason: "A has mode=inline, which Openspot no longer reads. A .js file runs inline, so remove the line"),
             ScanResult.Refusal(file: "stays", reason: "Stays is a .js file, which runs inline, so it takes no mode=stay"),
         ])
     }
@@ -358,16 +340,6 @@ final class SpotsFolderTests: XCTestCase {
         try "#!/usr/bin/env node\n// title=Node\n// mode=stay\nconsole.log('hi')\n".writeScript(to: folder.spotFile("node", extension: "js"))
 
         XCTAssertEqual(try scan.spots.map(\.mode), [.stay])
-    }
-
-    func testRefusesStayAndNamesTheMode() throws {
-        try write("a.sh", header: "stay=true")
-        try write("b.sh", header: "stay=always")
-
-        XCTAssertEqual(try scan.refused, [
-            ScanResult.Refusal(file: "a", reason: "A has stay, which Openspot no longer reads. Use mode=stay or mode=always"),
-            ScanResult.Refusal(file: "b", reason: "B has stay, which Openspot no longer reads. Use mode=stay or mode=always"),
-        ])
     }
 
     func testAHeaderKeepsTheFilesItsCardTakes() throws {
@@ -387,25 +359,10 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(scan.metrics.map(\.read?.seconds), [30])
     }
 
-    func testOldHeaderKeysHaveNoEffect() throws {
-        try write("a.sh", header: "live=true\nsearch=live\nrecents=false\norder=last\ngrid=false\nrank=1")
-
-        let command = try XCTUnwrap(try scan.spots.first)
-
-        XCTAssertEqual(try scan.refused, [])
-        XCTAssertEqual(command.mode, .once)
-        XCTAssertEqual(command.kind, .launch)
-        XCTAssertTrue(command.keepsRecent)
-        XCTAssertTrue(command.isOnGrid)
-        XCTAssertFalse(command.isGlobal)
-    }
-
-    func testASpotThatOffersSearchAndCardHasACardAndOffersRowsIsRefusedWithItsFix() throws {
+    func testASpotThatOffersSearchAndCardHasACard() throws {
         try write("a.sh", header: "on=panel.open\noffers=card\noffers=search")
-        try write("b.sh", header: "on=panel.open\noffers=rows")
 
         XCTAssertEqual(try scan.spots.map(\.headerState.isOnGrid), [true])
-        XCTAssertEqual(try scan.refused, [ScanResult.Refusal(file: "b", reason: "B offers rows, which Openspot no longer reads. Use offers=search, and leave out offers=card")])
     }
 
     func testTheMainSearchNeedsAMomentOutsideTheSheet() throws {
@@ -464,23 +421,13 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     func testRefusesAHeaderWithAFault() throws {
-        try write("a.sh", header: "read=sometimes")
         try write("b.sh", header: "mode=huge")
-        try write("c.sh", header: "shortcut=ctrl+d")
         try write("f.sh", header: "offers=search")
-        try write("j.sh", header: "read=open")
-        try write("k.sh", header: "read=click")
-        try write("l.sh", header: "read=panel,later")
 
         XCTAssertEqual(try scan.files, [])
         XCTAssertEqual(try scan.refused, [
-            ScanResult.Refusal(file: "a", reason: "A has read=sometimes, which Openspot no longer reads. Write an event, such as on=sheet.open"),
             ScanResult.Refusal(file: "b", reason: "B has an unknown mode: huge. Use once, stay or always"),
-            ScanResult.Refusal(file: "c", reason: "C has shortcut, which Openspot no longer reads. The person gives each spot its letter in Edit Spots"),
-            ScanResult.Refusal(file: "f", reason: "F needs on=panel.open, on=sheet.open or a clock, such as on=clock.60, to join the main search"),
-            ScanResult.Refusal(file: "j", reason: "J has read=open, which Openspot no longer reads. Write an event, such as on=sheet.open"),
-            ScanResult.Refusal(file: "k", reason: "K has read=click, which Openspot no longer reads. Write an event, such as on=sheet.open"),
-            ScanResult.Refusal(file: "l", reason: "L has read=panel,later, which Openspot no longer reads. Write on=panel.open")
+            ScanResult.Refusal(file: "f", reason: "F needs on=panel.open, on=sheet.open or a clock, such as on=clock.60, to join the main search")
         ])
     }
 
@@ -528,20 +475,6 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(folder.url.path, "/tmp/debug/spots")
     }
 
-    func testThePluginsFolderOfAnOlderOpenspotBecomesTheSpotsFolderOnce() throws {
-        try write("config/plugins/weather.spot/weather.sh")
-        try "How to build a spot.".write(to: folder.appendingPathComponent("config/plugins/AGENTS.md"), atomically: true, encoding: .utf8)
-        let environment = ["OPENSPOT_CONFIG": folder.appendingPathComponent("config").path]
-
-        let spots = SpotsFolder.standard(environment: environment, home: folder)
-
-        XCTAssertEqual(try spots.scan().spots.map(\.id), ["weather"])
-        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("config/plugins").path))
-        try write("config/plugins/other.spot/other.sh")
-        _ = SpotsFolder.standard(environment: environment, home: folder)
-        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("config/plugins/other.spot/other.sh").path))
-    }
-
     func testASpotsPathBeatsAConfigPath() {
         let folder = SpotsFolder.standard(environment: ["OPENSPOT_CONFIG": "/tmp/debug", "OPENSPOT_SPOTS": "/tmp/own"], home: URL(fileURLWithPath: "/home"))
 
@@ -554,10 +487,4 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(folder.url.path, "/home/.config/openspot/spots")
     }
 
-    func testAShortcutInTheHeaderIsRefusedBecauseThePersonGivesTheLetter() throws {
-        try write("a.sh", header: "title=One\nshortcut=d")
-
-        XCTAssertEqual(try scan.spots.map(\.id), [])
-        XCTAssertEqual(try scan.refused, [ScanResult.Refusal(file: "a", reason: "One has shortcut, which Openspot no longer reads. The person gives each spot its letter in Edit Spots")])
-    }
 }
