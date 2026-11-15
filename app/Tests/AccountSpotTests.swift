@@ -2,11 +2,30 @@ import XCTest
 @testable import OpenspotCore
 
 final class AccountSpotTests: BuiltInCase {
+    private actor Publishes {
+        var ids: [String] = []
+
+        func add(_ id: String) {
+            ids.append(id)
+        }
+    }
+
     private let phrase = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+    private let publishes = Publishes()
+    private var sheet: AccountSheet?
 
     private var account: Spot {
         get throws {
-            try spot("account")
+            if let sheet { return sheet.spot }
+            let app = app, mac = mac, publishes = publishes
+            let made = AccountSheet(store: store, links: AccountSheet.Links(
+                allows: { await app.allows($0) },
+                copy: { mac.copied.append($0); return true },
+                publish: { await publishes.add($0) },
+                userName: { "Tony" }
+            ))
+            sheet = made
+            return made.spot
         }
     }
 
@@ -45,7 +64,7 @@ final class AccountSpotTests: BuiltInCase {
         XCTAssertTrue(spot.isFound)
         XCTAssertFalse(spot.read?.has(.panel) == true)
         XCTAssertTrue(spot.reachesAccountKey)
-        XCTAssertEqual(spot.view.map { URL(fileURLWithPath: $0).lastPathComponent }, "account.swift")
+        XCTAssertEqual(spot.view, AccountSheet.card)
     }
 
     func testWithNoAccountItOffersANewKeyOrYourOwn() async throws {
@@ -114,25 +133,25 @@ final class AccountSpotTests: BuiltInCase {
     }
 
     func testANewKeyOnThePublishPageMakesTheKeyPublishesAndGoesBack() async throws {
-        let programs = try countPrograms()
 
         _ = try await frame(["new"], page: "publish:a")
         let done = try await frame(["create"], input: "name=Tony\n", page: "publish:a")
 
         XCTAssertNotNil(try store.key())
-        XCTAssertTrue(programs().contains("openspot store publish a"), programs().joined(separator: "\n"))
+        let published = await publishes.ids
+        XCTAssertEqual(published, ["a"])
         XCTAssertTrue(done.contains("pop=true\n"), done)
     }
 
     func testYourOwnWordsOnThePublishPageSignInPublishesAndGoesBack() async throws {
-        let programs = try countPrograms()
 
         let restore = try await frame(["own"], page: "publish:a")
         let done = try await frame(["sign_in"], input: "phrase=\(phrase)\n", page: "publish:a")
 
         XCTAssertTrue(restore.contains("field=phrase"), restore)
         XCTAssertEqual(try store.key()?.words?.joined(separator: " "), phrase)
-        XCTAssertTrue(programs().contains("openspot store publish a"), programs().joined(separator: "\n"))
+        let published = await publishes.ids
+        XCTAssertEqual(published, ["a"])
         XCTAssertTrue(done.contains("pop=true\n"), done)
     }
 

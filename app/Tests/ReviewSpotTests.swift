@@ -366,7 +366,7 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertEqual(command.kind, .list)
         XCTAssertEqual(command.read, .sheet)
         XCTAssertTrue(command.growsFromField)
-        let answer = try await command.host?.answer(["read"])
+        let answer = try await command.host?.answer(["read"], input: nil, variables: [:])
         XCTAssertEqual(answer, try review.answer(["read"]))
     }
 

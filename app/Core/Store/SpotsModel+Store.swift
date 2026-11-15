@@ -56,8 +56,8 @@ extension SpotsModel {
     func accountKey(publishing id: String?) async throws -> AccountKey? {
         let account = files.account
         if let key = try await Task.detached(priority: .userInitiated, operation: { try account.key() }).value { return key }
-        let page = id.map { "publish:\($0)" }
-        if let account = entries.first(where: { $0.spot.reachesAccountKey }) {
+        let page = id.map { AccountSheet.publishPrefix + $0 }
+        if let account = entries.first(where: { $0.id == AccountSheet.id }) {
             host.present()
             if let page, account.spot.takes(page: page) {
                 _ = push(FlowSheet(spot: account.id, page: page))

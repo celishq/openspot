@@ -184,6 +184,7 @@ public final class SpotsModel {
 
     @ObservationIgnored public unowned let host: SpotsHost
     @ObservationIgnored public let files: AppPlaces
+    @ObservationIgnored public private(set) var account: AccountSheet!
     @ObservationIgnored private(set) var assignedKeys: [GlobalKey] = []
 
     public init(host: SpotsHost, files: AppPlaces = .standard, runs: SpotRuns? = nil) {
@@ -201,6 +202,12 @@ public final class SpotsModel {
             guard let self else { return bring() }
             bringParts(of: id, bring)
         }
+        account = AccountSheet(store: files.account, links: AccountSheet.Links(
+            allows: { [weak self] reason in await self?.allows(reason) ?? false },
+            copy: { text in (try? await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["LC_ALL=en_US.UTF-8", "pbcopy"], input: text)) != nil },
+            publish: { [weak self] id in _ = await self?.publish(id) },
+            userName: { NSFullUserName() }
+        ))
     }
 
     public var config: Config {
@@ -239,7 +246,7 @@ public final class SpotsModel {
         host.applyConfig(config)
         let folder = files.folder(config)
         lastRead = (config, folder)
-        var scan = spotScan.look(at: folder, hosted: reviewed.map { [$0.spot] } ?? [])
+        var scan = spotScan.look(at: folder, hosted: (folder.findsAppSpots() ? [account.spot] : []) + (reviewed.map { [$0.spot] } ?? []))
         let faults = folder.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
         if !faults.isEmpty { scan.files.append(SpotFile(id: FaultSpot.fileID, spots: faults)) }
         guard spotScan.stamp != loadedStamp || config != loadedConfig else { return holdAssignedKeys(config) }

@@ -264,6 +264,10 @@ public struct SpotsFolder: Sendable {
         return Self.files(in: folders.filter { $0.lastPathComponent != Self.appName })
     }
 
+    public func findsAppSpots() -> Bool {
+        core.map { Self.isFolder($0.appendingPathComponent(Self.appName, isDirectory: true)) } ?? false
+    }
+
     private func appFiles() -> [(file: URL, id: String)] {
         guard let folder = core?.appendingPathComponent(Self.appName, isDirectory: true), Self.isFolder(folder) else { return [] }
         return Self.files(in: [folder])

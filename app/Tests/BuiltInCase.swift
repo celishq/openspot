@@ -19,7 +19,6 @@ class BuiltInCase: XCTestCase {
         func reminderStore() -> any ReminderStore { FakeReminderStore() }
         func showCalendar(at time: Date) throws {}
         func open(_ link: URL) -> Bool { true }
-        func copy(text: String) throws { mac.copied.append(text) }
     }
 
     final class MacSettings: @unchecked Sendable {
