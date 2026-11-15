@@ -34,9 +34,7 @@ final class GlobalKeyTests: XCTestCase {
     }
 
     func testOnlyACommandThatAScriptListsTakesItsKey() throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-keys-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
+        let folder = try temporaryFolder()
         try "#!/bin/sh\n# button=full\n# title=Full screen\n".writeScript(to: folder.spotFile("move"))
         let shortcut = try XCTUnwrap(Shortcut(text: "ctrl+up"))
         let listed = GlobalKey(spot: "move", command: "full", shortcut: shortcut)
@@ -100,9 +98,7 @@ final class GlobalKeyTests: XCTestCase {
     }
 
     func testAKeyWithNoCommandStaysOnlyForASpotThatOffersFloat() throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-keys-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
+        let folder = try temporaryFolder()
         try "#!/bin/sh\n# on=sheet.open\n# offers=float\n".writeScript(to: folder.spotFile("shelf"))
         try "#!/bin/sh\n".writeScript(to: folder.spotFile("notes"))
         try "#!/bin/sh\n# on=clock.60\n# offers=card\n# offers=float\necho text=cups\n".writeScript(to: folder.spotFile("cups"))
@@ -136,9 +132,7 @@ final class GlobalKeyTests: XCTestCase {
     }
 
     func testAFileItCannotReadKeepsItsTablesOnAWrite() throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-keys-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
+        let folder = try temporaryFolder()
         let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
         let text = "[[spots]]\nid = \n"
         try text.write(to: file.url, atomically: true, encoding: .utf8)

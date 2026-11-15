@@ -110,9 +110,7 @@ final class LinksSpotTests: SampleSpotsCase {
             try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(-8 * 86400)], ofItemAtPath: marker.path)
             let expected = icons.appendingPathComponent("icons.test.png").path
 
-            setenv("OPENSPOT_REASON", "app.launch", 1)
-            _ = try await links.items(timeout: 5)
-            unsetenv("OPENSPOT_REASON")
+            _ = try await TestEnvironment.with(["OPENSPOT_REASON": "app.launch"]) { try await links.items(timeout: 5) }
             for _ in 0..<100 where !FileManager.default.fileExists(atPath: expected) {
                 try await Task.sleep(nanoseconds: 100_000_000)
             }

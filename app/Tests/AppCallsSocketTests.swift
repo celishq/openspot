@@ -2,13 +2,6 @@ import XCTest
 @testable import OpenspotCore
 
 final class AppCallsSocketTests: XCTestCase {
-    private final class Host: Mac {
-        func eventStore() -> any EventStore { FakeEventStore() }
-        func reminderStore() -> any ReminderStore { FakeReminderStore() }
-        func showCalendar(at time: Date) throws {}
-        func open(_ link: URL) -> Bool { true }
-    }
-
     private var folder: URL!
     private var outside: URL!
     private var socket: CommandSocket?
@@ -31,7 +24,7 @@ final class AppCallsSocketTests: XCTestCase {
     }
 
     private func listen(app: (any RunningApp)? = nil, runs: SpotRuns? = nil) {
-        socket = CommandSocket(folder: folder, api: CommandAPI(mac: Host(), app: app, runs: runs))
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: FakeMac(), app: app, runs: runs))
     }
 
     private func connect() -> SocketConnection {
@@ -51,16 +44,7 @@ final class AppCallsSocketTests: XCTestCase {
     }
 
     private func spot(_ name: String, header: String = "", _ body: String) throws {
-        let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: spots.spotFile(name))
-    }
-
-    private func wait(_ what: String, until fact: () -> Bool) async throws {
-        for _ in 0..<1000 {
-            if fact() { return }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTFail("waited for \(what)")
+        try TestSpot(header: header, body: "\(body)").write(to: spots.spotFile(name))
     }
 
     private func exists(_ file: URL) -> Bool {

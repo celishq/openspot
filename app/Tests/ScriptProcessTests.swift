@@ -74,12 +74,10 @@ final class ScriptProcessTests: XCTestCase {
 
     func testARunGetsTheDataFolderAndOpenspotCreatesIt() async throws {
         let config = folder.appendingPathComponent("config")
-        setenv("OPENSPOT_CONFIG", config.path, 1)
-        defer { unsetenv("OPENSPOT_CONFIG") }
         let spot = try writeSpot("data.sh", "#!/bin/sh\nprintf %s \"$OPENSPOT_DATA\"\n")
         let data = config.appendingPathComponent("data").path
 
-        let output = try await ScriptProcess.output(url: spot.url, limit: 5)
+        let output = try await ScriptProcess.output(url: spot.url, limit: 5, base: ProcessInfo.processInfo.environment.merging(["OPENSPOT_CONFIG": config.path]) { _, new in new })
 
         XCTAssertEqual(output, data)
         var isFolder: ObjCBool = false
@@ -227,7 +225,7 @@ final class ScriptProcessTests: XCTestCase {
 
         process.stop()
 
-        try await wait { self.exists("cleaned") && !process.isRunning }
+        try await wait("the clean-up and the end") { self.exists("cleaned") && !process.isRunning }
     }
 
     func testAScriptThatIgnoresTheTerminateSignalEndsAfterTwoSeconds() async throws {
@@ -238,7 +236,7 @@ final class ScriptProcessTests: XCTestCase {
 
         let started = Date()
         process.stop()
-        try await wait(seconds: 10) { !process.isRunning }
+        try await wait("the end of the process") { !process.isRunning }
 
         XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(started), 2)
     }
@@ -260,14 +258,6 @@ final class ScriptProcessTests: XCTestCase {
         kill(pid, 0) == 0
     }
 
-    private func wait(seconds: Int = 5, until fact: () -> Bool) async throws {
-        for _ in 0..<(seconds * 100) {
-            if fact() { return }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTFail("waited too long")
-    }
-
     func testATerminalStopEndsTheGroupOfEachScriptThatRuns() async throws {
         let spot = try writeSpot("long.sh", "#!/bin/sh\n\(writesPid("script"))\n\(deafChild())printf 'a=1\\n---\\n'\n\(String.longLoop)\n")
         let process = ScriptProcess(url: spot.url, stopPause: 30)
@@ -278,7 +268,7 @@ final class ScriptProcessTests: XCTestCase {
 
         await Task.detached { TerminalStop.stopEach(pause: Self.stopPause) }.value
 
-        try await wait { !self.runs(script) && !self.runs(child) }
+        try await wait("the end of the script and its child") { !self.runs(script) && !self.runs(child) }
     }
 
     func testAScriptAndAChildThatIgnoreTheTerminateSignalAreGoneOnePauseAfterAStop() async throws {
@@ -291,7 +281,7 @@ final class ScriptProcessTests: XCTestCase {
         let started = Date()
 
         process.stop()
-        try await wait { !self.runs(script) && !self.runs(child) }
+        try await wait("the end of the script and its child") { !self.runs(script) && !self.runs(child) }
 
         XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(started), Self.stopPause)
     }
@@ -305,7 +295,7 @@ final class ScriptProcessTests: XCTestCase {
         let started = Date()
 
         process.stop()
-        try await wait { !self.runs(child) }
+        try await wait("the end of the child") { !self.runs(child) }
 
         XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(started), Self.stopPause)
         XCTAssertFalse(process.isRunning)
@@ -334,7 +324,7 @@ final class ScriptProcessTests: XCTestCase {
         let started = Date()
 
         live.end()
-        try await wait { !self.runs(script) && !self.runs(child) }
+        try await wait("the end of the script and its child") { !self.runs(script) && !self.runs(child) }
 
         XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(started), Self.stopPause * 2)
     }
@@ -348,7 +338,7 @@ final class ScriptProcessTests: XCTestCase {
         let started = Date()
 
         live.end()
-        try await wait { !self.runs(child) }
+        try await wait("the end of the child") { !self.runs(child) }
 
         XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(started), Self.stopPause * 2)
         XCTAssertFalse(live.isRunning)
@@ -426,7 +416,7 @@ final class ScriptProcessTests: XCTestCase {
         } catch SpotError.timedOut {
         }
         let script = try await pid("script")
-        try await wait { !self.runs(script) }
+        try await wait("the end of the script") { !self.runs(script) }
 
         XCTAssertFalse(exists("went-on"))
     }

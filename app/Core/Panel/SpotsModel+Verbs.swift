@@ -37,7 +37,7 @@ extension SpotsModel {
         let path = file(of: entry).path
         Task {
             do {
-                _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["open", "-t", path])
+                _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["open", "-t", path], base: runs.environment)
             } catch {
                 host.notify("Openspot cannot open \(path). \(Self.reason(error))")
             }
@@ -49,7 +49,7 @@ extension SpotsModel {
         let text = prompt.changing(file(of: entry), failure: entry.failure)
         Task {
             do {
-                host.confirm(try await prompt.copy(text))
+                host.confirm(try await prompt.copy(text, base: runs.environment))
             } catch {
                 host.notify("The prompt for \(entry.spot.name) was not copied. \(Self.reason(error))")
             }

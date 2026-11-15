@@ -6,9 +6,8 @@ final class SpotFaultTests: XCTestCase {
     private var folder: URL!
     private var defaults: UserDefaults!
     private var suite = ""
-    private var host: TestHost!
+    private var host: FakeHost!
     private var model: SpotsModel!
-    private let path = ProcessInfo.processInfo.environment["PATH"]
 
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-fault-\(UUID().uuidString)")
@@ -18,22 +17,20 @@ final class SpotFaultTests: XCTestCase {
         for (name, body) in [("pbcopy", "cat > '\(folder.path)/clipboard'"), ("open", "echo \"$@\" > '\(folder.path)/opened'")] {
             try "#!/bin/sh\n\(body)\n".writeScript(to: tools.appendingPathComponent(name))
         }
-        setenv("PATH", "\(tools.path):/usr/bin:/bin", 1)
         suite = "openspot-fault-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
-        host = TestHost()
+        host = FakeHost()
         let files = AppPlaces(
             environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
             home: folder,
             defaults: defaults
         )
-        model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
+        model = SpotsModel(host: host, files: files, runs: SpotRuns(environment: ProcessInfo.processInfo.environment.merging(["PATH": "\(tools.path):/usr/bin:/bin"]) { _, new in new }, stopPause: 0.2))
         host.model = model
     }
 
     override func tearDown() async throws {
         model.quit()
-        if let path { setenv("PATH", path, 1) }
         defaults.removePersistentDomain(forName: suite)
         try? FileManager.default.removeItem(at: folder)
     }
@@ -43,16 +40,7 @@ final class SpotFaultTests: XCTestCase {
     }
 
     private func script(_ name: String, header: String = "", _ body: String) throws {
-        let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: spots.spotFile(name))
-    }
-
-    private func wait(_ what: String, until condition: () -> Bool) async throws {
-        for _ in 0..<500 {
-            if condition() { return }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTFail("waited for \(what)")
+        try TestSpot(header: header, body: "\(body)").write(to: spots.spotFile(name))
     }
 
     private func entry(_ id: String) -> SpotsModel.Entry? {

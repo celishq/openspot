@@ -1,0 +1,100 @@
+import XCTest
+
+final class CheckScriptTests: XCTestCase {
+    private static let checks = ["core", "tests", "comments", "motion", "names", "files", "getters", "spots"]
+    private static let lists = ["names", "files", "getters", "test-pauses", "spot-clocks", "spot-state"]
+
+    private static let breaches: [(check: String, file: String, text: String)] = [
+        ("core", "app/Core/Panel.swift", "@preconcurrency import AppKit\n"),
+        ("core", "app/Core/Panel.swift", "import EventKit\n"),
+        ("tests", "app/Tests/PanelTests.swift", "let text = NSPasteboard" + ".general.string(forType: .string)\n"),
+        ("tests", "app/Tests/PanelTests.swift", "try await Task" + ".sleep(for: .seconds(1))\n"),
+        ("tests", "app/Tests/PanelTests.swift", "set" + "env(\"HOME\", \"/tmp\", 1)\n"),
+        ("comments", "app/Core/Panel.swift", "struct Panel {}\n// a note\n"),
+        ("comments", "scripts/build.sh", "#!/bin/sh\n# a note\necho\n"),
+        ("motion", "app/Shell/Panel.swift", "withAnimation(." + "spring(duration: 0.3)) {}\n"),
+        ("names", "app/Core/PanelManager.swift", "struct PanelManager {}\n"),
+        ("files", "app/Core/Panel.swift", "struct Sheet {}\n"),
+        ("files", "app/Core/Panel.swift", "struct Panel {}\nstruct Sheet {}\n"),
+        ("getters", "app/Core/Panel.swift", "struct Panel {\n    var text: String {\n        (try? String(contentsOfFile: \"/a\", encoding: .utf8)) ?? \"\"\n    }\n}\n"),
+        ("getters", "app/Core/Panel.swift", "struct Panel {\n    var isOn: Bool { FileManager.default.fileExists(atPath: \"/a\") }\n}\n"),
+        ("getters", "app/Shell/Panel.swift", "struct Panel {\n    static func open(_ file: URL) -> Panel? {\n        guard FileManager.default.fileExists(atPath: file.path) else { return nil }\n        return Panel()\n    }\n}\n"),
+        ("spots", "spots/weather.spot/weather.sh", "#!/bin/sh\n# title=Weather\n# on=clock.5\necho\n"),
+        ("spots", "examples/weather.spot/weather.sh", "#!/bin/sh\n# title=Weather\necho 1 > \"${TMPDIR:-/tmp}/weather\"\n")
+    ]
+
+    private var scripts: URL {
+        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("scripts")
+    }
+
+    private func cleanTree() throws -> URL {
+        let root = try temporaryFolder()
+        for folder in ["app/Core", "app/Shell", "app/Client", "app/Tests", "scripts/breaks", "spots", "examples"] {
+            try FileManager.default.createDirectory(at: root.appendingPathComponent(folder), withIntermediateDirectories: true)
+        }
+        for list in Self.lists {
+            try "".write(to: root.appendingPathComponent("scripts/breaks/\(list).txt"), atomically: true, encoding: .utf8)
+        }
+        try "verify:\n\tsh scripts/check-core.sh\n".write(to: root.appendingPathComponent("Makefile"), atomically: true, encoding: .utf8)
+        try "struct Clean {}\n".write(to: root.appendingPathComponent("app/Core/Clean.swift"), atomically: true, encoding: .utf8)
+        return root
+    }
+
+    private func status(of check: String, in root: URL) throws -> Int32 {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/sh")
+        process.arguments = [scripts.appendingPathComponent("check-\(check).sh").path, root.path]
+        process.currentDirectoryURL = try temporaryFolder()
+        process.environment = ["PATH": "/usr/bin:/bin"]
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        try process.run()
+        process.waitUntilExit()
+        return process.terminationStatus
+    }
+
+    func testEachCheckPassesOnACleanTreeFromAnotherFolder() throws {
+        let root = try cleanTree()
+
+        for check in Self.checks {
+            XCTAssertEqual(try status(of: check, in: root), 0, check)
+        }
+    }
+
+    func testEachCheckFailsOnEachOfItsBreaches() throws {
+        for breach in Self.breaches {
+            let root = try cleanTree()
+            let file = root.appendingPathComponent(breach.file)
+            try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try breach.text.write(to: file, atomically: true, encoding: .utf8)
+
+            XCTAssertEqual(try status(of: breach.check, in: root), 1, "\(breach.check): \(breach.text)")
+        }
+    }
+
+    func testACheckWithATrackedListFailsOnAListedBreakThatIsGone() throws {
+        for list in Self.lists {
+            let root = try cleanTree()
+            try "app/Core/Gone.swift\n".write(to: root.appendingPathComponent("scripts/breaks/\(list).txt"), atomically: true, encoding: .utf8)
+            let check = list.hasPrefix("spot") ? "spots" : list == "test-pauses" ? "tests" : list
+
+            XCTAssertEqual(try status(of: check, in: root), 1, list)
+        }
+    }
+
+    func testACheckPassesOnABreakThatItsListHolds() throws {
+        let root = try cleanTree()
+        try "struct PanelManager {}\n".write(to: root.appendingPathComponent("app/Core/PanelManager.swift"), atomically: true, encoding: .utf8)
+        try "app/Core/PanelManager.swift\tPanelManager\n".write(to: root.appendingPathComponent("scripts/breaks/names.txt"), atomically: true, encoding: .utf8)
+
+        XCTAssertEqual(try status(of: "names", in: root), 0)
+    }
+
+    func testEachCheckFailsWhenAFolderItScansIsMissing() throws {
+        let root = try temporaryFolder()
+
+        for check in Self.checks {
+            XCTAssertEqual(try status(of: check, in: root), 1, check)
+        }
+    }
+}

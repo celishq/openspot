@@ -19,7 +19,7 @@ final class GridExampleTests: SampleSpotsCase {
         defer { try? FileManager.default.removeItem(at: folder) }
 
         func pick(_ numbers: Int...) async throws -> String {
-            try await ScriptProcess.output(url: grid, arguments: ["pick"] + numbers.map(String.init))
+            try await ScriptProcess.output(url: grid, arguments: ["pick"] + numbers.map(String.init), base: TestEnvironment.values)
         }
 
         let forward = try await pick(6, 6, 1, 1, 4, 3)
@@ -48,7 +48,7 @@ final class GridExampleTests: SampleSpotsCase {
 
         for area in areas {
             let numbers = [6, 6, area.minX, area.minY, area.width, area.height].map { String(Int($0)) }
-            let lines = try await ScriptProcess.output(url: grid, arguments: ["frames"] + numbers).split(separator: "\n")
+            let lines = try await ScriptProcess.output(url: grid, arguments: ["frames"] + numbers, base: TestEnvironment.values).split(separator: "\n")
             for line in lines {
                 let parts = line.split(separator: "|")
                 let drawn = parts[1].split(separator: " ").compactMap { Double($0) }
@@ -108,7 +108,7 @@ final class GridExampleTests: SampleSpotsCase {
             try String(waiting.processIdentifier).write(to: data.appendingPathComponent("grid.pid"), atomically: true, encoding: .utf8)
 
             _ = try await grid.perform(.open, timeout: 5)
-            try await self.waitUntil { FileManager.default.fileExists(atPath: shown.path) }
+            try await self.wait("the shown grid") { FileManager.default.fileExists(atPath: shown.path) }
 
             XCTAssertTrue(FileManager.default.fileExists(atPath: shown.path))
             XCTAssertEqual(self.calls(in: folder), "")
@@ -131,7 +131,7 @@ final class GridExampleTests: SampleSpotsCase {
         second.arguments = ["stay", String(parent.processIdentifier)]
         try second.run()
         defer { kill(second.processIdentifier, SIGKILL) }
-        try await waitUntil { !second.isRunning }
+        try await wait("the end of the second helper") { !second.isRunning }
 
         XCTAssertFalse(second.isRunning)
         XCTAssertEqual(try String(contentsOf: pidfile, encoding: .utf8), "1")
@@ -162,7 +162,7 @@ final class GridExampleTests: SampleSpotsCase {
         defer { old.terminate() }
         let pidfile = data.appendingPathComponent("grid.pid")
         func named() -> pid_t? { pid_t((try? String(contentsOf: pidfile, encoding: .utf8)) ?? "") }
-        try await waitUntil { named() != nil }
+        try await wait("the pid of the helper") { named() != nil }
         let copy = data.appendingPathComponent("grid")
         try FileManager.default.copyItem(at: grid, to: copy)
         try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(5)], ofItemAtPath: copy.path)
@@ -173,7 +173,7 @@ final class GridExampleTests: SampleSpotsCase {
         read.environment = ["PATH": "/usr/bin:/bin", "OPENSPOT_DATA": data.path, "OPENSPOT_REASON": "panel.open"]
         try read.run()
         defer { read.terminate() }
-        try await waitUntil { !old.isRunning && named().map { $0 == old.processIdentifier || kill($0, 0) != 0 } == false }
+        try await wait("the new helper in place of the old") { !old.isRunning && named().map { $0 == old.processIdentifier || kill($0, 0) != 0 } == false }
         defer { if let new = named() { kill(new, SIGKILL) } }
 
         XCTAssertFalse(old.isRunning)

@@ -58,7 +58,7 @@ final class DocExampleTests: SampleSpotsCase {
                         try "#!/bin/sh\n# on=clock.60\nprintf 'text=t\\ntitle=T\\n'\n".writeScript(to: folder.spotFile(name))
                     }
 
-                    let faults = await SpotCheck(folder: SpotsFolder(url: folder), views: ViewLibrary(cache: home.appendingPathComponent("views"))).faults()
+                    let faults = await SpotCheck(folder: SpotsFolder(url: folder), views: ViewLibrary(cache: home.appendingPathComponent("views")), environment: TestEnvironment.values).faults()
                     XCTAssertEqual(faults, [], place)
 
                     guard let spot = try SpotsFolder(url: folder).scan().spots.first(where: { $0.id == "example" }) else {

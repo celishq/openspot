@@ -4,13 +4,13 @@ import XCTest
 @MainActor
 final class PlaygroundPlaceTests: XCTestCase {
     private var folder: URL!
-    private var host: TestHost!
+    private var host: FakeHost!
     private var panel: PlaygroundPanel!
 
     override func setUp() async throws {
         try await super.setUp()
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("playground-\(UUID().uuidString)")
-        host = TestHost()
+        host = FakeHost()
         panel = PlaygroundPanel(host: host, scratch: folder, defaults: UserDefaults(suiteName: "playground-\(UUID().uuidString)")!)
         host.model = panel.model
     }
@@ -19,14 +19,6 @@ final class PlaygroundPlaceTests: XCTestCase {
         panel.model.quit()
         try? FileManager.default.removeItem(at: folder)
         try await super.tearDown()
-    }
-
-    private func wait(_ what: String, until condition: @escaping () -> Bool) async throws {
-        for _ in 0..<500 {
-            if condition() { return }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTFail("waited for \(what)")
     }
 
     private let answering = "#!/bin/sh\n# title=Twice\n# on=sheet.open\n# on=clock.60\n# on=search.text ^[0-9]\nprintf 'text=t\\ntitle=%s\\n' \"$OPENSPOT_REASON\"\n[ -n \"$OPENSPOT_VALUE\" ] && printf '\\nrow=%s\\ntitle=Twice %s\\n' \"$OPENSPOT_VALUE\" \"$OPENSPOT_VALUE\"\n"

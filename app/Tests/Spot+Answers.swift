@@ -4,7 +4,7 @@ import Foundation
 @MainActor
 extension Spot {
     private func output(_ action: SpotAction, input: String? = nil, variables: [String: String] = [:], timeout: TimeInterval) async throws -> SpotOutput {
-        SpotOutput(text: try await SpotRuns().answer(of: self, action, input: input, limit: timeout, variables: variables))
+        SpotOutput(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: self, action, input: input, limit: timeout, variables: variables))
     }
 
     func state(timeout: TimeInterval) async throws -> SpotState {
@@ -36,7 +36,7 @@ extension Spot {
     }
 
     func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft, timeout: TimeInterval) async throws -> String {
-        let text = try await SpotRuns().answer(of: self, .action(action, item: item), input: draft.text, limit: timeout)
+        let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: self, .action(action, item: item), input: draft.text, limit: timeout)
         return text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
@@ -46,7 +46,7 @@ extension Spot {
     }
 
     func hook(_ function: String, card: String, origin: String) async -> Bool {
-        let runs = SpotRuns()
+        let runs = SpotRuns(environment: TestEnvironment.values)
         let answer = await withCheckedContinuation { continuation in
             if let now = runs.ask(function, of: self, card: card, origin: origin, later: { continuation.resume(returning: $0) }) {
                 continuation.resume(returning: now)

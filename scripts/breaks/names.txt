@@ -1,0 +1,4 @@
+app/Core/Building/SpotStarter.swift	SpotStarter
+app/Core/Script/SheetFrameReader.swift	SheetFrameReader
+app/Shell/Sheet/SpotFileChooser.swift	SpotFileChooser
+app/Shell/Sheet/SpotScrollEdges.swift	SpotScrollEdgeTracker

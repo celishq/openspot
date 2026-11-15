@@ -27,7 +27,7 @@ final class DictateExampleTests: SampleSpotsCase {
 
     private func server(in folder: URL) async throws -> pid_t {
         let file = folder.appendingPathComponent("server")
-        try await waitUntil { FileManager.default.fileExists(atPath: file.path) }
+        try await wait("the file") { FileManager.default.fileExists(atPath: file.path) }
         return try XCTUnwrap(pid_t(try String(contentsOf: file, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
     }
 
@@ -42,7 +42,7 @@ final class DictateExampleTests: SampleSpotsCase {
         defer { kill(server, SIGKILL) }
 
         kill(staying.processIdentifier, SIGKILL)
-        try await waitUntil { kill(server, 0) != 0 }
+        try await wait("the end of the server") { kill(server, 0) != 0 }
 
         XCTAssertNotEqual(kill(server, 0), 0)
     }
@@ -58,7 +58,7 @@ final class DictateExampleTests: SampleSpotsCase {
         defer { kill(server, SIGKILL) }
 
         kill(parent.processIdentifier, SIGTERM)
-        try await waitUntil { !staying.isRunning && kill(server, 0) != 0 }
+        try await wait("the end of the helper and its server") { !staying.isRunning && kill(server, 0) != 0 }
 
         XCTAssertFalse(staying.isRunning)
         XCTAssertNotEqual(kill(server, 0), 0)
@@ -74,7 +74,7 @@ final class DictateExampleTests: SampleSpotsCase {
         let server = try await server(in: folder)
         defer { kill(server, SIGKILL) }
 
-        try await waitUntil { kill(server, 0) != 0 }
+        try await wait("the end of the server") { kill(server, 0) != 0 }
 
         XCTAssertNotEqual(kill(server, 0), 0)
         XCTAssertTrue(staying.isRunning)
@@ -89,7 +89,7 @@ final class DictateExampleTests: SampleSpotsCase {
 
         let staying = try stay(helper, watching: parent, in: folder)
         defer { kill(staying.processIdentifier, SIGKILL) }
-        try await waitUntil { (try? String(contentsOf: pidfile, encoding: .utf8)) == String(staying.processIdentifier) }
+        try await wait("the pid of the staying helper") { (try? String(contentsOf: pidfile, encoding: .utf8)) == String(staying.processIdentifier) }
 
         XCTAssertEqual(try String(contentsOf: pidfile, encoding: .utf8), String(staying.processIdentifier))
     }
@@ -113,9 +113,10 @@ final class DictateExampleTests: SampleSpotsCase {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
         process.arguments = [script.path, folder.path, String(named ?? 0), fetched.path, String(dying)]
+        process.environment = TestEnvironment.values
         try process.run()
         let pidfile = folder.appendingPathComponent("dictate.pid")
-        try await waitUntil { !((try? String(contentsOf: pidfile, encoding: .utf8)) ?? "").isEmpty }
+        try await wait("the pid file") { !((try? String(contentsOf: pidfile, encoding: .utf8)) ?? "").isEmpty }
         return process
     }
 
@@ -131,7 +132,7 @@ final class DictateExampleTests: SampleSpotsCase {
 
         let second = try stay(helper, watching: parent, action: "fetch", in: folder)
         defer { kill(second.processIdentifier, SIGKILL) }
-        try await waitUntil { !second.isRunning && FileManager.default.fileExists(atPath: fetched.path) }
+        try await wait("the end of the second helper and the fetch") { !second.isRunning && FileManager.default.fileExists(atPath: fetched.path) }
 
         XCTAssertFalse(second.isRunning)
         XCTAssertTrue(FileManager.default.fileExists(atPath: fetched.path))
@@ -150,7 +151,7 @@ final class DictateExampleTests: SampleSpotsCase {
 
         let second = try stay(helper, watching: parent, action: "fetch", in: folder)
         defer { kill(second.processIdentifier, SIGKILL) }
-        try await waitUntil { !second.isRunning }
+        try await wait("the end of the second helper") { !second.isRunning }
 
         XCTAssertFalse(second.isRunning)
         XCTAssertEqual(kill(other.processIdentifier, 0), 0)
@@ -196,7 +197,7 @@ final class DictateExampleTests: SampleSpotsCase {
             func named() -> pid_t? { pid_t((try? String(contentsOf: pidfile, encoding: .utf8)) ?? "") }
 
             _ = try await dictate.perform(SpotAction(arguments: ["open", "whisper"]), timeout: 5)
-            try await self.waitUntil { !old.isRunning && named().map { $0 != old.processIdentifier && kill($0, 0) == 0 } == true }
+            try await self.wait("the new helper in place of the old") { !old.isRunning && named().map { $0 != old.processIdentifier && kill($0, 0) == 0 } == true }
             defer { if let new = named() { kill(new, SIGKILL) } }
 
             XCTAssertFalse(old.isRunning)
@@ -211,9 +212,9 @@ final class DictateExampleTests: SampleSpotsCase {
         let input = folder.appendingPathComponent("heard")
         try " [BLANK_AUDIO]\n Привіт, світе.\n (soft music)\n  Second   line [Music] here.\n *laughs*\n".write(to: input, atomically: true, encoding: .utf8)
 
-        let text = try await ScriptProcess.output(url: URL(fileURLWithPath: "/bin/sh"), arguments: ["-c", "'\(helper.path)' clean < '\(input.path)'"])
-        let silence = try await ScriptProcess.output(url: URL(fileURLWithPath: "/bin/sh"), arguments: ["-c", "printf ' [BLANK_AUDIO]\\n' | '\(helper.path)' clean"])
-        let dot = try await ScriptProcess.output(url: URL(fileURLWithPath: "/bin/sh"), arguments: ["-c", "printf ' .\\n' | '\(helper.path)' clean"])
+        let text = try await ScriptProcess.output(url: URL(fileURLWithPath: "/bin/sh"), arguments: ["-c", "'\(helper.path)' clean < '\(input.path)'"], base: TestEnvironment.values)
+        let silence = try await ScriptProcess.output(url: URL(fileURLWithPath: "/bin/sh"), arguments: ["-c", "printf ' [BLANK_AUDIO]\\n' | '\(helper.path)' clean"], base: TestEnvironment.values)
+        let dot = try await ScriptProcess.output(url: URL(fileURLWithPath: "/bin/sh"), arguments: ["-c", "printf ' .\\n' | '\(helper.path)' clean"], base: TestEnvironment.values)
 
         XCTAssertEqual(text, "Привіт, світе. Second line here.\n")
         XCTAssertEqual(silence, "\n")
@@ -225,7 +226,7 @@ final class DictateExampleTests: SampleSpotsCase {
         defer { try? FileManager.default.removeItem(at: folder) }
         let file = folder.appendingPathComponent("speech.wav")
 
-        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/bin/sh"), arguments: ["-c", "'\(helper.path)' wave 0 1 -1 2 > '\(file.path)'"])
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/bin/sh"), arguments: ["-c", "'\(helper.path)' wave 0 1 -1 2 > '\(file.path)'"], base: TestEnvironment.values)
         let wave = try Data(contentsOf: file)
 
         func number(_ at: Int, _ size: Int) -> Int { wave[at..<at + size].reversed().reduce(0) { $0 << 8 | Int($1) } }
@@ -249,7 +250,7 @@ final class DictateExampleTests: SampleSpotsCase {
             try String(waiting.processIdentifier).write(to: data.appendingPathComponent("dictate.pid"), atomically: true, encoding: .utf8)
 
             _ = try await dictate.perform(.press("dictate"), timeout: 5)
-            try await self.waitUntil { FileManager.default.fileExists(atPath: pressed.path) }
+            try await self.wait("the press") { FileManager.default.fileExists(atPath: pressed.path) }
 
             XCTAssertTrue(FileManager.default.fileExists(atPath: pressed.path))
             XCTAssertFalse(FileManager.default.fileExists(atPath: started.path))
@@ -263,7 +264,7 @@ final class DictateExampleTests: SampleSpotsCase {
             _ = try self.fakeHelper("echo \"$1 $4\" > '\(started.path)'", in: folder)
 
             _ = try await dictate.perform(.press("dictate"), timeout: 5)
-            try await self.waitUntil { FileManager.default.fileExists(atPath: started.path) }
+            try await self.wait("the start") { FileManager.default.fileExists(atPath: started.path) }
 
             XCTAssertEqual(try self.read("started", in: folder), "stay start\n")
         }
@@ -276,7 +277,7 @@ final class DictateExampleTests: SampleSpotsCase {
             _ = try self.fakeHelper("echo \"$1 $4\" > '\(started.path)'", model: false, in: folder)
 
             _ = try await dictate.perform(.press("dictate"), timeout: 5)
-            try await self.waitUntil { FileManager.default.fileExists(atPath: started.path) }
+            try await self.wait("the start") { FileManager.default.fileExists(atPath: started.path) }
 
             XCTAssertEqual(try self.read("started", in: folder), "stay start\n")
             XCTAssertNil(try? self.read("fetched", in: folder))
@@ -290,8 +291,8 @@ final class DictateExampleTests: SampleSpotsCase {
         let target = folder.appendingPathComponent("data/ggml.bin")
         try Data((0..<200_000).map { UInt8($0 % 251) }).write(to: source)
 
-        let landed = try await ScriptProcess.output(url: helper, arguments: ["fetch", source.absoluteString, target.path])
-        let failed = try? await ScriptProcess.output(url: helper, arguments: ["fetch", folder.appendingPathComponent("gone.bin").absoluteString, folder.appendingPathComponent("none.bin").path])
+        let landed = try await ScriptProcess.output(url: helper, arguments: ["fetch", source.absoluteString, target.path], base: TestEnvironment.values)
+        let failed = try? await ScriptProcess.output(url: helper, arguments: ["fetch", folder.appendingPathComponent("gone.bin").absoluteString, folder.appendingPathComponent("none.bin").path], base: TestEnvironment.values)
 
         XCTAssertEqual(landed, "from 0\nlanded\n")
         XCTAssertEqual(try Data(contentsOf: target), try Data(contentsOf: source))
@@ -304,7 +305,7 @@ final class DictateExampleTests: SampleSpotsCase {
         defer { try? FileManager.default.removeItem(at: folder) }
 
         func place(_ kept: String, droppedAt x: Int, _ y: Int) async throws -> String {
-            try await ScriptProcess.output(url: helper, arguments: ["place", kept, String(x), String(y)])
+            try await ScriptProcess.output(url: helper, arguments: ["place", kept, String(x), String(y)], base: TestEnvironment.values)
         }
 
         let standard = try await place("", droppedAt: 500, 20)
@@ -326,7 +327,7 @@ final class DictateExampleTests: SampleSpotsCase {
         let file = folder.appendingPathComponent("history")
 
         for index in 0..<13 {
-            _ = try await ScriptProcess.output(url: helper, arguments: ["remember", file.path, String(1_000 + index), "Text \(index)"])
+            _ = try await ScriptProcess.output(url: helper, arguments: ["remember", file.path, String(1_000 + index), "Text \(index)"], base: TestEnvironment.values)
         }
         let lines = try String(contentsOf: file, encoding: .utf8).split(separator: "\n")
 
@@ -360,11 +361,9 @@ final class DictateExampleTests: SampleSpotsCase {
             try "1000\tПривіт, світе\n".write(to: data.appendingPathComponent("history"), atomically: true, encoding: .utf8)
             try "#!/bin/sh\nif [ \"$(locale charmap)\" = UTF-8 ]; then cat; else iconv -f MACINTOSH -t UTF-8; fi > '\(folder.path)/clipboard'\n"
                 .writeScript(to: folder.appendingPathComponent("tools/pbcopy"))
-            let locale = ["LANG", "LC_ALL", "LC_CTYPE"].map { ($0, ProcessInfo.processInfo.environment[$0]) }
-            locale.forEach { unsetenv($0.0) }
-            defer { locale.forEach { name, value in if let value { setenv(name, value, 1) } } }
-
-            _ = try await dictate.perform(.item(SpotItem(title: "Привіт, світе", run: "1000")), timeout: 5)
+            _ = try await TestEnvironment.with(["LANG": nil, "LC_ALL": nil, "LC_CTYPE": nil]) {
+                try await dictate.perform(.item(SpotItem(title: "Привіт, світе", run: "1000")), timeout: 5)
+            }
 
             XCTAssertEqual(try self.read("clipboard", in: folder), "Привіт, світе")
         }
@@ -384,7 +383,7 @@ final class DictateExampleTests: SampleSpotsCase {
             try "42".write(to: data.appendingPathComponent("download"), atomically: true, encoding: .utf8)
             let progress = try await dictate.items(timeout: 5).items.first { $0.run == "whisper" }
             _ = try await dictate.perform(.item(try XCTUnwrap(offer)), timeout: 5)
-            try await self.waitUntil { FileManager.default.fileExists(atPath: fetched.path) }
+            try await self.wait("the fetch") { FileManager.default.fileExists(atPath: fetched.path) }
 
             XCTAssertEqual(offer?.title, "Download speech model")
             XCTAssertEqual(offer?.pin, .top)
@@ -429,7 +428,7 @@ final class DictateExampleTests: SampleSpotsCase {
         defer { serving.stop() }
         let port = String(decoding: out.fileHandleForReading.availableData, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
 
-        let resumed = try await ScriptProcess.output(url: helper, arguments: ["fetch", "http://127.0.0.1:\(port)/model", target.path])
+        let resumed = try await ScriptProcess.output(url: helper, arguments: ["fetch", "http://127.0.0.1:\(port)/model", target.path], base: TestEnvironment.values)
 
         XCTAssertEqual(resumed, "from 100000\nlanded\n")
         XCTAssertEqual(try String(contentsOf: served, encoding: .utf8), "100000\n")
@@ -446,7 +445,7 @@ final class DictateExampleTests: SampleSpotsCase {
         try bytes.write(to: source)
         try Data(repeating: 7, count: 50_000).write(to: target.appendingPathExtension("part"))
 
-        let fetched = try await ScriptProcess.output(url: helper, arguments: ["fetch", source.absoluteString, target.path])
+        let fetched = try await ScriptProcess.output(url: helper, arguments: ["fetch", source.absoluteString, target.path], base: TestEnvironment.values)
 
         XCTAssertEqual(fetched, "from 50000\nlanded\n")
         XCTAssertEqual(try Data(contentsOf: target), bytes)

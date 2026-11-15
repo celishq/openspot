@@ -2,13 +2,6 @@ import XCTest
 @testable import OpenspotCore
 
 final class CalculatorSpotTests: SampleSpotsCase {
-    private final class Host: Mac {
-        func eventStore() -> any EventStore { FakeEventStore() }
-        func reminderStore() -> any ReminderStore { FakeReminderStore() }
-        func showCalendar(at time: Date) throws {}
-        func open(_ link: URL) -> Bool { false }
-    }
-
     private var calculator: Spot {
         get throws { try XCTUnwrap(try scan.spots.first { $0.name == "Calculator" }) }
     }
@@ -126,12 +119,12 @@ final class CalculatorSpotTests: SampleSpotsCase {
         let suite = "openspot-calc-\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
-        let host = TestHost()
+        let host = FakeHost()
         let files = AppPlaces(environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path], home: folder, defaults: defaults)
-        let model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
+        let model = SpotsModel(host: host, files: files, runs: SpotRuns(environment: TestEnvironment.values, stopPause: 0.2))
         defer { model.quit() }
         host.model = model
-        model.runs.api = CommandAPI(mac: Host())
+        model.runs.api = CommandAPI(mac: FakeMac(opens: false))
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])

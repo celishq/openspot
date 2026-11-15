@@ -6,7 +6,7 @@ final class SpotsModelDragTests: XCTestCase {
     private var folder: URL!
     private var defaults: UserDefaults!
     private var suite = ""
-    private var host: TestHost!
+    private var host: FakeHost!
     private var model: SpotsModel!
 
     override func setUp() async throws {
@@ -17,7 +17,7 @@ final class SpotsModelDragTests: XCTestCase {
             .write(to: folder.appendingPathComponent("defaults.toml"), atomically: true, encoding: .utf8)
         suite = "openspot-drag-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
-        let host = TestHost()
+        let host = FakeHost()
         self.host = host
         model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2, prepare: { await host.prepare($0, glyphs: $1) }))
         host.model = model
@@ -85,7 +85,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     private func savedOrder() -> [String] {
-        let host = TestHost()
+        let host = FakeHost()
         let other = SpotsModel(host: host, files: files)
         other.reload()
         defer { other.quit() }

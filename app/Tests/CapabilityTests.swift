@@ -4,6 +4,7 @@ import XCTest
 final class CapabilityTests: XCTestCase {
     private var folder: URL!
     private var label = ""
+    private var environment: [String: String] = [:]
 
     private var tool: URL {
         Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("OpenspotStandIn")
@@ -18,20 +19,17 @@ final class CapabilityTests: XCTestCase {
         label = "standin-\(tag)"
         folder = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true).appendingPathComponent("os-\(tag)", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        setenv("STANDIN_FOLDER", folder.path, 1)
-        setenv("STANDIN_IDLE", "30", 1)
+        environment = ProcessInfo.processInfo.environment.merging(["STANDIN_FOLDER": folder.path, "STANDIN_IDLE": "30"]) { _, new in new }
     }
 
     override func tearDown() async throws {
         for id in await helpers() { kill(id, SIGKILL) }
-        unsetenv("STANDIN_FOLDER")
-        unsetenv("STANDIN_IDLE")
         try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: folder.path)
         try? FileManager.default.removeItem(at: folder)
     }
 
     private func call(_ request: String = "count") async throws -> String {
-        try await ScriptProcess.output(url: tool, arguments: ["call", label], input: request, limit: 30)
+        try await ScriptProcess.output(url: tool, arguments: ["call", label], input: request, limit: 30, base: environment)
     }
 
     private func script(after: String = "") throws -> URL {
@@ -65,8 +63,8 @@ final class CapabilityTests: XCTestCase {
     func testStateStaysAcrossTwoSeparateRunsOfAScriptAndACallFromATerminal() async throws {
         let url = try script()
 
-        let first = try await ScriptProcess.output(url: url, limit: 30)
-        let second = try await ScriptProcess.output(url: url, limit: 30)
+        let first = try await ScriptProcess.output(url: url, limit: 30, base: environment)
+        let second = try await ScriptProcess.output(url: url, limit: 30, base: environment)
         let terminal = try await call()
 
         XCTAssertEqual(try field("count", in: first), 1)
@@ -79,10 +77,11 @@ final class CapabilityTests: XCTestCase {
     func testCallsThatRaceToStartItEndWithOneHelper() async throws {
         let url = try script()
         let total = 12
+        let environment = environment
 
         let answers = try await withThrowingTaskGroup(of: String.self) { group in
             for _ in 0..<total {
-                group.addTask { try await ScriptProcess.output(url: url, limit: 30) }
+                group.addTask { try await ScriptProcess.output(url: url, limit: 30, base: environment) }
             }
             return try await group.reduce(into: []) { $0.append($1) }
         }
@@ -94,7 +93,7 @@ final class CapabilityTests: XCTestCase {
     }
 
     func testTheHelperIsGoneAfterItsIdleTimeAndTheNextCallStartsANewOne() async throws {
-        setenv("STANDIN_IDLE", "1", 1)
+        environment["STANDIN_IDLE"] = "1"
 
         let id = pid_t(try field("pid", in: try await call()))
         XCTAssertTrue(isAlive(id))
@@ -110,7 +109,7 @@ final class CapabilityTests: XCTestCase {
     }
 
     func testAHelperWithWorkOutlivesItsIdleTimeAndEndsAfterTheWork() async throws {
-        setenv("STANDIN_IDLE", "1", 1)
+        environment["STANDIN_IDLE"] = "1"
         let id = pid_t(try field("pid", in: try await call("hold")))
 
         try await Task.sleep(for: .seconds(3))
@@ -123,7 +122,7 @@ final class CapabilityTests: XCTestCase {
     }
 
     func testACallPutsOffTheIdleExit() async throws {
-        setenv("STANDIN_IDLE", "2", 1)
+        environment["STANDIN_IDLE"] = "2"
         let id = try field("pid", in: try await call())
 
         for _ in 0..<4 {
@@ -148,7 +147,7 @@ final class CapabilityTests: XCTestCase {
 
     func testAStopOfAScriptLeavesTheHelper() async throws {
         let url = try script(after: "printf -- '---\\n'\nsleep 30")
-        let process = ScriptProcess(url: url, limit: 30)
+        let process = ScriptProcess(url: url, limit: 30, base: environment)
         var frames = process.start().makeAsyncIterator()
         let first = try await frames.next()
         let id = pid_t(try field("pid", in: try XCTUnwrap(first)))
@@ -164,7 +163,7 @@ final class CapabilityTests: XCTestCase {
 
     func testACallerStoppedDuringACallLeavesTheHelperAlive() async throws {
         let id = pid_t(try field("pid", in: try await call()))
-        let process = ScriptProcess(url: tool, arguments: ["call", label], mode: .once(input: "slow"))
+        let process = ScriptProcess(url: tool, arguments: ["call", label], mode: .once(input: "slow"), base: environment)
         _ = process.start()
         try await Task.sleep(for: .milliseconds(500))
 
@@ -219,7 +218,7 @@ final class CapabilityTests: XCTestCase {
 
     func testAPathTooLongForASocketFailsWithItsFix() async throws {
         let long = folder.appendingPathComponent(String(repeating: "a", count: 110), isDirectory: true)
-        setenv("STANDIN_FOLDER", long.path, 1)
+        environment["STANDIN_FOLDER"] = long.path
 
         do {
             let answer = try await call()

@@ -2,13 +2,6 @@ import XCTest
 @testable import OpenspotCore
 
 final class CommandSocketTests: XCTestCase {
-    private final class Host: Mac {
-        func eventStore() -> any EventStore { FakeEventStore() }
-        func reminderStore() -> any ReminderStore { FakeReminderStore() }
-        func showCalendar(at time: Date) throws {}
-        func open(_ link: URL) -> Bool { true }
-    }
-
     private struct SlowApp: RunningApp {
         let folder: URL
 
@@ -45,7 +38,7 @@ final class CommandSocketTests: XCTestCase {
 
     override func setUpWithError() throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("os-\(UUID().uuidString.prefix(8))", isDirectory: true)
-        socket = CommandSocket(folder: folder, api: CommandAPI(mac: Host()))
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: FakeMac()))
     }
 
     override func tearDownWithError() throws {
@@ -66,14 +59,6 @@ final class CommandSocketTests: XCTestCase {
         defer { connection.close() }
         try connection.send(request(argv, env: env, cwd: cwd))
         return try connection.exchange(input: input)
-    }
-
-    private func wait(_ what: String, until fact: () -> Bool) async throws {
-        for _ in 0..<1000 {
-            if fact() { return }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTFail("waited for \(what)")
     }
 
     private func exists(_ name: String) -> Bool {
@@ -118,7 +103,7 @@ final class CommandSocketTests: XCTestCase {
 
     func testASlowCallSendsItsFirstChunkBeforeItsEnd() async throws {
         socket?.close()
-        socket = CommandSocket(folder: folder, api: CommandAPI(mac: Host(), app: SlowApp(folder: folder)))
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: FakeMac(), app: SlowApp(folder: folder)))
         let connection = connect()
         defer { connection.close() }
         try connection.send(request(["batch"]))
@@ -135,7 +120,7 @@ final class CommandSocketTests: XCTestCase {
 
     func testAClosedConnectionStopsItsCallAndTheCallChangesNothing() async throws {
         socket?.close()
-        socket = CommandSocket(folder: folder, api: CommandAPI(mac: Host(), app: SlowApp(folder: folder)))
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: FakeMac(), app: SlowApp(folder: folder)))
         let connection = connect()
         try connection.send(request(["setting", "change", "--spot", "repos", "folder"]))
         try await wait("the start of the work") { exists("started") }

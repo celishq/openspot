@@ -1,6 +1,7 @@
 #!/bin/sh
 set -e
-cd "$(dirname "$0")/.."
+. "$(dirname "$0")/checks.sh"
+need app scripts
 found=$(mktemp)
 trap 'rm -f "$found"' EXIT
 

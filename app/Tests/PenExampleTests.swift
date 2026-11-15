@@ -35,7 +35,7 @@ final class PenExampleTests: SampleSpotsCase {
         try "#!/bin/sh\ntouch '\(started.path)'\n\(String.longLoop)\n".writeScript(to: data.appendingPathComponent("pen-overlay"))
 
         try press(data)
-        try await waitUntil { FileManager.default.fileExists(atPath: started.path) }
+        try await wait("the start") { FileManager.default.fileExists(atPath: started.path) }
         defer { if let overlay = pid(in: data) { kill(overlay, SIGKILL) } }
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: started.path))
@@ -54,7 +54,7 @@ final class PenExampleTests: SampleSpotsCase {
         try String(running.processIdentifier).write(to: data.appendingPathComponent("pen.pid"), atomically: true, encoding: .utf8)
 
         try press(data)
-        try await waitUntil { kill(running.processIdentifier, 0) != 0 }
+        try await wait("the end of the pen") { kill(running.processIdentifier, 0) != 0 }
 
         XCTAssertNotEqual(kill(running.processIdentifier, 0), 0)
         XCTAssertNil(pid(in: data))

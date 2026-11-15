@@ -65,9 +65,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testThePartsKeepTheTimeOfTheLastChangeOfEachPictureWhenTheyArrive() throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-pictures-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
+        let folder = try temporaryFolder()
         let file = folder.appendingPathComponent("cover.png")
         try Data([1]).write(to: file)
         let changed = Date(timeIntervalSince1970: 1_700_000_000)

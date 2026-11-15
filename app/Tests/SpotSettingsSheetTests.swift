@@ -6,7 +6,7 @@ final class SpotSettingsSheetTests: XCTestCase {
     private var folder: URL!
     private var defaults: UserDefaults!
     private var suite = ""
-    private var host: TestHost!
+    private var host: FakeHost!
     private var model: SpotsModel!
 
     override func setUp() async throws {
@@ -14,7 +14,7 @@ final class SpotSettingsSheetTests: XCTestCase {
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         suite = "openspot-settings-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
-        host = TestHost()
+        host = FakeHost()
         let files = AppPlaces(
             environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
             home: folder,
@@ -45,14 +45,6 @@ final class SpotSettingsSheetTests: XCTestCase {
     private func script(_ name: String, header: String) throws {
         let lines = header.split(separator: "\n", omittingEmptySubsequences: false).map { $0.isEmpty ? "#" : "# \($0)" }.joined(separator: "\n")
         try "#!/bin/sh\n\(lines)\necho \"$*\" >> '\(log.path)'\n[ \"$1\" = read ] && printf 'row=own\\ntitle=Own\\n'\nexit 0\n".writeScript(to: spots.spotFile(name))
-    }
-
-    private func wait(_ what: String, until condition: () -> Bool) async throws {
-        for _ in 0..<500 {
-            if condition() { return }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTFail("waited for \(what)")
     }
 
     private func show(selecting id: String, search: String = "") throws {

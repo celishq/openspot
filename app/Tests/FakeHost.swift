@@ -2,7 +2,7 @@ import Foundation
 @testable import OpenspotCore
 
 @MainActor
-final class TestHost: SpotsHost {
+final class FakeHost: SpotsHost {
     var dismissals = 0
     var edgeChanges: [(motion: PanelMotion?, edges: FlowEdges, rows: [String])] = []
     var shows = 0

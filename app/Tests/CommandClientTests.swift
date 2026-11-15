@@ -2,13 +2,6 @@ import XCTest
 @testable import OpenspotCore
 
 final class CommandClientTests: XCTestCase {
-    private final class Host: Mac {
-        func eventStore() -> any EventStore { FakeEventStore() }
-        func reminderStore() -> any ReminderStore { FakeReminderStore() }
-        func showCalendar(at time: Date) throws {}
-        func open(_ link: URL) -> Bool { true }
-    }
-
     private struct SlowApp: RunningApp {
         let folder: URL
 
@@ -62,7 +55,7 @@ final class CommandClientTests: XCTestCase {
     }
 
     private func listen() {
-        socket = CommandSocket(folder: config, api: CommandAPI(mac: Host()))
+        socket = CommandSocket(folder: config, api: CommandAPI(mac: FakeMac()))
     }
 
     private func run(_ program: URL, _ arguments: [String], input: String = "") throws -> (output: String, errors: String, code: Int32) {
@@ -167,14 +160,6 @@ final class CommandClientTests: XCTestCase {
         return (process, output, errors)
     }
 
-    private func wait(_ what: String, until fact: () -> Bool) async throws {
-        for _ in 0..<1000 {
-            if fact() { return }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTFail("waited for \(what)")
-    }
-
     private func exists(_ name: String) -> Bool {
         FileManager.default.fileExists(atPath: folder.appendingPathComponent(name).path)
     }
@@ -214,7 +199,7 @@ final class CommandClientTests: XCTestCase {
     }
 
     func testCtrlCStopsTheWorkOfTheCallInTheAppAndItChangesNothing() async throws {
-        socket = CommandSocket(folder: config, api: CommandAPI(mac: Host(), app: SlowApp(folder: folder)))
+        socket = CommandSocket(folder: config, api: CommandAPI(mac: FakeMac(), app: SlowApp(folder: folder)))
         let run = try start(["setting", "change", "--spot", "repos", "folder"])
         try await wait("the start of the work") { exists("started") }
 

@@ -19,14 +19,6 @@ final class SheetStreamTests: XCTestCase {
         return url
     }
 
-    private func wait(until fact: () -> Bool) async throws {
-        for _ in 0..<500 {
-            if fact() { return }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTFail("waited too long")
-    }
-
     func testAMarkEndsAFrameWhereverAChunkStops() {
         var reader = SheetFrameReader()
 
@@ -188,7 +180,7 @@ final class SheetStreamTests: XCTestCase {
         _ = live.start()
 
         live.end()
-        try await wait(until: { !live.isRunning })
+        try await wait("the end of the live process") { !live.isRunning }
     }
 
     func testAScriptThatStaysIsAList() throws {

@@ -3,13 +3,6 @@ import XCTest
 
 @MainActor
 final class SpotUsesTests: SpotRunsCase {
-    private final class NoHost: Mac {
-        func eventStore() -> any EventStore { FakeEventStore() }
-        func reminderStore() -> any ReminderStore { FakeReminderStore() }
-        func showCalendar(at time: Date) throws {}
-        func open(_ link: URL) -> Bool { false }
-    }
-
     private var config: URL!
     private var client: URL!
     private var socket: CommandSocket?
@@ -21,7 +14,7 @@ final class SpotUsesTests: SpotRunsCase {
         client = folder.appendingPathComponent("A.app/Contents/Helpers/openspot")
         try FileManager.default.createDirectory(at: client.deletingLastPathComponent(), withIntermediateDirectories: true)
         try FileManager.default.copyItem(at: Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot"), to: client)
-        let api = CommandAPI(mac: NoHost(), runs: runs)
+        let api = CommandAPI(mac: FakeMac(opens: false), runs: runs)
         runs.api = api
         socket = try XCTUnwrap(CommandSocket(folder: config, api: api))
         runs.onReport = { [unowned self] _, report in

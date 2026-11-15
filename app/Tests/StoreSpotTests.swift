@@ -72,7 +72,7 @@ final class StoreSpotTests: BuiltInCase {
         try "# Timer\n\nCounts down.\n".write(to: core.appendingPathComponent("timer.spot/readme.md"), atomically: true, encoding: .utf8)
 
         for action in [SpotAction.read, SpotAction(arguments: ["gallery", "get:timer"]), SpotAction(arguments: ["gallery", "publish:timer"])] {
-            let text = try await SpotRuns().answer(of: store, action, limit: 5)
+            let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, action, limit: 5)
 
             let values = SpotOutput(text: text).parts.first?.values ?? [:]
             XCTAssertEqual(values["readme"], ["timer\t# Timer", "timer\t", "timer\tCounts down."], "\(action.arguments)")
@@ -83,7 +83,7 @@ final class StoreSpotTests: BuiltInCase {
         let folder = core.appendingPathComponent("timer.spot")
         try "![The sheet](shot.png)\n![](/tmp/a.mov)\n![Web](https://example.com/a.jpg)\n".write(to: folder.appendingPathComponent("readme.md"), atomically: true, encoding: .utf8)
 
-        let text = try await SpotRuns().answer(of: store, .read, limit: 5)
+        let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, .read, limit: 5)
 
         let lines = (SpotOutput(text: text).parts.first?.values["readme"] ?? []).filter { $0.hasPrefix("timer\t") }
         XCTAssertEqual(lines, ["timer\t![The sheet](\(folder.path)/shot.png)", "timer\t![](/tmp/a.mov)", "timer\t![Web](https://example.com/a.jpg)"])

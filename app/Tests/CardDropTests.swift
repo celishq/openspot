@@ -16,7 +16,7 @@ final class CardDropTests: PanelCase {
         XCTAssertNil(model.openList)
 
         XCTAssertTrue(model.drop([file.path], on: "shelf"))
-        try await waitFor("the sheet of the shelf") { self.model.openList == "shelf" && self.titles == ["A"] }
+        try await wait("the sheet of the shelf") { self.model.openList == "shelf" && self.titles == ["A"] }
         XCTAssertEqual(host.dismissals, 1)
         XCTAssertTrue(model.holdsFocus)
     }

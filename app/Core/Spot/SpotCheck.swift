@@ -6,12 +6,14 @@ public struct SpotCheck: Sendable {
     public let views: ViewLibrary
     let careful: Set<SpotUse>?
     let tokens: CallerTokens?
+    let environment: [String: String]
 
-    public init(folder: SpotsFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard()) {
-        self.init(folder: folder, timeout: timeout, views: views, careful: nil, tokens: nil)
+    public init(folder: SpotsFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard(), environment: [String: String] = ProcessInfo.processInfo.environment) {
+        self.init(folder: folder, timeout: timeout, views: views, careful: nil, tokens: nil, environment: environment)
     }
 
-    init(folder: SpotsFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard(), careful: Set<SpotUse>?, tokens: CallerTokens?) {
+    init(folder: SpotsFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard(), careful: Set<SpotUse>?, tokens: CallerTokens?, environment: [String: String] = ProcessInfo.processInfo.environment) {
+        self.environment = environment
         self.folder = folder
         self.timeout = timeout
         self.views = views
@@ -58,7 +60,7 @@ public struct SpotCheck: Sendable {
                 findings.append(Finding(spot: script.id, file: script.url.path, fault: fault))
             }
         }
-        let runs = await SpotRuns(tokens: tokens ?? CallerTokens())
+        let runs = await SpotRuns(environment: environment, tokens: tokens ?? CallerTokens())
         if careful != nil { await MainActor.run { runs.isCareful = true } }
         for var script in scan.scripts where script.read != nil {
             guard !Task.isCancelled else { return findings }

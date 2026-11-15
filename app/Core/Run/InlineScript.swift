@@ -44,7 +44,7 @@ final class InlineScript: @unchecked Sendable {
     private var thrown: JSValue?
     private var variables: [String: String] = [:]
 
-    init(spot: Spot, api: CommandAPI?, tokens: CallerTokens? = nil, careful: Set<SpotUse>? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
+    init(spot: Spot, api: CommandAPI?, tokens: CallerTokens? = nil, careful: Set<SpotUse>? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, base: [String: String] = ProcessInfo.processInfo.environment, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
         self.careful = careful.map(CarefulMode.init)
         url = spot.url
         name = spot.id
@@ -54,7 +54,7 @@ final class InlineScript: @unchecked Sendable {
         self.spent = spent
         self.tokens = tokens
         token = tokens?.issue(for: spot)
-        environment = ScriptProcess.environment(base: ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "", dataName: spot.dataName)
+        environment = ScriptProcess.environment(base: base, app: Bundle.main.executablePath ?? "", dataName: spot.dataName)
             .merging(["OPENSPOT_ID": spot.id]) { _, new in new }
             .merging(token.map { [CallerTokens.variable: $0] } ?? [:]) { _, new in new }
     }

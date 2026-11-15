@@ -66,14 +66,6 @@ final class SwiftProgramTests: XCTestCase {
         return url
     }
 
-    private func wait(_ what: String, until fact: () -> Bool) async throws {
-        for _ in 0..<1000 {
-            if fact() { return }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTFail("waited for \(what)")
-    }
-
     func testASwiftScriptRunsItsSourceWhileItBuildsOnceAndThenItsProgram() async throws {
         let program = try caching()
         let source = try source()
@@ -362,5 +354,4 @@ final class SwiftProgramTests: XCTestCase {
 
         XCTAssertTrue(exists(kept[0]))
     }
-
 }

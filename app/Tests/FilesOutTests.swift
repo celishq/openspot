@@ -6,7 +6,7 @@ final class FilesOutTests: XCTestCase {
     private var folder: URL!
     private var defaults: UserDefaults!
     private var suite = ""
-    private var host: TestHost!
+    private var host: FakeHost!
     private var model: SpotsModel!
 
     override func setUp() async throws {
@@ -14,7 +14,7 @@ final class FilesOutTests: XCTestCase {
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         suite = "openspot-out-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
-        host = TestHost()
+        host = FakeHost()
         let files = AppPlaces(
             environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
             home: folder,
@@ -32,14 +32,6 @@ final class FilesOutTests: XCTestCase {
 
     private var spots: URL {
         folder.appendingPathComponent("spots", isDirectory: true)
-    }
-
-    private func wait(_ what: String, until condition: () -> Bool) async throws {
-        for _ in 0..<500 {
-            if condition() { return }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTFail("waited for \(what)")
     }
 
     func testARowCarriesTheFileThatItNamesFromTheRoot() {

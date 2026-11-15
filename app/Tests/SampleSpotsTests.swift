@@ -4,9 +4,7 @@ import XCTest
 final class SampleSpotsTests: SampleSpotsCase {
     func testACopyAsksForTheCopiedToast() throws {
         let spots = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
-        let tools = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-copy-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: tools) }
+        let tools = try temporaryFolder()
         try "#!/bin/sh\ncat >/dev/null\n".writeScript(to: tools.appendingPathComponent("pbcopy"))
         try "#!/bin/sh\ncat >/dev/null\n".writeScript(to: tools.appendingPathComponent("openspot"))
         let examples = spots.deletingLastPathComponent().appendingPathComponent("examples")
@@ -32,17 +30,15 @@ final class SampleSpotsTests: SampleSpotsCase {
         XCTAssertEqual(confetti.settings.map(\.title), ["Look", "Shortcut"])
         let source = confetti.url.deletingPathExtension().appendingPathComponent("confetti.swift")
 
-        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-typecheck", source.path])
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-typecheck", source.path], base: TestEnvironment.values)
     }
 
     func testTheConfettiListenerEndsWhenItsParentEnds() async throws {
         let confetti = try XCTUnwrap(try scan.spots.first { $0.id == "confetti" })
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-listen-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
+        let folder = try temporaryFolder()
         let source = confetti.url.deletingPathExtension().appendingPathComponent("confetti.swift")
         let program = folder.appendingPathComponent("confetti")
-        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-o", program.path, source.path], limit: 300)
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-o", program.path, source.path], limit: 300, base: TestEnvironment.values)
         let parent = Process()
         parent.executableURL = URL(fileURLWithPath: "/bin/sleep")
         parent.arguments = ["300"]
@@ -68,9 +64,7 @@ final class SampleSpotsTests: SampleSpotsCase {
 
     func testAConfettiReadStartsOneListenerThatEndsWithItsCaller() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        let data = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-read-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: data) }
+        let data = try temporaryFolder()
         let log = data.appendingPathComponent("started")
         try "#!/bin/sh\nprintf '%s\\n' \"$*\" >> '\(log.path)'\nexec /bin/sleep 300\n".writeScript(to: data.appendingPathComponent("confetti"))
         defer {
@@ -102,9 +96,7 @@ final class SampleSpotsTests: SampleSpotsCase {
 
     func testAConfettiReadRestartsAListenerThatNoParentEnds() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        let data = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-old-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: data) }
+        let data = try temporaryFolder()
         let log = data.appendingPathComponent("started")
         try "#!/bin/sh\nprintf '%s\\n' \"$*\" >> '\(log.path)'\nexec /bin/sleep 300\n".writeScript(to: data.appendingPathComponent("confetti"))
         try "option+c".write(to: data.appendingPathComponent("key"), atomically: true, encoding: .utf8)
@@ -141,9 +133,7 @@ final class SampleSpotsTests: SampleSpotsCase {
 
     func testConfettiRefusesAPlayKeyThatTheAppsUse() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        let data = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-key-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: data) }
+        let data = try temporaryFolder()
         try "option+c".write(to: data.appendingPathComponent("key"), atomically: true, encoding: .utf8)
 
         for key in ["cmd+c", "cmd+shift+v"] {
@@ -189,9 +179,7 @@ final class SampleSpotsTests: SampleSpotsCase {
     }
 
     func testConfettiAsksForItsLookAsAChoiceAndKeepsThePick() throws {
-        let data = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-look-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: data) }
+        let data = try temporaryFolder()
 
         let form = SpotOutput(text: try confetti(["look"], data: data))
         XCTAssertEqual(form.summary?.value("title"), "Look")
@@ -207,9 +195,7 @@ final class SampleSpotsTests: SampleSpotsCase {
 
     func testConfettiWithNoKeyStopsListeningAndSaysSo() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        let data = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-key-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: data) }
+        let data = try temporaryFolder()
         try "option+c".write(to: data.appendingPathComponent("key"), atomically: true, encoding: .utf8)
         let process = Process()
         let out = Pipe()
@@ -263,7 +249,7 @@ final class SampleSpotsTests: SampleSpotsCase {
 
         try await withPrivateHome { _ in
             let first = try await cpu.read(timeout: 10).points?.count ?? 0
-            let look = MetricValue(output: SpotOutput(text: try await ScriptProcess.output(url: cpu.url, arguments: ["show"], limit: 10)))
+            let look = MetricValue(output: SpotOutput(text: try await ScriptProcess.output(url: cpu.url, arguments: ["show"], limit: 10, base: TestEnvironment.values)))
             let second = try await cpu.read(timeout: 10).points?.count ?? 0
 
             XCTAssertEqual(look?.points?.count, first + 1)
@@ -274,19 +260,10 @@ final class SampleSpotsTests: SampleSpotsCase {
 
     func testTheCPUTrendSurvivesABadHistoryAndAShortPath() async throws {
         let cpu = try XCTUnwrap(try scan.metrics.first { $0.id == "cpu" })
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-cpu-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let folder = try temporaryFolder()
         try "5\n\nnonsense\n7\n".write(to: folder.appendingPathComponent("openspot-cpu"), atomically: true, encoding: .utf8)
-        let environment = ProcessInfo.processInfo.environment
-        setenv("TMPDIR", folder.path + "/", 1)
-        setenv("PATH", "/usr/bin:/bin", 1)
-        defer {
-            if let tmp = environment["TMPDIR"] { setenv("TMPDIR", tmp, 1) } else { unsetenv("TMPDIR") }
-            if let path = environment["PATH"] { setenv("PATH", path, 1) }
-            try? FileManager.default.removeItem(at: folder)
-        }
 
-        let points = try await cpu.read(timeout: 10).points
+        let points = try await TestEnvironment.with(["TMPDIR": folder.path + "/", "PATH": "/usr/bin:/bin"]) { try await cpu.read(timeout: 10).points }
 
         XCTAssertEqual(points?.prefix(2), [5, 7])
         XCTAssertEqual(points?.count, 3)
@@ -299,7 +276,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             try "#!/bin/sh\ncase \"$1 $2\" in 'app status') echo '{}' ;; 'spot list'|'setting list') echo '[]' ;; esac\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
             let views = ViewLibrary(cache: folder.appendingPathComponent("views"))
             for name in ["spots", "examples"] {
-                let faults = await SpotCheck(folder: SpotsFolder(url: root.appendingPathComponent(name)), views: views).faults()
+                let faults = await SpotCheck(folder: SpotsFolder(url: root.appendingPathComponent(name)), views: views, environment: TestEnvironment.values).faults()
 
                 XCTAssertEqual(faults, [], name)
             }
@@ -309,7 +286,7 @@ final class SampleSpotsTests: SampleSpotsCase {
     func testRelaySendsALineOverItsSocketAndShowsTheLineThatComesBack() async throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let port = Int.random(in: 40000...60000)
-        let relay = ScriptProcess(url: root.appendingPathComponent("examples/relay.spot/relay.sh"), mode: .stays, limit: 10, stopPause: 0.2, variables: ["RELAY_PORT": String(port)])
+        let relay = ScriptProcess(url: root.appendingPathComponent("examples/relay.spot/relay.sh"), mode: .stays, limit: 10, stopPause: 0.2, variables: ["RELAY_PORT": String(port)], base: TestEnvironment.values)
         defer { relay.end() }
         var frames = relay.start().makeAsyncIterator()
 
@@ -514,7 +491,7 @@ final class SampleSpotsTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let emoji = try self.fakeEmoji(in: folder)
 
-            _ = try await SpotRuns().answer(of: emoji, .set("tone", to: "dark"), input: nil, limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .set("tone", to: "dark"), input: nil, limit: 30)
             let output = try await emoji.items(timeout: 10)
 
             XCTAssertEqual(self.text(of: "tone", in: output), "dark")
@@ -596,12 +573,12 @@ final class SampleSpotsTests: SampleSpotsCase {
             let row = SpotItem(title: "thumbs up", run: "👍")
             XCTAssertEqual(tone.key, ActionKey(name: "t", isCommand: true))
 
-            _ = try await SpotRuns().answer(of: emoji, .action(tone, item: row), input: nil, limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .action(tone, item: row), input: nil, limit: 30)
             let next = try await emoji.items(timeout: 10)
             XCTAssertEqual(self.text(of: "tone", in: next), "light")
 
-            _ = try await SpotRuns().answer(of: emoji, .set("tone", to: "dark"), input: nil, limit: 30)
-            _ = try await SpotRuns().answer(of: emoji, .action(tone, item: row), input: nil, limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .set("tone", to: "dark"), input: nil, limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .action(tone, item: row), input: nil, limit: 30)
             let wrapped = try await emoji.items(timeout: 10)
             XCTAssertEqual(self.text(of: "tone", in: wrapped), "none")
         }
@@ -611,7 +588,7 @@ final class SampleSpotsTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let emoji = try self.fakeEmoji(in: folder)
 
-            _ = try await SpotRuns().answer(of: emoji, .item(SpotItem(title: "thumbs up", run: "👍")), input: nil, limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .item(SpotItem(title: "thumbs up", run: "👍")), input: nil, limit: 30)
 
             XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("clipboard"), encoding: .utf8), "👍")
         }
@@ -634,7 +611,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             let emoji = try self.fakeEmoji(in: folder)
             try "before".write(to: folder.appendingPathComponent("clipboard"), atomically: true, encoding: .utf8)
 
-            _ = try await SpotRuns().answer(of: emoji, SpotAction(arguments: ["paste", "👍"]), input: nil, limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, SpotAction(arguments: ["paste", "👍"]), input: nil, limit: 30)
 
             XCTAssertEqual(try self.read("pasted", in: folder), "👍")
             XCTAssertEqual(try self.read("clipboard", in: folder), "before")
@@ -647,7 +624,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             let url = folder.appendingPathComponent("frames.sh")
             try "#!/bin/sh\nprintf 'text=a\\n---\\n'\nprintf 'text=b\\n'\n".writeScript(to: url)
 
-            let text = try await SpotRuns().answer(of: Spot(id: "frames", name: "Frames", url: url), .read, limit: 5)
+            let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: Spot(id: "frames", name: "Frames", url: url), .read, limit: 5)
 
             XCTAssertEqual(text, "text=a\n")
         }

@@ -65,14 +65,12 @@ final class AppsSpotTests: SampleSpotsCase {
 
     func testDeleteShowsTheAppAndItsFilesAndTrashesOnlyThoseThatStayChosen() async throws {
         let apps = try apps()
-        try await withPrivateHome { folder in
+        try await withPrivateHome(["OPENSPOT_REASON": "spot.change"]) { folder in
             let app = try Self.fakeApp(in: folder, running: false)
             let cache = try Self.library(folder, "Caches/dev.zed.Zed/db")
             let support = try Self.library(folder, "Application Support/Zed/settings.json")
             let preferences = try Self.library(folder, "Preferences/dev.zed.Zed.plist")
             _ = try Self.library(folder, "Caches/com.other.App/db")
-            setenv("OPENSPOT_REASON", "spot.change", 1)
-            defer { unsetenv("OPENSPOT_REASON") }
 
             try await apps.perform(SpotAction(arguments: ["uninstall", app.path]), timeout: 10)
             let sheet = try await apps.items(timeout: 10)

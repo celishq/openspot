@@ -20,14 +20,8 @@ class SampleSpotsCase: XCTestCase {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-\(name)-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let program = folder.appendingPathComponent(name)
-        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-o", program.path, examples.appendingPathComponent("\(name).spot/\(name).swift").path])
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-o", program.path, examples.appendingPathComponent("\(name).spot/\(name).swift").path], base: TestEnvironment.values)
         return (folder, program)
-    }
-
-    @nonobjc func waitUntil(_ fact: () -> Bool) async throws {
-        for _ in 0..<200 where !fact() {
-            try await Task.sleep(for: .milliseconds(50))
-        }
     }
 
     var scan: ScanResult {
@@ -42,9 +36,7 @@ class SampleSpotsCase: XCTestCase {
     }
 
     func windowCall(_ slot: String) throws -> String {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-windows-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
+        let folder = try temporaryFolder()
         try "#!/bin/sh\nprintf '%s\\n' \"$@\"\n".writeScript(to: folder.appendingPathComponent("openspot"))
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/sh")
@@ -77,7 +69,7 @@ class SampleSpotsCase: XCTestCase {
         XCTAssertEqual(stopped.on, false)
     }
 
-    func withPrivateHome(_ body: (URL) async throws -> Void) async throws {
+    func withPrivateHome(_ more: [String: String] = [:], _ body: (URL) async throws -> Void) async throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-home-\(UUID().uuidString)")
         let tools = folder.appendingPathComponent("tools")
         try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
@@ -94,18 +86,16 @@ class SampleSpotsCase: XCTestCase {
             let tool = tools.appendingPathComponent(name)
             try "#!/bin/sh\n\(script)\n".writeScript(to: tool)
         }
-        let before = ProcessInfo.processInfo.environment
-        setenv("HOME", folder.path, 1)
-        setenv("TMPDIR", folder.path + "/", 1)
-        setenv("PATH", "\(tools.path):/usr/bin:/bin", 1)
-        setenv("APP_FOLDERS", folder.appendingPathComponent("Applications").path, 1)
-        defer {
-            for name in ["HOME", "TMPDIR", "PATH", "APP_FOLDERS"] {
-                if let value = before[name] { setenv(name, value, 1) } else { unsetenv(name) }
-            }
-            try? FileManager.default.removeItem(at: folder)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let home: [String: String] = [
+            "HOME": folder.path,
+            "TMPDIR": folder.path + "/",
+            "PATH": "\(tools.path):/usr/bin:/bin",
+            "APP_FOLDERS": folder.appendingPathComponent("Applications").path
+        ]
+        try await TestEnvironment.with(home.merging(more) { _, new in new }) {
+            try await body(folder)
         }
-        try await body(folder)
     }
 
     static func fakeOpenspot(in folder: URL) -> String {
@@ -227,7 +217,7 @@ class SampleSpotsCase: XCTestCase {
         var panel = try XCTUnwrap(SheetParts(output: last))
         for action in actions {
             if action.arguments.count == 2 { panel.set(action.arguments[1], of: action.arguments[0]) }
-            last = SpotOutput(text: try await SpotRuns().answer(of: spot, action, input: panel.values, limit: 30))
+            last = SpotOutput(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, action, input: panel.values, limit: 30))
             panel.take(last, answering: panel.generation)
         }
         return last
@@ -250,7 +240,7 @@ class SampleSpotsCase: XCTestCase {
 
     @MainActor
     static func targetOptions(of spot: Spot, release: URL) async throws -> (first: Int, last: Int) {
-        let runs = SpotRuns()
+        let runs = SpotRuns(environment: TestEnvironment.values)
         defer { runs.quit() }
         let sheet = runs.sheet(for: spot)
         let options: () -> Int = {

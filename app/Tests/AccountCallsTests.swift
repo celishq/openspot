@@ -3,13 +3,6 @@ import XCTest
 
 @MainActor
 final class AccountCallsTests: XCTestCase {
-    private final class Host: Mac {
-        func eventStore() -> any EventStore { FakeEventStore() }
-        func reminderStore() -> any ReminderStore { FakeReminderStore() }
-        func showCalendar(at time: Date) throws {}
-        func open(_ link: URL) -> Bool { true }
-    }
-
     private var folder: URL!
     private var runs: SpotRuns!
     private var app: FakeRunningApp!
@@ -21,7 +14,7 @@ final class AccountCallsTests: XCTestCase {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         runs = SpotRuns()
         app = FakeRunningApp()
-        api = CommandAPI(mac: Host(), app: app, runs: runs)
+        api = CommandAPI(mac: FakeMac(), app: app, runs: runs)
     }
 
     override func tearDown() async throws {

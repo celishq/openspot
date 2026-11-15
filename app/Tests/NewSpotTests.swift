@@ -109,7 +109,7 @@ final class NewSpotTests: BuiltInCase {
     }
 
     func testTheWordsOfTheFieldReachThePressAndTheButtonSaysCopiedThenCopyPromptAgain() async throws {
-        let runs = SpotRuns()
+        let runs = SpotRuns(environment: TestEnvironment.values)
         defer { runs.quit() }
         let sheet = runs.sheet(for: try newSpot())
         sheet.open {}
@@ -141,7 +141,7 @@ final class NewSpotTests: BuiltInCase {
     }
 
     private func edit(_ sheet: Spot, _ action: SpotAction, input: String? = nil, variables: [String: String] = [:]) async throws -> String {
-        try await SpotRuns().answer(of: sheet, action, input: input, limit: 5, variables: variables)
+        try await SpotRuns(environment: TestEnvironment.values).answer(of: sheet, action, input: input, limit: 5, variables: variables)
     }
 
     func testTheEditSheetIsTheSameFormForAChangeWithOpenInEditor() async throws {
@@ -270,7 +270,7 @@ final class NewSpotTests: BuiltInCase {
                 try "#!/bin/sh\n# on=clock.60\nprintf 'text=t\\ntitle=T\\n'\n".writeScript(to: folder.spotFile(name))
             }
 
-            let faults = await SpotCheck(folder: SpotsFolder(url: folder)).faults()
+            let faults = await SpotCheck(folder: SpotsFolder(url: folder), environment: TestEnvironment.values).faults()
 
             XCTAssertEqual(faults, [], script)
         }

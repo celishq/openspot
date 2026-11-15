@@ -67,8 +67,10 @@ public final class SpotRuns {
     @ObservationIgnored var frameWaits = 0
     @ObservationIgnored var answerWaits: [(DispatchTime) -> Void]?
     @ObservationIgnored private let swift: SwiftProgram
+    @ObservationIgnored let environment: [String: String]
 
     public init(
+        environment: [String: String] = ProcessInfo.processInfo.environment,
         readLimit: TimeInterval = 10,
         opening: SheetOpening = SheetOpening(),
         now: @escaping () -> Date = { Date() },
@@ -84,6 +86,7 @@ public final class SpotRuns {
         swift: SwiftProgram = SwiftProgram(),
         tokens: CallerTokens = CallerTokens()
     ) {
+        self.environment = environment
         self.tokens = tokens
         self.log = log
         self.swift = swift
@@ -348,14 +351,14 @@ public final class SpotRuns {
     func inline(_ spot: Spot, limit: TimeInterval? = nil) -> InlineScript {
         let id = spot.id
         let idle = max(inlineIdle, (spot.read?.seconds ?? 0) * 1.5)
-        return InlineScript(spot: spot, api: api, tokens: tokens, careful: isCareful ? spot.uses : nil, limit: limit ?? readLimit, idle: idle) { [usage] seconds in
+        return InlineScript(spot: spot, api: api, tokens: tokens, careful: isCareful ? spot.uses : nil, limit: limit ?? readLimit, idle: idle, base: environment) { [usage] seconds in
             usage.add(ProcessTime(cpu: seconds, wakeups: 0), to: id, at: usage.now())
         }
     }
 
     func stay(_ spot: Spot, limit: TimeInterval?) -> (ScriptProcess, AsyncThrowingStream<String, Error>, String) {
         let token = tokens.issue(for: spot)
-        let script = ScriptProcess(url: swift.runnable(for: spot.url), name: spot.url.path, mode: .stays, limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: ["OPENSPOT_ID": spot.id, CallerTokens.variable: token], careful: isCareful ? spot.uses : nil)
+        let script = ScriptProcess(url: swift.runnable(for: spot.url), name: spot.url.path, mode: .stays, limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: ["OPENSPOT_ID": spot.id, CallerTokens.variable: token], careful: isCareful ? spot.uses : nil, base: environment)
         track(script, of: spot.id, token: token)
         let frames = script.start()
         keep(script)
@@ -369,7 +372,7 @@ public final class SpotRuns {
             return (stream, halt, nil)
         }
         if let sheet = spot.host {
-            let (stream, halt) = answered { try await sheet.answer(action.arguments, input: input, variables: variables) }
+            let (stream, halt) = answered { [environment] in try await sheet.answer(action.arguments, input: input, variables: variables, base: environment) }
             return (stream, halt, nil)
         }
         if spot.mode == .inline {
@@ -391,7 +394,7 @@ public final class SpotRuns {
         }
         let sent = action.sent(input: input)
         let token = tokens.issue(for: spot, reason: variables["OPENSPOT_REASON"])
-        let process = ScriptProcess(url: swift.runnable(for: spot.url), name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: variables.merging(["OPENSPOT_ID": spot.id]) { given, _ in given }.merging([CallerTokens.variable: token]) { _, own in own }, careful: isCareful ? spot.uses : nil)
+        let process = ScriptProcess(url: swift.runnable(for: spot.url), name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: variables.merging(["OPENSPOT_ID": spot.id]) { given, _ in given }.merging([CallerTokens.variable: token]) { _, own in own }, careful: isCareful ? spot.uses : nil, base: environment)
         track(process, of: spot.id, token: token)
         let stream = process.start()
         keep(process)

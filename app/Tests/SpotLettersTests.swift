@@ -8,7 +8,7 @@ final class SpotLettersTests: XCTestCase {
     private var folder: URL!
     private var defaults: UserDefaults!
     private var suite = ""
-    private var host: TestHost!
+    private var host: FakeHost!
     private var model: SpotsModel!
 
     override func setUp() async throws {
@@ -19,7 +19,7 @@ final class SpotLettersTests: XCTestCase {
         try "[[spots]]\nid = \"notes\"\nletter = \"n\"\n".write(to: standard, atomically: true, encoding: .utf8)
         suite = "openspot-letters-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
-        host = TestHost()
+        host = FakeHost()
         let files = AppPlaces(
             environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": configFolder.path],
             home: folder,

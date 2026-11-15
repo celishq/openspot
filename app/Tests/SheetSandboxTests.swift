@@ -3,9 +3,7 @@ import XCTest
 
 final class SheetSandboxTests: XCTestCase {
     func testTheSandboxRunsAScriptOfEachStayingModeAsOneThatStaysWhileInUse() throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("sandbox-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
+        let folder = try temporaryFolder()
         let modes = try ["stay", "always", "once", "inline"].map { mode in
             let file = folder.appendingPathComponent("\(mode).sh")
             try "#!/bin/sh\n# mode=\(mode)\n".write(to: file, atomically: true, encoding: .utf8)

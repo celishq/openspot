@@ -14,9 +14,7 @@ final class SpotHeaderTests: XCTestCase {
     }
 
     func testEachOffersLineNamesOnePlaceAndASpotWithNoLineOffersItsCard() throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-places-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
+        let folder = try temporaryFolder()
         func spot(_ header: String) throws -> Spot {
             let url = folder.appendingPathComponent("\(UUID().uuidString).sh")
             try "#!/bin/sh\n\(header)".writeScript(to: url)
@@ -73,9 +71,7 @@ final class SpotHeaderTests: XCTestCase {
     }
 
     func testAJavaScriptSpotNamesTheFunctionThatSaysWhetherAnActionShows() throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-when-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
+        let folder = try temporaryFolder()
         let js = folder.appendingPathComponent("icon.js")
         try "// title=Icon\n//\n// button=reset\n// title=Reset Icon\n// offers=actions\n// when=hasIcon\nfunction hasIcon(id) { return true }\n".write(to: js, atomically: true, encoding: .utf8)
         let shell = folder.appendingPathComponent("icon.sh")
@@ -137,9 +133,7 @@ final class SpotHeaderTests: XCTestCase {
     }
 
     func testPressOpenMakesAPressOfASpotWithASheetRunIt() throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-press-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
+        let folder = try temporaryFolder()
         let runs = folder.appendingPathComponent("runs.sh"), opens = folder.appendingPathComponent("opens.sh")
         let unknown = folder.appendingPathComponent("unknown.sh")
         try "#!/bin/sh\n# on=sheet.open\n# press=open\n".writeScript(to: runs)
@@ -209,9 +203,7 @@ final class SpotHeaderTests: XCTestCase {
     }
 
     func testAnEditOfAViewChangesItsSpot() throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-view-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
+        let folder = try temporaryFolder()
         let view = folder.appendingPathComponent("cups.swift")
         try "".write(to: view, atomically: true, encoding: .utf8)
         let header = SpotHeader(text: "#!/bin/sh\n# view=cups.swift\n").block
@@ -225,9 +217,7 @@ final class SpotHeaderTests: XCTestCase {
     }
 
     func testAnEditOfTheLibraryBesideAViewChangesItsSpot() throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-view-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
+        let folder = try temporaryFolder()
         try "".write(to: folder.appendingPathComponent("cups.swift"), atomically: true, encoding: .utf8)
         let library = folder.appendingPathComponent("cups.view")
         try "".write(to: library, atomically: true, encoding: .utf8)

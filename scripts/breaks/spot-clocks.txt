@@ -1,0 +1,5 @@
+spots/battery.spot/battery.sh
+spots/cpu.spot/cpu.sh
+spots/devices.spot/devices.sh
+spots/disk.spot/disk.sh
+spots/memory.spot/memory.sh

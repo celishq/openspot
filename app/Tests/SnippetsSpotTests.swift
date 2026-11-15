@@ -6,14 +6,14 @@ final class SnippetsSpotTests: SampleSpotsCase {
         let snippets = try XCTUnwrap(try scan.spots.first { $0.name == "Snippets" })
         try await withPrivateHome { folder in
             let config = folder.appendingPathComponent("debug-config")
-            setenv("OPENSPOT_CONFIG", config.path, 1)
-            defer { unsetenv("OPENSPOT_CONFIG") }
-            let new = try await self.action("new", of: snippets)
-            var draft = FormDraft(form: try await snippets.form(new, item: nil, timeout: 5))
-            draft.set("A", for: "title")
-            draft.set("B", for: "content")
+            try await TestEnvironment.with(["OPENSPOT_CONFIG": config.path]) {
+                let new = try await self.action("new", of: snippets)
+                var draft = FormDraft(form: try await snippets.form(new, item: nil, timeout: 5))
+                draft.set("A", for: "title")
+                draft.set("B", for: "content")
 
-            _ = try await snippets.submit(new, item: nil, draft: draft, timeout: 5)
+                _ = try await snippets.submit(new, item: nil, draft: draft, timeout: 5)
+            }
 
             XCTAssertTrue(FileManager.default.fileExists(atPath: config.appendingPathComponent("data/snippets/snippets.json").path))
             XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent(".config").path))

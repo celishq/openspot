@@ -35,14 +35,6 @@ final class SpotRunTests: XCTestCase {
         FileManager.default.fileExists(atPath: path(name))
     }
 
-    private func wait(_ what: String, until condition: () -> Bool) async throws {
-        for _ in 0..<500 {
-            if condition() { return }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTFail("waited for \(what)")
-    }
-
     private func holding(_ body: String, pause: TimeInterval) throws -> SpotRun {
         let url = folder.appendingPathComponent("held.sh")
         try "#!/bin/sh\n\(body)\n".writeScript(to: url)

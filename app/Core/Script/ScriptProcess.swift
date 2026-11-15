@@ -79,9 +79,9 @@ public final class ScriptProcess: @unchecked Sendable {
         base["HOME"].map { URL(fileURLWithPath: $0, isDirectory: true) } ?? FileManager.default.homeDirectoryForCurrentUser
     }
 
-    public static func output(url: URL, arguments: [String] = [], input: String? = nil, limit: TimeInterval? = nil) async throws -> String {
+    public static func output(url: URL, arguments: [String] = [], input: String? = nil, limit: TimeInterval? = nil, base: [String: String]? = nil) async throws -> String {
         var text = ""
-        for try await frame in ScriptProcess(url: url, arguments: arguments, mode: .once(input: input), limit: limit).start() {
+        for try await frame in ScriptProcess(url: url, arguments: arguments, mode: .once(input: input), limit: limit, base: base).start() {
             text += frame
         }
         return text

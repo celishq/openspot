@@ -6,7 +6,7 @@ class PanelCase: XCTestCase {
     var folder: URL!
     var defaults: UserDefaults!
     var suite = ""
-    var host: TestHost!
+    var host: FakeHost!
     var model: SpotsModel!
 
     override func setUp() async throws {
@@ -14,7 +14,7 @@ class PanelCase: XCTestCase {
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         suite = "openspot-panel-case-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
-        let host = TestHost()
+        let host = FakeHost()
         self.host = host
         let files = AppPlaces(
             environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
@@ -41,16 +41,7 @@ class PanelCase: XCTestCase {
     let toGrid = ActionKey(name: "escape", isCommand: true)
 
     func script(_ name: String, header: String, _ body: String) throws {
-        let lines = header.split(separator: "\n", omittingEmptySubsequences: false).map { "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: spots.spotFile(name))
-    }
-
-    func waitFor(_ what: String, until condition: @escaping () -> Bool) async throws {
-        for _ in 0..<500 {
-            if condition() { return }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTFail("waited for \(what)")
+        try TestSpot(header: header, body: "\(body)").write(to: spots.spotFile(name))
     }
 
     var titles: [String] {
@@ -66,11 +57,11 @@ class PanelCase: XCTestCase {
         model.isShown = true
         model.panelWillShow(holding: [])
         model.press("list")
-        try await waitFor("the open list") { self.model.transition.phase == .open && self.titles == ["A"] }
+        try await wait("the open list") { self.model.transition.phase == .open && self.titles == ["A"] }
     }
 
     func openPage() async throws {
         model.runSelectedItem()
-        try await waitFor("the page") { self.titles == ["Detail a"] }
+        try await wait("the page") { self.titles == ["Detail a"] }
     }
 }

@@ -75,9 +75,9 @@ final class SystemSettingsSpotTests: SampleSpotsCase {
             try Self.pane("HeadphoneSettingsExtension", in: panes, info: ["CFBundleIdentifier": "com.apple.HeadphoneSettings", "CFBundleDisplayName": "HeadphoneSettingsExtension"])
             try Self.pane("Widget", in: panes, info: ["CFBundleIdentifier": "com.apple.Widget", "CFBundleDisplayName": "Widget"], point: "com.apple.widgetkit-extension")
             try "#!/bin/sh\nprintf '(\\n    \"ru-RU\",\\n    en\\n)\\n'\n".writeScript(to: folder.appendingPathComponent("tools/defaults"))
-            setenv("SETTINGS_PANES", panes.path, 1)
-            defer { unsetenv("SETTINGS_PANES") }
-            try await body(folder)
+            try await TestEnvironment.with(["SETTINGS_PANES": panes.path]) {
+                try await body(folder)
+            }
         }
     }
 

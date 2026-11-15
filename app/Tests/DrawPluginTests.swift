@@ -9,11 +9,11 @@ final class DrawPluginTests: SampleSpotsCase {
     private func withBoards(_ body: (URL, URL) async throws -> Void) async throws {
         try await withPrivateHome { folder in
             let config = folder.appendingPathComponent(".config/openspot")
-            setenv("OPENSPOT_CONFIG", config.path, 1)
-            defer { unsetenv("OPENSPOT_CONFIG") }
             let boards = config.appendingPathComponent("data/draw/boards")
             try FileManager.default.createDirectory(at: boards, withIntermediateDirectories: true)
-            try await body(folder, boards)
+            try await TestEnvironment.with(["OPENSPOT_CONFIG": config.path]) {
+                try await body(folder, boards)
+            }
         }
     }
 
@@ -129,6 +129,6 @@ final class DrawPluginTests: SampleSpotsCase {
                 .map { folder.appendingPathComponent("\(part)/\($0)").path }
         }
 
-        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-typecheck"] + sources)
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-typecheck"] + sources, base: TestEnvironment.values)
     }
 }

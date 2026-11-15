@@ -3,9 +3,7 @@ import XCTest
 
 final class ClockExampleTests: SampleSpotsCase {
     func testItShowsTheTimeOfItsZoneAndPrintsItAgainAtTheNextMinute() async throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-clock-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
+        let folder = try temporaryFolder()
         try """
         #!/bin/sh
         case "$1" in

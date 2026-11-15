@@ -3,13 +3,6 @@ import XCTest
 
 @MainActor
 final class SpotRunsInlineTests: SpotRunsCase {
-    private final class Host: Mac {
-        func eventStore() -> any EventStore { FakeEventStore() }
-        func reminderStore() -> any ReminderStore { FakeReminderStore() }
-        func showCalendar(at time: Date) throws {}
-        func open(_ link: URL) -> Bool { false }
-    }
-
     private func inline(_ name: String = "script", header: String, _ body: String) throws {
         let lines = header.split(separator: "\n").map { "// \($0)\n" }.joined()
         let url = folder.spotFile(name, extension: "js")
@@ -102,7 +95,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testOpenspotCallAsksTheAPIInTheApp() async throws {
-        runs.api = CommandAPI(mac: Host())
+        runs.api = CommandAPI(mac: FakeMac(opens: false))
         try inline(header: "on=search.text ^[0-9]", """
         function main([id, row], env) {
           const text = id === "open" ? row : env.OPENSPOT_VALUE

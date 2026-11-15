@@ -3,13 +3,6 @@ import XCTest
 
 @MainActor
 final class SpotVerbTests: XCTestCase {
-    private final class Host: Mac {
-        func eventStore() -> any EventStore { FakeEventStore() }
-        func reminderStore() -> any ReminderStore { FakeReminderStore() }
-        func showCalendar(at time: Date) throws {}
-        func open(_ link: URL) -> Bool { false }
-    }
-
     private struct ModelApp: RunningApp {
         let model: SpotsModel
 
@@ -35,9 +28,8 @@ final class SpotVerbTests: XCTestCase {
     private var folder: URL!
     private var defaults: UserDefaults!
     private var suite = ""
-    private var host: TestHost!
+    private var host: FakeHost!
     private var model: SpotsModel!
-    private let path = ProcessInfo.processInfo.environment["PATH"]
 
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-verb-\(UUID().uuidString)")
@@ -48,10 +40,9 @@ final class SpotVerbTests: XCTestCase {
         for (name, body) in [("pbcopy", "cat > '\(folder.path)/clipboard.new' && mv '\(folder.path)/clipboard.new' '\(folder.path)/clipboard'"), ("open", "echo \"$@\" > '\(folder.path)/opened'")] {
             try "#!/bin/sh\n\(body)\n".writeScript(to: tools.appendingPathComponent(name))
         }
-        setenv("PATH", "\(tools.path):/usr/bin:/bin", 1)
         suite = "openspot-verb-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
-        host = TestHost()
+        host = FakeHost()
         host.app = "/Apps/Openspot.app/Contents/MacOS/Openspot"
         let trash = trash!
         let editor = [
@@ -78,14 +69,13 @@ final class SpotVerbTests: XCTestCase {
                 return place
             }
         )
-        model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
+        model = SpotsModel(host: host, files: files, runs: SpotRuns(environment: ProcessInfo.processInfo.environment.merging(["PATH": "\(tools.path):/usr/bin:/bin"]) { _, new in new }, stopPause: 0.2))
         host.model = model
-        model.runs.api = CommandAPI(mac: Host(), app: ModelApp(model: model), runs: model.runs)
+        model.runs.api = CommandAPI(mac: FakeMac(opens: false), app: ModelApp(model: model), runs: model.runs)
     }
 
     override func tearDown() async throws {
         model.quit()
-        if let path { setenv("PATH", path, 1) }
         defaults.removePersistentDomain(forName: suite)
         try? FileManager.default.removeItem(at: folder)
     }
@@ -107,16 +97,7 @@ final class SpotVerbTests: XCTestCase {
     }
 
     private func script(_ name: String, header: String = "", _ body: String = "echo") throws {
-        let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: spots.spotFile(name))
-    }
-
-    private func wait(_ what: String, until condition: () -> Bool) async throws {
-        for _ in 0..<500 {
-            if condition() { return }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTFail("waited for \(what)")
+        try TestSpot(header: header, body: "\(body)").write(to: spots.spotFile(name))
     }
 
     private func saved(_ name: String) -> String? {

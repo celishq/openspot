@@ -2,13 +2,6 @@ import XCTest
 @testable import OpenspotCore
 
 final class SpotAddTests: XCTestCase {
-    private final class Host: Mac {
-        func eventStore() -> any EventStore { FakeEventStore() }
-        func reminderStore() -> any ReminderStore { FakeReminderStore() }
-        func showCalendar(at time: Date) throws {}
-        func open(_ link: URL) -> Bool { true }
-    }
-
     private var root: URL!
     private var spots: URL!
 
@@ -29,7 +22,7 @@ final class SpotAddTests: XCTestCase {
 
     private func answer(_ arguments: [String]) async throws -> CommandAnswer {
         let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: environment))
-        let work = try XCTUnwrap(CommandAPI(mac: Host()).work(for: call, input: { "" }, environment: environment))
+        let work = try XCTUnwrap(CommandAPI(mac: FakeMac()).work(for: call, input: { "" }, environment: environment))
         return await work()
     }
 

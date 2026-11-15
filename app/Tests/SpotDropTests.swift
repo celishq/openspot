@@ -42,20 +42,11 @@ final class SpotDropTests: XCTestCase {
 
     private func sheet(header: String = "", _ body: String = "") throws -> SpotRun {
         let url = folder.spotFile("script")
-        let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\necho $$ >> '\(path("pids"))'\necho \"$*\" >> '\(path("log"))'\n\(body)\n".writeScript(to: url)
+        try TestSpot(header: header, body: "echo $$ >> '\(path("pids"))'\necho \"$*\" >> '\(path("log"))'\n\(body)").write(to: url)
         let scan = try SpotsFolder(url: folder).scan()
         XCTAssertEqual(scan.refused, [])
         runs.take(scan)
         return try XCTUnwrap(runs.sheets["script"])
-    }
-
-    private func wait(_ what: String, until condition: () -> Bool) async throws {
-        for _ in 0..<500 {
-            if condition() { return }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTFail("waited for \(what)")
     }
 
     private func allEnded() async throws {

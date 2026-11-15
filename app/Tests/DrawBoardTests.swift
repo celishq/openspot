@@ -267,9 +267,7 @@ final class DrawBoardTests: XCTestCase {
         var image = Figure(kind: .image, points: [.zero, CGPoint(x: 40, y: 30)])
         image.source = "picture.png"
         board.add(image)
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-draw-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
+        let folder = try temporaryFolder()
         let file = folder.appendingPathComponent("board.json")
 
         try board.save(to: file)

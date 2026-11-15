@@ -6,7 +6,7 @@ final class SpotsModelTests: XCTestCase {
     private var folder: URL!
     private var defaults: UserDefaults!
     private var suite = ""
-    private var host: TestHost!
+    private var host: FakeHost!
     private var model: SpotsModel!
 
     override func setUp() async throws {
@@ -14,7 +14,7 @@ final class SpotsModelTests: XCTestCase {
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         suite = "openspot-panel-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
-        let host = TestHost()
+        let host = FakeHost()
         self.host = host
         let files = AppPlaces(
             environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
@@ -36,16 +36,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     private func script(_ name: String, header: String, _ body: String) throws {
-        let lines = header.split(separator: "\n", omittingEmptySubsequences: false).map { "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: spots.spotFile(name))
-    }
-
-    private func wait(_ what: String, until condition: () -> Bool) async throws {
-        for _ in 0..<500 {
-            if condition() { return }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTFail("waited for \(what)")
+        try TestSpot(header: header, body: "\(body)").write(to: spots.spotFile(name))
     }
 
     func testACardIsFoundByItsIDAndAnUnknownIDFindsNone() throws {
@@ -457,7 +448,7 @@ final class SpotsModelTests: XCTestCase {
 
     func testAListDrawsAheadTheRowsItShowsFirstWithARecentPickOnTop() async throws {
         try script("apps", header: "on=sheet.open", "for i in $(seq 1 100); do printf 'row=a%s\\ntitle=App %s\\nicon=/Applications/A%s.app\\n\\n' $i $i $i; done")
-        let host = TestHost()
+        let host = FakeHost()
         let ranked = SpotsModel(host: host, files: model.files, runs: SpotRuns(stopPause: 0.2, recent: { _ in ["a50"] }, prepare: { await host.prepare($0, glyphs: $1) }))
         host.model = ranked
         defer { ranked.quit() }

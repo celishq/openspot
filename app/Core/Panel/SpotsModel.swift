@@ -200,9 +200,10 @@ public final class SpotsModel {
             guard let self else { return bring() }
             bringParts(of: id, bring)
         }
+        let environment = self.runs.environment
         account = AccountSheet(store: files.account, links: AccountSheet.Links(
             allows: { [weak self] reason in await self?.allows(reason) ?? false },
-            copy: { text in (try? await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["LC_ALL=en_US.UTF-8", "pbcopy"], input: text)) != nil },
+            copy: { text in (try? await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["LC_ALL=en_US.UTF-8", "pbcopy"], input: text, base: environment)) != nil },
             publish: { [weak self] id in _ = await self?.publish(id) },
             userName: { NSFullUserName() }
         ))
