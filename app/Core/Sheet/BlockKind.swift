@@ -66,10 +66,6 @@ public struct BlockKind: Sendable, Equatable {
         return kinds.first { $0.word == word && $0.picks(block) }
     }
 
-    static func isKept(_ word: String, in kinds: [BlockKind]) -> Bool {
-        kinds.contains { $0.name == word }
-    }
-
     func formField(of block: TextBlock) -> ItemForm.Field? {
         guard let field, let name = block.value(word), let label = block.value("title") else { return nil }
         return field(block, name, label)

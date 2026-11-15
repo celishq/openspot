@@ -130,7 +130,7 @@ public struct SpotCheck: Sendable {
             var seen: Set<String> = []
             var told: Set<String> = []
             for line in block {
-                guard let key = line.split(separator: "=", maxSplits: 1).first.map(String.init), !lists.contains(key), !key.hasPrefix("grid.") else { continue }
+                guard let key = line.split(separator: "=", maxSplits: 1).first.map(String.init), !lists.contains(key), !HeaderKey.isDrawing(key) else { continue }
                 if !seen.insert(key).inserted, told.insert(key).inserted { faults.append("the block \(name) has \(key) twice, \(fix)") }
             }
         }

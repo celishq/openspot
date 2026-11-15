@@ -15,6 +15,6 @@ public enum HeaderBlock: String, CaseIterable, Sendable {
 
     static func unknown(in block: TextBlock) -> String? {
         guard let kind = HeaderBlock(block: block) else { return nil }
-        return block.fields.map(\.key).first { !kind.keys.contains($0) }
+        return block.fields.map(\.key).first { HeaderKey.isWord($0) && !kind.keys.contains($0) }
     }
 }

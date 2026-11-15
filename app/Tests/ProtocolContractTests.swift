@@ -27,7 +27,7 @@ final class ProtocolContractTests: XCTestCase {
         let headerKinds = Set(HeaderBlock.allCases.map(\.rawValue))
         let docHeaderKinds = keys(RepoDoc.tableRows(in: doc.section("The header")).filter { $0[0].hasPrefix("`button") || $0[0].hasPrefix("`field") }.map { $0[0] })
 
-        let headKeys = Set(HeadKey.allCases.map(\.rawValue) + [HeadKey.drawing + "<size>"])
+        let headKeys = Set(HeadKey.allCases.map(\.rawValue) + [HeaderKey.drawing + "<size>"])
         let docHeadKeys = keys([doc.section("The head").components(separatedBy: "- The head can come")[0]])
 
         let docKinds = keys(RepoDoc.tableRows(in: doc.section("Blocks")).map { $0[0] })

@@ -88,6 +88,22 @@ final class SoleCommandTests: XCTestCase {
         XCTAssertNil(model.recording)
     }
 
+    func testTheFooterOfASpotWithOneCommandAndNoSheetNamesWhatReturnDoes() async throws {
+        try script("party", header: "title=Party\non=panel.open\n\nbutton=play\ntitle=Play")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.query = "party"
+        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "party" })
+
+        XCTAssertEqual(try entry("party").kind, .launch)
+        XCTAssertFalse(model.hint.contains("Set key"), model.hint)
+        model.run(try entry("party"))
+
+        try await wait("the press of the card") { host.confirms.contains("Ran open") }
+        XCTAssertNil(model.recording)
+    }
+
     func testReturnOnASpotWithTwoCommandsOnlyOpensTheirKeys() async throws {
         try script("windows", header: "title=Windows\n\nbutton=left\ntitle=Left\n\nbutton=right\ntitle=Right")
         model.reload()

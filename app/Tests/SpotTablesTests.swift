@@ -33,6 +33,12 @@ final class SpotTablesTests: XCTestCase {
         XCTAssertNil(fault(ofHeader: "# title=Coffee\n# on=sheet.open\n# pages=day:*\n"))
     }
 
+    func testACommentInAHeaderThatIsNoKeyOfTheContractDoesNotStopTheSpot() {
+        XCTAssertNil(fault(ofHeader: "# title=T\n# shellcheck disable=SC2034\n# vim: set ts=2:\n# Set CITY=Paris to change it\n# on=sheet.open\n"))
+        XCTAssertNil(fault(ofHeader: "# title=T\n#\n# button=go\n# title=Go\n# shellcheck disable=SC2034\n"))
+        XCTAssertEqual(fault(ofHeader: "# title=T\n# read-on=sheet.open\n"), "T has an unknown key in its header: read-on")
+    }
+
     func testAKeyThatAHeaderBlockDoesNotTakeIsAFault() {
         XCTAssertEqual(fault(ofHeader: "# title=T\n#\n# button=go\n# title=Go\n# colour=red\n"), "T has an unknown key on the button go: colour")
         XCTAssertEqual(fault(ofHeader: "# title=T\n#\n# field=look\n# titel=Look\n"), "T has an unknown key on the field look: titel")

@@ -20,8 +20,8 @@ public struct CardFace: Equatable, Sendable {
 
     public init(head: TextBlock?, parts: [SpotPart]) {
         var drawings: [String: [[String]]] = [:]
-        for field in head?.fields ?? [] where field.key.hasPrefix("grid.") && !field.value.isEmpty {
-            let place = String(field.key.dropFirst(5))
+        for field in head?.fields ?? [] where HeaderKey.isDrawing(field.key) && !field.value.isEmpty {
+            let place = String(field.key.dropFirst(HeaderKey.drawing.count))
             guard Self.places.contains(place) else { continue }
             drawings[place, default: []].append(field.value.split(whereSeparator: \.isWhitespace).map(String.init))
         }

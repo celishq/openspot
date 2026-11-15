@@ -79,14 +79,16 @@ final class OnceLink: ScriptLink {
         guard let run else { return nil }
         return try await withCheckedThrowingContinuation { continuation in
             var answer = SpotOutput.empty
+            var select: String?
             let made = runs.call(run.spot, action, key: key, input: input, limit: nil, variables: run.withPage([:])) { [weak run] _, _, lines in
                 if !lines.fields.isEmpty || answer.fields.isEmpty { answer = lines }
+                select = lines.select ?? select
                 run?.report(toastOf: lines)
             } onEnd: { [weak run] made, end in
                 run?.callEnded(made)
                 switch end {
                 case .stopped: continuation.resume(returning: nil)
-                case .ended: continuation.resume(returning: answer)
+                case .ended: continuation.resume(returning: answer.selecting(select))
                 case .failed(let error): continuation.resume(throwing: error)
                 }
             }

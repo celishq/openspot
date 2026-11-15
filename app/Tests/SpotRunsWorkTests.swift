@@ -447,7 +447,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(header: "on=sheet.open", """
         case "$1" in
           read) printf 'button=add\\ntitle=Add\\nform=true\\nscope=spot\\n\\nrow=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n\\nrow=c\\ntitle=C\\n' ;;
-          add) case "$(cat)" in *name=bare*) echo c ;; *name=*) printf 'select=b\\n' ;; *) printf 'title=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
+          add) case "$(cat)" in *name=bare*) echo c ;; *name=*) printf 'select=b\\n---\\ntoast=Saved\\n' ;; *) printf 'title=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
         esac
         """)
         let sheet = try sheet()

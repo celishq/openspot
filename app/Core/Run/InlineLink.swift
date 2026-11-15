@@ -172,6 +172,7 @@ final class InlineLink: ScriptLink {
         switch outcome {
         case .frame(let text) where !made.isStopped:
             let lines = await SpotOutput.reading(text)
+            guard !made.isStopped else { return nil }
             run.report(toastOf: lines)
             return lines
         case .failed(let error) where !made.isStopped:

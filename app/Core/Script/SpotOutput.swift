@@ -137,6 +137,12 @@ public struct SpotOutput: Equatable, Sendable {
         summary?.number(HeadKey.progress).map { min(max($0, 0), 1) }
     }
 
+    func selecting(_ row: String?) -> SpotOutput {
+        var output = self
+        output.select = row
+        return output
+    }
+
     public func withoutEffects() -> SpotOutput {
         var output = self
         output.toast = nil

@@ -168,7 +168,7 @@ extension SpotsModel {
     }
 
     var soleHint: String? {
-        guard openList == nil, let entry = selectedEntry, let command = entry.spot.soleCommand else { return nil }
+        guard openList == nil, let entry = selectedEntry, entry.kind == .list, !entry.spot.pressRuns, let command = entry.spot.soleCommand else { return nil }
         guard assignedKeys.contains(where: { $0.spot == entry.id && $0.act == .command(command) }) else {
             return "⏎ Set key   ⌘⏎ Settings   ⌘K Actions"
         }

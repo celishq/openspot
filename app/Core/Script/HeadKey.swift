@@ -7,11 +7,9 @@ public enum HeadKey: String, CaseIterable, Sendable {
     case pushReplace = "push.replace"
     case pop, end, call
 
-    public static let drawing = "grid."
-
     private static let names = Set(allCases.map(\.rawValue))
 
     static func isKey(_ key: String) -> Bool {
-        names.contains(key) || key.hasPrefix(drawing)
+        names.contains(key) || HeaderKey.isDrawing(key)
     }
 }

@@ -59,7 +59,7 @@ public struct FrameCheck: Equatable, Sendable {
         if let head, head.value(HeadKey.push) != nil || head.value(HeadKey.pushSpot) != nil, head.value(HeadKey.pop) != nil {
             faults.append("the frame holds both push and pop, and moves nothing. Print one of them")
         }
-        for field in head?.fields ?? [] where field.key.hasPrefix(HeadKey.drawing) && !CardFace.places.contains(String(field.key.dropFirst(HeadKey.drawing.count))) {
+        for field in head?.fields ?? [] where HeaderKey.isDrawing(field.key) && !CardFace.places.contains(String(field.key.dropFirst(HeaderKey.drawing.count))) {
             faults.append("the head draws \(field.key), which is not a place")
         }
         for drawing in output.face.drawings.values {
