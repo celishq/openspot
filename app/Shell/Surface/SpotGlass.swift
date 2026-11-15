@@ -5,46 +5,26 @@ struct SpotGlass: ViewModifier {
     var radius: CGFloat = SpotTokens.radius
     var isSolid = false
     var isBare = false
-    var blursBehind = true
-    var rimSize: CGSize?
     @Environment(\.spotIsShown) private var isShown
+    @Environment(\.spotFade) private var fade
+    @Environment(\.spotScrollFade) private var edge
 
     func body(content: Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
+        let shape = SpotRoundShape(radius: radius)
+        let fade = fade
+        let edge = edge
+        let space = SpotsView.panelSpace
         content
+            .background { shape.fill(SpotTheme.solid).opacity(isSolid ? 1 : 0) }
+            .opacity(fade)
+            .visualEffect { content, place in content.opacity(edge?.strength(of: place.frame(in: .named(space))) ?? 1) }
+            .spotGlass(!isSolid && !isBare, in: shape)
+            .visualEffect { content, place in
+                content.opacity(SpotTheme.glassStrength(at: fade * (edge?.strength(of: place.frame(in: .named(space))) ?? 1)))
+            }
             .opacity(isShown ? 1 : MotionTokens.hiddenOpacity)
-            .animation(SpotMotion.fade(isShown: isShown), value: isShown)
             .allowsHitTesting(isShown)
-            .background {
-                if blursBehind {
-                    SpotBlur(radius: SpotTheme.blur)
-                        .overlay(SpotTheme.glass)
-                        .clipShape(shape)
-                        .opacity(isSolid || isBare ? 0 : shown)
-                }
-                shape.fill(SpotTheme.solid).opacity(isSolid ? shown : 0)
-            }
-            .animation(SpotMotion.fade(isShown: isShown), value: isShown)
-            .overlay {
-                rim
-                    .opacity(isSolid || isBare ? 0 : shown)
-                    .animation(SpotMotion.fade(isShown: isShown), value: isShown)
-                    .allowsHitTesting(false)
-            }
             .scaleEffect(isShown ? 1 : MotionTokens.hiddenScale)
             .animation(SpotMotion.fade(isShown: isShown), value: isShown)
-    }
-
-    private var shown: Double {
-        isShown ? 1 : MotionTokens.hiddenOpacity
-    }
-
-    @ViewBuilder
-    private var rim: some View {
-        if let rimSize {
-            SpotRimPicture(size: rimSize, radius: radius)
-        } else {
-            SpotRim(radius: radius)
-        }
     }
 }

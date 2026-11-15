@@ -78,7 +78,7 @@ final class SpotsPanel: NSPanel {
 
     func showsDrop(at point: NSPoint) -> Bool {
         guard let model, model.isShown else { return false }
-        let height = SpotTokens.backdropHeight(gridHeight: SpotGrid.height(of: model.placements))
+        let height = SpotTokens.contentHeight(gridHeight: SpotGrid.height(of: model.placements))
         return NSRect(x: frame.minX, y: frame.maxY - height, width: frame.width, height: height).contains(point)
     }
 

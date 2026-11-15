@@ -17,22 +17,33 @@ struct SpotScrollEdges: Equatable {
     }
 
     func gradient(height: CGFloat) -> LinearGradient {
-        LinearGradient(stops: stops(height: height), startPoint: .top, endPoint: .bottom)
+        LinearGradient(stops: levels(height: height).map { .init(color: .black.opacity($0.strength), location: $0.location) }, startPoint: .top, endPoint: .bottom)
     }
 
-    private func stops(height: CGFloat) -> [Gradient.Stop] {
+    func strength(at y: CGFloat, height: CGFloat) -> Double {
+        let levels = levels(height: height)
+        let place = y / SpotTokens.panelHeight
+        guard let after = levels.firstIndex(where: { $0.location >= place }) else { return levels.last?.strength ?? 1 }
+        guard after > 0 else { return levels[0].strength }
+        let low = levels[after - 1]
+        let high = levels[after]
+        let share = high.location > low.location ? (place - low.location) / (high.location - low.location) : 1
+        return low.strength + (high.strength - low.strength) * share
+    }
+
+    private func levels(height: CGFloat) -> [(location: CGFloat, strength: Double)] {
         let start = (SpotTokens.halo + SpotTokens.rowHeight) / SpotTokens.panelHeight
         let end = (height - SpotTokens.halo - SpotTokens.hintBlock) / SpotTokens.panelHeight
         let length = Self.fadeLength / SpotTokens.panelHeight
         return [
-            .init(color: .black.opacity(1 - top), location: start),
-            .init(color: .black.opacity(1 - 0.6 * top), location: start + length / 3),
-            .init(color: .black.opacity(1 - 0.2 * top), location: start + 2 * length / 3),
-            .init(color: .black, location: start + length),
-            .init(color: .black, location: end - length),
-            .init(color: .black.opacity(1 - 0.2 * bottom), location: end - 2 * length / 3),
-            .init(color: .black.opacity(1 - 0.6 * bottom), location: end - length / 3),
-            .init(color: .black.opacity(1 - bottom), location: end)
+            (start, 1 - top),
+            (start + length / 3, 1 - 0.6 * top),
+            (start + 2 * length / 3, 1 - 0.2 * top),
+            (start + length, 1),
+            (end - length, 1),
+            (end - 2 * length / 3, 1 - 0.2 * bottom),
+            (end - length / 3, 1 - 0.6 * bottom),
+            (end, 1 - bottom)
         ]
     }
 }

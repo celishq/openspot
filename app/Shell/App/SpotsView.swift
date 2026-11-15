@@ -8,7 +8,6 @@ struct SpotsView: View {
     @State private var scroll = ScrollPosition()
     @State private var scrollOffset: CGFloat = 0
     @State private var dropTarget: String?
-    @Environment(\.spotDrawsBlur) private var drawsBlur
 
     private var sheetID: String? {
         model.transition.id
@@ -46,10 +45,10 @@ struct SpotsView: View {
             })
             .modifier(GridEdgeScroll(model: model, scroll: $scroll))
             .modifier(SpotScrollEdgeTracker(edges: Binding(get: { fade.edges }, set: { fade.edges = $0 })))
-            .modifier(GridFadeMask(fade: fade, height: cardHeight))
-            .morph(coversGrid ? 0 : 1, opacity: { SheetMorph.sheetLook(at: $0) })
+            .modifier(GridEdgeFade(fade: fade, height: cardHeight))
+            .fade(coversGrid ? 0 : 1) { SheetMorph.sheetLook(at: $0) }
             .modifier(PanelSpan(panels: model.panels))
-            SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: max(gridHeight, model.menuBackdropHeight), sheetHeight: sheetID == nil ? gridHeight : sheetHeight, sheetRect: sheetRect, menuHeight: model.menuBackdropHeight)
+            SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: max(gridHeight, model.menuContentHeight), sheetHeight: sheetID == nil ? gridHeight : sheetHeight, sheetRect: sheetRect, menuHeight: model.menuContentHeight)
                 .modifier(SpotShownFade(isShown: model.isShown))
             if sheetOpen, sheetID != nil {
                 SpotFlowEdges(model: model, rect: sheetRect)
@@ -90,20 +89,11 @@ struct SpotsView: View {
         .overlayPreferenceValue(SpotMenuAnchor.self, alignment: .topLeading) { item in
             SpotMenuLayer(model: model, item: item, fieldIsInSheet: fieldIsInSheet)
         }
-        .background(alignment: .topLeading) {
-            softBlur
-        }
         .environment(\.spotIsShown, model.isShown)
         .environment(\.spotPanels, model.panels)
         .onChange(of: model.isShown) { _, isShown in
             if !isShown { dropTarget = nil }
         }
-    }
-
-    private var softBlur: some View {
-        SpotBackdrop(model: model, gridHeight: gridHeight, sheetHeight: sheetHeight, sheetRect: sheetRect, menuHeight: menuHeight, drawsBlur: drawsBlur)
-            .environment(\.spotPanels, model.shownPanels)
-            .modifier(PanelSpan(panels: model.shownPanels))
     }
 
     private func fieldSheet(on card: SpotSheetCard?, at frame: CGRect?) -> (morph: SheetMorph, cardRadius: CGFloat)? {
@@ -219,12 +209,12 @@ private struct GridEdgeScroll: ViewModifier {
     }
 }
 
-private struct GridFadeMask: ViewModifier {
+private struct GridEdgeFade: ViewModifier {
     let fade: SpotScrollFade
     let height: CGFloat
 
     func body(content: Content) -> some View {
-        content.mask(fade.edges.gradient(height: height))
+        content.environment(\.spotScrollFade, SpotEdgeFade(edges: fade.edges, height: height))
     }
 }
 

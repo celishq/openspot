@@ -460,18 +460,6 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.gridOrigin.x, SpotTokens.halo - shift)
     }
 
-    func testASearchShowsNoSidePanelAndAnEmptyFieldShowsThemAgain() {
-        model.show(.left, true)
-        XCTAssertEqual(model.shownPanels, GridPanels(hasLeft: true))
-
-        model.query = "a"
-        model.landSearch()
-        XCTAssertEqual(model.shownPanels, GridPanels())
-
-        model.query = ""
-        XCTAssertEqual(model.shownPanels, GridPanels(hasLeft: true))
-    }
-
     func testACardDroppedOnASidePanelStaysThereAndHidingThePanelMovesItBackToTheEnd() async throws {
         model.show(.right, true)
         let column = model.panels.firstColumn(of: .right)

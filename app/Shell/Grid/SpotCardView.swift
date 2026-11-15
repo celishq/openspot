@@ -30,12 +30,12 @@ struct SpotCardView: View, @MainActor Equatable {
             .padding(drawnView != nil && !isDrawn ? 0 : SpotTokens.cardPadding(for: size, isWidget: entry.kind == .widget || isDrawn))
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
             .background(shape.fill(SpotTheme.accent).opacity(dropFill))
-            .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, blursBehind: false, rimSize: CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))))
             .modifier(CardPress(shape: shape, isFilled: isFilled, showsPress: showsPress))
             .modifier(SpotPointerMove { model.point(at: .card(entry.id)) })
-            .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape)).modifier(CardReveal()).allowsHitTesting(false))
+            .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape)).allowsHitTesting(false))
             .overlay(alignment: .topTrailing) { chainLetter.map { ChainKeycap(model: model, letter: $0, size: size) } }
             .overlay(alignment: .topTrailing) { FailureMark(entry: entry, size: size) }
+            .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled))
             .contentShape(shape)
             .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id, opening: NSEvent.modifierFlags.contains(.command)) } }
             .animation(SpotMotion.fade(isShown: isFilled), value: isFilled)
@@ -224,17 +224,6 @@ private struct CardPress: ViewModifier {
         content
             .overlay(shape.fill((isFilled ? SpotTheme.onSolid : SpotTheme.ink).opacity(showsPress ? 0.12 : 0)).allowsHitTesting(false))
             .contentShape(shape)
-    }
-}
-
-private struct CardReveal: ViewModifier {
-    @Environment(\.spotIsShown) private var isShown
-
-    func body(content: Content) -> some View {
-        content
-            .opacity(isShown ? 1 : MotionTokens.hiddenOpacity)
-            .scaleEffect(isShown ? 1 : MotionTokens.hiddenScale)
-            .animation(SpotMotion.fade(isShown: isShown), value: isShown)
     }
 }
 
