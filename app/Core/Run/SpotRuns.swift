@@ -8,10 +8,10 @@ public final class SpotRuns {
     public internal(set) var isPanelOpen = false
     public private(set) var openID: String?
     public private(set) var floating: Set<String> = []
-    public var draggedPaths: [String] = [] {
+    public var dragged = FileKinds() {
         didSet {
-            guard draggedPaths != oldValue else { return }
-            let takers = draggedPaths.isEmpty ? [] : Set(sheets.filter { $0.value.spot.accepts(draggedPaths) }.keys)
+            guard dragged != oldValue else { return }
+            let takers = dragged.paths.isEmpty ? [] : Set(sheets.filter { $0.value.spot.accepts(dragged) }.keys)
             if takers != dragTakers { dragTakers = takers }
         }
     }
@@ -40,6 +40,7 @@ public final class SpotRuns {
     @ObservationIgnored var clipboardSeen: Int?
     @ObservationIgnored var loadWatch: Task<Void, Never>?
     @ObservationIgnored let loadPause: Duration
+    @ObservationIgnored var loadSeen: (sample: LoadSample, at: Date)?
     @ObservationIgnored private(set) var hasQuit = false
     @ObservationIgnored private let recent: (String) -> [String]
     @ObservationIgnored private let prepare: ([SpotItem], [String]) async -> Void
@@ -76,6 +77,7 @@ public final class SpotRuns {
     @ObservationIgnored private let swift: SwiftProgram
     @ObservationIgnored let environment: [String: String]
     @ObservationIgnored private(set) var settings: [String: [String: String]] = [:]
+    @ObservationIgnored public var secrets: SecretStore?
 
     public func take(settings values: [SpotSetting]) {
         var next: [String: [String: String]] = [:]
@@ -367,7 +369,7 @@ public final class SpotRuns {
             }, nil)
         case .stay, .once:
             let sent = action.sent(input: input)
-            let token = tokens.issue(for: spot, reason: variables[ReadReason.variable])
+            let token = tokens.issue(for: spot, reason: variables[ReadReason.variable], keepsFix: true)
             let process = ScriptProcess(url: swift.runnable(for: spot), name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: variables.merging(["OPENSPOT_ID": spot.id]) { given, _ in given }.merging([CallerTokens.variable: token]) { _, own in own }, careful: isCareful ? spot.uses : nil, base: environment, build: swift.build(of: spot))
             track(process, of: spot.id, token: token)
             process.fix = { [tokens] in tokens.fix(of: token) }

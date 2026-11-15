@@ -43,6 +43,6 @@ extension SpotRun {
     }
 
     var fieldValues: FieldValues {
-        FieldValues(of: spot, in: runs.settings)
+        FieldValues(of: spot, in: runs.settings, secrets: runs.secrets?.values(of: spot.id) ?? [:])
     }
 }

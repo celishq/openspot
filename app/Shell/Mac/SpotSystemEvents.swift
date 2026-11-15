@@ -13,7 +13,7 @@ final class SpotSystemEvents {
     private var mounts: NSObjectProtocol?
     private static let host = mach_host_self()
 
-    static var load: LoadSample {
+    static func measureLoad() -> LoadSample {
         var info = host_cpu_load_info()
         var count = mach_msg_type_number_t(MemoryLayout<host_cpu_load_info>.size / MemoryLayout<integer_t>.size)
         let result = withUnsafeMutablePointer(to: &info) {
@@ -32,7 +32,7 @@ final class SpotSystemEvents {
     func listen(_ heard: @escaping @MainActor (SpotEvent) -> Void) {
         stop()
         self.heard = heard
-        power = Self.powerWord
+        power = Self.readPowerSource()
         let context = Unmanaged.passUnretained(self).toOpaque()
         if let source = IOPSNotificationCreateRunLoopSource({ context in
             guard let context else { return }
@@ -70,13 +70,13 @@ final class SpotSystemEvents {
     }
 
     private func powerChanged() {
-        let next = Self.powerWord
+        let next = Self.readPowerSource()
         guard next != power else { return }
         power = next
         heard?(.named(SpotEvent.powerChange, value: next))
     }
 
-    private static var powerWord: String {
+    private static func readPowerSource() -> String {
         guard let info = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(), let type = IOPSGetProvidingPowerSourceType(info)?.takeUnretainedValue() as String? else { return "ac" }
         switch type {
         case kIOPMBatteryPowerKey: return "battery"

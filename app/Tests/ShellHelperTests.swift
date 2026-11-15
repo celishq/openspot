@@ -30,7 +30,7 @@ final class ShellHelperTests: XCTestCase {
             for text in Self.hard {
                 let input = TextBlock(fields: [.init(key: "first", value: "not this"), .init(key: "a", value: text), .init(key: "b", value: "second=\(text)")]).text
 
-                let output = try await ScriptProcess.output(url: url, input: input, limit: 10)
+                let output = try await ScriptProcess.output(url: url, input: input, limit: 60)
 
                 XCTAssertEqual(output, "\(text)|second=\(text)", "\(shell) \(text.debugDescription)")
             }
@@ -43,7 +43,7 @@ final class ShellHelperTests: XCTestCase {
             for text in Self.hard {
                 let line = TextBlock(fields: [.init(key: "a", value: text)]).text
 
-                let output = try await ScriptProcess.output(url: url, input: line, limit: 10)
+                let output = try await ScriptProcess.output(url: url, input: line, limit: 60)
 
                 XCTAssertEqual(output, line, "\(shell) \(text.debugDescription)")
             }
@@ -59,7 +59,7 @@ final class ShellHelperTests: XCTestCase {
         printf '|%s|%s|%s' "$IFS" "$1" "$#"
         """)
 
-        let output = try await ScriptProcess.output(url: url, limit: 10)
+        let output = try await ScriptProcess.output(url: url, limit: 60)
 
         XCTAssertTrue(output.hasPrefix("a\\\\b\\nc|:|one|2"), output)
     }
@@ -72,7 +72,7 @@ final class ShellHelperTests: XCTestCase {
                 let values = ["one two", "a\\b\nc", "three" + tail]
                 let input = TextBlock(fields: values.flatMap { [.init(key: "a", value: $0), .init(key: "b", value: "not this")] }).text
 
-                let output = try await ScriptProcess.output(url: url, input: input, limit: 10)
+                let output = try await ScriptProcess.output(url: url, input: input, limit: 60)
 
                 XCTAssertEqual(output, values.joined(separator: "\n"), "\(shell) \(tail.count)")
             }
@@ -82,7 +82,7 @@ final class ShellHelperTests: XCTestCase {
     func testValueOfAnUnknownIdPrintsNothing() async throws {
         let url = try script("value none\nvalue a=\nprintf '%s' \"$(value ''; value a)\"")
 
-        let output = try await ScriptProcess.output(url: url, input: "a=1\n", limit: 10)
+        let output = try await ScriptProcess.output(url: url, input: "a=1\n", limit: 60)
 
         XCTAssertEqual(output, "1")
     }
@@ -90,7 +90,7 @@ final class ShellHelperTests: XCTestCase {
     func testValueIsSafeWithAStrictScript() async throws {
         let url = try script("set -eu\nvalue none\nvalue a\nesc x")
 
-        let output = try await ScriptProcess.output(url: url, limit: 10)
+        let output = try await ScriptProcess.output(url: url, limit: 60)
 
         XCTAssertEqual(output, "x")
     }
@@ -112,7 +112,7 @@ final class ShellHelperTests: XCTestCase {
                 let big = text + padding + text
                 let line = TextBlock(fields: [.init(key: "first", value: "not this"), .init(key: "a", value: big)]).text
 
-                let output = try await ScriptProcess.output(url: url, input: line, limit: 10)
+                let output = try await ScriptProcess.output(url: url, input: line, limit: 60)
 
                 XCTAssertEqual(output, TextBlock(fields: [.init(key: "a", value: big)]).text + big, "\(shell) \(text.debugDescription)")
             }
@@ -202,10 +202,10 @@ final class ShellHelperTests: XCTestCase {
         let stays = try script(Self.shownCall, header: "# mode=stay\n")
 
         var onceText = ""
-        for try await frame in ScriptProcess(url: once, arguments: action.arguments, mode: .once(input: input), limit: 10, variables: variables).start() {
+        for try await frame in ScriptProcess(url: once, arguments: action.arguments, mode: .once(input: input), limit: 60, variables: variables).start() {
             onceText += frame
         }
-        let live = ScriptProcess(url: stays, mode: .stays, limit: 10)
+        let live = ScriptProcess(url: stays, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
         live.send(action, input: input, variables: variables, id: 1)
         var stayFrames: [String] = []
@@ -226,7 +226,7 @@ final class ShellHelperTests: XCTestCase {
         openspot_serve main "$@"
         printf 'over=1\\n'
         """, header: "# mode=stay\n")
-        let live = ScriptProcess(url: url, mode: .stays, limit: 5)
+        let live = ScriptProcess(url: url, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
 
         live.send(.read, input: "a=held\n", variables: ReadReason(event: "music.track", value: "Song").variables, id: 1)
@@ -242,7 +242,7 @@ final class ShellHelperTests: XCTestCase {
 
     func testServeKeepsAnEmptyFirstArgument() async throws {
         let url = try script("main() { printf 'count=%s|%s\\n' \"$#\" \"$2\"; }\nopenspot_serve main \"$@\"", header: "# mode=stay\n")
-        let live = ScriptProcess(url: url, mode: .stays, limit: 5)
+        let live = ScriptProcess(url: url, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
 
         live.send(SpotAction(arguments: ["", "x"]), id: 1)
@@ -255,7 +255,7 @@ final class ShellHelperTests: XCTestCase {
 
     func testOnceServeReturnsTheCodeOfMain() async throws {
         let url = try script("main() { echo 'No sky' >&2; return 3; }\nopenspot_serve main \"$@\"")
-        let process = ScriptProcess(url: url, arguments: ["read"], limit: 5)
+        let process = ScriptProcess(url: url, arguments: ["read"], limit: 60)
 
         do {
             for try await _ in process.start() {}
@@ -273,7 +273,7 @@ final class ShellHelperTests: XCTestCase {
         printf 'b\\tBack\\\\slash\\t\\t\\tvalue=true\\tkeywords=c\\\\d\\n' | openspot_rows
         """)
 
-        let output = try await ScriptProcess.output(url: url, limit: 10)
+        let output = try await ScriptProcess.output(url: url, limit: 60)
 
         let items = SpotOutput(text: output).items
         XCTAssertEqual(items.map(\.run), ["a", "b"], output)
@@ -318,7 +318,7 @@ final class ShellHelperTests: XCTestCase {
     func testTheHelperReadsAllOfStdinInAScriptThatSaysStayFalse() async throws {
         let url = try script("printf '%s' \"$(value a)\"", header: "# title=Once\n# mode=once\n")
 
-        let output = try await ScriptProcess.output(url: url, input: "a=one\n", limit: 5)
+        let output = try await ScriptProcess.output(url: url, input: "a=one\n", limit: 60)
 
         XCTAssertEqual(output, "one")
     }

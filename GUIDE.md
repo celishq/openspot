@@ -178,7 +178,7 @@ esac
 ```
 
 Add `confirm=` to a header button whose command can't be undone. The first press shows its words, and the second runs
-the command.
+the command. Its hotkey asks the same way.
 
 ```sh
 #!/bin/sh
@@ -330,7 +330,7 @@ esac
 <!-- draw: OPENSPOT_VALUE='cpu=12 memory=61' sh "$EXAMPLE" -->
 ![The sheet of Load: one line, 12% CPU](docs/images/show-the-load.png)
 
-The sheet opens with **Measuring…**, and shows the first value 5 seconds later.
+The sheet opens with **Measuring…**, and shows the first value within 5 seconds.
 `power.change`, `disk.mount` and `device.connect` tell a spot of a new power source, a disk and a USB device the same
 way.
 
@@ -384,7 +384,8 @@ In the Settings of Repos, choose **Folder**, and Openspot runs `repos.sh folder`
 Each later call gets it in `OPENSPOT_SETTING_FOLDER`, so the spot reads its setting with no `openspot` call.
 
 A field with `type=secret` keeps a value that no other program should see, such as the token of a service. Openspot
-asks for it in a form of its own, and gives it to each call only on stdin, as `setting.token`.
+asks for it in a form of its own, keeps it in the Keychain, and gives it to each call only on stdin, as
+`setting.token`. A secret has 8 characters or more.
 
 ```sh
 #!/bin/sh

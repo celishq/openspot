@@ -19,7 +19,7 @@ struct SpotViewPlace: @MainActor Equatable {
         if let detached {
             model.land(detached)
         } else {
-            model.closeList(moving: true)
+            model.closeSheet(moving: true)
         }
     }
 

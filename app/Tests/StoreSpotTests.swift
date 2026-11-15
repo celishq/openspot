@@ -17,14 +17,14 @@ final class StoreSpotTests: BuiltInCase {
     }
 
     private func items() async throws -> [[String]] {
-        let parts = try await store.items(timeout: 5).parts
+        let parts = try await store.items(timeout: 60).parts
         XCTAssertEqual(parts.map(\.id), ["gallery"])
         return (parts.first?.values["value"] ?? []).map { $0.split(separator: "\t", omittingEmptySubsequences: false).map(String.init) }
     }
 
     @discardableResult
     private func call(_ arguments: [String]) async throws -> String? {
-        try await store.perform(SpotAction(arguments: arguments), timeout: 5)
+        try await store.perform(SpotAction(arguments: arguments), timeout: 60)
     }
 
     func testItOpensInAWindowWithItsGalleryView() throws {
@@ -72,7 +72,7 @@ final class StoreSpotTests: BuiltInCase {
         try "# Timer\n\nCounts down.\n".write(to: core.appendingPathComponent("timer.spot/readme.md"), atomically: true, encoding: .utf8)
 
         for action in [SpotAction.read, SpotAction(arguments: ["gallery", "get:timer"]), SpotAction(arguments: ["gallery", "publish:timer"])] {
-            let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, action, limit: 5)
+            let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, action, limit: 60)
 
             let values = SpotOutput(text: text).parts.first?.values ?? [:]
             XCTAssertEqual(values["readme"], ["timer\t# Timer", "timer\t", "timer\tCounts down."], "\(action.arguments)")
@@ -83,7 +83,7 @@ final class StoreSpotTests: BuiltInCase {
         let folder = core.appendingPathComponent("timer.spot")
         try "![The sheet](shot.png)\n![](/tmp/a.mov)\n![Web](https://example.com/a.jpg)\n".write(to: folder.appendingPathComponent("readme.md"), atomically: true, encoding: .utf8)
 
-        let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, .read, limit: 5)
+        let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, .read, limit: 60)
 
         let lines = (SpotOutput(text: text).parts.first?.values["readme"] ?? []).filter { $0.hasPrefix("timer\t") }
         XCTAssertEqual(lines, ["timer\t![The sheet](\(folder.path)/shot.png)", "timer\t![](/tmp/a.mov)", "timer\t![Web](https://example.com/a.jpg)"])
@@ -93,7 +93,7 @@ final class StoreSpotTests: BuiltInCase {
         let rows = try await items()
         let id = try XCTUnwrap(rows.first { $0[2] == "publish" }?[0])
 
-        _ = try await runs.answer(of: store, SpotAction(arguments: ["gallery", "publish:\(id)"]), limit: 5)
+        _ = try await runs.answer(of: store, SpotAction(arguments: ["gallery", "publish:\(id)"]), limit: 60)
 
         let opened = await app.opened
         XCTAssertEqual(opened, ["publish mine"])

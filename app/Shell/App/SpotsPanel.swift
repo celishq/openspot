@@ -78,7 +78,7 @@ final class SpotsPanel: NSPanel {
 
     func showsDrop(at point: NSPoint) -> Bool {
         guard let model, model.isShown else { return false }
-        let height = SpotTokens.backdropHeight(gridHeight: SpotGrid.height(of: model.placements))
+        let height = SpotTokens.contentHeight(gridHeight: SpotGrid.height(of: model.placements))
         return NSRect(x: frame.minX, y: frame.maxY - height, width: frame.width, height: height).contains(point)
     }
 
@@ -139,22 +139,18 @@ final class SpotsPanel: NSPanel {
             }
         }
         if event.type == .scrollWheel, takeSwipe(event) { return }
-        if event.type == .rightMouseDown, let model, model.isShown, !model.isEditing, model.openList == nil {
+        if event.type == .rightMouseDown, let model, model.isShown, !model.isEditing, model.openSheetID == nil {
             openMenu(at: event)
             return
         }
         if event.type == .keyDown {
             tap.spoil()
             if model?.recording != nil {
-                if Int(event.keyCode) == kVK_Escape {
-                    model?.stopRecording()
-                } else {
-                    model?.record(code: UInt32(event.keyCode), modifiers: Self.modifiers(of: event.modifierFlags))
-                }
+                if let key = Self.actionKey(of: event), model?.handleKey(key) == true { return }
+                model?.record(code: UInt32(event.keyCode), modifiers: Self.modifiers(of: event.modifierFlags))
                 return
             }
-            if Int(event.keyCode) == kVK_Return, event.modifierFlags.contains(.command), model?.openSelectedSettings() == true { return }
-            if let key = Self.actionKey(of: event), !textKeepsArrow(key), model?.handleKey(key) == true { return }
+            if let key = Self.actionKey(of: event), !textKeepsKey(key), model?.handleKey(key) == true { return }
             if model?.handleChain(code: UInt32(event.keyCode), modifiers: Self.modifiers(of: event.modifierFlags)) == true { return }
         }
         super.sendEvent(event)
@@ -175,10 +171,10 @@ final class SpotsPanel: NSPanel {
         CGPoint(x: event.locationInWindow.x - place.left, y: (contentView?.bounds.height ?? 0) - event.locationInWindow.y)
     }
 
-    private func textKeepsArrow(_ key: ActionKey) -> Bool {
-        guard key == ActionKey(name: "up") || key == ActionKey(name: "down"),
-              let text = firstResponder as? NSTextView, text.isEditable, !text.isFieldEditor
-        else { return false }
+    private func textKeepsKey(_ key: ActionKey) -> Bool {
+        guard let text = firstResponder as? NSTextView else { return false }
+        if text.hasMarkedText() { return true }
+        guard key == ActionKey(name: "up") || key == ActionKey(name: "down"), text.isEditable, !text.isFieldEditor else { return false }
         let line = { (location: Int) in text.firstRect(forCharacterRange: NSRange(location: location, length: 0), actualRange: nil).midY }
         let caret = line(text.selectedRange().location)
         let edge = line(key.name == "up" ? 0 : (text.string as NSString).length)
@@ -195,7 +191,7 @@ final class SpotsPanel: NSPanel {
     }
 
     private func takeSwipe(_ event: NSEvent) -> Bool {
-        guard NSEvent.isSwipeTrackingFromScrollEventsEnabled, let model, model.openList != nil, event.momentumPhase.isEmpty else { return false }
+        guard NSEvent.isSwipeTrackingFromScrollEventsEnabled, let model, model.openSheetID != nil, event.momentumPhase.isEmpty else { return false }
         let phase: FlowSwipe.Phase
         if event.phase.contains(.began) {
             phase = .began

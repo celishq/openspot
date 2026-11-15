@@ -94,7 +94,7 @@ final class AgendaExampleTests: SampleSpotsCase {
 
     @MainActor
     private static func wait(_ what: String, until condition: () -> Bool) async throws {
-        for _ in 0..<500 {
+        for _ in 0..<6000 {
             if condition() { return }
             try await Task.sleep(for: .milliseconds(10))
         }

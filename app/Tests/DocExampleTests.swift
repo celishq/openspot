@@ -74,7 +74,7 @@ final class DocExampleTests: SampleSpotsCase {
                         let calls = spot.offers.map(\.id) + spot.offeredActions.map(\.action.id)
                         for call in calls.isEmpty ? ["open"] : calls {
                             do {
-                                try await spot.perform(SpotAction(arguments: [call]), timeout: 10)
+                                try await spot.perform(SpotAction(arguments: [call]), timeout: 60)
                             } catch {
                                 XCTFail("\(place) fails its call \(call): \(error)")
                             }

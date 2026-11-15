@@ -6,6 +6,8 @@ public struct ViewLibrary: Sendable {
     static let libraryExtension = "view"
     private static let preludeName = "openspot-view.swift"
     private static let hashLength = 64
+    static let sourceFault = "This view does not compile."
+    static let toolsFault = "To draw a view, install the Command Line Tools: xcode-select --install"
 
     static let prelude = """
         public struct SpotFonts {
@@ -168,11 +170,20 @@ public struct ViewLibrary: Sendable {
         guard let text = try? Data(contentsOf: source) else {
             throw SpotError.fault("Openspot cannot find the view \(source.lastPathComponent).")
         }
+        return try await library(of: source, text: text)
+    }
+
+    func kept(of source: URL, text: Data) -> URL? {
         let carried = URL(fileURLWithPath: Self.path(beside: source.path, text: text))
         if FileManager.default.fileExists(atPath: carried.path) { return carried }
+        let built = cache.appendingPathComponent("\(Self.name(of: text)).dylib")
+        return FileManager.default.fileExists(atPath: built.path) ? built : nil
+    }
+
+    func library(of source: URL, text: Data) async throws -> URL {
+        if let kept = kept(of: source, text: text) { return kept }
         let name = Self.name(of: text)
         let built = cache.appendingPathComponent("\(name).dylib")
-        if FileManager.default.fileExists(atPath: built.path) { return built }
         let data = try await build(source: text, named: source.lastPathComponent, kinds: [Self.thisMac])
         try FileManager.default.createDirectory(at: cache, withIntermediateDirectories: true)
         let part = cache.appendingPathComponent("\(name).\(UUID().uuidString).part")
@@ -205,7 +216,7 @@ public struct ViewLibrary: Sendable {
         let module = "View\(Self.name(of: source).prefix(16))"
         let flags = ["-emit-library", "-parse-as-library", "-O", "-module-name", module, "-Xfrontend", "-import-module", "-Xfrontend", "SwiftUI"]
         let files = [SwiftBuild.File(name: Self.preludeName, data: Data(Self.prelude.utf8)), SwiftBuild.File(name: name, data: source)]
-        return try await SwiftBuild(tools: tools).output(of: files, flags: flags, kinds: kinds, needs: "To draw a view", fault: "This view does not compile.")
+        return try await SwiftBuild(tools: tools).output(of: files, flags: flags, kinds: kinds, toolsFault: Self.toolsFault, fault: Self.sourceFault)
     }
 
     private static var thisMac: String {
@@ -216,7 +227,7 @@ public struct ViewLibrary: Sendable {
         #endif
     }
 
-    private static func name(of source: Data) -> String {
+    static func name(of source: Data) -> String {
         SHA256.hash(data: Data(prelude.utf8) + source).map { String(format: "%02x", $0) }.joined()
     }
 }

@@ -26,8 +26,8 @@ final class SpotMac: MacEvents {
         NSPasteboard.general.changeCount
     }
 
-    var load: LoadSample {
-        SpotSystemEvents.load
+    func measureLoad() -> LoadSample {
+        SpotSystemEvents.measureLoad()
     }
 
     func listen(_ heard: @escaping @MainActor (SpotEvent) -> Void) {

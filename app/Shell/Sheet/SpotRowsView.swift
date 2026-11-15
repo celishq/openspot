@@ -150,6 +150,10 @@ struct SpotRowsView: View {
                 .padding(.bottom, bottomInset)
             }
             .modifier(RowsFollow(selection: selected, items: list.shown, proxy: proxy, motion: SpotMotion.move))
+            .onChange(of: list.landedSearches) {
+                guard let run = list.shown.first?.run else { return }
+                DispatchQueue.main.async { proxy.scrollTo(run, anchor: .top) }
+            }
         }
     }
 

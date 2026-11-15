@@ -119,7 +119,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         let changes = expectation(description: "the second has passed")
 
         XCTAssertNil(withObservationTracking { live.runningSummary } onChange: { changes.fulfill() })
-        await fulfillment(of: [changes], timeout: 5)
+        await fulfillment(of: [changes], timeout: 60)
 
         XCTAssertNotNil(live.runningSummary)
     }

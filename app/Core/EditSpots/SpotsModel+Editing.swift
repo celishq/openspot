@@ -2,14 +2,14 @@ import Foundation
 import Observation
 
 extension SpotsModel {
-    private static let deleteCode: UInt32 = 51
+    static let deleteCode: UInt32 = 51
 
     public func sizes(of entry: Entry) -> [SpotSize] {
         entry.item == nil ? entry.spot.sizes : []
     }
 
     public func beginEditing() {
-        guard openList == nil else { return }
+        guard openSheetID == nil else { return }
         closeMenu()
         change(.edit) {
             query = ""
@@ -19,7 +19,7 @@ extension SpotsModel {
     }
 
     public func editGrid() {
-        if openList != nil { closeList(moving: false) }
+        if openSheetID != nil { closeSheet(moving: false) }
         host.show()
         beginEditing()
     }
@@ -67,32 +67,8 @@ extension SpotsModel {
         }
     }
 
-    public func handleEditKey(_ key: ActionKey) {
-        if drag != nil || resize != nil || carry != nil {
-            if key.name == "escape" {
-                cancelDrag()
-                cancelResize()
-            }
-            return
-        }
-        if openSheet(on: key) { return }
+    func moveSelectedSpot(by step: Int) {
         let order = visible.map(\.id)
-        switch (key.name, key.isShift) {
-        case ("escape", _): endEditing()
-        case ("left", false): moveSelection(dx: -1, dy: 0)
-        case ("right", false): moveSelection(dx: 1, dy: 0)
-        case ("up", false): moveSelection(dx: 0, dy: -1)
-        case ("down", false): moveSelection(dx: 0, dy: 1)
-        case ("left", true), ("up", true): moveSelectedSpot(by: -1, in: order)
-        case ("right", true), ("down", true): moveSelectedSpot(by: 1, in: order)
-        case ("s", _): stepSelectedSize()
-        case ("h", _): toggleSelectedOnGrid()
-        case ("l", _): if let entry = selectedEntry, entry.item == nil { toggleRecording(id: entry.id) }
-        default: break
-        }
-    }
-
-    private func moveSelectedSpot(by step: Int, in order: [String]) {
         guard order.indices.contains(selected),
               let place = grid.nextPlace(of: selected, in: visible.map(\.size), step: step) else { return }
         moveSpot(order[selected], to: place)
@@ -106,13 +82,13 @@ extension SpotsModel {
         saveArrangement({ $0.arrange(order) }, selecting: id)
     }
 
-    private func stepSelectedSize() {
+    func stepSelectedSize() {
         guard let entry = selectedEntry else { return }
         let sizes = visible.map(\.size)
         if let next = grid.nextSize(of: selected, in: sizes, among: self.sizes(of: entry)) { prefer(next, for: entry.id) }
     }
 
-    private func toggleSelectedOnGrid() {
+    func toggleSelectedOnGrid() {
         guard let entry = selectedEntry else { return }
         setOnGrid(!entry.isOnGrid, for: entry.id)
     }
@@ -181,7 +157,7 @@ extension SpotsModel {
         }
         guard isSaved else { return }
         if let holder, let letter {
-            let name = { (spot: String) in self.entries.first { $0.id == spot }?.spot.name ?? spot }
+            let name = { (spot: String) in self.entry(spot)?.spot.name ?? spot }
             host.notify("\(letter.name.uppercased()) now runs \(name(id)), so \(name(holder)) has no letter.")
         }
         land(selecting: id)

@@ -1,7 +1,7 @@
 import Foundation
 
 public struct SpotAction: Equatable, Sendable {
-    private static let argumentLimit = 65_536
+    static let argumentLimit = 65_536
 
     public let arguments: [String]
 

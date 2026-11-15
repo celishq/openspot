@@ -81,7 +81,7 @@ extension SpotRun {
         if case .read = ask, !frame.isEmpty, frame == shownFrame, lines.parts.isEmpty, panel == nil, !list.hasFailed { return takeRepeat(lines, answers: answers) }
         let next: ItemList.Rows? = if case .read = ask { await newRows(lines.items, search: Self.search(of: lines, in: spot)) } else { nil }
         lastAnswer = lines
-        shownFrame = if case .read = ask, !frame.isEmpty { frame } else { nil }
+        shownFrame = if case .read = ask, !frame.isEmpty, frame.utf8.count <= Self.shownFrameLimit { frame } else { nil }
         report(toastOf: lines)
         spot = spot.taking(lines)
         switch ask {
@@ -119,6 +119,8 @@ extension SpotRun {
             onReport(.failure("\(spot.name) sent \(lines.errors.count) items Openspot cannot read."))
         }
     }
+
+    private static let shownFrameLimit = 256 * 1024
 
     private func takeRepeat(_ lines: SpotOutput, answers: Bool) {
         report(toastOf: lines)

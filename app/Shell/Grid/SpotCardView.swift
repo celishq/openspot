@@ -30,29 +30,37 @@ struct SpotCardView: View, @MainActor Equatable {
             .padding(drawnView != nil && !isDrawn ? 0 : SpotTokens.cardPadding(for: size, isWidget: entry.kind == .widget || isDrawn))
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
             .background(shape.fill(SpotTheme.accent).opacity(dropFill))
-            .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, blursBehind: false, rimSize: CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))))
             .modifier(CardPress(shape: shape, isFilled: isFilled, showsPress: showsPress))
             .modifier(SpotPointerMove { model.point(at: .card(entry.id)) })
-            .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape)).modifier(CardReveal()).allowsHitTesting(false))
+            .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape)).allowsHitTesting(false))
             .overlay(alignment: .topTrailing) { chainLetter.map { ChainKeycap(model: model, letter: $0, size: size) } }
             .overlay(alignment: .topTrailing) { FailureMark(entry: entry, size: size) }
+            .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled))
             .contentShape(shape)
             .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id, opening: NSEvent.modifierFlags.contains(.command)) } }
             .animation(SpotMotion.fade(isShown: isFilled), value: isFilled)
             .scaleEffect(showsPress ? MotionTokens.pressedScale : 1)
             .animation(SpotMotion.press, value: showsPress)
-            .modifier(CardViewLoad(source: ownView, date: entry.spot.viewDate))
     }
 
     @ViewBuilder
     private var content: some View {
         if drawsOwnCard, let layout = entry.state.face.layout(for: size) {
             SpotCardDrawing(layout: layout, face: entry.state.face, card: size, view: { room in
-                drawnView.map { SpotCustomView(source: $0, values: entry.state.values, card: size, room: room, views: SpotViews.shared) }
+                ownView.map { SpotCustomView(source: $0, values: entry.state.values, card: size, room: room, date: entry.spot.viewDate, views: SpotViews.shared) }
             }) { model.setCardPart(entry.id, $0, to: $1) }
         } else if let view = drawnView {
-            SpotCustomView(source: view, values: entry.state.values, card: size, views: SpotViews.shared)
-        } else if let layout = entry.spot.layout {
+            SpotCustomView(source: view, values: entry.state.values, card: size, date: entry.spot.viewDate, views: SpotViews.shared)
+        } else {
+            words.background {
+                if let ownView { SpotCustomView(source: ownView, values: entry.state.values, card: size, date: entry.spot.viewDate, views: SpotViews.shared) }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var words: some View {
+        if let layout = entry.spot.layout {
             SpotWidgetView(layout: layout, places: entry.spot.places, reading: reading, card: size)
         } else if size == .small {
             glyph.frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -211,7 +219,7 @@ private struct CardRing: ViewModifier {
     let shape: RoundedRectangle
 
     func body(content: Content) -> some View {
-        content.modifier(SpotSelectionRing(isSelected: model.selected == index, shape: shape, marksMenu: model.openList == nil))
+        content.modifier(SpotSelectionRing(isSelected: model.selected == index, shape: shape, marksMenu: model.openSheetID == nil))
     }
 }
 
@@ -224,34 +232,6 @@ private struct CardPress: ViewModifier {
         content
             .overlay(shape.fill((isFilled ? SpotTheme.onSolid : SpotTheme.ink).opacity(showsPress ? 0.12 : 0)).allowsHitTesting(false))
             .contentShape(shape)
-    }
-}
-
-private struct CardReveal: ViewModifier {
-    @Environment(\.spotIsShown) private var isShown
-
-    func body(content: Content) -> some View {
-        content
-            .opacity(isShown ? 1 : MotionTokens.hiddenOpacity)
-            .scaleEffect(isShown ? 1 : MotionTokens.hiddenScale)
-            .animation(SpotMotion.fade(isShown: isShown), value: isShown)
-    }
-}
-
-private struct CardViewLoad: ViewModifier {
-    let source: String?
-    let date: Date?
-    @Environment(\.spotIsShown) private var isShown
-
-    func body(content: Content) -> some View {
-        content.task(id: source.map { "\($0)\n\(date?.timeIntervalSince1970 ?? 0)\n\(date == nil || hasFailed($0) ? isShown : true)" }) {
-            if let source { await SpotViews.shared.load(source) }
-        }
-    }
-
-    private func hasFailed(_ source: String) -> Bool {
-        if case .failed = SpotViews.shared.phase(of: source) { return true }
-        return false
     }
 }
 
@@ -289,7 +269,7 @@ private struct ChainKeycap: View {
             .background(SpotTheme.keycap, in: RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous).strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
             .offset(x: -inset, y: inset)
-            .opacity(model.showsChain ? 1 : 0)
+            .opacity(model.showsChain ? 1 : MotionTokens.hiddenOpacity)
             .animation(SpotMotion.fade(isShown: true), value: model.showsChain)
             .allowsHitTesting(false)
     }

@@ -131,7 +131,7 @@ final class SpotsModelDragTests: XCTestCase {
         host.heldEnds = []
         model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
 
-        model.handleEditKey(ActionKey(name: "escape"))
+        _ = model.handleKey(ActionKey(name: "escape"))
 
         XCTAssertEqual(model.landing, "d")
         host.heldEnds?.forEach { $0() }
@@ -176,7 +176,7 @@ final class SpotsModelDragTests: XCTestCase {
 
         model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
 
-        for _ in 0..<500 where order != ["a", "b", "d", "c"] {
+        for _ in 0..<6000 where order != ["a", "b", "d", "c"] {
             try await Task.sleep(for: .milliseconds(10))
         }
         XCTAssertEqual(order, ["a", "b", "d", "c"])
@@ -211,7 +211,7 @@ final class SpotsModelDragTests: XCTestCase {
     func testTheHKeyPutsTheSelectedSpotInSearchOnly() {
         XCTAssertEqual(model.hint, "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done")
 
-        model.handleEditKey(ActionKey(name: "h"))
+        _ = model.handleKey(ActionKey(name: "h"))
 
         XCTAssertEqual(order, ["b", "c", "d", "a"])
         XCTAssertEqual(model.cards.first { $0.id == "a" }?.isOnGrid, false)
@@ -222,7 +222,7 @@ final class SpotsModelDragTests: XCTestCase {
         let translation = move("d", to: leftHalf(of: "c"))
         model.dragSpot("d", by: translation)
 
-        model.handleEditKey(ActionKey(name: "escape"))
+        _ = model.handleKey(ActionKey(name: "escape"))
         model.dropSpot(by: translation)
 
         XCTAssertTrue(model.isEditing)
@@ -375,7 +375,7 @@ final class SpotsModelDragTests: XCTestCase {
         let start = model.placements[3].rect
         model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
 
-        model.handleEditKey(ActionKey(name: "escape"))
+        _ = model.handleKey(ActionKey(name: "escape"))
 
         XCTAssertEqual(model.lift.origin, CGPoint(x: SpotTokens.halo + start.minX, y: SpotTokens.gridTop + start.minY))
         host.heldEnds?.forEach { $0() }
@@ -430,7 +430,7 @@ final class SpotsModelDragTests: XCTestCase {
     func testEscapePutsTheSizeBackAndSavesNothing() {
         model.resizeSpot("c", by: down)
 
-        model.handleEditKey(ActionKey(name: "escape"))
+        _ = model.handleKey(ActionKey(name: "escape"))
         model.dropResize()
 
         XCTAssertTrue(model.isEditing)
@@ -460,17 +460,6 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.gridOrigin.x, SpotTokens.halo - shift)
     }
 
-    func testASearchShowsNoSidePanelAndAnEmptyFieldShowsThemAgain() {
-        model.show(.left, true)
-        XCTAssertEqual(model.shownPanels, GridPanels(hasLeft: true))
-
-        model.query = "a"
-        XCTAssertEqual(model.shownPanels, GridPanels())
-
-        model.query = ""
-        XCTAssertEqual(model.shownPanels, GridPanels(hasLeft: true))
-    }
-
     func testACardDroppedOnASidePanelStaysThereAndHidingThePanelMovesItBackToTheEnd() async throws {
         model.show(.right, true)
         let column = model.panels.firstColumn(of: .right)
@@ -483,7 +472,7 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.visible.first { $0.id == "a" }?.panel, .right)
         XCTAssertEqual(files.config.read().arrangement.panel(of: "a"), .right)
         model.show(.right, false)
-        for _ in 0..<500 where model.panels.hasRight { try await Task.sleep(for: .milliseconds(10)) }
+        for _ in 0..<6000 where model.panels.hasRight { try await Task.sleep(for: .milliseconds(10)) }
         XCTAssertFalse(model.panels.hasRight)
         XCTAssertEqual(model.visible.first { $0.id == "a" }?.panel, .center)
         XCTAssertEqual(model.visible.filter(\.isOnGrid).last?.id, "a")

@@ -47,7 +47,7 @@ public struct SwiftProgram: Sendable {
         }
         guard builds, Self.lock.withLock({ Self.started.insert(program.path).inserted }) else { return script }
         Task.detached(priority: .utility) { [self] in
-            if let source = try? Data(contentsOf: script), (try? await cached(source, with: [], needs: nil, at: program)) != nil { Self.lock.withLock { _ = Self.started.remove(program.path) } }
+            if let source = try? Data(contentsOf: script), (try? await cached(source, with: [], toolsFault: nil, at: program)) != nil { Self.lock.withLock { _ = Self.started.remove(program.path) } }
         }
         return script
     }
@@ -77,7 +77,7 @@ public struct SwiftProgram: Sendable {
             if let build = builds[program.path] { return build }
             let build = Task.detached(priority: .userInitiated) { [self] in
                 defer { Self.building.withLock { $0[program.path] = nil } }
-                try await cached(source, with: more, needs: "To build a Swift spot", at: program)
+                try await cached(source, with: more, toolsFault: "To build a Swift spot, install the Command Line Tools: xcode-select --install", at: program)
                 return program
             }
             builds[program.path] = build
@@ -216,8 +216,8 @@ public struct SwiftProgram: Sendable {
         return (try? handle.read(upToCount: 4)).map { magics.contains(Array($0)) } ?? false
     }
 
-    private func cached(_ source: Data, with more: [SwiftBuild.File], needs: String?, at program: URL) async throws {
-        let data = try await SwiftBuild(tools: tools).output(of: Self.files(source, more), flags: Self.flags, kinds: [nil], needs: needs, fault: Self.fault)
+    private func cached(_ source: Data, with more: [SwiftBuild.File], toolsFault: String?, at program: URL) async throws {
+        let data = try await SwiftBuild(tools: tools).output(of: Self.files(source, more), flags: Self.flags, kinds: [nil], toolsFault: toolsFault, fault: Self.fault)
         guard Self.magics.contains(Array(data.prefix(4))) else { throw SpotError.fault("swiftc wrote no program.") }
         try FileManager.default.createDirectory(at: cache, withIntermediateDirectories: true)
         let placed = cache.appendingPathComponent(".\(program.lastPathComponent)-\(UUID().uuidString)")
@@ -253,6 +253,6 @@ public struct SwiftProgram: Sendable {
     }
 
     func build(source: Data, with more: [SwiftBuild.File] = []) async throws -> Data {
-        try await SwiftBuild(tools: tools).output(of: Self.files(source, more), flags: Self.flags, kinds: SwiftBuild.kinds, needs: "To share a Swift spot", fault: Self.fault)
+        try await SwiftBuild(tools: tools).output(of: Self.files(source, more), flags: Self.flags, kinds: SwiftBuild.kinds, toolsFault: "To share a Swift spot, install the Command Line Tools: xcode-select --install", fault: Self.fault)
     }
 }

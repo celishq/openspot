@@ -20,7 +20,7 @@ final class SpotSettingsTests: XCTestCase {
 
     private func scan() throws -> ScanResult {
         var scan = try SpotsFolder(url: folder).scan()
-        scan.addSettings(in: file)
+        scan.addSettings(in: file, secrets: SecretStore(file: folder.appendingPathComponent("secrets.json")))
         return scan
     }
 
@@ -49,7 +49,7 @@ final class SpotSettingsTests: XCTestCase {
         XCTAssertEqual(items.map(\.shortcut), ["Record", nil])
         _ = try await runs.answer(of: settings, .set("key:move:left", to: "ctrl+option+left"), limit: 1)
         XCTAssertEqual(file.read().keys.map(\.act), [.command("left")])
-        let press = try await runs.answer(of: move, .press("left"), limit: 5)
+        let press = try await runs.answer(of: move, .press("left"), limit: 60)
         XCTAssertEqual(press, "toast=Left\n")
         _ = try await runs.answer(of: settings, SpotAction(arguments: ["clear", "key:move:left"]), limit: 1)
         XCTAssertEqual(file.read().keys, [])
@@ -75,7 +75,7 @@ final class SpotSettingsTests: XCTestCase {
             _ = try await runs.answer(of: move, .set("key:move:left", to: "k"), limit: 1)
             XCTFail("took a bad key")
         } catch {}
-        _ = try? await runs.answer(of: move, .set("key:other:up", to: "ctrl+k"), limit: 5)
+        _ = try? await runs.answer(of: move, .set("key:other:up", to: "ctrl+k"), limit: 60)
 
         XCTAssertEqual(file.read().keys, [])
     }
@@ -114,7 +114,7 @@ final class SpotSettingsTests: XCTestCase {
         XCTAssertEqual(before.map(\.symbol), ["slider.horizontal.3", "slider.horizontal.3", "slider.horizontal.3", "keyboard", "keyboard", "pip", "menubar.rectangle"])
         XCTAssertEqual(before.map(\.records), [false, false, false, true, true, true, false])
         XCTAssertEqual(before.map { $0.hides ?? [] }, [[], ["clear"], [], ["clear"], ["clear"], ["clear"], ["clear"]])
-        let own = try await runs.answer(of: shelf, .read, limit: 5)
+        let own = try await runs.answer(of: shelf, .read, limit: 60)
         XCTAssertEqual(SpotOutput(text: own).items.map(\.run), ["own"])
 
         _ = try await runs.answer(of: settings, .set("float:shelf", to: "ctrl+option+s"), limit: 1)

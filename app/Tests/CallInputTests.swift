@@ -9,6 +9,14 @@ final class CallInputTests: SpotRunsCase {
         (try? String(contentsOfFile: path(name), encoding: .utf8)) ?? ""
     }
 
+    @discardableResult
+    private func secrets(_ values: [String: String] = [:], of spot: String = "script") throws -> SecretStore {
+        let store = SecretStore(file: folder.appendingPathComponent("secrets.json"))
+        for (key, value) in values { try store.keep(value, key: key, of: spot) }
+        runs.secrets = store
+        return store
+    }
+
     private func everything(in folder: URL) -> String {
         let files = FileManager.default.enumerator(at: folder, includingPropertiesForKeys: nil)?.compactMap { $0 as? URL } ?? []
         return files.compactMap { try? String(contentsOf: $0, encoding: .utf8) }.joined(separator: "\n")
@@ -47,7 +55,7 @@ final class CallInputTests: SpotRunsCase {
         try await wait("the action") { self.text("input").contains("join a") && sheet.calls.isEmpty }
         sheet.pick(row)
 
-        try await wait("the pick") { self.text("input").contains("open a") }
+        try await wait("the pick") { self.text("input").contains("open a\nrow=a") && self.text("input").hasSuffix("\n\n") }
         XCTAssertEqual(text("input"), "join a\nrow=a\ntitle=A\nmeeting=https://meet.example/a\n\nopen a\nrow=a\ntitle=A\nmeeting=https://meet.example/a\n\n")
     }
 
@@ -73,7 +81,7 @@ final class CallInputTests: SpotRunsCase {
         exit 1
         """)
         let sheet = try sheet()
-        runs.take(settings: [SpotSetting(spot: "script", key: "token", value: marker)])
+        try secrets(["token": marker])
 
         sheet.pressCard()
 
@@ -92,16 +100,88 @@ final class CallInputTests: SpotRunsCase {
         XCTAssertFalse(everything(in: stats).contains(marker))
     }
 
-    func testTheSettingsSheetShowsThatASecretIsSetAndNotItsValue() throws {
-        let config = folder.appendingPathComponent("config.toml")
-        try "[[settings]]\nspot = \"script\"\nkey = \"token\"\nvalue = \"\(marker)\"\n".write(to: config, atomically: true, encoding: .utf8)
-        let file = ConfigFile(url: config)
-        let token = try XCTUnwrap(CommandOffer(setting: TextBlock(fields: [.init(key: "field", value: "token"), .init(key: "type", value: "secret")])))
-        let settings = SpotSettings(file: file, spot: "script", offers: [], fields: [token], offersFloat: false, showsInMenuBar: false)
+    func testAFormCallThatFailsHidesTheSecretInItsFailure() async throws {
+        runs.onReport = { _, _ in }
+        try script(header: "on=sheet.open\n\nfield=token\ntype=secret", """
+        token=$(sed -n 's/^setting.token=//p')
+        case "$1" in
+          login) echo "Cannot reach the server with $token" >&2; exit 1 ;;
+        esac
+        """)
+        let sheet = try sheet()
+        try secrets(["token": marker])
 
-        let sheet = settings.sheet(in: file.read())
+        do {
+            _ = try await sheet.form(CommandAction(id: "login", title: "Log in"), item: nil)
+            XCTFail("The form call should fail.")
+        } catch {
+            XCTAssertEqual(SpotsModel.reason(error), "Cannot reach the server with •••")
+        }
+    }
+
+    func testAPlainFieldNeverGetsTheSecretThatAnOlderHeaderKeptUnderItsKey() async throws {
+        try script(header: "on=sheet.open\n\nfield=token", "env > '\(path("env"))'\ncat > '\(path("input"))'")
+        let sheet = try sheet()
+        try secrets(["token": marker])
+
+        sheet.read(need: .change)
+
+        try await wait("the call") { self.text("env").contains("OPENSPOT_ID") && !sheet.isReading }
+        XCTAssertFalse(text("env").contains(marker))
+        XCTAssertFalse(text("input").contains(marker))
+    }
+
+    func testASettingOver64KBIsNotPutInTheEnvironment() async throws {
+        try script(header: "on=sheet.open\n\nfield=notes\n\nfield=city", "env | grep '^OPENSPOT_SETTING_' | cut -c1-30 > '\(path("env"))'")
+        let sheet = try sheet()
+        runs.take(settings: [
+            SpotSetting(spot: "script", key: "notes", value: String(repeating: "n", count: 65_537)),
+            SpotSetting(spot: "script", key: "city", value: "Paris")
+        ])
+
+        sheet.read(need: .change)
+
+        try await wait("the call") { self.text("env").hasSuffix("\n") }
+        XCTAssertEqual(text("env"), "OPENSPOT_SETTING_CITY=Paris\n")
+    }
+
+    private func settingsSheet(fields: [CommandOffer], config: String = "") throws -> String {
+        let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
+        try config.write(to: file.url, atomically: true, encoding: .utf8)
+        let settings = SpotSettings(file: file, secrets: try secrets(["token": marker]), spot: "script", offers: [], fields: fields, offersFloat: false, showsInMenuBar: false)
+        return try settings.answer(["read"])
+    }
+
+    private func field(_ key: String, secret: Bool) throws -> CommandOffer {
+        try XCTUnwrap(CommandOffer(setting: TextBlock(fields: [.init(key: "field", value: key)] + (secret ? [.init(key: "type", value: "secret")] : []))))
+    }
+
+    func testTheSettingsSheetShowsThatASecretIsSetAndNotItsValue() throws {
+        let sheet = try settingsSheet(fields: [field("token", secret: true)])
 
         XCTAssertFalse(sheet.contains(marker))
         XCTAssertTrue(sheet.contains("detail=Set, and hidden"))
+    }
+
+    func testASecretShowsNeitherInAPlainFieldOfItsKeyNorAsAKeptValue() throws {
+        let plain = try settingsSheet(fields: [field("token", secret: false)])
+        let dropped = try settingsSheet(fields: [], config: "[[settings]]\nspot = \"script\"\nkey = \"city\"\nvalue = \"Paris\"\n")
+
+        XCTAssertFalse(plain.contains(marker))
+        XCTAssertTrue(plain.contains("detail=Not set"))
+        XCTAssertFalse(dropped.contains(marker))
+        XCTAssertFalse(dropped.contains("token"))
+        XCTAssertTrue(dropped.contains("detail=Paris"))
+    }
+
+    func testRemoveOnTheRowOfASecretDropsItFromTheStore() throws {
+        let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
+        let store = try secrets(["token": marker])
+        let settings = try SpotSettings(file: file, secrets: store, spot: "script", offers: [], fields: [field("token", secret: true)], offersFloat: false, showsInMenuBar: false)
+
+        _ = try settings.answer(["clear", "setting:script:token"])
+
+        XCTAssertEqual(try SecretStore(file: store.file).read(), [:])
+        XCTAssertNil(file.read().setting("token", of: "script"))
     }
 }

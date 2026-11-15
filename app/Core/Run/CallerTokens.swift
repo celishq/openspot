@@ -19,6 +19,7 @@ public final class CallerTokens: @unchecked Sendable {
         var group: pid_t?
         var start: UInt64 = 0
         var hasEnded = false
+        var keepsFix = false
         var fix: URL?
     }
 
@@ -48,10 +49,10 @@ public final class CallerTokens: @unchecked Sendable {
         records[Self.sandboxed] = Record(caller: Caller(id: "", name: "A sandboxed process", uses: []))
     }
 
-    func issue(for spot: Spot, reason: String? = nil) -> String {
+    func issue(for spot: Spot, reason: String? = nil, keepsFix: Bool = false) -> String {
         var random = SystemRandomNumberGenerator()
         let token = String(format: "%016llx%016llx", random.next() as UInt64, random.next() as UInt64)
-        lock.withLock { records[token] = Record(caller: Caller(id: spot.id, name: spot.name, uses: spot.uses, isBuiltIn: spot.isBuiltIn, dataName: spot.dataName), reason: reason) }
+        lock.withLock { records[token] = Record(caller: Caller(id: spot.id, name: spot.name, uses: spot.uses, isBuiltIn: spot.isBuiltIn, dataName: spot.dataName), reason: reason, keepsFix: keepsFix) }
         return token
     }
 
@@ -95,7 +96,7 @@ public final class CallerTokens: @unchecked Sendable {
 
     func note(_ fix: URL?, of token: String) {
         lock.withLock {
-            guard records[token]?.hasEnded == false else { return }
+            guard records[token]?.hasEnded == false, records[token]?.keepsFix == true else { return }
             records[token]?.fix = fix
         }
     }

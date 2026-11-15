@@ -11,10 +11,8 @@ struct SwiftBuild: Sendable {
 
     let tools: URL
 
-    func output(of files: [File], flags: [String], kinds: [String?], needs: String?, fault: String) async throws -> Data {
-        if let needs, (try? await run("xcode-select", ["-p"])) == nil {
-            throw SpotError.fault("\(needs), install the Command Line Tools: xcode-select --install")
-        }
+    func output(of files: [File], flags: [String], kinds: [String?], toolsFault: String?, fault: String) async throws -> Data {
+        if let toolsFault, (try? await run("xcode-select", ["-p"])) == nil { throw SpotError.fault(toolsFault) }
         let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-build-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: place) }

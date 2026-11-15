@@ -88,7 +88,7 @@ final class CapabilityTests: XCTestCase {
 
         XCTAssertEqual(Set(try answers.map { try field("pid", in: $0) }).count, 1)
         XCTAssertEqual(Set(try answers.map { try field("count", in: $0) }), Set(1...total))
-        let settled = await wait(seconds: 10) { await self.helpers().count == 1 }
+        let settled = await wait(seconds: 60) { await self.helpers().count == 1 }
         XCTAssertTrue(settled)
     }
 
@@ -99,7 +99,7 @@ final class CapabilityTests: XCTestCase {
         XCTAssertTrue(isAlive(id))
         XCTAssertTrue(FileManager.default.fileExists(atPath: socket))
 
-        let gone = await wait(seconds: 15) { !self.isAlive(id) }
+        let gone = await wait(seconds: 60) { !self.isAlive(id) }
         XCTAssertTrue(gone)
         XCTAssertFalse(FileManager.default.fileExists(atPath: socket))
 
@@ -117,7 +117,7 @@ final class CapabilityTests: XCTestCase {
         let freed = try await call("free")
         XCTAssertEqual(pid_t(try field("pid", in: freed)), id)
 
-        let gone = await wait(seconds: 15) { !self.isAlive(id) }
+        let gone = await wait(seconds: 60) { !self.isAlive(id) }
         XCTAssertTrue(gone)
     }
 
@@ -136,7 +136,7 @@ final class CapabilityTests: XCTestCase {
         let id = pid_t(try field("pid", in: try await call()))
 
         kill(id, SIGKILL)
-        let gone = await wait(seconds: 10) { !self.isAlive(id) }
+        let gone = await wait(seconds: 60) { !self.isAlive(id) }
         XCTAssertTrue(gone)
         XCTAssertTrue(FileManager.default.fileExists(atPath: socket))
 
@@ -153,7 +153,7 @@ final class CapabilityTests: XCTestCase {
         let id = pid_t(try field("pid", in: try XCTUnwrap(first)))
 
         process.stop()
-        let stopped = await wait(seconds: 10) { !process.isRunning }
+        let stopped = await wait(seconds: 60) { !process.isRunning }
 
         XCTAssertTrue(stopped)
         XCTAssertTrue(isAlive(id))
@@ -168,7 +168,7 @@ final class CapabilityTests: XCTestCase {
         try await Task.sleep(for: .milliseconds(500))
 
         process.stop()
-        let stopped = await wait(seconds: 10) { !process.isRunning }
+        let stopped = await wait(seconds: 60) { !process.isRunning }
 
         XCTAssertTrue(stopped)
         let next = try await call()

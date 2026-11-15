@@ -56,6 +56,7 @@ public struct SpotSettings: Equatable, Sendable {
     }
 
     public let file: ConfigFile
+    let secrets: SecretStore
     public let spot: String
     let offers: [CommandOffer]
     let fields: [CommandOffer]
@@ -75,7 +76,7 @@ public struct SpotSettings: Equatable, Sendable {
         let row = arguments.dropFirst().first
         switch (arguments.first, row.flatMap(self.row)) {
         case ("read", _):
-            return sheet(in: file.read())
+            return sheet(in: file.read(), secrets: try secrets.read()[spot] ?? [:])
         case (Self.clear, let found?):
             try clear(found)
             return ""
@@ -107,6 +108,7 @@ public struct SpotSettings: Equatable, Sendable {
         case .key(let command): try file.change { $0.assign(nil, to: spot, act: .command(command)) }
         case .float: try file.change { $0.assign(nil, to: spot, act: .float) }
         case .menuBar: try file.change { $0.arrangement.set(isInMenuBar: false, of: spot) }
+        case .setting(let key) where fields.contains { $0.id == key && $0.isSecret }: try secrets.keep(nil, key: key, of: spot)
         case .setting(let key): try file.change { $0.set(setting: key, of: spot, to: nil) }
         }
     }
@@ -117,13 +119,15 @@ public struct SpotSettings: Equatable, Sendable {
         }
     }
 
-    func sheet(in config: Config) -> String {
+    func sheet(in config: Config, secrets: [String: String]) -> String {
         var blocks = [
             TextBlock(fields: [.init(key: "recents", value: "false")]),
             TextBlock(fields: [.init(key: "button", value: Self.open), .init(key: "title", value: "Change"), .init(key: "close", value: "false")]),
             TextBlock(fields: [.init(key: "button", value: Self.clear), .init(key: "title", value: "Remove"), .init(key: "shortcut", value: "cmd+backspace")])
         ]
-        let named = fields.map { field in (field, config.setting(field.id, of: spot).flatMap { $0.isEmpty ? nil : field.isSecret ? Self.secretWord : $0 }) }
+        let named = fields.map { field in
+            (field, field.isSecret ? secrets[field.id].map { _ in Self.secretWord } : config.setting(field.id, of: spot).flatMap { $0.isEmpty ? nil : $0 })
+        }
         let kept = kept(in: config).compactMap { value in CommandOffer(setting: value.key).map { ($0, Optional(value.value)) } }
         blocks += (named + kept).map(fieldRow)
         blocks += keyRows(config.keys)

@@ -15,7 +15,7 @@ struct SpotSteadyField: View {
             SpotSearchField(prompt: prompt, text: text, onSearch: onSearch, isFocused: $isFocused)
                 .animation(nil) { $0.opacity(isSettled ? 1 : 0.001) }
             copy
-                .animation(nil) { $0.opacity(isSettled ? 0 : 1) }
+                .animation(nil) { $0.opacity(isSettled ? MotionTokens.hiddenOpacity : 1) }
         }
         .onAppear {
             DispatchQueue.main.async { isFocused = true }

@@ -52,6 +52,7 @@ final class SpotSettingsSheetTests: XCTestCase {
         model.isShown = true
         model.panelWillShow(holding: [])
         model.query = search
+        model.landSearch()
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == id })
     }
 
@@ -63,11 +64,11 @@ final class SpotSettingsSheetTests: XCTestCase {
         XCTAssertEqual(model.hint, "⏎ Open   ⌘⏎ Settings")
         XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
 
-        try await wait("the Settings sheet") { model.openList == settings }
+        try await wait("the Settings sheet") { model.openSheetID == settings }
         try await wait("its rows") { model.openItems?.shown.map(\.run) == ["float:draw", "menubar:draw"] }
         XCTAssertEqual(model.openEntry?.id, settings)
         XCTAssertEqual(model.openEntry?.state.title, "Draw Settings")
-        XCTAssertEqual(SpotSheetCard.of(model.openList, in: model)?.id, "draw")
+        XCTAssertEqual(SpotSheetCard.of(model.openSheetID, in: model)?.id, "draw")
         XCTAssertFalse(calls.contains("read"))
 
         model.runSelectedItem()
@@ -75,14 +76,14 @@ final class SpotSettingsSheetTests: XCTestCase {
         model.record(code: 1, modifiers: [.control, .option])
         try await wait("the key in the file") { model.files.config.read().keys.map(\.act) == [.float] }
         try await wait("the key in its row") { model.openItems?.shown.first?.shortcut == "ctrl+option+s" }
-        XCTAssertEqual(model.openList, settings)
+        XCTAssertEqual(model.openSheetID, settings)
         XCTAssertEqual(host.dismissals, 0)
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
-        XCTAssertNil(model.openList)
+        XCTAssertNil(model.openSheetID)
         model.runSelected()
         try await wait("its own sheet") { model.openItems?.shown.map(\.run) == ["own"] }
-        XCTAssertEqual(model.openList, "draw")
+        XCTAssertEqual(model.openSheetID, "draw")
     }
 
     func testASpotWhoseReturnRunsItKeepsItsSettingsApartFromItsOwnSheet() async throws {
@@ -92,8 +93,8 @@ final class SpotSettingsSheetTests: XCTestCase {
         XCTAssertEqual(model.hint, "⏎ Run   ⌘⏎ Settings   ⌘K Actions")
         XCTAssertTrue(model.openSelectedSettings())
         try await wait("its settings") { model.openItems?.shown.map(\.run) == ["float:conf", "menubar:conf"] }
-        XCTAssertEqual(model.openList, SpotSettings.sheetID(of: "conf"))
-        model.closeList(moving: false)
+        XCTAssertEqual(model.openSheetID, SpotSettings.sheetID(of: "conf"))
+        model.closeSheet(moving: false)
 
         model.pushFirst("conf", moving: false)
         try await wait("its own rows") { model.openItems?.shown.map(\.run) == ["own"] }
@@ -106,7 +107,7 @@ final class SpotSettingsSheetTests: XCTestCase {
 
         XCTAssertTrue(model.act(.settings, on: "draw"))
 
-        try await wait("the Settings sheet") { model.openList == SpotSettings.sheetID(of: "draw") }
+        try await wait("the Settings sheet") { model.openSheetID == SpotSettings.sheetID(of: "draw") }
         XCTAssertNil(model.menu)
     }
 
@@ -121,8 +122,8 @@ final class SpotSettingsSheetTests: XCTestCase {
         XCTAssertNil(model.menu)
         XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
         try await wait("its place in the menu bar") { model.openItems?.shown.map(\.run) == ["menubar:quit"] }
-        XCTAssertEqual(model.openList, SpotSettings.sheetID(of: "quit"))
-        model.closeList(moving: false)
+        XCTAssertEqual(model.openSheetID, SpotSettings.sheetID(of: "quit"))
+        model.closeSheet(moving: false)
 
         try await show(selecting: "lock")
         XCTAssertTrue(model.openSelectedSettings())
@@ -141,7 +142,7 @@ final class SpotSettingsSheetTests: XCTestCase {
         model.runSelectedItem()
         try await wait("the menu bar in the file") { model.files.config.read().arrangement.menuBar == ["cups"] }
         try await wait("the switch") { model.openItems?.shown.first { $0.run == "menubar:cups" }?.isOn == true }
-        XCTAssertEqual(model.openList, SpotSettings.sheetID(of: "cups"))
+        XCTAssertEqual(model.openSheetID, SpotSettings.sheetID(of: "cups"))
 
         model.moveItemToEdge(last: false)
         model.runSelectedItem()

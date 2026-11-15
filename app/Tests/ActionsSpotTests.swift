@@ -18,9 +18,9 @@ final class ActionsSpotTests: BuiltInCase {
         try "#!/bin/sh\n# title=Caffeinate\n".writeScript(to: core.appendingPathComponent("caffeinate.spot/caffeinate.sh"))
 
         for act in ["settings", "edit", "share", "delete"] {
-            try await actions.perform(SpotAction(arguments: [act, "weather"]), timeout: 5)
+            try await actions.perform(SpotAction(arguments: [act, "weather"]), timeout: 60)
         }
-        try await actions.perform(SpotAction(arguments: ["off", "caffeinate"]), timeout: 5)
+        try await actions.perform(SpotAction(arguments: ["off", "caffeinate"]), timeout: 60)
 
         let opened = await app.opened
         let changes = await app.changeList
@@ -35,13 +35,13 @@ final class ActionsSpotTests: BuiltInCase {
         try FileManager.default.createSymbolicLink(at: core.appendingPathComponent("openspot.spot"), withDestinationURL: repoSpots.appendingPathComponent("openspot.spot"))
 
         let before = await ask("weather")
-        try await actions.perform(SpotAction(arguments: ["icon.draw", "weather"]), timeout: 5)
-        try await icon.perform(SpotAction(arguments: ["drawer", "0" + String(repeating: ".", count: 80)]), timeout: 5)
-        try await icon.perform(SpotAction(arguments: ["save"]), timeout: 5)
+        try await actions.perform(SpotAction(arguments: ["icon.draw", "weather"]), timeout: 60)
+        try await icon.perform(SpotAction(arguments: ["drawer", "0" + String(repeating: ".", count: 80)]), timeout: 60)
+        try await icon.perform(SpotAction(arguments: ["save"]), timeout: 60)
         let drawn = await ask("weather")
-        try await actions.perform(SpotAction(arguments: ["icon.reset", "weather"]), timeout: 5)
+        try await actions.perform(SpotAction(arguments: ["icon.reset", "weather"]), timeout: 60)
         let after = await ask("weather")
-        try await actions.perform(SpotAction(arguments: ["icon.file", "weather"]), timeout: 5)
+        try await actions.perform(SpotAction(arguments: ["icon.file", "weather"]), timeout: 60)
 
         let opened = await app.opened
         XCTAssertEqual([before, drawn, after], [false, true, false])

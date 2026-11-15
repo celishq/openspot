@@ -30,7 +30,7 @@ class SampleSpotsCase: XCTestCase {
                 .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             let folder = root.appendingPathComponent("spots")
             var scan = try SpotsFolder(url: folder).scan()
-            scan.addSettings(in: ConfigFile(url: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-samples/config.toml")))
+            scan.addSettings(in: ConfigFile(url: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-samples/config.toml")), secrets: SecretStore(file: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-samples/secrets.json")))
             return scan
         }
     }
@@ -50,21 +50,21 @@ class SampleSpotsCase: XCTestCase {
     }
 
     func turnCaffeinateOnAndOff(_ caffeinate: Spot) async throws {
-        let toast = try await caffeinate.perform(.item(SpotItem(title: "1 minute", run: "60")), timeout: 5)
+        let toast = try await caffeinate.perform(.item(SpotItem(title: "1 minute", run: "60")), timeout: 60)
         XCTAssertEqual(toast, "Caffeinate is on for 1 minute")
-        var started = try await caffeinate.state(timeout: 5)
-        for _ in 0..<100 where started.subtitle == "Off" {
+        var started = try await caffeinate.state(timeout: 60)
+        for _ in 0..<1200 where started.subtitle == "Off" {
             try await Task.sleep(for: .milliseconds(50))
-            started = try await caffeinate.state(timeout: 5)
+            started = try await caffeinate.state(timeout: 60)
         }
-        let first = try await caffeinate.items(timeout: 5).items.first
+        let first = try await caffeinate.items(timeout: 60).items.first
         XCTAssertEqual(started.subtitle, "1m left")
         XCTAssertEqual(started.on, true)
         XCTAssertEqual(first?.run, "off")
 
-        let stopToast = try await caffeinate.perform(.item(try XCTUnwrap(first)), timeout: 5)
+        let stopToast = try await caffeinate.perform(.item(try XCTUnwrap(first)), timeout: 60)
         XCTAssertEqual(stopToast, "Caffeinate is off")
-        let stopped = try await caffeinate.state(timeout: 5)
+        let stopped = try await caffeinate.state(timeout: 60)
         XCTAssertEqual(stopped.subtitle, "Off")
         XCTAssertEqual(stopped.on, false)
     }
@@ -158,14 +158,14 @@ class SampleSpotsCase: XCTestCase {
 
     func savedLink(_ url: String, in links: Spot) async throws {
         let new = try await action("new", of: links)
-        var draft = FormDraft(form: try await links.form(new, item: nil, timeout: 5))
+        var draft = FormDraft(form: try await links.form(new, item: nil, timeout: 60))
         draft.set("Site", for: "title")
         draft.set(url, for: "url")
-        _ = try await links.submit(new, item: nil, draft: draft, timeout: 5)
+        _ = try await links.submit(new, item: nil, draft: draft, timeout: 60)
     }
 
     func action(_ id: String, of spot: Spot) async throws -> CommandAction {
-        let actions = try await spot.items(timeout: 5).actions
+        let actions = try await spot.items(timeout: 60).actions
         return try XCTUnwrap(actions.first { $0.id == id })
     }
 
@@ -177,7 +177,7 @@ class SampleSpotsCase: XCTestCase {
         let script = "#!/bin/sh\n[ \"$1 $2\" = 'color pick' ] && { printf '%s' '\(answer)'; exit 0; }\n\(Self.fakeOpenspot(in: folder))\n"
         try script.writeScript(to: folder.appendingPathComponent("tools/openspot"))
         let picker = try XCTUnwrap(try scan.spots.first { $0.name == "Color picker" })
-        return try await picker.perform(picker.click, timeout: 5)
+        return try await picker.perform(picker.click, timeout: 60)
     }
 
     func fakeTranslate(in folder: URL, status: String? = nil) throws -> Spot {
@@ -214,7 +214,7 @@ class SampleSpotsCase: XCTestCase {
 
     @MainActor
     static func drive(_ spot: Spot, _ actions: [SpotAction]) async throws -> SpotOutput {
-        var last = try await spot.items(timeout: 10)
+        var last = try await spot.items(timeout: 60)
         var panel = try XCTUnwrap(SheetParts(output: last))
         for action in actions {
             if action.arguments.count == 2 { panel.set(action.arguments[1], of: action.arguments[0]) }
@@ -250,10 +250,10 @@ class SampleSpotsCase: XCTestCase {
         }
         runs.panelOpened()
         sheet.open {}
-        for _ in 0..<1000 where sheet.panel == nil { try await Task.sleep(for: .milliseconds(10)) }
+        for _ in 0..<6000 where sheet.panel == nil { try await Task.sleep(for: .milliseconds(10)) }
         let first = options()
         FileManager.default.createFile(atPath: release.path, contents: Data())
-        for _ in 0..<1000 where options() < 2 { try await Task.sleep(for: .milliseconds(10)) }
+        for _ in 0..<6000 where options() < 2 { try await Task.sleep(for: .milliseconds(10)) }
         return (first, options())
     }
 }

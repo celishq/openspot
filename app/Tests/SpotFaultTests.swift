@@ -56,8 +56,8 @@ final class SpotFaultTests: XCTestCase {
         await model.reload()
         model.isShown = true
         model.press("weather")
-        try await wait("the fault sheet") { model.openPanel != nil }
-        return try XCTUnwrap(model.openPanel)
+        try await wait("the fault sheet") { model.openParts != nil }
+        return try XCTUnwrap(model.openParts)
     }
 
     func testAFileThatDoesNotLoadKeepsAWideCardThatSaysHowToFixIt() async throws {

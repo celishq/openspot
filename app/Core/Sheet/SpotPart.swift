@@ -44,7 +44,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
 
     public let id: String
     public let kind: String
-    private let fills: Bool
+    public let isOpen: Bool
+    public let isPicture: Bool
     public let isSection: Bool
     public let title: String?
     public let detail: String?
@@ -67,7 +68,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     static let rowsKey = "row"
 
     func holding(rows: [TextBlock]) -> SpotPart {
-        guard fills, !rows.isEmpty else { return self }
+        guard isOpen, !rows.isEmpty else { return self }
         var part = self
         part.values[Self.rowsKey] = rows.map { $0.fields.first?.value ?? "" }
         for (index, row) in rows.enumerated() {
@@ -90,7 +91,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         guard let id = block.value(kind.word) else { return nil }
         self.id = id
         self.kind = kind.name
-        fills = kind.isOpen
+        isOpen = kind.isOpen
+        isPicture = kind == .picture
         values = kind.isOpen ? Dictionary(grouping: block.fields, by: \.key).mapValues { $0.map(\.value) } : [:]
         isSection = kind == .section
         title = block.value("title")
@@ -165,7 +167,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     }
 
     public var fillsHeight: Bool {
-        if fills { return true }
+        if isOpen { return true }
         return switch control {
         case .text, .list, .number, .chart, .image, .progress: true
         default: false
@@ -187,7 +189,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
 
     var growsRow: Bool {
         guard grows else { return false }
-        if fills { return true }
+        if isOpen { return true }
         return switch control {
         case .text, .list, .chart, .image: true
         default: false

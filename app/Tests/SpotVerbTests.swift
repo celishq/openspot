@@ -148,10 +148,10 @@ final class SpotVerbTests: XCTestCase {
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "e", isCommand: true)))
 
-        try await wait("the Edit sheet") { model.openList == sheet && model.openPanel != nil }
+        try await wait("the Edit sheet") { model.openSheetID == sheet && model.openParts != nil }
         XCTAssertEqual(model.openEntry?.state.title, "Edit Weather")
         XCTAssertEqual(SpotSheetCard.of(sheet, in: model)?.id, "weather")
-        XCTAssertEqual(model.openPanel?.parts.map(\.id), ["describe", "copy"])
+        XCTAssertEqual(model.openParts?.parts.map(\.id), ["describe", "copy"])
         XCTAssertEqual(model.hint, "⌘⏎ Copy prompt   ⌘K Actions")
         XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
         try await wait("the copy") { saved("edits") == "weather|\(spots.spotFile("weather").path)|\n" }
@@ -171,8 +171,8 @@ final class SpotVerbTests: XCTestCase {
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
         model.pressMenu(row: try XCTUnwrap(model.menu?.rows.firstIndex { $0.title == "Edit" }))
-        try await wait("the Edit sheet") { model.openList == OwnedSheet.edit.id(of: "ping") && model.openPanel != nil }
-        model.pressPart(try XCTUnwrap(model.openPanel?.parts.last))
+        try await wait("the Edit sheet") { model.openSheetID == OwnedSheet.edit.id(of: "ping") && model.openParts != nil }
+        model.pressPart(try XCTUnwrap(model.openParts?.parts.last))
 
         try await wait("the copy") { saved("edits")?.hasSuffix("|Openspot cannot reach the server.\n") == true }
         XCTAssertTrue(saved("edits")?.hasPrefix("ping|\(spots.spotFile("ping").path)|") == true)
@@ -188,13 +188,13 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertEqual(rows.first { $0.title == "Edit" }?.keyLabel, "⌘E")
         model.closeMenu()
         XCTAssertTrue(model.handleKey(ActionKey(name: "e", isCommand: true)))
-        try await wait("the Edit sheet") { model.openList == OwnedSheet.edit.id(of: "cups") && model.openPanel != nil }
-        model.pressPart(try XCTUnwrap(model.openPanel?.parts.last))
+        try await wait("the Edit sheet") { model.openSheetID == OwnedSheet.edit.id(of: "cups") && model.openParts != nil }
+        model.pressPart(try XCTUnwrap(model.openParts?.parts.last))
         try await wait("the copy") { saved("edits") == "cups||\n" }
         _ = model.handleKey(ActionKey(name: "k", isCommand: true))
         XCTAssertNil(model.menu?.rows.first { $0.title == "Open in editor" })
         model.closeMenu()
-        model.closeList(moving: false)
+        model.closeSheet(moving: false)
 
         let change = try XCTUnwrap(model.entries.first { $0.spot.editsSpots })
         XCTAssertFalse(model.openEdit(of: change))
@@ -226,7 +226,7 @@ final class SpotVerbTests: XCTestCase {
 
         XCTAssertTrue(model.push(FlowSheet(spot: "openspot/icon")))
 
-        XCTAssertEqual(model.openList, "openspot/icon")
+        XCTAssertEqual(model.openSheetID, "openspot/icon")
     }
 
     func testFilesAreAskedForOnlyForASpotThatTakesThem() async throws {
@@ -319,15 +319,55 @@ final class SpotVerbTests: XCTestCase {
         await model.reload()
 
         XCTAssertTrue(model.act(.settings, on: "weather"))
-        try await wait("the Settings sheet") { model.openList == SpotSettings.sheetID(of: "weather") }
+        try await wait("the Settings sheet") { model.openSheetID == SpotSettings.sheetID(of: "weather") }
         XCTAssertTrue(model.act(.edit, on: "weather"))
-        try await wait("the Edit sheet") { model.openList == OwnedSheet.edit.id(of: "weather") }
+        try await wait("the Edit sheet") { model.openSheetID == OwnedSheet.edit.id(of: "weather") }
         XCTAssertTrue(model.act(.delete, on: "weather"))
+        try await wait("the toast of the removal") { self.host.confirms.contains { $0.hasPrefix("Moved Weather to the Trash") } }
         XCTAssertFalse(FileManager.default.fileExists(atPath: spots.spotFile("weather").path))
         XCTAssertTrue(model.handleKey(ActionKey(name: "z", isCommand: true)))
         XCTAssertFalse(model.act(.edit, on: "gone"))
 
-        XCTAssertTrue(FileManager.default.fileExists(atPath: spots.spotFile("weather").path))
+        try await wait("the file again") { FileManager.default.fileExists(atPath: self.spots.spotFile("weather").path) }
+    }
+
+    func testTheSecretOfARemovedSpotGoesWithItAndComesBackWithItsUndo() async throws {
+        try script("weather", header: "title=Weather\n\nfield=token\ntype=secret")
+        try script("clock", header: "title=Clock\n\nfield=token\ntype=secret")
+        try model.files.secrets.keep("weather-secret", key: "token", of: "weather")
+        try model.files.secrets.keep("clock-secret", key: "token", of: "clock")
+        await model.reload()
+
+        XCTAssertTrue(model.act(.delete, on: "weather"))
+        try await wait("the toast of the removal") { self.host.confirms.contains { $0.hasPrefix("Moved Weather to the Trash") } }
+        let removed = try SecretStore(file: model.files.secrets.file).read()
+        XCTAssertTrue(model.handleKey(ActionKey(name: "z", isCommand: true)))
+        try await wait("the toast of the undo") { self.host.confirms.contains("Put Weather back.") }
+
+        XCTAssertEqual(removed, ["clock": ["token": "clock-secret"]])
+        XCTAssertEqual(try SecretStore(file: model.files.secrets.file).read()["weather"], ["token": "weather-secret"])
+    }
+
+    func testTheFormOfASecretKeepsItInTheStoreNotTheConfigAndRefusesAShortOne() async throws {
+        try script("weather", header: "title=Weather\non=sheet.open\n\nfield=token\ntype=secret")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+
+        XCTAssertTrue(model.changeSetting("token", of: "weather"))
+        model.setFormValue("1234567", for: "token")
+        model.submitForm()
+        let short = host.notes.last
+        let kept = try SecretStore(file: model.files.secrets.file).read()
+        model.setFormValue("12345678", for: "token")
+        model.submitForm()
+        try await wait("the kept secret") { model.form == nil }
+
+        XCTAssertEqual(short, "Openspot didn't keep this secret, because it is shorter than 8 characters. Type the whole value.")
+        XCTAssertEqual(kept, [:])
+        XCTAssertNil(model.form)
+        XCTAssertEqual(try SecretStore(file: model.files.secrets.file).read(), ["weather": ["token": "12345678"]])
+        XCTAssertFalse((try? String(contentsOf: model.files.config.url, encoding: .utf8))?.contains("12345678") ?? false)
     }
 
     func testARightOrForceClickOnACardOpensItsMenuAndTheClickThatEndsItRunsNothing() async throws {

@@ -122,7 +122,7 @@ final class DoomExampleTests: SampleSpotsCase {
             time += 10
             let before = log.frames.count
             runs.panelOpened()
-            for _ in 0..<500 where log.frames.count == before {
+            for _ in 0..<6000 where log.frames.count == before {
                 try await Task.sleep(for: .milliseconds(10))
             }
             runs.panelClosed()

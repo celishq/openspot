@@ -14,7 +14,7 @@ public enum SettingCall: NounCall {
     case careful(Bool)
 
     static let noun = CommandNoun("setting", verbs: [
-        CommandVerb("get", "[--spot id] <key>", "Prints the value the person chose for the spot, or nothing.") { words in
+        CommandVerb("get", "[--spot id] <key>", "Prints the value the person chose for the spot, or nothing. A secret prints as •••.") { words in
             pair(words, sets: false) { spot, key, _ in Self.get(spot: spot, key: key) }
         },
         CommandVerb(
@@ -101,7 +101,7 @@ public enum SettingCall: NounCall {
     }
 
     func work(in context: CallContext) -> CommandAPI.Work? {
-        let settings = SettingCalls(environment: context.environment, caller: context.spot, app: context.app)
+        let settings = SettingCalls(environment: context.environment, caller: context.spot, app: context.app, secrets: context.secrets)
         let keys = KeyCalls(environment: context.environment, app: context.app)
         let apps = AppCalls(mac: context.mac, environment: context.environment, app: context.app)
         return switch self {

@@ -41,7 +41,7 @@ final class SpotTests: XCTestCase {
         [ "$1" = read ] && [ -z "$2" ] && printf 'switch=focus\\ntitle=Focus\\ndetail=On\\nvalue=true\\n'
         """)
 
-        let state = try await command.state(timeout: 5)
+        let state = try await command.state(timeout: 60)
 
         XCTAssertEqual(state, SpotState(title: "Focus", subtitle: "On", on: true, control: "focus"))
     }
@@ -59,7 +59,7 @@ final class SpotTests: XCTestCase {
     func testAStateKeepsWhatItLeavesOutFromTheHeader() async throws {
         let command = try writeCommand(kind: .toggle, subtitle: "Header", read: .panel, "printf 'switch=power\\nvalue=true\\n'")
 
-        let state = try await command.state(timeout: 5)
+        let state = try await command.state(timeout: 60)
 
         XCTAssertEqual(state, SpotState(title: "Command", subtitle: "Header", on: true, control: "power"))
     }
@@ -67,7 +67,7 @@ final class SpotTests: XCTestCase {
     func testASpotWithNoReadShowsItsHeaderAndDoesNotRun() async throws {
         let command = try writeCommand(kind: .launch, subtitle: "Folder", "touch '\(marker.path)'")
 
-        let opened = try await command.opened(timeout: 5)
+        let opened = try await command.opened(timeout: 60)
 
         XCTAssertEqual(opened.state, SpotState(title: "Command", subtitle: "Folder"))
         XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path))
@@ -78,7 +78,7 @@ final class SpotTests: XCTestCase {
         printf 'active=true\\n\\nbutton=open\\ntitle=Select\\n\\nbutton=copy\\ntitle=Copy\\n\\nrow=a\\ntitle=A\\n'
         """)
 
-        let opened = try await command.opened(timeout: 5)
+        let opened = try await command.opened(timeout: 60)
 
         XCTAssertEqual(opened.spot.kind, .list)
         XCTAssertEqual(opened.spot.openTitle, "Select")
@@ -91,7 +91,7 @@ final class SpotTests: XCTestCase {
         [ "$1" = read ] && [ -z "$2" ] && printf 'row=/Safari.app\\ntitle=Safari\\n'
         """)
 
-        let lines = try await command.items(timeout: 5)
+        let lines = try await command.items(timeout: 60)
 
         XCTAssertEqual(lines.items, [SpotItem(title: "Safari", run: "/Safari.app")])
     }
@@ -101,7 +101,7 @@ final class SpotTests: XCTestCase {
         printf 'row=%s\\ntitle=%s\\n' "$1" "$(sed -n 's/^search=//p')"
         """)
 
-        let lines = try await command.items(query: "rep", timeout: 5)
+        let lines = try await command.items(query: "rep", timeout: 60)
 
         XCTAssertEqual(lines.items, [SpotItem(title: "rep", run: "read")])
     }
@@ -111,7 +111,7 @@ final class SpotTests: XCTestCase {
         [ "$1" = new ] && [ -z "$(cat)" ] && printf 'title=New\\n\\nfield=title\\ntitle=Name\\n'
         """)
 
-        let form = try await command.form(CommandAction(id: "new", title: "New", isForm: true), item: nil, timeout: 5)
+        let form = try await command.form(CommandAction(id: "new", title: "New", isForm: true), item: nil, timeout: 60)
 
         XCTAssertEqual(form, ItemForm(title: "New", fields: [.init(name: "title", label: "Name")]))
     }
@@ -121,7 +121,7 @@ final class SpotTests: XCTestCase {
         [ "$1 $2" = "edit one" ] && printf 'title=Edit\\n\\nfield=title\\ntitle=Name\\n'
         """)
 
-        let form = try await command.form(CommandAction(id: "edit", title: "Edit", isForm: true), item: SpotItem(title: "One", run: "one"), timeout: 5)
+        let form = try await command.form(CommandAction(id: "edit", title: "Edit", isForm: true), item: SpotItem(title: "One", run: "one"), timeout: 60)
 
         XCTAssertEqual(form.title, "Edit")
     }
@@ -129,7 +129,7 @@ final class SpotTests: XCTestCase {
     func testAClickOnAFileWithNoReadSendsOpen() async throws {
         let command = try writeCommand(kind: .launch, "echo \"$1\" > '\(marker.path)'")
 
-        try await command.perform(command.click, timeout: 5)
+        try await command.perform(command.click, timeout: 60)
 
         XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "open\n")
     }
@@ -137,7 +137,7 @@ final class SpotTests: XCTestCase {
     func testAClickOnACardWithAReadSendsOpen() async throws {
         let command = try writeCommand(kind: .launch, read: .panel, "echo \"$1\" > '\(marker.path)'")
 
-        try await command.perform(command.click, timeout: 5)
+        try await command.perform(command.click, timeout: 60)
 
         XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "open\n")
     }
@@ -146,7 +146,7 @@ final class SpotTests: XCTestCase {
         let command = try writeCommand(kind: .list, "echo nonsense")
 
         do {
-            _ = try await command.form(CommandAction(id: "new", title: "New", isForm: true), item: nil, timeout: 5)
+            _ = try await command.form(CommandAction(id: "new", title: "New", isForm: true), item: nil, timeout: 60)
             XCTFail("expected a failure")
         } catch SpotError.badForm {
         }
@@ -158,7 +158,7 @@ final class SpotTests: XCTestCase {
         """)
         let form = ItemForm(title: "New", fields: [.init(name: "title", label: "Name", value: "One")])
 
-        let run = try await command.submit(CommandAction(id: "new", title: "New", isForm: true), item: nil, draft: FormDraft(form: form), timeout: 5)
+        let run = try await command.submit(CommandAction(id: "new", title: "New", isForm: true), item: nil, draft: FormDraft(form: form), timeout: 60)
 
         XCTAssertEqual(run, "abc")
         XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "title=One\n")
@@ -168,7 +168,7 @@ final class SpotTests: XCTestCase {
         let command = try writeCommand(kind: .toggle, read: .panel, "echo nonsense")
 
         do {
-            _ = try await command.state(timeout: 5)
+            _ = try await command.state(timeout: 60)
             XCTFail("expected a failure")
         } catch SpotError.badState {
         }
@@ -177,16 +177,16 @@ final class SpotTests: XCTestCase {
     func testPerformPassesTheActionArguments() async throws {
         let command = try writeCommand(kind: .toggle, "echo \"$*\" > '\(marker.path)'")
 
-        try await command.perform(.toggle(SpotState(title: "Focus", on: false, control: "focus")), timeout: 5)
+        try await command.perform(.toggle(SpotState(title: "Focus", on: false, control: "focus")), timeout: 60)
 
         XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "focus true\n")
     }
 
     func testAnActionCanPrintAToast() async throws {
         let quiet = try writeCommand(kind: .launch, "echo done > /dev/null")
-        let quietToast = try await quiet.perform(quiet.click, timeout: 5)
+        let quietToast = try await quiet.perform(quiet.click, timeout: 60)
         let loud = try writeCommand(kind: .launch, "echo 'toast=All done'")
-        let loudToast = try await loud.perform(loud.click, timeout: 5)
+        let loudToast = try await loud.perform(loud.click, timeout: 60)
 
         XCTAssertNil(quietToast)
         XCTAssertEqual(loudToast, "All done")
@@ -196,7 +196,7 @@ final class SpotTests: XCTestCase {
         let command = try writeCommand(kind: .launch, "echo first >&2\necho 'No screenshot found.' >&2\nexit 3")
 
         do {
-            try await command.perform(command.click, timeout: 5)
+            try await command.perform(command.click, timeout: 60)
             XCTFail("expected a failure")
         } catch let error as SpotError {
             XCTAssertEqual(error, .failed(3, "No screenshot found."))

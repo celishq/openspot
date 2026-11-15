@@ -47,9 +47,16 @@ final class SpotTablesTests: XCTestCase {
     func testAHeaderFieldThatAsksForAHotkeyIsAFault() {
         XCTAssertEqual(
             fault(ofHeader: "# title=T\n# on=sheet.open\n#\n# field=key\n# type=hotkey\n# title=Shortcut\n"),
-            "T has an unknown type on the field key: hotkey. Use type=secret, or no type"
+            "T has an unknown type on the field `key`: `hotkey`. Use `type=secret`, or no type."
         )
         XCTAssertNil(fault(ofHeader: "# title=T\n# on=sheet.open\n#\n# field=token\n# type=secret\n"))
+    }
+
+    func testTwoFieldsThatGiveOneVariableAreAFaultThatNamesBoth() {
+        XCTAssertEqual(
+            fault(ofHeader: "# title=T\n# on=sheet.open\n#\n# field=api-key\n#\n# field=api_key\n"),
+            "T has field=api-key and field=api_key, which both give `OPENSPOT_SETTING_API_KEY`. Rename one of them."
+        )
     }
 
     func testARowHoldsKeysOfItsOwnWhichACheckDoesNotReport() async throws {
@@ -127,7 +134,7 @@ final class SpotTablesTests: XCTestCase {
         for name in ["spots", "examples"] {
             for spot in try SpotsFolder(url: RepoDoc.repo.appendingPathComponent(name)).scan().scripts {
                 guard let sampled = spot.sampled else { continue }
-                let frame = try await SpotRuns(environment: TestEnvironment.values).answer(of: sampled, .read, limit: 10)
+                let frame = try await SpotRuns(environment: TestEnvironment.values).answer(of: sampled, .read, limit: 60)
                 XCTAssertEqual(unknownKeys(in: frame), [], spot.id)
             }
         }

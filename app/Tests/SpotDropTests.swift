@@ -160,26 +160,26 @@ final class SpotDropTests: XCTestCase {
         try addScript("plain", header: "title=Plain")
         XCTAssertEqual(cardsThatTakeTheDrag(), [])
 
-        runs.draggedPaths = [file("a.mov")]
+        runs.dragged = FileKinds.Disk().read([file("a.mov")])
         XCTAssertEqual(cardsThatTakeTheDrag(), ["movies", "clips", "all"])
 
-        runs.draggedPaths = [file("a.mov"), file("b.mkv")]
+        runs.dragged = FileKinds.Disk().read([file("a.mov"), file("b.mkv")])
         XCTAssertEqual(cardsThatTakeTheDrag(), ["clips", "all"])
 
-        runs.draggedPaths = [file("a.mov"), file("b.txt")]
+        runs.dragged = FileKinds.Disk().read([file("a.mov"), file("b.txt")])
         XCTAssertEqual(cardsThatTakeTheDrag(), ["all"])
 
-        runs.draggedPaths = [try directory("plain folder")]
+        runs.dragged = FileKinds.Disk().read([try directory("plain folder")])
         XCTAssertEqual(cardsThatTakeTheDrag(), ["all", "folders"])
 
-        runs.draggedPaths = []
+        runs.dragged = FileKinds.Disk().read([])
         XCTAssertEqual(cardsThatTakeTheDrag(), [])
     }
 
     func testACardKnowsItTakesTheDragFromTheStartOfTheDragWithNoNewLookAtTheFiles() throws {
         try addScript("movies", header: "drop=mov")
         let movie = file("a.mov")
-        runs.draggedPaths = [movie]
+        runs.dragged = FileKinds.Disk().read([movie])
 
         try FileManager.default.removeItem(atPath: movie)
 
@@ -187,7 +187,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testACardThatIsNotAScriptNeverTakesADrag() {
-        runs.draggedPaths = [file("a.mov")]
+        runs.dragged = FileKinds.Disk().read([file("a.mov")])
 
         XCTAssertFalse(runs.takesDrag("gone"))
     }
@@ -195,7 +195,7 @@ final class SpotDropTests: XCTestCase {
     func testADragRunsNoScript() async throws {
         try addScript("movies", header: "drop=mov")
         let frames = FrameLog(try XCTUnwrap(runs.sheets["movies"]))
-        runs.draggedPaths = [file("a.mov")]
+        runs.dragged = FileKinds.Disk().read([file("a.mov")])
 
         XCTAssertTrue(runs.takesDrag("movies"))
 

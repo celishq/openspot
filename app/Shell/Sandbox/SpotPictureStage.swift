@@ -26,7 +26,7 @@ struct SpotPictureStage<Content: View>: View {
                 .mask { shape.frame(width: size.width, height: size.height) }
             content
                 .frame(width: size.width, height: size.height)
-                .overlay { SpotRimPicture(size: size, radius: radius) }
+                .overlay { shape.strokeBorder(SpotTheme.pictureRim, lineWidth: 0.5) }
         }
         .frame(width: size.width + 2 * Self.margin, height: size.height + 2 * Self.margin)
     }

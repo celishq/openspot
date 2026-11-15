@@ -16,13 +16,13 @@ final class SpotViews {
     private(set) var phases: [String: Phase] = [:]
     @ObservationIgnored private var loaded: [URL: Make] = [:]
     @ObservationIgnored private var libraries: [String: URL] = [:]
-    @ObservationIgnored private let library: ViewLibrary
+    @ObservationIgnored private let builds: ViewBuilds
     @ObservationIgnored private var kept: Set<String> = []
 
     static let shared = SpotViews()
 
     init(library: ViewLibrary = .standard()) {
-        self.library = library
+        builds = ViewBuilds(library: library)
         phases[AccountSheet.card] = .ready(PublisherCard.make)
     }
 
@@ -40,9 +40,8 @@ final class SpotViews {
 
     func load(_ source: String) async {
         if source == AccountSheet.card { return }
-        let library = library
         do {
-            let url = try await Task.detached { try await library.library(of: URL(fileURLWithPath: source)) }.value
+            let url = try await builds.library(of: URL(fileURLWithPath: source))
             if let make = loaded[url] {
                 if libraries[source] != url { ready(source, make, from: url) }
                 return
@@ -54,7 +53,9 @@ final class SpotViews {
             ready(source, make, from: url)
         } catch {
             libraries[source] = nil
-            phases[source] = .failed((error as? SpotError)?.reason ?? error.localizedDescription)
+            let reason = (error as? SpotError)?.reason ?? error.localizedDescription
+            if case .failed(let kept)? = phases[source], kept == reason { return }
+            phases[source] = .failed(reason)
         }
     }
 

@@ -17,13 +17,11 @@ public enum MotionTokens {
     public static let cardShare = 0.5
 
     public static let hiddenScale = 1.04
-    public static let backdropHiddenScale = 1.02
     public static let pressedScale = 1.04
     public static let liftedScale = 1.05
     public static let focusedScale = 1.04
     public static let pushedScale = 0.4
     public static let stepFadeWidth = 0.3
-    public static let pressedGlass = 1.5
     public static let menuStartScale = 0.9
     public static let hiddenOpacity = 0.001
     public static let edgeScrollSpeed = 500.0

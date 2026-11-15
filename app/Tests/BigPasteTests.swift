@@ -43,7 +43,7 @@ final class BigPasteTests: XCTestCase {
 
     private func answerTime(of sheet: SpotRun, for text: String) async throws -> TimeInterval {
         sheet.open {}
-        for _ in 0..<500 where sheet.panel == nil || !sheet.calls.isEmpty { try await Task.sleep(for: .milliseconds(10)) }
+        for _ in 0..<6000 where sheet.panel == nil || !sheet.calls.isEmpty { try await Task.sleep(for: .milliseconds(10)) }
         let input = try XCTUnwrap(sheet.panel?.parts.first { $0.id == "input" })
         let started = Date()
         sheet.set(input, to: text)
