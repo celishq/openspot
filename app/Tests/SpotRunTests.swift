@@ -94,7 +94,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testARepeatedFrameTellsNoReader() async throws {
-        let sheet = try make("printf 'detail=Same\\nvalue=3\\n\\nswitch=power\\nvalue=true\\n\\nrow=a\\ntitle=A\\n'", read: .panel)
+        let sheet = try make("printf 'detail=Same\\n\\nrow=a\\ntitle=A\\n'", read: .panel)
         nonisolated(unsafe) var frames = 0
         let report = sheet.onReport
         sheet.onReport = {
@@ -110,10 +110,47 @@ final class SpotRunTests: XCTestCase {
         withObservationTracking { _ = sheet.list } onChange: { told.append("list") }
         withObservationTracking { _ = sheet.failure } onChange: { told.append("failure") }
 
-        sheet.read(need: .change)
-        try await wait("the second answer") { frames == 2 }
+        let parses = FrameParses()
+
+        try await FrameParses.$meter.withValue(parses) {
+            sheet.read(need: .change)
+            try await wait("the second answer") { !sheet.isReading && sheet.calls.isEmpty }
+        }
 
         XCTAssertEqual(told, [])
+        XCTAssertEqual(parses.count, 0)
+        XCTAssertEqual(frames, 1)
+    }
+
+    func testAFrameOver256KBIsKeptNowhereSoItsRepeatIsParsedAgain() async throws {
+        let sheet = try make("printf 'detail=Long\\n\\nrow=a\\ntitle=A\\nnote=%s\\n' \"$(head -c 270000 /dev/zero | tr '\\0' n)\"", read: .panel)
+        sheet.read()
+        try await wait("the first answer") { sheet.list.all.count == 1 && !sheet.isReading }
+        let parses = FrameParses()
+
+        try await FrameParses.$meter.withValue(parses) {
+            sheet.read(need: .change)
+            try await wait("the second answer") { !sheet.isReading && sheet.calls.isEmpty }
+        }
+
+        XCTAssertNil(sheet.shownFrame)
+        XCTAssertEqual(parses.count, 1)
+    }
+
+    func testARepeatedFrameStillShowsItsToastAndAChangedFrameIsApplied() async throws {
+        try "1".write(toFile: path("n"), atomically: true, encoding: .utf8)
+        let sheet = try make("printf 'toast=Hi\n\nrow=a\ntitle=%s\n' \"$(cat '\(path("n"))')\"", read: .panel)
+        nonisolated(unsafe) var toasts = 0
+        sheet.onReport = { if case .toast = $0 { toasts += 1 } }
+        sheet.read()
+        try await wait("the first answer") { toasts == 1 && !sheet.isReading }
+
+        sheet.read(need: .change)
+        try await wait("the toast of the same frame") { toasts == 2 && !sheet.isReading && sheet.calls.isEmpty }
+        try "2".write(toFile: path("n"), atomically: true, encoding: .utf8)
+        sheet.read(need: .change)
+
+        try await wait("the new row") { sheet.list.all.map(\.title) == ["2"] }
     }
 
     func testANewValueOfAPartTellsNoReaderOfTheRectOrTheKindOfTheParts() async throws {

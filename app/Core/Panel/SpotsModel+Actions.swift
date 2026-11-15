@@ -450,6 +450,13 @@ extension SpotsModel {
 
     public func changeSetting(_ key: String, of id: String) -> Bool {
         guard let entry = entry(id), let sheet = sheets[id] else { return false }
+        if let field = entry.spot.settings.first(where: { $0.id == key && $0.isSecret }) {
+            pushFirst(id, moving: true)
+            let form = ItemForm(title: field.title, fields: [ItemForm.Field(name: key, label: field.title)])
+            let action = CommandAction(id: Self.secretPrefix + key, title: "Change \(field.title)", scope: .spot, after: .stay)
+            self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: action, item: nil, openedSheet: true)
+            return true
+        }
         let action = CommandAction(id: key, title: "Change \(key)", scope: .spot, after: .close)
         let ask = UUID()
         formAsk = ask
@@ -498,7 +505,39 @@ extension SpotsModel {
         send(form, form.draft)
     }
 
+    private static let secretPrefix = "openspot.secret."
+
+    private func keepSecret(_ form: FormSession, _ draft: FormDraft) {
+        let key = String(form.action.id.dropFirst(Self.secretPrefix.count))
+        let spot = form.entry.id
+        let value = draft.values[key] ?? ""
+        if !value.isEmpty, value.count < SecretStore.shortest {
+            return host.notify("Openspot didn't keep this secret, because it is shorter than \(SecretStore.shortest) characters. Type the whole value.")
+        }
+        let secrets = files.secrets
+        Task {
+            if let failure = await Self.keep(value.isEmpty ? nil : value, key: key, of: spot, in: secrets) {
+                return host.notify("\(form.action.title) failed. \(failure)")
+            }
+            guard self.form?.id == form.id else { return }
+            self.form = nil
+            closeSheet(moving: true)
+            configChanged(.value(spot: spot, caller: nil), to: kept)
+        }
+    }
+
+    @concurrent
+    private nonisolated static func keep(_ value: String?, key: String, of spot: String, in secrets: SecretStore) async -> String? {
+        do {
+            try secrets.keep(value, key: key, of: spot)
+            return nil
+        } catch {
+            return reason(error)
+        }
+    }
+
     func send(_ form: FormSession, _ draft: FormDraft) {
+        if form.action.id.hasPrefix(Self.secretPrefix) { return keepSecret(form, draft) }
         Task {
             do {
                 switch try await sheets[form.entry.id]?.submit(form.action, item: form.item, draft: draft) {

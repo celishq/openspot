@@ -76,11 +76,11 @@ public struct AccountStore: Sendable {
         guard status == errSecSuccess else { throw Self.fault(status) }
     }
 
-    private enum Keychain {
+    enum Keychain {
         case synced, login
     }
 
-    private static let keychain = findKeychain()
+    static let keychain = findKeychain()
 
     private static func findKeychain() -> Keychain {
         let probe: [CFString: Any] = [

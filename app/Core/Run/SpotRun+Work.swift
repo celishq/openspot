@@ -109,8 +109,8 @@ extension SpotRun {
             guard let other = runs.sheets[to] else { return fail(SpotError.failed(1, "\(spot.name) hands this row to `\(to)`, which is not on. Turn it on, then try again.")) }
             return other.press(.item(item), input: item.fields)
         }
-        guard list.search == .script, !list.query.isEmpty else { return press(.item(item)) }
-        press(.item(item), input: TextBlock(fields: [.init(key: "search", value: list.query)]).text)
+        guard list.search == .script, !list.query.isEmpty else { return press(.item(item), input: item.fields) }
+        press(.item(item), input: (item.fields ?? "") + TextBlock(fields: [.init(key: "search", value: list.query)]).text)
     }
 
     public func set(_ item: SpotItem, to value: String) {
@@ -118,7 +118,7 @@ extension SpotRun {
     }
 
     public func run(_ action: CommandAction, item: SpotItem?) {
-        press(.action(action, item: item))
+        press(.action(action, item: item), input: item?.fields)
     }
 
     public func form(_ action: CommandAction, item: SpotItem?) async throws -> ItemForm? {

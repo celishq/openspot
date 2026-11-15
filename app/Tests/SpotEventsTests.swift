@@ -16,6 +16,14 @@ final class SpotEventsTests: SpotRunsCase {
             looks += 1
             return count
         }
+
+        var sample = LoadSample(busy: 0, total: 0, memory: 0)
+        private(set) var samples = 0
+
+        func measureLoad() -> LoadSample {
+            samples += 1
+            return sample
+        }
     }
 
     private var mac = FakeMac()
@@ -325,6 +333,73 @@ final class SpotEventsTests: SpotRunsCase {
         await watch.value
 
         XCTAssertFalse(runs.watchesClipboard)
+    }
+
+    func testOneSampleOfTheLoadServesEachWantedReaderAndNoneIsTakenWithNoReader() async throws {
+        let fake = FakeClock()
+        runs = SpotRuns(clock: fake.value, stopPause: 0.2)
+        try script("one", header: "on=system.load\noffers=card\noffers=menubar", log: "one", "echo \"$OPENSPOT_REASON ${OPENSPOT_VALUE-none}\" >> '\(path("one-reasons"))'\nprintf 'text=t\\ntitle=T\\n'")
+        try script("two", header: "on=system.load cpu=[0-9]+\noffers=card\noffers=menubar", log: "two", "echo \"$OPENSPOT_REASON ${OPENSPOT_VALUE-none}\" >> '\(path("two-reasons"))'\nprintf 'text=t\\ntitle=T\\n'")
+        _ = try scanned()
+        runs.listen(to: mac)
+        fake.advance(by: 60)
+        XCTAssertFalse(runs.watchesLoad)
+        XCTAssertEqual(mac.samples, 0)
+
+        menuBar = ["one", "two"]
+        _ = try scanned()
+        XCTAssertTrue(runs.watchesLoad)
+        XCTAssertEqual(mac.samples, 1)
+        try await wait("the first reads") { self.log("one-reasons") == ["spot.want none"] && self.log("two-reasons") == ["spot.want none"] && !self.runs.isReading }
+        try await wait("the sleep of the watch") { fake.isSleeping(for: 5) }
+        mac.sample = LoadSample(busy: 30, total: 100, memory: 61)
+
+        fake.advance(by: 5)
+
+        try await wait("the load reads") { self.log("one-reasons").last == "system.load cpu=30 memory=61" && self.log("two-reasons").last == "system.load cpu=30 memory=61" }
+        XCTAssertEqual(mac.samples, 2)
+
+        menuBar = []
+        _ = try scanned()
+        XCTAssertFalse(runs.watchesLoad)
+        fake.advance(by: 60)
+        try await allEnded()
+        XCTAssertEqual(mac.samples, 2)
+    }
+
+    func testAReaderThatComesBackWithin10SecondsGetsTheLoadAtOnceAndOneLaterWaitsForTwoSamples() async throws {
+        let fake = FakeClock()
+        runs = SpotRuns(clock: fake.value, stopPause: 0.2)
+        try script("one", header: "on=system.load\noffers=card\noffers=menubar", log: "one", "echo \"$OPENSPOT_REASON ${OPENSPOT_VALUE-none}\" >> '\(path("reasons"))'\nprintf 'text=t\\ntitle=T\\n'")
+        runs.listen(to: mac)
+        menuBar = ["one"]
+        _ = try scanned()
+        try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isReading }
+        menuBar = []
+        _ = try scanned()
+        fake.advance(by: 3)
+        mac.sample = LoadSample(busy: 20, total: 100, memory: 40)
+
+        menuBar = ["one"]
+        _ = try scanned()
+
+        try await wait("the load at once") { self.log("reasons").contains("system.load cpu=20 memory=40") && !self.runs.isReading }
+        menuBar = []
+        _ = try scanned()
+        fake.advance(by: 11)
+        mac.sample = LoadSample(busy: 50, total: 200, memory: 40)
+        menuBar = ["one"]
+        _ = try scanned()
+        try await wait("the watch") { self.runs.watchesLoad && fake.isSleeping(for: 5) && !self.runs.isReading }
+        try await allEnded()
+
+        XCTAssertEqual(log("reasons").filter { $0.hasPrefix("system.load") }, ["system.load cpu=20 memory=40"])
+    }
+
+    func testTheEventsOfTheMacThatCarryAValueTakeAFilter() throws {
+        for line in ["power.change battery", "disk.mount ^/Volumes/", "device.connect Keyboard", "system.load cpu=9[0-9]"] {
+            XCTAssertNotNil(try SpotRead(on: [line], of: "Probe"))
+        }
     }
 
     func testAnEventFromAShellReadsTheSpotThatListsIt() async throws {

@@ -168,7 +168,8 @@ final class StayLink: ScriptLink {
         call.made.halt = { [weak script] in script?.send(text: SpotAction.stopEvent(id: id)) }
         if case .ask = request.purpose { askReason = request.reason?.rawValue }
         noteReason()
-        script.send(request.action, input: request.input, variables: run?.withPage(request.variables) ?? request.variables, id: id)
+        let values = run?.fieldValues
+        script.send(request.action, input: values?.input(with: request.input) ?? request.input, variables: values.flatMap { run?.sent(request.variables, values: $0) } ?? request.variables, id: id)
         guard isTimed else { return }
         let limit = runs.readLimit
         record.timer = Task { [weak self, weak script, sleep = runs.clock.sleep] in

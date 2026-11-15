@@ -165,11 +165,12 @@ public struct Spot: Equatable, Sendable {
         soleCommand != nil && !self.opensToSettings && self.read != nil
     }
 
-    func takingSettings(in config: ConfigFile) -> Spot {
+    func takingSettings(in config: ConfigFile, secrets: SecretStore) -> Spot {
         guard self.host == nil else { return self }
         var spot = self
         spot.settingsSheet = SpotSettings(
             file: config,
+            secrets: secrets,
             spot: self.id,
             offers: self.offers,
             fields: self.settings,

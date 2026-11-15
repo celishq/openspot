@@ -36,7 +36,41 @@ extension SpotRuns {
         self.source = source
         source.listen { [weak self] in self?.raise($0) }
         watchClipboard()
+        watchLoad()
     }
+
+    var watchesLoad: Bool {
+        loadWatch != nil
+    }
+
+    func watchLoad() {
+        let isWanted = sheets.values.contains { $0.isWanted && $0.spot.read?.has(.event(SpotEvent.systemLoad)) == true }
+        guard let source, isWanted, !hasQuit else {
+            loadWatch?.cancel()
+            loadWatch = nil
+            return
+        }
+        guard loadWatch == nil else { return }
+        let first = source.measureLoad()
+        let seen = now()
+        let value = loadSeen.flatMap { seen.timeIntervalSince($0.at) < Self.loadFreshness ? first.value(since: $0.sample) : nil }
+        loadSeen = (first, seen)
+        loadWatch = Task { [weak self, weak source, sleep = clock.sleep, pause = loadPause] in
+            if let value { self?.raise(.named(SpotEvent.systemLoad, value: value)) }
+            var last = first
+            while !Task.isCancelled {
+                try? await sleep(pause, pause / 5)
+                guard !Task.isCancelled, let self, let source else { return }
+                let next = source.measureLoad()
+                let value = next.value(since: last)
+                last = next
+                loadSeen = (next, now())
+                raise(.named(SpotEvent.systemLoad, value: value))
+            }
+        }
+    }
+
+    private static let loadFreshness: TimeInterval = 10
 
     var clipboardWait: Duration {
         isPanelOpen ? clipboardPause : clipboardPause * 2
