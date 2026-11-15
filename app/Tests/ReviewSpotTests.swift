@@ -303,12 +303,12 @@ final class ReviewSpotTests: XCTestCase {
 
     func testAFaultThatStopsAPartOfItShows() throws {
         let review = try ReviewSpot(
-            spot: spot([("good.spot/good.sh", "#!/bin/sh\n", true), ("bad.spot/bad.sh", "#!/bin/sh\n# read=never\n", true)]),
+            spot: spot([("good.spot/good.sh", "#!/bin/sh\n", true), ("bad.spot/bad.sh", "#!/bin/sh\n# mode=never\n", true)]),
             folder: folder
         )
 
         let text = try shown(review)
-        XCTAssertTrue(text.contains("Will not load\nbad: Bad has read=never, which Openspot no longer reads."), text)
+        XCTAssertTrue(text.contains("Will not load\nbad: Bad has an unknown mode: never."), text)
     }
 
     func testAClashWithAFolderIsRefusedBeforeTheReviewShows() throws {

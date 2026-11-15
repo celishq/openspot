@@ -328,13 +328,6 @@ final class SpotAddTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: spots.appendingPathComponent("tools.spot/notes.sh").path))
     }
 
-    func testALockWithTheOldUsesReadsThemAsTheUsesThatTookThem() throws {
-        let lock = SpotLock(url: root.appendingPathComponent("spots.lock"))
-        try Data(#"[{"source":"/a.spot","paths":["a.sh"],"uses":["settings","update","network"]}]"#.utf8).write(to: lock.url)
-
-        XCTAssertEqual(try lock.entries().map(\.uses), [[.spots, .app, .network]])
-    }
-
     func testAnAddOfASignedSpotKeepsItsAddressAndKeyAndAnUpdateFromAnotherKeyNeedsYes() async throws {
         let file = root.appendingPathComponent("Cups.spot")
         let mine = try AccountKey.make()
