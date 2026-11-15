@@ -11,10 +11,8 @@ struct SpotCardSource {
 
     func view(_ id: String) -> AnyView {
         guard let model, let entry = model.storeEntry(id) else { return AnyView(EmptyView()) }
-        let shape = RoundedRectangle(cornerRadius: SpotTokens.corner(for: entry.size), style: .continuous)
         return AnyView(
             SpotCardView(entry: entry, size: entry.size, index: Self.unselectable, isPressed: false, takesDrag: false, isDropTarget: false, chainLetter: nil, model: model)
-                .background { SpotBlur(radius: SpotTheme.blur).overlay(SpotTheme.glass).clipShape(shape) }
                 .allowsHitTesting(false)
         )
     }

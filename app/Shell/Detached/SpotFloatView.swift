@@ -99,8 +99,7 @@ struct SpotFloatView: View {
     }
 
     private func card(_ entry: SpotsModel.Entry) -> some View {
-        let shape = RoundedRectangle(cornerRadius: SpotTokens.corner(for: entry.size), style: .continuous)
-        return SpotCardView(
+        SpotCardView(
             entry: entry,
             size: entry.size,
             index: -1,
@@ -111,7 +110,6 @@ struct SpotFloatView: View {
             model: model,
             onTap: { model.pressFloatCard(id) }
         )
-        .background { SpotBlur(radius: SpotTheme.blur).overlay(SpotTheme.glass).clipShape(shape) }
     }
 
     @ViewBuilder

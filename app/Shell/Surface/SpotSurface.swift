@@ -5,7 +5,6 @@ struct SpotSurface: View {
     let rect: CGRect
     let radius: CGFloat
     var glass = 1.0
-    var fill = 0.0
     var marks: [FlowEdge] = []
     var markRoom: CGRect = .zero
     @Environment(\.spotIsShown) private var isShown
@@ -15,29 +14,16 @@ struct SpotSurface: View {
         let rect = rect.offsetBy(dx: -panels.frame.minX, dy: 0)
         let shape = SpotSurfaceShape(rect: rect, radius: radius)
         ZStack(alignment: .topLeading) {
-            SpotBlur(radius: SpotTheme.blur)
-                .overlay(SpotTheme.glass)
-                .mask {
-                    ZStack(alignment: .topLeading) {
-                        shape
-                        ForEach(marks) { mark in
-                            SpotSurfaceShape(rect: place(of: mark), radius: mark.radius)
-                                .fill(Color.black.opacity(strength(of: mark)))
-                                .transition(.opacity)
-                        }
-                    }
-                }
-                .opacity(isShown ? glass : MotionTokens.hiddenOpacity)
-                .animation(SpotMotion.fade(isShown: isShown), value: isShown)
-            shape.fill(SpotTheme.ink.opacity(SpotTheme.fill * fill))
-            SpotRim(radius: radius, rect: rect)
-                .opacity(isShown ? glass : MotionTokens.hiddenOpacity)
-                .animation(SpotMotion.fade(isShown: isShown), value: isShown)
             ForEach(marks) { mark in
-                SpotRim(radius: mark.radius, rect: place(of: mark))
+                Color.clear
+                    .glassEffect(.regular, in: SpotSurfaceShape(rect: place(of: mark), radius: mark.radius))
                     .opacity(isShown ? strength(of: mark) : MotionTokens.hiddenOpacity)
                     .transition(.opacity)
             }
+            Color.clear
+                .glassEffect(.regular, in: shape)
+                .opacity(isShown ? glass : MotionTokens.hiddenOpacity)
+                .animation(SpotMotion.fade(isShown: isShown), value: isShown)
         }
         .modifier(PanelSpan(panels: panels))
         .allowsHitTesting(false)

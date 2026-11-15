@@ -24,7 +24,7 @@ struct SpotPlaygroundStage: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .defaultScrollAnchor(.center)
-            .background(SpotBlur(radius: SpotTheme.blur))
+            .glassEffect(.regular, in: Rectangle())
         }
     }
 }

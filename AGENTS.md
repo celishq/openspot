@@ -83,7 +83,11 @@ Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these 
   and Synchronization. `make verify` runs `scripts/check-core.sh`, which fails on any other import, also after an attribute
   such as `@preconcurrency`.
 - Logic that a window needs goes in `Core/`. Only drawing and window handling go in `Shell/`.
-- Each colour, strength and blur radius of the panel is in `Shell/Surface/SpotTheme.swift`, and a new theme is one more value there.
+- Each colour and strength of the panel is in `Shell/Surface/SpotTheme.swift`, and a new theme is one more value there.
+- Glass is system glass, drawn by `glassEffect`. Each shape draws its own glass, outside a
+  `GlassEffectContainer`: in a container, an opacity or an overlay after `glassEffect` is dropped, and shapes that overlap
+  melt together. `make verify` runs `scripts/check-glass.sh`, which fails on `NSVisualEffectView` or a private Core Animation
+  name in `Shell/`.
 
 ## Performance
 
@@ -142,10 +146,10 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
 
 - Move a view with FLIP: lay it out at its last place, then animate only `offset`, `scaleEffect` and `opacity` from its
   first place. Do not animate a frame, a padding, a font, a text width or a blur radius.
-- Grow a surface with an animated shape that clips its content, masks its blur and places its rim. Do not scale a surface
-  that has corners, a rim or words.
+- Grow a surface with an animated shape that clips its content and shapes its glass. Do not scale a surface that has corners,
+  a rim or words.
 - Change words by a crossfade of two laid-out copies, not by a reflow.
-- Draw blur from one fixed view behind the moving shapes. Do not put an AppKit view in a view that moves or resizes.
+- Do not put an AppKit view in a view that moves or resizes.
 - The model starts a motion where its cause happens, not a view: no `onChange` chain, and no `.animation(_:value:)` on a
   container. A view that is just built lies at its first place for one turn, and its motion starts on the next turn.
 - During a motion, no state is written from a measure, such as `onGeometryChange` or a scroll's geometry. Compute frames

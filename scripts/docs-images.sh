@@ -37,11 +37,11 @@ for example in "$work"/examples/*.example; do
   card=$(cat "$work/examples/$name.card")
   rm -rf "$work"/spots/*
   if [ -n "$draw" ]; then
-    cp "$example" "$work/spots/$name.source"
+    cp "$example" "$work/$name.source"
     {
       printf '#!/bin/sh\n'
       sed '1{/^#!/d;}' "$example" | sed -E -n '/^(#|\/\/)/!q; p' | sed 's|^//|#|'
-      printf 'EXAMPLE="%s"\n%s\n' "$work/spots/$name.source" "$draw"
+      printf 'EXAMPLE="%s"\n%s\n' "$work/$name.source" "$draw"
     } > "$work/spots/$name.sh"
     chmod +x "$work/spots/$name.sh"
   else

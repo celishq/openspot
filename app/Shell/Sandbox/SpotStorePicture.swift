@@ -38,7 +38,6 @@ enum SpotStorePicture {
                 .padding(margin)
         }
         .frame(width: whole.width, height: whole.height)
-        .environment(\.spotDrawsBlur, false)
         .preferredColorScheme(.dark))
         let window = NSWindow(contentRect: NSRect(x: -9000, y: -9000, width: whole.width, height: whole.height), styleMask: .borderless, backing: .buffered, defer: false)
         window.contentView = view

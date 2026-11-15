@@ -3,7 +3,6 @@ import SwiftUI
 
 extension EnvironmentValues {
     @Entry var spotIsShown = true
-    @Entry var spotDrawsBlur = true
     @Entry var spotPanels = GridPanels()
 }
 

@@ -8,7 +8,6 @@ struct SpotsView: View {
     @State private var scroll = ScrollPosition()
     @State private var scrollOffset: CGFloat = 0
     @State private var dropTarget: String?
-    @Environment(\.spotDrawsBlur) private var drawsBlur
 
     private var sheetID: String? {
         model.transition.id
@@ -90,20 +89,11 @@ struct SpotsView: View {
         .overlayPreferenceValue(SpotMenuAnchor.self, alignment: .topLeading) { item in
             SpotMenuLayer(model: model, item: item, fieldIsInSheet: fieldIsInSheet)
         }
-        .background(alignment: .topLeading) {
-            softBlur
-        }
         .environment(\.spotIsShown, model.isShown)
         .environment(\.spotPanels, model.panels)
         .onChange(of: model.isShown) { _, isShown in
             if !isShown { dropTarget = nil }
         }
-    }
-
-    private var softBlur: some View {
-        SpotBackdrop(model: model, gridHeight: gridHeight, sheetHeight: sheetHeight, sheetRect: sheetRect, menuHeight: menuHeight, drawsBlur: drawsBlur)
-            .environment(\.spotPanels, model.shownPanels)
-            .modifier(PanelSpan(panels: model.shownPanels))
     }
 
     private func fieldSheet(on card: SpotSheetCard?, at frame: CGRect?) -> (morph: SheetMorph, cardRadius: CGFloat)? {
