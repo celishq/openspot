@@ -377,7 +377,7 @@ public final class SpotRuns {
         }
         if spot.mode == .inline {
             let script = inline(spot, limit: limit)
-            let call = InlineCall(arguments: action.arguments, variables: variables, input: input)
+            let call = InlineCall(arguments: action.arguments, variables: variables, input: input, limit: limit)
             script.send(call)
             let (stream, halt) = answered {
                 defer { script.end() }

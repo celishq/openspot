@@ -218,7 +218,7 @@ final class SpotRunsStayTests: SpotRunsCase {
       case "$line" in
         call=*) call=${line#call=} ;;
         arg=new) ;;
-        arg=done) printf 'end=%%s\\n---\\n' "$call" ;;
+        arg=done) printf 'toast=Done already\\nend=%%s\\n---\\n' "$call" ;;
         arg=read) printf 'end=%%s\\n\\nbutton=new\\ntitle=New\\nscope=spot\\nform=true\\n\\nbutton=done\\ntitle=Done\\nscope=spot\\nform=true\\n---\\n' "$call" ;;
       esac
     done
@@ -251,6 +251,8 @@ final class SpotRunsStayTests: SpotRunsCase {
 
     func testAFormOfAStayingScriptWhoseCallEndsWithNoFieldIsABadForm() async throws {
         let (sheet, _, done) = try await silentFormSheet()
+        var toasts: [String] = []
+        sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
 
         do {
             _ = try await sheet.form(done, item: nil)
@@ -259,6 +261,7 @@ final class SpotRunsStayTests: SpotRunsCase {
             XCTAssertEqual(error as? SpotError, .badForm)
         }
         XCTAssertFalse(sheet.link.holdsScript)
+        XCTAssertEqual(toasts, ["Done already"])
     }
 
     func testAPressAgainStopsAFormOfAStayingScript() async throws {

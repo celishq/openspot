@@ -108,11 +108,12 @@ final class InlineScript: @unchecked Sendable {
             while calls.isEmpty, !isEnded, condition.wait(until: idleEnd) {}
             if isEnded || calls.isEmpty {
                 let dropped = calls
+                let outcome: InlineCall.Outcome = isOverdue ? .failed(SpotError.timedOut) : .dropped
                 calls = []
                 context = nil
                 hasThread = false
                 condition.unlock()
-                dropped.forEach { $0.finish(.dropped) }
+                dropped.forEach { $0.finish(outcome) }
                 return
             }
             let call = calls.removeFirst()
@@ -122,9 +123,8 @@ final class InlineScript: @unchecked Sendable {
                 continue
             }
             let start = Self.threadTime()
-            deadline = .now() + limit
+            deadline = call.limit.map { .now() + $0 } ?? .distantFuture
             condition.withLock { running = call }
-            DispatchQueue.global().asyncAfter(deadline: deadline) { [weak self] in self?.overdue(call) }
             autoreleasepool {
                 do {
                     call.finish(.frame(try run(call)))
@@ -137,15 +137,14 @@ final class InlineScript: @unchecked Sendable {
         }
     }
 
-    private func overdue(_ call: InlineCall) {
-        let isLate = condition.withLock {
-            guard running === call else { return false }
+    private func timeOut() {
+        let call = condition.withLock {
             isOverdue = true
             isEnded = true
             condition.signal()
-            return true
+            return running
         }
-        if isLate { call.finish(.failed(SpotError.timedOut)) }
+        call?.finish(.failed(SpotError.timedOut))
     }
 
     private static func threadTime() -> TimeInterval {
@@ -248,6 +247,7 @@ final class InlineScript: @unchecked Sendable {
         }
         guard done.wait(timeout: deadline) == .success else {
             task.cancel()
+            timeOut()
             return Self.late
         }
         return box.answer

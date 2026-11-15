@@ -28,7 +28,7 @@ final class InlineLink: ScriptLink {
     func send(_ call: SpotRun.Call) -> Bool {
         guard let run else { return false }
         let made = ScriptCall(action: call.action, key: call.key, started: runs.now())
-        let inline = InlineCall(arguments: call.action.arguments, variables: run.withPage(call.variables), input: call.input)
+        let inline = InlineCall(arguments: call.action.arguments, variables: run.withPage(call.variables), input: call.input, limit: call.limit)
         made.halt = { inline.stop() }
         if case .ask(let ask) = call.purpose, !ask.isAnswer { asking.append(made) }
         run.track(made)

@@ -219,14 +219,49 @@ final class SpotRunsInlineTests: SpotRunsCase {
         try await wait("the next answer") { sheet.list.shown.map(\.run) == ["a"] }
     }
 
-    func testACallThatHangsInOpenspotCallEndsAtItsLimitAndTheNextCallGetsANewScript() async throws {
+    private func fakeOpenspot(_ body: String) throws {
         let bin = folder.appendingPathComponent("bin")
         try FileManager.default.createDirectory(at: bin, withIntermediateDirectories: true)
-        try "#!/bin/sh\necho $$ > '\(path("child"))'\nexec sleep 30\n".writeScript(to: bin.appendingPathComponent("openspot"))
+        try "#!/bin/sh\n\(body)\n".writeScript(to: bin.appendingPathComponent("openspot"))
         var environment = ProcessInfo.processInfo.environment
         environment["PATH"] = "\(bin.path):\(environment["PATH"] ?? "/usr/bin:/bin")"
         runs.quit()
         runs = SpotRuns(environment: environment, readLimit: 0.5, now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50))
+    }
+
+    private func callingSpot() throws -> Spot {
+        try inline(header: "on=sheet.open", "function main() { return openspot.call([\"calc\", \"solve\", \"1\"]).stdout }")
+        return try XCTUnwrap(try scanned().scripts.first)
+    }
+
+    func testAWorkCallHasNoLimitOfAReadAndWaitsForItsOpenspotCall() async throws {
+        try fakeOpenspot("sleep 1\nprintf 'toast=Saved\\n'")
+        let script = runs.inline(try callingSpot())
+        defer { script.end() }
+        let call = InlineCall(arguments: ["save"])
+
+        script.send(call)
+
+        guard case .frame(let text) = await call.outcome() else { return XCTFail("the work call failed") }
+        XCTAssertEqual(text, "toast=Saved\n")
+    }
+
+    func testACallQueuedBehindOneThatTimedOutFailsAsTooSlow() async throws {
+        try fakeOpenspot("exec sleep 30")
+        let script = runs.inline(try callingSpot())
+        defer { script.end() }
+        let first = InlineCall(arguments: ["read"], limit: 0.5)
+        let second = InlineCall(arguments: ["read"], limit: 0.5)
+
+        script.send(first)
+        script.send(second)
+
+        guard case .failed(let error) = await second.outcome() else { return XCTFail("the queued call did not fail") }
+        XCTAssertEqual(error as? SpotError, .timedOut)
+    }
+
+    func testACallThatHangsInOpenspotCallEndsAtItsLimitAndTheNextCallGetsANewScript() async throws {
+        try fakeOpenspot("echo $$ > '\(path("child"))'\nexec sleep 30")
         try inline(header: "on=sheet.open", """
         function main(args, env) {
           if (env.OPENSPOT_REASON === "sheet.open") openspot.call(["calc", "solve", "1"])

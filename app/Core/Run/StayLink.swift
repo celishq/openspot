@@ -99,10 +99,12 @@ final class StayLink: ScriptLink {
         return try await withCheckedThrowingContinuation { continuation in
             formAnswer = continuation
             guard let id = send(action, input: nil, key: key) else { return answerForm(with: .success(nil)) }
+            guard formAnswer != nil else { return }
             formID = id
             let limit = runs.readLimit
+            formTimer?.cancel()
             formTimer = Task { [weak self] in
-                try? await Task.sleep(for: .seconds(limit))
+                try? await Task.sleep(for: .seconds(limit), tolerance: .seconds(limit / 10))
                 guard !Task.isCancelled else { return }
                 self?.formTimedOut(id)
             }
@@ -339,6 +341,7 @@ final class StayLink: ScriptLink {
                     continue
                 }
                 if formAnswer != nil, !lines.fields.isEmpty || lines.ends.contains(formID.map(String.init) ?? "") {
+                    run.report(toastOf: lines)
                     answerForm(with: .success(text))
                     settle()
                     continue

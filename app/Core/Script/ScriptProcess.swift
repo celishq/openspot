@@ -414,6 +414,7 @@ public final class ScriptProcess: @unchecked Sendable {
             if kill(-started, 0) != 0 {
                 TerminalStop.leave(started)
                 lateKill = nil
+                id = 0
             }
             waitStatus = code
             endTime = time

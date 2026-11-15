@@ -83,7 +83,7 @@ public struct TerminalRun {
     private func inline(isolation: isolated (any Actor)? = #isolation, isRead: Bool, frame: (String) -> Void) async -> End {
         let script = InlineScript(spot: spot, api: nil, tokens: tokens, careful: careful, limit: Self.readLimit)
         defer { script.end() }
-        let call = InlineCall(arguments: action.arguments, variables: ["OPENSPOT_ID": spot.id].merging(isRead ? ReadReason.sheet.variables : [:]) { _, new in new }, input: input)
+        let call = InlineCall(arguments: action.arguments, variables: ["OPENSPOT_ID": spot.id].merging(isRead ? ReadReason.sheet.variables : [:]) { _, new in new }, input: input, limit: isRead ? Self.readLimit : nil)
         script.send(call)
         let outcome = await withTaskCancellationHandler {
             await call.outcome(limit: isRead ? Self.readLimit : nil)

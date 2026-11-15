@@ -20,6 +20,7 @@ final class CheckScriptTests: XCTestCase {
         ("getters", "app/Core/Panel.swift", "struct Panel {\n    var isOn: Bool { FileManager.default.fileExists(atPath: \"/a\") }\n}\n"),
         ("getters", "app/Shell/Panel.swift", "struct Panel {\n    static func open(_ file: URL) -> Panel? {\n        guard FileManager.default.fileExists(atPath: file.path) else { return nil }\n        return Panel()\n    }\n}\n"),
         ("processes", "app/Shell/Panel.swift", "let process = Process()\n"),
+        ("processes", "app/Client/main.swift", "_ = posix_spawn(&started, path, nil, nil, words, environ)\n"),
         ("spots", "spots/weather.spot/weather.sh", "#!/bin/sh\n# title=Weather\n# on=clock.5\necho\n"),
         ("spots", "examples/weather.spot/weather.sh", "#!/bin/sh\n# title=Weather\necho 1 > \"${TMPDIR:-/tmp}/weather\"\n")
     ]
