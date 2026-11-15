@@ -20,24 +20,28 @@ public actor AccountSheet {
         }
     }
 
-    private enum Step {
-        case choose, name, how, about, words, check, account, leave, restore
+    private struct Pick: Equatable {
+        let place: Int
+        let word: String
+    }
+
+    private struct WordCheck: Equatable {
+        let places: [Int]
+        var pick: Pick?
+        var mistake: String?
+    }
+
+    private enum Step: Equatable {
+        case choose, name, how, about, words, check(WordCheck), account, leave, restore
     }
 
     public static let id = "openspot/account"
     public static let card = "openspot:account-card"
     public static let publishPrefix = "publish:"
-    private static let header = [
-        "title=Account", "icon=person.crop.circle", "detail=Signs what you publish", "on=sheet.open", "uses=app,account,clipboard",
-        "offers=search", "pages=\(publishPrefix)*",
-    ]
 
     private let account: Account
     private let links: Links
     private var saved: Step?
-    private var mistake: String?
-    private var pick: (place: Int, word: String)?
-    private var places = (1, 12)
 
     public init(store: AccountStore, links: Links) {
         account = Account(store: store, allows: links.allows)
@@ -45,13 +49,11 @@ public actor AccountSheet {
     }
 
     public nonisolated var spot: Spot {
-        let header = TextBlock(fields: Self.header.map { line in
-            let parts = line.split(separator: "=", maxSplits: 1).map(String.init)
-            return TextBlock.Field(key: parts[0], value: parts[1])
-        })
-        let url = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("account.sh")
-        let made = (try? SpotFile(script: url, header: header, id: Self.id).spots.first) ?? Spot(id: Self.id, name: "Account", url: url)
-        return made.builtIn().hosted(by: .account(self), view: Self.card)
+        Spot(
+            id: Self.id, name: "Account", url: URL(fileURLWithPath: NSTemporaryDirectory()), kind: .list, symbol: "person.crop.circle",
+            subtitle: "Signs what you publish", read: .sheet, host: .account(self), offeredPlaces: [.search], dataName: "account",
+            isOnGrid: false, headerSymbol: "person.crop.circle", view: Self.card, pages: ["\(Self.publishPrefix)*"], uses: [.app, .account, .clipboard]
+        ).builtIn()
     }
 
     func answer(_ arguments: [String], input: String?, variables: [String: String]) async throws -> String {
@@ -72,42 +74,41 @@ public actor AccountSheet {
                 let typed = AccountPhrase(phrase)
                 if typed.canSignIn {
                     try account.signIn(typed)
-                    go(.account)
+                    saved = .account
                     phrase = ""
                     toast = "Signed in"
                     if let publishing { pops = await publish(publishing) }
                 }
             } else {
-                go(.restore)
+                saved = .restore
             }
         case "phrase":
             phrase = arguments.count > 1 ? arguments[1] : ""
         case "new":
-            go(.name)
+            saved = .name
         case "create":
             let name = (fields?.value("name") ?? "").trimmingCharacters(in: .whitespaces)
             try account.make(name: name.isEmpty ? nil : name)
             saved = nil
             if let publishing { pops = await publish(publishing) }
         case "own":
-            go(.restore)
+            saved = .restore
         case "card":
             if arguments.dropFirst().first == "copy", let npub = try account.status().npub, await links.copy(npub) { toast = "Copied your key" }
         case "how":
-            go(.how)
+            saved = .how
         case "about":
-            go(.about)
+            saved = .about
         case "show", "again":
-            go(.words)
+            saved = .words
         case "wrote":
             if try account.status().sync == true {
                 saved = nil
             } else {
-                go(.check)
-                places = Self.twoPlaces()
+                saved = .check(WordCheck(places: Self.twoPlaces()))
             }
         case "leave":
-            go(.leave)
+            saved = .leave
         case "back", "cancel", "done", "later":
             saved = nil
         case "sign_out":
@@ -127,17 +128,12 @@ public actor AccountSheet {
     private func step(reason: String?, _ facts: AccountStatus) throws -> Step {
         if reason != nil, saved == .words { saved = nil }
         switch (saved, facts.signedIn) {
-        case (.how?, _), (.restore?, _), (.name?, false): return saved ?? .choose
-        case (.about?, true), (.words?, true), (.account?, true), (.leave?, true): return saved ?? .account
-        case (.check?, true) where facts.backedUp != true: return .check
+        case let (step?, _) where [.how, .restore].contains(step): return step
+        case (.name?, false): return .name
+        case let (step?, true) where [.about, .words, .account, .leave].contains(step): return step
+        case let (.check(check)?, true) where facts.backedUp != true: return .check(check)
         default: return facts.signedIn ? .account : .choose
         }
-    }
-
-    private func go(_ step: Step) {
-        saved = step
-        mistake = nil
-        pick = nil
     }
 
     private func publish(_ id: String) async -> Bool {
@@ -150,26 +146,26 @@ public actor AccountSheet {
         let rest = id.dropFirst("pick-".count)
         guard let dash = rest.firstIndex(of: "-"), let place = Int(rest[..<dash]) else { return nil }
         let word = String(rest[rest.index(after: dash)...])
-        guard let first = pick, first.place != place else {
-            pick = (place, word)
+        guard case .check(var check)? = saved else { return nil }
+        guard let first = check.pick, first.place != place else {
+            check.pick = Pick(place: place, word: word)
+            saved = .check(check)
             return nil
         }
         do {
-            try account.confirm([first, (place, word)])
+            try account.confirm([(first.place, first.word), (place, word)])
         } catch let error as SpotError {
-            pick = nil
-            mistake = error.reason
+            check.pick = nil
+            check.mistake = error.reason
+            saved = .check(check)
             return nil
         }
-        go(.account)
+        saved = .account
         return "Your words are backed up"
     }
 
-    private static func twoPlaces() -> (Int, Int) {
-        let first = Int.random(in: 1...12)
-        var second = Int.random(in: 1...12)
-        while second == first { second = Int.random(in: 1...12) }
-        return (min(first, second), max(first, second))
+    private static func twoPlaces() -> [Int] {
+        Array((1...AccountPhrase.wordCount).shuffled().prefix(2)).sorted()
     }
 
     private func sheet(reason: String?, toast: String?, phrase: String, pops: Bool) async throws -> String {
@@ -178,7 +174,7 @@ public actor AccountSheet {
         if pops { frame.head("pop", "true") }
         switch try step(reason: reason, facts) {
         case .restore: restore(&frame, facts, phrase: phrase, toast: toast)
-        case .check: check(&frame, toast: toast)
+        case .check(let check): self.check(&frame, check, toast: toast)
         case .choose: choose(&frame, toast: toast)
         case .name: name(&frame, toast: toast)
         case .how: how(&frame, toast: toast)
@@ -323,8 +319,8 @@ public actor AccountSheet {
         frame.button("back", "Back")
     }
 
-    private func check(_ frame: inout AccountFrame, toast: String?) {
-        let (first, second) = places
+    private func check(_ frame: inout AccountFrame, _ check: WordCheck, toast: String?) {
+        let (first, second) = (check.places[0], check.places[1])
         let choices = (try? account.choices(at: [first, second])) ?? [[], []]
         let ids = zip([first, second], choices).map { place, words in words.map { "pick-\(place)-\($0)" } }
         frame.grid("head head", "first first")
@@ -333,7 +329,7 @@ public actor AccountSheet {
         if ids[1].count == 4 { frame.grid("\(ids[1][0]) \(ids[1][1])", "\(ids[1][2]) \(ids[1][3])") }
         frame.grid("again again")
         frame.toast(toast)
-        if let mistake {
+        if let mistake = check.mistake {
             frame.line("head", mistake, icon: "exclamationmark.triangle", tone: "bad")
         } else {
             frame.line("head", "Pick each word you wrote", icon: "checkmark.circle")
@@ -342,7 +338,7 @@ public actor AccountSheet {
         frame.block(["text": "second", "title": "Word \(second)", "icon": "\(second).circle"], order: ["text", "title", "icon"])
         for (place, words) in zip([first, second], choices) {
             for word in words {
-                let isPicked = pick.map { $0.place == place && $0.word == word } ?? false
+                let isPicked = check.pick == Pick(place: place, word: word)
                 frame.button("pick-\(place)-\(word)", word, isPicked ? .picked : .plain)
             }
         }

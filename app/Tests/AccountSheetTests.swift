@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class AccountSpotTests: BuiltInCase {
+final class AccountSheetTests: BuiltInCase {
     private actor Publishes {
         var ids: [String] = []
 
@@ -84,7 +84,7 @@ final class AccountSpotTests: BuiltInCase {
         let made = try await frame(["create"], input: "name=Tony Pinkevych\n")
 
         XCTAssertNotNil(try store.key())
-        XCTAssertEqual(try store.name(), "Tony Pinkevych")
+        XCTAssertEqual(try store.record()?.name, "Tony Pinkevych")
         XCTAssertEqual(block("card", in: made)["name"], "Tony Pinkevych")
         XCTAssertEqual(block("card", in: made)["npub"], try store.key()?.npub)
         XCTAssertEqual(block("backup", in: made)["title"], "Your 12 words are not backed up")
@@ -198,7 +198,7 @@ final class AccountSpotTests: BuiltInCase {
         XCTAssertEqual(block("pick-\(places[0])-\(words[places[0] - 1])", in: first)["look"], "strong")
         let done = try await frame(["pick-\(places[1])-\(words[places[1] - 1])"])
 
-        XCTAssertTrue(try store.isBackedUp())
+        XCTAssertTrue(try store.record()?.isBackedUp == true)
         XCTAssertEqual(toast(in: done), "Your words are backed up")
         XCTAssertNotNil(block("card", in: done)["short"])
     }
@@ -215,7 +215,7 @@ final class AccountSpotTests: BuiltInCase {
         let after = try await frame(["pick-\(places[1])-\(words[places[1] - 1])"])
 
         XCTAssertEqual(block("head", in: after)["title"], "That isn't word \(places[0]). Look at your words again.")
-        XCTAssertFalse(try store.isBackedUp())
+        XCTAssertFalse(try store.record()?.isBackedUp == true)
     }
 
     func testTheSignInPageShowsTwelveNumberedSlotsAndNoCountAndPutsSignInOnTheRight() async throws {
@@ -241,7 +241,7 @@ final class AccountSpotTests: BuiltInCase {
         XCTAssertEqual(block("status", in: typing)["title"], "Did you mean absorb?")
         XCTAssertEqual(block("status", in: ready)["title"], "Signs in as")
         XCTAssertEqual(toast(in: signedIn), "Signed in")
-        XCTAssertTrue(try store.isBackedUp())
+        XCTAssertTrue(try store.record()?.isBackedUp == true)
     }
 
     func testAReadAtLaunchNeverShowsTheWordsNorAsksForTouchID() async throws {

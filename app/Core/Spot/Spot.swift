@@ -25,7 +25,7 @@ public struct Spot: Equatable, Sendable {
     public let layout: WidgetLayout?
     public let places: [String]
     public let opens: String?
-    public private(set) var host: HostSheet?
+    public let host: HostSheet?
     public let growsFromField: Bool
     public let mode: SpotMode
     public let pressRuns: Bool
@@ -40,7 +40,7 @@ public struct Spot: Equatable, Sendable {
     public private(set) var file: String?
     public private(set) var image: String?
     public private(set) var glyph: String?
-    public private(set) var view: String?
+    public let view: String?
     public let viewDate: Date?
     public let emits: [String]
     public let pages: [String]
@@ -187,13 +187,6 @@ public struct Spot: Equatable, Sendable {
         spot.file = icon.file
         spot.image = icon.image
         spot.glyph = icon.glyph
-        return spot
-    }
-
-    func hosted(by sheet: HostSheet, view: String?) -> Spot {
-        var spot = self
-        spot.host = sheet
-        spot.view = view
         return spot
     }
 

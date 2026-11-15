@@ -5,14 +5,14 @@ struct Account: Sendable {
     let allows: @Sendable (String) async -> Bool
 
     func status() throws -> AccountStatus {
-        let key = try store.key()
+        let record = try store.record()
         return AccountStatus(
-            signedIn: key != nil,
-            npub: key?.npub,
-            name: key == nil ? nil : try store.name(),
-            since: key == nil ? nil : try store.since(),
-            backedUp: key == nil ? nil : try store.isBackedUp(),
-            sync: key == nil || !store.canSync ? nil : try store.isSyncing()
+            signedIn: record != nil,
+            npub: record?.key.npub,
+            name: record?.name,
+            since: record?.since,
+            backedUp: record?.isBackedUp,
+            sync: record == nil || !store.canSync ? nil : try store.isSyncing()
         )
     }
 

@@ -17,11 +17,11 @@ final class AccountStoreTests: XCTestCase {
 
     func testAMadeKeyIsNotBackedUpUntilItIsMarked() throws {
         let key = try store.keyMadeOnce()
-        XCTAssertFalse(try store.isBackedUp())
+        XCTAssertFalse(try store.record()?.isBackedUp == true)
 
         try store.markBackedUp()
 
-        XCTAssertTrue(try store.isBackedUp())
+        XCTAssertTrue(try store.record()?.isBackedUp == true)
         XCTAssertEqual(try store.key(), key)
     }
 
@@ -30,16 +30,16 @@ final class AccountStoreTests: XCTestCase {
 
         try store.markBackedUp()
 
-        XCTAssertEqual(try store.name(), "Tony Pinkevych")
-        XCTAssertEqual(try store.since(), "2026-11-15")
-        XCTAssertTrue(try store.isBackedUp())
+        XCTAssertEqual(try store.record()?.name, "Tony Pinkevych")
+        XCTAssertEqual(try store.record()?.since, "2026-11-15")
+        XCTAssertTrue(try store.record()?.isBackedUp == true)
     }
 
     func testAKeyKeptFromItsWordsHasNoNameNorDay() throws {
         try store.keep(try AccountKey.make(), isBackedUp: true)
 
-        XCTAssertNil(try store.name())
-        XCTAssertNil(try store.since())
+        XCTAssertNil(try store.record()?.name)
+        XCTAssertNil(try store.record()?.since)
     }
 
     func testAKeyKeptFromItsWordsIsBackedUp() throws {
@@ -47,7 +47,7 @@ final class AccountStoreTests: XCTestCase {
 
         try store.keep(key, isBackedUp: true)
 
-        XCTAssertTrue(try store.isBackedUp())
+        XCTAssertTrue(try store.record()?.isBackedUp == true)
         XCTAssertEqual(try store.key(), key)
     }
 
@@ -56,7 +56,7 @@ final class AccountStoreTests: XCTestCase {
 
         try store.keep(try AccountKey.make())
 
-        XCTAssertFalse(try store.isBackedUp())
+        XCTAssertFalse(try store.record()?.isBackedUp == true)
     }
 
     func testARemovedKeyIsGone() throws {
@@ -65,7 +65,7 @@ final class AccountStoreTests: XCTestCase {
         try store.remove()
 
         XCTAssertNil(try store.key())
-        XCTAssertFalse(try store.isBackedUp())
+        XCTAssertFalse(try store.record()?.isBackedUp == true)
         XCTAssertNoThrow(try store.remove())
     }
 

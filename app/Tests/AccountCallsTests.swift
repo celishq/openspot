@@ -54,7 +54,7 @@ final class AccountCallsTests: XCTestCase {
 
         let facts = try await call(["account", "--frame"], from: spot(uses: [], isBuiltIn: false))
 
-        XCTAssertEqual(facts.output, "signedIn=true\nnpub=\(key.npub)\nsince=\(try XCTUnwrap(try store.since()))\nbackedUp=false\n")
+        XCTAssertEqual(facts.output, "signedIn=true\nnpub=\(key.npub)\nsince=\(try XCTUnwrap(try store.record()?.since))\nbackedUp=false\n")
     }
 
     func testOnlyABuiltInSpotThatUsesAccountReachesTheKey() async throws {
@@ -122,7 +122,7 @@ final class AccountCallsTests: XCTestCase {
         XCTAssertEqual(blocks[0].components(separatedBy: "choice=").count - 1, 4)
         XCTAssertEqual(wrong.errors, "That isn't word 4. Look at your words again.\n")
         XCTAssertEqual(right.code, 0, right.errors)
-        XCTAssertTrue(try store.isBackedUp())
+        XCTAssertTrue(try store.record()?.isBackedUp == true)
     }
 
     func testAPhraseSaysHowFarItIsAndSignsIn() async throws {
@@ -133,7 +133,7 @@ final class AccountCallsTests: XCTestCase {
         XCTAssertEqual(typing.output, "counter=3 of 12\nword=abandon\nword=abuot\nword=abso\nunknown=2\ncompletion=absorb\n")
         XCTAssertEqual(ready.output, "counter=12 of 12\n" + Array(repeating: "word=abandon\n", count: 11).joined() + "word=about\naccount=\(try AccountKey(words: phrase.split(separator: " ").map(String.init)).npub)\n")
         XCTAssertEqual(signedIn.code, 0, signedIn.errors)
-        XCTAssertTrue(try store.isBackedUp())
+        XCTAssertTrue(try store.record()?.isBackedUp == true)
     }
 
     func testASignInThatIsNoAccountSaysWhy() async throws {
