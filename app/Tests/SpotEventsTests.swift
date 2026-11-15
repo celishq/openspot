@@ -3,15 +3,10 @@ import XCTest
 
 @MainActor
 final class SpotEventsTests: SpotRunsCase {
-    private final class FakeMac: Mac, @unchecked Sendable {
+    private final class FakeMac: MacEvents, @unchecked Sendable {
         var heard: (@MainActor (SpotEvent) -> Void)?
         var count = 0
         private(set) var looks = 0
-
-        func eventStore() -> any EventStore { FakeEventStore() }
-        func reminderStore() -> any ReminderStore { FakeReminderStore() }
-        func showCalendar(at time: Date) throws {}
-        func open(_ link: URL) -> Bool { false }
 
         func listen(_ heard: @escaping @MainActor (SpotEvent) -> Void) {
             self.heard = heard
@@ -342,7 +337,7 @@ final class SpotEventsTests: SpotRunsCase {
         try FileManager.default.createDirectory(at: client.deletingLastPathComponent(), withIntermediateDirectories: true)
         try FileManager.default.copyItem(at: Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot"), to: client)
         let runs = runs!
-        let socket = try XCTUnwrap(CommandSocket(folder: config, api: CommandAPI(mac: NoHost(), places: .test(["OPENSPOT_CONFIG": config.path]), raise: { event in await MainActor.run { runs.raise(event) } })))
+        let socket = try XCTUnwrap(CommandSocket(folder: config, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), raise: { event in await MainActor.run { runs.raise(event) } }, rates: .offline)))
         defer { socket.close() }
         let shell = Process()
         shell.executableURL = URL(fileURLWithPath: "/bin/sh")
@@ -356,11 +351,4 @@ final class SpotEventsTests: SpotRunsCase {
         try await wait("the read of the event") { self.log("reasons") == ["spot.want none", "music.track Blue in Green"] }
         try await wait("the frame of the event") { sheet.reading.value?.title == "Blue in Green" }
     }
-}
-
-private final class NoHost: Mac {
-    func eventStore() -> any EventStore { FakeEventStore() }
-    func reminderStore() -> any ReminderStore { FakeReminderStore() }
-    func showCalendar(at time: Date) throws {}
-    func open(_ link: URL) -> Bool { false }
 }

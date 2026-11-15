@@ -12,7 +12,7 @@ enum SpotCommandLine {
         var info = stat()
         let isPiped = fstat(0, &info) == 0 && (info.st_mode & S_IFMT == S_IFIFO || info.st_mode & S_IFMT == S_IFREG)
         let request = CommandRequest(arguments: Array(CommandLine.arguments.dropFirst()), folder: FileManager.default.currentDirectoryPath, isPiped: isPiped)
-        if let work = CommandAPI(mac: SpotMac(), places: .standard).work(for: call, request: request, input: { standardInput }, output: output) {
+        if let work = CommandAPI(mac: SpotMac().mac, places: .standard, rates: .standard).work(for: call, request: request, input: { standardInput }, output: output) {
             Task {
                 let answer = await work()
                 output.print(answer.output)
@@ -47,8 +47,6 @@ enum SpotCommandLine {
             SpotTranslation.serve()
         case HelperCall.capability(SpotRecording.capability.name) as HelperCall:
             SpotRecording.serve()
-        case HelperCall.capability(CalcRateCache.capability.name) as HelperCall:
-            CalcRateCache.serve()
         case HelperCall.glyphs(let side, let fontSize, let path) as HelperCall:
             let glyphs = standardInput.split(separator: "\n").map(String.init)
             exit(SpotGlyphBook.write(GlyphBook(glyphs: glyphs, side: side, fontSize: fontSize), to: path) ? 0 : 1)

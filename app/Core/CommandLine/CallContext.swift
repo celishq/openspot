@@ -1,7 +1,7 @@
 import Foundation
 
 struct CallContext {
-    let mac: any Mac
+    let mac: Mac
     let api: CommandAPI
     let request: CommandRequest
     let environment: [String: String]
@@ -16,7 +16,7 @@ struct CallContext {
     let output: CommandOutput
     let calendar: CalendarCalls
     let reminders: RemindersCalls
-    let keywords: GlyphKeywordCache
+    let rates: CalcRateCache
     let nouns: [CommandNoun]
 
     var usage: String {

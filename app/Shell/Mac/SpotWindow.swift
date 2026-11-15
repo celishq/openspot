@@ -27,11 +27,9 @@ struct SpotWindow {
         CGRect(origin: value(kAXPositionAttribute, .cgPoint, CGPoint.zero), size: value(kAXSizeAttribute, .cgSize, CGSize.zero))
     }
 
-    var frameText: String {
+    var place: WindowFrame {
         let window = frame
-        let area = Self.area(holding: CGPoint(x: window.midX, y: window.midY))
-        return ([window.minX, window.minY, window.width, window.height, area.minX, area.minY, area.width, area.height]
-            .map { String(Int($0.rounded())) }.joined(separator: " ")) + "\n"
+        return WindowFrame(window: window, area: Self.area(holding: CGPoint(x: window.midX, y: window.midY)))
     }
 
     func move(_ move: WindowMove) throws {

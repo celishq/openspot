@@ -32,7 +32,7 @@ extension SpotRuns {
         raise(.wake)
     }
 
-    public func listen(to source: any Mac) {
+    public func listen(to source: any MacEvents) {
         self.source = source
         source.listen { [weak self] in self?.raise($0) }
         watchClipboard()

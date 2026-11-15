@@ -4,14 +4,17 @@ public final class CommandSocket: @unchecked Sendable {
     public static let name = SocketPath.name
     static let unreadableCode = -32700
     static let aloneCode = -32000
+    static let strangerCode = -32001
     private static let queueLength: Int32 = 64
-    private static let callerLimit = 5
-    private static let chunk = 65_536
 
     private let path: String
     private let source: any DispatchSourceRead
 
-    public init?(folder: URL, api: CommandAPI) {
+    public convenience init?(folder: URL, api: CommandAPI) {
+        self.init(folder: folder, api: api, limits: CommandConnection.Limits())
+    }
+
+    init?(folder: URL, api: CommandAPI, limits: CommandConnection.Limits, peer: @escaping @Sendable (Int32) -> pid_t? = CommandSocket.peer(of:)) {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         guard let real = realpath(folder.path, nil) else { return nil }
         path = SocketPath.of(config: String(cString: real))
@@ -43,7 +46,10 @@ public final class CommandSocket: @unchecked Sendable {
         source.setEventHandler {
             while case let connection = accept(listener, nil, nil), connection >= 0 {
                 _ = fcntl(connection, F_SETFD, FD_CLOEXEC)
-                DispatchQueue.global().async { Self.answer(connection, api) }
+                _ = CommandConnection(descriptor: connection, limits: limits) { link, line in
+                    let caller = peer(connection)
+                    DispatchQueue.global().async { Self.answer(line, on: link, from: caller, api) }
+                }
             }
         }
         source.setCancelHandler { Darwin.close(listener) }
@@ -55,20 +61,16 @@ public final class CommandSocket: @unchecked Sendable {
         unlink(path)
     }
 
-    private static func answer(_ connection: Int32, _ api: CommandAPI) {
-        _ = fcntl(connection, F_SETFL, fcntl(connection, F_GETFL) & ~O_NONBLOCK)
-        var on: Int32 = 1
-        setsockopt(connection, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
-        var time = timeval(tv_sec: callerLimit, tv_usec: 0)
-        setsockopt(connection, SOL_SOCKET, SO_RCVTIMEO, &time, socklen_t(MemoryLayout<timeval>.size))
-        let (line, rest) = receive(connection)
-        let link = CommandConnection(descriptor: connection, rest: rest)
+    private static func answer(_ line: Data, on link: CommandConnection, from peer: pid_t?, _ api: CommandAPI) {
         guard let asked = CommandRequest(line: line) else {
             return link.end(fault(unreadableCode, "Openspot cannot read this request.", id: nil))
         }
-        let request = api.request(asked, from: peer(of: connection))
+        guard let peer else {
+            return link.end(fault(strangerCode, "Openspot cannot tell which process sent this call.", id: asked.id))
+        }
+        let request = api.request(asked, from: peer)
         let output = CommandOutput { text, isError in link.notify(isError ? "stderr" : "stdout", text: text) }
-        guard let work = api.work(for: request, input: { await link.stdin() }, isSandboxed: CallerTokens.isSandboxedApart(peer(of: connection)), output: output) else {
+        guard let work = api.work(for: request, input: { await link.stdin() }, isSandboxed: CallerTokens.isSandboxedApart(peer), output: output) else {
             return link.end(fault(aloneCode, "Run this call in a process of its own.", id: request.id))
         }
         let stop = CommandStop()
@@ -77,8 +79,8 @@ public final class CommandSocket: @unchecked Sendable {
         stop.hold(task)
         Task.detached {
             let answer = await task.value
-            output.print(answer.output)
-            output.report(answer.errors)
+            await link.deliver("stdout", text: answer.output)
+            await link.deliver("stderr", text: answer.errors)
             link.end(["jsonrpc": "2.0", "id": request.id.map { $0 as Any } ?? NSNull(), "result": ["code": answer.code]])
         }
     }
@@ -87,25 +89,9 @@ public final class CommandSocket: @unchecked Sendable {
         ["jsonrpc": "2.0", "id": id.map { $0 as Any } ?? NSNull(), "error": ["code": code, "message": message]]
     }
 
-    private static func peer(of connection: Int32) -> pid_t {
+    @Sendable static func peer(of connection: Int32) -> pid_t? {
         var id: pid_t = 0
         var size = socklen_t(MemoryLayout<pid_t>.size)
-        return getsockopt(connection, SOL_LOCAL, LOCAL_PEERPID, &id, &size) == 0 ? id : 0
-    }
-
-    private static func receive(_ connection: Int32) -> (Data, Data) {
-        var data = Data()
-        var buffer = [UInt8](repeating: 0, count: chunk)
-        while true {
-            let count = read(connection, &buffer, buffer.count)
-            if count > 0 {
-                data.append(contentsOf: buffer[..<count])
-                if buffer[..<count].contains(UInt8(ascii: "\n")) { break }
-            } else if count == 0 || errno != EINTR {
-                break
-            }
-        }
-        guard let end = data.firstIndex(of: UInt8(ascii: "\n")) else { return (data, Data()) }
-        return (data[data.startIndex..<end], Data(data[(end + 1)...]))
+        return getsockopt(connection, SOL_LOCAL, LOCAL_PEERPID, &id, &size) == 0 && id > 0 ? id : nil
     }
 }

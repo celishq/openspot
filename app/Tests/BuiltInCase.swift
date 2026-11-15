@@ -3,24 +3,6 @@ import XCTest
 
 @MainActor
 class BuiltInCase: XCTestCase {
-    private final class Host: Mac {
-        let mac: MacSettings
-        let guide: URL?
-
-        init(mac: MacSettings, guide: URL?) {
-            self.mac = mac
-            self.guide = guide
-        }
-
-        var login: LoginItem? { mac.login }
-        var link: CommandLink? { mac.link }
-
-        func eventStore() -> any EventStore { FakeEventStore() }
-        func reminderStore() -> any ReminderStore { FakeReminderStore() }
-        func showCalendar(at time: Date) throws {}
-        func open(_ link: URL) -> Bool { true }
-    }
-
     final class MacSettings: @unchecked Sendable {
         var isOn = false
         var login: LoginItem?
@@ -104,7 +86,7 @@ class BuiltInCase: XCTestCase {
         }
         let built = Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot")
         try FileManager.default.copyItem(at: built, to: tools.appendingPathComponent("openspot"))
-        socket = CommandSocket(folder: root, api: CommandAPI(mac: Host(mac: mac, guide: guide), places: .test(TestEnvironment.values), app: app, runs: runs))
+        socket = CommandSocket(folder: root, api: CommandAPI(mac: Mac(calendar: FakeCalendar(), reminders: FakeReminders(), login: { [mac] in mac.login }, link: { [mac] in mac.link }, guide: guide), places: .test(TestEnvironment.values), app: app, runs: runs, rates: .offline))
     }
 
     override func tearDown() async throws {

@@ -1,4 +1,5 @@
 import XCTest
+import os
 @testable import OpenspotCore
 
 final class CommandSocketTests: XCTestCase {
@@ -34,16 +35,27 @@ final class CommandSocketTests: XCTestCase {
         }
     }
 
+    private struct Clipboard: MacClipboard {
+        let kept: String
+
+        func copy(text: String) throws {}
+        func copy(file: URL) throws {}
+        func text() -> String { kept }
+        func paste() throws {}
+    }
+
     private var folder: URL!
     private var socket: CommandSocket?
+    private var clock: CommandSocket?
 
     override func setUpWithError() throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("os-\(UUID().uuidString.prefix(8))", isDirectory: true)
-        socket = CommandSocket(folder: folder, api: CommandAPI(mac: FakeMac(), places: .test(["OPENSPOT_CONFIG": folder.path, "OPENSPOT_SPOTS": folder.appendingPathComponent("spots").path])))
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path, "OPENSPOT_SPOTS": folder.appendingPathComponent("spots").path]), rates: .offline))
     }
 
     override func tearDownWithError() throws {
         socket?.close()
+        clock?.close()
         try? FileManager.default.removeItem(at: folder)
     }
 
@@ -104,7 +116,7 @@ final class CommandSocketTests: XCTestCase {
 
     func testASlowCallSendsItsFirstChunkBeforeItsEnd() async throws {
         socket?.close()
-        socket = CommandSocket(folder: folder, api: CommandAPI(mac: FakeMac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: SlowApp(folder: folder)))
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: SlowApp(folder: folder), rates: .offline))
         let connection = connect()
         defer { connection.close() }
         try connection.send(request(["batch"]))
@@ -121,7 +133,7 @@ final class CommandSocketTests: XCTestCase {
 
     func testAClosedConnectionStopsItsCallAndTheCallChangesNothing() async throws {
         socket?.close()
-        socket = CommandSocket(folder: folder, api: CommandAPI(mac: FakeMac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: SlowApp(folder: folder)))
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: SlowApp(folder: folder), rates: .offline))
         let connection = connect()
         try connection.send(request(["setting", "change", "--spot", "repos", "folder"]))
         try await wait("the start of the work") { exists("started") }
@@ -165,5 +177,159 @@ final class CommandSocketTests: XCTestCase {
         connection.send(line: "hello")
 
         XCTAssertEqual((try connection.exchange().reply["error"] as? [String: Any])?["code"] as? Int, -32700)
+    }
+
+    private func listen(_ limits: CommandConnection.Limits = CommandConnection.Limits(), mac: Mac = Mac(), peer: @escaping @Sendable (Int32) -> pid_t? = CommandSocket.peer(of:)) {
+        socket?.close()
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: mac, places: .test(["OPENSPOT_CONFIG": folder.path]), rates: .offline), limits: limits, peer: peer)
+    }
+
+    private func isClosed(_ connection: SocketConnection) -> Bool {
+        var watched = pollfd(fd: connection.descriptor, events: Int16(POLLIN), revents: 0)
+        return poll(&watched, 1, 0) > 0 && watched.revents & Int16(POLLHUP) != 0
+    }
+
+    private func tick() async throws {
+        let silent = SocketConnection(path: folder.appendingPathComponent("clock").appendingPathComponent(CommandSocket.name).path)
+        defer { silent.close() }
+        try await wait("the close of a silent caller of the clock") { isClosed(silent) }
+    }
+
+    private func askForMuch(_ connection: SocketConnection) throws {
+        try connection.send(request(["batch"]))
+        XCTAssertEqual(try connection.next()?["method"] as? String, "stdin")
+        try connection.send(["jsonrpc": "2.0", "method": "stdin", "params": ["text": String(repeating: "help\n", count: 200)]])
+        try connection.send(["jsonrpc": "2.0", "method": "stdin", "params": ["end": true]])
+    }
+
+    private func hasAReply(_ connection: SocketConnection) throws -> Bool {
+        while let line = try connection.next() {
+            if line["result"] != nil || line["error"] != nil { return true }
+        }
+        return false
+    }
+
+    func testASilentCallerHoldsNoThread() async throws {
+        listen(CommandConnection.Limits(caller: 600))
+        let path = folder.appendingPathComponent(CommandSocket.name).path
+        var silent: [SocketConnection] = []
+        defer { silent.forEach { $0.close() } }
+        for _ in 0..<80 {
+            try await wait("the connection of a silent caller") {
+                let caller = SocketConnection(path: path, mustConnect: false)
+                if caller.isConnected { silent.append(caller) } else { caller.close() }
+                return caller.isConnected
+            }
+        }
+
+        let answer = try ask(["calc", "solve", "2+2"])
+
+        XCTAssertEqual(answer.code, 0)
+    }
+
+    func testACallerThatStaysSilentGetsAnErrorAndIsClosed() async throws {
+        listen(CommandConnection.Limits(caller: 0.05))
+        let connection = connect()
+        defer { connection.close() }
+
+        try await wait("the close of the silent caller") { isClosed(connection) }
+
+        XCTAssertEqual((try connection.next()?["error"] as? [String: Any])?["code"] as? Int, -32700)
+        XCTAssertNil(try connection.next())
+    }
+
+    func testARequestLineOverTheLimitIsClosed() async throws {
+        listen(CommandConnection.Limits(caller: 600, line: 1024))
+        let connection = connect()
+        defer { connection.close() }
+        let bytes = [UInt8](repeating: UInt8(ascii: "a"), count: 4096)
+        XCTAssertEqual(write(connection.descriptor, bytes, bytes.count), bytes.count)
+
+        try await wait("the close of the long line") { isClosed(connection) }
+
+        XCTAssertNil(try connection.next())
+    }
+
+    func testAReaderThatTakesNoByteInTimeIsClosedWithNoReply() async throws {
+        listen(CommandConnection.Limits(reader: 0.05))
+        let connection = connect()
+        defer { connection.close() }
+        try askForMuch(connection)
+
+        try await wait("the close of the stopped reader") { isClosed(connection) }
+
+        XCTAssertFalse(try hasAReply(connection))
+    }
+
+    func testAReaderWithMoreOutputWaitingThanTheLimitIsClosedWithNoReply() async throws {
+        listen(CommandConnection.Limits(reader: 600, output: 65_536))
+        let connection = connect()
+        defer { connection.close() }
+        try askForMuch(connection)
+
+        try await wait("the close of the reader that is behind") { isClosed(connection) }
+
+        XCTAssertFalse(try hasAReply(connection))
+    }
+
+    func testAnAnswerOverTheOutputLimitReachesAReaderThatKeepsUp() throws {
+        let text = String(repeating: "0123456789abcdef", count: 65_536)
+        listen(CommandConnection.Limits(output: 65_536), mac: Mac(clipboard: Clipboard(kept: text)))
+
+        let answer = try ask(["clipboard", "read"])
+
+        XCTAssertEqual(answer.code, 0)
+        XCTAssertTrue(answer.stdout.trimmingCharacters(in: .newlines) == text)
+    }
+
+    func testAReaderThatIsSlowButTakesBytesGetsTheWholeAnswer() async throws {
+        listen(CommandConnection.Limits(reader: 1))
+        clock = CommandSocket(folder: folder.appendingPathComponent("clock"), api: CommandAPI(mac: Mac(), places: .test(), rates: .offline), limits: CommandConnection.Limits(caller: 0.01))
+        let slow = connect()
+        let stopped = connect()
+        defer {
+            slow.close()
+            stopped.close()
+        }
+        try askForMuch(slow)
+        try askForMuch(stopped)
+
+        var taken = 0
+        while !isClosed(stopped) {
+            slow.take(4096)
+            taken += 4096
+            try await tick()
+        }
+        let answer = try slow.exchange()
+
+        XCTAssertGreaterThan(answer.stdout.utf8.count, taken)
+        XCTAssertEqual(answer.code, 0)
+        XCTAssertEqual(answer.stdout.components(separatedBy: "openspot guide ").count - 1, 200)
+    }
+
+    func testTheCallerOfEachLineIsReadOnceWhileItsConnectionIsOpen() async throws {
+        let reads = OSAllocatedUnfairLock(initialState: [Bool]())
+        listen(peer: { descriptor in
+            reads.withLock { $0.append(fcntl(descriptor, F_GETFD) >= 0) }
+            return getpid()
+        })
+
+        for _ in 0..<20 {
+            let connection = connect()
+            try connection.send(request(["calc", "solve", "2+2"]))
+            connection.close()
+        }
+
+        try await wait("the read of each caller") { reads.withLock { $0.count } >= 20 }
+        XCTAssertEqual(reads.withLock { $0 }, Array(repeating: true, count: 20))
+    }
+
+    func testARequestWhoseCallerCannotBeReadIsRefused() throws {
+        listen(peer: { _ in nil })
+
+        let answer = try ask(["setting", "set", "--spot", "notes", "tone", "warm"])
+
+        XCTAssertEqual((answer.reply["error"] as? [String: Any])?["code"] as? Int, -32001)
+        XCTAssertNil(ConfigFile(url: folder.appendingPathComponent("config.toml")).read().setting("tone", of: "notes"))
     }
 }

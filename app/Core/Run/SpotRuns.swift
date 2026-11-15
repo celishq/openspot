@@ -35,7 +35,7 @@ public final class SpotRuns {
     @ObservationIgnored let now: () -> Date
     @ObservationIgnored private let stopPause: TimeInterval
     @ObservationIgnored let clipboardPause: Duration
-    @ObservationIgnored var source: (any Mac)?
+    @ObservationIgnored var source: (any MacEvents)?
     @ObservationIgnored var clipboardWatch: Task<Void, Never>?
     @ObservationIgnored var clipboardSeen: Int?
     @ObservationIgnored private(set) var hasQuit = false

@@ -3,7 +3,7 @@ import OpenspotCore
 
 @MainActor
 enum SpotFolderPick {
-    static func pick() async -> String {
+    static func pick() async -> URL? {
         let window = NSOpenPanel()
         window.canChooseFiles = false
         window.canChooseDirectories = true
@@ -19,7 +19,6 @@ enum SpotFolderPick {
             Task { @MainActor in shown.cancel(nil) }
         }
         previous?.activate()
-        guard response == .OK, let url = window.url else { return "" }
-        return url.path + "\n"
+        return response == .OK ? window.url : nil
     }
 }

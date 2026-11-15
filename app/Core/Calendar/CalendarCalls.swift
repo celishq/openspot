@@ -1,11 +1,11 @@
 import Foundation
 
 final class CalendarCalls: @unchecked Sendable {
-    private let mac: any Mac
+    private let mac: (any MacCalendar)?
     private let lock = NSLock()
     private var store: (any EventStore)?
 
-    init(mac: any Mac) {
+    init(mac: (any MacCalendar)?) {
         self.mac = mac
     }
 
@@ -23,14 +23,15 @@ final class CalendarCalls: @unchecked Sendable {
 
     func show(_ id: String, isRead: Bool) -> CommandAPI.Work {
         CommandAnswer.work {
-            try self.mac.showCalendar(at: try await self.events(isRead).day(of: id))
+            try Mac.part(self.mac, "calendar").show(try await self.events(isRead).day(of: id))
             return ""
         }
     }
 
-    private func events(_ isRead: Bool) -> Events {
+    private func events(_ isRead: Bool) throws -> Events {
+        let mac = try Mac.part(mac, "calendar")
         let store = lock.withLock {
-            let store = self.store ?? mac.eventStore()
+            let store = self.store ?? mac.store()
             self.store = store.access() == .allowed ? store : nil
             return store
         }

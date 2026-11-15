@@ -21,7 +21,7 @@ public enum ClipboardCall: NounCall {
     }
 
     func work(in context: CallContext) -> CommandAPI.Work? {
-        let calls = ClipboardCalls(mac: context.mac, folder: context.folder)
+        let calls = ClipboardCalls(mac: context.mac.clipboard, folder: context.folder)
         return switch self {
         case .copy(let path): calls.copy(path, input: context.input)
         case .paste: calls.paste()

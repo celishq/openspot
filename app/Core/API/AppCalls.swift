@@ -1,7 +1,7 @@
 import Foundation
 
 struct AppCalls {
-    let mac: any Mac
+    let mac: Mac
     let environment: [String: String]
     let app: (any RunningApp)?
 
@@ -14,8 +14,8 @@ struct AppCalls {
                 panelKey: (config.panelKey ?? .standard).text,
                 fixKey: (config.fixKey ?? .fix).text,
                 careful: config.isCareful,
-                login: mac.login?.isOn(),
-                link: mac.link?.isOn,
+                login: mac.login()?.isOn(),
+                link: mac.link()?.isOn,
                 update: running?.update,
                 calls: running?.calls,
                 firstLaunch: running?.isFirstLaunch
@@ -25,7 +25,7 @@ struct AppCalls {
 
     func login(_ isOn: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [mac] in
-            guard let login = mac.login else { throw SpotError.failed(1, "This copy of Openspot cannot open at login. Move it to Applications, then try again.") }
+            guard let login = mac.login() else { throw SpotError.failed(1, "This copy of Openspot cannot open at login. Move it to Applications, then try again.") }
             try login.set(isOn)
             return ""
         }
@@ -33,7 +33,7 @@ struct AppCalls {
 
     func link(_ isOn: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [mac] in
-            guard let link = mac.link else { throw SpotError.failed(1, "This copy of Openspot cannot put openspot in Terminal.") }
+            guard let link = mac.link() else { throw SpotError.failed(1, "This copy of Openspot cannot put openspot in Terminal.") }
             try link.set(isOn)
             return ""
         }

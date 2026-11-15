@@ -3,7 +3,7 @@ import Foundation
 public final class CommandAPI: @unchecked Sendable {
     public typealias Work = @Sendable () async -> CommandAnswer
 
-    private let mac: any Mac
+    private let mac: Mac
     private let raise: (@Sendable (SpotEvent) async -> Void)?
     private let app: (any RunningApp)?
     private let places: AppPlaces
@@ -11,19 +11,20 @@ public final class CommandAPI: @unchecked Sendable {
     private weak var runs: SpotRuns?
     private let calendar: CalendarCalls
     private let reminders: RemindersCalls
-    private let keywords = GlyphKeywordCache()
+    private let rates: CalcRateCache
     private let nouns: [CommandNoun]
 
-    public init(mac: any Mac, places: AppPlaces, raise: (@Sendable (SpotEvent) async -> Void)? = nil, app: (any RunningApp)? = nil, runs: SpotRuns? = nil, nouns: [CommandNoun] = CommandNoun.all) {
+    public init(mac: Mac, places: AppPlaces, raise: (@Sendable (SpotEvent) async -> Void)? = nil, app: (any RunningApp)? = nil, runs: SpotRuns? = nil, rates: CalcRateCache, nouns: [CommandNoun] = CommandNoun.all) {
         self.mac = mac
         self.places = places
         account = app.map { app in Account(store: places.account, allows: { await app.allows($0) }) }
         self.runs = runs
         self.raise = raise
         self.app = app
+        self.rates = rates
         self.nouns = nouns
-        calendar = CalendarCalls(mac: mac)
-        reminders = RemindersCalls(mac: mac)
+        calendar = CalendarCalls(mac: mac.calendar)
+        reminders = RemindersCalls(mac: mac.reminders)
     }
 
     public func request(_ request: CommandRequest, from peer: pid_t) -> CommandRequest {
@@ -76,7 +77,7 @@ public final class CommandAPI: @unchecked Sendable {
         let (spot, reason) = values(of: request)
         return call.call.work(in: CallContext(
             mac: mac, api: self, request: request, environment: places.environment, app: app, runs: runs, account: account, raise: raise, caller: caller,
-            spot: spot, isRead: reason != nil, input: input, output: output, calendar: calendar, reminders: reminders, keywords: keywords, nouns: nouns
+            spot: spot, isRead: reason != nil, input: input, output: output, calendar: calendar, reminders: reminders, rates: rates, nouns: nouns
         ))
     }
 }

@@ -105,7 +105,7 @@ final class CalcRatesTests: XCTestCase {
         XCTAssertEqual(count, 1)
     }
 
-    func testAFileFromAnEarlierHelperAnswersAtOnceAndOldRatesComeNewInTheBackground() async throws {
+    func testAFileFromAnEarlierRunAnswersAtOnceAndOldRatesComeNewInTheBackground() async throws {
         let clock = Clock()
         _ = await cache(Source(), clock).rates()
         clock.now += CalcRateCache.freshness + 1

@@ -123,4 +123,18 @@ final class ProtocolContractTests: XCTestCase {
             }
         }
     }
+
+    func testEachStatusWordAndSourceIDThatCoreWritesIsOneTheDocsName() throws {
+        let protocolText = try RepoDoc("PROTOCOL.md").text
+        let screen = try RepoDoc("app/Help/screen.md").text
+        for status in TranslatedText.Status.allCases.map(\.rawValue) + [CalcRateFailure.offline, .unavailable].map(\.rawValue) {
+            XCTAssertTrue(protocolText.contains("`status=\(status)`"), "PROTOCOL.md does not name status=\(status)")
+        }
+        for state in ScreenRecording.State.allCases {
+            XCTAssertTrue(screen.contains("`state=\(state.rawValue)`"), "the guide of screen does not name state=\(state.rawValue)")
+        }
+        for kind in ScreenDevice.Kind.allCases.map(\.rawValue) + [ScreenDevice.system] {
+            XCTAssertTrue(screen.contains("`\(kind):<id>`") || screen.contains("`\(kind)`"), "the guide of screen does not name the source \(kind)")
+        }
+    }
 }
