@@ -60,8 +60,7 @@ extension SpotsModel {
     }
 
     public func focus(ofCard index: Int) -> CardFocus {
-        guard isMenuOpen, openSheetID == nil else { return .none }
-        return index == selected ? .focused : .faded
+        isMenuOpen && openSheetID == nil && index == selected ? .focused : .none
     }
 
     public func tap(_ id: String, opening: Bool = false) {

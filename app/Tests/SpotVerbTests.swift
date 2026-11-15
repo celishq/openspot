@@ -458,20 +458,37 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertEqual(model.selectedEntry?.id, "clock")
     }
 
-    func testTheCardOfTheOpenMenuIsFocusedAndTheOthersFaded() async throws {
+    func testOpeningTheMenuChangesTheFadeOfNoCardAndOneShade() async throws {
         try script("weather", header: "title=Weather")
         try script("clock", header: "title=Clock")
+        try script("notes", header: "title=Notes")
         _ = try await select("weather")
         let weather = try XCTUnwrap(model.visible.firstIndex { $0.id == "weather" })
-        let clock = try XCTUnwrap(model.visible.firstIndex { $0.id == "clock" })
-        XCTAssertEqual(model.focus(ofCard: weather), .none)
+        let others = model.placements.map(\.index).filter { $0 != weather }
+        XCTAssertGreaterThanOrEqual(others.count, 2)
+        XCTAssertFalse(model.gridShade.isOn)
+        nonisolated(unsafe) var shades = 0
+        withObservationTracking { _ = model.gridShade } onChange: { shades += 1 }
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        try await wait("the grown menu") { model.menuSession?.isGrown == true }
 
         XCTAssertEqual(model.focus(ofCard: weather), .focused)
-        XCTAssertEqual(model.focus(ofCard: clock), .faded)
+        XCTAssertEqual(others.filter { model.focus(ofCard: $0) != .none }, [])
+        XCTAssertEqual(shades, 1)
+        XCTAssertTrue(model.gridShade.isOn)
+        XCTAssertEqual(model.gridShade.cards.map(\.id), others)
+        XCTAssertEqual(model.gridShade.cards.map(\.rect), model.placements.filter { $0.index != weather }.map(\.rect))
+        nonisolated(unsafe) var moved = false
+        withObservationTracking { _ = model.gridShade } onChange: { moved = true }
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+        XCTAssertFalse(moved)
+
         model.closeMenu()
-        XCTAssertEqual(model.focus(ofCard: clock), .none)
+
+        XCTAssertFalse(model.gridShade.isOn)
+        XCTAssertEqual(model.gridShade.cards.map(\.id), others)
+        XCTAssertEqual(model.focus(ofCard: weather), .none)
     }
 
     func testCopyPromptForAICopiesTheFileAndTheLastFailure() async throws {

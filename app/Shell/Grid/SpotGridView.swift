@@ -74,6 +74,7 @@ struct SpotGridView: View {
                 .animation(nil) { $0.opacity(model.carry?.entry.id == entry.id ? 0.001 : 1) }
                 .allowsHitTesting(entry.id != openID)
             }
+            SpotGridShade(shade: model.gridShade)
         }
         .frame(width: SpotTokens.width(columns: model.panels.columns), height: height, alignment: .topLeading)
         .contentShape(Rectangle())

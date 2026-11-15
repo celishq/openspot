@@ -8,6 +8,7 @@ struct SpotTheme {
     let glyphOnSolid: NSColor
     let glass: NSColor
     let shade: NSColor
+    let dim: NSColor
     let keycap: NSColor
     let window: NSColor
     let preview: NSColor
@@ -27,6 +28,7 @@ struct SpotTheme {
         glyphOnSolid: .controlAccentColor,
         glass: .clear,
         shade: .black.withAlphaComponent(0.2),
+        dim: NSColor(white: 0.37, alpha: 0.65),
         keycap: NSColor(white: 0.2, alpha: 1),
         window: NSColor(white: 0.16, alpha: 1),
         preview: NSColor(white: 0.3, alpha: 1),
@@ -47,6 +49,7 @@ struct SpotTheme {
         glyphOnSolid: .white,
         glass: .white.withAlphaComponent(0.5),
         shade: .black.withAlphaComponent(0.08),
+        dim: NSColor(white: 0.925, alpha: 0.65),
         keycap: NSColor(white: 0.98, alpha: 1),
         window: NSColor(white: 0.93, alpha: 1),
         preview: NSColor(white: 0.98, alpha: 1),
@@ -105,6 +108,7 @@ struct SpotTheme {
     static let glyphOnSolid = color(\.glyphOnSolid)
     static let glass = color(\.glass)
     static let shade = color(\.shade)
+    static let dim = color(\.dim)
     static let keycap = color(\.keycap)
     static let window = color(\.window)
     static let preview = color(\.preview)

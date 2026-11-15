@@ -27,7 +27,7 @@ struct SpotFieldView: View {
                 .opacity(model.isEditing ? 1 : MotionTokens.hiddenOpacity)
                 .allowsHitTesting(model.isEditing)
         }
-        .modifier(SpotFocusLook(focus: model.isMenuOpen ? .faded : .none))
+        .modifier(FieldDim(isDim: model.isMenuOpen))
         .background(SpotFieldFocus(model: model, isFocused: $isFocused))
     }
 
@@ -191,4 +191,14 @@ struct SpotFieldView: View {
         isInSheet ? Self.sheetRadius : SurfaceEdge(card: .strip).radius
     }
 
+}
+
+private struct FieldDim: ViewModifier {
+    let isDim: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .environment(\.spotFade, isDim ? SpotTheme.unfocusedCardStrength : 1)
+            .animation(SpotMotion.grow(isOpen: isDim), value: isDim)
+    }
 }

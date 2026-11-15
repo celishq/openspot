@@ -156,12 +156,15 @@ public final class SpotsModel {
                 isMenuOpen = isOpen
                 takeMode()
             }
+            let dims = menuSession?.isGrown == true && openSheetID == nil
+            if dims != gridShade.isOn { gridShade = dims ? GridShade(over: placements, leaving: selected) : gridShade.off }
             guard menuSession == nil else { return }
             if menuFrame != nil { menuFrame = nil }
             if menuContentHeight != 0 { change(.sheet(isOpen: false), { menuContentHeight = 0 }) }
         }
     }
     public private(set) var isMenuOpen = false
+    public private(set) var gridShade = GridShade()
     public internal(set) var menuFrame: ActionMenuFrame?
     public internal(set) var menuContentHeight: CGFloat = 0
     public internal(set) var gridHint = HintWords("")
