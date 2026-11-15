@@ -9,9 +9,17 @@ extension SpotRun {
         guard call.doesWork else { return }
         workCalls.append(call)
         Task { [weak self, sleep = runs.clock.sleep] in
-            try? await sleep(.seconds(Self.workPause), nil)
-            self?.workPauses += 1
+            try? await sleep(.seconds(Self.workPause), .seconds(Self.workPause / 10))
+            self?.showWork()
         }
+    }
+
+    func showWork() {
+        let time = runs.now()
+        let shown = workCalls.filter { time.timeIntervalSince($0.started) >= Self.workPause }
+        guard !shown.elementsEqual(work, by: ===) else { return }
+        work = shown
+        runs.showWork()
     }
 
     func callEnded(_ call: ScriptCall) {
@@ -21,12 +29,14 @@ extension SpotRun {
     }
 
     func drewFrame(_ call: ScriptCall) {
-        if let index = workCalls.firstIndex(where: { $0 === call }) { workCalls.remove(at: index) }
+        guard let index = workCalls.firstIndex(where: { $0 === call }) else { return }
+        workCalls.remove(at: index)
+        showWork()
     }
 
     func forget(_ call: ScriptCall) {
         calls.removeAll { $0 === call }
-        if let index = workCalls.firstIndex(where: { $0 === call }) { workCalls.remove(at: index) }
+        drewFrame(call)
     }
 
     func take(_ error: Error, of ask: Ask) {

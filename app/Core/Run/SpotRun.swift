@@ -52,8 +52,11 @@ public final class SpotRun {
         var input: String?
         var limit: TimeInterval?
         var reason: ReadReason?
-        var variables: [String: String] = [:]
         var purpose: Purpose
+
+        var variables: [String: String] {
+            reason?.variables ?? [:]
+        }
     }
 
     static let answerAge: TimeInterval = 5
@@ -68,7 +71,9 @@ public final class SpotRun {
     static let levelKey = "level"
     static let globalKey = "global"
 
-    public internal(set) var spot: Spot
+    public internal(set) var spot: Spot {
+        didSet { runs.showMarks(of: spot.id) }
+    }
     public internal(set) var answers: [SpotItem] = []
     var answerQuery = ""
     var answeredQuery = ""
@@ -174,13 +179,15 @@ public final class SpotRun {
         }
     }
     public private(set) var isOn = false
-    public internal(set) var reading: MetricReading
+    public internal(set) var reading: MetricReading {
+        didSet { runs.showMarks(of: spot.id) }
+    }
     public internal(set) var failure: String?
     @ObservationIgnored public internal(set) var calls: [ScriptCall] = []
-    var workCalls: [ScriptCall] = []
+    @ObservationIgnored var workCalls: [ScriptCall] = []
+    public internal(set) var work: [ScriptCall] = []
     @ObservationIgnored public var onReport: (Report) -> Void = { _ in }
     @ObservationIgnored public var partsArrival: (() -> Void) -> Void = { $0() }
-    var workPauses = 0
     @ObservationIgnored let runs: SpotRuns
     @ObservationIgnored let prepare: ([SpotItem], [String]) async -> Void
     @ObservationIgnored var glyphs: (rows: [SpotItem], glyphs: [String]) = ([], [])
@@ -200,6 +207,7 @@ public final class SpotRun {
     @ObservationIgnored var editing: String?
     @ObservationIgnored var waitingFiles: [SpotAction] = []
     @ObservationIgnored var waitingKeys: [String] = []
+    @ObservationIgnored var clockRead: Date?
     public internal(set) var page: String?
     @ObservationIgnored var pageStates: [(page: String?, state: PageState)] = []
 

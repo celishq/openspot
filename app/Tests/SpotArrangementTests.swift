@@ -45,7 +45,7 @@ final class SpotArrangementTests: XCTestCase {
 
     func testTheConfigReadsTheChoices() {
         let config = Config(text: """
-        panel_key = "cmd+k"
+        panel-key = "cmd+k"
 
         [[spots]]
         id = "apps"
@@ -147,9 +147,9 @@ final class SpotArrangementTests: XCTestCase {
         let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
         let arrangement = SpotArrangement(choices: [choice("b", size: .large, isOnGrid: false), choice("a")])
 
-        try file.set("panel_key", to: "cmd+k")
+        try file.set("panel-key", to: "cmd+k")
         try file.write(arrangement)
-        try file.set("panel_key", to: "cmd+j")
+        try file.set("panel-key", to: "cmd+j")
         try file.write(SpotArrangement(choices: arrangement.choices.reversed()))
 
         let config = file.read()

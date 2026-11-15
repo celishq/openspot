@@ -42,15 +42,15 @@ public struct Config: Equatable, Sendable {
         kept.tables = []
         let known = ["spots", "keys", "settings"]
         let names = Array(document.values.keys) + Set(document.tables.map(\.name))
-        for key in names.sorted() where !(["panel_key", "fix_key", "careful"] + known + GridPanel.allCases.compactMap(\.configKey)).contains(key) {
+        for key in names.sorted() where !(["panel-key", "fix-key", "careful"] + known + GridPanel.allCases.compactMap(\.configKey)).contains(key) {
             faults.append("config.toml: \(key) is not a setting.")
         }
         arrangement = SpotArrangement(choices: document.tables(named: "spots").compactMap { choice(of: $0) })
         keys = document.tables(named: "keys").compactMap { key(of: $0) }
         settings = document.tables(named: "settings").compactMap { setting(of: $0) }
         kept.tables += document.tables.filter { !known.contains($0.name) }
-        panelKey = shortcut(document.values["panel_key"], named: "panel_key", or: .standard)
-        fixKey = shortcut(document.values["fix_key"], named: "fix_key", or: .fix)
+        panelKey = shortcut(document.values["panel-key"], named: "panel-key", or: .standard)
+        fixKey = shortcut(document.values["fix-key"], named: "fix-key", or: .fix)
         switch document.values["careful"] {
         case .boolean(let isOn)?: isCareful = isOn
         case nil: break
@@ -95,8 +95,8 @@ public struct Config: Equatable, Sendable {
 
     public mutating func set(_ shortcut: Shortcut, for name: String) {
         switch name {
-        case "panel_key": panelKey = shortcut
-        case "fix_key": fixKey = shortcut
+        case "panel-key": panelKey = shortcut
+        case "fix-key": fixKey = shortcut
         default: return
         }
         kept.set(name, to: .string(shortcut.text))

@@ -25,12 +25,19 @@ public struct Shortcut: Hashable, Sendable {
         public var label: String? {
             Shortcut.modifierWords.first { $0.modifier == self }.map { "\($0.mark) \($0.name)" }
         }
+
+        var mark: String? {
+            Shortcut.modifierWords.first { $0.modifier == self }?.mark
+        }
+
+        static var all: [Modifiers] {
+            Shortcut.modifierWords.map(\.modifier)
+        }
     }
 
     private static let modifierWords: [(word: String, modifier: Modifiers, mark: String, name: String)] = [
         ("cmd", .command, "⌘", "Command"), ("ctrl", .control, "⌃", "Control"), ("option", .option, "⌥", "Option"), ("shift", .shift, "⇧", "Shift")
     ]
-    private static let markOrder: [Modifiers] = [.control, .option, .shift, .command]
     private static let namedCodes: [String: UInt32] = ["space": 49, "return": 36, "tab": 48, "left": 123, "right": 124, "down": 125, "up": 126]
 
     public static let standard = Shortcut(name: "space", code: 49, modifiers: .control)
@@ -47,15 +54,10 @@ public struct Shortcut: Hashable, Sendable {
     }
 
     public init?(text: String) {
-        var words = text.lowercased().split(separator: "+", omittingEmptySubsequences: false).map(String.init)
-        guard let name = words.popLast() else { return nil }
-        var modifiers: Modifiers = []
-        for word in words {
-            guard let modifier = Self.modifierWords.first(where: { $0.word == word })?.modifier else { return nil }
-            modifiers.insert(modifier)
+        guard let key = KeyText(text: text), let code = Self.namedCodes[key.name] ?? CommandKey(name: key.name)?.code, Self.isHeld(key.modifiers) else {
+            return nil
         }
-        guard let code = Self.namedCodes[name] ?? CommandKey(name: name)?.code, Self.isHeld(modifiers) else { return nil }
-        self.init(name: name, code: code, modifiers: modifiers)
+        self.init(name: key.name, code: code, modifiers: key.modifiers)
     }
 
     public init?(code: UInt32, modifiers: Modifiers) {
@@ -73,7 +75,7 @@ public struct Shortcut: Hashable, Sendable {
     }
 
     public var text: String {
-        (Self.modifierWords.filter { modifiers.contains($0.modifier) }.map(\.word) + [name]).joined(separator: "+")
+        KeyText(modifiers: modifiers, name: name).text
     }
 
     public var openHint: String {
@@ -81,10 +83,7 @@ public struct Shortcut: Hashable, Sendable {
     }
 
     public var label: String {
-        let marks = Self.markOrder.filter(modifiers.contains).compactMap { held in
-            Self.modifierWords.first { $0.modifier == held }?.mark
-        }
-        return marks.joined() + (name.count == 1 ? name.uppercased() : name.capitalized)
+        KeyText(modifiers: modifiers, name: name).label
     }
 
     public func chains(to key: CommandKey, code: UInt32, modifiers: Modifiers) -> Bool {

@@ -3,7 +3,7 @@ import OpenspotCore
 
 @MainActor
 enum SpotWordsWidth {
-    private static var widths = RecentCache<String, CGFloat>(base: 4 << 10)
+    private static var widths = RecentCache<String, CGFloat>(limit: 4 << 10)
 
     static func of(title: String, detail: String?) -> CGFloat {
         let key = "\(title)\n\(detail ?? "")"

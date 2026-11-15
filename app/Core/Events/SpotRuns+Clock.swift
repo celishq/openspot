@@ -1,48 +1,52 @@
 import Foundation
 
 extension SpotRuns {
-    func tick() {
-        let time = now()
-        var next: TimeInterval?
-        for sheet in sheets.values where sheet.spot.read?.waitsForEvents == true {
-            if !sheet.isWanted {
-                lastClockRead[sheet.spot.id] = nil
-            } else if lastClockRead[sheet.spot.id] == nil {
-                lastClockRead[sheet.spot.id] = time
-                sheet.read(need: .clock, reason: .clock(sheet.spot.read?.seconds))
-            }
-        }
-        for sheet in sheets.values where sheet.isWanted {
-            guard let seconds = sheet.spot.read?.seconds else { continue }
-            var left = seconds
-            if let last = lastClockRead[sheet.spot.id], time.timeIntervalSince(last) < seconds {
-                left = seconds - time.timeIntervalSince(last)
-            } else {
-                lastClockRead[sheet.spot.id] = time
-                sheet.read(need: .clock, reason: .clock(sheet.spot.read?.seconds))
-            }
-            next = min(next ?? left, left)
-        }
-        nextRead = next
-    }
-
     func updateClock() {
         watchClipboard()
+        schedule(tick())
+    }
+
+    private func tick() -> Date? {
+        clockPasses += 1
+        let time = now()
+        var due: Date?
+        for sheet in sheets.values {
+            guard let read = sheet.spot.read else { continue }
+            let isWanted = sheet.isWanted
+            if read.waitsForEvents {
+                if !isWanted {
+                    sheet.clockRead = nil
+                } else if sheet.clockRead == nil {
+                    sheet.clockRead = time
+                    sheet.read(need: .clock, reason: .clock(nil))
+                }
+                continue
+            }
+            guard isWanted, let seconds = read.seconds else { continue }
+            if let last = sheet.clockRead, time.timeIntervalSince(last) < seconds {
+                due = min(due ?? .distantFuture, last.addingTimeInterval(seconds))
+            } else {
+                sheet.clockRead = time
+                sheet.read(need: .clock, reason: .clock(seconds))
+                due = min(due ?? .distantFuture, time.addingTimeInterval(seconds))
+            }
+        }
+        return due
+    }
+
+    private func schedule(_ due: Date?) {
+        guard due != nextRead || ticks == nil && due != nil else { return }
         ticks?.cancel()
         ticks = nil
-        raise(.clock)
-        var next = nextRead
-        guard isPanelOpen || next != nil else { return }
-        ticks = Task { [weak self, tickPause, sleep = clock.sleep] in
-            while !Task.isCancelled {
-                let isPanelOpen = self?.isPanelOpen ?? false
-                let wait = isPanelOpen ? tickPause : max(tickPause, .seconds(next ?? 0))
-                try? await sleep(wait, wait / 10)
-                guard !Task.isCancelled, let self else { return }
-                raise(.clock)
-                next = nextRead
-                guard self.isPanelOpen || next != nil else { return }
-            }
+        nextRead = due
+        guard let due, !hasQuit else { return }
+        let wait = Duration.seconds(max(0, due.timeIntervalSince(now())))
+        ticks = Task { [weak self, sleep = clock.sleep] in
+            try? await sleep(wait, wait / 10)
+            guard !Task.isCancelled, let self else { return }
+            ticks = nil
+            nextRead = nil
+            updateClock()
         }
     }
 }

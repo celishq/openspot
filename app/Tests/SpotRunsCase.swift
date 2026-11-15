@@ -5,7 +5,11 @@ import XCTest
 class SpotRunsCase: XCTestCase {
     var folder: URL!
     var runs: SpotRuns!
-    var time = Date(timeIntervalSince1970: 1000)
+    let clock = FakeClock(isReal: true)
+    var time: Date {
+        get { clock.time }
+        set { clock.advance(by: newValue.timeIntervalSince(clock.time)) }
+    }
     var menuBar: Set<String> = []
 
     override func setUp() async throws {
@@ -15,7 +19,7 @@ class SpotRunsCase: XCTestCase {
     }
 
     func runs(environment: [String: String]) -> SpotRuns {
-        SpotRuns(environment: environment, clock: RunClock { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50))
+        SpotRuns(environment: environment, clock: clock.value, stopPause: 0.2)
     }
 
     override func tearDown() async throws {

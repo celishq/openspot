@@ -30,12 +30,6 @@ extension SpotRun {
         running(Self.cardKey) != nil
     }
 
-    public var work: [ScriptCall] {
-        _ = workPauses
-        let time = runs.now()
-        return workCalls.filter { time.timeIntervalSince($0.started) >= Self.workPause }
-    }
-
     public var cardWork: ScriptCall? {
         shown(Self.cardKey)
     }
@@ -90,7 +84,7 @@ extension SpotRun {
     }
 
     public func pressKey(_ call: String) {
-        waitingKeys.append(call)
+        if !waitingKeys.contains(call) { waitingKeys.append(call) }
         startWaitingKey()
     }
 
@@ -201,7 +195,7 @@ extension SpotRun {
     func after(_ pause: Duration, key: String, _ work: @escaping () -> Void) {
         pauses[key]?.cancel()
         pauses[key] = Task { [weak self, sleep = runs.clock.sleep] in
-            try? await sleep(pause, nil)
+            try? await sleep(pause, pause / 10)
             guard !Task.isCancelled else { return }
             self?.pauses[key] = nil
             work()

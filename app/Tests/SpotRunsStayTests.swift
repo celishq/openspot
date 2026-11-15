@@ -267,7 +267,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
     private func silentFormSheet(limit: TimeInterval = 10) async throws -> (SpotRun, CommandAction, CommandAction) {
         runs.quit()
-        runs = SpotRuns(environment: ProcessInfo.processInfo.environment, readLimit: limit, clock: RunClock { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50))
+        runs = SpotRuns(environment: ProcessInfo.processInfo.environment, readLimit: limit, clock: clock.value, stopPause: 0.2)
         try script(header: "mode=stay\noffers=card\noffers=menubar", String(format: Self.silentForm, path("asked")))
         let sheet = try sheet()
         runs.panelOpened()
@@ -507,6 +507,38 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertEqual(link.records.values.map(\.isDropped), [true])
     }
 
+    func testAnAnswerBeingAppliedIsNotFailedAsSlow() async throws {
+        let clock = FakeClock()
+        nonisolated(unsafe) var holds = false
+        runs.quit()
+        runs = SpotRuns(clock: clock.value, stopPause: 0.2, prepare: { _, _ in
+            guard holds else { return }
+            holds = false
+            await MainActor.run { clock.advance(by: 10) }
+            for _ in 0..<5 { await MainActor.run {} }
+        })
+        try script(header: "mode=stay\noffers=card\noffers=menubar", #"""
+        while IFS= read -r line; do
+          case "$line" in
+            call=*) id=${line#call=} ;;
+            '') printf 'end=%s\n\nrow=a\ntitle=A\n---\n' "$id" ;;
+          esac
+        done
+        """#)
+        let (sheet, told) = try toldSheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 && !sheet.isReading }
+        let link = try XCTUnwrap(sheet.link as? StayLink)
+
+        holds = true
+        sheet.read(need: .change)
+        try await wait("the answer") { !holds && !sheet.isReading && link.records.isEmpty }
+
+        XCTAssertEqual(told(), [])
+        XCTAssertNil(sheet.failure)
+    }
+
     func testACardCallOfAStayingScriptReachesIt() async throws {
         try staying()
         let sheet = try sheet()
@@ -666,7 +698,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testACallStartsAStayingScriptThatNothingWantsAndItEndsAfterTheCall() async throws {
-        runs = SpotRuns(clock: RunClock { [unowned self] in self.time }, stopPause: 30, tickPause: .milliseconds(50))
+        runs = SpotRuns(clock: clock.value, stopPause: 30)
         try staying()
         let sheet = try sheet()
 
@@ -848,7 +880,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
     private func slowStaying(limit: TimeInterval = 1) throws -> (sheet: SpotRun, told: () -> [String]) {
         runs.quit()
-        runs = SpotRuns(readLimit: limit, clock: RunClock { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50))
+        runs = SpotRuns(readLimit: limit, clock: clock.value, stopPause: 0.2)
         try script(header: "mode=stay\non=sheet.open\noffers=card\noffers=menubar", """
         first=; [ -f '\(path("started"))' ] || first=1; touch '\(path("started"))'
         while IFS= read -r line; do
@@ -938,7 +970,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testTheRecordOfALongCallOfAStayingScriptKeepsOnlyTheFramesTheLogShows() async throws {
-        runs = SpotRuns(clock: RunClock { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50), log: CallLog(folder: folder.appendingPathComponent("logs"), limit: 2_000))
+        runs = SpotRuns(clock: clock.value, stopPause: 0.2, log: CallLog(folder: folder.appendingPathComponent("logs"), limit: 2_000))
         nonisolated(unsafe) var kept: [Int] = []
         runs.onCall = { record, _ in if record.arguments.first == "go" { kept.append(record.frames.count) } }
         try script(header: "mode=stay\noffers=card\noffers=menubar", #"""

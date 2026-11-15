@@ -48,16 +48,16 @@ final class SettingsSpotTests: BuiltInCase {
 
         let items = try await items()
 
-        XCTAssertEqual(items.map(\.run), ["panel_key", "fix_key", "careful_mode"])
+        XCTAssertEqual(items.map(\.run), ["panel-key", "fix-key", "careful_mode"])
         XCTAssertFalse(items.contains { $0.title == "Show in the menu bar" || $0.title == "Float" || $0.subtitle?.contains("Cups") == true })
     }
 
     func testTheSheetListsTheKeyOfTheFile() async throws {
-        try file.set("panel_key", to: "option+space")
+        try file.set("panel-key", to: "option+space")
 
         let items = try await items()
 
-        XCTAssertEqual(items.map(\.run), ["panel_key", "fix_key", "careful_mode"])
+        XCTAssertEqual(items.map(\.run), ["panel-key", "fix-key", "careful_mode"])
         XCTAssertEqual(items.first?.title, "Open Openspot")
         XCTAssertEqual(items.first?.shortcut, "option+space")
         XCTAssertEqual(items.map { $0.hides ?? [] }, [[], [], []])
@@ -69,14 +69,14 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(before[1].title, "Open a fix")
         XCTAssertEqual(before[1].shortcut, "cmd+option+o")
 
-        try await call(["fix_key", "ctrl+option+f"])
+        try await call(["fix-key", "ctrl+option+f"])
 
         XCTAssertEqual(file.read().fixKey, Shortcut(text: "ctrl+option+f"))
     }
 
     func testTheKeyThatOpensThePanelTakesNoShake() async throws {
         do {
-            try await call(["panel_key", "shake"])
+            try await call(["panel-key", "shake"])
             XCTFail("took a shake to open the panel")
         } catch {
             XCTAssertEqual(file.read().panelKey, .standard)
@@ -116,7 +116,7 @@ final class SettingsSpotTests: BuiltInCase {
 
     func testAKeyItCannotUseLeavesTheFile() async throws {
         do {
-            try await call(["panel_key", "k"])
+            try await call(["panel-key", "k"])
             XCTFail("took a bad key")
         } catch {
             XCTAssertFalse(FileManager.default.fileExists(atPath: file.url.path))
@@ -136,7 +136,7 @@ final class SettingsSpotTests: BuiltInCase {
         offerLogin()
 
         let off = try await items()
-        XCTAssertEqual(off.map(\.run), ["panel_key", "fix_key", "careful_mode", "open_at_login"])
+        XCTAssertEqual(off.map(\.run), ["panel-key", "fix-key", "careful_mode", "open_at_login"])
         XCTAssertEqual(off.last?.title, "Open at login")
         XCTAssertEqual(off.last?.isOn, false)
 
@@ -170,7 +170,7 @@ final class SettingsSpotTests: BuiltInCase {
         offerLink()
 
         let off = try await items()
-        XCTAssertEqual(off.map(\.run), ["panel_key", "fix_key", "careful_mode", "command_link"])
+        XCTAssertEqual(off.map(\.run), ["panel-key", "fix-key", "careful_mode", "command_link"])
         XCTAssertEqual(off.last?.title, "Use openspot in Terminal")
         XCTAssertEqual(off.last?.isOn, false)
 

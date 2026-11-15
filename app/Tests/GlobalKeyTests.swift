@@ -118,7 +118,7 @@ final class GlobalKeyTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: folder) }
         let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
         let key = GlobalKey(spot: "windows", command: "left", shortcut: try XCTUnwrap(Shortcut(text: "ctrl+option+left")))
-        try file.set("panel_key", to: "option+space")
+        try file.set("panel-key", to: "option+space")
         try file.write(keys: [key])
         var arrangement = SpotArrangement()
         arrangement.set(isOnGrid: false, of: "apps")

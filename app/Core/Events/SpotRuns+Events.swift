@@ -6,7 +6,7 @@ extension SpotRuns {
         case .panel: openPanel()
         case .wake: wake()
         case .sleep: usage.flush()
-        case .clock: tick()
+        case .clock: updateClock()
         case .query(let text): ask(text)
         case .named(let name, let value, let readsEachSpot): read(name, value, readsEachSpot: readsEachSpot)
         }
@@ -82,13 +82,12 @@ extension SpotRuns {
             clipboardWatch = nil
             watchClipboard(looksNow: true)
         }
-        raise(.clock)
+        updateClock()
         readPanel()
         for id in placed {
             guard let sheet = sheets[id], let read = sheet.spot.read, read.seconds == nil, !read.has(.panel) else { continue }
             sheet.read(reason: .want)
         }
-        updateClock()
     }
 
     private func readPanel() {
@@ -101,10 +100,11 @@ extension SpotRuns {
     private func wake() {
         let time = now()
         for sheet in sheets.values where sheet.isWanted && sheet.spot.read?.seconds != nil {
-            lastClockRead[sheet.spot.id] = time
+            sheet.clockRead = time
             sheet.read(need: .clock, reason: .clock(sheet.spot.read?.seconds))
         }
         sheets.values.forEach { $0.settleScript() }
+        updateClock()
     }
 
     private func read(_ name: String, _ value: String?, readsEachSpot: Bool) {

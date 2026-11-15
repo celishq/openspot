@@ -211,15 +211,15 @@ final class SpotAPITests: XCTestCase {
     }
 
     func testTheStatusOfTheAppNamesItsKeysAndWhatOnlyTheRunningAppKnows() async throws {
-        try file.set("panel_key", to: "option+space")
+        try file.set("panel-key", to: "option+space")
         await app.set(update: "0.3.0", calls: 2, isFirstLaunch: true)
 
         let running = try await answer(["app", "status"])
         let alone = try await XCTUnwrap(appWork(["app", "status"]))()
 
         let status = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(running.output.utf8)) as? [String: Any])
-        XCTAssertEqual(status["panelKey"] as? String, "option+space")
-        XCTAssertEqual(status["fixKey"] as? String, "cmd+option+o")
+        XCTAssertEqual(status["panel-key"] as? String, "option+space")
+        XCTAssertEqual(status["fix-key"] as? String, "cmd+option+o")
         XCTAssertEqual(status["update"] as? String, "0.3.0")
         XCTAssertEqual(status["calls"] as? Int, 2)
         XCTAssertEqual(status["firstLaunch"] as? Bool, true)

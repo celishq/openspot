@@ -234,7 +234,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
 
     private func runs(limit: TimeInterval = 10, idle: TimeInterval = 30, frameWait: DispatchTimeInterval = .milliseconds(2), log: CallLog? = nil) {
         runs.quit()
-        runs = SpotRuns(readLimit: limit, clock: RunClock { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50), inlineIdle: idle, frameWait: frameWait, log: log)
+        runs = SpotRuns(readLimit: limit, clock: clock.value, stopPause: 0.2, inlineIdle: idle, frameWait: frameWait, log: log)
     }
 
     func testAnEndlessLoopFailsAsTooSlowAndTheSpotAnswersItsNextCall() async throws {
@@ -261,7 +261,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
         var environment = ProcessInfo.processInfo.environment
         environment["PATH"] = "\(bin.path):\(environment["PATH"] ?? "/usr/bin:/bin")"
         runs.quit()
-        runs = SpotRuns(environment: environment, readLimit: 0.5, clock: RunClock { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50))
+        runs = SpotRuns(environment: environment, readLimit: 0.5, clock: clock.value, stopPause: 0.2)
     }
 
     private func callingSpot() throws -> Spot {

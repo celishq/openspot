@@ -22,7 +22,7 @@ public final class CallerTokens: @unchecked Sendable {
     }
 
     public static let variable = "OPENSPOT_TOKEN"
-    private static let reason = "OPENSPOT_REASON"
+    private static let reason = ReadReason.variable
 
     private let lock = NSLock()
     private var records: [String: Record] = [:]

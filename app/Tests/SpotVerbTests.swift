@@ -123,7 +123,7 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertEqual(menu.rows.count, 6)
         let rows = menu.rows.filter { $0.action != nil }
         XCTAssertEqual(rows.map(\.title), ["Share", "Settings", "Edit", "Change Icon", "Delete"])
-        XCTAssertEqual(rows.map(\.keyLabel), ["⌘⇧C", "⌘⏎", "⌘E", "›", "⌘⌫"])
+        XCTAssertEqual(rows.map(\.keyLabel), ["⇧⌘C", "⌘⏎", "⌘E", "›", "⌘⌫"])
         XCTAssertEqual(rows.first { $0.title == "Change Icon" }?.children.map(\.title), ["Draw…", "Choose File…"])
         XCTAssertEqual(rows.map(\.isDestructive), [false, false, false, false, true])
         XCTAssertEqual(menu.headers.map(\.title), [])

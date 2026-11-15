@@ -29,8 +29,8 @@ sheet() {
   login=$(value "$1" login)
   link=$(value "$1" link)
   printf 'recents=false\n\nbutton=open\ntitle=Change\nclose=false\n'
-  printf '\nrow=panel_key\ntitle=Open Openspot\nicon=keyboard\ntype=hotkey\nshortcut=%s\n' "$(value "$1" panelKey)"
-  printf '\nrow=fix_key\ntitle=Open a fix\nicon=wrench.and.screwdriver\ntype=hotkey\nshortcut=%s\n' "$(value "$1" fixKey)"
+  printf '\nrow=panel-key\ntitle=Open Openspot\nicon=keyboard\ntype=hotkey\nshortcut=%s\n' "$(value "$1" panel-key)"
+  printf '\nrow=fix-key\ntitle=Open a fix\nicon=wrench.and.screwdriver\ntype=hotkey\nshortcut=%s\n' "$(value "$1" fix-key)"
   printf '\nrow=careful_mode\ntitle=Careful mode\ndetail=Spots get only what their uses name\nicon=lock.shield\nvalue=%s\n' "$(value "$1" careful)"
   [ -z "$login" ] || printf '\nrow=open_at_login\ntitle=Open at login\nicon=power\nvalue=%s\n' "$login"
   [ -z "$link" ] || printf '\nrow=command_link\ntitle=Use openspot in Terminal\ndetail=The command line tool\nicon=terminal\nvalue=%s\n' "$link"
@@ -64,8 +64,8 @@ case "$1" in
         ;;
     esac
     ;;
-  panel_key) exec openspot setting set --spot openspot panel-key "$2" ;;
-  fix_key) exec openspot setting set --spot openspot fix-key "$2" ;;
+  panel-key) exec openspot setting set --spot openspot panel-key "$2" ;;
+  fix-key) exec openspot setting set --spot openspot fix-key "$2" ;;
   *)
     echo 'Settings cannot do that.' >&2
     exit 1

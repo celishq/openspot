@@ -320,7 +320,7 @@ A button is a verb. If the layout places it, the sheet draws it. If not, it's an
   and one `field`, `choice` or `switch` for each value. Then the same call runs again with the values on stdin.
 - A form with only one `choice` shows its options as rows under the search field. Return or a click sends one.
 - With `type=multiple`, a choice picks several options. A checkmark marks each option in a `value` line. Return sends the
-  option of its row, and `⌘⇧A` sends each option without a checkmark. The spot keeps the picks and prints the form again.
+  option of its row, and `⇧⌘A` sends each option without a checkmark. The spot keeps the picks and prints the form again.
 - A form can print itself again, such as with a `title` that says what's wrong. Then it stays open.
 - When the call with the values prints `select=<row id>` in its head, that row is selected after the sheet reads again,
   such as the row that the form made.

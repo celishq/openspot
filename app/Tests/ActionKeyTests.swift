@@ -36,6 +36,13 @@ final class ActionKeyTests: XCTestCase {
     func testWritesTheKeyAsTheMacDoes() {
         XCTAssertEqual(ActionKey(text: "cmd+return")?.label, "⌘⏎")
         XCTAssertEqual(ActionKey(text: "cmd+backspace")?.label, "⌘⌫")
-        XCTAssertEqual(ActionKey(text: "cmd+shift+n")?.label, "⌘⇧N")
+        XCTAssertEqual(ActionKey(text: "cmd+shift+n")?.label, "⇧⌘N")
+    }
+
+    func testAKeyOfThePanelAndAGlobalKeyWriteOneKeyAlike() {
+        XCTAssertEqual(ActionKey(text: "cmd+shift+n")?.label, Shortcut(text: "cmd+shift+n")?.label)
+        XCTAssertEqual(ActionKey(text: "cmd+return")?.label, Shortcut(text: "cmd+return")?.label)
+        XCTAssertEqual(ActionKey(text: "cmd+shift+n")?.text, Shortcut(text: "shift+cmd+n")?.text)
+        XCTAssertEqual(ActionKey(label: "⇧⌘N"), ActionKey(text: "cmd+shift+n"))
     }
 }

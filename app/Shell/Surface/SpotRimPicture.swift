@@ -8,7 +8,7 @@ struct SpotRimPicture: View {
     @Environment(\.colorScheme) private var scheme
     @Environment(\.displayScale) private var scale
 
-    @MainActor private static var pictures = RecentCache<Key, NSImage>(base: 8 << 20)
+    @MainActor private static var pictures = RecentCache<Key, NSImage>(limit: 32 << 20)
 
     var body: some View {
         let theme: SpotTheme = scheme == .dark ? .dark : .light

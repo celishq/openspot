@@ -18,8 +18,8 @@ final class ReservedSettingTests: XCTestCase {
         XCTAssertEqual(call("setting", "set", "--spot", "openspot", "login", "true"), .appLogin(true))
         XCTAssertEqual(call("setting", "set", "--spot", "openspot", "link", "false"), .appLink(false))
         XCTAssertEqual(call("setting", "set", "--spot", "openspot", "careful", "true"), .appCareful(true))
-        XCTAssertEqual(call("setting", "set", "--spot", "openspot", "panel-key", "ctrl+space"), .appKeySet(name: "panel_key", key: "ctrl+space"))
-        XCTAssertEqual(call("setting", "set", "--spot", "openspot", "fix-key", "ctrl+f"), .appKeySet(name: "fix_key", key: "ctrl+f"))
+        XCTAssertEqual(call("setting", "set", "--spot", "openspot", "panel-key", "ctrl+space"), .appKeySet(name: "panel-key", key: "ctrl+space"))
+        XCTAssertEqual(call("setting", "set", "--spot", "openspot", "fix-key", "ctrl+f"), .appKeySet(name: "fix-key", key: "ctrl+f"))
         XCTAssertEqual(call("setting", "set", "--spot", "openspot", "login", "yes"), .refused("`login` takes `true` or `false`, such as `openspot setting set --spot openspot login true`."))
     }
 

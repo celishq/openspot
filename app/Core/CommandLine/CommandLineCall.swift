@@ -144,7 +144,7 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot prompt change <id> [--failure <text>] [words]...
                                                  Prints a prompt that asks a coding agent to change the spot as the
                                                  words say. With no words, the agent asks you what to change.
-    openspot app status [--frame]                Prints the state of the app as JSON: version, panelKey, fixKey, login,
+    openspot app status [--frame]                Prints the state of the app as JSON: version, panel-key, fix-key, login,
                                                  link, update, calls and firstLaunch. --frame prints them as one block.
     openspot batch                               Runs one call for each line of stdin, its words split at spaces, and
                                                  prints the output of each with a line --- after it. It stops at the first
@@ -494,8 +494,8 @@ public enum CommandLineCall: Equatable, Sendable {
 
     private static func key(_ words: [String]) -> CommandLineCall? {
         switch words.first {
-        case "--panel" where words.count == 2: return .appKeySet(name: "panel_key", key: words[1])
-        case "--fix" where words.count == 2: return .appKeySet(name: "fix_key", key: words[1])
+        case "--panel" where words.count == 2: return .appKeySet(name: "panel-key", key: words[1])
+        case "--fix" where words.count == 2: return .appKeySet(name: "fix-key", key: words[1])
         case let spot? where !spot.hasPrefix("-") && (words.count == 2 || words.count == 3):
             let act: GlobalKey.Act = words[1] == "--float" ? .float : .command(words[1])
             guard words[1] == "--float" || !words[1].hasPrefix("-") else { return nil }

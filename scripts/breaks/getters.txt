@@ -1,5 +1,4 @@
 app/Core/CommandLine/CommandLink.swift	isOn
-app/Core/Keys/SpotSettings.swift	sheet
 app/Core/Panel/AppPlaces.swift	defaultArrangement
 app/Core/Panel/AppPlaces.swift	folder
 app/Core/Sheet/PictureFile.swift	changed

@@ -173,10 +173,10 @@ final class SpotRunsWantTests: SpotRunsCase {
 
     func testTheClockLooksAtTheTimeOnlyWhenAReadIsDue() async throws {
         var looks = 0
-        runs = SpotRuns(clock: RunClock { [unowned self] in
+        runs = SpotRuns(clock: RunClock(now: { [unowned self] in
             looks += 1
             return self.time
-        }, stopPause: 0.2, tickPause: .milliseconds(50))
+        }, sleep: clock.value.sleep), stopPause: 0.2)
         menuBar.insert("script")
         try script(header: "on=clock.5\noffers=card\noffers=menubar", "printf 'text=t\\ntitle=1\\n'")
         _ = try scanned()

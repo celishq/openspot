@@ -91,11 +91,11 @@ final class SpotsModelTests: XCTestCase {
 
     func testAPressReadsTheConfigOfTheLastReloadAndNotTheFile() async throws {
         await model.reload()
-        try model.files.config.set("fix_key", to: "cmd+shift+9")
+        try model.files.config.set("fix-key", to: "cmd+shift+9")
 
         XCTAssertEqual(model.config.fixKey, Config(text: "").fixKey)
         await model.spotsChanged()
-        XCTAssertEqual(model.config.fixKey, Config(text: "fix_key = \"cmd+shift+9\"").fixKey)
+        XCTAssertEqual(model.config.fixKey, Config(text: "fix-key = \"cmd+shift+9\"").fixKey)
     }
 
     func testAChoiceThatTheAppWritesBuildsNoGridWhenTheWatchReportsItsWrite() async throws {

@@ -36,7 +36,7 @@ struct SpotHintLine: View {
         return model.formHasChoices ? Self.choiceForm : Self.form
     }
 
-    private static let multipleForm = HintWords("⏎ Select   ⌘⇧A Select all   Esc Done")
+    private static let multipleForm = HintWords("⏎ Select   ⇧⌘A Select all   Esc Done")
     private static let choiceForm = HintWords("⏎ Save   Esc Cancel")
     private static let form = HintWords("⌘⏎ Save   Esc Cancel")
 }

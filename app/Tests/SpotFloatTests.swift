@@ -191,7 +191,7 @@ final class SpotFloatTests: XCTestCase {
         let given = folder.appendingPathComponent("given").path
         try script("keys", header: "title=Keys\non=sheet.open", """
         case "$1" in
-          read) printf 'button=open\\ntitle=Change\\nclose=false\\n\\nrow=panel_key\\ntitle=Open\\nshortcut=ctrl+space\\n\\nrow=float:shelf\\ntitle=Float\\nshortcut=Record\\nshake=true\\n' ;;
+          read) printf 'button=open\\ntitle=Change\\nclose=false\\n\\nrow=panel-key\\ntitle=Open\\nshortcut=ctrl+space\\n\\nrow=float:shelf\\ntitle=Float\\nshortcut=Record\\nshake=true\\n' ;;
           *) printf '%s %s' "$1" "$2" > '\(given)' ;;
         esac
         """)
@@ -203,10 +203,10 @@ final class SpotFloatTests: XCTestCase {
         model.openSettings()
         try await wait("the rows of the keys") { model.openItems?.shown.contains { $0.run == "float:shelf" } == true }
 
-        model.toggleRecording(id: "panel_key")
+        model.toggleRecording(id: "panel-key")
         XCTAssertEqual(model.recordingWords, "Press keys")
         model.recordShake()
-        XCTAssertEqual(model.recording, "panel_key")
+        XCTAssertEqual(model.recording, "panel-key")
 
         model.toggleRecording(id: "float:shelf")
         XCTAssertEqual(model.recordingWords, "Press keys or shake")

@@ -81,7 +81,8 @@ class SampleSpotsCase: XCTestCase {
             ("gh", Self.fakeGh(answer: folder.appendingPathComponent("gh-answer").path)),
             ("osascript", "cp '\(folder.path)/clipboard' '\(folder.path)/pasted'"),
             ("openspot", Self.fakeOpenspot(in: folder)),
-            ("caffeinate", "exec /bin/bash -c 'exec -a caffeinate /bin/sleep 30'")
+            ("caffeinate", "exec /bin/bash -c 'exec -a caffeinate /bin/sleep 30'"),
+            ("say", "exit 0")
         ] {
             let tool = tools.appendingPathComponent(name)
             try "#!/bin/sh\n\(script)\n".writeScript(to: tool)

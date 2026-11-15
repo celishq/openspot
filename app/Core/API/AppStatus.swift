@@ -11,6 +11,13 @@ struct AppStatus: Encodable {
     let calls: Int?
     let firstLaunch: Bool?
 
+    private enum CodingKeys: String, CodingKey {
+        case version
+        case panelKey = "panel-key"
+        case fixKey = "fix-key"
+        case careful, login, link, update, calls, firstLaunch
+    }
+
     func text(frame: Bool) throws -> String {
         guard frame else {
             let encoder = JSONEncoder()
@@ -18,7 +25,7 @@ struct AppStatus: Encodable {
             return String(decoding: try encoder.encode(self), as: UTF8.self) + "\n"
         }
         let pairs: [(String, String?)] = [
-            ("version", version), ("panelKey", panelKey), ("fixKey", fixKey), ("careful", String(careful)), ("login", login.map(String.init)), ("link", link.map(String.init)),
+            ("version", version), (CodingKeys.panelKey.rawValue, panelKey), (CodingKeys.fixKey.rawValue, fixKey), ("careful", String(careful)), ("login", login.map(String.init)), ("link", link.map(String.init)),
             ("update", update), ("calls", calls.map(String.init)), ("firstLaunch", firstLaunch.map(String.init))
         ]
         return TextBlock(fields: pairs.compactMap { key, value in value.map { TextBlock.Field(key: key, value: $0) } }).text

@@ -28,8 +28,7 @@ extension SpotRun {
             key: Self.readKey,
             input: values.isEmpty ? nil : values.joined(),
             limit: action == read ? runs.readLimit : nil,
-            reason: reason,
-            variables: action == read ? reason.variables : [:],
+            reason: action == read ? reason : nil,
             purpose: .ask(.read(generation: panel?.generation, reports: need != .clock, query: query, tells: reason != .panel))
         ))
         if isSent {
@@ -65,7 +64,6 @@ extension SpotRun {
             input: (showsSheet ? panel?.values ?? "" : "") + SearchQuery(text: query).input,
             limit: runs.readLimit,
             reason: .text(query, inSheet: true),
-            variables: ReadReason.text(query, inSheet: true).variables,
             purpose: .ask(.search(query))
         ))
     }
@@ -86,7 +84,6 @@ extension SpotRun {
             input: runs.search(of: text).input,
             limit: runs.readLimit,
             reason: .text(text, inSheet: false),
-            variables: ReadReason.text(text, inSheet: false).variables,
             purpose: .ask(.answer(text))
         ))
     }

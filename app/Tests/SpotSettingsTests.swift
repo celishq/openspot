@@ -55,6 +55,17 @@ final class SpotSettingsTests: XCTestCase {
         XCTAssertEqual(file.read().keys, [])
     }
 
+    func testAValueWithANewLineStaysInItsRow() async throws {
+        try "#!/bin/sh\n# title=Move\n#\n# field=place\n# title=Place\n".writeScript(to: folder.spotFile("move"))
+        try file.set(setting: "place", of: "move", to: "far\n\nrow=other\ntitle=Other")
+        let settings = try XCTUnwrap(try spot("move").settingsSpot)
+
+        let items = try await rows(of: settings, in: SpotRuns())
+
+        XCTAssertEqual(items.map(\.run), ["setting:move:place", "menubar:move"])
+        XCTAssertEqual(items.first?.subtitle, "far\n\nrow=other\ntitle=Other")
+    }
+
     func testItTakesNoKeyOfAnotherSpotAndNoKeyItCannotUse() async throws {
         try "#!/bin/sh\n# title=Move\n#\n# button=left\n# title=Left side\n".writeScript(to: folder.spotFile("move"))
         let move = try XCTUnwrap(try spot("move").settingsSpot)

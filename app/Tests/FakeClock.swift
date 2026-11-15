@@ -12,6 +12,11 @@ final class FakeClock {
     private(set) var time = Date(timeIntervalSince1970: 1000)
     private var sleeps: [Sleep] = []
     private var count = 0
+    private let isReal: Bool
+
+    init(isReal: Bool = false) {
+        self.isReal = isReal
+    }
 
     var value: RunClock {
         RunClock(now: { self.time }, sleep: { duration, _ in try await self.sleep(duration) })
@@ -43,10 +48,19 @@ final class FakeClock {
                     wake.resume(throwing: CancellationError())
                 } else {
                     sleeps.append(Sleep(id: id, due: due, wake: wake))
+                    if isReal { wakeLater(id, after: duration) }
                 }
             }
         } onCancel: {
             Task { @MainActor [weak self] in self?.cancel(id) }
+        }
+    }
+
+    private func wakeLater(_ id: Int, after duration: Duration) {
+        Task { [weak self] in
+            try? await RunClock().sleep(duration, nil)
+            guard let self, let index = sleeps.firstIndex(where: { $0.id == id }) else { return }
+            sleeps.remove(at: index).wake.resume()
         }
     }
 

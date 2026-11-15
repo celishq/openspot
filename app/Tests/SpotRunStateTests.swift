@@ -199,8 +199,124 @@ final class SpotRunStateTests: XCTestCase {
         XCTAssertTrue(sheet.work.isEmpty)
         clock.advance(by: 0.1)
 
+        try await wait("the shown work") { !sheet.work.isEmpty }
         XCTAssertEqual(sheet.work.map(\.id), [link.sent[0].made.id])
-        try await wait("the reader of the work") { sheet.workPauses == 1 }
+    }
+
+    private func inMenuBar(read: SpotRead? = nil) -> (SpotRun, FakeLink) {
+        let spot = Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), read: read)
+        runs.take(ScanResult(files: [SpotFile(id: "script", spots: [spot])], refused: []), menuBar: ["script"])
+        return (runs.sheets["script"]!, links["script"]!)
+    }
+
+    func testWorkShorterThanItsPauseTellsNoReaderOfTheWorkOrTheMenuBar() async throws {
+        let (sheet, link) = inMenuBar()
+        nonisolated(unsafe) var told: [String] = []
+        withObservationTracking { _ = sheet.work } onChange: { told.append("work") }
+        withObservationTracking { _ = sheet.shownState } onChange: { told.append("state") }
+        withObservationTracking { _ = self.runs.menuBarMarks } onChange: { told.append("marks") }
+        withObservationTracking { _ = self.runs.runningSummary } onChange: { told.append("summary") }
+
+        sheet.pressCard()
+        await link.end(link.sent[0])
+
+        XCTAssertEqual(told, [])
+    }
+
+    func testWorkPastItsPauseShowsInTheRunningSummaryUntilItEnds() async throws {
+        let (sheet, link) = inMenuBar()
+        sheet.pressCard()
+        try await sleeps()
+        nonisolated(unsafe) var told = 0
+        withObservationTracking { _ = self.runs.runningSummary } onChange: { told += 1 }
+
+        clock.advance(by: 1)
+        try await wait("the summary") { self.runs.runningSummary == "Script is running" }
+        XCTAssertEqual(told, 1)
+        XCTAssertEqual(runs.workSpot, "script")
+        await link.end(link.sent[0])
+
+        XCTAssertNil(runs.runningSummary)
+        XCTAssertTrue(sheet.work.isEmpty)
+    }
+
+    func testANewReadingTellsTheReaderOfTheMarksAndTheSameReadingDoesNot() async throws {
+        let (sheet, link) = inMenuBar(read: SpotRead(moments: [.every(60)]))
+        try await wait("the first read") { link.sent.count == 1 }
+        await link.frame("number=n\nvalue=3\n", of: link.sent[0])
+        await link.end(link.sent[0])
+        nonisolated(unsafe) var told = 0
+        withObservationTracking { _ = self.runs.menuBarMarks } onChange: { told += 1 }
+
+        sheet.read(need: .change)
+        await link.frame("number=n\nvalue=3\n", of: link.sent[1])
+        await link.end(link.sent[1])
+        XCTAssertEqual(told, 0)
+        sheet.read(need: .change)
+        await link.frame("number=n\nvalue=4\n", of: link.sent[2])
+        await link.end(link.sent[2])
+
+        XCTAssertEqual(told, 1)
+        XCTAssertEqual(runs.menuBarMarks.map(\.id), ["script"])
+    }
+
+    func testAnOpenPanelWithNothingDueSetsNoWake() async throws {
+        let (sheet, _) = inMenuBar()
+
+        runs.raise(.panel)
+        sheet.pressCard()
+
+        try await wait("the pause of the work") { self.clock.sleepCount >= 1 }
+        await Task.yield()
+        XCTAssertEqual(clock.sleepCount, 1)
+    }
+
+    func testAPanelOpenPassesOverTheClockOnce() {
+        _ = inMenuBar(read: SpotRead(moments: [.every(60)]))
+        let passes = runs.clockPasses
+
+        runs.raise(.panel)
+
+        XCTAssertEqual(runs.clockPasses - passes, 1)
+    }
+
+    func testTheClockSleepsUntilTheNextReadIsDue() async throws {
+        let (_, link) = inMenuBar(read: SpotRead(moments: [.every(60)]))
+        await link.end(link.sent[0])
+        try await wait("the schedule") { self.clock.isSleeping(for: 60) }
+
+        clock.advance(by: 59)
+        runs.raise(.panel)
+        XCTAssertEqual(link.sent.count, 1)
+        try await wait("the schedule kept") { self.clock.isSleeping(for: 1) && self.clock.sleepCount == 1 }
+        clock.advance(by: 1)
+
+        try await wait("the read from the clock") { link.sent.count == 2 }
+    }
+
+    func testASpotThatComesBackReadsAtOnce() async throws {
+        let spot = Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), read: SpotRead(moments: [.every(60)]))
+        let scan = ScanResult(files: [SpotFile(id: "script", spots: [spot])], refused: [])
+        runs.take(scan, menuBar: ["script"])
+        await links["script"]!.end(links["script"]!.sent[0])
+        clock.advance(by: 10)
+
+        runs.take(ScanResult(files: [], refused: []), menuBar: ["script"])
+        runs.take(scan, menuBar: ["script"])
+
+        XCTAssertEqual(links["script"]?.sent.count, 1)
+    }
+
+    func testAHeldKeyWaitsAsOneCall() async throws {
+        let (sheet, link) = sheet(kind: .launch, read: nil)
+
+        sheet.pressKey("go")
+        sheet.pressKey("go")
+        sheet.pressKey("go")
+        await link.end(link.sent[0])
+        await link.end(link.sent[1])
+
+        XCTAssertEqual(link.arguments(), [["go"], ["go"]])
     }
 
     func testAFormCallAnswersWithItsFrameOfFieldsAndTheRowItNames() async throws {

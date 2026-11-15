@@ -33,7 +33,7 @@ final class ConfigFileTests: XCTestCase {
     }
 
     func testReadsTheKey() throws {
-        try write("# mine\npanel_key = \"option+space\"\n")
+        try write("# mine\npanel-key = \"option+space\"\n")
 
         XCTAssertEqual(file.read().panelKey, Shortcut(text: "option+space"))
         XCTAssertEqual(file.read().faults, [])
@@ -41,9 +41,9 @@ final class ConfigFileTests: XCTestCase {
 
     func testTheFixKeyIsCommandOptionOUntilTheFileNamesAnother() {
         XCTAssertEqual(Config(text: "").fixKey, Shortcut(text: "cmd+option+o"))
-        XCTAssertEqual(Config(text: "fix_key = \"ctrl+option+f\"\n").fixKey, Shortcut(text: "ctrl+option+f"))
-        XCTAssertNil(Config(text: "fix_key = \"f\"\n").fixKey)
-        XCTAssertEqual(Config(text: "fix_key = \"f\"\n").faults.count, 1)
+        XCTAssertEqual(Config(text: "fix-key = \"ctrl+option+f\"\n").fixKey, Shortcut(text: "ctrl+option+f"))
+        XCTAssertNil(Config(text: "fix-key = \"f\"\n").fixKey)
+        XCTAssertEqual(Config(text: "fix-key = \"f\"\n").faults.count, 1)
     }
 
     func testTheGridHasNoSidePanelsUntilTheFileAsksForThem() {
@@ -64,48 +64,48 @@ final class ConfigFileTests: XCTestCase {
     }
 
     func testABadKeyGivesNoKeyAndAFault() {
-        let config = Config(text: "panel_key = \"k\"\n")
+        let config = Config(text: "panel-key = \"k\"\n")
 
         XCTAssertNil(config.panelKey)
-        XCTAssertEqual(config.faults, ["config.toml: panel_key cannot use k. Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab."])
+        XCTAssertEqual(config.faults, ["config.toml: panel-key cannot use k. Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab."])
     }
 
     func testAKeyThatIsNotTextIsAFault() {
-        XCTAssertNil(Config(text: "panel_key = 1\n").panelKey)
-        XCTAssertEqual(Config(text: "panel_key = 1\n").faults.count, 1)
+        XCTAssertNil(Config(text: "panel-key = 1\n").panelKey)
+        XCTAssertEqual(Config(text: "panel-key = 1\n").faults.count, 1)
     }
 
     func testAnUnknownKeyIsAFaultAndTheOthersStillLoad() {
-        let config = Config(text: "theme = \"dark\"\npanel_key = \"cmd+k\"\n")
+        let config = Config(text: "theme = \"dark\"\npanel-key = \"cmd+k\"\n")
 
         XCTAssertEqual(config.panelKey, Shortcut(text: "cmd+k"))
         XCTAssertEqual(config.faults, ["config.toml: theme is not a setting."])
     }
 
     func testAFileThatCannotBeReadGivesNoKeyAndItsLine() {
-        let config = Config(text: "panel_key\n")
+        let config = Config(text: "panel-key\n")
 
         XCTAssertNil(config.panelKey)
         XCTAssertEqual(config.faults, ["config.toml: line 1: expected a key and a value"])
     }
 
     func testSettingAKeyChangesOnlyItsLine() throws {
-        try write("# mine\n\npanel_key = \"cmd+k\"\n# end\n")
+        try write("# mine\n\npanel-key = \"cmd+k\"\n# end\n")
 
-        try file.set("panel_key", to: "ctrl+k")
+        try file.set("panel-key", to: "ctrl+k")
 
-        XCTAssertEqual(try String(contentsOf: file.url, encoding: .utf8), "# mine\n\npanel_key = \"ctrl+k\"\n# end\n")
+        XCTAssertEqual(try String(contentsOf: file.url, encoding: .utf8), "# mine\n\npanel-key = \"ctrl+k\"\n# end\n")
     }
 
     func testSettingAKeyAddsItsLineAndMakesTheFile() throws {
-        try file.set("panel_key", to: "ctrl+k")
+        try file.set("panel-key", to: "ctrl+k")
 
-        XCTAssertEqual(try String(contentsOf: file.url, encoding: .utf8), "panel_key = \"ctrl+k\"\n")
+        XCTAssertEqual(try String(contentsOf: file.url, encoding: .utf8), "panel-key = \"ctrl+k\"\n")
 
         try write("# mine")
-        try file.set("panel_key", to: "ctrl+j")
+        try file.set("panel-key", to: "ctrl+j")
 
-        XCTAssertEqual(try String(contentsOf: file.url, encoding: .utf8), "# mine\npanel_key = \"ctrl+j\"\n")
+        XCTAssertEqual(try String(contentsOf: file.url, encoding: .utf8), "# mine\npanel-key = \"ctrl+j\"\n")
     }
 
     func testASettingIsKeptForItsSpotAndRemovedWithNoValue() throws {
@@ -133,7 +133,7 @@ final class ConfigFileTests: XCTestCase {
     func testOtherWritesKeepTheSettings() throws {
         try file.set(setting: "folder", of: "repos", to: "~/Code")
 
-        try file.set("panel_key", to: "option+space")
+        try file.set("panel-key", to: "option+space")
         try file.turn("cpu", on: true)
         try file.write(keys: [GlobalKey(spot: "move", command: "left", shortcut: try XCTUnwrap(Shortcut(text: "ctrl+left")))])
 
@@ -196,7 +196,7 @@ final class ConfigFileTests: XCTestCase {
     }
 
     func testAChangeReadsOnceAndWritesOnce() throws {
-        let disk = FakeDisk(text: "panel_key = \"cmd+k\"\n\n[[spots]]\nid = \"a\"\n")
+        let disk = FakeDisk(text: "panel-key = \"cmd+k\"\n\n[[spots]]\nid = \"a\"\n")
         let file = ConfigFile(url: file.url, disk: disk)
 
         try file.change { config in
@@ -245,17 +245,17 @@ final class ConfigFileTests: XCTestCase {
     }
 
     func testAFileThatCannotBeReadIsNotWrittenFromAKeptConfig() throws {
-        let disk = FakeDisk(text: "panel_key\n")
+        let disk = FakeDisk(text: "panel-key\n")
         let file = ConfigFile(url: file.url, disk: disk)
 
         XCTAssertThrowsError(try file.change(from: file.readKept()) { $0.set(isCareful: true) })
-        XCTAssertEqual(disk.text, "panel_key\n")
+        XCTAssertEqual(disk.text, "panel-key\n")
     }
 
     func testTheSectionsThatDifferNameEachFieldAndTheRest() {
         let config = Config(text: "")
 
-        XCTAssertEqual(Config(text: "panel_key = \"cmd+k\"\n").sections(differingFrom: config), [.keys])
+        XCTAssertEqual(Config(text: "panel-key = \"cmd+k\"\n").sections(differingFrom: config), [.keys])
         XCTAssertEqual(Config(text: "[[keys]]\nspot = \"a\"\nkey = \"shake\"\n").sections(differingFrom: config), [.keys])
         XCTAssertEqual(Config(text: "[[spots]]\nid = \"a\"\n").sections(differingFrom: config), [.spots])
         XCTAssertEqual(Config(text: "[[settings]]\nspot = \"a\"\nkey = \"k\"\nvalue = \"v\"\n").sections(differingFrom: config), [.settings])

@@ -6,6 +6,8 @@ public struct ReadReason: Equatable, Sendable {
     public static let want = ReadReason(rawValue: "spot.want")
     public static let change = ReadReason(rawValue: "spot.change")
 
+    static let variable = "OPENSPOT_REASON"
+
     public let rawValue: String
     public let value: String?
     let isEvent: Bool
@@ -35,6 +37,6 @@ public struct ReadReason: Equatable, Sendable {
     }
 
     var variables: [String: String] {
-        ["OPENSPOT_REASON": rawValue].merging(value.map { ["OPENSPOT_VALUE": $0] } ?? [:]) { _, new in new }
+        [Self.variable: rawValue].merging(value.map { ["OPENSPOT_VALUE": $0] } ?? [:]) { _, new in new }
     }
 }

@@ -49,7 +49,7 @@ final class FirstLaunchTests: XCTestCase {
         XCTAssertEqual(file.read().faults, [])
         XCTAssertEqual(file.read().arrangement.enabled, ["apps", "files"])
 
-        try file.set("panel_key", to: "option+space")
+        try file.set("panel-key", to: "option+space")
         try file.begin(enabling: ["links"])
         XCTAssertEqual(file.read().panelKey, Shortcut(text: "option+space"))
         XCTAssertEqual(file.read().arrangement.enabled, ["apps", "files"])

@@ -241,7 +241,7 @@ final class SheetPartsTests: XCTestCase {
 
     func testTheHintListsTheKeysOfItsParts() throws {
         XCTAssertEqual(try panel(lights).hint, "⌘Q Quit   Esc Close")
-        XCTAssertEqual(try panel("grid=swap\n\nbutton=swap\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\n").hint, "⌘⇧S Swap   Esc Close")
+        XCTAssertEqual(try panel("grid=swap\n\nbutton=swap\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\n").hint, "⇧⌘S Swap   Esc Close")
     }
 
     func testAButtonCanTakeEscapeAndThenTheHintHasNoCloseOfItsOwn() throws {

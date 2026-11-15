@@ -34,7 +34,6 @@ public final class SpotRuns {
     @ObservationIgnored let clock: RunClock
     @ObservationIgnored let now: () -> Date
     @ObservationIgnored private let stopPause: TimeInterval
-    @ObservationIgnored let tickPause: Duration
     @ObservationIgnored let clipboardPause: Duration
     @ObservationIgnored var source: (any Mac)?
     @ObservationIgnored var clipboardWatch: Task<Void, Never>?
@@ -42,13 +41,17 @@ public final class SpotRuns {
     @ObservationIgnored private(set) var hasQuit = false
     @ObservationIgnored private let recent: (String) -> [String]
     @ObservationIgnored private let prepare: ([SpotItem], [String]) async -> Void
-    private var order: [String] = []
+    @ObservationIgnored private var order: [String] = []
 
     @ObservationIgnored private(set) var placed: Set<String> = []
-    private var menuBar: Set<String> = []
-    @ObservationIgnored var lastClockRead: [String: Date] = [:]
+    @ObservationIgnored private var menuBar: Set<String> = []
+    public private(set) var menuBarMarks: [(id: String, mark: MenuBarMark)] = []
+    @ObservationIgnored public private(set) var work: [(id: String, call: ScriptCall)] = []
+    public private(set) var runningSummary: String?
+    public private(set) var workSpot: String?
     @ObservationIgnored var ticks: Task<Void, Never>?
-    @ObservationIgnored var nextRead: TimeInterval?
+    @ObservationIgnored var nextRead: Date?
+    @ObservationIgnored var clockPasses = 0
     @ObservationIgnored var answerMatches = AnswerMatches()
     @ObservationIgnored private var lastSearch: SearchQuery?
     @ObservationIgnored private(set) var searchBuilds = 0
@@ -78,7 +81,6 @@ public final class SpotRuns {
         opening: SheetOpening = SheetOpening(),
         clock: RunClock = RunClock(),
         stopPause: TimeInterval = 2,
-        tickPause: Duration = .seconds(1),
         clipboardPause: Duration = .milliseconds(500),
         recent: @escaping (String) -> [String] = { _ in [] },
         prepare: @escaping ([SpotItem], [String]) async -> Void = { _, _ in },
@@ -101,7 +103,6 @@ public final class SpotRuns {
         self.clock = clock
         now = clock.now
         self.stopPause = stopPause
-        self.tickPause = tickPause
         self.clipboardPause = clipboardPause
         self.recent = recent
         self.prepare = prepare
@@ -130,6 +131,8 @@ public final class SpotRuns {
             sheet.stopReads()
         }
         scripts.forEach { sheet(for: $0).scanned(stamps[$0.id]) }
+        showMarks()
+        showWork()
         swift.prune(keeping: scripts.map(\.url))
         updateClock()
         readOfferedRows()
@@ -220,31 +223,29 @@ public final class SpotRuns {
         usage.flush()
     }
 
-    public var menuBarMarks: [(id: String, mark: MenuBarMark)] {
-        order.compactMap { id in
+    func showMarks(of id: String? = nil) {
+        if let id, !menuBar.contains(id) { return }
+        let marks: [(id: String, mark: MenuBarMark)] = order.compactMap { id in
             guard let sheet = sheets[id], isInMenuBar(sheet.spot) else { return nil }
             guard sheet.spot.showsValueInMenuBar else { return (id, MenuBarMark(icon: sheet.spot.symbol, name: sheet.spot.name)) }
             return MenuBarMark(reading: sheet.reading).map { (id, $0) }
         }
+        guard !marks.elementsEqual(menuBarMarks, by: { $0.id == $1.id && $0.mark == $1.mark }) else { return }
+        menuBarMarks = marks
     }
 
     private func isInMenuBar(_ spot: Spot) -> Bool {
         menuBar.contains(spot.id) && spot.canShowInMenuBar
     }
 
-    public var work: [(id: String, call: ScriptCall)] {
-        order.flatMap { id in (sheets[id]?.work ?? []).map { (id: id, call: $0) } }.sorted { $0.call.started < $1.call.started }
-    }
-
-    public var runningSummary: String? {
-        let work = work
-        guard let oldest = work.first else { return nil }
-        let name = sheets[oldest.id]?.spot.name ?? oldest.id
-        return work.count > 1 ? "\(work.count) running. \(name) is the oldest" : "\(name) is running"
-    }
-
-    public var workSpot: String? {
-        work.first?.id
+    func showWork() {
+        let next = order.flatMap { id in (sheets[id]?.work ?? []).map { (id: id, call: $0) } }.sorted { $0.call.started < $1.call.started }
+        guard !next.elementsEqual(work, by: { $0.id == $1.id && $0.call === $1.call }) else { return }
+        work = next
+        let name = next.first.map { sheets[$0.id]?.spot.name ?? $0.id }
+        let summary = name.map { next.count > 1 ? "\(next.count) running. \($0) is the oldest" : "\($0) is running" }
+        if summary != runningSummary { runningSummary = summary }
+        if next.first?.id != workSpot { workSpot = next.first?.id }
     }
 
     public func takesDrag(_ id: String) -> Bool {
@@ -254,7 +255,7 @@ public final class SpotRuns {
     public func answer(of spot: Spot, _ action: SpotAction, input: String? = nil, limit: TimeInterval? = nil, variables: [String: String] = [:]) async throws -> String {
         if ScriptKind(of: spot) == .stay, action == .read {
             let (script, frames, token) = stay(spot, limit: limit)
-            tokens.setReason(ReadReason.panel.variables["OPENSPOT_REASON"], of: token)
+            tokens.setReason(ReadReason.panel.rawValue, of: token)
             defer { script.end() }
             script.send(.read, variables: ReadReason.panel.variables.merging(variables) { _, new in new }, id: 1)
             for try await frame in frames {
@@ -352,7 +353,7 @@ public final class SpotRuns {
             }, nil)
         case .stay, .once:
             let sent = action.sent(input: input)
-            let token = tokens.issue(for: spot, reason: variables["OPENSPOT_REASON"])
+            let token = tokens.issue(for: spot, reason: variables[ReadReason.variable])
             let process = ScriptProcess(url: swift.runnable(for: spot.url), name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: variables.merging(["OPENSPOT_ID": spot.id]) { given, _ in given }.merging([CallerTokens.variable: token]) { _, own in own }, careful: isCareful ? spot.uses : nil, base: environment)
             track(process, of: spot.id, token: token)
             let stream = process.start()

@@ -169,7 +169,7 @@ final class InlineScript: @unchecked Sendable {
         }
         let env = environment.filter { ["OPENSPOT_ID", CallerTokens.variable].contains($0.key) }.merging(call.variables) { _, new in new }
         variables = call.variables
-        if let token { tokens?.setReason(call.variables["OPENSPOT_REASON"], of: token) }
+        if let token { tokens?.setReason(call.variables[ReadReason.variable], of: token) }
         defer {
             variables = [:]
             if let token { tokens?.setReason(nil, of: token) }

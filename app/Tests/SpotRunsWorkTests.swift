@@ -41,6 +41,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertEqual(sheet.shownState, sheet.state)
 
         time += 0.1
+        try await wait("the shown work") { !sheet.work.isEmpty }
         XCTAssertEqual(sheet.work.map(\.id), sheet.calls.map(\.id))
         XCTAssertNotNil(runs.runningSummary)
         XCTAssertEqual(runs.workSpot, "script")
@@ -60,7 +61,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertEqual(log(), ["a"])
 
         touch("go")
-        try await wait("each press") { self.log() == ["a", "a", "b", "a"] }
+        try await wait("each press") { self.log() == ["a", "a", "b"] }
     }
 
     func testAQuickCallNeverShows() async throws {
@@ -133,6 +134,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         let sheet = try sheet()
         sheet.pressCard()
         time += 1
+        try await wait("the shown work") { !sheet.work.isEmpty }
         let call = try XCTUnwrap(sheet.work.first)
         XCTAssertNil(call.fill)
 
@@ -155,7 +157,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertEqual(sheet.shownState.title, "Encode")
 
         time += 1
-        XCTAssertEqual(sheet.shownState.title, "42%")
+        try await wait("the shown work") { sheet.shownState.title == "42%" }
         XCTAssertEqual(sheet.shownState.subtitle, "2 min left")
         XCTAssertEqual(sheet.state.title, "Encode")
         XCTAssertEqual(sheet.state.subtitle, "Videos")
@@ -173,7 +175,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try await wait("the frame") { sheet.calls.first?.status != nil }
         time += 1
 
-        XCTAssertEqual(sheet.shownState.title, "42%")
+        try await wait("the shown work") { sheet.shownState.title == "42%" }
         XCTAssertEqual(sheet.shownState.subtitle, "Videos")
     }
 
@@ -183,7 +185,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         sheet.pressCard()
         try await wait("the frame") { sheet.calls.first?.status != nil }
         time += 1
-        XCTAssertEqual(sheet.shownState.title, "42%")
+        try await wait("the shown work") { sheet.shownState.title == "42%" }
 
         sheet.pressCard()
 
@@ -207,11 +209,11 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try await wait("the frame") { z.calls.first?.status != nil }
         time += 1
         a.pressCard()
-        XCTAssertEqual(runs.runningSummary, "\(z.spot.name) is running")
+        try await wait("the summary") { self.runs.runningSummary == "\(z.spot.name) is running" }
         XCTAssertEqual(runs.workSpot, "z")
 
         time += 1
-        XCTAssertEqual(runs.runningSummary, "2 running. \(z.spot.name) is the oldest")
+        try await wait("the summary of both") { self.runs.runningSummary == "2 running. \(z.spot.name) is the oldest" }
         XCTAssertEqual(runs.workSpot, "z")
 
         z.stop(try XCTUnwrap(z.calls.first))
@@ -239,7 +241,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try await wait("both frames") { sheet.calls.count == 2 && sheet.calls.allSatisfy { $0.status != nil } }
         time += 1
 
-        XCTAssertEqual(sheet.work.count, 2)
+        try await wait("both shown") { sheet.work.count == 2 }
         XCTAssertEqual(sheet.shownState.title, "B")
     }
 
@@ -259,7 +261,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertNil(sheet.work(of: parts[0]))
         time += 1
 
-        XCTAssertNotNil(sheet.work(of: parts[0]))
+        try await wait("the shown work") { sheet.work(of: parts[0]) != nil }
         XCTAssertNil(sheet.work(of: parts[1]))
         XCTAssertTrue(parts[0].isPressable)
         XCTAssertFalse(parts[1].isPressable)
@@ -305,13 +307,13 @@ final class SpotRunsWorkTests: SpotRunsCase {
 
         sheet.run(try XCTUnwrap(go.action), item: nil)
         time += 1
-        XCTAssertNotNil(sheet.work(of: go, item: nil))
+        try await wait("the shown action") { sheet.work(of: go, item: nil) != nil }
         XCTAssertNil(sheet.work(of: copy, item: item))
         XCTAssertNil(sheet.work(of: primary, item: item))
 
         sheet.pick(item)
         time += 1
-        XCTAssertNotNil(sheet.work(of: primary, item: item))
+        try await wait("the shown pick") { sheet.work(of: primary, item: item) != nil }
         XCTAssertNil(sheet.cardWork)
     }
 
@@ -326,7 +328,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertNil(sheet.work(of: row, item: nil))
         time += 1
 
-        XCTAssertNotNil(sheet.cardWork)
+        try await wait("the shown card") { sheet.cardWork != nil }
         XCTAssertNotNil(sheet.work(of: row, item: nil))
         try await wait("the call") { self.log() == ["open"] }
         sheet.pressCard()

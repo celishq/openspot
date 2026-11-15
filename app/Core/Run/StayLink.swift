@@ -144,7 +144,7 @@ final class StayLink: ScriptLink {
         self.token = token
         slowAsks = 0
         let reason = reason ?? startReason
-        let read = SpotRun.Call(action: .read, key: SpotRun.readKey, reason: reason, variables: reason.variables, purpose: .ask(.read(generation: nil, reports: true)))
+        let read = SpotRun.Call(action: .read, key: SpotRun.readKey, reason: reason, purpose: .ask(.read(generation: nil, reports: true)))
         open(OpenCall(read, started: runs.now()), on: script, isTimed: false)
         Task { await follow(script, frames) }
     }
@@ -166,7 +166,7 @@ final class StayLink: ScriptLink {
         let request = call.request
         records[id] = record
         call.made.halt = { [weak script] in script?.send(text: SpotAction.stopEvent(id: id)) }
-        if case .ask = request.purpose { askReason = request.variables["OPENSPOT_REASON"] }
+        if case .ask = request.purpose { askReason = request.reason?.rawValue }
         noteReason()
         script.send(request.action, input: request.input, variables: run?.withPage(request.variables) ?? request.variables, id: id)
         guard isTimed else { return }
@@ -274,21 +274,21 @@ final class StayLink: ScriptLink {
         if let start { printing = start }
         defer { if let printing, ends.contains(printing) { self.printing = nil } }
         if let (id, form) = records.first(where: \.value.isForm), !lines.fields.isEmpty || ends.contains(id) {
-            await run.take(text, lines, of: form.call)
-            await close(Set(ends + [id]).filter { records[$0]?.ask == nil }.sorted(), in: run)
+            let others = Set(ends).subtracting([id]).filter { records[$0]?.ask == nil }.sorted()
+            await answer(id, form, text, lines, in: run)
+            await close(others, in: run)
             return
         }
         if let id = ends.first(where: { records[$0]?.ask != nil }), let record = records[id] {
             slowAsks = 0
             if record.isPictured, !lines.isPicture { record.call.pushed = lastPicture }
-            await run.take(text, lines, of: record.call)
+            await answer(id, record, text, lines, in: run)
         } else if !late.isEmpty {
             late.forEach(remove)
         } else if let printing, start == nil, ends.isEmpty, isDropped(printing) {
             return
         } else if let printing, start == nil, lines.isPicture, let record = records[printing], record.ask != nil {
-            await run.take(text, lines, of: record.call)
-            await close([printing], in: run)
+            await answer(printing, record, text, lines, in: run)
         } else {
             if lines.isPicture {
                 if printing == nil {
@@ -303,6 +303,13 @@ final class StayLink: ScriptLink {
             }
         }
         await close(ends, in: run)
+    }
+
+    private func answer(_ id: Int, _ record: Record, _ text: String, _ lines: SpotOutput, in run: SpotRun) async {
+        remove(id)
+        await run.take(text, lines, of: record.call)
+        await run.close(record.call, .ended)
+        settle()
     }
 
     private func close(_ ids: [Int], in run: SpotRun) async {
