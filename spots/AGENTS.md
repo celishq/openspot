@@ -19,3 +19,7 @@ These rules hold for the core spots in `spots/` and the spots in `examples/`. A 
 `make verify` runs `scripts/check-spots.sh`. It fails on a core spot with `on=clock.`, and on a spot that names
 `TMPDIR` or `/tmp` outside `mktemp`. `scripts/breaks/spot-clocks.txt` and `scripts/breaks/spot-state.txt` list
 today's breaks. The comment and motion checks scan only `app/` and `scripts/`.
+
+A spot's tests of its own code live in its `tests` folder, with a `run.sh` that builds and runs them. `make verify` runs
+each one through `scripts/spot-tests.sh`. A test that drives a spot through Openspot stays in `app/Tests`. The `tests`
+folder is not part of the spot: the app's copy of the spots and a share leave it out.

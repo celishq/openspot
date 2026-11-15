@@ -25,6 +25,15 @@ final class SpotCheckTests: XCTestCase {
         XCTAssertEqual(json, [["spot": "weather", "file": file.path, "fault": "Weather has an unknown mode: huge. Use once, stay or always"]])
     }
 
+    func testTheTestsOfASpotAreNotCheckedAsASpot() async throws {
+        try "#!/bin/sh\n# on=sheet.open\necho row=a\necho title=A\n".writeScript(to: folder.spotFile("notes"))
+        try "#!/bin/sh\n# mode=huge\nexit 1\n".writeScript(to: folder.appendingPathComponent("notes.spot/tests/run.sh"))
+
+        let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
+
+        XCTAssertEqual(findings, [])
+    }
+
     func testAValueWithANewLinePrintedByHandIsAFaultThatNamesTheHelper() async throws {
         let file = folder.spotFile("notes")
         try "#!/bin/sh\n# on=sheet.open\nprintf 'row=a\\ntitle=one\\ntwo\\n\\nrow=b\\ntitle=B\\ntitle=C\\n'\n".writeScript(to: file)

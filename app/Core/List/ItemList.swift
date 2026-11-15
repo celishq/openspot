@@ -19,6 +19,7 @@ public struct ItemList: Equatable, Sendable {
     private var awaitsLanding = false
     public private(set) var isFinding = false
     public private(set) var isLoading = false
+    public private(set) var loadingWords: String?
     public private(set) var hasFailed = false
     private(set) var all: [SpotItem]
     private(set) var searchIndex = SearchIndex()
@@ -145,17 +146,20 @@ public struct ItemList: Equatable, Sendable {
         if text == query { isWaiting = false }
     }
 
-    public mutating func beginLoading() {
+    public mutating func beginLoading(saying words: String? = nil) {
         isLoading = true
+        loadingWords = words
         hasFailed = false
     }
 
     public mutating func stopLoading() {
         isLoading = false
+        loadingWords = nil
     }
 
     public mutating func loadFailed() {
         isLoading = false
+        loadingWords = nil
         hasFailed = true
     }
 
@@ -179,6 +183,7 @@ public struct ItemList: Equatable, Sendable {
         guard rows.base == all, rows.search == search else { return replace(ready(rows.items, search: search)) }
         let run = selectedItem?.run
         isLoading = false
+        loadingWords = nil
         hasFailed = false
         if let index = rows.index {
             all = rows.items

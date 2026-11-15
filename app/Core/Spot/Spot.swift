@@ -251,6 +251,7 @@ public struct Spot: Equatable, Sendable {
         var spot = self
         spot.url = sample
         spot.mode = .once
+        spot.sources = []
         return spot
     }
 

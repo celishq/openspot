@@ -69,7 +69,7 @@ struct SpotRowsView: View {
 
     private var emptyText: String {
         if list.isWaiting { return "Searching" }
-        if list.isLoading { return "Loading…" }
+        if list.isLoading { return list.loadingWords ?? "Loading…" }
         if list.hasFailed { return "Could not load" }
         if list.search == .script && list.query.isEmpty { return "Type to search" }
         return list.query.isEmpty ? "Nothing here yet" : "No results"

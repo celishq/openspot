@@ -420,6 +420,10 @@ public final class SpotRuns {
         processes.append(process)
     }
 
+    func isBuilding(_ spot: Spot) -> Bool {
+        processes.contains { $0.isBuilding(spot.url.path) }
+    }
+
     func dropFinished() {
         processes.removeAll { !$0.needsFinish }
     }
