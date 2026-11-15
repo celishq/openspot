@@ -131,16 +131,15 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(result.refused.map(\.reason), ["weather.sh is outside a spot folder. Move it into weather.spot."])
     }
 
-    func testOpeningTheFolderWrapsALooseScriptWithItsReadmePreviewAndProgramIntoASpotFolder() throws {
+    func testOpeningTheFolderWrapsALooseScriptWithItsReadmeIntoASpotFolder() throws {
         try write("weather.sh", loose: true)
         try "Shows the weather.".write(to: folder.appendingPathComponent("weather.md"), atomically: true, encoding: .utf8)
-        try "row=a\n".write(to: folder.appendingPathComponent("weather.preview.txt"), atomically: true, encoding: .utf8)
         try "notes".write(to: folder.appendingPathComponent("notes.txt"), atomically: true, encoding: .utf8)
 
         XCTAssertEqual(try opened.scan().spots.map(\.id), ["weather"])
 
         let names = try FileManager.default.contentsOfDirectory(atPath: folder.appendingPathComponent("weather.spot").path).sorted()
-        XCTAssertEqual(names, ["preview.txt", "readme.md", "weather.sh"])
+        XCTAssertEqual(names, ["readme.md", "weather.sh"])
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path).sorted(), ["notes.txt", "weather.spot"])
     }
 
@@ -474,20 +473,6 @@ final class SpotsFolderTests: XCTestCase {
         let folder = SpotsFolder.standard(environment: ["OPENSPOT_CONFIG": "/tmp/debug"], home: URL(fileURLWithPath: "/home"))
 
         XCTAssertEqual(folder.url.path, "/tmp/debug/spots")
-    }
-
-    func testThePluginsFolderOfAnOlderOpenspotBecomesTheSpotsFolderOnce() throws {
-        try write("config/plugins/weather.spot/weather.sh")
-        try "How to build a spot.".write(to: folder.appendingPathComponent("config/plugins/AGENTS.md"), atomically: true, encoding: .utf8)
-        let environment = ["OPENSPOT_CONFIG": folder.appendingPathComponent("config").path]
-
-        let spots = SpotsFolder.standard(environment: environment, home: folder)
-
-        XCTAssertEqual(try spots.scan().spots.map(\.id), ["weather"])
-        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("config/plugins").path))
-        try write("config/plugins/other.spot/other.sh")
-        _ = SpotsFolder.standard(environment: environment, home: folder)
-        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("config/plugins/other.spot/other.sh").path))
     }
 
     func testASpotsPathBeatsAConfigPath() {

@@ -4,9 +4,7 @@ public enum SpotListing {
     public static let readmeName = "readme.md"
     public static let sampleScriptName = "sample.sh"
     public static let sampleName = "sample.txt"
-    public static let olderSampleName = "preview.txt"
     static let readmeExtension = "md"
-    static let olderSampleSuffix = ".preview.txt"
     private static let sampleLimit: TimeInterval = 10
 
     public static func readme(of file: URL) -> URL {
@@ -37,13 +35,11 @@ public enum SpotListing {
         if runsScript, let sampled = spot.sampled {
             return try? await runs.answer(of: sampled, .read, limit: sampleLimit)
         }
-        let folder = spot.url.deletingLastPathComponent()
-        return await Task.detached(priority: .userInitiated) {
-            [sampleName, olderSampleName].lazy.compactMap { try? String(contentsOf: folder.appendingPathComponent($0), encoding: .utf8) }.first
-        }.value
+        let kept = sampleText(of: spot.url)
+        return await Task.detached(priority: .userInitiated) { try? String(contentsOf: kept, encoding: .utf8) }.value
     }
 
     static func hasKeptSample(beside file: URL) -> Bool {
-        [sampleName, olderSampleName].contains { FileManager.default.fileExists(atPath: file.deletingLastPathComponent().appendingPathComponent($0).path) }
+        FileManager.default.fileExists(atPath: sampleText(of: file).path)
     }
 }

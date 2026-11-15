@@ -140,9 +140,6 @@ targets:
       - name: Fill the dev state
         basedOnDependencyAnalysis: false
         script: |
-          if [ -n "$OPENSPOT_DEV_STATE" ] && [ ! -e "$OPENSPOT_DEV_STATE/spots" ] && [ -e "$OPENSPOT_DEV_STATE/plugins" ]; then
-            mv "$OPENSPOT_DEV_STATE/plugins" "$OPENSPOT_DEV_STATE/spots"
-          fi
           if [ -n "$OPENSPOT_DEV_STATE" ] && [ ! -e "$OPENSPOT_DEV_STATE/spots" ]; then
             mkdir -p "$OPENSPOT_DEV_STATE"
             cp -R "$SRCROOT/../spots" "$OPENSPOT_DEV_STATE/spots"

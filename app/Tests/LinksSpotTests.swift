@@ -221,21 +221,6 @@ final class LinksSpotTests: SampleSpotsCase {
         }
     }
 
-    func testSavedQuicklinksMoveToLinks() async throws {
-        let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
-        try await withPrivateHome { folder in
-            let data = folder.appendingPathComponent(".config/openspot/data/links")
-            try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
-            let old = data.appendingPathComponent("quicklinks.json")
-            try #"[{"id":"1","title":"Docs","url":"https://docs.test"}]"#.write(to: old, atomically: true, encoding: .utf8)
-
-            let items = try await links.items(timeout: 5).items
-
-            XCTAssertEqual(items.map(\.title), ["Docs", "Downloads", "Screenshots"])
-            XCTAssertFalse(FileManager.default.fileExists(atPath: old.path))
-        }
-    }
-
     func testLinksOpensAFolderAndKeepsSpacesInItsPath() async throws {
         let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
         try await withPrivateHome { folder in

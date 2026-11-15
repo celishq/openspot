@@ -363,13 +363,6 @@ final class SpotAddTests: XCTestCase {
         XCTAssertNotNil(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries().first?.hash)
     }
 
-    func testALockOfAnOlderOpenspotReadsEachPathInItsSpotFolder() throws {
-        let lock = SpotLock(url: root.appendingPathComponent("spots.lock"))
-        try Data(#"[{"source":"/a","paths":["coffee","notes.sh","notes.md","notes.preview.txt","tools/x.sh","tea.spot/tea.sh"]}]"#.utf8).write(to: lock.url)
-
-        XCTAssertEqual(try lock.entries().map(\.paths), [["coffee.spot", "notes.spot/notes.sh", "notes.spot/readme.md", "notes.spot/preview.txt", "tools.spot/x.sh", "tea.spot/tea.sh"]])
-    }
-
     func testAddsAtTheSameTimeLoseNoEntryOfTheLock() async throws {
         let sources = try (0..<12).map { index in
             let folder = root.appendingPathComponent("sources/s\(index)")

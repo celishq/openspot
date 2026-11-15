@@ -32,21 +32,6 @@ public struct SpotLock: Equatable, Sendable {
             self.key = key
         }
 
-        public init(from decoder: Decoder) throws {
-            let values = try decoder.container(keyedBy: CodingKeys.self)
-            try self.init(
-                source: values.decode(String.self, forKey: .source),
-                commit: values.decodeIfPresent(String.self, forKey: .commit),
-                paths: values.decode([String].self, forKey: .paths).map { SpotsFolder.wrapped($0) },
-                hash: values.decodeIfPresent(String.self, forKey: .hash),
-                uses: values.decodeIfPresent([SpotUse].self, forKey: .uses),
-                canDo: values.decodeIfPresent([String].self, forKey: .canDo),
-                address: values.decodeIfPresent(String.self, forKey: .address),
-                key: values.decodeIfPresent(String.self, forKey: .key)
-            )
-        }
-
-
         var addedLine: String {
             commit.map { "Added \(name) at \($0.prefix(7)).\n" } ?? "Added \(name).\n"
         }

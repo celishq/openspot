@@ -644,7 +644,7 @@ final class SpotsModelDragTests: XCTestCase {
 
     func testASpotWithOnlyAKeptSampleShowsIt() async throws {
         try "#!/bin/sh\nprintf 'title=Real row\\n'\n".writeScript(to: core.appendingPathComponent("coin.spot/coin.sh"))
-        try "row=s\ntitle=Kept\n".write(to: core.appendingPathComponent("coin.spot/preview.txt"), atomically: true, encoding: .utf8)
+        try "row=s\ntitle=Kept\n".write(to: core.appendingPathComponent("coin.spot/sample.txt"), atomically: true, encoding: .utf8)
         model.reload()
 
         let sample = await model.sample("coin")
@@ -657,16 +657,11 @@ final class SpotsModelDragTests: XCTestCase {
         try "#!/bin/sh\n# title=Shared\n".writeScript(to: shared.appendingPathComponent("shared.sh"))
         try "#!/bin/sh\nprintf 'row=s\\ntitle=Ran\\n'\n".writeScript(to: shared.appendingPathComponent("sample.sh"))
         try "row=s\ntitle=Kept\n".write(to: shared.appendingPathComponent("sample.txt"), atomically: true, encoding: .utf8)
-        let old = store.appendingPathComponent("old.spot")
-        try "#!/bin/sh\n# title=Old\n".writeScript(to: old.appendingPathComponent("old.sh"))
-        try "row=s\ntitle=Older\n".write(to: old.appendingPathComponent("preview.txt"), atomically: true, encoding: .utf8)
         model.reload()
 
         let sample = await model.sample("shared")
-        let older = await model.sample("old")
 
         XCTAssertEqual(sample?.items.map(\.title), ["Kept"])
-        XCTAssertEqual(older?.items.map(\.title), ["Older"])
     }
 
     func testTheStoreFindsTheCardOfASpotThatIsOffByItsStoreID() throws {
