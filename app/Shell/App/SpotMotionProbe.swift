@@ -409,7 +409,7 @@ final class SpotMotionProbe: NSObject {
             return DispatchQueue.main.asyncAfter(deadline: .now() + pause * Double(keys.count + 1)) { self.end() }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + after) { self.model.press(id) }
-        DispatchQueue.main.asyncAfter(deadline: .now() + after + 1.5) { self.model.closeList(moving: true) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + after + 1.5) { self.model.closeSheet(moving: true) }
         DispatchQueue.main.asyncAfter(deadline: .now() + after + 3) { self.end() }
     }
 
@@ -425,7 +425,7 @@ final class SpotMotionProbe: NSObject {
         if left % 2 == 0 {
             model.press(id)
         } else {
-            model.closeList(moving: true)
+            model.closeSheet(moving: true)
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.press(id, left: left - 1) }
     }

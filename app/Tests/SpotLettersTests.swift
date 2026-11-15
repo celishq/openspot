@@ -63,7 +63,7 @@ final class SpotLettersTests: XCTestCase {
     private func startLetter(of id: String) throws {
         model.beginEditing()
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == id })
-        model.handleEditKey(ActionKey(name: "l"))
+        _ = model.handleKey(ActionKey(name: "l"))
     }
 
     func testTheDefaultConfigGivesASpotItsLetter() async throws {
@@ -82,7 +82,7 @@ final class SpotLettersTests: XCTestCase {
 
         XCTAssertFalse(model.showsChain)
         XCTAssertFalse(model.handleChain(code: try code("n"), modifiers: model.entryKey.modifiers))
-        XCTAssertNil(model.openList)
+        XCTAssertNil(model.openSheetID)
 
         model.isChainHeld = true
         XCTAssertTrue(model.showsChain)
@@ -138,7 +138,7 @@ final class SpotLettersTests: XCTestCase {
         model.stopRecording()
         XCTAssertEqual(letter(of: "notes"), "N")
 
-        model.handleEditKey(ActionKey(name: "l"))
+        _ = model.handleKey(ActionKey(name: "l"))
         model.record(code: Self.deleteCode, modifiers: [])
         await model.reload()
 

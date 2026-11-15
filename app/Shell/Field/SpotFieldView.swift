@@ -108,54 +108,11 @@ struct SpotFieldView: View {
             SpotSearchText(model: model, title: "\(SearchPrompt.verb) \(isOpen ? sheetWord : SearchPrompt.grid)")
                 .textFieldStyle(.plain)
                 .focused($isFocused)
-                .onSubmit { model.runSelected() }
-                .onKeyPress(keys: [.downArrow]) { press in
-                    if model.openList != nil, press.modifiers.contains(.command) {
-                        model.moveItemToEdge(last: true)
-                    } else if model.openList != nil {
-                        model.moveItemLine(by: 1)
-                    } else {
-                        model.moveSelection(dx: 0, dy: 1)
-                    }
-                    return .handled
-                }
-                .onKeyPress(keys: [.upArrow]) { press in
-                    if model.openList != nil, press.modifiers.contains(.command) {
-                        model.moveItemToEdge(last: false)
-                    } else if model.openList != nil {
-                        model.moveItemLine(by: -1)
-                    } else {
-                        model.moveSelection(dx: 0, dy: -1)
-                    }
-                    return .handled
-                }
-                .onKeyPress(.leftArrow) {
-                    if model.openList != nil {
-                        guard (model.openItems?.perLine ?? 1) > 1 else { return .ignored }
-                        model.moveItem(by: -1)
-                        return .handled
-                    }
-                    if !model.query.isEmpty { return .ignored }
-                    if model.selectedIsSlider {
-                        model.adjustSelected(by: -5)
-                    } else {
-                        model.moveSelection(dx: -1, dy: 0)
-                    }
-                    return .handled
-                }
-                .onKeyPress(.rightArrow) {
-                    if model.openList != nil {
-                        guard (model.openItems?.perLine ?? 1) > 1 else { return .ignored }
-                        model.moveItem(by: 1)
-                        return .handled
-                    }
-                    if !model.query.isEmpty { return .ignored }
-                    if model.selectedIsSlider {
-                        model.adjustSelected(by: 5)
-                    } else {
-                        model.moveSelection(dx: 1, dy: 0)
-                    }
-                    return .handled
+                .onSubmit { _ = model.handleSearchKey(ActionKey(name: "return")) }
+                .onKeyPress(keys: [.downArrow, .upArrow, .leftArrow, .rightArrow]) { press in
+                    if (NSApp.keyWindow?.firstResponder as? NSTextView)?.hasMarkedText() == true { return .ignored }
+                    let name = press.key == .downArrow ? "down" : press.key == .upArrow ? "up" : press.key == .leftArrow ? "left" : "right"
+                    return model.handleSearchKey(ActionKey(name: name, isCommand: press.modifiers.contains(.command))) ? .handled : .ignored
                 }
     }
 

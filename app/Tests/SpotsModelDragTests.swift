@@ -131,7 +131,7 @@ final class SpotsModelDragTests: XCTestCase {
         host.heldEnds = []
         model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
 
-        model.handleEditKey(ActionKey(name: "escape"))
+        _ = model.handleKey(ActionKey(name: "escape"))
 
         XCTAssertEqual(model.landing, "d")
         host.heldEnds?.forEach { $0() }
@@ -211,7 +211,7 @@ final class SpotsModelDragTests: XCTestCase {
     func testTheHKeyPutsTheSelectedSpotInSearchOnly() {
         XCTAssertEqual(model.hint, "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done")
 
-        model.handleEditKey(ActionKey(name: "h"))
+        _ = model.handleKey(ActionKey(name: "h"))
 
         XCTAssertEqual(order, ["b", "c", "d", "a"])
         XCTAssertEqual(model.cards.first { $0.id == "a" }?.isOnGrid, false)
@@ -222,7 +222,7 @@ final class SpotsModelDragTests: XCTestCase {
         let translation = move("d", to: leftHalf(of: "c"))
         model.dragSpot("d", by: translation)
 
-        model.handleEditKey(ActionKey(name: "escape"))
+        _ = model.handleKey(ActionKey(name: "escape"))
         model.dropSpot(by: translation)
 
         XCTAssertTrue(model.isEditing)
@@ -375,7 +375,7 @@ final class SpotsModelDragTests: XCTestCase {
         let start = model.placements[3].rect
         model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
 
-        model.handleEditKey(ActionKey(name: "escape"))
+        _ = model.handleKey(ActionKey(name: "escape"))
 
         XCTAssertEqual(model.lift.origin, CGPoint(x: SpotTokens.halo + start.minX, y: SpotTokens.gridTop + start.minY))
         host.heldEnds?.forEach { $0() }
@@ -430,7 +430,7 @@ final class SpotsModelDragTests: XCTestCase {
     func testEscapePutsTheSizeBackAndSavesNothing() {
         model.resizeSpot("c", by: down)
 
-        model.handleEditKey(ActionKey(name: "escape"))
+        _ = model.handleKey(ActionKey(name: "escape"))
         model.dropResize()
 
         XCTAssertTrue(model.isEditing)
@@ -465,6 +465,7 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.shownPanels, GridPanels(hasLeft: true))
 
         model.query = "a"
+        model.landSearch()
         XCTAssertEqual(model.shownPanels, GridPanels())
 
         model.query = ""

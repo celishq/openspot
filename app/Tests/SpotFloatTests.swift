@@ -60,7 +60,7 @@ final class SpotFloatTests: XCTestCase {
 
         XCTAssertEqual(host.floats, ["list"])
         XCTAssertEqual(host.shows, 0)
-        XCTAssertNil(model.openList)
+        XCTAssertNil(model.openSheetID)
         XCTAssertEqual(model.runs.floating, ["list"])
         XCTAssertEqual(model.sheets["list"]?.list.shown.first?.title, "sheet.open")
     }
@@ -130,7 +130,7 @@ final class SpotFloatTests: XCTestCase {
         model.run(rename, on: (entry, model.sheets["list"]?.list.selectedItem), in: .float)
 
         XCTAssertEqual(host.shows, 1)
-        try await wait("the sheet in the panel") { model.openList == "list" }
+        try await wait("the sheet in the panel") { model.openSheetID == "list" }
     }
 
     func testAFloatOfPartsKeepsItsValuesWhenThePanelClosesAndDropsThemWhenItCloses() async throws {
@@ -177,14 +177,19 @@ final class SpotFloatTests: XCTestCase {
         let files = ["a.png", "b.txt", "c.spot"].map { folder.appendingPathComponent($0).path }
         try files.forEach { try Data().write(to: URL(fileURLWithPath: $0)) }
 
-        XCTAssertTrue(model.acceptsDrop([files[0]], on: "shelf", in: .float))
+        host.draggedPaths = [files[2]]
+        model.followDrag()
         XCTAssertFalse(model.acceptsDrop([files[2]], on: "shelf", in: .float))
+        host.draggedPaths = Array(files.prefix(2))
+        model.followDrag()
+        XCTAssertFalse(model.acceptsDrop(Array(files.prefix(2)), on: "shelf", in: .float))
+        try await wait("the kinds of the dragged files") { self.model.acceptsDrop(Array(files.prefix(2)), on: "shelf", in: .float) }
         XCTAssertEqual(model.dropWords(Array(files.prefix(2)), on: "shelf"), "Add 2 files")
         XCTAssertTrue(model.drop(Array(files.prefix(2)), on: "shelf", in: .float))
 
         try await wait("the drop") { host.confirms == ["Kept \(files[0]) \(files[1])"] }
         XCTAssertEqual(host.shows, 0)
-        XCTAssertNil(model.openList)
+        XCTAssertNil(model.openSheetID)
     }
 
     func testAShakeWhileARowThatTakesOneRecordsGivesItTheShake() async throws {
@@ -244,7 +249,7 @@ final class SpotFloatTests: XCTestCase {
         try await wait("the window") { host.windows == ["store"] }
 
         XCTAssertEqual(host.shows, 0)
-        XCTAssertNil(model.openList)
+        XCTAssertNil(model.openSheetID)
         XCTAssertEqual(model.runs.floating, ["store"])
         try await wait("its rows") { model.sheets["store"]?.list.shown.first?.title == "Apple" }
     }
@@ -258,7 +263,7 @@ final class SpotFloatTests: XCTestCase {
 
         XCTAssertEqual(host.dismissals, 0)
         XCTAssertFalse(model.isShown)
-        XCTAssertNil(model.openList)
+        XCTAssertNil(model.openSheetID)
     }
 
     func testAFormOfAWindowSpotSaysItDoesNotShowYetAndOpensNoPanel() async throws {

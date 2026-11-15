@@ -380,17 +380,32 @@ final class ItemListTests: XCTestCase {
     func testTypingMakesNoPickWeightsAndAPickMakesThemOnce() {
         var list = ItemList(items: items("Safari", "Slack", "Notes"), recent: ["Slack"])
         var search = MainSearch()
-        let before = PickWeights.builds
+        let ranks = SearchRanks()
 
-        for text in ["s", "sa", "saf", "sl", "s"] {
-            list.search(text)
-            _ = search.matching(SearchQuery(text: text), in: [list])
+        SearchRanks.$meter.withValue(ranks) {
+            for text in ["s", "sa", "saf", "sl", "s"] {
+                list.search(text)
+                _ = search.matching(SearchQuery(text: text), in: [list])
+            }
+            XCTAssertEqual(ranks.weights, 0)
+            list.remember(list.all[0])
         }
-        XCTAssertEqual(PickWeights.builds - before, 0)
-        list.remember(list.all[0])
 
-        XCTAssertEqual(PickWeights.builds - before, 1)
+        XCTAssertEqual(ranks.weights, 1)
         XCTAssertEqual(list.shown.map(\.title), ["Safari", "Slack", "Notes"])
+    }
+
+    func testAFindBuildsTheRowsItShowsSoThatTakingItCopiesNone() {
+        var list = ItemList(items: items("Safari", "Slack", "Notes"))
+        var landed = list
+        XCTAssertTrue(list.beginFinding("s"))
+        XCTAssertTrue(landed.beginFinding("s"))
+
+        list.take(list.found())
+        landed.landFinding()
+
+        XCTAssertEqual(list.shown.map(\.title), ["Safari", "Slack", "Notes"])
+        XCTAssertEqual(list, landed)
     }
 
     func testEachKeystrokeInALargeListAnswersQuickly() {

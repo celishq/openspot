@@ -239,7 +239,7 @@ private struct GridSelectionFollow: ViewModifier {
 
     private func show() {
         let placements = model.placements
-        guard model.openList == nil, model.drag == nil, let spot = placements.first(where: { $0.index == model.selected }) else { return }
+        guard model.openSheetID == nil, model.drag == nil, let spot = placements.first(where: { $0.index == model.selected }) else { return }
         let top = SpotTokens.gridTop + spot.rect.minY
         let window = ScrollWindow(
             top: SpotTokens.halo + SpotTokens.rowHeight + SpotScrollEdges.fadeLength,

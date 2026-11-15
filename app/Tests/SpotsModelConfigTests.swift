@@ -69,13 +69,13 @@ final class SpotsModelConfigTests: PanelCase {
             return self.disk.writes == writes + 1
         }
 
-        model.handleEditKey(ActionKey(name: "right", isShift: true))
+        _ = model.handleKey(ActionKey(name: "right", isShift: true))
         XCTAssertTrue(wrote())
-        model.handleEditKey(ActionKey(name: "left", isShift: true))
+        _ = model.handleKey(ActionKey(name: "left", isShift: true))
         XCTAssertTrue(wrote())
-        model.handleEditKey(ActionKey(name: "h"))
+        _ = model.handleKey(ActionKey(name: "h"))
         XCTAssertTrue(wrote())
-        model.handleEditKey(ActionKey(name: "l"))
+        _ = model.handleKey(ActionKey(name: "l"))
         model.recordLetter(code: try XCTUnwrap(CommandKey(name: "m")).code, modifiers: [])
         XCTAssertTrue(wrote())
         model.show(.left, true)
