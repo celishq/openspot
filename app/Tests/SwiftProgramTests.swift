@@ -363,32 +363,4 @@ final class SwiftProgramTests: XCTestCase {
         XCTAssertTrue(exists(kept[0]))
     }
 
-    func testABuildInTheOldSharedFolderMovesIntoTheFolderOfItsConfig() async throws {
-        let program = try caching(config: "release")
-        let source = try source()
-        let other = try await built([source], by: try caching(config: "other"))
-        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        let old = root.appendingPathComponent(try sha(source))
-        try FileManager.default.moveItem(at: other[0], to: old)
-
-        let runnable = program.runnable(for: source)
-
-        XCTAssertEqual(runnable, SwiftProgram.folder(of: folder.appendingPathComponent("release"), in: root).appendingPathComponent(try sha(source)))
-        XCTAssertFalse(exists(old))
-        XCTAssertEqual(builds, 1)
-    }
-
-    func testAPruneRemovesAnOldSharedBuildThatDidNotRunFor30Days() async throws {
-        let program = try caching(config: "release")
-        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        let stale = root.appendingPathComponent(String(repeating: "a", count: 64))
-        let fresh = root.appendingPathComponent(String(repeating: "b", count: 64))
-        try Data("x".utf8).write(to: stale)
-        try Data("x".utf8).write(to: fresh)
-        try age(stale, days: 31)
-
-        await program.prune(keeping: [])?.value
-
-        XCTAssertEqual([exists(stale), exists(fresh)], [false, true])
-    }
 }

@@ -142,8 +142,9 @@ printf 'detail=%s free\n\ntext=free\ntitle=%s free\n' "$free" "$free"
 ![The card of Disk, with the free space under its title](docs/images/show-a-value.png)
 
 The first block, `detail=…`, is the **head**: it isn't drawn, and its `detail` becomes the line under the card's title.
-The `text` block is the spot's **main block**. `offers=card` and `offers=menubar` name the places the spot can show: a
-card on the grid, and the menu bar, where the main block shows next to the clock. The user decides which ones it takes.
+The `text` block is the spot's **main block**. `offers=card` and `offers=menubar` name the places where the spot can show
+it: a card on the grid, and the menu bar, next to the clock. The user puts the spot in the menu bar from its Settings,
+which `⌘⏎` on its card opens.
 
 A spot with a clock stays off the grid until the user adds it, so that a new spot doesn't fill the panel.
 
@@ -154,7 +155,7 @@ Learn more in [The main block and the card](PROTOCOL.md#the-main-block-and-the-c
 A button runs a command. Give each button an id. When the user presses it, Openspot runs your spot with that id.
 
 Buttons in the header turn the spot into a set of commands, with no card. The user finds each command in the main
-search, and can give it a hotkey.
+search, and gives it a hotkey in the spot's Settings.
 
 ```sh
 #!/bin/sh
@@ -296,8 +297,8 @@ Learn more in [Cards of other spots](PROTOCOL.md#cards-of-other-spots).
 
 ## Let the user choose a setting
 
-A setting keeps a choice of the user, such as a folder. Name it in the header with a `field` block, and the Settings spot
-lists it.
+A setting keeps a choice of the user, such as a folder. Name it in the header with a `field` block, and the spot's
+Settings list it. The user opens them with `⌘⏎` on the spot's card, or with **Settings** in its ⌘K menu.
 
 ```sh
 #!/bin/sh
@@ -312,7 +313,7 @@ case "$1" in
 esac
 ```
 
-In Settings, choose **Repos**, then **folder**, and Openspot runs `repos.sh folder`. The spot asks for a folder and keeps it. Later
+In the Settings of Repos, choose **Folder**, and Openspot runs `repos.sh folder`. The spot asks for a folder and keeps it. Later
 calls read it with `openspot setting get folder`.
 
 Learn more in [Settings](PROTOCOL.md#settings).

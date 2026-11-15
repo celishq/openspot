@@ -99,10 +99,6 @@ public struct SpotItem: Equatable, Sendable {
         picture?.glyph
     }
 
-    public var iconText: String? {
-        symbol ?? iconFile ?? image ?? glyph
-    }
-
     public func path(in spot: Spot) -> String {
         [spot.name, parent].compactMap { $0 }.joined(separator: " › ")
     }

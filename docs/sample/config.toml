@@ -1,5 +1,5 @@
 [[spots]]
-id = "now-playing/now-playing"
+id = "now-playing"
 size = "large"
 grid = true
 

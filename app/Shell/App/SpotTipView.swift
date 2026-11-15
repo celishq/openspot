@@ -12,15 +12,7 @@ struct SpotTipView: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             if let tip = model.tip, model.isEditing, model.carry == nil, model.resize == nil, let top = top(of: tip) {
-                Text(tip.text)
-                    .font(SpotType.detail)
-                    .foregroundStyle(SpotTheme.ink)
-                    .lineLimit(1)
-                    .fixedSize()
-                    .padding(.horizontal, SpotTokens.hintKeyPadding)
-                    .frame(height: SpotTokens.hintPillHeight)
-                    .background(SpotTheme.keycap, in: Capsule())
-                    .overlay(Capsule().strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
+                SpotTipPill(text: tip.text)
                     .position(x: panelOrigin.x + top.x, y: panelOrigin.y + top.y + Self.gap + SpotTokens.hintPillHeight / 2)
                     .opacity(isShown ? 1 : 0)
             }

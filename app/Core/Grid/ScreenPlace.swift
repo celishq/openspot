@@ -22,16 +22,6 @@ public struct ScreenPlace: Sendable {
         return CGPoint(x: (area.midX - size.width / 2).rounded(.down), y: (area.minY + (area.height - size.height) * 0.75).rounded(.down))
     }
 
-    public func origin(of size: CGSize, beside window: CGRect) -> CGPoint? {
-        guard let area = screen(window: window, pointer: CGPoint(x: window.midX, y: window.midY))?.area else { return nil }
-        let right = window.maxX + Self.besideGap
-        let x = right + size.width <= area.maxX ? right : max(window.minX - Self.besideGap - size.width, area.minX)
-        let y = min(max(window.maxY - size.height, area.minY), area.maxY - size.height)
-        return CGPoint(x: x.rounded(.down), y: y.rounded(.down))
-    }
-
-    static let besideGap: CGFloat = 12
-
     public func origin(of size: CGSize, under pointer: CGPoint) -> CGPoint? {
         guard let area = screen(window: nil, pointer: pointer)?.area else { return nil }
         let x = min(max(pointer.x - size.width / 2, area.minX), area.maxX - size.width)

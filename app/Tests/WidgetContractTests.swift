@@ -165,7 +165,7 @@ final class WidgetContractTests: XCTestCase {
         }
     }
 
-    func testOnlyAScriptThatOffersTheMenuBarCanShowThere() throws {
+    func testEachSpotCanShowInTheMenuBarAndOnlyOneThatOffersItWithAValueShowsTheValue() throws {
         try script("one.sh", "#!/bin/sh\n")
         try script("two.sh", "#!/bin/sh\n# on=panel.open\n")
         try script("three.sh", "#!/bin/sh\n# mode=stay\n# offers=menubar\n")
@@ -173,7 +173,8 @@ final class WidgetContractTests: XCTestCase {
         try script("five.sh", "#!/bin/sh\n# on=clock.5\n")
 
         XCTAssertEqual(try scan.refused, [])
-        XCTAssertEqual(try scan.scripts.filter(\.canShowInMenuBar).map(\.id), ["four", "three"])
+        XCTAssertEqual(try scan.scripts.filter(\.canShowInMenuBar).map(\.id), ["five", "four", "one", "three", "two"])
+        XCTAssertEqual(try scan.scripts.filter(\.showsValueInMenuBar).map(\.id), ["four", "three"])
     }
 
     func testASpotWhoseHeaderDrawsItsCardPlacesMetricsOfOtherScripts() throws {
@@ -191,14 +192,6 @@ final class WidgetContractTests: XCTestCase {
         XCTAssertEqual(widget.size, .strip)
         XCTAssertEqual(widget.layout, WidgetLayout(drawing: ["power power"]))
         XCTAssertEqual(widget.places, ["power"])
-    }
-
-    func testAWidgetFileIsRefusedAndToldToBeASpot() throws {
-        let file = folder.spotFile("mine", extension: "toml")
-        try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try "[[widgets]]\ntitle = \"Now\"\ngrid = [\"power\"]\n".write(to: file, atomically: true, encoding: .utf8)
-
-        XCTAssertEqual(try scan.refused.first?.reason, "mine.toml holds widgets, which Openspot no longer reads. Write a spot whose header draws its card from other spots, such as grid.large=cpu cpu memory")
     }
 
     func testACardDrawnAtTwoSizesIsRefused() throws {
@@ -241,13 +234,6 @@ final class WidgetContractTests: XCTestCase {
 
         XCTAssertNil(still.openTitle(hasItem: false))
         XCTAssertEqual(opening.openTitle(hasItem: false), "Open")
-    }
-
-    func testAWidgetWithAShortcutIsRefusedBecauseThePersonGivesTheLetter() throws {
-        try power()
-        try widget(more: "# shortcut=w\n")
-
-        XCTAssertEqual(try scan.refused.first?.reason, "Now has shortcut, which Openspot no longer reads. The person gives each spot its letter in Edit Spots")
     }
 
     func testEveryLayoutFillsItsSizeWithNoOverlap() {

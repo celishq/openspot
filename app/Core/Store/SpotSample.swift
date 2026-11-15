@@ -1,0 +1,39 @@
+import Foundation
+
+public enum SpotSample {
+    public static let scriptName = "sample.sh"
+    public static let textName = "sample.txt"
+    private static let limit: TimeInterval = 10
+
+    public static func script(beside file: URL) -> URL {
+        file.deletingLastPathComponent().appendingPathComponent(scriptName)
+    }
+
+    public static func text(beside file: URL) -> URL {
+        file.deletingLastPathComponent().appendingPathComponent(textName)
+    }
+
+    static func isScript(_ url: URL) -> Bool {
+        url.lastPathComponent == scriptName && url.deletingLastPathComponent().deletingPathExtension().lastPathComponent != "sample"
+    }
+
+    static func exists(for spot: Spot, runsScript: Bool) -> Bool {
+        (runsScript && spot.sample != nil) || FileManager.default.fileExists(atPath: text(beside: spot.url).path)
+    }
+
+    @MainActor
+    public static func capture(of spot: Spot, runs: SpotRuns) async throws {
+        guard let sampled = spot.sampled else { throw SpotError.fault("\(spot.name) has no sample. Add \(scriptName) beside it.") }
+        let text = try await runs.answer(of: sampled, .read, limit: limit)
+        try text.write(to: self.text(beside: spot.url), atomically: true, encoding: .utf8)
+    }
+
+    @MainActor
+    public static func output(of item: SpotStore.Item, runs: SpotRuns) async -> SpotOutput? {
+        if item.runsSample, let sampled = item.spot.sampled {
+            return (try? await runs.answer(of: sampled, .read, limit: limit)).map(SpotOutput.init(text:))
+        }
+        let kept = text(beside: item.spot.url)
+        return await Task.detached(priority: .userInitiated) { (try? String(contentsOf: kept, encoding: .utf8)).map(SpotOutput.init(text:)) }.value
+    }
+}

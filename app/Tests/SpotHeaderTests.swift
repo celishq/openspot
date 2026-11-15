@@ -31,13 +31,13 @@ final class SpotHeaderTests: XCTestCase {
         let nowhere = try spot("# on=sheet.open\n# offers=none\n")
         let window = try spot("# on=sheet.open\n# offers=card\n# offers=window\n")
 
-        XCTAssertEqual([all.offersCard, all.headerState.isOnGrid, all.isGlobal, all.canShowInMenuBar, all.offersFloat], [true, true, true, true, false])
-        XCTAssertEqual([float.offersCard, float.headerState.isOnGrid, float.isGlobal, float.canShowInMenuBar, float.offersFloat], [false, false, false, false, true])
+        XCTAssertEqual([all.offersCard, all.headerState.isOnGrid, all.isGlobal, all.showsValueInMenuBar, all.offersFloat], [true, true, true, true, false])
+        XCTAssertEqual([float.offersCard, float.headerState.isOnGrid, float.isGlobal, float.showsValueInMenuBar, float.offersFloat], [false, false, false, false, true])
         XCTAssertEqual([clock.offersCard, clock.headerState.isOnGrid], [true, false])
-        XCTAssertEqual([none.offersCard, none.headerState.isOnGrid, none.isGlobal, none.canShowInMenuBar, none.offersFloat], [true, true, false, false, false])
+        XCTAssertEqual([none.offersCard, none.headerState.isOnGrid, none.isGlobal, none.showsValueInMenuBar, none.offersFloat], [true, true, false, false, false])
         XCTAssertEqual([search.offersCard, search.headerState.isOnGrid, search.isGlobal], [false, false, true])
         XCTAssertTrue(search.isFound)
-        XCTAssertEqual([nowhere.offersCard, nowhere.headerState.isOnGrid, nowhere.isGlobal, nowhere.canShowInMenuBar, nowhere.offersFloat], [false, false, false, false, false])
+        XCTAssertEqual([nowhere.offersCard, nowhere.headerState.isOnGrid, nowhere.isGlobal, nowhere.showsValueInMenuBar, nowhere.offersFloat], [false, false, false, false, false])
         XCTAssertEqual([window.offersCard, window.offersWindow, nowhere.offersWindow], [true, true, false])
         let both = folder.appendingPathComponent("both.sh")
         try "#!/bin/sh\n# on=sheet.open\n# offers=none\n# offers=card\n".writeScript(to: both)
@@ -168,24 +168,6 @@ final class SpotHeaderTests: XCTestCase {
         }
     }
 
-    func testGlobalFloatAndTrayRefuseTheSpotAndNameTheirNewWay() throws {
-        let cases = [
-            ("on=panel.open\n# global=true", "offers=search"),
-            ("on=panel.open\n# global=rows", "offers=search"),
-            ("on=sheet.open\n# float=true", "offers=float"),
-            ("on=clock.60\n# tray=true", "offers=menubar")
-        ]
-        for (header, hint) in cases {
-            let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-old-\(UUID().uuidString)")
-            try "#!/bin/sh\n# \(header)\n".writeScript(to: url)
-            defer { try? FileManager.default.removeItem(at: url) }
-
-            XCTAssertThrowsError(try SpotFile(file: url, id: "script"), header) { error in
-                XCTAssertTrue((error as? SpotError)?.reason.contains(hint) == true, "\(header): \(error)")
-            }
-        }
-    }
-
     func testEachKeywordOfTheHeaderFindsTheSpot() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-keyword-\(UUID().uuidString)")
         try "#!/bin/sh\n# title=Timer\n# keywords=countdown,  pomodoro timer , ,\n".writeScript(to: url)
@@ -194,30 +176,6 @@ final class SpotHeaderTests: XCTestCase {
         let spot = try XCTUnwrap(try SpotFile(file: url, id: "timer")?.spots.first)
 
         XCTAssertEqual(spot.keywords, ["countdown", "pomodoro timer"])
-    }
-
-    func testASizeLineRefusesTheSpotAndNamesItsFix() throws {
-        for header in ["title=Timer\n# size=small", "title=Timer\n# grid.small=cpu\n# size=small"] {
-            let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-size-\(UUID().uuidString)")
-            try "#!/bin/sh\n# \(header)\n".writeScript(to: url)
-            defer { try? FileManager.default.removeItem(at: url) }
-
-            XCTAssertThrowsError(try SpotFile(file: url, id: "timer"), header) { error in
-                XCTAssertEqual((error as? SpotError)?.reason, "Timer has size=small, which Openspot no longer reads. Openspot sizes a card by the person's choice, so remove it", header)
-            }
-        }
-    }
-
-    func testAKeywordLineRefusesTheSpotAndNamesTheList() throws {
-        for header in ["title=Timer\n# keyword=countdown", "grid.small=cpu\n# keyword=load"] {
-            let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-keyword-\(UUID().uuidString)")
-            try "#!/bin/sh\n# \(header)\n".writeScript(to: url)
-            defer { try? FileManager.default.removeItem(at: url) }
-
-            XCTAssertThrowsError(try SpotFile(file: url, id: "timer"), header) { error in
-                XCTAssertTrue((error as? SpotError)?.reason.contains("Write keywords=a, b") == true, "\(header): \(error)")
-            }
-        }
     }
 
     func testReadsTheCommentLinesUnderTheFirstLine() {

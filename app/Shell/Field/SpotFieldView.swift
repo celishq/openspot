@@ -157,11 +157,6 @@ struct SpotFieldView: View {
                     }
                     return .handled
                 }
-                .onKeyPress(keys: [.return]) { press in
-                    guard press.modifiers.contains(.command) else { return .ignored }
-                    model.openBigView()
-                    return .handled
-                }
     }
 
     private var promptLayer: some View {
@@ -199,7 +194,7 @@ struct SpotFieldView: View {
 
     private var sheetWord: String {
         let id = model.transition.id
-        return SearchPrompt.word(for: model.entries.first { $0.id == id }?.state.title ?? "")
+        return SearchPrompt.word(for: model.sheetEntry(id)?.state.title ?? "")
     }
 
     private var progress: Double {

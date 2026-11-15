@@ -19,9 +19,6 @@ public enum Place: String, CaseIterable, Sendable {
             if word == "actions" {
                 throw SpotError.fault("\(name) offers actions in its header. Write offers=actions on a button, such as after button=change")
             }
-            if word == "rows" {
-                throw SpotError.fault("\(name) offers rows, which Openspot no longer reads. Use offers=search, and leave out offers=card")
-            }
             guard let place = Place(rawValue: word) else {
                 throw SpotError.fault("\(name) offers an unknown place: \(word). Use card, search, menubar, float, window or none")
             }

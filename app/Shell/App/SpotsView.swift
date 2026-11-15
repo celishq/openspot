@@ -54,7 +54,7 @@ struct SpotsView: View {
             if sheetOpen, sheetID != nil {
                 SpotFlowEdges(model: model, rect: sheetRect)
             }
-            if let entry = model.entries.first(where: { $0.id == sheetID }) {
+            if let entry = model.sheetEntry(sheetID) {
                 SpotSheetLayer(
                     model: model,
                     entry: entry,

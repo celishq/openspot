@@ -114,7 +114,7 @@ struct SpotSheetLayer: View {
     }
 
     private var showsArrow: Bool {
-        entry.kind == .list && card?.look == nil && (frame?.width ?? 0) > SpotTokens.cell
+        (card?.kind ?? entry.kind) == .list && card?.look == nil && (frame?.width ?? 0) > SpotTokens.cell
     }
 
     private var arrow: some View {

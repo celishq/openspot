@@ -11,11 +11,8 @@ public enum SheetFaults {
     private static let swatchWidth: CGFloat = 26
     private static let smallSwatchWidth: CGFloat = 18
 
-    public static func of(layout: SheetLayout?, summary: TextBlock?, parts: [SpotPart]) -> [String] {
+    public static func of(layout: SheetLayout?, parts: [SpotPart]) -> [String] {
         var faults: [String] = []
-        if summary?.value("layout") != nil { faults.append("a sheet has no layout key, so draw it with grid= lines") }
-        if summary?.value("card") != nil { faults.append("a sheet has no card key, so leave it out: each part draws its own box") }
-        if summary?.value("pad") != nil { faults.append("a sheet has no pad key, so print a button for each key") }
         guard let layout, layout.isDrawn else {
             let flat = SheetPlacement(parts: parts, layout: SheetLayout(flat: parts))
             if flat.overflows, parts.contains(where: \.scrollsItself) {

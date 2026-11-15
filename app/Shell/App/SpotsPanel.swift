@@ -51,13 +51,6 @@ final class SpotsPanel: NSPanel {
         setFrameOrigin(NSPoint(x: origin.x - place.left, y: origin.y))
     }
 
-    func place(beside window: NSRect) {
-        guard model?.isShown != true || model?.isWarming == true else { return }
-        let center = NSSize(width: frame.width - place.left - appliedRight, height: frame.height)
-        guard let origin = ScreenPlace(screens: ScreenPlace.Screen.all).origin(of: center, beside: window) else { return }
-        setFrameOrigin(NSPoint(x: origin.x - place.left, y: origin.y))
-    }
-
     private static func frontWindow(of app: NSRunningApplication) -> CGRect? {
         let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
         let front = windows.first {
@@ -160,7 +153,7 @@ final class SpotsPanel: NSPanel {
                 }
                 return
             }
-            if Int(event.keyCode) == kVK_Return, event.modifierFlags.contains(.command), model?.openSoleSettings() == true { return }
+            if Int(event.keyCode) == kVK_Return, event.modifierFlags.contains(.command), model?.openSelectedSettings() == true { return }
             if let key = Self.actionKey(of: event), !textKeepsArrow(key), model?.handleKey(key) == true { return }
             if model?.handleChain(code: UInt32(event.keyCode), modifiers: Self.modifiers(of: event.modifierFlags)) == true { return }
         }

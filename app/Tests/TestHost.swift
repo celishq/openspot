@@ -6,7 +6,6 @@ final class TestHost: SpotsHost {
     var dismissals = 0
     var edgeChanges: [(motion: PanelMotion?, edges: FlowEdges, rows: [String])] = []
     var shows = 0
-    var dragShows = 0
     var notes: [String] = []
     var confirms: [String] = []
     var isPointerOverDrop = false
@@ -34,11 +33,6 @@ final class TestHost: SpotsHost {
         dismissals += 1
         model?.panelWillHide()
         model?.panelDidHide()
-    }
-
-    func showForDrag() {
-        dragShows += 1
-        model?.panelWillShow(holding: [])
     }
 
     func show() {

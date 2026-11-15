@@ -4,6 +4,7 @@ public struct CommandOffer: Equatable, Sendable {
     public let id: String
     public let title: String
     public let icon: String?
+    public let isHotkey: Bool
 
     public init?(block: TextBlock) {
         guard let id = block.value("button"), let title = block.value("title"), id != "read", !id.contains(where: \.isWhitespace) else {
@@ -12,11 +13,12 @@ public struct CommandOffer: Equatable, Sendable {
         self.id = id
         self.title = title
         icon = block.value("icon")
+        isHotkey = false
     }
 
     public init?(setting block: TextBlock) {
         guard let key = block.value("field"), let named = CommandOffer(setting: key) else { return nil }
-        self.init(id: key, title: block.value("title") ?? named.title, icon: block.value("icon"))
+        self.init(id: key, title: block.value("title") ?? named.title, icon: block.value("icon"), isHotkey: block.value("type") == "hotkey")
     }
 
     public init?(setting key: String) {
@@ -24,9 +26,10 @@ public struct CommandOffer: Equatable, Sendable {
         self.init(id: key, title: key.prefix(1).uppercased() + key.dropFirst(), icon: nil)
     }
 
-    private init(id: String, title: String, icon: String?) {
+    private init(id: String, title: String, icon: String?, isHotkey: Bool = false) {
         self.id = id
         self.title = title
         self.icon = icon
+        self.isHotkey = isHotkey
     }
 }

@@ -6,8 +6,8 @@ public struct SpotLock: Equatable, Sendable {
         public let commit: String?
         public let paths: [String]
         public let hash: String?
-        public let uses: [SpotUse]?
-        public var canDo: [String]?
+        public let uses: [SpotUse]
+        public var canDo: [String]
         public var address: String?
         public var key: String?
 
@@ -21,7 +21,7 @@ public struct SpotLock: Equatable, Sendable {
             }
         }
 
-        public init(source: String, commit: String?, paths: [String], hash: String?, uses: [SpotUse]?, canDo: [String]? = nil, address: String? = nil, key: String? = nil) {
+        public init(source: String, commit: String?, paths: [String], hash: String?, uses: [SpotUse], canDo: [String] = [], address: String? = nil, key: String? = nil) {
             self.source = source
             self.commit = commit
             self.paths = paths
@@ -31,21 +31,6 @@ public struct SpotLock: Equatable, Sendable {
             self.address = address
             self.key = key
         }
-
-        public init(from decoder: Decoder) throws {
-            let values = try decoder.container(keyedBy: CodingKeys.self)
-            try self.init(
-                source: values.decode(String.self, forKey: .source),
-                commit: values.decodeIfPresent(String.self, forKey: .commit),
-                paths: values.decode([String].self, forKey: .paths).map { SpotsFolder.wrapped($0) },
-                hash: values.decodeIfPresent(String.self, forKey: .hash),
-                uses: values.decodeIfPresent([SpotUse].self, forKey: .uses),
-                canDo: values.decodeIfPresent([String].self, forKey: .canDo),
-                address: values.decodeIfPresent(String.self, forKey: .address),
-                key: values.decodeIfPresent(String.self, forKey: .key)
-            )
-        }
-
 
         var addedLine: String {
             commit.map { "Added \(name) at \($0.prefix(7)).\n" } ?? "Added \(name).\n"
@@ -114,12 +99,11 @@ public struct SpotLock: Equatable, Sendable {
                     throw SpotError.fault("Another key signed this version than the one you have. Openspot kept the one you have. Run `openspot spot add \(source.text) --yes` to update it.")
                 }
                 if let old, !isConfirmed {
-                    let before = old.uses == nil || old.canDo == nil ? try Self.facts(of: old.paths, in: folder) : nil
-                    try Self.refuseGrowth(from: old.uses ?? before?.uses ?? [], old.canDo ?? before?.canDo ?? [], to: new, confirm: "openspot spot add \(source.text) --yes")
+                    try Self.refuseGrowth(from: old.uses, old.canDo, to: new, confirm: "openspot spot add \(source.text) --yes")
                 }
                 facts = new
             }
-            let entry = Entry(source: source.text, commit: commit, paths: paths, hash: facts?.hash, uses: facts?.uses, canDo: facts?.canDo, address: facts?.release?.address, key: facts?.release?.publicKey)
+            let entry = Entry(source: source.text, commit: commit, paths: paths, hash: facts?.hash, uses: facts?.uses ?? [], canDo: facts?.canDo ?? [], address: facts?.release?.address, key: facts?.release?.publicKey)
             try write(try entries().filter { Set($0.paths).isDisjoint(with: paths) && $0.source != source.text } + [entry])
             return old == nil ? entry.addedLine : entry.updatedLine
         }
@@ -140,12 +124,12 @@ public struct SpotLock: Equatable, Sendable {
                 var facts: Facts?
                 _ = try await SpotSource(text: entry.source, place: place).add(to: folder, at: entry.commit, check: { work, paths in
                     let new = try Self.facts(of: paths, in: work)
-                    if !isConfirmed, new.hash != entry.hash, let uses = entry.uses {
-                        try Self.refuseGrowth(from: uses, entry.canDo ?? new.canDo, to: new, confirm: "openspot spot add --yes")
+                    if !isConfirmed, new.hash != entry.hash {
+                        try Self.refuseGrowth(from: entry.uses, entry.canDo, to: new, confirm: "openspot spot add --yes")
                     }
                     facts = new
                 })
-                entries[index] = Entry(source: entry.source, commit: entry.commit, paths: entry.paths, hash: facts?.hash, uses: facts?.uses, canDo: facts?.canDo, address: facts?.release?.address, key: facts?.release?.publicKey)
+                entries[index] = Entry(source: entry.source, commit: entry.commit, paths: entry.paths, hash: facts?.hash, uses: facts?.uses ?? [], canDo: facts?.canDo ?? [], address: facts?.release?.address, key: facts?.release?.publicKey)
                 changed[entry.source] = entries[index]
                 added += entry.addedLine
             } catch {

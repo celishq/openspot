@@ -8,6 +8,16 @@ public struct SpotStore: Sendable {
         public let isAdded: Bool
         public let size: SpotSize
         public let publication: SpotPublication?
+        public let hasSample: Bool
+
+        public var runsSample: Bool {
+            origin != .store
+        }
+
+        public var step: String {
+            guard isAdded else { return "get" }
+            return origin == .mine && publication != .current ? "publish" : "added"
+        }
 
         public var package: URL? {
             origin == .store ? spot.url.deletingLastPathComponent() : nil
@@ -59,12 +69,10 @@ public struct SpotStore: Sendable {
     }
 
     private func item(_ spot: Spot, id: String, origin: SpotOrigin, isAdded: Bool, publication: SpotPublication? = nil) -> Item {
-        Item(id: id, spot: spot, origin: origin, isAdded: isAdded, size: arrangement.size(of: id) ?? spot.size, publication: publication)
-    }
-
-    public func turnOn(_ item: Item, in arrangement: inout SpotArrangement) {
-        guard item.origin != .store else { return }
-        arrangement.set(isEnabled: true, of: item.id)
+        Item(
+            id: id, spot: spot, origin: origin, isAdded: isAdded, size: arrangement.size(of: id) ?? spot.size, publication: publication,
+            hasSample: SpotSample.exists(for: spot, runsScript: origin != .store)
+        )
     }
 
     public func add(_ item: Item, environment: [String: String]) async throws {
@@ -107,16 +115,18 @@ public struct SpotStore: Sendable {
         items.map(Printed.init).map { printed in
             let pairs: [(String, String?)] = [
                 ("spot", printed.id), ("name", printed.name), ("icon", printed.icon), ("detail", printed.detail), ("size", printed.size),
-                ("origin", printed.origin), ("added", String(printed.added)), ("published", printed.published), ("path", printed.path)
-            ]
+                ("origin", printed.origin), ("added", String(printed.added)), ("step", printed.step), ("published", printed.published), ("path", printed.path),
+                ("sample", printed.sample ? "true" : nil)
+            ] + printed.readme.map { ("readme", $0) }
             return TextBlock(fields: pairs.compactMap { key, value in value.map { TextBlock.Field(key: key, value: $0) } }).text + "\n"
         }.joined()
     }
 
     private struct Printed: Encodable {
-        let id, name, icon, size, origin: String
+        let id, name, icon, size, origin, step: String
         let detail, published, path: String?
-        let added: Bool
+        let readme: [String]
+        let added, sample: Bool
 
         init(_ item: Item) {
             id = item.id
@@ -126,8 +136,11 @@ public struct SpotStore: Sendable {
             size = item.size.name
             origin = item.origin.rawValue
             added = item.isAdded
+            step = item.step
+            sample = item.hasSample
             published = item.publication?.rawValue
             path = item.package?.path
+            readme = SpotReadme.lines(at: SpotReadme.url(beside: item.spot.url))
         }
     }
 }

@@ -130,7 +130,7 @@ struct SheetPartsView: View {
     private func drawn(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         if part.kind == "view" {
             if let viewSource {
-                SpotCustomView(source: viewSource, values: part.values, card: .square, room: frame.rect.size, views: views) { onSet(part, $0) }
+                SpotCustomView(source: viewSource, values: part.values, card: .square, room: frame.rect.size, answers: panel.answered, views: views) { onSet(part, $0) }
                     .equatable()
             }
         } else {
@@ -318,6 +318,7 @@ struct SheetPartsView: View {
 
     private func centeredLine(_ part: SpotPart, isActive: Bool) -> some View {
         pressLabel(part, words: part.title ?? part.id.capitalized, font: SpotType.body.weight(.medium))
+            .padding(.horizontal, SpotTokens.padding)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .spotFill(isActive: isActive, otherwise: SpotTheme.ink.opacity(SpotTheme.selectedFill), in: shape)
             .contentShape(shape)
