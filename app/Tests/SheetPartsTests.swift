@@ -48,15 +48,19 @@ final class SheetPartsTests: XCTestCase {
         try XCTUnwrap(SheetParts(output: SpotOutput(text: text)))
     }
 
-    func testThePartsCountEachAnswerTheyTakeEvenOneEqualToTheLast() throws {
+    func testThePartsCountOneAnswerForEachChangeEvenAnAnswerEqualToTheLast() throws {
         var parts = try panel(lights)
         let first = parts.answers
 
         parts.take(SpotOutput(text: lights), answering: parts.generation)
+        let polled = parts
+        parts.set("90", of: "brightness")
+        parts.take(SpotOutput(text: lights), answering: parts.generation)
         parts.take(SpotOutput(text: lights), answering: parts.generation)
         parts.take(SpotOutput(text: lights), answering: parts.generation - 1)
 
-        XCTAssertEqual(parts.answers, first + 2)
+        XCTAssertEqual(polled.answers, first)
+        XCTAssertEqual(parts.answers, first + 1)
     }
 
     func testThePartsKeepTheTimeOfTheLastChangeOfEachPictureWhenTheyArrive() throws {

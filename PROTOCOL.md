@@ -23,7 +23,7 @@ press   ─ on a block ─►  <spot> <id>    the user or an agent acts
   folder holds its scripts, its `readme.md`, its `sample.sh` and any file that they need.
 - `sample.sh` prints what the spot would show, with made-up data, so that the store can show the spot before you add it.
   A click on that sample runs nothing. Publish runs it once and ships what it printed as `sample.txt`, which is all a
-  shared spot shows before you add it. `sample.sh` is never a spot of its own.
+  shared spot shows before you add it. `sample.sh` is a spot of its own only in `sample.spot`.
 - A line of `readme.md` that holds only a Markdown image shows a picture or a video from the folder: PNG, JPEG, MOV or
   MP4. A picture can also be an `https` address, which Openspot fetches once, with no cookies. A video at an `https`
   address shows as a link that opens in your browser.
@@ -691,7 +691,7 @@ struct SpotView: View {
 | `spot.accent`       | The accent colour.                                                    |
 | `spot.font`         | The fonts of the cards: `title`, `detail`, `metric` and `value`.      |
 | `spot.send(v)`      | Calls the spot with the view's id and `v`, as a field does.           |
-| `spot.answers`      | How many answers the sheet took, so that a view can end a busy state. |
+| `spot.answers`      | One more each time the spot answers a new send, to end a busy state.  |
 | `spot.card(id)`     | The card of a spot, at the size it takes on the grid.                 |
 | `spot.cardSize(id)` | That size, so the view can lay cards out.                             |
 | `spot.sheet(id)`    | The sheet of a spot with its sample data, where a click runs nothing. |

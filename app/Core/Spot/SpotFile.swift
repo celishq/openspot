@@ -121,7 +121,7 @@ public struct SpotFile: Equatable, Sendable {
 
     private static func sample(beside url: URL) -> URL? {
         let sample = SpotListing.sampleScript(of: url)
-        return FileManager.default.isExecutableFile(atPath: sample.path) ? sample : nil
+        return SpotListing.isSampleScript(sample) && FileManager.default.isExecutableFile(atPath: sample.path) ? sample : nil
     }
 
     private static func refuseOldKeys(_ header: TextBlock, of name: String) throws {

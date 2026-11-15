@@ -29,6 +29,13 @@ final class SpotListingTests: XCTestCase {
         XCTAssertNil(try SpotFile(file: sample, id: "timer/sample"))
     }
 
+    func testAScriptNamedSampleInItsOwnFolderIsASpot() throws {
+        let spot = try self.spot("# title=Sample", named: "sample")
+
+        XCTAssertEqual(spot.name, "Sample")
+        XCTAssertNil(spot.sample)
+    }
+
     func testAnOldPreviewKeyStillLoadsTheSpot() throws {
         XCTAssertNil(try spot("# preview=sample").sample)
     }

@@ -22,7 +22,7 @@ public enum SpotListing {
     }
 
     static func isSampleScript(_ url: URL) -> Bool {
-        url.lastPathComponent == sampleScriptName
+        url.lastPathComponent == sampleScriptName && url.deletingLastPathComponent().deletingPathExtension().lastPathComponent != "sample"
     }
 
     @MainActor
@@ -34,8 +34,7 @@ public enum SpotListing {
 
     @MainActor
     public static func sample(of spot: Spot, runsScript: Bool, runs: SpotRuns) async -> String? {
-        if runsScript {
-            guard let sampled = spot.sampled else { return nil }
+        if runsScript, let sampled = spot.sampled {
             return try? await runs.answer(of: sampled, .read, limit: sampleLimit)
         }
         let folder = spot.url.deletingLastPathComponent()
