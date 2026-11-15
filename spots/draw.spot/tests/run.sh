@@ -2,6 +2,7 @@
 # Builds the tests of Draw with its model and its app, and runs them. `make verify` runs each `tests/run.sh` of a spot.
 # Each test writes only under the folder in DRAW_TESTS, which goes when the run ends.
 set -e
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 spot=$(cd "$(dirname "$0")/.." && pwd)
 out=$(mktemp -d)
 trap 'rm -rf "$out"' EXIT

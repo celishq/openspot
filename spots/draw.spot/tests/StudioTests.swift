@@ -279,4 +279,69 @@ final class DrawStudioTests: XCTestCase {
         XCTAssertTrue(desk.tabs.studios.isEmpty)
         XCTAssertFalse(FileManager.default.fileExists(atPath: file.path))
     }
+
+    func testAtTheEndEachBoardIsWrittenBeforeAnyPictureIsDrawn() throws {
+        let files = [try board("one"), try board("two")]
+        let desk = Desk(folder: folder, shows: false)
+        for file in files { try desk.open(file) }
+        for studio in desk.tabs.studios { studio.change { $0.add(self.box()) } }
+
+        desk.finish()
+
+        func written(_ file: URL) throws -> Date {
+            try XCTUnwrap(try FileManager.default.attributesOfItem(atPath: file.path)[.modificationDate] as? Date)
+        }
+        let pictures = try files.map { try written($0.deletingPathExtension().appendingPathExtension("png")) }
+        XCTAssertEqual(try files.map { try Board.load(from: $0).figures.count }, [1, 1])
+        XCTAssertLessThan(try XCTUnwrap(try files.map(written).max()), try XCTUnwrap(pictures.min()))
+    }
+
+    func testABoardWhoseWriteFailedGetsNoPicture() throws {
+        let file = try board("flows")
+        let studio = try Studio(file: file)
+        studio.change { $0.add(self.box()) }
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: folder.path)
+        studio.save()
+        Saves.shared.wait()
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: folder.path)
+
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), ["flows.json"])
+    }
+
+    func testUndoOnABoardWhoseFileRepeatsAnIdKeepsBothFigures() throws {
+        let file = folder.appendingPathComponent("twins.json")
+        let id = UUID()
+        var first = box()
+        var second = box(300)
+        first.id = id
+        second.id = id
+        try JSONEncoder().encode(["title": AnyEncodable("Twins"), "figures": AnyEncodable([first, second])]).write(to: file)
+        let before = try number(of: file)
+        let studio = try Studio(file: file)
+        studio.save()
+        Saves.shared.wait()
+        XCTAssertEqual(try number(of: file), before)
+        let loaded = studio.board.figures
+
+        studio.change { $0.move([id], by: CGPoint(x: 0, y: 50)) }
+        studio.undo()
+
+        XCTAssertEqual(studio.board.figures, loaded)
+        XCTAssertEqual(loaded.map(\.points), [first.points, second.points])
+        XCTAssertEqual(loaded[0].id, id)
+        XCTAssertNotEqual(loaded[1].id, id)
+    }
+}
+
+/// A value of any kind that can be written, for a board file that a test writes by hand.
+private struct AnyEncodable: Encodable {
+    let value: any Encodable
+
+    init(_ value: any Encodable) {
+        self.value = value
+    }
+
+    func encode(to encoder: Encoder) throws {
+        try value.encode(to: encoder)
+    }
 }

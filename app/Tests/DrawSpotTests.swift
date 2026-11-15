@@ -8,6 +8,7 @@ final class DrawSpotTests: XCTestCase {
     private static let bad = Data(#"{"title":"Plan","figures":"none"}"#.utf8)
 
     private var runs: SpotRuns!
+    private var started: [SpotRuns] = []
     private var home: URL!
     private var boards: URL!
     private var toasts: [String] = []
@@ -21,7 +22,8 @@ final class DrawSpotTests: XCTestCase {
     }
 
     override func tearDown() async throws {
-        runs?.quit()
+        started.forEach { $0.quit() }
+        started = []
         runs = nil
     }
 
@@ -29,8 +31,7 @@ final class DrawSpotTests: XCTestCase {
         ProcessInfo.processInfo.environment.merging([
             "HOME": home.path,
             "PATH": "\(home.path)/tools:/usr/bin:/bin",
-            "OPENSPOT_CONFIG": home.appendingPathComponent(".config/openspot").path,
-            "DRAW_WINDOW": "off"
+            "OPENSPOT_CONFIG": home.appendingPathComponent(".config/openspot").path
         ]) { _, new in new }
     }
 
@@ -51,12 +52,18 @@ final class DrawSpotTests: XCTestCase {
         return (board["figures"] as? [Any])?.count ?? 0
     }
 
+    private func shownFiles() throws -> [String] {
+        try FileManager.default.contentsOfDirectory(atPath: boards.path).filter { !$0.hasPrefix(".") }.sorted()
+    }
+
     private func title(of file: URL) throws -> String? {
         (try JSONSerialization.jsonObject(with: Data(contentsOf: file)) as? [String: Any])?["title"] as? String
     }
 
     private func opened(_ spot: Spot) async throws -> SpotRun {
         runs = SpotRuns(environment: environment, readLimit: 120, stopPause: 20)
+        started.append(runs)
+        let count = records.count
         runs.onCall = { [unowned self] record, _ in records.append(record) }
         let sheet = runs.sheet(for: spot)
         sheet.onReport = { [unowned self] report in
@@ -65,6 +72,8 @@ final class DrawSpotTests: XCTestCase {
         runs.panelOpened()
         sheet.open {}
         try await wait("the sheet of Draw, which Openspot builds first", seconds: Self.buildLimit) { !sheet.list.shown.isEmpty }
+        sheet.run(CommandAction(id: "windowless", title: "No window"), item: nil)
+        try await wait("the end of the call that tells Draw to show no window") { self.records.dropFirst(count).contains { $0.arguments == ["windowless"] } }
         return sheet
     }
 
@@ -134,7 +143,7 @@ final class DrawSpotTests: XCTestCase {
 
         try await wait("the sheet with no board") { sheet.list.shown.map(\.title) == ["New board"] }
         XCTAssertEqual(toasts, ["Moved Flows to the Trash."])
-        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: boards.path), [])
+        XCTAssertEqual(try shownFiles(), [])
         let trash = try FileManager.default.contentsOfDirectory(atPath: home.appendingPathComponent(".Trash").path).sorted()
         XCTAssertEqual(trash.count, 2)
         XCTAssertTrue(trash[0].hasPrefix("Flows-") && trash[0].hasSuffix(".json"))
@@ -234,7 +243,7 @@ final class DrawSpotTests: XCTestCase {
         runs.quit()
 
         try await wait("the end of Draw") { self.processes(of: program).isEmpty }
-        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: boards.path).sorted(), ["flows.json"])
+        XCTAssertEqual(try shownFiles(), ["flows.json"])
     }
 
     func testDrawEndsWhenItsSheetClosesWithNoBoardOpen() async throws {
@@ -247,6 +256,36 @@ final class DrawSpotTests: XCTestCase {
         runs.panelClosed()
 
         try await wait("the end of Draw") { self.processes(of: program).isEmpty }
+    }
+
+    func testASecondOpenspotChangesNoBoardWhileTheFirstHasOneOpenAndSaysSo() async throws {
+        let spot = try draw()
+        try write("Flows", id: "flows")
+        let file = boards.appendingPathComponent("flows.json")
+        let first = try await opened(spot)
+        first.pick(try row("flows", in: first))
+        try await wait("the call that waits") { first.list.shown.first?.run == "1:new" }
+        let program = try await program(of: spot)
+        let second = try await opened(spot)
+        XCTAssertEqual(processes(of: program).count, 2)
+        let item = try row("flows", in: second)
+        let rename = try XCTUnwrap(second.spot.actions.first { $0.id == "rename" })
+        let form = try await second.form(rename, item: item)
+        var draft = FormDraft(form: try XCTUnwrap(form))
+        draft.set("Other", for: "name")
+
+        _ = try await second.submit(rename, item: item, draft: draft)
+        try await wait("the toast of the rename") { self.toasts.count == 1 }
+        second.pick(item)
+        try await wait("the toast of the open") { self.toasts.count == 2 }
+        second.pick(SpotItem(title: "New board", run: "0:new"))
+        try await wait("the toast of the new board") { self.toasts.count == 3 }
+
+        XCTAssertEqual(Set(toasts), ["Another Draw has these boards open, so nothing changed. Close it, then try again."])
+        XCTAssertEqual(try title(of: file), "Flows")
+        XCTAssertEqual(try shownFiles(), ["flows.json"])
+        try await wait("the end of the second open") { self.ended(["open", "0:new"]) }
+        XCTAssertTrue(second.calls.isEmpty)
     }
 
     func testTheCallThatOpensTheStudioKeepsDrawWantedAndShowsNoWork() async throws {

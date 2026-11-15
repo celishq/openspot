@@ -4,6 +4,12 @@ import Foundation
 /// each frame that Draw prints.
 final class Host: @unchecked Sendable {
     private let lock = NSLock()
+    private let output: FileHandle
+
+    /// The host that reads what Draw prints from `output`.
+    init(output: FileHandle = .standardOutput) {
+        self.output = output
+    }
 
     /// Reads the blocks of stdin on a thread of its own and hands each call to `take` on the main thread. It hands nil
     /// when stdin closes, which is how Openspot says that it no longer wants Draw.
@@ -28,7 +34,7 @@ final class Host: @unchecked Sendable {
     /// Prints one frame.
     func send(_ frame: String) {
         lock.withLock {
-            FileHandle.standardOutput.write(Data((frame + (frame.hasSuffix("\n") ? "" : "\n") + "---\n").utf8))
+            output.write(Data((frame + (frame.hasSuffix("\n") ? "" : "\n") + "---\n").utf8))
         }
     }
 }

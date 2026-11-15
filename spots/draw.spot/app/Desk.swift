@@ -415,10 +415,14 @@ final class Desk: NSObject, NSWindowDelegate {
         return host
     }
 
-    /// Ends the edit of words that is under way, and saves each board that changed. It returns when they are on the disk.
+    /// Ends the edit of words that is under way, and saves each board that changed. It writes every board first and
+    /// draws the pictures after, so a Draw that is killed while it draws them has lost no drawing. It returns when
+    /// they are on the disk.
     func finish() {
         canvas?.endEditing()
-        for studio in tabs.studios where FileManager.default.fileExists(atPath: studio.file.path) { studio.save() }
+        let changed = tabs.studios.filter { FileManager.default.fileExists(atPath: $0.file.path) && $0.saveBoard() }
+        Saves.shared.wait()
+        changed.forEach { $0.savePicture() }
         Saves.shared.wait()
     }
 

@@ -62,6 +62,7 @@ public final class SpotRun {
     static let answerAge: TimeInterval = 5
     static let textPause: Duration = .milliseconds(300)
     static let sliderPause: Duration = .milliseconds(100)
+    static let buildPause: Duration = .milliseconds(500)
     static let pressPause: TimeInterval = 1
     static let workPause: TimeInterval = 1
     static let waitingLimit = 8
@@ -71,6 +72,7 @@ public final class SpotRun {
     static let cardKey = "card"
     static let levelKey = "level"
     static let globalKey = "global"
+    static let buildKey = "build"
 
     public internal(set) var spot: Spot {
         didSet { runs.showMarks(of: spot.id) }

@@ -119,6 +119,7 @@ targets:
           rm -rf "$core"
           mkdir -p "$(dirname "$core")"
           cp -RL "$SRCROOT/../spots" "$core"
+          rm -rf "$core"/*.spot/tests
           cp "$SRCROOT/defaults.toml" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/defaults.toml"
       - name: Build the views of the core spots
         basedOnDependencyAnalysis: false

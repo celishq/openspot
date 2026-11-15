@@ -103,20 +103,32 @@ final class Studio: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: work)
     }
 
-    /// Writes the board and its picture when the board changed since the last write. The file is written off the main
-    /// thread. A board whose file is gone was deleted, so its tab closes and nothing is written.
+    /// Writes the board and its picture when the board changed since the last write. The files are written off the
+    /// main thread. A board whose file is gone was deleted, so its tab closes and nothing is written.
     func save() {
+        if saveBoard() { savePicture() }
+    }
+
+    /// Writes the board alone when it changed since the last write, and returns whether it did.
+    func saveBoard() -> Bool {
         pending?.cancel()
         pending = nil
-        guard board != saved else { return }
+        guard board != saved else { return false }
         guard FileManager.default.fileExists(atPath: file.path) else {
             gone?()
-            return
+            return false
         }
         saved = board
-        saves.write(board, picture: Painting(board: board, assets: assets).picture(width: 360, height: 240), to: file) { [weak self] in
+        saves.write(board, to: file) { [weak self] in
             DispatchQueue.main.async { self?.saved = nil }
         }
+        return true
+    }
+
+    /// Draws the picture of the board as it is now, and writes it after the board.
+    func savePicture() {
+        guard let picture = Painting(board: board, assets: assets).picture(width: 360, height: 240) else { return }
+        saves.write(picture: picture, of: file)
     }
 
     /// Gives the board a new title, and saves it at once so that Openspot lists it so.

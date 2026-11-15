@@ -9,8 +9,7 @@
 // source=app
 import AppKit
 
-// Draw is one process that Openspot keeps: it answers the sheet, and it is the board window. `DRAW_WINDOW=off` runs
-// it with no window, for a test.
+// Draw is one process that Openspot keeps: it answers the sheet, and it is the board window.
 let environment = ProcessInfo.processInfo.environment
 guard let data = environment["OPENSPOT_DATA"] else {
     FileHandle.standardError.write(Data("Draw runs inside Openspot, which gives it the folder of its boards.\n".utf8))
@@ -23,8 +22,7 @@ MainActor.assumeIsolated {
     app.setActivationPolicy(.prohibited)
     let draw = Draw(
         boards: URL(fileURLWithPath: data, isDirectory: true).appendingPathComponent("boards", isDirectory: true),
-        home: URL(fileURLWithPath: environment["HOME"] ?? NSHomeDirectory(), isDirectory: true),
-        shows: environment["DRAW_WINDOW"] != "off"
+        home: URL(fileURLWithPath: environment["HOME"] ?? NSHomeDirectory(), isDirectory: true)
     )
     app.delegate = draw
     draw.listen()

@@ -55,6 +55,20 @@ final class SpotPackageTests: XCTestCase {
         return try SpotPackage(contentsOf: zip)
     }
 
+    func testAShareLeavesOutTheTestsOfTheSpot() throws {
+        try script("weather.spot/weather.sh", "#!/bin/sh\n# title=Weather\necho\n")
+        try script("weather.spot/tests/run.sh", "#!/bin/sh\n# title=Tests\nexit 1\n")
+        try plain("weather.spot/tests/WeatherTests.swift", Data("import XCTest\n".utf8))
+        try plain("weather.spot/more/tests/kept.txt", Data("kept".utf8))
+
+        let scan = try SpotsFolder(url: spots).scan()
+        let shared = try sharing("weather")
+
+        XCTAssertEqual(scan.spots.map(\.id), ["weather"])
+        XCTAssertEqual(scan.refused.map(\.file), [])
+        XCTAssertEqual(shared.files.map(\.path).sorted(), ["weather.spot/more/tests/kept.txt", "weather.spot/weather.sh"])
+    }
+
     func testAScriptKeepsItsBytesAndItsExecutableMarkThroughTheZip() throws {
         let text = "#!/bin/sh\r\n# title=Weather é\n\tprintf '\\\\n'\n"
         try script("weather.spot/weather.sh", text)

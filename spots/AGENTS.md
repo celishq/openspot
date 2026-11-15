@@ -21,4 +21,5 @@ These rules hold for the core spots in `spots/` and the spots in `examples/`. A 
 today's breaks. The comment and motion checks scan only `app/` and `scripts/`.
 
 A spot's tests of its own code live in its `tests` folder, with a `run.sh` that builds and runs them. `make verify` runs
-each one through `scripts/spot-tests.sh`. A test that drives a spot through Openspot stays in `app/Tests`.
+each one through `scripts/spot-tests.sh`. A test that drives a spot through Openspot stays in `app/Tests`. The `tests`
+folder is not part of the spot: the app's copy of the spots and a share leave it out.

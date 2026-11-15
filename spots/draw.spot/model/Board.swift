@@ -29,11 +29,16 @@ struct Board: Codable, Equatable {
         one.title == other.title && one.figures == other.figures
     }
 
-    /// Reads a board, and turns each junction of an older board, where arrows merged into one, into a tie.
+    /// Reads a board, gives the later of two figures with one id a new id, and turns each junction of an older board,
+    /// where arrows merged into one, into a tie.
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         title = try values.decodeIfPresent(String.self, forKey: .title) ?? Board.untitled
         figures = try values.decode([Figure].self, forKey: .figures)
+        // A file that a hand or an agent wrote can repeat an id. The later figure takes a new one, so that each id
+        // finds one figure.
+        var seen: Set<UUID> = []
+        for place in figures.indices where !seen.insert(figures[place].id).inserted { figures[place].id = UUID() }
         index()
         for junction in figures where junction.kind == .tie && junction.members.isEmpty {
             let branches = figures.filter { $0.kind == .arrow && $0.end == junction.id }

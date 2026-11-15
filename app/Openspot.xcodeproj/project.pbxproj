@@ -3209,7 +3209,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "core=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/spots\"\nrm -rf \"$core\"\nmkdir -p \"$(dirname \"$core\")\"\ncp -RL \"$SRCROOT/../spots\" \"$core\"\ncp \"$SRCROOT/defaults.toml\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/defaults.toml\"\n";
+			shellScript = "core=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/spots\"\nrm -rf \"$core\"\nmkdir -p \"$(dirname \"$core\")\"\ncp -RL \"$SRCROOT/../spots\" \"$core\"\nrm -rf \"$core\"/*.spot/tests\ncp \"$SRCROOT/defaults.toml\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/defaults.toml\"\n";
 		};
 		9086F9D8FC997F4EEA3460DC /* Copy the openspot command */ = {
 			isa = PBXShellScriptBuildPhase;
