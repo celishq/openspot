@@ -58,6 +58,16 @@ final class SpotSampleTests: XCTestCase {
         XCTAssertEqual(SpotOutput(text: sample).items.map(\.title), ["Sample"])
     }
 
+    func testTheSampleOfASwiftSpotWithSourcesRunsItsSampleScriptAndBuildsNothing() async throws {
+        try "#!/usr/bin/env swift\n// title=Cups\n// on=sheet.open\n// source=more.swift\nprint(\"row=r\\ntitle=\\(real)\")\n".writeScript(to: core.appendingPathComponent("cups.spot/cups.swift"))
+        try "let real = \"Real row\"\n".write(to: core.appendingPathComponent("cups.spot/more.swift"), atomically: true, encoding: .utf8)
+        try "#!/bin/sh\nprintf 'row=s\\ntitle=Sample row\\n'\n".writeScript(to: core.appendingPathComponent("cups.spot/sample.sh"))
+
+        let sample = try await output(of: "cups")
+
+        XCTAssertEqual(sample?.items.map(\.title), ["Sample row"])
+    }
+
     func testTheSampleOfASpotIsWhatItsSampleScriptPrintsAndNoneWithoutOne() async throws {
         try "#!/bin/sh\nprintf 'row=r\\ntitle=Real row\\n'\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
         try "#!/bin/sh\nprintf 'row=s\\ntitle=Sample row\\n'\n".writeScript(to: core.appendingPathComponent("timer.spot/sample.sh"))

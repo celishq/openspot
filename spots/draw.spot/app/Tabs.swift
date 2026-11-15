@@ -13,8 +13,8 @@ final class Tabs: ObservableObject {
     @Published private(set) var pages: [Page]
     @Published private(set) var currentID: UUID
 
-    init(_ studio: Studio) {
-        let page = Page(studio: studio)
+    init() {
+        let page = Page()
         pages = [page]
         currentID = page.id
     }
@@ -48,12 +48,13 @@ final class Tabs: ObservableObject {
     }
 
     /// Shows a board in its tab. A board that is not open takes the New Tab that shows, or a new tab after this one.
-    func show(_ file: URL) {
+    /// A board that fails to load gets no tab.
+    func show(_ file: URL) throws {
         if let page = pages.first(where: { $0.studio?.file.standardizedFileURL == file.standardizedFileURL }) {
             currentID = page.id
             return
         }
-        let studio = Studio(file: file)
+        let studio = try Studio(file: file)
         if let index = pages.firstIndex(where: { $0.id == currentID }), pages[index].studio == nil {
             pages[index].studio = studio
         } else {
@@ -79,10 +80,11 @@ final class Tabs: ObservableObject {
         }
     }
 
-    /// Shows a board from its new place in the tab that showed it from the old one.
+    /// Lets the board of a tab follow its file to a new place.
     func replace(_ id: UUID, with file: URL) {
-        guard let index = pages.firstIndex(where: { $0.id == id }) else { return }
-        pages[index].studio = Studio(file: file)
+        guard let studio = pages.first(where: { $0.id == id })?.studio else { return }
+        objectWillChange.send()
+        studio.moved(to: file)
     }
 
     /// The tab of a board.

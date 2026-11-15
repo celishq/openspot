@@ -1,14 +1,17 @@
 import AppKit
 import SwiftUI
 
-/// The app of the board window: the tabs, the list of boards, and the canvas and bars of the board that shows, or the
-/// start page on a New Tab. A second open of Draw, such as from Openspot, asks this one to show its board in a tab.
+/// The board window: the tabs, the list of boards, and the canvas and bars of the board that shows, or the start page
+/// on a New Tab. The window is made when the first board opens, and each later open shows its board in a tab.
 @MainActor
-final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
-    let tabs: Tabs
+final class Desk: NSObject, NSWindowDelegate {
+    let tabs = Tabs()
     /// The folder of the boards.
     let folder: URL
-    private let lock: Lock
+    /// Whether the desk has a window. Without one it still opens, changes and saves boards.
+    private let shows: Bool
+    /// What to do when the person closes the window.
+    var closed: (() -> Void)?
     private let drawer = Drawer()
     private var side: NSView?
     private var stripLeading: NSLayoutConstraint?
@@ -25,24 +28,25 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// How far down the window the middle of the window buttons lies, where the tab row lines up.
     private var middle: CGFloat = 26
     private var stage = NSView()
-    var window: NSWindow!
+    var window: NSWindow?
     var canvas: Canvas?
 
     /// The board that shows, or nil on a New Tab.
     var studio: Studio? { tabs.studio }
 
-    init(file: URL, lock: Lock) {
-        tabs = Tabs(Studio(file: file))
-        folder = file.deletingLastPathComponent()
-        self.lock = lock
+    init(folder: URL, shows: Bool = true) {
+        self.folder = folder
+        self.shows = shows
     }
 
-    func applicationDidFinishLaunching(_ notification: Notification) {
+    /// Makes the window, and makes Draw an app in the Dock.
+    private func raise() -> NSWindow {
+        NSApp.setActivationPolicy(.regular)
         NSApp.mainMenu = menu()
         NSApp.applicationIconImage = icon()
         let screen = NSScreen.main?.visibleFrame ?? CGRect(x: 0, y: 0, width: 1440, height: 900)
         let size = CGSize(width: min(1280, screen.width * 0.85), height: min(860, screen.height * 0.85))
-        window = NSWindow(contentRect: CGRect(origin: .zero, size: size), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
+        let window = NSWindow(contentRect: CGRect(origin: .zero, size: size), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.toolbar = NSToolbar(identifier: "Draw")
@@ -53,15 +57,14 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         window.isReleasedWhenClosed = false
         window.setFrameAutosaveName("Draw board")
         if window.frame.size == size { window.center() }
-        mount()
+        self.window = window
+        mount(in: window)
         stageUp()
-        window.makeKeyAndOrderFront(nil)
-        NSApp.activate()
-        DistributedNotificationCenter.default().addObserver(self, selector: #selector(asked(_:)), name: Desk.openName, object: nil)
+        return window
     }
 
     /// Lays the parts that stay while tabs change: the stage, the list of boards, its button and the tabs.
-    private func mount() {
+    private func mount(in window: NSWindow) {
         let root = NSView()
         stage.translatesAutoresizingMaskIntoConstraints = false
         root.addSubview(stage)
@@ -102,6 +105,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     /// Lays the canvas and the bars of the board that shows, or the start page on a New Tab.
     private func stageUp() {
+        guard let window else { return }
         stage.subviews.forEach { $0.removeFromSuperview() }
         stripLeading?.constant = stripStart(open: drawer.open)
         guard let studio else {
@@ -149,12 +153,38 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         studio?.save()
     }
 
-    /// Shows a board in its tab, or in the New Tab that shows, or in a new tab.
+    /// Shows a board in its tab, or in the New Tab that shows, or in a new tab, and brings the window to the front.
+    /// A board that fails to load opens nothing, and its file stays as it is.
+    func open(_ file: URL) throws {
+        if !tabs.shows(file) {
+            leave()
+            try withAnimation(.spring(duration: 0.3, bounce: 0.12)) { try tabs.show(file) }
+            stageUp()
+        }
+        guard shows else { return }
+        let window = window ?? raise()
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate()
+    }
+
+    /// Shows a board that the person picked in the window, or says that Draw cannot read it.
     func show(_ file: URL) {
-        guard !tabs.shows(file) else { return }
-        leave()
-        withAnimation(.spring(duration: 0.3, bounce: 0.12)) { tabs.show(file) }
-        stageUp()
+        do {
+            try open(file)
+        } catch {
+            guard let window else { return }
+            let alert = NSAlert()
+            alert.messageText = Desk.unreadable
+            alert.beginSheetModal(for: window)
+        }
+    }
+
+    /// What Draw says of a board that fails to load.
+    static let unreadable = "Draw cannot read this board. Its file stays as it is."
+
+    /// Tells the lists of boards that the boards on disk changed.
+    func listChanged() {
+        drawer.changes += 1
     }
 
     func select(_ id: UUID) {
@@ -209,6 +239,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let inside = tabs.studios.filter { studio in urls.contains { studio.file.standardizedFileURL == $0.standardizedFileURL || studio.file.path.hasPrefix($0.path + "/") } }
         if let shown = studio, inside.contains(where: { $0 === shown }) { canvas?.endEditing() }
         inside.forEach { $0.save() }
+        Saves.shared.wait()
         let shelf = Shelf(folder: folder)
         let moved = urls.map { (try? shelf.move($0, into: target)) ?? $0 }
         let current = tabs.currentID
@@ -231,6 +262,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let shown = studio.map { shown in inside.contains { $0 === shown } } ?? false
         if shown { canvas?.endEditing() }
         inside.forEach { $0.save() }
+        Saves.shared.wait()
         guard let moved = try? change(), moved != url else { return }
         if drawer.expanded.remove(url.path) != nil { drawer.expanded.insert(moved.path) }
         let current = tabs.currentID
@@ -289,6 +321,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 cancel.keyEquivalent = toDelete ? "" : "\r"
                 return nil
             }
+            guard let window else { return }
             alert.beginSheetModal(for: window) { [weak self] answer in
                 if let arrows { NSEvent.removeMonitor(arrows) }
                 guard answer == .alertFirstButtonReturn else { return }
@@ -299,13 +332,20 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         discard(files)
     }
 
-    /// Moves boards and folders to the Trash and closes their tabs.
-    private func discard(_ files: [URL]) {
+    /// Closes the tabs of these boards and of the boards in these folders, and waits until their last changes are on the
+    /// disk, so that no late write brings a moved file back.
+    func close(boardsAt files: [URL]) {
         for file in files {
             for open in tabs.studios where open.file.standardizedFileURL == file.standardizedFileURL || open.file.path.hasPrefix(file.path + "/") {
                 if let page = tabs.page(of: open) { close(page: page) }
             }
         }
+        Saves.shared.wait()
+    }
+
+    /// Moves boards and folders to the Trash and closes their tabs.
+    private func discard(_ files: [URL]) {
+        close(boardsAt: files)
         let shelf = Shelf(folder: folder)
         for file in files {
             try? shelf.discard(file) { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }
@@ -375,32 +415,27 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         return host
     }
 
-    /// The message that another start of Draw sends with the path of the board to show.
-    nonisolated static let openName = Notification.Name("dev.openspot.draw.open")
-
-    @objc func asked(_ note: Notification) {
-        guard let path = note.object as? String else { return }
-        show(URL(fileURLWithPath: path))
-        window.makeKeyAndOrderFront(nil)
-        NSApp.activate()
+    /// Ends the edit of words that is under way, and saves each board that changed. It writes every board first and
+    /// draws the pictures after, so a Draw that is killed while it draws them has lost no drawing. It returns when
+    /// they are on the disk.
+    func finish() {
+        canvas?.endEditing()
+        let changed = tabs.studios.filter { FileManager.default.fileExists(atPath: $0.file.path) && $0.saveBoard() }
+        Saves.shared.wait()
+        changed.forEach { $0.savePicture() }
+        Saves.shared.wait()
     }
 
+    /// Closes the tab of the board that shows when its file went while the window was behind, such as to the Trash in Finder.
     func windowDidBecomeKey(_ notification: Notification) {
-        studio?.reloadTitle()
+        guard let studio, !FileManager.default.fileExists(atPath: studio.file.path), let page = tabs.page(of: studio) else { return }
+        close(page: page)
     }
 
     func windowWillClose(_ notification: Notification) {
-        canvas?.endEditing()
-        for studio in tabs.studios where FileManager.default.fileExists(atPath: studio.file.path) { studio.save() }
-        NSApp.terminate(nil)
+        finish()
+        closed?()
     }
-
-    func applicationWillTerminate(_ notification: Notification) {
-        canvas?.endEditing()
-        for studio in tabs.studios where FileManager.default.fileExists(atPath: studio.file.path) { studio.save() }
-    }
-
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 
     private func icon() -> NSImage {
         NSImage(size: CGSize(width: 256, height: 256), flipped: false) { rect in

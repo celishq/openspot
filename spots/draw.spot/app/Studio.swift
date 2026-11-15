@@ -2,7 +2,8 @@ import AppKit
 import Combine
 
 /// The board in its window: the figures, the selection, the tool, the style, the steps to undo, and the file it saves to.
-/// Each change is one step to undo, and a change saves the board and its picture shortly after.
+/// Each change is one step to undo, and a change saves the board and its picture shortly after. There is a studio only
+/// for a board that loaded, so a file that Draw cannot read is never written.
 @MainActor
 final class Studio: ObservableObject {
     @Published var board: Board
@@ -11,29 +12,34 @@ final class Studio: ObservableObject {
     @Published var style = Style()
     @Published var form = Figure.Form.rectangle
     @Published var zoom: CGFloat = 1
-    private var past: [Board] = []
-    private var future: [Board] = []
+    private var past: [Step] = []
+    private var future: [Step] = []
     private var pending: DispatchWorkItem?
-    /// What to do when the board's file is gone, because Openspot deleted the board.
+    /// The board as the disk holds it, or nil after a write that failed.
+    private var saved: Board?
+    private let saves: Saves
+    /// What to do when the board's file is gone, because it was deleted outside the window.
     var gone: (() -> Void)?
-    /// The title on disk when this board last read or wrote it, so a rename in Openspot shows here.
-    private var knownTitle: String
-    let file: URL
+    private(set) var file: URL
 
-    init(file: URL) {
+    init(file: URL, saves: Saves = .shared) throws {
         self.file = file
-        let board = (try? Board.load(from: file)) ?? Board()
+        self.saves = saves
+        let board = try Board.load(from: file)
         self.board = board
-        knownTitle = board.title
+        saved = board
     }
 
     var canUndo: Bool { !past.isEmpty }
     var canRedo: Bool { !future.isEmpty }
 
-    /// Keeps `before` as a step to undo when the board changed since it.
+    /// The figures that the steps to undo hold.
+    var kept: Int { past.reduce(0) { $0 + $1.before.count + $1.after.count } }
+
+    /// Keeps the change since `before` as a step to undo.
     func record(_ before: Board) {
-        guard before != board else { return }
-        past.append(before)
+        guard let step = Step(from: before, to: board) else { return }
+        past.append(step)
         if past.count > 300 { past.removeFirst() }
         future = []
         saveSoon()
@@ -47,16 +53,16 @@ final class Studio: ObservableObject {
 
     func undo() {
         guard let last = past.popLast() else { return }
-        future.append(board)
-        board = last
+        future.append(last)
+        board.undo(last)
         selection = selection.filter { board[$0] != nil }
         saveSoon()
     }
 
     func redo() {
         guard let next = future.popLast() else { return }
-        past.append(board)
-        board = next
+        past.append(next)
+        board.redo(next)
         selection = selection.filter { board[$0] != nil }
         saveSoon()
     }
@@ -97,29 +103,32 @@ final class Studio: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: work)
     }
 
-    /// Writes the board and its picture. A board whose file is gone was deleted in Openspot, so its tab closes.
+    /// Writes the board and its picture when the board changed since the last write. The files are written off the
+    /// main thread. A board whose file is gone was deleted, so its tab closes and nothing is written.
     func save() {
-        pending?.cancel()
-        pending = nil
-        guard FileManager.default.fileExists(atPath: file.path) else {
-            gone?()
-            return
-        }
-        if let title = try? Board.load(from: file).title, title != knownTitle { board.title = title }
-        try? board.save(to: file)
-        knownTitle = board.title
-        if let picture = Painting(board: board, assets: assets).picture(width: 360, height: 240) {
-            try? picture.write(to: file.deletingPathExtension().appendingPathExtension("png"), options: .atomic)
-        }
+        if saveBoard() { savePicture() }
     }
 
-    /// Takes the title that Openspot gave the board, and closes the tab of a board that Openspot deleted.
-    func reloadTitle() {
-        guard FileManager.default.fileExists(atPath: file.path) else { return gone?() ?? () }
-        if let title = try? Board.load(from: file).title, title != knownTitle {
-            board.title = title
-            knownTitle = title
+    /// Writes the board alone when it changed since the last write, and returns whether it did.
+    func saveBoard() -> Bool {
+        pending?.cancel()
+        pending = nil
+        guard board != saved else { return false }
+        guard FileManager.default.fileExists(atPath: file.path) else {
+            gone?()
+            return false
         }
+        saved = board
+        saves.write(board, to: file) { [weak self] in
+            DispatchQueue.main.async { self?.saved = nil }
+        }
+        return true
+    }
+
+    /// Draws the picture of the board as it is now, and writes it after the board.
+    func savePicture() {
+        guard let picture = Painting(board: board, assets: assets).picture(width: 360, height: 240) else { return }
+        saves.write(picture: picture, of: file)
     }
 
     /// Gives the board a new title, and saves it at once so that Openspot lists it so.
@@ -128,6 +137,11 @@ final class Studio: ObservableObject {
         guard !title.isEmpty, title != board.title else { return }
         board.title = title
         save()
+    }
+
+    /// Follows the file to where it moved.
+    func moved(to file: URL) {
+        self.file = file
     }
 
     /// The folder of this board's images, beside its file.

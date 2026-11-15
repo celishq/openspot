@@ -209,6 +209,36 @@ final class SpotRunStateTests: XCTestCase {
         return (runs.sheets["script"]!, links["script"]!)
     }
 
+    private func readInMenuBar() async -> (SpotRun, FakeLink, Int) {
+        let (sheet, link) = inMenuBar(read: SpotRead(moments: [.panel, .sheet, .event("clipboard.change")]))
+        for call in link.sent { await link.end(call) }
+        sheet.read(need: .change, reason: .panel)
+        return (sheet, link, link.sent.count - 1)
+    }
+
+    func testASheetOpenAndAnEventDuringOneReadEachReadWithTheirOwnReason() async throws {
+        let (sheet, link, first) = await readInMenuBar()
+
+        sheet.open {}
+        sheet.read(need: .clock, reason: ReadReason(event: "clipboard.change", value: nil))
+        await link.end(link.sent[first])
+        XCTAssertEqual(link.sent.dropFirst(first).map(\.request.reason?.rawValue), ["panel.open", "sheet.open"])
+        await link.end(link.sent[first + 1])
+
+        XCTAssertEqual(link.sent.dropFirst(first).map(\.request.reason?.rawValue), ["panel.open", "sheet.open", "clipboard.change"])
+    }
+
+    func testASheetThatClosesDuringAReadGetsNoReadForItsOpen() async throws {
+        let (sheet, link, first) = await readInMenuBar()
+
+        sheet.open {}
+        sheet.close()
+        await link.end(link.sent[first])
+
+        XCTAssertFalse(link.sent[first].made.isStopped)
+        XCTAssertEqual(link.sent.dropFirst(first).map(\.request.reason?.rawValue), ["panel.open"])
+    }
+
     func testWorkShorterThanItsPauseTellsNoReaderOfTheWorkOrTheMenuBar() async throws {
         let (sheet, link) = inMenuBar()
         nonisolated(unsafe) var told: [String] = []

@@ -75,7 +75,7 @@ public struct SpotPackage: Equatable, Sendable {
         var total = 0
         var files: [File] = []
         for root in Self.roots(of: spot, in: scan) {
-            files += try Self.files(at: root.url, path: root.path, total: &total, limit: Self.shareLimit)
+            files += try Self.files(at: root.url, path: root.path, total: &total, limit: Self.shareLimit, shares: true)
         }
         let sources = files.filter { $0.path.hasSuffix(".\(SwiftProgram.sourceExtension)") }
         try self.init(files: files.filter { file in
@@ -285,15 +285,23 @@ public struct SpotPackage: Equatable, Sendable {
         return roots
     }
 
-    private static func files(at url: URL, path: String, total: inout Int, limit: Int) throws -> [File] {
+    static let testsFolder = "tests"
+
+    private static func isTests(_ path: String) -> Bool {
+        let parts = path.split(separator: "/")
+        return parts.count == 2 && parts[1] == testsFolder
+    }
+
+    private static func files(at url: URL, path: String, total: inout Int, limit: Int, shares: Bool = false) throws -> [File] {
         var isFolder: ObjCBool = false
         guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isFolder) else { return [] }
         if isFolder.boolValue {
+            if shares, isTests(path) { return [] }
             if path.contains("/"), type(of: url) == .typeSymbolicLink { return [] }
             let names = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
                 .map(\.lastPathComponent)
                 .sorted()
-            return try names.flatMap { try files(at: url.appendingPathComponent($0), path: "\(path)/\($0)", total: &total, limit: limit) }
+            return try names.flatMap { try files(at: url.appendingPathComponent($0), path: "\(path)/\($0)", total: &total, limit: limit, shares: shares) }
         }
         total += (try FileManager.default.attributesOfItem(atPath: url.resolvingSymlinksInPath().path)[.size] as? Int) ?? 0
         guard total <= limit else { throw tooLarge(limit) }

@@ -11,7 +11,8 @@ extension SpotRun {
         let wantsSheetAnswer = reason == .sheet && spot.read?.has(.sheet) == true && readReason != .sheet
         if let run { selecting = run }
         if link.isAsking {
-            if need == .change || wantsSheetAnswer { readsAgain = true }
+            if need == .change { readsAgain = true }
+            if wantsSheetAnswer { sheetAgain = true }
             if reason.isEvent { eventAgain = reason }
             return
         }
@@ -138,7 +139,14 @@ extension SpotRun {
     }
 
     func readAgainIfAsked() {
-        guard readsAgain || eventAgain != nil, !link.isAsking else { return }
+        guard !link.isAsking else { return }
+        if sheetAgain {
+            sheetAgain = false
+            readsAgain = false
+            read(need: .change, reason: .sheet)
+            guard !link.isAsking else { return }
+        }
+        guard readsAgain || eventAgain != nil else { return }
         let need: ReadNeed = readsAgain ? .change : .clock
         let reason = eventAgain
         readsAgain = false

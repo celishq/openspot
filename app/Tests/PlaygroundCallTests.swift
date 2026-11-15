@@ -69,13 +69,14 @@ final class PlaygroundCallTests: SpotRunsCase {
         try await wait("the second call") { sheet.calls.count == 1 }
         time += 2
         sheet.run(action, item: nil)
-        try await wait("the stop") { calls.count == 3 }
+        try "".write(toFile: path("done"), atomically: true, encoding: .utf8)
+        try await wait("the end after the stop") { calls.count == 3 }
 
         XCTAssertEqual(calls[0].lines.first, "$ read · OPENSPOT_REASON=sheet.open")
         XCTAssertTrue(calls[0].lines.contains("> button=go"), "\(calls[0].lines)")
         XCTAssertEqual(calls[0].lines.last, "= exit 0")
         XCTAssertEqual(calls[1].lines, ["$ go", "> end=2", "= exit 0"])
-        XCTAssertEqual(calls[2].lines, ["$ go", "= stopped"])
+        XCTAssertEqual(calls[2].lines, ["$ go", "> end=3", "= exit 0"])
     }
 
     func testACallPrintsEachArgumentAndHowItEnded() {

@@ -613,7 +613,7 @@ final class Canvas: NSView, NSTextViewDelegate {
         editing.field.removeFromSuperview()
         studio.board.update(editing.id) { $0.text = words }
         if let figure = studio.board[editing.id], figure.kind == .text, words.isEmpty {
-            studio.board.figures.removeAll { $0.id == editing.id }
+            studio.board.drop(editing.id)
             studio.selection = []
         }
         studio.record(editing.before)

@@ -4,8 +4,7 @@ final class DrawShelfTests: XCTestCase {
     private var folder: URL!
 
     override func setUpWithError() throws {
-        folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-shelf-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        folder = try emptyFolder()
     }
 
     override func tearDownWithError() throws {
@@ -155,5 +154,38 @@ final class DrawShelfTests: XCTestCase {
         let again = try shelf.makeFolder(in: nil)
         try shelf.move(again, into: inner)
         XCTAssertEqual(try shelf.move(shelf.makeFolder(in: nil), into: inner).lastPathComponent, "New Folder 3")
+    }
+
+    func testTheShelfListsABoardWhoseFiguresItCannotReadByItsTitle() throws {
+        try Data(#"{"title":"Plan","figures":"none"}"#.utf8).write(to: folder.appendingPathComponent("plan.json"))
+
+        XCTAssertEqual(Shelf(folder: folder).entries.map(\.title), ["Plan"])
+    }
+
+    func testTheShelfReadsABoardAgainOnlyWhenItsFileChanges() throws {
+        let file = folder.appendingPathComponent("plan.json")
+        try Data(#"{"title":"Plan A","figures":[]}"#.utf8).write(to: file)
+        let changed = Date(timeIntervalSince1970: 1_700_000_000)
+        try FileManager.default.setAttributes([.modificationDate: changed], ofItemAtPath: file.path)
+        XCTAssertEqual(Shelf(folder: folder).entries.map(\.title), ["Plan A"])
+
+        let handle = try FileHandle(forWritingTo: file)
+        try handle.write(contentsOf: Data(#"{"title":"Plan B","figures":[]}"#.utf8))
+        try handle.close()
+        try FileManager.default.setAttributes([.modificationDate: changed], ofItemAtPath: file.path)
+        XCTAssertEqual(Shelf(folder: folder).entries.map(\.title), ["Plan A"])
+
+        try Data(#"{"title":"Plan C","figures":[]}"#.utf8).write(to: file, options: .atomic)
+        XCTAssertEqual(Shelf(folder: folder).entries.map(\.title), ["Plan C"])
+    }
+
+    func testARenameOfABoardThatFailsToLoadLeavesItsFileAsItWas() throws {
+        let file = folder.appendingPathComponent("plan.json")
+        let bytes = Data(#"{"title":"Plan","figures":"none"}"#.utf8)
+        try bytes.write(to: file)
+
+        XCTAssertThrowsError(try Shelf(folder: folder).rename(file, to: "Other"))
+
+        XCTAssertEqual(try Data(contentsOf: file), bytes)
     }
 }

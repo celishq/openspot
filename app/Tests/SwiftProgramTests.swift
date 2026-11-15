@@ -469,6 +469,64 @@ final class SwiftProgramTests: XCTestCase {
         return swift
     }
 
+    private func stayingSpot() throws -> Spot {
+        try script("slow.swift", "#!/usr/bin/env swift\n// title=Slow\n// mode=stay\n// on=sheet.open\n// source=more\nprint(mark())\n")
+        let more = folder.appendingPathComponent("slow.spot/more")
+        try FileManager.default.createDirectory(at: more, withIntermediateDirectories: true)
+        try Data("func mark() -> String { \"!\" }\n".utf8).write(to: more.appendingPathComponent("Mark.swift"))
+        return try XCTUnwrap(try SpotsFolder(url: folder).scan().spots.first)
+    }
+
+    func testTheSheetOfAStayingSpotThatIsBeingBuiltOpensAfterAPauseAndSaysSo() async throws {
+        let release = folder.appendingPathComponent("release").path
+        _ = try tools(compiler: "n=0; while [ ! -f '\(release)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done\necho 'main.swift:1:1: error: stopped' >&2\nexit 1")
+        let clock = FakeClock()
+        let runs = SpotRuns(clock: clock.value, swift: SwiftProgram(tools: folder.appendingPathComponent("tools"), cache: cache))
+        defer { runs.quit() }
+        let sheet = runs.sheet(for: try stayingSpot())
+        var isReady = false
+        var failures: [String] = []
+        sheet.onReport = { report in
+            if case .failure(let text) = report { failures.append(text) }
+        }
+
+        runs.panelOpened()
+        sheet.open { isReady = true }
+        try await wait("the pause before the sheet says that the spot is being built") { clock.isSleeping(for: 0.5) }
+        XCTAssertFalse(isReady)
+        XCTAssertNil(sheet.list.loadingWords)
+        clock.advance(by: 0.5)
+        try await wait("the open sheet") { isReady }
+
+        XCTAssertTrue(sheet.list.isLoading)
+        XCTAssertEqual(sheet.list.loadingWords, "Openspot is building Slow. This takes about half a minute, once.")
+
+        FileManager.default.createFile(atPath: release, contents: Data())
+        try await wait("the end of the build") { !sheet.list.isLoading }
+        XCTAssertNil(sheet.list.loadingWords)
+    }
+
+    func testTheSheetOfAStayingSpotThatIsBuiltStaysHeldForItsAnswerAndSaysNothing() async throws {
+        let swift = try cachingWithTools("int main(void) { char line[64]; while (fgets(line, sizeof line, stdin)) {} return 0; }")
+        let clock = FakeClock()
+        let runs = SpotRuns(clock: clock.value, swift: swift)
+        defer { runs.quit() }
+        let spot = try stayingSpot()
+        _ = try await swift.built(spot.url, with: spot.sources)
+        let sheet = runs.sheet(for: spot)
+        var isReady = false
+
+        runs.panelOpened()
+        sheet.open { isReady = true }
+        try await wait("the pause after which a spot that is being built says so") { clock.isSleeping(for: 0.5) }
+        try await wait("the start of the built program") { runs.processes.contains(where: \.isRunning) }
+        clock.advance(by: 0.5)
+        try await wait("the end of the pause") { sheet.pauses[SpotRun.buildKey] == nil }
+
+        XCTAssertFalse(isReady)
+        XCTAssertNil(sheet.list.loadingWords)
+    }
+
     func testASwiftSpotIsBuiltFromItsFileAndEachSourceItsHeaderNames() async throws {
         let spot = try spotOfSeveralFiles()
         let runs = SpotRuns(swift: SwiftProgram(cache: cache))

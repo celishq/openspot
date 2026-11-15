@@ -31,6 +31,7 @@ public final class ScriptProcess: @unchecked Sendable {
     private var continuation: AsyncThrowingStream<String, Error>.Continuation?
     private var hasFrame = false
     private var stopped = false
+    private var building: Bool
     private var ended = false
     private var lateKill: Int?
     private var stops = 0
@@ -48,6 +49,7 @@ public final class ScriptProcess: @unchecked Sendable {
     public init(url: URL, name: String? = nil, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], errorLimit: Int? = 64 * 1024, careful: Set<SpotUse>? = nil, base: [String: String]? = nil, folder: URL? = nil, build: (@Sendable () async throws -> URL)? = nil) {
         self.name = name
         self.build = build
+        building = build != nil
         self.base = base
         self.folder = folder
         self.careful = careful.map(CarefulMode.init)
@@ -109,9 +111,13 @@ public final class ScriptProcess: @unchecked Sendable {
         Task.detached(priority: .userInitiated) { [self] in
             do {
                 let program = try await build()
-                lock.withLock { url = program }
+                lock.withLock {
+                    url = program
+                    building = false
+                }
                 DispatchQueue.global(qos: .userInitiated).async { [self] in launch() }
             } catch {
+                lock.withLock { building = false }
                 abandon()
                 finish(throwing: error)
             }
@@ -196,6 +202,10 @@ public final class ScriptProcess: @unchecked Sendable {
 
     public var isStopped: Bool {
         lock.withLock { stopped }
+    }
+
+    func isBuilding(_ name: String) -> Bool {
+        self.name == name && lock.withLock { building }
     }
 
     public var isRunning: Bool {

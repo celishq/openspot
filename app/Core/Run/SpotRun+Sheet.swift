@@ -14,11 +14,21 @@ extension SpotRun {
         }
         read(need: need)
         if !isReading, answered == nil { dropUnshownSheet() }
+        if answered == nil, runs.isBuilding(spot) {
+            after(Self.buildPause, key: Self.buildKey) { [weak self] in self?.sayBuilding() }
+        }
         runs.updateClock()
+    }
+
+    private func sayBuilding() {
+        guard isOpen, answered == nil, runs.isBuilding(spot) else { return }
+        list.beginLoading(saying: "Openspot is building \(spot.name). This takes about half a minute, once.")
+        runs.opening.startMotion(of: spot.id)
     }
 
     public func close() {
         guard isOpen else { return }
+        sheetAgain = false
         runs.didClose(self)
         settle()
         for (key, pause) in pauses where key != Self.levelKey {
@@ -118,6 +128,7 @@ extension SpotRun {
         waitingFiles = []
         waitingKeys = []
         readsAgain = false
+        sheetAgain = false
         eventAgain = nil
         calls.forEach(stop)
         link.leave()
