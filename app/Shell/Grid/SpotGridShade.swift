@@ -2,10 +2,11 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotGridShade: View {
-    let shade: GridShade
+    let model: SpotsModel
     @Environment(\.spotScrollFade) private var edge
 
     var body: some View {
+        let shade = model.gridShade
         let edge = edge
         let space = SpotsView.panelSpace
         ZStack(alignment: .topLeading) {

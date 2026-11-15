@@ -12,14 +12,8 @@ public struct GridShade: Equatable, Sendable {
 
     public init() {}
 
-    init(over placements: [SpotPlacement], leaving focused: Int) {
+    init(over placements: [SpotPlacement], leaving focused: Int, isOn: Bool) {
         cards = placements.filter { $0.index != focused }.map { Card(id: $0.index, rect: $0.rect, edge: SurfaceEdge(card: $0.size)) }
-        isOn = true
-    }
-
-    var off: GridShade {
-        var shade = self
-        shade.isOn = false
-        return shade
+        self.isOn = isOn
     }
 }

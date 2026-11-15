@@ -15,4 +15,16 @@ if [ -n "$bare" ]; then
   echo "$bare" >&2
   exit 1
 fi
+faded=$(grep -rnE --include='*.swift' 'gridShade' app/Shell | grep -v '^app/Shell/Grid/SpotGridShade\.swift:')
+if [ -n "$faded" ]; then
+  echo "A view reads the shade of the grid, so it runs again when a menu opens. Only SpotGridShade may:" >&2
+  echo "$faded" >&2
+  exit 1
+fi
+faded=$(grep -rnE --include='*.swift' 'environment\(\\\.spotFade,' app/Shell | grep -vE '^app/Shell/(Surface/SpotFadeLook|Field/SpotFieldView)\.swift:')
+if [ -n "$faded" ]; then
+  echo "A view fades the glass under it one by one. Fade many glass surfaces by one layer over them (see Motion in AGENTS.md):" >&2
+  echo "$faded" >&2
+  exit 1
+fi
 echo "Glass check passed."

@@ -79,6 +79,7 @@ public final class SpotsModel {
             if height != gridHeight { gridHeight = height }
             let bands = SpotGroupBands(placements)
             if bands != groupBands { groupBands = bands }
+            takeShade()
         }
     }
     public internal(set) var groupBands: SpotGroupBands?
@@ -92,6 +93,7 @@ public final class SpotsModel {
     public var selected = 0 {
         didSet {
             if confirming != nil, selected != oldValue { confirming = nil }
+            takeShade()
         }
     }
     public internal(set) var confirming: GlobalKey?
@@ -156,8 +158,7 @@ public final class SpotsModel {
                 isMenuOpen = isOpen
                 takeMode()
             }
-            let dims = menuSession?.isGrown == true && openSheetID == nil
-            if dims != gridShade.isOn { gridShade = dims ? GridShade(over: placements, leaving: selected) : gridShade.off }
+            takeShade()
             guard menuSession == nil else { return }
             if menuFrame != nil { menuFrame = nil }
             if menuContentHeight != 0 { change(.sheet(isOpen: false), { menuContentHeight = 0 }) }
@@ -165,6 +166,12 @@ public final class SpotsModel {
     }
     public private(set) var isMenuOpen = false
     public private(set) var gridShade = GridShade()
+
+    private func takeShade() {
+        var next = GridShade()
+        if let menuSession, openSheetID == nil { next = GridShade(over: placements, leaving: selected, isOn: menuSession.isGrown) }
+        if next != gridShade { gridShade = next }
+    }
     public internal(set) var menuFrame: ActionMenuFrame?
     public internal(set) var menuContentHeight: CGFloat = 0
     public internal(set) var gridHint = HintWords("")
