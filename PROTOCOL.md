@@ -676,7 +676,7 @@ struct SpotView: View {
 ```
 
 - `view=<file>` in the header names a SwiftUI file next to the spot. A `view=<id>` block draws it in its place.
-- The spot and its view must be in a folder of their own, such as `cups/cups.sh` and `cups/cups.swift`.
+- The spot and its view must be in a folder of their own, such as `cups.spot/cups.sh` and `cups.spot/cups.swift`.
 - The file declares `struct SpotView: View` with `let spot: SpotInput`, and has no top-level code.
 
 | Member              | Gives                                                                 |

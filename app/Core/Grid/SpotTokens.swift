@@ -13,7 +13,6 @@ public enum SpotTokens {
     public static let groupTitleBand: CGFloat = groupTitleHeight + placeGap
     public static let glyphSize: CGFloat = 36
     public static let glyphInset: CGFloat = 9
-    public static let iconInset: CGFloat = 3
     public static let workMark: CGFloat = 16
     public static let keycap: CGFloat = 20
     public static let keycapRadius: CGFloat = 6

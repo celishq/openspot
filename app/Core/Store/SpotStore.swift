@@ -62,11 +62,6 @@ public struct SpotStore: Sendable {
         Item(id: id, spot: spot, origin: origin, isAdded: isAdded, size: arrangement.size(of: id) ?? spot.size, publication: publication)
     }
 
-    public func turnOn(_ item: Item, in arrangement: inout SpotArrangement) {
-        guard item.origin != .store else { return }
-        arrangement.set(isEnabled: true, of: item.id)
-    }
-
     public func add(_ item: Item, environment: [String: String]) async throws {
         guard let package = item.package else { return }
         _ = try await SpotLock.standard(environment: environment).add(SpotSource(text: package.path, place: package), to: folder.url, isConfirmed: false)
