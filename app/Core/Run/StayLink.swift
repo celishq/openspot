@@ -49,6 +49,7 @@ final class StayLink: ScriptLink {
     private var givenUp: [Int]??
     private var heldScript = false
     private var slowAsks = 0
+    private var endingAsks = 0
 
     init(runs: SpotRuns) {
         self.runs = runs
@@ -57,7 +58,7 @@ final class StayLink: ScriptLink {
     nonisolated deinit {}
 
     var isAsking: Bool {
-        records.values.contains { $0.ask.map { !$0.isAnswer } ?? false }
+        endingAsks > 0 || records.values.contains { $0.ask.map { !$0.isAnswer } ?? false }
     }
 
     private var holdsScript: Bool {
@@ -307,19 +308,26 @@ final class StayLink: ScriptLink {
     }
 
     private func answer(_ id: Int, _ record: Record, _ text: String, _ lines: SpotOutput, in run: SpotRun) async {
-        remove(id)
-        await run.take(text, lines, of: record.call)
-        await run.close(record.call, .ended)
+        await end(id, record, frame: (text, lines), in: run)
         settle()
     }
 
     private func close(_ ids: [Int], in run: SpotRun) async {
         for id in ids {
             guard let record = records[id], !record.isDropped else { continue }
-            remove(id)
-            await run.close(record.call, .ended)
+            await end(id, record, in: run)
         }
         if !ids.isEmpty { settle() }
+    }
+
+    private func end(_ id: Int, _ record: Record, frame: (text: String, lines: SpotOutput)? = nil, in run: SpotRun) async {
+        let asks = record.ask?.isAnswer == false
+        remove(id)
+        if asks { endingAsks += 1 }
+        if let frame { await run.take(frame.text, frame.lines, of: record.call) }
+        await run.takeEnd(of: record.call, .ended)
+        if asks { endingAsks -= 1 }
+        run.finish(record.call, .ended)
     }
 
     private func failed(_ error: Error, telling: Bool = true) {

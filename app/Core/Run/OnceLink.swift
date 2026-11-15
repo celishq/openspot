@@ -43,8 +43,10 @@ final class OnceLink: ScriptLink {
             }
             runs.dropFinished()
             if let failed = process?.failedFrame { call.frames.append(failed) }
+            let last = made.isStopped ? .stopped : end
+            await run?.takeEnd(of: call, last)
             self?.asking.removeAll { $0 === made }
-            await run?.close(call, made.isStopped ? .stopped : end, errors: process?.errors ?? "")
+            run?.finish(call, last, errors: process?.errors ?? "")
         }
         return true
     }
