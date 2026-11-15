@@ -1,9 +1,12 @@
 #!/bin/sh
+# detail=The space in use
 # icon=internaldrive
-# on=clock.300
+# on=disk.mount
 # offers=card
 # offers=menubar
-df -k /System/Volumes/Data | awk 'NR == 2 {
+# `show <report>` draws a report of `df -k` that is given, such as the one of sample.sh.
+if [ "$1" = show ] && [ -n "${2-}" ]; then report=$2; else report=$(df -k /System/Volumes/Data); fi
+printf '%s\n' "$report" | awk 'NR == 2 {
   used = $3 / ($3 + $4)
   printf "graph=disk\ntitle=%d%%\ndetail=%d GB free\nvalue=%.2f\n", used * 100, $4 / 1048576, used
 }'

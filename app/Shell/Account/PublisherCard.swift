@@ -27,6 +27,8 @@ struct PublisherCard: View {
         }
     }
 
+    static let source = "openspot:account-card"
+
     static func make(_ values: [String: [String]], _ card: [String: Any], _ send: @escaping (String) -> Void) -> AnyView {
         AnyView(PublisherCard(values: values, place: card["size"] as? CGSize ?? CGSize(width: 263, height: 178), send: send))
     }

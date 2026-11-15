@@ -2,6 +2,7 @@ import Foundation
 
 public struct SpotFile: Equatable, Sendable {
     public static let inlineExtension = "js"
+    public static let appView = "openspot:"
 
     public let id: String
     public let spots: [Spot]
@@ -81,7 +82,8 @@ public struct SpotFile: Equatable, Sendable {
         let press = header.value(HeaderKey.press) ?? "sheet"
         guard ["sheet", "open"].contains(press) else { throw SpotError.fault("\(name) has an unknown press: \(press). Use open or sheet") }
         let view = header.value(HeaderKey.view)
-        if let view, URL(fileURLWithPath: view).pathExtension != SwiftProgram.sourceExtension {
+        let isAppView = view?.hasPrefix(Self.appView) == true
+        if let view, !isAppView, URL(fileURLWithPath: view).pathExtension != SwiftProgram.sourceExtension {
             throw SpotError.fault("\(name) needs a Swift file for its view, such as view=\(url.deletingPathExtension().lastPathComponent).swift")
         }
         let edits = header.value(HeaderKey.edits)
@@ -108,8 +110,8 @@ public struct SpotFile: Equatable, Sendable {
             offers: offers,
             offeredActions: offeredActions,
             settings: header.children.filter { HeaderBlock(block: $0) == .field }.compactMap { CommandOffer(setting: $0) },
-            view: view.map { Self.path($0, beside: url) },
-            viewDate: view.flatMap { Self.viewDate(of: Self.path($0, beside: url), script: url) },
+            view: isAppView ? view : view.map { Self.path($0, beside: url) },
+            viewDate: isAppView ? nil : view.flatMap { Self.viewDate(of: Self.path($0, beside: url), script: url) },
             emits: emits,
             pages: header.values(HeaderKey.pages),
             uses: uses,

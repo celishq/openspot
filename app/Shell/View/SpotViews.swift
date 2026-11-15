@@ -22,7 +22,7 @@ final class SpotViews {
 
     init(library: ViewLibrary = .standard()) {
         builds = ViewBuilds(library: library)
-        phases[AccountSheet.card] = .ready(PublisherCard.make)
+        phases[PublisherCard.source] = .ready(PublisherCard.make)
     }
 
     func phase(of source: String) -> Phase {
@@ -30,7 +30,7 @@ final class SpotViews {
     }
 
     func load(_ source: String) async {
-        if source == AccountSheet.card { return }
+        if source == PublisherCard.source { return }
         do {
             let url = try await builds.library(of: URL(fileURLWithPath: source))
             if let make = loaded[url] {

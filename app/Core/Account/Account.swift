@@ -41,8 +41,9 @@ struct Account: Sendable {
         return key
     }
 
-    func choices(at places: [Int]) throws -> [[String]] {
+    func choices(at places: [Int]) async throws -> [[String]] {
         guard let key = try store.key(), key.words != nil else { throw SpotError.failed(1, Self.noWords) }
+        try await unlock(to: "check your account words", or: "Openspot showed no words")
         return places.map { key.choices(at: $0) }
     }
 

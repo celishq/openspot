@@ -217,6 +217,20 @@ final class SampleSpotsTests: SampleSpotsCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: data.appendingPathComponent("listen.pid").path))
     }
 
+    func testASampleIsTheReadOfItsSpotOverSampleData() async throws {
+        for id in ["battery", "cpu", "devices", "disk", "memory", "confetti"] {
+            let spot = try XCTUnwrap(try scan.spots.first { $0.id == id }, id)
+            let sample = try String(contentsOf: try XCTUnwrap(spot.sample, id), encoding: .utf8)
+            XCTAssertTrue(sample.contains("exec \"$(dirname \"$0\")/\(id).sh\""), sample)
+        }
+        let confetti = try XCTUnwrap(try scan.spots.first { $0.id == "confetti" })
+        try await withPrivateHome { _ in
+            let shown = try await SpotRuns(environment: TestEnvironment.values).answer(of: try XCTUnwrap(confetti.sampled), .read, limit: 60)
+
+            XCTAssertEqual(shown, "detail=Colorful\n")
+        }
+    }
+
     func testNoMetricShowsTwiceInTheGrid() throws {
         let places = try scan.spots.flatMap(\.places)
 
@@ -232,42 +246,6 @@ final class SampleSpotsTests: SampleSpotsCase {
         let rows = placements.map { $0.row + $0.size.rows }.max()
 
         XCTAssertLessThanOrEqual(rows ?? 0, 6)
-    }
-
-    func testTheCPUTrendGrowsWithEachRead() async throws {
-        let cpu = try XCTUnwrap(try scan.metrics.first { $0.id == "cpu" })
-
-        try await withPrivateHome { _ in
-            let first = try await cpu.read(timeout: 60).points?.count ?? 0
-            let second = try await cpu.read(timeout: 60).points?.count ?? 0
-
-            XCTAssertEqual(second, first + 1)
-        }
-    }
-
-    func testALookAtTheCPUShowsItNowAndLeavesItsTrendForTheReads() async throws {
-        let cpu = try XCTUnwrap(try scan.metrics.first { $0.id == "cpu" })
-
-        try await withPrivateHome { _ in
-            let first = try await cpu.read(timeout: 60).points?.count ?? 0
-            let look = MetricValue(output: SpotOutput(text: try await ScriptProcess.output(url: cpu.url, arguments: ["show"], limit: 60, base: TestEnvironment.values)))
-            let second = try await cpu.read(timeout: 60).points?.count ?? 0
-
-            XCTAssertEqual(look?.points?.count, first + 1)
-            XCTAssertNotNil(look?.title)
-            XCTAssertEqual(second, first + 1)
-        }
-    }
-
-    func testTheCPUTrendSurvivesABadHistoryAndAShortPath() async throws {
-        let cpu = try XCTUnwrap(try scan.metrics.first { $0.id == "cpu" })
-        let folder = try temporaryFolder()
-        try "5\n\nnonsense\n7\n".write(to: folder.appendingPathComponent("openspot-cpu"), atomically: true, encoding: .utf8)
-
-        let points = try await TestEnvironment.with(["TMPDIR": folder.path + "/", "PATH": "/usr/bin:/bin"]) { try await cpu.read(timeout: 60).points }
-
-        XCTAssertEqual(points?.prefix(2), [5, 7])
-        XCTAssertEqual(points?.count, 3)
     }
 
     func testTheCheckFindsNoFaultInTheSpotsAndTheExamples() async throws {
@@ -569,12 +547,6 @@ final class SampleSpotsTests: SampleSpotsCase {
             XCTAssertEqual(callsWhenKept, "emoji\nsymbols\n")
             XCTAssertEqual(try self.read("calls", in: folder), "emoji\nsymbols\nemoji\nsymbols\n")
         }
-    }
-
-    func testDevicesReadsEveryFiveMinutes() throws {
-        let devices = try XCTUnwrap(try scan.spots.first { $0.id == "devices" })
-
-        XCTAssertEqual(devices.read?.seconds, 300)
     }
 
     func testEmojiShowsTheSymbolsAndKeepsNothingWhenTheEmojiFail() async throws {

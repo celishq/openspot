@@ -37,7 +37,7 @@ public final class KeptScan: Sendable {
             if kept.count > limit { kept = kept.filter { visited.contains($0.key) } }
         }
         let failure = own == nil && folder.core == nil ? "Openspot cannot read the folder \(folder.url.path)." : nil
-        return SpotLoad(entries: entries, loose: loose, failure: failure, stamp: stamp, hasAppSpots: !app.isEmpty)
+        return SpotLoad(entries: entries, loose: loose, failure: failure, stamp: stamp)
     }
 
     private func read(_ folders: [URL], origin: SpotLoad.Origin, into stamp: inout [String: [Int]], visiting visited: inout Set<String>) -> [SpotLoad.Entry] {

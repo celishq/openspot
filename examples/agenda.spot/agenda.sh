@@ -13,7 +13,7 @@
 # icon=calendar
 . "$OPENSPOT_SH"
 
-hidden=$(openspot setting get calendars </dev/null)
+hidden=${OPENSPOT_SETTING_CALENDARS-}
 
 # Prints a --hide flag for each calendar and list that the person hides in the calendars setting.
 hides() { for id in $hidden; do printf -- '--hide %s ' "$id"; done; }
@@ -209,7 +209,7 @@ case "$1" in
     calendars_form
     ;;
   tick)
-    state=$(reminders | awk -v id="$2" 'BEGIN { RS = ""; FS = "\n" } $1 == "row=" id { for (i = 2; i <= NF; i++) if ($i ~ /^done=/) print substr($i, 6) }')
+    state=$(value done)
     to=true
     [ "$state" = true ] && to=false
     openspot reminders done "$2" "$to" </dev/null
@@ -221,7 +221,7 @@ case "$1" in
     open "$link"
     ;;
   join)
-    link=$(events | awk -v id="$2" 'BEGIN { RS = ""; FS = "\n" } $1 == "row=" id { for (i = 2; i <= NF; i++) if ($i ~ /^meeting=/) print substr($i, 9) }')
+    link=$(value meeting)
     [ -n "$link" ] || { echo 'This event has no call link.' >&2; exit 1; }
     open "$link"
     ;;

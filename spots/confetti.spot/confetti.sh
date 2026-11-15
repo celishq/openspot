@@ -16,7 +16,7 @@ case "$1" in
   read)
     [ -z "${OPENSPOT_REASON-}" ] || current || (listen > /dev/null 2>&1 &)
     title=$(look_title "$(default_look)")
-    [ -n "$(openspot setting get look 2>/dev/null)" ] || openspot setting set look "$title" > /dev/null 2>&1
+    [ -n "${OPENSPOT_SETTING_LOOK-}" ] || openspot setting set look "$title" > /dev/null 2>&1
     printf 'detail=%s\n' "$(esc "$title")"
     ;;
   open | play)

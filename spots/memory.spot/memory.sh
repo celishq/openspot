@@ -1,15 +1,39 @@
 #!/bin/sh
 # title=Memory
 # icon=memorychip
-# on=clock.5
+# detail=The memory in use
+# on=system.load
+# mode=stay
 # offers=card
 # offers=menubar
-/usr/bin/memory_pressure -Q | awk -F': ' -v level="$(/usr/sbin/sysctl -n kern.memorystatus_vm_pressure_level)" '
-  /free percentage/ { sub("%", "", $2); free = $2 }
-  END {
-    used = 100 - (free == "" ? 100 : free)
-    if (level == 4) { detail = "Pressure critical"; tone = "bad" }
-    else if (level == 2) { detail = "Pressure high"; tone = "warn" }
-    else { detail = "Pressure normal"; tone = "" }
-    printf "graph=memory\ntitle=%d%%\ndetail=%s\nvalue=%s\ntone=%s\n", used, detail, used / 100, tone
-  }'
+
+# Prints the memory in use, as a share of the whole, with a tone when little is left.
+draw() {
+  used=$1
+  if [ "$used" -ge 95 ]; then detail="Almost full" tone=bad
+  elif [ "$used" -ge 85 ]; then detail="Little left" tone=warn
+  else detail="In use" tone=
+  fi
+  case $used in ?) value=0.0$used ;; ??) value=0.$used ;; *) value=1 ;; esac
+  printf 'graph=memory\ntitle=%s%%\ndetail=%s\nvalue=%s\ntone=%s\n' "$used" "$detail" "$value" "$tone"
+}
+
+# `show <percent>` draws the share that is given, such as the one of sample.sh. With none, as when another spot such as
+# System details looks, it measures the memory now.
+if [ "$1" = show ]; then
+  draw "${2:-$((100 - $(/usr/sbin/sysctl -n kern.memorystatus_level)))}"
+  exit 0
+fi
+
+. "$OPENSPOT_SH"
+used=
+
+# Prints the memory from the load that Openspot measures every 5 seconds. A read with no load shows the last one.
+main() {
+  case $OPENSPOT_VALUE in
+    *memory=*) used=${OPENSPOT_VALUE##*memory=} used=${used%% *} ;;
+  esac
+  [ -z "$used" ] || draw "$used"
+}
+
+openspot_serve main "$@"

@@ -1,3 +1,1 @@
-spots/apps.spot/apps.sh
 spots/caffeinate.spot/caffeinate.sh
-spots/cpu.spot/cpu.sh

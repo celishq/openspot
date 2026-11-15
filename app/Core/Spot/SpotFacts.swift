@@ -23,7 +23,7 @@ public struct SpotFacts: Equatable, Sendable {
     public let drop: [String]
     public let dataName: String?
     public internal(set) var isOnGrid: Bool
-    public let view: String?
+    public internal(set) var view: String?
     public let viewDate: Date?
     public let emits: [String]
     public let pages: [String]

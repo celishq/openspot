@@ -1,2 +1,2 @@
 #!/bin/sh
-printf 'graph=devices\ntitle=72%%\ndetail=AirPods Pro\nicon=airpods\nvalue=0.72\n'
+exec "$(dirname "$0")/devices.sh" show "AirPods Pro	Left	72"

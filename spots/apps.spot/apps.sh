@@ -4,7 +4,7 @@
 # on=panel.open
 # offers=card
 # offers=search
-data=${OPENSPOT_DATA:-${TMPDIR:-/tmp}}
+data=$OPENSPOT_DATA
 pending="$data/uninstall"
 kept="$data/uninstall-kept"
 found="$data/app-list"
@@ -38,13 +38,19 @@ bundle_id() {
   /usr/bin/defaults read "$1/Contents/Info" CFBundleIdentifier 2>/dev/null
 }
 
-# Prints each file that an app leaves in the Library: by its bundle id, and by its exact name.
-leftovers() {
+# Prints each file that an app leaves in the Library under its exact name. Another app of the same maker can share such a
+# folder, such as Google, so a delete leaves them unless the person ticks them.
+by_name() {
   name=$(basename "$1" .app)
-  id=$(bundle_id "$1")
   for path in "$lib/Application Support/$name" "$lib/Caches/$name" "$lib/Logs/$name"; do
     [ -e "$path" ] && printf '%s\n' "$path"
   done
+}
+
+# Prints each file that an app leaves in the Library: by its exact name, and by its bundle id.
+leftovers() {
+  by_name "$1"
+  id=$(bundle_id "$1")
   [ -n "$id" ] || return 0
   for path in "$lib/Application Support/$id" "$lib/Caches/$id" "$lib/Preferences/$id.plist" "$lib/Containers/$id" \
     "$lib/Saved Application State/$id.savedState" "$lib/HTTPStorages/$id" "$lib/HTTPStorages/$id.binarycookies" \
@@ -52,6 +58,14 @@ leftovers() {
     "$lib/Group Containers/"*".$id" "$lib/Preferences/ByHost/$id."*.plist "$lib/LaunchAgents/$id"*.plist; do
     [ -e "$path" ] && printf '%s\n' "$path"
   done
+}
+
+# Whether a file of the app goes to the Trash: the app and each file of its bundle id unless the person unticked it, and
+# a file of its name only when the person ticked it. The kept file holds each path that the person turned.
+chosen() {
+  turned=false
+  grep -Fxq "$1" "$kept" 2>/dev/null && turned=true
+  if printf '%s\n' "$names" | grep -Fxq "$1"; then [ "$turned" = true ]; else [ "$turned" = false ]; fi
 }
 
 # Asks an app to quit, as its own Quit does, so that it can save its work.
@@ -80,6 +94,7 @@ uninstall_sheet() {
   app=$1
   name=$(basename "$app" .app)
   files=$( { printf '%s\n' "$app"; leftovers "$app"; } )
+  names=$(by_name "$app")
   count=$(printf '%s\n' "$files" | wc -l | tr -d ' ')
   lines=$count
   [ "$lines" -gt 7 ] && lines=7
@@ -92,11 +107,10 @@ uninstall_sheet() {
   printf 'button=cancel\ntitle=Cancel\nshortcut=escape\nscope=spot\n\n'
   printf 'button=remove\ntitle=Move to Trash\nshortcut=cmd+return\nscope=spot\n\n'
   printf '%s\n' "$files" | while IFS= read -r path; do
-    chosen=true
-    grep -Fxq "$path" "$kept" 2>/dev/null && chosen=false
+    if chosen "$path"; then ticked=true; else ticked=false; fi
     where=$(dirname "$path" | sed "s#^$HOME#~#")
     openspot_row "$path" "$(basename "$path")" "$where" "$path"
-    openspot_kv value "$chosen"
+    openspot_kv value "$ticked"
   done
 }
 
@@ -121,8 +135,8 @@ case "$1" in
     ;;
   open)
     if [ -s "$pending" ]; then
-      if grep -Fxq "$2" "$kept" 2>/dev/null; then grep -Fxv "$2" "$kept" > "$kept.tmp"; else { cat "$kept" 2>/dev/null; printf '%s\n' "$2"; } > "$kept.tmp"; fi
-      mv "$kept.tmp" "$kept"
+      if grep -Fxq "$2" "$kept" 2>/dev/null; then grep -Fxv "$2" "$kept" > "$kept.$$"; else { cat "$kept" 2>/dev/null; printf '%s\n' "$2"; } > "$kept.$$"; fi
+      mv "$kept.$$" "$kept"
     else
       open "$2"
     fi
@@ -138,7 +152,7 @@ case "$1" in
     case "$2" in
       /System/*) echo "$(basename "$2" .app) is part of macOS, so it cannot be deleted." >&2; exit 1 ;;
     esac
-    printf '%s' "$2" > "$pending.tmp" && mv "$pending.tmp" "$pending"
+    printf '%s' "$2" > "$pending.$$" && mv "$pending.$$" "$pending"
     rm -f "$kept"
     ;;
   cancel)
@@ -157,9 +171,10 @@ case "$1" in
         exit 1
       fi
     fi
+    names=$(by_name "$app")
     set --
     while IFS= read -r path; do
-      grep -Fxq "$path" "$kept" 2>/dev/null || set -- "$@" "$path"
+      chosen "$path" && set -- "$@" "$path"
     done <<EOF
 $( { printf '%s\n' "$app"; leftovers "$app"; } )
 EOF

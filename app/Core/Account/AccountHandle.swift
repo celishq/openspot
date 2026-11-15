@@ -11,8 +11,4 @@ public struct AccountHandle: Equatable, Sendable {
         guard Self.length.contains(text.count), text.allSatisfy(Self.letters.contains) else { return nil }
         self.text = text
     }
-
-    public static func suggestion(from name: String) -> String {
-        String(name.lowercased().filter(letters.contains).prefix(length.upperBound))
-    }
 }

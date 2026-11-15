@@ -5,6 +5,7 @@ public enum AccountCall: NounCall {
     case sync(Bool)
     case new(String?)
     case words
+    case choices([String])
     case checked
     case phrase
     case signIn
@@ -25,6 +26,7 @@ public enum AccountCall: NounCall {
             return Self.new(handle.isEmpty ? nil : handle)
         },
         CommandVerb("words", "", "Prints the 12 words, after Touch ID.", rule: key()) { $0.none ? Self.words : nil },
+        CommandVerb("choices", "<place> <place>", "Prints four words for each of two places, one of them right, after Touch ID: a line of the place and its words, for the check that the words are written down.", rule: key()) { Self.choices($0.rest) },
         CommandVerb("checked", "", "Takes a place and a word on each line of stdin, for two places or more, and marks the words backed up when all are right. It says only that the set is right or wrong.", rule: key(account, input: true)) { $0.none ? Self.checked : nil },
         CommandVerb("phrase", "", "Reads a phrase on stdin, and prints its counter, its unknown words, a completion, a problem or the account it opens.", rule: key(input: true)) { $0.none ? Self.phrase : nil },
         CommandVerb("sign-in", "", "Keeps the key of the 12 words or the nsec on stdin, after Touch ID.", rule: key(account, input: true)) { $0.none ? Self.signIn : nil },
@@ -44,6 +46,7 @@ public enum AccountCall: NounCall {
         case .sync: "account sync"
         case .new: "account new"
         case .words: "account words"
+        case .choices: "account choices"
         case .checked: "account checked"
         case .phrase: "account phrase"
         case .signIn: "account sign-in"

@@ -88,3 +88,23 @@ grid = false
 [[spots]]
 id = "openspot/playground"
 grid = false
+
+[[spots]]
+id = "battery"
+grid = false
+
+[[spots]]
+id = "cpu"
+grid = false
+
+[[spots]]
+id = "devices"
+grid = false
+
+[[spots]]
+id = "disk"
+grid = false
+
+[[spots]]
+id = "memory"
+grid = false

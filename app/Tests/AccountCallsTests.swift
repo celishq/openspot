@@ -54,7 +54,7 @@ final class AccountCallsTests: XCTestCase {
         let refused = "Only Openspot's Account and Store spots can reach your account key.\n"
 
         for caller in [nil, spot(uses: [.account], isBuiltIn: false), spot(uses: [.app], isBuiltIn: true)] {
-            for arguments in [["account", "words"], ["account", "new"], ["account", "checked"], ["account", "phrase"], ["account", "sign-in"], ["account", "sign-out"], ["account", "sync", "off"]] {
+            for arguments in [["account", "words"], ["account", "choices", "2", "7"], ["account", "new"], ["account", "checked"], ["account", "phrase"], ["account", "sign-in"], ["account", "sign-out"], ["account", "sync", "off"]] {
                 let answer = try await call(arguments, from: caller)
                 XCTAssertEqual(answer.errors, refused, "\(arguments) from \(caller?.uses ?? [])")
                 XCTAssertEqual(answer.code, 1)
@@ -75,6 +75,27 @@ final class AccountCallsTests: XCTestCase {
         XCTAssertEqual(denied.errors, "Touch ID didn't pass, so Openspot showed no words.\n")
         let asked = await app.asked
         XCTAssertEqual(asked, ["show your account words", "show your account words"])
+    }
+
+    func testTheChoicesOfTwoPlacesHoldTheRightWordAfterTouchIDAndTakeNoOtherPlaces() async throws {
+        let key = try store.keyMadeOnce()
+        let words = try XCTUnwrap(key.words)
+
+        let choices = try await call(["account", "choices", "2", "7"], from: account)
+        let one = try await call(["account", "choices", "2"], from: account)
+        let same = try await call(["account", "choices", "2", "2"], from: account)
+        let outside = try await call(["account", "choices", "2", "13"], from: account)
+        await app.set(allows: false)
+        let denied = try await call(["account", "choices", "2", "7"], from: account)
+
+        let lines = choices.output.split(separator: "\n").map { $0.split(separator: " ").map(String.init) }
+        XCTAssertEqual(lines.map(\.first), ["2", "7"])
+        XCTAssertEqual(lines.map(\.count), [5, 5])
+        XCTAssertTrue(lines[0].contains(words[1]) && lines[1].contains(words[6]), choices.output)
+        XCTAssertEqual([one.code, same.code, outside.code].map { $0 == 0 }, [false, false, false])
+        XCTAssertEqual(denied.errors, "Touch ID didn't pass, so Openspot showed no words.\n")
+        let asked = await app.asked
+        XCTAssertEqual(asked, ["check your account words", "check your account words"])
     }
 
     func testNewKeepsTheHandleItIsGivenAndAnyoneReadsItWithTheDay() async throws {
@@ -134,7 +155,7 @@ final class AccountCallsTests: XCTestCase {
         let alone = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path, CallerTokens.variable: runs.tokens.issue(for: account)]), rates: .offline)
         let phrase = phrase
 
-        for arguments in [["account"], ["account", "new"], ["account", "words"], ["account", "checked"], ["account", "phrase"], ["account", "sign-in"], ["account", "sign-out"], ["account", "sync", "off"]] {
+        for arguments in [["account"], ["account", "new"], ["account", "words"], ["account", "choices", "2", "7"], ["account", "checked"], ["account", "phrase"], ["account", "sign-in"], ["account", "sign-out"], ["account", "sync", "off"]] {
             let request = CommandRequest(arguments: arguments, folder: folder.path)
             let work = try XCTUnwrap(alone.work(for: try XCTUnwrap(alone.call(of: request)), request: request, input: { phrase }))
             let answer = await work()

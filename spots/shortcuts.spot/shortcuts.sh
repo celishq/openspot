@@ -115,7 +115,7 @@ case "$1" in
     ;;
   drop)
     shift
-    printf '%s\n' "$@" >"$input.tmp" && mv "$input.tmp" "$input"
+    printf '%s\n' "$@" >"$input.$$" && mv "$input.$$" "$input"
     ;;
   cancel)
     rm -f "$input"
