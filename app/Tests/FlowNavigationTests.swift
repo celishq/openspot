@@ -135,6 +135,16 @@ final class FlowNavigationTests: PanelCase {
         XCTAssertEqual(host.edgeChanges.last?.edges.coming, .some(nil))
     }
 
+    func testAPushedPageMovesOnlyOnceItsFirstRowsAreIn() async throws {
+        try await openList()
+        host.edgeChanges = []
+
+        try await openPage()
+
+        try await waitFor("the step to settle") { self.model.flowEdges.from == nil && self.model.flowEdges.titles(on: .behind) == ["List"] }
+        XCTAssertEqual(host.edgeChanges.first { $0.motion == .flow }?.rows, ["Detail a"])
+    }
+
     func testAStepCutMidMotionHoldsThePageItCutAndEndsOnTheNewestPage() async throws {
         try await openList()
         host.heldEnds = []

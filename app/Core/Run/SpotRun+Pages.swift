@@ -7,8 +7,9 @@ extension SpotRun {
         let panel: SheetParts?
     }
 
-    public func show(page next: String?) {
-        guard next != page else { return }
+    @discardableResult
+    public func show(page next: String?) -> Bool {
+        guard next != page else { return true }
         forget(page: page)
         pageStates.append((page, PageState(state: state, rows: rows, panel: panel)))
         if let read = running(Self.readKey) { stop(read) }
@@ -22,6 +23,12 @@ extension SpotRun {
         answered = nil
         lastAnswer = nil
         if showsSheet { read(need: .change, reason: .sheet) }
+        return kept != nil
+    }
+
+    func holdPageMotion(start: @escaping () -> Void) {
+        guard answered == nil else { return start() }
+        runs.opening.holdMotion(of: spot.id, limited: true, start: start)
     }
 
     func forget(page: String?) {

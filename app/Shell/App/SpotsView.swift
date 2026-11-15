@@ -49,7 +49,7 @@ struct SpotsView: View {
             .modifier(GridFadeMask(fade: fade, height: cardHeight))
             .morph(coversGrid ? 0 : 1, opacity: { SheetMorph.sheetLook(at: $0) })
             .modifier(PanelSpan(panels: model.panels))
-            SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: max(gridHeight, model.menuBackdropHeight), sheetHeight: max(sheetID == nil ? gridHeight : sheetHeight, model.menuBackdropHeight), sheetRect: sheetRect)
+            SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: max(gridHeight, model.menuBackdropHeight), sheetHeight: sheetID == nil ? gridHeight : sheetHeight, sheetRect: sheetRect, menuHeight: model.menuBackdropHeight)
                 .modifier(SpotShownFade(isShown: model.isShown))
             if sheetOpen, sheetID != nil {
                 SpotFlowEdges(model: model, rect: sheetRect)

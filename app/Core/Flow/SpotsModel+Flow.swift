@@ -104,7 +104,7 @@ extension SpotsModel {
             sheet.show(page: page.page)
             return showEdges()
         }
-        pushIn { sheet.show(page: page.page) }
+        pushIn { sheet.show(page: page.page) ? nil : sheet }
     }
 
     func endFlow() {

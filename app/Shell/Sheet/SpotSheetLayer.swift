@@ -90,7 +90,7 @@ struct SpotSheetLayer: View {
             .frame(width: page.rect.width, height: page.rect.height, alignment: .topLeading)
             .offset(x: page.rect.minX, y: page.rect.minY)
             if page.showsField {
-                SpotFieldLook(query: page.query, title: page.state.title)
+                SpotFieldLook(query: page.query, title: page.fieldTitle)
             }
         }
         return SheetStep.Leaving(look: AnyView(look), from: page.rect, rect: edge.rect(around: room))

@@ -7,11 +7,12 @@ struct SpotHintLine: View {
     let gridHeight: CGFloat
     let sheetHeight: CGFloat
     let sheetRect: CGRect
+    let menuHeight: CGFloat
 
     var body: some View {
         ZStack(alignment: .top) {
             hint(model.gridHint, isShown: !surfaceIsOut, height: gridHeight)
-            hint(sheetWords, isShown: surfaceIsOut, height: sheetHeight + model.flowEdges.heldHeight(of: sheetRect))
+            hint(sheetWords, isShown: surfaceIsOut, height: max(sheetHeight + model.flowEdges.heldHeight(of: sheetRect), menuHeight))
         }
         .onAppear { model.followHint() }
     }

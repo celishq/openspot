@@ -1,7 +1,7 @@
 import Foundation
 
 extension SpotsModel {
-    func pushIn(_ swap: () -> Void) {
+    func pushIn(_ swap: () -> SpotRun?) {
         step(swap)
     }
 
@@ -13,7 +13,10 @@ extension SpotsModel {
     func takeWaitingPush(_ swap: () -> Void) -> Bool {
         guard waitingPush else { return false }
         waitingPush = false
-        step(swap)
+        step {
+            swap()
+            return nil
+        }
         return true
     }
 
@@ -29,16 +32,20 @@ extension SpotsModel {
         if next != flowEdges { flowEdges = next }
     }
 
-    private func step(_ swap: () -> Void) {
+    private func step(_ swap: () -> SpotRun?) {
+        var loading: SpotRun?
         change(nil) {
             standEdges()
-            swap()
+            loading = swap()
         }
         let step = edgeStep
-        DispatchQueue.main.async { [weak self] in
-            guard let self, step == edgeStep else { return }
-            change(.flow, { moveEdges() }) { [weak self] in self?.settleEdges(step) }
+        let move = { [weak self] in
+            DispatchQueue.main.async { [weak self] in
+                guard let self, step == edgeStep else { return }
+                change(.flow, { moveEdges() }) { [weak self] in self?.settleEdges(step) }
+            }
         }
+        if let loading { loading.holdPageMotion(start: move) } else { move() }
     }
 
     private func settleEdges(_ step: Int) {
@@ -49,7 +56,7 @@ extension SpotsModel {
     private func standEdges() {
         edgeStep += 1
         guard flowEdges.shown != nil, let open = openList, let run = sheets[open], let rect = shownSheetRect else { return }
-        let page = SheetPage(run: run, rect: rect, query: searchText)
+        let page = formRect == nil ? SheetPage(run: run, rect: rect, query: searchText) : nil
         flowEdges = flowEdges.standing(at: rect, holding: page, in: flow, title: title(of:))
     }
 
