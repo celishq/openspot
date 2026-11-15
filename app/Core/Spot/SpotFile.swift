@@ -72,6 +72,9 @@ public struct SpotFile: Equatable, Sendable {
         }
         let press = header.value("press") ?? "sheet"
         guard ["sheet", "open"].contains(press) else { throw SpotError.fault("\(name) has an unknown press: \(press). Use open or sheet") }
+        if header.value("preview") != nil {
+            throw SpotError.fault("\(name) has preview=, which Openspot no longer reads. Put a \(SpotListing.sampleScriptName) beside it that prints the spot with made-up data")
+        }
         let view = header.value("view")
         if let view, URL(fileURLWithPath: view).pathExtension != SwiftProgram.sourceExtension {
             throw SpotError.fault("\(name) needs a Swift file for its view, such as view=\(url.deletingPathExtension().lastPathComponent).swift")

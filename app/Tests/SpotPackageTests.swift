@@ -139,7 +139,7 @@ final class SpotPackageTests: XCTestCase {
 
     func testAFolderOverTheSizeLimitDoesNotTravel() throws {
         try script("home.spot/coffee.sh")
-        try plain("home.spot/big.bin", Data(count: SpotPackage.sizeLimit + 1))
+        try plain("home.spot/big.bin", Data(count: SpotPackage.shareLimit + 1))
 
         XCTAssertThrowsError(try sharing("home/coffee")) { error in
             XCTAssertEqual((error as? SpotError)?.reason, "This spot is over the 25 MB limit.")
@@ -224,7 +224,7 @@ final class SpotPackageTests: XCTestCase {
     }
 
     func testAFileOverTheSizeLimitIsRefused() throws {
-        assertRefused([SpotPackage.File(path: "a.spot/a.sh", isExecutable: true, contents: Data(count: SpotPackage.sizeLimit + 1))], says: "25 MB")
+        assertRefused([SpotPackage.File(path: "a.spot/a.sh", isExecutable: true, contents: Data(count: SpotPackage.sizeLimit + 1))], says: "64 MB")
     }
 
     func testAddWritesEachFileWithItsMark() throws {
