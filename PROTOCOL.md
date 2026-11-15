@@ -697,6 +697,11 @@ struct SpotView: View {
 | `spot.sheet(id)`    | The sheet of a spot with its sample data, where a click runs nothing. |
 | `spot.tip(text)`    | A tip in the look of Openspot's own, for the view to show on hover.   |
 | `spot.media(path)`  | A PNG or JPEG picture, or a MOV or MP4 video, at its size or less.    |
+| `spot.cornerButton` | The round button on the rim of a card, by its id and an action.       |
+| `spot.columnGap`    | The gap between the columns of the grid.                              |
+| `spot.rowGap`       | The gap between the rows of the grid.                                 |
+| `spot.columns`      | How many columns a window holds.                                      |
+| `spot.tipDelay`     | How long the pointer rests on a control before its tip shows.         |
 
 - The view fills its place, and the whole card when there's no card layout. It can't change the size of its place.
 - In a window (see [Places](#places)), a sheet with one `view` block fills the window. `spot.card(id)` draws the card of
