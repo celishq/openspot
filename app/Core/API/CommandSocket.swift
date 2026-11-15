@@ -4,6 +4,7 @@ public final class CommandSocket: @unchecked Sendable {
     public static let name = SocketPath.name
     static let unreadableCode = -32700
     static let aloneCode = -32000
+    static let strangerCode = -32001
     private static let queueLength: Int32 = 64
 
     private let path: String
@@ -13,7 +14,7 @@ public final class CommandSocket: @unchecked Sendable {
         self.init(folder: folder, api: api, limits: CommandConnection.Limits())
     }
 
-    init?(folder: URL, api: CommandAPI, limits: CommandConnection.Limits) {
+    init?(folder: URL, api: CommandAPI, limits: CommandConnection.Limits, peer: @escaping @Sendable (Int32) -> pid_t? = CommandSocket.peer(of:)) {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         guard let real = realpath(folder.path, nil) else { return nil }
         path = SocketPath.of(config: String(cString: real))
@@ -46,7 +47,8 @@ public final class CommandSocket: @unchecked Sendable {
             while case let connection = accept(listener, nil, nil), connection >= 0 {
                 _ = fcntl(connection, F_SETFD, FD_CLOEXEC)
                 _ = CommandConnection(descriptor: connection, limits: limits) { link, line in
-                    DispatchQueue.global().async { Self.answer(line, on: link, of: connection, api) }
+                    let caller = peer(connection)
+                    DispatchQueue.global().async { Self.answer(line, on: link, from: caller, api) }
                 }
             }
         }
@@ -59,13 +61,16 @@ public final class CommandSocket: @unchecked Sendable {
         unlink(path)
     }
 
-    private static func answer(_ line: Data, on link: CommandConnection, of connection: Int32, _ api: CommandAPI) {
+    private static func answer(_ line: Data, on link: CommandConnection, from peer: pid_t?, _ api: CommandAPI) {
         guard let asked = CommandRequest(line: line) else {
             return link.end(fault(unreadableCode, "Openspot cannot read this request.", id: nil))
         }
-        let request = api.request(asked, from: peer(of: connection))
+        guard let peer else {
+            return link.end(fault(strangerCode, "Openspot cannot tell which process sent this call.", id: asked.id))
+        }
+        let request = api.request(asked, from: peer)
         let output = CommandOutput { text, isError in link.notify(isError ? "stderr" : "stdout", text: text) }
-        guard let work = api.work(for: request, input: { await link.stdin() }, isSandboxed: CallerTokens.isSandboxedApart(peer(of: connection)), output: output) else {
+        guard let work = api.work(for: request, input: { await link.stdin() }, isSandboxed: CallerTokens.isSandboxedApart(peer), output: output) else {
             return link.end(fault(aloneCode, "Run this call in a process of its own.", id: request.id))
         }
         let stop = CommandStop()
@@ -74,8 +79,8 @@ public final class CommandSocket: @unchecked Sendable {
         stop.hold(task)
         Task.detached {
             let answer = await task.value
-            output.print(answer.output)
-            output.report(answer.errors)
+            await link.deliver("stdout", text: answer.output)
+            await link.deliver("stderr", text: answer.errors)
             link.end(["jsonrpc": "2.0", "id": request.id.map { $0 as Any } ?? NSNull(), "result": ["code": answer.code]])
         }
     }
@@ -84,9 +89,9 @@ public final class CommandSocket: @unchecked Sendable {
         ["jsonrpc": "2.0", "id": id.map { $0 as Any } ?? NSNull(), "error": ["code": code, "message": message]]
     }
 
-    private static func peer(of connection: Int32) -> pid_t {
+    @Sendable static func peer(of connection: Int32) -> pid_t? {
         var id: pid_t = 0
         var size = socklen_t(MemoryLayout<pid_t>.size)
-        return getsockopt(connection, SOL_LOCAL, LOCAL_PEERPID, &id, &size) == 0 ? id : 0
+        return getsockopt(connection, SOL_LOCAL, LOCAL_PEERPID, &id, &size) == 0 && id > 0 ? id : nil
     }
 }

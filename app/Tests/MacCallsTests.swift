@@ -57,7 +57,7 @@ final class MacCallsTests: XCTestCase {
         func recording() async throws -> ScreenRecording? { nil }
     }
 
-    private struct Translator: MacTranslation {
+    private struct FakeTranslation: MacTranslation {
         let acts: Acts
 
         func translate(_ text: String, from: String?, to: String?) async throws -> TranslatedText {
@@ -74,7 +74,7 @@ final class MacCallsTests: XCTestCase {
 
     private var host: Mac {
         Mac(
-            clipboard: Clipboard(acts: acts), windows: Windows(acts: acts), screen: Screen(acts: acts), translation: Translator(acts: acts),
+            clipboard: Clipboard(acts: acts), windows: Windows(acts: acts), screen: Screen(acts: acts), translation: FakeTranslation(acts: acts),
             pickColor: { HexColor(red: 1, green: 0x88 / 255.0, blue: 0) }, pickFolder: { URL(fileURLWithPath: "/Users/a/Repos") }
         )
     }
@@ -92,7 +92,7 @@ final class MacCallsTests: XCTestCase {
         let built = Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot")
         try FileManager.default.copyItem(at: built, to: client)
         try "#!/bin/sh\necho \"alone: $*\"\n".writeScript(to: folder.appendingPathComponent("A.app/Contents/MacOS/Openspot"))
-        socket = CommandSocket(folder: config, api: CommandAPI(mac: host, places: .test(["OPENSPOT_CONFIG": config.path])))
+        socket = CommandSocket(folder: config, api: CommandAPI(mac: host, places: .test(["OPENSPOT_CONFIG": config.path]), rates: .offline))
     }
 
     override func tearDownWithError() throws {
@@ -129,7 +129,7 @@ final class MacCallsTests: XCTestCase {
         let deep = folder.appendingPathComponent(String(repeating: "deep-folder-", count: 10), isDirectory: true)
         try FileManager.default.createDirectory(at: deep, withIntermediateDirectories: true)
         XCTAssertGreaterThan(deep.appendingPathComponent(CommandSocket.name).path.utf8.count, 103)
-        let socket = try XCTUnwrap(CommandSocket(folder: deep, api: CommandAPI(mac: host, places: .test(["OPENSPOT_CONFIG": deep.path]))))
+        let socket = try XCTUnwrap(CommandSocket(folder: deep, api: CommandAPI(mac: host, places: .test(["OPENSPOT_CONFIG": deep.path]), rates: .offline)))
         defer { socket.close() }
 
         let answer = try Self.run(client, config: deep, ["clipboard", "read"], input: "", in: folder)
@@ -210,7 +210,7 @@ final class MacCallsTests: XCTestCase {
         runs.isCareful = true
         let fenced = runs.tokens.issue(for: Spot(id: "shots", name: "Shots", url: folder.appendingPathComponent("shots.sh"), dataName: "shots", uses: [.screen]))
         let free = runs.tokens.issue(for: Spot(id: "files", name: "Files", url: folder.appendingPathComponent("files.sh"), dataName: "files", uses: [.screen, .files]))
-        let api = CommandAPI(mac: host, places: .test(["OPENSPOT_CONFIG": config.path]), runs: runs)
+        let api = CommandAPI(mac: host, places: .test(["OPENSPOT_CONFIG": config.path]), runs: runs, rates: .offline)
         let home = URL(fileURLWithPath: try XCTUnwrap(ProcessInfo.processInfo.environment["HOME"], "the test scheme gives a private home"), isDirectory: true).standardizedFileURL
         let data = URL(fileURLWithPath: try XCTUnwrap(ScriptProcess.environment(base: ProcessInfo.processInfo.environment, app: "", dataName: "shots")["OPENSPOT_DATA"]), isDirectory: true)
         let outside = home.appendingPathComponent("Documents/mc-\(UUID().uuidString.prefix(8))", isDirectory: true)
@@ -262,7 +262,7 @@ final class MacCallsTests: XCTestCase {
     }
 
     func testAMacWithNoPartSaysSoAndAFakeStubsOneNoun() async throws {
-        let api = CommandAPI(mac: Mac(windows: Windows(acts: acts)), places: .test(["OPENSPOT_CONFIG": config.path]))
+        let api = CommandAPI(mac: Mac(windows: Windows(acts: acts)), places: .test(["OPENSPOT_CONFIG": config.path]), rates: .offline)
         func answer(_ arguments: [String]) async throws -> CommandAnswer {
             try await XCTUnwrap(api.work(for: .test(arguments), input: { "" }))()
         }

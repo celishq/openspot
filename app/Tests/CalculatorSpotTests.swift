@@ -124,7 +124,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
         let model = SpotsModel(host: host, files: files, runs: SpotRuns(environment: TestEnvironment.values, stopPause: 0.2))
         defer { model.quit() }
         host.model = model
-        model.runs.api = CommandAPI(mac: Mac(), places: files, runs: model.runs)
+        model.runs.api = CommandAPI(mac: Mac(), places: files, runs: model.runs, rates: .offline)
         await model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])

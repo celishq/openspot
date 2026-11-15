@@ -21,7 +21,7 @@ final class SpotAddTests: XCTestCase {
 
     private func answer(_ arguments: [String]) async throws -> CommandAnswer {
         let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: environment))
-        let work = try XCTUnwrap(CommandAPI(mac: Mac(), places: .test(environment)).work(for: call, request: .test(arguments, in: environment), input: { "" }))
+        let work = try XCTUnwrap(CommandAPI(mac: Mac(), places: .test(environment), rates: .offline).work(for: call, request: .test(arguments, in: environment), input: { "" }))
         return await work()
     }
 

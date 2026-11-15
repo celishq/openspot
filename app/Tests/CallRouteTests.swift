@@ -22,7 +22,7 @@ final class CallRouteTests: XCTestCase {
         func recording() async throws -> ScreenRecording? { nil }
     }
 
-    private struct Translator: MacTranslation {
+    private struct FakeTranslation: MacTranslation {
         func translate(_ text: String, from: String?, to: String?) async throws -> TranslatedText { TranslatedText(text: text.uppercased()) }
         func languages() async throws -> [String] { ["en"] }
     }
@@ -36,7 +36,7 @@ final class CallRouteTests: XCTestCase {
     private var folder: URL!
     private var socket: CommandSocket?
     private let host = Mac(
-        calendar: FakeCalendar(), reminders: FakeReminders(), clipboard: Clipboard(), windows: Windows(), screen: Screen(), translation: Translator(),
+        calendar: FakeCalendar(), reminders: FakeReminders(), clipboard: Clipboard(), windows: Windows(), screen: Screen(), translation: FakeTranslation(),
         pickColor: { HexColor(red: 1, green: 0x88 / 255.0, blue: 0) }, pickFolder: { URL(fileURLWithPath: "/Users/a/Repos") }
     )
 
@@ -50,7 +50,7 @@ final class CallRouteTests: XCTestCase {
         folder = URL(fileURLWithPath: String(cString: temp), isDirectory: true).appendingPathComponent("cr-\(UUID().uuidString.prefix(8))", isDirectory: true)
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         let runs = await SpotRuns()
-        socket = CommandSocket(folder: folder, api: CommandAPI(mac: host, places: .test(ProcessInfo.processInfo.environment.merging(variables) { _, new in new }), app: FakeRunningApp(), runs: runs))
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: host, places: .test(ProcessInfo.processInfo.environment.merging(variables) { _, new in new }), app: FakeRunningApp(), runs: runs, rates: .offline))
     }
 
     override func tearDown() async throws {
@@ -64,7 +64,7 @@ final class CallRouteTests: XCTestCase {
         let printed = Printed()
         let output = CommandOutput { text, isError in printed.add(text, isError: isError) }
         let request = CommandRequest(arguments: argv, folder: folder.path, isPiped: input != nil)
-        let work = try XCTUnwrap(CommandAPI(mac: host, places: .test(environment)).work(for: call, request: request, input: { input ?? "" }, output: output))
+        let work = try XCTUnwrap(CommandAPI(mac: host, places: .test(environment), rates: .offline).work(for: call, request: request, input: { input ?? "" }, output: output))
         let answer = await work()
         output.print(answer.output)
         output.report(answer.errors)

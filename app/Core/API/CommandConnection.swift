@@ -21,6 +21,7 @@ final class CommandConnection: @unchecked Sendable {
     private var outgoing = Data()
     private var sent = 0
     private var stall: DispatchWorkItem?
+    private var drains: [CheckedContinuation<Bool, Never>] = []
     private var asked: (@Sendable (CommandConnection, Data) -> Void)?
     private var closed: (@Sendable () -> Void)?
     private var isClosed = false
@@ -72,6 +73,30 @@ final class CommandConnection: @unchecked Sendable {
         send(object)
     }
 
+    func deliver(_ method: String, text: String) async {
+        var rest = Substring(text)
+        while !rest.isEmpty {
+            let end = rest.unicodeScalars.index(rest.startIndex, offsetBy: Self.chunk, limitedBy: rest.endIndex) ?? rest.endIndex
+            notify(method, text: String(rest[..<end]))
+            rest = rest[end...]
+            guard await isDrained() else { return }
+        }
+    }
+
+    private func isDrained() async -> Bool {
+        await withCheckedContinuation { drain in
+            queue.async { [self] in
+                if isClosed || sent == outgoing.count { drain.resume(returning: !isClosed) } else { drains.append(drain) }
+            }
+        }
+    }
+
+    private func tell(isDrained: Bool) {
+        let waiting = drains
+        drains = []
+        for drain in waiting { drain.resume(returning: isDrained) }
+    }
+
     func end(_ reply: [String: Any]) {
         send(reply)
         queue.async { [self] in
@@ -84,9 +109,9 @@ final class CommandConnection: @unchecked Sendable {
         guard let encoded = try? JSONSerialization.data(withJSONObject: object, options: [.withoutEscapingSlashes]) else { return }
         queue.async { [self] in
             guard !isClosed else { return }
+            guard outgoing.count - sent <= limits.output else { return close() }
             outgoing.append(encoded)
             outgoing.append(Self.lineEnd)
-            guard outgoing.count - sent <= limits.output else { return close() }
             flush()
         }
     }
@@ -99,6 +124,7 @@ final class CommandConnection: @unchecked Sendable {
                 sent += count
                 hasMoved = true
             } else if errno == EAGAIN {
+                dropWhatWasSent()
                 return waitForTheReader(hasMoved: hasMoved)
             } else if errno != EINTR {
                 return close()
@@ -107,11 +133,18 @@ final class CommandConnection: @unchecked Sendable {
         guard !isClosed else { return }
         outgoing = Data()
         sent = 0
+        tell(isDrained: true)
         stall?.cancel()
         stall = nil
         writes?.cancel()
         writes = nil
         if isEnding { close() }
+    }
+
+    private func dropWhatWasSent() {
+        guard sent >= Self.chunk, sent >= outgoing.count - sent else { return }
+        outgoing = Data(outgoing[sent...])
+        sent = 0
     }
 
     private func waitForTheReader(hasMoved: Bool) {
@@ -185,6 +218,7 @@ final class CommandConnection: @unchecked Sendable {
         writes = nil
         reads.cancel()
         inputEnd.finish()
+        tell(isDrained: false)
         closed?()
         closed = nil
     }

@@ -14,7 +14,7 @@ public final class CommandAPI: @unchecked Sendable {
     private let rates: CalcRateCache
     private let nouns: [CommandNoun]
 
-    public init(mac: Mac, places: AppPlaces, raise: (@Sendable (SpotEvent) async -> Void)? = nil, app: (any RunningApp)? = nil, runs: SpotRuns? = nil, rates: CalcRateCache = .standard, nouns: [CommandNoun] = CommandNoun.all) {
+    public init(mac: Mac, places: AppPlaces, raise: (@Sendable (SpotEvent) async -> Void)? = nil, app: (any RunningApp)? = nil, runs: SpotRuns? = nil, rates: CalcRateCache, nouns: [CommandNoun] = CommandNoun.all) {
         self.mac = mac
         self.places = places
         account = app.map { app in Account(store: places.account, allows: { await app.allows($0) }) }

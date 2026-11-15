@@ -24,7 +24,7 @@ final class AppCallsSocketTests: XCTestCase {
     }
 
     private func listen(app: (any RunningApp)? = nil, runs: SpotRuns? = nil) {
-        socket = CommandSocket(folder: folder, api: CommandAPI(mac: Mac(), places: .test(ProcessInfo.processInfo.environment.merging(["OPENSPOT_CONFIG": config.path, "OPENSPOT_SPOTS": spots.path, "TONE": "warm"]) { _, new in new }), app: app, runs: runs))
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: Mac(), places: .test(ProcessInfo.processInfo.environment.merging(["OPENSPOT_CONFIG": config.path, "OPENSPOT_SPOTS": spots.path, "TONE": "warm"]) { _, new in new }), app: app, runs: runs, rates: .offline))
     }
 
     private func connect() -> SocketConnection {

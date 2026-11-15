@@ -44,6 +44,12 @@ final class SocketConnection {
         return try XCTUnwrap(JSONSerialization.jsonObject(with: line) as? [String: Any])
     }
 
+    func take(_ count: Int) {
+        var chunk = [UInt8](repeating: 0, count: count)
+        let taken = read(descriptor, &chunk, count)
+        if taken > 0 { buffer.append(contentsOf: chunk[..<taken]) }
+    }
+
     func close() {
         Darwin.close(descriptor)
     }

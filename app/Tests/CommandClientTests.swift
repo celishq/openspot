@@ -56,7 +56,7 @@ final class CommandClientTests: XCTestCase {
     }
 
     private func listen() {
-        socket = CommandSocket(folder: config, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path])))
+        socket = CommandSocket(folder: config, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), rates: .offline))
     }
 
     private func run(_ program: URL, _ arguments: [String], input: String = "", variables: [String: String] = [:]) throws -> (output: String, errors: String, code: Int32) {
@@ -81,7 +81,7 @@ final class CommandClientTests: XCTestCase {
 
     func testTheTokenOfACallerNamesItsSpotAndNoOtherVariableDoes() async throws {
         let runs = await SpotRuns()
-        socket = CommandSocket(folder: config, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), runs: runs))
+        socket = CommandSocket(folder: config, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), runs: runs, rates: .offline))
         let token = runs.tokens.issue(for: Spot(id: "home/coffee", name: "Coffee", url: folder.appendingPathComponent("coffee.sh")))
 
         let named = try run(client, ["setting", "set", "tone", "warm"], variables: [CallerTokens.variable: token])
@@ -97,7 +97,7 @@ final class CommandClientTests: XCTestCase {
     func testAPersonInTerminalAndACopiedTokenOfABuiltInReachNoKey() async throws {
         let runs = await SpotRuns()
         let app = FakeRunningApp()
-        socket = CommandSocket(folder: config, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: app, runs: runs))
+        socket = CommandSocket(folder: config, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: app, runs: runs, rates: .offline))
         let account = Spot(id: "openspot/account", name: "Account", url: folder.appendingPathComponent("account.sh"), uses: [.account]).builtIn()
         let copied = [CallerTokens.variable: runs.tokens.issue(for: account)]
         let refused = "Only Openspot's Account and Store spots can reach your account key.\n"
@@ -232,7 +232,7 @@ final class CommandClientTests: XCTestCase {
     }
 
     func testCtrlCStopsTheWorkOfTheCallInTheAppAndItChangesNothing() async throws {
-        socket = CommandSocket(folder: config, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: SlowApp(folder: folder)))
+        socket = CommandSocket(folder: config, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: SlowApp(folder: folder), rates: .offline))
         let run = try start(["setting", "change", "--spot", "repos", "folder"])
         try await wait("the start of the work") { exists("started") }
 
