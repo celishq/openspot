@@ -24,7 +24,7 @@ extension SpotPackage {
         let current = try files.first { $0.path == path }.map { try ReleaseLog(text: $0.text ?? "") } ?? ReleaseLog(releases: [])
         let released = released(in: root)
         guard !current.names(SpotManifest(released)) else { return self }
-        let readme = text(of: SpotListing.readmeName, in: root) ?? ""
+        let readme = text(of: SpotReadme.name, in: root) ?? ""
         let log = try current.signing(released, readme: readme, by: key, at: date)
         return try SpotPackage(files: files.filter { $0.path != path } + [File(path: path, isExecutable: false, contents: Data(log.text.utf8))])
     }

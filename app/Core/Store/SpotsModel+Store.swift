@@ -8,7 +8,7 @@ extension SpotsModel {
             host.notify("\(spot.name) comes with Openspot, so the store has it already.")
             return .notOwn
         }
-        guard FileManager.default.fileExists(atPath: SpotListing.readme(of: spot.url).path) else {
+        guard FileManager.default.fileExists(atPath: SpotReadme.url(beside: spot.url).path) else {
             host.notify("Write a readme for \(spot.name), then publish it again.")
             return .needsReadme
         }

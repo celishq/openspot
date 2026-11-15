@@ -193,7 +193,7 @@ public struct SpotsFolder: Sendable {
     }
 
     private static func wrapped(_ file: String, into name: String) -> String {
-        SpotID(name).folderName + "/" + (file == name + "." + SpotListing.readmeExtension ? SpotListing.readmeName : file)
+        SpotID(name).folderName + "/" + (file == name + "." + SpotReadme.fileExtension ? SpotReadme.name : file)
     }
 
     private static func stem(of name: String) -> String {

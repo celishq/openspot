@@ -78,8 +78,8 @@ struct SpotView: View {
         init(_ line: String) {
             if line.hasPrefix("#") {
                 self = .heading(line.drop { $0 == "#" }.trimmingCharacters(in: .whitespaces))
-            } else if line.hasPrefix("!["), let close = line.range(of: "]("), line.hasSuffix(")") {
-                self = .media(String(line[close.upperBound..<line.index(before: line.endIndex)]), caption: String(line[line.index(line.startIndex, offsetBy: 2)..<close.lowerBound]))
+            } else if line.hasPrefix("!["), line.hasSuffix(")"), let middle = line.range(of: "]("), !line[middle.upperBound...].dropLast().contains(")") {
+                self = .media(String(line[middle.upperBound..<line.index(before: line.endIndex)]), caption: String(line[line.index(line.startIndex, offsetBy: 2)..<middle.lowerBound]))
             } else {
                 let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
                 self = .text((try? AttributedString(markdown: line, options: options)) ?? AttributedString(line))

@@ -128,7 +128,7 @@ public struct SpotPackage: Equatable, Sendable {
     }
 
     public var readme: String? {
-        roots.first.flatMap { text(of: SpotListing.readmeName, in: $0) }?.trimmingCharacters(in: .whitespacesAndNewlines)
+        roots.first.flatMap { text(of: SpotReadme.name, in: $0) }?.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     public var sampleText: String? {
