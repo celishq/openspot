@@ -9,8 +9,7 @@ public struct FlowEdges: Equatable, Sendable {
     public private(set) var isMoving = false
     public private(set) var leavingSheet: FlowSheet?
     public private(set) var sheetStart: FlowEdge.Place?
-    public internal(set) var showsContent = true
-    public internal(set) var isSwapped = false
+    public private(set) var leavingPage: SheetPage?
 
     public init() {}
 
@@ -22,6 +21,14 @@ public struct FlowEdges: Equatable, Sendable {
         shown = flow.current
     }
 
+    public func room(around sheetRect: CGRect) -> CGRect {
+        isMoving ? sheetRect : from ?? sheetRect
+    }
+
+    public func heldHeight(of sheetRect: CGRect) -> CGFloat {
+        room(around: sheetRect).height - sheetRect.height
+    }
+
     public var leavingEdge: FlowEdge? {
         edges.first { $0.sheet == leavingSheet }
     }
@@ -30,17 +37,18 @@ public struct FlowEdges: Equatable, Sendable {
         edges.filter { !$0.isFading && $0.place.side == side }.map(\.title)
     }
 
-    func standing(at rect: CGRect, in flow: Flow, title: (FlowSheet) -> String) -> FlowEdges {
+    func standing(at rect: CGRect, holding page: SheetPage?, in flow: Flow, title: (FlowSheet) -> String) -> FlowEdges {
         var next = settled
         guard let shown, !next.edges.contains(where: { $0.sheet == shown }) else { return next }
         let left = flow.pages.firstIndex(of: shown)
         let coming: FlowEdge.Side = left.map { $0 > flow.index ? .behind : .ahead } ?? .behind
         next.coming = coming
-        next.leaving = left == nil ? .stand(FlowEdge.Place.bar(.ahead, 0).rect(around: rect).insetBy(dx: SpotTokens.edgeWidth / 2, dy: 0)) : .bar(coming == .ahead ? .behind : .ahead, 0)
+        next.leaving = left == nil ? .line(.ahead) : .bar(coming == .ahead ? .behind : .ahead, 0)
         next.edges.removeAll { $0.sheet == flow.current }
         next.edges.append(FlowEdge(sheet: shown, title: title(shown), place: .stand(rect)))
         next.leavingSheet = shown
         next.sheetStart = .bar(coming, 0)
+        next.leavingPage = page
         next.from = rect
         return next
     }
@@ -52,8 +60,7 @@ public struct FlowEdges: Equatable, Sendable {
         next.leaving = leaving
         next.isMoving = true
         next.leavingSheet = leavingSheet
-        next.showsContent = showsContent
-        next.isSwapped = isSwapped
+        next.leavingPage = leavingPage
         for edge in edges where !rest.edges.contains(where: { $0.sheet == edge.sheet }) {
             var gone = edge
             if edge.sheet == leavingSheet, let leaving { gone.place = leaving }
@@ -72,8 +79,7 @@ public struct FlowEdges: Equatable, Sendable {
         next.isMoving = false
         next.leavingSheet = nil
         next.sheetStart = nil
-        next.showsContent = true
-        next.isSwapped = false
+        next.leavingPage = nil
         return next
     }
 }

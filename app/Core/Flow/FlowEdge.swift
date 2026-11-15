@@ -7,6 +7,7 @@ public struct FlowEdge: Equatable, Identifiable, Sendable {
 
     public enum Place: Equatable, Sendable {
         case bar(Side, Int)
+        case line(Side)
         case stand(CGRect)
         case sheet
     }
@@ -37,6 +38,8 @@ extension FlowEdge.Place {
             let reach = SpotTokens.edgeGap + CGFloat(index) * (SpotTokens.edgeWidth + SpotTokens.edgeStep)
             let x = side == .behind ? sheetRect.minX - reach - SpotTokens.edgeWidth : sheetRect.maxX + reach
             return CGRect(x: x, y: sheetRect.midY - height / 2, width: SpotTokens.edgeWidth, height: height)
+        case .line(let side):
+            return Self.bar(side, 0).rect(around: sheetRect).insetBy(dx: SpotTokens.edgeWidth / 2, dy: 0)
         case .stand(let rect):
             return rect
         case .sheet:

@@ -5,12 +5,13 @@ struct SpotBackdrop: View {
     let model: SpotsModel
     let gridHeight: CGFloat
     let sheetHeight: CGFloat
+    let sheetRect: CGRect
     let menuHeight: CGFloat
     let drawsBlur: Bool
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
-        let height = max(model.transition.isOpen ? sheetHeight : gridHeight, menuHeight)
+        let height = max(model.transition.isOpen ? sheetHeight + model.flowEdges.heldHeight(of: sheetRect) : gridHeight, menuHeight)
         ZStack(alignment: .top) {
             if drawsBlur {
                 SpotSoftBlur()

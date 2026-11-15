@@ -101,19 +101,21 @@ final class FlowNavigationTests: PanelCase {
         let places = host.edgeChanges.map { $0.edges.edges.first { $0.sheet == list }?.place }
         XCTAssertEqual(places.first, .stand(try XCTUnwrap(host.edgeChanges.first?.edges.from)))
         XCTAssertTrue(places.dropFirst().allSatisfy { $0 == .bar(.behind, 0) })
-        XCTAssertEqual(host.edgeChanges.map(\.motion), [nil, .flow, .fadeOut, .flow, .fade, nil])
-        XCTAssertEqual(host.edgeChanges.map(\.edges.isMoving), [false, true, true, true, true, false])
+        XCTAssertEqual(host.edgeChanges.map(\.motion), [nil, .flow, nil])
+        XCTAssertEqual(host.edgeChanges.map(\.edges.isMoving), [false, true, false])
     }
 
-    func testAStepSwapsThePageOnlyOnceItsContentHasFadedOutThenFadesItIn() async throws {
+    func testAStepSwapsThePageAtThePressAndHoldsACopyOfThePageItLeaves() async throws {
         try await openList()
-        host.edgeChanges = []
+        host.heldEnds = []
 
-        try await openPage()
+        XCTAssertTrue(model.push(FlowSheet(spot: "list", page: "a")))
 
-        try await waitFor("the step to settle") { self.model.flowEdges.from == nil && self.model.flowEdges.titles(on: .behind) == ["List"] }
-        let looks = host.edgeChanges.map { [$0.edges.showsContent, $0.edges.isSwapped] }
-        XCTAssertEqual(looks, [[true, false], [true, false], [false, false], [false, true], [true, true], [true, false]])
+        XCTAssertEqual(model.sheets["list"]?.page, "a")
+        let held = try XCTUnwrap(model.flowEdges.leavingPage)
+        XCTAssertEqual(held.list.shown.map(\.title), ["A"])
+        XCTAssertEqual(held.rect, model.flowEdges.from)
+        XCTAssertEqual(model.flowEdges.room(around: try XCTUnwrap(model.sheets["list"]?.sheetRect)), held.rect)
     }
 
     func testAStepSaysWhichSideItsNewPageComesFromUntilItEnds() async throws {
@@ -133,16 +135,17 @@ final class FlowNavigationTests: PanelCase {
         XCTAssertEqual(host.edgeChanges.last?.edges.coming, .some(nil))
     }
 
-    func testAStepCutBeforeItsSwapLeavesNoSwapForTheNextStep() async throws {
+    func testAStepCutMidMotionHoldsThePageItCutAndEndsOnTheNewestPage() async throws {
         try await openList()
         host.heldEnds = []
         XCTAssertTrue(model.push(FlowSheet(spot: "list", page: "a")))
-        try await waitFor("the step to fade out") { self.model.flowEdges.isMoving }
+        try await waitFor("the step to move") { self.model.flowEdges.isMoving }
 
         XCTAssertTrue(model.handleKey(back))
-        XCTAssertTrue(model.push(FlowSheet(spot: "list", page: "b")))
 
         XCTAssertNil(model.sheets["list"]?.page)
+        XCTAssertEqual(model.flowEdges.leavingPage?.page, "a")
+        XCTAssertFalse(model.flowEdges.isMoving)
     }
 
     func testBackPutsThePageItLeavesInABarAheadThatAClickGoesForwardTo() async throws {
@@ -197,7 +200,7 @@ final class FlowNavigationTests: PanelCase {
         try await waitFor("the step to settle") { self.titles == ["A"] && self.model.flowEdges.from == nil }
         XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "list")])
         XCTAssertEqual(model.flowEdges.titles(on: .ahead), [])
-        guard case .stand? = host.edgeChanges.first?.edges.leaving else { return XCTFail("the page leaves into no line") }
+        XCTAssertEqual(host.edgeChanges.first?.edges.leaving, .line(.ahead))
         XCTAssertTrue(model.handleKey(forward))
         XCTAssertEqual(model.flow.index, 0)
     }

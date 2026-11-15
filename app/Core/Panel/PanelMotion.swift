@@ -5,5 +5,4 @@ public enum PanelMotion: Equatable, Sendable {
     case edit
     case flow
     case fade
-    case fadeOut
 }

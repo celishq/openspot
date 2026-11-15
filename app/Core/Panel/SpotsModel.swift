@@ -84,8 +84,6 @@ public final class SpotsModel {
     public internal(set) var flowEdges = FlowEdges()
     @ObservationIgnored var edgeStep = 0
     @ObservationIgnored var waitingPush = false
-    @ObservationIgnored var stepSwap: (() -> Void)?
-    @ObservationIgnored var isStepFaded = false
     public internal(set) var transition = SheetTransition() {
         didSet {
             let shown = transition.shown

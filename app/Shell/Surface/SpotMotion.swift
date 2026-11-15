@@ -26,7 +26,6 @@ enum SpotMotion {
         case .edit: move
         case .flow: grow(isOpen: true)
         case .fade: fade(isShown: true)
-        case .fadeOut: fade(isShown: false)
         }
     }
 }

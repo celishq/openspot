@@ -49,7 +49,7 @@ struct SpotsView: View {
             .modifier(GridFadeMask(fade: fade, height: cardHeight))
             .morph(coversGrid ? 0 : 1, opacity: { SheetMorph.sheetLook(at: $0) })
             .modifier(PanelSpan(panels: model.panels))
-            SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: max(gridHeight, model.menuBackdropHeight), sheetHeight: max(sheetID == nil ? gridHeight : sheetHeight, model.menuBackdropHeight))
+            SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: max(gridHeight, model.menuBackdropHeight), sheetHeight: max(sheetID == nil ? gridHeight : sheetHeight, model.menuBackdropHeight), sheetRect: sheetRect)
                 .modifier(SpotShownFade(isShown: model.isShown))
             if sheetOpen, sheetID != nil {
                 SpotFlowEdges(model: model, rect: sheetRect)
@@ -101,7 +101,7 @@ struct SpotsView: View {
     }
 
     private var softBlur: some View {
-        SpotBackdrop(model: model, gridHeight: gridHeight, sheetHeight: sheetHeight, menuHeight: menuHeight, drawsBlur: drawsBlur)
+        SpotBackdrop(model: model, gridHeight: gridHeight, sheetHeight: sheetHeight, sheetRect: sheetRect, menuHeight: menuHeight, drawsBlur: drawsBlur)
             .environment(\.spotPanels, model.shownPanels)
             .modifier(PanelSpan(panels: model.shownPanels))
     }

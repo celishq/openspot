@@ -2,7 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotFieldLook: View {
-    let model: SpotsModel
+    let query: String
     let title: String
 
     var body: some View {
@@ -25,11 +25,11 @@ struct SpotFieldLook: View {
 
     @ViewBuilder
     private var words: some View {
-        if model.searchText.isEmpty {
+        if query.isEmpty {
             Text("\(SearchPrompt.verb) \(SearchPrompt.word(for: title))")
                 .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
         } else {
-            Text(model.searchText)
+            Text(query)
                 .foregroundStyle(SpotTheme.ink)
         }
     }

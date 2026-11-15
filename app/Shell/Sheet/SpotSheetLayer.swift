@@ -13,6 +13,7 @@ struct SpotSheetLayer: View {
     var showsField = false
 
     var body: some View {
+        let step = step
         SpotSheetView(
             model: model,
             entry: entry,
@@ -42,7 +43,7 @@ struct SpotSheetLayer: View {
             }
         }
         .modifier(SpotSheetFrame(
-            rect: isOpen ? model.flowEdges.sheetStart?.rect(around: model.flowEdges.from ?? sheetRect) ?? sheetRect : closedRect,
+            rect: isOpen ? step.fit ?? sheetRect : closedRect,
             radius: isOpen ? SpotTokens.radius : isInstall ? SpotTokens.corner(for: .strip) : SpotTokens.corner(for: card?.placement.size ?? entry.size),
             sheetRect: sheetRect,
             shift: isOpen ? .zero : shift(to: closedRect),
@@ -60,13 +61,39 @@ struct SpotSheetLayer: View {
     private var step: SheetStep {
         guard isOpen else { return SheetStep() }
         let edges = model.flowEdges
-        let isStepping = edges.coming != nil
+        guard let from = edges.from else { return SheetStep(marks: edges.edges) }
+        let room = edges.room(around: sheetRect)
         return SheetStep(
             marks: edges.edges,
-            clip: isStepping && !edges.isSwapped ? edges.leavingEdge?.rect(around: sheetRect) : nil,
-            showsContent: edges.showsContent,
-            field: isStepping && showsField ? AnyView(SpotFieldLook(model: model, title: entry.state.title)) : nil
+            room: room,
+            fit: edges.sheetStart?.rect(around: from) ?? sheetRect,
+            leaving: leaving(edges, around: room),
+            field: showsField ? AnyView(SpotFieldLook(query: model.searchText, title: entry.state.title)) : nil
         )
+    }
+
+    private func leaving(_ edges: FlowEdges, around room: CGRect) -> SheetStep.Leaving? {
+        guard let page = edges.leavingPage, let edge = edges.leavingEdge, let held = model.entries.first(where: { $0.id == page.spot }) else { return nil }
+        let look = ZStack(alignment: .topLeading) {
+            SpotSheetView(
+                model: model,
+                entry: held,
+                cardSize: held.size,
+                isOpen: true,
+                showsFill: held.isActive,
+                rect: page.rect,
+                closeShift: nil,
+                cardWidth: page.rect.width,
+                morph: SheetMorph(card: page.rect, sheet: page.rect),
+                held: page
+            )
+            .frame(width: page.rect.width, height: page.rect.height, alignment: .topLeading)
+            .offset(x: page.rect.minX, y: page.rect.minY)
+            if page.showsField {
+                SpotFieldLook(query: page.query, title: page.state.title)
+            }
+        }
+        return SheetStep.Leaving(look: AnyView(look), from: page.rect, rect: edge.rect(around: room))
     }
 
     private var progress: Double {

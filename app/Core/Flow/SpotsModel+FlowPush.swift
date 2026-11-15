@@ -1,9 +1,8 @@
 import Foundation
 
 extension SpotsModel {
-    func pushIn(_ change: @escaping () -> Void) {
-        beginStep()
-        offerSwap(change)
+    func pushIn(_ swap: () -> Void) {
+        step(swap)
     }
 
     func waitPush(moving: Bool) {
@@ -11,11 +10,10 @@ extension SpotsModel {
         if !moving { showEdges() }
     }
 
-    func takeWaitingPush(_ swap: @escaping () -> Void) -> Bool {
+    func takeWaitingPush(_ swap: () -> Void) -> Bool {
         guard waitingPush else { return false }
         waitingPush = false
-        beginStep()
-        offerSwap(swap)
+        step(swap)
         return true
     }
 
@@ -27,46 +25,19 @@ extension SpotsModel {
 
     func showEdges() {
         edgeStep += 1
-        stepSwap = nil
-        isStepFaded = false
         let next = FlowEdges(flow: flow, title: title(of:))
         if next != flowEdges { flowEdges = next }
     }
 
-    private func beginStep() {
-        if let swap = stepSwap {
-            stepSwap = nil
-            change(nil, swap)
+    private func step(_ swap: () -> Void) {
+        change(nil) {
+            standEdges()
+            swap()
         }
-        change(nil) { standEdges() }
-        isStepFaded = false
         let step = edgeStep
         DispatchQueue.main.async { [weak self] in
             guard let self, step == edgeStep else { return }
-            change(.flow) { moveEdges() }
-            change(.fadeOut, { flowEdges.showsContent = false }) { [weak self] in
-                guard let self, step == edgeStep else { return }
-                isStepFaded = true
-                swapStep(step)
-            }
-        }
-    }
-
-    private func offerSwap(_ swap: @escaping () -> Void) {
-        stepSwap = swap
-        swapStep(edgeStep)
-    }
-
-    private func swapStep(_ step: Int) {
-        guard isStepFaded, let swap = stepSwap else { return }
-        stepSwap = nil
-        change(.flow) {
-            swap()
-            flowEdges.isSwapped = true
-        }
-        DispatchQueue.main.async { [weak self] in
-            guard let self, step == edgeStep else { return }
-            change(.fade, { flowEdges.showsContent = true }) { [weak self] in self?.settleEdges(step) }
+            change(.flow, { moveEdges() }) { [weak self] in self?.settleEdges(step) }
         }
     }
 
@@ -77,8 +48,9 @@ extension SpotsModel {
 
     private func standEdges() {
         edgeStep += 1
-        guard flowEdges.shown != nil, let rect = shownSheetRect else { return }
-        flowEdges = flowEdges.standing(at: rect, in: flow, title: title(of:))
+        guard flowEdges.shown != nil, let open = openList, let run = sheets[open], let rect = shownSheetRect else { return }
+        let page = SheetPage(run: run, rect: rect, query: searchText)
+        flowEdges = flowEdges.standing(at: rect, holding: page, in: flow, title: title(of:))
     }
 
     private func moveEdges() {
