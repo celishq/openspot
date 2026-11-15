@@ -73,6 +73,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
         try answering()
         let sheet = try sheet()
         sheet.answer("1")
+        try await wait("the loaded script") { sheet.answers.map(\.run) == ["1"] }
 
         sheet.answer("12")
 

@@ -78,8 +78,9 @@ final class InlineLink: ScriptLink {
                 let lines = await runs.intake(text, of: run.spot.id)
                 if made.isStopped { end = .stopped } else { await run.take(text, lines, of: call) }
             }
+            await run?.takeEnd(of: call, end)
             self.asking.removeAll { $0 === made }
-            await run?.close(call, end, errors: errors)
+            run?.finish(call, end, errors: errors)
         }
     }
 

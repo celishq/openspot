@@ -119,10 +119,23 @@ final class SpotRunsStayTests: SpotRunsCase {
 
         sheet.pick(try XCTUnwrap(sheet.list.selectedItem))
 
-        try await wait("the call") { self.blocks().last == "arg=open\narg=a" }
+        try await wait("the call and its end") { self.blocks().last == "arg=open\narg=a" && sheet.calls.isEmpty }
         XCTAssertEqual(Set(blocks().dropLast()), ["arg=read"])
         XCTAssertEqual(log().count, 1)
-        XCTAssertTrue(sheet.calls.isEmpty)
+    }
+
+    func testAReadOfAStayingScriptIsReadingUntilItsAnswerIsIn() async throws {
+        try staying()
+        let sheet = try sheet()
+        runs.panelOpened()
+
+        sheet.open {}
+        XCTAssertTrue(sheet.isReading)
+        let limit = ContinuousClock.now + .seconds(60)
+        while sheet.isReading, ContinuousClock.now < limit { await Task.yield() }
+
+        XCTAssertFalse(sheet.isReading)
+        XCTAssertEqual(sheet.list.shown.count, 1)
     }
 
     func testAnActionReachesTheRunningStayingScript() async throws {
@@ -182,9 +195,8 @@ final class SpotRunsStayTests: SpotRunsCase {
             let once = try sheet("once")
             runs.panelOpened()
             stay.open {}
-            try await wait("the three frames of the staying spot") { stay.list.all.count == 2 && stay.calls.isEmpty }
+            try await wait("the three frames of the staying spot") { stay.list.all.count == 2 && parses.count == 3 }
             let stayed = parses.count
-            XCTAssertTrue((2...3).contains(stayed), "\(stayed)")
 
             once.open {}
             try await wait("the read of the spot that runs once") { once.spot.actions.count == 1 && once.calls.isEmpty }

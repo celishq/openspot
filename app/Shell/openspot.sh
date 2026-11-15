@@ -1,7 +1,7 @@
 # The shell helper of Openspot. `. "$OPENSPOT_SH"` gives `esc`, `value`, `openspot_value`, `openspot_kv`, `openspot_row`,
 # `openspot_rows`, `openspot_serve`, `openspot_keep` and `openspot_paste`.
 # Loading starts `cat` once, and each function starts `sed`, `tr` or `awk` only above 1 KB, where a shell loop is too slow.
-# `openspot_serve` starts `mktemp` and `mkfifo` once for a script that gets stdin, and `rm` when it ends.
+# `openspot_serve` starts `mktemp` and `mkfifo` once for a script that gets stdin, and `unlink` and `rmdir` when it ends.
 
 # Whether the header of the script says `mode=stay` or `mode=always`: the comment lines at its top, read with no process.
 _openspot_stays=
@@ -173,7 +173,7 @@ _openspot_next() {
 # Runs the function in `_openspot_main` with these arguments, and with `_openspot_stdin` as its stdin. The text goes
 # through a pipe with a name, in a folder that only the user reads, so it touches no file: `sh` writes a here-document
 # to a file. A script that runs once removes the folder before the function starts, and a staying script keeps it for
-# its next calls.
+# its next calls. The shell opens both ends of the pipe itself, so no opening waits for the other end.
 _openspot_pipe=
 _openspot_run() {
   if [ -z "$_openspot_stdin" ]; then
@@ -187,18 +187,25 @@ _openspot_run() {
       return
     }
   fi
-  printf '%s\n' "${_openspot_stdin%"$_openspot_nl"}" > "$_openspot_pipe/stdin" &
-  exec 8< "$_openspot_pipe/stdin"
-  [ -n "$_openspot_stays" ] || _openspot_close
-  "$_openspot_main" "$@" <&8
-  _openspot_code=$?
-  exec 8<&-
+  _openspot_code=1
+  {
+    printf '%s\n' "${_openspot_stdin%"$_openspot_nl"}" >&8 7<&- 2>/dev/null &
+    _openspot_feed=$!
+    exec 8>&-
+    [ -n "$_openspot_stays" ] || _openspot_close
+    "$_openspot_main" "$@" <&7
+    _openspot_code=$?
+  } 8<> "$_openspot_pipe/stdin" 7< "$_openspot_pipe/stdin"
+  kill "$_openspot_feed" 2>/dev/null || :
+  wait "$_openspot_feed" 2>/dev/null || :
   return "$_openspot_code"
 }
 
-# Removes the folder of the pipe.
+# Removes the pipe and its folder, and nothing else.
 _openspot_close() {
-  [ -z "$_openspot_pipe" ] || /bin/rm -rf "$_openspot_pipe"
+  [ -n "$_openspot_pipe" ] || return 0
+  /bin/unlink "$_openspot_pipe/stdin" 2>/dev/null
+  /bin/rmdir "$_openspot_pipe" 2>/dev/null
   _openspot_pipe=
 }
 

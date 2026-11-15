@@ -208,6 +208,7 @@ public final class SpotRun {
     @ObservationIgnored var waiter: (() -> Void)?
     @ObservationIgnored var selecting: String?
     @ObservationIgnored var readsAgain = false
+    @ObservationIgnored var sheetAgain = false
     @ObservationIgnored var eventAgain: ReadReason?
     @ObservationIgnored var pauses: [String: Task<Void, Never>] = [:]
     @ObservationIgnored var editing: String?

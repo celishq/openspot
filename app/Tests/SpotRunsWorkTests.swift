@@ -89,8 +89,19 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertNil(runs.workSpot)
     }
 
-    func testACallToAStayingScriptNeverShowsAsWorkAndItsFrameDoesNotMakeItShow() async throws {
-        try staying(frame: "graph=p\\ntitle=42%%\\nvalue=0.42\\n")
+    func testACallToAStayingScriptShowsAsWorkAfterItsSecondAndLeavesItAtItsEnd() async throws {
+        try script(header: "mode=stay\noffers=card\noffers=menubar", """
+        while IFS= read -r line; do
+          printf '%s\\n' "$line" >> '\(path("blocks"))'
+          case "$line" in
+            call=*) call=${line#call=}; name= ;;
+            arg=*) [ -n "$name" ] || name=${line#arg=} ;;
+            '')
+              if [ "$name" != read ]; then \(untilRelease); fi
+              printf 'end=%s\\n\\ngraph=p\\ntitle=42%%\\nvalue=0.42\\n---\\n' "$call" ;;
+          esac
+        done
+        """)
         let sheet = try sheet()
         let frames = FrameLog(sheet)
         runs.panelOpened()
@@ -101,8 +112,12 @@ final class SpotRunsWorkTests: SpotRunsCase {
         sheet.pick(SpotItem(title: "A", run: "a"))
         try await wait("the call") { self.blocks() == ["arg=read", "arg=open\narg=a"] }
         time += 5
+        try await wait("the shown work") { sheet.work.count == 1 }
+        XCTAssertEqual(sheet.calls.count, 1)
+        XCTAssertEqual(runs.workSpot, "script")
 
-        XCTAssertTrue(sheet.calls.isEmpty)
+        openGate()
+        try await wait("the end of the call") { sheet.calls.isEmpty }
         XCTAssertTrue(sheet.work.isEmpty)
         XCTAssertNil(runs.runningSummary)
         XCTAssertNil(runs.workSpot)
