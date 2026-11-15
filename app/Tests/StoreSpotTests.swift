@@ -93,7 +93,7 @@ final class StoreSpotTests: BuiltInCase {
         let rows = try await items()
         let id = try XCTUnwrap(rows.first { $0[2] == "publish" }?[0])
 
-        try await call(["gallery", "publish:\(id)"])
+        _ = try await runs.answer(of: store, SpotAction(arguments: ["gallery", "publish:\(id)"]), limit: 5)
 
         let opened = await app.opened
         XCTAssertEqual(opened, ["publish mine"])

@@ -54,8 +54,8 @@ extension SpotsModel {
     }
 
     func accountKey(publishing id: String?) async throws -> AccountKey? {
-        let account = files.account
-        if let key = try await Task.detached(priority: .userInitiated, operation: { try account.key() }).value { return key }
+        let account = Account(store: files.account, allows: { [weak self] reason in await self?.allows(reason) ?? false })
+        if let key = try await Task.detached(priority: .userInitiated, operation: { try await account.signing() }).value { return key }
         let page = id.map { AccountSheet.publishPrefix + $0 }
         if let account = entries.first(where: { $0.id == AccountSheet.id }) {
             host.present()

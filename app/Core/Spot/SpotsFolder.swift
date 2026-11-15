@@ -215,7 +215,10 @@ public struct SpotsFolder: Sendable {
             let added = isDated ? (try? file.resourceValues(forKeys: [.creationDateKey]).creationDate) : nil
             let spots = loaded.spots.map { command in
                 let dated = added.map(command.added(at:)) ?? command
-                return isReadOnly ? dated.builtIn() : dated
+                guard !isReadOnly else { return dated.builtIn() }
+                var own = dated
+                own.uses.remove(.account)
+                return own
             }
             result.files.append(SpotFile(id: id, spots: spots))
         } catch {

@@ -90,6 +90,17 @@ final class SpotUsesTests: SpotRunsCase {
         return (log("done").last ?? "", (try? String(contentsOfFile: path("errors"), encoding: .utf8)) ?? "")
     }
 
+    func testASpotOfThePersonThatNamesTheAccountUseCannotPublish() async throws {
+        try caller(header: "uses=account", "store publish script")
+        let found = try scanned()
+
+        let (code, errors) = try await pressed()
+
+        XCTAssertEqual(code, "1")
+        XCTAssertEqual(errors, "Only Openspot's Account spot can reach your account key.\n")
+        XCTAssertEqual(found.scripts.first?.uses, [])
+    }
+
     func testASpotCannotChangeCarefulMode() async throws {
         try caller(header: "uses=app", "setting set --spot openspot careful false")
         _ = try scanned()

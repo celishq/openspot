@@ -31,7 +31,7 @@ final class AccountCallsTests: XCTestCase {
     }
 
     private func call(_ arguments: [String], from spot: Spot? = nil, input: String = "") async throws -> CommandAnswer {
-        let request = CommandRequest(arguments: arguments, folder: folder.path, token: spot.map { runs.tokens.issue(for: $0) })
+        let request = CommandRequest(arguments: arguments, folder: folder.path, token: spot.map { runs.tokens.issue(for: $0) }, isBound: true)
         let parsed = api.admit(try XCTUnwrap(api.call(of: request)), request: request)
         let work = try XCTUnwrap(api.work(for: parsed, request: request, input: { input }))
         return await work()
@@ -168,7 +168,9 @@ final class AccountCallsTests: XCTestCase {
             "jsonrpc": "2.0", "id": 1, "method": "ask",
             "params": ["argv": ["account", "new"], "cwd": other.path, "token": runs.tokens.issue(for: account), "env": ["OPENSPOT_CONFIG": other.path]]
         ])
-        let request = try XCTUnwrap(CommandRequest(line: line))
+        var request = try XCTUnwrap(CommandRequest(line: line))
+        XCTAssertFalse(request.isBound)
+        request.isBound = true
         let work = try XCTUnwrap(api.work(for: api.admit(try XCTUnwrap(api.call(of: request)), request: request), request: request, input: { "" }))
 
         let answer = await work()

@@ -98,9 +98,9 @@ public final class CallerTokens: @unchecked Sendable {
         return variables
     }
 
-    public func token(of peer: pid_t, claimed: String?) -> String? {
+    public func token(of peer: pid_t, claimed: String?) -> (token: String?, isBound: Bool) {
         let group = getpgid(peer)
-        guard group > 0 else { return claimed }
+        guard group > 0 else { return (claimed, false) }
         let known: String? = lock.withLock {
             guard let token = groups[group], let record = records[token] else { return nil }
             guard kill(group, 0) != 0 || Self.start(of: group) == record.start else {
@@ -109,9 +109,9 @@ public final class CallerTokens: @unchecked Sendable {
             }
             return token
         }
-        if let known { return known }
-        guard isCareful, caller(of: claimed) == nil, Self.isSandboxed(peer) else { return claimed }
-        return Self.sandboxed
+        if let known { return (known, true) }
+        guard isCareful, caller(of: claimed) == nil, Self.isSandboxed(peer) else { return (claimed, false) }
+        return (Self.sandboxed, false)
     }
 
     private static func start(of id: pid_t) -> UInt64 {

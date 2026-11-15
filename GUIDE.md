@@ -59,7 +59,8 @@ Try each example of this page in the playground before you put it in the spots f
 - **New spot.** `openspot spot new <name> --from <kind>` writes a working spot that you can change. The kinds are
   `button`, `list`, `number` and `form`.
 - **One call.** `openspot spot run <id> [call] [value]...` runs one call the way Openspot does, and prints everything the
-  spot prints. With no call, it asks the spot what to show.
+  spot prints. With no call, it asks the spot what to show. While Openspot is open, the script gets the variables of
+  the app, not those of your shell.
 - **Image.** `openspot render [--view <file>] <file.png>` draws the sheet that stdin holds. `--card <size>` draws its card,
   and `--spot <id>` draws an installed spot.
 - **Log.** `openspot spot log <id>` prints the last calls to a spot, with their stdin, stdout, stderr and exit code.

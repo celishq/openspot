@@ -3,8 +3,10 @@ import Foundation
 
 extension AppPlaces {
     static func test(_ environment: [String: String] = [:]) -> AppPlaces {
-        let home = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-test-home", isDirectory: true)
-        return AppPlaces(environment: environment, home: home, defaults: .standard, defaultConfig: nil)
+        let name = "openspot-test-\(UUID().uuidString)"
+        let home = FileManager.default.temporaryDirectory.appendingPathComponent(name, isDirectory: true)
+        let own = ["OPENSPOT_CONFIG": home.appendingPathComponent("config", isDirectory: true).path].merging(environment) { _, given in given }
+        return AppPlaces(environment: own, home: home, defaults: UserDefaults(suiteName: name) ?? .standard, defaultConfig: nil)
     }
 }
 

@@ -27,7 +27,7 @@ public final class CommandAPI: @unchecked Sendable {
     public func request(_ request: CommandRequest, from peer: pid_t) -> CommandRequest {
         guard let runs else { return request }
         var request = request
-        request.token = runs.tokens.token(of: peer, claimed: request.token)
+        (request.token, request.isBound) = runs.tokens.token(of: peer, claimed: request.token)
         return request
     }
 
@@ -48,6 +48,7 @@ public final class CommandAPI: @unchecked Sendable {
         switch call {
         case .refused, .unknown: return call
         case .account(let account) where account.reachesKey: return call
+        case .storePublish: return call
         default: break
         }
         guard let runs, let caller = caller(of: request) else { return call }
@@ -72,6 +73,7 @@ public final class CommandAPI: @unchecked Sendable {
         let environment = places.environment
         let folder = request.place
         let caller = caller(of: request)
+        let keyCaller = request.isBound ? caller : nil
         let variables = variables(of: request)
         let isRead = variables["OPENSPOT_REASON"] != nil
         let isPiped = request.isPiped
@@ -115,7 +117,7 @@ public final class CommandAPI: @unchecked Sendable {
         case .gridEdit: return spots.editGrid()
         case .storeList(let frame): return StoreCalls(environment: environment, app: app).list(frame: frame)
         case .storeGet(let id): return StoreCalls(environment: environment, app: app).get(id)
-        case .storePublish(let id): return StoreCalls(environment: environment, app: app).publish(id)
+        case .storePublish(let id): return StoreCalls(environment: environment, app: app).publish(id, account: account, caller: keyCaller)
         case .spotNew(let name, let starter): return spots.new(name, from: starter)
         case .spotLog(let id): return spots.log(id)
         case .spotStats(let days, let spot, let format): return spots.stats(days: days, spot: spot, format: format)
@@ -129,7 +131,7 @@ public final class CommandAPI: @unchecked Sendable {
         case .appQuit: return apps.quit()
         case .updateCheck: return UpdateCalls(app: app).check()
         case .updateInstall: return UpdateCalls(app: app).install()
-        case .account(let call): return AccountCalls(account: account, caller: caller).work(for: call, input: input)
+        case .account(let call): return AccountCalls(account: account, caller: keyCaller).work(for: call, input: input)
         case .eventEmit(let name, let value): return EventCalls(raise: raise).emit(name, value: value)
         case .calcSolve(let words): return CalcCalls().solve(words)
         case .emoji(let tone): return EmojiCalls(keywords: keywords).rows(tone: tone)

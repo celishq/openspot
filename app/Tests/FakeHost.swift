@@ -52,9 +52,13 @@ final class FakeHost: SpotsHost {
         presents += 1
     }
 
+    var allowsActs = true
+    var asked: [String] = []
+
     func allows(_ reason: String) async -> Bool {
         heldDuringAsks.append(model?.holdsFocus ?? false)
-        return true
+        asked.append(reason)
+        return allowsActs
     }
 
     func notify(_ text: String) {

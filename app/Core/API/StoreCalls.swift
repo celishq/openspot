@@ -23,9 +23,10 @@ struct StoreCalls {
         }
     }
 
-    func publish(_ id: String) -> CommandAPI.Work {
-        guard let app else { return CommandAnswer.notRunning("store publish \(id)") }
+    func publish(_ id: String, account: Account?, caller: CallerTokens.Caller?) -> CommandAPI.Work {
+        guard let app, let account else { return CommandAnswer.notRunning("store publish \(id)") }
         return CommandAnswer.work {
+            try account.admit(caller)
             switch await app.publish(id) {
             case .published: return "Published \(id).\n"
             case .unchanged: return "\(id) has no change since its last publish.\n"

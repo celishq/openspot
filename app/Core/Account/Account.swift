@@ -35,6 +35,12 @@ struct Account: Sendable {
         return words
     }
 
+    func signing() async throws -> AccountKey? {
+        guard let key = try store.key() else { return nil }
+        try await unlock(to: "sign your spot", or: "Openspot signed nothing")
+        return key
+    }
+
     func choices(at places: [Int]) throws -> [[String]] {
         guard let key = try store.key(), key.words != nil else { throw SpotError.failed(1, Self.noWords) }
         return places.map { key.choices(at: $0) }

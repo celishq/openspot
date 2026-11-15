@@ -199,7 +199,7 @@ final class InlineScript: @unchecked Sendable {
         guard let call = CommandLineCall(arguments: arguments, environment: environment) else {
             return CommandAnswer(errors: "openspot needs a call, such as calc solve 2+2.\n", code: 2)
         }
-        let request = CommandRequest(arguments: arguments, folder: environment["PWD"] ?? FileManager.default.currentDirectoryPath, token: token)
+        let request = CommandRequest(arguments: arguments, folder: environment["PWD"] ?? FileManager.default.currentDirectoryPath, token: token, isBound: true)
         if let api, api.work(for: call, request: request, input: { input ?? "" }) != nil,
            let work = api.work(for: api.admit(call, request: request), request: request, input: { input ?? "" }) {
             let box = Box()

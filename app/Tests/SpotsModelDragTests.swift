@@ -571,6 +571,19 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(publication(of: "a"), .current)
     }
 
+    func testAPublishSignsOnlyAfterTouchID() async throws {
+        try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
+        _ = try model.files.account.keyMadeOnce()
+        host.allowsActs = false
+
+        let denied = await model.publish("a")
+
+        XCTAssertEqual(denied, .failed)
+        XCTAssertNil(publication(of: "a"))
+        XCTAssertEqual(host.asked, ["sign your spot"])
+        XCTAssertEqual(host.notes.last, "A was not published. Touch ID didn't pass, so Openspot signed nothing.")
+    }
+
     func testAPublishWithNoAccountOpensThePublishPageOfTheAccountSpot() async throws {
         try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
         model.reload()

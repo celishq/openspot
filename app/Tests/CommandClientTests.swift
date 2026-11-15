@@ -93,6 +93,23 @@ final class CommandClientTests: XCTestCase {
         XCTAssertNil(kept.setting("tone", of: "home/tea"))
     }
 
+    func testAPersonInTerminalAndACopiedTokenOfABuiltInReachNoKey() async throws {
+        let runs = await SpotRuns()
+        let app = FakeRunningApp()
+        socket = CommandSocket(folder: config, api: CommandAPI(mac: FakeMac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: app, runs: runs))
+        let account = Spot(id: "openspot/account", name: "Account", url: folder.appendingPathComponent("account.sh"), uses: [.account]).builtIn()
+        let copied = [CallerTokens.variable: runs.tokens.issue(for: account)]
+        let refused = "Only Openspot's Account spot can reach your account key.\n"
+
+        XCTAssertEqual(try run(client, ["store", "publish", "mine"]).errors, refused)
+        XCTAssertEqual(try run(client, ["store", "publish", "mine"], variables: copied).errors, refused)
+        XCTAssertEqual(try run(client, ["account", "new"], variables: copied).errors, refused)
+
+        let opened = await app.opened
+        XCTAssertEqual(opened, [])
+        XCTAssertNil(try AccountStore.standard(environment: ["OPENSPOT_CONFIG": config.path], home: folder, devState: nil).key())
+    }
+
     func testTheRunningAppAnswersACalcSum() throws {
         listen()
 
