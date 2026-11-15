@@ -79,7 +79,7 @@ public final class SpotsModel {
             if confirming != nil, selected != oldValue { confirming = nil }
         }
     }
-    public internal(set) var confirming: String?
+    public internal(set) var confirming: GlobalKey?
     public private(set) var openList: String?
     public internal(set) var flow = Flow() {
         didSet {
@@ -203,6 +203,7 @@ public final class SpotsModel {
             log: files.log,
             stats: files.stats
         )
+        self.runs.secrets = files.secrets
         self.runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
         self.runs.partsArrival = { [weak self] id, bring in
             guard let self else { return bring() }
@@ -256,10 +257,11 @@ public final class SpotsModel {
         let previous = loading
         let config = files.config
         let folder = folder
+        let secrets = files.secrets
         let task = Task {
             await previous?.value
             let start = kept
-            let (next, load) = await Self.read(config, folder)
+            let (next, load) = await Self.read(config, folder, secrets)
             self.load = load
             let id = selectedEntry?.id
             reload(patching: nil, to: kept == start ? next : kept)
@@ -270,8 +272,9 @@ public final class SpotsModel {
     }
 
     @concurrent
-    private nonisolated static func read(_ config: ConfigFile, _ folder: SpotsFolder) async -> (KeptConfig, SpotLoad) {
-        (config.readKept(), KeptScan.shared.load(folder))
+    private nonisolated static func read(_ config: ConfigFile, _ folder: SpotsFolder, _ secrets: SecretStore) async -> (KeptConfig, SpotLoad) {
+        _ = try? secrets.read()
+        return (config.readKept(), KeptScan.shared.load(folder))
     }
 
     func reload(patching ids: Set<String>?, to next: KeptConfig) {
@@ -285,7 +288,7 @@ public final class SpotsModel {
         var scan = (try? load.result(enabled: folder.enabled, disabled: folder.disabled, hosted: hosted)) ?? ScanResult(files: [SpotFile(id: "openspot", spots: hosted)], refused: [])
         let faults = load.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
         if !faults.isEmpty { scan.files.append(SpotFile(id: FaultSpot.fileID, spots: faults)) }
-        scan.addSettings(in: files.config, read: config)
+        scan.addSettings(in: files.config, secrets: files.secrets, read: config)
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
         runs.isCareful = config.isCareful
@@ -319,6 +322,10 @@ public final class SpotsModel {
 
     public func reveal(_ id: String) async -> Bool {
         await reload()
+        return showCard(id)
+    }
+
+    func showCard(_ id: String) -> Bool {
         guard let entry = cards.first(where: { $0.id == id }) else { return false }
         closeMenu()
         form = nil
@@ -412,7 +419,7 @@ public final class SpotsModel {
 
     public func panelWillHide() {
         formAsk = nil
-        confirming = nil
+        if confirming != nil { confirming = nil }
         takeHeld([])
         stopRecording()
         closeMenu()

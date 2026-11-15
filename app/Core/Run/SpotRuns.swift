@@ -40,6 +40,7 @@ public final class SpotRuns {
     @ObservationIgnored var clipboardSeen: Int?
     @ObservationIgnored var loadWatch: Task<Void, Never>?
     @ObservationIgnored let loadPause: Duration
+    @ObservationIgnored var loadSeen: (sample: LoadSample, at: Date)?
     @ObservationIgnored private(set) var hasQuit = false
     @ObservationIgnored private let recent: (String) -> [String]
     @ObservationIgnored private let prepare: ([SpotItem], [String]) async -> Void
@@ -76,6 +77,7 @@ public final class SpotRuns {
     @ObservationIgnored private let swift: SwiftProgram
     @ObservationIgnored let environment: [String: String]
     @ObservationIgnored private(set) var settings: [String: [String: String]] = [:]
+    @ObservationIgnored public var secrets: SecretStore?
 
     public func take(settings values: [SpotSetting]) {
         var next: [String: [String: String]] = [:]
@@ -366,7 +368,7 @@ public final class SpotRuns {
             }, nil)
         case .stay, .once:
             let sent = action.sent(input: input)
-            let token = tokens.issue(for: spot, reason: variables[ReadReason.variable])
+            let token = tokens.issue(for: spot, reason: variables[ReadReason.variable], keepsFix: true)
             let process = ScriptProcess(url: swift.runnable(for: spot.url), name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: variables.merging(["OPENSPOT_ID": spot.id]) { given, _ in given }.merging([CallerTokens.variable: token]) { _, own in own }, careful: isCareful ? spot.uses : nil, base: environment)
             track(process, of: spot.id, token: token)
             process.fix = { [tokens] in tokens.fix(of: token) }

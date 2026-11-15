@@ -451,7 +451,7 @@ extension SpotsModel {
             let hasActions = target.flatMap(actionMenu(on:)) != nil
             return panel.hint(escape: escape, stopping: { work(of: $0) != nil }, actions: hasActions)
         }
-        if let soleHint { return soleHint }
+        if let hint = confirmHint ?? soleHint { return hint }
         let keys = target.flatMap { target in
             let onGrid = openList == nil && target.item == nil
             let settings = onGrid && settingsSheet(of: target.entry) != nil ? ["\(Self.openLabel) Settings"] : []
@@ -650,8 +650,11 @@ extension SpotsModel {
         let key = String(form.action.id.dropFirst(Self.secretPrefix.count))
         let spot = form.entry.id
         let value = draft.values[key] ?? ""
+        if !value.isEmpty, value.count < SecretStore.shortest {
+            return host.notify("Openspot didn't keep this secret, because it is shorter than \(SecretStore.shortest) characters. Type the whole value.")
+        }
         do {
-            try write(.settings) { $0.set(setting: key, of: spot, to: value.isEmpty ? nil : value) }
+            try files.secrets.keep(value.isEmpty ? nil : value, key: key, of: spot)
         } catch {
             return host.notify("\(form.action.title) failed. \(Self.reason(error))")
         }

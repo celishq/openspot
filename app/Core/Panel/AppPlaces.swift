@@ -7,6 +7,7 @@ public struct AppPlaces {
     public let trash: (URL) throws -> URL
     public let defaultConfig: URL?
     public let account: AccountStore
+    public let secrets: SecretStore
     public let config: ConfigFile
 
     public init(
@@ -23,6 +24,7 @@ public struct AppPlaces {
         self.trash = trash
         self.defaultConfig = defaultConfig
         account = .standard(environment: environment, home: home)
+        secrets = .standard(environment: environment, home: home)
         config = ConfigFile(url: ConfigFile.standard(environment: environment, home: home).url, disk: disk)
     }
 

@@ -5,6 +5,7 @@ extension SpotsModel {
         let id: String
         let words: String
         let moves: [(from: URL, to: URL)]
+        var secrets: SecretStore.Values = [:]
     }
 
     static let undoKey = ActionKey(name: "z", isCommand: true)
@@ -64,7 +65,8 @@ extension SpotsModel {
         var moves: [(from: URL, to: URL)] = []
         do {
             try folder.remove(command) { url in moves.append((url, try files.trash(url))) }
-            removal = Removal(id: entry.id, words: words, moves: moves)
+            let ids = Set(entries.filter { $0.spot.url == entry.spot.url }.map(\.spot.id) + [entry.id])
+            removal = Removal(id: entry.id, words: words, moves: moves, secrets: try files.secrets.remove { ids.contains($0) })
             files.log.remove(entry.id)
             Task {
                 await reload()
@@ -86,6 +88,7 @@ extension SpotsModel {
             for move in removal.moves.reversed() {
                 try FileManager.default.moveItem(at: move.to, to: move.from)
             }
+            try files.secrets.putBack(removal.secrets)
         } catch {
             host.notify("Openspot cannot put \(removal.words) back, because a file left the Trash. Find it in the Trash, and move it to the spots folder.")
             return true

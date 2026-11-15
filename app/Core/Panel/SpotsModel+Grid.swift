@@ -2,6 +2,24 @@ import Foundation
 
 extension SpotsModel {
     public func press(_ key: GlobalKey) {
+        if confirming != key, confirmWords(of: key) != nil, showCard(key.spot) {
+            confirming = key
+            return
+        }
+        run(key)
+    }
+
+    private func confirmWords(of key: GlobalKey) -> String? {
+        guard case .command(let command) = key.act else { return nil }
+        return sheets[key.spot]?.spot.offers.first { $0.id == command }?.confirm
+    }
+
+    var confirmHint: String? {
+        guard openList == nil, let key = confirming, selectedEntry?.id == key.spot, let words = confirmWords(of: key) else { return nil }
+        return "⏎ \(words)   ⌘⏎ Settings   ⌘K Actions"
+    }
+
+    private func run(_ key: GlobalKey) {
         guard case .command(let command) = key.act else { return float(key.spot) }
         guard let sheet = sheets[key.spot] else { return }
         sheet.pressKey(command)
@@ -115,6 +133,11 @@ extension SpotsModel {
     }
 
     public func run(_ entry: Entry) {
+        if let key = confirming, key.spot == entry.id, entry.item == nil, openList == nil {
+            confirming = nil
+            if isShown { host.dismiss() }
+            return run(key)
+        }
         if let item = entry.item, let list = entries.first(where: { $0.id == entry.spot.id }) {
             if item.records, openList != list.id {
                 pushFirst(list.id, moving: true)
@@ -172,20 +195,17 @@ extension SpotsModel {
         guard assignedKeys.contains(where: { $0.spot == entry.id && $0.act == .command(command) }) else {
             return "⏎ Set key   ⌘⏎ Settings   ⌘K Actions"
         }
-        let offer = entry.spot.offers.first
-        if confirming == entry.id, let confirm = offer?.confirm { return "⏎ \(confirm)   ⌘⏎ Settings   ⌘K Actions" }
-        return "⏎ \(offer?.title ?? command)   ⌘⏎ Settings   ⌘K Actions"
+        return "⏎ \(entry.spot.offers.first?.title ?? command)   ⌘⏎ Settings   ⌘K Actions"
     }
 
     private func runSole(_ command: String, of entry: Entry) {
         if let key = assignedKeys.first(where: { $0.spot == entry.id && $0.act == .command(command) }) {
-            if entry.spot.offers.first?.confirm != nil, confirming != entry.id {
-                confirming = entry.id
+            if confirmWords(of: key) != nil {
+                confirming = key
                 return
             }
-            confirming = nil
             if isShown { host.dismiss() }
-            press(key)
+            run(key)
         } else {
             openSettings(of: entry)
             toggleRecording(id: SpotSettings.keyRun(spot: entry.id, command: command))

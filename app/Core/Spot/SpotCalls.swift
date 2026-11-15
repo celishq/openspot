@@ -5,12 +5,14 @@ struct SpotCalls {
     let folder: URL
     let app: (any RunningApp)?
     let runs: SpotRuns?
+    let secrets: SecretStore
 
     init(_ context: CallContext) {
         environment = context.environment
         folder = context.folder
         app = context.app
         runs = context.runs
+        secrets = context.secrets
     }
 
     func list(core: Bool, form: PrintForm) -> CommandAPI.Work {
@@ -50,9 +52,10 @@ struct SpotCalls {
     }
 
     func remove(_ id: String) -> CommandAPI.Work {
-        CommandAnswer.work { [environment, app] in
+        CommandAnswer.work { [environment, app, secrets] in
             let folder = SpotsFolder.standard(environment: environment, enabled: [], disabled: [])
             let removed = try SpotLock.standard(environment: environment).remove(id, from: folder.url).name
+            _ = try secrets.remove { SpotID($0).isSameFolder(as: SpotID(removed)) }
             await app?.spotsChanged()
             return "Removed \(removed).\n"
         }

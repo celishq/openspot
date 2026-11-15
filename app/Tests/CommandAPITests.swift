@@ -141,6 +141,28 @@ final class CommandAPITests: XCTestCase {
         XCTAssertEqual(get.output, "warm\n")
     }
 
+    func testASecretIsNeverPrintedAndOnlyOpenspotsFormChangesIt() async throws {
+        let spots = folder.appendingPathComponent("spots", isDirectory: true)
+        try TestSpot(header: "title=Weather\n\nfield=token\ntype=secret\n\nfield=key\ntype=secret", body: "echo").write(to: spots.spotFile("weather"))
+        let places = environment.merging(["OPENSPOT_SPOTS": spots.path]) { _, new in new }
+        let spot = places.merging(["OPENSPOT_ID": "weather"]) { _, new in new }
+        try AppPlaces.test(places).secrets.keep("MARKER-7f3c", key: "token", of: "weather")
+
+        let get = try await answer(["setting", "get", "token"], environment: spot)
+        let list = try await answer(["setting", "list"], environment: places)
+        let set = try await answer(["setting", "set", "token", "other"], environment: spot)
+        let unset = try await answer(["setting", "set", "key", "other"], environment: spot)
+
+        XCTAssertEqual(get.output, "•••\n")
+        XCTAssertFalse(list.output.contains("MARKER"), list.output)
+        XCTAssertTrue(list.output.contains("•••"), list.output)
+        XCTAssertEqual(set.code, 1)
+        XCTAssertEqual(set.errors, "Openspot keeps `token` of weather as a secret, so only its own form changes it. Open the Settings of weather, and press Return on its row.\n")
+        XCTAssertEqual(unset.code, 1)
+        XCTAssertEqual(try AppPlaces.test(places).secrets.read(), ["weather": ["token": "MARKER-7f3c"]])
+        XCTAssertNil(ConfigFile.standard(environment: places).read().setting("key", of: "weather"))
+    }
+
     func testASheetOnStdinIsChecked() async throws {
         let answer = try await answer(["check", "--sheet"], input: "title=Hi\n")
 

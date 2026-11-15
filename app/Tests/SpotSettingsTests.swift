@@ -20,7 +20,7 @@ final class SpotSettingsTests: XCTestCase {
 
     private func scan() throws -> ScanResult {
         var scan = try SpotsFolder(url: folder).scan()
-        scan.addSettings(in: file)
+        scan.addSettings(in: file, secrets: SecretStore(file: folder.appendingPathComponent("secrets.json")))
         return scan
     }
 

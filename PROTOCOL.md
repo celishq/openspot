@@ -133,7 +133,8 @@ The header says what a spot is. Openspot reads it without running the spot.
 - A spot with one `button` and its own rows runs the command on Return, and its rows open as its History on `⌘Y`. A
   spot with more `button`s runs them by their hotkeys and from its ⌘K menu. See [The keys of a spot](#the-keys-of-a-spot).
 - `confirm=<words>` on a header `button` makes a press of its card, or its row in the ⌘K menu, ask twice: the first
-  press shows the words, and the second runs the command. A hotkey runs it at once.
+  press shows the words, and the second runs the command. Its hotkey doesn't run it at once: it shows the panel on the
+  spot with the words, and Return, or the hotkey again, runs it.
 
 ```sh
 #!/bin/sh
@@ -184,8 +185,8 @@ printf 'text=done\ntitle=Copied\n'
   of a key that shows twice in a block where only a list repeats, and of a key that the head or a kind doesn't take. A
   row can hold keys of its own, which Openspot skips.
 - Openspot reads `ESC ] 9;4;1;<percent>` as `progress` and `ESC ] 9;<text>` as a toast, and removes other escape codes.
-- A read that prints the same frame of rows or of a card as the one that shows changes nothing, so Openspot skips it.
-  Its toast still shows.
+- A read that prints the same frame as the one that shows, with only a head and rows, changes nothing, so Openspot skips
+  it. Its toast still shows. A frame with another block, or over 256 KB, is drawn again.
 
 ## Blocks
 
@@ -540,6 +541,8 @@ Each call has three parts:
   keyboard layout. A value that isn't a field comes as `value=`.
 - An action or a pick on a row that holds keys of its own, such as `meeting=`, also gets every key of that row on
   stdin. The calls of a form don't.
+- Each process that the spot starts inherits its stdin, with the value of each secret and the keys of the row, unless
+  the spot reads it first or closes it for that process, such as `curl "$url" </dev/null`.
 
 ```ini
 title=Groceries
@@ -932,6 +935,8 @@ on its card, a press of the card with `⌘`, or **Settings** in its ⌘K menu op
 - `type=secret` on a header `field` keeps a value such as a key of a service. Return on its row asks for the value in
   Openspot's own form. Each call gets it only on stdin, as `setting.<key>=<value>`, never in a variable or an argument.
   Settings show only that it is set, and Openspot hides it in the call log, the stats, a toast and a failure line.
+- Openspot keeps a secret in the Keychain, under the spot's id and the field's key, never in the config. Only a
+  `type=secret` field of that spot gets it, and it goes when the spot is removed. See [Trust](#trust).
 
 ```sh
 #!/bin/sh
@@ -946,7 +951,12 @@ on its card, a press of the card with `⌘`, or **Settings** in its ⌘K menu op
 printf 'text=city\ntitle=%s\n' "${OPENSPOT_SETTING_CITY:-Paris}"
 if [ -n "$(value setting.token)" ]; then printf 'text=token\ntitle=Signed in\n'; fi
 ```
-- `openspot setting get <key>` prints the value, or nothing. `openspot setting set <key> [value]` keeps the value, or
+
+- A secret has 8 characters or more. Openspot hides only the exact value, so a part of it or another form of it, such
+  as its base64, still shows.
+- `openspot spot run` in Terminal and `openspot check` pass no settings. A value over 64 KB isn't put in a variable.
+  Two keys that give one variable, such as `api-key` and `api_key`, are a fault of the header.
+- `openspot setting get <key>` prints the value, or nothing, and `•••` for a secret that is set. `openspot setting set <key> [value]` keeps the value, or
   removes it when there's no value. In a terminal, `--spot <id>` names the spot.
 - Keep a choice of the user in a setting. Keep what the spot makes, such as a cache, in `OPENSPOT_DATA`.
 - Openspot keeps some keys for the user, and a `field` can't use them:
@@ -999,6 +1009,8 @@ openspot app quit
   after it happens.
 - Openspot knows which spot makes each call of `openspot` from its own records, not from the variables of the process.
   Only the user's own processes can reach the API.
+- No spot and no Terminal reads a secret (see [Settings](#settings)): `setting get` and `setting list` print `•••` for
+  it, to its own spot too, and `setting set` of it fails. Only Openspot's own form changes it.
 - `uses` names what a spot uses. Openspot doesn't load a spot with an unknown use.
 
 | Use         | The calls that need it                                                                                                                                          |

@@ -106,6 +106,24 @@ final class SoleCommandTests: XCTestCase {
         XCTAssertEqual(model.hint, "⏎ Wipe   ⌘⏎ Settings   ⌘K Actions")
     }
 
+    func testAGlobalKeyOfACommandWithConfirmShowsItsCardAskingAndReturnRunsIt() async throws {
+        try script("wipe", header: "title=Wipe\n\nbutton=wipe\ntitle=Wipe\nconfirm=Press again to wipe")
+        try script("other", header: "title=Other\n\nbutton=other\ntitle=Other")
+        _ = try model.files.config.change { $0.assign(.tap(.option), to: "wipe", act: .command("wipe")) }
+        await model.reload()
+        let key = try XCTUnwrap(model.assignedKeys.first { $0.spot == "wipe" })
+
+        model.press(key)
+
+        XCTAssertEqual(model.selectedEntry?.id, "wipe")
+        XCTAssertEqual(model.hint, "⏎ Press again to wipe   ⌘⏎ Settings   ⌘K Actions")
+        XCTAssertEqual(host.shows, 1)
+        try await wait("the panel") { self.model.isShown }
+        model.runSelected()
+        try await wait("the command") { self.host.confirms == ["Ran wipe"] }
+        XCTAssertEqual(host.dismissals, 1)
+    }
+
     func testACommandWithConfirmAsksForASecondPressInTheMenu() async throws {
         try script("wipe", header: "title=Wipe\non=sheet.open\n\nbutton=wipe\ntitle=Wipe\nconfirm=Press again to wipe\n\nbutton=keep\ntitle=Keep")
         await model.reload()
