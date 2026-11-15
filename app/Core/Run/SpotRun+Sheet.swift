@@ -19,6 +19,7 @@ extension SpotRun {
 
     public func close() {
         guard isOpen else { return }
+        sheetAgain = false
         runs.didClose(self)
         settle()
         for (key, pause) in pauses where key != Self.levelKey {
@@ -118,6 +119,7 @@ extension SpotRun {
         waitingFiles = []
         waitingKeys = []
         readsAgain = false
+        sheetAgain = false
         eventAgain = nil
         calls.forEach(stop)
         link.leave()

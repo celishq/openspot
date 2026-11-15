@@ -28,8 +28,10 @@ final class FakeLink: ScriptLink {
     }
 
     func end(_ call: OpenCall, _ end: ScriptCall.End = .ended) async {
+        let last = call.made.isStopped ? .stopped : end
+        await run?.takeEnd(of: call, last)
         open.removeAll { $0 === call }
-        await run?.close(call, call.made.isStopped ? .stopped : end)
+        run?.finish(call, last)
     }
 
     func arguments() -> [[String]] {

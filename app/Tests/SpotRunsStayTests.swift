@@ -124,6 +124,20 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertEqual(log().count, 1)
     }
 
+    func testAReadOfAStayingScriptIsReadingUntilItsAnswerIsIn() async throws {
+        try staying()
+        let sheet = try sheet()
+        runs.panelOpened()
+
+        sheet.open {}
+        XCTAssertTrue(sheet.isReading)
+        let limit = ContinuousClock.now + .seconds(60)
+        while sheet.isReading, ContinuousClock.now < limit { await Task.yield() }
+
+        XCTAssertFalse(sheet.isReading)
+        XCTAssertEqual(sheet.list.shown.count, 1)
+    }
+
     func testAnActionReachesTheRunningStayingScript() async throws {
         try staying(frame: "button=go\\ntitle=Go\\n\\nrow=a\\ntitle=A\\n")
         let sheet = try sheet()
