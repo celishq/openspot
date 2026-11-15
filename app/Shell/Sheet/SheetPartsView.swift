@@ -130,7 +130,7 @@ struct SheetPartsView: View {
     private func drawn(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         if part.kind == "view" {
             if let viewSource {
-                SpotCustomView(source: viewSource, values: part.values, card: .square, room: frame.rect.size, answers: panel.answers, views: views) { onSet(part, $0) }
+                SpotCustomView(source: viewSource, values: part.values, card: .square, room: frame.rect.size, answers: panel.answered, views: views) { onSet(part, $0) }
                     .equatable()
             }
         } else {

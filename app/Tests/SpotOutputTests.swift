@@ -262,6 +262,17 @@ final class SpotOutputTests: XCTestCase {
         XCTAssertEqual(output.layout?.rows, [["a", "a"]])
     }
 
+    func testABlockThatNamesAKindOfTheAppItselfIsUnreadable() {
+        let output = SpotOutput(text: "gauge=g\nvalue=1\n\nslider=s\nvalue=4\n\nhotkey=k\nvalue=ctrl+k\n")
+
+        XCTAssertEqual(output.parts, [])
+        XCTAssertEqual(output.sheetFaults.filter { $0.hasPrefix("cannot read the block") }, [
+            "cannot read the block that starts: gauge=g",
+            "cannot read the block that starts: slider=s",
+            "cannot read the block that starts: hotkey=k"
+        ])
+    }
+
     func testARowDrawsItsOwnKeys() throws {
         let output = SpotOutput(text: "row=r\ntitle=R\nas=big\nname=Big\n")
 

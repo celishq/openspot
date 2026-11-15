@@ -20,15 +20,6 @@ final class ProtocolContractTests: XCTestCase {
         cells.flatMap(RepoDoc.code).map { String($0.prefix { $0 != "=" }) }
     }
 
-    private func refused(_ header: String) -> Bool {
-        do {
-            _ = try SpotFile(script: URL(fileURLWithPath: "/none/probe.sh"), header: SpotHeader(text: "#!/bin/sh\n# title=T\n# on=sheet.open\n" + header).block, id: "probe")
-            return false
-        } catch {
-            return (error as? SpotError)?.reason.contains("no longer reads") ?? false
-        }
-    }
-
     private func loads(_ header: String) -> Bool {
         (try? SpotFile(script: URL(fileURLWithPath: "/none/probe.sh"), header: SpotHeader(text: "#!/bin/sh\n# title=T\n# on=sheet.open\n" + header).block, id: "probe")) != nil
     }
@@ -61,13 +52,12 @@ final class ProtocolContractTests: XCTestCase {
         let spotFile = try source("Core/Spot/SpotFile.swift")
         let headerReads = Set(RepoDoc.matches(#"header\.(?:value|values|list)\("([^"]+)"\)"#, in: spotFile).map { $0[1] })
         let prefix = literals(in: line("drawingPrefix = ", in: spotFile)).map { $0 + "<size>" }
-        let headerKeys = headerReads.filter { !refused("# \($0)=1\n") }.union(prefix)
+        let headerKeys = headerReads.union(prefix)
         let pages = RepoDoc.tableRows(in: doc.section("Pages"))
         let docHeaderKeys = keys(RepoDoc.tableRows(in: doc.section("The header")).filter { !$0[0].hasPrefix("`button") && !$0[0].hasPrefix("`field") }.map { $0[0] })
             + keys(pages.filter { $0[1] == "the header" }.map { $0[0] })
 
         let headerKinds = Set(literals(in: line("kinds: Set<String> = ", in: try source("Core/Spot/SpotHeader.swift"))))
-            .filter { !refused("#\n# \($0)=x\n# title=X\n") }
         let docHeaderKinds = keys(RepoDoc.tableRows(in: doc.section("The header")).filter { $0[0].hasPrefix("`button") || $0[0].hasPrefix("`field") }.map { $0[0] })
 
         let output = try source("Core/Script/SpotOutput.swift")

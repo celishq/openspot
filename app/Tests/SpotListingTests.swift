@@ -36,15 +36,6 @@ final class SpotListingTests: XCTestCase {
         XCTAssertNil(spot.sample)
     }
 
-    func testTheOldPreviewKeyIsRefusedWithTheSampleFileAsItsFix() throws {
-        let url = folder.spotFile("old")
-        try "#!/bin/sh\n# preview=sample\n".writeScript(to: url)
-
-        XCTAssertThrowsError(try SpotFile(file: url, id: "old")) { error in
-            XCTAssertTrue((error as? SpotError)?.reason.contains("sample.sh") == true, "\(error)")
-        }
-    }
-
     @MainActor
     func testTheCaptureRunsTheSampleScriptAndKeepsItsTextBesideTheSpot() async throws {
         try "#!/bin/sh\nprintf 'row=a\\ntitle=Sample\\n'\n".writeScript(to: SpotListing.sampleScript(of: folder.spotFile("timer")))

@@ -192,17 +192,8 @@ public struct SpotsFolder: Sendable {
         }
     }
 
-    static func wrapped(_ path: String, into name: String? = nil) -> String {
-        let parts = path.split(separator: "/", maxSplits: 1).map(String.init)
-        guard let first = parts.first, (first as NSString).pathExtension != SpotPackage.fileExtension else { return path }
-        if parts.count > 1 { return SpotID(first).folderName + "/" + parts[1] }
-        guard first.contains(".") || name != nil else { return SpotID(first).folderName }
-        let stem = name ?? Self.stem(of: first)
-        let file = switch first {
-        case stem + "." + SpotListing.readmeExtension: SpotListing.readmeName
-        default: first
-        }
-        return SpotID(stem).folderName + "/" + file
+    private static func wrapped(_ file: String, into name: String) -> String {
+        SpotID(name).folderName + "/" + (file == name + "." + SpotListing.readmeExtension ? SpotListing.readmeName : file)
     }
 
     private static func stem(of name: String) -> String {

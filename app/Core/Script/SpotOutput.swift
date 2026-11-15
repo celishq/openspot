@@ -37,15 +37,14 @@ public struct SpotOutput: Equatable, Sendable {
     private static let button = "button"
     private static let repeatKind = "repeat"
     private static let optionKind = "option"
-    private static let retiredKinds: Set<String> = [retired]
-    private static let retired = "retired"
-    private static let foldedKinds: Set<String> = ["gauge", "slider", "hotkey"]
+    private static let unread = "unread"
+    private static let ownKinds: Set<String> = ["gauge", "slider", "hotkey"]
     private static let rowsArea = "rows"
     private static let formKinds: Set<String> = ["field", "choice", "switch", "slider"]
     private static let valueKinds: Set<String> = ["text", "number", "gauge", "graph", "switch", "slider"]
 
     static func isKind(_ key: String) -> Bool {
-        key == "row" || key == repeatKind || key == optionKind || retiredKinds.contains(key) || SpotPart.kinds.contains(key)
+        key == "row" || key == repeatKind || key == optionKind || key == unread || SpotPart.kinds.contains(key)
     }
 
     private static let headKeys: Set<String> = ["grid", "main", "title", "detail", "active", "recents", "toast", "link", "progress", "select", "push", "push.spot", "push.title", "push.replace", "pop", "end", "call", "search"]
@@ -78,10 +77,6 @@ public struct SpotOutput: Equatable, Sendable {
         self.init(blocks: blocks.map(Self.drawn), checks: false)
     }
 
-    var unreadable: [String] {
-        errors.filter { line in !Self.foldedKinds.contains(String(line.prefix { $0 != "=" })) }
-    }
-
     static func reading(_ text: String) async -> SpotOutput {
         await Task.detached(priority: .userInitiated) { SpotOutput(text: text) }.value
     }
@@ -92,7 +87,7 @@ public struct SpotOutput: Equatable, Sendable {
             let rest = block.fields.dropFirst().filter { !($0.key == "look" && $0.value == "tick") }
             return TextBlock(fields: [.init(key: kind, value: first.value)] + rest + extra, firstLine: block.firstLine, children: block.children)
         }
-        if foldedKinds.contains(first.key) { return renamed(retired) }
+        if ownKinds.contains(first.key) { return renamed(unread) }
         switch (first.key, block.value("type")) {
         case ("graph", _) where block.values("value").count == 1 && block.value("max") == nil: return renamed("gauge")
         case ("field", "slider"): return renamed("slider")
@@ -117,7 +112,7 @@ public struct SpotOutput: Equatable, Sendable {
         for block in blocks {
             let kind = block.fields.first?.key
             if kind == Self.repeatKind { continue }
-            if let kind, Self.retiredKinds.contains(kind) {
+            if kind == Self.unread {
                 errors.append(block.firstLine)
             } else if kind == Self.button, let id = block.value(Self.button), drawn?.areas[id] == nil, !carded.contains(id) {
                 take(action: id, block)
@@ -251,7 +246,7 @@ public struct SpotOutput: Equatable, Sendable {
     }
 
     public var sheetFaults: [String] {
-        (parts.isEmpty && perLine == nil ? ["the sheet has no parts"] : []) + unreadable.map { "cannot read the block that starts: \($0)" } + partFaults
+        (parts.isEmpty && perLine == nil ? ["the sheet has no parts"] : []) + errors.map { "cannot read the block that starts: \($0)" } + partFaults
     }
 
     public var kind: SpotKind {

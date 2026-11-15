@@ -37,20 +37,17 @@ public struct SpotPackage: Equatable, Sendable {
             guard taken.insert(Self.folded(file.path)).inserted else { throw SpotError.fault("This file holds \(file.path) twice.") }
             total += file.contents.count
         }
-        guard total <= Self.sizeLimit else { throw Self.tooLarge() }
+        guard total <= Self.sizeLimit else { throw Self.tooLarge(Self.sizeLimit) }
         for file in files where Self.parents(of: file.path).contains(where: { taken.contains(Self.folded($0)) }) {
             throw SpotError.fault("This file holds \(file.path) twice.")
         }
         self.files = files
     }
 
-    public init(contentsOf url: URL, limit: Int? = nil) throws {
-        let limit = min(limit ?? Self.sizeLimit, Self.sizeLimit)
+    public init(contentsOf url: URL) throws {
         if Self.type(of: url) == .typeDirectory {
             var total = 0
-            let files = try Self.files(at: url, path: url.lastPathComponent, total: &total)
-            guard total <= limit else { throw Self.tooLarge(limit) }
-            try self.init(files: files)
+            try self.init(files: try Self.files(at: url, path: url.lastPathComponent, total: &total, limit: Self.sizeLimit))
             return
         }
         let head = (try? FileHandle(forReadingFrom: url)).flatMap { try? $0.read(upToCount: 4) }
@@ -59,7 +56,7 @@ public struct SpotPackage: Equatable, Sendable {
         guard names.allSatisfy(Self.isSafe(entry:)) else { throw SpotError.fault("This file holds a path that leaves its folder, so Openspot does not open it.") }
         let total = try Self.run("/usr/bin/zipinfo", ["-t", url.path]).components(separatedBy: " bytes uncompressed").first?
             .split(separator: " ").last.flatMap { Int($0) } ?? .max
-        guard total <= limit else { throw Self.tooLarge(limit) }
+        guard total <= Self.sizeLimit else { throw Self.tooLarge(Self.sizeLimit) }
         let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-open-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: place) }
         _ = try Self.run("/usr/bin/ditto", ["-x", "-k", url.path, place.path])
@@ -78,15 +75,14 @@ public struct SpotPackage: Equatable, Sendable {
         var total = 0
         var files: [File] = []
         for root in Self.roots(of: spot, in: scan) {
-            files += try Self.files(at: root.url, path: root.path, total: &total)
+            files += try Self.files(at: root.url, path: root.path, total: &total, limit: Self.shareLimit)
         }
-        guard total <= Self.shareLimit else { throw Self.tooLarge(Self.shareLimit) }
         try self.init(files: files)
     }
 
     init(paths: [String], in folder: URL) throws {
         var total = 0
-        try self.init(files: try paths.flatMap { try Self.files(at: folder.appendingPathComponent($0), path: $0, total: &total) })
+        try self.init(files: try paths.flatMap { try Self.files(at: folder.appendingPathComponent($0), path: $0, total: &total, limit: Self.sizeLimit) })
     }
 
     public var needsCompile: Bool {
@@ -260,7 +256,7 @@ public struct SpotPackage: Equatable, Sendable {
         }
     }
 
-    private static func tooLarge(_ limit: Int = sizeLimit) -> SpotError {
+    private static func tooLarge(_ limit: Int) -> SpotError {
         .fault("This spot is over the \(limit / 1_000_000) MB limit.")
     }
 
@@ -281,7 +277,7 @@ public struct SpotPackage: Equatable, Sendable {
         return roots
     }
 
-    private static func files(at url: URL, path: String, total: inout Int) throws -> [File] {
+    private static func files(at url: URL, path: String, total: inout Int, limit: Int) throws -> [File] {
         var isFolder: ObjCBool = false
         guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isFolder) else { return [] }
         if isFolder.boolValue {
@@ -289,10 +285,10 @@ public struct SpotPackage: Equatable, Sendable {
             let names = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
                 .map(\.lastPathComponent)
                 .sorted()
-            return try names.flatMap { try files(at: url.appendingPathComponent($0), path: "\(path)/\($0)", total: &total) }
+            return try names.flatMap { try files(at: url.appendingPathComponent($0), path: "\(path)/\($0)", total: &total, limit: limit) }
         }
         total += (try FileManager.default.attributesOfItem(atPath: url.resolvingSymlinksInPath().path)[.size] as? Int) ?? 0
-        guard total <= sizeLimit else { throw tooLarge() }
+        guard total <= limit else { throw tooLarge(limit) }
         return [File(path: path, isExecutable: FileManager.default.isExecutableFile(atPath: url.path), contents: try Data(contentsOf: url))]
     }
 

@@ -48,19 +48,20 @@ final class SheetPartsTests: XCTestCase {
         try XCTUnwrap(SheetParts(output: SpotOutput(text: text)))
     }
 
-    func testThePartsCountOneAnswerForEachChangeEvenAnAnswerEqualToTheLast() throws {
+    func testThePartsMarkTheAnswerToEachChangeAndAnEqualPollChangesNothing() throws {
         var parts = try panel(lights)
-        let first = parts.answers
+        let first = parts
 
         parts.take(SpotOutput(text: lights), answering: parts.generation)
-        let polled = parts
+        XCTAssertEqual(parts, first)
+
         parts.set("90", of: "brightness")
         parts.take(SpotOutput(text: lights), answering: parts.generation)
-        parts.take(SpotOutput(text: lights), answering: parts.generation)
+        let answered = parts.answered
         parts.take(SpotOutput(text: lights), answering: parts.generation - 1)
 
-        XCTAssertEqual(polled.answers, first)
-        XCTAssertEqual(parts.answers, first + 1)
+        XCTAssertNotEqual(answered, first.answered)
+        XCTAssertEqual(parts.answered, answered)
     }
 
     func testThePartsKeepTheTimeOfTheLastChangeOfEachPictureWhenTheyArrive() throws {
@@ -256,7 +257,7 @@ final class SheetPartsTests: XCTestCase {
         let action = SpotOutput(text: "text=t\n\nbutton=b\ntitle=B\nshortcut=ctrl+k\n\nbutton=c\nicon=trash\n\nrow=r\nshortcut=⌃⌥K\n")
 
         XCTAssertEqual(action.actions, [])
-        XCTAssertEqual(action.unreadable, [])
+        XCTAssertEqual(action.errors, [])
         XCTAssertEqual(action.sheetFaults, [key, "the button c needs a title"])
         XCTAssertEqual(SpotOutput(text: "grid=b\n\nbutton=b\ntitle=B\nshortcut=ctrl+k\n").partFaults, [key])
     }

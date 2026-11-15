@@ -16,8 +16,7 @@ public struct SheetParts: Equatable, Sendable {
 
     public private(set) var parts: [SpotPart]
     public private(set) var generation = 0
-    public private(set) var answers = 0
-    private var answered = 0
+    public private(set) var answered = 0
     public private(set) var layout: SheetLayout?
     public private(set) var placement: SheetPlacement
     public private(set) var pictureTimes: [String: Double]
@@ -200,10 +199,7 @@ public struct SheetParts: Equatable, Sendable {
         if let id, let kept, let index = parts.firstIndex(where: { $0.id == id }) { parts[index].set(kept) }
         pictureTimes = Self.pictureTimes(of: parts)
         place()
-        if answered != generation {
-            answers += 1
-            answered = generation
-        }
+        answered = generation
         return true
     }
 }
