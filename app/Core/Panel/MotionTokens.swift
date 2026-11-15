@@ -22,7 +22,7 @@ public enum MotionTokens {
     public static let liftedScale = 1.05
     public static let focusedScale = 1.04
     public static let pushedScale = 0.4
-    public static let stepFadeScale = 0.3
+    public static let stepFadeWidth = 0.3
     public static let pressedGlass = 1.5
     public static let menuStartScale = 0.9
     public static let hiddenOpacity = 0.001

@@ -89,7 +89,8 @@ extension SpotsModel {
         return true
     }
 
-    private func show(_ page: FlowSheet, moving: Bool) {
+    func show(_ page: FlowSheet, moving: Bool) {
+        guard !(moving && isStepping) else { return }
         guard let sheet = sheets[page.spot] else {
             flow.remove(spot: page.spot)
             if let current = flow.current { show(current, moving: moving) } else { closeList(moving: moving) }

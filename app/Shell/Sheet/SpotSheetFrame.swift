@@ -66,11 +66,12 @@ private struct PageFit: ViewModifier, @preconcurrency Animatable {
 
     func body(content: Content) -> some View {
         let rect = isFitting ? rect : natural
-        let scale = min(rect.width / max(natural.width, 1), rect.height / max(natural.height, 1), 1)
-        let shown = min(max((scale - MotionTokens.stepFadeScale) / (1 - MotionTokens.stepFadeScale), MotionTokens.hiddenOpacity), 1)
+        let scale = min(rect.height / max(natural.height, 1), 1)
+        let width = min(rect.width / max(natural.width, 1), 1)
+        let shown = min(max((width - MotionTokens.stepFadeWidth) / (1 - MotionTokens.stepFadeWidth), MotionTokens.hiddenOpacity), 1)
         content
-            .scaleEffect(scale, anchor: UnitPoint(x: natural.midX / width, y: natural.midY / SpotTokens.panelHeight))
-            .offset(x: rect.midX - natural.midX, y: rect.midY - natural.midY)
+            .scaleEffect(scale, anchor: UnitPoint(x: natural.midX / self.width, y: natural.minY / SpotTokens.panelHeight))
+            .offset(x: rect.midX - natural.midX, y: rect.minY - natural.minY)
             .opacity(shown)
     }
 }

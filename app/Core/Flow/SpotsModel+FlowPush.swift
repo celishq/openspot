@@ -24,6 +24,11 @@ extension SpotsModel {
         guard waitingPush else { return }
         waitingPush = false
         showEdges()
+        showQueued()
+    }
+
+    var isStepping: Bool {
+        waitingPush || flowEdges.from != nil
     }
 
     func showEdges() {
@@ -34,6 +39,7 @@ extension SpotsModel {
 
     private func step(_ swap: () -> SpotRun?) {
         var loading: SpotRun?
+        let target = flow
         change(nil) {
             standEdges()
             loading = swap()
@@ -42,15 +48,21 @@ extension SpotsModel {
         let move = { [weak self] in
             DispatchQueue.main.async { [weak self] in
                 guard let self, step == edgeStep else { return }
-                change(.flow, { moveEdges() }) { [weak self] in self?.settleEdges(step) }
+                change(.flow, { moveEdges(to: target) }) { [weak self] in self?.settleEdges(step) }
             }
         }
         if let loading { loading.holdPageMotion(start: move) } else { move() }
     }
 
     private func settleEdges(_ step: Int) {
-        guard step == edgeStep, flowEdges.settled != flowEdges else { return }
-        change(nil) { flowEdges = flowEdges.settled }
+        guard step == edgeStep else { return }
+        if flowEdges.settled != flowEdges { change(nil) { flowEdges = flowEdges.settled } }
+        showQueued()
+    }
+
+    private func showQueued() {
+        guard let current = flow.current, current != flowEdges.shown, openList != nil else { return }
+        show(current, moving: isShown)
     }
 
     private func standEdges() {
@@ -60,8 +72,8 @@ extension SpotsModel {
         flowEdges = flowEdges.standing(at: rect, holding: page, in: flow, title: title(of:))
     }
 
-    private func moveEdges() {
-        flowEdges = flowEdges.moved(to: FlowEdges(flow: flow, title: title(of:)))
+    private func moveEdges(to target: Flow) {
+        flowEdges = flowEdges.moved(to: FlowEdges(flow: target, title: title(of:)))
     }
 
     private var shownSheetRect: CGRect? {

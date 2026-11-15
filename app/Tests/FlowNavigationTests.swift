@@ -145,17 +145,24 @@ final class FlowNavigationTests: PanelCase {
         XCTAssertEqual(host.edgeChanges.first { $0.motion == .flow }?.rows, ["Detail a"])
     }
 
-    func testAStepCutMidMotionHoldsThePageItCutAndEndsOnTheNewestPage() async throws {
+    func testPressesDuringAStepWaitForItThenMakeOneStepToTheNewestPage() async throws {
         try await openList()
         host.heldEnds = []
         XCTAssertTrue(model.push(FlowSheet(spot: "list", page: "a")))
         try await waitFor("the step to move") { self.model.flowEdges.isMoving }
 
         XCTAssertTrue(model.handleKey(back))
+        XCTAssertTrue(model.handleKey(forward))
+        XCTAssertTrue(model.handleKey(back))
 
-        XCTAssertNil(model.sheets["list"]?.page)
-        XCTAssertEqual(model.flowEdges.leavingPage?.page, "a")
-        XCTAssertFalse(model.flowEdges.isMoving)
+        XCTAssertEqual(model.sheets["list"]?.page, "a")
+        let ends = host.heldEnds ?? []
+        host.heldEnds = nil
+        host.edgeChanges = []
+        ends.forEach { $0() }
+        try await waitFor("one step to the newest page") { self.model.sheets["list"]?.page == nil && self.model.flowEdges.from == nil }
+        XCTAssertEqual(model.flowEdges.titles(on: .ahead), ["A"])
+        XCTAssertEqual(host.edgeChanges.filter { $0.motion == .flow }.count, 1)
     }
 
     func testBackPutsThePageItLeavesInABarAheadThatAClickGoesForwardTo() async throws {
