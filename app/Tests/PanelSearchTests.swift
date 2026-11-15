@@ -65,7 +65,7 @@ final class PanelSearchTests: PanelCase {
 
         SearchRanks.$meter.withValue(ranks) {
             model.query = "bet"
-            XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+            XCTAssertTrue(model.handleSearchKey(ActionKey(name: "return")))
         }
 
         XCTAssertEqual(shown, ["beta"])
@@ -74,18 +74,22 @@ final class PanelSearchTests: PanelCase {
         XCTAssertEqual(ranks.count, 1)
     }
 
-    func testAKeyThatTypesLeavesTheSearchInFlightToItsTask() async throws {
+    func testAKeyWithNoCommandActsOnTheSpotsOfTheNewText() async throws {
         try await showGrid()
-        let ranks = SearchRanks()
 
-        SearchRanks.$meter.withValue(ranks) {
-            model.query = "al"
-            XCTAssertFalse(model.handleKey(ActionKey(name: "p")))
-        }
+        model.query = "bet"
+        _ = model.handleKey(ActionKey(name: "\t"))
 
-        XCTAssertEqual(ranks.countOnMain, 0)
-        try await wait("the found spots") { self.shown == ["alpha"] }
-        XCTAssertEqual(ranks.countOnMain, 0)
+        XCTAssertEqual(shown, ["beta"])
+    }
+
+    func testAClickRunsTheCardThatThePersonSawWhileANewerTextIsStillSearched() async throws {
+        try await showGrid()
+
+        model.query = "bet"
+        model.tap("alpha")
+
+        XCTAssertEqual(host.dismissals, 1)
     }
 
     func testClearingTheTextShowsTheGridAtOnceAndDropsTheSearchInFlight() async throws {

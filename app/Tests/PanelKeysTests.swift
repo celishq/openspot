@@ -91,15 +91,26 @@ final class PanelKeysTests: PanelCase {
         try await showGrid()
         XCTAssertEqual(model.selected, 0)
 
-        XCTAssertTrue(model.handleKey(right))
+        XCTAssertTrue(model.handleSearchKey(right))
         XCTAssertEqual(model.selected, 1)
-        XCTAssertTrue(model.handleKey(left))
+        XCTAssertTrue(model.handleSearchKey(left))
         XCTAssertEqual(model.selected, 0)
-        XCTAssertTrue(model.handleKey(down))
-        XCTAssertTrue(model.handleKey(up))
+        XCTAssertTrue(model.handleSearchKey(down))
+        XCTAssertTrue(model.handleSearchKey(up))
 
-        XCTAssertTrue(model.handleKey(enter))
+        XCTAssertTrue(model.handleSearchKey(enter))
         XCTAssertEqual(host.dismissals, 1)
+    }
+
+    func testReturnAndTheArrowsStayWithAFieldThatIsNotTheSearchField() async throws {
+        try await showGrid()
+
+        XCTAssertFalse(model.handleKey(enter))
+        XCTAssertFalse(model.handleKey(right))
+        XCTAssertFalse(model.handleKey(down))
+
+        XCTAssertEqual(model.selected, 0)
+        XCTAssertEqual(host.dismissals, 0)
     }
 
     func testWhileASearchIsTypedOnTheGridTheSideArrowsStayInTheText() async throws {
@@ -107,9 +118,9 @@ final class PanelKeysTests: PanelCase {
         model.query = "a"
         model.landSearch()
 
-        XCTAssertFalse(model.handleKey(left))
-        XCTAssertFalse(model.handleKey(right))
-        XCTAssertTrue(model.handleKey(down))
+        XCTAssertFalse(model.handleSearchKey(left))
+        XCTAssertFalse(model.handleSearchKey(right))
+        XCTAssertTrue(model.handleSearchKey(down))
     }
 
     func testInASheetOfRowsTheArrowsMoveByLinesAndReturnPicksTheRow() async throws {
@@ -120,14 +131,15 @@ final class PanelKeysTests: PanelCase {
         model.press("fruit")
         try await wait("the rows") { self.model.openItems?.shown.count == 3 }
 
-        XCTAssertTrue(model.handleKey(down))
+        XCTAssertFalse(model.handleKey(down))
+        XCTAssertTrue(model.handleSearchKey(down))
         XCTAssertEqual(model.openItems?.selectedItem?.run, "b")
-        XCTAssertTrue(model.handleKey(ActionKey(name: "down", isCommand: true)))
+        XCTAssertTrue(model.handleSearchKey(ActionKey(name: "down", isCommand: true)))
         XCTAssertEqual(model.openItems?.selectedItem?.run, "c")
-        XCTAssertTrue(model.handleKey(ActionKey(name: "up", isCommand: true)))
+        XCTAssertTrue(model.handleSearchKey(ActionKey(name: "up", isCommand: true)))
         XCTAssertEqual(model.openItems?.selectedItem?.run, "a")
-        XCTAssertFalse(model.handleKey(left))
-        XCTAssertFalse(model.handleKey(right))
+        XCTAssertFalse(model.handleSearchKey(left))
+        XCTAssertFalse(model.handleSearchKey(right))
         XCTAssertFalse(model.handleKey(tab))
         XCTAssertFalse(model.handleKey(history))
         XCTAssertFalse(model.handleKey(settings))
@@ -136,7 +148,8 @@ final class PanelKeysTests: PanelCase {
     func testReturnInASheetOfRowsRunsTheSelectedRow() async throws {
         try await openList()
 
-        XCTAssertTrue(model.handleKey(enter))
+        XCTAssertFalse(model.handleKey(enter))
+        XCTAssertTrue(model.handleSearchKey(enter))
 
         try await wait("the page") { self.titles == ["Detail a"] }
     }
@@ -162,6 +175,8 @@ final class PanelKeysTests: PanelCase {
         try await openInfo()
 
         XCTAssertFalse(model.handleKey(enter))
+        XCTAssertFalse(model.handleSearchKey(enter))
+        XCTAssertFalse(model.handleSearchKey(down))
         XCTAssertFalse(model.handleKey(tab))
         XCTAssertFalse(model.handleKey(left))
         XCTAssertFalse(model.handleKey(settings))
@@ -225,7 +240,7 @@ final class PanelKeysTests: PanelCase {
         XCTAssertTrue(model.handleKey(settings))
         let sheet = SpotSettings.sheetID(of: "draw")
         try await wait("its rows") { self.model.openItems?.shown.map(\.run) == ["float:draw", "menubar:draw"] }
-        XCTAssertTrue(model.handleKey(enter))
+        XCTAssertTrue(model.handleSearchKey(enter))
         XCTAssertEqual(model.recording, "float:draw")
         XCTAssertEqual(model.hint, "Esc Cancel")
 

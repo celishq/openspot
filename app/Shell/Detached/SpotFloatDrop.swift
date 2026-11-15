@@ -9,11 +9,19 @@ struct SpotFloatDrop: DropDelegate {
     @Binding var target: String?
 
     func validateDrop(info: DropInfo) -> Bool {
-        model.acceptsDrop(SpotGridDrop.paths, on: id, in: place)
+        model.followDrag()
+        return !model.dragPaths.isEmpty
     }
 
     func dropEntered(info: DropInfo) {
-        if model.acceptsDrop(SpotGridDrop.paths, on: id, in: place) { target = id }
+        _ = dropUpdated(info: info)
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        let takes = model.acceptsDrop(model.dragPaths, on: id, in: place)
+        let next = takes ? id : target == id ? nil : target
+        if target != next { target = next }
+        return DropProposal(operation: takes ? .copy : .forbidden)
     }
 
     func dropExited(info: DropInfo) {

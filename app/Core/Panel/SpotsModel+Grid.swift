@@ -38,10 +38,11 @@ extension SpotsModel {
     }
 
     public func tap(_ id: String, opening: Bool = false) {
-        landSearch()
         guard !menuOwnsPointer, let position = visible.firstIndex(where: { $0.id == id }) else { return }
         selected = position
-        if !opening || !openSelectedSettings() { runSelected() }
+        if opening, openSelectedSettings() { return }
+        guard !isEditing else { return }
+        if openSheetID == nil { run(seen: visible[position]) } else { runSelectedItem() }
     }
 
     public func setLevel(_ id: String, to value: Double) {
@@ -60,6 +61,10 @@ extension SpotsModel {
             return
         }
         guard let entry = selectedEntry else { return }
+        run(seen: entry)
+    }
+
+    private func run(seen entry: Entry) {
         if entry.isAnswer, let sheet = sheets[entry.spot.id], sheet.isAnswering {
             sheet.afterAnswers { [weak self] in
                 guard let self, let next = selectedEntry, next.isAnswer, next.spot.id == entry.spot.id else { return }

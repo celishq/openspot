@@ -4,15 +4,8 @@ import Observation
 extension SpotsModel {
     public func acceptsDrop(_ paths: [String], on id: String, in place: SheetPlace = .panel) -> Bool {
         let isOpenToDrops = place == .panel ? openSheetID == nil : runs.floating.contains(id)
-        guard isOpenToDrops, !SpotPackage.isFile(paths), let spot = sheets[id]?.spot else { return false }
-        guard let files = dragged(paths) else { return spot.takesDrops }
-        return spot.accepts(files)
-    }
-
-    private func dragged(_ paths: [String]) -> FileKinds? {
-        if runs.dragged.paths == paths { return runs.dragged }
-        if readPaths != paths { read(paths) }
-        return nil
+        guard isOpenToDrops, !paths.isEmpty, runs.dragged.paths == paths, let spot = sheets[id]?.spot else { return false }
+        return spot.accepts(runs.dragged)
     }
 
     private func read(_ paths: [String]) {
@@ -73,7 +66,7 @@ extension SpotsModel {
     }
 
     public func drop(_ paths: [String], on id: String, in place: SheetPlace = .panel) -> Bool {
-        guard acceptsDrop(paths, on: id, in: place), sheets[id]?.drop(paths, files: dragged(paths)) == true else { return false }
+        guard acceptsDrop(paths, on: id, in: place), sheets[id]?.drop(paths, files: runs.dragged) == true else { return false }
         guard place == .panel else { return true }
         endDrag()
         guard entry(id)?.kind == .list else {
@@ -112,10 +105,11 @@ extension SpotsModel {
         endReview()
         let folder = folder.url
         let lock = SpotLock.standard(environment: files.environment, home: files.home)
+        let wasShown = isShown
         reviewRead?.cancel()
         reviewRead = Task { [weak self] in
             let review = await Self.review(url, folder, lock)
-            guard !Task.isCancelled, let self else { return }
+            guard !Task.isCancelled, let self, isShown == wasShown, flow.current == nil else { return }
             switch review {
             case .success(let review):
                 show(review)
@@ -133,8 +127,11 @@ extension SpotsModel {
 
     @discardableResult
     public func reviewCore(_ id: String) async -> Bool {
+        let wasShown = isShown
+        let open = flow.current
         do {
             guard let review = try await Self.review(core: id, in: folder).get() else { return false }
+            guard isShown == wasShown, flow.current == open else { return true }
             closeSheet(moving: isShown)
             show(review)
         } catch {

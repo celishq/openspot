@@ -108,10 +108,11 @@ struct SpotFieldView: View {
             SpotSearchText(model: model, title: "\(SearchPrompt.verb) \(isOpen ? sheetWord : SearchPrompt.grid)")
                 .textFieldStyle(.plain)
                 .focused($isFocused)
-                .onSubmit { _ = model.handleKey(ActionKey(name: "return")) }
+                .onSubmit { _ = model.handleSearchKey(ActionKey(name: "return")) }
                 .onKeyPress(keys: [.downArrow, .upArrow, .leftArrow, .rightArrow]) { press in
+                    if (NSApp.keyWindow?.firstResponder as? NSTextView)?.hasMarkedText() == true { return .ignored }
                     let name = press.key == .downArrow ? "down" : press.key == .upArrow ? "up" : press.key == .leftArrow ? "left" : "right"
-                    return model.handleKey(ActionKey(name: name, isCommand: press.modifiers.contains(.command))) ? .handled : .ignored
+                    return model.handleSearchKey(ActionKey(name: name, isCommand: press.modifiers.contains(.command))) ? .handled : .ignored
                 }
     }
 

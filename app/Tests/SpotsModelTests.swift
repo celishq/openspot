@@ -1004,7 +1004,8 @@ final class SpotsModelTests: XCTestCase {
         )
         try await wait("the rows") { model.openItems?.shown.count == 2 }
 
-        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+        XCTAssertFalse(model.handleKey(ActionKey(name: "down")))
+        XCTAssertTrue(model.handleSearchKey(ActionKey(name: "down")))
         XCTAssertEqual(model.openItems?.selectedItem?.run, "b")
         XCTAssertNil(model.openParts?.selectedPart)
         XCTAssertTrue(model.handleKey(ActionKey(name: "down")))

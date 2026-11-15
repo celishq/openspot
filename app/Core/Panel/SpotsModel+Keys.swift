@@ -7,11 +7,19 @@ extension SpotsModel {
         if next != mode { mode = next }
     }
 
-    private static let actNames: Set<String> = ["return", "escape", "up", "down", "left", "right"]
-
     public func handleKey(_ key: ActionKey) -> Bool {
-        if key.isCommand || Self.actNames.contains(key.name) { landSearch() }
-        for row in keyRows(of: mode) where row.takes(key) {
+        landSearch()
+        return take(key, in: keyRows(of: mode))
+    }
+
+    public func handleSearchKey(_ key: ActionKey) -> Bool {
+        guard mode == .sheet || mode == .grid, showsSearch, openParts?.selectedPart == nil else { return false }
+        landSearch()
+        return take(key, in: searchRows)
+    }
+
+    private func take(_ key: ActionKey, in rows: [KeyRow]) -> Bool {
+        for row in rows where row.takes(key) {
             if let handled = row.act(key) { return handled }
         }
         return false
@@ -19,7 +27,7 @@ extension SpotsModel {
 
     public func pressHint(_ label: String) {
         guard let key = ActionKey(label: label) else { return }
-        _ = handleKey(key)
+        if !handleKey(key) { _ = handleSearchKey(key) }
     }
 
     func keyRows(of mode: PanelMode) -> [KeyRow] {
@@ -265,8 +273,11 @@ extension SpotsModel {
             .any { [self] key in target.flatMap { runAction(with: key, on: $0) } },
             .any { [self] key in openSheet(on: key) ? true : nil },
         ]
-        guard showsSearch, parts?.selectedPart == nil else { return rows }
-        return rows + [
+        return rows
+    }
+
+    private var searchRows: [KeyRow] {
+        [
             KeyRow("return", shift: nil) { [self] _ in
                 runSelected()
                 return true

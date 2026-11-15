@@ -177,8 +177,13 @@ final class SpotFloatTests: XCTestCase {
         let files = ["a.png", "b.txt", "c.spot"].map { folder.appendingPathComponent($0).path }
         try files.forEach { try Data().write(to: URL(fileURLWithPath: $0)) }
 
-        XCTAssertTrue(model.acceptsDrop([files[0]], on: "shelf", in: .float))
+        host.draggedPaths = [files[2]]
+        model.followDrag()
         XCTAssertFalse(model.acceptsDrop([files[2]], on: "shelf", in: .float))
+        host.draggedPaths = Array(files.prefix(2))
+        model.followDrag()
+        XCTAssertFalse(model.acceptsDrop(Array(files.prefix(2)), on: "shelf", in: .float))
+        try await wait("the kinds of the dragged files") { self.model.acceptsDrop(Array(files.prefix(2)), on: "shelf", in: .float) }
         XCTAssertEqual(model.dropWords(Array(files.prefix(2)), on: "shelf"), "Add 2 files")
         XCTAssertTrue(model.drop(Array(files.prefix(2)), on: "shelf", in: .float))
 

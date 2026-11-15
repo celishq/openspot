@@ -63,11 +63,14 @@ extension SpotsModel {
         let words = count > 1 ? "\(count) widgets" : command.name
         let id = entry.id
         let folder = folder
+        removal = nil
+        removals += 1
+        let turn = removals
         let trash = files.trash
         let log = files.log
         Task {
             let (moves, failure) = await Self.discard(command, in: folder, trash: trash, log: log)
-            removal = failure == nil || !moves.isEmpty ? Removal(id: id, words: words, moves: moves) : nil
+            if turn == removals { removal = failure == nil || !moves.isEmpty ? Removal(id: id, words: words, moves: moves) : nil }
             await reload()
             if let failure {
                 host.notify("\(command.name) was not removed. \(failure)")
