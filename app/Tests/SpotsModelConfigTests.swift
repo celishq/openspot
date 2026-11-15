@@ -20,14 +20,14 @@ final class SpotsModelConfigTests: PanelCase {
         model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2, prepare: { await host.prepare($0, glyphs: $1) }))
         host.model = model
         for name in ["a", "b", "c"] { try script(name, header: "title=\(name)", ":") }
-        model.reload()
+        await model.reload()
     }
 
-    func testASectionThatAChangeDoesNotNameIsNotLost() throws {
+    func testASectionThatAChangeDoesNotNameIsNotLost() async throws {
         try model.files.config.change { $0.show(.left, true) }
 
         model.configChanged(.keys, to: model.files.config.readKept())
-        model.spotsChanged()
+        await model.spotsChanged()
 
         XCTAssertEqual(model.panels, GridPanels(hasLeft: true))
     }
@@ -46,14 +46,14 @@ final class SpotsModelConfigTests: PanelCase {
         XCTAssertEqual(model.config, next.config)
     }
 
-    func testAKeyOfTheAppACarefulModeAndAPanelBuildNoGrid() throws {
+    func testAKeyOfTheAppACarefulModeAndAPanelBuildNoGrid() async throws {
         let builds = model.gridBuilds
         let key = try XCTUnwrap(Shortcut(text: "option+space"))
 
         model.configChanged(.keys, to: try model.files.config.change { $0.set(key, for: "panel_key") })
         model.configChanged(.careful, to: try model.files.config.change { $0.set(isCareful: true) })
         model.show(.left, true)
-        model.spotsChanged()
+        await model.spotsChanged()
 
         XCTAssertEqual(model.gridBuilds, builds)
         XCTAssertEqual(model.panels, GridPanels(hasLeft: true))

@@ -64,7 +64,7 @@ final class SpotSandboxModel {
         Task { [weak self] in
             try? await Task.sleep(for: Self.editPause)
             guard let self, edit == self.edits else { return }
-            self.run(text)
+            await self.run(text)
         }
     }
 
@@ -73,9 +73,9 @@ final class SpotSandboxModel {
         if let id { panel.show(next, id: id) }
     }
 
-    func rerun() {
+    func rerun() async {
         guard let id else { return }
-        panel.model.reload()
+        await panel.model.reload()
         panel.model.panelWillShow(holding: [])
         if place == .sheet { panel.model.sheets[id]?.read(need: .change) }
     }
@@ -86,9 +86,9 @@ final class SpotSandboxModel {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func run(_ text: String) {
+    private func run(_ text: String) async {
         do {
-            let placed = try panel.place(file: file, text: text, spots: spots)
+            let placed = try await panel.place(file: file, text: text, spots: spots)
             guard let url = panel.file, try SpotFile(file: url, id: placed)?.spots.first != nil else {
                 fault = "This text is no spot. Start it with #!/bin/sh, or with // lines of a JavaScript header."
                 return
@@ -114,9 +114,9 @@ final class SpotSandboxModel {
         }
     }
 
-    private func load(_ text: String) {
+    private func load(_ text: String) async {
         guard text != source else { return }
         source = text
-        run(text)
+        await run(text)
     }
 }

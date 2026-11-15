@@ -34,7 +34,7 @@ struct SpotList {
     let config: Config
 
     func loaded() throws -> String {
-        let scan = try folder.keptScan()
+        let scan = try folder.scan()
         let keys = config.keys
         return try Self.json(scan.scripts.map { script in
             Loaded(
@@ -55,7 +55,7 @@ struct SpotList {
     }
 
     func loadedFrame() throws -> String {
-        let scan = try folder.keptScan()
+        let scan = try folder.scan()
         let keys = config.keys
         return scan.scripts.map { script in
             let spot = Self.block([
@@ -82,9 +82,9 @@ struct SpotList {
     }
 
     private var choices: [(id: String, spot: Spot, on: Bool, own: Bool)] {
-        let own = folder.ownIDs
+        let own = folder.scanOwnIDs()
         let enabled = config.arrangement.enabled
-        return folder.keptCoreChoices().sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }.map { spot in
+        return folder.coreChoices().sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }.map { spot in
             let id = SpotsFolder.coreID(of: spot)
             return (id, spot, own.contains(id) || enabled.contains(id), own.contains(id))
         }

@@ -25,7 +25,9 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     private var opened: SpotsFolder {
-        SpotsFolder.standard(environment: ["OPENSPOT_SPOTS": folder.path], home: folder.appendingPathComponent("home"))
+        let spots = SpotsFolder.standard(environment: ["OPENSPOT_SPOTS": folder.path], home: folder.appendingPathComponent("home"))
+        _ = KeptScan().load(spots, wrapping: true)
+        return spots
     }
 
     private var scan: ScanResult {
@@ -37,10 +39,10 @@ final class SpotsFolderTests: XCTestCase {
         try write("home/b.sh", header: "title=B")
         let spots = SpotsFolder(url: folder)
 
-        XCTAssertEqual(spots.stamp(), spots.stamp())
+        XCTAssertEqual(KeptScan().load(spots).stamp, KeptScan().load(spots).stamp)
     }
 
-    func testTheStampChangesWithEachChangeThatAScanReads() throws {
+    func testTheStampChangesWithEachChangeOfAFileAndNotWithAChoice() throws {
         let outside = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-linked-\(UUID().uuidString).sh")
         try "#!/bin/sh\n# title=L\n".writeScript(to: outside)
         defer { try? FileManager.default.removeItem(at: outside) }
@@ -48,6 +50,7 @@ final class SpotsFolderTests: XCTestCase {
         try write("home/b.sh", header: "title=B")
         try FileManager.default.createSymbolicLink(at: folder.appendingPathComponent("linked.sh"), withDestinationURL: outside)
         let spots = SpotsFolder(url: folder)
+        let kept = KeptScan()
         let changes: [(String, () throws -> Void)] = [
             ("an edit of the same size", { try "#!/bin/sh\n# title=Z\n\n".write(to: a, atomically: false, encoding: .utf8) }),
             ("a mode", { try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: a.path) }),
@@ -58,32 +61,54 @@ final class SpotsFolderTests: XCTestCase {
         ]
 
         for (change, make) in changes {
-            let before = spots.stamp()
+            let before = kept.load(spots).stamp
             try make()
-            XCTAssertNotEqual(spots.stamp(), before, change)
+            XCTAssertNotEqual(kept.load(spots).stamp, before, change)
         }
-        XCTAssertNotEqual(SpotsFolder(url: folder, core: folder, enabled: ["a"]).stamp(), SpotsFolder(url: folder, core: folder).stamp())
-        XCTAssertNotEqual(spots.stamp(hosted: [Spot(id: "x", name: "X", url: folder)]), spots.stamp())
+        XCTAssertEqual(kept.load(SpotsFolder(url: folder, core: folder, enabled: ["a"])).stamp, kept.load(SpotsFolder(url: folder, core: folder)).stamp)
     }
 
-    func testAKeptScanEqualsAScanAndSeesANewFile() throws {
+    func testAScanSeesANewFile() throws {
         try write("a.sh", header: "title=A")
-        let spots = SpotsFolder(url: folder)
+        XCTAssertEqual(try scan.spots.map(\.name), ["A"])
 
-        XCTAssertEqual(try spots.keptScan(), try scan)
         try write("home/b.sh", header: "title=B")
 
-        XCTAssertEqual(try spots.keptScan().spots.map(\.name), ["A", "B"])
+        XCTAssertEqual(try scan.spots.map(\.name), ["A", "B"])
     }
 
-    func testKeptCoreChoicesSeeANewCoreFile() throws {
+    func testAFolderReadAsCoreAndThenAsOwnKeepsItsSpots() throws {
+        try write("a.sh", header: "title=A")
+        _ = try SpotsFolder(url: folder.appendingPathComponent("own"), core: folder).scan()
+
+        XCTAssertEqual(try scan.spots.map(\.name), ["A"])
+    }
+
+    func testCoreChoicesSeeANewCoreFile() throws {
         try write("a.spot/a.sh", header: "title=A")
         let spots = SpotsFolder(url: folder.appendingPathComponent("own"), core: folder)
 
-        XCTAssertEqual(spots.keptCoreChoices().map(\.name), ["A"])
+        XCTAssertEqual(spots.coreChoices().map(\.name), ["A"])
         try write("b.spot/b.sh", header: "title=B")
 
-        XCTAssertEqual(spots.keptCoreChoices().map(\.name), ["A", "B"])
+        XCTAssertEqual(spots.coreChoices().map(\.name), ["A", "B"])
+    }
+
+    func testALoadParsesOnlyTheFolderThatChanged() throws {
+        try write("a.sh", header: "title=A")
+        let b = try write("b.sh", header: "title=B")
+        let kept = KeptScan()
+        let work = ScanWork()
+
+        try ScanWork.$meter.withValue(work) {
+            _ = kept.load(SpotsFolder(url: folder))
+            XCTAssertEqual(work.parses, 2)
+            _ = kept.load(SpotsFolder(url: folder))
+            XCTAssertEqual(work.parses, 2)
+            try "#!/bin/sh\n# title=C\n".write(to: b, atomically: false, encoding: .utf8)
+            _ = kept.load(SpotsFolder(url: folder))
+            XCTAssertEqual(work.parses, 3)
+        }
     }
 
     func testAScanReadsEachEntryUpToOneFolderDownThatIsNotHidden() {
@@ -164,7 +189,7 @@ final class SpotsFolderTests: XCTestCase {
         try write("battery.sh", body: "echo metric", loose: true)
         try write("clock.sh", loose: true)
 
-        XCTAssertNoThrow(try SpotsFolder(url: folder).wrap())
+        XCTAssertNoThrow(try SpotsFolder.wrap(folder))
         let result = try opened.scan()
 
         XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("battery.spot/battery.sh"), encoding: .utf8).contains("liquid"), true)
@@ -252,7 +277,7 @@ final class SpotsFolderTests: XCTestCase {
 
         XCTAssertEqual(cup.icon, .image(cup.url.deletingLastPathComponent().appendingPathComponent("icons/cup.png").path))
         XCTAssertEqual(safari.icon, .file("/Applications/Safari.app"))
-        XCTAssertNil(tea.icon)
+        XCTAssertNil(tea.fileIcon)
         XCTAssertEqual(tea.glyph, "🍵")
     }
 

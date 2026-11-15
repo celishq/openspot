@@ -22,7 +22,7 @@ public final class PlaygroundPanel {
     }
 
     @discardableResult
-    public func place(file: URL?, text: String, spots real: URL? = nil) throws -> String {
+    public func place(file: URL?, text: String, spots real: URL? = nil) async throws -> String {
         let (source, id) = SheetSandbox.place(of: file, text: text, spots: real ?? spots, scratch: spots)
         let target = SpotID(id).file(in: spots, extension: source.pathExtension)
         let manager = FileManager.default
@@ -40,7 +40,7 @@ public final class PlaygroundPanel {
         }
         self.file = target
         try model.files.config.change { $0.arrangement = SpotArrangement(choices: [SpotArrangement.Choice(id: id, isOnGrid: true)]) }
-        model.reload()
+        await model.reload()
         model.panelWillShow(holding: [])
         return id
     }

@@ -50,9 +50,9 @@ public actor AccountSheet {
 
     public nonisolated var spot: Spot {
         Spot(
-            id: Self.id, name: "Account", url: URL(fileURLWithPath: NSTemporaryDirectory()), kind: .list, symbol: "person.crop.circle",
+            id: Self.id, name: "Account", url: URL(fileURLWithPath: NSTemporaryDirectory()), kind: .list, icon: .symbol("person.crop.circle"),
             subtitle: "Signs what you publish", read: .sheet, host: .account(self), offeredPlaces: [.search], dataName: "account",
-            isOnGrid: false, headerSymbol: "person.crop.circle", view: Self.card, pages: ["\(Self.publishPrefix)*"], uses: [.app, .account, .clipboard]
+            isOnGrid: false, view: Self.card, pages: ["\(Self.publishPrefix)*"], uses: [.app, .account, .clipboard]
         ).builtIn()
     }
 

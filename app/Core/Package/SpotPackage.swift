@@ -102,20 +102,19 @@ public struct SpotPackage: Equatable, Sendable {
     }
 
     private var uncompiled: [(file: File, path: String)] {
-        files.compactMap { file in
-            guard file.isExecutable, let path = SwiftProgram.path(beside: file.path), !files.contains(where: { $0.path == path }) else { return nil }
+        let roles = SpotFiles(package: self)
+        return files.compactMap { file in
+            guard file.isExecutable, let path = SwiftProgram.path(beside: file.path), roles.program(of: file.path) == nil else { return nil }
             return (file, path)
         }
     }
 
     private var unbuiltViews: [(file: File, path: String)] {
-        files.compactMap { script in
-            guard script.isExecutable, let text = script.text, let name = SpotHeader(text: text).block.value("view"), !name.hasPrefix("/") else { return nil }
-            let folder = (script.path as NSString).deletingLastPathComponent
-            let source = folder.isEmpty ? name : "\(folder)/\(name)"
-            let path = ViewLibrary.path(beside: source)
-            guard let file = files.first(where: { $0.path == source }), !files.contains(where: { $0.path == path }) else { return nil }
-            return (file, path)
+        let roles = SpotFiles(package: self)
+        return roles.scripts.compactMap { script in
+            guard let source = roles.view(of: script), let file = files.first(where: { $0.path == source }) else { return nil }
+            let path = ViewLibrary.path(beside: source, text: file.contents)
+            return files.contains(where: { $0.path == path }) ? nil : (file, path)
         }
     }
 

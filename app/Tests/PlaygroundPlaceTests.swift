@@ -23,15 +23,15 @@ final class PlaygroundPlaceTests: XCTestCase {
 
     private let answering = "#!/bin/sh\n# title=Twice\n# on=sheet.open\n# on=clock.60\n# on=search.text ^[0-9]\nprintf 'text=t\\ntitle=%s\\n' \"$OPENSPOT_REASON\"\n[ -n \"$OPENSPOT_VALUE\" ] && printf '\\nrow=%s\\ntitle=Twice %s\\n' \"$OPENSPOT_VALUE\" \"$OPENSPOT_VALUE\"\n"
 
-    func testATypedSpotLiesOnTheGridOfItsOwnPanel() throws {
-        let id = try panel.place(file: nil, text: answering)
+    func testATypedSpotLiesOnTheGridOfItsOwnPanel() async throws {
+        let id = try await panel.place(file: nil, text: answering)
 
         XCTAssertEqual(id, "playground")
         XCTAssertEqual(panel.model.visible.map(\.id), ["playground"])
     }
 
     func testTheSheetOpensAndTheCardClosesIt() async throws {
-        let id = try panel.place(file: nil, text: answering)
+        let id = try await panel.place(file: nil, text: answering)
 
         panel.show(.sheet, id: id)
         try await wait("the open sheet") { self.panel.model.openList == id }
@@ -41,7 +41,7 @@ final class PlaygroundPlaceTests: XCTestCase {
     }
 
     func testTheMainSearchShowsTheRowsThatTheSpotAnswers() async throws {
-        let id = try panel.place(file: nil, text: answering)
+        let id = try await panel.place(file: nil, text: answering)
 
         panel.show(.card, id: id)
         panel.model.searchText = "21"
@@ -49,12 +49,12 @@ final class PlaygroundPlaceTests: XCTestCase {
         try await wait("the answer") { self.panel.model.visible.contains { $0.item?.title == "Twice 21" } }
     }
 
-    func testANamedFileRunsFromACopyWithTheIdOfItsSpotsFolder() throws {
+    func testANamedFileRunsFromACopyWithTheIdOfItsSpotsFolder() async throws {
         let spots = folder.appendingPathComponent("real-spots", isDirectory: true)
         let file = spots.spotFile("home/coffee")
         try "#!/bin/sh\n# title=Coffee\n".writeScript(to: file)
 
-        let id = try panel.place(file: file, text: "#!/bin/sh\n# title=Coffee\n", spots: spots)
+        let id = try await panel.place(file: file, text: "#!/bin/sh\n# title=Coffee\n", spots: spots)
 
         XCTAssertEqual(id, "home/coffee")
         XCTAssertEqual(panel.model.visible.map(\.id), ["home/coffee"])

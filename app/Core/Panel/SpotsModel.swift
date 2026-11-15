@@ -170,14 +170,14 @@ public final class SpotsModel {
     @ObservationIgnored public var flashPause: Duration = .milliseconds(1500)
     @ObservationIgnored var flashWatch: Task<Void, Never>?
     @ObservationIgnored private var scanned: [Spot] = []
-    @ObservationIgnored private var spotScan = SpotScan()
+    @ObservationIgnored private var load = SpotLoad.empty
+    @ObservationIgnored private var loading: Task<Void, Never>?
     @ObservationIgnored private var lastScan = ScanResult(files: [], refused: [])
-    @ObservationIgnored private var keptFolder: SpotsFolder?
-    @ObservationIgnored private var loadedStamp: SpotsFolder.Stamp?
+    @ObservationIgnored private var loaded: (stamp: [String: [Int]], hosted: [Spot])?
     @ObservationIgnored private(set) var kept = KeptConfig()
     @ObservationIgnored private(set) var gridBuilds = 0
     @ObservationIgnored var removal: Removal?
-    @ObservationIgnored private var fileStamps: [String: String] = [:]
+    @ObservationIgnored private var fileStamps: [String: [Int]] = [:]
 
     @ObservationIgnored public unowned let host: SpotsHost
     @ObservationIgnored public let files: AppPlaces
@@ -217,7 +217,7 @@ public final class SpotsModel {
     }
 
     public var folder: SpotsFolder {
-        keptFolder ?? files.folder
+        files.folder(kept.config)
     }
 
     public var sheets: [String: SpotRun] {
@@ -232,41 +232,58 @@ public final class SpotsModel {
         runs.work.count
     }
 
-    public func beginFirstLaunch() {
+    public func beginFirstLaunch() async {
         isFirstLaunch = true
         do {
             try files.config.begin(enabling: folder.startingSpots())
         } catch {
             host.notify("Openspot could not save the spots. \(Self.reason(error))")
         }
-        reload()
+        await reload()
         host.present()
     }
 
-    public func reload() {
-        reload(patching: nil, to: files.config.readKept())
+    public func reload() async {
+        let previous = loading
+        let config = files.config
+        let folder = folder
+        let task = Task {
+            await previous?.value
+            let start = kept
+            let (next, load) = await Self.read(config, folder)
+            self.load = load
+            reload(patching: nil, to: kept == start ? next : kept)
+        }
+        loading = task
+        await task.value
+    }
+
+    @concurrent
+    private nonisolated static func read(_ config: ConfigFile, _ folder: SpotsFolder) async -> (KeptConfig, SpotLoad) {
+        (config.readKept(), KeptScan.shared.load(folder, wrapping: true))
     }
 
     func reload(patching ids: Set<String>?, to next: KeptConfig) {
         let config = next.config
         let isSameConfig = config == kept.config
         host.applyConfig(config)
-        let folder = files.folder(config)
         kept = next
-        keptFolder = folder
-        var scan = spotScan.look(at: folder, hosted: (folder.findsAppSpots() ? [account.spot] : []) + (reviewed.map { [$0.spot] } ?? []))
-        let faults = folder.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
+        let folder = files.folder(config)
+        let hosted = (load.hasAppSpots ? [account.spot] : []) + (reviewed.map { [$0.spot] } ?? [])
+        guard loaded.map({ $0.stamp != load.stamp || $0.hosted != hosted }) ?? true || !isSameConfig else { return holdAssignedKeys(config) }
+        var scan = (try? load.result(enabled: folder.enabled, disabled: folder.disabled, hosted: hosted)) ?? ScanResult(files: [SpotFile(id: "openspot", spots: hosted)], refused: [])
+        let faults = load.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
         if !faults.isEmpty { scan.files.append(SpotFile(id: FaultSpot.fileID, spots: faults)) }
-        guard spotScan.stamp != loadedStamp || !isSameConfig else { return holdAssignedKeys(config) }
         scan.addSettings(in: files.config, read: config)
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
         runs.isCareful = config.isCareful
         runs.take(scan, menuBar: config.arrangement.menuBar)
         lastScan = scan
-        loadedStamp = spotScan.stamp
-        let stamps = Self.stamps(of: scan)
-        let others = ids.map { ids in { (stamps: [String: String]) in stamps.filter { !ids.contains($0.key) } } }
+        loaded = (load.stamp, hosted)
+        var stamps: [String: [Int]] = [:]
+        for script in scan.scripts where script.host == nil { stamps[script.id] = load.stamp(of: script) }
+        let others = ids.map { ids in { (stamps: [String: [Int]]) in stamps.filter { !ids.contains($0.key) } } }
         let isOnlyNamed = others.map { $0(stamps) == $0(fileStamps) } ?? false
         fileStamps = stamps
         holdAssignedKeys(config)
@@ -280,10 +297,10 @@ public final class SpotsModel {
         self.problems = problems
     }
 
-    public func spotsChanged() {
+    public func spotsChanged() async {
         let stamps = fileStamps
         let id = selectedEntry?.id
-        reload()
+        await reload()
         if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
         guard isShown else { return }
         for entry in entries where entry.spot.read?.has(.panel) == true && fileStamps[entry.id] != stamps[entry.id] {
@@ -291,18 +308,8 @@ public final class SpotsModel {
         }
     }
 
-    private static func stamps(of scan: ScanResult) -> [String: String] {
-        var stamps: [String: String] = [:]
-        for script in scan.scripts where script.host == nil {
-            guard let values = try? FileManager.default.attributesOfItem(atPath: script.url.path) else { continue }
-            let date = (values[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
-            stamps[script.id] = "\(date) \(values[.systemFileNumber] ?? "")"
-        }
-        return stamps
-    }
-
-    public func reveal(_ id: String) -> Bool {
-        reload()
+    public func reveal(_ id: String) async -> Bool {
+        await reload()
         guard let entry = cards.first(where: { $0.id == id }) else { return false }
         closeMenu()
         form = nil

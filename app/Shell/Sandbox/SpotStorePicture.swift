@@ -9,9 +9,9 @@ enum SpotStorePicture {
     static func run(path: String) -> Never {
         NSApplication.shared.setActivationPolicy(.prohibited)
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
-        model.reload()
-        model.panelWillShow(holding: [])
         Task { @MainActor in
+            await model.reload()
+            model.panelWillShow(holding: [])
             guard let entry = model.cards.first(where: { model.place(ofSheet: $0.id) == .window }) else {
                 FileHandle.standardError.write(Data("No spot offers a window.\n".utf8))
                 exit(1)

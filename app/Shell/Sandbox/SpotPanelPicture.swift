@@ -9,9 +9,9 @@ enum SpotPanelPicture {
     static func run(path: String) -> Never {
         NSApplication.shared.setActivationPolicy(.prohibited)
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
-        model.reload()
-        model.panelWillShow(holding: [])
         Task { @MainActor in
+            await model.reload()
+            model.panelWillShow(holding: [])
             try? await Task.sleep(for: .milliseconds(300))
             await model.waitForReads()
             for sheet in model.sheets.values {

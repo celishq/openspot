@@ -5,7 +5,7 @@ import XCTest
 final class FlowMoveTests: PanelCase {
     func openFlowSpot() async throws {
         try writeFlow()
-        model.reload()
+        await model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
         model.press("flow")
@@ -91,7 +91,7 @@ final class FlowMoveTests: PanelCase {
 
     func testAReadThatPushesMovesNothing() async throws {
         try script("reader", header: "title=Reader\non=sheet.open", "printf 'push=elsewhere\\n\\nrow=r\\ntitle=R\\n'")
-        model.reload()
+        await model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
         model.press("reader")
@@ -115,7 +115,7 @@ final class FlowMoveTests: PanelCase {
     func testAPushOfAPageThatTheSpotDoesNotTakeMovesNothingAndSaysSo() async throws {
         try await openList()
         try script("narrow", header: "title=Narrow\non=sheet.open\npages=ok:*", "printf 'row=n\\ntitle=N\\n'")
-        model.reload()
+        await model.reload()
 
         XCTAssertTrue(model.push(FlowSheet(spot: "narrow", page: "bad")))
 

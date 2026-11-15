@@ -66,12 +66,16 @@ extension SpotsModel {
             try folder.remove(command) { url in moves.append((url, try files.trash(url))) }
             removal = Removal(id: entry.id, words: words, moves: moves)
             files.log.remove(entry.id)
-            reload()
-            host.confirm("Moved \(words) to the Trash. Press `⌘Z` to put \(count > 1 ? "them" : "it") back.")
+            Task {
+                await reload()
+                host.confirm("Moved \(words) to the Trash. Press `⌘Z` to put \(count > 1 ? "them" : "it") back.")
+            }
         } catch {
             removal = moves.isEmpty ? nil : Removal(id: entry.id, words: words, moves: moves)
-            reload()
-            host.notify("\(command.name) was not removed. \(Self.reason(error))")
+            Task {
+                await reload()
+                host.notify("\(command.name) was not removed. \(Self.reason(error))")
+            }
         }
     }
 
@@ -86,9 +90,11 @@ extension SpotsModel {
             host.notify("Openspot cannot put \(removal.words) back, because a file left the Trash. Find it in the Trash, and move it to the spots folder.")
             return true
         }
-        reload()
-        if let place = visible.firstIndex(where: { $0.id == removal.id }) { selected = place }
-        host.confirm("Put \(removal.words) back.")
+        Task {
+            await reload()
+            if let place = visible.firstIndex(where: { $0.id == removal.id }) { selected = place }
+            host.confirm("Put \(removal.words) back.")
+        }
         return true
     }
 }

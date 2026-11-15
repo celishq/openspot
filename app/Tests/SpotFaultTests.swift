@@ -53,17 +53,17 @@ final class SpotFaultTests: XCTestCase {
 
     private func openFault() async throws -> SheetParts {
         try script("weather", header: "mode=huge", "echo")
-        model.reload()
+        await model.reload()
         model.isShown = true
         model.press("weather")
         try await wait("the fault sheet") { model.openPanel != nil }
         return try XCTUnwrap(model.openPanel)
     }
 
-    func testAFileThatDoesNotLoadKeepsAWideCardThatSaysHowToFixIt() throws {
+    func testAFileThatDoesNotLoadKeepsAWideCardThatSaysHowToFixIt() async throws {
         try script("weather", header: "mode=huge", "echo")
 
-        model.reload()
+        await model.reload()
 
         let card = try XCTUnwrap(entry("weather"))
         XCTAssertEqual(card.state.title, "Fix")
@@ -73,9 +73,9 @@ final class SpotFaultTests: XCTestCase {
         XCTAssertEqual(host.notes, [])
     }
 
-    func testAFaultCardStaysWideWhenThePersonChoseTheSmallSize() throws {
+    func testAFaultCardStaysWideWhenThePersonChoseTheSmallSize() async throws {
         try script("weather", header: "mode=huge", "echo")
-        model.reload()
+        await model.reload()
 
         model.prefer(.small, for: "weather")
 
@@ -114,12 +114,12 @@ final class SpotFaultTests: XCTestCase {
         XCTAssertEqual(saved("opened"), "-t \(spots.spotFile("weather").path)\n")
     }
 
-    func testAFileThatLoadsAgainTakesBackItsCard() throws {
+    func testAFileThatLoadsAgainTakesBackItsCard() async throws {
         try script("weather", header: "mode=huge", "echo")
-        model.reload()
+        await model.reload()
 
         try script("weather", header: "mode=once", "echo")
-        model.spotsChanged()
+        await model.spotsChanged()
 
         XCTAssertEqual(entry("weather")?.state.title, "Weather")
         XCTAssertNil(entry("weather")?.spot.fault)
@@ -127,36 +127,36 @@ final class SpotFaultTests: XCTestCase {
 
     func testAFailedRunMarksItsCardUntilARunSucceeds() async throws {
         try script("ping", "echo 'Openspot cannot reach the server. Try again when the Mac is online.' >&2; exit 1")
-        model.reload()
+        await model.reload()
 
         model.tap("ping")
         try await wait("the failure") { entry("ping")?.failure != nil }
         XCTAssertEqual(entry("ping")?.failure, "Openspot cannot reach the server. Try again when the Mac is online.")
 
         try script("ping", "exit 0")
-        model.spotsChanged()
+        await model.spotsChanged()
         model.tap("ping")
         try await wait("the success") { entry("ping")?.failure == nil }
     }
 
-    func testAChangeOfTheFolderShowsANewSpotAtOnce() throws {
-        model.reload()
+    func testAChangeOfTheFolderShowsANewSpotAtOnce() async throws {
+        await model.reload()
 
         try script("hello", "echo")
-        model.spotsChanged()
+        await model.spotsChanged()
 
         XCTAssertTrue(model.visible.contains { $0.id == "hello" })
     }
 
     func testAChangedScriptReadsAgainWhileTheOpenPanelShowsIt() async throws {
         try script("cups", header: "on=panel.open", "printf 'title=One cup\\n'")
-        model.reload()
+        await model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
         try await wait("the first read") { entry("cups")?.state.title == "One cup" }
 
         try script("cups", header: "on=panel.open", "printf 'title=Two cups\\n'")
-        model.spotsChanged()
+        await model.spotsChanged()
 
         try await wait("the read of the changed script") { entry("cups")?.state.title == "Two cups" }
     }

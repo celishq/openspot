@@ -13,13 +13,15 @@ enum SpotShowLink {
         AppPlaces.standard.log.folder.deletingLastPathComponent().standardizedFileURL.path
     }
 
-    static func listen(reveal: @escaping @MainActor (String) -> Bool) -> NSObjectProtocol {
+    static func listen(reveal: @escaping @MainActor @Sendable (String) async -> Bool) -> NSObjectProtocol {
         let config = config
         let center = DistributedNotificationCenter.default()
         return center.addObserver(forName: ask, object: nil, queue: .main) { note in
             guard let info = note.userInfo as? [String: String], info["config"] == config, let spot = info["spot"], let token = info["token"] else { return }
-            let found = MainActor.assumeIsolated { reveal(spot) }
-            center.postNotificationName(answer, object: nil, userInfo: ["token": token, "found": String(found)], deliverImmediately: true)
+            Task { @MainActor in
+                let found = await reveal(spot)
+                center.postNotificationName(answer, object: nil, userInfo: ["token": token, "found": String(found)], deliverImmediately: true)
+            }
         }
     }
 

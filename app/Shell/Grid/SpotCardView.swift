@@ -190,7 +190,7 @@ struct SpotCardView: View, @MainActor Equatable {
         if let item = entry.item, item.icon != nil {
             SpotItemIcon(item: item, size: SpotTokens.glyphSize)
         } else if entry.showsHeaderPicture {
-            SpotItemIcon(icon: entry.spot.icon, glyph: entry.spot.glyph, symbol: nil, size: SpotTokens.glyphSize)
+            SpotItemIcon(icon: entry.spot.fileIcon, glyph: entry.spot.glyph, symbol: nil, size: SpotTokens.glyphSize)
         } else {
             symbolGlyph
         }

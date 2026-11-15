@@ -6,6 +6,7 @@ public struct ViewLibrary: Sendable {
     static let libraryExtension = "view"
     private static let platform = "apple-macos26.0"
     private static let preludeName = "openspot-view.swift"
+    private static let hashLength = 64
 
     static let prelude = """
         public struct SpotFonts {
@@ -106,20 +107,27 @@ public struct ViewLibrary: Sendable {
         ViewLibrary(cache: cache.appendingPathComponent("views", isDirectory: true))
     }
 
-    static func path(beside source: String) -> String {
-        (source as NSString).deletingPathExtension + "." + libraryExtension
+    static func path(beside source: String, text: Data) -> String {
+        (source as NSString).deletingPathExtension + "." + name(of: text) + "." + libraryExtension
     }
 
     static func isLibrary(_ path: String) -> Bool {
         (path as NSString).pathExtension == libraryExtension
     }
 
+    static func isLibrary(_ path: String, of source: String) -> Bool {
+        let stem = (source as NSString).deletingPathExtension + "."
+        guard isLibrary(path), path.hasPrefix(stem) else { return false }
+        let hash = (path.dropFirst(stem.count) as NSString).deletingPathExtension
+        return hash.count == hashLength && hash.allSatisfy(\.isHexDigit)
+    }
+
     public func library(of source: URL) async throws -> URL {
-        let carried = URL(fileURLWithPath: Self.path(beside: source.path))
-        if FileManager.default.fileExists(atPath: carried.path) { return carried }
         guard let text = try? Data(contentsOf: source) else {
             throw SpotError.fault("Openspot cannot find the view \(source.lastPathComponent).")
         }
+        let carried = URL(fileURLWithPath: Self.path(beside: source.path, text: text))
+        if FileManager.default.fileExists(atPath: carried.path) { return carried }
         let name = Self.name(of: text)
         let built = cache.appendingPathComponent("\(name).dylib")
         if FileManager.default.fileExists(atPath: built.path) { return built }
@@ -140,7 +148,7 @@ public struct ViewLibrary: Sendable {
             guard let text = try? String(contentsOf: script, encoding: .utf8), let name = SpotHeader(text: text).block.value("view"), !name.hasPrefix("/") else { continue }
             let source = script.deletingLastPathComponent().appendingPathComponent(name)
             guard let data = try? Data(contentsOf: source) else { continue }
-            let library = URL(fileURLWithPath: Self.path(beside: source.path))
+            let library = URL(fileURLWithPath: Self.path(beside: source.path, text: data))
             try await build(source: data, named: name, kinds: SwiftProgram.kinds).write(to: library)
             built.append(library)
         }

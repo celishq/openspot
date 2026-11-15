@@ -14,7 +14,11 @@ public struct SpotFile: Equatable, Sendable {
     public init?(file url: URL, id: String) throws {
         if SwiftProgram.isProgram(url) { return nil }
         if Self.runs(url) {
-            try self.init(script: url, header: SpotHeader(url: url).block, id: id)
+            let header = SpotHeader(url: url)
+            guard !header.isTooLong else {
+                throw SpotError.fault("\(header.block.value(HeaderKey.title) ?? Self.name(of: url)) has a header over \(SpotHeader.limit / 1024) KB. Keep the header shorter.")
+            }
+            try self.init(script: url, header: header.block, id: id)
         } else {
             return nil
         }
@@ -33,8 +37,7 @@ public struct SpotFile: Equatable, Sendable {
             self.init(id: id, spots: [try Self.drawn(header, name: name, id: id, url: url)])
             return
         }
-        let icon = Icon(text: header.value(HeaderKey.icon))
-        let symbol = icon?.symbol
+        let icon = Icon(text: header.value(HeaderKey.icon)).map { Self.placed($0, beside: url) }
         let on = try SpotRead(on: header.values(HeaderKey.on), of: name)
         let read = on?.moments.isEmpty == false ? on : nil
         let emits = SpotRead.words(header.value(HeaderKey.emits))
@@ -82,7 +85,7 @@ public struct SpotFile: Equatable, Sendable {
             name: name,
             url: url,
             kind: kind,
-            symbol: symbol ?? "app",
+            icon: icon,
             subtitle: header.value(HeaderKey.detail),
             read: read,
             isFound: !answersOnly,
@@ -93,13 +96,9 @@ public struct SpotFile: Equatable, Sendable {
             offeredPlaces: places,
             dataName: SpotID(id).name,
             isOnGrid: places.contains(.card) && offers.isEmpty && read?.seconds == nil && !answersOnly,
-            headerSymbol: symbol,
             offers: offers,
             offeredActions: offeredActions,
             settings: header.children.filter { HeaderBlock(block: $0) == .field }.compactMap { CommandOffer(setting: $0) },
-            file: icon?.file.map { Self.path($0, beside: url) },
-            image: icon?.image.map { Self.path($0, beside: url) },
-            glyph: icon?.glyph,
             view: view.map { Self.path($0, beside: url) },
             viewDate: view.flatMap { Self.viewDate(of: Self.path($0, beside: url), script: url) },
             emits: emits,
@@ -127,7 +126,15 @@ public struct SpotFile: Equatable, Sendable {
         let folder = script.deletingLastPathComponent().path
         let isLinked = (try? FileManager.default.destinationOfSymbolicLink(atPath: folder)) != nil
         guard (view as NSString).deletingLastPathComponent == folder, !isLinked else { return nil }
-        return [view, ViewLibrary.path(beside: view)].compactMap { try? FileManager.default.attributesOfItem(atPath: $0)[.modificationDate] as? Date }.max()
+        return try? FileManager.default.attributesOfItem(atPath: view)[.modificationDate] as? Date
+    }
+
+    private static func placed(_ icon: Icon, beside url: URL) -> Icon {
+        switch icon {
+        case .file(let path): .file(Self.path(path, beside: url))
+        case .image(let path): .image(Self.path(path, beside: url))
+        case .symbol, .glyph: icon
+        }
     }
 
     private static func path(_ text: String, beside url: URL) -> String {

@@ -75,7 +75,12 @@ enum SpotCommandLine {
 
     private static func renderSheet(of id: String, to path: String) -> Never {
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
-        model.reload()
+        var loaded = false
+        Task {
+            await model.reload()
+            loaded = true
+        }
+        while !loaded { RunLoop.main.run(mode: .default, before: .distantFuture) }
         guard let spot = model.entries.first(where: { $0.id == id })?.spot else {
             FileHandle.standardError.write(Data("Openspot has no spot \(id). Run `openspot check` to see each file that does not load.\n".utf8))
             exit(1)

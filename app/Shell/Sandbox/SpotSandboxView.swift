@@ -42,7 +42,7 @@ struct SpotSandboxView: View {
                     .font(SpotType.title)
                     .lineLimit(1)
                 Spacer()
-                Button("Run again") { model.rerun() }
+                Button("Run again") { Task { await model.rerun() } }
                     .keyboardShortcut("r")
                 presets
             }

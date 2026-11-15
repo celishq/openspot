@@ -53,7 +53,7 @@ class PanelCase: XCTestCase {
         if [ -n "$OPENSPOT_PAGE" ]; then printf 'row=x\\ntitle=Detail %s\\n' "$OPENSPOT_PAGE"; else printf 'row=a\\ntitle=A\\npush=true\\n'; fi
         """)
         try script("other", header: "on=sheet.open", "printf 'row=o\\ntitle=Other\\n'")
-        model.reload()
+        await model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
         model.press("list")

@@ -62,7 +62,7 @@ final class FilesOutTests: XCTestCase {
         esac
         """
         try "#!/bin/sh\n# on=sheet.open\n\(body)\n".writeScript(to: spots.spotFile("shelf"))
-        model.reload()
+        await model.reload()
         model.press(GlobalKey(spot: "shelf", act: .float, trigger: .shake))
         try await wait("the rows") { model.sheets["shelf"]?.list.shown.count == 3 }
         let rows = try XCTUnwrap(model.sheets["shelf"]?.list.shown)

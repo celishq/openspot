@@ -21,7 +21,7 @@ extension Spot {
     func items(query: String = "", input: String? = nil, page: String? = nil, timeout: TimeInterval) async throws -> SpotOutput {
         let typed = query.isEmpty ? nil : TextBlock(fields: [.init(key: "search", value: query)]).text
         let lines = [input, typed].compactMap { $0 }
-        let reason = query.isEmpty ? [:] : ReadReason.text(query, inSheet: answers == nil).variables
+        let reason = query.isEmpty ? [:] : ReadReason.text(query, inSheet: self.answers == nil).variables
         let variables = reason.merging(page.map { ["OPENSPOT_PAGE": $0] } ?? [:]) { _, new in new }
         return try await output(.read, input: lines.isEmpty ? nil : lines.joined(), variables: variables, timeout: timeout)
     }

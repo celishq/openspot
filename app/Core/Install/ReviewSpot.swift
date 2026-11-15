@@ -55,7 +55,7 @@ public struct ReviewSpot: Equatable, Sendable {
             programs.isEmpty ? nil : Self.section(
                 "Program that Openspot cannot show",
                 programs + ["It can do all that you can. Add it only if you trust the sender."]
-                    + (programs.contains { Self.hasSource($0, in: spot) } ? ["The source beside it may not match the program."] : [])
+                    + (programs.contains(where: SpotFiles(package: spot).isBuilt) ? ["The source beside it may not match the program."] : [])
             ),
             uses.isEmpty ? "Uses nothing\n\n" : Self.section("Uses", [uses.map(\.rawValue).joined(separator: ", ")]),
             Self.section("Can also", canAlso),
@@ -190,10 +190,6 @@ public struct ReviewSpot: Equatable, Sendable {
 
     private static func section(_ title: String, _ lines: [String]) -> String? {
         lines.isEmpty ? nil : "\(title)\n\(lines.joined(separator: "\n"))\n\n"
-    }
-
-    private static func hasSource(_ path: String, in spot: SpotPackage) -> Bool {
-        spot.files.contains { SwiftProgram.path(beside: $0.path) == path || (URL(fileURLWithPath: $0.path).pathExtension == SwiftProgram.sourceExtension && ViewLibrary.path(beside: $0.path) == path) }
     }
 
     private static func canShow(_ file: SpotPackage.File) -> Bool {

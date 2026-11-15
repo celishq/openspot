@@ -5,7 +5,7 @@ final class CardDropTests: PanelCase {
     func testADropOnACardWithRowsOpensItsSheetWithTheFocusAndOnAnyOtherCardClosesThePanel() async throws {
         try script("shelf", header: "on=sheet.open\ndrop=*", "case \"$1\" in read) printf 'row=a\\ntitle=A\\n' ;; esac")
         try script("plain", header: "drop=*", "true")
-        model.reload()
+        await model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
         let file = folder.appendingPathComponent("a.txt")

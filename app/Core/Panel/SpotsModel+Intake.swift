@@ -136,7 +136,7 @@ extension SpotsModel {
     public func endReview() {
         guard reviewed != nil else { return }
         reviewed = nil
-        reload()
+        reload(patching: nil, to: kept)
     }
 
     public func share(_ entry: Entry) {

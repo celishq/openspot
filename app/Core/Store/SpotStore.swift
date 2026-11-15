@@ -47,12 +47,12 @@ public struct SpotStore: Sendable {
     }
 
     public func items(publications reads: Bool) -> [Item] {
-        let own = (try? SpotsFolder(url: folder.url).keptScan()) ?? ScanResult(files: [], refused: [])
+        let own = (try? SpotsFolder(url: folder.url).scan()) ?? ScanResult(files: [], refused: [])
         let ownIDs = Set(own.files.map(\.id))
         let publications = reads ? Self.publications(of: own, in: url) : [:]
         let enabled = arrangement.enabled.union(folder.enabled)
         let disabled = arrangement.disabled.union(folder.disabled)
-        let core = folder.keptCoreChoices().filter { !ownIDs.contains(SpotsFolder.coreID(of: $0)) }.map { spot in
+        let core = folder.coreChoices().filter { !ownIDs.contains(SpotsFolder.coreID(of: $0)) }.map { spot in
             item(spot, id: SpotsFolder.coreID(of: spot), origin: .core, isAdded: enabled.contains(SpotsFolder.coreID(of: spot)))
         }
         let mine = own.files.compactMap { file in

@@ -74,19 +74,25 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
             Logger(subsystem: Bundle.main.bundleIdentifier ?? "openspot", category: "api")
                 .error("Openspot cannot listen for openspot calls for \(config.path, privacy: .public), so spots that ask the app fail.")
         }
-        model.reload()
+        Task { await launch(update: update) }
+    }
+
+    private func launch(update: AppUpdate?) async {
+        await model.reload()
         let spots = model.folder.url
-        spotsWatch = SpotsWatch(folder: spots, config: model.files.config.url) { [weak self] in self?.model.spotsChanged() }
+        spotsWatch = SpotsWatch(folder: spots, config: model.files.config.url) { [weak self] in
+            Task { await self?.model.spotsChanged() }
+        }
         try? AgentNote(command: Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/openspot").path).write(in: spots)
-        showListener = SpotShowLink.listen { [weak self] id in self?.model.reveal(id) ?? false }
-        let isFirstLaunch = model.folder.isFirstLaunch(config: model.files.config)
+        showListener = SpotShowLink.listen { [weak self] id in await self?.model.reveal(id) ?? false }
+        let isFirstLaunch = await Self.isFirstLaunch(model.folder, config: model.files.config)
         model.runs.launched()
         panel?.warm { [weak self] in
             guard let self else { return }
             SpotSheetWarmth.draw()
             update?.start()
             if isFirstLaunch {
-                model.beginFirstLaunch()
+                Task { await self.model.beginFirstLaunch() }
             } else {
                 confirm(model.entryKey.openHint)
             }
@@ -94,6 +100,11 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         isLaunched = true
         if !openedAtLaunch.isEmpty { model.review(openedAtLaunch) }
         model.runs.listen(to: mac)
+    }
+
+    @concurrent
+    private nonisolated static func isFirstLaunch(_ folder: SpotsFolder, config: ConfigFile) async -> Bool {
+        folder.isFirstLaunch(config: config)
     }
 
     func applyConfig(_ config: Config) {

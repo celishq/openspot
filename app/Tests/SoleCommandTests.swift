@@ -45,7 +45,7 @@ final class SoleCommandTests: XCTestCase {
 
     func testTheFirstReturnRecordsTheKeyAndTheNextReturnRunsTheCommand() async throws {
         try script("dictate", header: "title=Dictate\n\nbutton=dictate\ntitle=Dictate")
-        model.reload()
+        await model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
 
@@ -90,7 +90,7 @@ final class SoleCommandTests: XCTestCase {
 
     func testTheFooterOfASpotWithOneCommandAndNoSheetNamesWhatReturnDoes() async throws {
         try script("party", header: "title=Party\non=panel.open\n\nbutton=play\ntitle=Play")
-        model.reload()
+        await model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
         model.query = "party"
@@ -106,7 +106,7 @@ final class SoleCommandTests: XCTestCase {
 
     func testReturnOnASpotWithTwoCommandsOnlyOpensTheirKeys() async throws {
         try script("windows", header: "title=Windows\n\nbutton=left\ntitle=Left\n\nbutton=right\ntitle=Right")
-        model.reload()
+        await model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
 
@@ -121,7 +121,7 @@ final class SoleCommandTests: XCTestCase {
         let lines = ["title=Dictate", "on=sheet.open", "on=app.update", "", "button=dictate", "title=Dictate"].map { $0.isEmpty ? "#" : "# \($0)" }
         try "#!/bin/sh\n\(lines.joined(separator: "\n"))\ncase \"$1\" in read) printf 'row=one\\ntitle=Hello there\\n\\nrow=two\\ntitle=Second\\n' ;; esac\n"
             .writeScript(to: spots.appendingPathComponent("dictate.sh"))
-        model.reload()
+        await model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
         model.query = "dictate"
@@ -164,7 +164,7 @@ final class SoleCommandTests: XCTestCase {
         let lines = ["title=Get", "on=sheet.open"].map { "# \($0)" }
         try "#!/bin/sh\n\(lines.joined(separator: "\n"))\ncase \"$1\" in read) printf 'button=open\\ntitle=Copy\\n\\nrow=model\\ntitle=Download\\nopen=Download\\nclose=false\\n\\nrow=text\\ntitle=Hello\\n' ;; esac\n"
             .writeScript(to: spots.appendingPathComponent("get.sh"))
-        model.reload()
+        await model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
         model.run(try entry("get"))
@@ -184,7 +184,7 @@ final class SoleCommandTests: XCTestCase {
         let lines = ["title=Dictate", "on=sheet.open", "", "button=dictate", "title=Dictate"].map { $0.isEmpty ? "#" : "# \($0)" }
         try "#!/bin/sh\n\(lines.joined(separator: "\n"))\ncase \"$1\" in read) printf 'row=whisper\\ntitle=Download\\npin=top\\n\\nsearch=off\\n' ;; esac\n"
             .writeScript(to: spots.appendingPathComponent("dictate.sh"))
-        model.reload()
+        await model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
 
@@ -199,7 +199,7 @@ final class SoleCommandTests: XCTestCase {
     func testAClickOnTheMenuBarIconOfASpotThatReturnRunsDoesWhatReturnDoes() async throws {
         let lines = ["title=Pen", "icon=pencil.tip", "", "button=draw", "title=Draw on screen"].map { $0.isEmpty ? "#" : "# \($0)" }
         try "#!/bin/sh\n\(lines.joined(separator: "\n"))\nexit 0\n".writeScript(to: spots.appendingPathComponent("pen.sh"))
-        model.reload()
+        await model.reload()
 
         model.openFromMenuBar("pen")
 

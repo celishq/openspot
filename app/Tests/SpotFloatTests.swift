@@ -50,7 +50,7 @@ final class SpotFloatTests: XCTestCase {
           trash) printf 'toast=Trashed %s\\n' "$2" ;;
         esac
         """)
-        model.reload()
+        await model.reload()
         model.press(try key("list"))
         try await wait("the floating list") { model.sheets["list"]?.list.shown.count == 2 }
     }
@@ -67,7 +67,7 @@ final class SpotFloatTests: XCTestCase {
 
     func testAFloatThatOpensDuringADragFollowsItAndOneWithNoDragDoesNot() async throws {
         try script("list", header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
-        model.reload()
+        await model.reload()
 
         host.isMouseDown = true
         model.press(try key("list"))
@@ -135,7 +135,7 @@ final class SpotFloatTests: XCTestCase {
 
     func testAFloatOfPartsKeepsItsValuesWhenThePanelClosesAndDropsThemWhenItCloses() async throws {
         try script("note", header: "on=sheet.open", "printf 'field=note\\nvalue=hi\\n'")
-        model.reload()
+        await model.reload()
         model.press(try key("note"))
         try await wait("the parts") { model.sheets["note"]?.panel != nil }
 
@@ -153,7 +153,7 @@ final class SpotFloatTests: XCTestCase {
 
     func testAFloatOfPartsWithNoFieldKeepsItsPartsWhenItCloses() async throws {
         try script("note", header: "on=sheet.open", "printf 'text=hi\\ntitle=Hi\\n'")
-        model.reload()
+        await model.reload()
         model.press(try key("note"))
         try await wait("the parts") { model.sheets["note"]?.panel != nil }
 
@@ -170,7 +170,7 @@ final class SpotFloatTests: XCTestCase {
           drop) shift; printf 'toast=Kept %s\\n' "$*" ;;
         esac
         """)
-        model.reload()
+        await model.reload()
         model.press(try key("shelf"))
         try await wait("the float") { model.sheets["shelf"]?.list.shown.count == 1 }
 
@@ -197,7 +197,7 @@ final class SpotFloatTests: XCTestCase {
         """)
         try FileManager.default.createDirectory(at: folder.appendingPathComponent("config"), withIntermediateDirectories: true)
         try "[[spots]]\nid = \"keys\"\nkey = \"cmd+,\"\n".write(to: folder.appendingPathComponent("config/config.toml"), atomically: true, encoding: .utf8)
-        model.reload()
+        await model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
         model.openSettings()
@@ -218,7 +218,7 @@ final class SpotFloatTests: XCTestCase {
 
     func testAFloatOfACardWithNoReadRunsNothingUntilItsCardIsPressed() async throws {
         try script("go", header: "title=Go", "printf 'toast=Went\\n'")
-        model.reload()
+        await model.reload()
 
         model.press(try key("go"))
 
@@ -232,13 +232,13 @@ final class SpotFloatTests: XCTestCase {
         XCTAssertEqual(host.dismissals, 0)
     }
 
-    private func windowSpot() throws {
+    private func windowSpot() async throws {
         try script("store", header: "on=sheet.open\noffers=card\noffers=window", "printf 'row=a\\ntitle=Apple\\n'")
-        model.reload()
+        await model.reload()
     }
 
     func testAPressOfASpotThatOffersAWindowOpensItsWindowAndNotThePanel() async throws {
-        try windowSpot()
+        try await windowSpot()
 
         model.press("store")
         try await wait("the window") { host.windows == ["store"] }
@@ -250,7 +250,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testOpenOfASpotThatOffersAWindowOpensItsWindowAndHidesThePanel() async throws {
-        try windowSpot()
+        try await windowSpot()
         model.isShown = true
 
         XCTAssertTrue(model.open("store"))
@@ -262,7 +262,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testAFormOfAWindowSpotSaysItDoesNotShowYetAndOpensNoPanel() async throws {
-        try windowSpot()
+        try await windowSpot()
         model.press("store")
         try await wait("the window") { host.windows == ["store"] }
         let entry = try XCTUnwrap(model.cards.first { $0.id == "store" })
@@ -277,19 +277,19 @@ final class SpotFloatTests: XCTestCase {
     func testAWindowReadsAgainWhenTheSpotsChange() async throws {
         let log = folder.appendingPathComponent("reads")
         try script("store", header: "on=sheet.open\noffers=card\noffers=window", "echo read >> '\(log.path)'\nprintf 'row=a\\ntitle=Apple\\n'")
-        model.reload()
+        await model.reload()
         model.press("store")
         let reads = { ((try? String(contentsOf: log, encoding: .utf8)) ?? "").split(separator: "\n").count }
         try await wait("the first read") { reads() == 1 }
 
         try script("other", header: "title=Other", "true")
-        model.reload()
+        await model.reload()
 
         try await wait("a read after the load") { reads() == 2 }
     }
 
     func testAWindowThatClosesLandsItsSpotAndAnotherPressOpensItAgain() async throws {
-        try windowSpot()
+        try await windowSpot()
         model.press("store")
         try await wait("the window") { host.windows == ["store"] }
 

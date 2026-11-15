@@ -1,14 +1,14 @@
 import Foundation
 
 extension SpotsFolder {
-    public var ownIDs: Set<String> {
-        Set(((try? SpotsFolder(url: url).keptScan())?.files ?? []).map(\.id))
+    public func scanOwnIDs() -> Set<String> {
+        Set(((try? SpotsFolder(url: url).scan())?.files ?? []).map(\.id))
     }
 
     @discardableResult
     public func turn(_ ids: [String], on isOn: Bool, in config: ConfigFile) throws -> KeptConfig {
-        let choices = Set(keptCoreChoices().map(Self.coreID(of:)))
-        let own = ownIDs
+        let choices = Set(coreChoices().map(Self.coreID(of:)))
+        let own = scanOwnIDs()
         if let id = ids.first(where: { !choices.contains($0) && !(isOn && own.contains($0)) }) {
             throw SpotError.failed(1, "`\(id)` is not a spot that comes with Openspot. Run `openspot spot list --core` to see each one.")
         }

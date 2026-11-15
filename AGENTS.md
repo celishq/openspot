@@ -104,7 +104,7 @@ below is one a reviewer can check in a diff.
 - A getter, a computed property and a static factory read only memory. They touch no disk, start no process and change no
   state. Work that reads the disk is a method named for it, such as `read()` or `scan()`. `scripts/check-getters.sh` fails on
   a getter or a static factory that reads the disk.
-- The model and the views do not read the disk. A loader, such as `SpotScan` or `ConfigFile`, reads it at a load, and the
+- The model and the views do not read the disk. A loader, such as `KeptScan` or `ConfigFile`, reads it at a load, and the
   rest read the value it kept.
 - Code starts a process only through `ScriptProcess`, which gives it a limit, a stop and the end of its group.
   `scripts/check-processes.sh` fails on another `Process()`.

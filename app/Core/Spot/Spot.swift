@@ -1,64 +1,26 @@
 import Foundation
 
+@dynamicMemberLookup
 public struct Spot: Equatable, Sendable {
+    @usableFromInline
+    final class Header: Sendable {
+        @usableFromInline let facts: SpotFacts
+
+        init(_ facts: SpotFacts) {
+            self.facts = facts
+        }
+    }
+
     private static let folderWord = "folder"
     private static let anyWord = "*"
 
-    public let id: String
-    public let name: String
-    public private(set) var url: URL
+    @usableFromInline private(set) var header: Header
     public private(set) var kind: SpotKind
-    public let size: SpotSize
-    public private(set) var symbol: String
-    public let subtitle: String?
-    public private(set) var read: SpotRead?
     public private(set) var pick: ItemPick
     public private(set) var pickForm: CommandAction?
-    public let offeredPlaces: Set<Place>
-    public var isGlobal: Bool { offeredPlaces.contains(.search) }
-    public let isFound: Bool
-    public let answers: AnswerPattern?
-    public private(set) var order: Int
     public private(set) var keepsRecent = true
     public private(set) var openTitle: String?
     public private(set) var actions: [CommandAction]
-    public let layout: WidgetLayout?
-    public let places: [String]
-    public let opens: String?
-    public let host: HostSheet?
-    public let growsFromField: Bool
-    public private(set) var mode: SpotMode
-    public let pressRuns: Bool
-    public let drop: [String]
-    public var offersFloat: Bool { offeredPlaces.contains(.float) }
-    public var offersWindow: Bool { offeredPlaces.contains(.window) }
-    public var offersCard: Bool { offeredPlaces.contains(.card) }
-    public var offersMenuBar: Bool { offeredPlaces.contains(.menubar) }
-    public let dataName: String?
-    public private(set) var isOnGrid: Bool
-    public private(set) var headerSymbol: String?
-    public private(set) var file: String?
-    public private(set) var image: String?
-    public private(set) var glyph: String?
-    public let view: String?
-    public let viewDate: Date?
-    public let emits: [String]
-    public let pages: [String]
-    public internal(set) var uses: Set<SpotUse>
-    public let offers: [CommandOffer]
-    public private(set) var offeredActions: [OfferedAction]
-    public let settings: [CommandOffer]
-    public private(set) var settingsSheet: SpotSettings?
-    public private(set) var holdsSettings = false
-    public private(set) var opensToSettings = false
-    public private(set) var isBuiltIn = false
-    public var reachesAccountKey: Bool {
-        SpotUse.reachesAccountKey(uses, isBuiltIn: isBuiltIn)
-    }
-    public let keywords: [String]
-    public let sample: URL?
-    public let editsSpots: Bool
-    public private(set) var editedFile: URL?
 
     public init(
         id: String,
@@ -67,6 +29,7 @@ public struct Spot: Equatable, Sendable {
         kind: SpotKind = .launch,
         size: SpotSize = .wide,
         symbol: String = "app",
+        icon: Icon? = nil,
         subtitle: String? = nil,
         read: SpotRead? = nil,
         pick: ItemPick = .close,
@@ -86,13 +49,9 @@ public struct Spot: Equatable, Sendable {
         offeredPlaces: Set<Place> = [.card, .menubar],
         dataName: String? = nil,
         isOnGrid: Bool = true,
-        headerSymbol: String? = nil,
         offers: [CommandOffer] = [],
         offeredActions: [OfferedAction] = [],
         settings: [CommandOffer] = [],
-        file: String? = nil,
-        image: String? = nil,
-        glyph: String? = nil,
         view: String? = nil,
         viewDate: Date? = nil,
         emits: [String] = [],
@@ -102,54 +61,59 @@ public struct Spot: Equatable, Sendable {
         sample: URL? = nil,
         editsSpots: Bool = false
     ) {
-        self.editsSpots = editsSpots
-        self.emits = emits
-        self.pages = pages
-        self.uses = uses
-        self.keywords = keywords
-        self.sample = sample
-        self.id = id
-        self.name = name
-        self.url = url
+        header = Header(SpotFacts(
+            id: id, name: name, url: url, size: size, icon: icon, baseSymbol: symbol, subtitle: subtitle, read: read,
+            offeredPlaces: offeredPlaces, isFound: isFound, answers: answers, order: order, layout: layout, places: places,
+            opens: opens, host: host, growsFromField: growsFromField, mode: mode, pressRuns: pressRuns, drop: drop,
+            dataName: dataName, isOnGrid: isOnGrid, view: view, viewDate: viewDate, emits: emits, pages: pages, uses: uses,
+            offers: offers, offeredActions: offeredActions, settings: settings, keywords: keywords, sample: sample,
+            editsSpots: editsSpots
+        ))
         self.kind = kind
-        self.size = size
-        self.symbol = symbol
-        self.subtitle = subtitle
-        self.read = read
         self.pick = pick
-        self.isFound = isFound
-        self.answers = answers
-        self.order = order
         self.openTitle = openTitle
         self.actions = actions
-        self.layout = layout
-        self.places = places
-        self.opens = opens
-        self.host = host
-        self.growsFromField = growsFromField
-        self.mode = mode
-        self.pressRuns = pressRuns
-        self.drop = drop
-        self.offeredPlaces = offeredPlaces
-        self.dataName = dataName
-        self.isOnGrid = isOnGrid
-        self.headerSymbol = headerSymbol
-        self.offers = offers
-        self.offeredActions = offeredActions
-        self.settings = settings
-        self.file = file
-        self.image = image
-        self.glyph = glyph
-        self.view = view
-        self.viewDate = viewDate
+    }
+
+    @inlinable
+    public subscript<Value>(dynamicMember path: KeyPath<SpotFacts, Value>) -> Value {
+        header.facts[keyPath: path]
+    }
+
+    public subscript<Value>(dynamicMember path: WritableKeyPath<SpotFacts, Value>) -> Value {
+        get { header.facts[keyPath: path] }
+        set {
+            var facts = header.facts
+            facts[keyPath: path] = newValue
+            header = Header(facts)
+        }
+    }
+
+    public static func == (left: Spot, right: Spot) -> Bool {
+        (left.header === right.header || left.header.facts == right.header.facts) && left.kind == right.kind && left.pick == right.pick
+            && left.pickForm == right.pickForm && left.keepsRecent == right.keepsRecent && left.openTitle == right.openTitle
+            && left.actions == right.actions
+    }
+
+    public var symbol: String {
+        header.facts.symbol
+    }
+
+    public var read: SpotRead? {
+        header.facts.read
+    }
+
+    public var isGlobal: Bool { self.offeredPlaces.contains(.search) }
+    public var offersFloat: Bool { self.offeredPlaces.contains(.float) }
+    public var offersWindow: Bool { self.offeredPlaces.contains(.window) }
+    public var offersCard: Bool { self.offeredPlaces.contains(.card) }
+    public var offersMenuBar: Bool { self.offeredPlaces.contains(.menubar) }
+    public var reachesAccountKey: Bool {
+        SpotUse.reachesAccountKey(self.uses, isBuiltIn: self.isBuiltIn)
     }
 
     public var fault: FaultSpot? {
-        if case .fault(let fault)? = host { fault } else { nil }
-    }
-
-    public var icon: FileIcon? {
-        image.map(FileIcon.image) ?? file.map(FileIcon.init(path:))
+        if case .fault(let fault)? = self.host { fault } else { nil }
     }
 
     public var sizes: [SpotSize] {
@@ -157,34 +121,34 @@ public struct Spot: Equatable, Sendable {
     }
 
     public func symbol(of command: String) -> String {
-        Icon(text: offers.first { $0.id == command }?.icon)?.symbol ?? symbol
+        Icon(text: self.offers.first { $0.id == command }?.icon)?.symbol ?? self.symbol
     }
 
     public var soleCommand: String? {
-        guard host == nil, offers.count == 1 else { return nil }
-        return offers.first?.id
+        guard self.host == nil, self.offers.count == 1 else { return nil }
+        return self.offers.first?.id
     }
 
     public var opensOnReturn: Bool {
-        kind.opensSheet && !pressRuns && soleCommand == nil
+        kind.opensSheet && !self.pressRuns && soleCommand == nil
     }
 
     public var keepsHistory: Bool {
-        soleCommand != nil && !opensToSettings && read != nil
+        soleCommand != nil && !self.opensToSettings && self.read != nil
     }
 
     func takingSettings(in config: ConfigFile) -> Spot {
-        guard host == nil else { return self }
+        guard self.host == nil else { return self }
         var spot = self
         spot.settingsSheet = SpotSettings(
             file: config,
-            spot: id,
-            offers: offers,
-            fields: settings,
+            spot: self.id,
+            offers: self.offers,
+            fields: self.settings,
             offersFloat: offersFloat,
             showsInMenuBar: canShowInMenuBar
         )
-        if read == nil, !offers.isEmpty {
+        if self.read == nil, !self.offers.isEmpty {
             spot.kind = .list
             spot.opensToSettings = true
         }
@@ -192,46 +156,40 @@ public struct Spot: Equatable, Sendable {
     }
 
     public var settingsSpot: Spot? {
-        guard let settingsSheet, !holdsSettings else { return nil }
+        guard let settingsSheet = self.settingsSheet, !self.holdsSettings else { return nil }
         var spot = Spot(
-            id: SpotSettings.sheetID(of: id),
-            name: "\(name) Settings",
-            url: url,
+            id: SpotSettings.sheetID(of: self.id),
+            name: "\(self.name) Settings",
+            url: self.url,
             kind: .list,
-            size: size,
-            symbol: symbol,
+            size: self.size,
+            symbol: header.facts.baseSymbol,
+            icon: self.icon,
             read: .sheet,
             isFound: false,
-            isOnGrid: false,
-            headerSymbol: headerSymbol,
-            file: file,
-            image: image,
-            glyph: glyph
+            isOnGrid: false
         )
-        spot.settingsSheet = settingsSheet
+        spot.settingsSheet = self.settingsSheet
         spot.holdsSettings = true
         return spot
     }
 
     public func editSheet(of owner: Spot, isOwn: Bool) -> Spot? {
-        guard editsSpots, isBuiltIn else { return nil }
+        guard self.editsSpots, self.isBuiltIn else { return nil }
         var spot = Spot(
             id: OwnedSheet.edit.id(of: owner.id),
             name: "Edit \(owner.name)",
-            url: url,
+            url: self.url,
             kind: .list,
             size: owner.size,
-            symbol: owner.symbol,
-            read: read,
+            symbol: owner.header.facts.baseSymbol,
+            icon: owner.icon,
+            read: self.read,
             isFound: false,
-            mode: mode,
-            dataName: dataName,
+            mode: self.mode,
+            dataName: self.dataName,
             isOnGrid: false,
-            headerSymbol: owner.headerSymbol,
-            file: owner.file,
-            image: owner.image,
-            glyph: owner.glyph,
-            uses: uses
+            uses: self.uses
         )
         spot.isBuiltIn = true
         spot.editedFile = isOwn ? owner.url : nil
@@ -247,23 +205,19 @@ public struct Spot: Equatable, Sendable {
     func withIcon(_ text: String?) -> Spot {
         guard let icon = Icon(text: text) else { return self }
         var spot = self
-        spot.headerSymbol = icon.symbol
-        spot.symbol = icon.symbol ?? symbol
-        spot.file = icon.file
-        spot.image = icon.image
-        spot.glyph = icon.glyph
+        spot.icon = icon
         return spot
     }
 
     func builtIn() -> Spot {
         var spot = self
         spot.isBuiltIn = true
-        spot.offeredActions = offeredActions.map { $0.ofTheApp() }
+        spot.offeredActions = self.offeredActions.map { $0.ofTheApp() }
         return spot
     }
 
     public var sampled: Spot? {
-        guard let sample else { return nil }
+        guard let sample = self.sample else { return nil }
         var spot = self
         spot.url = sample
         spot.mode = .once
@@ -277,28 +231,28 @@ public struct Spot: Equatable, Sendable {
     }
 
     public var headerState: SpotState {
-        SpotState(title: name, subtitle: subtitle, isOnGrid: isOnGrid)
+        SpotState(title: self.name, subtitle: self.subtitle, isOnGrid: self.isOnGrid)
     }
 
     public var readsState: Bool {
-        (read?.has(.panel) == true || read?.has(.event(SpotEvent.appLaunch)) == true) && !isGlobal && !mode.stays
+        (self.read?.has(.panel) == true || self.read?.has(.event(SpotEvent.appLaunch)) == true) && !isGlobal && !self.mode.stays
     }
 
     public var readsAtLaunch: Bool {
-        read?.has(.event(SpotEvent.appLaunch)) == true
+        self.read?.has(.event(SpotEvent.appLaunch)) == true
     }
 
     public var readsOfferedRows: Bool {
-        guard let read else { return false }
+        guard let read = self.read else { return false }
         return isGlobal && !read.has(.panel) && read.seconds == nil
     }
 
     public var canShowInMenuBar: Bool {
-        host == nil
+        self.host == nil
     }
 
     public var showsValueInMenuBar: Bool {
-        offersMenuBar && (read?.seconds != nil || read?.hasEvent == true || mode.stays)
+        offersMenuBar && (self.read?.seconds != nil || self.read?.hasEvent == true || self.mode.stays)
     }
 
     public var click: SpotAction {
@@ -331,7 +285,7 @@ public struct Spot: Equatable, Sendable {
     }
 
     private var dropWords: [String] {
-        drop.map { $0.lowercased() }
+        self.drop.map { $0.lowercased() }
     }
 
     public func taking(_ output: SpotOutput) -> Spot {
@@ -349,8 +303,8 @@ public struct Spot: Equatable, Sendable {
         guard readsState else { return headerState }
         guard output.summary != nil || output.errors.isEmpty else { throw SpotError.badState }
         var state = SpotState(output: output, header: headerState)
-        if view != nil { state = state.holding(output.view) }
-        guard isBuiltIn, let isOnGrid = output.summary?.flag(HeadKey.shown) else { return state }
+        if self.view != nil { state = state.holding(output.view) }
+        guard self.isBuiltIn, let isOnGrid = output.summary?.flag(HeadKey.shown) else { return state }
         return state.onGrid(isOnGrid)
     }
 
@@ -363,14 +317,14 @@ public struct Spot: Equatable, Sendable {
         switch kind {
         case .launch: return "Run"
         case .toggle: return "Toggle"
-        case .list: return soleCommand.flatMap { command in offers.first { $0.id == command }?.title } ?? (pressRuns ? "Run" : "Open")
+        case .list: return soleCommand.flatMap { command in self.offers.first { $0.id == command }?.title } ?? (self.pressRuns ? "Run" : "Open")
         case .slider: return nil
-        case .widget: return opens == nil ? nil : "Open"
+        case .widget: return self.opens == nil ? nil : "Open"
         }
     }
 
     public func takes(page: String) -> Bool {
-        pages.contains { fnmatch($0, page, 0) == 0 }
+        self.pages.contains { fnmatch($0, page, 0) == 0 }
     }
 
 }

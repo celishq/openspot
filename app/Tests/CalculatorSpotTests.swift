@@ -125,7 +125,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
         defer { model.quit() }
         host.model = model
         model.runs.api = CommandAPI(mac: FakeMac(opens: false), places: files, runs: model.runs)
-        model.reload()
+        await model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
         model.searchText = "2+2"

@@ -45,43 +45,45 @@ enum SpotCardPicture {
     static func run(spot id: String, size: SpotSize, path: String) -> Never {
         NSApplication.shared.setActivationPolicy(.prohibited)
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
-        model.reload()
-        guard let entry = model.entries.first(where: { $0.id == id }) else {
-            FileHandle.standardError.write(Data("Openspot has no card for \(id). Run `openspot check` to see each file that does not load.\n".utf8))
-            exit(1)
-        }
-        let draw = {
-            let card = CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))
-            let shown = model.entries.first { $0.id == id } ?? entry
-            let view = NSHostingView(rootView: SpotPictureStage(size: card, radius: SpotTokens.corner(for: size), seed: URL(fileURLWithPath: path).lastPathComponent) {
-                SpotCardView(entry: shown, size: size, index: -1, isPressed: false, takesDrag: false, isDropTarget: false, chainLetter: nil, model: model)
-                    .environment(\.spotIsShown, true)
+        Task { @MainActor in
+            await model.reload()
+            guard let entry = model.entries.first(where: { $0.id == id }) else {
+                FileHandle.standardError.write(Data("Openspot has no card for \(id). Run `openspot check` to see each file that does not load.\n".utf8))
+                exit(1)
             }
-            .preferredColorScheme(.dark))
-            let frame = NSRect(x: -9000, y: -9000, width: card.width + 2 * margin, height: card.height + 2 * margin)
-            let window = NSWindow(contentRect: frame, styleMask: .borderless, backing: .buffered, defer: false)
-            window.contentView = view
-            window.orderBack(nil)
-            DispatchQueue.main.asyncAfter(deadline: .now() + settle) {
-                MainActor.assumeIsolated {
-                    guard let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { exit(1) }
-                    view.cacheDisplay(in: view.bounds, to: bitmap)
-                    let data = bitmap.representation(using: .png, properties: [:])
-                    exit(FileManager.default.createFile(atPath: path, contents: data) ? 0 : 1)
+            let draw = {
+                let card = CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))
+                let shown = model.entries.first { $0.id == id } ?? entry
+                let view = NSHostingView(rootView: SpotPictureStage(size: card, radius: SpotTokens.corner(for: size), seed: URL(fileURLWithPath: path).lastPathComponent) {
+                    SpotCardView(entry: shown, size: size, index: -1, isPressed: false, takesDrag: false, isDropTarget: false, chainLetter: nil, model: model)
+                        .environment(\.spotIsShown, true)
+                }
+                .preferredColorScheme(.dark))
+                let frame = NSRect(x: -9000, y: -9000, width: card.width + 2 * margin, height: card.height + 2 * margin)
+                let window = NSWindow(contentRect: frame, styleMask: .borderless, backing: .buffered, defer: false)
+                window.contentView = view
+                window.orderBack(nil)
+                DispatchQueue.main.asyncAfter(deadline: .now() + settle) {
+                    MainActor.assumeIsolated {
+                        guard let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { exit(1) }
+                        view.cacheDisplay(in: view.bounds, to: bitmap)
+                        let data = bitmap.representation(using: .png, properties: [:])
+                        exit(FileManager.default.createFile(atPath: path, contents: data) ? 0 : 1)
+                    }
                 }
             }
-        }
-        if entry.kind == .widget {
-            model.panelWillShow(holding: [])
-            Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(300))
-                await model.waitForReads()
+            if entry.kind == .widget {
+                model.panelWillShow(holding: [])
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(300))
+                    await model.waitForReads()
+                    draw()
+                }
+            } else if let sheet = model.sheets[id], entry.spot.readsState {
+                sheet.afterAnswer(draw)
+            } else {
                 draw()
             }
-        } else if let sheet = model.sheets[id], entry.spot.readsState {
-            sheet.afterAnswer(draw)
-        } else {
-            draw()
         }
         NSApplication.shared.run()
         exit(0)

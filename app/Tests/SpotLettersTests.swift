@@ -66,19 +66,19 @@ final class SpotLettersTests: XCTestCase {
         model.handleEditKey(ActionKey(name: "l"))
     }
 
-    func testTheDefaultConfigGivesASpotItsLetter() throws {
+    func testTheDefaultConfigGivesASpotItsLetter() async throws {
         try script("notes")
 
-        model.reload()
+        await model.reload()
 
         XCTAssertEqual(letter(of: "notes"), "N")
         model.isChainHeld = true
         XCTAssertTrue(model.handleChain(code: try code("n"), modifiers: model.entryKey.modifiers))
     }
 
-    func testALetterOpensItsSpotOnlyWhileTheLettersShowSoACommandKeyOfTheCardStaysItsOwn() throws {
+    func testALetterOpensItsSpotOnlyWhileTheLettersShowSoACommandKeyOfTheCardStaysItsOwn() async throws {
         try script("notes")
-        model.reload()
+        await model.reload()
 
         XCTAssertFalse(model.showsChain)
         XCTAssertFalse(model.handleChain(code: try code("n"), modifiers: model.entryKey.modifiers))
@@ -89,21 +89,21 @@ final class SpotLettersTests: XCTestCase {
         XCTAssertTrue(model.handleChain(code: try code("n"), modifiers: model.entryKey.modifiers))
     }
 
-    func testThePersonsLetterWinsAndARemovedDefaultStaysRemoved() throws {
+    func testThePersonsLetterWinsAndARemovedDefaultStaysRemoved() async throws {
         try script("notes")
         try script("mail")
         try "[[spots]]\nid = \"notes\"\nletter = \"\"\n\n[[spots]]\nid = \"mail\"\nletter = \"m\"\n"
             .write(to: configFolder.appendingPathComponent("config.toml"), atomically: true, encoding: .utf8)
 
-        model.reload()
+        await model.reload()
 
         XCTAssertNil(letter(of: "notes"))
         XCTAssertEqual(letter(of: "mail"), "M")
     }
 
-    func testEditSpotsRecordsALetterIntoTheConfig() throws {
+    func testEditSpotsRecordsALetterIntoTheConfig() async throws {
         try script("mail")
-        model.reload()
+        await model.reload()
 
         try startLetter(of: "mail")
         XCTAssertNotNil(model.recording)
@@ -115,14 +115,14 @@ final class SpotLettersTests: XCTestCase {
         XCTAssertTrue(config.contains("letter = \"m\""), config)
     }
 
-    func testALetterThatAnotherSpotHoldsMovesAndTheToastNamesThatSpot() throws {
+    func testALetterThatAnotherSpotHoldsMovesAndTheToastNamesThatSpot() async throws {
         try script("notes")
         try script("mail")
-        model.reload()
+        await model.reload()
 
         try startLetter(of: "mail")
         model.record(code: try code("n"), modifiers: [])
-        model.reload()
+        await model.reload()
 
         XCTAssertEqual(letter(of: "mail"), "N")
         XCTAssertNil(letter(of: "notes"))
@@ -130,9 +130,9 @@ final class SpotLettersTests: XCTestCase {
         XCTAssertTrue(host.notes.first?.contains("Notes") == true, host.notes.description)
     }
 
-    func testDeleteRemovesTheLetterAndEscapeKeepsIt() throws {
+    func testDeleteRemovesTheLetterAndEscapeKeepsIt() async throws {
         try script("notes")
-        model.reload()
+        await model.reload()
 
         try startLetter(of: "notes")
         model.stopRecording()
@@ -140,15 +140,15 @@ final class SpotLettersTests: XCTestCase {
 
         model.handleEditKey(ActionKey(name: "l"))
         model.record(code: Self.deleteCode, modifiers: [])
-        model.reload()
+        await model.reload()
 
         XCTAssertNil(letter(of: "notes"))
         XCTAssertTrue(config.contains("letter = \"\""), config)
     }
 
-    func testAKeyThatIsNotALetterKeepsRecordingAndSaysWhy() throws {
+    func testAKeyThatIsNotALetterKeepsRecordingAndSaysWhy() async throws {
         try script("mail")
-        model.reload()
+        await model.reload()
 
         try startLetter(of: "mail")
         model.record(code: try code("m"), modifiers: [.command])
@@ -158,9 +158,9 @@ final class SpotLettersTests: XCTestCase {
         XCTAssertEqual(host.notes.count, 1)
     }
 
-    func testEditSpotsShowsTheLetters() throws {
+    func testEditSpotsShowsTheLetters() async throws {
         try script("notes")
-        model.reload()
+        await model.reload()
         XCTAssertFalse(model.showsChain)
 
         model.beginEditing()
@@ -169,9 +169,9 @@ final class SpotLettersTests: XCTestCase {
         XCTAssertEqual(letter(of: "notes"), "N")
     }
 
-    func testTheEditHintNamesTheLetterKey() throws {
+    func testTheEditHintNamesTheLetterKey() async throws {
         try script("mail")
-        model.reload()
+        await model.reload()
 
         model.beginEditing()
 

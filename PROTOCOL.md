@@ -99,7 +99,7 @@ value=true
 The header says what a spot is. Openspot reads it without running the spot.
 
 - The header is the comment lines right after the first line. They start with `#`, `//` or `--`. It ends at the first
-  other line, or after 4096 bytes.
+  other line. A header over 64 KB is a fault, and Openspot doesn't load that spot.
 - The keys of the spot come first. After each empty comment line comes a `button` or a `field` block.
 - If a header key is wrong, or is one that Openspot doesn't know, such as `titel`, Openspot doesn't load that spot.
   Other spots still load.
@@ -756,7 +756,8 @@ struct SpotView: View {
   `spot.send(value)` calls the spot with `<id> <value>`, as a field does. A newer send stops the call of the older one.
 - Openspot compiles it when its card first shows, and again when the file changes. A view that doesn't compile shows its
   first error, and `openspot check` prints it.
-- A shared spot carries the compiled view as `<name>.view`, which Openspot uses instead of the source.
+- A shared spot carries the compiled view as `<name>.<hash>.view`, where the hash is the SHA-256 of Openspot's view
+  code and the source. Openspot uses it instead of the source only while that hash matches.
 - The view runs inside Openspot, so a crash quits Openspot. Do the work in the spot, and only draw in `body`.
 
 ## Cards of other spots
