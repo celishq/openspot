@@ -103,14 +103,14 @@ public struct SpotFile: Equatable, Sendable {
     }
 
     static func runs(_ url: URL) -> Bool {
-        if SpotListing.isSampleScript(url) { return false }
+        if SpotSample.isScript(url) { return false }
         if FileManager.default.isExecutableFile(atPath: url.path) { return true }
         return url.pathExtension == inlineExtension && !SpotHeader(url: url).block.fields.isEmpty
     }
 
     private static func sample(beside url: URL) -> URL? {
-        let sample = SpotListing.sampleScript(of: url)
-        return SpotListing.isSampleScript(sample) && FileManager.default.isExecutableFile(atPath: sample.path) ? sample : nil
+        let sample = SpotSample.script(beside: url)
+        return SpotSample.isScript(sample) && FileManager.default.isExecutableFile(atPath: sample.path) ? sample : nil
     }
 
     private static func viewDate(of view: String, script: URL) -> Date? {

@@ -8,6 +8,11 @@ public struct SpotStore: Sendable {
         public let isAdded: Bool
         public let size: SpotSize
         public let publication: SpotPublication?
+        public let hasSample: Bool
+
+        public var runsSample: Bool {
+            origin != .store
+        }
 
         public var package: URL? {
             origin == .store ? spot.url.deletingLastPathComponent() : nil
@@ -59,7 +64,10 @@ public struct SpotStore: Sendable {
     }
 
     private func item(_ spot: Spot, id: String, origin: SpotOrigin, isAdded: Bool, publication: SpotPublication? = nil) -> Item {
-        Item(id: id, spot: spot, origin: origin, isAdded: isAdded, size: arrangement.size(of: id) ?? spot.size, publication: publication)
+        Item(
+            id: id, spot: spot, origin: origin, isAdded: isAdded, size: arrangement.size(of: id) ?? spot.size, publication: publication,
+            hasSample: SpotSample.exists(for: spot, runsScript: origin != .store)
+        )
     }
 
     public func add(_ item: Item, environment: [String: String]) async throws {
@@ -122,7 +130,7 @@ public struct SpotStore: Sendable {
             size = item.size.name
             origin = item.origin.rawValue
             added = item.isAdded
-            sample = (item.origin != .store && item.spot.sample != nil) || SpotListing.hasKeptSample(beside: item.spot.url)
+            sample = item.hasSample
             published = item.publication?.rawValue
             path = item.package?.path
             let readme = SpotListing.readme(of: item.spot.url).path

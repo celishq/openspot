@@ -25,7 +25,7 @@ extension SpotsModel {
                 return .unchanged
             }
             if spot.sample != nil {
-                try await SpotListing.captureSample(of: spot, runs: runs)
+                try await SpotSample.capture(of: spot, runs: runs)
                 shared = try await Task.detached(priority: .userInitiated) { try SpotPackage(sharing: spot, from: SpotsFolder(url: folder.url).scan()) }.value
             }
             guard let released = try await release(shared, named: spot.name) else { return .failed }

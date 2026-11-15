@@ -629,41 +629,6 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(offInConfig, ["a"])
     }
 
-    func testTheSampleOfASpotIsWhatItsSampleScriptPrintsAndNoneWithoutOne() async throws {
-        try "#!/bin/sh\nprintf 'row=r\\ntitle=Real row\\n'\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
-        try "#!/bin/sh\nprintf 'row=s\\ntitle=Sample row\\n'\n".writeScript(to: core.appendingPathComponent("timer.spot/sample.sh"))
-        try "#!/bin/sh\nprintf 'title=Real row\\n'\n".writeScript(to: core.appendingPathComponent("coin.spot/coin.sh"))
-        model.reload()
-
-        let sample = await model.sample("timer")
-        let none = await model.sample("coin")
-
-        XCTAssertEqual(sample?.items.map(\.title), ["Sample row"])
-        XCTAssertNil(none)
-    }
-
-    func testASpotWithOnlyAKeptSampleShowsIt() async throws {
-        try "#!/bin/sh\nprintf 'title=Real row\\n'\n".writeScript(to: core.appendingPathComponent("coin.spot/coin.sh"))
-        try "row=s\ntitle=Kept\n".write(to: core.appendingPathComponent("coin.spot/sample.txt"), atomically: true, encoding: .utf8)
-        model.reload()
-
-        let sample = await model.sample("coin")
-
-        XCTAssertEqual(sample?.items.map(\.title), ["Kept"])
-    }
-
-    func testASharedSpotShowsItsKeptSampleAndRunsNoScript() async throws {
-        let shared = store.appendingPathComponent("shared.spot")
-        try "#!/bin/sh\n# title=Shared\n".writeScript(to: shared.appendingPathComponent("shared.sh"))
-        try "#!/bin/sh\nprintf 'row=s\\ntitle=Ran\\n'\n".writeScript(to: shared.appendingPathComponent("sample.sh"))
-        try "row=s\ntitle=Kept\n".write(to: shared.appendingPathComponent("sample.txt"), atomically: true, encoding: .utf8)
-        model.reload()
-
-        let sample = await model.sample("shared")
-
-        XCTAssertEqual(sample?.items.map(\.title), ["Kept"])
-    }
-
     func testTheStoreFindsTheCardOfASpotThatIsOffByItsStoreID() throws {
         try "#!/bin/sh\n# detail=Counts down\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
         try "#!/bin/sh\n# title=Shared\n".writeScript(to: store.appendingPathComponent("shared.spot/shared.sh"))

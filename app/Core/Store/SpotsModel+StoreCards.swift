@@ -6,8 +6,8 @@ extension SpotsModel {
     }
 
     public func sample(_ id: String) async -> SpotOutput? {
-        guard let item = storeItem(id), let text = await SpotListing.sample(of: item.spot, runsScript: item.origin != .store, runs: runs) else { return nil }
-        return SpotOutput(text: text)
+        guard let item = storeItem(id) else { return nil }
+        return await SpotSample.output(of: item, runs: runs)
     }
 
     func storeItem(_ id: String) -> SpotStore.Item? {

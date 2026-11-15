@@ -131,8 +131,8 @@ public struct SpotPackage: Equatable, Sendable {
         roots.first.flatMap { text(of: SpotListing.readmeName, in: $0) }?.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    public var sample: String? {
-        roots.first.flatMap { text(of: SpotListing.sampleName, in: $0) }
+    public var sampleText: String? {
+        roots.first.flatMap { text(of: SpotSample.textName, in: $0) }
     }
 
     func text(of name: String, in root: String) -> String? {
