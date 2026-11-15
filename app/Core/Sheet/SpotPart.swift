@@ -62,7 +62,19 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let align: Align?
     public let look: Look?
     public let mark: MetricValue?
-    public let values: [String: [String]]
+    public private(set) var values: [String: [String]]
+
+    static let rowsKey = "row"
+
+    func holding(rows: [TextBlock]) -> SpotPart {
+        guard fills, !rows.isEmpty else { return self }
+        var part = self
+        part.values[Self.rowsKey] = rows.map { $0.fields.first?.value ?? "" }
+        for (index, row) in rows.enumerated() {
+            part.values["\(Self.rowsKey).\(index)"] = row.fields.flatMap { [$0.key, $0.value] }
+        }
+        return part
+    }
 
     public struct NumberPiece: Equatable, Sendable {
         public let text: String

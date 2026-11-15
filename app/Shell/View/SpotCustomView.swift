@@ -11,6 +11,7 @@ struct SpotCustomView: View, @MainActor Equatable {
     var send: ((String) -> Void)?
     @Environment(\.spotIsShown) private var isShown
     @Environment(\.spotCards) private var cards
+    @Environment(\.spotViewPlace) private var place
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.source == rhs.source && lhs.values == rhs.values && lhs.card == rhs.card && lhs.room == rhs.room && lhs.answers == rhs.answers && lhs.views === rhs.views
@@ -72,8 +73,29 @@ struct SpotCustomView: View, @MainActor Equatable {
         }
     }
 
+    private var keep: () -> Void {
+        let views = views
+        let source = source
+        return { MainActor.assumeIsolated { views.keep(source) } }
+    }
+
+    private var close: () -> Void {
+        let place = place
+        return { MainActor.assumeIsolated { place.close() } }
+    }
+
+    private var bodyTime: (Duration) -> Void {
+        let place = place
+        let source = source
+        return { time in MainActor.assumeIsolated { place.drew(source, in: time) } }
+    }
+
     private var input: [String: Any] {
         [
+            "isShown": isShown,
+            "keep": keep,
+            "close": close,
+            "bodyTime": bodyTime,
             "size": size,
             "answers": answers,
             "inset": SpotTokens.padding,
@@ -103,7 +125,7 @@ struct SpotCustomView: View, @MainActor Equatable {
         switch views.phase(of: source) {
         case .building:
             EmptyView()
-        case .ready(let make) where isShown:
+        case .ready(let make) where isShown || views.isKept(source):
             make(values, input, send ?? { _ in })
         case .ready:
             EmptyView()

@@ -28,6 +28,17 @@ final class SpotStarterTests: XCTestCase {
         }
     }
 
+    func testAPickOfTheListStarterReadsAKeyOfItsRow() async throws {
+        _ = try SpotStarter.list.write(name: "Weather", in: folder)
+        let spot = try XCTUnwrap(SpotsFolder(url: folder).scan().spots.first)
+        let rows = try await spot.answer(.read, timeout: 10).items
+
+        let picked = try await spot.answer(SpotAction(arguments: ["open", "second"]), input: rows.last?.fields, timeout: 10)
+
+        XCTAssertEqual(rows.map(\.run), ["first", "second"])
+        XCTAssertEqual(picked.toast, "You picked the row that says: Hello again")
+    }
+
     func testANameThatAnotherSpotHasIsRefused() throws {
         _ = try SpotStarter.button.write(name: "Weather", in: folder)
 

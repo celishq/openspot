@@ -112,6 +112,24 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(output.parts.first { $0.id == "note" }?.values, [:])
     }
 
+    func testAViewBlockAlsoGetsEachRowOfItsFrameWithItsKeysInOrder() {
+        let output = SpotOutput(text: "view=gallery\nmode=all\n\nrow=a\ntitle=One\ntag=x\ntag=y\n\nrow=b\ndetail=two\\nlines\n\ntext=note\ntitle=Hi\n")
+
+        let values = output.parts.first { $0.id == "gallery" }?.values
+        XCTAssertEqual(values?["row"], ["a", "b"])
+        XCTAssertEqual(values?["row.0"], ["row", "a", "title", "One", "tag", "x", "tag", "y"])
+        XCTAssertEqual(values?["row.1"], ["row", "b", "detail", "two\nlines"])
+        XCTAssertEqual(values?["mode"], ["all"])
+        XCTAssertEqual(output.parts.first { $0.id == "note" }?.values, [:])
+        XCTAssertEqual(output.items.map(\.run), ["a", "b"])
+    }
+
+    func testAViewBlockOfAFrameWithNoRowGetsNoRowKey() {
+        let output = SpotOutput(text: "view=gallery\nmode=all\n")
+
+        XCTAssertEqual(output.parts.first?.values, ["view": ["gallery"], "mode": ["all"]])
+    }
+
     func testATextsToneColoursItsWordsAndAGaugeKeepsItsOwn() {
         let outputCheck = FrameCheck(text: "text=due\ndetail=Late\ntone=bad\n\ntext=now\ntitle=Standup\ntone=on\n\ngraph=disk\nvalue=0.9\ntone=bad\n")
         let output = outputCheck.output

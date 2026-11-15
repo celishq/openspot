@@ -17,6 +17,7 @@ final class SpotViews {
     @ObservationIgnored private var loaded: [URL: Make] = [:]
     @ObservationIgnored private var libraries: [String: URL] = [:]
     @ObservationIgnored private let library: ViewLibrary
+    @ObservationIgnored private var kept: Set<String> = []
 
     static let shared = SpotViews()
 
@@ -27,6 +28,14 @@ final class SpotViews {
 
     func phase(of source: String) -> Phase {
         phases[source] ?? .building
+    }
+
+    func keep(_ source: String) {
+        if !kept.contains(source) { kept.insert(source) }
+    }
+
+    func isKept(_ source: String) -> Bool {
+        kept.contains(source)
     }
 
     func load(_ source: String) async {
@@ -51,6 +60,7 @@ final class SpotViews {
 
     private func ready(_ source: String, _ make: @escaping Make, from url: URL) {
         libraries[source] = url
+        kept.remove(source)
         phases[source] = .ready(make)
     }
 

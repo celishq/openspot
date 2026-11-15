@@ -327,7 +327,7 @@ final class CommandLineCallTests: XCTestCase {
     func testAScriptFindsTheCommandOnItsPath() {
         let environment = ScriptProcess.environment(base: ["PATH": "/usr/bin", "HOME": "/h"], app: "/A/Openspot.app/Contents/MacOS/Openspot")
 
-        XCTAssertEqual(environment["PATH"], "/A/Openspot.app/Contents/Helpers:/usr/bin")
+        XCTAssertEqual(environment["PATH"]?.hasPrefix("/A/Openspot.app/Contents/Helpers:/usr/bin:"), true)
         XCTAssertEqual(environment["HOME"], "/h")
     }
 

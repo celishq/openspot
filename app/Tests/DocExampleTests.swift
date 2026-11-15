@@ -27,9 +27,9 @@ final class DocExampleTests: SampleSpotsCase {
                 let fences = doc.fences
                 for (index, fence) in fences.enumerated() where runnable.contains(fence.language) {
                     let place = "\(doc.path), example \(index + 1)"
-                    if fence.language == "swift" {
-                        let named = fences[..<index].last { runnable.contains($0.language) }.map { SpotHeader(text: $0.text).block.value("view") } ?? nil
-                        XCTAssertNotNil(named, "\(place) is Swift that no view= of the example before it names. Make it a view, or put it in a text fence.")
+                    if fence.language == "swift", !fence.text.hasPrefix("#!") {
+                        let header = fences[..<index].last { runnable.contains($0.language) && ($0.language != "swift" || $0.text.hasPrefix("#!")) }.map { SpotHeader(text: $0.text).block }
+                        XCTAssertNotNil(header?.value("view") ?? header?.value("source"), "\(place) is Swift that no view= or source= of the example before it names. Make it a view or a source, or put it in a text fence.")
                         continue
                     }
                     let isSpot = fence.text.hasPrefix("#!") || fence.text.hasPrefix("//")
@@ -45,9 +45,14 @@ final class DocExampleTests: SampleSpotsCase {
                         try fence.text.write(to: file, atomically: true, encoding: .utf8)
                     } else {
                         try fence.text.writeScript(to: file)
-                        XCTAssertNil(try syntaxFault(of: file), place)
+                        if fence.language == "sh" { XCTAssertNil(try syntaxFault(of: file), place) }
                     }
                     let header = SpotHeader(text: fence.text).block
+                    let sources = header.values("source").isEmpty ? [] : fences[(index + 1)...].prefix { $0.language == "swift" && !$0.text.hasPrefix("#!") }
+                    XCTAssertEqual(sources.count, header.values("source").count, "\(place) names \(header.values("source").count) sources, and \(sources.count) Swift examples follow it")
+                    for (name, source) in zip(header.values("source"), sources) {
+                        try source.text.write(to: file.deletingLastPathComponent().appendingPathComponent(name), atomically: true, encoding: .utf8)
+                    }
                     if let view = header.value("view") {
                         let source = fences[(index + 1)...].first { $0.language == "swift" }
                         XCTAssertNotNil(source, "\(place) names the view \(view), and no Swift example follows it")
@@ -58,7 +63,7 @@ final class DocExampleTests: SampleSpotsCase {
                         try "#!/bin/sh\n# on=clock.60\nprintf 'text=t\\ntitle=T\\n'\n".writeScript(to: folder.spotFile(name))
                     }
 
-                    let faults = await SpotCheck(folder: SpotsFolder(url: folder), views: ViewLibrary(cache: home.appendingPathComponent("views")), environment: TestEnvironment.values).faults()
+                    let faults = await SpotCheck(folder: SpotsFolder(url: folder), views: ViewLibrary(cache: home.appendingPathComponent("views")), programs: SwiftProgram(cache: home.appendingPathComponent("programs")), environment: TestEnvironment.values).faults()
                     XCTAssertEqual(faults, [], place)
 
                     guard let spot = try SpotsFolder(url: folder).scan().spots.first(where: { $0.id == "example" }) else {

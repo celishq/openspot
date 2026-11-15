@@ -1,5 +1,5 @@
-# The shell helper of Openspot. `. "$OPENSPOT_SH"` gives `esc`, `value`, `openspot_kv`, `openspot_row`, `openspot_rows` and
-# `openspot_serve`.
+# The shell helper of Openspot. `. "$OPENSPOT_SH"` gives `esc`, `value`, `openspot_value`, `openspot_kv`, `openspot_row`,
+# `openspot_rows`, `openspot_serve`, `openspot_keep` and `openspot_paste`.
 # Loading starts `cat` once, and each function starts `sed`, `tr` or `awk` only above 1 KB, where a shell loop is too slow.
 
 # Whether the header of the script says `mode=stay` or `mode=always`: the comment lines at its top, read with no process.
@@ -95,6 +95,13 @@ value() (
   done <<EOF_OPENSPOT
 $_openspot_stdin
 EOF_OPENSPOT
+)
+
+# Prints the real text of each value of a key from a text, such as the frame that an `openspot` call prints, as `value`
+# does from stdin.
+openspot_value() (
+  _openspot_stdin=${2-}
+  value "${1-}"
 )
 
 _openspot_nl='
@@ -233,4 +240,27 @@ openspot_rows() {
       for (i = 5; i <= NF; i++) if ($i != "") print $i
     }
     END { if (NR) print "" }'
+}
+
+# Keeps a text in a file as a whole: the second argument, or all of stdin with no second argument. It writes a new file
+# beside the old one and moves it into place, so that a reader gets the whole old text or the whole new one. It makes the
+# folder of the file, and fails with the old file as it was.
+openspot_keep() {
+  case $1 in */*) /bin/mkdir -p "${1%/*}" 2>/dev/null || return 1 ;; esac
+  _openspot_part=$(/usr/bin/mktemp "$1.XXXXXX" 2>/dev/null) || return 1
+  if [ $# -gt 1 ]; then printf %s "$2"; else /bin/cat; fi > "$_openspot_part" && /bin/mv -f "$_openspot_part" "$1" && return 0
+  /bin/rm -f "$_openspot_part"
+  return 1
+}
+
+# Pastes a text into the front app, then puts back the text that the clipboard held, also when the paste fails. It returns
+# the code of the paste, and prints what the paste prints. It needs `uses=clipboard`.
+openspot_paste() {
+  _openspot_held=$(openspot clipboard read </dev/null 2>/dev/null; printf x)
+  printf %s "${1-}" | openspot clipboard copy > /dev/null || return
+  openspot clipboard paste </dev/null
+  _openspot_code=$?
+  [ "$_openspot_code" != 0 ] || sleep "${_openspot_paste_pause:-0.3}"
+  [ "$_openspot_held" = x ] || printf %s "${_openspot_held%x}" | openspot clipboard copy > /dev/null
+  return "$_openspot_code"
 }

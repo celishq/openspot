@@ -177,6 +177,22 @@ case "$1" in
 esac
 ```
 
+Add `confirm=` to a header button whose command can't be undone. The first press shows its words, and the second runs
+the command.
+
+```sh
+#!/bin/sh
+# title=Notes
+# icon=note.text
+#
+# button=clear
+# title=Clear my notes
+# confirm=Press again to clear your notes
+case "$1" in
+  clear) rm -f "$OPENSPOT_DATA/notes" && echo 'toast=Cleared' ;;
+esac
+```
+
 A button that the spot prints acts on its rows. If no layout places it, it shows in the ⌘K menu of the sheet, and its
 shortcut works while a row is selected.
 
@@ -197,6 +213,26 @@ esac
 ![The sheet of Notes list: one row, Today](docs/images/add-buttons.png)
 
 Select **Today** and press ⌘⌫ twice, and Openspot runs `notes-list.sh trash today`.
+
+A row can hold keys of its own, such as `path=`. An action on that row gets each of its keys on stdin, so the spot
+doesn't look the row up again.
+
+```sh
+#!/bin/sh
+# title=Downloads
+# on=sheet.open
+. "$OPENSPOT_SH"
+case "$1" in
+  read)
+    openspot_row report Report.pdf
+    openspot_kv path "$HOME/Downloads/Report.pdf"
+    printf '\nbutton=reveal\ntitle=Show in Finder\nshortcut=cmd+o\n'
+    ;;
+  reveal) open -R "$(value path)" ;;
+esac
+```
+
+Select **Report.pdf** and press ⌘O, and `value path` prints the path that the row holds.
 
 Learn more in [Buttons and actions](PROTOCOL.md#buttons-and-actions).
 
@@ -273,6 +309,31 @@ printf 'text=n\ntitle=%s\n' "$OPENSPOT_REASON"
 Bring Notes to the front while the sheet shows, and Openspot asks the spot again. `OPENSPOT_REASON` says why:
 `sheet.open` or `app.front`.
 
+Some events bring a value. `system.load` comes every 5 seconds while the sheet shows, with the load of the Mac in
+`OPENSPOT_VALUE`, so the spot starts no tool to measure it.
+
+```sh
+#!/bin/sh
+# title=Load
+# icon=gauge.with.needle
+# on=sheet.open
+# on=system.load
+case "${OPENSPOT_VALUE-}" in
+  cpu=*)
+    cpu=${OPENSPOT_VALUE#cpu=}
+    printf 'text=cpu\ntitle=%s%% CPU\n' "${cpu%% *}"
+    ;;
+  *) printf 'text=cpu\ntitle=Measuring…\n' ;;
+esac
+```
+
+<!-- draw: OPENSPOT_VALUE='cpu=12 memory=61' sh "$EXAMPLE" -->
+![The sheet of Load: one line, 12% CPU](docs/images/show-the-load.png)
+
+The sheet opens with **Measuring…**, and shows the first value 5 seconds later.
+`power.change`, `disk.mount` and `device.connect` tell a spot of a new power source, a disk and a USB device the same
+way.
+
 Learn more in [Events](PROTOCOL.md#events).
 
 ## Combine spots on one card
@@ -304,9 +365,11 @@ Settings list it. The user opens them with `⌘⏎` on the spot's card, or with 
 ```sh
 #!/bin/sh
 # title=Repos
+# on=sheet.open
 #
 # field=folder
 case "$1" in
+  read) printf 'text=folder\ntitle=%s\n' "${OPENSPOT_SETTING_FOLDER:-Choose a folder in Settings}" ;;
   folder)
     picked=$(openspot folder pick)
     [ -n "$picked" ] && openspot setting set folder "$picked"
@@ -314,7 +377,102 @@ case "$1" in
 esac
 ```
 
-In the Settings of Repos, choose **Folder**, and Openspot runs `repos.sh folder`. The spot asks for a folder and keeps it. Later
-calls read it with `openspot setting get folder`.
+<!-- draw: OPENSPOT_SETTING_FOLDER=/Users/me/Code sh "$EXAMPLE" read -->
+![The sheet of Repos: one line, /Users/me/Code](docs/images/read-a-setting.png)
+
+In the Settings of Repos, choose **Folder**, and Openspot runs `repos.sh folder`. The spot asks for a folder and keeps it.
+Each later call gets it in `OPENSPOT_SETTING_FOLDER`, so the spot reads its setting with no `openspot` call.
+
+A field with `type=secret` keeps a value that no other program should see, such as the token of a service. Openspot
+asks for it in a form of its own, and gives it to each call only on stdin, as `setting.token`.
+
+```sh
+#!/bin/sh
+# title=Weather
+# on=sheet.open
+#
+# field=token
+# type=secret
+. "$OPENSPOT_SH"
+if [ -n "$(value setting.token)" ]; then
+  printf 'text=state\ntitle=Signed in\n'
+else
+  printf 'text=state\ntitle=Set a token in Settings\n'
+fi
+```
 
 Learn more in [Settings](PROTOCOL.md#settings).
+
+## Write a spot in Swift
+
+A spot can be a Swift program, for work that a shell script does badly. Openspot builds it once, and runs the built
+program at each call. Each `source=` line names one more Swift file, or a folder of them, to build with it.
+
+```swift
+#!/usr/bin/env swift
+// title=Cups today
+// icon=cup.and.saucer.fill
+// on=sheet.open
+// source=cups.swift
+print("text=cups\ntitle=\(cups) cups")
+```
+
+```swift
+let cups = 3
+```
+
+![The sheet of Cups today: one line, 3 cups](docs/images/swift-spot.png)
+
+The first file is the spot: its header is in `//` lines, and its code runs first. `cups.swift` sits next to it. The
+first call waits for the build, which needs the Command Line Tools. A spot that you share carries its built program, so
+the Mac that gets it needs no tools.
+
+Learn more in [A Swift spot](PROTOCOL.md#a-swift-spot).
+
+## Draw your own view
+
+A view draws what blocks can't. Name a SwiftUI file with `view=` in the header, and print a `view` block where it
+draws. The view reads the keys of its block, and the rows of the frame.
+
+```sh
+#!/bin/sh
+# title=Cups this week
+# icon=chart.bar
+# on=sheet.open
+# view=week.swift
+printf 'view=week\n\n'
+printf 'row=mon\ntitle=Monday\ncups=3\n\n'
+printf 'row=tue\ntitle=Tuesday\ncups=1\n\n'
+printf 'row=wed\ntitle=Wednesday\ncups=2\n'
+```
+
+```swift
+import SwiftUI
+
+struct SpotView: View {
+    let spot: SpotInput
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 8) {
+            ForEach(spot.rows) { row in
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(spot.accent)
+                    .frame(width: 28, height: 16 * CGFloat(Int(row["cups"] ?? "") ?? 0))
+            }
+            Spacer()
+            Image(systemName: "cup.and.saucer.fill")
+                .symbolEffect(.pulse, isActive: spot.isShown)
+            Button("Done") { spot.close() }
+        }
+        .padding(spot.inset)
+    }
+}
+```
+
+![The sheet of Cups this week: three bars, a cup and a Done button over the rows Monday, Tuesday and Wednesday](docs/images/own-view.png)
+
+`spot.rows` holds each row with its keys, so the bars need no second copy of the data. In a sheet, Openspot draws the
+rows under the view. `spot.isShown` is false while the panel is hidden: stop a motion or a timer then, as the cup stops
+its pulse. `spot.close()` closes the sheet, as Esc does.
+
+Learn more in [Views](PROTOCOL.md#views).

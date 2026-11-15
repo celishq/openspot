@@ -4,7 +4,6 @@ import Foundation
 public struct ViewLibrary: Sendable {
     public static let entry = "openspot_view_v1"
     static let libraryExtension = "view"
-    private static let platform = "apple-macos26.0"
     private static let preludeName = "openspot-view.swift"
     private static let hashLength = 64
 
@@ -14,6 +13,17 @@ public struct ViewLibrary: Sendable {
             public let detail: Font
             public let metric: Font
             public let value: Font
+        }
+
+        public struct SpotRow: Identifiable {
+            public let id: String
+            let fields: [String]
+
+            public subscript(key: String) -> String? { all(key).last }
+
+            public func all(_ key: String) -> [String] {
+                stride(from: 0, to: fields.count - 1, by: 2).filter { fields[$0] == key }.map { fields[$0 + 1] }
+            }
         }
 
         public struct SpotInput {
@@ -29,6 +39,11 @@ public struct ViewLibrary: Sendable {
             public let rowGap: CGFloat
             public let columns: Int
             public let tipDelay: Duration
+            public let rows: [SpotRow]
+            let shown: Bool
+            let keeper: () -> Void
+            let closer: () -> Void
+            let timer: (Duration) -> Void
             let values: [String: [String]]
             let sender: (String) -> Void
             let cardMaker: (String) -> AnyView
@@ -47,6 +62,11 @@ public struct ViewLibrary: Sendable {
                 tipMaker = card["tip"] as? (String) -> AnyView ?? { AnyView(Text($0)) }
                 mediaMaker = card["media"] as? (String) -> AnyView ?? { _ in AnyView(EmptyView()) }
                 cornerMaker = card["cornerButton"] as? (String, String, String, @escaping () -> Void) -> AnyView ?? { _, _, _, _ in AnyView(EmptyView()) }
+                rows = (values["row"] ?? []).enumerated().map { SpotRow(id: $1, fields: values["row.\\($0)"] ?? []) }
+                shown = card["isShown"] as? Bool ?? true
+                keeper = card["keep"] as? () -> Void ?? {}
+                closer = card["close"] as? () -> Void ?? {}
+                timer = card["bodyTime"] as? (Duration) -> Void ?? { _ in }
                 columnGap = card["columnGap"] as? CGFloat ?? 11
                 rowGap = card["rowGap"] as? CGFloat ?? 12
                 columns = card["columns"] as? Int ?? 16
@@ -70,7 +90,14 @@ public struct ViewLibrary: Sendable {
 
             public func all(_ key: String) -> [String] { values[key] ?? [] }
 
+            public var isShown: Bool {
+                keeper()
+                return shown
+            }
+
             public func send(_ value: String) { sender(value) }
+
+            public func close() { closer() }
 
             public func card(_ id: String) -> AnyView { cardMaker(id) }
 
@@ -85,10 +112,25 @@ public struct ViewLibrary: Sendable {
             public func cornerButton(_ symbol: String, label: String, card id: String, action: @escaping () -> Void) -> AnyView { cornerMaker(symbol, label, id, action) }
         }
 
+        extension SpotView: DynamicProperty {}
+
+        struct SpotTimedView: View {
+            var view: SpotView
+            let timer: (Duration) -> Void
+
+            var body: some View {
+                let start = ContinuousClock.now
+                let content = view.body
+                timer(ContinuousClock.now - start)
+                return content
+            }
+        }
+
         @_cdecl("\(entry)")
         public func openspotViewEntry() -> UnsafeMutableRawPointer {
             let make: ([String: [String]], [String: Any], @escaping (String) -> Void) -> AnyView = { values, card, send in
-                AnyView(SpotView(spot: SpotInput(values: values, card: card, sender: send)))
+                let input = SpotInput(values: values, card: card, sender: send)
+                return AnyView(SpotTimedView(view: SpotView(spot: input), timer: input.timer))
             }
             return Unmanaged.passRetained(make as AnyObject).toOpaque()
         }
@@ -149,7 +191,7 @@ public struct ViewLibrary: Sendable {
             let source = script.deletingLastPathComponent().appendingPathComponent(name)
             guard let data = try? Data(contentsOf: source) else { continue }
             let library = URL(fileURLWithPath: Self.path(beside: source.path, text: data))
-            try await build(source: data, named: name, kinds: SwiftProgram.kinds).write(to: library)
+            try await build(source: data, named: name, kinds: SwiftBuild.kinds).write(to: library)
             let folder = source.deletingLastPathComponent()
             for old in (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? [] where old != library.lastPathComponent && Self.isLibrary(old, of: source.lastPathComponent) {
                 try FileManager.default.removeItem(at: folder.appendingPathComponent(old))
@@ -160,32 +202,10 @@ public struct ViewLibrary: Sendable {
     }
 
     public func build(source: Data, named name: String, kinds: [String]) async throws -> Data {
-        guard (try? await run("xcode-select", ["-p"])) != nil else {
-            throw SpotError.fault("To draw a view, install the Command Line Tools: xcode-select --install")
-        }
-        let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-view-\(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: place) }
-        let prelude = place.appendingPathComponent(Self.preludeName)
-        try Data(Self.prelude.utf8).write(to: prelude)
-        let file = place.appendingPathComponent(name)
-        try source.write(to: file)
         let module = "View\(Self.name(of: source).prefix(16))"
-        var parts: [String] = []
-        for kind in kinds {
-            let part = place.appendingPathComponent(kind).path
-            parts.append(part)
-            let arguments = ["-emit-library", "-parse-as-library", "-O", "-module-name", module, "-Xfrontend", "-import-module", "-Xfrontend", "SwiftUI", "-target", "\(kind)-\(Self.platform)", prelude.path, file.path, "-o", part]
-            do {
-                try await run("swiftc", arguments)
-            } catch let error as SpotError {
-                throw SpotError.fault("This view does not compile. \(error.reason)")
-            }
-        }
-        guard parts.count > 1 else { return try Data(contentsOf: URL(fileURLWithPath: parts[0])) }
-        let library = place.appendingPathComponent("library")
-        try await run("lipo", ["-create"] + parts + ["-output", library.path])
-        return try Data(contentsOf: library)
+        let flags = ["-emit-library", "-parse-as-library", "-O", "-module-name", module, "-Xfrontend", "-import-module", "-Xfrontend", "SwiftUI"]
+        let files = [SwiftBuild.File(name: Self.preludeName, data: Data(Self.prelude.utf8)), SwiftBuild.File(name: name, data: source)]
+        return try await SwiftBuild(tools: tools).output(of: files, flags: flags, kinds: kinds, needs: "To draw a view", fault: "This view does not compile.")
     }
 
     private static var thisMac: String {
@@ -198,22 +218,5 @@ public struct ViewLibrary: Sendable {
 
     private static func name(of source: Data) -> String {
         SHA256.hash(data: Data(prelude.utf8) + source).map { String(format: "%02x", $0) }.joined()
-    }
-
-    private func run(_ name: String, _ arguments: [String]) async throws {
-        let process = ScriptProcess(url: tools.appendingPathComponent(name), arguments: arguments)
-        do {
-            for try await _ in process.start() {}
-        } catch SpotError.failed {
-            let lines = process.errors.split(separator: "\n").map(String.init)
-            let line = lines.first { $0.contains("error:") } ?? lines.last ?? "\(name) failed."
-            throw SpotError.fault(Self.withoutFolders(line))
-        }
-    }
-
-    private static func withoutFolders(_ line: String) -> String {
-        guard line.hasPrefix("/"), let colon = line.firstIndex(of: ":") else { return line }
-        let path = line[..<colon]
-        return String(line[(path.lastIndex(of: "/").map { line.index(after: $0) } ?? path.startIndex)...])
     }
 }

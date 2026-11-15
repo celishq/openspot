@@ -32,6 +32,7 @@ struct SpotFloatView: View {
         .onChange(of: size, initial: true) { onSize(size) }
         .environment(\.spotIsShown, true)
         .environment(\.spotCards, SpotCardSource(model: model))
+        .environment(\.spotViewPlace, SpotViewPlace(model: model, detached: id))
     }
 
     private func size(_ entry: SpotsModel.Entry?, _ run: SpotRun?) -> CGSize {

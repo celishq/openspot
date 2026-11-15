@@ -194,6 +194,16 @@ final class SpotUsageTests: SpotRunsCase {
         XCTAssertEqual(again.days(1, at: day).first?.uses.first?.call, "app.quit")
     }
 
+    func testTheRunsTellTheUsageWhichSpotOwnsEachView() throws {
+        try script(header: "on=sheet.open\nview=cups.swift", "printf 'view=cups\n'")
+        let view = try XCTUnwrap(try scanned().scripts.first?.view)
+
+        runs.usage.drew(view: view, seconds: 0.5)
+
+        XCTAssertEqual(runs.usage.counts["script"]?.view, SpotUsage.ViewTime(bodies: 1, seconds: 0.5))
+        XCTAssertEqual(runs.usage.counts["script"]?.name, "Script")
+    }
+
     func testAProcessReadsItsDiskBytes() throws {
         let time = try XCTUnwrap(ProcessTime(of: getpid()))
 

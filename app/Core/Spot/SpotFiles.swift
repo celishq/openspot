@@ -33,8 +33,8 @@ public struct SpotFiles: Sendable {
         files.filter(\.isScript).map(\.path)
     }
 
-    func program(of script: String) -> String? {
-        SwiftProgram.path(beside: script).flatMap(has)
+    func programs(of script: String) -> [String] {
+        files.map(\.path).filter { SwiftProgram.isProgram($0, of: script) }
     }
 
     func view(of script: String) -> String? {
@@ -49,11 +49,11 @@ public struct SpotFiles: Sendable {
 
     func own(of script: String) -> [String] {
         let view = view(of: script)
-        return [script] + (program(of: script).map { [$0] } ?? []) + (view.map { [$0] + libraries(of: $0) } ?? [])
+        return [script] + programs(of: script) + (view.map { [$0] + libraries(of: $0) } ?? [])
     }
 
     func isBuilt(_ path: String) -> Bool {
-        files.contains { SwiftProgram.path(beside: $0.path) == path || ViewLibrary.isLibrary(path, of: $0.path) && $0.path.hasSuffix(".\(SwiftProgram.sourceExtension)") }
+        files.contains { SwiftProgram.isProgram(path, of: $0.path) || ViewLibrary.isLibrary(path, of: $0.path) && $0.path.hasSuffix(".\(SwiftProgram.sourceExtension)") }
     }
 
     private func has(_ path: String) -> String? {

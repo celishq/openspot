@@ -94,6 +94,7 @@ struct SpotsView: View {
             softBlur
         }
         .environment(\.spotIsShown, model.isShown)
+        .environment(\.spotViewPlace, SpotViewPlace(model: model))
         .environment(\.spotPanels, model.panels)
         .onChange(of: model.isShown) { _, isShown in
             if !isShown { dropTarget = nil }

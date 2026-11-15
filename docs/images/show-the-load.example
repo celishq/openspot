@@ -1,0 +1,12 @@
+#!/bin/sh
+# title=Load
+# icon=gauge.with.needle
+# on=sheet.open
+# on=system.load
+case "${OPENSPOT_VALUE-}" in
+  cpu=*)
+    cpu=${OPENSPOT_VALUE#cpu=}
+    printf 'text=cpu\ntitle=%s%% CPU\n' "${cpu%% *}"
+    ;;
+  *) printf 'text=cpu\ntitle=Measuring…\n' ;;
+esac

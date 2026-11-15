@@ -25,6 +25,7 @@ public struct SpotFacts: Equatable, Sendable {
     public internal(set) var isOnGrid: Bool
     public let view: String?
     public let viewDate: Date?
+    public let sources: [String]
     public let emits: [String]
     public let pages: [String]
     public internal(set) var uses: Set<SpotUse>
