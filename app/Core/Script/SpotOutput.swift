@@ -11,7 +11,6 @@ public struct SpotOutput: Equatable, Sendable {
     public private(set) var pickForm: CommandAction?
     public private(set) var parts: [SpotPart] = []
     public private(set) var errors: [String] = []
-    public private(set) var retired: [String] = []
     public private(set) var layout: SheetLayout?
     public private(set) var value: TextBlock?
     public private(set) var view: TextBlock?
@@ -38,7 +37,7 @@ public struct SpotOutput: Equatable, Sendable {
     private static let button = "button"
     private static let repeatKind = "repeat"
     private static let optionKind = "option"
-    private static let retiredKinds: Set<String> = ["template", "spot", retired]
+    private static let retiredKinds: Set<String> = [retired]
     private static let retired = "retired"
     private static let foldedKinds: Set<String> = ["gauge", "slider", "hotkey"]
     private static let rowsArea = "rows"
@@ -77,21 +76,6 @@ public struct SpotOutput: Equatable, Sendable {
     public init(text: String) {
         let blocks = TextBlock.blocks(in: text)
         self.init(blocks: blocks.map(Self.drawn), checks: false)
-        retired = blocks.compactMap(Self.retiredWord)
-    }
-
-    private static func retiredWord(of block: TextBlock) -> String? {
-        guard let first = block.fields.first else { return nil }
-        switch first.key {
-        case "gauge": return "gauge=\(first.value) is now a graph. Write graph=\(first.value) with one value from 0 to 1."
-        case "slider", "hotkey": return "\(first.key)=\(first.value) is now a field. Write field=\(first.value) with type=\(first.key)."
-        case "row" where block.value("keyword") != nil:
-            return "The row \(first.value) has keyword=\(block.value("keyword")!), which Openspot no longer reads. Write keywords=a, b."
-        case "switch" where block.value("look") == "tick": return "The switch \(first.value) has look=tick, which Openspot no longer reads. Write type=tick."
-        case _ where !isKind(first.key) && block.value("search") == "script":
-            return "The head has search=script, which Openspot no longer reads. Write on=sheet.text in the header."
-        default: return nil
-        }
     }
 
     var unreadable: [String] {
@@ -207,16 +191,13 @@ public struct SpotOutput: Equatable, Sendable {
             checkedFaults.append("a part cannot be called \(id), which stdin uses")
         }
         for row in rows {
-            if row.value("as") != nil {
-                checkedFaults.append("the row \(row.value("row") ?? "") has as=, which Openspot no longer reads. A row draws its own keys")
-            }
             if let file = row.value("file"), !file.hasPrefix("/") {
                 checkedFaults.append("the row \(row.value("row") ?? "") names the file \(file), which does not start with /")
             }
         }
         let carded = Set(face.drawings.values.flatMap { $0.joined() })
         let sheet = parts.filter { !carded.contains($0.id) || layout?.areas[$0.id] != nil }
-        if !sheet.isEmpty { checkedFaults += SheetFaults.of(layout: layout, summary: summary, parts: sheet) }
+        if !sheet.isEmpty { checkedFaults += SheetFaults.of(layout: layout, parts: sheet) }
     }
 
     public var control: SpotPart? {
@@ -270,7 +251,7 @@ public struct SpotOutput: Equatable, Sendable {
     }
 
     public var sheetFaults: [String] {
-        (parts.isEmpty && perLine == nil ? ["the sheet has no parts"] : []) + retired + unreadable.map { "cannot read the block that starts: \($0)" } + partFaults
+        (parts.isEmpty && perLine == nil ? ["the sheet has no parts"] : []) + unreadable.map { "cannot read the block that starts: \($0)" } + partFaults
     }
 
     public var kind: SpotKind {

@@ -230,10 +230,6 @@ public enum CommandLineCall: Equatable, Sendable {
             return
         }
         guard !noun.hasPrefix("-") else { return nil }
-        if let form = ReservedSetting.replacement(of: arguments) {
-            self = .refused("`openspot \(arguments.joined(separator: " "))` is now `\(form)`.")
-            return
-        }
         switch ReservedSetting.call(of: arguments, spot: environment["OPENSPOT_ID"].flatMap { $0.isEmpty ? nil : $0 }) {
         case .success(let words)?: self.init(reserved: words, environment: environment)
         case .failure(let refusal)?: self = .refused(refusal.line)

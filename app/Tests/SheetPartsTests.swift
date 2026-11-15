@@ -285,7 +285,7 @@ final class SheetPartsTests: XCTestCase {
     func testTheCatalogReportsWhatAPartCannotHold() {
         XCTAssertEqual(SpotOutput(text: lights).partFaults, [])
         XCTAssertEqual(SpotOutput(text: "text=a\ncolour=red\n").partFaults, ["the part a has an unknown key: colour"])
-        XCTAssertEqual(SpotOutput(text: "choice=a\noption=en:English\n").partFaults, ["the part a has option lines, which Openspot no longer reads. Print each option as a block after its choice, such as option=en with title=English"])
+        XCTAssertEqual(SpotOutput(text: "choice=a\noption=en:English\n").partFaults, ["the part a has an unknown key: option"])
         XCTAssertEqual(SpotOutput(text: "choice=a\ncolor=red\n").partFaults, ["the part a needs a color as #rrggbb: red"])
         XCTAssertEqual(SpotOutput(text: "text=a\nshortcut=nope+a\n").partFaults, ["the part a has an unknown key combination: nope+a"])
         XCTAssertEqual(SpotOutput(text: "text=a\ntitle=A\ndetail=9%\nvalue=0.09\ntone=bad\n").partFaults, [])

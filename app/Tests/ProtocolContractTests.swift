@@ -36,7 +36,7 @@ final class ProtocolContractTests: XCTestCase {
     private func isKind(_ word: String) -> Bool {
         let block = word == "option" ? "choice=c\n\noption=x\ntitle=X\n" : "\(word)=x\ntitle=X\n"
         let output = SpotOutput(text: block)
-        return output.summary == nil && output.errors.isEmpty && output.retired.isEmpty
+        return output.summary == nil && output.errors.isEmpty
     }
 
     private func isCallWord(_ word: String) -> Bool {

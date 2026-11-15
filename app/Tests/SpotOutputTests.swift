@@ -111,11 +111,8 @@ final class SpotOutputTests: XCTestCase {
     }
 
     func testAnActionWithAnUnknownScopeIsAFaultThatNamesTheScopes() {
-        let old = SpotOutput(text: "button=b\ntitle=B\nscope=command\n")
         let unknown = SpotOutput(text: "button=c\ntitle=C\nscope=world\n")
 
-        XCTAssertEqual(old.actions, [])
-        XCTAssertEqual(old.partFaults, ["the button b has scope=command, which Openspot no longer reads. Write scope=spot"])
         XCTAssertEqual(unknown.partFaults, ["the button c has an unknown scope: world. Use item or spot"])
         XCTAssertEqual(unknown.errors, [])
     }
@@ -258,36 +255,18 @@ final class SpotOutputTests: XCTestCase {
         XCTAssertEqual(output.items.first?.keywords, ["happy", "big smile"])
     }
 
-    func testAKeywordLineInARowNamesTheList() {
-        let output = SpotOutput(text: "row=a\ntitle=A\nkeyword=happy\n")
-
-        XCTAssertEqual(output.retired, ["The row a has keyword=happy, which Openspot no longer reads. Write keywords=a, b."])
-    }
-
-    func testATemplateOrASpotBlockIsSkippedAndReportedWhereverItIs() {
-        let output = SpotOutput(text: "template=row\ngrid=pic name\npicture=pic\n\nspot=cpu\n\ntitle=Apps\n\nrow=a\ntitle=A\nname=A\n")
-
-        XCTAssertEqual(output.errors, ["template=row", "spot=cpu"])
-        XCTAssertEqual(output.summary?.value("title"), "Apps")
-        XCTAssertEqual(output.parts.map(\.id), [])
-        XCTAssertEqual(output.items.map(\.run), ["a"])
-    }
-
-    func testCardAndPadLinesDrawNothingAndACheckReportsThem() throws {
+    func testCardAndPadLinesDrawNothing() throws {
         let output = SpotOutput(text: "grid=a a\ncard=a\npad=7 8 9\n\ntext=a\ntitle=A\n")
 
         XCTAssertEqual(output.parts.map(\.id), ["a"])
         XCTAssertEqual(output.layout?.rows, [["a", "a"]])
-        XCTAssertTrue(output.partFaults.contains("a sheet has no card key, so leave it out: each part draws its own box"), "\(output.partFaults)")
-        XCTAssertTrue(output.partFaults.contains("a sheet has no pad key, so print a button for each key"), "\(output.partFaults)")
     }
 
-    func testARowDrawsItsOwnKeysAndACheckReportsAs() throws {
+    func testARowDrawsItsOwnKeys() throws {
         let output = SpotOutput(text: "row=r\ntitle=R\nas=big\nname=Big\n")
 
         let row = try XCTUnwrap(output.items.first)
         XCTAssertEqual(row, SpotItem(title: "R", run: "r"))
-        XCTAssertTrue(output.partFaults.contains("the row r has as=, which Openspot no longer reads. A row draws its own keys"), "\(output.partFaults)")
     }
 
     func testAGraphOfOneValueIsAGaugeAFieldTypeIsItsInputAndAnOldKindIsReported() {
@@ -298,22 +277,4 @@ final class SpotOutputTests: XCTestCase {
         XCTAssertEqual(output.errors, ["gauge=old"])
     }
 
-    func testSearchScriptInTheHeadNamesTheEventThatTookItsPlace() {
-        let output = SpotOutput(text: "search=script\ngrid=rows\n\nrow=a\ntitle=A\n")
-
-        XCTAssertEqual(output.retired, ["The head has search=script, which Openspot no longer reads. Write on=sheet.text in the header."])
-    }
-
-    func testEachOldOutputWordNamesTheWordThatTookItsPlace() {
-        let output = SpotOutput(text: "gauge=g\nvalue=1\n\nslider=s\nvalue=4\n\nhotkey=k\nvalue=ctrl+k\n\nswitch=t\nlook=tick\n")
-
-        XCTAssertEqual(output.retired, [
-            "gauge=g is now a graph. Write graph=g with one value from 0 to 1.",
-            "slider=s is now a field. Write field=s with type=slider.",
-            "hotkey=k is now a field. Write field=k with type=hotkey.",
-            "The switch t has look=tick, which Openspot no longer reads. Write type=tick."
-        ])
-        XCTAssertEqual(output.sheetFaults.filter { $0.contains("cannot read the block") }, [])
-        XCTAssertTrue(output.sheetFaults.contains("slider=s is now a field. Write field=s with type=slider."))
-    }
 }
