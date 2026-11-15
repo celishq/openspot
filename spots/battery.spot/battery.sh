@@ -1,8 +1,11 @@
 #!/bin/sh
-# on=clock.30
+# detail=Its charge, and the time left
+# on=power.change
 # offers=card
 # offers=menubar
-pmset -g batt | awk '
+# `show <report>` draws a report of `pmset -g batt` that is given, such as the one of sample.sh.
+if [ "$1" = show ] && [ -n "${2-}" ]; then report=$2; else report=$(pmset -g batt); fi
+printf '%s\n' "$report" | awk '
   /InternalBattery/ && match($0, /[0-9]+%/) { line = $0 }
   !first && /[0-9]+%/ { first = $0 }
   END {

@@ -31,7 +31,7 @@ reset() {
 case "$1" in
   draw|file|reset)
     mkdir -p "$data"
-    printf '%s' "$2" > "$data/target"
+    printf '%s' "$2" > "$data/target.$$" && mv "$data/target.$$" "$data/target"
     target=$2
     name=$(printf '%s' "$target" | tr '/' '_')
     rm -f "$data/$name.draft"
@@ -59,19 +59,19 @@ case "$1" in
     ;;
   drawer)
     [ -n "$target" ] && [ ${#2} -eq 81 ] || exit 0
-    printf '%s' "$2" > "$data/$name.draft"
+    printf '%s' "$2" > "$data/$name.draft.$$" && mv "$data/$name.draft.$$" "$data/$name.draft"
     ;;
   clear)
-    [ -n "$target" ] && printf '%s' "$empty" > "$data/$name.draft"
+    [ -n "$target" ] && printf '%s' "$empty" > "$data/$name.draft.$$" && mv "$data/$name.draft.$$" "$data/$name.draft"
     ;;
   save)
     [ -n "$target" ] || exit 0
     dots=$(cat "$data/$name.draft" 2>/dev/null || cat "$data/$name.dots" 2>/dev/null)
     [ ${#dots} -eq 81 ] && [ "$dots" != "$empty" ] || { reset; exit 0; }
     rm -f "$data/$name".*.svg "$data/$name".*.picture.* "$data/$name.draft"
-    printf '%s' "$dots" > "$data/$name.dots"
+    printf '%s' "$dots" > "$data/$name.dots.$$" && mv "$data/$name.dots.$$" "$data/$name.dots"
     file="$data/$name.$(date +%s).svg"
-    picture "$dots" > "$file"
+    picture "$dots" > "$file.$$" && mv "$file.$$" "$file"
     openspot setting set --spot "$target" icon "$file"
     ;;
 esac

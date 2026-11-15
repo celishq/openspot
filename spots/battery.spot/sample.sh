@@ -1,2 +1,2 @@
 #!/bin/sh
-printf 'graph=battery\ntitle=84%%\ndetail=3:12 left\nicon=battery.75\nvalue=0.84\n'
+exec "$(dirname "$0")/battery.sh" show " -InternalBattery-0 (id=1)	84%; discharging; 3:12 remaining present: true"

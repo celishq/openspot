@@ -84,9 +84,9 @@ final class CommandNounTests: XCTestCase {
     func testAKeyVerbSkipsTheUseCheckAndMeetsTheGateOfTheKey() async throws {
         runs.isCareful = true
 
-        let answer = try await ask(["account", "words"], from: spot(uses: []))
+        let answer = try await ask(["store", "publish", "x"], from: spot(uses: []))
 
-        XCTAssertEqual(answer.errors, "Only Openspot's Account and Store spots can reach your account key.\n")
+        XCTAssertEqual(answer.errors, "Only Openspot's Store can reach your account key.\n")
         XCTAssertNil(runs.usage.counts["chime"])
     }
 
@@ -96,7 +96,7 @@ final class CommandNounTests: XCTestCase {
                 let arguments = [noun.name] + verb.words + (verb.form == "on|off" ? ["off"] : verb.form == "<id>" ? ["x"] : [])
                 for caller in [nil, spot(uses: [.account])] {
                     let answer = try await ask(arguments, from: caller)
-                    XCTAssertEqual(answer.errors, "Only Openspot's Account and Store spots can reach your account key.\n", arguments.joined(separator: " "))
+                    XCTAssertEqual(answer.errors, "Only Openspot's Store can reach your account key.\n", arguments.joined(separator: " "))
                 }
             }
         }

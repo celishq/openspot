@@ -487,9 +487,9 @@ printf 'text=load\ntitle=%s\n' "${OPENSPOT_VALUE:-cpu=0 memory=0}"
 | `app.launch`       | Once when Openspot starts.                                                |               |
 | `screen.wake`      | When the screen wakes.                                                    |               |
 | `system.load`      | Every 5 seconds while the spot is wanted.                                 | `cpu=<percent> memory=<percent>` |
-| `power.change`     | When the Mac moves to another power source.                               | `ac`, `battery` or `ups` |
+| `power.change`     | When the Mac moves to another power source, or its battery gains or loses a percent. | `ac`, `battery` or `ups` |
 | `disk.mount`       | When a disk or a volume mounts.                                           | its path      |
-| `device.connect`   | When a USB device connects.                                               | its name      |
+| `device.connect`   | When a USB device connects. A Bluetooth device raises no event.           | its name      |
 
 - Openspot also asks a spot for these reasons, which aren't events:
   - `spot.change`: after a call that printed nothing;
@@ -562,6 +562,7 @@ The shell helper reads and writes values for you:
 | `esc <text>`                                | Prints text as a value.                                                                               |
 | `value <key>`                               | Prints each value of the key from stdin, one per line, in order.                                      |
 | `openspot_value <key> <text>`               | Prints each value of the key from a text, such as the frame that an `openspot` call prints.           |
+| `openspot_input`                            | Prints the stdin of the call as it came.                                                              |
 | `openspot_kv <key> <value>`                 | Prints one line, with its value escaped.                                                              |
 | `openspot_row <id> <title> [detail] [icon]` | Prints one row.                                                                                       |
 | `openspot_rows [kind]`                      | Prints a row, or a block of that kind, for each tab-separated line of stdin: id, title, detail, icon. |
@@ -569,7 +570,9 @@ The shell helper reads and writes values for you:
 | `openspot_keep <file> [text]`               | Keeps the text, or all of stdin, in the file as a whole, so a reader never gets half of it.           |
 | `openspot_paste <text>`                     | Pastes the text into the front app, then puts back the text that the clipboard held, or clears it.    |
 
-- Loading the helper reads all of stdin, except in a staying spot.
+- Loading the helper reads all of stdin, except in a staying spot, and keeps it in memory. So read the stdin of a call
+  with `value` or `openspot_input`, not with `cat` or `read`: the function of `openspot_serve` gets an empty stdin in
+  each mode, and so does each process it starts.
 - `openspot_keep` makes the folder of the file. When it can't write, it fails and the old file stays as it was.
 - `openspot_paste` needs `uses=clipboard`. It fails when the paste fails, and puts the clipboard back first. It puts
   back the text that the clipboard held. A clipboard that held a picture, a file or nothing is cleared, so the pasted
@@ -928,8 +931,7 @@ A spot asks the Mac and Openspot for things through one command, which works the
   - calls that change Openspot or its places: `app quit`, `update install`, and `setting set` of a key that Openspot
     keeps for the user (see [Settings](#settings));
   - calls that open a window or the panel: `spot show`, `spot open`, `spot choose`, `spot settings`, `spot edit`, `spot prompt`, `spot share`, `spot review`, `grid edit`, `setting change`,
-    `update check`, `calendar show` and `reminders show`;
-  - `account sync`, which only the user and the spots of Openspot can call.
+    `update check`, `calendar show` and `reminders show`.
 - `calendar add --dry-run` and `reminders add --dry-run` change nothing, so they work in a read.
 - `openspot batch` runs one call for each line of stdin, and prints `---` after each. It stops at the first failure.
 - `--frame` makes `app status`, `account`, `spot list`, `store list` and `setting list` print blocks instead of JSON.
@@ -967,7 +969,7 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot emoji [--tone name]`                     | Prints each emoji as a row, with its name in the language of the Mac.                           |
 | `openspot symbols`                                 | Prints each symbol of the Character Viewer as a row.                                            |
 | `openspot translate [--from code] [--to code]`     | Translates the text on stdin. `openspot translate languages` prints the languages it knows.     |
-| `openspot account <verb>`                          | Reaches the account key with `new`, `words`, `checked`, `phrase`, `sign-in` or `sign-out`. See [Trust](#trust). |
+| `openspot account [--frame]`                       | Prints the public facts of the account that signs what you publish. See [Trust](#trust).        |
 
 ### Settings
 
@@ -1078,7 +1080,7 @@ openspot app quit
 | `calendar`  | each call of `calendar` and `reminders`                                                                                                                         |
 | `network`   | No call. The spot reaches the network.                                                                                                                          |
 | `files`     | No call. The spot writes outside its data folder.                                                                                                               |
-| `account`   | `account new`, `words`, `checked`, `phrase`, `sign-in`, `sign-out` and `sync`. Only a spot that ships inside Openspot can have it.                               |
+| `account`   | `store publish`. Only a spot that ships inside Openspot can have it.                                                                                            |
 
 - A call that needs a use the header doesn't name still runs, and shows one toast for each spot, use and day.
   `openspot check` can't report it, because only a run shows it.
@@ -1102,11 +1104,11 @@ openspot app quit
   publishes the spot, and refuses a shared spot whose files don't match its last release. A spot reads nothing from it.
 - `openspot account` tells any spot the public facts: whether an account is signed in, its `npub`, the `handle` it was
   made with, the day it was made (`since`), whether its words are backed up, and whether it syncs.
-- `openspot account new <handle>` makes the key with that handle: 3 to 20 of a–z, 0–9, `-` and `_`. It and every other
-  call of `account` reach the key, so they answer only a spot that ships inside Openspot and names `account` in its uses,
-  and only while the app runs. `words`, `checked`, `sign-in`, `sign-out` and `sync` ask for Touch ID first, which counts
-  for 5 minutes. `checked` says only whether the whole set of words is right. The calls of such a spot stay out of the
-  call log and the playground.
+- No call makes, changes or removes the account key, and none prints or takes the 12 words. Only the Account sheet of
+  the app does, and it asks for Touch ID or the Mac's password before each act on the key. An unlock counts for 5
+  minutes, and only for the act it was asked for. A Mac with neither a password nor Touch ID cannot unlock the key.
+- `store publish` signs with the key, so it answers only a spot that ships inside Openspot and names `account` in its
+  uses, and only while the app runs. The calls of such a spot stay out of the call log and the playground.
 - The 12 words of an account give its key as NIP-06 says, so they open the same account in another Nostr client.
 
 ## Messages

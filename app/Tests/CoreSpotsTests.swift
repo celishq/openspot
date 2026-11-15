@@ -93,6 +93,18 @@ final class CoreSpotsTests: XCTestCase {
         XCTAssertEqual(config.arrangement.letters(over: SpotArrangement()).count, config.arrangement.choices.filter { $0.letter?.isEmpty == false }.count)
     }
 
+    @MainActor func testAMetricThatAGetTurnsOnShowsItsCard() throws {
+        let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let defaults = Config(text: try String(contentsOf: repo.appendingPathComponent("app/defaults.toml"), encoding: .utf8)).arrangement
+        let metrics = ["battery", "cpu", "devices", "disk", "memory"]
+        let scan = try SpotsFolder(url: folder, core: repo.appendingPathComponent("spots"), enabled: Set(metrics)).scan()
+
+        for id in metrics {
+            let spot = try XCTUnwrap(scan.spots.first { $0.id == id }, id)
+            XCTAssertTrue(SpotsModel.Entry(spot: spot, run: nil, defaults: defaults).isOnGrid, id)
+        }
+    }
+
     func testACoreSpotRunsInPlaceFromItsFolderInTheApp() throws {
         try write("apps.sh", in: core)
 

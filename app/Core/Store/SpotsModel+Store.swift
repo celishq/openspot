@@ -56,16 +56,20 @@ extension SpotsModel {
     func accountKey(publishing id: String?) async throws -> AccountKey? {
         let account = Account(store: files.account, allows: { [weak self] reason in await self?.allows(reason) ?? false })
         if let key = try await Task.detached(priority: .userInitiated, operation: { try await account.signing() }).value { return key }
-        let page = id.map { AccountSheet.publishPrefix + $0 }
         if let account = entries.first(where: { $0.id == AccountSheet.id }) {
             host.present()
-            if let page, account.spot.takes(page: page) {
-                _ = push(FlowSheet(spot: account.id, page: page))
-                return nil
-            }
             _ = push(FlowSheet(spot: account.id))
+            waitingPublish = id
+            if id != nil { return nil }
         }
         host.notify("Set up your account, then publish again.")
         return nil
+    }
+
+    func publishWaiting() async -> Bool {
+        guard let id = waitingPublish else { return false }
+        waitingPublish = nil
+        await publish(id)
+        return true
     }
 }

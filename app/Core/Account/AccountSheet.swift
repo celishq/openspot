@@ -4,13 +4,13 @@ public actor AccountSheet {
     public struct Links: Sendable {
         let allows: @Sendable (String) async -> Bool
         let copy: @Sendable (String) async -> Bool
-        let publish: @Sendable (String) async -> Void
+        let publish: @Sendable () async -> Bool
         let userName: @Sendable () -> String
 
         public init(
             allows: @escaping @Sendable (String) async -> Bool,
             copy: @escaping @Sendable (String) async -> Bool,
-            publish: @escaping @Sendable (String) async -> Void,
+            publish: @escaping @Sendable () async -> Bool,
             userName: @escaping @Sendable () -> String
         ) {
             self.allows = allows
@@ -37,7 +37,6 @@ public actor AccountSheet {
 
     public static let id = "openspot/account"
     public static let card = "openspot:account-card"
-    public static let publishPrefix = "publish:"
 
     private let account: Account
     private let links: Links
@@ -52,13 +51,11 @@ public actor AccountSheet {
         Spot(
             id: Self.id, name: "Account", url: URL(fileURLWithPath: NSTemporaryDirectory()), kind: .list, icon: .symbol("person.crop.circle"),
             subtitle: "Signs what you publish", read: .sheet, host: .account(self), offeredPlaces: [.search], dataName: "account",
-            isOnGrid: false, view: Self.card, pages: ["\(Self.publishPrefix)*"], uses: [.app, .account, .clipboard]
+            isOnGrid: false, view: Self.card, uses: [.app, .account, .clipboard]
         ).builtIn()
     }
 
     func answer(_ arguments: [String], input: String?, variables: [String: String]) async throws -> String {
-        let page = variables["OPENSPOT_PAGE"] ?? ""
-        let publishing = page.hasPrefix(Self.publishPrefix) ? String(page.dropFirst(Self.publishPrefix.count)) : nil
         let fields = TextBlock.blocks(in: input ?? "").first
         let reason = variables["OPENSPOT_REASON"]
         var toast: String?
@@ -78,7 +75,7 @@ public actor AccountSheet {
                     saved = .account
                     phrase = ""
                     toast = "Signed in"
-                    if let publishing { pops = await publish(publishing) }
+                    pops = await publishWaiting()
                 }
             } else {
                 saved = .restore
@@ -97,7 +94,7 @@ public actor AccountSheet {
             }
             try account.make(handle: typed)
             saved = nil
-            if let publishing { pops = await publish(publishing) }
+            pops = await publishWaiting()
         case "own":
             saved = .restore
         case "card":
@@ -143,9 +140,9 @@ public actor AccountSheet {
         }
     }
 
-    private func publish(_ id: String) async -> Bool {
+    private func publishWaiting() async -> Bool {
+        guard await links.publish() else { return false }
         saved = nil
-        await links.publish(id)
         return true
     }
 

@@ -45,12 +45,13 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["account"])?.value as? AccountCall, .status(.json))
         XCTAssertEqual(CommandLineCall(arguments: ["account", "--frame"], environment: ["OPENSPOT_REASON": "sheet.open"])?.value as? AccountCall, .status(.frame))
         XCTAssertEqual(CommandLineCall(arguments: ["account", "open"])?.value as? CallFault, .unknown("account open"))
-        XCTAssertEqual(CommandLineCall(arguments: ["account", "sync", "off"])?.value as? AccountCall, .sync(false))
-        XCTAssertEqual(CommandLineCall(arguments: ["account", "sign-out"], environment: ["OPENSPOT_REASON": "sheet.open"])?.value as? CallFault, .refused("`openspot account sign-out` changes your account, so it cannot run in a read. Run it from a pick or an action."))
-        XCTAssertEqual(CommandLineCall(arguments: ["account", "words"], environment: ["OPENSPOT_REASON": "sheet.open"])?.value as? AccountCall, .words)
+        for verb in ["words", "choices", "checked", "phrase", "sign-in", "new", "sign-out", "sync"] {
+            XCTAssertEqual(CommandLineCall(arguments: ["account", verb])?.value as? CallFault, .unknown("account \(verb)"))
+        }
         XCTAssertEqual(CommandLineCall(arguments: ["account", "check", "4", "13"])?.value as? CallFault, .unknown("account check 4 13"))
-        XCTAssertEqual(CommandLineCall(arguments: ["account", "sync", "maybe"])?.value as? CallFault, .unknown("account sync maybe"))
-        XCTAssertTrue(CommandLineCall.usage.contains("openspot account words"))
+        XCTAssertTrue(CommandLineCall.usage.contains("openspot account [--frame]"))
+        XCTAssertFalse(CommandLineCall.usage.contains("openspot account words"))
+        XCTAssertFalse(CommandLineCall.usage.contains("openspot account sign-out"))
     }
 
     func testEmojiCanNameATone() {

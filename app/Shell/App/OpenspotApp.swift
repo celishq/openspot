@@ -18,8 +18,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     }
 
     private static let dragSourceFocusDelay = 0.2
-    static let touchIDReuse: TimeInterval = 300
-    static var touchIDPassed: Date?
+    static var unlocks = UnlockPass()
 
     private(set) var item: OpenspotItem?
     private(set) lazy var model = SpotsModel(host: self)

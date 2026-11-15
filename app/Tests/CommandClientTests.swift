@@ -100,11 +100,13 @@ final class CommandClientTests: XCTestCase {
         socket = CommandSocket(folder: config, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: app, runs: runs, rates: .offline))
         let account = Spot(id: "openspot/account", name: "Account", url: folder.appendingPathComponent("account.sh"), uses: [.account]).builtIn()
         let copied = [CallerTokens.variable: runs.tokens.issue(for: account)]
-        let refused = "Only Openspot's Account and Store spots can reach your account key.\n"
+        let refused = "Only Openspot's Store can reach your account key.\n"
 
         XCTAssertEqual(try run(client, ["store", "publish", "mine"]).errors, refused)
         XCTAssertEqual(try run(client, ["store", "publish", "mine"], variables: copied).errors, refused)
-        XCTAssertEqual(try run(client, ["account", "new"], variables: copied).errors, refused)
+        for verb in ["new", "sign-out", "sync"] {
+            XCTAssertEqual(try run(client, ["account", verb], variables: copied).code, 2, verb)
+        }
 
         let opened = await app.opened
         XCTAssertEqual(opened, [])

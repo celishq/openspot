@@ -26,15 +26,15 @@ final class ScreenExamplesTests: SampleSpotsCase {
         """.writeScript(to: folder.appendingPathComponent("tools/openspot"))
     }
 
-    func testRecordStartsWithTheKeptInputsAndTheNextRunStopsAndCopiesTheVideo() async throws {
+    func testRecordStartsWithTheInputsOfItsSettingAndTheNextRunStopsAndCopiesTheVideo() async throws {
         let record = try example("Record")
-        try await withPrivateHome { folder in
+        try await withPrivateHome(["OPENSPOT_SETTING_INPUTS": "mic:B2 system"]) { folder in
             try self.fakeScreen(in: folder)
-            try "mic:B2 system".write(to: folder.appendingPathComponent("setting-inputs"), atomically: true, encoding: .utf8)
 
             let started = try await record.perform(.open, timeout: 60)
             XCTAssertEqual(started, "Recording the screen. Run Record again to stop it.")
             XCTAssertTrue(try self.read("calls", in: folder).contains("screen record start mic:B2 system\n"))
+            XCTAssertFalse(try self.read("calls", in: folder).contains("setting get"))
 
             let stopped = try await record.perform(.open, timeout: 60)
             XCTAssertEqual(stopped, "Copied the recording.")
@@ -42,33 +42,36 @@ final class ScreenExamplesTests: SampleSpotsCase {
         }
     }
 
-    func testRecordInputsListsTheSoundMicsAndCamerasWithTheKeptOnesOn() async throws {
-        let inputs = try example("Record inputs")
-        try await withPrivateHome { folder in
+    func testTheInputsSettingListsTheSoundMicsAndCamerasWithTheKeptOnesOn() async throws {
+        let record = try example("Record")
+        try await withPrivateHome(["OPENSPOT_SETTING_INPUTS": "mic:B2 camera:C3"]) { folder in
             try self.fakeScreen(in: folder)
-            try "mic:B2 camera:C3".write(to: folder.appendingPathComponent("setting-inputs"), atomically: true, encoding: .utf8)
 
-            let items = try await inputs.items(timeout: 60).items
+            let form = try await record.form(CommandAction(id: "inputs", title: "Sound and camera"), item: nil, timeout: 60)
 
-            XCTAssertEqual(items.map(\.run), ["system", "mic:A1", "mic:B2", "camera:C3"])
-            XCTAssertEqual(items.filter(\.isOn).map(\.run), ["mic:B2", "camera:C3"])
+            XCTAssertEqual(record.settings.map(\.id), ["inputs"])
+            XCTAssertEqual(form.soleChoice?.options.map(\.id), ["system", "mic:A1", "mic:B2", "camera:C3"])
+            XCTAssertEqual(form.soleChoice?.picks, ["mic:B2", "camera:C3"])
         }
     }
 
     func testAPickTurnsAnInputOnOrOffAndReplacesTheOtherOfItsKind() async throws {
-        let inputs = try example("Record inputs")
+        let record = try example("Record")
+        let inputs = SpotAction.action(CommandAction(id: "inputs", title: "Sound and camera"), item: nil)
         try await withPrivateHome { folder in
             try self.fakeScreen(in: folder)
-            try "mic:A1".write(to: folder.appendingPathComponent("setting-inputs"), atomically: true, encoding: .utf8)
+            let pick = { (input: String, kept: String) in
+                _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: record, inputs, input: "inputs=\(input)\n", limit: 60, variables: ["OPENSPOT_SETTING_INPUTS": kept])
+                return (try? self.read("setting-inputs", in: folder)) ?? ""
+            }
 
-            try await inputs.perform(.item(SpotItem(title: "Headset", run: "mic:B2")), timeout: 60)
-            XCTAssertEqual(try self.read("setting-inputs", in: folder), "mic:B2")
-            try await inputs.perform(.item(SpotItem(title: "Sound of the Mac", run: "system")), timeout: 60)
-            XCTAssertEqual(try self.read("setting-inputs", in: folder), "mic:B2 system")
-            try await inputs.perform(.item(SpotItem(title: "Headset", run: "mic:B2")), timeout: 60)
-            XCTAssertEqual(try self.read("setting-inputs", in: folder), "system")
-            try await inputs.perform(.item(SpotItem(title: "Sound of the Mac", run: "system")), timeout: 60)
-            XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("setting-inputs").path))
+            let first = try await pick("mic:B2", "mic:A1")
+            let second = try await pick("system", "mic:B2")
+            let third = try await pick("mic:B2", "mic:B2 system")
+            let last = try await pick("system", "system")
+
+            XCTAssertEqual([first, second, third], ["mic:B2", "mic:B2 system", "system"])
+            XCTAssertEqual(last, "")
         }
     }
 

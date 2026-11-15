@@ -77,7 +77,7 @@ actor FakeRunningApp: RunningApp {
 
     func publish(_ id: String) -> SpotPublish {
         opened.append("publish \(id)")
-        return .published
+        return id == "unread" ? .needsReadme : .published
     }
 
     func reveal(_ id: String) -> Bool {

@@ -63,7 +63,7 @@ final class AppsSpotTests: SampleSpotsCase {
         }
     }
 
-    func testDeleteShowsTheAppAndItsFilesAndTrashesOnlyThoseThatStayChosen() async throws {
+    func testDeleteShowsTheAppAndItsFilesTicksOnlyThoseOfItsBundleIdAndTrashesThoseThatStayChosen() async throws {
         let apps = try apps()
         try await withPrivateHome(["OPENSPOT_REASON": "spot.change"]) { folder in
             let app = try Self.fakeApp(in: folder, running: false)
@@ -76,6 +76,7 @@ final class AppsSpotTests: SampleSpotsCase {
             let sheet = try await apps.items(timeout: 60)
 
             XCTAssertEqual(sheet.summary?.value("title"), "Delete Zed")
+            XCTAssertEqual(sheet.summary?.value("detail"), "Move the app and its files to the Trash. A folder found only by the app's name waits for your tick.")
             XCTAssertEqual(sheet.parts.map(\.id), [])
             XCTAssertEqual(sheet.actions.map(\.id), ["cancel", "remove"])
             XCTAssertEqual(sheet.actions.map(\.key), [ActionKey(name: "escape"), ActionKey(name: "return", isCommand: true)])
@@ -83,18 +84,21 @@ final class AppsSpotTests: SampleSpotsCase {
             XCTAssertEqual(Set(sheet.items.map(\.run)), [
                 app.path, support.deletingLastPathComponent().path, cache.deletingLastPathComponent().path, preferences.path
             ])
-            XCTAssertEqual(sheet.items.map(\.isOn), Array(repeating: true, count: 4))
+            XCTAssertEqual(sheet.items.map(\.run), [app.path, support.deletingLastPathComponent().path, cache.deletingLastPathComponent().path, preferences.path])
+            XCTAssertEqual(sheet.items.map(\.isOn), [true, false, true, true])
             XCTAssertEqual(sheet.pick, .stay)
 
             try await apps.perform(.item(SpotItem(title: "dev.zed.Zed.plist", run: preferences.path)), timeout: 60)
             let kept = try await apps.items(timeout: 60)
             XCTAssertEqual(kept.items.first { $0.run == preferences.path }?.isOn, false)
+            try await apps.perform(.item(SpotItem(title: "Zed", run: support.deletingLastPathComponent().path)), timeout: 60)
             let toast = try await apps.perform(.press("remove"), timeout: 60)
 
             let said = try String(contentsOf: folder.appendingPathComponent("osascript-args"), encoding: .utf8)
             XCTAssertTrue(said.contains(app.path + "\n"))
             XCTAssertTrue(said.contains(cache.deletingLastPathComponent().path + "\n"))
             XCTAssertFalse(said.contains(preferences.path))
+            XCTAssertTrue(said.contains(support.deletingLastPathComponent().path + "\n"))
             XCTAssertEqual(toast, "Moved Zed and 2 of its files to the Trash")
             let after = try await apps.items(timeout: 60)
             XCTAssertTrue(after.parts.isEmpty)

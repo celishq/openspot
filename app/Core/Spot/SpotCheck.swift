@@ -92,7 +92,7 @@ public struct SpotCheck: Sendable {
                 findings.append(found(Self.reason(error)))
             }
         }
-        for script in scan.scripts where !script.isBuiltIn && script.url.deletingLastPathComponent().lastPathComponent != SpotsFolder.appName {
+        for script in scan.scripts where !script.isBuiltIn {
             guard SpotRead.words(SpotHeader(url: script.url).block.value(HeaderKey.uses)).contains(SpotUse.account.rawValue) else { continue }
             let fault = "\(script.name) has uses=account, which only a spot of Openspot takes. Remove it"
             findings.append(Finding(spot: script.id, file: script.url.path, fault: fault))
