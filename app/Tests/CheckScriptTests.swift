@@ -1,7 +1,7 @@
 import XCTest
 
 final class CheckScriptTests: XCTestCase {
-    private static let checks = ["core", "tests", "comments", "motion", "names", "files", "getters", "spots", "processes", "glass"]
+    private static let checks = ["core", "tests", "comments", "motion", "names", "files", "getters", "spots", "processes", "glass", "tools"]
     private static let lists = ["names", "files", "getters", "test-pauses", "spot-clocks", "spot-state", "processes"]
 
     private static let breaches: [(check: String, file: String, text: String)] = [
@@ -26,6 +26,9 @@ final class CheckScriptTests: XCTestCase {
         ("glass", "app/Shell/Panel.swift", "let part = layers.first { $0.name == \"back" + "drop\" }\n"),
         ("glass", "app/Shell/Panel.swift", "let filter = NSClassFromString(\"CA" + "Filter\")\n"),
         ("glass", "app/Shell/Panel.swift", "part.setValue(24, forKeyPath: \"filters.gaussian" + "Blur.inputRadius\")\n"),
+        ("tools", "app/Shell/Panel.swift", "let output = environment[\"OPENSPOT_" + "PROBE\"]\n"),
+        ("tools", "app/Shell/Panel.swift", "#if OPENSPOT_TOOLS\n#if DEBUG\n#endif\n#endif\nlet probe = SpotMotion" + "Probe()\n"),
+        ("tools", "app/project.yml", "targets:\n  A:\n    configs:\n      Release:\n        SWIFT_ACTIVE_COMPILATION_CONDITIONS: OPENSPOT_" + "TOOLS\n"),
         ("processes", "app/Client/main.swift", "_ = posix_spawn(&started, path, nil, nil, words, environ)\n"),
         ("spots", "spots/weather.spot/weather.sh", "#!/bin/sh\n# title=Weather\n# on=clock.5\necho\n"),
         ("spots", "examples/weather.spot/weather.sh", "#!/bin/sh\n# title=Weather\necho 1 > \"${TMPDIR:-/tmp}/weather\"\n")

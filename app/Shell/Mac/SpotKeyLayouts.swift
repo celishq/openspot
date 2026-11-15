@@ -5,18 +5,30 @@ import OpenspotCore
 @MainActor
 enum SpotKeyLayouts {
     private static let keyCodes: ClosedRange<UInt16> = 0...50
-    private static var observer: NSObjectProtocol?
+    private static var observers: [NSObjectProtocol] = []
+    private(set) static var latin: KeyLayout?
 
     static func start() {
         KeyLayout.enabled = read()
-        guard observer == nil else { return }
-        let name = Notification.Name(kTISNotifyEnabledKeyboardInputSourcesChanged as String)
-        observer = DistributedNotificationCenter.default().addObserver(forName: name, object: nil, queue: .main) { _ in
-            MainActor.assumeIsolated { KeyLayout.enabled = read() }
-        }
+        latin = readLatin()
+        guard observers.isEmpty else { return }
+        let center = DistributedNotificationCenter.default()
+        let enabled = Notification.Name(kTISNotifyEnabledKeyboardInputSourcesChanged as String)
+        let selected = Notification.Name(kTISNotifySelectedKeyboardInputSourceChanged as String)
+        observers = [
+            center.addObserver(forName: enabled, object: nil, queue: .main) { _ in
+                MainActor.assumeIsolated {
+                    KeyLayout.enabled = read()
+                    latin = readLatin()
+                }
+            },
+            center.addObserver(forName: selected, object: nil, queue: .main) { _ in
+                MainActor.assumeIsolated { latin = readLatin() }
+            }
+        ]
     }
 
-    static var latin: KeyLayout? {
+    static func readLatin() -> KeyLayout? {
         guard let source = TISCopyCurrentASCIICapableKeyboardLayoutInputSource()?.takeRetainedValue() else { return nil }
         return layout(source)
     }

@@ -268,9 +268,9 @@ final class SpotRunsWantTests: SpotRunsCase {
         XCTAssertEqual(scan.spots.map(\.headerState.isOnGrid), [false, false])
     }
 
-    func testTheSandboxClicksAFileWithNoRead() async throws {
+    func testThePlaygroundClicksAFileWithNoRead() async throws {
         let url = try script(body: "printf 'text=a\\ntitle=%s\\n' \"$#\"")
-        let sheet = runs.sheet(for: SheetSandbox.command(file: url))
+        let sheet = runs.sheet(for: Playground.command(file: url))
 
         sheet.open {}
 
@@ -278,9 +278,9 @@ final class SpotRunsWantTests: SpotRunsCase {
         XCTAssertEqual(log(), ["open"])
     }
 
-    func testTheSandboxReadsAFileWithARead() async throws {
+    func testThePlaygroundReadsAFileWithARead() async throws {
         let url = try script(header: "on=panel.open", "printf 'text=a\\ntitle=%s\\n' \"$1\"")
-        let sheet = runs.sheet(for: SheetSandbox.command(file: url))
+        let sheet = runs.sheet(for: Playground.command(file: url))
 
         sheet.open {}
 

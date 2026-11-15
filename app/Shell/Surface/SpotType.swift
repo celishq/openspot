@@ -13,6 +13,14 @@ enum SpotType {
     static let menuBar = Font.system(size: 13, weight: .medium).monospacedDigit()
     static let small = Font.system(size: 10, weight: .medium)
     static let keycap = Font.system(size: 11, weight: .semibold, design: .rounded)
+    static let strong = Font.system(size: 13, weight: .semibold)
+    static let glyph = Font.system(size: 17, weight: .semibold)
+    static let mark = Font.system(size: 9, weight: .semibold)
+    static let code = Font.system(size: 12, design: .monospaced)
+    static let chevron = Font.system(size: 12, weight: .semibold)
+    static let cornerMark = Font.system(size: 10, weight: .bold)
+    static let cornerFault = Font.system(size: 10, weight: .semibold)
+    static let number = Font.system(size: 24, weight: .semibold, design: .rounded).monospacedDigit()
     static let lineGap: CGFloat = 1
     static let titleLine: CGFloat = 16
     static let detailLine: CGFloat = 14

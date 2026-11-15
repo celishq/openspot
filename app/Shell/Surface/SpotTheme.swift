@@ -78,6 +78,9 @@ struct SpotTheme {
         min(fade * glassFadeReach, 1)
     }
     static let accent = Color.accentColor
+    static let good = Color.green
+    static let warn = Color.orange
+    static let bad = Color.red
     static let secondaryLight = 0.7
     static let dragFill = 0.4
     static let hover = 0.08

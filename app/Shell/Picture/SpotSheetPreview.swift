@@ -18,7 +18,7 @@ struct SpotSheetPreview: View {
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             HStack(spacing: SpotTokens.padding - 5) {
                 Image(systemName: symbol)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(SpotType.glyph)
                     .foregroundStyle(SpotTheme.ink)
                     .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
                     .background(SpotTheme.ink.opacity(SpotTheme.disc), in: Circle())

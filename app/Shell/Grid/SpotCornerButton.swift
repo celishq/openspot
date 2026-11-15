@@ -17,7 +17,7 @@ struct SpotCornerButton: View {
         let inset = SpotTokens.corner(for: size) * SpotTokens.rimPoint - SpotTokens.keycap / 2
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 10, weight: .bold))
+                .font(SpotType.cornerMark)
                 .foregroundStyle(SpotTheme.ink)
                 .frame(width: SpotTokens.keycap, height: SpotTokens.keycap)
                 .background(SpotTheme.keycap, in: Circle())

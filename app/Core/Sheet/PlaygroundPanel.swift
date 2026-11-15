@@ -23,7 +23,7 @@ public final class PlaygroundPanel {
 
     @discardableResult
     public func place(file: URL?, text: String, spots real: URL? = nil) async throws -> String {
-        let (source, id) = SheetSandbox.place(of: file, text: text, spots: real ?? spots, scratch: spots)
+        let (source, id) = Playground.place(of: file, text: text, spots: real ?? spots, scratch: spots)
         let target = SpotID(id).file(in: spots, extension: source.pathExtension)
         let manager = FileManager.default
         for old in (try? manager.contentsOfDirectory(at: spots, includingPropertiesForKeys: nil)) ?? [] {

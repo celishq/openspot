@@ -10,6 +10,10 @@ public struct KeyLayout: Equatable, Sendable {
         codes = Dictionary(keys.map { ($1, $0) }, uniquingKeysWith: min)
     }
 
+    public func code(of character: Character) -> UInt16? {
+        codes[character]
+    }
+
     private static let current = Mutex<[KeyLayout]>([])
 
     public static var enabled: [KeyLayout] {

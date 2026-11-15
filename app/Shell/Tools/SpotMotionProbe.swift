@@ -1,3 +1,4 @@
+#if OPENSPOT_TOOLS
 import OpenspotCore
 import AppKit
 import QuartzCore
@@ -673,3 +674,4 @@ private final class SpotJumpWatch: NSObject, SCStreamOutput, @unchecked Sendable
         return stride(from: -600, through: 600, by: 1).min { cost($0) < cost($1) } ?? 0
     }
 }
+#endif

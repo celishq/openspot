@@ -1,2 +1,2 @@
-app/Shell/Sandbox/SpotPictureStage.swift
+app/Shell/Picture/SpotPictureStage.swift
 app/Shell/Sheet/SpotScrollEdges.swift

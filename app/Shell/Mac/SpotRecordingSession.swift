@@ -11,10 +11,11 @@ final class SpotRecordingSession {
     private let output: SCRecordingOutput
     private let videoEnd: SpotFileEnd
     private let camera: (session: AVCaptureSession, movie: AVCaptureMovieFileOutput, end: SpotFileEnd)?
-    private let events: SpotEventLog?
+    private let events: SpotInputLog?
     private let started = Date()
+    private(set) var isEnded = false
 
-    private init(plan: RecordingRequest.Plan, stream: SCStream, output: SCRecordingOutput, videoEnd: SpotFileEnd, camera: (AVCaptureSession, AVCaptureMovieFileOutput, SpotFileEnd)?, events: SpotEventLog?) {
+    private init(plan: RecordingRequest.Plan, stream: SCStream, output: SCRecordingOutput, videoEnd: SpotFileEnd, camera: (AVCaptureSession, AVCaptureMovieFileOutput, SpotFileEnd)?, events: SpotInputLog?) {
         self.plan = plan
         self.stream = stream
         self.output = output
@@ -23,7 +24,7 @@ final class SpotRecordingSession {
         self.events = events
     }
 
-    static func start(_ plan: RecordingRequest.Plan) async throws -> SpotRecordingSession {
+    static func start(_ plan: RecordingRequest.Plan, onEnd: @escaping @MainActor () -> Void) async throws -> SpotRecordingSession {
         let target = try await SpotScreenTarget.find(plan.target)
         let file = URL(fileURLWithPath: plan.file)
         try? FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -49,9 +50,9 @@ final class SpotRecordingSession {
         let fits = CGFloat(configuration.width) <= h264Limit.width && CGFloat(configuration.height) <= h264Limit.height
         recording.videoCodecType = fits ? .h264 : .hevc
         let camera = try plan.camera.map { try cameraParts(plan.inputs, to: $0) }
-        let events = try plan.events.map { try SpotEventLog(path: $0, frame: target.frame, scale: target.scale) }
-        let stream = SCStream(filter: target.filter, configuration: configuration, delegate: nil)
-        let end = SpotFileEnd()
+        let events = try plan.events.map { try SpotInputLog(path: $0, frame: target.frame, scale: target.scale) }
+        let end = SpotFileEnd { [events] in events?.begin() }
+        let stream = SCStream(filter: target.filter, configuration: configuration, delegate: end)
         let output = SCRecordingOutput(configuration: recording, delegate: end)
         do {
             try stream.addRecordingOutput(output)
@@ -71,6 +72,12 @@ final class SpotRecordingSession {
             _ = try? await session.stop()
             throw error
         }
+        Task { [weak session] in
+            _ = try? await end.wait()
+            guard let session, !session.isEnded else { return }
+            _ = try? await session.stop()
+            onEnd()
+        }
         return session
     }
 
@@ -79,6 +86,7 @@ final class SpotRecordingSession {
     }
 
     func stop() async throws -> ScreenRecording {
+        isEnded = true
         events?.stop()
         try? await stream.stopCapture()
         var failure: Error?

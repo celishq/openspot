@@ -60,7 +60,7 @@ struct SpotActionMenuView: View, @MainActor Equatable {
                         .modifier(SpotSecondaryText())
                 } else {
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(SpotType.chevron)
                         .modifier(SpotSecondaryText())
                 }
             }

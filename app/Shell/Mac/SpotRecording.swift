@@ -78,7 +78,10 @@ enum SpotRecording {
                 let name = URL(fileURLWithPath: session.status.file).lastPathComponent
                 throw SpotError.fault("Openspot is already recording to \(name). Run `openspot screen record stop` first.")
             }
-            session = try await SpotRecordingSession.start(plan)
+            let started = try await SpotRecordingSession.start(plan) {
+                if session?.isEnded == true { session = nil }
+            }
+            session = started
             return TextBlock(fields: [.init(key: "state", value: ScreenRecording.State.recording.rawValue)])
         case .stop?:
             guard let running = session else {

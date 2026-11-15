@@ -1,6 +1,6 @@
 import Foundation
 
-actor SpotSandboxFile {
+actor SpotPlaygroundFile {
     let url: URL
     private var known: Date?
     private var hasLooked = false
