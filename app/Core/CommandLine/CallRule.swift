@@ -19,6 +19,7 @@ public struct CallRule: Equatable, Sendable {
         public static let reachesKey = Flags(rawValue: 2)
         public static let readsInput = Flags(rawValue: 4)
         public static let ownProcess = Flags(rawValue: 8)
+        public static let events = Flags(rawValue: 16)
     }
 
     public var use: SpotUse?

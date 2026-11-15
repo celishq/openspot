@@ -20,7 +20,7 @@ enum SpotCommandLine {
                 if call.value as? ClipboardCall == .paste { try? await Task.sleep(for: postedKeysPause) }
                 exit(answer.code)
             }
-            if needsEvents(call) {
+            if call.rule.flags.contains(.events) {
                 NSApplication.shared.setActivationPolicy(.accessory)
                 NSApplication.shared.run()
             }
@@ -95,9 +95,5 @@ enum SpotCommandLine {
             exit(1)
         }
         SpotSheetPicture.run(text: text, path: path, view: spot.view, spot: spot)
-    }
-
-    private static func needsEvents(_ call: CommandLineCall) -> Bool {
-        call.value is ColorCall || call.value is FolderCall || call.value is ScreenCall && call.value as? ScreenCall != .sources
     }
 }

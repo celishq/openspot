@@ -29,7 +29,11 @@ public enum SettingCall: NounCall {
         CommandVerb("change", "[--spot id] <key>", "Runs the action of the setting in the panel, which can ask with a form.", rule: CallRule(read: .changes("opens a form"))) { words in
             pair(words, sets: false) { spot, key, _ in Self.change(spot: spot, key: key) }
         }
-    ])
+    ], loose: { verb, rest, caller in
+        guard rest.first == CallWords.spotWord, rest.count > 1 else { return nil }
+        let call: SettingCall = verb.words == ["get"] ? .get(spot: rest[1], key: "") : .set(spot: rest[1], key: "", value: nil)
+        return call.rule(verb.rule, spot: caller)
+    })
 
     private static let careful = "cannot change Careful mode. Only you can, in Settings or with `openspot setting set --spot openspot careful true` in Terminal."
 
@@ -65,7 +69,8 @@ public enum SettingCall: NounCall {
                 return changing(.appKey(name: key, key: value), "sets a key of your Mac")
             case "login": return on("changes your Mac", Self.login)
             case "link": return on("changes your Mac", Self.link)
-            default: return on("changes how spots run", Self.careful)
+            case "careful": return on("changes how spots run", Self.careful)
+            default: return nil
             }
         }
         switch key {

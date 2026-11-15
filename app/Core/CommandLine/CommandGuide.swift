@@ -15,9 +15,7 @@ public struct CommandGuide: Sendable {
 
     public func text(of noun: String) throws -> String {
         guard let file = nouns.first(where: { $0.name == noun })?.guide else {
-            let runs = names.map { "openspot help \($0)" }
-            let list = runs.dropLast().joined(separator: ", ") + " or " + (runs.last ?? "")
-            throw SpotError.fault("openspot has no guide for \(noun). Run \(list).")
+            throw SpotError.fault("openspot has no guide for \(noun). Run \(CommandNoun.listed(names.map { "openspot help \($0)" })).")
         }
         return try String(contentsOf: folder.appendingPathComponent("\(file).md"), encoding: .utf8)
     }

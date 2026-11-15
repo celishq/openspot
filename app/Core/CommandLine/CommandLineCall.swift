@@ -16,7 +16,8 @@ public struct CommandLineCall: Equatable, Sendable {
     public static let usage = usage(of: CommandNoun.all)
 
     static func usage(of nouns: [CommandNoun]) -> String {
-        nouns.flatMap(\.lines).map { $0 + "\n" }.joined() + "\n"
+        let guides = CommandNoun.listed(nouns.filter { $0.guide != nil }.map(\.name).sorted())
+        return nouns.flatMap { $0.lines(guides: guides) }.map { $0 + "\n" }.joined()
     }
 
     init(name: String, rule: CallRule = CallRule(), call: any NounCall) {
@@ -50,9 +51,11 @@ public struct CommandLineCall: Equatable, Sendable {
         self.init(name: name, rule: rule, call: call)
     }
 
-    static func verb(of arguments: [String], nouns: [CommandNoun] = CommandNoun.all) -> (name: String, verb: CommandVerb)? {
-        guard let noun = nouns.first(where: { $0.name == arguments.first }), let verb = noun.verb(of: Array(arguments.dropFirst())) else { return nil }
-        return (([noun.name] + verb.words).joined(separator: " "), verb)
+    static func looseRule(of arguments: [String], spot: String, nouns: [CommandNoun] = CommandNoun.all) -> (name: String, rule: CallRule)? {
+        let rest = Array(arguments.dropFirst())
+        guard let noun = nouns.first(where: { $0.name == arguments.first }), let verb = noun.verb(of: rest) else { return nil }
+        let rule = noun.loose?(verb, Array(rest.dropFirst(verb.words.count)), spot) ?? verb.rule
+        return (([noun.name] + verb.words).joined(separator: " "), rule)
     }
 
     var use: SpotUseCall? {

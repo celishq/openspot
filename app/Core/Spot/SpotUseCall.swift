@@ -17,8 +17,8 @@ public struct SpotUseCall: Equatable, Sendable {
             guard let use = call.use else { return nil }
             self = use
         } else {
-            guard let found = CommandLineCall.verb(of: arguments) else { return nil }
-            self.init(name: found.name, rule: found.verb.rule)
+            guard let found = CommandLineCall.looseRule(of: arguments, spot: spot) else { return nil }
+            self.init(name: found.name, rule: found.rule)
         }
     }
 }

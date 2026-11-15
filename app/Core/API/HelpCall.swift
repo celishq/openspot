@@ -7,7 +7,7 @@ enum HelpCall: NounCall {
     static let flag = "--help"
 
     static let noun = CommandNoun("help", verbs: [
-        CommandVerb("", "[noun]", "Prints this list, or the guide of a noun: calendar, reminders or screen.") { words in
+        CommandVerb("", "[noun]", "Prints this list, or the guide of a noun: \(CommandNoun.guides).") { words in
             words.none ? Self.list : words.one.map(Self.guide)
         }
     ])

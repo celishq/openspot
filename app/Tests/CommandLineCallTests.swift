@@ -152,6 +152,8 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["help", "reminders"])?.value as? HelpCall, .guide("reminders"))
         XCTAssertEqual(CommandLineCall(arguments: ["help", "screen", "shot"])?.value as? CallFault, .unknown("help screen shot"))
         XCTAssertTrue(CommandLineCall.usage.contains("openspot help [noun]"))
+        XCTAssertTrue(CommandLineCall.usage.contains("the guide of a noun: calendar, reminders or screen."))
+        XCTAssertFalse(CommandLineCall.usage.hasSuffix("\n\n"))
     }
 
     func testASettingBelongsToTheSpotThatRunsTheCommand() {

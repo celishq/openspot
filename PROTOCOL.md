@@ -874,7 +874,7 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot emoji [--tone name]`                     | Prints each emoji as a row, with its name in the language of the Mac.                           |
 | `openspot symbols`                                 | Prints each symbol of the Character Viewer as a row.                                            |
 | `openspot translate [--from code] [--to code]`     | Translates the text on stdin. `openspot translate languages` prints the languages it knows.     |
-| `openspot account <verb>`                          | Reaches the account key with `new`, `words`, `checked`, `phrase`, `sign-in` or `sign-out`. Only Openspot's Account spot can run them. |
+| `openspot account <verb>`                          | Reaches the account key with `new`, `words`, `checked`, `phrase`, `sign-in` or `sign-out`. See [Trust](#trust). |
 
 ### Settings
 
