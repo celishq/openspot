@@ -82,7 +82,11 @@ Link.listen { call in
     }
 } stop: { id in
     guard id == editing else { return }
-    if let editor { return editor.front() }
+    if let editor {
+        // A frame for the call within two seconds keeps it open, so the editor and its marks stay.
+        Link.start(id)
+        return editor.front()
+    }
     editing = nil
     Link.end(id)
 } end: {

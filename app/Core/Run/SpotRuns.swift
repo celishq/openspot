@@ -33,7 +33,7 @@ public final class SpotRuns {
     public nonisolated let tokens: CallerTokens
     @ObservationIgnored let clock: RunClock
     @ObservationIgnored let now: () -> Date
-    @ObservationIgnored private let stopPause: TimeInterval
+    @ObservationIgnored let stopPause: TimeInterval
     @ObservationIgnored let clipboardPause: Duration
     @ObservationIgnored var source: (any MacEvents)?
     @ObservationIgnored var clipboardWatch: Task<Void, Never>?

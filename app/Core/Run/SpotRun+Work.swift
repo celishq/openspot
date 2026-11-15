@@ -85,7 +85,11 @@ extension SpotRun {
 
     public func pressKey(_ call: String) {
         let held = script.keepsState ? calls.count { $0.key == Self.globalKey } : 0
-        if waitingKeys.count + held < Self.waitingLimit { waitingKeys.append(call) }
+        if waitingKeys.count + held < Self.waitingLimit {
+            waitingKeys.append(call)
+        } else if held > 0 {
+            onReport(.toast("\(spot.name) is still busy with \(Self.waitingLimit) presses, so Openspot dropped this one. Wait for one to end, then press again."))
+        }
         startWaitingKey()
     }
 
@@ -176,7 +180,13 @@ extension SpotRun {
 
     private func pressAgain(_ call: ScriptCall) {
         guard script.keepsState else { return stopPressed(call) }
-        if runs.now().timeIntervalSince(call.started) >= Self.pressPause { call.halt() }
+        guard runs.now().timeIntervalSince(call.started) >= Self.pressPause else { return }
+        let heard = call.heard
+        call.halt()
+        after(.seconds(runs.stopPause), key: "stop:\(call.key)") { [weak self] in
+            guard let self, call.heard == heard, calls.contains(where: { $0 === call }) else { return }
+            stop(call)
+        }
     }
 
     private func stopPressed(_ call: ScriptCall) {

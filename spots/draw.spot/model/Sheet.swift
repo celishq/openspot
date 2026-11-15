@@ -3,9 +3,9 @@ import Foundation
 /// What Draw shows in Openspot: a row that makes a board, then each board, newest first, with the buttons of a row.
 struct Sheet {
     let shelf: Shelf
-    /// The number that starts the id of each thing that opens the studio. Openspot stops a call that waits when the
-    /// person presses it again, so the number changes each time a call starts to hold the studio, and no press repeats
-    /// that call.
+    /// The number that starts the id of each thing that opens the studio. A press of the call that holds the studio
+    /// would send it a stop, and Draw ends at that stop, so the number changes each time a call starts to hold the
+    /// studio, and no press repeats that call.
     var turn = 0
     var now = Date()
 

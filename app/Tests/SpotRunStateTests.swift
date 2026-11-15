@@ -365,14 +365,65 @@ final class SpotRunStateTests: XCTestCase {
 
     func testAStayingSpotHoldsNoMoreKeyPressesThanTheLimit() async throws {
         let (sheet, link) = sheet(kind: .launch, read: nil, mode: .stay)
+        var toasts: [String] = []
+        sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
 
         for _ in 0..<50 { sheet.pressKey("go") }
+        XCTAssertEqual(toasts.count, 50 - SpotRun.waitingLimit)
+        XCTAssertEqual(toasts.first, "Script is still busy with 8 presses, so Openspot dropped this one. Wait for one to end, then press again.")
         XCTAssertEqual(link.sent.count, SpotRun.waitingLimit)
         XCTAssertEqual(sheet.calls.count, SpotRun.waitingLimit)
         await link.end(link.sent[0])
         sheet.pressKey("go")
 
         XCTAssertEqual(link.sent.count, SpotRun.waitingLimit + 1)
+    }
+
+    func testASecondPressStopsAStayingCallThatSaysNothingAfterTheStopPause() async throws {
+        let (sheet, link) = sheet(kind: .launch, read: nil, mode: .stay)
+        sheet.pressCard()
+        clock.advance(by: 2)
+
+        sheet.pressCard()
+        XCTAssertEqual(sheet.calls.count, 1)
+        try await wait("the stop pause") { self.clock.isSleeping(for: 2) }
+        clock.advance(by: 2)
+
+        try await wait("the stop") { sheet.calls.isEmpty }
+        XCTAssertTrue(link.sent[0].made.isStopped)
+    }
+
+    func testAStayingCallThatPrintsAFrameAfterTheStopKeepsRunning() async throws {
+        let (sheet, link) = sheet(kind: .launch, read: nil, mode: .stay)
+        sheet.pressCard()
+        clock.advance(by: 2)
+
+        sheet.pressCard()
+        await link.frame("call=1\n", of: link.sent[0])
+        try await wait("the stop pause") { self.clock.isSleeping(for: 2) }
+        clock.advance(by: 2)
+
+        try await wait("the end of the stop pause") { sheet.pauses.isEmpty }
+        XCTAssertEqual(sheet.calls.count, 1)
+        XCTAssertFalse(link.sent[0].made.isStopped)
+    }
+
+    func testAThirdPressStartsTheStopPauseAgain() async throws {
+        let (sheet, _) = sheet(kind: .launch, read: nil, mode: .stay)
+        sheet.pressCard()
+        clock.advance(by: 2)
+        sheet.pressCard()
+        try await wait("the stop pause") { self.clock.isSleeping(for: 2) }
+        clock.advance(by: 1.5)
+
+        sheet.pressCard()
+        try await wait("the new stop pause") { self.clock.isSleeping(for: 2) }
+        clock.advance(by: 1)
+        await Task.yield()
+        XCTAssertEqual(sheet.calls.count, 1)
+        clock.advance(by: 1)
+
+        try await wait("the stop") { sheet.calls.isEmpty }
     }
 
     func testWorkThatWakesBeforeItsTimeSleepsForTheTimeLeft() async throws {

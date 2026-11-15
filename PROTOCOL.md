@@ -525,7 +525,8 @@ out.
 - A drop on a card waits for the card's running call. A drop on a card with rows opens its sheet, and the frame can
   select the new row with `select=`.
 - A spot's hotkeys run one at a time, in order, and never stop a call. A staying spot gets each press at once, in
-  order, so a second press can end the call of the first. Only the user gives a command a hotkey.
+  order, so a second press can end the call of the first, while fewer than 8 calls of its hotkeys are open. Openspot
+  drops a press past that with a toast. Only the user gives a command a hotkey.
 
 Each call has three parts:
 
@@ -600,8 +601,8 @@ start ──► frame ──► frame ──► ... ──► end        exit 0:
 - A `read` has 10 seconds to print its first frame or end. Other calls have no time limit.
 - A frame holds at most 32 MB. Openspot stops a call that prints more in one frame, and the call fails.
 - A new value of a block stops the older call of that block. A second press of a running call stops it: its process
-  group gets the terminate signal, then the kill signal, and a staying spot gets a stop block instead. When Openspot
-  quits, it stops every call.
+  group gets the terminate signal, then the kill signal. A staying spot can keep a call that the user pressed again; see
+  [A staying spot](#a-staying-spot). When Openspot quits, it stops every call.
 - A call ends when its output closes. A stopped call changes nothing.
 - Exit code 0 means success. Any other code is a failure, and the user sees the last line of stderr. A failure can print
   `link=<url>`, a page that helps fix it.
@@ -727,9 +728,11 @@ input=message=Hello\n
   `end=<n>` after it. The same `main` works in every mode.
 - The spot can print frames at any time. It must end each call with `end=<n>` in a head. A frame of only `call=<n>`
   starts the output of that call.
-- A second press sends the block `stop=<n>`, and its call runs on until the spot prints its `end`, so the spot decides
-  what a second press does, such as to bring its window to the front. A newer search text sends `stop=<n>` for the read
-  of the older text, so only the newest answer shows. A read after the first gets `stop=<n>` after 10 seconds, and fails
+- A second press of a running call sends the block `stop=<n>`. The call ends 2 seconds later, unless the spot prints a
+  frame for it first, such as a head of only `call=<n>`; then the call runs on to its `end`. That is how a spot keeps a
+  window open and brings it to the front at a second press. A form, and a call stopped by a newer value of its block,
+  stop at once. `openspot_serve` reads stdin only between calls, so it can't see a stop while `main` runs. A newer
+  search text sends `stop=<n>` for the read of the older text, so only the newest answer shows. A read after the first gets `stop=<n>` after 10 seconds, and fails
   as a slow read.
 - With `mode=stay`, the process runs while the spot is wanted, or while a call waits for its `end`. When the spot is no
   longer wanted, Openspot closes its stdin, and the spot must end, with every process it started. After 2 seconds its
