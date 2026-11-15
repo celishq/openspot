@@ -48,6 +48,15 @@ final class SheetLayoutTests: XCTestCase {
     title=Copy
     """
 
+    func testABlockThatDoesNotGrowKeepsTheHeightOfItsLines() throws {
+        let grown = try placement("grid=note\ngrid=note\ngrid=note\ngrid=go\n\nfield=note\ntype=multiline\n\nbutton=go\ntitle=Go\n")
+        let kept = try placement("grid=note\ngrid=note\ngrid=note\ngrid=go\n\nfield=note\ntype=multiline\ngrow=false\n\nbutton=go\ntitle=Go\n")
+
+        XCTAssertEqual(grown.height, SheetPlacement.maxHeight)
+        XCTAssertEqual(try XCTUnwrap(kept.frames["note"]).rect.height, 3 * SheetPlacement.rowHeight + 2 * SheetPlacement.gap)
+        XCTAssertLessThan(kept.height, SheetPlacement.maxHeight)
+    }
+
     func testALetterFillsTheRectangleAroundItsCells() throws {
         let layout = try XCTUnwrap(SheetLayout(block: TextBlock(fields: [
             .init(key: "grid", value: "a a b"),

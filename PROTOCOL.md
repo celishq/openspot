@@ -260,6 +260,8 @@ divider across its line.
   cell, or `-` for a divider across the line.
 - The words of a line set the columns. A block fills the rectangle of cells that its id covers, and each id must cover a
   rectangle. A smaller block inside a bigger one sits on top of it, at the edge it touches.
+- A `view`, a list, a chart, an image or a `multiline` field takes the free height of the sheet. `grow=false` keeps it
+  at the height of its grid lines, and the sheet is as tall as its lines.
 - `grid.<size>=` lines lay out the card at one size: `small`, `wide`, `square`, `strip` or `large`. The user chooses the
   size of each card. A block that only a card layout places shows only on the card.
 - A card layout can have more lines than the card has room for. A size with no layout uses the layout of the next
