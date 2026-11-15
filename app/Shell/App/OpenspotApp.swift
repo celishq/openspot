@@ -68,17 +68,17 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
             await MainActor.run { model.runs.raise(event) }
         }, app: SpotRunningApp(model: model, update: update), runs: model.runs)
         model.runs.api = api
+        Task { await launch(update: update, api: api) }
+    }
+
+    private func launch(update: AppUpdate?, api: CommandAPI) async {
+        await model.reload()
         let config = ConfigFile.standard().url.deletingLastPathComponent()
         commandSocket = CommandSocket(folder: config, api: api)
         if commandSocket == nil {
             Logger(subsystem: Bundle.main.bundleIdentifier ?? "openspot", category: "api")
                 .error("Openspot cannot listen for openspot calls for \(config.path, privacy: .public), so spots that ask the app fail.")
         }
-        Task { await launch(update: update) }
-    }
-
-    private func launch(update: AppUpdate?) async {
-        await model.reload()
         let spots = model.folder.url
         spotsWatch = SpotsWatch(folder: spots, config: model.files.config.url) { [weak self] in
             Task { await self?.model.spotsChanged() }

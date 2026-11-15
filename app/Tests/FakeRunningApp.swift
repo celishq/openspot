@@ -3,6 +3,7 @@ import Foundation
 
 actor FakeRunningApp: RunningApp {
     private(set) var changes = 0
+    private(set) var spotChanges = 0
     private(set) var checks = 0
     private(set) var installs = 0
     private(set) var quits = 0
@@ -16,6 +17,10 @@ actor FakeRunningApp: RunningApp {
     func configChanged(_ change: ConfigChange, to config: KeptConfig) {
         changes += 1
         changeList.append(change)
+    }
+
+    func spotsChanged() {
+        spotChanges += 1
     }
 
     func status() -> (update: String?, calls: Int, isFirstLaunch: Bool) {

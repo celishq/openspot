@@ -9,6 +9,10 @@ struct SpotRunningApp: RunningApp {
         await model.configChanged(change, to: config)
     }
 
+    func spotsChanged() async {
+        await model.spotsChanged()
+    }
+
     func status() async -> (update: String?, calls: Int, isFirstLaunch: Bool) {
         await MainActor.run { (update?.readyVersion, model.workCount, model.isFirstLaunch) }
     }

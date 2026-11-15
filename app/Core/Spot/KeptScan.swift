@@ -8,33 +8,39 @@ public final class KeptScan: Sendable {
     }
 
     public static let shared = KeptScan()
-    private static let limit = 1024
 
+    private let limit: Int
     private let kept = Mutex<[String: Kept]>([:])
 
-    public init() {}
+    public init(limit: Int = 1024) {
+        self.limit = limit
+    }
 
-    public func load(_ folder: SpotsFolder, wrapping: Bool = false) -> SpotLoad {
-        if wrapping { try? SpotsFolder.wrap(folder.url) }
+    public func load(_ folder: SpotsFolder) -> SpotLoad {
+        if folder.wrapsLooseFiles { try? SpotsFolder.wrap(folder.url) }
         var stamp: [String: [Int]] = [:]
         var entries: [SpotLoad.Entry] = []
         var loose: [ScanResult.Refusal] = []
+        var visited: Set<String> = []
         let own = try? Self.sorted(in: folder.url)
         for file in own ?? [] {
             stamp[file.path] = Self.state(of: file.path)
             guard SpotsFolder.isScript(file) else { continue }
             loose.append(ScanResult.Refusal(file: file.lastPathComponent, reason: SpotsFolder.looseReason(file, in: folder.url)))
         }
-        entries += read(Self.spotFolders(in: own ?? []), origin: .own, into: &stamp)
+        entries += read(Self.spotFolders(in: own ?? []), origin: .own, into: &stamp, visiting: &visited)
         let core = folder.core.map { Self.spotFolders(in: (try? Self.sorted(in: $0)) ?? []) } ?? []
         let app = core.filter { $0.lastPathComponent == SpotsFolder.appName }
-        entries += read(core.filter { !app.contains($0) }, origin: .core, into: &stamp)
-        entries += read(app, origin: .app, into: &stamp)
+        entries += read(core.filter { !app.contains($0) }, origin: .core, into: &stamp, visiting: &visited)
+        entries += read(app, origin: .app, into: &stamp, visiting: &visited)
+        kept.withLock { kept in
+            if kept.count > limit { kept = kept.filter { visited.contains($0.key) } }
+        }
         let failure = own == nil && folder.core == nil ? "Openspot cannot read the folder \(folder.url.path)." : nil
         return SpotLoad(entries: entries, loose: loose, failure: failure, stamp: stamp, hasAppSpots: !app.isEmpty)
     }
 
-    private func read(_ folders: [URL], origin: SpotLoad.Origin, into stamp: inout [String: [Int]]) -> [SpotLoad.Entry] {
+    private func read(_ folders: [URL], origin: SpotLoad.Origin, into stamp: inout [String: [Int]], visiting visited: inout Set<String>) -> [SpotLoad.Entry] {
         folders.flatMap { folder in
             var states = [folder.path: Self.state(of: folder.path)]
             let files = ((try? Self.sorted(in: folder)) ?? []).filter { file in
@@ -44,12 +50,10 @@ public final class KeptScan: Sendable {
             }
             stamp.merge(states) { _, new in new }
             let key = "\(origin) \(folder.path)"
+            visited.insert(key)
             if let kept = kept.withLock({ $0[key] }), kept.states == states { return kept.entries }
             let entries = files.map { Self.entry(of: $0, origin: origin) }
-            kept.withLock {
-                if $0.count >= Self.limit { $0.removeAll() }
-                $0[key] = Kept(states: states, entries: entries)
-            }
+            kept.withLock { $0[key] = Kept(states: states, entries: entries) }
             return entries
         }
     }

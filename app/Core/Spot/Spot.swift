@@ -21,6 +21,9 @@ public struct Spot: Equatable, Sendable {
     public private(set) var keepsRecent = true
     public private(set) var openTitle: String?
     public private(set) var actions: [CommandAction]
+    public private(set) var settingsSheet: SpotSettings?
+    public private(set) var opensToSettings = false
+    private var chosenIcon: Icon?
 
     public init(
         id: String,
@@ -62,7 +65,7 @@ public struct Spot: Equatable, Sendable {
         editsSpots: Bool = false
     ) {
         header = Header(SpotFacts(
-            id: id, name: name, url: url, size: size, icon: icon, baseSymbol: symbol, subtitle: subtitle, read: read,
+            id: id, name: name, url: url, size: size, headerIcon: icon, baseSymbol: symbol, subtitle: subtitle, read: read,
             offeredPlaces: offeredPlaces, isFound: isFound, answers: answers, order: order, layout: layout, places: places,
             opens: opens, host: host, growsFromField: growsFromField, mode: mode, pressRuns: pressRuns, drop: drop,
             dataName: dataName, isOnGrid: isOnGrid, view: view, viewDate: viewDate, emits: emits, pages: pages, uses: uses,
@@ -92,11 +95,36 @@ public struct Spot: Equatable, Sendable {
     public static func == (left: Spot, right: Spot) -> Bool {
         (left.header === right.header || left.header.facts == right.header.facts) && left.kind == right.kind && left.pick == right.pick
             && left.pickForm == right.pickForm && left.keepsRecent == right.keepsRecent && left.openTitle == right.openTitle
-            && left.actions == right.actions
+            && left.actions == right.actions && left.settingsSheet == right.settingsSheet
+            && left.opensToSettings == right.opensToSettings && left.chosenIcon == right.chosenIcon
+    }
+
+    public var icon: Icon? {
+        chosenIcon ?? header.facts.headerIcon
     }
 
     public var symbol: String {
-        header.facts.symbol
+        icon?.symbol ?? header.facts.baseSymbol
+    }
+
+    public var headerSymbol: String? {
+        icon?.symbol
+    }
+
+    public var image: String? {
+        icon?.image
+    }
+
+    public var file: String? {
+        icon?.file
+    }
+
+    public var glyph: String? {
+        icon?.glyph
+    }
+
+    public var fileIcon: FileIcon? {
+        image.map(FileIcon.image) ?? file.map(FileIcon.init(path:))
     }
 
     public var read: SpotRead? {
@@ -205,7 +233,7 @@ public struct Spot: Equatable, Sendable {
     func withIcon(_ text: String?) -> Spot {
         guard let icon = Icon(text: text) else { return self }
         var spot = self
-        spot.icon = icon
+        spot.chosenIcon = icon
         return spot
     }
 

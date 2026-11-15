@@ -90,9 +90,10 @@ extension SpotsModel {
             host.notify("Openspot cannot put \(removal.words) back, because a file left the Trash. Find it in the Trash, and move it to the spots folder.")
             return true
         }
+        let chosen = selectedEntry?.id
         Task {
             await reload()
-            if let place = visible.firstIndex(where: { $0.id == removal.id }) { selected = place }
+            if selectedEntry?.id == chosen, let place = visible.firstIndex(where: { $0.id == removal.id }) { selected = place }
             host.confirm("Put \(removal.words) back.")
         }
         return true

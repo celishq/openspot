@@ -252,7 +252,9 @@ public final class SpotsModel {
             let start = kept
             let (next, load) = await Self.read(config, folder)
             self.load = load
+            let id = selectedEntry?.id
             reload(patching: nil, to: kept == start ? next : kept)
+            if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
         }
         loading = task
         await task.value
@@ -260,7 +262,7 @@ public final class SpotsModel {
 
     @concurrent
     private nonisolated static func read(_ config: ConfigFile, _ folder: SpotsFolder) async -> (KeptConfig, SpotLoad) {
-        (config.readKept(), KeptScan.shared.load(folder, wrapping: true))
+        (config.readKept(), KeptScan.shared.load(folder))
     }
 
     func reload(patching ids: Set<String>?, to next: KeptConfig) {
@@ -299,9 +301,7 @@ public final class SpotsModel {
 
     public func spotsChanged() async {
         let stamps = fileStamps
-        let id = selectedEntry?.id
         await reload()
-        if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
         guard isShown else { return }
         for entry in entries where entry.spot.read?.has(.panel) == true && fileStamps[entry.id] != stamps[entry.id] {
             sheets[entry.id]?.read(need: .change)

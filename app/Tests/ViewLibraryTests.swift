@@ -205,4 +205,34 @@ final class ViewLibraryTests: XCTestCase {
 
         XCTAssertEqual(discarded, ["cups.sh", "cups.swift", built])
     }
+
+    func testAShareLeavesOutALibraryThatDoesNotMatchItsSource() throws {
+        let spots = folder.appendingPathComponent("spots")
+        let cups = spots.appendingPathComponent("cups.spot")
+        try FileManager.default.createDirectory(at: cups, withIntermediateDirectories: true)
+        try "#!/bin/sh\n# view=cups.swift\n".writeScript(to: cups.appendingPathComponent("cups.sh"))
+        try Data(view.utf8).write(to: cups.appendingPathComponent("cups.swift"))
+        let stale = (ViewLibrary.path(beside: "cups.swift", text: Data("struct Old {}".utf8)) as NSString).lastPathComponent
+        for name in [built, stale] { try Data("built".utf8).write(to: cups.appendingPathComponent(name)) }
+        let scan = try SpotsFolder(url: spots).scan()
+        let spot = try XCTUnwrap(scan.spots.first { $0.id == "cups" })
+
+        let shared = try SpotPackage(sharing: spot, from: scan)
+
+        XCTAssertEqual(shared.files.map(\.path), ["cups.spot/\(built)", "cups.spot/cups.sh", "cups.spot/cups.swift"])
+    }
+
+    func testABuildBesideTheSourceRemovesItsOldLibrary() async throws {
+        let spots = folder.appendingPathComponent("spots")
+        let own = spots.appendingPathComponent("cups.spot")
+        try FileManager.default.createDirectory(at: own, withIntermediateDirectories: true)
+        try "#!/bin/sh\n# view=cups.swift\n".writeScript(to: own.appendingPathComponent("cups.sh"))
+        try Data(view.utf8).write(to: own.appendingPathComponent("cups.swift"))
+        let stale = (ViewLibrary.path(beside: "cups.swift", text: Data("struct Old {}".utf8)) as NSString).lastPathComponent
+        try Data("old".utf8).write(to: own.appendingPathComponent(stale))
+
+        _ = try await tools().buildViews(under: spots)
+
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: own.path).sorted(), [built, "cups.sh", "cups.swift"].sorted())
+    }
 }

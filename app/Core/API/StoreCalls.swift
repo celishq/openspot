@@ -19,7 +19,7 @@ struct StoreCalls {
         CommandAnswer.work { [environment, app] in
             let file = ConfigFile.standard(environment: environment)
             let item = try await Self.store(in: environment).get(id, config: file, environment: environment)
-            await app?.configChanged(.spots([id]), to: file.readKept())
+            await app?.spotsChanged()
             return "Added \(item.spot.name).\n"
         }
     }

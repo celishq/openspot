@@ -150,6 +150,10 @@ public struct ViewLibrary: Sendable {
             guard let data = try? Data(contentsOf: source) else { continue }
             let library = URL(fileURLWithPath: Self.path(beside: source.path, text: data))
             try await build(source: data, named: name, kinds: SwiftProgram.kinds).write(to: library)
+            let folder = source.deletingLastPathComponent()
+            for old in (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? [] where old != library.lastPathComponent && Self.isLibrary(old, of: source.lastPathComponent) {
+                try FileManager.default.removeItem(at: folder.appendingPathComponent(old))
+            }
             built.append(library)
         }
         return built

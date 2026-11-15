@@ -25,9 +25,7 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     private var opened: SpotsFolder {
-        let spots = SpotsFolder.standard(environment: ["OPENSPOT_SPOTS": folder.path], home: folder.appendingPathComponent("home"))
-        _ = KeptScan().load(spots, wrapping: true)
-        return spots
+        SpotsFolder.standard(environment: ["OPENSPOT_SPOTS": folder.path], home: folder.appendingPathComponent("home"))
     }
 
     private var scan: ScanResult {
@@ -179,7 +177,7 @@ final class SpotsFolderTests: XCTestCase {
         try write("cups.sh", header: "view=glass.swift", loose: true)
         try "import SwiftUI\n".write(to: folder.appendingPathComponent("glass.swift"), atomically: true, encoding: .utf8)
 
-        _ = opened
+        _ = try opened.scan()
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("cups.spot/glass.swift").path))
     }
@@ -512,4 +510,17 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(folder.url.path, "/home/.config/openspot/spots")
     }
 
+
+    func testALoadOverItsLimitKeepsEachFolderItReads() throws {
+        for name in ["a", "b", "c"] { try write("\(name).sh", header: "title=\(name)") }
+        let kept = KeptScan(limit: 2)
+        let work = ScanWork()
+
+        ScanWork.$meter.withValue(work) {
+            _ = kept.load(SpotsFolder(url: folder))
+            _ = kept.load(SpotsFolder(url: folder))
+        }
+
+        XCTAssertEqual(work.parses, 3)
+    }
 }

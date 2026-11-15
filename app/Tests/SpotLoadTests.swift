@@ -52,4 +52,30 @@ final class SpotLoadTests: PanelCase {
         XCTAssertEqual(work.parses, 0)
         XCTAssertEqual(work.statsOnMain, 0)
     }
+
+    func testAReloadKeepsTheHeaderOfASpotWhoseFilesDidNotChange() async throws {
+        try model.files.config.change { $0.set(setting: ReservedSetting.icon, of: "own", to: "cup.and.saucer") }
+        await model.reload()
+        let header = try XCTUnwrap(model.entries.first { $0.id == "own" }).spot.header
+        try script("other", header: "title=Other", ":")
+
+        await model.reload()
+
+        XCTAssertEqual(model.entries.map(\.id).sorted(), ["other", "own"])
+        XCTAssertTrue(try XCTUnwrap(model.entries.first { $0.id == "own" }).spot.header === header)
+    }
+
+    func testASpotAddedFromAReviewIsOnTheGridAfterTheReviewEnds() async throws {
+        await model.reload()
+        let package = folder.appendingPathComponent("drop/cups.spot")
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        try "#!/bin/sh\n# title=Cups\n:\n".writeScript(to: package.appendingPathComponent("cups.sh"))
+        model.review([package])
+        XCTAssertTrue(model.isReviewing)
+        try SpotPackage(contentsOf: package).add(to: spots)
+
+        model.endReview()
+
+        try await wait("the card") { self.model.entries.contains { $0.id == "cups" } }
+    }
 }

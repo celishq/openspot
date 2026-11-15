@@ -27,16 +27,20 @@ struct SpotCalls {
     }
 
     func add(_ source: String, isConfirmed: Bool) -> CommandAPI.Work {
-        CommandAnswer.work { [environment, folder] in
+        CommandAnswer.work { [environment, folder, app] in
             let spots = SpotsFolder.standard(environment: environment, enabled: [], disabled: [])
-            return try await SpotLock.standard(environment: environment).add(SpotSource(text: source, place: folder), to: spots.url, isConfirmed: isConfirmed)
+            let answer = try await SpotLock.standard(environment: environment).add(SpotSource(text: source, place: folder), to: spots.url, isConfirmed: isConfirmed)
+            await app?.spotsChanged()
+            return answer
         }
     }
 
     func restore(isConfirmed: Bool) -> CommandAPI.Work {
-        { [environment] in
+        { [environment, app] in
             do {
-                return try await SpotLock.standard(environment: environment).restore(to: SpotsFolder.standard(environment: environment, enabled: [], disabled: []).url, isConfirmed: isConfirmed)
+                let answer = try await SpotLock.standard(environment: environment).restore(to: SpotsFolder.standard(environment: environment, enabled: [], disabled: []).url, isConfirmed: isConfirmed)
+                await app?.spotsChanged()
+                return answer
             } catch {
                 return CommandAnswer(failure: error)
             }
@@ -44,9 +48,11 @@ struct SpotCalls {
     }
 
     func remove(_ id: String) -> CommandAPI.Work {
-        CommandAnswer.work { [environment] in
+        CommandAnswer.work { [environment, app] in
             let folder = SpotsFolder.standard(environment: environment, enabled: [], disabled: [])
-            return "Removed \(try SpotLock.standard(environment: environment).remove(id, from: folder.url).name).\n"
+            let removed = try SpotLock.standard(environment: environment).remove(id, from: folder.url).name
+            await app?.spotsChanged()
+            return "Removed \(removed).\n"
         }
     }
 
@@ -141,8 +147,9 @@ struct SpotCalls {
     }
 
     func new(_ name: String, from starter: SpotStarter) -> CommandAPI.Work {
-        CommandAnswer.work { [environment] in
+        CommandAnswer.work { [environment, app] in
             let file = try starter.write(name: name, in: SpotsFolder.standard(environment: environment).url)
+            await app?.spotsChanged()
             return "Wrote \(file.path). Its ID is \(file.deletingPathExtension().lastPathComponent).\n"
         }
     }

@@ -8,6 +8,7 @@ final class SpotVerbTests: XCTestCase {
 
         func act(_ act: CardAct, on id: String) async -> Bool { await model.act(act, on: id) }
         func configChanged(_ change: ConfigChange, to config: KeptConfig) async { await model.configChanged(change, to: config) }
+        func spotsChanged() async { await model.spotsChanged() }
         func status() async -> (update: String?, calls: Int, isFirstLaunch: Bool) { (nil, 0, false) }
         func checkUpdate() async -> Bool { false }
         func installUpdate() async -> Bool { false }
@@ -476,5 +477,32 @@ final class SpotVerbTests: XCTestCase {
         try await wait("the delete") { !model.entries.contains { $0.id == "broken" } }
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: trash.appendingPathComponent("broken.spot").path))
+    }
+
+    private func call(_ arguments: [String]) async throws -> CommandAnswer {
+        let api = try XCTUnwrap(model.runs.api)
+        let request = CommandRequest(arguments: arguments, folder: folder.path)
+        let parsed = api.admit(try XCTUnwrap(api.call(of: request)), request: request)
+        let work = try XCTUnwrap(api.work(for: parsed, request: request, input: { "" }))
+        return await work()
+    }
+
+    func testASpotThatACallWritesIsOnTheGridWhenTheCallAnswers() async throws {
+        await model.reload()
+
+        let answer = try await call(["spot", "new", "coffee"])
+
+        XCTAssertEqual(answer.code, 0)
+        XCTAssertTrue(model.entries.contains { $0.id == "coffee" })
+    }
+
+    func testACallRunsALooseScriptThatItMovesIntoASpotFolder() async throws {
+        try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
+        try "#!/bin/sh\n# title=Coffee\necho brewed\n".writeScript(to: spots.appendingPathComponent("coffee.sh"))
+
+        let answer = try await call(["spot", "run", "coffee"])
+
+        XCTAssertEqual(answer.code, 0, answer.errors)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: spots.spotFile("coffee").path))
     }
 }

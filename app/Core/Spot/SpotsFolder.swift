@@ -9,12 +9,14 @@ public struct SpotsFolder: Sendable {
     public let core: URL?
     public let enabled: Set<String>
     public let disabled: Set<String>
+    public let wrapsLooseFiles: Bool
 
-    public init(url: URL, core: URL? = nil, enabled: Set<String> = [], disabled: Set<String> = []) {
+    public init(url: URL, core: URL? = nil, enabled: Set<String> = [], disabled: Set<String> = [], wrapsLooseFiles: Bool = false) {
         self.url = url
         self.core = core
         self.enabled = enabled
         self.disabled = disabled
+        self.wrapsLooseFiles = wrapsLooseFiles
     }
 
     public static func standard(
@@ -34,7 +36,7 @@ public struct SpotsFolder: Sendable {
         } else {
             url = config(environment: environment, home: home).appendingPathComponent(folderName, isDirectory: true)
         }
-        return SpotsFolder(url: url, core: core, enabled: enabled, disabled: disabled)
+        return SpotsFolder(url: url, core: core, enabled: enabled, disabled: disabled, wrapsLooseFiles: true)
     }
 
     static let folderName = "spots"
