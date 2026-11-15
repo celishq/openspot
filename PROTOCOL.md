@@ -562,6 +562,7 @@ The shell helper reads and writes values for you:
 | `esc <text>`                                | Prints text as a value.                                                                               |
 | `value <key>`                               | Prints each value of the key from stdin, one per line, in order.                                      |
 | `openspot_value <key> <text>`               | Prints each value of the key from a text, such as the frame that an `openspot` call prints.           |
+| `openspot_input`                            | Prints the stdin of the call as it came.                                                              |
 | `openspot_kv <key> <value>`                 | Prints one line, with its value escaped.                                                              |
 | `openspot_row <id> <title> [detail] [icon]` | Prints one row.                                                                                       |
 | `openspot_rows [kind]`                      | Prints a row, or a block of that kind, for each tab-separated line of stdin: id, title, detail, icon. |
@@ -569,7 +570,9 @@ The shell helper reads and writes values for you:
 | `openspot_keep <file> [text]`               | Keeps the text, or all of stdin, in the file as a whole, so a reader never gets half of it.           |
 | `openspot_paste <text>`                     | Pastes the text into the front app, then puts back the text that the clipboard held, or clears it.    |
 
-- Loading the helper reads all of stdin, except in a staying spot.
+- Loading the helper reads all of stdin, except in a staying spot, and keeps it in memory. So read the stdin of a call
+  with `value` or `openspot_input`, not with `cat` or `read`: the function of `openspot_serve` gets an empty stdin in
+  each mode, and so does each process it starts.
 - `openspot_keep` makes the folder of the file. When it can't write, it fails and the old file stays as it was.
 - `openspot_paste` needs `uses=clipboard`. It fails when the paste fails, and puts the clipboard back first. It puts
   back the text that the clipboard held. A clipboard that held a picture, a file or nothing is cleared, so the pasted

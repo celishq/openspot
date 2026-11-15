@@ -1,7 +1,6 @@
-# The shell helper of Openspot. `. "$OPENSPOT_SH"` gives `esc`, `value`, `openspot_value`, `openspot_kv`, `openspot_row`,
-# `openspot_rows`, `openspot_serve`, `openspot_keep` and `openspot_paste`.
+# The shell helper of Openspot. `. "$OPENSPOT_SH"` gives `esc`, `value`, `openspot_value`, `openspot_input`, `openspot_kv`,
+# `openspot_row`, `openspot_rows`, `openspot_serve`, `openspot_keep` and `openspot_paste`.
 # Loading starts `cat` once, and each function starts `sed`, `tr` or `awk` only above 1 KB, where a shell loop is too slow.
-# `openspot_serve` starts `mktemp` and `mkfifo` once for a script that gets stdin, and `unlink` and `rmdir` when it ends.
 
 # Whether the header of the script says `mode=stay` or `mode=always`: the comment lines at its top, read with no process.
 _openspot_stays=
@@ -105,6 +104,11 @@ openspot_value() (
   value "${1-}"
 )
 
+# Prints the stdin of the call as it came.
+openspot_input() {
+  printf %s "$_openspot_stdin"
+}
+
 # Sets `_openspot_text` to the real text of a value: `\n` as a new line and `\\` as a backslash. It starts `sed` and `tr`
 # only above 1 KB.
 _openspot_decode() {
@@ -170,53 +174,15 @@ _openspot_next() {
   return 1
 }
 
-# Runs the function in `_openspot_main` with these arguments, and with `_openspot_stdin` as its stdin. The text goes
-# through a pipe with a name, in a folder that only the user reads, so it touches no file: `sh` writes a here-document
-# to a file. A script that runs once removes the folder before the function starts, and a staying script keeps it for
-# its next calls. The shell opens both ends of the pipe itself, so no opening waits for the other end.
-_openspot_pipe=
-_openspot_run() {
-  if [ -z "$_openspot_stdin" ]; then
-    "$_openspot_main" "$@" </dev/null
-    return
-  fi
-  if [ -z "$_openspot_pipe" ]; then
-    _openspot_pipe=$(/usr/bin/mktemp -d 2>/dev/null) && /usr/bin/mkfifo -m 600 "$_openspot_pipe/stdin" 2>/dev/null || {
-      _openspot_close
-      "$_openspot_main" "$@" </dev/null
-      return
-    }
-  fi
-  _openspot_code=1
-  {
-    printf '%s\n' "${_openspot_stdin%"$_openspot_nl"}" >&8 7<&- 2>/dev/null &
-    _openspot_feed=$!
-    exec 8>&-
-    [ -n "$_openspot_stays" ] || _openspot_close
-    "$_openspot_main" "$@" <&7
-    _openspot_code=$?
-  } 8<> "$_openspot_pipe/stdin" 7< "$_openspot_pipe/stdin"
-  kill "$_openspot_feed" 2>/dev/null || :
-  wait "$_openspot_feed" 2>/dev/null || :
-  return "$_openspot_code"
-}
-
-# Removes the pipe and its folder, and nothing else.
-_openspot_close() {
-  [ -n "$_openspot_pipe" ] || return 0
-  /bin/unlink "$_openspot_pipe/stdin" 2>/dev/null
-  /bin/rmdir "$_openspot_pipe" 2>/dev/null
-  _openspot_pipe=
-}
-
 # Runs a function with the three parts of each call: its arguments, its variables and its stdin (protocol: Modes). A script that runs
 # once runs it once, with the arguments after its name, and returns its code. A staying script runs it for each call block
-# on stdin, one at a time, and prints `call=<n>` before its output and `end=<n>` after it.
+# on stdin, one at a time, and prints `call=<n>` before its output and `end=<n>` after it. The function gets an empty
+# stdin: the stdin of the call stays in memory, for `value` and `openspot_input`, so it touches no file and no pipe.
 openspot_serve() {
   _openspot_main=$1
   shift
   if [ -z "$_openspot_stays" ]; then
-    _openspot_run "$@"
+    "$_openspot_main" "$@" </dev/null
     return
   fi
   while _openspot_next; do
@@ -231,10 +197,9 @@ openspot_serve() {
       esac
     done
     printf 'call=%s\n---\n' "$_openspot_call"
-    _openspot_run "$@"
+    "$_openspot_main" "$@" </dev/null
     printf '\n---\nend=%s\n---\n' "$_openspot_call"
   done
-  _openspot_close
 }
 
 # Prints one line of a block with its value written for you, so that a new line or a backslash in the value stays in it (protocol: The calls).
