@@ -90,7 +90,8 @@ value=true
 - The first key of a block is its kind, and its value is the block's id. `switch=wifi` is a switch with the id `wifi`.
 - The head is the block that starts with a key of the head (see [The head](#the-head)). A block that starts with any
   other unknown key is an error, and Openspot skips it.
-- Openspot skips a line with an unknown key.
+- In a frame, Openspot skips a line with an unknown key, and `openspot check` reports it. In the header, an unknown
+  key is a fault (see [The header](#the-header)).
 - Anything with its own title or icon is a block of its own, such as an `option` after a `choice`.
 
 ## The header
@@ -100,7 +101,8 @@ The header says what a spot is. Openspot reads it without running the spot.
 - The header is the comment lines right after the first line. They start with `#`, `//` or `--`. It ends at the first
   other line, or after 4096 bytes.
 - The keys of the spot come first. After each empty comment line comes a `button` or a `field` block.
-- If a header key is wrong, Openspot doesn't load that spot. Other spots still load.
+- If a header key is wrong, or is one that Openspot doesn't know, such as `titel`, Openspot doesn't load that spot.
+  Other spots still load.
 
 | Key           | Value                                                                                                                            |
 | ------------- | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -167,7 +169,8 @@ printf 'text=done\ntitle=Copied\n'
 - When a newer change makes a call out of date, Openspot ignores what it prints.
 - Print a value that comes from data with a helper, so that it can't add a line or a block: `openspot_kv`,
   `openspot_row` or `esc` in a shell, and `openspot.frame` in JavaScript. `openspot check` warns of a line with no `=`,
-  and of a key that shows twice in a block where only a list repeats.
+  of a key that shows twice in a block where only a list repeats, and of a key that the head or a kind doesn't take. A
+  row can hold keys of its own, which Openspot skips.
 - Openspot reads `ESC ] 9;4;1;<percent>` as `progress` and `ESC ] 9;<text>` as a toast, and removes other escape codes.
 
 ## Blocks
@@ -319,6 +322,8 @@ A button is a verb. If the layout places it, the sheet draws it. If not, it's an
 - With `type=multiple`, a choice picks several options. A checkmark marks each option in a `value` line. Return sends the
   option of its row, and `⌘⇧A` sends each option without a checkmark. The spot keeps the picks and prints the form again.
 - A form can print itself again, such as with a `title` that says what's wrong. Then it stays open.
+- When the call with the values prints `select=<row id>` in its head, that row is selected after the sheet reads again,
+  such as the row that the form made.
 
 ## Rows
 
@@ -376,7 +381,7 @@ went through. A spot pushes a sheet onto the flow and pops its own sheet off it.
 | `push=<page id>`      | a row, or a press      | Pushes that page over the sheet that shows. On a row, `push=true` pushes the row's id. |
 | `push.spot=<spot id>` | a row, or a press      | Pushes a sheet of that spot instead. With no `push=`, its first sheet.               |
 | `push.title=<words>`  | a row, or a press      | The title of the pushed sheet, which its edge names. By default, the row's title.     |
-| `push.replace=true`   | a press                | The pushed sheet takes the place of the one that shows, so going back skips it.       |
+| `push.replace=true`   | a row, or a press      | The pushed sheet takes the place of the one that shows, so going back skips it.       |
 | `pop=true`            | a press                | Takes the spot's sheet off. On its first sheet, that goes back to whoever pushed it.  |
 | `pop=all`             | a press                | Goes back to the spot's first sheet.                                                  |
 
@@ -399,6 +404,8 @@ The head is the block of a frame that starts with one of its keys. Openspot does
 effects of the frame.
 
 - Its layout keys: `grid=` and `grid.<size>=` lines, `main`, `title`, `detail` and `active` for the card, `recents` and `search`.
+- `shown=true` puts the card of a spot of the app on the grid, and `shown=false` takes it off. Openspot skips it in
+  the frame of any other spot.
 - Its effects:
   - `toast=Saved` shows a short message at once, even when the panel is closed;
   - `link=<url>` opens the URL;
@@ -863,17 +870,15 @@ on its card, a press of the card with `⌘`, or **Settings** in its ⌘K menu op
 `⌘` Return sets it up. See [Let the user choose a setting](GUIDE.md#let-the-user-choose-a-setting) for an example.
 
 - The Settings of a spot list each thing the user can change about it, in this order: first what the spot itself does,
-  each `field` that isn't a hotkey, set or not, and each value it keeps that no `field` names, such as a look; then its
-  shortcuts, the hotkey of each `button` in its header and each `field` with `type=hotkey`; then **Float** when it has a
-  view to float, its sheet; and last **Show in the menu bar**, which every spot has.
+  each `field`, set or not, and each value it keeps that no `field` names, such as a look; then its shortcuts, the
+  hotkey of each `button` in its header; then **Float** when it has a view to float, its sheet; and last **Show in the
+  menu bar**, which every spot has.
+- Each shortcut is a row with `type=hotkey` (see [Rows](#rows)). Return on it records a key, and `⌘⌫` removes the key.
 - Openspot makes the Settings sheet, and it grows from the spot's card. Its rows never show in the spot's own sheet.
 - The Settings spot of Openspot holds only the settings of the app: its keys, Careful mode, Open at login and the
   `openspot` command.
 - A `field` block in the header names a setting. Return on it runs the action with the same id, which can answer with a
   form. `⌘⌫` removes the value.
-- A `field` with `type=hotkey` is a key that the spot listens for itself. Its row records a key, and Openspot sends
-  `<spot> <key> <shortcut>`. The spot checks the key, keeps it with `openspot setting set <key> <shortcut>`, and fails
-  to refuse it. Its row shows the kept value. `⌘⌫` sends `<spot> <key>` with no shortcut, and the spot stops listening.
 - `openspot setting get <key>` prints the value, or nothing. `openspot setting set <key> [value]` keeps the value, or
   removes it when there's no value. In a terminal, `--spot <id>` names the spot.
 - Keep a choice of the user in a setting. Keep what the spot makes, such as a cache, in `OPENSPOT_DATA`.
@@ -979,7 +984,8 @@ spot raises the major number, and adds a header key `protocol=<major>`. A spot w
 
 ## How to extend
 
-An old spot never sees a word it didn't ask for, and an old app skips a word it doesn't know.
+An old spot never sees a word it didn't ask for. An old app skips a word of a frame that it doesn't know, and doesn't
+load a spot whose header has a key that it doesn't know.
 
 | To add               | Add                                                              |
 | -------------------- | ---------------------------------------------------------------- |

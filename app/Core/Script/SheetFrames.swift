@@ -1,6 +1,6 @@
 import Foundation
 
-public struct SheetFrameReader: Sendable {
+public struct SheetFrames: Sendable {
     public static let mark = "---"
 
     private enum Escape: Sendable {

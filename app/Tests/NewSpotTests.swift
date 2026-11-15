@@ -43,7 +43,7 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(output.parts.map(\.id), ["describe", "copy"])
         XCTAssertEqual(output.items, [])
         let field = try XCTUnwrap(output.parts.first)
-        XCTAssertEqual(output.fields.map { $0.value("type") }, ["multiline"])
+        XCTAssertEqual(output.fields.map { $0.block.value("type") }, ["multiline"])
         XCTAssertEqual(field.control, .text("", placeholder: "Describe what you want to build", isReadOnly: false))
         let copy = try XCTUnwrap(output.parts.last)
         XCTAssertEqual(copy.title, "Copy prompt")
@@ -152,7 +152,7 @@ final class NewSpotTests: BuiltInCase {
 
         XCTAssertEqual(sheet.name, "Edit Weather")
         XCTAssertEqual(output.parts.map(\.id), ["describe", "copy"])
-        XCTAssertEqual(output.fields.map { $0.value("type") }, ["multiline"])
+        XCTAssertEqual(output.fields.map { $0.block.value("type") }, ["multiline"])
         XCTAssertEqual(output.parts.first?.control, .text("", placeholder: "Describe what you want to change", isReadOnly: false))
         XCTAssertEqual(output.parts.last?.title, "Copy prompt")
         XCTAssertEqual(output.parts.last?.look, .strong)
@@ -305,7 +305,7 @@ final class NewSpotTests: BuiltInCase {
         for line in blocks.split(separator: "\n") where line.hasPrefix("| `") {
             let cells = line.split(separator: "|").map { $0.trimmingCharacters(in: .whitespaces) }
             let kind = cells[0].trimmingCharacters(in: CharacterSet(charactersIn: "`"))
-            guard cells.count > 2, SpotPart.kinds.contains(kind) else { continue }
+            guard cells.count > 2, BlockKind.all.contains(where: { $0.word == kind }) else { continue }
             for item in cells[2].components(separatedBy: ", ") {
                 guard let word = item.split(separator: "`", omittingEmptySubsequences: false).dropFirst().first else { continue }
                 XCTAssertTrue(PartCatalog.keys.contains(String(word.split(separator: "=").first ?? word)), "\(kind): \(word)")

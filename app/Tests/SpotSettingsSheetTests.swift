@@ -100,44 +100,6 @@ final class SpotSettingsSheetTests: XCTestCase {
         XCTAssertFalse(calls.contains("open"))
     }
 
-    func testAHotkeyFieldIsRecordedInTheSettingsAndGoesToTheSpotsActionOfItsName() async throws {
-        try script("conf", header: "title=Confetti\non=sheet.open\npress=open\noffers=card\noffers=float\n\nfield=key\ntype=hotkey\ntitle=Shortcut")
-        try model.files.config.set(setting: "key", of: "conf", to: "option+c")
-        try show(selecting: "conf")
-        XCTAssertTrue(model.openSelectedSettings())
-        try await wait("its settings") { model.openItems?.shown.map(\.run) == ["setting:conf:key", "float:conf", "menubar:conf"] }
-        let row = try XCTUnwrap(model.openItems?.shown.first)
-        XCTAssertTrue(row.records)
-        XCTAssertFalse(row.takesShake)
-        XCTAssertEqual(row.shortcut, "option+c")
-
-        model.moveItemToEdge(last: false)
-        model.runSelectedItem()
-        XCTAssertEqual(model.recording, "setting:conf:key")
-        model.record(code: 1, modifiers: [.control, .option])
-
-        try await wait("the action of the field") { calls.contains("key ctrl+option+s") }
-        XCTAssertEqual(model.openList, SpotSettings.sheetID(of: "conf"))
-        XCTAssertEqual(host.dismissals, 0)
-    }
-
-    func testRemoveOnAHotkeyFieldGoesToTheSpotsActionOfItsNameWithNoKeyAndTheSheetHasNoActionsMenu() async throws {
-        try script("conf", header: "title=Confetti\non=sheet.open\noffers=card\noffers=float\n\nfield=key\ntype=hotkey\ntitle=Shortcut")
-        try model.files.config.set(setting: "key", of: "conf", to: "option+c")
-        try show(selecting: "conf")
-        XCTAssertTrue(model.openSelectedSettings())
-        try await wait("its settings") { model.openItems?.shown.map(\.run) == ["setting:conf:key", "float:conf", "menubar:conf"] }
-        model.moveItemToEdge(last: false)
-
-        XCTAssertEqual(model.hint, "⏎ Change   ⌘⌫ Remove")
-        XCTAssertFalse(model.handleKey(ActionKey(name: "k", isCommand: true)))
-        XCTAssertNil(model.menu)
-        XCTAssertTrue(model.handleKey(ActionKey(name: "backspace", isCommand: true)))
-
-        try await wait("the action of the field with no key") { calls.contains("key ") }
-        XCTAssertEqual(model.openList, SpotSettings.sheetID(of: "conf"))
-    }
-
     func testTheSettingsActOfACardOpensItsSettingsSheet() async throws {
         try script("draw", header: "title=Draw\non=sheet.open")
         try show(selecting: "draw")

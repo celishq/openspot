@@ -161,6 +161,47 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertEqual(log().count, 1)
     }
 
+    func testEachFrameOfASpotIsParsedOnceAndOffTheMainThread() async throws {
+        let parses = FrameParses()
+        try await FrameParses.$meter.withValue(parses) {
+            try script("stay", header: "mode=stay\noffers=card\non=sheet.open", """
+            while read -r line; do
+              case "$line" in
+                call=*) id=${line#call=} ;;
+                "") printf 'call=%s\\n\\nrow=a\\ntitle=A\\n---\\nrow=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n---\\nend=%s\\n---\\n' "$id" "$id" ;;
+              esac
+            done
+            """)
+            try script("once", header: "on=sheet.open", """
+            case "$1" in
+              read) printf 'button=add\\ntitle=Add\\nform=true\\nscope=spot\\n\\nrow=a\\ntitle=A\\n' ;;
+              add) case "$(cat)" in *name=*) printf 'select=a\\n' ;; *) printf 'title=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
+            esac
+            """)
+            let stay = try sheet("stay")
+            let once = try sheet("once")
+            runs.panelOpened()
+            stay.open {}
+            try await wait("the three frames of the staying spot") { stay.list.all.count == 2 && stay.calls.isEmpty }
+            XCTAssertEqual(parses.count, 3)
+
+            once.open {}
+            try await wait("the read of the spot that runs once") { once.spot.actions.count == 1 && once.calls.isEmpty }
+            XCTAssertEqual(parses.count, 4)
+
+            let action = try XCTUnwrap(once.spot.actions.first)
+            let asked = try await once.form(action, item: nil)
+            XCTAssertEqual(parses.count, 5)
+            var draft = FormDraft(form: try XCTUnwrap(asked))
+            draft.set("x", for: "name")
+            _ = try await once.submit(action, item: nil, draft: draft)
+            try await wait("the read after the submit") { once.calls.isEmpty && !once.list.isLoading }
+            XCTAssertEqual(parses.count, 7)
+        }
+
+        XCTAssertEqual(parses.countOnMain, 0)
+    }
+
     func testASecondAskForAFormOfAStayingScriptLeavesTheFirstWaiting() async throws {
         try script(header: "mode=stay\noffers=card\noffers=menubar", """
         while IFS= read -r line; do

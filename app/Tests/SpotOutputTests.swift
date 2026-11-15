@@ -2,21 +2,6 @@ import XCTest
 @testable import OpenspotCore
 
 final class SpotOutputTests: XCTestCase {
-    func testAKeptOutputHoldsItsRowsOnlyAsItemsAndKeepsAllElseItShows() {
-        let output = SpotOutput(text: "title=T\ntoast=Hi\n\nrow=a\ntitle=A\n\nrow=b\ntitle=B\n\ntext=m\ntitle=3\n\nbutton=go\ntitle=Go\n")
-
-        let kept = output.withoutBlocks()
-
-        XCTAssertTrue(kept.rows.isEmpty)
-        XCTAssertEqual(kept.items, output.items)
-        XCTAssertEqual(kept.parts, output.parts)
-        XCTAssertEqual(kept.actions, output.actions)
-        XCTAssertEqual(kept.summary, output.summary)
-        XCTAssertEqual(kept.value, output.value)
-        XCTAssertEqual(kept.kind, output.kind)
-        XCTAssertEqual(kept.toast, "Hi")
-    }
-
     func testAScriptPrintsWhetherRecentPicksMoveUp() {
         let plain = SpotOutput(text: "row=a\ntitle=A\n")
         let printed = SpotOutput(text: "recents=false\n\nrow=a\ntitle=A\n")
@@ -111,9 +96,10 @@ final class SpotOutputTests: XCTestCase {
     }
 
     func testAnActionWithAnUnknownScopeIsAFaultThatNamesTheScopes() {
-        let unknown = SpotOutput(text: "button=c\ntitle=C\nscope=world\n")
+        let unknownCheck = FrameCheck(text: "button=c\ntitle=C\nscope=world\n")
+        let unknown = unknownCheck.output
 
-        XCTAssertEqual(unknown.partFaults, ["the button c has an unknown scope: world. Use item or spot"])
+        XCTAssertEqual(unknownCheck.partFaults, ["the button c has an unknown scope: world. Use item or spot"])
         XCTAssertEqual(unknown.errors, [])
     }
 
@@ -200,7 +186,7 @@ final class SpotOutputTests: XCTestCase {
     }
 
     func testATintIsAnUnknownKey() {
-        XCTAssertEqual(SpotOutput(text: "text=m\ntitle=1\ntint=green\n").partFaults, ["the part m has an unknown key: tint"])
+        XCTAssertEqual(FrameCheck(text: "text=m\ntitle=1\ntint=green\n").partFaults, ["the part m has an unknown key: tint"])
     }
 
     func testPrintingNothingHidesAMetric() {
@@ -263,10 +249,11 @@ final class SpotOutputTests: XCTestCase {
     }
 
     func testABlockThatNamesAKindOfTheAppItselfIsUnreadable() {
-        let output = SpotOutput(text: "gauge=g\nvalue=1\n\nslider=s\nvalue=4\n\nhotkey=k\nvalue=ctrl+k\n")
+        let outputCheck = FrameCheck(text: "gauge=g\nvalue=1\n\nslider=s\nvalue=4\n\nhotkey=k\nvalue=ctrl+k\n")
+        let output = outputCheck.output
 
         XCTAssertEqual(output.parts, [])
-        XCTAssertEqual(output.sheetFaults.filter { $0.hasPrefix("cannot read the block") }, [
+        XCTAssertEqual(outputCheck.sheetFaults.filter { $0.hasPrefix("cannot read the block") }, [
             "cannot read the block that starts: gauge=g",
             "cannot read the block that starts: slider=s",
             "cannot read the block that starts: hotkey=k"

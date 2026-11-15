@@ -6,13 +6,16 @@ public enum PartCatalog {
         "placeholder", "readonly", "required", "type", "close", "confirm", "scope", "form", "align", "look",
         "shortcut", "tone", "unit"
     ]
-    private static let open: Set<String> = ["view"]
     private static let optionKeys: Set<String> = ["option", "title", "icon"]
 
-    public static func faults(in block: TextBlock) -> [String] {
+    public static func faults(in block: TextBlock, kinds: [BlockKind] = BlockKind.all) -> [String] {
+        BlockKind.of(block, in: kinds).map { faults(in: block, kind: $0) } ?? []
+    }
+
+    static func faults(in block: TextBlock, kind: BlockKind) -> [String] {
         let name = block.fields.first?.value ?? ""
-        let isOpen = open.contains(block.fields.first?.key ?? "")
-        var faults = isOpen ? [] : block.fields.dropFirst().map(\.key).filter { !keys.contains($0) }.map { "the part \(name) has an unknown key: \($0)" }
+        let known = keys.union(kind.keys)
+        var faults = kind.isOpen ? [] : block.fields.dropFirst().map(\.key).filter { !known.contains($0) }.map { "the part \(name) has an unknown key: \($0)" }
         for option in block.children {
             let id = option.value("option") ?? ""
             faults += option.fields.map(\.key).filter { !optionKeys.contains($0) }.map { "the option \(id) of \(name) has an unknown key: \($0)" }
@@ -27,22 +30,12 @@ public enum PartCatalog {
         if let tone = block.value("tone"), MetricValue.Tone(rawValue: tone) == nil {
             faults.append("the part \(name) has an unknown tone: \(tone)")
         }
-        if block.fields.first?.key == "slider", let level = block.number("value") {
-            let low = block.number("min") ?? 0, high = block.number("max") ?? 100
-            if level < low || level > high {
-                faults.append("the part \(name) has a level of \(Int(level)), outside \(Int(low)) to \(Int(high))")
-            }
-        }
-        if block.fields.first?.key == "hotkey" {
-            if let shortcut = block.value("value"), Shortcut(text: shortcut) == nil {
-                faults.append("the part \(name) needs a shortcut that holds cmd, ctrl or option: \(shortcut)")
-            }
-        } else if block.fields.first?.key == "button" {
-            faults += shortcutFaults(in: block)
-        } else if let key = block.value("shortcut"), ActionKey(text: key) == nil {
-            faults.append("the part \(name) has an unknown key combination: \(key)")
-        }
-        return faults
+        return faults + kind.faults(block)
+    }
+
+    @Sendable static func keyFaults(in block: TextBlock) -> [String] {
+        guard let key = block.value("shortcut"), ActionKey(text: key) == nil else { return [] }
+        return ["the part \(block.fields.first?.value ?? "") has an unknown key combination: \(key)"]
     }
 
     public static func actionFaults(in block: TextBlock) -> [String] {
@@ -55,12 +48,12 @@ public enum PartCatalog {
         return faults
     }
 
-    private static func shortcutFaults(in block: TextBlock) -> [String] {
+    @Sendable static func shortcutFaults(in block: TextBlock) -> [String] {
         guard let key = block.value("shortcut"), ActionKey(text: key) == nil else { return [] }
         return ["the button \(block.value("button") ?? "") has shortcut=\(key), which a button cannot take. Use cmd or shift with a letter, a digit, return, backspace or a comma, or escape"]
     }
 
-    private static func isColor(_ text: String) -> Bool {
+    static func isColor(_ text: String) -> Bool {
         text.count == 7 && text.first == "#" && text.dropFirst().allSatisfy(\.isHexDigit)
     }
 }

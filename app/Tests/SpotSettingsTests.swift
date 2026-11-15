@@ -83,34 +83,6 @@ final class SpotSettingsTests: XCTestCase {
         XCTAssertEqual(settings.map(\.run), ["key:move:left", "float:move", "menubar:move"])
     }
 
-    func testAHotkeyFieldShowsItsKeyAndRecordsANewOne() async throws {
-        try "#!/bin/sh\n# title=Confetti\n# on=sheet.open\n# offers=card\n# offers=float\n#\n# field=key\n# type=hotkey\n# title=Shortcut\n#\n# field=theme\n".writeScript(to: folder.spotFile("confetti"))
-        let settings = try XCTUnwrap(try spot("confetti").settingsSheet)
-        let runs = SpotRuns()
-        let sheet = try XCTUnwrap(try spot("confetti").settingsSpot)
-
-        let unset = try await rows(of: sheet, in: runs)
-        XCTAssertEqual(unset.map(\.run), ["setting:confetti:theme", "setting:confetti:key", "float:confetti", "menubar:confetti"])
-        XCTAssertEqual(unset.map(\.records), [false, true, true, false])
-        XCTAssertEqual(unset[1].shortcut, "Record")
-        XCTAssertEqual(unset[1].hides, ["clear"])
-        XCTAssertEqual(settings.hotkeyField(of: "setting:confetti:key"), "key")
-        XCTAssertNil(settings.hotkeyField(of: "setting:confetti:theme"))
-
-        try file.set(setting: "key", of: "confetti", to: "option+c")
-        let set = try await rows(of: sheet, in: runs)
-        XCTAssertEqual(set[1].shortcut, "option+c")
-        XCTAssertNil(set[1].subtitle)
-        XCTAssertEqual(set.map { $0.hides ?? [] }, [["clear"], [], ["clear"], ["clear"]])
-        XCTAssertEqual(set.map(\.symbol), ["slider.horizontal.3", "keyboard", "pip", "menubar.rectangle"])
-
-        try file.set(setting: "key", of: "confetti", to: "")
-        let emptied = try await rows(of: sheet, in: runs)
-        XCTAssertEqual(emptied[1].shortcut, "Record")
-        XCTAssertEqual(emptied[1].records, true)
-        XCTAssertEqual(emptied[1].hides, ["clear"])
-    }
-
     func testAListSpotKeepsItsSettingsInASheetOfTheirOwn() async throws {
         let header = ["title=Shelf", "icon=tray.full", "on=sheet.open", "on=clock.60", "offers=card", "offers=float", "", "button=left", "title=Left side", "", "button=right", "title=Right side", "", "field=folder", "", "field=editor", "title=Default app", "icon=app.badge"]
         try "#!/bin/sh\n\(header.map { $0.isEmpty ? "#" : "# \($0)" }.joined(separator: "\n"))\nprintf 'row=own\\ntitle=Own\\n'\n".writeScript(to: folder.spotFile("shelf"))

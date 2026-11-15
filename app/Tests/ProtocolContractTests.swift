@@ -8,38 +8,8 @@ final class ProtocolContractTests: XCTestCase {
         try String(contentsOf: RepoDoc.repo.appendingPathComponent("app/\(path)"), encoding: .utf8)
     }
 
-    private func literals(in text: String) -> [String] {
-        RepoDoc.matches(#""([^"\\\n]*)""#, in: text).map { $0[1] }
-    }
-
-    private func line(_ marker: String, in text: String) -> String {
-        text.components(separatedBy: "\n").first { $0.contains(marker) } ?? ""
-    }
-
     private func keys(_ cells: [String]) -> [String] {
         cells.flatMap(RepoDoc.code).map { String($0.prefix { $0 != "=" }) }
-    }
-
-    private func loads(_ header: String) -> Bool {
-        (try? SpotFile(script: URL(fileURLWithPath: "/none/probe.sh"), header: SpotHeader(text: "#!/bin/sh\n# title=T\n# on=sheet.open\n" + header).block, id: "probe")) != nil
-    }
-
-    private func isKind(_ word: String) -> Bool {
-        let block = word == "option" ? "choice=c\n\noption=x\ntitle=X\n" : "\(word)=x\ntitle=X\n"
-        let output = SpotOutput(text: block)
-        return output.summary == nil && output.errors.isEmpty
-    }
-
-    private func isCallWord(_ word: String) -> Bool {
-        SpotOutput(text: "row=r\nfile=/r\n\nswitch=\(word)\ntitle=X\n").partFaults.contains("a part cannot be called \(word)")
-    }
-
-    private func rowMoves(_ key: String) -> Bool {
-        let base = key.hasPrefix("push.") ? "row=r\npush=p\n" : "row=r\n"
-        func move(_ text: String) -> FlowMove? {
-            TextBlock.blocks(in: text).first.flatMap(SpotItem.init(block:))?.move
-        }
-        return move(base + "\(key)=true\n") != move(base)
     }
 
     private func compare(_ name: String, code: Set<String>, doc: Set<String>) -> [String] {
@@ -49,28 +19,19 @@ final class ProtocolContractTests: XCTestCase {
 
     private func gaps() throws -> [String] {
         let doc = try RepoDoc("PROTOCOL.md")
-        let spotFile = try source("Core/Spot/SpotFile.swift")
-        let headerReads = Set(RepoDoc.matches(#"header\.(?:value|values|list)\("([^"]+)"\)"#, in: spotFile).map { $0[1] })
-        let prefix = literals(in: line("drawingPrefix = ", in: spotFile)).map { $0 + "<size>" }
-        let headerKeys = headerReads.union(prefix)
         let pages = RepoDoc.tableRows(in: doc.section("Pages"))
+        let headerKeys = Set(HeaderKey.allCases.map(\.rawValue) + [HeaderKey.drawing + "<size>"])
         let docHeaderKeys = keys(RepoDoc.tableRows(in: doc.section("The header")).filter { !$0[0].hasPrefix("`button") && !$0[0].hasPrefix("`field") }.map { $0[0] })
             + keys(pages.filter { $0[1] == "the header" }.map { $0[0] })
 
-        let headerKinds = Set(literals(in: line("kinds: Set<String> = ", in: try source("Core/Spot/SpotHeader.swift"))))
+        let headerKinds = Set(HeaderBlock.allCases.map(\.rawValue))
         let docHeaderKinds = keys(RepoDoc.tableRows(in: doc.section("The header")).filter { $0[0].hasPrefix("`button") || $0[0].hasPrefix("`field") }.map { $0[0] })
 
-        let output = try source("Core/Script/SpotOutput.swift")
-        let headKeys = Set(literals(in: line("headKeys: Set<String> = ", in: output))).union(prefix)
+        let headKeys = Set(HeadKey.allCases.map(\.rawValue) + [HeadKey.drawing + "<size>"])
         let docHeadKeys = keys([doc.section("The head").components(separatedBy: "- The head can come")[0]])
 
         let docKinds = keys(RepoDoc.tableRows(in: doc.section("Blocks")).map { $0[0] })
-        let candidates = Set(SpotPart.kinds + literals(in: output) + docKinds).filter { $0.range(of: #"^[a-z]+$"#, options: .regularExpression) != nil }
-        let kinds = candidates.filter(isKind)
 
-        let reads = #"block\.(?:value|values|flag|list|number)\("([^"]+)"\)"#
-        let itemReads = RepoDoc.matches(reads, in: try source("Core/Spot/SpotItem.swift")).map { $0[1] }
-            + RepoDoc.matches(reads, in: try source("Core/Flow/FlowMove.swift")).map { $0[1] }.filter(rowMoves)
         let rowRows = RepoDoc.tableRows(in: doc.section("Rows"))
         let docRowKeys = keys(rowRows.map { $0[0] }) + keys(rowRows.filter { $0[0] == "`push`" }.map { $0[1] }).filter { $0.hasPrefix("push.") }
             + keys(pages.filter { $0[1].contains("a row") }.map { $0[0] })
@@ -78,19 +39,14 @@ final class ProtocolContractTests: XCTestCase {
         let events = Set(SpotEvent.known + [SpotEvent.clockPrefix + "<seconds>"])
         let docEvents = keys(RepoDoc.tableRows(in: doc.section("Events")).map { $0[0] })
 
-        let placeWords = Set(Place.allCases.map(\.rawValue) + literals(in: try source("Core/Spot/Place.swift")))
-            .filter { $0.range(of: #"^[a-z]+$"#, options: .regularExpression) != nil }
+        let places = Set(Place.allCases.map(\.rawValue) + [Place.none, OfferedAction.place])
         let docPlaces = keys(RepoDoc.tableRows(in: doc.section("Places")).map { $0[0] })
-        let places = placeWords.union(docPlaces).filter { word in
-            Place(rawValue: word) != nil || loads("# offers=\(word)\n") || loads("#\n# button=b\n# title=B\n# offers=\(word)\n")
-        }
 
         let uses = Set(SpotUse.allCases.map(\.rawValue))
         let docUses = keys(RepoDoc.tableRows(in: doc.section("Trust")).map { $0[0] })
 
         let docCalls = RepoDoc.tableRows(in: doc.section("The calls")).flatMap { RepoDoc.code($0[0]) }
             .filter { $0.hasPrefix("<spot> ") }.map { $0.split(separator: " ")[1] }.filter { !$0.hasPrefix("<") }.map(String.init)
-        let calls = Set(literals(in: output) + docCalls).filter { $0.range(of: #"^[a-z]+$"#, options: .regularExpression) != nil }.filter(isCallWord)
 
         let variable = #"OPENSPOT_[A-Z_]*[A-Z]"#
         let scripts = try ["spots", "examples"].flatMap { folder -> [String] in
@@ -110,12 +66,12 @@ final class ProtocolContractTests: XCTestCase {
         return compare("header key", code: headerKeys, doc: Set(docHeaderKeys))
             + compare("header block", code: headerKinds, doc: Set(docHeaderKinds))
             + compare("head key", code: headKeys, doc: Set(docHeadKeys))
-            + compare("block kind", code: kinds, doc: Set(docKinds))
-            + compare("row key", code: Set(itemReads), doc: Set(docRowKeys))
+            + compare("block kind", code: BlockKind.words, doc: Set(docKinds))
+            + compare("row key", code: Set(RowKey.allCases.map(\.rawValue)), doc: Set(docRowKeys))
             + compare("event", code: events, doc: Set(docEvents))
             + compare("place", code: places, doc: Set(docPlaces))
             + compare("use", code: uses, doc: Set(docUses))
-            + compare("call", code: calls, doc: Set(docCalls))
+            + compare("call", code: Set(FrameCheck.calls), doc: Set(docCalls))
             + compare("shell helper", code: functions, doc: Set(docFunctions))
             + compare("variable", code: read.union(docVariables.intersection(set)), doc: docVariables)
     }

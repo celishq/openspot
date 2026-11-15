@@ -27,7 +27,8 @@ final class SampleSpotsTests: SampleSpotsCase {
         let confetti = try XCTUnwrap(try scan.spots.first { $0.id == "confetti" })
         XCTAssertEqual(confetti.symbol, "party.popper")
         XCTAssertFalse(confetti.kind.opensSheet)
-        XCTAssertEqual(confetti.settings.map(\.title), ["Look", "Shortcut"])
+        XCTAssertEqual(confetti.settings.map(\.title), ["Look"])
+        XCTAssertEqual(confetti.offers.map(\.id), ["play"])
         let source = confetti.url.deletingPathExtension().appendingPathComponent("confetti.swift")
 
         _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-typecheck", source.path], base: TestEnvironment.values)
@@ -292,7 +293,7 @@ final class SampleSpotsTests: SampleSpotsCase {
 
         relay.send(.read, id: 1)
         var sheet = try await frames.next()
-        while SpotOutput(text: sheet ?? "").isMark { sheet = try await frames.next() }
+        while FrameHead(text: sheet ?? "").isMark { sheet = try await frames.next() }
         XCTAssertTrue(sheet?.contains("title=No message yet") == true, sheet ?? "")
 
         var call = 2
@@ -477,8 +478,9 @@ final class SampleSpotsTests: SampleSpotsCase {
     func testEmojiIsAGridWithItsToneAndNoFaults() async throws {
         try await withPrivateHome { folder in
             let output = try await self.fakeEmoji(in: folder).items(timeout: 10)
+            let faults = try await self.fakeEmoji(in: folder).sheetFaults(timeout: 10)
 
-            XCTAssertEqual(output.sheetFaults, [])
+            XCTAssertEqual(faults, [])
             XCTAssertEqual(output.perLine, 7)
             XCTAssertEqual(output.items.map(\.title), ["thumbs up, none", "rightwards arrow"])
             XCTAssertEqual(output.items.last?.subtitle, "Rightwards Arrows")

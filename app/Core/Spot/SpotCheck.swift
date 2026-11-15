@@ -68,16 +68,22 @@ public struct SpotCheck: Sendable {
             func found(_ fault: String) -> Finding { Finding(spot: script.id, file: script.url.path, fault: fault) }
             do {
                 let text = try await runs.answer(of: script, .read, limit: timeout)
-                let output = SpotOutput(text: text)
+                let check = FrameCheck(text: text)
+                let output = check.output
                 _ = try script.state(of: output)
                 if script.read?.seconds != nil, MetricValue(output: output) == nil { throw SpotError.badMetric }
                 findings += output.errors.map { found("cannot read the item \($0)") }
                 findings += Self.brokenBlocks(in: text).map(found)
-                findings += output.partFaults.map(found)
+                findings += check.partFaults.map(found)
                 findings += Self.moveFaults(of: output, in: script, among: scan.scripts).map(found)
             } catch {
                 findings.append(found(Self.reason(error)))
             }
+        }
+        for script in scan.scripts where !script.isBuiltIn && script.url.deletingLastPathComponent().lastPathComponent != SpotsFolder.appName {
+            guard SpotRead.words(SpotHeader(url: script.url).block.value(HeaderKey.uses)).contains(SpotUse.account.rawValue) else { continue }
+            let fault = "\(script.name) has uses=account, which only a spot of Openspot takes. Remove it"
+            findings.append(Finding(spot: script.id, file: script.url.path, fault: fault))
         }
         for script in scan.scripts {
             guard !Task.isCancelled else { return findings }
@@ -117,7 +123,7 @@ public struct SpotCheck: Sendable {
         let fix = "as a value with a new line prints. Print each value from data with openspot_kv, openspot_row or esc"
         let lists: Set<String> = ["grid", "value", "hides", "color"]
         var faults: [String] = []
-        let blocks = text.components(separatedBy: "\n").split { $0.isEmpty || $0 == SheetFrameReader.mark }
+        let blocks = text.components(separatedBy: "\n").split { $0.isEmpty || $0 == SheetFrames.mark }
         for block in blocks {
             let name = block.first ?? ""
             if block.contains(where: { !$0.contains("=") }) { faults.append("the block \(name) has a line with no =, \(fix)") }

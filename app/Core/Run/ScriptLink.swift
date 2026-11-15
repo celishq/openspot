@@ -9,8 +9,8 @@ protocol ScriptLink: AnyObject {
     var isReachable: Bool { get }
     @discardableResult
     func send(_ call: SpotRun.Call) -> Bool
-    func form(_ action: SpotAction, key: String) async throws -> String?
-    func submit(_ action: SpotAction, key: String, values: String) async throws -> String?
+    func form(_ action: SpotAction, key: String) async throws -> SpotOutput?
+    func submit(_ action: SpotAction, key: String, values: String) async throws -> SpotOutput?
     func stop(_ call: ScriptCall)
     func settle()
     func end()

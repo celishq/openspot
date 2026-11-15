@@ -25,11 +25,12 @@ final class RepeatDrawingTests: XCTestCase {
     }
 
     func testOneLineOfSingleCellsIsAGrid() {
-        let output = SpotOutput(text: "grid=tone\ngrid=a\n\nrepeat=a\ngrid=a b c d e f g\n\nchoice=tone\n\noption=none\ntitle=Yellow\n\nrow=x\ntitle=x\n")
+        let outputCheck = FrameCheck(text: "grid=tone\ngrid=a\n\nrepeat=a\ngrid=a b c d e f g\n\nchoice=tone\n\noption=none\ntitle=Yellow\n\nrow=x\ntitle=x\n")
+        let output = outputCheck.output
 
         XCTAssertEqual(output.drawing.perLine, 7)
         XCTAssertEqual(output.perLine, 7)
-        XCTAssertEqual(output.sheetFaults, [])
+        XCTAssertEqual(outputCheck.sheetFaults, [])
     }
 
     func testABentoTileRepeatsDown() {
@@ -44,12 +45,13 @@ final class RepeatDrawingTests: XCTestCase {
     }
 
     func testASheetWithNoDrawingShowsItsComponentsThenItsRows() throws {
-        let output = SpotOutput(text: "text=note\ntitle=Note\n\nbutton=copy\ntitle=Copy\n\nrow=a\ntitle=A\n")
+        let outputCheck = FrameCheck(text: "text=note\ntitle=Note\n\nbutton=copy\ntitle=Copy\n\nrow=a\ntitle=A\n")
+        let output = outputCheck.output
 
         XCTAssertEqual(output.layout?.rows, [["note"], ["rows"]])
         XCTAssertEqual(output.layout?.repeated?.area, "rows")
         XCTAssertEqual(output.actions.map(\.id), ["copy"])
         XCTAssertTrue(try XCTUnwrap(SheetParts(output: output)).showsRows)
-        XCTAssertEqual(output.sheetFaults, [])
+        XCTAssertEqual(outputCheck.sheetFaults, [])
     }
 }

@@ -30,7 +30,7 @@ final class SheetSandboxTests: XCTestCase {
 
     func testEachExampleHasNoFaults() {
         for example in SheetExamples.all {
-            XCTAssertEqual(SpotOutput(text: example.text).sheetFaults, [], example.name)
+            XCTAssertEqual(FrameCheck(text: example.text).sheetFaults, [], example.name)
         }
     }
 

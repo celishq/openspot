@@ -19,7 +19,7 @@ struct BatchCalls {
                 }
                 let answer = await work()
                 guard answer.code == 0 else { return answer }
-                output.print(answer.output + (answer.output.isEmpty || answer.output.hasSuffix("\n") ? "" : "\n") + SheetFrameReader.mark + "\n")
+                output.print(answer.output + (answer.output.isEmpty || answer.output.hasSuffix("\n") ? "" : "\n") + SheetFrames.mark + "\n")
             }
             return CommandAnswer()
         }

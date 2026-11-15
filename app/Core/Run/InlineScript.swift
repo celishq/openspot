@@ -257,9 +257,9 @@ final class InlineScript: @unchecked Sendable {
         var frames: [String] = []
         do {
             for try await frame in child.start() { frames.append(frame) }
-            return CommandAnswer(output: frames.joined(separator: SheetFrameReader.mark + "\n"), code: 0)
+            return CommandAnswer(output: frames.joined(separator: SheetFrames.mark + "\n"), code: 0)
         } catch SpotError.failed(let code, _), SpotError.failedWithFix(let code, _, _) {
-            return CommandAnswer(output: (frames + (child.failedFrame.map { [$0] } ?? [])).joined(separator: SheetFrameReader.mark + "\n"), code: code)
+            return CommandAnswer(output: (frames + (child.failedFrame.map { [$0] } ?? [])).joined(separator: SheetFrames.mark + "\n"), code: code)
         } catch let error as SpotError {
             return CommandAnswer(errors: error.reason + "\n", code: 1)
         } catch {

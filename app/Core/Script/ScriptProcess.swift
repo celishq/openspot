@@ -41,7 +41,7 @@ public final class ScriptProcess: @unchecked Sendable {
     private var startHandlers: [@Sendable (pid_t) -> Void] = []
     private let errorText: ErrorTail
     private var unended: String?
-    private var reader = SheetFrameReader()
+    private var reader = SheetFrames()
 
     public init(url: URL, name: String? = nil, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], errorLimit: Int? = 64 * 1024, careful: Set<SpotUse>? = nil, base: [String: String]? = nil, folder: URL? = nil) {
         self.name = name
@@ -306,7 +306,7 @@ public final class ScriptProcess: @unchecked Sendable {
             let line = lastErrors.text
             let last = reader.finish()
             lock.withLock { unended = last }
-            let fix = last.flatMap { SpotOutput(text: $0).link }.flatMap(URL.init(string:))
+            let fix = last.flatMap { FrameHead(text: $0).link }.flatMap(URL.init(string:))
             finish(throwing: fix.map { SpotError.failedWithFix(exitCode, line, $0) } ?? SpotError.failed(exitCode, line))
             return
         }

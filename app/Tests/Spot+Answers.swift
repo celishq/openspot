@@ -30,14 +30,17 @@ extension Spot {
         try await output(action, input: input, timeout: timeout)
     }
 
+    func sheetFaults(timeout: TimeInterval) async throws -> [String] {
+        FrameCheck(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: self, .read, limit: timeout)).sheetFaults
+    }
+
     func form(_ action: CommandAction, item: SpotItem?, timeout: TimeInterval) async throws -> ItemForm {
         guard let form = ItemForm(output: try await output(.action(action, item: item), timeout: timeout)) else { throw SpotError.badForm }
         return form
     }
 
     func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft, timeout: TimeInterval) async throws -> String {
-        let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: self, .action(action, item: item), input: draft.text, limit: timeout)
-        return text.trimmingCharacters(in: .whitespacesAndNewlines)
+        try await output(.action(action, item: item), input: draft.text, timeout: timeout).select ?? ""
     }
 
     @discardableResult

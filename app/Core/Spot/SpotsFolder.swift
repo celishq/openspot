@@ -10,7 +10,7 @@ public struct SpotsFolder: Sendable {
     }
 
     private static let coreName = "spots"
-    private static let appName = "openspot.spot"
+    static let appName = "openspot.spot"
     private static let startingIDs: Set<String> = ["apps", "caffeinate", "color-picker", "emoji", "files", "links", "paste-screenshot", "settings", "snippets", "translate"]
 
     public let url: URL

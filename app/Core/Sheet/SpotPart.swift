@@ -44,6 +44,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
 
     public let id: String
     public let kind: String
+    private let fills: Bool
     public let isSection: Bool
     public let title: String?
     public let detail: String?
@@ -51,6 +52,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let file: String?
     public let glyph: String?
     public let tone: MetricValue.Tone?
+    public let textTone: MetricValue.Tone?
     public let color: String?
     public private(set) var control: Control
     public let press: Press
@@ -67,70 +69,40 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         public let isUnit: Bool
     }
 
-    public static let kinds = ["text", "number", "gauge", "graph", "picture", "view", "switch", "slider", "field", "choice", "hotkey", "button", "section"]
+    public init?(block: TextBlock, kinds: [BlockKind] = BlockKind.all) {
+        guard let kind = BlockKind.of(block, in: kinds) else { return nil }
+        self.init(block: block, kind: kind)
+    }
 
-    public init?(block: TextBlock) {
-        guard let kind = block.fields.first?.key, Self.kinds.contains(kind), let id = block.value(kind) else { return nil }
+    init?(block: TextBlock, kind: BlockKind) {
+        guard let id = block.value(kind.word) else { return nil }
         self.id = id
-        self.kind = kind
-        values = kind == "view" ? Dictionary(grouping: block.fields, by: \.key).mapValues { $0.map(\.value) } : [:]
-        isSection = kind == "section"
+        self.kind = kind.name
+        fills = kind.isOpen
+        values = kind.isOpen ? Dictionary(grouping: block.fields, by: \.key).mapValues { $0.map(\.value) } : [:]
+        isSection = kind == .section
         title = block.value("title")
         detail = block.value("detail")
-        key = kind == "hotkey" ? nil : block.value("shortcut").flatMap(ActionKey.init(text:))
+        key = kind == .hotkey ? nil : block.value("shortcut").flatMap(ActionKey.init(text:))
         closes = block.flag("close") ?? false
         grows = block.flag("grow") ?? true
         align = block.value("align").flatMap(Align.init(rawValue:))
-        look = block.value("look").flatMap(Look.init(rawValue:))
+        let named = block.value("look").flatMap(Look.init(rawValue:))
+        look = block.value("type").flatMap { kind.looks[$0] } ?? (named == .tick ? nil : named)
         let icon = Icon(text: block.value("icon"))
-        let symbol = icon?.symbol
         file = icon?.file
         glyph = icon?.glyph
         tone = block.value("tone").flatMap(MetricValue.Tone.init)
-        color = ["text", "number"].contains(kind) ? block.value("color").flatMap(Self.hex) : nil
-        if kind == "button" {
-            self.symbol = nil
-            press = symbol.map(Press.symbol) ?? .line
-        } else {
-            self.symbol = symbol
-            press = .none
-        }
-        switch kind {
-        case "switch":
-            control = .toggle(block.flag("value") ?? false)
-        case "gauge":
-            control = .progress(level: (block.number("value") ?? 0) * 100)
-        case "graph":
-            control = .chart(block.values("value").compactMap(Double.init))
-        case "picture":
-            control = icon?.image.map(Control.image) ?? .none
-        case "slider":
-            control = .slider(level: block.number("value") ?? 0, min: block.number("min") ?? 0, max: block.number("max") ?? 100)
-        case "field":
-            control = .text(block.value("value") ?? "", placeholder: block.value("placeholder"), isReadOnly: block.flag("readonly") ?? false)
-        case "hotkey":
-            control = .shortcut(block.value("value") ?? "")
-        case "choice":
-            let options = Self.options(of: block)
-            if !block.values("color").isEmpty {
-                control = .swatches(block.values("color"), value: block.value("value"))
-            } else {
-                control = .menu(options, value: block.value("value"))
-            }
-        case "number":
-            control = .number(block.value("display") ?? block.value("value") ?? "", unit: block.value("unit").flatMap { $0.isEmpty ? nil : $0 })
-        default:
-            control = .none
-        }
-        mark = control == .none && kind == "text" ? Self.mark(block) : nil
-    }
-
-    private static func hex(_ text: String) -> String? {
-        text.count == 7 && text.first == "#" && text.dropFirst().allSatisfy(\.isHexDigit) ? text : nil
+        textTone = kind == .text ? tone : nil
+        color = kind.takesColor ? block.value("color").flatMap { PartCatalog.isColor($0) ? $0 : nil } : nil
+        symbol = kind.presses ? nil : icon?.symbol
+        press = kind.presses ? icon?.symbol.map(Press.symbol) ?? .line : .none
+        control = kind.control(block)
+        mark = control == .none && kind == .text ? Self.mark(block) : nil
     }
 
     private static func mark(_ block: TextBlock) -> MetricValue? {
-        let data = MetricValue.data(of: block)
+        guard let data = BlockKind.text.data?(block) else { return nil }
         guard data.value != nil || data.points != nil else { return nil }
         return MetricValue(
             title: block.value("detail") ?? "",
@@ -149,10 +121,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
             NumberPiece(text: unit, isUnit: true),
             NumberPiece(text: String(number[range.upperBound...]), isUnit: false),
         ].filter { !$0.text.isEmpty }
-    }
-
-    public var textTone: MetricValue.Tone? {
-        kind == "text" ? tone : nil
     }
 
     static func options(of block: TextBlock) -> [Option] {
@@ -185,7 +153,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     }
 
     public var fillsHeight: Bool {
-        if kind == "view" { return true }
+        if fills { return true }
         return switch control {
         case .text, .list, .number, .chart, .image, .progress: true
         default: false
@@ -207,7 +175,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
 
     var growsRow: Bool {
         guard grows else { return false }
-        if kind == "view" { return true }
+        if fills { return true }
         return switch control {
         case .text, .list, .chart, .image: true
         default: false

@@ -443,6 +443,32 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertEqual(done, .done)
     }
 
+    func testASubmitSelectsTheRowThatItsHeadNamesAndNoBareLine() async throws {
+        try script(header: "on=sheet.open", """
+        case "$1" in
+          read) printf 'button=add\\ntitle=Add\\nform=true\\nscope=spot\\n\\nrow=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n\\nrow=c\\ntitle=C\\n' ;;
+          add) case "$(cat)" in *name=bare*) echo c ;; *name=*) printf 'select=b\\n' ;; *) printf 'title=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
+        esac
+        """)
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the read") { sheet.spot.actions.count == 1 }
+        let action = try XCTUnwrap(sheet.spot.actions.first)
+        let asked = try await sheet.form(action, item: nil)
+        var draft = FormDraft(form: try XCTUnwrap(asked))
+
+        draft.set("x", for: "name")
+        let named = try await sheet.submit(action, item: nil, draft: draft)
+        try await wait("the row the head names") { sheet.list.selectedItem?.run == "b" }
+        draft.set("bare", for: "name")
+        let bare = try await sheet.submit(action, item: nil, draft: draft)
+        try await wait("the read after the bare line") { sheet.calls.isEmpty && !sheet.list.isLoading }
+
+        XCTAssertEqual(named, .done)
+        XCTAssertEqual(bare, .done)
+        XCTAssertEqual(sheet.list.selectedItem?.run, "b")
+    }
+
     func testAChangeAnswersWithTheFormOfItsScriptOrIsDone() async throws {
         try script(header: "on=sheet.open", """
         case "$1" in

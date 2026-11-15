@@ -28,7 +28,7 @@ enum SpotCardPicture {
         window.contentView = view
         window.orderBack(nil)
         Task { @MainActor in
-            for picture in output.webPictures { _ = await WebPictures.shared.path(of: picture) }
+            for picture in WebPictures.named(in: text) { _ = await WebPictures.shared.path(of: picture) }
             DispatchQueue.main.asyncAfter(deadline: .now() + settle) {
                 MainActor.assumeIsolated {
                     guard let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { exit(1) }

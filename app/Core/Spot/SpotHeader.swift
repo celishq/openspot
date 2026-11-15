@@ -3,7 +3,6 @@ import Foundation
 public struct SpotHeader: Equatable, Sendable {
     private static let limit = 4096
     private static let marks = ["//", "--", "#"]
-    private static let kinds: Set<String> = ["button", "field"]
 
     public let block: TextBlock
 
@@ -20,7 +19,7 @@ public struct SpotHeader: Equatable, Sendable {
         var keys: [TextBlock.Field] = []
         var children: [TextBlock] = []
         for block in TextBlock.blocks(in: lines.joined(separator: "\n")) {
-            if let kind = block.fields.first?.key, Self.kinds.contains(kind) {
+            if HeaderBlock(block: block) != nil {
                 children.append(block)
             } else {
                 keys += block.fields

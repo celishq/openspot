@@ -49,12 +49,12 @@ final class InlineLink: ScriptLink {
         return true
     }
 
-    func form(_ action: SpotAction, key: String) async throws -> String? {
-        try await text(of: action, key: key, input: nil)
+    func form(_ action: SpotAction, key: String) async throws -> SpotOutput? {
+        try await answer(of: action, key: key, input: nil)
     }
 
-    func submit(_ action: SpotAction, key: String, values: String) async throws -> String? {
-        try await text(of: action, key: key, input: values)
+    func submit(_ action: SpotAction, key: String, values: String) async throws -> SpotOutput? {
+        try await answer(of: action, key: key, input: values)
     }
 
     func stop(_ call: ScriptCall) {}
@@ -141,7 +141,7 @@ final class InlineLink: ScriptLink {
             }
             if case .ended = end, !hasAnswer, case .ask(let ask) = call.purpose {
                 hasAnswer = true
-                await run.takeAnswer(lines?.withoutEffects() ?? SpotOutput(text: ""), frame: "", to: ask)
+                await run.takeAnswer(lines?.withoutEffects() ?? .empty, frame: "", to: ask)
             }
             run.ended(made, call.purpose, end, hadAnswer: hasAnswer, showedPicture: showedPicture, selected: lines?.select)
         }
@@ -152,7 +152,7 @@ final class InlineLink: ScriptLink {
         return ((error as? SpotError)?.reason ?? error.localizedDescription) + "\n"
     }
 
-    private func text(of action: SpotAction, key: String, input: String?) async throws -> String? {
+    private func answer(of action: SpotAction, key: String, input: String?) async throws -> SpotOutput? {
         guard let run else { return nil }
         let made = ScriptCall(action: action, key: key, started: runs.now())
         let inline = InlineCall(arguments: action.arguments, variables: run.withPage([:]), input: input)
@@ -171,8 +171,9 @@ final class InlineLink: ScriptLink {
         runs.record(run.spot, action, input: input, frames: text.map { [$0] } ?? [], errors: Self.errors(of: end), end: end, reason: nil, started: made.started, begin: begin)
         switch outcome {
         case .frame(let text) where !made.isStopped:
-            run.report(toastOf: SpotOutput(text: text))
-            return text
+            let lines = await SpotOutput.reading(text)
+            run.report(toastOf: lines)
+            return lines
         case .failed(let error) where !made.isStopped:
             throw error
         default:

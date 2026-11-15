@@ -3,14 +3,12 @@
 # icon=party.popper
 # detail=Celebrate on each screen
 # on=panel.open
-# offers=card
+#
+# button=play
+# title=Play
 #
 # field=look
 # title=Look
-#
-# field=key
-# type=hotkey
-# title=Shortcut
 dir=$(cd "${0%/*}" && pwd)/confetti
 . "$dir/shared.sh"
 

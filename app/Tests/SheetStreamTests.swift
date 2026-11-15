@@ -20,7 +20,7 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testAMarkEndsAFrameWhereverAChunkStops() {
-        var reader = SheetFrameReader()
+        var reader = SheetFrames()
 
         XCTAssertEqual(reader.read(Data("text=a\n-".utf8)), [])
         XCTAssertEqual(reader.read(Data("--\ntext=".utf8)), ["text=a\n"])
@@ -30,7 +30,7 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testAFrameOverTheLimitIsDroppedAndMarksTheReader() {
-        var reader = SheetFrameReader(limit: 8)
+        var reader = SheetFrames(limit: 8)
 
         XCTAssertEqual(reader.read(Data("text=a\n---\n".utf8)), ["text=a\n"])
         XCTAssertFalse(reader.isOverLimit)
@@ -39,7 +39,7 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testALineWithNoEndOverTheLimitMarksTheReader() {
-        var reader = SheetFrameReader(limit: 8)
+        var reader = SheetFrames(limit: 8)
 
         _ = reader.read(Data("abcdefghijk".utf8))
 
@@ -48,7 +48,7 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testATerminalProgressCodeIsAFrameWithItsValue() {
-        var reader = SheetFrameReader()
+        var reader = SheetFrames()
 
         XCTAssertEqual(reader.read(Data("Copying\u{1b}]9;4;1;42\u{07}".utf8)), ["progress=0.42\n"])
         XCTAssertEqual(reader.read(Data("\u{1b}]9;4;1".utf8)), [])
@@ -57,13 +57,13 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testATerminalNotificationCodeIsAFrameWithItsToast() {
-        var reader = SheetFrameReader()
+        var reader = SheetFrames()
 
         XCTAssertEqual(reader.read(Data("\u{1b}]9;Build done\u{07}".utf8)), ["toast=Build done\n"])
     }
 
     func testEachOtherEscapeCodeLeavesTheText() {
-        var reader = SheetFrameReader()
+        var reader = SheetFrames()
 
         XCTAssertEqual(reader.read(Data("title=\u{1b}[1;31mRed\u{1b}[0m\n\u{1b}]8;;https://a.b\u{07}link\u{1b}]8;;\u{07}\u{1b}=".utf8)), [])
         XCTAssertEqual(reader.finish(), "title=Red\nlink")

@@ -57,7 +57,7 @@ final class OnceLink: ScriptLink {
             }
             if case .ended = end, !hasAnswer, case .ask(let ask) = call.purpose {
                 hasAnswer = true
-                await run.takeAnswer(lastHead?.withoutEffects() ?? SpotOutput(text: ""), frame: "", to: ask)
+                await run.takeAnswer(lastHead?.withoutEffects() ?? .empty, frame: "", to: ask)
             }
             self?.asking.removeAll { $0 === made }
             run.ended(made, call.purpose, end, hadAnswer: hasAnswer, showedPicture: showedPicture, selected: selected)
@@ -67,26 +67,26 @@ final class OnceLink: ScriptLink {
         return true
     }
 
-    func form(_ action: SpotAction, key: String) async throws -> String? {
-        try await text(of: action, key: key, input: nil)
+    func form(_ action: SpotAction, key: String) async throws -> SpotOutput? {
+        try await answer(of: action, key: key, input: nil)
     }
 
-    func submit(_ action: SpotAction, key: String, values: String) async throws -> String? {
-        try await text(of: action, key: key, input: values)
+    func submit(_ action: SpotAction, key: String, values: String) async throws -> SpotOutput? {
+        try await answer(of: action, key: key, input: values)
     }
 
-    private func text(of action: SpotAction, key: String, input: String?) async throws -> String? {
+    private func answer(of action: SpotAction, key: String, input: String?) async throws -> SpotOutput? {
         guard let run else { return nil }
         return try await withCheckedThrowingContinuation { continuation in
-            var text = ""
-            let made = runs.call(run.spot, action, key: key, input: input, limit: nil, variables: run.withPage([:])) { [weak run] _, frame, lines in
-                text += frame
+            var answer = SpotOutput.empty
+            let made = runs.call(run.spot, action, key: key, input: input, limit: nil, variables: run.withPage([:])) { [weak run] _, _, lines in
+                if !lines.fields.isEmpty || answer.fields.isEmpty { answer = lines }
                 run?.report(toastOf: lines)
             } onEnd: { [weak run] made, end in
                 run?.callEnded(made)
                 switch end {
                 case .stopped: continuation.resume(returning: nil)
-                case .ended: continuation.resume(returning: text)
+                case .ended: continuation.resume(returning: answer)
                 case .failed(let error): continuation.resume(throwing: error)
                 }
             }

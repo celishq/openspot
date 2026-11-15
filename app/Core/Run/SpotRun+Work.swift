@@ -134,8 +134,8 @@ extension SpotRun {
             pressAgain(running)
             return nil
         }
-        guard let text = try await link.form(call, key: key) else { return nil }
-        guard let form = ItemForm(output: SpotOutput(text: text)) else { throw SpotError.badForm }
+        guard let output = try await link.form(call, key: key) else { return nil }
+        guard let form = ItemForm(output: output) else { throw SpotError.badForm }
         return form
     }
 
@@ -146,8 +146,8 @@ extension SpotRun {
             pressAgain(running)
             return nil
         }
-        guard let text = try await link.form(call, key: key) else { return nil }
-        if let form = ItemForm(output: SpotOutput(text: text)), !form.fields.isEmpty { return .form(form) }
+        guard let output = try await link.form(call, key: key) else { return nil }
+        if let form = ItemForm(output: output), !form.fields.isEmpty { return .form(form) }
         read(need: .change)
         return .done
     }
@@ -159,14 +159,13 @@ extension SpotRun {
             pressAgain(running)
             return nil
         }
-        guard let text = try await link.submit(call, key: key, values: draft.text) else { return nil }
+        guard let output = try await link.submit(call, key: key, values: draft.text) else { return nil }
         guard !link.keepsState else { return .done }
-        if let form = ItemForm(output: SpotOutput(text: text)), !form.fields.isEmpty {
+        if let form = ItemForm(output: output), !form.fields.isEmpty {
             if draft.isMultiple { read(need: .change) }
             return .form(form)
         }
-        let run = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        read(selecting: run.isEmpty ? nil : run, need: .change)
+        read(selecting: output.select, need: .change)
         return .done
     }
 

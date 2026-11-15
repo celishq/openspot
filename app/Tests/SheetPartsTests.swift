@@ -89,12 +89,13 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testAButtonThatOnlyACardDrawingPlacesIsAPartOfTheCardAndNoAction() {
-        let output = SpotOutput(text: "grid.strip=next next next join-now\n\nnumber=next\nvalue=09:30\n\nbutton=join-now\ntitle=Join\n\nbutton=tick\ntitle=Mark as done\n")
+        let outputCheck = FrameCheck(text: "grid.strip=next next next join-now\n\nnumber=next\nvalue=09:30\n\nbutton=join-now\ntitle=Join\n\nbutton=tick\ntitle=Mark as done\n")
+        let output = outputCheck.output
 
         XCTAssertEqual(output.parts.map(\.id), ["next", "join-now"])
         XCTAssertEqual(output.actions.map(\.id), ["tick"])
         XCTAssertEqual(output.face.drawing(for: .strip), [["next", "next", "next", "join-now"]])
-        XCTAssertEqual(output.partFaults, [])
+        XCTAssertEqual(outputCheck.partFaults, [])
     }
 
     func testATextOrANumberTakesAColourForItsBarAndOtherPartsDoNot() {
@@ -112,10 +113,11 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testATextsToneColoursItsWordsAndAGaugeKeepsItsOwn() {
-        let output = SpotOutput(text: "text=due\ndetail=Late\ntone=bad\n\ntext=now\ntitle=Standup\ntone=on\n\ngraph=disk\nvalue=0.9\ntone=bad\n")
+        let outputCheck = FrameCheck(text: "text=due\ndetail=Late\ntone=bad\n\ntext=now\ntitle=Standup\ntone=on\n\ngraph=disk\nvalue=0.9\ntone=bad\n")
+        let output = outputCheck.output
 
         XCTAssertEqual(output.parts.map(\.textTone), [.bad, nil, nil])
-        XCTAssertEqual(output.partFaults, ["the part now has an unknown tone: on"])
+        XCTAssertEqual(outputCheck.partFaults, ["the part now has an unknown tone: on"])
     }
 
     func testASetValueKeepsThePlacementOfTheParts() throws {
@@ -160,7 +162,7 @@ final class SheetPartsTests: XCTestCase {
         let parts = try panel("switch=wifi\non=true\n\nfield=volume\ntype=slider\nlevel=40\n\nfield=name\ntext=Ann\n\ngraph=history\npoint=2\n").parts
 
         XCTAssertEqual(parts.map(\.control), [.toggle(false), .slider(level: 0, min: 0, max: 100), .text("", placeholder: nil, isReadOnly: false), .chart([])])
-        for (kind, key) in [("switch", "on"), ("slider", "level"), ("field", "text"), ("graph", "point")] {
+        for (kind, key) in [("switch", "on"), ("field", "level"), ("field", "text"), ("graph", "point")] {
             XCTAssertEqual(PartCatalog.faults(in: TextBlock(fields: [.init(key: kind, value: "a"), .init(key: key, value: "1")])), ["the part a has an unknown key: \(key)"])
         }
     }
@@ -247,17 +249,18 @@ final class SheetPartsTests: XCTestCase {
 
         XCTAssertEqual(sheet.parts.first?.key, ActionKey(name: "escape"))
         XCTAssertEqual(sheet.hint, "Esc Cancel   ⌘⏎ Move to Trash")
-        XCTAssertEqual(SpotOutput(text: "text=a\nshortcut=cmd+escape\n").partFaults, ["the part a has an unknown key combination: cmd+escape"])
+        XCTAssertEqual(FrameCheck(text: "text=a\nshortcut=cmd+escape\n").partFaults, ["the part a has an unknown key combination: cmd+escape"])
     }
 
     func testAButtonThatCannotBeAnActionIsAFaultThatSaysWhy() {
         let key = "the button b has shortcut=ctrl+k, which a button cannot take. Use cmd or shift with a letter, a digit, return, backspace or a comma, or escape"
-        let action = SpotOutput(text: "text=t\n\nbutton=b\ntitle=B\nshortcut=ctrl+k\n\nbutton=c\nicon=trash\n\nrow=r\nshortcut=⌃⌥K\n")
+        let actionCheck = FrameCheck(text: "text=t\n\nbutton=b\ntitle=B\nshortcut=ctrl+k\n\nbutton=c\nicon=trash\n\nrow=r\nshortcut=⌃⌥K\n")
+        let action = actionCheck.output
 
         XCTAssertEqual(action.actions, [])
         XCTAssertEqual(action.errors, [])
-        XCTAssertEqual(action.sheetFaults, [key, "the button c needs a title"])
-        XCTAssertEqual(SpotOutput(text: "grid=b\n\nbutton=b\ntitle=B\nshortcut=ctrl+k\n").partFaults, [key])
+        XCTAssertEqual(actionCheck.sheetFaults, [key, "the button c needs a title"])
+        XCTAssertEqual(FrameCheck(text: "grid=b\n\nbutton=b\ntitle=B\nshortcut=ctrl+k\n").partFaults, [key])
     }
 
     func testASheetOfRowsDrawsKeysOnlyWhenItsDrawingPlacesAButtonWithAKey() throws {
@@ -270,7 +273,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testAnEveryLineIsAnUnknownKindThatASheetSkips() throws {
-        XCTAssertEqual(SpotOutput(text: "on=clock.5\n\ntext=a\ntitle=A\n").sheetFaults, ["cannot read the block that starts: on=clock.5"])
+        XCTAssertEqual(FrameCheck(text: "on=clock.5\n\ntext=a\ntitle=A\n").sheetFaults, ["cannot read the block that starts: on=clock.5"])
         XCTAssertEqual(try panel("on=clock.5\n\ntext=a\ntitle=A\n").parts.map(\.id), ["a"])
     }
 
@@ -282,13 +285,13 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testTheCatalogReportsWhatAPartCannotHold() {
-        XCTAssertEqual(SpotOutput(text: lights).partFaults, [])
-        XCTAssertEqual(SpotOutput(text: "text=a\ncolour=red\n").partFaults, ["the part a has an unknown key: colour"])
-        XCTAssertEqual(SpotOutput(text: "choice=a\noption=en:English\n").partFaults, ["the part a has an unknown key: option"])
-        XCTAssertEqual(SpotOutput(text: "choice=a\ncolor=red\n").partFaults, ["the part a needs a color as #rrggbb: red"])
-        XCTAssertEqual(SpotOutput(text: "text=a\nshortcut=nope+a\n").partFaults, ["the part a has an unknown key combination: nope+a"])
-        XCTAssertEqual(SpotOutput(text: "text=a\ntitle=A\ndetail=9%\nvalue=0.09\ntone=bad\n").partFaults, [])
-        XCTAssertEqual(SpotOutput(text: "text=a\ntitle=A\ndetail=9%\nvalue=0.09\ntone=red\n").partFaults, ["the part a has an unknown tone: red"])
+        XCTAssertEqual(FrameCheck(text: lights).partFaults, [])
+        XCTAssertEqual(FrameCheck(text: "text=a\ncolour=red\n").partFaults, ["the part a has an unknown key: colour"])
+        XCTAssertEqual(FrameCheck(text: "choice=a\noption=en:English\n").partFaults, ["the part a has an unknown key: option"])
+        XCTAssertEqual(FrameCheck(text: "choice=a\ncolor=red\n").partFaults, ["the part a needs a color as #rrggbb: red"])
+        XCTAssertEqual(FrameCheck(text: "text=a\nshortcut=nope+a\n").partFaults, ["the part a has an unknown key combination: nope+a"])
+        XCTAssertEqual(FrameCheck(text: "text=a\ntitle=A\ndetail=9%\nvalue=0.09\ntone=bad\n").partFaults, [])
+        XCTAssertEqual(FrameCheck(text: "text=a\ntitle=A\ndetail=9%\nvalue=0.09\ntone=red\n").partFaults, ["the part a has an unknown tone: red"])
     }
 
     func testTheCallsOfAPanel() {
@@ -297,35 +300,35 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testAPartOrAnActionCalledReadIsAFault() {
-        XCTAssertEqual(SpotOutput(text: "text=read\ntitle=A\n").partFaults, ["a part cannot be called read"])
-        XCTAssertEqual(SpotOutput(text: "button=read\ntitle=A\n").partFaults, ["an action cannot be called read"])
+        XCTAssertEqual(FrameCheck(text: "text=read\ntitle=A\n").partFaults, ["a part cannot be called read"])
+        XCTAssertEqual(FrameCheck(text: "button=read\ntitle=A\n").partFaults, ["an action cannot be called read"])
     }
 
     func testAPartOrAnActionWithAKeyOfStdinIsAFault() {
         for id in ["search", "form", "value"] {
-            XCTAssertEqual(SpotOutput(text: "field=\(id)\nvalue=A\n").partFaults, ["a part cannot be called \(id), which stdin uses"])
-            XCTAssertEqual(SpotOutput(text: "button=\(id)\ntitle=A\n").partFaults, ["an action cannot be called \(id), which stdin uses"])
-            XCTAssertEqual(SpotOutput(text: "row=\(id)\ntitle=A\n").partFaults, [])
+            XCTAssertEqual(FrameCheck(text: "field=\(id)\nvalue=A\n").partFaults, ["a part cannot be called \(id), which stdin uses"])
+            XCTAssertEqual(FrameCheck(text: "button=\(id)\ntitle=A\n").partFaults, ["an action cannot be called \(id), which stdin uses"])
+            XCTAssertEqual(FrameCheck(text: "row=\(id)\ntitle=A\n").partFaults, [])
         }
     }
 
     func testAPartCanBeCalledCallOrArgBecauseAValueRidesInsideTheInputOfACall() {
         for id in ["call", "reason", "arg", "input"] {
-            XCTAssertEqual(SpotOutput(text: "field=\(id)\nvalue=A\n").partFaults, [])
+            XCTAssertEqual(FrameCheck(text: "field=\(id)\nvalue=A\n").partFaults, [])
         }
     }
 
     func testAPartOrAnActionWithADefaultIdIsAFaultButAnOpenActionChangesThePick() {
         for id in ["open", "drop"] {
-            XCTAssertEqual(SpotOutput(text: "text=\(id)\ntitle=A\n").partFaults, ["a part cannot be called \(id)"])
+            XCTAssertEqual(FrameCheck(text: "text=\(id)\ntitle=A\n").partFaults, ["a part cannot be called \(id)"])
         }
-        XCTAssertEqual(SpotOutput(text: "button=drop\ntitle=A\n").partFaults, ["an action cannot be called drop"])
-        XCTAssertEqual(SpotOutput(text: "button=open\ntitle=Show\n").partFaults, [])
+        XCTAssertEqual(FrameCheck(text: "button=drop\ntitle=A\n").partFaults, ["an action cannot be called drop"])
+        XCTAssertEqual(FrameCheck(text: "button=open\ntitle=Show\n").partFaults, [])
     }
 
     func testRunIsAnIdThatAScriptCanGiveAPartOrAnAction() {
-        XCTAssertEqual(SpotOutput(text: "text=run\ntitle=A\n").partFaults, [])
-        XCTAssertEqual(SpotOutput(text: "button=run\ntitle=A\n").partFaults, [])
+        XCTAssertEqual(FrameCheck(text: "text=run\ntitle=A\n").partFaults, [])
+        XCTAssertEqual(FrameCheck(text: "button=run\ntitle=A\n").partFaults, [])
     }
 
     func testArrowsSelectThePartsThatReturnCanUse() throws {
@@ -460,9 +463,9 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testALookOnlyDrawsTheBox() {
-        XCTAssertEqual(SpotOutput(text: "text=a\ntitle=A\nlook=large\n").partFaults, ["the part a has an unknown look: large"])
-        XCTAssertEqual(SpotOutput(text: "text=a\ntitle=A\nlook=section\n").partFaults, ["the part a has an unknown look: section"])
-        XCTAssertEqual(SpotOutput(text: "choice=a\nlook=list\n\noption=x\ntitle=X\n").partFaults, ["the part a has an unknown look: list"])
+        XCTAssertEqual(FrameCheck(text: "text=a\ntitle=A\nlook=large\n").partFaults, ["the part a has an unknown look: large"])
+        XCTAssertEqual(FrameCheck(text: "text=a\ntitle=A\nlook=section\n").partFaults, ["the part a has an unknown look: section"])
+        XCTAssertEqual(FrameCheck(text: "choice=a\nlook=list\n\noption=x\ntitle=X\n").partFaults, ["the part a has an unknown look: list"])
     }
 
     func testASwitchWithATickLookKeepsItsValue() throws {
@@ -470,7 +473,7 @@ final class SheetPartsTests: XCTestCase {
 
         XCTAssertEqual(part.look, .tick)
         XCTAssertEqual(part.control, .toggle(true))
-        XCTAssertEqual(SpotOutput(text: "switch=done\nvalue=true\ntype=tick\n").partFaults, [])
+        XCTAssertEqual(FrameCheck(text: "switch=done\nvalue=true\ntype=tick\n").partFaults, [])
     }
 
 }

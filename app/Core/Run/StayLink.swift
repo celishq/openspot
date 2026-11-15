@@ -32,7 +32,7 @@ final class StayLink: ScriptLink {
     }
     private var failures: [Date] = []
     private var givenUp: Date??
-    private var formAnswer: CheckedContinuation<String?, Error>?
+    private var formAnswer: CheckedContinuation<SpotOutput?, Error>?
     private var formID: Int?
     private var formTimer: Task<Void, Never>?
     private var heldScript = false
@@ -94,7 +94,7 @@ final class StayLink: ScriptLink {
         return script != nil
     }
 
-    func form(_ action: SpotAction, key: String) async throws -> String? {
+    func form(_ action: SpotAction, key: String) async throws -> SpotOutput? {
         guard formAnswer == nil else { return nil }
         return try await withCheckedThrowingContinuation { continuation in
             formAnswer = continuation
@@ -120,9 +120,9 @@ final class StayLink: ScriptLink {
         settle()
     }
 
-    func submit(_ action: SpotAction, key: String, values: String) async throws -> String? {
+    func submit(_ action: SpotAction, key: String, values: String) async throws -> SpotOutput? {
         send(action, input: values)
-        return ""
+        return .empty
     }
 
     func stop(_ call: ScriptCall) {
@@ -310,7 +310,7 @@ final class StayLink: ScriptLink {
         for id in openCalls.keys.sorted() { close(id, end, errors: errors) }
     }
 
-    private func answerForm(with answer: Result<String?, Error>) {
+    private func answerForm(with answer: Result<SpotOutput?, Error>) {
         let waiting = formAnswer
         formAnswer = nil
         formTimer?.cancel()
@@ -342,7 +342,7 @@ final class StayLink: ScriptLink {
                 }
                 if formAnswer != nil, !lines.fields.isEmpty || lines.ends.contains(formID.map(String.init) ?? "") {
                     run.report(toastOf: lines)
-                    answerForm(with: .success(text))
+                    answerForm(with: .success(lines))
                     settle()
                     continue
                 }
@@ -388,7 +388,7 @@ final class StayLink: ScriptLink {
         endCalls(nil)
         forgetAsks()
         run?.lost()
-        answerForm(with: .success(""))
+        answerForm(with: .success(.empty))
     }
 
     private func counted(_ ends: [String]) {

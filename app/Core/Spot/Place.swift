@@ -3,7 +3,7 @@ import Foundation
 public enum Place: String, CaseIterable, Sendable {
     case card, search, menubar, float, window
 
-    private static let none = "none"
+    static let none = "none"
 
     static func read(_ lines: [String], of name: String) throws -> Set<Place>? {
         guard !lines.isEmpty else { return nil }
@@ -16,7 +16,7 @@ public enum Place: String, CaseIterable, Sendable {
             if word.contains(",") {
                 throw SpotError.fault("\(name) has offers=\(word). Write one place on each line, such as offers=card and offers=search")
             }
-            if word == "actions" {
+            if word == OfferedAction.place {
                 throw SpotError.fault("\(name) offers actions in its header. Write offers=actions on a button, such as after button=change")
             }
             guard let place = Place(rawValue: word) else {

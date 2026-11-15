@@ -103,7 +103,7 @@ extension SpotRun {
     func takeAnswer(_ lines: SpotOutput, frame: String, to ask: Ask, keeping: String? = nil, answers: Bool = true) async {
         if case .answer(let query) = ask { return takeAnswers(lines.answers, to: query) }
         let next: ItemList.Rows? = if case .read = ask { await newRows(lines.items, search: Self.search(of: lines, in: spot)) } else { nil }
-        lastAnswer = lines.withoutBlocks()
+        lastAnswer = lines
         report(toastOf: lines)
         spot = spot.taking(lines)
         switch ask {

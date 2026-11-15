@@ -8,7 +8,7 @@ struct CheckCalls {
 
     func sheet() -> CommandAPI.Work {
         { [input] in
-            let faults = SpotOutput(text: await input()).sheetFaults
+            let faults = FrameCheck(text: await input()).sheetFaults
             let text = faults.map { $0 + "\n" }.joined() + (faults.isEmpty ? "No faults.\n" : "\(faults.count) faults.\n")
             return CommandAnswer(output: text, code: faults.isEmpty ? 0 : 1)
         }

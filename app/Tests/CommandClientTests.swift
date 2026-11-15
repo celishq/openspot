@@ -165,7 +165,7 @@ final class CommandClientTests: XCTestCase {
         let printed = String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
         process.waitUntilExit()
 
-        XCTAssertEqual(printed, "the sheet has no parts\n1 faults.\n")
+        XCTAssertEqual(printed, "the sheet has no parts\nthe head has an unknown key: text\n2 faults.\n")
     }
 
     func testWithNoSocketItStartsTheAppWithTheSameArguments() throws {

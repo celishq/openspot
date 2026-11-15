@@ -105,7 +105,7 @@ case "$1" in
       exit 0
     fi
     /usr/bin/jq -c --arg title "$(printf %s "$name" | tr '\n' ' ')" '.title = $title' "$file" > "$file.$$" && mv "$file.$$" "$file" || fail "Openspot cannot rename it, so it keeps its name."
-    printf '%s\n' "$2"
+    printf 'select=%s\n' "$2"
     ;;
   delete)
     board "$2"

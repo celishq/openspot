@@ -32,11 +32,11 @@ case "$1" in
   read)
     if [ -z "$ready" ]; then
       rm -f "$warned"
-      printf 'title=Updates\ndetail=%s\ngrid=false\n' "$version"
+      printf 'title=Updates\ndetail=%s\nshown=false\n' "$version"
     elif warned; then
-      printf 'title=Restart\ndetail=Stops %s\ngrid=true\n' "$(calls "$calls")"
+      printf 'title=Restart\ndetail=Stops %s\nshown=true\n' "$(calls "$calls")"
     else
-      printf 'title=Restart\ndetail=Update %s\ngrid=true\n' "$ready"
+      printf 'title=Restart\ndetail=Update %s\nshown=true\n' "$ready"
     fi
     ;;
   open)

@@ -196,7 +196,7 @@ final class SettingsSpotTests: BuiltInCase {
 
     func testAPartRecordsAKeyAndReportsItsValue() throws {
         var part = try XCTUnwrap(SpotPart(block: TextBlock(fields: [
-            .init(key: "hotkey", value: "open"), .init(key: "title", value: "Open"), .init(key: "value", value: "ctrl+k")
+            .init(key: "field", value: "open"), .init(key: "type", value: "hotkey"), .init(key: "title", value: "Open"), .init(key: "value", value: "ctrl+k")
         ])))
 
         XCTAssertEqual(part.value, "ctrl+k")
@@ -205,7 +205,7 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     func testTheCheckFindsABadHotkey() {
-        XCTAssertEqual(SpotOutput(text: "field=a\ntype=hotkey\nvalue=k\n").partFaults, ["the part a needs a shortcut that holds cmd, ctrl or option: k"])
-        XCTAssertEqual(SpotOutput(text: "field=a\ntype=hotkey\nvalue=ctrl+k\n").partFaults, [])
+        XCTAssertEqual(FrameCheck(text: "field=a\ntype=hotkey\nvalue=k\n").partFaults, ["the part a needs a shortcut that holds cmd, ctrl or option: k"])
+        XCTAssertEqual(FrameCheck(text: "field=a\ntype=hotkey\nvalue=ctrl+k\n").partFaults, [])
     }
 }

@@ -250,7 +250,10 @@ public final class SpotRuns {
             tokens.setReason(ReadReason.panel.variables["OPENSPOT_REASON"], of: token)
             defer { script.end() }
             script.send(.read, variables: ReadReason.panel.variables.merging(variables) { _, new in new }, id: 1)
-            for try await frame in frames where !SpotOutput(text: frame).isMark || SpotOutput(text: frame).ends.contains("1") { return frame }
+            for try await frame in frames {
+                let head = FrameHead(text: frame)
+                if !head.isMark || head.end == "1" { return frame }
+            }
             return ""
         }
         let (stream, halt, _) = frames(of: spot, action, input: input, limit: limit, variables: variables)

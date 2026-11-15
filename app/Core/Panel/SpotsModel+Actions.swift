@@ -216,10 +216,6 @@ extension SpotsModel {
     }
 
     private func give(_ key: String, to item: SpotItem, of entry: Entry) {
-        if let settings = entry.spot.settingsSheet, entry.spot.holdsSettings, let field = settings.hotkeyField(of: item.run) {
-            sheets[settings.spot]?.set(SpotItem(title: item.title, run: field), to: key)
-            return
-        }
         sheets[entry.id]?.set(item, to: key)
         guard !entry.spot.holdsSettings else { return }
         closingPick = (item, entry)
@@ -545,9 +541,6 @@ extension SpotsModel {
             } else {
                 sheets[target.entry.id]?.run(action, item: target.item)
             }
-        } else if action.id == SpotSettings.removeID, let item = target.item, target.entry.spot.holdsSettings,
-                  let settings = target.entry.spot.settingsSheet, let field = settings.hotkeyField(of: item.run) {
-            sheets[settings.spot]?.set(SpotItem(title: item.title, run: field), to: "")
         } else if action == .open || action == .history {
             presentSheet(of: target.entry.id, moving: true)
         } else if let command = CommandAction.command(of: action) {

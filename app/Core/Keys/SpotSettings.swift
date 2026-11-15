@@ -43,9 +43,6 @@ public struct SpotSettings: Equatable, Sendable {
         return run.hasPrefix(prefix) ? String(run.dropFirst(prefix.count)) : nil
     }
 
-    public func hotkeyField(of run: String) -> String? {
-        field(of: run).flatMap { key in fields.contains { $0.id == key && $0.isHotkey } ? key : nil }
-    }
 
     func answer(_ arguments: [String]) throws -> String {
         let row = arguments.dropFirst().first
@@ -103,9 +100,8 @@ public struct SpotSettings: Equatable, Sendable {
         let named = fields.map { ($0, config.setting($0.id, of: spot).flatMap { $0.isEmpty ? nil : $0 }) }
         let kept = kept(in: config).compactMap { value in CommandOffer(setting: value.key).map { ($0, Optional(value.value)) } }
         let values = named + kept
-        var rows = values.filter { !$0.0.isHotkey }.map(fieldRow)
+        var rows = values.map(fieldRow)
         rows += keyRows(config.keys)
-        rows += values.filter { $0.0.isHotkey }.map(fieldRow)
         if offersFloat {
             let key = config.keys.first { $0.spot == spot && $0.act == .float }
             rows.append(keyRow(run: floatRun, title: "Float", detail: "", icon: Self.floatIcon, key: key))
@@ -119,9 +115,6 @@ public struct SpotSettings: Equatable, Sendable {
     private func fieldRow(_ field: CommandOffer, _ value: String?) -> String {
         let run = "row=\(Self.settingPrefix)\(spot):\(field.id)\ntitle=\(field.title)\n"
         let hides = value == nil ? "hides=\(Self.clear)\n" : ""
-        if field.isHotkey {
-            return "\(run)icon=\(Self.keyIcon)\n\(hides)type=hotkey\nshortcut=\(value ?? Self.unset)\n"
-        }
         return "\(run)detail=\(value ?? "Not set")\nicon=\(Self.valueIcon)\n\(hides)"
     }
 

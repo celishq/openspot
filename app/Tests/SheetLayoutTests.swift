@@ -228,7 +228,7 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testALetterWithNoPartStaysEmpty() {
-        XCTAssertEqual(output("grid=a b\n\ntext=a\ntitle=A\n").partFaults, [])
+        XCTAssertEqual(FrameCheck(text: "grid=a b\n\ntext=a\ntitle=A\n").partFaults, [])
     }
 
     private let picker = """
@@ -261,24 +261,26 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testRowsAndPartsShareOneSheet() throws {
-        let lines = output(picker)
+        let linesCheck = FrameCheck(text: picker)
+        let lines = linesCheck.output
 
         XCTAssertEqual(lines.items.map(\.glyph), ["😀"])
         XCTAssertEqual(lines.perLine, 7)
-        XCTAssertEqual(lines.sheetFaults, [])
+        XCTAssertEqual(linesCheck.sheetFaults, [])
         XCTAssertFalse(try XCTUnwrap(SheetParts(output: lines)).takesArrows)
     }
 
     func testRowsAloneNeedNoDrawing() {
-        let lines = output("repeat=a\ngrid=a b c d e f g\n\nrow=1\ntitle=one\nicon=😀\n")
+        let linesCheck = FrameCheck(text: "repeat=a\ngrid=a b c d e f g\n\nrow=1\ntitle=one\nicon=😀\n")
+        let lines = linesCheck.output
 
         XCTAssertEqual(lines.perLine, 7)
-        XCTAssertEqual(lines.sheetFaults, [])
+        XCTAssertEqual(linesCheck.sheetFaults, [])
         XCTAssertEqual(output("row=1\ntitle=one\n").perLine, nil)
     }
 
     func testTheFaultsOfARepeat() {
-        func faults(_ text: String) -> [String] { output(text).partFaults }
+        func faults(_ text: String) -> [String] { FrameCheck(text: text).partFaults }
         let part = "\n\ntext=a\ntitle=A\n"
 
         XCTAssertEqual(faults("grid=a\n\nrepeat=z\ngrid=x y" + part), ["the repeat names z, which the drawing does not have"])
@@ -317,7 +319,7 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testTheFaultsOfADrawing() {
-        func faults(_ text: String) -> [String] { output(text).partFaults }
+        func faults(_ text: String) -> [String] { FrameCheck(text: text).partFaults }
 
         XCTAssertEqual(faults("grid=a b\ngrid=a\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n"), ["each grid line needs the same number of columns"])
         XCTAssertEqual(faults("grid=a\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n"), ["the part b is not in the drawing"])
@@ -329,13 +331,13 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testACheckOfOneSheetReportsWhatCannotBeRead() {
-        XCTAssertEqual(output("grid=a\n\ntext=a\ntitle=A\n").sheetFaults, [])
-        XCTAssertEqual(output("grid=a\n\ntitle=A\n\ntext=a\ntitle=A\n").sheetFaults, ["cannot read the block that starts: title=A"])
-        XCTAssertEqual(output("grid=a\n").sheetFaults, ["the sheet has no parts"])
+        XCTAssertEqual(FrameCheck(text: "grid=a\n\ntext=a\ntitle=A\n").sheetFaults, [])
+        XCTAssertEqual(FrameCheck(text: "grid=a\n\ntitle=A\n\ntext=a\ntitle=A\n").sheetFaults, ["cannot read the block that starts: title=A"])
+        XCTAssertEqual(FrameCheck(text: "grid=a\n").sheetFaults, ["the sheet has no parts"])
     }
 
     func testTheFaultsThatComeFromSize() {
-        func faults(_ text: String) -> [String] { output(text).partFaults }
+        func faults(_ text: String) -> [String] { FrameCheck(text: text).partFaults }
 
         XCTAssertEqual(faults("field=a\ntype=slider\nvalue=255\n"), ["the part a has a level of 255, outside 0 to 100"])
         XCTAssertEqual(faults("field=a\ntype=slider\nvalue=255\nmax=255\n"), [])
@@ -353,7 +355,7 @@ final class SheetLayoutTests: XCTestCase {
 
         XCTAssertTrue(try XCTUnwrap(sheet.frames["intro"]).hasDetailUnderTitle)
         XCTAssertFalse(try XCTUnwrap(sheet.frames["go"]).hasDetailUnderTitle)
-        XCTAssertEqual(output(text).partFaults, [])
+        XCTAssertEqual(FrameCheck(text: text).partFaults, [])
     }
 
     func testAViewFillsItsAreaOfASheetAndSharesTheFreeHeight() throws {
@@ -362,7 +364,7 @@ final class SheetLayoutTests: XCTestCase {
 
         XCTAssertEqual(frame.vertical, .fill)
         XCTAssertGreaterThan(frame.rect.height, SheetPlacement.rowHeight * 2)
-        XCTAssertEqual(output("grid=chart\n\nview=chart\n").sheetFaults, [])
+        XCTAssertEqual(FrameCheck(text: "grid=chart\n\nview=chart\n").sheetFaults, [])
     }
 
 }

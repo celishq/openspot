@@ -154,7 +154,7 @@ final class SpotTests: XCTestCase {
 
     func testSubmitGivesTheValuesAndReturnsTheNewRun() async throws {
         let command = try writeCommand(kind: .list, """
-        [ "$1" = new ] && cat > '\(marker.path)' && echo ' abc '
+        [ "$1" = new ] && cat > '\(marker.path)' && echo 'select=abc'
         """)
         let form = ItemForm(title: "New", fields: [.init(name: "title", label: "Name", value: "One")])
 

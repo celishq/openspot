@@ -166,7 +166,7 @@ case "$1" in
     values=$(checked) || exit 1
     load | jq -c --arg id "$id" --argjson v "$values" '. + [{id: $id, title: $v.title, url: $v.url}]' | store
     fetch_missing >/dev/null 2>&1 </dev/null &
-    echo "$id"
+    printf 'select=%s\n' "$id"
     ;;
   edit)
     if [ -z "$(value title)$(value url)" ]; then
@@ -176,7 +176,7 @@ case "$1" in
     values=$(checked) || exit 1
     load | jq -c --arg id "$2" --argjson v "$values" 'map(if .id == $id then .title = $v.title | .url = $v.url else . end)' | store
     fetch_missing >/dev/null 2>&1 </dev/null &
-    echo "$2"
+    printf 'select=%s\n' "$2"
     ;;
   delete)
     load | jq -c --arg id "$2" 'map(select(.id != $id))' | store

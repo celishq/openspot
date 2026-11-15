@@ -26,9 +26,9 @@ public struct SheetSandbox: Equatable, Sendable {
 
     public mutating func take(text: String) {
         self.text = text
-        let output = SpotOutput(text: text)
-        faults = text.isEmpty ? [] : output.sheetFaults
-        if let panel = SheetParts(output: output) { self.panel = panel }
+        let check = FrameCheck(text: text)
+        faults = text.isEmpty ? [] : check.sheetFaults
+        if let panel = SheetParts(output: check.output) { self.panel = panel }
     }
 
     @discardableResult
@@ -45,9 +45,9 @@ public struct SheetSandbox: Equatable, Sendable {
 
     public mutating func note(frame text: String) {
         self.text = text
-        let output = SpotOutput(text: text)
-        guard !output.parts.isEmpty else { return }
-        faults = output.layout == nil ? output.partFaults : output.sheetFaults
+        let check = FrameCheck(text: text)
+        guard !check.output.parts.isEmpty else { return }
+        faults = check.output.layout == nil ? check.partFaults : check.sheetFaults
     }
 
     public mutating func record(_ line: String) {

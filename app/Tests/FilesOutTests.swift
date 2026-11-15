@@ -35,18 +35,19 @@ final class FilesOutTests: XCTestCase {
     }
 
     func testARowCarriesTheFileThatItNamesFromTheRoot() {
-        let output = SpotOutput(text: "row=a\nfile=/Users/me/a.png\n\nrow=b\nfile=b.png\n\nrow=c\n")
+        let outputCheck = FrameCheck(text: "row=a\nfile=/Users/me/a.png\n\nrow=b\nfile=b.png\n\nrow=c\n")
+        let output = outputCheck.output
 
         XCTAssertEqual(output.items.map(\.file), ["/Users/me/a.png", nil, nil])
-        XCTAssertTrue(output.partFaults.contains("the row b names the file b.png, which does not start with /"))
+        XCTAssertTrue(outputCheck.partFaults.contains("the row b names the file b.png, which does not start with /"))
     }
 
     func testAComponentCannotTakeTheIdDragBesideRowsWithFiles() {
-        let files = SpotOutput(text: "row=a\nfile=/a.png\n\nbutton=drag\ntitle=Drag\n\nfield=note\n")
-        let none = SpotOutput(text: "row=a\n\nbutton=drag\ntitle=Drag\n\nfield=note\n")
+        let filesCheck = FrameCheck(text: "row=a\nfile=/a.png\n\nbutton=drag\ntitle=Drag\n\nfield=note\n")
+        let noneCheck = FrameCheck(text: "row=a\n\nbutton=drag\ntitle=Drag\n\nfield=note\n")
 
-        XCTAssertTrue(files.partFaults.contains("an action cannot be called drag"))
-        XCTAssertFalse(none.partFaults.contains("an action cannot be called drag"))
+        XCTAssertTrue(filesCheck.partFaults.contains("an action cannot be called drag"))
+        XCTAssertFalse(noneCheck.partFaults.contains("an action cannot be called drag"))
     }
 
     func testTheDragCallNamesEachRow() {

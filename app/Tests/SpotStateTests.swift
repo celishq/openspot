@@ -11,8 +11,8 @@ final class SpotStateTests: XCTestCase {
     func testAFrameOfAScriptCannotMoveItsCardOnOrOffTheGrid() throws {
         let hidden = SpotState(title: "Name", isOnGrid: false)
 
-        XCTAssertFalse(SpotState(output: SpotOutput(text: "grid=true"), header: hidden).isOnGrid)
-        XCTAssertTrue(try state("grid=false").isOnGrid)
+        XCTAssertFalse(SpotState(output: SpotOutput(text: "shown=true"), header: hidden).isOnGrid)
+        XCTAssertTrue(try state("shown=false").isOnGrid)
     }
 
     func testAReadKeepsEachValueOfItsHeadForAViewAndAChangeKeepsThem() throws {

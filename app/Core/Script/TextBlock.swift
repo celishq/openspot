@@ -86,6 +86,26 @@ public struct TextBlock: Equatable, Sendable {
         value(key).flatMap(Bool.init)
     }
 
+    public func value<Key: RawRepresentable>(_ key: Key) -> String? where Key.RawValue == String {
+        value(key.rawValue)
+    }
+
+    public func values<Key: RawRepresentable>(_ key: Key) -> [String] where Key.RawValue == String {
+        values(key.rawValue)
+    }
+
+    public func list<Key: RawRepresentable>(_ key: Key) -> [String] where Key.RawValue == String {
+        list(key.rawValue)
+    }
+
+    public func number<Key: RawRepresentable>(_ key: Key) -> Double? where Key.RawValue == String {
+        number(key.rawValue)
+    }
+
+    public func flag<Key: RawRepresentable>(_ key: Key) -> Bool? where Key.RawValue == String {
+        flag(key.rawValue)
+    }
+
     private static func escaped(_ value: String) -> String {
         var value = value
         return value.withUTF8 { bytes in
