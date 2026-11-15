@@ -7,13 +7,15 @@ struct SpotCustomView: View, @MainActor Equatable {
     let card: SpotSize
     var room: CGSize?
     var answers = 0
+    var date: Date?
     let views: SpotViews
     var send: ((String) -> Void)?
     @Environment(\.spotIsShown) private var isShown
     @Environment(\.spotCards) private var cards
+    @Environment(\.spotIsHeld) private var isHeld
 
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.source == rhs.source && lhs.values == rhs.values && lhs.card == rhs.card && lhs.room == rhs.room && lhs.answers == rhs.answers && lhs.views === rhs.views
+        lhs.source == rhs.source && lhs.values == rhs.values && lhs.card == rhs.card && lhs.room == rhs.room && lhs.answers == rhs.answers && lhs.date == rhs.date && lhs.views === rhs.views
             && (lhs.send == nil) == (rhs.send == nil)
     }
 
@@ -30,6 +32,15 @@ struct SpotCustomView: View, @MainActor Equatable {
             .frame(width: size.width, height: size.height, alignment: .topLeading)
             .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
             .allowsHitTesting(send != nil)
+            .task(id: isHeld ? nil : loadKey) {
+                if !isHeld { await views.load(source) }
+            }
+    }
+
+    private var loadKey: String? {
+        var hasFailed = false
+        if case .failed = views.phase(of: source) { hasFailed = true }
+        return "\(source)\n\(date?.timeIntervalSince1970 ?? 0)\n\(date == nil || hasFailed ? isShown : true)"
     }
 
     private var cardView: (String) -> AnyView {
@@ -102,11 +113,11 @@ struct SpotCustomView: View, @MainActor Equatable {
     private var content: some View {
         switch views.phase(of: source) {
         case .building:
-            EmptyView()
+            Color.clear
         case .ready(let make) where isShown:
-            make(values, input, send ?? { _ in })
+            make(values, input, isHeld ? { _ in } : send ?? { _ in })
         case .ready:
-            EmptyView()
+            Color.clear
         case .failed(let reason):
             Text(reason)
                 .font(SpotType.detail)

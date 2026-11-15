@@ -61,13 +61,13 @@ extension SpotsModel {
     }
 
     private func showQueued() {
-        guard let current = flow.current, current != flowEdges.shown, openList != nil else { return }
+        guard let current = flow.current, current != flowEdges.shown, openSheetID != nil else { return }
         show(current, moving: isShown)
     }
 
     private func standEdges() {
         edgeStep += 1
-        guard flowEdges.shown != nil, let open = openList, let run = sheets[open], let rect = shownSheetRect else { return }
+        guard flowEdges.shown != nil, let open = openSheetID, let run = sheets[open], let rect = shownSheetRect else { return }
         let page = formRect == nil ? SheetPage(run: run, rect: rect, query: searchText) : nil
         flowEdges = flowEdges.standing(at: rect, holding: page, in: flow, title: title(of:))
     }
@@ -77,6 +77,6 @@ extension SpotsModel {
     }
 
     private var shownSheetRect: CGRect? {
-        formRect ?? openList.flatMap { sheets[$0]?.sheetRect }
+        formRect ?? openSheetID.flatMap { sheets[$0]?.sheetRect }
     }
 }

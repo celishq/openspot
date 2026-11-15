@@ -442,19 +442,37 @@ final class SpotRunTests: XCTestCase {
         sheet.open {}
         try await wait("the rows") { sheet.list.shown.count == 2 }
         let landed = sheet.list.landedSearches
-        let threads = FindThreads()
-        ItemList.findTap = { threads.add(onMain: $0) }
-        defer { ItemList.findTap = nil }
+        let ranks = SearchRanks()
         nonisolated(unsafe) var told = false
         withObservationTracking { _ = sheet.list } onChange: { told = true }
 
-        sheet.search("ban")
+        SearchRanks.$meter.withValue(ranks) { sheet.search("ban") }
 
         XCTAssertFalse(told)
         XCTAssertEqual(sheet.list.query, "ban")
         try await wait("the found rows") { sheet.list.shown.map(\.run) == ["b"] }
         XCTAssertEqual(sheet.list.landedSearches, landed + 1)
-        XCTAssertEqual(threads.onMain, [false])
+        XCTAssertEqual(ranks.count, 1)
+        XCTAssertEqual(ranks.countOnMain, 0)
+    }
+
+    func testTheNextKeyCancelsTheFindOfTheKeyBefore() async throws {
+        let sheet = try make("printf 'row=a\\ntitle=Apple\\n\\nrow=b\\ntitle=Banana\\n'")
+        sheet.open {}
+        try await wait("the rows") { sheet.list.shown.count == 2 }
+        let landed = sheet.list.landedSearches
+        let ranks = SearchRanks()
+
+        SearchRanks.$meter.withValue(ranks) {
+            sheet.search("b")
+            sheet.search("ba")
+            sheet.search("ban")
+        }
+
+        try await wait("the found rows") { sheet.list.landedSearches == landed + 1 }
+        XCTAssertEqual(sheet.list.shown.map(\.run), ["b"])
+        XCTAssertEqual(sheet.list.query, "ban")
+        XCTAssertEqual(ranks.count, 1)
     }
 
     func testATextLeavesTheSelectionUntilItsRowsLand() async throws {
@@ -707,18 +725,5 @@ final class SpotRunTests: XCTestCase {
         try await wait("the rows") { sheet.list.shown.count == 2 }
 
         XCTAssertEqual(changes, 1)
-    }
-}
-
-private final class FindThreads: @unchecked Sendable {
-    private let lock = NSLock()
-    private var kept: [Bool] = []
-
-    var onMain: [Bool] {
-        lock.withLock { kept }
-    }
-
-    func add(onMain: Bool) {
-        lock.withLock { kept.append(onMain) }
     }
 }

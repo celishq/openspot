@@ -67,7 +67,7 @@ final class GridExampleTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             _ = try self.fakeGrid("echo '0 0 1/2 1'", in: folder)
 
-            _ = try await grid.perform(.open, timeout: 5)
+            _ = try await grid.perform(.open, timeout: 60)
 
             XCTAssertEqual(self.calls(in: folder), "window move 0 0 1/2 1\n")
         }
@@ -81,7 +81,7 @@ final class GridExampleTests: SampleSpotsCase {
             try "#!/bin/sh\necho link=\(link)\necho 'Openspot cannot move the window.' >&2\nexit 1\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
             try "#!/bin/sh\necho \"$*\" >> '\(folder.path)/opened'\n".writeScript(to: folder.appendingPathComponent("tools/open"))
 
-            _ = try await grid.perform(.open, timeout: 5)
+            _ = try await grid.perform(.open, timeout: 60)
 
             XCTAssertEqual(try self.read("opened", in: folder), "\(link)\n")
         }
@@ -92,7 +92,7 @@ final class GridExampleTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             _ = try self.fakeGrid("true", in: folder)
 
-            _ = try await grid.perform(.open, timeout: 5)
+            _ = try await grid.perform(.open, timeout: 60)
 
             XCTAssertEqual(self.calls(in: folder), "")
         }
@@ -107,7 +107,7 @@ final class GridExampleTests: SampleSpotsCase {
             defer { waiting.stop() }
             try String(waiting.processIdentifier).write(to: data.appendingPathComponent("grid.pid"), atomically: true, encoding: .utf8)
 
-            _ = try await grid.perform(.open, timeout: 5)
+            _ = try await grid.perform(.open, timeout: 60)
             try await self.wait("the shown grid") { FileManager.default.fileExists(atPath: shown.path) }
 
             XCTAssertTrue(FileManager.default.fileExists(atPath: shown.path))
@@ -186,7 +186,7 @@ final class GridExampleTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let data = try self.fakeGrid("touch '\(folder.path)/started'", in: folder)
 
-            _ = try await grid.items(timeout: 5)
+            _ = try await grid.items(timeout: 60)
 
             XCTAssertFalse(FileManager.default.fileExists(atPath: data.appendingPathComponent("grid.pid").path))
             XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("started").path))

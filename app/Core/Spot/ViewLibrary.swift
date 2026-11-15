@@ -7,6 +7,8 @@ public struct ViewLibrary: Sendable {
     private static let platform = "apple-macos26.0"
     private static let preludeName = "openspot-view.swift"
     private static let hashLength = 64
+    static let sourceFault = "This view does not compile."
+    static let toolsFault = "To draw a view, install the Command Line Tools: xcode-select --install"
 
     static let prelude = """
         public struct SpotFonts {
@@ -126,11 +128,20 @@ public struct ViewLibrary: Sendable {
         guard let text = try? Data(contentsOf: source) else {
             throw SpotError.fault("Openspot cannot find the view \(source.lastPathComponent).")
         }
+        return try await library(of: source, text: text)
+    }
+
+    func kept(of source: URL, text: Data) -> URL? {
         let carried = URL(fileURLWithPath: Self.path(beside: source.path, text: text))
         if FileManager.default.fileExists(atPath: carried.path) { return carried }
+        let built = cache.appendingPathComponent("\(Self.name(of: text)).dylib")
+        return FileManager.default.fileExists(atPath: built.path) ? built : nil
+    }
+
+    func library(of source: URL, text: Data) async throws -> URL {
+        if let kept = kept(of: source, text: text) { return kept }
         let name = Self.name(of: text)
         let built = cache.appendingPathComponent("\(name).dylib")
-        if FileManager.default.fileExists(atPath: built.path) { return built }
         let data = try await build(source: text, named: source.lastPathComponent, kinds: [Self.thisMac])
         try FileManager.default.createDirectory(at: cache, withIntermediateDirectories: true)
         let part = cache.appendingPathComponent("\(name).\(UUID().uuidString).part")
@@ -161,7 +172,7 @@ public struct ViewLibrary: Sendable {
 
     public func build(source: Data, named name: String, kinds: [String]) async throws -> Data {
         guard (try? await run("xcode-select", ["-p"])) != nil else {
-            throw SpotError.fault("To draw a view, install the Command Line Tools: xcode-select --install")
+            throw SpotError.fault(Self.toolsFault)
         }
         let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-view-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
@@ -179,7 +190,7 @@ public struct ViewLibrary: Sendable {
             do {
                 try await run("swiftc", arguments)
             } catch let error as SpotError {
-                throw SpotError.fault("This view does not compile. \(error.reason)")
+                throw SpotError.fault("\(Self.sourceFault) \(error.reason)")
             }
         }
         guard parts.count > 1 else { return try Data(contentsOf: URL(fileURLWithPath: parts[0])) }
@@ -196,7 +207,7 @@ public struct ViewLibrary: Sendable {
         #endif
     }
 
-    private static func name(of source: Data) -> String {
+    static func name(of source: Data) -> String {
         SHA256.hash(data: Data(prelude.utf8) + source).map { String(format: "%02x", $0) }.joined()
     }
 

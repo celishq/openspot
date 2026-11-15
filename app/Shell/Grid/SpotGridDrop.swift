@@ -17,8 +17,7 @@ struct SpotGridDrop: DropDelegate {
 
     func validateDrop(info: DropInfo) -> Bool {
         model.followDrag()
-        let paths = Self.paths
-        return SpotPackage.isFile(paths) || model.visible.contains { model.acceptsDrop(paths, on: $0.id) }
+        return !model.dragPaths.isEmpty
     }
 
     func dropEntered(info: DropInfo) {

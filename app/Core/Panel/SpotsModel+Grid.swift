@@ -2,7 +2,8 @@ import Foundation
 
 extension SpotsModel {
     public func press(_ key: GlobalKey) {
-        if confirming != key, confirmWords(of: key) != nil, showCard(key.spot) {
+        if confirming == key, runConfirmed() { return }
+        if confirmWords(of: key) != nil, showCard(key.spot) {
             confirming = key
             return
         }
@@ -14,9 +15,17 @@ extension SpotsModel {
         return sheets[key.spot]?.spot.offers.first { $0.id == command }?.confirm
     }
 
-    var confirmHint: String? {
-        guard openList == nil, let key = confirming, selectedEntry?.id == key.spot, let words = confirmWords(of: key) else { return nil }
-        return "⏎ \(words)   ⌘⏎ Settings   ⌘K Actions"
+    var waitingWords: String? {
+        guard openSheetID == nil, let key = confirming, selectedEntry?.id == key.spot else { return nil }
+        return confirmWords(of: key)
+    }
+
+    func runConfirmed() -> Bool {
+        guard waitingWords != nil, let key = confirming else { return false }
+        confirming = nil
+        if isShown { host.dismiss() }
+        run(key)
+        return true
     }
 
     private func run(_ key: GlobalKey) {
@@ -51,14 +60,16 @@ extension SpotsModel {
     }
 
     public func focus(ofCard index: Int) -> CardFocus {
-        guard isMenuOpen, openList == nil else { return .none }
+        guard isMenuOpen, openSheetID == nil else { return .none }
         return index == selected ? .focused : .faded
     }
 
     public func tap(_ id: String, opening: Bool = false) {
         guard !menuOwnsPointer, let position = visible.firstIndex(where: { $0.id == id }) else { return }
         selected = position
-        if !opening || !openSelectedSettings() { runSelected() }
+        if opening, openSelectedSettings() { return }
+        guard !isEditing else { return }
+        if openSheetID == nil { run(seen: visible[position]) } else { runSelectedItem() }
     }
 
     public func setLevel(_ id: String, to value: Double) {
@@ -71,11 +82,16 @@ extension SpotsModel {
 
     public func runSelected() {
         guard !isEditing else { return }
-        if openList != nil {
+        landSearch()
+        if openSheetID != nil {
             runSelectedItem()
             return
         }
         guard let entry = selectedEntry else { return }
+        run(seen: entry)
+    }
+
+    private func run(seen entry: Entry) {
         if entry.isAnswer, let sheet = sheets[entry.spot.id], sheet.isAnswering {
             sheet.afterAnswers { [weak self] in
                 guard let self, let next = selectedEntry, next.isAnswer, next.spot.id == entry.spot.id else { return }
@@ -87,7 +103,7 @@ extension SpotsModel {
     }
 
     public func press(_ id: String) {
-        guard let entry = entries.first(where: { $0.id == id }) else { return }
+        guard let entry = entry(id) else { return }
         if let sheet = sheets[id], sheet.awaitsAnswer {
             sheet.afterAnswer { [weak self] in self?.press(id) }
             return
@@ -120,7 +136,7 @@ extension SpotsModel {
     }
 
     private var isOnGrid: Bool {
-        menu == nil && form == nil && openList == nil && !isEditing
+        menu == nil && form == nil && openSheetID == nil && !isEditing
     }
 
     public func handleChain(code: UInt32, modifiers: Shortcut.Modifiers) -> Bool {
@@ -133,13 +149,8 @@ extension SpotsModel {
     }
 
     public func run(_ entry: Entry) {
-        if let key = confirming, key.spot == entry.id, entry.item == nil, openList == nil {
-            confirming = nil
-            if isShown { host.dismiss() }
-            return run(key)
-        }
-        if let item = entry.item, let list = entries.first(where: { $0.id == entry.spot.id }) {
-            if item.records, openList != list.id {
+        if let item = entry.item, let list = self.entry(entry.spot.id) {
+            if item.records, openSheetID != list.id {
                 pushFirst(list.id, moving: true)
             }
             pick(item, of: list)
@@ -159,8 +170,8 @@ extension SpotsModel {
             if isShown, sheets[entry.id]?.isCardRunning != true { host.dismiss() }
             sheets[entry.id]?.pressCard()
         case .list:
-            if openList == entry.id {
-                closeList(moving: true)
+            if openSheetID == entry.id {
+                closeSheet(moving: true)
             } else if let command = entry.spot.soleCommand {
                 runSole(command, of: entry)
             } else {
@@ -191,7 +202,7 @@ extension SpotsModel {
     }
 
     var soleHint: String? {
-        guard openList == nil, let entry = selectedEntry, entry.kind == .list, !entry.spot.pressRuns, let command = entry.spot.soleCommand else { return nil }
+        guard openSheetID == nil, let entry = selectedEntry, entry.kind == .list, !entry.spot.pressRuns, let command = entry.spot.soleCommand else { return nil }
         guard assignedKeys.contains(where: { $0.spot == entry.id && $0.act == .command(command) }) else {
             return "⏎ Set key   ⌘⏎ Settings   ⌘K Actions"
         }
@@ -201,7 +212,7 @@ extension SpotsModel {
     private func runSole(_ command: String, of entry: Entry) {
         if let key = assignedKeys.first(where: { $0.spot == entry.id && $0.act == .command(command) }) {
             if confirmWords(of: key) != nil {
-                confirming = key
+                if confirming != key || !runConfirmed() { confirming = key }
                 return
             }
             if isShown { host.dismiss() }
@@ -223,11 +234,11 @@ extension SpotsModel {
     public func openWork() -> Bool {
         guard let id = runs.workSpot else { return false }
         let spot = { self.visible.firstIndex { $0.id == id || $0.spot.places.contains(id) } }
-        if isShown, openList == nil, spot() == selected {
+        if isShown, openSheetID == nil, spot() == selected {
             host.dismiss()
             return true
         }
-        closeList(moving: isShown)
+        closeSheet(moving: isShown)
         host.show()
         if let spot = spot() { selected = spot }
         return true
@@ -248,12 +259,12 @@ extension SpotsModel {
             return run(entry)
         }
         let opens = entries.first { $0.id == id && $0.kind.opensSheet }?.id
-        if isShown, opens == nil || openList == opens {
+        if isShown, opens == nil || openSheetID == opens {
             host.dismiss()
         } else if let opens {
             press(opens)
         } else {
-            closeList(moving: isShown)
+            closeSheet(moving: isShown)
             host.show()
             selected = visible.firstIndex { $0.spot.places.contains(id) } ?? 0
         }

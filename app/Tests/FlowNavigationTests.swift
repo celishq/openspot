@@ -9,7 +9,7 @@ final class FlowNavigationTests: PanelCase {
         try await openPage()
 
         XCTAssertEqual(model.flow.current, FlowSheet(spot: "list", page: "a"))
-        XCTAssertEqual(model.openList, "list")
+        XCTAssertEqual(model.openSheetID, "list")
         XCTAssertEqual(host.dismissals, 0)
     }
 
@@ -29,15 +29,16 @@ final class FlowNavigationTests: PanelCase {
         try await openList()
         try await openPage()
         model.searchText = "de"
+        model.landSearch()
 
         XCTAssertTrue(model.handleKey(escape))
         XCTAssertEqual(model.searchText, "")
         XCTAssertTrue(model.handleKey(escape))
         try await wait("the sheet before") { self.titles == ["A"] }
-        XCTAssertEqual(model.openList, "list")
+        XCTAssertEqual(model.openSheetID, "list")
         XCTAssertTrue(model.handleKey(escape))
 
-        try await wait("the grid") { self.model.openList == nil }
+        try await wait("the grid") { self.model.openSheetID == nil }
         XCTAssertNil(model.flow.current)
     }
 
@@ -47,7 +48,7 @@ final class FlowNavigationTests: PanelCase {
 
         XCTAssertTrue(model.handleKey(toGrid))
 
-        try await wait("the grid") { self.model.openList == nil }
+        try await wait("the grid") { self.model.openSheetID == nil }
         XCTAssertNil(model.flow.current)
         XCTAssertNil(model.sheets["list"]?.page)
     }
@@ -56,10 +57,10 @@ final class FlowNavigationTests: PanelCase {
         try await openList()
 
         XCTAssertTrue(model.push(FlowSheet(spot: "other")))
-        try await wait("the other sheet") { self.model.openList == "other" && self.titles == ["Other"] }
+        try await wait("the other sheet") { self.model.openSheetID == "other" && self.titles == ["Other"] }
 
         XCTAssertTrue(model.handleKey(back))
-        try await wait("the first sheet") { self.model.openList == "list" && self.titles == ["A"] }
+        try await wait("the first sheet") { self.model.openSheetID == "list" && self.titles == ["A"] }
         XCTAssertEqual(model.flow.ahead, FlowSheet(spot: "other"))
     }
 
@@ -82,10 +83,10 @@ final class FlowNavigationTests: PanelCase {
         model.isShown = true
         model.panelWillShow(holding: [])
         model.press("info")
-        try await wait("the first sheet") { self.model.openPanel?.parts.first?.title == "First" }
+        try await wait("the first sheet") { self.model.openParts?.parts.first?.title == "First" }
         XCTAssertTrue(model.push(FlowSheet(spot: "info", page: "a")))
 
-        try await wait("the page of parts") { self.model.openPanel?.parts.first?.title == "Detail" }
+        try await wait("the page of parts") { self.model.openParts?.parts.first?.title == "Detail" }
 
         XCTAssertEqual(model.hint, "Esc Back")
     }
@@ -226,12 +227,12 @@ final class FlowNavigationTests: PanelCase {
         try await openList()
         try await openPage()
         XCTAssertTrue(model.push(FlowSheet(spot: "other")))
-        try await wait("the other sheet") { self.model.openList == "other" && self.titles == ["Other"] }
+        try await wait("the other sheet") { self.model.openSheetID == "other" && self.titles == ["Other"] }
 
         try await wait("the bars behind") { self.model.flowEdges.titles(on: .behind) == ["A", "List"] }
 
         XCTAssertTrue(model.back(steps: 2))
-        try await wait("the first sheet") { self.model.openList == "list" && self.titles == ["A"] }
+        try await wait("the first sheet") { self.model.openSheetID == "list" && self.titles == ["A"] }
         try await wait("no bar behind") { self.model.flowEdges.titles(on: .behind) == [] }
         XCTAssertEqual(model.flowEdges.titles(on: .ahead), ["A", "Other"])
     }
@@ -242,7 +243,7 @@ final class FlowNavigationTests: PanelCase {
 
         XCTAssertTrue(model.push(FlowSheet(spot: "other")))
 
-        try await wait("the step to settle") { self.model.openList == "other" && self.model.flowEdges.from == nil && self.model.flowEdges.titles(on: .behind) == ["List"] }
+        try await wait("the step to settle") { self.model.openSheetID == "other" && self.model.flowEdges.from == nil && self.model.flowEdges.titles(on: .behind) == ["List"] }
         let list = FlowSheet(spot: "list")
         let places = host.edgeChanges.compactMap { change in change.edges.edges.first { $0.sheet == list }.map { (change.motion, $0.place) } }
         XCTAssertEqual(places.first?.1, .stand(try XCTUnwrap(host.edgeChanges.first?.edges.from)))
@@ -256,7 +257,7 @@ final class FlowNavigationTests: PanelCase {
 
         XCTAssertTrue(model.open("other"))
 
-        try await wait("the other spot") { self.model.openList == "other" && self.titles == ["Other"] }
+        try await wait("the other spot") { self.model.openSheetID == "other" && self.titles == ["Other"] }
         XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "other")])
         XCTAssertNil(model.sheets["list"]?.page)
     }
@@ -269,7 +270,7 @@ final class FlowNavigationTests: PanelCase {
 
         XCTAssertTrue(model.handleKey(toGrid))
 
-        try await wait("the grid") { self.model.openList == nil }
+        try await wait("the grid") { self.model.openSheetID == nil }
         XCTAssertEqual(model.sheets["list"]?.pageStates.count, 0)
     }
 }

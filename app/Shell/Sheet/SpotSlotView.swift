@@ -56,7 +56,7 @@ struct SpotSlotView: View {
         case .image(let path):
             picture(icon: .image(path))
         default:
-            if part.kind == "picture" {
+            if part.isPicture {
                 picture(icon: part.file.map(FileIcon.init(path:)))
             } else if case .symbol(let symbol) = part.press {
                 Button { onSlot(part.id, nil) } label: {

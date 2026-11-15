@@ -43,16 +43,15 @@ struct SpotFloatView: View {
     }
 
     private func sheet(_ entry: SpotsModel.Entry, _ run: SpotRun, size: CGSize) -> some View {
-        let sole = fills ? run.panel.flatMap { $0.parts.count == 1 ? $0.parts.first : nil }.flatMap { $0.kind == "view" ? $0 : nil } : nil
+        let sole = fills ? run.panel.flatMap { $0.parts.count == 1 ? $0.parts.first : nil }.flatMap { $0.isOpen ? $0 : nil } : nil
         return VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             if !fills { header(entry, run) }
             if let part = sole, let view = entry.spot.view {
                 GeometryReader { area in
-                    SpotCustomView(source: view, values: part.values, card: .square, room: area.size, answers: run.panel?.answered ?? 0, views: .shared) { run.set(part, to: $0) }
+                    SpotCustomView(source: view, values: part.values, card: .square, room: area.size, answers: run.panel?.answered ?? 0, date: entry.spot.viewDate, views: .shared) { run.set(part, to: $0) }
                         .equatable()
                 }
                 .ignoresSafeArea()
-                .task(id: view) { await SpotViews.shared.load(view) }
             } else if let parts = run.panel {
                 SheetPartsView(
                     panel: parts,
@@ -68,11 +67,9 @@ struct SpotFloatView: View {
                     selection: { run.selection },
                     selectedPart: { run.selectedPart?.id },
                     nudge: { run.nudge },
-                    viewSource: entry.spot.view
+                    viewSource: entry.spot.view,
+                    viewDate: entry.spot.viewDate
                 )
-                .task(id: parts.parts.contains { $0.kind == "view" } ? entry.spot.view : nil) {
-                    if let view = entry.spot.view, parts.parts.contains(where: { $0.kind == "view" }) { await SpotViews.shared.load(view) }
-                }
             } else {
                 SpotRowsView(
                     list: run.list,
@@ -99,8 +96,7 @@ struct SpotFloatView: View {
     }
 
     private func card(_ entry: SpotsModel.Entry) -> some View {
-        let shape = RoundedRectangle(cornerRadius: SpotTokens.corner(for: entry.size), style: .continuous)
-        return SpotCardView(
+        SpotCardView(
             entry: entry,
             size: entry.size,
             index: -1,
@@ -111,7 +107,6 @@ struct SpotFloatView: View {
             model: model,
             onTap: { model.pressFloatCard(id) }
         )
-        .background { SpotBlur(radius: SpotTheme.blur).overlay(SpotTheme.glass).clipShape(shape) }
     }
 
     @ViewBuilder
@@ -136,7 +131,7 @@ private struct FloatSurface: ViewModifier {
         if fills {
             content.background {
                 Color.clear
-                    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: SpotTokens.radius, style: .continuous))
+                    .spotGlass(in: RoundedRectangle(cornerRadius: SpotTokens.radius, style: .continuous))
                     .ignoresSafeArea()
             }
         } else {

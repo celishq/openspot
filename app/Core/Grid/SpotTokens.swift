@@ -142,7 +142,7 @@ public enum SpotTokens {
         CGFloat(rows) * menuRowHeight + CGFloat(max(rows - 1, 0)) * menuRowGap + 2 * menuPadding
     }
 
-    public static func backdropHeight(gridHeight: CGFloat) -> CGFloat {
+    public static func contentHeight(gridHeight: CGFloat) -> CGFloat {
         let cards = gridHeight > 0 ? rowGap + gridHeight : 0
         return min(2 * halo + rowHeight + cards + hintBlock, panelHeight)
     }

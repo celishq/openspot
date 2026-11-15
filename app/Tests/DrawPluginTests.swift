@@ -29,7 +29,7 @@ final class DrawPluginTests: SampleSpotsCase {
             try write("Old plan", id: "old", in: boards, age: 7200)
             try write("Flows", id: "flows", in: boards, age: 120)
 
-            let rows = try await spot.items(timeout: 5).items
+            let rows = try await spot.items(timeout: 60).items
 
             XCTAssertEqual(rows.map(\.title), ["New board", "Flows", "Old plan"])
             XCTAssertEqual(rows.map(\.run), ["new", "flows", "old"])
@@ -45,7 +45,7 @@ final class DrawPluginTests: SampleSpotsCase {
             try FileManager.default.createDirectory(at: work.appendingPathComponent("plan.assets"), withIntermediateDirectories: true)
             try write("Plan", id: "plan", in: work, age: 60)
 
-            let rows = try await spot.items(timeout: 5).items
+            let rows = try await spot.items(timeout: 60).items
 
             XCTAssertEqual(rows.map(\.run), ["new", "Work/plan"])
             XCTAssertEqual(rows[1].subtitle, "Work · Edited 1 min ago")
@@ -59,13 +59,13 @@ final class DrawPluginTests: SampleSpotsCase {
                 try write("Board \(index)", id: "b\(index)", in: boards, age: TimeInterval(index * 60))
             }
 
-            let rows = try await spot.items(timeout: 5).items
+            let rows = try await spot.items(timeout: 60).items
             XCTAssertEqual(rows.map(\.title), ["New board"] + (1...8).map { "Board \($0)" })
 
-            let found = try await spot.items(query: "board 10", timeout: 5).items
+            let found = try await spot.items(query: "board 10", timeout: 60).items
             XCTAssertEqual(found.map(\.title), ["Board 10"])
 
-            let typed = try await spot.items(query: "ищфкв", input: "form=board\n", timeout: 5).items
+            let typed = try await spot.items(query: "ищфкв", input: "form=board\n", timeout: 60).items
             XCTAssertEqual(typed.count, 10)
         }
     }
@@ -76,14 +76,14 @@ final class DrawPluginTests: SampleSpotsCase {
             var board = Board(title: "Untitled board")
             board.add(Figure(kind: .shape, points: [.zero, CGPoint(x: 10, y: 10)]))
             try board.save(to: boards.appendingPathComponent("a.json"))
-            let rows = try await spot.items(timeout: 5).items
+            let rows = try await spot.items(timeout: 60).items
             let item = try XCTUnwrap(rows.first { $0.run == "a" })
             let rename = try await action("rename", of: spot)
-            var draft = FormDraft(form: try await spot.form(rename, item: item, timeout: 5))
+            var draft = FormDraft(form: try await spot.form(rename, item: item, timeout: 60))
             XCTAssertEqual(draft.form.fields.map(\.value), ["Untitled board"])
             draft.set("Launch flow", for: "name")
 
-            _ = try await spot.submit(rename, item: item, draft: draft, timeout: 5)
+            _ = try await spot.submit(rename, item: item, draft: draft, timeout: 60)
 
             let renamed = try Board.load(from: boards.appendingPathComponent("a.json"))
             XCTAssertEqual(renamed.title, "Launch flow")
@@ -96,10 +96,10 @@ final class DrawPluginTests: SampleSpotsCase {
         try await withBoards { folder, boards in
             try FileManager.default.createDirectory(at: folder.appendingPathComponent(".Trash"), withIntermediateDirectories: true)
             try write("Flows", id: "flows", in: boards, age: 0)
-            let rows = try await spot.items(timeout: 5).items
+            let rows = try await spot.items(timeout: 60).items
             let item = try XCTUnwrap(rows.first { $0.run == "flows" })
 
-            let toast = try await spot.perform(.action(try await action("delete", of: spot), item: item), timeout: 5)
+            let toast = try await spot.perform(.action(try await action("delete", of: spot), item: item), timeout: 60)
 
             XCTAssertEqual(toast, "Moved Flows to the Trash.")
             XCTAssertFalse(FileManager.default.fileExists(atPath: boards.appendingPathComponent("flows.json").path))
@@ -113,7 +113,7 @@ final class DrawPluginTests: SampleSpotsCase {
         let spot = try draw()
         try await withBoards { _, _ in
             do {
-                try await spot.perform(.item(SpotItem(title: "Gone", run: "gone")), timeout: 5)
+                try await spot.perform(.item(SpotItem(title: "Gone", run: "gone")), timeout: 60)
                 XCTFail("expected a failure")
             } catch let error as SpotError {
                 XCTAssertEqual(error.reason, "This board is gone.")

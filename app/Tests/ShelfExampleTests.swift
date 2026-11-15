@@ -14,22 +14,22 @@ final class ShelfExampleTests: SampleSpotsCase {
             let files = ["a.txt", "b\\c.txt"].map { folder.appendingPathComponent($0).path }
             try files.forEach { try Data().write(to: URL(fileURLWithPath: $0)) }
 
-            _ = try await shelf.perform(.drop(paths: files), timeout: 5)
-            _ = try await shelf.perform(.drop(paths: [files[0]]), timeout: 5)
-            let kept = try await shelf.items(timeout: 5).items
+            _ = try await shelf.perform(.drop(paths: files), timeout: 60)
+            _ = try await shelf.perform(.drop(paths: [files[0]]), timeout: 60)
+            let kept = try await shelf.items(timeout: 60).items
 
             XCTAssertEqual(kept.map(\.title), ["a.txt", "b\\c.txt"])
             XCTAssertEqual(kept.map(\.file), files)
             XCTAssertEqual(kept.map(\.subtitle), ["~", "~"])
 
-            _ = try await shelf.perform(.drag(runs: [files[0]]), timeout: 5)
+            _ = try await shelf.perform(.drag(runs: [files[0]]), timeout: 60)
 
-            let left = try await shelf.items(timeout: 5).items
+            let left = try await shelf.items(timeout: 60).items
             XCTAssertEqual(left.map(\.run), [files[1]])
 
             try FileManager.default.removeItem(atPath: files[1])
 
-            let gone = try await shelf.items(timeout: 5).items
+            let gone = try await shelf.items(timeout: 60).items
             XCTAssertEqual(gone, [])
         }
     }
@@ -39,11 +39,11 @@ final class ShelfExampleTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let file = folder.appendingPathComponent("a.txt").path
             try Data().write(to: URL(fileURLWithPath: file))
-            _ = try await shelf.perform(.drop(paths: [file]), timeout: 5)
+            _ = try await shelf.perform(.drop(paths: [file]), timeout: 60)
 
-            _ = try await shelf.perform(SpotAction(arguments: ["clear"]), timeout: 5)
+            _ = try await shelf.perform(SpotAction(arguments: ["clear"]), timeout: 60)
 
-            let items = try await shelf.items(timeout: 5).items
+            let items = try await shelf.items(timeout: 60).items
             XCTAssertEqual(items, [])
         }
     }

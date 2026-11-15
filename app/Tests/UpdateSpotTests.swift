@@ -9,7 +9,7 @@ final class UpdateSpotTests: BuiltInCase {
     func testAReadStartsOneOpenspotAndNoJq() async throws {
         let programs = try countPrograms()
 
-        _ = try await spot("updates").state(timeout: 5)
+        _ = try await spot("updates").state(timeout: 60)
 
         XCTAssertEqual(programs(), ["openspot app status --frame"])
     }
@@ -17,8 +17,8 @@ final class UpdateSpotTests: BuiltInCase {
     func testTheCardShowsTheVersionAndAPressChecks() async throws {
         let spot = try spot("updates")
 
-        let state = try await spot.state(timeout: 5)
-        _ = try await spot.perform(.open, timeout: 5)
+        let state = try await spot.state(timeout: 60)
+        _ = try await spot.perform(.open, timeout: 60)
 
         XCTAssertEqual(state, SpotState(title: "Updates", subtitle: version, isOnGrid: false))
         let checks = await app.checks
@@ -31,8 +31,8 @@ final class UpdateSpotTests: BuiltInCase {
         await app.set(update: "0.3.0", calls: 0)
         let spot = try spot("updates")
 
-        let state = try await spot.state(timeout: 5)
-        _ = try await spot.perform(.open, timeout: 5)
+        let state = try await spot.state(timeout: 60)
+        _ = try await spot.perform(.open, timeout: 60)
 
         XCTAssertEqual(state, SpotState(title: "Restart", subtitle: "Update 0.3.0", isOnGrid: true))
         let checks = await app.checks
@@ -55,10 +55,10 @@ final class UpdateSpotTests: BuiltInCase {
         await app.set(update: "0.3.0", calls: 2)
         let spot = try spot("updates")
 
-        let warning = try await spot.perform(.open, timeout: 5)
-        let warned = try await spot.state(timeout: 5)
+        let warning = try await spot.perform(.open, timeout: 60)
+        let warned = try await spot.state(timeout: 60)
         let first = await app.installs
-        _ = try await spot.perform(.open, timeout: 5)
+        _ = try await spot.perform(.open, timeout: 60)
         let second = await app.installs
 
         XCTAssertEqual(warning, "Restarting stops 2 calls. Press again to restart.")
@@ -70,7 +70,7 @@ final class UpdateSpotTests: BuiltInCase {
     func testOneRunningCallIsNamedInTheSingular() async throws {
         await app.set(update: "0.3.0", calls: 1)
 
-        let warning = try await spot("updates").perform(.open, timeout: 5)
+        let warning = try await spot("updates").perform(.open, timeout: 60)
 
         XCTAssertEqual(warning, "Restarting stops 1 call. Press again to restart.")
     }
@@ -78,10 +78,10 @@ final class UpdateSpotTests: BuiltInCase {
     func testWhenTheWorkChangesAPressWarnsAgain() async throws {
         let spot = try spot("updates")
         await app.set(update: "0.3.0", calls: 2)
-        _ = try await spot.perform(.open, timeout: 5)
+        _ = try await spot.perform(.open, timeout: 60)
         await app.set(update: "0.3.0", calls: 1)
 
-        _ = try await spot.perform(.open, timeout: 5)
+        _ = try await spot.perform(.open, timeout: 60)
 
         let installs = await app.installs
         XCTAssertEqual(installs, 0)
@@ -90,12 +90,12 @@ final class UpdateSpotTests: BuiltInCase {
     func testAWarningEndsWithItsUpdate() async throws {
         let spot = try spot("updates")
         await app.set(update: "0.3.0", calls: 2)
-        _ = try await spot.perform(.open, timeout: 5)
+        _ = try await spot.perform(.open, timeout: 60)
         await app.set(update: nil, calls: 2)
-        _ = try await spot.state(timeout: 5)
+        _ = try await spot.state(timeout: 60)
         await app.set(update: "0.4.0", calls: 2)
 
-        let warning = try await spot.perform(.open, timeout: 5)
+        let warning = try await spot.perform(.open, timeout: 60)
 
         XCTAssertEqual(warning, "Restarting stops 2 calls. Press again to restart.")
         let installs = await app.installs

@@ -55,7 +55,7 @@ final class CallInputTests: SpotRunsCase {
         try await wait("the action") { self.text("input").contains("join a") && sheet.calls.isEmpty }
         sheet.pick(row)
 
-        try await wait("the pick") { self.text("input").contains("open a") }
+        try await wait("the pick") { self.text("input").contains("open a\nrow=a") && self.text("input").hasSuffix("\n\n") }
         XCTAssertEqual(text("input"), "join a\nrow=a\ntitle=A\nmeeting=https://meet.example/a\n\nopen a\nrow=a\ntitle=A\nmeeting=https://meet.example/a\n\n")
     }
 

@@ -22,10 +22,26 @@ public final class SpotsModel {
     private static let loadPause: Duration = .milliseconds(20)
     public static let dropPause: Duration = .milliseconds(300)
 
-    public private(set) var fieldSheet: String?
+    public private(set) var fieldSheet: String? {
+        didSet { takeCards() }
+    }
+
+    public func entry(_ id: String) -> Entry? {
+        let entries = entries
+        return entryPlaces[id].map { entries[$0] }
+    }
+
+    private func takeCards() {
+        let next = entries.filter { $0.id != fieldSheet }
+        if next != cards { cards = next }
+    }
     @ObservationIgnored var storeCards: [String: (entry: Entry, item: SpotStore.Item)]?
+    @ObservationIgnored private var entryPlaces: [String: Int] = [:]
+    public private(set) var cards: [Entry] = []
     public var entries: [Entry] = [] {
         didSet {
+            entryPlaces = Dictionary(entries.enumerated().map { ($0.element.id, $0.offset) }, uniquingKeysWith: { first, _ in first })
+            takeCards()
             spotListIsStale = true
             storeCards = nil
             askAnswers()
@@ -37,7 +53,6 @@ public final class SpotsModel {
         didSet {
             guard query != oldValue else { return }
             selected = 0
-            showPanels()
             askAnswers()
             updateVisible()
         }
@@ -55,32 +70,27 @@ public final class SpotsModel {
         runs.answerMatches
     }
     @ObservationIgnored var mainSearch = MainSearch()
+    @ObservationIgnored var finding: Finding?
+    @ObservationIgnored var foundSpots: [Entry] = []
     public internal(set) var placements: [SpotPlacement] = [] {
         didSet {
-            let height = SpotTokens.backdropHeight(gridHeight: SpotGrid.height(of: placements))
+            let height = SpotTokens.contentHeight(gridHeight: SpotGrid.height(of: placements))
             if height != gridHeight { gridHeight = height }
             let bands = SpotGroupBands(placements)
             if bands != groupBands { groupBands = bands }
         }
     }
     public internal(set) var groupBands: SpotGroupBands?
-    public internal(set) var panels = GridPanels() {
-        didSet { showPanels() }
-    }
-    public private(set) var shownPanels = GridPanels()
+    public internal(set) var panels = GridPanels()
     @ObservationIgnored var panelLeaving: GridPanel?
-    private func showPanels() {
-        let shown = query.isEmpty ? panels : GridPanels()
-        if shownPanels != shown { shownPanels = shown }
-    }
-    public private(set) var gridHeight = SpotTokens.backdropHeight(gridHeight: 0)
+    public private(set) var gridHeight = SpotTokens.contentHeight(gridHeight: 0)
     public var selected = 0 {
         didSet {
             if confirming != nil, selected != oldValue { confirming = nil }
         }
     }
     public internal(set) var confirming: GlobalKey?
-    public private(set) var openList: String?
+    public private(set) var openSheetID: String?
     public internal(set) var flow = Flow() {
         didSet {
             for gone in Set(oldValue.pages).subtracting(flow.pages) { sheets[gone.spot]?.forget(page: gone.page) }
@@ -91,9 +101,11 @@ public final class SpotsModel {
     @ObservationIgnored var waitingPush = false
     public internal(set) var transition = SheetTransition() {
         didSet {
+            if transition.id != nil, transition.id != oldValue.id || (transition.phase == .closing && oldValue.phase != .closing), cardScroll != gridScroll { cardScroll = gridScroll }
             let shown = transition.shown
-            if shown != openList {
-                openList = shown
+            if shown != openSheetID {
+                openSheetID = shown
+                takeMode()
                 if shown != nil, followsHint { takeSheetHint(HintWords(hint)) }
             }
             let opening = transition.phase == .opening ? transition.id : nil
@@ -104,6 +116,9 @@ public final class SpotsModel {
     public let runs: SpotRuns
     @ObservationIgnored public var dragWatch: Task<Void, Never>?
     public var dragPaths: [String] = []
+    @ObservationIgnored var dragRead: Task<Void, Never>?
+    @ObservationIgnored var readPaths: [String] = []
+    @ObservationIgnored var reviewRead: Task<Void, Never>?
     public var draggedSpot: SpotDrop? {
         didSet { followSpotDrop(from: isPointerOverDrop ? oldValue : nil) }
     }
@@ -123,20 +138,26 @@ public final class SpotsModel {
     public var entryKey = Shortcut.standard
     var isChainHeld = false
     @ObservationIgnored var chainWatch: Task<Void, Never>?
-    public var recording: String?
+    public var recording: String? {
+        didSet { takeMode() }
+    }
+    public internal(set) var mode = PanelMode.grid
     @ObservationIgnored private var problems: [String] = []
     public internal(set) var menuSession: ActionMenuSession? {
         didSet {
             let isOpen = menuSession != nil && menuSession?.phase != .closing
-            if isOpen != isMenuOpen { isMenuOpen = isOpen }
+            if isOpen != isMenuOpen {
+                isMenuOpen = isOpen
+                takeMode()
+            }
             guard menuSession == nil else { return }
             if menuFrame != nil { menuFrame = nil }
-            if menuBackdropHeight != 0 { change(.sheet(isOpen: false), { menuBackdropHeight = 0 }) }
+            if menuContentHeight != 0 { change(.sheet(isOpen: false), { menuContentHeight = 0 }) }
         }
     }
     public private(set) var isMenuOpen = false
     public internal(set) var menuFrame: ActionMenuFrame?
-    public internal(set) var menuBackdropHeight: CGFloat = 0
+    public internal(set) var menuContentHeight: CGFloat = 0
     public internal(set) var gridHint = HintWords("")
     public internal(set) var sheetHint = HintWords("")
     @ObservationIgnored var hintIsForEdit = false
@@ -150,13 +171,19 @@ public final class SpotsModel {
             if hasChoices != formHasChoices { formHasChoices = hasChoices }
             let isMultiple = form?.draft.isMultiple == true
             if isMultiple != formIsMultiple { formIsMultiple = isMultiple }
+            let hint = HintWords(KeyRow.hint(of: formRows))
+            if hint != formHint { formHint = hint }
+            takeMode()
         }
     }
     public private(set) var formRect: CGRect?
     public private(set) var formHasChoices = false
     public private(set) var formIsMultiple = false
+    public private(set) var formHint = HintWords("")
     @ObservationIgnored var formAsk: UUID?
-    public var isEditing = false
+    public var isEditing = false {
+        didSet { takeMode() }
+    }
     public var tip: SpotTip?
     public internal(set) var drag: SpotDrag?
     public let lift = SpotLift()
@@ -167,6 +194,7 @@ public final class SpotsModel {
     @ObservationIgnored var dragTarget: SpotDrag.Target?
     @ObservationIgnored var dragWait: Task<Void, Never>?
     @ObservationIgnored public internal(set) var gridScroll: CGFloat = 0
+    public internal(set) var cardScroll: CGFloat = 0
     @ObservationIgnored var scrollAtPress: CGFloat = 0
     @ObservationIgnored var pointerMove: CGSize?
     @ObservationIgnored var resizeGrip = CGPoint(x: SpotTokens.resizeHandle, y: SpotTokens.resizeHandle)
@@ -186,6 +214,7 @@ public final class SpotsModel {
     }
     @ObservationIgnored private(set) var gridBuilds = 0
     @ObservationIgnored var removal: Removal?
+    @ObservationIgnored var removals = 0
     @ObservationIgnored private var fileStamps: [String: [Int]] = [:]
 
     @ObservationIgnored public unowned let host: SpotsHost
@@ -196,7 +225,7 @@ public final class SpotsModel {
     public init(host: SpotsHost, files: AppPlaces = .standard, runs: SpotRuns? = nil) {
         self.host = host
         self.files = files
-        defaultArrangement = files.defaultArrangement
+        defaultArrangement = files.readDefaultArrangement()
         self.runs = runs ?? SpotRuns(
             recent: { files.recent(of: $0) },
             prepare: { [unowned host] in await host.prepare($0, glyphs: $1) },
@@ -265,6 +294,7 @@ public final class SpotsModel {
             self.load = load
             let id = selectedEntry?.id
             reload(patching: nil, to: kept == start ? next : kept)
+            landSearch()
             if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
         }
         loading = task
@@ -326,13 +356,14 @@ public final class SpotsModel {
     }
 
     func showCard(_ id: String) -> Bool {
-        guard let entry = cards.first(where: { $0.id == id }) else { return false }
+        guard let entry = card(id: id) else { return false }
         closeMenu()
         form = nil
         endEditing(moving: false)
-        if openList != nil { closeList(moving: false) }
+        if openSheetID != nil { closeSheet(moving: false) }
         host.show()
         query = visible.contains { $0.id == id } || cards.filter(\.isOnGrid).contains { $0.id == id } ? "" : entry.state.title
+        landSearch()
         selected = visible.firstIndex { $0.id == id } ?? 0
         return true
     }
@@ -342,6 +373,7 @@ public final class SpotsModel {
         if case .spots(let ids) = change {
             let id = selectedEntry?.id
             reload(patching: Set(ids), to: next)
+            landSearch()
             if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
             return
         }
@@ -471,7 +503,7 @@ public final class SpotsModel {
         case .landed:
             host.land(id)
         case .closed:
-            if let shown = openList, runs.sheets[shown]?.isOpen != true {
+            if let shown = openSheetID, runs.sheets[shown]?.isOpen != true {
                 showSheet(nil, moving: false)
                 endFlow()
             }
@@ -500,7 +532,7 @@ public final class SpotsModel {
         return true
     }
 
-    public static func reason(_ error: Error) -> String {
+    public nonisolated static func reason(_ error: Error) -> String {
         (error as? SpotError)?.reason ?? error.localizedDescription
     }
 }

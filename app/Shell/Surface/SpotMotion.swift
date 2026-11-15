@@ -3,8 +3,11 @@ import SwiftUI
 
 extension EnvironmentValues {
     @Entry var spotIsShown = true
-    @Entry var spotDrawsBlur = true
     @Entry var spotPanels = GridPanels()
+    @Entry var spotFade = 1.0
+    @Entry var spotScrollFade: SpotEdgeFade?
+    @Entry var spotDrawsGlass = true
+    @Entry var spotIsHeld = false
 }
 
 enum SpotMotion {

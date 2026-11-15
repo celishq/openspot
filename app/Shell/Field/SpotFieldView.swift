@@ -20,9 +20,11 @@ struct SpotFieldView: View {
                 .morph(showsField ? 1 : 0, opacity: { SheetMorph.sheetLook(at: $0) })
                 .allowsHitTesting(showsField && !model.isEditing)
             promptLayer
-                .opacity(model.isEditing ? 0 : 1)
+                .modifier(SpotFaded())
+                .opacity(model.isEditing ? MotionTokens.hiddenOpacity : 1)
             editHeader
-                .opacity(model.isEditing ? 1 : 0)
+                .modifier(SpotFaded())
+                .opacity(model.isEditing ? 1 : MotionTokens.hiddenOpacity)
                 .allowsHitTesting(model.isEditing)
         }
         .modifier(SpotFocusLook(focus: model.isMenuOpen ? .faded : .none))
@@ -34,10 +36,9 @@ struct SpotFieldView: View {
         let top = isInSheet ? Self.sheetTop : SpotTokens.halo
         let glyphLeft = isInSheet ? Self.sheetGlyphLeft : SpotTokens.halo + SpotTokens.padding
         return ZStack(alignment: .topLeading) {
-            SpotSurface(rect: place, radius: fieldRadius, glass: isInSheet || isInstall ? 0 : 1)
-                .mask { outsideSheet }
+            SpotSurface(rect: place, radius: fieldRadius, glass: isInstall ? 0 : 1, cut: sheetShape)
             SpotSurfaceShape(rect: place, radius: fieldRadius)
-                .fill(SpotTheme.ink.opacity(SpotTheme.fill * (isInSheet ? 1 : 0)))
+                .fill(SpotTheme.ink.opacity(isInSheet ? SpotTheme.fill : 0))
                 .mask { insideSheet }
             ZStack(alignment: .topLeading) {
                 Image(systemName: "magnifyingglass")
@@ -49,14 +50,17 @@ struct SpotFieldView: View {
                     .offset(x: fieldTextLeft, y: top)
             }
             .morph(progress, opacity: crossing)
-            .opacity(model.showsFieldDrop || model.isEditing ? 0 : 1)
+            .modifier(SpotFaded())
+            .opacity(model.showsFieldDrop || model.isEditing ? MotionTokens.hiddenOpacity : 1)
+            .allowsHitTesting(!model.showsFieldDrop)
             .modifier(SpotShownFade(isShown: model.isShown))
             if let drop = model.fieldDrop {
                 SpotDropView(drop: drop)
                     .padding(.horizontal, SpotTokens.padding)
                     .frame(width: Self.rect.width, height: Self.rect.height)
                     .offset(x: Self.rect.minX, y: Self.rect.minY)
-                    .opacity(model.showsFieldDrop ? 1 : 0)
+                    .opacity(model.showsFieldDrop ? 1 : MotionTokens.hiddenOpacity)
+                    .allowsHitTesting(model.showsFieldDrop)
             }
         }
         .font(SpotType.input)
@@ -108,54 +112,11 @@ struct SpotFieldView: View {
             SpotSearchText(model: model, title: "\(SearchPrompt.verb) \(isOpen ? sheetWord : SearchPrompt.grid)")
                 .textFieldStyle(.plain)
                 .focused($isFocused)
-                .onSubmit { model.runSelected() }
-                .onKeyPress(keys: [.downArrow]) { press in
-                    if model.openList != nil, press.modifiers.contains(.command) {
-                        model.moveItemToEdge(last: true)
-                    } else if model.openList != nil {
-                        model.moveItemLine(by: 1)
-                    } else {
-                        model.moveSelection(dx: 0, dy: 1)
-                    }
-                    return .handled
-                }
-                .onKeyPress(keys: [.upArrow]) { press in
-                    if model.openList != nil, press.modifiers.contains(.command) {
-                        model.moveItemToEdge(last: false)
-                    } else if model.openList != nil {
-                        model.moveItemLine(by: -1)
-                    } else {
-                        model.moveSelection(dx: 0, dy: -1)
-                    }
-                    return .handled
-                }
-                .onKeyPress(.leftArrow) {
-                    if model.openList != nil {
-                        guard (model.openItems?.perLine ?? 1) > 1 else { return .ignored }
-                        model.moveItem(by: -1)
-                        return .handled
-                    }
-                    if !model.query.isEmpty { return .ignored }
-                    if model.selectedIsSlider {
-                        model.adjustSelected(by: -5)
-                    } else {
-                        model.moveSelection(dx: -1, dy: 0)
-                    }
-                    return .handled
-                }
-                .onKeyPress(.rightArrow) {
-                    if model.openList != nil {
-                        guard (model.openItems?.perLine ?? 1) > 1 else { return .ignored }
-                        model.moveItem(by: 1)
-                        return .handled
-                    }
-                    if !model.query.isEmpty { return .ignored }
-                    if model.selectedIsSlider {
-                        model.adjustSelected(by: 5)
-                    } else {
-                        model.moveSelection(dx: 1, dy: 0)
-                    }
-                    return .handled
+                .onSubmit { _ = model.handleSearchKey(ActionKey(name: "return")) }
+                .onKeyPress(keys: [.downArrow, .upArrow, .leftArrow, .rightArrow]) { press in
+                    if (NSApp.keyWindow?.firstResponder as? NSTextView)?.hasMarkedText() == true { return .ignored }
+                    let name = press.key == .downArrow ? "down" : press.key == .upArrow ? "up" : press.key == .leftArrow ? "left" : "right"
+                    return model.handleSearchKey(ActionKey(name: name, isCommand: press.modifiers.contains(.command))) ? .handled : .ignored
                 }
     }
 
@@ -215,15 +176,6 @@ struct SpotFieldView: View {
 
     private var sheetShape: SpotSurfaceShape? {
         sheet.map { isOpen ? SpotSurfaceShape(rect: $0.morph.sheet, radius: SpotTokens.radius) : SpotSurfaceShape(rect: $0.morph.card, radius: $0.cardRadius) }
-    }
-
-    @ViewBuilder
-    private var outsideSheet: some View {
-        if let sheetShape {
-            SpotOutsideShape(inner: sheetShape).fill(style: FillStyle(eoFill: true))
-        } else {
-            Color.black
-        }
     }
 
     @ViewBuilder

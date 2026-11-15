@@ -65,8 +65,8 @@ extension SpotRun {
     }
 
     @discardableResult
-    public func drop(_ paths: [String]) -> Bool {
-        guard spot.accepts(paths) else { return false }
+    public func drop(_ paths: [String], files: FileKinds? = nil) -> Bool {
+        guard files.map(spot.accepts) ?? spot.accepts(paths) else { return false }
         waitingFiles.append(.drop(paths: paths))
         startWaitingFiles()
         return true

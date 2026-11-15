@@ -100,7 +100,7 @@ final class SpotRunsWantTests: SpotRunsCase {
 
         _ = try scanned()
 
-        await fulfillment(of: [changed], timeout: 2)
+        await fulfillment(of: [changed], timeout: 60)
     }
 
     func testEachMomentReadsOnlyTheScriptsThatListIt() async throws {

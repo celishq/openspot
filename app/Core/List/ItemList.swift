@@ -2,7 +2,6 @@ import Foundation
 
 public struct ItemList: Equatable, Sendable {
     public static let recentLimit = 100
-    nonisolated(unsafe) static var findTap: (@Sendable (Bool) -> Void)?
 
     public private(set) var search: ItemSearch
     public private(set) var query = ""
@@ -78,8 +77,9 @@ public struct ItemList: Equatable, Sendable {
     }
 
     public func found() -> Found {
-        Self.findTap?(Thread.isMainThread)
-        return Found(query: query, base: all, recent: recent, narrowings: narrowed())
+        SearchRanks.meter?.add()
+        let narrowings = narrowed()
+        return Found(query: query, base: all, recent: recent, narrowings: narrowings, rows: rows(of: narrowings.last?.matches ?? []))
     }
 
     public mutating func take(_ found: Found) {
@@ -87,7 +87,7 @@ public struct ItemList: Equatable, Sendable {
         isFinding = false
         if found.base == all, found.recent == recent, search == .local {
             narrowings = found.narrowings
-            show(narrowings.last?.matches ?? [])
+            show(found.rows)
         } else {
             refresh()
         }
@@ -100,6 +100,7 @@ public struct ItemList: Equatable, Sendable {
         fileprivate let base: [SpotItem]
         fileprivate let recent: [String]
         fileprivate let narrowings: [Narrowing]
+        fileprivate let rows: Shown
     }
 
     public func differsOnlyInText(from other: ItemList) -> Bool {
@@ -285,14 +286,27 @@ public struct ItemList: Equatable, Sendable {
         return narrowings
     }
 
-    private mutating func show<Offsets: Collection<Int>>(_ found: Offsets) {
+    fileprivate struct Shown: Sendable {
+        let items: [SpotItem]
+        let hasFiles: Bool
+    }
+
+    private func rows<Offsets: Collection<Int>>(of found: Offsets) -> Shown {
         var rows = pinnedAbove
         rows.reserveCapacity(pinnedAbove.count + found.count + pinnedBelow.count)
         for offset in found where all[offset].pin == nil { rows.append(all[offset]) }
         rows += pinnedBelow
-        shown = rows
+        return Shown(items: rows, hasFiles: holdsFiles && rows.contains { $0.file != nil })
+    }
+
+    private mutating func show<Offsets: Collection<Int>>(_ found: Offsets) {
+        show(rows(of: found))
+    }
+
+    private mutating func show(_ rows: Shown) {
+        shown = rows.items
         topCount = pinnedAbove.count
         bottomCount = pinnedBelow.count
-        hasFiles = holdsFiles && rows.contains { $0.file != nil }
+        hasFiles = rows.hasFiles
     }
 }

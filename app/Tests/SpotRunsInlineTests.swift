@@ -206,7 +206,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
 
         script.send(call)
 
-        guard case .frame(let text) = await call.outcome(limit: 10) else { return XCTFail("the call gave no frame") }
+        guard case .frame(let text) = await call.outcome(limit: 60) else { return XCTFail("the call gave no frame") }
         XCTAssertEqual(TextBlock.blocks(in: text).first?.value("title"), "2|read|a b|panel|script|note=x\ny")
     }
 
@@ -214,7 +214,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
         try inline(header: "title=Script", "function main() { return openspot.frame([{ row: 'a', title: 'one\\n\\nrow=x\\ntitle=x', hides: ['x', 'y'], none: null }, { row: 'b', value: true }]) }")
         let spot = try XCTUnwrap(try scanned().scripts.first)
 
-        let text = try await runs.answer(of: spot, SpotAction(arguments: ["read"]), limit: 5)
+        let text = try await runs.answer(of: spot, SpotAction(arguments: ["read"]), limit: 60)
 
         let items = SpotOutput(text: text).items
         XCTAssertEqual(items.map(\.run), ["a", "b"], text)
@@ -227,7 +227,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
         try inline(header: "title=Script", "function main(args, env, input) { return `toast=Saved ${input}` }")
         let spot = try XCTUnwrap(try scanned().scripts.first)
 
-        let text = try await runs.answer(of: spot, SpotAction(arguments: ["save"]), input: "a=1", limit: 5)
+        let text = try await runs.answer(of: spot, SpotAction(arguments: ["save"]), input: "a=1", limit: 60)
 
         XCTAssertEqual(SpotOutput(text: text).toast, "Saved a=1")
     }

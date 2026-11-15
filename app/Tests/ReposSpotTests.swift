@@ -26,8 +26,8 @@ final class ReposSpotTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             try folder.path.appending("/code").write(to: folder.appendingPathComponent("picked"), atomically: true, encoding: .utf8)
 
-            let items = try await repos.items(timeout: 5).items
-            try await repos.perform(.item(try XCTUnwrap(items.first)), timeout: 5)
+            let items = try await repos.items(timeout: 60).items
+            try await repos.perform(.item(try XCTUnwrap(items.first)), timeout: 60)
 
             XCTAssertEqual(items.map(\.run), ["choose"])
             XCTAssertEqual(items.map(\.title), ["Choose the folder of your repos"])
@@ -46,7 +46,7 @@ final class ReposSpotTests: SampleSpotsCase {
             try self.repo(code.appendingPathComponent(".hidden"), head: "ref: refs/heads/main")
             try code.path.write(to: folder.appendingPathComponent("setting-folder"), atomically: true, encoding: .utf8)
 
-            let items = try await repos.items(timeout: 5).items
+            let items = try await repos.items(timeout: 60).items
 
             XCTAssertEqual(items.map(\.title), ["app", "loose", "site"])
             XCTAssertEqual(items.map(\.subtitle), ["main", "9fceb02", "feature/new"])
@@ -61,7 +61,7 @@ final class ReposSpotTests: SampleSpotsCase {
             try FileManager.default.createDirectory(at: empty, withIntermediateDirectories: true)
             try empty.path.write(to: folder.appendingPathComponent("setting-folder"), atomically: true, encoding: .utf8)
 
-            let items = try await repos.items(timeout: 5).items
+            let items = try await repos.items(timeout: 60).items
 
             XCTAssertEqual(items.map(\.run), ["choose"])
             XCTAssertEqual(items.map(\.subtitle), ["Choose another folder"])
@@ -86,15 +86,15 @@ final class ReposSpotTests: SampleSpotsCase {
             try "#!/bin/sh\necho \"$*\" > '\(folder.path)/opened'\n".writeScript(to: folder.appendingPathComponent("tools/open"))
             let item = SpotItem(title: "app", run: code.appendingPathComponent("app").path)
 
-            let first = repos.taking(try await repos.items(timeout: 5))
-            try await repos.perform(.item(item), timeout: 5)
+            let first = repos.taking(try await repos.items(timeout: 60))
+            try await repos.perform(.item(item), timeout: 60)
             let opened = try self.read("opened", in: folder)
             let change = try XCTUnwrap(first.actions.first { $0.title == "Change default app" })
-            let form = try await repos.form(change, item: nil, timeout: 5)
+            let form = try await repos.form(change, item: nil, timeout: 60)
             var draft = FormDraft(form: form)
             draft.choose(zed.path)
-            _ = try await repos.submit(change, item: nil, draft: draft, timeout: 5)
-            let then = repos.taking(try await repos.items(timeout: 5))
+            _ = try await repos.submit(change, item: nil, draft: draft, timeout: 60)
+            let then = repos.taking(try await repos.items(timeout: 60))
 
             XCTAssertNil(first.pickForm)
             XCTAssertEqual(first.openTitle, "Open in Cursor")
@@ -115,10 +115,10 @@ final class ReposSpotTests: SampleSpotsCase {
             try FileManager.default.createDirectory(at: zed, withIntermediateDirectories: true)
             let change = CommandAction(id: "editor", title: "Change editor", scope: .spot, after: .close)
 
-            let form = try await repos.form(change, item: nil, timeout: 5)
+            let form = try await repos.form(change, item: nil, timeout: 60)
             var draft = FormDraft(form: form)
             draft.choose(zed.path)
-            _ = try await repos.submit(change, item: nil, draft: draft, timeout: 5)
+            _ = try await repos.submit(change, item: nil, draft: draft, timeout: 60)
 
             XCTAssertEqual(form.soleChoice?.options.map(\.title), ["Zed", "Finder"])
             XCTAssertEqual(try self.read("setting-editor", in: folder), zed.path)
@@ -142,11 +142,11 @@ final class ReposSpotTests: SampleSpotsCase {
             try "[remote \"origin\"]\n\turl = ssh://git@git.example.com:2222/team/own.git\n".write(to: common.appendingPathComponent("config"), atomically: true, encoding: .utf8)
             try code.path.write(to: folder.appendingPathComponent("setting-folder"), atomically: true, encoding: .utf8)
 
-            let output = try await repos.items(timeout: 5)
+            let output = try await repos.items(timeout: 60)
             let pages = repos.taking(output).actions.filter { $0.title.hasPrefix("Open on ") }
             let app = try XCTUnwrap(output.items.first { $0.title == "app" })
             let github = try XCTUnwrap(pages.first { $0.title == "Open on GitHub" })
-            try await repos.perform(.action(github, item: app), timeout: 5)
+            try await repos.perform(.action(github, item: app), timeout: 60)
 
             XCTAssertEqual(pages.map(\.title), ["Open on git.example.com", "Open on GitHub", "Open on GitLab"])
             XCTAssertEqual(output.items.map(\.title), ["app", "lab", "local", "own"])

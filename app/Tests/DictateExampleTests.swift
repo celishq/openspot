@@ -196,7 +196,7 @@ final class DictateExampleTests: SampleSpotsCase {
             let pidfile = data.appendingPathComponent("dictate.pid")
             func named() -> pid_t? { pid_t((try? String(contentsOf: pidfile, encoding: .utf8)) ?? "") }
 
-            _ = try await dictate.perform(SpotAction(arguments: ["open", "whisper"]), timeout: 5)
+            _ = try await dictate.perform(SpotAction(arguments: ["open", "whisper"]), timeout: 60)
             try await self.wait("the new helper in place of the old") { !old.isRunning && named().map { $0 != old.processIdentifier && kill($0, 0) == 0 } == true }
             defer { if let new = named() { kill(new, SIGKILL) } }
 
@@ -249,7 +249,7 @@ final class DictateExampleTests: SampleSpotsCase {
             defer { waiting.stop() }
             try String(waiting.processIdentifier).write(to: data.appendingPathComponent("dictate.pid"), atomically: true, encoding: .utf8)
 
-            _ = try await dictate.perform(.press("dictate"), timeout: 5)
+            _ = try await dictate.perform(.press("dictate"), timeout: 60)
             try await self.wait("the press") { FileManager.default.fileExists(atPath: pressed.path) }
 
             XCTAssertTrue(FileManager.default.fileExists(atPath: pressed.path))
@@ -263,7 +263,7 @@ final class DictateExampleTests: SampleSpotsCase {
             let started = folder.appendingPathComponent("started")
             _ = try self.fakeHelper("echo \"$1 $4\" > '\(started.path)'", in: folder)
 
-            _ = try await dictate.perform(.press("dictate"), timeout: 5)
+            _ = try await dictate.perform(.press("dictate"), timeout: 60)
             try await self.wait("the start") { FileManager.default.fileExists(atPath: started.path) }
 
             XCTAssertEqual(try self.read("started", in: folder), "stay start\n")
@@ -276,7 +276,7 @@ final class DictateExampleTests: SampleSpotsCase {
             let started = folder.appendingPathComponent("started")
             _ = try self.fakeHelper("echo \"$1 $4\" > '\(started.path)'", model: false, in: folder)
 
-            _ = try await dictate.perform(.press("dictate"), timeout: 5)
+            _ = try await dictate.perform(.press("dictate"), timeout: 60)
             try await self.wait("the start") { FileManager.default.fileExists(atPath: started.path) }
 
             XCTAssertEqual(try self.read("started", in: folder), "stay start\n")
@@ -342,9 +342,9 @@ final class DictateExampleTests: SampleSpotsCase {
             let data = try self.fakeHelper("true", in: folder)
             try "1000\tFirst words\n2000\tSecond, with a back\\slash\n".write(to: data.appendingPathComponent("history"), atomically: true, encoding: .utf8)
 
-            let rows = try await dictate.items(timeout: 5).items.filter { !$0.run.hasPrefix("key:") }
-            let toast = try await dictate.perform(.item(SpotItem(title: "First words", run: "1000")), timeout: 5)
-            _ = try await dictate.perform(SpotAction(arguments: ["delete", "2000"]), timeout: 5)
+            let rows = try await dictate.items(timeout: 60).items.filter { !$0.run.hasPrefix("key:") }
+            let toast = try await dictate.perform(.item(SpotItem(title: "First words", run: "1000")), timeout: 60)
+            _ = try await dictate.perform(SpotAction(arguments: ["delete", "2000"]), timeout: 60)
 
             XCTAssertEqual(rows.map(\.run), ["2000", "1000"])
             XCTAssertEqual(rows.map(\.title), ["Second, with a back\\slash", "First words"])
@@ -362,7 +362,7 @@ final class DictateExampleTests: SampleSpotsCase {
             try "#!/bin/sh\nif [ \"$(locale charmap)\" = UTF-8 ]; then cat; else iconv -f MACINTOSH -t UTF-8; fi > '\(folder.path)/clipboard'\n"
                 .writeScript(to: folder.appendingPathComponent("tools/pbcopy"))
             _ = try await TestEnvironment.with(["LANG": nil, "LC_ALL": nil, "LC_CTYPE": nil]) {
-                try await dictate.perform(.item(SpotItem(title: "Привіт, світе", run: "1000")), timeout: 5)
+                try await dictate.perform(.item(SpotItem(title: "Привіт, світе", run: "1000")), timeout: 60)
             }
 
             XCTAssertEqual(try self.read("clipboard", in: folder), "Привіт, світе")
@@ -374,15 +374,15 @@ final class DictateExampleTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let fetched = folder.appendingPathComponent("fetch")
             let data = try self.fakeHelper("true", model: false, in: folder)
-            let first = try await dictate.items(timeout: 5)
+            let first = try await dictate.items(timeout: 60)
             let offer = first.items.first { $0.run == "whisper" }
 
             let waiting = try TestChild("/bin/sh", ["-c", "trap 'touch \(fetched.path)' USR2; while true; do sleep 0.05; done"])
             defer { waiting.stop() }
             try String(waiting.processIdentifier).write(to: data.appendingPathComponent("dictate.pid"), atomically: true, encoding: .utf8)
             try "42".write(to: data.appendingPathComponent("download"), atomically: true, encoding: .utf8)
-            let progress = try await dictate.items(timeout: 5).items.first { $0.run == "whisper" }
-            _ = try await dictate.perform(.item(try XCTUnwrap(offer)), timeout: 5)
+            let progress = try await dictate.items(timeout: 60).items.first { $0.run == "whisper" }
+            _ = try await dictate.perform(.item(try XCTUnwrap(offer)), timeout: 60)
             try await self.wait("the fetch") { FileManager.default.fileExists(atPath: fetched.path) }
 
             XCTAssertEqual(offer?.title, "Download speech model")

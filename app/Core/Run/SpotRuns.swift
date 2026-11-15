@@ -8,10 +8,10 @@ public final class SpotRuns {
     public internal(set) var isPanelOpen = false
     public private(set) var openID: String?
     public private(set) var floating: Set<String> = []
-    public var draggedPaths: [String] = [] {
+    public var dragged = FileKinds() {
         didSet {
-            guard draggedPaths != oldValue else { return }
-            let takers = draggedPaths.isEmpty ? [] : Set(sheets.filter { $0.value.spot.accepts(draggedPaths) }.keys)
+            guard dragged != oldValue else { return }
+            let takers = dragged.paths.isEmpty ? [] : Set(sheets.filter { $0.value.spot.accepts(dragged) }.keys)
             if takers != dragTakers { dragTakers = takers }
         }
     }

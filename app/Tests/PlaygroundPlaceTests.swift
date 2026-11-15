@@ -34,10 +34,10 @@ final class PlaygroundPlaceTests: XCTestCase {
         let id = try await panel.place(file: nil, text: answering)
 
         panel.show(.sheet, id: id)
-        try await wait("the open sheet") { self.panel.model.openList == id }
+        try await wait("the open sheet") { self.panel.model.openSheetID == id }
         panel.show(.card, id: id)
 
-        try await wait("the closed sheet") { self.panel.model.openList == nil }
+        try await wait("the closed sheet") { self.panel.model.openSheetID == nil }
     }
 
     func testTheMainSearchShowsTheRowsThatTheSpotAnswers() async throws {
@@ -45,6 +45,7 @@ final class PlaygroundPlaceTests: XCTestCase {
 
         panel.show(.card, id: id)
         panel.model.searchText = "21"
+        panel.model.landSearch()
 
         try await wait("the answer") { self.panel.model.visible.contains { $0.item?.title == "Twice 21" } }
     }

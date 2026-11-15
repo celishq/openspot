@@ -18,12 +18,7 @@ struct SpotSubmenuView: View {
         }
         .padding(SpotTokens.menuPadding)
         .frame(width: ActionMenuFrame.width, alignment: .top)
-        .background {
-            SpotBlur(radius: SpotTheme.blur)
-                .overlay(SpotTheme.glass)
-                .clipShape(outline)
-        }
-        .overlay(SpotRim(radius: SpotActionMenuView.radius))
+        .spotGlass(in: outline)
         .environment(\.spotIsShown, true)
     }
 

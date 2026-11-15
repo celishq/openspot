@@ -301,13 +301,16 @@ public struct Spot: Equatable, Sendable {
     }
 
     public func accepts(_ paths: [String]) -> Bool {
-        !paths.isEmpty && paths.allSatisfy(accepts(path:))
+        accepts(FileKinds.Disk().read(paths))
     }
 
-    private func accepts(path: String) -> Bool {
-        var isFolder: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: path, isDirectory: &isFolder) else { return false }
-        if isFolder.boolValue { return takesFolders }
+    public func accepts(_ files: FileKinds) -> Bool {
+        !files.paths.isEmpty && files.paths.allSatisfy { accepts(path: $0, kind: files.kind(of: $0)) }
+    }
+
+    private func accepts(path: String, kind: FileKinds.Kind?) -> Bool {
+        guard let kind else { return false }
+        if kind == .folder { return takesFolders }
         let fileExtension = URL(fileURLWithPath: path).pathExtension.lowercased()
         if dropWords.contains(Self.anyWord) { return true }
         return !fileExtension.isEmpty && fileExtension != Self.folderWord && dropWords.contains(fileExtension)

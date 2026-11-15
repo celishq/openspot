@@ -1,7 +1,7 @@
 import Foundation
 
-struct MainSearch {
-    private struct Kept {
+struct MainSearch: Sendable {
+    private struct Kept: Sendable {
         let query: SearchQuery
         let items: [SpotItem]
         let texts: SearchIndex

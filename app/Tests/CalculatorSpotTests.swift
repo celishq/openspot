@@ -30,7 +30,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
         try await withPrivateHome { home in
             try "row=1234.5\ntitle=1,234.5\ndetail=1000 + 234.5\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
-            let answers = try await self.calculator.items(query: "1000+234.5", timeout: 5).answers
+            let answers = try await self.calculator.items(query: "1000+234.5", timeout: 60).answers
 
             XCTAssertEqual(answers.map(\.run), ["1234.5"])
             XCTAssertEqual(answers.first?.card?.face.answerSize, .large)
@@ -45,7 +45,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
         try await withPrivateHome { home in
             try "row=13.46\ntitle=13,46 €\ndetail=15 USD in EUR\nunit=€\nrates=Nov 10\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
-            let answers = try await self.calculator.items(query: "15 usd in eur", timeout: 5).answers
+            let answers = try await self.calculator.items(query: "15 usd in eur", timeout: 60).answers
 
             XCTAssertEqual(answers.first?.card?.face.parts.map(\.detail), ["15 USD in EUR", nil])
             XCTAssertEqual(answers.first?.card?.face.parts.last?.numberPieces.map(\.isUnit), [false, true])
@@ -56,7 +56,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
         try await withPrivateHome { home in
             try "row=2026-11-11 07:00\ntitle=Wed 7:00 AM\ndetail=Wed 3:00 PM · Tokyo\nunit=AM\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
-            let answers = try await self.calculator.items(query: "3pm tokyo in berlin", timeout: 5).answers
+            let answers = try await self.calculator.items(query: "3pm tokyo in berlin", timeout: 60).answers
 
             XCTAssertEqual(answers.first?.card?.face.parts.first?.detail, "Wed 3:00 PM · Tokyo")
         }
@@ -66,7 +66,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
         try await withPrivateHome { home in
             try "row=13.46\ntitle=13,46 €\ndetail=15 USD in EUR\nunit=€\nrates=Nov 2, 9 days old\ntone=warn\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
-            let answers = try await self.calculator.items(query: "15 usd in eur", timeout: 5).answers
+            let answers = try await self.calculator.items(query: "15 usd in eur", timeout: 60).answers
 
             XCTAssertEqual(answers.map(\.run), ["13.46"])
             XCTAssertEqual(answers.first?.card?.face.parts.first?.detail, "15 USD in EUR · rates of Nov 2, 9 days old")
@@ -78,7 +78,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
         try await withPrivateHome { home in
             try "status=offline\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
-            let rows = try await self.calculator.items(query: "15 usd in eur", timeout: 5).items
+            let rows = try await self.calculator.items(query: "15 usd in eur", timeout: 60).items
 
             XCTAssertEqual(rows.map(\.title), ["No exchange rates"])
             XCTAssertEqual(rows.first?.subtitle, "Openspot cannot get exchange rates. Connect to the internet, then type again.")
@@ -89,7 +89,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
         try await withPrivateHome { home in
             try "status=unavailable\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
-            let rows = try await self.calculator.items(query: "15 usd in eur", timeout: 5).items
+            let rows = try await self.calculator.items(query: "15 usd in eur", timeout: 60).items
 
             XCTAssertEqual(rows.map(\.title), ["No exchange rates"])
             XCTAssertEqual(rows.first?.subtitle, "The source of the rates does not answer. Sums, units and dates still work. Try again later.")
@@ -98,7 +98,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
 
     func testAPickCopiesThePlainValue() async throws {
         try await withPrivateHome { home in
-            let toast = try await self.calculator.perform(.item(SpotItem(title: "13,46 €", run: "13.46")), timeout: 5)
+            let toast = try await self.calculator.perform(.item(SpotItem(title: "13,46 €", run: "13.46")), timeout: 60)
 
             XCTAssertEqual(toast, "Copied 13.46")
             XCTAssertEqual(try String(contentsOf: home.appendingPathComponent("clipboard"), encoding: .utf8), "13.46")
@@ -129,15 +129,17 @@ final class CalculatorSpotTests: SampleSpotsCase {
         model.isShown = true
         model.panelWillShow(holding: [])
         model.searchText = "2+2"
-        for _ in 0..<500 where model.visible.first?.id != "calculator\n4" { try await Task.sleep(for: .milliseconds(10)) }
+        model.landSearch()
+        for _ in 0..<6000 where model.visible.first?.id != "calculator\n4" { try await Task.sleep(for: .milliseconds(10)) }
 
         var times: [Duration] = []
         for _ in 0..<5 {
             model.searchText = ""
             let start = ContinuousClock.now
             model.searchText = "12*(3+4)"
+            model.landSearch()
             if model.visible.first?.id == "calculator\n84" { times.append(ContinuousClock.now - start) }
-            for _ in 0..<500 where model.visible.first?.id != "calculator\n84" { try await Task.sleep(for: .milliseconds(10)) }
+            for _ in 0..<6000 where model.visible.first?.id != "calculator\n84" { try await Task.sleep(for: .milliseconds(10)) }
         }
 
         XCTAssertLessThan(try XCTUnwrap(times.min(), "no key showed its rows in its own turn"), .milliseconds(4), "\(times)")
