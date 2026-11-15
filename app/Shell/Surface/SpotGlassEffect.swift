@@ -9,7 +9,7 @@ struct SpotGlassEffect<Edge: Shape>: ViewModifier {
         if drawsGlass {
             content.glassEffect(isOn ? .regular : .identity, in: shape)
         } else {
-            content.overlay { shape.stroke(SpotTheme.pictureRim.opacity(isOn ? 1 : 0), lineWidth: 0.5) }
+            content.overlay { shape.stroke(isOn ? SpotTheme.pictureRim : .clear, lineWidth: 0.5) }
         }
     }
 }

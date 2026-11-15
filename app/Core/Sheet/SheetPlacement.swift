@@ -150,7 +150,7 @@ public struct SheetPlacement: Equatable, Sendable {
         let last = layout.rows.count - 1
         guard last > 0, !layout.hasDivider(inRow: last) else { return false }
         let inLast = parts.filter { part in layout.letter(of: part).flatMap { layout.areas[$0] }.map { $0.y1 == last } ?? false }
-        return !inLast.isEmpty && inLast.allSatisfy { $0.kind == "button" && layout.letter(of: $0).flatMap { layout.areas[$0] }?.y0 == last }
+        return !inLast.isEmpty && inLast.allSatisfy { $0.isPressable && layout.letter(of: $0).flatMap { layout.areas[$0] }?.y0 == last }
     }
 
     private static func side(_ align: SpotPart.Align?, default fallback: Side) -> Side {

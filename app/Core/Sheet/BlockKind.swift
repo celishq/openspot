@@ -57,8 +57,10 @@ public struct BlockKind: Sendable, Equatable {
 
     public static let all = [text, number, gauge, graph, picture, view, toggle, slider, hotkey, field, choice, button, section]
 
+    static let listWords = [row, repeated, option]
+
     public static var words: Set<String> {
-        Set(all.map(\.word) + [row, repeated, option])
+        Set(all.map(\.word) + listWords)
     }
 
     static func of(_ block: TextBlock, in kinds: [BlockKind]) -> BlockKind? {

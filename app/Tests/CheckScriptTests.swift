@@ -13,6 +13,8 @@ final class CheckScriptTests: XCTestCase {
         ("comments", "app/Core/Panel.swift", "struct Panel {}\n// a note\n"),
         ("comments", "scripts/build.sh", "#!/bin/sh\n# a note\necho\n"),
         ("motion", "app/Shell/Panel.swift", "withAnimation(." + "spring(duration: 0.3)) {}\n"),
+        ("motion", "app/Shell/Panel.swift", "content.opacity(isShown ? 1 " + ": 0)\n"),
+        ("motion", "app/Shell/Panel.swift", "content.opacity(model.isEditing ? 0 " + ": 1)\n"),
         ("names", "app/Core/PanelManager.swift", "struct PanelManager {}\n"),
         ("files", "app/Core/Panel.swift", "struct Sheet {}\n"),
         ("files", "app/Core/Panel.swift", "struct Panel {}\nstruct Sheet {}\n"),

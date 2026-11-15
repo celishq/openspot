@@ -43,7 +43,7 @@ struct SpotFloatView: View {
     }
 
     private func sheet(_ entry: SpotsModel.Entry, _ run: SpotRun, size: CGSize) -> some View {
-        let sole = fills ? run.panel.flatMap { $0.parts.count == 1 ? $0.parts.first : nil }.flatMap { $0.kind == "view" ? $0 : nil } : nil
+        let sole = fills ? run.panel.flatMap { $0.parts.count == 1 ? $0.parts.first : nil }.flatMap { $0.isOpen ? $0 : nil } : nil
         return VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             if !fills { header(entry, run) }
             if let part = sole, let view = entry.spot.view {
@@ -52,7 +52,6 @@ struct SpotFloatView: View {
                         .equatable()
                 }
                 .ignoresSafeArea()
-                .task(id: view) { await SpotViews.shared.load(view) }
             } else if let parts = run.panel {
                 SheetPartsView(
                     panel: parts,
@@ -70,9 +69,6 @@ struct SpotFloatView: View {
                     nudge: { run.nudge },
                     viewSource: entry.spot.view
                 )
-                .task(id: parts.parts.contains { $0.kind == "view" } ? entry.spot.view : nil) {
-                    if let view = entry.spot.view, parts.parts.contains(where: { $0.kind == "view" }) { await SpotViews.shared.load(view) }
-                }
             } else {
                 SpotRowsView(
                     list: run.list,

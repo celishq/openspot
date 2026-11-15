@@ -98,6 +98,7 @@ extension SpotsModel {
     public func gridScrolled(to offset: CGFloat) {
         guard gridScroll != offset else { return }
         gridScroll = offset
+        if transition.id != nil { cardScroll = offset }
         if tip != nil { tip = nil }
         guard let move = pointerMove else { return }
         if let drag {

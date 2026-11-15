@@ -15,7 +15,7 @@ struct SpotGlass: ViewModifier {
         let edge = edge
         let space = SpotsView.panelSpace
         content
-            .background { shape.fill(SpotTheme.solid).opacity(isSolid ? 1 : 0) }
+            .background { shape.fill(SpotTheme.solid).opacity(isSolid ? 1 : MotionTokens.hiddenOpacity) }
             .opacity(fade)
             .visualEffect { content, place in content.opacity(edge?.strength(of: place.frame(in: .named(space))) ?? 1) }
             .spotGlass(!isSolid && !isBare, in: shape)

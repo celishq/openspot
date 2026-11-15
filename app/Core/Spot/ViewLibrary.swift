@@ -7,6 +7,7 @@ public struct ViewLibrary: Sendable {
     private static let platform = "apple-macos26.0"
     private static let preludeName = "openspot-view.swift"
     private static let hashLength = 64
+    static let sourceFault = "This view does not compile."
 
     static let prelude = """
         public struct SpotFonts {
@@ -126,6 +127,10 @@ public struct ViewLibrary: Sendable {
         guard let text = try? Data(contentsOf: source) else {
             throw SpotError.fault("Openspot cannot find the view \(source.lastPathComponent).")
         }
+        return try await library(of: source, text: text)
+    }
+
+    func library(of source: URL, text: Data) async throws -> URL {
         let carried = URL(fileURLWithPath: Self.path(beside: source.path, text: text))
         if FileManager.default.fileExists(atPath: carried.path) { return carried }
         let name = Self.name(of: text)
@@ -179,7 +184,7 @@ public struct ViewLibrary: Sendable {
             do {
                 try await run("swiftc", arguments)
             } catch let error as SpotError {
-                throw SpotError.fault("This view does not compile. \(error.reason)")
+                throw SpotError.fault("\(Self.sourceFault) \(error.reason)")
             }
         }
         guard parts.count > 1 else { return try Data(contentsOf: URL(fileURLWithPath: parts[0])) }
@@ -196,7 +201,7 @@ public struct ViewLibrary: Sendable {
         #endif
     }
 
-    private static func name(of source: Data) -> String {
+    static func name(of source: Data) -> String {
         SHA256.hash(data: Data(prelude.utf8) + source).map { String(format: "%02x", $0) }.joined()
     }
 

@@ -41,18 +41,26 @@ struct SpotCardView: View, @MainActor Equatable {
             .animation(SpotMotion.fade(isShown: isFilled), value: isFilled)
             .scaleEffect(showsPress ? MotionTokens.pressedScale : 1)
             .animation(SpotMotion.press, value: showsPress)
-            .modifier(CardViewLoad(source: ownView, date: entry.spot.viewDate))
     }
 
     @ViewBuilder
     private var content: some View {
         if drawsOwnCard, let layout = entry.state.face.layout(for: size) {
             SpotCardDrawing(layout: layout, face: entry.state.face, card: size, view: { room in
-                drawnView.map { SpotCustomView(source: $0, values: entry.state.values, card: size, room: room, views: SpotViews.shared) }
+                ownView.map { SpotCustomView(source: $0, values: entry.state.values, card: size, room: room, date: entry.spot.viewDate, views: SpotViews.shared) }
             }) { model.setCardPart(entry.id, $0, to: $1) }
         } else if let view = drawnView {
-            SpotCustomView(source: view, values: entry.state.values, card: size, views: SpotViews.shared)
-        } else if let layout = entry.spot.layout {
+            SpotCustomView(source: view, values: entry.state.values, card: size, date: entry.spot.viewDate, views: SpotViews.shared)
+        } else {
+            words.background {
+                if let ownView { SpotCustomView(source: ownView, values: entry.state.values, card: size, date: entry.spot.viewDate, views: SpotViews.shared) }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var words: some View {
+        if let layout = entry.spot.layout {
             SpotWidgetView(layout: layout, places: entry.spot.places, reading: reading, card: size)
         } else if size == .small {
             glyph.frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -227,23 +235,6 @@ private struct CardPress: ViewModifier {
     }
 }
 
-private struct CardViewLoad: ViewModifier {
-    let source: String?
-    let date: Date?
-    @Environment(\.spotIsShown) private var isShown
-
-    func body(content: Content) -> some View {
-        content.task(id: source.map { "\($0)\n\(date?.timeIntervalSince1970 ?? 0)\n\(date == nil || hasFailed($0) ? isShown : true)" }) {
-            if let source { await SpotViews.shared.load(source) }
-        }
-    }
-
-    private func hasFailed(_ source: String) -> Bool {
-        if case .failed = SpotViews.shared.phase(of: source) { return true }
-        return false
-    }
-}
-
 private struct FailureMark: View {
     let entry: SpotsModel.Entry
     let size: SpotSize
@@ -278,7 +269,7 @@ private struct ChainKeycap: View {
             .background(SpotTheme.keycap, in: RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous).strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
             .offset(x: -inset, y: inset)
-            .opacity(model.showsChain ? 1 : 0)
+            .opacity(model.showsChain ? 1 : MotionTokens.hiddenOpacity)
             .animation(SpotMotion.fade(isShown: true), value: model.showsChain)
             .allowsHitTesting(false)
     }

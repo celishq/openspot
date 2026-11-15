@@ -71,9 +71,6 @@ struct SpotSheetView: View {
                         onFocus: { model.focusPart($0) },
                         viewSource: entry.spot.view
                     )
-                    .task(id: panel.parts.contains { $0.kind == "view" } ? entry.spot.view : nil) {
-                        if let view = entry.spot.view, panel.parts.contains(where: { $0.kind == "view" }) { await SpotViews.shared.load(view) }
-                    }
                 } else if let form {
                     if form.choices != nil { Color.clear.frame(height: SpotTokens.listRowHeight) }
                     SpotFormView(

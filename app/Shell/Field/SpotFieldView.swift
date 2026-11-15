@@ -21,10 +21,10 @@ struct SpotFieldView: View {
                 .allowsHitTesting(showsField && !model.isEditing)
             promptLayer
                 .modifier(SpotFaded())
-                .opacity(model.isEditing ? 0 : 1)
+                .opacity(model.isEditing ? MotionTokens.hiddenOpacity : 1)
             editHeader
                 .modifier(SpotFaded())
-                .opacity(model.isEditing ? 1 : 0)
+                .opacity(model.isEditing ? 1 : MotionTokens.hiddenOpacity)
                 .allowsHitTesting(model.isEditing)
         }
         .modifier(SpotFocusLook(focus: model.isMenuOpen ? .faded : .none))
@@ -38,7 +38,7 @@ struct SpotFieldView: View {
         return ZStack(alignment: .topLeading) {
             SpotSurface(rect: place, radius: fieldRadius, glass: isInstall ? 0 : 1, cut: sheetShape)
             SpotSurfaceShape(rect: place, radius: fieldRadius)
-                .fill(SpotTheme.ink.opacity(SpotTheme.fill * (isInSheet ? 1 : 0)))
+                .fill(SpotTheme.ink.opacity(isInSheet ? SpotTheme.fill : 0))
                 .mask { insideSheet }
             ZStack(alignment: .topLeading) {
                 Image(systemName: "magnifyingglass")
@@ -51,14 +51,16 @@ struct SpotFieldView: View {
             }
             .morph(progress, opacity: crossing)
             .modifier(SpotFaded())
-            .opacity(model.showsFieldDrop || model.isEditing ? 0 : 1)
+            .opacity(model.showsFieldDrop || model.isEditing ? MotionTokens.hiddenOpacity : 1)
+            .allowsHitTesting(!model.showsFieldDrop)
             .modifier(SpotShownFade(isShown: model.isShown))
             if let drop = model.fieldDrop {
                 SpotDropView(drop: drop)
                     .padding(.horizontal, SpotTokens.padding)
                     .frame(width: Self.rect.width, height: Self.rect.height)
                     .offset(x: Self.rect.minX, y: Self.rect.minY)
-                    .opacity(model.showsFieldDrop ? 1 : 0)
+                    .opacity(model.showsFieldDrop ? 1 : MotionTokens.hiddenOpacity)
+                    .allowsHitTesting(model.showsFieldDrop)
             }
         }
         .font(SpotType.input)

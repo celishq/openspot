@@ -20,6 +20,7 @@ struct SheetPartsView: View {
     var viewSource: String?
     var views = SpotViews.shared
     @FocusState private var focus: String?
+    @Environment(\.spotIsHeld) private var isHeld
 
     private static let swatchSize: CGFloat = 22
     private static let smallSwatch: CGFloat = 16
@@ -49,7 +50,7 @@ struct SheetPartsView: View {
         .modifier(FocusOnShow(focus: focusSelectedField))
         .modifier(FocusOnSelect(selectedID: selectedID, focus: focusSelectedField))
         .onChange(of: focus) { _, id in
-            if let part = panel.parts.first(where: { $0.id == id }) { onFocus(part) }
+            if !isHeld, let part = panel.parts.first(where: { $0.id == id }) { onFocus(part) }
         }
     }
 
@@ -121,14 +122,14 @@ struct SheetPartsView: View {
     }
 
     private func focusSelectedField() {
-        guard !panel.showsRows else { return }
+        guard !isHeld, !panel.showsRows else { return }
         let id = selectedID()
         DispatchQueue.main.async { focus = panel.parts.first { $0.id == id && $0.isEditable }?.id }
     }
 
     @ViewBuilder
     private func drawn(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
-        if part.kind == "view" {
+        if part.isOpen {
             if let viewSource {
                 SpotCustomView(source: viewSource, values: part.values, card: .square, room: frame.rect.size, answers: panel.answered, views: views) { onSet(part, $0) }
                     .equatable()
@@ -588,6 +589,7 @@ private struct SheetPicture: View {
     let arrived: SpotPictureStore.Key
     @State private var followed: (from: SpotPictureStore.Key, changed: Double?)?
     @State private var loaded: (key: SpotPictureStore.Key, image: CGImage)?
+    @Environment(\.spotIsHeld) private var isHeld
 
     private var key: SpotPictureStore.Key {
         followed.flatMap { $0.from == arrived ? SpotPictureStore.Key(path: arrived.path, changed: $0.changed) : nil } ?? arrived
@@ -604,9 +606,10 @@ private struct SheetPicture: View {
                 }
             }
             .task(id: key) {
-                if let image = await SpotPictureStore.shared.image(key) { loaded = (key, image) }
+                if !isHeld, let image = await SpotPictureStore.shared.image(key) { loaded = (key, image) }
             }
             .task(id: arrived) {
+                guard !isHeld else { return }
                 for await changed in PictureFile(path: arrived.path).changes { followed = (arrived, changed) }
             }
     }

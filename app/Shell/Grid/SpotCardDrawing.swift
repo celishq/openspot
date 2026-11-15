@@ -19,7 +19,7 @@ struct SpotCardDrawing: View {
                 if let part = face.parts.first(where: { $0.id == id }) {
                     let rect = layout.rect(of: slot, in: room, gap: SpotTokens.placeGap, sideGap: SpotTokens.sideGap)
                     Group {
-                        if part.kind == "view" {
+                        if part.isOpen {
                             view(rect.size)
                         } else {
                             SpotSlotView(part: part, tone: part.tone, height: rect.height, onSlot: onSlot)

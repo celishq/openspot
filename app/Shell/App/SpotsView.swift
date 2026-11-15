@@ -6,7 +6,6 @@ struct SpotsView: View {
     let model: SpotsModel
     @State private var fade = SpotScrollFade()
     @State private var scroll = ScrollPosition()
-    @State private var scrollOffset: CGFloat = 0
     @State private var dropTarget: String?
 
     private var sheetID: String? {
@@ -22,7 +21,7 @@ struct SpotsView: View {
 
     var body: some View {
         let card = SpotSheetCard.of(sheetID, in: model)
-        let frame = card?.frame(scrollOffset: scrollOffset)
+        let frame = card?.frame(scrollOffset: model.cardScroll)
         ZStack(alignment: .topLeading) {
             ScrollView(showsIndicators: false) {
                 SpotGridView(
@@ -38,9 +37,8 @@ struct SpotsView: View {
                     .padding(.bottom, Self.gridBottom)
             }
             .scrollPosition($scroll)
-            .modifier(GridSelectionFollow(model: model, scroll: $scroll, scrollOffset: $scrollOffset))
+            .modifier(GridSelectionFollow(model: model, scroll: $scroll))
             .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y }, action: { _, offset in
-                scrollOffset = offset
                 model.gridScrolled(to: offset)
             })
             .modifier(GridEdgeScroll(model: model, scroll: $scroll))
@@ -102,7 +100,7 @@ struct SpotsView: View {
     }
 
     private func push(from card: SpotSheetCard) -> SheetPush {
-        let origin = SpotTokens.gridOrigin(scrollOffset: scrollOffset, left: model.panels.leftExtent)
+        let origin = SpotTokens.gridOrigin(scrollOffset: model.cardScroll, left: model.panels.leftExtent)
         let panel = model.panels.frame
         let window = CGRect(x: panel.minX - origin.x, y: SpotTokens.halo - origin.y, width: panel.width, height: panel.height - SpotTokens.halo)
         return SheetPush(open: card.placement, sheet: sheetRect.offsetBy(dx: -origin.x, dy: -origin.y), window: window)
@@ -221,7 +219,6 @@ private struct GridEdgeFade: ViewModifier {
 private struct GridSelectionFollow: ViewModifier {
     let model: SpotsModel
     @Binding var scroll: ScrollPosition
-    @Binding var scrollOffset: CGFloat
 
     func body(content: Content) -> some View {
         content.onChange(of: model.selected) { show() }
@@ -237,8 +234,8 @@ private struct GridSelectionFollow: ViewModifier {
             viewHeight: SpotTokens.panelHeight,
             contentHeight: SpotTokens.gridTop + SpotGrid.height(of: model.placements) + SpotsView.gridBottom
         )
-        let offset = window.offset(showing: top...(top + SpotTokens.height(rows: spot.size.rows)), from: scrollOffset)
-        guard offset != scrollOffset else { return }
+        let offset = window.offset(showing: top...(top + SpotTokens.height(rows: spot.size.rows)), from: model.gridScroll)
+        guard offset != model.gridScroll else { return }
         withAnimation(SpotMotion.move) { scroll.scrollTo(y: offset) }
     }
 }

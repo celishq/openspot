@@ -6,6 +6,6 @@ struct SpotEmptyField: ViewModifier {
     let isHidden: Bool
 
     func body(content: Content) -> some View {
-        content.opacity(model.searchText.isEmpty && !isHidden ? 1 : 0)
+        content.opacity(model.searchText.isEmpty && !isHidden ? 1 : MotionTokens.hiddenOpacity)
     }
 }

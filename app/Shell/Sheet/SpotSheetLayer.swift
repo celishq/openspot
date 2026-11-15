@@ -93,6 +93,7 @@ struct SpotSheetLayer: View {
                 SpotFieldLook(query: page.query, title: page.fieldTitle)
             }
         }
+        .environment(\.spotIsHeld, true)
         return SheetStep.Leaving(look: AnyView(look), from: page.rect, rect: edge.rect(around: room))
     }
 
@@ -166,7 +167,7 @@ private struct SheetFadeMask: ViewModifier {
         content.mask {
             ZStack {
                 fade.edges.gradient(height: height)
-                Color.black.opacity(isOpen ? 1 : 0)
+                isOpen ? Color.black : Color.clear
             }
             .padding(.leading, panels.leftExtent)
             .offset(x: panels.frame.minX)

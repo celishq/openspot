@@ -25,7 +25,8 @@ struct SpotMenuLayer: View {
                     SpotActionMenuView(menu: menu, frame: frame, isSettled: session.phase == .settled, work: { model.work(of: $0) }, onPress: { model.pressMenu(row: $0) }, onPoint: { model.point(at: .menuRow($0)) }, onSearch: { model.searchMenu($0) }, selection: { model.menuSession?.menu.selected ?? 0 })
                         .equatable()
                         .scaleEffect(scale, anchor: corner)
-                        .opacity(isGrown ? 1 : 0)
+                        .opacity(isGrown ? 1 : MotionTokens.hiddenOpacity)
+                        .allowsHitTesting(isGrown)
                         .offset(x: shown.minX, y: shown.minY)
                 }
                 .allowsHitTesting(!isClosing)

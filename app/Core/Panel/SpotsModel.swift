@@ -96,6 +96,7 @@ public final class SpotsModel {
     @ObservationIgnored var waitingPush = false
     public internal(set) var transition = SheetTransition() {
         didSet {
+            if transition.id != nil, transition.id != oldValue.id, cardScroll != gridScroll { cardScroll = gridScroll }
             let shown = transition.shown
             if shown != openSheetID {
                 openSheetID = shown
@@ -188,6 +189,7 @@ public final class SpotsModel {
     @ObservationIgnored var dragTarget: SpotDrag.Target?
     @ObservationIgnored var dragWait: Task<Void, Never>?
     @ObservationIgnored public internal(set) var gridScroll: CGFloat = 0
+    public internal(set) var cardScroll: CGFloat = 0
     @ObservationIgnored var scrollAtPress: CGFloat = 0
     @ObservationIgnored var pointerMove: CGSize?
     @ObservationIgnored var resizeGrip = CGPoint(x: SpotTokens.resizeHandle, y: SpotTokens.resizeHandle)
