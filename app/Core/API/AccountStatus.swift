@@ -8,6 +8,10 @@ struct AccountStatus: Encodable {
     let backedUp: Bool?
     let sync: Bool?
 
+    var shortNpub: String? {
+        npub.map(AccountKey.short)
+    }
+
     func text(frame: Bool) throws -> String {
         guard frame else {
             let encoder = JSONEncoder()

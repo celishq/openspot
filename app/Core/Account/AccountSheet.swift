@@ -24,16 +24,6 @@ public actor AccountSheet {
         case choose, name, how, about, words, check, account, leave, restore
     }
 
-    private struct Facts {
-        let npub: String?
-        let name: String?
-        let since: String?
-        let isBackedUp: Bool
-        let sync: Bool?
-
-        var isSignedIn: Bool { npub != nil }
-    }
-
     public static let id = "openspot/account"
     public static let card = "openspot:account-card"
     public static let publishPrefix = "publish:"
@@ -42,7 +32,7 @@ public actor AccountSheet {
         "offers=search", "pages=\(publishPrefix)*",
     ]
 
-    private let store: AccountStore
+    private let account: Account
     private let links: Links
     private var saved: Step?
     private var mistake: String?
@@ -50,7 +40,7 @@ public actor AccountSheet {
     private var places = (1, 12)
 
     public init(store: AccountStore, links: Links) {
-        self.store = store
+        account = Account(store: store, allows: links.allows)
         self.links = links
     }
 
@@ -77,11 +67,11 @@ public actor AccountSheet {
         case "read":
             break
         case "sign_in":
-            if try step(reason: reason, try facts()) == .restore {
+            if try step(reason: reason, try account.status()) == .restore {
                 phrase = fields?.value("phrase") ?? ""
                 let typed = AccountPhrase(phrase)
-                if typed.canSignIn, let key = try? typed.key() {
-                    try store.keep(key, isBackedUp: true)
+                if typed.canSignIn {
+                    try account.signIn(typed)
                     go(.account)
                     phrase = ""
                     toast = "Signed in"
@@ -96,13 +86,13 @@ public actor AccountSheet {
             go(.name)
         case "create":
             let name = (fields?.value("name") ?? "").trimmingCharacters(in: .whitespaces)
-            _ = try store.keyMadeOnce(name: name.isEmpty ? nil : name)
+            try account.make(name: name.isEmpty ? nil : name)
             saved = nil
             if let publishing { pops = await publish(publishing) }
         case "own":
             go(.restore)
         case "card":
-            if arguments.dropFirst().first == "copy", let npub = try store.key()?.npub, await links.copy(npub) { toast = "Copied your key" }
+            if arguments.dropFirst().first == "copy", let npub = try account.status().npub, await links.copy(npub) { toast = "Copied your key" }
         case "how":
             go(.how)
         case "about":
@@ -110,7 +100,7 @@ public actor AccountSheet {
         case "show", "again":
             go(.words)
         case "wrote":
-            if try facts().sync == true {
+            if try account.status().sync == true {
                 saved = nil
             } else {
                 go(.check)
@@ -121,12 +111,11 @@ public actor AccountSheet {
         case "back", "cancel", "done", "later":
             saved = nil
         case "sign_out":
-            guard await links.allows("sign out of your account") else { throw SpotError.failed(1, "Touch ID didn't pass, so your account stays.") }
-            try store.remove()
+            try await account.signOut()
             saved = nil
             toast = "Signed out"
         case "sync":
-            try store.setSyncing(arguments.dropFirst().first == "true")
+            try account.sync(arguments.dropFirst().first == "true")
         case let id where id.hasPrefix("pick-"):
             toast = try picked(id)
         default:
@@ -135,24 +124,13 @@ public actor AccountSheet {
         return try await sheet(reason: action == "read" ? reason : nil, toast: toast, phrase: phrase, pops: pops)
     }
 
-    private func facts() throws -> Facts {
-        let key = try store.key()
-        return Facts(
-            npub: key?.npub,
-            name: key == nil ? nil : try store.name(),
-            since: key == nil ? nil : try store.since(),
-            isBackedUp: key == nil ? false : try store.isBackedUp(),
-            sync: key == nil || !store.canSync ? nil : try store.isSyncing()
-        )
-    }
-
-    private func step(reason: String?, _ facts: Facts) throws -> Step {
+    private func step(reason: String?, _ facts: AccountStatus) throws -> Step {
         if reason != nil, saved == .words { saved = nil }
-        switch (saved, facts.isSignedIn) {
+        switch (saved, facts.signedIn) {
         case (.how?, _), (.restore?, _), (.name?, false): return saved ?? .choose
         case (.about?, true), (.words?, true), (.account?, true), (.leave?, true): return saved ?? .account
-        case (.check?, true) where !facts.isBackedUp: return .check
-        default: return facts.isSignedIn ? .account : .choose
+        case (.check?, true) where facts.backedUp != true: return .check
+        default: return facts.signedIn ? .account : .choose
         }
     }
 
@@ -176,13 +154,13 @@ public actor AccountSheet {
             pick = (place, word)
             return nil
         }
-        guard let words = try store.key()?.words else { throw SpotError.failed(1, "This Mac holds no account words.") }
-        for (at, chosen) in [first, (place, word)] where words.indices.contains(at - 1) && words[at - 1] != chosen.lowercased() {
+        do {
+            try account.confirm([first, (place, word)])
+        } catch let error as SpotError {
             pick = nil
-            mistake = "That isn't word \(at). Look at your words again."
+            mistake = error.reason
             return nil
         }
-        try store.markBackedUp()
         go(.account)
         return "Your words are backed up"
     }
@@ -195,12 +173,12 @@ public actor AccountSheet {
     }
 
     private func sheet(reason: String?, toast: String?, phrase: String, pops: Bool) async throws -> String {
-        let facts = try facts()
+        let facts = try account.status()
         var frame = AccountFrame()
         if pops { frame.head("pop", "true") }
         switch try step(reason: reason, facts) {
         case .restore: restore(&frame, facts, phrase: phrase, toast: toast)
-        case .check: try check(&frame, toast: toast)
+        case .check: check(&frame, toast: toast)
         case .choose: choose(&frame, toast: toast)
         case .name: name(&frame, toast: toast)
         case .how: how(&frame, toast: toast)
@@ -243,7 +221,7 @@ public actor AccountSheet {
         frame.button("done", "Done", .main)
     }
 
-    private func about(_ frame: inout AccountFrame, _ facts: Facts, toast: String?) {
+    private func about(_ frame: inout AccountFrame, _ facts: AccountStatus, toast: String?) {
         frame.grid("head", "head", "private", "reset")
         if facts.sync == true { frame.grid("icloud") }
         frame.grid("show")
@@ -256,39 +234,37 @@ public actor AccountSheet {
         frame.howAction()
     }
 
-    private func words(_ frame: inout AccountFrame, _ facts: Facts, toast: String?) async {
+    private func words(_ frame: inout AccountFrame, _ facts: AccountStatus, toast: String?) async {
         frame.grid("head head")
         frame.wordGrid()
         frame.grid("wrote wrote", "later later")
         frame.toast(toast)
-        let words = try? store.key()?.words
-        if words == nil {
-            frame.line("head", "This Mac holds no account words.", icon: "exclamationmark.triangle", tone: "bad")
-        } else if let words, await links.allows("show your account words") {
+        do {
+            let words = try await account.words()
             frame.line("head", "Write them down", icon: "pencil", detail: "In this order")
             for (index, word) in words.enumerated() { frame.word(index + 1, word) }
-        } else {
-            frame.line("head", "Touch ID didn't pass, so Openspot showed no words.", icon: "exclamationmark.triangle", tone: "bad")
+        } catch {
+            frame.line("head", (error as? SpotError)?.reason ?? error.localizedDescription, icon: "exclamationmark.triangle", tone: "bad")
         }
         frame.button("wrote", "I wrote them down", .main)
-        frame.button("later", facts.isBackedUp ? "Done" : "Later", .close)
+        frame.button("later", facts.backedUp == true ? "Done" : "Later", .close)
         frame.howAction()
     }
 
-    private func account(_ frame: inout AccountFrame, _ facts: Facts, toast: String?) {
+    private func account(_ frame: inout AccountFrame, _ facts: AccountStatus, toast: String?) {
         frame.grid("card card", "card card", "card card", "card card")
         if facts.sync != true { frame.grid("backup backup") }
         if facts.sync != nil { frame.grid("sync sync") }
         frame.grid("done done", "about how", "leave leave")
         frame.toast(toast)
         let npub = facts.npub ?? ""
-        var card = ["view": "card", "npub": npub, "short": "\(npub.prefix(9))…\(npub.suffix(4))"]
+        var card = ["view": "card", "npub": npub, "short": facts.shortNpub ?? ""]
         var order = ["view", "npub", "short"]
         if let name = facts.name { card["name"] = name; order.append("name") }
         if let since = facts.since.flatMap(Self.month) { card["since"] = since; order.append("since") }
         frame.block(card, order: order)
         if facts.sync == true {
-        } else if facts.isBackedUp {
+        } else if facts.backedUp == true {
             frame.line("backup", "Your 12 words are backed up", icon: "checkmark.shield", tone: "good")
         } else {
             frame.line("backup", "Your 12 words are not backed up", icon: "exclamationmark.triangle", tone: "warn")
@@ -302,30 +278,30 @@ public actor AccountSheet {
         frame.howAction()
     }
 
-    private func leave(_ frame: inout AccountFrame, _ facts: Facts, toast: String?) {
+    private func leave(_ frame: inout AccountFrame, _ facts: AccountStatus, toast: String?) {
         frame.grid("head", "head")
-        if !facts.isBackedUp { frame.grid("again") }
+        if facts.backedUp != true { frame.grid("again") }
         frame.grid("sign_out", "cancel")
         frame.toast(toast)
         let place = facts.sync == true ? "all your Macs" : "this Mac"
-        let again = facts.isBackedUp ? " Your 12 words sign you in again." : ""
+        let again = facts.backedUp == true ? " Your 12 words sign you in again." : ""
         frame.line("head", "Sign out of your account?", icon: "rectangle.portrait.and.arrow.right", detail: "It leaves \(place).\(again)")
-        if !facts.isBackedUp { frame.line("again", "You haven't saved its words", icon: "exclamationmark.triangle", tone: "bad") }
+        if facts.backedUp != true { frame.line("again", "You haven't saved its words", icon: "exclamationmark.triangle", tone: "bad") }
         frame.button("sign_out", "Sign out", .main)
         frame.button("cancel", "Cancel")
         frame.howAction()
     }
 
-    private func restore(_ frame: inout AccountFrame, _ facts: Facts, phrase: String, toast: String?) {
+    private func restore(_ frame: inout AccountFrame, _ facts: AccountStatus, phrase: String, toast: String?) {
         let typed = phrase.isEmpty ? nil : AccountPhrase(phrase)
         let words = typed?.typed ?? []
         var status: (title: String, icon: String, tone: String?, detail: String?)?
         if let problem = typed?.problem {
             status = (problem, "exclamationmark.triangle", "bad", nil)
         } else if let account = typed?.account {
-            status = facts.isSignedIn
-                ? ("Replaces the account on this Mac", "exclamationmark.triangle", "warn", Self.short(account))
-                : ("Signs in as", "checkmark.circle", "good", Self.short(account))
+            status = facts.signedIn
+                ? ("Replaces the account on this Mac", "exclamationmark.triangle", "warn", AccountKey.short(account))
+                : ("Signs in as", "checkmark.circle", "good", AccountKey.short(account))
         } else if let completion = typed?.completion {
             status = ("Did you mean \(completion)?", "questionmark.circle", nil, nil)
         }
@@ -347,10 +323,9 @@ public actor AccountSheet {
         frame.button("back", "Back")
     }
 
-    private func check(_ frame: inout AccountFrame, toast: String?) throws {
-        let key = try store.key()
+    private func check(_ frame: inout AccountFrame, toast: String?) {
         let (first, second) = places
-        let choices = [first, second].map { key?.words == nil ? [] : (key?.choices(at: $0) ?? []) }
+        let choices = (try? account.choices(at: [first, second])) ?? [[], []]
         let ids = zip([first, second], choices).map { place, words in words.map { "pick-\(place)-\($0)" } }
         frame.grid("head head", "first first")
         if ids[0].count == 4 { frame.grid("\(ids[0][0]) \(ids[0][1])", "\(ids[0][2]) \(ids[0][3])") }
@@ -372,10 +347,6 @@ public actor AccountSheet {
             }
         }
         frame.button("again", "Show the words again")
-    }
-
-    private static func short(_ npub: String) -> String {
-        "\(npub.prefix(12))…\(npub.suffix(6))"
     }
 
     private static func month(_ day: String) -> String? {

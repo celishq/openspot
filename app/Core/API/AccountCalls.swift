@@ -4,8 +4,8 @@ struct AccountCalls {
     let environment: [String: String]
     let app: (any RunningApp)?
 
-    private var store: AccountStore {
-        .standard(environment: environment)
+    private var account: Account {
+        Account(store: .standard(environment: environment), allows: { [app] in await app?.allows($0) == true })
     }
 
     func work(for call: AccountCall, input: @escaping @Sendable () async -> String) -> CommandAPI.Work {
@@ -24,60 +24,46 @@ struct AccountCalls {
 
     func status(frame: Bool) -> CommandAPI.Work {
         guard app != nil else { return CommandAnswer.notRunning("account") }
-        return CommandAnswer.work { [store] in
-            let key = try store.key()
-            return try AccountStatus(
-                signedIn: key != nil,
-                npub: key?.npub,
-                name: key == nil ? nil : try store.name(),
-                since: key == nil ? nil : try store.since(),
-                backedUp: key == nil ? nil : try store.isBackedUp(),
-                sync: key == nil || !store.canSync ? nil : try store.isSyncing()
-            ).text(frame: frame)
-        }
+        return CommandAnswer.work { [account] in try account.status().text(frame: frame) }
     }
 
     func sync(_ isOn: Bool) -> CommandAPI.Work {
         guard app != nil else { return CommandAnswer.notRunning("account sync") }
-        return CommandAnswer.work { [store] in
-            try store.setSyncing(isOn)
+        return CommandAnswer.work { [account] in
+            try account.sync(isOn)
             return ""
         }
     }
 
     func new(name: String?) -> CommandAPI.Work {
-        CommandAnswer.work { [store] in
-            _ = try store.keyMadeOnce(name: name)
+        CommandAnswer.work { [account] in
+            try account.make(name: name)
             return ""
         }
     }
 
     func words() -> CommandAPI.Work {
-        CommandAnswer.work { [store, app] in
-            guard let words = try store.key()?.words else { throw SpotError.failed(1, "This Mac holds no account words.") }
-            guard await app?.allows("show your account words") == true else { throw SpotError.failed(1, "Touch ID didn't pass, so Openspot showed no words.") }
-            return words.map { "word=\($0)\n" }.joined()
+        CommandAnswer.work { [account] in
+            try await account.words().map { "word=\($0)\n" }.joined()
         }
     }
 
     func check(_ places: [Int]) -> CommandAPI.Work {
-        CommandAnswer.work { [store] in
-            guard let key = try store.key(), key.words != nil else { throw SpotError.failed(1, "This Mac holds no account words.") }
-            return places.map { place in
-                TextBlock(fields: [.init(key: "check", value: String(place))] + key.choices(at: place).map { .init(key: "choice", value: $0) }).text
+        CommandAnswer.work { [account] in
+            try zip(places, account.choices(at: places)).map { place, choices in
+                TextBlock(fields: [.init(key: "check", value: String(place))] + choices.map { .init(key: "choice", value: $0) }).text
             }.joined(separator: "\n")
         }
     }
 
     func checked(_ input: @escaping @Sendable () async -> String) -> CommandAPI.Work {
-        CommandAnswer.work { [store] in
-            guard let words = try store.key()?.words else { throw SpotError.failed(1, "This Mac holds no account words.") }
-            for line in await input().split(whereSeparator: \.isNewline) {
+        CommandAnswer.work { [account] in
+            let picks = await input().split(whereSeparator: \.isNewline).compactMap { line -> (place: Int, word: String)? in
                 let parts = line.split(separator: " ").map(String.init)
-                guard parts.count == 2, let place = Int(parts[0]), words.indices.contains(place - 1) else { continue }
-                guard parts[1].lowercased() == words[place - 1] else { throw SpotError.failed(1, "That isn't word \(place). Look at your words again.") }
+                guard parts.count == 2, let place = Int(parts[0]) else { return nil }
+                return (place, parts[1])
             }
-            try store.markBackedUp()
+            try account.confirm(picks)
             return ""
         }
     }
@@ -89,18 +75,15 @@ struct AccountCalls {
     }
 
     func signIn(_ input: @escaping @Sendable () async -> String) -> CommandAPI.Work {
-        CommandAnswer.work { [store] in
-            let phrase = AccountPhrase(await input())
-            guard phrase.canSignIn else { throw SpotError.failed(1, phrase.problem ?? "Type all 12 words first.") }
-            try store.keep(try phrase.key(), isBackedUp: true)
+        CommandAnswer.work { [account] in
+            try account.signIn(AccountPhrase(await input()))
             return ""
         }
     }
 
     func signOut() -> CommandAPI.Work {
-        CommandAnswer.work { [store, app] in
-            guard await app?.allows("sign out of your account") == true else { throw SpotError.failed(1, "Touch ID didn't pass, so your account stays.") }
-            try store.remove()
+        CommandAnswer.work { [account] in
+            try await account.signOut()
             return ""
         }
     }

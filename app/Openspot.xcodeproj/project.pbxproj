@@ -357,6 +357,7 @@
 		906D15BF0B131D0E9D8A73C2 /* ReleaseLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 465AADBC2B4DBBB3B10D5794 /* ReleaseLog.swift */; };
 		9135837B0731689D6C701BAE /* ActionKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDC831F693DB15CCF243079E /* ActionKey.swift */; };
 		918E0E87E4254DD68DEFFF10 /* SpotManifest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08309AB083D02CF5F2D816FC /* SpotManifest.swift */; };
+		9242B4FE5CCFB80D32BBBAFA /* Account.swift in Sources */ = {isa = PBXBuildFile; fileRef = 408EF4FB6D0A14896BE00486 /* Account.swift */; };
 		9259CD61E77802CBC8D926A2 /* SpotTranslation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C85822DB2F15AF350E11EE94 /* SpotTranslation.swift */; };
 		932AC883417DB972A1B8EF03 /* SpotVerbTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 273FB2EF365B1DEA1351117D /* SpotVerbTests.swift */; };
 		939F845BA14C5415D5DE3C21 /* SpotMenuBarIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53E6CD189DE9778437E94AD /* SpotMenuBarIconView.swift */; };
@@ -861,6 +862,7 @@
 		3ED2147CFCDACE09BFCFD01A /* StoreCalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreCalls.swift; sourceTree = "<group>"; };
 		3F442C00EB92417701FEE471 /* SpotClipboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotClipboard.swift; sourceTree = "<group>"; };
 		3FCC9F874B325C807A9A62EC /* ActionsSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionsSpotTests.swift; sourceTree = "<group>"; };
+		408EF4FB6D0A14896BE00486 /* Account.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Account.swift; sourceTree = "<group>"; };
 		40E457C68F8BB4CB7234147D /* CardAct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardAct.swift; sourceTree = "<group>"; };
 		41BAF6625407D19B9911C04D /* FlowMoveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowMoveTests.swift; sourceTree = "<group>"; };
 		4223CF1668DC4EB0309DD41B /* SpotManifestTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotManifestTests.swift; sourceTree = "<group>"; };
@@ -1743,6 +1745,7 @@
 		5EE32CE29C8A5BD2AD4576FD /* Account */ = {
 			isa = PBXGroup;
 			children = (
+				408EF4FB6D0A14896BE00486 /* Account.swift */,
 				3BA99DAFDD1D488B84F6E372 /* AccountFrame.swift */,
 				6CB75ADB73E5F9963AEBAC8E /* AccountKey.swift */,
 				C347A42D491AEA12FF12C0BA /* AccountKey+Check.swift */,
@@ -2865,6 +2868,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9242B4FE5CCFB80D32BBBAFA /* Account.swift in Sources */,
 				CE567166B0FC90A538235214 /* AccountCall.swift in Sources */,
 				42AA1A1C4424F3F23CB2B877 /* AccountCalls.swift in Sources */,
 				F50119B93F88D0FE84AE0B81 /* AccountFrame.swift in Sources */,
