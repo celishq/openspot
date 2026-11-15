@@ -18,6 +18,7 @@ final class SpotInputLog: @unchecked Sendable {
     private var tap: CFMachPort?
     private var loop: CFRunLoop?
     private let ended = DispatchSemaphore(value: 0)
+    private var isStopped = false
 
     init(path: String, frame: CGRect, scale: CGFloat) throws {
         let url = URL(fileURLWithPath: path)
@@ -62,7 +63,13 @@ final class SpotInputLog: @unchecked Sendable {
         span.withLock { $0.begin(at: time) }
     }
 
+    var isFull: Bool {
+        span.withLock { $0.isFull }
+    }
+
     func stop() {
+        guard !isStopped else { return }
+        isStopped = true
         guard let tap, let loop else {
             try? handle.close()
             return

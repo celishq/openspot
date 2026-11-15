@@ -28,6 +28,8 @@ final class CheckScriptTests: XCTestCase {
         ("glass", "app/Shell/Panel.swift", "part.setValue(24, forKeyPath: \"filters.gaussian" + "Blur.inputRadius\")\n"),
         ("tools", "app/Shell/Panel.swift", "let output = environment[\"OPENSPOT_" + "PROBE\"]\n"),
         ("tools", "app/Shell/Panel.swift", "#if OPENSPOT_TOOLS\n#if DEBUG\n#endif\n#endif\nlet probe = SpotMotion" + "Probe()\n"),
+        ("tools", "app/Core/Panel.swift", "let probe = SpotMotion" + "Probe()\n"),
+        ("tools", "scripts/release.sh", "xcodebuild -configuration Release SWIFT_ACTIVE_COMPILATION_CONDITIONS=OPENSPOT_" + "TOOLS build\n"),
         ("tools", "app/project.yml", "targets:\n  A:\n    configs:\n      Release:\n        SWIFT_ACTIVE_COMPILATION_CONDITIONS: OPENSPOT_" + "TOOLS\n"),
         ("processes", "app/Client/main.swift", "_ = posix_spawn(&started, path, nil, nil, words, environ)\n"),
         ("spots", "spots/weather.spot/weather.sh", "#!/bin/sh\n# title=Weather\n# on=clock.5\necho\n"),

@@ -13,7 +13,7 @@ final class SpotRecordingSession {
     private let camera: (session: AVCaptureSession, movie: AVCaptureMovieFileOutput, end: SpotFileEnd)?
     private let events: SpotInputLog?
     private let started = Date()
-    private(set) var isEnded = false
+    private var result: ScreenRecording?
 
     private init(plan: RecordingRequest.Plan, stream: SCStream, output: SCRecordingOutput, videoEnd: SpotFileEnd, camera: (AVCaptureSession, AVCaptureMovieFileOutput, SpotFileEnd)?, events: SpotInputLog?) {
         self.plan = plan
@@ -24,7 +24,7 @@ final class SpotRecordingSession {
         self.events = events
     }
 
-    static func start(_ plan: RecordingRequest.Plan, onEnd: @escaping @MainActor () -> Void) async throws -> SpotRecordingSession {
+    static func start(_ plan: RecordingRequest.Plan, onEnd: @escaping @MainActor (SpotRecordingSession, ScreenRecording) -> Void) async throws -> SpotRecordingSession {
         let target = try await SpotScreenTarget.find(plan.target)
         let file = URL(fileURLWithPath: plan.file)
         try? FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -69,24 +69,28 @@ final class SpotRecordingSession {
         do {
             try events?.listen()
         } catch {
-            _ = try? await session.stop()
+            _ = await session.stop()
             throw error
         }
         Task { [weak session] in
             _ = try? await end.wait()
-            guard let session, !session.isEnded else { return }
-            _ = try? await session.stop()
-            onEnd()
+            guard let session, session.result == nil else { return }
+            let stopped = await session.stop()
+            onEnd(session, ScreenRecording(
+                file: stopped.file, camera: stopped.camera, events: stopped.events, seconds: stopped.seconds,
+                state: .ended, fault: stopped.fault ?? "The recording ended before `openspot screen record stop`, as macOS stopped it.", isLogFull: stopped.isLogFull
+            ))
         }
         return session
     }
 
     var status: ScreenRecording {
-        ScreenRecording(file: plan.file, camera: plan.camera, events: plan.events, seconds: Int(Date().timeIntervalSince(started)))
+        ScreenRecording(file: plan.file, camera: plan.camera, events: plan.events, seconds: Int(Date().timeIntervalSince(started)), isLogFull: events?.isFull ?? false)
     }
 
-    func stop() async throws -> ScreenRecording {
-        isEnded = true
+    func stop() async -> ScreenRecording {
+        if let result { return result }
+        result = status
         events?.stop()
         try? await stream.stopCapture()
         var failure: Error?
@@ -96,8 +100,11 @@ final class SpotRecordingSession {
             do { try await camera.end.wait() } catch { failure = failure ?? error }
             camera.session.stopRunning()
         }
-        if let failure { throw SpotError.fault("The recording stopped with a fault: \(failure.localizedDescription) What it wrote is in \(plan.file).") }
-        return status
+        let now = status
+        let fault = failure.map { "The recording stopped with a fault: \($0.localizedDescription) What it wrote is in \(plan.file)." }
+        let stopped = ScreenRecording(file: now.file, camera: now.camera, events: now.events, seconds: now.seconds, fault: fault, isLogFull: now.isLogFull)
+        result = stopped
+        return stopped
     }
 
     private static func cameraParts(_ inputs: [ScreenInput], to path: String) throws -> (AVCaptureSession, AVCaptureMovieFileOutput, SpotFileEnd) {

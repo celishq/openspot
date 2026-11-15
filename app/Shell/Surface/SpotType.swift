@@ -1,9 +1,14 @@
+import AppKit
 import SwiftUI
 
 enum SpotType {
-    static let title = Font.system(size: 13, weight: .medium)
+    static let titleSize: CGFloat = 13
+    static let detailSize: CGFloat = 11
+    static let title = Font.system(size: titleSize, weight: .medium)
     static let body = Font.system(size: 13)
-    static let detail = Font.system(size: 11)
+    static let detail = Font.system(size: detailSize)
+    @MainActor static let titleMeasure = NSFont.systemFont(ofSize: titleSize, weight: .medium)
+    @MainActor static let detailMeasure = NSFont.systemFont(ofSize: detailSize)
     static let input = Font.system(size: 14)
     static let action = Font.system(size: 11, weight: .medium)
     static let metric = Font.system(size: 30, weight: .semibold, design: .rounded).monospacedDigit()

@@ -129,6 +129,10 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     }
 
     @objc func togglePanel() {
+        guard isLaunched else {
+            showsAtLaunch.toggle()
+            return
+        }
         if model.isShown, !model.isWarming {
             panel?.hide()
         } else {
@@ -142,8 +146,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
             return
         }
         guard let panel else { return }
-        let front = NSWorkspace.shared.frontmostApplication
-        previous.show(over: front, own: .current)
+        let front = recordFront()
         panel.place(over: front)
         NSApp.activate(ignoringOtherApps: true)
         panel.show()
@@ -152,6 +155,13 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     func openSettings() {
         show()
         model.openSettings()
+    }
+
+    @discardableResult
+    func recordFront() -> NSRunningApplication? {
+        let front = NSWorkspace.shared.frontmostApplication
+        previous.show(over: front, own: .current)
+        return front
     }
 
     func present() {

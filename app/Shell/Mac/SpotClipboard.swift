@@ -24,8 +24,8 @@ struct SpotClipboard: MacClipboard {
         guard AXIsProcessTrusted() else {
             throw SpotError.failedWithFix(1, "Openspot cannot paste. Press `⌘V` to paste, or allow Openspot in Accessibility.", URL(string: Self.accessibility)!)
         }
-        let latin = Thread.isMainThread ? MainActor.assumeIsolated { SpotKeyLayouts.readLatin() } : DispatchQueue.main.sync { MainActor.assumeIsolated { SpotKeyLayouts.readLatin() } }
-        let code = latin?.code(of: "v") ?? Self.vKey
+        let read = { MainActor.assumeIsolated { SpotKeyLayouts.readCommandCode(of: "v") } }
+        let code = (Thread.isMainThread ? read() : DispatchQueue.main.sync(execute: read)) ?? Self.vKey
         for isDown in [true, false] {
             let event = CGEvent(keyboardEventSource: nil, virtualKey: code, keyDown: isDown)
             event?.flags = .maskCommand

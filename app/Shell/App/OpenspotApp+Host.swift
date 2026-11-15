@@ -55,6 +55,7 @@ extension OpenspotApp: SpotsHost {
 
     func window(_ entry: SpotsModel.Entry) {
         if model.isShown { panel?.hide() }
+        recordFront()
         windows.window(entry)
     }
 

@@ -6,6 +6,7 @@ public struct InputLogSpan: Sendable {
     private let limit: Int
     private var zero: TimeInterval?
     private var written = 0
+    public private(set) var isFull = false
 
     public init(limit: Int = byteLimit) {
         self.limit = limit
@@ -21,7 +22,10 @@ public struct InputLogSpan: Sendable {
     }
 
     public mutating func admits(_ bytes: Int) -> Bool {
-        guard written + bytes <= limit else { return false }
+        guard !isFull, written + bytes <= limit else {
+            isFull = true
+            return false
+        }
         written += bytes
         return true
     }

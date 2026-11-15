@@ -28,4 +28,14 @@ final class PreviousAppTests: XCTestCase {
 
         XCTAssertNil(previous.app)
     }
+
+    func testASpotWindowThatTakesTheFocusOverAnotherAppIsWhereADismissReturns() {
+        var previous = PreviousApp<String>()
+
+        previous.show(over: "Safari", own: "Openspot")
+        previous.show(over: "Mail", own: "Openspot")
+        previous.show(over: "Openspot", own: "Openspot")
+
+        XCTAssertEqual(previous.app, "Mail")
+    }
 }

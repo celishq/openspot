@@ -22,8 +22,9 @@ final class InputLogSpanTests: XCTestCase {
         var span = InputLogSpan(limit: 100)
 
         XCTAssertTrue(span.admits(60))
+        XCTAssertFalse(span.isFull)
         XCTAssertFalse(span.admits(60))
-        XCTAssertTrue(span.admits(40))
-        XCTAssertFalse(span.admits(1))
+        XCTAssertFalse(span.admits(40))
+        XCTAssertTrue(span.isFull)
     }
 }
