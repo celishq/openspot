@@ -14,17 +14,15 @@ get() {
   added=$(openspot store get "$1") && printf 'toast=%s\n\n' "$added"
 }
 
-# Prints the gallery: each spot with its id, its name, what its button does, its origin, its description, its size, and
+# Prints the gallery: each spot with its id, its name, its step, its origin, its description, its size, and
 # whether it has sample data, then each line of its readme after its id, with the full path of each picture or video in it.
 gallery() {
   printf 'view=gallery\n'
   openspot store list --frame | awk 'BEGIN { RS = ""; FS = "\n" }
     { delete f
       for (i = 1; i <= NF; i++) { n = index($i, "="); f[substr($i, 1, n - 1)] = substr($i, n + 1) }
-      state = f["added"] == "true" ? "added" : "get"
-      if (f["origin"] == "mine" && f["added"] == "true" && f["published"] != "current") state = "publish"
       sample = f["sample"] == "true" ? "sample" : ""
-      printf "value=%s\t%s\t%s\t%s\t%s\t%s\t%s\n", f["spot"], f["name"], state, f["origin"], f["detail"], f["size"], sample
+      printf "value=%s\t%s\t%s\t%s\t%s\t%s\t%s\n", f["spot"], f["name"], f["step"], f["origin"], f["detail"], f["size"], sample
       if (f["readme"] != "") {
         RS = "\n"; dir = f["readme"]; sub(/\/[^\/]*$/, "", dir)
         while ((getline line < f["readme"]) > 0) {

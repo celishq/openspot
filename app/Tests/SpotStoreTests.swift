@@ -58,6 +58,7 @@ final class SpotStoreTests: XCTestCase {
         XCTAssertTrue(frame.contains("spot=timer\nname=Timer\n"), frame)
         XCTAssertTrue(frame.contains("origin=core\nadded=false\n"), frame)
         XCTAssertTrue(frame.contains("spot=shared\n"), frame)
+        XCTAssertTrue(frame.contains("step=get\n"), frame)
     }
 
     func testGetTurnsOnACoreSpotByTheIDThatTheListPrints() async throws {

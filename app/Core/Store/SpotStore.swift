@@ -14,6 +14,11 @@ public struct SpotStore: Sendable {
             origin != .store
         }
 
+        public var step: String {
+            guard isAdded else { return "get" }
+            return origin == .mine && publication != .current ? "publish" : "added"
+        }
+
         public var package: URL? {
             origin == .store ? spot.url.deletingLastPathComponent() : nil
         }
@@ -110,7 +115,7 @@ public struct SpotStore: Sendable {
         items.map(Printed.init).map { printed in
             let pairs: [(String, String?)] = [
                 ("spot", printed.id), ("name", printed.name), ("icon", printed.icon), ("detail", printed.detail), ("size", printed.size),
-                ("origin", printed.origin), ("added", String(printed.added)), ("published", printed.published), ("path", printed.path),
+                ("origin", printed.origin), ("added", String(printed.added)), ("step", printed.step), ("published", printed.published), ("path", printed.path),
                 ("readme", printed.readme), ("sample", printed.sample ? "true" : nil)
             ]
             return TextBlock(fields: pairs.compactMap { key, value in value.map { TextBlock.Field(key: key, value: $0) } }).text + "\n"
@@ -118,7 +123,7 @@ public struct SpotStore: Sendable {
     }
 
     private struct Printed: Encodable {
-        let id, name, icon, size, origin: String
+        let id, name, icon, size, origin, step: String
         let detail, published, path, readme: String?
         let added, sample: Bool
 
@@ -130,6 +135,7 @@ public struct SpotStore: Sendable {
             size = item.size.name
             origin = item.origin.rawValue
             added = item.isAdded
+            step = item.step
             sample = item.hasSample
             published = item.publication?.rawValue
             path = item.package?.path
