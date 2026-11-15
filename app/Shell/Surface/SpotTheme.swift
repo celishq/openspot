@@ -91,6 +91,7 @@ struct SpotTheme {
     static let accent = Color.accentColor
     static let secondaryLight = 0.7
     static let dragFill = 0.4
+    static let hover = 0.08
     static let liftShadow: CGFloat = 14
     static let liftShadowStrength = 0.25
     static let unfocusedCardStrength = 0.35

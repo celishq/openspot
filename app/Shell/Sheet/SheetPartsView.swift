@@ -287,6 +287,7 @@ struct SheetPartsView: View {
                     .fixedSize()
                     .spotFill(isActive: work(part) != nil, otherwise: SpotTheme.ink.opacity(frame.isOnTop ? SpotTheme.control : SpotTheme.selectedFill), in: Capsule())
                     .background { if frame.isOnTop { SpotFloatGlass(shape: Capsule()) } }
+                    .spotHover(isOnSolid: work(part) != nil, in: Capsule())
                     .contentShape(Capsule())
             case .bare:
                 HStack {
@@ -302,12 +303,14 @@ struct SheetPartsView: View {
                     .padding(.vertical, 5)
                     .fixedSize()
                     .spotFill(isActive: true, in: Capsule())
+                    .spotHover(isOnSolid: true, in: Capsule())
                     .contentShape(Capsule())
             case .strong:
                 centeredLine(part, isActive: true)
             case .tile:
                 labelled(part, frame)
                     .modifier(TileLook(isOn: true))
+                    .spotHover(in: shape)
                     .contentShape(shape)
             default:
                 centeredLine(part, isActive: work(part) != nil)
@@ -321,6 +324,7 @@ struct SheetPartsView: View {
             .padding(.horizontal, SpotTokens.padding)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .spotFill(isActive: isActive, otherwise: SpotTheme.ink.opacity(SpotTheme.selectedFill), in: shape)
+            .spotHover(isOnSolid: isActive, in: shape)
             .contentShape(shape)
     }
 
