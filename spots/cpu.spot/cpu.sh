@@ -14,11 +14,16 @@ draw() {
   for point; do printf 'value=%s\n' "$point"; done
 }
 
+# Prints the use of all cores now.
+measure() {
+  ps -A -o %cpu= | LC_ALL=C awk -v cores="$(/usr/sbin/sysctl -n hw.ncpu)" '{ sum += $1 } END { print int(sum / cores) }'
+}
+
 # `show` draws the points that are given, such as the ones of sample.sh. With none, as when another spot such as System
 # details looks, it measures the use of all cores now, and keeps no point.
 if [ "$1" = show ]; then
   shift
-  [ $# -gt 0 ] || set -- $(ps -A -o %cpu= | LC_ALL=C awk -v cores="$(/usr/sbin/sysctl -n hw.ncpu)" '{ sum += $1 } END { print int(sum / cores) }')
+  [ $# -gt 0 ] || set -- $(measure)
   draw "$@"
   exit 0
 fi
@@ -35,7 +40,7 @@ if [ -f "$kept" ]; then
 fi
 
 # Prints the use of all cores, from the load that Openspot measures every 5 seconds, and the trend of the last 30 points.
-# A read with no load shows the trend as it is.
+# A read with no load, as when the panel opens, measures the use now after the trend, and keeps no point.
 main() {
   case "$1:$OPENSPOT_VALUE" in
     read:cpu=*)
@@ -44,9 +49,10 @@ main() {
       set -- $points "$now"
       [ $# -le 30 ] || shift $(($# - 30))
       points="$*"
+      draw $points
       ;;
+    *) draw $points $(measure) ;;
   esac
-  draw $points
 }
 
 openspot_serve main "$@"

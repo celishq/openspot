@@ -10,4 +10,9 @@ final class AccountHandleTests: XCTestCase {
         XCTAssertNil(AccountHandle("tony p"))
         XCTAssertNil(AccountHandle("tony.p"))
     }
+
+    func testTheMacUserNameSuggestsAHandle() {
+        XCTAssertEqual(AccountHandle.suggestion(from: "Tony Pinkevych"), "tonypinkevych")
+        XCTAssertEqual(AccountHandle.suggestion(from: "Zoë O'Neil-Smith"), "zooneil-smith")
+    }
 }

@@ -84,7 +84,7 @@ final class CommandNounTests: XCTestCase {
     func testAKeyVerbSkipsTheUseCheckAndMeetsTheGateOfTheKey() async throws {
         runs.isCareful = true
 
-        let answer = try await ask(["account", "words"], from: spot(uses: []))
+        let answer = try await ask(["account", "sign-out"], from: spot(uses: []))
 
         XCTAssertEqual(answer.errors, "Only Openspot's Account and Store spots can reach your account key.\n")
         XCTAssertNil(runs.usage.counts["chime"])

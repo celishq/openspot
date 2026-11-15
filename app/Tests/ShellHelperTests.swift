@@ -50,6 +50,19 @@ final class ShellHelperTests: XCTestCase {
         }
     }
 
+    func testEscValueAndServeWorkWhereNoTempFileCanBeWritten() async throws {
+        let fence = "(version 1)(allow default)(deny file-write* (subpath \"/private/var/tmp\") (subpath \"/private/tmp\") (subpath \"/private/var/folders\"))"
+        let once = try script("printf '[%s][%s][%s]' \"$(esc 'a\\b\nc')\" \"$(value a)\" \"$(value b)\"")
+        let stays = try script("main() { printf '%s|%s|%s' \"$(esc \"$1\")\" \"$2\" \"$#\"; }\nopenspot_serve main", header: "# mode=stay\n")
+        let tool = URL(fileURLWithPath: "/usr/bin/sandbox-exec")
+
+        let read = try await ScriptProcess.output(url: tool, arguments: ["-p", fence, "/bin/sh", once.path], input: "a=one\\ntwo\nb=1\nc=2\nb=3\n", limit: 60)
+        let served = try await ScriptProcess.output(url: tool, arguments: ["-p", fence, "/bin/sh", stays.path], input: "call=1\narg=a\\\\b\\nc\narg=\n\n", limit: 60)
+
+        XCTAssertEqual(read, "[a\\\\b\\nc][one\ntwo][1\n3]")
+        XCTAssertTrue(served.contains("a\\\\b\\nc||2"), served)
+    }
+
     func testEscLeavesTheStateOfTheScriptAlone() async throws {
         let url = try script("""
         set -- one two

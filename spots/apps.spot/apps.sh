@@ -98,7 +98,9 @@ uninstall_sheet() {
   count=$(printf '%s\n' "$files" | wc -l | tr -d ' ')
   lines=$count
   [ "$lines" -gt 7 ] && lines=7
-  printf 'title=Delete %s\ndetail=Move the app and its files to the Trash\n' "$name"
+  note=
+  [ -z "$names" ] || note=" A folder found only by the app's name waits for your tick."
+  printf 'title=Delete %s\ndetail=Move the app and its files to the Trash.%s\n' "$name" "$note"
   i=0
   while [ "$i" -lt "$lines" ]; do printf 'grid=files files files files\n'; i=$((i + 1)); done
   printf '\n'

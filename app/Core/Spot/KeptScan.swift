@@ -28,7 +28,10 @@ public final class KeptScan: Sendable {
             guard SpotsFolder.isScript(file) else { continue }
             loose.append(ScanResult.Refusal(file: file.lastPathComponent, reason: SpotsFolder.looseReason(file, in: folder.url)))
         }
-        entries += read(Self.spotFolders(in: own ?? []), origin: .own, into: &stamp, visiting: &visited)
+        let ownFolders = Self.spotFolders(in: own ?? [])
+        let taken = ownFolders.filter { $0.lastPathComponent.lowercased() == SpotsFolder.appName }
+        loose += taken.map { ScanResult.Refusal(file: $0.lastPathComponent, reason: SpotsFolder.appNameReason) }
+        entries += read(ownFolders.filter { !taken.contains($0) }, origin: .own, into: &stamp, visiting: &visited)
         let core = folder.core.map { Self.spotFolders(in: (try? Self.sorted(in: $0)) ?? []) } ?? []
         let app = core.filter { $0.lastPathComponent == SpotsFolder.appName }
         entries += read(core.filter { !app.contains($0) }, origin: .core, into: &stamp, visiting: &visited)
@@ -37,7 +40,7 @@ public final class KeptScan: Sendable {
             if kept.count > limit { kept = kept.filter { visited.contains($0.key) } }
         }
         let failure = own == nil && folder.core == nil ? "Openspot cannot read the folder \(folder.url.path)." : nil
-        return SpotLoad(entries: entries, loose: loose, failure: failure, stamp: stamp)
+        return SpotLoad(entries: entries, loose: loose, failure: failure, stamp: stamp, hasAppSpots: !app.isEmpty)
     }
 
     private func read(_ folders: [URL], origin: SpotLoad.Origin, into stamp: inout [String: [Int]], visiting visited: inout Set<String>) -> [SpotLoad.Entry] {

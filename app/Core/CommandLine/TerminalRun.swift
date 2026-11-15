@@ -37,6 +37,9 @@ public struct TerminalRun {
     }
 
     public func start(isolation: isolated (any Actor)? = #isolation, frame: (String) -> Void) async -> End {
+        if spot.reachesAccountKey {
+            return End(code: 1, errors: "\(spot.name) reaches your account key, so it runs only in the Openspot panel. Open it there.\n")
+        }
         let isRead = action == .read
         if spot.mode == .inline { return await inline(isRead: isRead, frame: frame) }
         let program = SwiftProgram().runnable(for: spot.url, builds: false)

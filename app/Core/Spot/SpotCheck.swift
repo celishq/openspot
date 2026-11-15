@@ -87,7 +87,7 @@ public struct SpotCheck: Sendable {
         }
         for script in scan.scripts {
             guard !Task.isCancelled else { return findings }
-            guard let view = script.view, !view.hasPrefix(SpotFile.appView) else { continue }
+            guard let view = script.view else { continue }
             do {
                 _ = try await views.library(of: URL(fileURLWithPath: view))
             } catch {

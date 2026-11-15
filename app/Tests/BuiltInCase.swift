@@ -11,24 +11,6 @@ class BuiltInCase: XCTestCase {
         var copied: [String] = []
     }
 
-    private struct Clipboard: MacClipboard {
-        let mac: MacSettings
-
-        func copy(text: String) throws {
-            mac.copied.append(text)
-        }
-
-        func copy(file: URL) throws {
-            mac.copied.append(file.path)
-        }
-
-        func text() -> String {
-            mac.copied.last ?? ""
-        }
-
-        func paste() throws {}
-    }
-
     var root: URL!
     var spots: URL!
     var core: URL!
@@ -104,7 +86,7 @@ class BuiltInCase: XCTestCase {
         }
         let built = Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot")
         try FileManager.default.copyItem(at: built, to: tools.appendingPathComponent("openspot"))
-        socket = CommandSocket(folder: root, api: CommandAPI(mac: Mac(calendar: FakeCalendar(), reminders: FakeReminders(), clipboard: Clipboard(mac: mac), login: { [mac] in mac.login }, link: { [mac] in mac.link }, guide: guide), places: .test(TestEnvironment.values), app: app, runs: runs, rates: .offline))
+        socket = CommandSocket(folder: root, api: CommandAPI(mac: Mac(calendar: FakeCalendar(), reminders: FakeReminders(), login: { [mac] in mac.login }, link: { [mac] in mac.link }, guide: guide), places: .test(TestEnvironment.values), app: app, runs: runs, rates: .offline))
     }
 
     override func tearDown() async throws {

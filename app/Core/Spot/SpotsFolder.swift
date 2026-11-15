@@ -3,6 +3,7 @@ import Foundation
 public struct SpotsFolder: Sendable {
     private static let coreName = "spots"
     static let appName = "openspot.spot"
+    static let appNameReason = "The folder `\(appName)` has the name of Openspot's own spots, so Openspot does not load it. Give it another name, such as `my-\(appName)`."
     private static let startingIDs: Set<String> = ["apps", "caffeinate", "color-picker", "emoji", "files", "links", "paste-screenshot", "settings", "snippets", "translate"]
 
     public let url: URL

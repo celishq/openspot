@@ -28,7 +28,6 @@ public struct SpotLoad: Sendable {
             case .own, .core:
                 var own = added.map(spot.added(at:)) ?? spot
                 own.uses.remove(.account)
-                if own.view?.hasPrefix(SpotFile.appView) == true { own.view = nil }
                 return own
             }
         }
@@ -38,8 +37,9 @@ public struct SpotLoad: Sendable {
     let loose: [ScanResult.Refusal]
     let failure: String?
     public let stamp: [String: [Int]]
+    public let hasAppSpots: Bool
 
-    public static let empty = SpotLoad(entries: [], loose: [], failure: nil, stamp: [:])
+    public static let empty = SpotLoad(entries: [], loose: [], failure: nil, stamp: [:], hasAppSpots: false)
 
     public func result(enabled: Set<String>, disabled: Set<String>, hosted: [Spot] = []) throws -> ScanResult {
         if let failure { throw SpotError.fault(failure) }
@@ -51,7 +51,7 @@ public struct SpotLoad: Sendable {
         for entry in wantedCore(after: result, hiding: ownIDs, enabled: enabled) {
             entry.add(to: &result)
         }
-        for entry in entries where entry.origin == .app && !ownIDs.contains(entry.id) {
+        for entry in entries where entry.origin == .app {
             entry.add(to: &result)
         }
         result.removeWidgetsWithLostParts()

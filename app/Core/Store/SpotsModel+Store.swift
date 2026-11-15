@@ -1,8 +1,6 @@
 import Foundation
 
 extension SpotsModel {
-    static let publishPage = "publish:"
-
     @discardableResult
     public func publish(_ id: String) async -> SpotPublish {
         guard let spot = ownSpot(id) ?? entries.first(where: { $0.id == id && $0.item == nil })?.spot else { return .notOwn }
@@ -58,11 +56,14 @@ extension SpotsModel {
     func accountKey(publishing id: String?) async throws -> AccountKey? {
         let account = Account(store: files.account, allows: { [weak self] reason in await self?.allows(reason) ?? false })
         if let key = try await Task.detached(priority: .userInitiated, operation: { try await account.signing() }).value { return key }
-        let page = Self.publishPage + (id ?? "")
-        if let account = entries.first(where: { $0.spot.reachesAccountKey && $0.spot.takes(page: page) }) {
+        let page = id.map { AccountSheet.publishPrefix + $0 }
+        if let account = entries.first(where: { $0.id == AccountSheet.id }) {
             host.present()
-            _ = push(FlowSheet(spot: account.id, page: id == nil ? nil : page))
-            if id != nil { return nil }
+            if let page, account.spot.takes(page: page) {
+                _ = push(FlowSheet(spot: account.id, page: page))
+                return nil
+            }
+            _ = push(FlowSheet(spot: account.id))
         }
         host.notify("Set up your account, then publish again.")
         return nil

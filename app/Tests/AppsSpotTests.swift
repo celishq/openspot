@@ -76,6 +76,7 @@ final class AppsSpotTests: SampleSpotsCase {
             let sheet = try await apps.items(timeout: 60)
 
             XCTAssertEqual(sheet.summary?.value("title"), "Delete Zed")
+            XCTAssertEqual(sheet.summary?.value("detail"), "Move the app and its files to the Trash. A folder found only by the app's name waits for your tick.")
             XCTAssertEqual(sheet.parts.map(\.id), [])
             XCTAssertEqual(sheet.actions.map(\.id), ["cancel", "remove"])
             XCTAssertEqual(sheet.actions.map(\.key), [ActionKey(name: "escape"), ActionKey(name: "return", isCommand: true)])

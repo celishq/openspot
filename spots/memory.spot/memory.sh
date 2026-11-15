@@ -20,20 +20,26 @@ draw() {
 
 # `show <percent>` draws the share that is given, such as the one of sample.sh. With none, as when another spot such as
 # System details looks, it measures the memory now.
+measure() {
+  printf '%s' "$((100 - $(/usr/sbin/sysctl -n kern.memorystatus_level)))"
+}
+
 if [ "$1" = show ]; then
-  draw "${2:-$((100 - $(/usr/sbin/sysctl -n kern.memorystatus_level)))}"
+  draw "${2:-$(measure)}"
   exit 0
 fi
 
 . "$OPENSPOT_SH"
 used=
 
-# Prints the memory from the load that Openspot measures every 5 seconds. A read with no load shows the last one.
+# Prints the memory from the load that Openspot measures every 5 seconds. A read with no load, as when the panel
+# opens, measures the memory now.
 main() {
   case $OPENSPOT_VALUE in
     *memory=*) used=${OPENSPOT_VALUE##*memory=} used=${used%% *} ;;
+    *) used=$(measure) ;;
   esac
-  [ -z "$used" ] || draw "$used"
+  draw "$used"
 }
 
 openspot_serve main "$@"

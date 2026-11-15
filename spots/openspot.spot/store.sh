@@ -19,7 +19,7 @@ get() {
   if said=$(openspot store get "$1" 2>&1); then toast "$said"; else toast "$said"; return 1; fi
 }
 
-# Publishes spot $1, and says in a toast why it did not. Openspot says itself that it did, and opens the Account spot
+# Publishes spot $1, and says in a toast why it did not. Openspot says itself that it did, and opens Account
 # when no key signs it yet.
 publish() {
   said=$(openspot store publish "$1" 2>&1 >/dev/null) && return 0

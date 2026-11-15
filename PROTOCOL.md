@@ -115,7 +115,7 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `offers`      | A place where the spot can show: `card`, `search`, `menubar`, `float` or `window`. One line each. See [Places](#places).         |
 | `drop`        | The files its card takes: extensions such as `mov,mkv`, `folder`, or `*`. See [The calls](#the-calls).                           |
 | `edits`       | `spots`: its sheet is also the Edit sheet of each spot, which grows from that spot's card. Only a spot of the app takes it.      |
-| `view`        | A SwiftUI file next to the spot, such as `view=cups.swift`. See [Views](#views). A spot of the app can name a view of the app.    |
+| `view`        | A SwiftUI file next to the spot, such as `view=cups.swift`. See [Views](#views).                                                 |
 | `mode`        | `once` (the default), `stay` or `always`. See [Modes](#modes).                                                                   |
 | `press`       | `open`: a press of the card sends `<spot> open` though the spot has a sheet, which **Open** in ⌘K opens. `sheet` is the default. |
 | `uses`        | What the spot uses, split by commas: `app`, `spots`, `screen`, `clipboard`, `calendar`, `network`, `files`. See [Trust](#trust). |
@@ -486,9 +486,9 @@ printf 'text=load\ntitle=%s\n' "${OPENSPOT_VALUE:-cpu=0 memory=0}"
 | `app.launch`       | Once when Openspot starts.                                                |               |
 | `screen.wake`      | When the screen wakes.                                                    |               |
 | `system.load`      | Every 5 seconds while the spot is wanted.                                 | `cpu=<percent> memory=<percent>` |
-| `power.change`     | When the Mac moves to another power source.                               | `ac`, `battery` or `ups` |
+| `power.change`     | When the Mac moves to another power source, or its battery gains or loses a percent. | `ac`, `battery` or `ups` |
 | `disk.mount`       | When a disk or a volume mounts.                                           | its path      |
-| `device.connect`   | When a USB device connects.                                               | its name      |
+| `device.connect`   | When a USB device connects. A Bluetooth device raises no event.           | its name      |
 
 - Openspot also asks a spot for these reasons, which aren't events:
   - `spot.change`: after a call that printed nothing;
@@ -912,7 +912,7 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot emoji [--tone name]`                     | Prints each emoji as a row, with its name in the language of the Mac.                           |
 | `openspot symbols`                                 | Prints each symbol of the Character Viewer as a row.                                            |
 | `openspot translate [--from code] [--to code]`     | Translates the text on stdin. `openspot translate languages` prints the languages it knows.     |
-| `openspot account <verb>`                          | Reaches the account key with `new`, `words`, `choices`, `checked`, `phrase`, `sign-in` or `sign-out`. See [Trust](#trust). |
+| `openspot account <verb>`                          | Reaches the account key with `new`, `sign-out` or `sync`. No verb prints or takes an account word. See [Trust](#trust). |
 
 ### Settings
 
@@ -1022,7 +1022,7 @@ openspot app quit
 | `calendar`  | each call of `calendar` and `reminders`                                                                                                                         |
 | `network`   | No call. The spot reaches the network.                                                                                                                          |
 | `files`     | No call. The spot writes outside its data folder.                                                                                                               |
-| `account`   | `account new`, `words`, `choices`, `checked`, `phrase`, `sign-in`, `sign-out` and `sync`. Only a spot that ships inside Openspot can have it.                    |
+| `account`   | `account new`, `sign-out` and `sync`, and `store publish`. Only a spot that ships inside Openspot can have it.                                                  |
 
 - A call that needs a use the header doesn't name still runs, and shows one toast for each spot, use and day.
   `openspot check` can't report it, because only a run shows it.
@@ -1040,10 +1040,9 @@ openspot app quit
   made with, the day it was made (`since`), whether its words are backed up, and whether it syncs.
 - `openspot account new <handle>` makes the key with that handle: 3 to 20 of a–z, 0–9, `-` and `_`. It and every other
   call of `account` reach the key, so they answer only a spot that ships inside Openspot and names `account` in its uses,
-  and only while the app runs. `words`, `choices`, `checked`, `sign-in`, `sign-out` and `sync` ask for Touch ID first, which
-  counts for 5 minutes. `choices` prints four words for each of two places, one of them right, and `checked` says only
-  whether the whole set of words is right. The calls of such a spot stay out of the
-  call log and the playground.
+  and only while the app runs. `sign-out` and `sync` ask for Touch ID first, which counts for 5 minutes. No call prints
+  or takes the 12 words: only the Account sheet of the app shows and checks them. The calls of such a spot stay out of
+  the call log and the playground.
 - The 12 words of an account give its key as NIP-06 says, so they open the same account in another Nostr client.
 
 ## Messages

@@ -41,6 +41,19 @@ final class AccountCallsTests: XCTestCase {
         spot(uses: [.account], isBuiltIn: true)
     }
 
+    private var secret: Account {
+        Account(store: store, allows: { [app] in await app!.allows($0) })
+    }
+
+    private func reason(_ work: () async throws -> Void) async -> String? {
+        do {
+            try await work()
+            return nil
+        } catch {
+            return (error as? SpotError)?.reason
+        }
+    }
+
     func testAnyoneReadsThePublicFacts() async throws {
         let key = try store.keyMadeOnce()
 
@@ -54,48 +67,39 @@ final class AccountCallsTests: XCTestCase {
         let refused = "Only Openspot's Account and Store spots can reach your account key.\n"
 
         for caller in [nil, spot(uses: [.account], isBuiltIn: false), spot(uses: [.app], isBuiltIn: true)] {
-            for arguments in [["account", "words"], ["account", "choices", "2", "7"], ["account", "new"], ["account", "checked"], ["account", "phrase"], ["account", "sign-in"], ["account", "sign-out"], ["account", "sync", "off"]] {
+            for arguments in [["account", "new"], ["account", "sign-out"], ["account", "sync", "off"]] {
                 let answer = try await call(arguments, from: caller)
                 XCTAssertEqual(answer.errors, refused, "\(arguments) from \(caller?.uses ?? [])")
                 XCTAssertEqual(answer.code, 1)
             }
         }
-        let words = try await call(["account", "words"], from: account)
-        XCTAssertEqual(words.code, 0, words.errors)
+        let made = try await call(["account", "new"], from: account)
+        XCTAssertEqual(made.code, 0, made.errors)
+    }
+
+    func testNoVerbPrintsOrTakesAWord() async throws {
+        _ = try store.keyMadeOnce()
+
+        for arguments in [["account", "words"], ["account", "choices", "2", "7"], ["account", "checked"], ["account", "phrase"], ["account", "sign-in"]] {
+            let answer = try await call(arguments, from: account, input: phrase)
+            XCTAssertEqual(answer.code, 2, "\(arguments)")
+            XCTAssertEqual(answer.output, "", "\(arguments)")
+        }
+        let asked = await app.asked
+        XCTAssertEqual(asked, [])
     }
 
     func testTheWordsShowAfterTouchID() async throws {
         let key = try store.keyMadeOnce()
 
-        let words = try await call(["account", "words"], from: account)
+        let words = try await secret.words()
         await app.set(allows: false)
-        let denied = try await call(["account", "words"], from: account)
+        let denied = await reason { _ = try await self.secret.words() }
 
-        XCTAssertEqual(words.output, (key.words ?? []).map { "word=\($0)\n" }.joined())
-        XCTAssertEqual(denied.errors, "Touch ID didn't pass, so Openspot showed no words.\n")
+        XCTAssertEqual(words, key.words)
+        XCTAssertEqual(denied, "Touch ID didn't pass, so Openspot showed no words.")
         let asked = await app.asked
         XCTAssertEqual(asked, ["show your account words", "show your account words"])
-    }
-
-    func testTheChoicesOfTwoPlacesHoldTheRightWordAfterTouchIDAndTakeNoOtherPlaces() async throws {
-        let key = try store.keyMadeOnce()
-        let words = try XCTUnwrap(key.words)
-
-        let choices = try await call(["account", "choices", "2", "7"], from: account)
-        let one = try await call(["account", "choices", "2"], from: account)
-        let same = try await call(["account", "choices", "2", "2"], from: account)
-        let outside = try await call(["account", "choices", "2", "13"], from: account)
-        await app.set(allows: false)
-        let denied = try await call(["account", "choices", "2", "7"], from: account)
-
-        let lines = choices.output.split(separator: "\n").map { $0.split(separator: " ").map(String.init) }
-        XCTAssertEqual(lines.map(\.first), ["2", "7"])
-        XCTAssertEqual(lines.map(\.count), [5, 5])
-        XCTAssertTrue(lines[0].contains(words[1]) && lines[1].contains(words[6]), choices.output)
-        XCTAssertEqual([one.code, same.code, outside.code].map { $0 == 0 }, [false, false, false])
-        XCTAssertEqual(denied.errors, "Touch ID didn't pass, so Openspot showed no words.\n")
-        let asked = await app.asked
-        XCTAssertEqual(asked, ["check your account words", "check your account words"])
     }
 
     func testNewKeepsTheHandleItIsGivenAndAnyoneReadsItWithTheDay() async throws {
@@ -120,22 +124,14 @@ final class AccountCallsTests: XCTestCase {
         XCTAssertEqual(try store.key(), key)
     }
 
-    func testAPhraseSaysHowFarItIsAndSignsIn() async throws {
-        let typing = try await call(["account", "phrase"], from: account, input: "abandon abuot abso")
-        let ready = try await call(["account", "phrase"], from: account, input: phrase)
-        let signedIn = try await call(["account", "sign-in"], from: account, input: phrase)
-
-        XCTAssertEqual(typing.output, "counter=3 of 12\nword=abandon\nword=abuot\nword=abso\nunknown=2\ncompletion=absorb\n")
-        XCTAssertEqual(ready.output, "counter=12 of 12\n" + Array(repeating: "word=abandon\n", count: 11).joined() + "word=about\naccount=\(try AccountKey(words: phrase.split(separator: " ").map(String.init)).npub)\n")
-        XCTAssertEqual(signedIn.code, 0, signedIn.errors)
-        XCTAssertTrue(try store.record()?.isBackedUp == true)
-    }
-
-    func testASignInThatIsNoAccountSaysWhy() async throws {
-        let answer = try await call(["account", "sign-in"], from: account, input: Array(repeating: "abandon", count: 12).joined(separator: " "))
-
-        XCTAssertEqual(answer.errors, "These words don't match an account. Check each word and their order.\n")
+    func testAPhraseSignsInAndOneThatIsNoAccountSaysWhy() async throws {
+        let wrong = await reason { try await self.secret.signIn(AccountPhrase(Array(repeating: "abandon", count: 12).joined(separator: " "))) }
         XCTAssertNil(try store.key())
+
+        try await secret.signIn(AccountPhrase(phrase))
+
+        XCTAssertEqual(wrong, "These words don't match an account. Check each word and their order.")
+        XCTAssertTrue(try store.record()?.isBackedUp == true)
     }
 
     func testSignOutAsksTouchIDFirst() async throws {
@@ -155,7 +151,7 @@ final class AccountCallsTests: XCTestCase {
         let alone = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path, CallerTokens.variable: runs.tokens.issue(for: account)]), rates: .offline)
         let phrase = phrase
 
-        for arguments in [["account"], ["account", "new"], ["account", "words"], ["account", "choices", "2", "7"], ["account", "checked"], ["account", "phrase"], ["account", "sign-in"], ["account", "sign-out"], ["account", "sync", "off"]] {
+        for arguments in [["account"], ["account", "new"], ["account", "sign-out"], ["account", "sync", "off"]] {
             let request = CommandRequest(arguments: arguments, folder: folder.path)
             let work = try XCTUnwrap(alone.work(for: try XCTUnwrap(alone.call(of: request)), request: request, input: { phrase }))
             let answer = await work()
@@ -165,21 +161,17 @@ final class AccountCallsTests: XCTestCase {
         XCTAssertNil(try store.key())
     }
 
-    func testTheCheckAnswersForTheWholeSetAndPrintsNoWord() async throws {
+    func testTheCheckAnswersForTheWholeSet() async throws {
         let key = try store.keyMadeOnce()
         let words = try XCTUnwrap(key.words)
 
-        let choices = try await call(["account", "check", "4", "9"], from: account)
-        let wrong = try await call(["account", "checked"], from: account, input: "4 \(words[4])\n9 \(words[8])\n")
-        let short = try await call(["account", "checked"], from: account, input: "4 \(words[3])\n")
+        let wrong = await reason { try await self.secret.confirm([(4, words[4]), (9, words[8])]) }
+        let short = await reason { try await self.secret.confirm([(4, words[3])]) }
 
-        XCTAssertEqual(choices.code, 2)
-        XCTAssertEqual(choices.output, "")
-        XCTAssertEqual(wrong.errors, "One of these words is wrong. Look at your words again.\n")
-        XCTAssertEqual(short.errors, wrong.errors)
+        XCTAssertEqual(wrong, "One of these words is wrong. Look at your words again.")
+        XCTAssertEqual(short, wrong)
         XCTAssertFalse(try store.record()?.isBackedUp == true)
-        let right = try await call(["account", "checked"], from: account, input: "4 \(words[3])\n9 \(words[8])\n")
-        XCTAssertEqual(right.code, 0, right.errors)
+        try await secret.confirm([(4, words[3]), (9, words[8])])
         XCTAssertTrue(try store.record()?.isBackedUp == true)
     }
 
@@ -206,12 +198,12 @@ final class AccountCallsTests: XCTestCase {
         let before = try store.key()
         await app.set(allows: false)
 
-        let signIn = try await call(["account", "sign-in"], from: account, input: phrase)
-        let checked = try await call(["account", "checked"], from: account, input: "1 abandon\n2 abandon\n")
+        let signIn = await reason { try await self.secret.signIn(AccountPhrase(self.phrase)) }
+        let checked = await reason { try await self.secret.confirm([(1, "abandon"), (2, "abandon")]) }
         let sync = try await call(["account", "sync", "off"], from: account)
 
-        XCTAssertEqual(signIn.errors, "Touch ID didn't pass, so Openspot didn't sign in.\n")
-        XCTAssertEqual(checked.errors, "Touch ID didn't pass, so Openspot checked no words.\n")
+        XCTAssertEqual(signIn, "Touch ID didn't pass, so Openspot didn't sign in.")
+        XCTAssertEqual(checked, "Touch ID didn't pass, so Openspot checked no words.")
         XCTAssertEqual(sync.errors, "Touch ID didn't pass, so your account stays where it is.\n")
         XCTAssertEqual(try store.key(), before)
         let asked = await app.asked

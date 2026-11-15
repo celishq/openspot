@@ -85,6 +85,14 @@ final class MetricSpotsTests: SpotRunsCase {
         XCTAssertEqual(runs.sheets["cpu"]?.reading.value?.points?.count, 12)
     }
 
+    func testCPUAndMemoryShowAValueOnAReadWithNoLoad() async throws {
+        menuBar = ["cpu", "memory"]
+
+        _ = try scanned()
+
+        try await wait("the first reads") { self.title("cpu")?.hasSuffix("%") == true && self.title("memory")?.hasSuffix("%") == true }
+    }
+
     func testTheBatteryReadsAgainWhenThePowerSourceChanges() async throws {
         menuBar = ["battery"]
         runs.listen(to: mac)
