@@ -4,6 +4,7 @@
 # detail=Signs what you publish
 # on=sheet.open
 # uses=app,account
+# view=account.swift
 # offers=card
 # offers=search
 # pages=publish:*
@@ -16,11 +17,13 @@ case ${OPENSPOT_PAGE-} in publish:*) publishing=${OPENSPOT_PAGE#publish:} ;; *) 
 # Reads the public facts of the account.
 facts() {
   state=$(openspot account --frame) || exit 1
-  signed= npub= backed= sync=
+  signed= npub= name= since= backed= sync=
   while IFS='=' read -r key value; do
     case $key in
       signedIn) signed=$value ;;
       npub) npub=$value ;;
+      name) name=$value ;;
+      since) since=$value ;;
       backedUp) backed=$value ;;
       sync) sync=$value ;;
     esac
@@ -192,7 +195,7 @@ sheet() {
       ;;
     words) printf 'grid=head head\n'; word_grid 12; printf 'grid=wrote wrote\ngrid=later later\n' ;;
     account)
-      printf 'grid=head head\ngrid=head head\n'
+      printf 'grid=card card\ngrid=card card\ngrid=card card\ngrid=card card\n'
       [ "$sync" = true ] || printf 'grid=backup backup\n'
       [ -z "$sync" ] || printf 'grid=sync sync\n'
       printf 'grid=done done\ngrid=about how\ngrid=leave leave\n'
@@ -248,7 +251,11 @@ sheet() {
       if [ "$backed" = true ]; then button later Done close; else button later Later close; fi
       ;;
     account)
-      line head 'Your account' person.crop.circle '' "$npub"
+      printf '\nview=card\n'
+      openspot_kv npub "$npub"
+      openspot_kv short "$(printf '%.9s…%s' "$npub" "${npub#"${npub%????}"}")"
+      [ -z "$name" ] || openspot_kv name "$name"
+      [ -z "$since" ] || openspot_kv since "$(date -j -f %Y-%m-%d "$since" '+%b %Y' 2>/dev/null)"
       if [ "$sync" = true ]; then
         :
       elif [ "$backed" = true ]; then

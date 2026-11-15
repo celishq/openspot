@@ -8,10 +8,11 @@ Add one spot folder to [`spots`](spots). The [guide](GUIDE.md) shows how, and th
 
 ## Change the app
 
-You need macOS 26, Xcode and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
+You need macOS 26, Xcode with its Metal Toolchain, and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
 
 ```sh
 brew install xcodegen
+xcodebuild -downloadComponent MetalToolchain
 cd app && xcodegen generate
 open Openspot.xcodeproj
 ```

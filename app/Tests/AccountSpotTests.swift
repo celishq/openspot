@@ -45,7 +45,7 @@ final class AccountSpotTests: BuiltInCase {
         XCTAssertTrue(spot.isFound)
         XCTAssertFalse(spot.read?.has(.panel) == true)
         XCTAssertTrue(spot.reachesAccountKey)
-        XCTAssertNil(spot.view)
+        XCTAssertEqual(spot.view.map { URL(fileURLWithPath: $0).lastPathComponent }, "account.swift")
     }
 
     func testWithNoAccountItOffersANewKeyOrYourOwn() async throws {
@@ -66,7 +66,8 @@ final class AccountSpotTests: BuiltInCase {
 
         XCTAssertNotNil(try store.key())
         XCTAssertEqual(try store.name(), "Tony Pinkevych")
-        XCTAssertEqual(block("head", in: made)["title"], "Your account")
+        XCTAssertEqual(block("card", in: made)["name"], "Tony Pinkevych")
+        XCTAssertEqual(block("card", in: made)["npub"], try store.key()?.npub)
         XCTAssertEqual(block("backup", in: made)["title"], "Your 12 words are not backed up")
         XCTAssertFalse(made.contains("pop=true"), made)
     }
@@ -76,7 +77,7 @@ final class AccountSpotTests: BuiltInCase {
 
         let read = try await frame(["read"])
 
-        XCTAssertEqual(block("head", in: read)["title"], "Your account")
+        XCTAssertEqual(block("card", in: read)["npub"], try store.key()?.npub)
     }
 
     func testHowItWorksIsAButtonOnTheChoiceAndTheAccountThatExplainsTheKey() async throws {
@@ -171,7 +172,7 @@ final class AccountSpotTests: BuiltInCase {
 
         XCTAssertTrue(try store.isBackedUp())
         XCTAssertEqual(toast(in: done), "Your words are backed up")
-        XCTAssertEqual(block("head", in: done)["title"], "Your account")
+        XCTAssertNotNil(block("card", in: done)["short"])
     }
 
     func testAWrongPickSaysWhichWord() async throws {
