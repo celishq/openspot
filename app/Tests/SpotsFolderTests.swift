@@ -240,14 +240,17 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertThrowsError(try place.remove(spot) { _ in XCTFail("It must not be discarded.") })
     }
 
-    func testAFileOfThePersonHidesASpotOfTheApp() throws {
+    func testAFolderOfThePersonWithTheNameOfTheAppsSpotsIsRefused() throws {
         _ = try write("core/openspot.spot/spots.sh", header: "title=Spots")
         _ = try write("mine/openspot.spot/spots.sh", header: "title=Mine")
+        _ = try write("mine/Openspot.spot/store.sh", header: "title=Store\nuses=account")
 
         let scan = try SpotsFolder(url: folder.appendingPathComponent("mine"), core: folder.appendingPathComponent("core")).scan()
 
-        XCTAssertEqual(scan.spots.map(\.name), ["Mine"])
-        XCTAssertEqual(scan.spots.map(\.isBuiltIn), [false])
+        XCTAssertEqual(scan.spots.map(\.name), ["Spots"])
+        XCTAssertEqual(scan.spots.map(\.isBuiltIn), [true])
+        XCTAssertEqual(Set(scan.refused.map(\.reason)), ["The folder `openspot.spot` has the name of Openspot's own spots, so Openspot does not load it. Give it another name, such as `my-openspot.spot`."])
+        XCTAssertFalse(scan.refused.isEmpty)
     }
 
     func testAnExecutableIsASpotWithItsHeader() throws {

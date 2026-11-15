@@ -52,7 +52,7 @@ public struct SpotLoad: Sendable {
         for entry in wantedCore(after: result, hiding: ownIDs, enabled: enabled) {
             entry.add(to: &result)
         }
-        for entry in entries where entry.origin == .app && !ownIDs.contains(entry.id) {
+        for entry in entries where entry.origin == .app {
             entry.add(to: &result)
         }
         result.removeWidgetsWithLostParts()

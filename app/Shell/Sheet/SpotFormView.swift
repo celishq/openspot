@@ -2,14 +2,15 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotFormView: View {
+    @Environment(\.spotSurfaceEdge) private var surface
     let draft: FormDraft
     let onValue: (String, String) -> Void
     var onChoose: (SpotItem) -> Void = { _ in }
     var selection: (() -> Int)?
     @FocusState private var focus: String?
 
-    private var shape: RoundedRectangle {
-        RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
+    private var shape: SpotRoundShape {
+        SpotRoundShape(surface.inner())
     }
 
     var body: some View {

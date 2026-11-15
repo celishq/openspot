@@ -16,6 +16,7 @@ struct SpotCustomView: View, @MainActor Equatable {
     @Environment(\.spotCards) private var cards
     @Environment(\.spotViewPlace) private var place
     @Environment(\.spotIsHeld) private var isHeld
+    @Environment(\.spotSurfaceEdge) private var surface
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.source == rhs.source && lhs.values == rhs.values && lhs.rows == rhs.rows && lhs.card == rhs.card && lhs.room == rhs.room && lhs.answers == rhs.answers && lhs.date == rhs.date && lhs.views === rhs.views
@@ -27,13 +28,13 @@ struct SpotCustomView: View, @MainActor Equatable {
     }
 
     private var corner: CGFloat {
-        room == nil ? SpotTokens.corner(for: card) : SpotTokens.radius - SpotTokens.padding
+        room == nil ? SurfaceEdge(card: card, mark: .view).radius : surface.inner().radius
     }
 
     var body: some View {
         content
             .frame(width: size.width, height: size.height, alignment: .topLeading)
-            .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
+            .clipShape(SpotRoundShape(radius: corner))
             .allowsHitTesting(send != nil)
             .task(id: isHeld ? nil : loadKey) {
                 if !isHeld { await views.load(source) }

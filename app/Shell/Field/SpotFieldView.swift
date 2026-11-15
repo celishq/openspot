@@ -101,7 +101,7 @@ struct SpotFieldView: View {
     static let sheetTop = SpotTokens.halo + SpotTokens.sheetFieldDrop - (SpotTokens.rowHeight - SpotTokens.listRowHeight) / 2
     static let sheetGlyphLeft = SpotTokens.halo + 2 * SpotTokens.padding + (SpotTokens.listIconSize - SpotTokens.glyphSize) / 2
     static let sheetTextLeft = SpotTokens.halo + 2 * SpotTokens.padding + SpotTokens.listIconSize + gap
-    static let sheetRadius = SpotTokens.radius - SpotTokens.padding
+    static let sheetRadius = SurfaceEdge.sheet.inner().radius
     static let fieldTextWidth = SpotTokens.gridWidth - 4 * SpotTokens.padding - SpotTokens.listIconSize - gap
 
     private var fieldTextLeft: CGFloat {
@@ -188,7 +188,7 @@ struct SpotFieldView: View {
     }
 
     private var fieldRadius: CGFloat {
-        isInSheet ? Self.sheetRadius : SpotTokens.corner(for: .strip)
+        isInSheet ? Self.sheetRadius : SurfaceEdge(card: .strip).radius
     }
 
 }

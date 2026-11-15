@@ -2,6 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotSteadyField: View {
+    @Environment(\.spotSurfaceEdge) private var surface
     let prompt: String
     let text: String
     let isSettled: Bool
@@ -31,7 +32,7 @@ struct SpotSteadyField: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, SpotTokens.padding - SpotTokens.menuPadding + 4)
             .frame(height: SpotTokens.menuRowHeight)
-            .background(SpotTheme.ink.opacity(SpotTheme.fill), in: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous))
+            .background(SpotTheme.ink.opacity(SpotTheme.fill), in: SpotRoundShape(surface.inner()))
             .allowsHitTesting(false)
     }
 }

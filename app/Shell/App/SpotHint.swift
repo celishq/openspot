@@ -23,7 +23,7 @@ struct SpotHint: View {
         .padding(.leading, words.groups.first?.key == nil ? SpotTokens.hintEndPadding : SpotTokens.hintKeyInset)
         .padding(.trailing, SpotTokens.hintEndPadding)
         .frame(height: SpotTokens.hintPillHeight)
-        .modifier(SpotGlass(radius: SpotTokens.hintHeight / 2 + SpotTokens.hintPillInset, isBare: words.groups.isEmpty))
+        .modifier(SpotGlass(shape: SpotRoundShape(radius: SpotTokens.hintHeight / 2 + SpotTokens.hintPillInset), isBare: words.groups.isEmpty))
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
@@ -34,7 +34,7 @@ struct SpotHint: View {
                     .padding(.horizontal, SpotTokens.hintKeyPadding)
                     .frame(height: SpotTokens.hintKeyHeight)
                     .background(SpotTheme.ink.opacity(SpotTheme.track), in: Capsule())
-                    .modifier(SpotSelectionRing(isSelected: key == activeKey, shape: Capsule(), width: SpotSelectionRing<Capsule>.thinWidth))
+                    .modifier(SpotSelectionRing(isSelected: key == activeKey, shape: Capsule(), width: SpotTokens.thinRing))
             }
             if !group.words.isEmpty {
                 Text(group.words)

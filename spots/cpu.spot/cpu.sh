@@ -1,23 +1,62 @@
 #!/bin/sh
 # title=CPU
-# on=clock.5
+# detail=The use of all cores
+# on=system.load
+# mode=stay
 # offers=card
 # offers=menubar
-history="${TMPDIR:-/tmp}/openspot-cpu"
 
-# Prints the use of all cores now, and the trend of the last points with the one of now. Only a read keeps the trend, so
-# that a look from another script adds no point.
-ps -A -o %cpu= | LC_ALL=C awk -v cores="$(/usr/sbin/sysctl -n hw.ncpu)" -v history="$history" -v kept="$history.$$" -v call="$1" '
-  { sum += $1 }
-  END {
-    now = int(sum / cores)
-    while ((getline line < history) > 0) if (line ~ /^[0-9]+$/) points[n++] = line
-    first = n > 29 ? n - 29 : 0
-    points[n++] = now
-    printf "graph=cpu\ntitle=%d%%\nmax=100\n", now
-    for (i = first; i < n; i++) {
-      print "value=" points[i]
-      if (call == "read") print points[i] > kept
-    }
-  }'
-if [ "$1" = read ]; then mv "$history.$$" "$history"; fi
+# Prints the use of all cores, the last of the points, with each point as a bar.
+draw() {
+  [ $# -gt 0 ] || return 0
+  eval "now=\${$#}"
+  printf 'graph=cpu\ntitle=%s%%\nmax=100\n' "$now"
+  for point; do printf 'value=%s\n' "$point"; done
+}
+
+# Prints the use of all cores now.
+measure() {
+  ps -A -o %cpu= | LC_ALL=C awk -v cores="$(/usr/sbin/sysctl -n hw.ncpu)" '{ sum += $1 } END { print int(sum / cores) }'
+}
+
+# `show` draws the points that are given, such as the ones of sample.sh. With none, as when another spot such as System
+# details looks, it measures the use of all cores now, and keeps no point.
+if [ "$1" = show ]; then
+  shift
+  [ $# -gt 0 ] || set -- $(measure)
+  draw "$@"
+  exit 0
+fi
+
+. "$OPENSPOT_SH"
+kept="$OPENSPOT_DATA/trend"
+points=
+
+# Starts from the trend that the last process kept, and skips a line that is not a number.
+if [ -f "$kept" ]; then
+  while IFS= read -r line; do
+    case $line in '' | *[!0-9]*) ;; *) points="$points $line" ;; esac
+  done < "$kept"
+fi
+
+# Prints the use of all cores, from the load that Openspot measures every 5 seconds, and the trend of the last 30 points.
+# A read with no load, as when the panel opens, measures the use now after the trend, and keeps no point.
+main() {
+  case "$1:$OPENSPOT_VALUE" in
+    read:cpu=*)
+      now=${OPENSPOT_VALUE#cpu=}
+      now=${now%% *}
+      set -- $points "$now"
+      [ $# -le 30 ] || shift $(($# - 30))
+      points="$*"
+      draw $points
+      ;;
+    *) draw $points $(measure) ;;
+  esac
+}
+
+openspot_serve main "$@"
+
+# The trend survives this process: it is written beside its file, then moved over it.
+[ -n "$points" ] || exit 0
+printf '%s\n' $points > "$kept.$$" && mv "$kept.$$" "$kept"

@@ -20,8 +20,8 @@ struct SpotCardView: View, @MainActor Equatable {
 
     private static let lineReach: CGFloat = 6
 
-    private var shape: RoundedRectangle {
-        RoundedRectangle(cornerRadius: SpotTokens.corner(for: size), style: .continuous)
+    private func shape(of mark: CardMark) -> SpotRoundShape {
+        SpotRoundShape(SurfaceEdge(card: size, mark: mark))
     }
 
     var body: some View {
@@ -30,14 +30,14 @@ struct SpotCardView: View, @MainActor Equatable {
             .environment(\.spotViewPlace, SpotViewPlace(model: model))
             .padding(drawnView != nil && !isDrawn ? 0 : SpotTokens.cardPadding(for: size, isWidget: entry.kind == .widget || isDrawn))
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
-            .background(shape.fill(SpotTheme.accent).opacity(dropFill))
-            .modifier(CardPress(shape: shape, isFilled: isFilled, showsPress: showsPress))
+            .background(shape(of: .dropFill).fill(SpotTheme.accent).opacity(dropFill))
+            .modifier(CardPress(shape: shape(of: .press), isFilled: isFilled, showsPress: showsPress))
             .modifier(SpotPointerMove { model.point(at: .card(entry.id)) })
-            .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape)).allowsHitTesting(false))
+            .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape(of: .ring))).allowsHitTesting(false))
             .overlay(alignment: .topTrailing) { chainLetter.map { ChainKeycap(model: model, letter: $0, size: size) } }
             .overlay(alignment: .topTrailing) { FailureMark(entry: entry, size: size) }
-            .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled))
-            .contentShape(shape)
+            .modifier(SpotGlass(shape: shape(of: .glass), isSolid: isFilled))
+            .contentShape(shape(of: .hit))
             .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id, opening: NSEvent.modifierFlags.contains(.command)) } }
             .animation(SpotMotion.fade(isShown: isFilled), value: isFilled)
             .scaleEffect(showsPress ? MotionTokens.pressedScale : 1)
@@ -217,7 +217,7 @@ struct SpotCardView: View, @MainActor Equatable {
 private struct CardRing: ViewModifier {
     let model: SpotsModel
     let index: Int
-    let shape: RoundedRectangle
+    let shape: SpotRoundShape
 
     func body(content: Content) -> some View {
         content.modifier(SpotSelectionRing(isSelected: model.selected == index, shape: shape, marksMenu: model.openSheetID == nil))
@@ -225,7 +225,7 @@ private struct CardRing: ViewModifier {
 }
 
 private struct CardPress: ViewModifier {
-    let shape: RoundedRectangle
+    let shape: SpotRoundShape
     let isFilled: Bool
     let showsPress: Bool
 
@@ -242,13 +242,14 @@ private struct FailureMark: View {
 
     var body: some View {
         if entry.failure != nil {
-            let inset = SpotTokens.corner(for: size) * SpotTokens.rimPoint - SpotTokens.keycap / 2
+            let inset = SurfaceEdge(card: size).rim - SpotTokens.keycap / 2
+            let cap = SpotRoundShape(radius: SpotTokens.keycapRadius)
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(SpotType.cornerFault)
                 .foregroundStyle(SpotTheme.ink)
                 .frame(width: SpotTokens.keycap, height: SpotTokens.keycap)
-                .background(SpotTheme.keycap, in: RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous).strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
+                .background(SpotTheme.keycap, in: cap)
+                .overlay(cap.strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
                 .offset(x: -inset, y: inset)
                 .accessibilityLabel("Last run failed")
                 .allowsHitTesting(false)
@@ -262,13 +263,14 @@ private struct ChainKeycap: View {
     let size: SpotSize
 
     var body: some View {
-        let inset = SpotTokens.corner(for: size) * SpotTokens.rimPoint - SpotTokens.keycap / 2
-        Text(letter)
+        let inset = SurfaceEdge(card: size).rim - SpotTokens.keycap / 2
+        let cap = SpotRoundShape(radius: SpotTokens.keycapRadius)
+        return Text(letter)
             .font(SpotType.keycap)
             .foregroundStyle(SpotTheme.ink)
             .frame(width: SpotTokens.keycap, height: SpotTokens.keycap)
-            .background(SpotTheme.keycap, in: RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous).strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
+            .background(SpotTheme.keycap, in: cap)
+            .overlay(cap.strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
             .offset(x: -inset, y: inset)
             .opacity(model.showsChain ? 1 : MotionTokens.hiddenOpacity)
             .animation(SpotMotion.fade(isShown: true), value: model.showsChain)

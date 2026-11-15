@@ -31,6 +31,20 @@ final class TerminalRunTests: XCTestCase {
         XCTAssertEqual(end.errors, "Nothing to send.\n")
     }
 
+    func testARunRefusesASpotThatReachesTheAccountKey() async throws {
+        let ran = folder.appendingPathComponent("ran")
+        var store = try spot("store", header: "uses=account", "touch '\(ran.path)'; echo title=Store")
+        store = store.builtIn()
+        store.uses.insert(.account)
+        var frames: [String] = []
+
+        let end = await TerminalRun(spot: store, arguments: ["read"], input: nil).start { frames.append($0) }
+
+        XCTAssertEqual(end, TerminalRun.End(code: 1, errors: "Store reaches your account key, so it runs only in the Openspot panel. Open it there.\n"))
+        XCTAssertEqual(frames, [])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: ran.path))
+    }
+
     func testARunReturnsAllOfALongStderr() async throws {
         let spot = try spot("loud", "i=0\nwhile [ $i -lt 5000 ]; do echo \"line $i of a log that runs long\" >&2; i=$((i+1)); done\nexit 1")
 

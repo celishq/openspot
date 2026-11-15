@@ -6,7 +6,7 @@ import OpenspotCore
 @MainActor
 final class SpotSystemEvents {
     private var heard: (@MainActor (SpotEvent) -> Void)?
-    private var power: String?
+    private var power: PowerSample?
     private var powerSource: CFRunLoopSource?
     private var devicePort: IONotificationPortRef?
     private var deviceWatch: io_iterator_t = 0
@@ -32,7 +32,7 @@ final class SpotSystemEvents {
     func listen(_ heard: @escaping @MainActor (SpotEvent) -> Void) {
         stop()
         self.heard = heard
-        power = Self.readPowerSource()
+        power = Self.readPower()
         let context = Unmanaged.passUnretained(self).toOpaque()
         if let source = IOPSNotificationCreateRunLoopSource({ context in
             guard let context else { return }
@@ -70,19 +70,26 @@ final class SpotSystemEvents {
     }
 
     private func powerChanged() {
-        let next = Self.readPowerSource()
-        guard next != power else { return }
+        let next = Self.readPower()
+        guard let event = next.event(after: power) else { return }
         power = next
-        heard?(.named(SpotEvent.powerChange, value: next))
+        heard?(event)
     }
 
-    private static func readPowerSource() -> String {
-        guard let info = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(), let type = IOPSGetProvidingPowerSourceType(info)?.takeUnretainedValue() as String? else { return "ac" }
-        switch type {
-        case kIOPMBatteryPowerKey: return "battery"
-        case kIOPMUPSPowerKey: return "ups"
-        default: return "ac"
+    private static func readPower() -> PowerSample {
+        guard let info = IOPSCopyPowerSourcesInfo()?.takeRetainedValue() else { return PowerSample(source: "ac", percent: nil) }
+        let source = switch IOPSGetProvidingPowerSourceType(info)?.takeUnretainedValue() as String? {
+        case kIOPMBatteryPowerKey?: "battery"
+        case kIOPMUPSPowerKey?: "ups"
+        default: "ac"
         }
+        let sources = IOPSCopyPowerSourcesList(info)?.takeRetainedValue() as [CFTypeRef]? ?? []
+        let percents = sources.compactMap { source -> Int? in
+            guard let facts = IOPSGetPowerSourceDescription(info, source)?.takeUnretainedValue() as? [String: Any] else { return nil }
+            guard let now = facts[kIOPSCurrentCapacityKey] as? Int, let full = facts[kIOPSMaxCapacityKey] as? Int, full > 0 else { return nil }
+            return now * 100 / full
+        }
+        return PowerSample(source: source, percent: percents.first)
     }
 
     private func stop() {

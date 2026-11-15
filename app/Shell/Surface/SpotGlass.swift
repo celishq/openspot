@@ -2,15 +2,20 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotGlass: ViewModifier {
-    var radius: CGFloat = SpotTokens.radius
-    var isSolid: Bool?
-    var isBare = false
+    let shape: SpotRoundShape
+    let isSolid: Bool?
+    let isBare: Bool
     @Environment(\.spotIsShown) private var isShown
     @Environment(\.spotFade) private var fade
     @Environment(\.spotScrollFade) private var edge
 
+    init(shape: SpotRoundShape = SpotRoundShape(radius: SpotTokens.radius), isSolid: Bool? = nil, isBare: Bool = false) {
+        self.shape = shape
+        self.isSolid = isSolid
+        self.isBare = isBare
+    }
+
     func body(content: Content) -> some View {
-        let shape = SpotRoundShape(radius: radius)
         let fade = fade
         let edge = edge
         let space = SpotsView.panelSpace

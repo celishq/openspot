@@ -98,7 +98,7 @@ struct SpotsView: View {
 
     private func fieldSheet(on card: SpotSheetCard?, at frame: CGRect?) -> (morph: SheetMorph, cardRadius: CGFloat)? {
         guard let card, let frame, !isInstall else { return nil }
-        return (SheetMorph(card: frame, sheet: sheetRect), SpotTokens.corner(for: card.placement.size))
+        return (SheetMorph(card: frame, sheet: sheetRect), SurfaceEdge(card: card.placement.size).radius)
     }
 
     private func push(from card: SpotSheetCard) -> SheetPush {

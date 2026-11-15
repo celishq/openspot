@@ -1,7 +1,7 @@
 import Foundation
 
 struct Account: Sendable {
-    static let refusal = "Only Openspot's Account and Store spots can reach your account key."
+    static let refusal = "Only Openspot's Store can reach your account key."
     static let checkedPlaces = 2
     private static let noWords = "This Mac holds no account words."
 

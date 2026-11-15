@@ -1,9 +1,26 @@
+import OpenspotCore
 import SwiftUI
 
-struct SpotRoundShape: Shape {
-    var radius: CGFloat
+struct SpotRoundShape: InsettableShape {
+    var edge: SurfaceEdge
+
+    init(_ edge: SurfaceEdge) {
+        self.edge = edge
+    }
+
+    init(radius: CGFloat) {
+        edge = SurfaceEdge(radius: radius)
+    }
 
     func path(in rect: CGRect) -> Path {
-        SpotSurfaceShape(rect: rect, radius: radius).path(in: rect)
+        RoundedRectangle(cornerRadius: edge.corner(in: rect), style: edge.isCircular(in: rect) ? .circular : .continuous).path(in: edge.place(in: rect))
     }
+
+    func inset(by amount: CGFloat) -> SpotRoundShape {
+        SpotRoundShape(edge.inset(by: amount))
+    }
+}
+
+extension EnvironmentValues {
+    @Entry var spotSurfaceEdge = SurfaceEdge.sheet
 }

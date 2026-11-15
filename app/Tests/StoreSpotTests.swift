@@ -60,6 +60,24 @@ final class StoreSpotTests: BuiltInCase {
         XCTAssertEqual(rows.first { $0[0] == "timer" }?[2], "added")
     }
 
+    func testAFailedGetOrPublishSaysWhyInAToast() async throws {
+        _ = try AccountStore.standard(environment: ["OPENSPOT_CONFIG": root.path], home: root, devState: nil).keyMadeOnce()
+
+        let got = SpotOutput(text: try await runs.answer(of: store, SpotAction(arguments: ["gallery", "get:nothing"]), limit: 60)).summary?.value("toast")
+        let published = SpotOutput(text: try await runs.answer(of: store, SpotAction(arguments: ["gallery", "publish:unread"]), limit: 60)).summary?.value("toast")
+
+        XCTAssertNotNil(got)
+        XCTAssertEqual(published, "unread has no readme.md. Write one beside its script, then publish again.")
+    }
+
+    func testAPublishWithNoKeySaysNothingSinceOpenspotOpensTheAccount() async throws {
+        let published = SpotOutput(text: try await runs.answer(of: store, SpotAction(arguments: ["gallery", "publish:unread"]), limit: 60)).summary?.value("toast")
+
+        XCTAssertNil(published)
+        let opened = await app.opened
+        XCTAssertEqual(opened, ["publish unread"])
+    }
+
     func testGetTurnsBackOnYourOwnSpotThatEditSpotsTurnedOff() async throws {
         try file.turn("mine", on: false)
         let before = try await items()

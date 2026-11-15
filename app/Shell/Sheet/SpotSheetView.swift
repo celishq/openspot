@@ -2,6 +2,7 @@ import SwiftUI
 import OpenspotCore
 
 struct SpotSheetView: View {
+    @Environment(\.spotSurfaceEdge) private var surface
     let model: SpotsModel
     let entry: SpotsModel.Entry
     let cardSize: SpotSize
@@ -43,8 +44,8 @@ struct SpotSheetView: View {
         held == nil && model.form?.entry.id == entry.id ? model.form?.draft : nil
     }
 
-    private var row: RoundedRectangle {
-        RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
+    private var row: SpotRoundShape {
+        SpotRoundShape(surface.inner())
     }
 
     var body: some View {
@@ -244,7 +245,7 @@ struct SpotSheetView: View {
 private struct CreateLabel: View {
     let model: SpotsModel
     let title: String
-    let shape: RoundedRectangle
+    let shape: SpotRoundShape
 
     var body: some View {
         Text("\(title): \(model.searchText)")

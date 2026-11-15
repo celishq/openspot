@@ -1,5 +1,5 @@
-# The shell helper of Openspot. `. "$OPENSPOT_SH"` gives `esc`, `value`, `openspot_value`, `openspot_kv`, `openspot_row`,
-# `openspot_rows`, `openspot_serve`, `openspot_keep` and `openspot_paste`.
+# The shell helper of Openspot. `. "$OPENSPOT_SH"` gives `esc`, `value`, `openspot_value`, `openspot_input`, `openspot_kv`,
+# `openspot_row`, `openspot_rows`, `openspot_serve`, `openspot_keep` and `openspot_paste`.
 # Loading starts `cat` once, and each function starts `sed`, `tr` or `awk` only above 1 KB, where a shell loop is too slow.
 
 # Whether the header of the script says `mode=stay` or `mode=always`: the comment lines at its top, read with no process.
@@ -23,34 +23,31 @@ if [ -z "$_openspot_stays" ]; then
   _openspot_stdin=${_openspot_stdin%x}
 fi
 
-# Writes text as a value: a backslash as `\\` and a new line as `\n`.
+_openspot_nl='
+'
+
+# Writes text as a value: a backslash as `\\` and a new line as `\n`. It works on the text in memory, so the text
+# touches no file.
 esc() {
   if [ "${#1}" -gt 1024 ]; then
     printf '%s\n' "$1" | LC_ALL=C /usr/bin/sed -e 's/\\/\\\\/g' -e '$!s/$/\\n/' | LC_ALL=C /usr/bin/tr -d '\n'
     return
   fi
-  _openspot_more=
-  while IFS= read -r _openspot_line; do
-    [ -z "$_openspot_more" ] || printf '\\n'
-    _openspot_more=1
-    while :; do
-      case $_openspot_line in
-        *\\*)
-          IFS=\\ read -r _openspot_head _openspot_line <<EOF_OPENSPOT
-$_openspot_line.
-EOF_OPENSPOT
-          printf '%s\\\\' "$_openspot_head"
-          _openspot_line=${_openspot_line%.}
-          ;;
-        *)
-          printf %s "$_openspot_line"
-          break
-          ;;
-      esac
-    done
-  done <<EOF_OPENSPOT
-${1-}
-EOF_OPENSPOT
+  _openspot_left=${1-}
+  _openspot_done=
+  while :; do
+    case $_openspot_left in
+      *\\*) _openspot_done=$_openspot_done${_openspot_left%%\\*}\\\\ _openspot_left=${_openspot_left#*\\} ;;
+      *) _openspot_left=$_openspot_done$_openspot_left; break ;;
+    esac
+  done
+  _openspot_done=
+  while :; do
+    case $_openspot_left in
+      *"$_openspot_nl"*) _openspot_done=$_openspot_done${_openspot_left%%"$_openspot_nl"*}\\n _openspot_left=${_openspot_left#*"$_openspot_nl"} ;;
+      *) printf %s "$_openspot_done$_openspot_left"; return ;;
+    esac
+  done
 }
 
 # Prints the real text of each value of a key from stdin, one per line: `\n` as a new line and `\\` as a backslash. It prints
@@ -68,7 +65,12 @@ value() (
   fi
   _openspot_key=${1-}
   _openspot_seen=
-  while IFS= read -r _openspot_line; do
+  _openspot_left=$_openspot_stdin
+  while [ -n "$_openspot_left" ]; do
+    case $_openspot_left in
+      *"$_openspot_nl"*) _openspot_line=${_openspot_left%%"$_openspot_nl"*} _openspot_left=${_openspot_left#*"$_openspot_nl"} ;;
+      *) _openspot_line=$_openspot_left _openspot_left= ;;
+    esac
     case $_openspot_line in
       "$_openspot_key="*)
         [ -z "$_openspot_seen" ] || printf '\n'
@@ -92,9 +94,7 @@ value() (
         done
         ;;
     esac
-  done <<EOF_OPENSPOT
-$_openspot_stdin
-EOF_OPENSPOT
+  done
 )
 
 # Prints the real text of each value of a key from a text, such as the frame that an `openspot` call prints, as `value`
@@ -104,8 +104,10 @@ openspot_value() (
   value "${1-}"
 )
 
-_openspot_nl='
-'
+# Prints the stdin of the call as it came.
+openspot_input() {
+  printf %s "$_openspot_stdin"
+}
 
 # Sets `_openspot_text` to the real text of a value: `\n` as a new line and `\\` as a backslash. It starts `sed` and `tr`
 # only above 1 KB.
@@ -172,40 +174,30 @@ _openspot_next() {
   return 1
 }
 
-# Runs the function in `_openspot_main` with these arguments, and with `_openspot_stdin` as its stdin.
-_openspot_run() {
-  if [ -z "$_openspot_stdin" ]; then
-    "$_openspot_main" "$@" </dev/null
-    return
-  fi
-  _openspot_feed=${_openspot_stdin%"$_openspot_nl"}
-  "$_openspot_main" "$@" <<EOF_OPENSPOT
-$_openspot_feed
-EOF_OPENSPOT
-}
-
 # Runs a function with the three parts of each call: its arguments, its variables and its stdin (protocol: Modes). A script that runs
 # once runs it once, with the arguments after its name, and returns its code. A staying script runs it for each call block
-# on stdin, one at a time, and prints `call=<n>` before its output and `end=<n>` after it.
+# on stdin, one at a time, and prints `call=<n>` before its output and `end=<n>` after it. The function gets an empty
+# stdin: the stdin of the call stays in memory, for `value` and `openspot_input`, so it touches no file and no pipe.
 openspot_serve() {
   _openspot_main=$1
   shift
   if [ -z "$_openspot_stays" ]; then
-    _openspot_run "$@"
+    "$_openspot_main" "$@" </dev/null
     return
   fi
   while _openspot_next; do
     set --
-    if [ "$_openspot_count" -gt 0 ]; then
-      while IFS= read -r _openspot_line; do
-        _openspot_decode "$_openspot_line"
-        set -- "$@" "$_openspot_text"
-      done <<EOF_OPENSPOT
-$_openspot_args
-EOF_OPENSPOT
-    fi
+    _openspot_left=$_openspot_args
+    while [ "$_openspot_count" -gt 0 ]; do
+      _openspot_decode "${_openspot_left%%"$_openspot_nl"*}"
+      set -- "$@" "$_openspot_text"
+      case $_openspot_left in
+        *"$_openspot_nl"*) _openspot_left=${_openspot_left#*"$_openspot_nl"} ;;
+        *) break ;;
+      esac
+    done
     printf 'call=%s\n---\n' "$_openspot_call"
-    _openspot_run "$@"
+    "$_openspot_main" "$@" </dev/null
     printf '\n---\nend=%s\n---\n' "$_openspot_call"
   done
 }

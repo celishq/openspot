@@ -1,3 +1,4 @@
+import os
 import XCTest
 @testable import OpenspotCore
 
@@ -17,6 +18,17 @@ final class ShellHelperTests: XCTestCase {
         let url = folder.appendingPathComponent(UUID().uuidString)
         try "#!\(shell)\n\(header). \"$OPENSPOT_SH\"\n\(body)\n".writeScript(to: url)
         return url
+    }
+
+    private func output(of url: URL, shell: String, input: String, base: [String: String]? = nil) async throws -> String {
+        let text = OSAllocatedUnfairLock<String?>(initialState: nil)
+        let run = Task {
+            let printed = (try? await ScriptProcess.output(url: URL(fileURLWithPath: shell), arguments: [url.path], input: input, base: base)) ?? ""
+            text.withLock { $0 = printed }
+        }
+        defer { run.cancel() }
+        try await wait("the end of \(shell)") { text.withLock { $0 } != nil }
+        return text.withLock { $0 } ?? ""
     }
 
     private static let hard = [
@@ -47,6 +59,107 @@ final class ShellHelperTests: XCTestCase {
 
                 XCTAssertEqual(output, line, "\(shell) \(text.debugDescription)")
             }
+        }
+    }
+
+    func testEscValueAndServeWorkWhereNoTempFileCanBeWritten() async throws {
+        let fence = "(version 1)(allow default)(deny file-write* (subpath \"/private/var/tmp\") (subpath \"/private/tmp\") (subpath \"/private/var/folders\"))"
+        let once = try script("printf '[%s][%s][%s]' \"$(esc 'a\\b\nc')\" \"$(value a)\" \"$(value b)\"")
+        let served = try script("main() { printf '%s|%s|' \"$1\" \"$(value secret)\"; openspot_input; /bin/cat; kept=yes; return 3; }\nopenspot_serve main \"$@\"\nprintf '|%s|%s' \"$?\" \"$kept\"")
+        let stays = try script("count=0\nmain() { count=$((count + 1)); printf '%s|%s|%s|%s|' \"$count\" \"$(esc \"$1\")\" \"$#\" \"$(value secret)\"; openspot_input; /bin/cat; }\nopenspot_serve main", header: "# mode=stay\n")
+        let tool = URL(fileURLWithPath: "/usr/bin/sandbox-exec")
+        let calls = "call=1\narg=a\\\\b\\nc\narg=\ninput=secret=hunter2\\nb=1\n\ncall=2\n\ncall=3\ninput=secret=two\n\n"
+
+        for shell in ["/bin/sh", "/bin/dash"] {
+            let read = try await ScriptProcess.output(url: tool, arguments: ["-p", fence, shell, once.path], input: "a=one\\ntwo\nb=1\nc=2\nb=3\n", limit: 60)
+            let ran = try await ScriptProcess.output(url: tool, arguments: ["-p", fence, shell, served.path, "open"], input: "secret=hunter2\nb=1\n", limit: 60)
+            let stayed = try await ScriptProcess.output(url: tool, arguments: ["-p", fence, shell, stays.path], input: calls, limit: 60)
+
+            XCTAssertEqual(read, "[a\\\\b\\nc][one\ntwo][1\n3]", shell)
+            XCTAssertEqual(ran, "open|hunter2|secret=hunter2\nb=1\n|3|yes", shell)
+            XCTAssertTrue(stayed.contains("1|a\\\\b\\nc|2|hunter2|secret=hunter2\nb=1\n"), stayed)
+            XCTAssertTrue(stayed.contains("2||0||"), stayed)
+            XCTAssertTrue(stayed.contains("3||0|two|secret=two\n"), stayed)
+        }
+    }
+
+    func testServeWritesNothingInTheTempFolderAlsoWhenACallIsStopped() async throws {
+        let temp = folder.appendingPathComponent("temp")
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        let once = try script("main() { printf '%s' \"$(value a)\"; }\nopenspot_serve main")
+        let stays = try script("main() { printf '%s' \"$(value a)\"; }\nopenspot_serve main", header: "# mode=stay\n")
+        let stopped = try script("main() { kill -TERM $$; }\nopenspot_serve main", header: "# mode=stay\n")
+        var base = ProcessInfo.processInfo.environment
+        base["TMPDIR"] = temp.path
+
+        for shell in ["/bin/sh", "/bin/dash"] {
+            let ran = try await output(of: once, shell: shell, input: "a=1\n", base: base)
+            let stayed = try await output(of: stays, shell: shell, input: "call=1\ninput=a=1\n\ncall=2\ninput=a=2\n\n", base: base)
+            _ = try await output(of: stopped, shell: shell, input: "call=1\ninput=\(Self.large)\n\n", base: base)
+
+            XCTAssertEqual(ran, "1", shell)
+            XCTAssertTrue(stayed.contains("1\n") && stayed.contains("2\n"), stayed)
+            XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: temp.path), [], shell)
+        }
+    }
+
+    private static let large = "a=" + String(repeating: "x", count: 200_000) + "\\n"
+
+    func testACallWithLargeStdinEndsWhateverItsFunctionReads() async throws {
+        let url = try script("""
+        main() {
+          case $1 in
+            half) openspot_input | /usr/bin/head -c 100000 | /usr/bin/wc -c ;;
+            all) openspot_input | /usr/bin/wc -c ;;
+            raw) printf 'raw=%s|\\n' "$(/bin/cat)" ;;
+          esac
+        }
+        openspot_serve main
+        """, header: "# mode=stay\n")
+        var calls = ""
+        for id in 1...20 {
+            let word = ["none", "half", "all", "raw"][id % 4]
+            calls += "call=\(id)\narg=\(word)\n" + (id % 5 == 0 ? "" : "input=\(Self.large)\n") + "\n"
+        }
+
+        for shell in ["/bin/sh", "/bin/dash"] {
+            let output = try await output(of: url, shell: shell, input: calls)
+
+            XCTAssertEqual(output.components(separatedBy: "end=").count - 1, 20, shell)
+            XCTAssertEqual(output.components(separatedBy: " 100000\n").count - 1, 4, shell)
+            XCTAssertEqual(output.components(separatedBy: " 200003\n").count - 1, 4, shell)
+            XCTAssertEqual(output.components(separatedBy: "raw=|\n").count - 1, 5, shell)
+        }
+    }
+
+    func testServeStartsNoProcessOfItsOwnAndLeavesNoneWhenTheFunctionExits() async throws {
+        let stays = try script("main() { /usr/bin/pgrep -P $$ > /dev/null; printf 'none=%s\\n' \"$?\"; }\nopenspot_serve main", header: "# mode=stay\n")
+        let once = try script("trap '/usr/bin/pgrep -P $$ > /dev/null; printf none=%s \"$?\"' EXIT\nmain() { exit 0; }\nopenspot_serve main")
+
+        for shell in ["/bin/sh", "/bin/dash"] {
+            let stayed = try await output(of: stays, shell: shell, input: "call=1\ninput=\(Self.large)\n\n")
+            let ran = try await output(of: once, shell: shell, input: "a=" + String(repeating: "x", count: 200_000) + "\n")
+
+            XCTAssertTrue(stayed.contains("none=1\n"), "\(shell) \(stayed)")
+            XCTAssertEqual(ran, "none=1", shell)
+        }
+    }
+
+    func testAChildOfOneCallGetsNothingOfTheNextAndTheNextNothingOfTheLast() async throws {
+        let url = try script("""
+        main() {
+          case $1 in
+            child) /bin/sleep 600 > /dev/null 2>&1 & child=$! ;;
+            *) printf 'got=%s|%s|\\n' "$(value b)" "$(/bin/cat)"; kill "$child" ;;
+          esac
+        }
+        openspot_serve main
+        """, header: "# mode=stay\n")
+
+        for shell in ["/bin/sh", "/bin/dash"] {
+            let output = try await output(of: url, shell: shell, input: "call=1\narg=child\ninput=secret=old\n\ncall=2\narg=next\ninput=b=new\n\n")
+
+            XCTAssertTrue(output.contains("got=new||\n"), "\(shell) \(output)")
         }
     }
 
@@ -185,7 +298,7 @@ final class ShellHelperTests: XCTestCase {
 
     private static let shownCall = """
     main() {
-      printf 'text=t\\ntitle=%s\\n' "$(esc "$#|$1|$2|${OPENSPOT_REASON-}|$(value note)|$(cat)")"
+      printf 'text=t\\ntitle=%s\\n' "$(esc "$#|$1|$2|${OPENSPOT_REASON-}|$(value note)|$(openspot_input)$(cat)")"
     }
     openspot_serve main "$@"
     """

@@ -54,16 +54,6 @@ public struct AccountPhrase: Sendable {
         (isNsec ? trimmed.count >= Self.nsecLength : typed.count == Self.wordCount) && problem == nil
     }
 
-    public var facts: String {
-        var fields = [TextBlock.Field(key: "counter", value: counter)] + typed.map { TextBlock.Field(key: "word", value: $0.text) }
-        let unknown = typed.indices.filter { !typed[$0].isKnown }.map { String($0 + 1) }
-        if !unknown.isEmpty { fields.append(.init(key: "unknown", value: unknown.joined(separator: " "))) }
-        if let completion { fields.append(.init(key: "completion", value: completion)) }
-        if let problem { fields.append(.init(key: "problem", value: problem)) }
-        if let account { fields.append(.init(key: "account", value: account)) }
-        return TextBlock(fields: fields).text
-    }
-
     public func key() throws -> AccountKey {
         isNsec ? try AccountKey(nsec: trimmed) : try AccountKey(words: typed.map(\.text))
     }

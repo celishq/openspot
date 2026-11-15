@@ -1,2 +1,0 @@
-spots/apps.spot/apps.sh
-spots/cpu.spot/cpu.sh

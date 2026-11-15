@@ -18,7 +18,7 @@
   into the app.
 - `spots/` holds the source of the core spots, each a `<name>.spot` folder. The build copies it into the app, and they run
   from there. `spots/openspot.spot/` holds the spots of the app itself, such as Settings, which are always on and use only the `openspot`
-  API. No code outside that folder names one of them. [spots/AGENTS.md](spots/AGENTS.md) holds the rules of a spot and of an
+  API. No code outside that folder names one of them. They run only from the app, so a change to one needs a build. [spots/AGENTS.md](spots/AGENTS.md) holds the rules of a spot and of an
   example.
 - `examples/` holds spots that show a feature, such as a view. The app does not ship them, and a test checks them.
   `make examples` copies them into the spots of a Debug build.
@@ -91,6 +91,11 @@ Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these 
   keeps the glass whole until its last third (`SpotTheme.glassStrength`), so faded glass never shows a sharp page.
   `make verify` runs `scripts/check-glass.sh`, which fails on `NSVisualEffectView` or a private Core Animation name in
   `Shell/`, outside `Shell/Surface/SpotBackdropBlur.swift`.
+- A surface has one shape, a `SurfaceEdge` of Core drawn by `SpotRoundShape`, and its glass, its clip, its ring and its
+  other marks take that value. A part inside it takes `inner()` of the edge it reads from `spotSurfaceEdge`. A titled
+  window follows the corner that macOS gives it: its glass is a `ConcentricRectangle`. A borderless window gives its
+  content view the edge of its surface (`NSWindow.take`). `make verify` runs `scripts/check-shapes.sh`, which fails on a
+  `RoundedRectangle` in `Shell/` outside `Shell/Surface/SpotRoundShape.swift`.
 - The soft backdrop of the panel is one fixed `SpotBackdropBlur` under the glass. Its soft edge is a picture drawn once
   and laid as nine fixed pieces that only move and scale (`SpotBackdropEdge`, by `BackdropEdge` in Core), and it hides by
   opacity alone.

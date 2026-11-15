@@ -44,7 +44,7 @@ struct SpotSheetLayer: View {
         }
         .modifier(SpotSheetFrame(
             rect: isOpen ? step.fit ?? sheetRect : closedRect,
-            radius: isOpen ? SpotTokens.radius : isInstall ? SpotTokens.corner(for: .strip) : SpotTokens.corner(for: card?.placement.size ?? entry.size),
+            radius: isOpen ? SpotTokens.radius : isInstall ? SurfaceEdge(card: .strip).radius : SurfaceEdge(card: card?.placement.size ?? entry.size).radius,
             sheetRect: sheetRect,
             shift: isOpen ? .zero : shift(to: closedRect),
             isSelected: { [model, id = card?.look?.id ?? entry.id] in

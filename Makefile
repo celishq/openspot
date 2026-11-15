@@ -11,6 +11,7 @@ verify:
 	sh scripts/check-spots.sh
 	sh scripts/check-processes.sh
 	sh scripts/check-glass.sh
+	sh scripts/check-shapes.sh
 	sh scripts/check-tools.sh
 	sh scripts/spot-tests.sh
 	cd app && xcodegen generate >/dev/null
@@ -38,8 +39,9 @@ docs-images:
 	sh scripts/docs-images.sh
 
 spots:
-	mkdir -p $(HOME)/.config/openspot
-	ln -sfn $(CURDIR)/spots $(HOME)/.config/openspot/spots
+	[ ! -L $(HOME)/.config/openspot/spots ] || rm $(HOME)/.config/openspot/spots
+	mkdir -p $(HOME)/.config/openspot/spots
+	for spot in spots/*.spot; do [ "$$spot" = spots/openspot.spot ] || ln -sfn "$(CURDIR)/$$spot" $(HOME)/.config/openspot/spots/; done
 
 dev-state:
 	rm -rf .temp/openspot

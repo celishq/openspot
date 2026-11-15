@@ -14,7 +14,7 @@ struct SpotCornerButton: View {
     let action: () -> Void
 
     var body: some View {
-        let inset = SpotTokens.corner(for: size) * SpotTokens.rimPoint - SpotTokens.keycap / 2
+        let inset = SurfaceEdge(card: size).rim - SpotTokens.keycap / 2
         Button(action: action) {
             Image(systemName: symbol)
                 .font(SpotType.cornerMark)
