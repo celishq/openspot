@@ -45,16 +45,11 @@ enum SpotPanelPicture {
                     }
                 SpotsView(model: model)
                     .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
-                ForEach(Array(shapes.enumerated()), id: \.offset) { _, shape in
-                    SpotSurfaceShape(rect: CGRect(origin: .zero, size: shape.0.size), radius: shape.1)
-                        .strokeBorder(SpotTheme.pictureRim, lineWidth: 0.5)
-                        .frame(width: shape.0.width, height: shape.0.height)
-                        .offset(x: shape.0.minX, y: shape.0.minY)
-                }
             }
             .frame(width: size.width, height: size.height, alignment: .topLeading)
             .clipped()
             .environment(\.spotIsShown, true)
+            .environment(\.spotDrawsGlass, false)
             .preferredColorScheme(.dark))
             let window = NSWindow(contentRect: NSRect(x: -9000, y: -9000, width: size.width, height: size.height), styleMask: .borderless, backing: .buffered, defer: false)
             window.contentView = view

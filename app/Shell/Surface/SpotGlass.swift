@@ -6,12 +6,22 @@ struct SpotGlass: ViewModifier {
     var isSolid = false
     var isBare = false
     @Environment(\.spotIsShown) private var isShown
+    @Environment(\.spotFade) private var fade
+    @Environment(\.spotScrollFade) private var edge
 
     func body(content: Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
+        let shape = SpotRoundShape(radius: radius)
+        let fade = fade
+        let edge = edge
+        let space = SpotsView.panelSpace
         content
             .background { shape.fill(SpotTheme.solid).opacity(isSolid ? 1 : 0) }
-            .glassEffect(isSolid || isBare ? .identity : .regular, in: shape)
+            .opacity(fade)
+            .visualEffect { content, place in content.opacity(edge?.strength(of: place.frame(in: .named(space))) ?? 1) }
+            .spotGlass(!isSolid && !isBare, in: shape)
+            .visualEffect { content, place in
+                content.opacity(SpotTheme.glassStrength(at: fade * (edge?.strength(of: place.frame(in: .named(space))) ?? 1)))
+            }
             .opacity(isShown ? 1 : MotionTokens.hiddenOpacity)
             .allowsHitTesting(isShown)
             .scaleEffect(isShown ? 1 : MotionTokens.hiddenScale)

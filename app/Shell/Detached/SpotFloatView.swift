@@ -134,7 +134,7 @@ private struct FloatSurface: ViewModifier {
         if fills {
             content.background {
                 Color.clear
-                    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: SpotTokens.radius, style: .continuous))
+                    .spotGlass(in: RoundedRectangle(cornerRadius: SpotTokens.radius, style: .continuous))
                     .ignoresSafeArea()
             }
         } else {

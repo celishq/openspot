@@ -72,6 +72,11 @@ struct SpotTheme {
     @MainActor private static var chosen: (appearance: NSAppearance, theme: SpotTheme)?
 
     static let pictureRim = Color.white.opacity(0.25)
+    static let glassFadeReach = 3.0
+
+    static func glassStrength(at fade: Double) -> Double {
+        min(fade * glassFadeReach, 1)
+    }
     static let accent = Color.accentColor
     static let secondaryLight = 0.7
     static let dragFill = 0.4

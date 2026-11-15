@@ -24,7 +24,7 @@ struct SpotPlaygroundStage: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .defaultScrollAnchor(.center)
-            .glassEffect(.regular, in: Rectangle())
+            .spotGlass(in: Rectangle())
         }
     }
 }

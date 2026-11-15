@@ -18,7 +18,7 @@ struct SpotSubmenuView: View {
         }
         .padding(SpotTokens.menuPadding)
         .frame(width: ActionMenuFrame.width, alignment: .top)
-        .glassEffect(.regular, in: outline)
+        .spotGlass(in: outline)
         .environment(\.spotIsShown, true)
     }
 

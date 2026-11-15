@@ -37,7 +37,6 @@ public final class SpotsModel {
         didSet {
             guard query != oldValue else { return }
             selected = 0
-            showPanels()
             askAnswers()
             updateVisible()
         }
@@ -57,23 +56,16 @@ public final class SpotsModel {
     @ObservationIgnored var mainSearch = MainSearch()
     public internal(set) var placements: [SpotPlacement] = [] {
         didSet {
-            let height = SpotTokens.backdropHeight(gridHeight: SpotGrid.height(of: placements))
+            let height = SpotTokens.contentHeight(gridHeight: SpotGrid.height(of: placements))
             if height != gridHeight { gridHeight = height }
             let bands = SpotGroupBands(placements)
             if bands != groupBands { groupBands = bands }
         }
     }
     public internal(set) var groupBands: SpotGroupBands?
-    public internal(set) var panels = GridPanels() {
-        didSet { showPanels() }
-    }
-    public private(set) var shownPanels = GridPanels()
+    public internal(set) var panels = GridPanels()
     @ObservationIgnored var panelLeaving: GridPanel?
-    private func showPanels() {
-        let shown = query.isEmpty ? panels : GridPanels()
-        if shownPanels != shown { shownPanels = shown }
-    }
-    public private(set) var gridHeight = SpotTokens.backdropHeight(gridHeight: 0)
+    public private(set) var gridHeight = SpotTokens.contentHeight(gridHeight: 0)
     public var selected = 0
     public private(set) var openList: String?
     public internal(set) var flow = Flow() {
@@ -126,12 +118,12 @@ public final class SpotsModel {
             if isOpen != isMenuOpen { isMenuOpen = isOpen }
             guard menuSession == nil else { return }
             if menuFrame != nil { menuFrame = nil }
-            if menuBackdropHeight != 0 { change(.sheet(isOpen: false), { menuBackdropHeight = 0 }) }
+            if menuContentHeight != 0 { change(.sheet(isOpen: false), { menuContentHeight = 0 }) }
         }
     }
     public private(set) var isMenuOpen = false
     public internal(set) var menuFrame: ActionMenuFrame?
-    public internal(set) var menuBackdropHeight: CGFloat = 0
+    public internal(set) var menuContentHeight: CGFloat = 0
     public internal(set) var gridHint = HintWords("")
     public internal(set) var sheetHint = HintWords("")
     @ObservationIgnored var hintIsForEdit = false

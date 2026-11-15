@@ -318,7 +318,7 @@ extension SpotsModel {
     public func placeMenu(_ frame: ActionMenuFrame) {
         guard menu != nil, frame != menuFrame else { return }
         menuFrame = frame
-        if menuSession?.phase != .opening { growBackdrop() }
+        if menuSession?.phase != .opening { fitMenuContent() }
         placeSubmenu()
     }
 
@@ -329,9 +329,9 @@ extension SpotsModel {
         return CGRect(x: item.midX - width / 2, y: item.midY - height / 2, width: width, height: height)
     }
 
-    private func growBackdrop() {
+    private func fitMenuContent() {
         let height = menuFrame.map { $0.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock } ?? 0
-        if height != menuBackdropHeight { menuBackdropHeight = height }
+        if height != menuContentHeight { menuContentHeight = height }
     }
 
     public func searchMenu(_ text: String) {
@@ -352,7 +352,7 @@ extension SpotsModel {
             guard let self, menuSession?.phase == .opening else { return }
             change(.sheet(isOpen: true), {
                 self.menuSession?.phase = .open
-                self.growBackdrop()
+                self.fitMenuContent()
             }, completion: { [weak self] in
                 if self?.menuSession?.phase == .open { self?.menuSession?.phase = .settled }
             })

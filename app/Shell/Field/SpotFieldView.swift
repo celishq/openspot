@@ -20,8 +20,10 @@ struct SpotFieldView: View {
                 .morph(showsField ? 1 : 0, opacity: { SheetMorph.sheetLook(at: $0) })
                 .allowsHitTesting(showsField && !model.isEditing)
             promptLayer
+                .modifier(SpotFaded())
                 .opacity(model.isEditing ? 0 : 1)
             editHeader
+                .modifier(SpotFaded())
                 .opacity(model.isEditing ? 1 : 0)
                 .allowsHitTesting(model.isEditing)
         }
@@ -34,8 +36,7 @@ struct SpotFieldView: View {
         let top = isInSheet ? Self.sheetTop : SpotTokens.halo
         let glyphLeft = isInSheet ? Self.sheetGlyphLeft : SpotTokens.halo + SpotTokens.padding
         return ZStack(alignment: .topLeading) {
-            SpotSurface(rect: place, radius: fieldRadius, glass: isInSheet || isInstall ? 0 : 1)
-                .mask { outsideSheet }
+            SpotSurface(rect: place, radius: fieldRadius, glass: isInstall ? 0 : 1, cut: sheetShape)
             SpotSurfaceShape(rect: place, radius: fieldRadius)
                 .fill(SpotTheme.ink.opacity(SpotTheme.fill * (isInSheet ? 1 : 0)))
                 .mask { insideSheet }
@@ -49,6 +50,7 @@ struct SpotFieldView: View {
                     .offset(x: fieldTextLeft, y: top)
             }
             .morph(progress, opacity: crossing)
+            .modifier(SpotFaded())
             .opacity(model.showsFieldDrop || model.isEditing ? 0 : 1)
             .modifier(SpotShownFade(isShown: model.isShown))
             if let drop = model.fieldDrop {
@@ -215,15 +217,6 @@ struct SpotFieldView: View {
 
     private var sheetShape: SpotSurfaceShape? {
         sheet.map { isOpen ? SpotSurfaceShape(rect: $0.morph.sheet, radius: SpotTokens.radius) : SpotSurfaceShape(rect: $0.morph.card, radius: $0.cardRadius) }
-    }
-
-    @ViewBuilder
-    private var outsideSheet: some View {
-        if let sheetShape {
-            SpotOutsideShape(inner: sheetShape).fill(style: FillStyle(eoFill: true))
-        } else {
-            Color.black
-        }
     }
 
     @ViewBuilder

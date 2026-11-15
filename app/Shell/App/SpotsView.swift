@@ -45,10 +45,10 @@ struct SpotsView: View {
             })
             .modifier(GridEdgeScroll(model: model, scroll: $scroll))
             .modifier(SpotScrollEdgeTracker(edges: Binding(get: { fade.edges }, set: { fade.edges = $0 })))
-            .modifier(GridFadeMask(fade: fade, height: cardHeight))
-            .morph(coversGrid ? 0 : 1, opacity: { SheetMorph.sheetLook(at: $0) })
+            .modifier(GridEdgeFade(fade: fade, height: cardHeight))
+            .fade(coversGrid ? 0 : 1) { SheetMorph.sheetLook(at: $0) }
             .modifier(PanelSpan(panels: model.panels))
-            SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: max(gridHeight, model.menuBackdropHeight), sheetHeight: sheetID == nil ? gridHeight : sheetHeight, sheetRect: sheetRect, menuHeight: model.menuBackdropHeight)
+            SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: max(gridHeight, model.menuContentHeight), sheetHeight: sheetID == nil ? gridHeight : sheetHeight, sheetRect: sheetRect, menuHeight: model.menuContentHeight)
                 .modifier(SpotShownFade(isShown: model.isShown))
             if sheetOpen, sheetID != nil {
                 SpotFlowEdges(model: model, rect: sheetRect)
@@ -209,12 +209,12 @@ private struct GridEdgeScroll: ViewModifier {
     }
 }
 
-private struct GridFadeMask: ViewModifier {
+private struct GridEdgeFade: ViewModifier {
     let fade: SpotScrollFade
     let height: CGFloat
 
     func body(content: Content) -> some View {
-        content.mask(fade.edges.gradient(height: height))
+        content.environment(\.spotScrollFade, SpotEdgeFade(edges: fade.edges, height: height))
     }
 }
 
