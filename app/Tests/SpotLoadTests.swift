@@ -71,7 +71,7 @@ final class SpotLoadTests: PanelCase {
         try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
         try "#!/bin/sh\n# title=Cups\n:\n".writeScript(to: package.appendingPathComponent("cups.sh"))
         model.review([package])
-        XCTAssertTrue(model.isReviewing)
+        try await wait("the review") { self.model.isReviewing }
         try SpotPackage(contentsOf: package).add(to: spots)
 
         model.endReview()

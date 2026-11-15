@@ -12,8 +12,8 @@ extension SpotsModel {
         return !isEditing && openSheet?.partsKind?.takesKeys != false
     }
 
-    public var openPanel: SheetParts? {
-        shownParts(of: openList)
+    public var openParts: SheetParts? {
+        shownParts(of: openSheetID)
     }
 
     public func shownParts(of id: String?) -> SheetParts? {
@@ -22,16 +22,16 @@ extension SpotsModel {
     }
 
     public var openSheet: SpotRun? {
-        openList.flatMap { sheets[$0] }
+        openSheetID.flatMap { sheets[$0] }
     }
 
     public var openEntry: Entry? {
-        sheetEntry(openList)
+        sheetEntry(openSheetID)
     }
 
     public func sheetEntry(_ id: String?) -> Entry? {
         guard let id else { return nil }
-        if let entry = entries.first(where: { $0.id == id }) { return entry }
+        if let entry = entry(id) { return entry }
         guard OwnedSheet.owner(of: id) != nil, let run = sheets[id] else { return nil }
         return Entry(spot: run.spot, run: run)
     }
@@ -44,8 +44,8 @@ extension SpotsModel {
         if !searchText.isEmpty {
             searchText = ""
         } else if popPage() {
-        } else if openList != nil {
-            closeList(moving: isShown)
+        } else if openSheetID != nil {
+            closeSheet(moving: isShown)
         } else {
             return false
         }
@@ -53,7 +53,7 @@ extension SpotsModel {
     }
 
     public func place(ofSheet id: String) -> SheetPlace {
-        entries.first { $0.id == id }?.spot.offersWindow == true ? .window : .panel
+        entry(id)?.spot.offersWindow == true ? .window : .panel
     }
 
     func presentSheet(of id: String, moving: Bool, showingPanel: () -> Void = {}) {
@@ -71,23 +71,23 @@ extension SpotsModel {
         if let spot = sheets[id]?.spot, spot.opensToSettings {
             return pushFirst(SpotSettings.sheetID(of: id), moving: moving, title: title)
         }
-        if let owner = SpotSettings.owner(of: id), let spot = sheets[owner]?.spot ?? entries.first(where: { $0.id == owner })?.spot {
+        if let owner = SpotSettings.owner(of: id), let spot = sheets[owner]?.spot ?? entry(owner)?.spot {
             runs.settingsSheet(of: spot)
         }
         if place(ofSheet: id) == .window { return openWindow(id) }
-        if openList == nil { endFlow() }
+        if openSheetID == nil { endFlow() }
         flow.push(FlowSheet(spot: id, title: title))
         sheets[id]?.show(page: nil)
-        waitPush(moving: moving && openList != nil && openList != id)
+        waitPush(moving: moving && openSheetID != nil && openSheetID != id)
         present(id, moving: moving)
     }
 
     func present(_ id: String, moving: Bool) {
-        if let shown = openList, shown != id { stopRecording() }
+        if let shown = openSheetID, shown != id { stopRecording() }
         sheets[id]?.open(waits: moving) { [weak self] in self?.showSheet(id, moving: moving) }
     }
 
-    public func closeList(moving: Bool) {
+    public func closeSheet(moving: Bool) {
         formAsk = nil
         stopRecording()
         showSheet(nil, moving: moving)
@@ -107,8 +107,8 @@ extension SpotsModel {
     }
 
     func showSheet(_ list: String?, moving: Bool) {
-        guard list != openList else { return dropWaitingPush() }
-        if let list, openList != nil, transition.isOpen {
+        guard list != openSheetID else { return dropWaitingPush() }
+        if let list, openSheetID != nil, transition.isOpen {
             let swapped = takeWaitingPush { [weak self] in
                 self?.transition.show(list, moves: true)
                 self?.transition.settle(list)
@@ -247,7 +247,7 @@ extension SpotsModel {
         guard let pick = closingPick else { return }
         closingPick = nil
         remember(pick.item, of: pick.entry)
-        closeList(moving: false)
+        closeSheet(moving: false)
     }
 
     private func remember(_ item: SpotItem, of entry: Entry) {

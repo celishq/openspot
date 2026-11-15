@@ -105,8 +105,12 @@ public final class SpotRun {
         }
     }
 
+    @ObservationIgnored var finding: Task<Void, Never>?
+
     public func landRows() {
-        if rows.isFinding { list.landFinding() }
+        guard rows.isFinding else { return }
+        finding?.cancel()
+        list.landFinding()
     }
 
     public var query: String {

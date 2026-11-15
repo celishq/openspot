@@ -57,45 +57,60 @@ extension SpotsModel {
     }
 
     func remove(_ entry: Entry) {
-        closeList(moving: isShown)
+        closeSheet(moving: isShown)
         let command = entry.spot.fault.map { Spot(id: entry.id, name: $0.name, url: $0.file) } ?? entry.spot
         let count = entry.kind == .widget ? entries.filter { $0.spot.url == entry.spot.url }.count : 1
         let words = count > 1 ? "\(count) widgets" : command.name
-        var moves: [(from: URL, to: URL)] = []
-        do {
-            try folder.remove(command) { url in moves.append((url, try files.trash(url))) }
-            removal = Removal(id: entry.id, words: words, moves: moves)
-            files.log.remove(entry.id)
-            Task {
-                await reload()
+        let id = entry.id
+        let folder = folder
+        let trash = files.trash
+        let log = files.log
+        Task {
+            let (moves, failure) = await Self.discard(command, in: folder, trash: trash, log: log)
+            removal = failure == nil || !moves.isEmpty ? Removal(id: id, words: words, moves: moves) : nil
+            await reload()
+            if let failure {
+                host.notify("\(command.name) was not removed. \(failure)")
+            } else {
                 host.confirm("Moved \(words) to the Trash. Press `⌘Z` to put \(count > 1 ? "them" : "it") back.")
             }
+        }
+    }
+
+    @concurrent
+    private nonisolated static func discard(_ spot: Spot, in folder: SpotsFolder, trash: @Sendable (URL) throws -> URL, log: CallLog) async -> (moves: [(from: URL, to: URL)], failure: String?) {
+        var moves: [(from: URL, to: URL)] = []
+        do {
+            try folder.remove(spot) { url in moves.append((url, try trash(url))) }
+            log.remove(spot.id)
+            return (moves, nil)
         } catch {
-            removal = moves.isEmpty ? nil : Removal(id: entry.id, words: words, moves: moves)
-            Task {
-                await reload()
-                host.notify("\(command.name) was not removed. \(Self.reason(error))")
-            }
+            return (moves, reason(error))
         }
     }
 
     func undoRemoval() -> Bool {
         guard let removal else { return false }
         self.removal = nil
-        do {
-            for move in removal.moves.reversed() {
-                try FileManager.default.moveItem(at: move.to, to: move.from)
-            }
-        } catch {
-            host.notify("Openspot cannot put \(removal.words) back, because a file left the Trash. Find it in the Trash, and move it to the spots folder.")
-            return true
-        }
         let chosen = selectedEntry?.id
         Task {
+            guard await Self.putBack(removal.moves) else {
+                return host.notify("Openspot cannot put \(removal.words) back, because a file left the Trash. Find it in the Trash, and move it to the spots folder.")
+            }
             await reload()
             if selectedEntry?.id == chosen, let place = visible.firstIndex(where: { $0.id == removal.id }) { selected = place }
             host.confirm("Put \(removal.words) back.")
         }
         return true
+    }
+
+    @concurrent
+    private nonisolated static func putBack(_ moves: [(from: URL, to: URL)]) async -> Bool {
+        do {
+            for move in moves.reversed() { try FileManager.default.moveItem(at: move.to, to: move.from) }
+            return true
+        } catch {
+            return false
+        }
     }
 }

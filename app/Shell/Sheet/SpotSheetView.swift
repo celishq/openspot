@@ -172,7 +172,7 @@ struct SpotSheetView: View {
     @ViewBuilder
     private var closeButton: some View {
         let button = SpotRoundButton(symbol: "xmark", label: "Close") {
-            model.closeList(moving: true)
+            model.closeSheet(moving: true)
         }
         if let closeShift {
             button

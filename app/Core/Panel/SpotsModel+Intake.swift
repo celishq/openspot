@@ -3,8 +3,36 @@ import Observation
 
 extension SpotsModel {
     public func acceptsDrop(_ paths: [String], on id: String, in place: SheetPlace = .panel) -> Bool {
-        let isOpenToDrops = place == .panel ? openList == nil : runs.floating.contains(id)
-        return isOpenToDrops && !SpotPackage.isFile(paths) && sheets[id]?.spot.accepts(paths) == true
+        let isOpenToDrops = place == .panel ? openSheetID == nil : runs.floating.contains(id)
+        guard isOpenToDrops, !SpotPackage.isFile(paths), let spot = sheets[id]?.spot else { return false }
+        guard let files = dragged(paths) else { return spot.takesDrops }
+        return spot.accepts(files)
+    }
+
+    private func dragged(_ paths: [String]) -> FileKinds? {
+        if runs.dragged.paths == paths { return runs.dragged }
+        if readPaths != paths { read(paths) }
+        return nil
+    }
+
+    private func read(_ paths: [String]) {
+        readPaths = paths
+        dragRead?.cancel()
+        if runs.dragged != FileKinds() { runs.dragged = FileKinds() }
+        if draggedSpot != nil { draggedSpot = nil }
+        guard !paths.isEmpty else { return }
+        let kinds = files.kinds
+        let folder = folder.url
+        dragRead = Task { [weak self] in
+            let (kinds, drop) = await Self.read(paths, kinds, folder)
+            guard !Task.isCancelled, let self, readPaths == paths else { return }
+            if let drop { draggedSpot = drop } else { runs.dragged = kinds }
+        }
+    }
+
+    @concurrent
+    private nonisolated static func read(_ paths: [String], _ kinds: @Sendable ([String]) -> FileKinds, _ folder: URL) async -> (FileKinds, SpotDrop?) {
+        SpotPackage.isFile(paths) ? (FileKinds(), SpotDrop(paths: paths, folder: folder)) : (kinds(paths), nil)
     }
 
     public func card(at point: CGPoint) -> String? {
@@ -12,16 +40,15 @@ extension SpotsModel {
     }
 
     public func takesDrag(_ id: String) -> Bool {
-        openList == nil && runs.takesDrag(id)
+        openSheetID == nil && runs.takesDrag(id)
     }
 
     public func followDrag() {
         let paths = host.draggedPaths
         guard paths != dragPaths else { return }
         dragPaths = paths
-        runs.draggedPaths = SpotPackage.isFile(paths) ? [] : paths
+        read(paths)
         isPointerOverDrop = host.isPointerOverDrop
-        draggedSpot = SpotPackage.isFile(paths) ? SpotDrop(paths: paths, folder: folder.url) : nil
         dragWatch?.cancel()
         dragWatch = Task { [weak self] in
             while self?.host.isMouseDown == true {
@@ -42,15 +69,14 @@ extension SpotsModel {
 
     private func endDrag() {
         dragPaths = []
-        draggedSpot = nil
-        runs.draggedPaths = []
+        read([])
     }
 
     public func drop(_ paths: [String], on id: String, in place: SheetPlace = .panel) -> Bool {
-        guard acceptsDrop(paths, on: id, in: place), sheets[id]?.drop(paths) == true else { return false }
+        guard acceptsDrop(paths, on: id, in: place), sheets[id]?.drop(paths, files: dragged(paths)) == true else { return false }
         guard place == .panel else { return true }
         endDrag()
-        guard entries.first(where: { $0.id == id })?.kind == .list else {
+        guard entry(id)?.kind == .list else {
             if isShown { host.dismiss() }
             return true
         }
@@ -71,8 +97,8 @@ extension SpotsModel {
     public func prepareForDrag() {
         isOpenForDrag = true
         followDrag()
-        guard openList != nil else { return }
-        closeList(moving: false)
+        guard openSheetID != nil else { return }
+        closeSheet(moving: false)
     }
 
     public func review(_ urls: [URL]) {
@@ -82,29 +108,49 @@ extension SpotsModel {
         finishPick()
         closeMenu()
         form = nil
-        closeList(moving: isShown)
+        closeSheet(moving: isShown)
         endReview()
-        do {
-            show(try ReviewSpot(file: url, folder: folder.url, lock: SpotLock.standard(environment: files.environment, home: files.home)))
-            if urls.count > 1 { host.notify("Openspot installs one spot at a time.") }
-        } catch {
-            host.notify(Self.reason(error))
+        let folder = folder.url
+        let lock = SpotLock.standard(environment: files.environment, home: files.home)
+        reviewRead?.cancel()
+        reviewRead = Task { [weak self] in
+            let review = await Self.review(url, folder, lock)
+            guard !Task.isCancelled, let self else { return }
+            switch review {
+            case .success(let review):
+                show(review)
+                if urls.count > 1 { host.notify("Openspot installs one spot at a time.") }
+            case .failure(let error):
+                host.notify(Self.reason(error))
+            }
         }
     }
 
+    @concurrent
+    private nonisolated static func review(_ file: URL, _ folder: URL, _ lock: SpotLock) async -> Result<ReviewSpot, Error> {
+        Result { try ReviewSpot(file: file, folder: folder, lock: lock) }
+    }
+
     @discardableResult
-    public func reviewCore(_ id: String) -> Bool {
-        let folder = self.folder
+    public func reviewCore(_ id: String) async -> Bool {
         do {
-            let place = SpotsFolder(url: folder.url, core: folder.core, enabled: folder.enabled.union([id]), disabled: folder.disabled)
-            let scan = try place.scan()
-            guard let command = scan.spots.first(where: { place.isCore($0) && SpotsFolder.coreID(of: $0) == id }) else { return false }
-            closeList(moving: isShown)
-            show(try ReviewSpot(spot: SpotPackage(sharing: command, from: scan), folder: folder.url, canAdd: false))
+            guard let review = try await Self.review(core: id, in: folder).get() else { return false }
+            closeSheet(moving: isShown)
+            show(review)
         } catch {
             host.notify(Self.reason(error))
         }
         return true
+    }
+
+    @concurrent
+    private nonisolated static func review(core id: String, in folder: SpotsFolder) async -> Result<ReviewSpot?, Error> {
+        Result {
+            let place = SpotsFolder(url: folder.url, core: folder.core, enabled: folder.enabled.union([id]), disabled: folder.disabled)
+            let scan = try place.scan()
+            guard let command = scan.spots.first(where: { place.isCore($0) && SpotsFolder.coreID(of: $0) == id }) else { return nil }
+            return try ReviewSpot(spot: SpotPackage(sharing: command, from: scan), folder: folder.url, canAdd: false)
+        }
     }
 
     private func show(_ review: ReviewSpot) {
@@ -141,18 +187,34 @@ extension SpotsModel {
 
     public func share(_ entry: Entry) {
         if isShown { host.dismiss() }
+        let spot = entry.spot
+        let folder = folder
         Task {
             do {
-                guard let spot = try await release(SpotPackage(sharing: entry.spot, from: folder.scan()), named: entry.spot.name) else { return }
-                let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-shared/\(UUID().uuidString)", isDirectory: true)
-                try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
-                let file = place.appendingPathComponent(SpotPackage.fileName(for: entry.spot.name))
-                try spot.zip(to: file)
+                let package = try await Self.package(sharing: spot, in: folder).get()
+                guard let released = try await release(package, named: spot.name) else { return }
+                let file = try await Self.zipped(released, named: spot.name).get()
                 host.copy(file)
-                host.confirm(spot.notice(name: entry.spot.name))
+                host.confirm(released.notice(name: spot.name))
             } catch {
-                host.notify("\(entry.spot.name) was not copied. \(Self.reason(error))")
+                host.notify("\(spot.name) was not copied. \(Self.reason(error))")
             }
+        }
+    }
+
+    @concurrent
+    private nonisolated static func package(sharing spot: Spot, in folder: SpotsFolder) async -> Result<SpotPackage, Error> {
+        Result { try SpotPackage(sharing: spot, from: folder.scan()) }
+    }
+
+    @concurrent
+    private nonisolated static func zipped(_ package: SpotPackage, named name: String) async -> Result<URL, Error> {
+        Result {
+            let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-shared/\(UUID().uuidString)", isDirectory: true)
+            try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
+            let file = place.appendingPathComponent(SpotPackage.fileName(for: name))
+            try package.zip(to: file)
+            return file
         }
     }
 }

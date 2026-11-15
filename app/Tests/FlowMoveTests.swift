@@ -26,7 +26,7 @@ final class FlowMoveTests: PanelCase {
     }
 
     private func openFlowSheetInPlace() async throws {
-        try await wait("the flow over the list") { self.model.openList == "flow" && self.titles == ["Page first"] && self.model.sheets["flow"]?.spot.actions.count == 5 }
+        try await wait("the flow over the list") { self.model.openSheetID == "flow" && self.titles == ["Page first"] && self.model.sheets["flow"]?.spot.actions.count == 5 }
     }
 
     private func pressFlow(_ id: String) throws {
@@ -69,11 +69,11 @@ final class FlowMoveTests: PanelCase {
 
         try pressFlow("top")
         try await wait("the end of the press") { self.model.sheets["flow"]?.calls.isEmpty == true && !self.model.runs.isReading }
-        XCTAssertEqual(model.openList, "flow")
+        XCTAssertEqual(model.openSheetID, "flow")
 
         try pressFlow("done")
 
-        try await wait("the list") { self.model.openList == "list" && self.titles == ["A"] }
+        try await wait("the list") { self.model.openSheetID == "list" && self.titles == ["A"] }
         XCTAssertNil(model.flow.ahead)
     }
 
@@ -85,7 +85,7 @@ final class FlowMoveTests: PanelCase {
 
         try pressFlow("hand")
 
-        try await wait("the other spot") { self.model.openList == "other" && self.titles == ["Other"] }
+        try await wait("the other spot") { self.model.openSheetID == "other" && self.titles == ["Other"] }
         try await wait("the bars behind") { self.model.flowEdges.titles(on: .behind) == ["Flow", "List"] }
     }
 
@@ -119,7 +119,7 @@ final class FlowMoveTests: PanelCase {
 
         XCTAssertTrue(model.push(FlowSheet(spot: "narrow", page: "bad")))
 
-        XCTAssertEqual(model.openList, "list")
+        XCTAssertEqual(model.openSheetID, "list")
         XCTAssertEqual(host.notes.last, "Narrow takes no page bad. Add pages=bad to its header")
     }
 }

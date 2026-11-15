@@ -129,6 +129,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
         model.isShown = true
         model.panelWillShow(holding: [])
         model.searchText = "2+2"
+        model.landSearch()
         for _ in 0..<500 where model.visible.first?.id != "calculator\n4" { try await Task.sleep(for: .milliseconds(10)) }
 
         var times: [Duration] = []
@@ -136,6 +137,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
             model.searchText = ""
             let start = ContinuousClock.now
             model.searchText = "12*(3+4)"
+            model.landSearch()
             if model.visible.first?.id == "calculator\n84" { times.append(ContinuousClock.now - start) }
             for _ in 0..<500 where model.visible.first?.id != "calculator\n84" { try await Task.sleep(for: .milliseconds(10)) }
         }

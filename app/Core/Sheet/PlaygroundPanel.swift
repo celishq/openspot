@@ -48,9 +48,9 @@ public final class PlaygroundPanel {
     public func show(_ place: PlaygroundPlace, id: String) {
         switch place {
         case .sheet:
-            if model.openList != id { _ = model.push(FlowSheet(spot: id)) }
+            if model.openSheetID != id { _ = model.push(FlowSheet(spot: id)) }
         case .card:
-            if model.openList != nil { model.closeList(moving: false) }
+            if model.openSheetID != nil { model.closeSheet(moving: false) }
         }
     }
 }
