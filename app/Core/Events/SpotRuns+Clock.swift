@@ -28,16 +28,16 @@ extension SpotRuns {
 
     func updateClock() {
         watchClipboard()
-        clock?.cancel()
-        clock = nil
+        ticks?.cancel()
+        ticks = nil
         raise(.clock)
         var next = nextRead
         guard isPanelOpen || next != nil else { return }
-        clock = Task { [weak self, tickPause] in
+        ticks = Task { [weak self, tickPause, sleep = clock.sleep] in
             while !Task.isCancelled {
                 let isPanelOpen = self?.isPanelOpen ?? false
                 let wait = isPanelOpen ? tickPause : max(tickPause, .seconds(next ?? 0))
-                try? await Task.sleep(for: wait, tolerance: wait / 10)
+                try? await sleep(wait, wait / 10)
                 guard !Task.isCancelled, let self else { return }
                 raise(.clock)
                 next = nextRead

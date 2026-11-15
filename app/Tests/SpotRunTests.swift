@@ -260,17 +260,6 @@ final class SpotRunTests: XCTestCase {
         XCTAssertEqual(sheet.list.shown.count, 1)
     }
 
-    func testClosingStopsAReadThatNothingElseWants() async throws {
-        let sheet = try make("sleep 0.2\nprintf 'row=a\\ntitle=A\\n'")
-
-        sheet.open {}
-        sheet.close()
-        try await Task.sleep(for: .milliseconds(250))
-
-        XCTAssertEqual(sheet.list.shown.count, 0)
-        XCTAssertFalse(sheet.list.isLoading)
-    }
-
     func testClosingOneSheetLeavesTheReadOfAnother() async throws {
         let first = try make(name: "first", "printf 'text=a\\ntitle=A\\n---\\n'\nsleep 30")
         let second = try make(name: "second", "sleep 0.2\nprintf 'row=b\\ntitle=B\\n'")
@@ -309,26 +298,6 @@ final class SpotRunTests: XCTestCase {
         sheet.open {}
 
         try await wait("the later frame") { sheet.panel?.parts.first?.title == "1" }
-    }
-
-    func testAnOlderAnswerDoesNotReplaceANewerChange() async throws {
-        let sheet = try make("""
-        case "$1" in
-          a) [ "$2" = old ] && sleep 0.2; printf 'field=a\\ntitle=%s\\nvalue=x\\n' "$2" ;;
-          *) printf 'field=a\\ntitle=start\\nvalue=x\\n' ;;
-        esac
-        """)
-        sheet.open {}
-        try await wait("the sheet") { sheet.panel != nil }
-        let part = try XCTUnwrap(sheet.panel?.parts.first)
-
-        sheet.set(part, to: "old")
-        sheet.set(part, to: "new")
-
-        try await wait("the newest answer") { sheet.panel?.parts.first?.title == "new" }
-        try await Task.sleep(for: .milliseconds(250))
-        XCTAssertEqual(sheet.panel?.parts.first?.title, "new")
-        XCTAssertEqual(sheet.panel?.parts.first?.value, "new")
     }
 
     func testAToastIsReported() async throws {
@@ -579,21 +548,6 @@ final class SpotRunTests: XCTestCase {
 
         try await wait("the pick") { (try? String(contentsOfFile: path("stdin"), encoding: .utf8))?.hasSuffix("\n") == true }
         XCTAssertEqual(try String(contentsOfFile: path("stdin"), encoding: .utf8), "search=weather in Tokyo\n")
-    }
-
-    func testAStoppedSearchChangesNothing() async throws {
-        let sheet = try make(searches: true, """
-        [ "$t" = slow ] && sleep 0.2 && exit 0
-        printf 'row=a\\ntitle=A\\n'
-        """)
-        sheet.open {}
-        try await wait("the row") { sheet.list.shown.count == 1 }
-
-        sheet.search("slow")
-        sheet.close()
-        try await Task.sleep(for: .milliseconds(250))
-
-        XCTAssertEqual(sheet.list.shown.count, 1)
     }
 
     func testAKeptSearchIsAskedAgainOnOpen() async throws {

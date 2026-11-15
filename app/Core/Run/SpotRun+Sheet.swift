@@ -6,13 +6,14 @@ extension SpotRun {
         settle()
         list.selectFirst()
         if panel == nil, answered != nil { panel = lastAnswer.flatMap(SheetParts.init(output:)) }
-        if answered == nil, link.keepsState || (waits && list.search == .local) {
-            runs.opening.holdMotion(of: spot.id, limited: !link.keepsState, start: onReady)
+        let keepsState = script.keepsState
+        if answered == nil, keepsState || (waits && list.search == .local) {
+            runs.opening.holdMotion(of: spot.id, limited: !keepsState, start: onReady)
         } else {
             onReady()
         }
         read(need: need)
-        if !link.isReachable { dropUnshownSheet() }
+        if !isReading, answered == nil { dropUnshownSheet() }
         runs.updateClock()
     }
 
@@ -70,10 +71,11 @@ extension SpotRun {
     }
 
     func leftPlace() {
-        if !isInView, panel != nil || link.keepsState {
+        let keepsState = script.keepsState
+        if !isInView, panel != nil || keepsState {
             let wasOpen = isOpen
             close()
-            if link.keepsState || panel?.parts.contains(where: \.isEditable) == true {
+            if keepsState || panel?.parts.contains(where: \.isEditable) == true {
                 panel = nil
                 answered = nil
             }
@@ -88,8 +90,8 @@ extension SpotRun {
         link.settle()
     }
 
-    func scanned() {
-        link.scanned()
+    func scanned(_ stamp: [Int]?) {
+        link.scanned(stamp)
     }
 
     func stopReads() {
@@ -103,7 +105,7 @@ extension SpotRun {
     }
 
     var isWanted: Bool {
-        isInView || runs.wants(spot) || link.holdsScript
+        isInView || runs.wants(spot) || (!calls.isEmpty && script.keepsState)
     }
 
     func settleScript() {

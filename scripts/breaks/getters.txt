@@ -2,8 +2,6 @@ app/Core/CommandLine/CommandLink.swift	isOn
 app/Core/Keys/SpotSettings.swift	sheet
 app/Core/Panel/AppPlaces.swift	defaultArrangement
 app/Core/Panel/AppPlaces.swift	folder
-app/Core/Run/InlineLink.swift	fileDate
-app/Core/Run/StayLink.swift	fileDate
 app/Core/Sheet/PictureFile.swift	changed
 app/Shell/Grid/SpotGlyphBook.swift	open
 app/Shell/Mac/SpotScreen.swift	screenshots

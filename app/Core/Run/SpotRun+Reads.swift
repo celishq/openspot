@@ -19,11 +19,11 @@ extension SpotRun {
             selectKept()
             return
         }
-        let query = list.search == .script && !link.keepsState ? list.query : ""
+        let query = list.search == .script && !script.keepsState ? list.query : ""
         let read = SpotAction.read
         let action = spot.read == nil ? spot.click : read
         let values = [showsSheet ? panel?.values : nil, query.isEmpty ? nil : SearchQuery(text: query).input].compactMap { $0 }
-        let isSent = link.send(Call(
+        let isSent = send(Call(
             action: action,
             key: Self.readKey,
             input: values.isEmpty ? nil : values.joined(),
@@ -59,7 +59,7 @@ extension SpotRun {
         if let older = running(Self.searchKey) { stop(older) }
         pauses[Self.searchKey]?.cancel()
         pauses[Self.searchKey] = nil
-        link.send(Call(
+        send(Call(
             action: .read,
             key: Self.searchKey,
             input: (showsSheet ? panel?.values ?? "" : "") + SearchQuery(text: query).input,
@@ -80,7 +80,7 @@ extension SpotRun {
             takeAnswers([])
             return
         }
-        link.send(Call(
+        send(Call(
             action: .read,
             key: Self.answerKey,
             input: runs.search(of: text).input,

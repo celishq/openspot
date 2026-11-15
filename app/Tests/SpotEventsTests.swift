@@ -27,7 +27,7 @@ final class SpotEventsTests: SpotRunsCase {
 
     override func setUp() async throws {
         try await super.setUp()
-        runs = SpotRuns(now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50), clipboardPause: .milliseconds(20))
+        runs = SpotRuns(clock: RunClock { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50), clipboardPause: .milliseconds(20))
     }
 
     private var reasons: String {
@@ -294,7 +294,7 @@ final class SpotEventsTests: SpotRunsCase {
     }
 
     func testOpeningThePanelLooksAtTheClipboardAtOnce() async throws {
-        runs = SpotRuns(now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50), clipboardPause: .seconds(4))
+        runs = SpotRuns(clock: RunClock { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50), clipboardPause: .seconds(4))
         menuBar.insert("script")
         try script(header: "on=clipboard.change\noffers=card\noffers=menubar", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
         _ = try scanned()

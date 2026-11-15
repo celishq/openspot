@@ -280,11 +280,11 @@ public final class SpotsModel {
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
         runs.isCareful = config.isCareful
-        runs.take(scan, menuBar: config.arrangement.menuBar)
-        lastScan = scan
-        loaded = (load.stamp, hosted)
         var stamps: [String: [Int]] = [:]
         for script in scan.scripts where script.host == nil { stamps[script.id] = load.stamp(of: script) }
+        runs.take(scan, menuBar: config.arrangement.menuBar, stamps: stamps)
+        lastScan = scan
+        loaded = (load.stamp, hosted)
         let others = ids.map { ids in { (stamps: [String: [Int]]) in stamps.filter { !ids.contains($0.key) } } }
         let isOnlyNamed = others.map { $0(stamps) == $0(fileStamps) } ?? false
         fileStamps = stamps

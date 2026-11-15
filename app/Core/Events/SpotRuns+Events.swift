@@ -56,12 +56,12 @@ extension SpotRuns {
         }
         guard clipboardWatch == nil else { return }
         if clipboardSeen == nil { clipboardSeen = source.clipboardCount }
-        clipboardWatch = Task { [weak self, weak source] in
+        clipboardWatch = Task { [weak self, weak source, sleep = clock.sleep] in
             var looks = looksNow
             while !Task.isCancelled {
                 if !looks, let self {
                     let wait = clipboardWait
-                    try? await Task.sleep(for: wait, tolerance: isPanelOpen ? wait / 2 : wait)
+                    try? await sleep(wait, isPanelOpen ? wait / 2 : wait)
                 }
                 looks = false
                 guard !Task.isCancelled, let self, let source else { return }

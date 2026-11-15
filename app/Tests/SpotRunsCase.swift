@@ -15,7 +15,7 @@ class SpotRunsCase: XCTestCase {
     }
 
     func runs(environment: [String: String]) -> SpotRuns {
-        SpotRuns(environment: environment, now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50))
+        SpotRuns(environment: environment, clock: RunClock { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50))
     }
 
     override func tearDown() async throws {
@@ -48,9 +48,12 @@ class SpotRunsCase: XCTestCase {
     }
 
     func scanned() throws -> ScanResult {
-        let scan = try SpotsFolder(url: folder).scan()
+        let load = KeptScan.shared.load(SpotsFolder(url: folder))
+        let scan = try load.result(enabled: [], disabled: [], hosted: [])
         XCTAssertEqual(scan.refused, [])
-        runs.take(scan, menuBar: menuBar)
+        var stamps: [String: [Int]] = [:]
+        for script in scan.scripts { stamps[script.id] = load.stamp(of: script) }
+        runs.take(scan, menuBar: menuBar, stamps: stamps)
         return scan
     }
 

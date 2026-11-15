@@ -10,7 +10,7 @@ final class SpotDropTests: XCTestCase {
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot drop \(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        runs = SpotRuns(now: { [unowned self] in self.time })
+        runs = SpotRuns(clock: RunClock { [unowned self] in self.time })
     }
 
     override func tearDown() async throws {
@@ -504,7 +504,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testADropHasNoTimeLimitAndGoesOnWithThePanelClosed() async throws {
-        runs = SpotRuns(readLimit: 0.2, now: { [unowned self] in self.time })
+        runs = SpotRuns(readLimit: 0.2, clock: RunClock { [unowned self] in self.time })
         let sheet = try sheet(header: "drop=mov", "sleep 0.5\ntouch '\(path("done"))'")
         runs.panelOpened()
         var failures: [String] = []

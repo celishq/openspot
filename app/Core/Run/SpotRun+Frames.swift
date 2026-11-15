@@ -8,8 +8,8 @@ extension SpotRun {
         calls.append(call)
         guard call.doesWork else { return }
         workCalls.append(call)
-        Task { [weak self] in
-            try? await Task.sleep(for: .seconds(Self.workPause))
+        Task { [weak self, sleep = runs.clock.sleep] in
+            try? await sleep(.seconds(Self.workPause), nil)
             self?.workPauses += 1
         }
     }
@@ -29,46 +29,7 @@ extension SpotRun {
         if let index = workCalls.firstIndex(where: { $0 === call }) { workCalls.remove(at: index) }
     }
 
-    func ended(_ call: ScriptCall, _ purpose: Purpose, _ end: ScriptCall.End, hadAnswer: Bool, showedPicture: Bool, selected: String?) {
-        let isAnswer = if case .ask(let ask) = purpose { ask.isAnswer } else { false }
-        if case .ended = end, failure != nil, !isAnswer { failure = nil }
-        switch (purpose, end) {
-        case (.ask(.read), .stopped):
-            list.stopLoading()
-            if !hadAnswer {
-                waiter = nil
-                readsAgain = false
-                eventAgain = nil
-            }
-        case (.ask(let ask), .failed(let error)):
-            take(error, of: ask)
-        case (.work(let work), .stopped):
-            if let undo = work.undo { state = undo }
-        case (.work(let work), .ended):
-            answered = nil
-            if let selected, spot.read != nil {
-                read(selecting: selected, need: .change)
-            } else if !showedPicture, work.readsAfter {
-                readOnce()
-            }
-        case (.work(let work), .failed(let error)):
-            answered = nil
-            if let undo = work.undo { state = undo }
-            fail(error)
-            if work.readsAfter { readOnce() }
-        default:
-            break
-        }
-        callEnded(call)
-        readAgainIfAsked()
-    }
-
-    func askFailed(_ ask: Ask, _ error: Error) {
-        take(error, of: ask)
-        readAgainIfAsked()
-    }
-
-    private func take(_ error: Error, of ask: Ask) {
+    func take(_ error: Error, of ask: Ask) {
         switch ask {
         case .read(_, let reports, _, let tells):
             answered = nil

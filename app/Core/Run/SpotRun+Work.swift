@@ -134,7 +134,7 @@ extension SpotRun {
             pressAgain(running)
             return nil
         }
-        guard let output = try await link.form(call, key: key) else { return nil }
+        guard let output = try await answer(to: call, key: key, input: nil) else { return nil }
         guard let form = ItemForm(output: output) else { throw SpotError.badForm }
         return form
     }
@@ -146,7 +146,7 @@ extension SpotRun {
             pressAgain(running)
             return nil
         }
-        guard let output = try await link.form(call, key: key) else { return nil }
+        guard let output = try await answer(to: call, key: key, input: nil) else { return nil }
         if let form = ItemForm(output: output), !form.fields.isEmpty { return .form(form) }
         read(need: .change)
         return .done
@@ -159,8 +159,11 @@ extension SpotRun {
             pressAgain(running)
             return nil
         }
-        guard let output = try await link.submit(call, key: key, values: draft.text) else { return nil }
-        guard !link.keepsState else { return .done }
+        guard !script.keepsState else {
+            work(call, key: key, input: draft.text)
+            return .done
+        }
+        guard let output = try await answer(to: call, key: key, input: draft.text) else { return nil }
         if let form = ItemForm(output: output), !form.fields.isEmpty {
             if draft.isMultiple { read(need: .change) }
             return .form(form)
@@ -197,8 +200,8 @@ extension SpotRun {
 
     func after(_ pause: Duration, key: String, _ work: @escaping () -> Void) {
         pauses[key]?.cancel()
-        pauses[key] = Task { [weak self] in
-            try? await Task.sleep(for: pause)
+        pauses[key] = Task { [weak self, sleep = runs.clock.sleep] in
+            try? await sleep(pause, nil)
             guard !Task.isCancelled else { return }
             self?.pauses[key] = nil
             work()
@@ -218,6 +221,6 @@ extension SpotRun {
 
     private func work(_ action: SpotAction, key: String, input: String? = nil, as work: Work = Work()) {
         answered = nil
-        link.send(Call(action: action, key: key, input: input, purpose: .work(work)))
+        send(Call(action: action, key: key, input: input, purpose: .work(work)))
     }
 }

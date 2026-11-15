@@ -8,7 +8,7 @@ final class CallLogTests: SpotRunsCase {
     override func setUp() async throws {
         try await super.setUp()
         log = CallLog(folder: folder.appendingPathComponent("logs"))
-        runs = SpotRuns(now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50), log: log)
+        runs = SpotRuns(clock: RunClock { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50), log: log)
     }
 
     func testACallLeavesItsArgumentsItsInputItsFramesItsErrorsAndItsExit() async throws {

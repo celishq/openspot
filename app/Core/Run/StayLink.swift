@@ -2,51 +2,53 @@ import Foundation
 
 @MainActor
 final class StayLink: ScriptLink {
+    @MainActor
+    final class Record {
+        let call: OpenCall
+        var isDropped = false
+        var isPictured = false
+        var timer: Task<Void, Never>?
+
+        init(_ call: OpenCall) {
+            self.call = call
+        }
+
+        var ask: SpotRun.Ask? {
+            guard !isDropped, case .ask(let ask) = call.request.purpose else { return nil }
+            return ask
+        }
+
+        var isForm: Bool {
+            guard !isDropped, case .form = call.request.purpose else { return false }
+            return true
+        }
+
+        var isWork: Bool {
+            guard !isDropped, case .work = call.request.purpose else { return false }
+            return true
+        }
+    }
+
     private static let failureLimit = 3
     private static let failureWindow: TimeInterval = 60
     private static let slowLimit = 2
     static let droppedLimit = 100
 
     weak var run: SpotRun?
-    let keepsState = true
     private let runs: SpotRuns
     private var script: ScriptProcess?
     private var token: String?
-    private var asks: [Int: SpotRun.Ask] = [:] {
-        didSet {
-            noteReason()
-            for id in timers.keys where asks[id] == nil { timers.removeValue(forKey: id)?.cancel() }
-        }
-    }
-    private var timers: [Int: Task<Void, Never>] = [:]
-    private var askReason: String?
-    private(set) var dropped: Set<Int> = []
+    private(set) var records: [Int: Record] = [:]
     private var droppedBelow = 0
-    private(set) var pictured: Set<Int> = []
+    private var askReason: String?
     private var lastPicture: SpotOutput?
-    private var printingCall: Int?
+    private var printing: Int?
     private var count = 0
-    private(set) var sent: [Int: Date] = [:]
-    private var calls: [String: ScriptCall] = [:] {
-        didSet { noteReason() }
-    }
     private var failures: [Date] = []
-    private var givenUp: Date??
-    private var formAnswer: CheckedContinuation<SpotOutput?, Error>?
-    private var formID: Int?
-    private var formTimer: Task<Void, Never>?
+    private var stamp: [Int]?
+    private var givenUp: [Int]??
     private var heldScript = false
     private var slowAsks = 0
-    private var openCalls: [Int: OpenCall] = [:]
-
-    private struct OpenCall {
-        let action: SpotAction
-        let input: String?
-        let reason: ReadReason?
-        let started: Date
-        let begin: Date
-        var frames: [String] = []
-    }
 
     init(runs: SpotRuns) {
         self.runs = runs
@@ -55,84 +57,43 @@ final class StayLink: ScriptLink {
     nonisolated deinit {}
 
     var isAsking: Bool {
-        asks.values.contains { !$0.isAnswer }
+        records.values.contains { $0.ask.map { !$0.isAnswer } ?? false }
     }
 
-    var holdsScript: Bool {
-        formAnswer != nil || !calls.isEmpty
+    private var holdsScript: Bool {
+        records.values.contains { $0.isWork || $0.isForm }
     }
 
-    var isReachable: Bool {
-        script != nil
-    }
-
-    func send(_ call: SpotRun.Call) -> Bool {
-        switch call.purpose {
-        case .ask(.read(let generation, let reports, _, let tells)):
+    func send(_ call: OpenCall) -> Bool {
+        switch call.request.purpose {
+        case .ask(.read):
             guard run?.isWanted == true else { return false }
             guard let script else {
-                start(reason: call.reason)
+                start(reason: call.request.reason)
                 return self.script != nil
             }
-            let id = next()
-            ask(.read(generation: generation, reports: reports, tells: tells), id: id, reason: call.variables["OPENSPOT_REASON"])
-            opened(id, .read, input: call.input, reason: call.reason)
-            script.send(.read, input: call.input, variables: paged(call.variables), id: id)
-        case .ask(.search(let query)):
+            open(call, on: script, isTimed: true)
+        case .ask(.search):
             stop { if case .search = $0 { true } else { false } }
-            if let id = send(.read, input: call.input, variables: call.variables, reason: call.reason) { ask(.search(query), id: id, reason: call.variables["OPENSPOT_REASON"]) }
+            post(call, isTimed: true)
         case .ask(.answer(let text)):
             stop(\.isAnswer)
-            if let id = send(call.action, input: call.input, variables: call.variables, reason: call.reason) {
-                ask(.answer(text), id: id, reason: call.variables["OPENSPOT_REASON"])
-            } else {
-                run?.takeAnswers([], to: text)
-            }
-        case .work:
-            send(call.action, input: call.input, key: call.key)
+            if !post(call, isTimed: true) { run?.takeAnswers([], to: text) }
+        case .work(let work):
+            call.request.purpose = .work(SpotRun.Work(keeping: work.keeping, readsAfter: false, undo: work.undo))
+            if post(call, isTimed: false) { run?.track(call.made) }
+        case .form:
+            guard !records.values.contains(where: \.isForm), post(call, isTimed: true) else { return false }
+            run?.track(call.made)
         }
+        settle()
         return script != nil
     }
 
-    func form(_ action: SpotAction, key: String) async throws -> SpotOutput? {
-        guard formAnswer == nil else { return nil }
-        return try await withCheckedThrowingContinuation { continuation in
-            formAnswer = continuation
-            guard let id = send(action, input: nil, key: key) else { return answerForm(with: .success(nil)) }
-            guard formAnswer != nil else { return }
-            formID = id
-            let limit = runs.readLimit
-            formTimer?.cancel()
-            formTimer = Task { [weak self] in
-                try? await Task.sleep(for: .seconds(limit), tolerance: .seconds(limit / 10))
-                guard !Task.isCancelled else { return }
-                self?.formTimedOut(id)
-            }
-        }
-    }
-
-    private func formTimedOut(_ id: Int) {
-        guard formID == id else { return }
-        script?.send(text: SpotAction.stopEvent(id: id))
-        drop(id)
-        close(id, .failed(SpotError.timedOut))
-        answerForm(with: .failure(SpotError.timedOut))
-        settle()
-    }
-
-    func submit(_ action: SpotAction, key: String, values: String) async throws -> SpotOutput? {
-        send(action, input: values)
-        return .empty
-    }
-
     func stop(_ call: ScriptCall) {
-        guard let id = calls.first(where: { $0.value === call })?.key else { return }
-        calls[id] = nil
-        if let number = Int(id) {
-            drop(number)
-            close(number, .stopped)
-            if number == formID { answerForm(with: .success(nil)) }
-        }
+        guard let (id, record) = records.first(where: { $0.value.call.made === call && !$0.value.isDropped }) else { return }
+        drop(id)
+        run?.finish(record.call, .stopped)
     }
 
     func settle() {
@@ -144,26 +105,27 @@ final class StayLink: ScriptLink {
         runs.updateClock()
     }
 
+    func restart() {
+        guard script != nil else { return }
+        end()
+        settle()
+    }
+
     func end() {
         script?.end()
         script = nil
-        closeAll(.stopped)
-        forgetAsks()
-        endCalls(nil)
-        answerForm(with: .success(nil))
+        loseAll(.stopped)
         run?.scriptEnded()
     }
 
     func leave() {
         script = nil
-        closeAll(.stopped)
-        forgetAsks()
-        calls = [:]
-        answerForm(with: .success(nil))
+        loseAll(.stopped)
     }
 
-    func scanned() {
-        if let givenUp, fileDate != givenUp {
+    func scanned(_ stamp: [Int]?) {
+        self.stamp = stamp
+        if let givenUp, stamp != givenUp {
             self.givenUp = nil
             failures = []
         }
@@ -181,46 +143,36 @@ final class StayLink: ScriptLink {
         self.script = script
         self.token = token
         slowAsks = 0
-        let id = next()
-        let variables = (reason ?? startReason).variables
-        askReason = variables["OPENSPOT_REASON"]
-        asks[id] = .read(generation: nil, reports: true)
-        opened(id, .read, input: nil, reason: reason ?? startReason)
-        script.send(.read, variables: paged(variables), id: id)
+        let reason = reason ?? startReason
+        let read = SpotRun.Call(action: .read, key: SpotRun.readKey, reason: reason, variables: reason.variables, purpose: .ask(.read(generation: nil, reports: true)))
+        open(OpenCall(read, started: runs.now()), on: script, isTimed: false)
         Task { await follow(script, frames) }
     }
 
-    @discardableResult
-    private func send(_ action: SpotAction, input: String?, variables: [String: String] = [:], reason: ReadReason? = nil, key: String? = nil) -> Int? {
+    private func post(_ call: OpenCall, isTimed: Bool) -> Bool {
         if script == nil { start() }
         guard let script else {
             settle()
-            return nil
+            return false
         }
-        let id = next()
-        opened(id, action, input: input, reason: reason)
-        script.send(action, input: input, variables: paged(variables), id: id)
-        if let key {
-            let call = ScriptCall(action: action, key: key, started: runs.now())
-            call.halt = { script.send(text: SpotAction.stopEvent(id: id)) }
-            calls[String(id)] = call
-            run?.track(call)
-        }
-        settle()
-        return id
+        open(call, on: script, isTimed: isTimed)
+        return true
     }
 
-    private func paged(_ variables: [String: String]) -> [String: String] {
-        run?.withPage(variables) ?? variables
-    }
-
-    private func ask(_ ask: SpotRun.Ask, id: Int, reason: String?) {
-        askReason = reason
-        asks[id] = ask
-        guard let script else { return }
+    private func open(_ call: OpenCall, on script: ScriptProcess, isTimed: Bool) {
+        count += 1
+        let id = count
+        let record = Record(call)
+        let request = call.request
+        records[id] = record
+        call.made.halt = { [weak script] in script?.send(text: SpotAction.stopEvent(id: id)) }
+        if case .ask = request.purpose { askReason = request.variables["OPENSPOT_REASON"] }
+        noteReason()
+        script.send(request.action, input: request.input, variables: run?.withPage(request.variables) ?? request.variables, id: id)
+        guard isTimed else { return }
         let limit = runs.readLimit
-        timers[id] = Task { [weak self, weak script] in
-            try? await Task.sleep(for: .seconds(limit))
+        record.timer = Task { [weak self, weak script, sleep = runs.clock.sleep] in
+            try? await sleep(.seconds(limit), .seconds(limit / 10))
             guard !Task.isCancelled, let script else { return }
             self?.timeOut(id, of: script)
         }
@@ -228,175 +180,138 @@ final class StayLink: ScriptLink {
 
     private func noteReason() {
         guard let token else { return }
-        runs.tokens.setReason(calls.isEmpty && !asks.isEmpty ? askReason : nil, of: token)
+        let asks = records.values.contains { $0.ask != nil }
+        runs.tokens.setReason(asks && !holdsScript ? askReason : nil, of: token)
     }
 
     private func timeOut(_ id: Int, of script: ScriptProcess) {
-        guard self.script === script, let ask = asks.removeValue(forKey: id) else { return }
+        guard self.script === script, let record = records[id], !record.isDropped else { return }
+        let isAsk = record.ask != nil
         drop(id)
-        close(id, .failed(SpotError.timedOut))
-        script.send(text: SpotAction.stopEvent(id: id))
-        slowAsks += 1
-        run?.askFailed(ask, SpotError.timedOut)
-        guard slowAsks >= Self.slowLimit else { return }
-        end()
-        failed(SpotError.timedOut, telling: false)
+        if isAsk { slowAsks += 1 }
+        run?.finish(record.call, .failed(SpotError.timedOut))
+        if isAsk, slowAsks >= Self.slowLimit {
+            end()
+            failed(SpotError.timedOut, telling: false)
+        }
         settle()
     }
 
     private func stop(_ kind: (SpotRun.Ask) -> Bool) {
-        for (id, ask) in asks {
-            guard kind(ask) else { continue }
-            asks[id] = nil
+        for (id, record) in records {
+            guard let ask = record.ask, kind(ask) else { continue }
             drop(id)
-            close(id, .stopped)
-            script?.send(text: SpotAction.stopEvent(id: id))
+            run?.finish(record.call, .stopped)
         }
     }
 
     private func drop(_ id: Int) {
-        dropped.insert(id)
-        sent[id] = nil
-        pictured.remove(id)
+        guard let record = records[id] else { return }
+        record.call.made.stop()
+        record.isDropped = true
+        record.timer?.cancel()
+        record.timer = nil
+        let dropped = records.filter(\.value.isDropped).keys
         if dropped.count > Self.droppedLimit, let oldest = dropped.min() {
-            dropped.remove(oldest)
+            records[oldest] = nil
             droppedBelow = max(droppedBelow, oldest + 1)
         }
+        noteReason()
+    }
+
+    private func remove(_ id: Int) {
+        records.removeValue(forKey: id)?.timer?.cancel()
+        noteReason()
     }
 
     private func isDropped(_ id: Int) -> Bool {
-        dropped.contains(id) || (id < droppedBelow && asks[id] == nil && calls[String(id)] == nil)
+        records[id]?.isDropped ?? (id < droppedBelow)
     }
 
-    private func forgetAsks() {
-        for case .answer(let text) in asks.values { run?.takeAnswers([], to: text) }
-        sent = [:]
-        asks = [:]
-        dropped = []
-        pictured = []
-        printingCall = nil
-    }
-
-    private func next() -> Int {
-        count += 1
-        sent[count] = Date()
-        return count
-    }
-
-    private func endCalls(_ ids: [String]?) {
-        for id in ids ?? Array(calls.keys) {
-            guard let call = calls.removeValue(forKey: id) else { continue }
-            run?.callEnded(call)
-        }
-    }
-
-    private func opened(_ id: Int, _ action: SpotAction, input: String?, reason: ReadReason?) {
-        openCalls[id] = OpenCall(action: action, input: input, reason: reason, started: runs.now(), begin: Date())
-    }
-
-    private func take(_ text: String, _ lines: SpotOutput) {
-        let ends = lines.ends.compactMap { Int($0) }
-        let owners = lines.start.flatMap(Int.init).map { [$0] } ?? (ends.isEmpty ? printingCall.map { [$0] } ?? [] : ends)
-        for id in owners where openCalls[id] != nil { runs.add(text, to: &openCalls[id]!.frames) }
-        for id in ends { close(id, .ended) }
-    }
-
-    private func close(_ id: Int, _ end: ScriptCall.End, errors: String = "") {
-        guard let run, let call = openCalls.removeValue(forKey: id) else { return }
-        runs.record(run.spot, call.action, input: call.input, frames: call.frames, errors: errors, end: end, reason: call.reason, started: call.started, begin: call.begin)
-    }
-
-    private func closeAll(_ end: ScriptCall.End, errors: String = "") {
-        for id in openCalls.keys.sorted() { close(id, end, errors: errors) }
-    }
-
-    private func answerForm(with answer: Result<SpotOutput?, Error>) {
-        let waiting = formAnswer
-        formAnswer = nil
-        formTimer?.cancel()
-        formTimer = nil
-        if let formID {
-            self.formID = nil
-            close(formID, .ended)
-            endCalls([String(formID)])
-        }
-        waiting?.resume(with: answer)
+    private func loseAll(_ end: ScriptCall.End, errors: String = "") {
+        let lost = records.sorted { $0.key < $1.key }.map(\.value)
+        lost.forEach { $0.timer?.cancel() }
+        records = [:]
+        printing = nil
+        noteReason()
+        for record in lost where !record.isDropped { run?.lose(record.call, end, errors: errors) }
     }
 
     private func follow(_ script: ScriptProcess, _ frames: AsyncThrowingStream<String, Error>) async {
+        var failure: Error?
         do {
             for try await text in frames {
                 let lines = await runs.intake(text, of: run?.spot.id)
-                let late = lines.ends.compactMap(Int.init).filter(isDropped)
-                if self.script === script {
-                    counted(lines.ends)
-                    take(text, lines)
-                }
-                if self.script === script, !lines.ends.isEmpty {
-                    endCalls(lines.ends)
-                    settle()
-                }
                 guard self.script === script, let run else {
                     run?.report(toastOf: lines)
                     continue
                 }
-                if formAnswer != nil, !lines.fields.isEmpty || lines.ends.contains(formID.map(String.init) ?? "") {
-                    run.report(toastOf: lines)
-                    answerForm(with: .success(lines))
-                    settle()
-                    continue
-                }
-                let ends = lines.ends.compactMap { Int($0) }
-                if let start = lines.start.flatMap(Int.init) { printingCall = start }
-                if let printingCall, calls[String(printingCall)] != nil { run.takeMove(lines) }
-                defer { if let printingCall, ends.contains(printingCall) { self.printingCall = nil } }
-                if let id = ends.first(where: { asks[$0] != nil }), let ask = asks.removeValue(forKey: id) {
-                    slowAsks = 0
-                    if lines.isPicture || !pictured.contains(id) {
-                        await run.takeAnswer(lines, frame: text, to: ask)
-                    } else {
-                        run.takeEffects(lines, frame: text)
-                        await run.takeAnswer(lastPicture?.withoutEffects() ?? lines, frame: text, to: ask)
-                    }
-                    pictured.remove(id)
-                } else if !late.isEmpty {
-                    late.forEach { dropped.remove($0) }
-                    continue
-                } else if let printingCall, lines.start == nil, ends.isEmpty, isDropped(printingCall) {
-                    continue
-                } else if let printingCall, lines.start == nil, lines.isPicture, let ask = asks.removeValue(forKey: printingCall) {
-                    await run.takeAnswer(lines, frame: text, to: ask)
-                } else if lines.isPicture {
-                    if printingCall == nil { pictured.formUnion(asks.filter { !$0.value.isAnswer }.keys) }
-                    lastPicture = lines
-                    await run.takePicture(lines, frame: text, of: nil)
-                } else {
-                    run.takeEffects(lines, frame: text)
-                }
+                await take(text, lines, in: run)
             }
         } catch {
-            if self.script === script {
-                closeAll(.failed(error), errors: script.errors)
-                failed(error)
-                answerForm(with: .failure(error))
-            }
+            failure = error
         }
         runs.dropFinished()
         guard self.script === script else { return }
-        closeAll(.ended, errors: script.errors)
         self.script = nil
-        endCalls(nil)
-        forgetAsks()
+        if let failure {
+            failed(failure)
+            loseAll(.failed(failure), errors: script.errors)
+        } else {
+            loseAll(.ended, errors: script.errors)
+        }
         run?.lost()
-        answerForm(with: .success(.empty))
     }
 
-    private func counted(_ ends: [String]) {
-        guard let run else { return }
-        for id in ends.compactMap(Int.init) {
-            guard let date = sent.removeValue(forKey: id) else { continue }
-            runs.usage.called(run.spot, seconds: Date().timeIntervalSince(date), isFailure: false, at: runs.now())
+    private func take(_ text: String, _ lines: SpotOutput, in run: SpotRun) async {
+        let ends = lines.ends.compactMap { Int($0) }
+        let start = lines.start.flatMap(Int.init)
+        let late = ends.filter(isDropped)
+        for id in start.map({ [$0] }) ?? (ends.isEmpty ? printing.map { [$0] } ?? [] : ends) {
+            guard let record = records[id], !record.isDropped else { continue }
+            runs.add(text, to: &record.call.frames)
         }
+        if let start { printing = start }
+        defer { if let printing, ends.contains(printing) { self.printing = nil } }
+        if let (id, form) = records.first(where: \.value.isForm), !lines.fields.isEmpty || ends.contains(id) {
+            await run.take(text, lines, of: form.call)
+            await close(Set(ends + [id]).filter { records[$0]?.ask == nil }.sorted(), in: run)
+            return
+        }
+        if let id = ends.first(where: { records[$0]?.ask != nil }), let record = records[id] {
+            slowAsks = 0
+            if record.isPictured, !lines.isPicture { record.call.pushed = lastPicture }
+            await run.take(text, lines, of: record.call)
+        } else if !late.isEmpty {
+            late.forEach(remove)
+        } else if let printing, start == nil, ends.isEmpty, isDropped(printing) {
+            return
+        } else if let printing, start == nil, lines.isPicture, let record = records[printing], record.ask != nil {
+            await run.take(text, lines, of: record.call)
+            await close([printing], in: run)
+        } else {
+            if lines.isPicture {
+                if printing == nil {
+                    for record in records.values where record.ask?.isAnswer == false { record.isPictured = true }
+                }
+                lastPicture = lines
+            }
+            if let record = (printing.map { [$0] } ?? ends).compactMap({ records[$0] }).first(where: \.isWork) {
+                await run.take(text, lines, of: record.call)
+            } else {
+                await run.take(text, lines)
+            }
+        }
+        await close(ends, in: run)
+    }
+
+    private func close(_ ids: [Int], in run: SpotRun) async {
+        for id in ids {
+            guard let record = records[id], !record.isDropped else { continue }
+            remove(id)
+            await run.close(record.call, .ended)
+        }
+        if !ids.isEmpty { settle() }
     }
 
     private func failed(_ error: Error, telling: Bool = true) {
@@ -405,14 +320,9 @@ final class StayLink: ScriptLink {
         runs.usage.failedRun(run.spot, at: time)
         failures = failures.filter { time.timeIntervalSince($0) < Self.failureWindow } + [time]
         guard failures.count >= Self.failureLimit else { return telling ? run.fail(error) : () }
-        givenUp = .some(fileDate)
+        givenUp = .some(stamp)
         let text = "\(run.spot.name) failed \(Self.failureLimit) times in one minute. Openspot will not start it again until its file changes."
         runs.usage.failed(run.spot, fault: text, at: time)
         run.onReport(.failure(text))
-    }
-
-    private var fileDate: Date? {
-        guard let run else { return nil }
-        return (try? FileManager.default.attributesOfItem(atPath: run.spot.url.path))?[.modificationDate] as? Date
     }
 }

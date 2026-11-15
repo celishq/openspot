@@ -41,7 +41,7 @@ final class SpotUsageTests: SpotRunsCase {
 
     func testAStayingProcessPutsItsCPUTimeOnTheDayItWasSpent() async throws {
         runs.quit()
-        runs = SpotRuns(now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50), stats: folder.appendingPathComponent("stats"))
+        runs = SpotRuns(clock: RunClock { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50), stats: folder.appendingPathComponent("stats"))
         try script(header: "mode=stay\non=sheet.open\noffers=card\noffers=menubar", """
         \(Self.busyLoop)
         touch '\(path("busy"))'
@@ -134,7 +134,7 @@ final class SpotUsageTests: SpotRunsCase {
     }
 
     func testTheMacGoingToSleepWritesTheDay() throws {
-        runs = SpotRuns(now: { [unowned self] in self.time }, stats: stats)
+        runs = SpotRuns(clock: RunClock { [unowned self] in self.time }, stats: stats)
         runs.usage.called(spot("a", "Alpha"), seconds: 1, isFailure: false, at: time)
         XCTAssertFalse(FileManager.default.fileExists(atPath: stats.path))
 

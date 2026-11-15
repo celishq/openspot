@@ -43,6 +43,7 @@ public final class SpotRun {
     enum Purpose {
         case ask(Ask)
         case work(Work)
+        case form(CheckedContinuation<SpotOutput?, Error>)
     }
 
     struct Call {
@@ -52,7 +53,7 @@ public final class SpotRun {
         var limit: TimeInterval?
         var reason: ReadReason?
         var variables: [String: String] = [:]
-        let purpose: Purpose
+        var purpose: Purpose
     }
 
     static let answerAge: TimeInterval = 5
@@ -218,17 +219,23 @@ public final class SpotRun {
     nonisolated deinit {}
 
     private static func link(for spot: Spot, runs: SpotRuns) -> ScriptLink {
-        switch spot.mode {
-        case .once: OnceLink(runs: runs)
-        case .stay, .always: StayLink(runs: runs)
+        if let link = runs.standIn?(spot) { return link }
+        return switch ScriptKind(of: spot) {
+        case .once, .settings, .host: OnceLink(runs: runs)
+        case .stay: StayLink(runs: runs)
         case .inline: InlineLink(runs: runs)
         }
+    }
+
+    var script: ScriptKind {
+        ScriptKind(of: spot)
     }
 
     public func update(_ new: Spot) {
         let header = spot.headerState
         if new.answers != spot.answers { answer("") }
-        if new.mode.stays != spot.mode.stays || (new.mode == .inline) != (spot.mode == .inline) {
+        let next = ScriptKind(of: new)
+        if next.keepsState != script.keepsState || (next == .inline) != (script == .inline) {
             let old = link
             link = Self.link(for: new, runs: runs)
             link.run = self
@@ -242,9 +249,7 @@ public final class SpotRun {
     }
 
     func restartScript() {
-        guard spot.mode.stays || spot.mode == .inline, link.isReachable else { return }
-        link.end()
-        link.settle()
+        link.restart()
     }
 
     public var awaitsAnswer: Bool {
