@@ -24,6 +24,11 @@ struct SpotCardSource {
         return AnyView(SpotSampleSheet(model: model, id: id, entry: entry))
     }
 
+    func cornerButton(_ symbol: String, label: String, card id: String, action: @escaping () -> Void) -> AnyView {
+        guard let size = model?.storeEntry(id)?.size else { return AnyView(EmptyView()) }
+        return AnyView(SpotCornerButton(symbol: symbol, label: label, corner: .leading, size: size, onHover: { _ in }, action: action))
+    }
+
     private static let unselectable = Int.min
 
     func size(_ id: String) -> CGSize {

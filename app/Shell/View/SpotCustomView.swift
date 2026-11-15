@@ -63,6 +63,15 @@ struct SpotCustomView: View, @MainActor Equatable {
         { source in AnyView(SpotMedia(source: source)) }
     }
 
+    private var cornerButton: (String, String, String, @escaping () -> Void) -> AnyView {
+        let cards = cards
+        return { symbol, label, id, action in
+            var view = AnyView(EmptyView())
+            MainActor.assumeIsolated { view = cards.cornerButton(symbol, label: label, card: id, action: action) }
+            return view
+        }
+    }
+
     private var input: [String: Any] {
         [
             "size": size,
@@ -80,7 +89,12 @@ struct SpotCustomView: View, @MainActor Equatable {
             "cardSize": cardSize,
             "sheet": sheetView,
             "tip": tipView,
-            "media": mediaView
+            "media": mediaView,
+            "cornerButton": cornerButton,
+            "columnGap": SpotTokens.columnGap,
+            "rowGap": SpotTokens.rowGap,
+            "columns": SpotTokens.windowColumns,
+            "tipDelay": SpotTipView.delay
         ]
     }
 

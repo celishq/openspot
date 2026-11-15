@@ -107,20 +107,12 @@ struct SpotView: View {
             words = [name, detail, Self.label(of: origin)].joined(separator: " ").folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
         }
 
-        /// The cells that its card covers on the grid.
-        var area: Int {
-            ["small": 1, "wide": 2, "square": 4, "strip": 4, "large": 8][size] ?? 1
-        }
-
         /// The word of the sidebar that names its origin.
         static func label(of origin: String) -> String {
             Origin.allCases.first { $0.word == origin }?.rawValue ?? origin
         }
     }
 
-    private static let columnGap: CGFloat = 11
-    private static let rowGap: CGFloat = 12
-    private static let columns: CGFloat = 16
     private static let sidebarColumns: CGFloat = 4
     private static let line: CGFloat = 36
     private static let text: Font = .system(size: 13)
@@ -129,8 +121,9 @@ struct SpotView: View {
 
     /// The width of the sidebar: 4 of the 16 columns that fill the window.
     private var sidebarWidth: CGFloat {
-        let column = (spot.size.width - 2 * spot.inset - (Self.columns - 1) * Self.columnGap) / Self.columns
-        return max(Self.sidebarColumns * column + (Self.sidebarColumns - 1) * Self.columnGap, 180)
+        let columns = CGFloat(spot.columns)
+        let column = (spot.size.width - 2 * spot.inset - (columns - 1) * spot.columnGap) / columns
+        return max(Self.sidebarColumns * column + (Self.sidebarColumns - 1) * spot.columnGap, 180)
     }
 
     var body: some View {
@@ -168,7 +161,7 @@ struct SpotView: View {
         .task(id: hovered) {
             tip = nil
             guard let hovered else { return }
-            try? await Task.sleep(for: .milliseconds(500))
+            try? await Task.sleep(for: spot.tipDelay)
             if !Task.isCancelled { tip = hovered }
         }
     }
@@ -181,8 +174,14 @@ struct SpotView: View {
         }
         switch order {
         case .name: return kept.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-        case .size: return kept.sorted { ($0.area, $1.name) > ($1.area, $0.name) }
+        case .size: return kept.sorted { (area(of: $0), $1.name) > (area(of: $1), $0.name) }
         }
+    }
+
+    /// The room that the card of a spot takes, which orders the store by size.
+    private func area(of item: Item) -> CGFloat {
+        let size = spot.cardSize(item.id)
+        return size.width * size.height
     }
 
     /// Shows the tip of a control while the pointer rests on it.
@@ -210,7 +209,7 @@ struct SpotView: View {
         }
         .padding([.leading, .top, .bottom], spot.inset)
         .frame(width: sidebarWidth + spot.inset)
-        .padding(.trailing, Self.columnGap)
+        .padding(.trailing, spot.columnGap)
     }
 
     /// A field whose whole fill takes a click, whose Esc clears it, and whose cross clears it too.
@@ -335,7 +334,7 @@ struct SpotView: View {
                 .controlSize(.large))
         }
         .padding([.trailing, .bottom], spot.inset)
-        .padding(.top, Self.rowGap)
+        .padding(.top, spot.rowGap)
     }
 
     /// A group of cards under its title, whose line matches the search field's, so that both columns start on one line.
@@ -345,7 +344,7 @@ struct SpotView: View {
                 .font(Self.heading)
                 .foregroundStyle(spot.ink.opacity(spot.secondary))
                 .frame(height: Self.line)
-            Flow(gap: Self.columnGap, line: Self.rowGap) {
+            Flow(gap: spot.columnGap, line: spot.rowGap) {
                 ForEach(list) { tile($0) }
             }
         }
@@ -358,7 +357,7 @@ struct SpotView: View {
             .frame(width: size.width, height: size.height)
             .contentShape(Rectangle())
             .onTapGesture { open(item) })
-            .overlay(alignment: .topLeading) { control(item, card: size) }
+            .overlay(alignment: .topLeading) { control(item) }
     }
 
     /// Opens the sheet of a spot.
@@ -504,30 +503,19 @@ struct SpotView: View {
     /// The control on the top left rim of a card, as on the cards of Edit Spots: a plus that gets a spot you lack, an up
     /// arrow that publishes your own spot's changes, and none on a spot you have.
     @ViewBuilder
-    private func control(_ item: Item, card: CGSize) -> some View {
+    private func control(_ item: Item) -> some View {
         switch item.state {
-        case "get": corner("plus", label: "Add \(item.name) to your grid", card: card) { send("get:\(item.id)") }
-        case "publish": corner("arrow.up", label: "Publish the changes of \(item.name)", card: card) { send("publish:\(item.id)") }
+        case "get": corner("plus", label: "Add \(item.name) to your grid", item: item) { send("get:\(item.id)") }
+        case "publish": corner("arrow.up", label: "Publish the changes of \(item.name)", item: item) { send("publish:\(item.id)") }
         default: EmptyView()
         }
     }
 
-    /// A small round control on the rim of a card's top left corner, which a click presses.
-    private func corner(_ symbol: String, label: String, card: CGSize, action: @escaping () -> Void) -> some View {
-        let radius: CGFloat = card.height <= 64 && card.width < 289 ? card.height / 2 : 26
-        let inset = radius * (1 - 0.5.squareRoot()) - 10
-        return tipped(label, Image(systemName: symbol)
-            .font(.system(size: 10, weight: .bold))
-            .foregroundStyle(spot.ink)
-            .frame(width: 20, height: 20)
-            .background(Circle().fill(.background))
-            .overlay(Circle().strokeBorder(spot.ink.opacity(0.15)))
-            .contentShape(Circle())
-            .onTapGesture(perform: action)
-            .accessibilityAddTraits(.isButton)
-            .accessibilityLabel(label))
-            .offset(x: inset, y: inset)
+    private func corner(_ symbol: String, label: String, item: Item, action: @escaping () -> Void) -> some View {
+        tipped(label, spot.cornerButton(symbol, label: label, card: item.id, action: action))
     }
+
+    /// A small round control on the rim of a card's top left corner, which a click presses.
 }
 
 /// Lays its views in rows that wrap at the width it gets, each row as tall as its tallest view.

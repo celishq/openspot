@@ -24,6 +24,10 @@ public struct ViewLibrary: Sendable {
             public let accent: Color
             public let font: SpotFonts
             public let answers: Int
+            public let columnGap: CGFloat
+            public let rowGap: CGFloat
+            public let columns: Int
+            public let tipDelay: Duration
             let values: [String: [String]]
             let sender: (String) -> Void
             let cardMaker: (String) -> AnyView
@@ -31,6 +35,7 @@ public struct ViewLibrary: Sendable {
             let sheetMaker: (String) -> AnyView
             let tipMaker: (String) -> AnyView
             let mediaMaker: (String) -> AnyView
+            let cornerMaker: (String, String, String, @escaping () -> Void) -> AnyView
 
             init(values: [String: [String]], card: [String: Any], sender: @escaping (String) -> Void) {
                 self.values = values
@@ -40,6 +45,11 @@ public struct ViewLibrary: Sendable {
                 sheetMaker = card["sheet"] as? (String) -> AnyView ?? { _ in AnyView(EmptyView()) }
                 tipMaker = card["tip"] as? (String) -> AnyView ?? { AnyView(Text($0)) }
                 mediaMaker = card["media"] as? (String) -> AnyView ?? { _ in AnyView(EmptyView()) }
+                cornerMaker = card["cornerButton"] as? (String, String, String, @escaping () -> Void) -> AnyView ?? { _, _, _, _ in AnyView(EmptyView()) }
+                columnGap = card["columnGap"] as? CGFloat ?? 11
+                rowGap = card["rowGap"] as? CGFloat ?? 12
+                columns = card["columns"] as? Int ?? 16
+                tipDelay = card["tipDelay"] as? Duration ?? .milliseconds(500)
                 size = card["size"] as? CGSize ?? .zero
                 answers = card["answers"] as? Int ?? 0
                 inset = card["inset"] as? CGFloat ?? 13
@@ -70,6 +80,8 @@ public struct ViewLibrary: Sendable {
             public func tip(_ text: String) -> AnyView { tipMaker(text) }
 
             public func media(_ source: String) -> AnyView { mediaMaker(source) }
+
+            public func cornerButton(_ symbol: String, label: String, card id: String, action: @escaping () -> Void) -> AnyView { cornerMaker(symbol, label, id, action) }
         }
 
         @_cdecl("\(entry)")
