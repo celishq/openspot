@@ -1,7 +1,5 @@
 import Foundation
 
-/// Values kept by key up to a limit in bytes, which lets the least recently used go first. Its limit is its base plus twice
-/// the largest value it has kept, so that the two parts of the largest surface never push out the rest.
 public struct RecentCache<Key: Hashable, Value> {
     private struct Kept {
         let value: Value
@@ -23,12 +21,10 @@ public struct RecentCache<Key: Hashable, Value> {
         base + 2 * largest
     }
 
-    /// The bytes it can still take with nothing let go.
     public var room: Int {
         limit - bytes
     }
 
-    /// The value of a key, which counts as a use.
     public mutating func value(for key: Key) -> Value? {
         guard var found = kept[key] else { return nil }
         uses += 1
@@ -37,7 +33,6 @@ public struct RecentCache<Key: Hashable, Value> {
         return found.value
     }
 
-    /// Keeps a value at its cost in bytes, and lets the least recently used values go until all fit in the limit.
     public mutating func keep(_ value: Value, for key: Key, cost: Int) {
         if let old = kept.removeValue(forKey: key) { bytes -= old.cost }
         largest = max(largest, cost)

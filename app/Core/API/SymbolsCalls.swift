@@ -1,6 +1,5 @@
 import Foundation
 
-/// The call of `openspot symbols`: each symbol of the Character Viewer as a row, with its keywords.
 struct SymbolsCalls {
     let keywords: GlyphKeywordCache
 

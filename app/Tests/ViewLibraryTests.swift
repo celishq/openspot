@@ -18,7 +18,6 @@ final class ViewLibraryTests: XCTestCase {
         folder.appendingPathComponent("cache")
     }
 
-    /// A folder of stand-ins for the build commands, with a compiler that counts its runs and writes `built`.
     private func tools(selector: String = "exit 0", compiler: String? = nil) throws -> ViewLibrary {
         let place = folder.appendingPathComponent("tools")
         try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
@@ -45,6 +44,24 @@ final class ViewLibraryTests: XCTestCase {
 
         let handle = try XCTUnwrap(dlopen(library.path, RTLD_NOW | RTLD_LOCAL), String(cString: dlerror()))
         XCTAssertNotNil(dlsym(handle, ViewLibrary.entry))
+    }
+
+    func testEachViewThatAScriptUnderAFolderNamesIsBuiltBesideItsSourceForBothKindsOfMac() async throws {
+        let views = try tools()
+        let spots = folder.appendingPathComponent("spots")
+        let own = spots.appendingPathComponent("openspot.spot")
+        try FileManager.default.createDirectory(at: own, withIntermediateDirectories: true)
+        try "#!/bin/sh\n# title=Icon\n# view=icon.swift\n".writeScript(to: own.appendingPathComponent("icon.sh"))
+        try Data(view.utf8).write(to: own.appendingPathComponent("icon.swift"))
+        try "#!/bin/sh\n# title=Quit\n".writeScript(to: own.appendingPathComponent("quit.sh"))
+        try Data(view.utf8).write(to: own.appendingPathComponent("loose.swift"))
+
+        let built = try await views.buildViews(under: spots)
+
+        XCTAssertEqual(built.map(\.lastPathComponent), ["icon.view"])
+        XCTAssertEqual(try Data(contentsOf: own.appendingPathComponent("icon.view")), Data("both".utf8))
+        XCTAssertEqual(builds, 2)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: own.appendingPathComponent("loose.view").path))
     }
 
     func testAnUnchangedViewIsBuiltOnce() async throws {

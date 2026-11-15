@@ -1,7 +1,6 @@
 import OpenspotCore
 import SwiftUI
 
-/// The picture of an item or a spot: its image or the icon of its file, or else its glyph, or else its symbol, or else nothing.
 struct SpotItemIcon: View {
     let icon: FileIcon?
     let glyph: String?
@@ -21,17 +20,14 @@ struct SpotItemIcon: View {
         self.size = size
     }
 
-    /// Draws ahead the colour emoji of these items at this size, so that their icons find them ready.
     static func prepare(_ items: ArraySlice<SpotItem>, size: CGFloat) {
         SpotGlyphPicture.prepare(items.compactMap(\.glyph), side: size, fontSize: size * glyphScale)
     }
 
-    /// Draws ahead these colour emoji at this size, so that the icons that show them find them ready.
     static func prepare(glyphs: [String], size: CGFloat) {
         SpotGlyphPicture.prepare(glyphs, side: size, fontSize: size * glyphScale)
     }
 
-    /// Takes the picture book of a whole list's colour emoji at the size of a row, so that its rows draw none of them.
     static func bind(glyphs: [String]) {
         SpotGlyphShelf.bind(glyphs, side: SpotTokens.listIconSize, fontSize: SpotTokens.listIconSize * glyphScale)
     }
@@ -55,7 +51,6 @@ struct SpotItemIcon: View {
     }
 }
 
-/// A file's icon read from the store. Its place stays empty until the bitmap is ready.
 private struct SpotFileIconView: View {
     let icon: FileIcon
     let size: CGFloat

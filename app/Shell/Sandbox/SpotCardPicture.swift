@@ -2,14 +2,11 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// A picture of a card that its script draws, made by the real card view in a window that lies off every screen.
 @MainActor
 enum SpotCardPicture {
     private static let settle = 0.5
     private static let margin = SpotPictureStage<Color>.margin
 
-    /// Reads an output, draws its card at a size from the drawing for that size, writes the picture as a PNG and exits. An
-    /// output with no drawing that fits the size exits with 1.
     static func run(text: String, size: SpotSize, path: String) -> Never {
         NSApplication.shared.setActivationPolicy(.prohibited)
         let output = SpotOutput(text: text)
@@ -45,9 +42,6 @@ enum SpotCardPicture {
         exit(0)
     }
 
-    /// Draws the real card of an installed spot at a size, after the read that the open panel would make, or after the reads
-    /// of the spots that a card of other spots names, writes the picture as a PNG and exits. A spot that no card shows exits
-    /// with 1.
     static func run(spot id: String, size: SpotSize, path: String) -> Never {
         NSApplication.shared.setActivationPolicy(.prohibited)
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())

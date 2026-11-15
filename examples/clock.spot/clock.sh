@@ -2,6 +2,8 @@
 # title=World clock
 # icon=globe
 # mode=always
+# offers=card
+# offers=menubar
 . "$OPENSPOT_SH"
 zone=Asia/Tokyo
 city=$(printf '%s' "${zone##*/}" | tr _ ' ')

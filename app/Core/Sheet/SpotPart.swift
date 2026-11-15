@@ -1,11 +1,9 @@
 import Foundation
 
-/// One line of a sheet that a script prints. What the block holds decides what it shows.
 public struct SpotPart: Equatable, Sendable, Identifiable {
     public struct Option: Equatable, Sendable {
         public let id: String
         public let title: String
-        /// The picture of its row in a form whose one choice shows as rows.
         public let icon: String?
 
         public init(id: String, title: String, icon: String? = nil) {
@@ -23,7 +21,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case menu([Option], value: String?)
         case text(String, placeholder: String?, isReadOnly: Bool)
         case list([Option], value: String?)
-        /// A big number as it shows, and the part of it that draws faint, such as its currency.
         case number(String, unit: String?)
         case chart([Double])
         case image(String)
@@ -37,8 +34,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case symbol(String)
     }
 
-    /// The box that the app draws around it, from the one set that the app owns. `tick` draws a switch as a round tick, for a
-    /// thing to do.
     public enum Look: String, Equatable, Sendable {
         case tile, chip, strong, bare, tick
     }
@@ -48,18 +43,14 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     }
 
     public let id: String
-    /// The kind that its first key names, such as `switch`.
     public let kind: String
     public let isSection: Bool
     public let title: String?
     public let detail: String?
     public let symbol: String?
-    /// The file whose icon it shows, and the short text, such as an emoji, that it shows as its picture.
     public let file: String?
     public let glyph: String?
-    /// Its colour that means something, or `on` for a dot that says that a thing is active.
     public let tone: MetricValue.Tone?
-    /// The colour, as `#RRGGBB`, of the bar that a text or a number draws at its leading edge, such as a calendar's.
     public let color: String?
     public private(set) var control: Control
     public let press: Press
@@ -67,22 +58,16 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let closes: Bool
     public let align: Align?
     public let look: Look?
-    /// The small mark of a line, drawn as a widget draws it: a ring around its detail from `value`, or bars before its
-    /// detail from `point` lines.
     public let mark: MetricValue?
-    /// Each key of its block with its values, which a spot's own view draws. Only a `view` block keeps them.
     public let values: [String: [String]]
 
-    /// One run of a number's shown value, and whether it is the unit.
     public struct NumberPiece: Equatable, Sendable {
         public let text: String
         public let isUnit: Bool
     }
 
-    /// The kinds of block that make a part, in the order of the table in Blocks of the protocol.
     public static let kinds = ["text", "number", "gauge", "graph", "picture", "view", "switch", "slider", "field", "choice", "hotkey", "button", "section"]
 
-    /// Reads a block whose first key is a kind of part. Its value is the id, and the kind decides the control.
     public init?(block: TextBlock) {
         guard let kind = block.fields.first?.key, Self.kinds.contains(kind), let id = block.value(kind) else { return nil }
         self.id = id
@@ -154,7 +139,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         )
     }
 
-    /// The shown value of a number in runs, with the last place of its unit apart. A value without its unit is one run.
     public var numberPieces: [NumberPiece] {
         guard case .number(let number, let unit) = control else { return [] }
         guard let unit, let range = number.range(of: unit, options: .backwards) else { return [NumberPiece(text: number, isUnit: false)] }
@@ -165,19 +149,16 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         ].filter { !$0.text.isEmpty }
     }
 
-    /// The good, warn or bad tone of a text, which colours its words. Another part shows its tone in its own way.
     public var textTone: MetricValue.Tone? {
         kind == "text" ? tone : nil
     }
 
-    /// The options of a choice: the `option` blocks after it, each with its id, its `title` or else its id, and its `icon`.
     static func options(of block: TextBlock) -> [Option] {
         block.children.compactMap { child in
             child.value("option").map { Option(id: $0, title: child.value("title") ?? $0, icon: child.value("icon")) }
         }
     }
 
-    /// The value of its control, as the script reads it. A line with no control has none.
     public var value: String? {
         switch control {
         case .none, .number, .chart, .image, .progress: nil
@@ -189,7 +170,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         }
     }
 
-    /// This part as a drawing places it: a choice whose area covers more than one line is a list, and any other is a menu.
     public func drawn(in layout: SheetLayout?) -> SpotPart {
         guard case .menu(let options, let value) = control, let area = layout?.areas[id], area.y1 > area.y0 else { return self }
         var part = self
@@ -197,13 +177,11 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         return part
     }
 
-    /// The words in the ring of a level, which takes the place of its detail: the detail with no percent sign.
     public var ringWords: String? {
         guard mark?.kind == .gauge, let detail else { return nil }
         return detail.hasSuffix("%") ? String(detail.dropLast()) : detail
     }
 
-    /// Whether it draws a block that takes all the height of its cell.
     public var fillsHeight: Bool {
         if kind == "view" { return true }
         return switch control {
@@ -212,14 +190,12 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         }
     }
 
-    /// Whether it takes all the width of its cell. A small button or a menu keeps its own size.
     public var fillsWidth: Bool {
         if look == .chip || look == .bare { return title != nil && control != .none }
         if case .symbol = press, title == nil, control == .none { return false }
         return true
     }
 
-    /// Whether it can scroll by itself, which rules out a sheet that scrolls around it.
     public var scrollsItself: Bool {
         switch control {
         case .text, .list: true
@@ -227,7 +203,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         }
     }
 
-    /// Whether its rows share the free height of a sheet.
     var growsRow: Bool {
         if kind == "view" { return true }
         return switch control {
@@ -236,18 +211,15 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         }
     }
 
-    /// Whether a press reaches it, so that a press also stops its running call.
     public var isPressable: Bool {
         press != .none
     }
 
-    /// Whether the person types into it.
     public var isEditable: Bool {
         if case .text(_, _, false) = control { return true }
         return false
     }
 
-    /// Whether the arrows can move the focus to it: a switch, a slider, a menu, a key, a field or a button.
     public var isFocusable: Bool {
         switch control {
         case .toggle, .shortcut, .menu, .slider: true
@@ -256,7 +228,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         }
     }
 
-    /// Takes a value that the person set.
     public mutating func set(_ value: String) {
         switch control {
         case .none, .number, .chart, .image, .progress: break

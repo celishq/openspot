@@ -1,9 +1,6 @@
 import OpenspotCore
 import SwiftUI
 
-/// The handle on the bottom right corner of a card in Edit Spots: a bold stretch of the card's own rim at that corner, over
-/// its ring, in the colour of text. It lies in a square on the corner, so that it moves with the corner as the card
-/// resizes. It takes no press; the corner of the card takes the drag.
 struct SpotResizeHandle: View {
     let size: SpotSize
     @MainActor private static var rims: [String: Path] = [:]
@@ -15,8 +12,6 @@ struct SpotResizeHandle: View {
             .allowsHitTesting(false)
     }
 
-    /// The stretch of a card's rim at its bottom right corner, between 12° and 78° around the centre of that corner, in the
-    /// square on that corner. It is found once for each size.
     private static func rim(of size: SpotSize) -> Path {
         if let rim = rims[size.name] { return rim }
         let radius = SpotTokens.corner(for: size)

@@ -1,8 +1,5 @@
 import Foundation
 
-/// The link to a script that runs once for each call. Each call is a process of its own. Each frame with a block of a
-/// read or a search answers it, and one that ended with no picture answers with its last head. A frame of only a head
-/// carries effects.
 @MainActor
 final class OnceLink: ScriptLink {
     weak var run: SpotRun?
@@ -28,7 +25,7 @@ final class OnceLink: ScriptLink {
         var showedPicture = false
         var lastHead: SpotOutput?
         var selected: String?
-        let made = runs.call(run.spot, call.action, key: call.key, input: call.input, limit: call.limit, reason: call.reason, variables: call.variables) { [weak run] made, text, lines in
+        let made = runs.call(run.spot, call.action, key: call.key, input: call.input, limit: call.limit, reason: call.reason, variables: run.withPage(call.variables)) { [weak run] made, text, lines in
             guard let run else { return }
             selected = lines.select ?? selected
             switch call.purpose {
@@ -42,8 +39,12 @@ final class OnceLink: ScriptLink {
                     run.takeEffects(lines, frame: text)
                 }
             case .work(let work):
+                run.takeMove(lines)
                 if lines.isPicture {
-                    if await run.takePicture(lines, frame: text, of: work) { showedPicture = true }
+                    if await run.takePicture(lines, frame: text, of: work) {
+                        showedPicture = true
+                        run.drewFrame(made)
+                    }
                 } else {
                     run.takeEffects(lines, frame: text)
                 }
@@ -74,12 +75,11 @@ final class OnceLink: ScriptLink {
         try await text(of: action, key: key, input: values)
     }
 
-    /// Runs a call to its end, and returns all that it printed, or nil when it was stopped.
     private func text(of action: SpotAction, key: String, input: String?) async throws -> String? {
         guard let run else { return nil }
         return try await withCheckedThrowingContinuation { continuation in
             var text = ""
-            let made = runs.call(run.spot, action, key: key, input: input, limit: nil) { [weak run] _, frame, lines in
+            let made = runs.call(run.spot, action, key: key, input: input, limit: nil, variables: run.withPage([:])) { [weak run] _, frame, lines in
                 text += frame
                 run?.report(toastOf: lines)
             } onEnd: { [weak run] made, end in

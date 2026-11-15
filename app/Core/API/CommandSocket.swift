@@ -1,17 +1,9 @@
 import Foundation
 
-/// The socket of the API in the config folder, which answers each `openspot` call while the app runs (protocol: The openspot command). It speaks
-/// JSON-RPC 2.0 with one JSON object on each line, as the stdio transport of MCP frames it. A call is a request
-/// (`CommandRequest`). The app answers with a notification `stdout` or `stderr` for each piece that the call prints, a
-/// notification `stdin` once the call reads stdin, and then a result with the `code`, or an error for a call that the API
-/// leaves to a process of its own, which the caller then starts. The caller answers `stdin` with notifications `stdin` whose
-/// params hold `text`, and then one whose params hold `end`. A caller that closes its connection stops its call (protocol: The openspot command).
 public final class CommandSocket: @unchecked Sendable {
     public static let name = SocketPath.name
-    /// The JSON-RPC code of a line that is not a request.
-    static let unreadable = -32700
-    /// The JSON-RPC code of a call that runs in a process of its own.
-    static let alone = -32000
+    static let unreadableCode = -32700
+    static let aloneCode = -32000
     private static let queueLength: Int32 = 64
     private static let callerLimit = 5
     private static let chunk = 65_536
@@ -19,7 +11,6 @@ public final class CommandSocket: @unchecked Sendable {
     private let path: String
     private let source: any DispatchSourceRead
 
-    /// Listens at the socket path of the folder, in place of a socket that an app left there. Returns nil when it cannot.
     public init?(folder: URL, api: CommandAPI) {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         guard let real = realpath(folder.path, nil) else { return nil }
@@ -59,13 +50,11 @@ public final class CommandSocket: @unchecked Sendable {
         source.resume()
     }
 
-    /// Stops listening and removes the socket.
     public func close() {
         source.cancel()
         unlink(path)
     }
 
-    /// Reads the request on a connection, streams its answer, and closes the connection.
     private static func answer(_ connection: Int32, _ api: CommandAPI) {
         _ = fcntl(connection, F_SETFL, fcntl(connection, F_GETFL) & ~O_NONBLOCK)
         var on: Int32 = 1
@@ -75,13 +64,13 @@ public final class CommandSocket: @unchecked Sendable {
         let (line, rest) = receive(connection)
         let link = CommandConnection(descriptor: connection, rest: rest)
         guard let request = CommandRequest(line: line) else {
-            return link.end(fault(unreadable, "Openspot cannot read this request.", id: nil))
+            return link.end(fault(unreadableCode, "Openspot cannot read this request.", id: nil))
         }
         let environment = api.environment(of: peer(of: connection), over: request.environment(over: ProcessInfo.processInfo.environment))
         let call = CommandLineCall(arguments: request.arguments, environment: environment).map { api.admit($0, arguments: request.arguments, environment: environment) }
         let output = CommandOutput { text, isError in link.notify(isError ? "stderr" : "stdout", text: text) }
         guard let call, let work = api.work(for: call, input: { await link.stdin() }, environment: environment, isPiped: request.isPiped, isSandboxed: CallerTokens.isSandboxedApart(peer(of: connection)), output: output) else {
-            return link.end(fault(alone, "Run this call in a process of its own.", id: request.id))
+            return link.end(fault(aloneCode, "Run this call in a process of its own.", id: request.id))
         }
         let stop = CommandStop()
         link.listen { stop.cancel() }
@@ -99,14 +88,12 @@ public final class CommandSocket: @unchecked Sendable {
         ["jsonrpc": "2.0", "id": id.map { $0 as Any } ?? NSNull(), "error": ["code": code, "message": message]]
     }
 
-    /// The ID of the process at the other end of a connection, or 0 when the socket does not say.
     private static func peer(of connection: Int32) -> pid_t {
         var id: pid_t = 0
         var size = socklen_t(MemoryLayout<pid_t>.size)
         return getsockopt(connection, SOL_LOCAL, LOCAL_PEERPID, &id, &size) == 0 ? id : 0
     }
 
-    /// Reads up to the end of the first line, and returns that line and the bytes after it.
     private static func receive(_ connection: Int32) -> (Data, Data) {
         var data = Data()
         var buffer = [UInt8](repeating: 0, count: chunk)

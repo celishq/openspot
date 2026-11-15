@@ -1,8 +1,6 @@
 import AppKit
 import OpenspotCore
 
-/// The width of a header's words as they are drawn, the longer of the title and the second line, measured once for each
-/// pair of words. It keeps about 4 KB of words, and lets the least recently used go first.
 @MainActor
 enum SpotWordsWidth {
     private static var widths = RecentCache<String, CGFloat>(base: 4 << 10)

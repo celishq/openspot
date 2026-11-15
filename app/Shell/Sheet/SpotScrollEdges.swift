@@ -1,14 +1,12 @@
 import OpenspotCore
 import SwiftUI
 
-/// How strongly each end of the scroll area fades, from 0 to 1.
 struct SpotScrollEdges: Equatable {
     var top = 0.0
     var bottom = 0.0
 
     static let fadeLength = 56.0
 
-    /// A mask for one end of a scroll area, `fadeLength` long, from that end inwards, for an end that fades this strongly.
     static func end(fading strength: Double, from edge: UnitPoint) -> LinearGradient {
         LinearGradient(stops: [
             .init(color: .black.opacity(1 - strength), location: 0),
@@ -18,7 +16,6 @@ struct SpotScrollEdges: Equatable {
         ], startPoint: edge, endPoint: edge == .top ? .bottom : .top)
     }
 
-    /// A mask for cards that scroll in a surface of this height.
     func gradient(height: CGFloat) -> LinearGradient {
         LinearGradient(stops: stops(height: height), startPoint: .top, endPoint: .bottom)
     }

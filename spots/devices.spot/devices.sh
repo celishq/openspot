@@ -2,11 +2,8 @@
 # title=Devices
 # icon=airpods
 # on=clock.300
-# preview=sample
-if [ "$OPENSPOT_REASON" = spot.preview ]; then
-  printf 'graph=devices\ntitle=72%%\ndetail=AirPods Pro\nicon=airpods\nvalue=0.72\n'
-  exit 0
-fi
+# offers=card
+# offers=menubar
 . "$OPENSPOT_SH"
 
 # Prints one line for each battery of each connected device: its name, the part, then the level.

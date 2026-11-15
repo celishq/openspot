@@ -1,6 +1,5 @@
 import XCTest
 
-/// Proves the board of the Draw spot: arrows that hold shapes, ties that hold arrows together, forms, and the file of a board.
 final class DrawBoardTests: XCTestCase {
     private func box(_ x: CGFloat, _ y: CGFloat, _ form: Figure.Form = .rectangle) -> Figure {
         var figure = Figure(kind: .shape, points: [CGPoint(x: x, y: y), CGPoint(x: x + 100, y: y + 60)])
@@ -15,7 +14,6 @@ final class DrawBoardTests: XCTestCase {
         return arrow
     }
 
-    /// Two sources on the left with arrows to one target on the right.
     private func fan() -> (board: Board, target: Figure, arrows: [Figure]) {
         let top = box(0, 0)
         let bottom = box(0, 200)

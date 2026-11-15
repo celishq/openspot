@@ -1,12 +1,10 @@
 import Foundation
 
-/// A source that is found on the screen: a display, a window, or an area in points from the top left of the main display.
 public enum ScreenTarget: Equatable, Sendable {
     case display(UInt32)
     case window(UInt32)
     case area(CGRect)
 
-    /// The target as one field: `display=<id>`, `window=<id>` or `area=<x> <y> <width> <height>`.
     var field: TextBlock.Field {
         switch self {
         case .display(let id): .init(key: "display", value: String(id))
@@ -16,7 +14,6 @@ public enum ScreenTarget: Equatable, Sendable {
         }
     }
 
-    /// Reads the field of a target from a block, or returns nil when it has none.
     init?(block: TextBlock) {
         if let id = block.value("display").flatMap(UInt32.init) {
             self = .display(id)

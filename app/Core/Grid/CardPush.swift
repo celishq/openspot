@@ -1,6 +1,5 @@
 import Foundation
 
-/// A card that an opening sheet pushes from its rect by an offset, in a straight line.
 public struct CardPush: Equatable, Sendable {
     public let from: CGRect
     public let by: CGSize
@@ -10,8 +9,6 @@ public struct CardPush: Equatable, Sendable {
         self.by = by
     }
 
-    /// The shares of the push from its start until the card's centre meets the edge of `bounds`; nil when the centre stays
-    /// inside.
     public func fade(within bounds: CGRect) -> ClosedRange<Double>? {
         let axes = [
             (from.midX, by.width, bounds.maxX),

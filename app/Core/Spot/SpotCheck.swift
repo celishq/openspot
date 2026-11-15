@@ -1,13 +1,10 @@
 import Foundation
 
-/// A run of each spot in a folder that reports all faults, so that a person or an agent can fix them.
 public struct SpotCheck: Sendable {
     public let folder: SpotsFolder
     public let timeout: TimeInterval
     public let views: ViewLibrary
-    /// The most uses that Careful mode leaves each read, or nil to run each one as the person (protocol: Trust).
     let careful: Set<SpotUse>?
-    /// The record of the app, which then knows each read's calls of `openspot` as its spot's (protocol: Trust), or nil for one of its own.
     let tokens: CallerTokens?
 
     public init(folder: SpotsFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard()) {
@@ -22,7 +19,6 @@ public struct SpotCheck: Sendable {
         self.tokens = tokens
     }
 
-    /// One fault, with the spot and the file that it is in when it has them.
     public struct Finding: Equatable, Sendable, Encodable {
         public let spot: String?
         public let file: String?
@@ -34,20 +30,15 @@ public struct SpotCheck: Sendable {
             self.fault = fault
         }
 
-        /// The fault in one line, after the spot that it is in.
         public var line: String {
             spot.map { "\($0): \(fault)" } ?? fault
         }
     }
 
-    /// Returns one line for each fault. No lines means that all spots load and answer, and each view compiles.
     public func faults() async -> [String] {
         await findings().map(\.line)
     }
 
-    /// Returns each fault with its spot and its file. None means that all spots load and answer, and each view compiles.
-    /// Only the start of each read runs on the main thread. A stop of its task starts no more reads and compiles no more
-    /// views.
     public func findings() async -> [Finding] {
         let scan: ScanResult
         do {
@@ -78,10 +69,10 @@ public struct SpotCheck: Sendable {
                 let output = SpotOutput(text: text)
                 _ = try script.state(of: output)
                 if script.read?.seconds != nil, MetricValue(output: output) == nil { throw SpotError.badMetric }
-                findings += output.retired.map(found)
-                findings += output.unreadable.map { found("cannot read the item \($0)") }
+                findings += output.errors.map { found("cannot read the item \($0)") }
                 findings += Self.brokenBlocks(in: text).map(found)
                 findings += output.partFaults.map(found)
+                findings += Self.moveFaults(of: output, in: script, among: scan.scripts).map(found)
             } catch {
                 findings.append(found(Self.reason(error)))
             }
@@ -98,15 +89,28 @@ public struct SpotCheck: Sendable {
         return findings
     }
 
-    /// The findings as one JSON list, with a new line at its end.
+    static func moveFaults(of output: SpotOutput, in script: Spot, among scripts: [Spot]) -> [String] {
+        var faults: [String] = []
+        if let move = output.move {
+            let word = if case .pop = move { "pop" } else { "push" }
+            faults.append("the read prints \(word), which moves nothing in a read. Print it from a press")
+        }
+        for item in output.items {
+            guard case .push(let spot, let page?, _, _)? = item.move else { continue }
+            let target = spot ?? script.id
+            guard let taker = scripts.first(where: { $0.id == target }), !taker.takes(page: page) else { continue }
+            let pattern = page.firstIndex(of: ":").map { "\(page[..<$0]):*" } ?? page
+            faults.append("the row \(item.run) pushes the page \(page) of \(target), which takes no such page. Add pages=\(pattern) to \(target)")
+        }
+        return faults
+    }
+
     public static func json(_ findings: [Finding]) -> String {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
         return String(decoding: (try? encoder.encode(findings)) ?? Data("[]".utf8), as: UTF8.self) + "\n"
     }
 
-    /// The faults of blocks that a value with a new line breaks: a line with no `=`, or a key twice that only a list repeats
-    /// (protocol: The calls).
     static func brokenBlocks(in text: String) -> [String] {
         let fix = "as a value with a new line prints. Print each value from data with openspot_kv, openspot_row or esc"
         let lists: Set<String> = ["grid", "value", "hides", "color"]

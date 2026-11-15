@@ -1,7 +1,6 @@
 import Observation
 import OpenspotCore
 
-/// The message a toast shows.
 @MainActor
 @Observable
 final class Toast {

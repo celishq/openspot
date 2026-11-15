@@ -9,7 +9,7 @@ final class MainSearchTests: XCTestCase {
 
         let found = search.matching(SearchQuery(text: "safa", layouts: []), in: [list])
 
-        XCTAssertEqual(search.ranked, 3)
+        XCTAssertEqual(search.rankedCount, 3)
         XCTAssertEqual(found.map(\.item.title), ["Safari"])
     }
 
@@ -20,7 +20,7 @@ final class MainSearchTests: XCTestCase {
 
         _ = search.matching(SearchQuery(text: "sig", layouts: []), in: [list])
 
-        XCTAssertEqual(search.ranked, 3)
+        XCTAssertEqual(search.rankedCount, 3)
     }
 
     func testNewRowsAreSearchedWhole() {
@@ -41,12 +41,12 @@ final class MainSearchTests: XCTestCase {
         list.remember(list.all[2])
 
         let picked = search.matching(SearchQuery(text: "safa", layouts: []), in: [list])
-        XCTAssertEqual(search.ranked, 3)
+        XCTAssertEqual(search.rankedCount, 3)
         list.take(search: .script)
         _ = search.matching(SearchQuery(text: "safar", layouts: []), in: [list])
 
         XCTAssertEqual(picked.map(\.item.title), ["Safari"])
-        XCTAssertEqual(search.ranked, 3)
+        XCTAssertEqual(search.rankedCount, 3)
     }
 
     func testAListThatItsScriptSearchesIsFoldedOnceForAllKeys() {

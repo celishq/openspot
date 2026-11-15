@@ -2,15 +2,10 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// A picture of the panel with each installed spot on its grid, after the reads of the open panel, and with the sample data
-/// of each spot that has one (protocol: The header): the real panel view over
-/// a wallpaper, with glass drawn at the field and at each card, since the panel's own blur does not show in a picture.
 @MainActor
 enum SpotPanelPicture {
     private static let settle = 0.8
 
-    /// Opens the panel of the installed spots, reads each spot with sample data for its preview, draws the panel, writes the
-    /// picture as a PNG and exits.
     static func run(path: String) -> Never {
         NSApplication.shared.setActivationPolicy(.prohibited)
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
@@ -19,8 +14,10 @@ enum SpotPanelPicture {
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(300))
             await model.waitForReads()
-            for sheet in model.sheets.values where sheet.spot.previewsSample {
-                sheet.read(need: .change, reason: .preview)
+            for sheet in model.sheets.values {
+                guard let sampled = sheet.spot.sampled else { continue }
+                sheet.update(sampled)
+                sheet.read(need: .change)
             }
             try? await Task.sleep(for: .milliseconds(300))
             await model.waitForReads()
@@ -34,7 +31,7 @@ enum SpotPanelPicture {
             let view = NSHostingView(rootView: ZStack(alignment: .topLeading) {
                 SpotWallpaper(seed: seed)
                 SpotWallpaper.blurred(seed: seed, size: size)
-                    .overlay(Color.black.opacity(SpotWallpaper.shade))
+                    .overlay(Color.black.opacity(SpotWallpaper.glassShade))
                     .overlay(SpotTheme.glass)
                     .mask {
                         ZStack(alignment: .topLeading) {

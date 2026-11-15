@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves that `openspot spot run` makes a call as the app makes it, and gives back all that the script printed.
 @MainActor
 final class TerminalRunTests: XCTestCase {
     private var folder: URL!
@@ -42,6 +41,15 @@ final class TerminalRunTests: XCTestCase {
         XCTAssertTrue(end.errors.hasSuffix("line 4999 of a log that runs long\n"))
     }
 
+    func testARunKeepsTheEndOfAStderrOverItsLimit() async throws {
+        let spot = try spot("flood", "head -c 3000000 /dev/zero | tr '\\0' 'a' >&2\necho ' the end' >&2\nexit 1")
+
+        let end = await TerminalRun(spot: spot, arguments: [], input: nil).start { _ in }
+
+        XCTAssertLessThanOrEqual(end.errors.utf8.count, 2 * TerminalRun.errorLimit)
+        XCTAssertTrue(end.errors.hasSuffix("a the end\n"))
+    }
+
     func testARunWithNoCallReadsASpotThatReadsAndOpensOneThatDoesNot() async throws {
         let reads = try spot("reads", header: "on=sheet.open", "echo \"$1 $OPENSPOT_REASON\"")
         let opens = try spot("opens", "echo \"$1\"")
@@ -54,7 +62,7 @@ final class TerminalRunTests: XCTestCase {
     }
 
     func testARunOfAStayingScriptEndsWithTheFrameThatEndsItsCall() async throws {
-        let spot = try spot("relay", header: "mode=stay", """
+        let spot = try spot("relay", header: "mode=stay\noffers=card\noffers=menubar", """
         . "$OPENSPOT_SH"
         main() { printf 'text=peer\\ntitle=%s\\n' "$1"; }
         openspot_serve main "$@"

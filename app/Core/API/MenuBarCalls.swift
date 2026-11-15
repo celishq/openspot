@@ -1,6 +1,5 @@
 import Foundation
 
-/// The call of `openspot menubar`: a spot in the menu bar, or out of it.
 struct MenuBarCalls {
     let environment: [String: String]
     let app: (any RunningApp)?

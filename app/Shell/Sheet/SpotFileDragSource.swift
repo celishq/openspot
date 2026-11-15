@@ -1,11 +1,8 @@
 import OpenspotCore
 import SwiftUI
 
-/// Lets a person drag the files of these rows out of a sheet (protocol: Files out). It adds nothing when no row has a file,
-/// and finds the rows with files only when a drag starts.
 struct SpotFileDragSource: ViewModifier {
     let items: [SpotItem]
-    /// Whether a row has a file, which the list knows without a pass over its rows.
     let hasFiles: Bool
     let onDrop: ([SpotItem]) -> Void
     @State private var isDragging = false

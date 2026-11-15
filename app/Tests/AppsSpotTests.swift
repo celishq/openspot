@@ -6,8 +6,6 @@ final class AppsSpotTests: SampleSpotsCase {
         try XCTUnwrap(try scan.spots.first { $0.name == "Apps" })
     }
 
-    /// Makes an app with a bundle id in a private home, and fake `find`, `ps` and `osascript`. The fake `osascript` writes
-    /// its arguments to `osascript-args`, one on each line.
     private static func fakeApp(in folder: URL, running: Bool) throws -> URL {
         let app = folder.appendingPathComponent("Applications/Zed.app")
         let contents = app.appendingPathComponent("Contents")

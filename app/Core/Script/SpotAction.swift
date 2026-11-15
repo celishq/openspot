@@ -12,7 +12,6 @@ public struct SpotAction: Equatable, Sendable {
         self.arguments = arguments
     }
 
-    /// A press of a card that is a switch: its id and its new value (protocol: The main block and the card).
     public static func toggle(_ state: SpotState) -> SpotAction {
         SpotAction(arguments: [state.control ?? "", (state.on ?? false) ? "false" : "true"])
     }
@@ -25,28 +24,22 @@ public struct SpotAction: Equatable, Sendable {
         SpotAction(arguments: [action.id] + (item.map { [$0.run] } ?? []))
     }
 
-    /// A person set the value of a part.
     public static func set(_ part: String, to value: String) -> SpotAction {
         SpotAction(arguments: [part, value])
     }
 
-    /// A person pressed a part.
     public static func press(_ part: String) -> SpotAction {
         SpotAction(arguments: [part])
     }
 
-    /// A person dropped or chose files on a card. Each path is its own argument.
     public static func drop(paths: [String]) -> SpotAction {
         SpotAction(arguments: ["drop"] + paths)
     }
 
-    /// The rows that a drag took out of the sheet as files (protocol: Files out).
     public static func drag(runs: [String]) -> SpotAction {
         SpotAction(arguments: ["drag"] + runs)
     }
 
-    /// This call as one block for a script that stays (protocol: Modes): `call=<id>`, an `arg` for each argument, an `env.<name>` for each
-    /// variable, and its stdin as one `input` value.
     public func block(input: String? = nil, variables: [String: String] = [:], id: Int) -> String {
         let call = [TextBlock.Field(key: "call", value: String(id))] + arguments.map { TextBlock.Field(key: "arg", value: $0) }
         let env = variables.sorted { $0.key < $1.key }.map { TextBlock.Field(key: "env.\($0.key)", value: $0.value) }
@@ -54,13 +47,10 @@ public struct SpotAction: Equatable, Sendable {
         return TextBlock(fields: call + env + stdin).text + "\n"
     }
 
-    /// The block that asks a staying script to stop the call with this `id`.
     public static func stopEvent(id: Int) -> String {
         "stop=\(id)\n\n"
     }
 
-    /// What a process gets for this call. A value over 64 KB leaves the arguments, because the system limits them. Stdin
-    /// holds it: a value of the sheet as it is, and any other value under the key `value`.
     func sent(input: String?) -> (arguments: [String], input: String?) {
         let long = arguments.dropFirst().filter { $0.utf8.count > Self.argumentLimit }
         guard !long.isEmpty else { return (arguments, input) }
@@ -69,7 +59,6 @@ public struct SpotAction: Equatable, Sendable {
         return (arguments.prefix(1) + arguments.dropFirst().filter { !long.contains($0) }, (input ?? "") + TextBlock(fields: missing).text)
     }
 
-    /// A new level of a card that is a slider: its id and the level (protocol: The main block and the card).
     public static func level(_ value: Double, of control: String) -> SpotAction {
         SpotAction(arguments: [control, String(Int(value.rounded()))])
     }

@@ -1,7 +1,4 @@
 #!/bin/sh
-# Films the open and close of SPOT's sheet (caffeinate by default) in a Release app, with its motion SLOW times slower (10 by
-# default), and saves each frame of the panel's window alone into .temp/film. With ffmpeg, it also tiles the frames of the
-# open and of the close into open.png and close.png.
 set -e
 cd "$(dirname "$0")/.."
 out=.temp/film

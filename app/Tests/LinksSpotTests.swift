@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Links spot with its real script and fake tools.
 final class LinksSpotTests: SampleSpotsCase {
     func testLinksAndAppsJoinTheMainSearch() throws {
         let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
@@ -123,7 +122,6 @@ final class LinksSpotTests: SampleSpotsCase {
         }
     }
 
-    /// Waits until no process of a read of the spot runs, such as a job that the read left in the background.
     private func readsEnded(of spot: Spot) async throws {
         for _ in 0..<500 {
             let pgrep = Process()
@@ -220,21 +218,6 @@ final class LinksSpotTests: SampleSpotsCase {
             let items = try await links.items(timeout: 5).items
 
             XCTAssertEqual(items, [])
-        }
-    }
-
-    func testSavedQuicklinksMoveToLinks() async throws {
-        let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
-        try await withPrivateHome { folder in
-            let data = folder.appendingPathComponent(".config/openspot/data/links")
-            try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
-            let old = data.appendingPathComponent("quicklinks.json")
-            try #"[{"id":"1","title":"Docs","url":"https://docs.test"}]"#.write(to: old, atomically: true, encoding: .utf8)
-
-            let items = try await links.items(timeout: 5).items
-
-            XCTAssertEqual(items.map(\.title), ["Docs", "Downloads", "Screenshots"])
-            XCTAssertFalse(FileManager.default.fileExists(atPath: old.path))
         }
     }
 

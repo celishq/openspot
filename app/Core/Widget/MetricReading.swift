@@ -1,6 +1,5 @@
 import Foundation
 
-/// The name and the last value of a metric. The value stays when a later read fails, and is then stale.
 public struct MetricReading: Equatable, Sendable {
     public private(set) var kind: MetricKind
     public let label: String
@@ -19,7 +18,6 @@ public struct MetricReading: Equatable, Sendable {
         value?.symbol ?? headerSymbol
     }
 
-    /// Takes a new value. When a metric has nothing to show it keeps its kind, and rows then count zero.
     public mutating func take(_ value: MetricValue) {
         isStale = false
         if value.isHidden {

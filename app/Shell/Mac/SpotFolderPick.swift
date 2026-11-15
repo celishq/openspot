@@ -1,11 +1,8 @@
 import AppKit
 import OpenspotCore
 
-/// The macOS folder window for a script. It gives the picked folder, and nothing on a cancel.
 @MainActor
 enum SpotFolderPick {
-    /// The picked folder on a line, or nothing after Cancel or a stop of the call. The window shows over the panel, and the
-    /// app that had the focus gets it back. It waits on the main thread without blocking it.
     static func pick() async -> String {
         let window = NSOpenPanel()
         window.canChooseFiles = false

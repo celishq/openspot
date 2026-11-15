@@ -2,9 +2,6 @@ import Foundation
 import Observation
 import OpenspotCore
 
-/// The state of the playground window. It runs the spot in a real panel of its own: a file that it keeps in step with the
-/// editor, or the text that a person types. Each edit runs again after a short pause, and only the newest edit runs. It
-/// reads, writes and watches the file away from the main thread.
 @MainActor
 @Observable
 final class SpotSandboxModel {
@@ -14,11 +11,8 @@ final class SpotSandboxModel {
 
     private(set) var sandbox = SheetSandbox()
     private(set) var source = ""
-    /// The place of the panel where the spot shows.
     private(set) var place = PlaygroundPlace.sheet
-    /// Why the header cannot load, or nil when it loads.
     private(set) var fault: String?
-    /// The ID of the spot in the panel, once it loads.
     private(set) var id: String?
     let file: URL?
     let presets: [(name: String, text: String)]
@@ -38,12 +32,10 @@ final class SpotSandboxModel {
         id.flatMap { id in panel.model.entries.first { $0.id == id }?.spot }
     }
 
-    /// The `on` line that the spot needs before its place reads it, or nil when it has one.
     var lack: String? {
         spot.flatMap(place.lack)
     }
 
-    /// `isCareful` runs the spot in Careful mode, with no use (protocol: Trust).
     init(path: String?, isCareful: Bool = false) {
         let file = path.map { URL(fileURLWithPath: $0) }
         self.file = file
@@ -64,7 +56,6 @@ final class SpotSandboxModel {
 
     nonisolated deinit {}
 
-    /// Takes the text of the spot that a person typed, saves it to the file, and runs it once the typing pauses.
     func edit(_ text: String) {
         source = text
         if let disk { Task.detached { await disk.write(text) } }
@@ -77,13 +68,11 @@ final class SpotSandboxModel {
         }
     }
 
-    /// Shows the spot in another place of the panel.
     func choose(_ next: PlaygroundPlace) {
         place = next
         if let id { panel.show(next, id: id) }
     }
 
-    /// Runs the spot again as it is, as a new open of the panel does.
     func rerun() {
         guard let id else { return }
         panel.model.reload()
@@ -91,15 +80,12 @@ final class SpotSandboxModel {
         if place == .sheet { panel.model.sheets[id]?.read(need: .change) }
     }
 
-    /// Stops the watch of the file and the panel, and removes its folder, once the window closes.
     func close() {
         watch?.cancel()
         panel.model.quit()
         try? FileManager.default.removeItem(at: folder)
     }
 
-    /// Puts the text in the panel, and shows the spot in its place. A header that cannot load keeps the last spot and
-    /// shows why.
     private func run(_ text: String) {
         do {
             let placed = try panel.place(file: file, text: text, spots: spots)
@@ -115,7 +101,6 @@ final class SpotSandboxModel {
         }
     }
 
-    /// Reads the file at once, and again each time another app changes it.
     private func startWatch() {
         guard let disk else { return }
         watch = Task.detached { [weak self] in

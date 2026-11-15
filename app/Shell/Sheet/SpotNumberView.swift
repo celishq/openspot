@@ -1,11 +1,9 @@
 import OpenspotCore
 import SwiftUI
 
-/// A big number with its unit faint and its title under it, as a card or a sheet draws it.
 struct SpotNumberView: View {
     let part: SpotPart
     let font: Font
-    /// How far a long number may shrink to fit its width.
     let leastScale: CGFloat
     var alignment: HorizontalAlignment = .leading
 

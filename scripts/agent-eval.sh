@@ -1,9 +1,4 @@
 #!/bin/sh
-# Measures goal 5 of the protocol in app/RULES.md: a coding agent with only `openspot guide` and one sentence writes a spot that
-# passes `openspot check --json` with [], so that it shows on the grid, on its first try.
-# Usage: scripts/agent-eval.sh [tasks]. Each task runs `claude -p` once in an empty spots folder of its own, and costs
-# money, so run one task first. A stand-in for `openspot spot show` keeps the app closed and notes each try.
-# It prints one line for each task, then the score, and writes them to .temp/agent-eval/result.txt.
 set -e
 cd "$(dirname "$0")/.."
 out="$PWD/.temp/agent-eval"

@@ -1,6 +1,5 @@
 import Foundation
 
-/// A working sheet for each kind of drawing, for a person to start from in the sandbox.
 public enum SheetExamples {
     public struct Example: Equatable, Sendable {
         public let name: String
@@ -302,7 +301,6 @@ public enum SheetExamples {
         tiles
     ]
 
-    /// A grid of emoji under a choice, whose rows fill a repeated area of the drawing.
     public static let tiles = Example(name: "a grid of emoji", text: """
     grid=tone tone tone tone tone tone tone
     grid=a a a a a a a

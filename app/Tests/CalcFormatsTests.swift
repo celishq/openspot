@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves that the kept formatters of Calc stay few and go when the person changes the language or the region.
 final class CalcFormatsTests: XCTestCase {
     func testTheKeptFormattersStayUnderTheirLimit() {
         for index in 0..<(CalcFormats.limit * 3) {

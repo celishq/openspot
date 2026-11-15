@@ -1,8 +1,5 @@
 import Foundation
 
-/// The picture that one `icon=` value names. An https URL or a path of a picture file, such as `cups.png`, draws the
-/// picture. Any other value with a slash, or that starts with `~`, is a file that draws its Finder icon. A name of lowercase
-/// letters, digits and dots is an SF Symbol. Any other text, such as an emoji, is drawn as it is.
 public enum Icon: Equatable, Sendable {
     case symbol(String)
     case file(String)

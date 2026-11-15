@@ -16,7 +16,6 @@ final class SwiftProgramTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    /// A folder of stand-ins for the build commands, which writes `built` as the program.
     private func tools(selector: String = "exit 0", compiler: String = "exit 0") throws -> SwiftProgram {
         let place = folder.appendingPathComponent("tools")
         try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
@@ -32,7 +31,6 @@ final class SwiftProgramTests: XCTestCase {
         try text.writeScript(to: url)
     }
 
-    /// A clock that a test moves.
     private final class Clock: @unchecked Sendable {
         private let lock = NSLock()
         private var date = Date()
@@ -47,8 +45,6 @@ final class SwiftProgramTests: XCTestCase {
     private let clock = Clock()
     private var cache: URL { folder.appendingPathComponent("cache") }
 
-    /// Stand-ins for the build commands whose compiler logs each build and writes a C program, by default one that prints
-    /// `text=program`, with a cache in the test's folder.
     private func caching(_ program: String = "int main(void) { return puts(\"text=program\") < 0; }", cache: URL? = nil) throws -> SwiftProgram {
         let place = folder.appendingPathComponent("tools")
         try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
@@ -267,7 +263,6 @@ final class SwiftProgramTests: XCTestCase {
         XCTAssertEqual(answer, "text=\(source.path)\n")
     }
 
-    /// Builds each source, and returns the path of its program in the cache.
     private func built(_ sources: [URL], by program: SwiftProgram) async throws -> [URL] {
         var programs: [URL] = []
         for source in sources {
@@ -337,7 +332,6 @@ final class SwiftProgramTests: XCTestCase {
 
     private var root: URL { folder.appendingPathComponent("swift", isDirectory: true) }
 
-    /// Stand-ins for the build commands, as `caching` gives them, with the cache of a config folder in `root`.
     private func caching(config: String) throws -> SwiftProgram {
         try caching(cache: SwiftProgram.folder(of: folder.appendingPathComponent(config), in: root))
     }
@@ -369,32 +363,4 @@ final class SwiftProgramTests: XCTestCase {
         XCTAssertTrue(exists(kept[0]))
     }
 
-    func testABuildInTheOldSharedFolderMovesIntoTheFolderOfItsConfig() async throws {
-        let program = try caching(config: "release")
-        let source = try source()
-        let other = try await built([source], by: try caching(config: "other"))
-        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        let old = root.appendingPathComponent(try sha(source))
-        try FileManager.default.moveItem(at: other[0], to: old)
-
-        let runnable = program.runnable(for: source)
-
-        XCTAssertEqual(runnable, SwiftProgram.folder(of: folder.appendingPathComponent("release"), in: root).appendingPathComponent(try sha(source)))
-        XCTAssertFalse(exists(old))
-        XCTAssertEqual(builds, 1)
-    }
-
-    func testAPruneRemovesAnOldSharedBuildThatDidNotRunFor30Days() async throws {
-        let program = try caching(config: "release")
-        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        let stale = root.appendingPathComponent(String(repeating: "a", count: 64))
-        let fresh = root.appendingPathComponent(String(repeating: "b", count: 64))
-        try Data("x".utf8).write(to: stale)
-        try Data("x".utf8).write(to: fresh)
-        try age(stale, days: 31)
-
-        await program.prune(keeping: [])?.value
-
-        XCTAssertEqual([exists(stale), exists(fresh)], [false, true])
-    }
 }

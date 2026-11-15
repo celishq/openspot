@@ -1,12 +1,9 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Dictate example: the words it keeps from Whisper, the sound it sends, and how its script wakes the helper.
 final class DictateExampleTests: SampleSpotsCase {
     private static let model = "ggml-large-v3-turbo.bin"
 
-    /// The data folder of the spot, with a stand-in Whisper server on the `PATH` and a stand-in helper that runs this
-    /// body. The helper's file is newer than the source, so the script does not build it.
     private func fakeHelper(_ body: String, model: Bool = true, in folder: URL) throws -> URL {
         try "#!/bin/sh\nexit 0\n".writeScript(to: folder.appendingPathComponent("tools/whisper-server"))
         let data = folder.appendingPathComponent(".config/openspot/data/dictate")
@@ -16,8 +13,6 @@ final class DictateExampleTests: SampleSpotsCase {
         return data
     }
 
-    /// The helper in `folder`, waiting as the script starts it, with a stand-in Whisper server on its `PATH` that writes
-    /// its process ID to `server` in the folder and sleeps.
     private func stay(_ helper: URL, watching parent: TestChild, action: String? = nil, rest: String = "600", in folder: URL) throws -> Process {
         try "#!/bin/sh\necho $$ > '\(folder.path)/server.new'\nmv '\(folder.path)/server.new' '\(folder.path)/server'\nexec /bin/sleep 600\n".writeScript(to: folder.appendingPathComponent("tools/whisper-server"))
         let process = Process()
@@ -30,7 +25,6 @@ final class DictateExampleTests: SampleSpotsCase {
         return process
     }
 
-    /// The process ID of the stand-in Whisper server, once it runs.
     private func server(in folder: URL) async throws -> pid_t {
         let file = folder.appendingPathComponent("server")
         try await waitUntil { FileManager.default.fileExists(atPath: file.path) }
@@ -100,8 +94,6 @@ final class DictateExampleTests: SampleSpotsCase {
         XCTAssertEqual(try String(contentsOf: pidfile, encoding: .utf8), String(staying.processIdentifier))
     }
 
-    /// A stand-in for a helper that waits in `folder`: it holds the helper's locks and writes `named`, or its own process
-    /// ID, into the pid file. USR2 touches `fetched`, and TERM ends it after `dying` seconds.
     private func holder(in folder: URL, naming named: pid_t? = nil, fetched: URL, dying: Double = 0) async throws -> Process {
         let script = folder.appendingPathComponent("holder.py")
         try """
@@ -358,6 +350,23 @@ final class DictateExampleTests: SampleSpotsCase {
             XCTAssertEqual(toast, "Copied")
             XCTAssertEqual(try self.read("clipboard", in: folder), "First words")
             XCTAssertEqual(try String(contentsOf: data.appendingPathComponent("history"), encoding: .utf8), "1000\tFirst words\n")
+        }
+    }
+
+    func testACopyKeepsTextThatIsNotEnglishWhenTheAppHasNoLocale() async throws {
+        let dictate = try example("Dictate")
+        try await withPrivateHome { folder in
+            let data = try self.fakeHelper("true", in: folder)
+            try "1000\tПривіт, світе\n".write(to: data.appendingPathComponent("history"), atomically: true, encoding: .utf8)
+            try "#!/bin/sh\nif [ \"$(locale charmap)\" = UTF-8 ]; then cat; else iconv -f MACINTOSH -t UTF-8; fi > '\(folder.path)/clipboard'\n"
+                .writeScript(to: folder.appendingPathComponent("tools/pbcopy"))
+            let locale = ["LANG", "LC_ALL", "LC_CTYPE"].map { ($0, ProcessInfo.processInfo.environment[$0]) }
+            locale.forEach { unsetenv($0.0) }
+            defer { locale.forEach { name, value in if let value { setenv(name, value, 1) } } }
+
+            _ = try await dictate.perform(.item(SpotItem(title: "Привіт, світе", run: "1000")), timeout: 5)
+
+            XCTAssertEqual(try self.read("clipboard", in: folder), "Привіт, світе")
         }
     }
 

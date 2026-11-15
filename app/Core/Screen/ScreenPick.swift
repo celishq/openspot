@@ -1,8 +1,5 @@
 import Foundation
 
-/// What the person picks in the overlay of a source with no value (S3): a drag picks an area, a click picks the front window
-/// under the pointer, and a click where no window is picks the display. A kind of source allows only its own picks.
-/// Each frame is in points from the top left of the main display, and the windows come front first.
 public struct ScreenPick: Sendable {
     public struct Item: Equatable, Sendable {
         public let id: UInt32
@@ -21,14 +18,12 @@ public struct ScreenPick: Sendable {
         case area
     }
 
-    /// The distance in points that makes a press a drag.
     private static let dragLength: CGFloat = 4
 
     private let kind: Kind
     private let displays: [Item]
     private let windows: [Item]
 
-    /// Returns nil for a source that has its value, which needs no pick.
     public init?(source: ScreenSource, displays: [Item], windows: [Item]) {
         switch source {
         case .any: kind = .any
@@ -41,7 +36,6 @@ public struct ScreenPick: Sendable {
         self.windows = windows
     }
 
-    /// The frame to light under the pointer: its window, or its display.
     public func hover(at point: CGPoint) -> CGRect? {
         switch kind {
         case .any: (window(at: point) ?? display(at: point))?.frame
@@ -51,7 +45,6 @@ public struct ScreenPick: Sendable {
         }
     }
 
-    /// The area of a drag so far, on the display where it started, or nil when it is not a drag of an area.
     public func area(from start: CGPoint, to end: CGPoint) -> CGRect? {
         guard kind == .any || kind == .area, hypot(end.x - start.x, end.y - start.y) >= Self.dragLength,
               let display = display(at: start) else { return nil }
@@ -60,7 +53,6 @@ public struct ScreenPick: Sendable {
         return CGRect(x: low.x, y: low.y, width: high.x - low.x, height: high.y - low.y).intersection(display.frame)
     }
 
-    /// The pick of a press and its release, or nil when they pick nothing and the overlay stays.
     public func target(from start: CGPoint, to end: CGPoint) -> ScreenTarget? {
         if hypot(end.x - start.x, end.y - start.y) >= Self.dragLength {
             return area(from: start, to: end).map { .area($0) }

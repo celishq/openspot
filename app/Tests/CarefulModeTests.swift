@@ -1,9 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves Careful mode with the real `sandbox-exec`: a spot's process writes only to its data folder and the temp folder
-/// unless its header names `files`, and reaches no network unless it names `network`. Off, a spot can do all that the
-/// person can (protocol: Trust).
 @MainActor
 final class CarefulModeTests: SpotRunsCase {
     private var outside: URL!
@@ -34,7 +31,6 @@ final class CarefulModeTests: SpotRunsCase {
         try await super.tearDown()
     }
 
-    /// A spot that tries each use and shows what worked as the title of its read.
     private func trying(uses: String = "") throws -> SpotRun {
         try script(header: "on=sheet.open\(uses.isEmpty ? "" : "\nuses=\(uses)")", """
         r=
@@ -90,7 +86,7 @@ final class CarefulModeTests: SpotRunsCase {
 
     func testOnAStayingSpotIsCarefulToo() async throws {
         runs.isCareful = true
-        try script(header: "mode=stay\non=sheet.open", """
+        try script(header: "mode=stay\non=sheet.open\noffers=card\noffers=menubar", """
         echo a > '\(outside.path)/written' 2>/dev/null && r=files || r=kept
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
@@ -104,7 +100,7 @@ final class CarefulModeTests: SpotRunsCase {
     }
 
     func testAStayingSpotStartsAgainInTheNewModeWhenTheModeChanges() async throws {
-        try script(header: "mode=stay\non=sheet.open", """
+        try script(header: "mode=stay\non=sheet.open\noffers=card\noffers=menubar", """
         echo a > '\(outside.path)/written-$$' 2>/dev/null && r=files || r=kept
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac

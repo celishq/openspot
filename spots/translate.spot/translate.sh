@@ -3,6 +3,7 @@
 # detail=Between languages
 # on=sheet.open
 # uses=clipboard
+# offers=card
 . "$OPENSPOT_SH"
 export LC_ALL=en_US.UTF-8
 

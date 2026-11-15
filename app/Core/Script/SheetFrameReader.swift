@@ -1,8 +1,5 @@
 import Foundation
 
-/// Splits what a script prints into frames. A line `---` ends a frame. It keeps a line that has not ended, so a chunk can
-/// stop anywhere, even inside a character. A terminal's progress code (OSC 9;4) and notification code (OSC 9) each give a
-/// frame of their own, and each other escape code leaves the text (protocol: Frames).
 public struct SheetFrameReader: Sendable {
     public static let mark = "---"
 
@@ -14,15 +11,19 @@ public struct SheetFrameReader: Sendable {
         case commandEnd
     }
 
+    public static let limit = 32 << 20
+
+    private let limit: Int
     private var line = Data()
     private var frame = ""
     private var escape = Escape.none
     private var command = Data()
+    public private(set) var isOverLimit = false
 
-    public init() {}
+    public init(limit: Int = Self.limit) {
+        self.limit = limit
+    }
 
-    /// Takes the next chunk, and returns each frame it completes. A chunk with no escape code and none open is split at
-    /// each new line by `memchr`.
     public mutating func read(_ data: Data) -> [String] {
         guard escape == .none else { return readEscaped(data) }
         return data.withUnsafeBytes { raw -> [String]? in
@@ -37,23 +38,35 @@ public struct SheetFrameReader: Sendable {
                 start = end + 1
             }
             line.append(contentsOf: UnsafeRawBufferPointer(rebasing: raw[start...]))
+            checkLine()
             return frames
         } ?? readEscaped(data)
     }
 
-    /// Ends the line that it keeps: a mark ends the frame, and any other line joins it.
     private mutating func endLine(into frames: inout [String]) {
         let text = String(decoding: line, as: UTF8.self)
         line.removeAll(keepingCapacity: true)
+        if isOverLimit { return }
         if text == Self.mark {
             frames.append(frame)
             frame = ""
+        } else if frame.utf8.count + text.utf8.count >= limit {
+            drop()
         } else {
             frame += text + "\n"
         }
     }
 
-    /// Takes a chunk byte by byte, through each escape code.
+    private mutating func checkLine() {
+        if line.count + frame.utf8.count >= limit { drop() }
+    }
+
+    private mutating func drop() {
+        isOverLimit = true
+        frame = ""
+        line = Data()
+    }
+
     private mutating func readEscaped(_ data: Data) -> [String] {
         var frames: [String] = []
         for byte in data {
@@ -85,11 +98,12 @@ public struct SheetFrameReader: Sendable {
                 }
             }
         }
+        checkLine()
         return frames
     }
 
-    /// Returns what is left when the output ends, or nil when nothing is.
     public mutating func finish() -> String? {
+        guard !isOverLimit else { return nil }
         if !line.isEmpty {
             frame += String(decoding: line, as: UTF8.self)
             line.removeAll()
@@ -98,8 +112,6 @@ public struct SheetFrameReader: Sendable {
         return frame.isEmpty ? nil : frame
     }
 
-    /// The frame of one operating system command: `progress` from a progress code that sets a percent, `toast` from a
-    /// notification, and none from any other.
     private static func frame(of command: Data) -> [String] {
         let text = String(decoding: command, as: UTF8.self)
         if text.hasPrefix("9;4;") {

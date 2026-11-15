@@ -1,6 +1,5 @@
 import XCTest
 
-/// Proves the list of boards that the Draw window and spot show.
 final class DrawShelfTests: XCTestCase {
     private var folder: URL!
 

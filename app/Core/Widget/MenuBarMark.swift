@@ -1,8 +1,6 @@
 import Foundation
 
-/// What a menu bar item shows for a reading, or nothing before the first value or when the metric hides it.
 public struct MenuBarMark: Equatable, Sendable {
-    /// How many rows of a metric have one tone.
     public struct Count: Equatable, Sendable {
         public let tone: MetricValue.Tone?
         public let count: Int
@@ -19,6 +17,7 @@ public struct MenuBarMark: Equatable, Sendable {
         case ring(fill: Double, title: String)
         case bars([Double], title: String)
         case status(String)
+        case icon
     }
 
     public static let barCount = 8
@@ -28,6 +27,14 @@ public struct MenuBarMark: Equatable, Sendable {
     public let content: Content
     public let isStale: Bool
     public let summary: String
+
+    public init(icon: String, name: String) {
+        symbol = icon
+        tone = nil
+        isStale = false
+        summary = name
+        content = .icon
+    }
 
     public init?(reading: MetricReading) {
         guard let value = reading.value, !value.isHidden else { return nil }

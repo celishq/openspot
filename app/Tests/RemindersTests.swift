@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves `openspot reminders due`, `lists` and `done` through `Reminders`, with a fake store in place of EventKit.
 final class RemindersTests: XCTestCase {
     private let family = CalendarList(id: "7D10", title: "Family", account: "iCloud", color: "#FF9500")
 
@@ -11,7 +10,6 @@ final class RemindersTests: XCTestCase {
         return clock
     }
 
-    /// Tuesday 10 November 2026 at the hour and minute in Berlin, or on another day.
     private func at(_ hour: Int, _ minute: Int = 0, day: Int = 10) -> Date {
         clock.date(from: DateComponents(year: 2026, month: 11, day: day, hour: hour, minute: minute))!
     }

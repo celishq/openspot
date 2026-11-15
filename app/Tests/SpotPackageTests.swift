@@ -49,7 +49,6 @@ final class SpotPackageTests: XCTestCase {
         }
     }
 
-    /// The spot after a trip through a zip, as a chat carries it.
     private func sent(_ spot: SpotPackage) throws -> SpotPackage {
         let zip = target.deletingLastPathComponent().appendingPathComponent("sent-\(UUID().uuidString).spot")
         try spot.zip(to: zip)
@@ -140,10 +139,10 @@ final class SpotPackageTests: XCTestCase {
 
     func testAFolderOverTheSizeLimitDoesNotTravel() throws {
         try script("home.spot/coffee.sh")
-        try plain("home.spot/big.bin", Data(count: SpotPackage.sizeLimit + 1))
+        try plain("home.spot/big.bin", Data(count: SpotPackage.shareLimit + 1))
 
         XCTAssertThrowsError(try sharing("home/coffee")) { error in
-            XCTAssertEqual((error as? SpotError)?.reason, "This spot is over the 64 MB limit.")
+            XCTAssertEqual((error as? SpotError)?.reason, "This spot is over the 25 MB limit.")
         }
     }
 
@@ -177,13 +176,17 @@ final class SpotPackageTests: XCTestCase {
         XCTAssertThrowsError(try SpotPackage(contentsOf: zip))
     }
 
-    func testAZipOverTheLimitIsRefusedBeforeItUnpacks() throws {
-        let spot = try SpotPackage(files: [file("timer.spot/timer.sh"), file("timer.spot/readme.md", String(repeating: "a", count: 10_000), runs: false)])
+    func testAZipOverTheLimitIsRefusedBeforeItUnpacks() async throws {
+        let place = target.appendingPathComponent("place")
+        try FileManager.default.createDirectory(at: place.appendingPathComponent("timer.spot"), withIntermediateDirectories: true)
+        try "#!/bin/sh\n".writeScript(to: place.appendingPathComponent("timer.spot/timer.sh"))
+        try Data(count: SpotPackage.sizeLimit + 1).write(to: place.appendingPathComponent("timer.spot/big.bin"))
         let zip = target.appendingPathComponent("Timer.spot")
-        try spot.zip(to: zip)
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/ditto"), arguments: ["-c", "-k", place.path, zip.path])
 
-        XCTAssertThrowsError(try SpotPackage(contentsOf: zip, limit: 5_000))
-        XCTAssertNoThrow(try SpotPackage(contentsOf: zip))
+        XCTAssertThrowsError(try SpotPackage(contentsOf: zip)) { error in
+            XCTAssertEqual((error as? SpotError)?.reason, "This spot is over the 64 MB limit.")
+        }
     }
 
     func testASpotFolderOnTheDiskOpensAsItIs() throws {

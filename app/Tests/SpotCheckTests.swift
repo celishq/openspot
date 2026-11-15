@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves that a check names the spot and the file of each fault, in words and in JSON for an agent.
 @MainActor
 final class SpotCheckTests: XCTestCase {
     private var folder: URL!
@@ -24,15 +23,6 @@ final class SpotCheckTests: XCTestCase {
         XCTAssertEqual(findings, [SpotCheck.Finding(spot: "weather", file: file.path, fault: "Weather has an unknown mode: huge. Use once, stay or always")])
         let json = try JSONSerialization.jsonObject(with: Data(SpotCheck.json(findings).utf8)) as? [[String: String]]
         XCTAssertEqual(json, [["spot": "weather", "file": file.path, "fault": "Weather has an unknown mode: huge. Use once, stay or always"]])
-    }
-
-    func testStayIsAFaultThatNamesTheMode() async throws {
-        let file = folder.spotFile("relay")
-        try "#!/bin/sh\n# stay=true\necho\n".writeScript(to: file)
-
-        let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
-
-        XCTAssertEqual(findings.map(\.fault), ["Relay has stay, which Openspot no longer reads. Use mode=stay or mode=always"])
     }
 
     func testAValueWithANewLinePrintedByHandIsAFaultThatNamesTheHelper() async throws {
@@ -99,5 +89,30 @@ final class SpotCheckTests: XCTestCase {
         _ = await check.value
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: far.path))
+    }
+
+    func testARowThatPushesAPageThatNoSpotTakesIsAFaultThatNamesThePagesLine() async throws {
+        try "#!/bin/sh\n# pages=text:*\n".writeScript(to: folder.spotFile("translate"))
+        let file = folder.spotFile("clips")
+        try "#!/bin/sh\n# on=sheet.open\nprintf 'row=a\\npush=text:a\\npush.spot=translate\\n\\nrow=b\\npush=word:b\\npush.spot=translate\\n\\nrow=c\\npush=true\\n'\n".writeScript(to: file)
+
+        let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
+
+        XCTAssertEqual(findings.map(\.fault), [
+            "the row b pushes the page word:b of translate, which takes no such page. Add pages=word:* to translate",
+            "the row c pushes the page c of clips, which takes no such page. Add pages=c to clips",
+        ])
+    }
+
+    func testAReadThatPushesOrAFrameWithBothMovesIsAFault() async throws {
+        try "#!/bin/sh\n# on=sheet.open\n# pages=*\nprintf 'push=a\\npop=true\\n\\nrow=r\\n'\n".writeScript(to: folder.spotFile("both"))
+        try "#!/bin/sh\n# on=sheet.open\n# pages=*\nprintf 'push=a\\n\\nrow=r\\n'\n".writeScript(to: folder.spotFile("reads"))
+
+        let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
+
+        XCTAssertEqual(findings.map(\.line), [
+            "both: the frame holds both push and pop, and moves nothing. Print one of them",
+            "reads: the read prints push, which moves nothing in a read. Print it from a press",
+        ])
     }
 }

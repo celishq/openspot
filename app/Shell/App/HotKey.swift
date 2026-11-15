@@ -2,7 +2,6 @@ import AppKit
 import Carbon.HIToolbox
 import OpenspotCore
 
-/// System-wide keys, which need no permission from the person.
 enum HotKey {
     struct Registration {
         fileprivate let id: UInt32

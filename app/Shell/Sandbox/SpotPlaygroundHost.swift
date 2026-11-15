@@ -1,11 +1,8 @@
 import AppKit
 import OpenspotCore
 
-/// The host of the playground's panel: it shows nothing of its own, and hands each toast, failure and note of work to the
-/// playground.
 @MainActor
 final class SpotPlaygroundHost: SpotsHost {
-    /// Takes each toast, failure and note of work of the panel.
     var onNote: (String) -> Void = { _ in }
 
     nonisolated deinit {}
@@ -22,9 +19,13 @@ final class SpotPlaygroundHost: SpotsHost {
     func setEntryKey(on isOn: Bool) {}
     func hold(_ keys: [GlobalKey]) {}
     func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void) {}
+    func showSubmenu(beside row: CGRect, of menu: CGRect) {}
+    func hideSubmenu() {}
     func float(_ entry: SpotsModel.Entry, followsDrag: Bool) {}
     func land(_ id: String) {}
+    func window(_ entry: SpotsModel.Entry) {}
     var isPointerOverDrop: Bool { false }
+    var isPointerOverWindow: Bool { false }
     var draggedPaths: [String] { [] }
     var isMouseDown: Bool { false }
     var pastedPaths: [String] { [] }

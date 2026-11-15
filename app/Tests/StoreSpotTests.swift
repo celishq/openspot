@@ -1,0 +1,101 @@
+import XCTest
+@testable import OpenspotCore
+
+final class StoreSpotTests: BuiltInCase {
+    private var store: Spot {
+        get throws {
+            try spot("store")
+        }
+    }
+
+    override func setUp() async throws {
+        try await super.setUp()
+        try "#!/bin/sh\n# detail=Counts down\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/sample.sh"))
+        try "#!/bin/sh\n# title=Shared\n".writeScript(to: root.appendingPathComponent("store/shared.spot/shared.sh"))
+        try "#!/bin/sh\n# title=Mine\n".writeScript(to: spots.appendingPathComponent("mine.spot/mine.sh"))
+    }
+
+    private func items() async throws -> [[String]] {
+        let parts = try await store.items(timeout: 5).parts
+        XCTAssertEqual(parts.map(\.id), ["gallery"])
+        return (parts.first?.values["value"] ?? []).map { $0.split(separator: "\t", omittingEmptySubsequences: false).map(String.init) }
+    }
+
+    @discardableResult
+    private func call(_ arguments: [String]) async throws -> String? {
+        try await store.perform(SpotAction(arguments: arguments), timeout: 5)
+    }
+
+    func testItOpensInAWindowWithItsGalleryView() throws {
+        let spot = try store
+
+        XCTAssertEqual(spot.name, "Store")
+        XCTAssertTrue(spot.offersWindow)
+        XCTAssertTrue(spot.offersCard)
+        XCTAssertEqual(spot.kind, .list)
+        XCTAssertEqual(spot.view.map { URL(fileURLWithPath: $0).lastPathComponent }, "store.swift")
+    }
+
+    func testItListsEachSpotWithWhatItsButtonDoes() async throws {
+        let rows = try await items()
+
+        XCTAssertEqual(rows.map { Array($0.prefix(4)) }, [["mine", "Mine", "publish", "mine"], ["shared", "Shared", "get", "store"], ["timer", "Timer", "get", "core"]])
+        XCTAssertEqual(rows.first { $0[0] == "timer" }?[4], "Counts down")
+        XCTAssertEqual(rows.map { $0[6] }, ["", "", "sample"])
+    }
+
+    func testGetTurnsOnACoreSpotAndAddsAStoredOne() async throws {
+        let ids = try await items().map { $0[0] }
+        XCTAssertTrue(ids.contains("timer"))
+
+        try await call(["gallery", "get:timer"])
+        XCTAssertTrue(file.read().arrangement.enabled.contains("timer"))
+
+        try await call(["gallery", "get:shared"])
+        XCTAssertTrue(FileManager.default.fileExists(atPath: spots.appendingPathComponent("shared.spot/shared.sh").path))
+        let rows = try await items()
+        XCTAssertEqual(rows.first { $0[0] == "timer" }?[2], "added")
+    }
+
+    func testGetTurnsBackOnYourOwnSpotThatEditSpotsTurnedOff() async throws {
+        try file.turn("mine", on: false)
+        let before = try await items()
+        XCTAssertEqual(before.first { $0[0] == "mine" }?[2], "get")
+
+        try await call(["gallery", "get:mine"])
+
+        XCTAssertEqual(file.read().arrangement.disabled, [])
+    }
+
+    func testEachAnswerCarriesTheReadmeOfEachSpotLineByLine() async throws {
+        try "# Timer\n\nCounts down.\n".write(to: core.appendingPathComponent("timer.spot/readme.md"), atomically: true, encoding: .utf8)
+
+        for action in [SpotAction.read, SpotAction(arguments: ["gallery", "get:timer"]), SpotAction(arguments: ["gallery", "publish:timer"])] {
+            let text = try await SpotRuns().answer(of: store, action, limit: 5)
+
+            let values = SpotOutput(text: text).parts.first?.values ?? [:]
+            XCTAssertEqual(values["readme"], ["timer\t# Timer", "timer\t", "timer\tCounts down."], "\(action.arguments)")
+        }
+    }
+
+    func testAReadmePictureOrVideoInTheSpotsFolderGetsItsFullPath() async throws {
+        let folder = core.appendingPathComponent("timer.spot")
+        try "![The sheet](shot.png)\n![](/tmp/a.mov)\n![Web](https://example.com/a.jpg)\n".write(to: folder.appendingPathComponent("readme.md"), atomically: true, encoding: .utf8)
+
+        let text = try await SpotRuns().answer(of: store, .read, limit: 5)
+
+        let lines = (SpotOutput(text: text).parts.first?.values["readme"] ?? []).filter { $0.hasPrefix("timer\t") }
+        XCTAssertEqual(lines, ["timer\t![The sheet](\(folder.path)/shot.png)", "timer\t![](/tmp/a.mov)", "timer\t![Web](https://example.com/a.jpg)"])
+    }
+
+    func testPublishPublishesYourOwnSpotInTheApp() async throws {
+        let rows = try await items()
+        let id = try XCTUnwrap(rows.first { $0[2] == "publish" }?[0])
+
+        try await call(["gallery", "publish:\(id)"])
+
+        let opened = await app.opened
+        XCTAssertEqual(opened, ["publish mine"])
+    }
+}

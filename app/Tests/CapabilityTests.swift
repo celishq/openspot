@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the openspot command of the protocol with real processes, through a stand-in capability: a small program that uses the same `Capability`.
 final class CapabilityTests: XCTestCase {
     private var folder: URL!
     private var label = ""
@@ -31,12 +30,10 @@ final class CapabilityTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    /// One call, as a terminal makes it.
     private func call(_ request: String = "count") async throws -> String {
         try await ScriptProcess.output(url: tool, arguments: ["call", label], input: request, limit: 30)
     }
 
-    /// A script that makes one call, and prints its answer.
     private func script(after: String = "") throws -> URL {
         let url = folder.appendingPathComponent("script-\(UUID().uuidString.prefix(8))")
         try "#!/bin/sh\nprintf count | '\(tool.path)' call \(label)\n\(after)\n".writeScript(to: url)
@@ -56,7 +53,6 @@ final class CapabilityTests: XCTestCase {
         kill(id, 0) == 0
     }
 
-    /// Waits for a fact, for at most the seconds given.
     private func wait(seconds: TimeInterval, for fact: () async -> Bool) async -> Bool {
         let deadline = Date().addingTimeInterval(seconds)
         while Date() < deadline {

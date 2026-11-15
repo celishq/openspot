@@ -3,8 +3,9 @@
 # detail=Open a link
 # on=panel.open
 # on=app.launch
-# offers=search
 # uses=network,clipboard
+# offers=card
+# offers=search
 export LC_ALL=en_US.UTF-8
 data="$OPENSPOT_DATA/links.json"
 icons="$OPENSPOT_DATA/icons"
@@ -14,17 +15,14 @@ agent="Mozilla/5.0 (Macintosh) Openspot"
 # Makes a jq value safe for one line of a text block.
 esc='def esc: gsub("\\\\"; "\\\\") | gsub("\n"; "\\n");'
 
-# Makes the list once: saved quicklinks move over, and the folder shortcuts join them.
+# Makes the list once, with the folder shortcuts.
 prepare() {
   [ -e "$data" ] && return
-  old="$OPENSPOT_DATA/quicklinks.json"
-  if [ -s "$old" ]; then saved=$(cat "$old"); else saved='[]'; fi
   shots=$(defaults read com.apple.screencapture location 2>/dev/null || echo "~/Desktop")
-  printf '%s' "$saved" | jq -c --arg shots "$shots" '. + [
+  jq -nc --arg shots "$shots" '[
     {id: "downloads", title: "Downloads", url: "~/Downloads"},
     {id: "screenshots", title: "Screenshots", url: $shots}
   ]' | store
-  rm -f "$old"
   fetch_missing >/dev/null 2>&1 </dev/null &
 }
 

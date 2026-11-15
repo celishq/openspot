@@ -1,6 +1,5 @@
 import Foundation
 
-/// The calls of `openspot app`: the state of the app, its login and terminal settings, and its quit.
 struct AppCalls {
     let mac: any Mac
     let environment: [String: String]
@@ -40,7 +39,6 @@ struct AppCalls {
         }
     }
 
-    /// Turns Careful mode on or off, and tells the running app (protocol: Trust).
     func careful(_ isOn: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [environment, app] in
             try ConfigFile.standard(environment: environment).set("careful", to: isOn)

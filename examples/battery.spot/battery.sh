@@ -4,6 +4,7 @@
 # detail=The battery as a liquid, drawn by a Metal shader
 # on=panel.open
 # view=battery.swift
+# offers=card
 [ "$1" = read ] || exit 0
 line=$(pmset -g batt | grep -E '[0-9]+%')
 if [ -z "$line" ]; then

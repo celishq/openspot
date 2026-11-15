@@ -93,6 +93,33 @@ shell helper, `$OPENSPOT_SH`, prints rows for you and escapes each value.
 
 Learn more in [Rows](PROTOCOL.md#rows) and [The calls](PROTOCOL.md#the-calls).
 
+## Open a row as a page
+
+A page shows the detail of a row as a sheet of its own, and keeps the list it came from. Name the pages in the header
+with `pages=`, give the row `push=true`, and print the page when `OPENSPOT_PAGE` holds its id.
+
+```sh
+#!/bin/sh
+# title=Fruit
+# icon=leaf
+# on=sheet.open
+# pages=*
+. "$OPENSPOT_SH"
+case "$OPENSPOT_PAGE" in
+  '') printf 'row=apple\ntitle=Apple\npush=true\n\nrow=pear\ntitle=Pear\npush=true\n' ;;
+  *) openspot_row "$OPENSPOT_PAGE:color" "Color" "Green" ;;
+esac
+```
+
+Pick **Apple**, and its page opens in place of the list, with one row, **Color**. Press `⌘[` to go back to the list,
+and `⌘]` to go forward to the page again. Esc takes the page off, so `⌘]` has nothing to go to. `⌘Esc` goes back to the grid.
+
+Each call of a page gets its id in `OPENSPOT_PAGE`, so a press on the page knows which page it came from. A press can
+move the flow too: print `pop=true` after it saves, and the list shows again. A row or a press with `push.spot=` pushes
+another spot, which reads what to show from its page, as a web page reads its URL.
+
+Learn more in [Pages](PROTOCOL.md#pages).
+
 ## Show a value on a card
 
 A card can show one live value, such as free disk space. `on=panel.open` asks your spot each time the panel opens, and
@@ -104,6 +131,8 @@ A card can show one live value, such as free disk space. `on=panel.open` asks yo
 # icon=internaldrive
 # on=panel.open
 # on=clock.300
+# offers=card
+# offers=menubar
 free=$(df -h / | awk 'NR==2 {print $4}')
 printf 'detail=%s free\n\ntext=free\ntitle=%s free\n' "$free" "$free"
 ```
@@ -113,8 +142,9 @@ printf 'detail=%s free\n\ntext=free\ntitle=%s free\n' "$free" "$free"
 ![The card of Disk, with the free space under its title](docs/images/show-a-value.png)
 
 The first block, `detail=…`, is the **head**: it isn't drawn, and its `detail` becomes the line under the card's title.
-The `text` block is the spot's **main block**. The user can put the spot in the menu bar, where the main block shows
-next to the clock.
+The `text` block is the spot's **main block**. `offers=card` and `offers=menubar` name the places where the spot can show
+it: a card on the grid, and the menu bar, next to the clock. The user puts the spot in the menu bar from its Settings,
+which `⌘⏎` on its card opens.
 
 A spot with a clock stays off the grid until the user adds it, so that a new spot doesn't fill the panel.
 
@@ -125,7 +155,7 @@ Learn more in [The main block and the card](PROTOCOL.md#the-main-block-and-the-c
 A button runs a command. Give each button an id. When the user presses it, Openspot runs your spot with that id.
 
 Buttons in the header turn the spot into a set of commands, with no card. The user finds each command in the main
-search, and can give it a hotkey.
+search, and gives it a hotkey in the spot's Settings.
 
 ```sh
 #!/bin/sh
@@ -267,8 +297,8 @@ Learn more in [Cards of other spots](PROTOCOL.md#cards-of-other-spots).
 
 ## Let the user choose a setting
 
-A setting keeps a choice of the user, such as a folder. Name it in the header with a `field` block, and the Settings spot
-lists it.
+A setting keeps a choice of the user, such as a folder. Name it in the header with a `field` block, and the spot's
+Settings list it. The user opens them with `⌘⏎` on the spot's card, or with **Settings** in its ⌘K menu.
 
 ```sh
 #!/bin/sh
@@ -283,7 +313,7 @@ case "$1" in
 esac
 ```
 
-In Settings, choose **folder**, and Openspot runs `repos.sh folder`. The spot asks for a folder and keeps it. Later
+In the Settings of Repos, choose **Folder**, and Openspot runs `repos.sh folder`. The spot asks for a folder and keeps it. Later
 calls read it with `openspot setting get folder`.
 
 Learn more in [Settings](PROTOCOL.md#settings).

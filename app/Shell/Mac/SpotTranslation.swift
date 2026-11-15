@@ -3,11 +3,9 @@ import NaturalLanguage
 import OpenspotCore
 import Translation
 
-/// The on-device translation of macOS, in plain text for a script.
 enum SpotTranslation {
     private static let fallback = "en"
 
-    /// The preferred languages, then one block for each language it knows.
     static func languages() async -> String {
         let preferred = TranslationTargets(preferred: Locale.preferredLanguages, source: "").codes
         let found = await LanguageAvailability().supportedLanguages
@@ -18,17 +16,14 @@ enum SpotTranslation {
         return ([summary] + blocks).map(\.text).joined(separator: "\n")
     }
 
-    /// The helper that keeps each pair of languages loaded (K2).
     static let capability = Capability(name: "translate")
 
-    /// Asks the helper to translate the text, and returns its answer.
     static func call(text: String, from: String?, to: String?) throws -> String {
         let pairs = [("from", from), ("to", to), ("text", text)]
         let request = TextBlock(fields: pairs.compactMap { key, value in value.map { .init(key: key, value: $0) } }).text
         return String(decoding: try capability.call(Data(request.utf8)), as: UTF8.self)
     }
 
-    /// Runs as the helper: answers each request, and says `status=failed` when macOS cannot translate it.
     static func serve() -> Never {
         capability.serve { request in
             let block = TextBlock.blocks(in: String(decoding: request, as: UTF8.self)).first ?? TextBlock(fields: [])
@@ -37,8 +32,6 @@ enum SpotTranslation {
         }
     }
 
-    /// Translates the text. No input language means that it finds one, and no output language means the first that the
-    /// person prefers apart from the input. A block says what happened: `text` on success, or else `status`.
     private static func answer(to text: String, from: String?, to: String?) async throws -> String {
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return "" }
         guard let code = from ?? NLLanguageRecognizer.dominantLanguage(for: text)?.rawValue else {
@@ -57,7 +50,6 @@ enum SpotTranslation {
 
     @MainActor private static var sessions: [String: TranslationSession] = [:]
 
-    /// Translates with the session of this pair, which stays loaded for the next text.
     @MainActor
     private static func translation(of text: String, from: Locale.Language, to: Locale.Language) async throws -> String {
         let pair = "\(from.minimalIdentifier)>\(to.minimalIdentifier)"

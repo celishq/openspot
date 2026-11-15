@@ -3,8 +3,9 @@
 # icon=person.crop.circle
 # detail=12 words that are your account
 # on=sheet.open
-# offers=search
 # uses=app,account
+# offers=card
+# offers=search
 . "$OPENSPOT_SH"
 
 data=${OPENSPOT_DATA:-${TMPDIR:-/tmp}/openspot-account}

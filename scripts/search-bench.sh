@@ -1,7 +1,4 @@
 #!/bin/sh
-# Times each keystroke of the search over copies of the real lists, in an optimized build of the Core sources.
-# The first run copies the lists of this Mac into .temp/search-bench/data, and later runs reuse them, so that runs before
-# and after a change read the same items. Usage: scripts/search-bench.sh [label]. Prints and keeps .temp/search-bench/<label>.txt.
 set -e
 cd "$(dirname "$0")/.."
 out=.temp/search-bench
@@ -9,8 +6,8 @@ rm -rf "$out/build"
 mkdir -p "$out/build" "$out/data"
 if [ ! -s "$out/data/settings.txt" ]; then
   for name in apps settings; do
-    mkdir -p "$out/plugin-data/$name"
-    OPENSPOT_SH="$PWD/app/Shell/openspot.sh" OPENSPOT_DATA="$PWD/$out/plugin-data/$name" sh "spots/$name.spot/$name.sh" read >"$out/data/$name.txt"
+    mkdir -p "$out/spot-data/$name"
+    OPENSPOT_SH="$PWD/app/Shell/openspot.sh" OPENSPOT_DATA="$PWD/$out/spot-data/$name" sh "spots/$name.spot/$name.sh" read >"$out/data/$name.txt"
   done
 fi
 if [ ! -s "$out/data/spots.txt" ]; then

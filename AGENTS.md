@@ -8,8 +8,9 @@
   - `Shell/` — the menu bar app, the panel and the hotkey. Imports AppKit and SwiftUI.
   - `Client/` — the `openspot` command, which talks to the running app.
   - `StandIn/` — a small program for tests: a capability that needs no Mac feature. It does not ship.
+  - `Views/` — `openspot-views`, which a Release build runs to compile each view of the core spots into a `.view` beside
+    its source, so that it draws on a Mac with no developer tools. It does not ship. Debug compiles a view at its first use.
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
-- `app/RULES.md` holds the rules of the app that no spot author sees, by ID. Code and tests name a rule by its ID.
 - `app/Keywords/` holds the CLDR keywords of emoji and symbols, one xz file per language. `scripts/emoji-keywords.py` writes
   it from a pinned CLDR version, and the build copies it into the app.
 - `app/Help/` holds the guide of each `openspot` noun that has one, which `openspot help <noun>` prints. The build copies it
@@ -44,11 +45,34 @@ Write a doc that people read, such as `GUIDE.md` and `PROTOCOL.md`, the way Appl
 - Keep the main idea and the edge cases apart. Put limits, errors and rare cases in a short note or in the reference.
 - Write natural English: "you" for the reader, short sentences, common words. Contractions are fine.
 - Use one word for each meaning on the page.
+- `make verify` fails when a doc links to a file or a heading that does not exist, names a repo path or a `make` target
+  that does not exist, or when code cites a protocol heading that does not exist (`DocReferenceTests`).
+- It fails when PROTOCOL.md and Core disagree on a key, a block kind, a call word, an event, a place, a use, a shell
+  helper or an `openspot` command (`ProtocolContractTests`). `scripts/protocol-gaps.txt` lists today's gaps, and it
+  fails on a gap the list lacks and on a listed gap that is gone.
+- It fails when an `sh`, `js` or `swift` example of GUIDE.md, PROTOCOL.md or `app/Help/` does not run (`DocExampleTests`).
+  An example that needs a network, an account or a tool that not every Mac has goes in a `text` fence.
+- The docs are `AGENTS.md`, `GUIDE.md`, `PROTOCOL.md`, `CONTRIBUTING.md`, `README.md` and `app/Help/`. The code is the
+  truth for how the app works, so no doc describes the app's code. Before you add a sentence, look for one that says it
+  already, and link to it, since no check finds a repeat.
 
-## Docstrings
+## Comments
 
-- Docstrings on types and members only. No inline comments.
-- A docstring says what the item does. Five lines on a type, three on a member, none where the name says it.
+- Code and the scripts in `scripts/` hold no comment and no docstring. A name, a type or a test says what a comment would.
+- The one exception is a `// @todo #<id>` puzzle. The header of a spot script is not a comment: it is part of the spot.
+- `make verify` runs `scripts/check-comments.sh`, which fails on a comment.
+
+## UX
+
+Each spot follows [The keys of a spot](PROTOCOL.md#the-keys-of-a-spot): Return does its main act, `⌘` Return opens its
+Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these for every spot, so a rule changes in one place.
+
+- Settings follow the level they change. openspot's Settings hold only the app's rows. Each spot's own Settings hold its
+  Float, menu bar, keys and fields, with one icon per kind of row and the same Not set and `⌘⌫` Remove on every key row.
+- A card's ⌘K menu holds the standard acts in one order, which `spots/openspot.spot/actions.js` offers to every card.
+  A key that a footer already shows does not need a ⌘K menu of its own.
+- Making and changing a spot both go through one form: describe it, then Copy prompt (`⌘⏎`), which flashes `✓ Copied`
+  on the same black button. The prompt tells the agent to finish alone, with no question.
 
 ## Core and Shell
 
@@ -69,6 +93,15 @@ below is one a reviewer can check in a diff.
 - The main thread never waits on a spot. The one exception: the answers to a key share one wait of 2 ms at most.
 - A press makes one update. The animated change goes first in it, or alone, since SwiftUI animates a view by the first change
   it sees in an update.
+
+### Where work lives
+
+- A getter, a computed property and a static factory read only memory. They touch no disk, start no process and change no
+  state. Work that reads the disk is a method named for it, such as `read()` or `scan()`.
+- The model and the views do not read the disk. A loader, such as `SpotScan` or `ConfigFile`, reads it at a load, and the
+  rest read the value it kept.
+- A stamp holds only what changes the result it guards. A choice that filters the result, such as which spots are on, is
+  applied after the kept result, not put in the stamp.
 
 ### What a view reads
 
@@ -119,7 +152,9 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
 - A shipped spot does no work all day. A spot that polls goes in `examples/`.
 - Each buffer, log and cache has a limit in bytes. A kept tail is cut back when it holds twice its limit. A loop that reads a
   stream wraps each pass in `autoreleasepool`.
-- The panel stays warm while hidden. Cut the waste around it, not the panel.
+- Each collection kept per call, page or frame drops an entry when the thing it tracks ends, and has a limit in count.
+- The panel stays warm while hidden. Cut the waste around it, not the panel. A view that the panel hides stays built,
+  except a spot's own view, which can run work of its own.
 - A framework that the panel does not need, such as translation or screen capture, runs in a helper process, not in the app.
 
 ### Proving a speed fix
@@ -155,7 +190,7 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
 ## Verify
 
 ```sh
-make verify                # the Core, Tests and Motion checks, then the XCTest suite, with test classes in parallel
+make verify                # the Core, Tests, Comments and Motion checks, then the XCTest suite, with test classes in parallel
 make test T=SpotRunsTests  # one test class, while you work on it
 make perf N=3              # times a Release sheet that opens and closes 20 times, 3 runs; ACTION picks another motion
 make film SPOT=caffeinate  # films the open and close of a sheet 10x slower (SLOW=1 for real speed) into .temp/film

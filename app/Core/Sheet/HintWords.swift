@@ -1,6 +1,5 @@
 import Foundation
 
-/// The words of a hint under the panel, as groups of a key and the words that say what it does.
 public struct HintWords: Hashable, Sendable {
     public struct Group: Hashable, Sendable {
         public let key: String?

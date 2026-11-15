@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves date sums on a fixed clock. A date with no year, such as `25 dec`, goes through the real date finder of macOS,
-/// which reads it from the real day, so these tests write each such date with its year.
 final class CalcDateTests: XCTestCase {
     private let english = Locale(identifier: "en_US")
     private let berlin: Calendar = {
@@ -10,14 +8,12 @@ final class CalcDateTests: XCTestCase {
         clock.timeZone = TimeZone(identifier: "Europe/Berlin")!
         return clock
     }()
-    /// Wednesday 11 November 2026 at 14:05 in Berlin.
     private let now = Date(timeIntervalSince1970: 1_794_402_300)
 
     private func answer(_ text: String) -> CalcAnswer? {
         try? CalcAnswer(text: text, locale: english, clock: berlin, now: now)
     }
 
-    /// The text with the narrow space that macOS writes before AM and PM as a plain space.
     private func spaced(_ text: String?) -> String? {
         text?.replacingOccurrences(of: "\u{202F}", with: " ")
     }

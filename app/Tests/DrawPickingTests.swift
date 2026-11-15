@@ -1,6 +1,5 @@
 import XCTest
 
-/// Proves the picking of boards in the list, as Finder picks files: a click, a Command-click, a Shift-click and the arrows.
 final class DrawPickingTests: XCTestCase {
     private let order = ["a", "b", "c", "d", "e"].map { URL(fileURLWithPath: "/boards/\($0).json") }
 

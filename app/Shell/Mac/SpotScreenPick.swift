@@ -1,9 +1,6 @@
 import AppKit
 import OpenspotCore
 
-/// The overlay over each screen where the person picks a source with no value (S3). It lights the window or the display
-/// under the pointer, draws the area of a drag, and ends at a pick or at Escape, which gives the focus back to the app that
-/// had it.
 @MainActor
 final class SpotScreenPick {
     private let pick: ScreenPick
@@ -19,7 +16,6 @@ final class SpotScreenPick {
         self.mainHeight = mainHeight
     }
 
-    /// The target that the person picks, or nil after Escape or a stop of the call.
     static func target(of source: ScreenSource) async -> ScreenTarget? {
         let mainHeight = NSScreen.screens.first?.frame.maxY ?? 0
         let displays = NSScreen.screens.compactMap { screen -> ScreenPick.Item? in
@@ -68,7 +64,6 @@ final class SpotScreenPick {
         moved(to: NSEvent.mouseLocation)
     }
 
-    /// A point of the screen, in points from the top left of the main display.
     private func global(_ point: NSPoint) -> CGPoint {
         CGPoint(x: point.x, y: mainHeight - point.y)
     }
@@ -103,17 +98,14 @@ final class SpotScreenPick {
         answer = nil
     }
 
-    /// A frame from the top left of the main display, as a frame on the screen that AppKit draws.
     private func local(_ frame: CGRect) -> CGRect {
         CGRect(x: frame.minX, y: mainHeight - frame.maxY, width: frame.width, height: frame.height)
     }
 
-    /// A panel of the overlay that takes keys, so that Escape reaches it.
     private final class Panel: NSPanel {
         override var canBecomeKey: Bool { true }
     }
 
-    /// The view of one screen: a dim over all of it, and a clear frame where the light falls.
     private final class Surface: NSView {
         private let overlay: SpotScreenPick
         private var lit: CGRect?
@@ -126,7 +118,6 @@ final class SpotScreenPick {
 
         required init?(coder: NSCoder) { nil }
 
-        /// Lights a frame given on the screens, in AppKit points from the bottom left of the main display.
         func show(_ frame: CGRect?, isArea: Bool) {
             lit = frame.map { $0.offsetBy(dx: -(window?.frame.minX ?? 0), dy: -(window?.frame.minY ?? 0)) }
             self.isArea = isArea

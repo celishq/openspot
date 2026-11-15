@@ -1,17 +1,12 @@
 import CryptoKit
 import Foundation
 
-/// The compiled form of a spot's view: a library with one entry that makes the view (protocol: Views). A library is kept in a cache
-/// by the text it was built from, so an unchanged view is built once.
 public struct ViewLibrary: Sendable {
-    /// The C name of the entry, which returns a retained function from the values, the card and a send to a view.
     public static let entry = "openspot_view_v1"
     static let libraryExtension = "view"
     private static let platform = "apple-macos26.0"
     private static let preludeName = "openspot-view.swift"
 
-    /// The code that Openspot builds with each view: `SpotInput` and the entry. The compiler imports SwiftUI into it. The
-    /// card reaches the view as a dictionary, so a new value of the card needs no new entry.
     static let prelude = """
         public struct SpotFonts {
             public let title: Font
@@ -28,13 +23,35 @@ public struct ViewLibrary: Sendable {
             public let secondary: Double
             public let accent: Color
             public let font: SpotFonts
+            public let answers: Int
+            public let columnGap: CGFloat
+            public let rowGap: CGFloat
+            public let columns: Int
+            public let tipDelay: Duration
             let values: [String: [String]]
             let sender: (String) -> Void
+            let cardMaker: (String) -> AnyView
+            let cardSizer: (String) -> CGSize
+            let sheetMaker: (String) -> AnyView
+            let tipMaker: (String) -> AnyView
+            let mediaMaker: (String) -> AnyView
+            let cornerMaker: (String, String, String, @escaping () -> Void) -> AnyView
 
             init(values: [String: [String]], card: [String: Any], sender: @escaping (String) -> Void) {
                 self.values = values
                 self.sender = sender
+                cardMaker = card["card"] as? (String) -> AnyView ?? { _ in AnyView(EmptyView()) }
+                cardSizer = card["cardSize"] as? (String) -> CGSize ?? { _ in .zero }
+                sheetMaker = card["sheet"] as? (String) -> AnyView ?? { _ in AnyView(EmptyView()) }
+                tipMaker = card["tip"] as? (String) -> AnyView ?? { AnyView(Text($0)) }
+                mediaMaker = card["media"] as? (String) -> AnyView ?? { _ in AnyView(EmptyView()) }
+                cornerMaker = card["cornerButton"] as? (String, String, String, @escaping () -> Void) -> AnyView ?? { _, _, _, _ in AnyView(EmptyView()) }
+                columnGap = card["columnGap"] as? CGFloat ?? 11
+                rowGap = card["rowGap"] as? CGFloat ?? 12
+                columns = card["columns"] as? Int ?? 16
+                tipDelay = card["tipDelay"] as? Duration ?? .milliseconds(500)
                 size = card["size"] as? CGSize ?? .zero
+                answers = card["answers"] as? Int ?? 0
                 inset = card["inset"] as? CGFloat ?? 13
                 corner = card["corner"] as? CGFloat ?? 20
                 ink = card["ink"] as? Color ?? .primary
@@ -53,6 +70,18 @@ public struct ViewLibrary: Sendable {
             public func all(_ key: String) -> [String] { values[key] ?? [] }
 
             public func send(_ value: String) { sender(value) }
+
+            public func card(_ id: String) -> AnyView { cardMaker(id) }
+
+            public func cardSize(_ id: String) -> CGSize { cardSizer(id) }
+
+            public func sheet(_ id: String) -> AnyView { sheetMaker(id) }
+
+            public func tip(_ text: String) -> AnyView { tipMaker(text) }
+
+            public func media(_ source: String) -> AnyView { mediaMaker(source) }
+
+            public func cornerButton(_ symbol: String, label: String, card id: String, action: @escaping () -> Void) -> AnyView { cornerMaker(symbol, label, id, action) }
         }
 
         @_cdecl("\(entry)")
@@ -68,29 +97,23 @@ public struct ViewLibrary: Sendable {
     private let cache: URL
     private let tools: URL
 
-    /// `cache` is the folder of built libraries, and `tools` the folder that holds `xcode-select`, `swiftc` and `lipo`.
     public init(cache: URL, tools: URL = URL(fileURLWithPath: "/usr/bin", isDirectory: true)) {
         self.cache = cache
         self.tools = tools
     }
 
-    /// The libraries in the cache folder of the app.
     public static func standard(cache: URL = AppCache.folder()) -> ViewLibrary {
         ViewLibrary(cache: cache.appendingPathComponent("views", isDirectory: true))
     }
 
-    /// The path of the library that travels beside a view's source, relative when the source path is.
     static func path(beside source: String) -> String {
         (source as NSString).deletingPathExtension + "." + libraryExtension
     }
 
-    /// Whether a file of this path is the library of a view.
     static func isLibrary(_ path: String) -> Bool {
         (path as NSString).pathExtension == libraryExtension
     }
 
-    /// The library of a view: the one that travels beside its source, else one built for this Mac. Throws a fault that
-    /// names what is wrong.
     public func library(of source: URL) async throws -> URL {
         let carried = URL(fileURLWithPath: Self.path(beside: source.path))
         if FileManager.default.fileExists(atPath: carried.path) { return carried }
@@ -108,8 +131,22 @@ public struct ViewLibrary: Sendable {
         return built
     }
 
-    /// Compiles a view for these kinds of Mac, such as `arm64` and `x86_64`, and returns the library. `name` is the name of
-    /// its file, which an error line shows.
+    public func buildViews(under folder: URL) async throws -> [URL] {
+        var built: [URL] = []
+        let scripts = (FileManager.default.enumerator(at: folder, includingPropertiesForKeys: nil)?.allObjects as? [URL] ?? [])
+            .filter { FileManager.default.isExecutableFile(atPath: $0.path) && !$0.hasDirectoryPath }
+            .sorted { $0.path < $1.path }
+        for script in scripts {
+            guard let text = try? String(contentsOf: script, encoding: .utf8), let name = SpotHeader(text: text).block.value("view"), !name.hasPrefix("/") else { continue }
+            let source = script.deletingLastPathComponent().appendingPathComponent(name)
+            guard let data = try? Data(contentsOf: source) else { continue }
+            let library = URL(fileURLWithPath: Self.path(beside: source.path))
+            try await build(source: data, named: name, kinds: SwiftProgram.kinds).write(to: library)
+            built.append(library)
+        }
+        return built
+    }
+
     public func build(source: Data, named name: String, kinds: [String]) async throws -> Data {
         guard (try? await run("xcode-select", ["-p"])) != nil else {
             throw SpotError.fault("To draw a view, install the Command Line Tools: xcode-select --install")
@@ -147,12 +184,10 @@ public struct ViewLibrary: Sendable {
         #endif
     }
 
-    /// The name of a library: a hash of its source and of the prelude.
     private static func name(of source: Data) -> String {
         SHA256.hash(data: Data(prelude.utf8) + source).map { String(format: "%02x", $0) }.joined()
     }
 
-    /// Runs a tool and waits for its end. A failure throws the first error line on stderr, with no folders in its path.
     private func run(_ name: String, _ arguments: [String]) async throws {
         let process = Process()
         process.executableURL = tools.appendingPathComponent(name)
@@ -180,7 +215,6 @@ public struct ViewLibrary: Sendable {
         }
     }
 
-    /// A compiler line with the folders cut from the path at its start.
     private static func withoutFolders(_ line: String) -> String {
         guard line.hasPrefix("/"), let colon = line.firstIndex(of: ":") else { return line }
         let path = line[..<colon]

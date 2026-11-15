@@ -3,9 +3,10 @@
 # detail=Run a shortcut
 # on=panel.open
 # on=sheet.open
-# offers=search
 # drop=*
 # uses=clipboard
+# offers=card
+# offers=search
 . "$OPENSPOT_SH"
 input="$OPENSPOT_DATA/input"
 kept="$OPENSPOT_DATA/rows"

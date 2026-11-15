@@ -1,9 +1,6 @@
 import OpenspotCore
 import SwiftUI
 
-/// Gives the search field the focus when the panel shows with a search, when the keys come back to the search, and when the
-/// actions menu closes, and takes it away when the panel hides. It alone reads whether the field keeps the keys, so that a
-/// key in a form reruns this view and not the field.
 struct SpotFieldFocus: View {
     let model: SpotsModel
     var isFocused: FocusState<Bool>.Binding

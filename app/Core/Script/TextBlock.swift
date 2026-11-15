@@ -1,7 +1,5 @@
 import Foundation
 
-/// A group of `key=value` lines, the form of all that a script prints and reads. A blank line ends a block.
-/// In a value, `\n` stands for a new line and `\\` for a backslash. An empty value counts as no value.
 public struct TextBlock: Equatable, Sendable {
     public struct Field: Equatable, Sendable {
         public let key: String
@@ -20,9 +18,7 @@ public struct TextBlock: Equatable, Sendable {
     private static let letterN = UInt8(ascii: "n")
 
     public let fields: [Field]
-    /// The first line as a script printed it, which names a block that cannot be read.
     public let firstLine: String
-    /// The blocks that belong to this one, such as the options after a choice.
     public let children: [TextBlock]
 
     public init(fields: [Field], firstLine: String = "", children: [TextBlock] = []) {
@@ -31,12 +27,10 @@ public struct TextBlock: Equatable, Sendable {
         self.children = children
     }
 
-    /// This block with one more block that belongs to it.
     func adding(child: TextBlock) -> TextBlock {
         TextBlock(fields: fields, firstLine: firstLine, children: children + [child])
     }
 
-    /// The blocks in what a script prints. A line with no key is skipped.
     public static func blocks(in output: String) -> [TextBlock] {
         var blocks: [TextBlock] = []
         var fields: [Field] = []
@@ -68,7 +62,6 @@ public struct TextBlock: Equatable, Sendable {
         return blocks
     }
 
-    /// The lines of this block, for a script to read.
     public var text: String {
         fields.map { "\($0.key)=\(Self.escaped($0.value))\n" }.joined()
     }
@@ -81,7 +74,6 @@ public struct TextBlock: Equatable, Sendable {
         fields.filter { $0.key == key && !$0.value.isEmpty }.map(\.value)
     }
 
-    /// The words of a comma list, such as `keywords=a, b`, with no spaces around them and no empty one.
     public func list(_ key: String) -> [String] {
         (value(key) ?? "").split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
     }
@@ -146,13 +138,11 @@ public struct TextBlock: Equatable, Sendable {
         String(decoding: UnsafeBufferPointer(rebasing: bytes[start..<end]), as: UTF8.self)
     }
 
-    /// Where this byte next lies in the range, or the end of the range.
     private static func next(_ byte: UInt8, in bytes: UnsafeBufferPointer<UInt8>, from start: Int, to end: Int) -> Int {
         guard start < end, let base = bytes.baseAddress, let found = memchr(base + start, Int32(byte), end - start) else { return end }
         return UnsafePointer(found.assumingMemoryBound(to: UInt8.self)) - base
     }
 
-    /// Copies the range, and returns how many bytes it copied.
     private static func copy(_ bytes: UnsafeBufferPointer<UInt8>, _ start: Int, _ end: Int, to out: UnsafeMutableBufferPointer<UInt8>, at offset: Int) -> Int {
         guard start < end, let source = bytes.baseAddress, let target = out.baseAddress else { return 0 }
         memcpy(target + offset, source + start, end - start)

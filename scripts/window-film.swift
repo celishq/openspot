@@ -3,8 +3,6 @@ import CoreImage
 import Foundation
 import ScreenCaptureKit
 
-/// Films the largest window of one process for some seconds, and writes each frame that changed as a PNG named by its
-/// time in milliseconds. It records only that window, so nothing else on the screen lands in the files.
 final class WindowFilm: NSObject, SCStreamOutput {
     let folder: URL
     private var start: Double?

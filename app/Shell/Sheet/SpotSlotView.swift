@@ -1,11 +1,9 @@
 import OpenspotCore
 import SwiftUI
 
-/// One slot of a row: a picture, words, a mark or a control, drawn small enough for a line.
 struct SpotSlotView: View {
     let part: SpotPart
     var tone: MetricValue.Tone?
-    /// The height of its area on a card, which a number with no title fills.
     var height: CGFloat?
     let onSlot: (String, String?) -> Void
 
@@ -92,7 +90,6 @@ struct SpotSlotView: View {
         part.title == nil ? height.map { $0 * 0.8 } ?? 28 : 28
     }
 
-    /// The title over the detail. On a text, a good, warn or bad tone colours the detail, or the title when there is none.
     private var words: some View {
         VStack(alignment: .leading, spacing: SpotType.lineGap) {
             if let title = part.title {
@@ -116,7 +113,6 @@ struct SpotSlotView: View {
     }
 }
 
-/// A text field in a row, which sends its text when the person presses Return.
 private struct SpotSlotField: View {
     let text: String
     let placeholder: String

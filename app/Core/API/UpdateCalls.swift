@@ -1,6 +1,5 @@
 import Foundation
 
-/// The calls of `openspot update`, which only the running app answers.
 struct UpdateCalls {
     let app: (any RunningApp)?
 

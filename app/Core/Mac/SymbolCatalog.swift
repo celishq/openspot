@@ -1,6 +1,5 @@
 import Foundation
 
-/// The symbols of the Character Viewer, with their Unicode names and the titles of their sections, read from the files of the system.
 public struct SymbolCatalog: Sendable {
     public static let standardResources = URL(fileURLWithPath: "/System/Library/Input Methods/CharacterPalette.app/Contents/Resources")
 
@@ -20,7 +19,6 @@ public struct SymbolCatalog: Sendable {
         self.keywords = keywords ?? GlyphKeywords(languages: languages)
     }
 
-    /// Each symbol as one row, in the order of the Character Viewer. A symbol in two categories shows once, in the first.
     public func rows() throws -> String {
         let titles = titles()
         var seen: Set<String> = []
@@ -45,7 +43,6 @@ public struct SymbolCatalog: Sendable {
         return text
     }
 
-    /// The sections of a category, each with the key of its title, or none when the category has one list.
     private func sections(of category: String) -> [(String?, String)]? {
         let url = resources.appendingPathComponent("Category-\(category).plist")
         guard let data = try? Data(contentsOf: url),
@@ -57,20 +54,17 @@ public struct SymbolCatalog: Sendable {
         return (list["Data"] as? String).map { [(nil, $0)] }
     }
 
-    /// The titles of categories and sections in the first language of the Mac that has them.
     private func titles() -> [String: String] {
         guard let data = try? Data(contentsOf: resources.appendingPathComponent("Localizable.loctable")),
               let table = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any] else { return [:] }
         return LanguageCodes(languages: languages).all.lazy.compactMap { table[$0] as? [String: String] }.first ?? [:]
     }
 
-    /// The symbol that an item of a list stands for: itself, or the scalar of a code such as `0x2C`.
     private static func symbol(_ item: Substring) -> String {
         guard item.hasPrefix(codeMark), let value = UInt32(item.dropFirst(codeMark.count), radix: 16), let scalar = Unicode.Scalar(value) else { return String(item) }
         return String(scalar)
     }
 
-    /// The Unicode name of a symbol in lower case, with no word for its text or picture form.
     private static func name(of symbol: String) -> String? {
         let names = symbol.unicodeScalars.filter { $0 != textMark && $0 != pictureMark }.compactMap(\.properties.name)
         return names.isEmpty ? nil : names.joined(separator: " ").lowercased()

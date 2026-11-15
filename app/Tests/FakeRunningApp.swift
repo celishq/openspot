@@ -1,8 +1,6 @@
 import Foundation
 @testable import OpenspotCore
 
-/// The running app of a test. It counts each change of the config that the API reports, records each act that the API
-/// asks for, and answers the status that the test sets. A spot called `gone` does not exist.
 actor FakeRunningApp: RunningApp {
     private(set) var changes = 0
     private(set) var checks = 0
@@ -13,7 +11,6 @@ actor FakeRunningApp: RunningApp {
     private var calls = 0
     private var isFirstLaunch = false
 
-    /// Each change of the config that the API reported, in order.
     private(set) var changeList: [ConfigChange] = []
 
     func configChanged(_ change: ConfigChange) {
@@ -44,13 +41,38 @@ actor FakeRunningApp: RunningApp {
         return id != "gone"
     }
 
+    func push(_ id: String, page: String?, title: String?, replace: Bool) -> Bool {
+        opened.append((["push", id, page, replace ? "replace" : nil, title].compactMap { $0 }).joined(separator: " "))
+        return id != "gone"
+    }
+
+    func pop(_ id: String, all: Bool) -> Bool {
+        opened.append((["pop", id, all ? "all" : nil].compactMap { $0 }).joined(separator: " "))
+        return id != "gone"
+    }
+
     func review(_ id: String) -> Bool {
         opened.append("review \(id)")
         return id != "gone"
     }
 
-    func openStore() {
-        opened.append("store")
+    func act(_ act: CardAct, on id: String) -> Bool {
+        opened.append("\(act.rawValue) \(id)")
+        return id != "gone"
+    }
+
+    func choose(for id: String) -> Bool {
+        opened.append("choose \(id)")
+        return id != "gone"
+    }
+
+    func editGrid() {
+        opened.append("grid")
+    }
+
+    func publish(_ id: String) -> SpotPublish {
+        opened.append("publish \(id)")
+        return .published
     }
 
     func reveal(_ id: String) -> Bool {
@@ -68,7 +90,6 @@ actor FakeRunningApp: RunningApp {
     }
 
 
-    /// Each reason that Touch ID was asked for, and whether the person passes it.
     private(set) var asked: [String] = []
     private var allowsActs = true
 

@@ -25,23 +25,12 @@ final class GlobalKeyTests: XCTestCase {
         }
     }
 
-    func testACommandInTheOldFormIsRefusedWithTheNewForm() {
-        for header in ["# command=full:Full screen", "# title=Move\n# command=full:Full screen"] {
-            XCTAssertThrowsError(try command(header: header), header) { error in
-                XCTAssertEqual((error as? SpotError)?.reason, "Move has command=full:Full screen, which Openspot no longer reads. Write each command as a button block after a blank comment line, such as button=left with title=Left side")
-            }
-        }
-    }
-
     func testASettingIsABlockWithATitleOrItsKey() throws {
         let spot = try command(header: "# title=Repos\n#\n# field=folder\n#\n# field=editor\n# title=Default app\n# icon=app.badge")
 
         XCTAssertEqual(spot.settings.map(\.id), ["folder", "editor"])
         XCTAssertEqual(spot.settings.map(\.title), ["Folder", "Default app"])
         XCTAssertEqual(spot.settings.map(\.icon), [nil, "app.badge"])
-        XCTAssertThrowsError(try command(header: "# title=Repos\n# settings=folder")) { error in
-            XCTAssertEqual((error as? SpotError)?.reason, "Repos has settings, which Openspot no longer reads. Write each setting as a field block after a blank comment line, such as field=folder with title=Folder")
-        }
     }
 
     func testOnlyACommandThatAScriptListsTakesItsKey() throws {
@@ -110,20 +99,22 @@ final class GlobalKeyTests: XCTestCase {
         XCTAssertEqual(Trigger(text: "ctrl+space")?.label, "⌃Space")
     }
 
-    func testAKeyWithNoCommandStaysOnlyForASpotWithASheet() throws {
+    func testAKeyWithNoCommandStaysOnlyForASpotThatOffersFloat() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-keys-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
-        try "#!/bin/sh\n# on=sheet.open\n".writeScript(to: folder.spotFile("shelf"))
+        try "#!/bin/sh\n# on=sheet.open\n# offers=float\n".writeScript(to: folder.spotFile("shelf"))
         try "#!/bin/sh\n".writeScript(to: folder.spotFile("notes"))
-        try "#!/bin/sh\n# on=clock.60\necho text=cups\n".writeScript(to: folder.spotFile("cups"))
+        try "#!/bin/sh\n# on=clock.60\n# offers=card\n# offers=float\necho text=cups\n".writeScript(to: folder.spotFile("cups"))
+        try "#!/bin/sh\n# on=sheet.open\n".writeScript(to: folder.spotFile("sheet"))
         let shortcut = try XCTUnwrap(Shortcut(text: "ctrl+up"))
         let shelf = GlobalKey(spot: "shelf", act: .float, trigger: .key(shortcut))
         let cups = GlobalKey(spot: "cups", act: .float, trigger: .key(shortcut))
         let notes = GlobalKey(spot: "notes", act: .float, trigger: .key(shortcut))
+        let sheet = GlobalKey(spot: "sheet", act: .float, trigger: .key(shortcut))
         let gone = GlobalKey(spot: "gone", act: .float, trigger: .key(shortcut))
 
-        XCTAssertEqual(try SpotsFolder(url: folder).scan().offered([shelf, cups, notes, gone]), [shelf, cups])
+        XCTAssertEqual(try SpotsFolder(url: folder).scan().offered([shelf, cups, notes, sheet, gone]), [shelf, cups])
     }
 
     func testSavingTheGridKeepsTheKeys() throws {

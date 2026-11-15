@@ -1,6 +1,5 @@
 import Foundation
 
-/// The cells that a letter of a drawing covers, as a rectangle of columns and rows.
 public struct SheetArea: Equatable, Sendable {
     public var x0: Int
     public var x1: Int

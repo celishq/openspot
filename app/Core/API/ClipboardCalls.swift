@@ -1,7 +1,5 @@
 import Foundation
 
-/// The calls of `openspot clipboard`, which reach the clipboard through the Mac. A relative path starts in the working
-/// folder of the caller.
 struct ClipboardCalls {
     let mac: any Mac
     let environment: [String: String]

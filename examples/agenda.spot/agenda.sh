@@ -6,6 +6,8 @@
 # on=sheet.text
 # on=clock.60
 # uses=calendar
+# offers=card
+# offers=menubar
 #
 # field=calendars
 # icon=calendar

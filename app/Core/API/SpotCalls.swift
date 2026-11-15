@@ -1,11 +1,8 @@
 import Foundation
 
-/// The calls of `openspot spot`: the spots that the app loads, the ones that come with it, and those that `spot add` put in
-/// the spots folder.
 struct SpotCalls {
     let environment: [String: String]
     let app: (any RunningApp)?
-    /// The runs of the app, whose counts of today are live, or nil in a process with no app to reach.
     let runs: SpotRuns?
 
     func list(core: Bool, frame: Bool) -> CommandAPI.Work {
@@ -61,15 +58,30 @@ struct SpotCalls {
         }
     }
 
-    func store() -> CommandAPI.Work {
-        guard let app else { return CommandAnswer.notRunning("spot store") }
+    func choose(for id: String) -> CommandAPI.Work {
+        guard let app else { return CommandAnswer.notRunning("spot choose \(id)") }
         return CommandAnswer.work {
-            await app.openStore()
+            guard await app.choose(for: id) else { throw SpotError.failed(1, "Openspot has no spot `\(id)` that takes files. Add drop= to its header.") }
             return ""
         }
     }
 
-    /// Opens the panel with the spot selected, or returns nil when no app runs, so that a process of its own asks for it.
+    func act(_ act: CardAct, _ id: String) -> CommandAPI.Work {
+        guard let app else { return CommandAnswer.notRunning("spot \(act.rawValue) \(id)") }
+        return CommandAnswer.work {
+            guard await app.act(act, on: id) else { throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.") }
+            return ""
+        }
+    }
+
+    func editGrid() -> CommandAPI.Work {
+        guard let app else { return CommandAnswer.notRunning("grid edit") }
+        return CommandAnswer.work {
+            await app.editGrid()
+            return ""
+        }
+    }
+
     func show(_ id: String) -> CommandAPI.Work? {
         guard let app else { return nil }
         return CommandAnswer.work {
@@ -78,10 +90,6 @@ struct SpotCalls {
         }
     }
 
-    /// Makes one call of an installed spot, prints each frame as it comes with a `---` line between frames and its stderr
-    /// at its end, and exits with the code of the script. It runs with the working folder and the variables of the caller,
-    /// and `input` is its stdin, or nil when the caller's stdin is no pipe or file. `careful` is the most uses that Careful
-    /// mode leaves the script, or nil to run it as the person (protocol: Trust).
     func run(_ id: String, _ arguments: [String], input: (@Sendable () async -> String)?, careful: Set<SpotUse>?, output: CommandOutput) -> CommandAPI.Work {
         { [environment, runs] in
             let folder = SpotsFolder.standard(environment: environment)
@@ -107,6 +115,24 @@ struct SpotCalls {
         }
     }
 
+    func push(_ id: String, page: String?, title: String?, replace: Bool) -> CommandAPI.Work {
+        guard let app else { return CommandAnswer.notRunning("spot push \(id)") }
+        return CommandAnswer.work {
+            guard await app.push(id, page: page, title: title, replace: replace) else {
+                throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.")
+            }
+            return ""
+        }
+    }
+
+    func pop(_ id: String, all: Bool) -> CommandAPI.Work {
+        guard let app else { return CommandAnswer.notRunning("spot pop \(id)") }
+        return CommandAnswer.work {
+            guard await app.pop(id, all: all) else { throw SpotError.failed(1, "The panel shows no sheet of `\(id)` to go back from.") }
+            return ""
+        }
+    }
+
     func review(_ id: String) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot review \(id)") }
         return CommandAnswer.work {
@@ -129,7 +155,6 @@ struct SpotCalls {
         }
     }
 
-    /// The counts of the last days: today's live from the running app, or with none each day from its file (protocol: Stats).
     func stats(days: Int, spot: String?, format: StatsReport.Format) -> CommandAPI.Work {
         CommandAnswer.work { [environment, runs] in
             let counts: [SpotUsage.Day]

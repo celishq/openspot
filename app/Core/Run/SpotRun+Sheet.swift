@@ -1,10 +1,6 @@
 import Foundation
 
-/// The sheet of a run: its open and close, its float and its places, and what wants its script.
 extension SpotRun {
-    /// Opens the sheet with its search kept. A sheet with a young answer opens at once with its parts. One with no answer
-    /// runs `onReady` with its first answer: with `waits`, or after a short pause when that is late, and always for a script
-    /// that holds its own state, which does not open when it cannot start.
     public func open(need: ReadNeed = .moment, waits: Bool = false, onReady: @escaping () -> Void) {
         runs.willOpen(self)
         settle()
@@ -20,7 +16,6 @@ extension SpotRun {
         runs.updateClock()
     }
 
-    /// Stops what only an open sheet needs. A read that nothing else wants stops. A call that does work goes on.
     public func close() {
         guard isOpen else { return }
         runs.didClose(self)
@@ -39,17 +34,14 @@ extension SpotRun {
         runs.updateClock()
     }
 
-    /// Moves the focus along the line of its parts.
     public func movePart(by step: Int) {
         panel?.move(by: step)
     }
 
-    /// Moves the focus to the line of parts above or below. Returns whether it moved.
     public func movePartLine(by lines: Int) -> Bool {
         panel?.moveLine(by: lines) ?? false
     }
 
-    /// Gives the focus to the first part below the rows. Returns false when no part lies there.
     public func leaveRows() -> Bool {
         panel?.leaveRows() ?? false
     }
@@ -58,7 +50,6 @@ extension SpotRun {
         panel?.focus(id)
     }
 
-    /// Asks the menu of a part to open.
     public func openMenu(of part: SpotPart) {
         menuOpening = SheetParts.MenuOpening(part: part.id, serial: (menuOpening?.serial ?? 0) + 1)
     }
@@ -67,8 +58,6 @@ extension SpotRun {
         nudge = SheetParts.Nudge(step: step, serial: nudge.serial + 1)
     }
 
-    /// The script began to float: its sheet selects its first row and reads. A card reads only when its header lists
-    /// `panel`, so that a float runs nothing that the panel would not.
     func floated() {
         settle()
         list.selectFirst()
@@ -80,9 +69,6 @@ extension SpotRun {
         runs.updateClock()
     }
 
-    /// The sheet left a place, as when the panel or a float closed. Unless it still shows in a place in view, a sheet of
-    /// parts, or of a script that holds its own state, closes. One with a field the person types in, or that holds its own
-    /// state, drops its values, so that its next show reads again (K5, W7). A sheet of rows stays.
     func leftPlace() {
         if !isInView, panel != nil || link.keepsState {
             let wasOpen = isOpen
@@ -97,40 +83,33 @@ extension SpotRun {
         link.settle()
     }
 
-    /// The panel opened: an open sheet of rows is in view again and reads, by Events in the protocol and M2.
     func panelOpened() {
         if isOpen { read() }
         link.settle()
     }
 
-    /// A scan looked at the folder: a stopped script that changed can start again (protocol: Modes).
     func scanned() {
         link.scanned()
     }
 
-    /// Stops each read of this script, whose sheet no longer has a use for it, and ends the script.
     func stopReads() {
         if let read = running(Self.readKey) { stop(read) }
         if let answer = running(Self.answerKey) { stop(answer) }
         link.end()
     }
 
-    /// Whether the person sees this sheet: it is the open one, and the panel shows.
     private var isInView: Bool {
         isOpen && runs.isPanelOpen || isFloating
     }
 
-    /// Whether something wants this script now (protocol: Events), also a call of a staying script that waits for its `end`.
     var isWanted: Bool {
         isInView || runs.wants(spot) || link.holdsScript
     }
 
-    /// Starts a script that stays and that something wants, and ends one that nothing wants.
     func settleScript() {
         link.settle()
     }
 
-    /// Stops each call and lets go of the script, so that neither changes anything, and drops all that would start a new call.
     func prepareToQuit() {
         pauses.values.forEach { $0.cancel() }
         pauses = [:]
@@ -148,7 +127,6 @@ extension SpotRun {
         if let search = running(Self.searchKey) { stop(search) }
     }
 
-    /// Closes a sheet that waits for an answer that will not come.
     func dropUnshownSheet() {
         guard runs.opening.dropMotion(of: spot.id) != nil else { return }
         runs.didClose(self)

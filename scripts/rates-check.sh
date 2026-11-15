@@ -1,9 +1,4 @@
 #!/bin/sh
-# Checks each address of the rates file that `openspot calc solve` reads, as app/Core/Calc/CalcRates.swift lists them, or
-# the addresses given: that it answers with the file, that its date is at most 2 days old, that it knows 300 currencies or
-# more with EUR, UAH and BTC, and that its EUR rate is within 3% of the European Central Bank's of the same week.
-# Prints one line for each address, and fails when one fails. `.github/workflows/rates.yml` runs it each day.
-# Usage: scripts/rates-check.sh [url]...
 set -u
 cd "$(dirname "$0")/.."
 urls=${*:-$(grep -oE 'https://[^"]+/usd\.json' app/Core/Calc/CalcRates.swift)}

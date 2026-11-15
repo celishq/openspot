@@ -1,22 +1,12 @@
 import Foundation
 
-/// Text that finds and ranks items. The glyph and the whole title rank first, then the title start. Otherwise each word
-/// must match, and the worst word sets the rank: a word start, the initials, any part of the title, a keyword start, a word
-/// start of the subtitle, any part of the subtitle, then three or more letters in order in one word of the title. Within a
-/// rank, the item with the most weight of picks comes first, and each pick weighs less as later picks come. Then an earlier
-/// list wins, then the given order. A form of the text, such as its Latin spelling, matches too, just below the typed text
-/// of the same rank, and never by letters in order.
 public struct SearchQuery: Equatable, Sendable {
     public let text: String
-    /// The other texts that the person may have meant: the text typed on the same keys of each other layout, then the text
-    /// spelled in Latin letters.
     public let forms: [String]
     private let typed: Form
     private let converted: [Form]
-    /// The text as a glyph matches it whole: with no mark that asks for a picture or a text form.
     private let plain: String
 
-    /// The lines that give the text and its forms to a script on stdin: `search=` and a `form=` for each form.
     public var input: String {
         TextBlock(fields: [.init(key: "search", value: text)] + forms.map { .init(key: "form", value: $0) }).text
     }
@@ -37,12 +27,10 @@ public struct SearchQuery: Equatable, Sendable {
         converted = forms.map(Form.init)
     }
 
-    /// The text typed on the same keys of each other layout.
     private static func retyped(_ text: String, layouts: [KeyLayout]) -> [String] {
         layouts.flatMap { from in layouts.filter { $0 != from }.compactMap { from.text(text, in: $0) } }
     }
 
-    /// The text spelled in Latin letters with no accents, when it holds other letters.
     private static func latin(_ text: String) -> [String] {
         guard !text.allSatisfy(\.isASCII) else { return [] }
         return [text.applyingTransform(.toLatin, reverse: false)?.applyingTransform(.stripDiacritics, reverse: false)].compactMap { $0 }
@@ -52,7 +40,6 @@ public struct SearchQuery: Equatable, Sendable {
         ranking(SearchIndex(items), items: items, among: Array(items.indices), weights: PickWeights(recent)).map { items[$0] }
     }
 
-    /// The indices of the items among the given ones that match, best first. The index holds the texts of the items.
     func ranking(_ index: SearchIndex, items: [SpotItem], among indices: [Int], weights: PickWeights) -> [Int] {
         index.withItems { folded in
             indices.compactMap { index in
@@ -63,10 +50,6 @@ public struct SearchQuery: Equatable, Sendable {
         .map(\.index)
     }
 
-    /// Whether each item that matches this text also matches the given text, so that a search for it may look only among the
-    /// matches of this one. A letters-in-order match needs three letters, so a last word that reaches three letters only now
-    /// may match more items; a short text of other characters may be a glyph; and each form of the given text must grow a form
-    /// of this one.
     func narrows(to next: SearchQuery) -> Bool {
         guard let last = typed.words.last, next.text.hasPrefix(text) else { return false }
         let added = next.text.dropFirst(text.count)
@@ -76,17 +59,13 @@ public struct SearchQuery: Equatable, Sendable {
         return next.forms.allSatisfy { form in forms.contains { form.hasPrefix($0) } }
     }
 
-    /// The best `limit` items that match in all lists, as one ranking, with the index of the list each came from. Each list
-    /// after the first that has no pick gives at most `unpickedLimit` items.
     public func matching(in lists: [ItemList], unpickedLimit: Int = .max, limit: Int = .max) -> [(list: Int, item: SpotItem)] {
         var search = MainSearch()
         return search.matching(self, in: lists, unpickedLimit: unpickedLimit, limit: limit)
     }
 
-    /// One item that matches: its rank, the weight of its picks and its place in its list.
     typealias Ranked = (rank: Int, weight: Double, offset: Int)
 
-    /// The items among the given offsets that match, in the order of the offsets.
     func ranked(_ index: SearchIndex, items: [SpotItem], among offsets: [Int], weights: PickWeights) -> [Ranked] {
         index.withItems { folded in
             offsets.compactMap { offset in
@@ -95,7 +74,6 @@ public struct SearchQuery: Equatable, Sendable {
         }
     }
 
-    /// The best `count` matches of one list: by rank, then by the weight of picks, then by place.
     static func best(_ matches: [Ranked], count: Int) -> [Ranked] {
         guard count < matches.count else { return matches }
         let precedes = { (one: Ranked, two: Ranked) in (one.rank, -one.weight, one.offset) < (two.rank, -two.weight, two.offset) }
@@ -146,7 +124,6 @@ public struct SearchQuery: Equatable, Sendable {
         return nil
     }
 
-    /// A text as folded letters, whole and split into words.
     private struct Form: Equatable, Sendable {
         let letters: [UInt32]
         let words: [[UInt32]]

@@ -1,18 +1,12 @@
 import Foundation
 import Security
 
-/// Where the account key lives: an item of the Keychain in a release build, or a file `account` with mode 0600 in the
-/// state folder when `OPENSPOT_CONFIG` or a Debug build names one, so that a test or a build under work never touches the
-/// Keychain. It holds the 12 words, or the `nsec` of a key that has none, then a line `backed-up` once the person has
-/// the words. The Keychain item syncs through iCloud Keychain when the app has its Keychain group, and else stays in the
-/// login Keychain of this Mac.
 public struct AccountStore: Sendable {
     private static let service = "dev.openspot.account"
     private static let account = "key"
     private static let fileName = "account"
     private static let backedUpLine = "backed-up"
 
-    /// The file that holds the key, or nil for the Keychain.
     let file: URL?
 
     init(file: URL?) {
@@ -29,13 +23,11 @@ public struct AccountStore: Sendable {
         return AccountStore(file: isOwnState ? folder.appendingPathComponent(fileName) : nil)
     }
 
-    /// The key that it holds, or nil when it holds none.
     public func key() throws -> AccountKey? {
         guard let line = try lines()?.first, !line.isEmpty else { return nil }
         return line.hasPrefix("nsec") ? try AccountKey(nsec: line) : try AccountKey(words: line.split(separator: " ").map(String.init))
     }
 
-    /// The key that it holds, made and kept at the first need.
     public func keyMadeOnce() throws -> AccountKey {
         if let key = try key() { return key }
         let key = try AccountKey.make()
@@ -43,12 +35,10 @@ public struct AccountStore: Sendable {
         return key
     }
 
-    /// Keeps a key in place of the one it holds, marked as backed up when the person already has its words.
     public func keep(_ key: AccountKey, isBackedUp: Bool = false) throws {
         try write([key.words?.joined(separator: " ") ?? key.nsec] + (isBackedUp ? [Self.backedUpLine] : []))
     }
 
-    /// Whether the person has the words of the key that it holds.
     public func isBackedUp() throws -> Bool {
         try lines()?.dropFirst().contains(Self.backedUpLine) == true
     }
@@ -58,7 +48,6 @@ public struct AccountStore: Sendable {
         try keep(key, isBackedUp: true)
     }
 
-    /// Removes the key, from every Mac that syncs it too.
     public func remove() throws {
         if let file {
             guard FileManager.default.fileExists(atPath: file.path) else { return }
@@ -68,18 +57,15 @@ public struct AccountStore: Sendable {
         guard status == errSecSuccess || status == errSecItemNotFound else { throw Self.fault(status) }
     }
 
-    /// Whether this copy of the app can sync the key through iCloud Keychain.
     public var canSync: Bool {
         file == nil && keychain == .synced
     }
 
-    /// Whether the key that it holds syncs through iCloud Keychain.
     public func isSyncing() throws -> Bool {
         guard canSync else { return false }
         return try item()?.isSynced == true
     }
 
-    /// Makes the key that it holds sync through iCloud Keychain, or stay on this Mac, which removes it from the other Macs.
     public func setSyncing(_ isOn: Bool) throws {
         guard canSync else { throw SpotError.fault("This copy of Openspot keeps your account on this Mac only.") }
         guard let item = try item(), item.isSynced != isOn else { return }
@@ -88,14 +74,10 @@ public struct AccountStore: Sendable {
         guard status == errSecSuccess else { throw Self.fault(status) }
     }
 
-    /// The Keychain that holds items of the app: the data-protection one when the app has its Keychain group, else the
-    /// login Keychain.
     private enum Keychain {
         case synced, login
     }
 
-    /// A read of the data-protection Keychain finds nothing in an app with no Keychain group, and only a write or a delete
-    /// says that the group is missing, so the gate deletes an item that is never kept, once for each launch.
     private static let place: Keychain = {
         let probe: [CFString: Any] = [
             kSecClass: kSecClassGenericPassword, kSecAttrService: service + ".probe", kSecUseDataProtectionKeychain: true,
@@ -149,7 +131,6 @@ public struct AccountStore: Sendable {
         guard status == errSecSuccess else { throw Self.fault(status) }
     }
 
-    /// The query of the item. An item of the data-protection Keychain is found whether it syncs or not.
     private func query(in place: Keychain, adding more: [CFString: Any] = [:]) -> [CFString: Any] {
         var query: [CFString: Any] = [kSecClass: kSecClassGenericPassword, kSecAttrService: Self.service, kSecAttrAccount: Self.account]
         if place == .synced {

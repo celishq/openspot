@@ -1,20 +1,18 @@
 import OpenspotCore
 import SwiftUI
 
-/// The hint under the grid and the hint under the sheet. Each stays at its own place and keeps the words it last showed, so
-/// that one fades out with its words before the other fades in. New words at one place cross-fade with the old ones, each
-/// laid out once. It alone reads the model's hints, so a change of the words reruns this view and not the panel.
 struct SpotHintLine: View {
     let model: SpotsModel
-    /// Whether a sheet is out or a drop is taken, which sets the time of each fade and which hint shows.
     let surfaceIsOut: Bool
     let gridHeight: CGFloat
     let sheetHeight: CGFloat
+    let sheetRect: CGRect
+    let menuHeight: CGFloat
 
     var body: some View {
         ZStack(alignment: .top) {
             hint(model.gridHint, isShown: !surfaceIsOut, height: gridHeight)
-            hint(sheetWords, isShown: surfaceIsOut, height: sheetHeight)
+            hint(sheetWords, isShown: surfaceIsOut, height: max(sheetHeight + model.flowEdges.heldHeight(of: sheetRect), menuHeight))
         }
         .onAppear { model.followHint() }
     }
@@ -32,7 +30,6 @@ struct SpotHintLine: View {
         .morph(isShown ? 1 : 0, opacity: { SheetMorph.sheetLook(at: $0) })
     }
 
-    /// What the hint says while a sheet shows: a form has its own keys.
     private var sheetWords: HintWords {
         guard model.formRect != nil else { return model.sheetHint }
         if model.formIsMultiple { return Self.multipleForm }

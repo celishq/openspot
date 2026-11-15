@@ -28,6 +28,19 @@ final class SheetPushTests: XCTestCase {
         XCTAssertEqual(push.offset(of: card(row: 1, column: 0)), CGSize(width: -75, height: 0))
     }
 
+    func testOnAWideGridACardBesideTheSheetsColumnsStays() {
+        let step = SpotTokens.cell + SpotTokens.columnGap
+        let wide = SheetPush(
+            open: SpotPlacement(index: 5, row: 1, column: 5, size: .small),
+            sheet: CGRect(x: 4 * step, y: -76, width: SpotTokens.gridWidth, height: 400),
+            window: CGRect(x: -24, y: -100, width: 700, height: 600)
+        )
+
+        XCTAssertEqual(wide.offset(of: card(row: 1, column: 1)), .zero)
+        XCTAssertNil(wide.fade(of: card(row: 3, column: 2), movedBy: .zero))
+        XCTAssertEqual(wide.offset(of: card(row: 0, column: 5)), CGSize(width: 0, height: -152))
+    }
+
     func testTheOpenCardStaysAndNeverFades() {
         XCTAssertEqual(push.offset(of: push.open), .zero)
         XCTAssertEqual(push.fade(of: push.open, movedBy: .zero), 0)

@@ -1,14 +1,10 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves how running work shows, what a press does while a call runs, and what a quit stops.
 @MainActor
 final class SpotRunsWorkTests: SpotRunsCase {
-    // MARK: L6, G1 to G4
-
     private static let progress = "printf 'title=42%%\\ndetail=2 min left\\nprogress=0.42\\n---\\n'\nsleep 30"
 
-    /// A body that waits for a file before each of these frames.
     private func steps(_ steps: [(file: String, frame: String)]) -> String {
         steps.map { "while [ ! -e '\(path($0.file))' ]; do sleep 0.02; done\nprintf '\($0.frame)\\n---\\n'" }.joined(separator: "\n") + "\nsleep 30"
     }
@@ -270,6 +266,26 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertNil(sheet.cardWork)
     }
 
+    func testAPartWhoseCallDrewItsOwnFrameShowsThatFrameAndNoWork() async throws {
+        try script(header: "on=sheet.open", """
+        case "$1" in
+          read) printf 'grid=go\\n\\nbutton=go\\ntitle=Go\\n' ;;
+          go) printf 'grid=go\\n\\nbutton=go\\ntitle=Done\\n---\\n'; sleep 30 ;;
+        esac
+        """)
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the parts") { sheet.panel != nil }
+        let go = try XCTUnwrap(sheet.panel?.parts.first)
+
+        sheet.press(go)
+        try await wait("the frame of the call") { sheet.panel?.parts.first?.title == "Done" }
+        time += 1
+
+        XCTAssertNil(sheet.work(of: go))
+        XCTAssertEqual(sheet.calls.count, 1)
+    }
+
     func testARunningActionOrPickShowsOnItsRowOfTheMenu() async throws {
         try script(header: "on=sheet.open", """
         case "$1" in
@@ -319,8 +335,6 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try await allEnded()
         XCTAssertFalse(exists("went-on"))
     }
-
-    // MARK: L11
 
     func testAPressOfAPartWithinOneSecondOfItsStartDoesNothing() async throws {
         try script(header: "on=sheet.open", """
@@ -540,7 +554,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAQuitChangesNothingOnAStayingScriptThatFailsAsItEnds() async throws {
-        try script(header: "mode=always", """
+        try script(header: "mode=always\noffers=card\noffers=menubar", """
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
           [ -n "$line" ] || printf 'end=%s\\n\\ntext=n\\ntitle=A\\n---\\n' "$call"

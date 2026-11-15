@@ -1,8 +1,6 @@
 import OpenspotCore
 import SwiftUI
 
-/// The field that searches the rows or the spots of a surface: its words on the fill of a row, and its prompt in the
-/// secondary strength of ink. A click anywhere on the fill puts the text cursor in it.
 struct SpotSearchField: View {
     let prompt: String
     let text: String

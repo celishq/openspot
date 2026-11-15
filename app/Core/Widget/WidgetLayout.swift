@@ -1,10 +1,7 @@
 import CoreGraphics
 import Foundation
 
-/// How the places of a widget lie: a drawing of the names of its metrics, as a card drawing is of ids. Each name is one
-/// place, and each place takes its form from the room its cell has on the card.
 public struct WidgetLayout: Equatable, Sendable {
-    /// How a place shows its metric.
     public enum Form: Equatable, Sendable {
         case big
         case line
@@ -17,11 +14,9 @@ public struct WidgetLayout: Equatable, Sendable {
     public let size: SpotSize
     public let columns: Int
     public let rows: Int
-    /// The name in each place, in the order in which each first shows.
     public let names: [String]
     public let slots: [SheetArea]
 
-    /// Reads a drawing. Its size is a strip when it has one line, and else the largest size, unless the file asks for another.
     public init(drawing: [String], size: SpotSize? = nil) {
         self.init(name: "grid", size: size ?? (drawing.count == 1 ? .strip : .large), drawing: drawing)
     }
@@ -45,7 +40,6 @@ public struct WidgetLayout: Equatable, Sendable {
         slots = names.compactMap { areas[$0] }
     }
 
-    /// What is wrong with a drawing for a widget, in words that let a person fix it.
     public static func faults(in drawing: [String]) -> [String] {
         let cells = drawing.map(words)
         guard !cells.isEmpty else { return ["its grid is empty"] }
@@ -60,7 +54,6 @@ public struct WidgetLayout: Equatable, Sendable {
         return faults
     }
 
-    /// The form of a place, from how many columns and rows of the card its cell covers.
     public func form(of slot: SheetArea, on card: SpotSize) -> Form {
         if card == .small { return .control }
         let wide = Double(slot.x1 - slot.x0 + 1) / Double(columns) * Double(card.columns)
@@ -70,8 +63,6 @@ public struct WidgetLayout: Equatable, Sendable {
         return tall < 1 ? .line : .half
     }
 
-    /// Where a place lies in the room of a card. One gap parts the cells, and a wider one parts the two sides of a drawing
-    /// with an even number of columns.
     public func rect(of slot: SheetArea, in room: CGSize, gap: CGFloat, sideGap: CGFloat) -> CGRect {
         let middle = columns > 1 && columns.isMultiple(of: 2) ? columns / 2 : nil
         let extra = middle == nil ? 0 : sideGap - gap

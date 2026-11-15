@@ -1,6 +1,5 @@
 import Foundation
 
-/// A key with its modifiers, as a script names it, such as cmd+return or cmd+shift+n, or `escape` alone.
 public struct ActionKey: Hashable, Sendable {
     public let name: String
     public let isCommand: Bool
@@ -12,8 +11,6 @@ public struct ActionKey: Hashable, Sendable {
         self.isShift = isShift
     }
 
-    /// The key of a press, named by the letter that it types. With ⌘ on a layout whose letters are not Latin, it takes the
-    /// letter that the same key types in the Latin layout, so that ⌘E works on a Ukrainian layout as on ABC (A17).
     public init(typed: String, code: UInt16, isCommand: Bool, isShift: Bool, latin: @autoclosure () -> KeyLayout?) {
         var name = typed.lowercased()
         if isCommand, !name.allSatisfy(\.isASCII), let letter = latin()?.keys[code], letter.isASCII {
@@ -36,7 +33,6 @@ public struct ActionKey: Hashable, Sendable {
         self.init(name: last, isCommand: parts.contains("cmd"), isShift: parts.contains("shift"))
     }
 
-    /// Reads a key as the footer writes it, such as ⌘⇧N, ⏎ or Esc. A label with only modifiers is no key.
     public init?(label: String) {
         if label == "Esc" {
             self.init(name: "escape")
@@ -58,12 +54,10 @@ public struct ActionKey: Hashable, Sendable {
         self.init(name: name, isCommand: isCommand, isShift: isShift)
     }
 
-    /// The key as a script names it, such as cmd+shift+n.
     public var text: String {
         (isCommand ? "cmd+" : "") + (isShift ? "shift+" : "") + name
     }
 
-    /// The key as the Mac writes it, such as ⌘⇧N.
     public var label: String {
         let key: String
         switch name {

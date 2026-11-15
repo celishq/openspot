@@ -1,7 +1,6 @@
 import OpenspotCore
 import SwiftUI
 
-/// The detail of a text, in the colour of its good, warn or bad tone, or as secondary text with no such tone.
 struct SpotToneWords: View {
     let text: String
     let tone: MetricValue.Tone?

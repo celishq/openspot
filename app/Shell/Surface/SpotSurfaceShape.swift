@@ -1,7 +1,5 @@
 import SwiftUI
 
-/// A rounded rectangle at a rect of the view it fills, which animates its rect and its radius. A surface that grows by this
-/// shape changes only a path on each frame, and lays out nothing.
 struct SpotSurfaceShape: InsettableShape {
     var rect: CGRect
     var radius: CGFloat
@@ -16,7 +14,13 @@ struct SpotSurfaceShape: InsettableShape {
     }
 
     func path(in bounds: CGRect) -> Path {
-        RoundedRectangle(cornerRadius: max(radius - inset, 0), style: .continuous).path(in: rect.insetBy(dx: inset, dy: inset))
+        let place = rect.insetBy(dx: inset, dy: inset)
+        let corner = min(max(radius - inset, 0), min(place.width, place.height) / 2)
+        return RoundedRectangle(cornerRadius: corner, style: Self.style(corner: corner, in: place)).path(in: place)
+    }
+
+    static func style(corner: CGFloat, in rect: CGRect) -> RoundedCornerStyle {
+        2 * corner >= min(rect.width, rect.height) ? .circular : .continuous
     }
 
     func inset(by amount: CGFloat) -> SpotSurfaceShape {

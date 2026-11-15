@@ -1,15 +1,11 @@
 import Foundation
 
-/// The sheet of a spot whose file does not load: the file, each fault, and the two acts that fix it. It runs nothing of the
-/// file.
 public struct FaultSpot: Equatable, Sendable {
-    /// The ID of the spot file that holds the cards of the files that do not load.
     public static let fileID = "openspot/faults"
     static let fixPart = "fix"
     static let editPart = "edit"
 
     public let file: URL
-    /// The name of the spot that the file would give.
     public let name: String
     public let faults: [String]
     let prompt: AgentPrompt
@@ -21,7 +17,6 @@ public struct FaultSpot: Equatable, Sendable {
         self.prompt = prompt
     }
 
-    /// Answers one call with the text a script would print.
     public func answer(_ arguments: [String]) async throws -> String {
         switch arguments.first {
         case "read":

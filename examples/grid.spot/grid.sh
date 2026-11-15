@@ -3,6 +3,7 @@
 # icon=square.grid.3x3
 # detail=Drag over a grid to place the front window
 # on=panel.open
+# offers=card
 helper="$OPENSPOT_DATA/grid"
 pidfile="$OPENSPOT_DATA/grid.pid"
 source="$(dirname "$0")/grid.swift"

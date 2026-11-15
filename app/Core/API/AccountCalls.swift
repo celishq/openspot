@@ -1,6 +1,5 @@
 import Foundation
 
-/// The calls of `openspot account`, which only the running app answers, so that no other program reads the Keychain.
 struct AccountCalls {
     let environment: [String: String]
     let app: (any RunningApp)?

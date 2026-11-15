@@ -1,26 +1,20 @@
 import Foundation
 
-/// A call of one spot that `openspot spot run` makes, with the environment, the arguments and the stdin that a call of the
-/// app gets. With no call, it reads a spot that has a `read`, and opens one that has none. A staying script gets the call as
-/// a block, and the run ends with the frame that ends that call. A stop of the task that waits for it stops its script.
 public struct TerminalRun {
-    /// How the call ended: the exit code of the script, and all that it printed on stderr.
     public struct End: Equatable, Sendable {
         public let code: Int32
         public let errors: String
     }
 
     private static let readLimit: TimeInterval = 10
+    static let errorLimit = 1 << 20
     private static let callID = 1
 
     public let spot: Spot
     public let arguments: [String]
     public let input: String?
-    /// The uses that Careful mode leaves the script, or nil to run it as the person (protocol: Trust).
     let careful: Set<SpotUse>?
-    /// The record of the app, which then knows the script's calls of `openspot` as the spot's (protocol: Trust).
     let tokens: CallerTokens?
-    /// The environment and the working folder of the caller, or nil for those of this process.
     let environment: [String: String]?
     let folder: URL?
 
@@ -38,12 +32,10 @@ public struct TerminalRun {
         self.folder = folder
     }
 
-    /// The call that this run makes.
     var action: SpotAction {
         SpotAction(arguments: arguments.isEmpty ? (spot.read == nil ? SpotAction.open : SpotAction.read).arguments : arguments)
     }
 
-    /// Makes the call, gives each frame as it comes on the actor of its caller, and returns how the call ended.
     public func start(isolation: isolated (any Actor)? = #isolation, frame: (String) -> Void) async -> End {
         let isRead = action == .read
         if spot.mode == .inline { return await inline(isRead: isRead, frame: frame) }
@@ -52,10 +44,10 @@ public struct TerminalRun {
         let variables = ["OPENSPOT_ID": spot.id].merging(isRead ? ReadReason.sheet.variables : [:]) { _, new in new }.merging(token.map { [CallerTokens.variable: $0] } ?? [:]) { _, new in new }
         let process: ScriptProcess
         if spot.mode.stays {
-            process = ScriptProcess(url: program, name: spot.url.path, mode: .stays, limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: nil, careful: careful, base: environment, folder: folder)
+            process = ScriptProcess(url: program, name: spot.url.path, mode: .stays, limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder)
         } else {
             let sent = action.sent(input: input)
-            process = ScriptProcess(url: program, name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: nil, careful: careful, base: environment, folder: folder)
+            process = ScriptProcess(url: program, name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder)
         }
         if let tokens, let token {
             process.onStart { group in tokens.enter(group, token: token) }
@@ -88,7 +80,6 @@ public struct TerminalRun {
         }
     }
 
-    /// Runs the call in a JavaScript spot, and gives its frame.
     private func inline(isolation: isolated (any Actor)? = #isolation, isRead: Bool, frame: (String) -> Void) async -> End {
         let script = InlineScript(spot: spot, api: nil, tokens: tokens, careful: careful, limit: Self.readLimit)
         defer { script.end() }

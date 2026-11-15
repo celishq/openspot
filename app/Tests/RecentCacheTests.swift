@@ -1,7 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves which values a cache of a limit in bytes keeps.
 final class RecentCacheTests: XCTestCase {
     func testAValuePastTheLimitLetsGoOnlyTheLeastRecentlyUsed() {
         var cache = RecentCache<String, Int>(base: 10)

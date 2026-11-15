@@ -1,7 +1,6 @@
 import OpenspotCore
 import SwiftUI
 
-/// A short message from Openspot on the same surface as a spot.
 struct ToastView: View {
     let toast: Toast
     private static let markSide: CGFloat = 16
@@ -31,7 +30,6 @@ struct ToastView: View {
         .environment(\.spotIsShown, toast.isShown)
     }
 
-    /// The message as text, with each span in backticks marked as a key. Spaces beside a key leave room for its fill.
     static func styled(_ message: String) -> Text {
         let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
         let parsed = (try? AttributedString(markdown: message, options: options)) ?? AttributedString(message)

@@ -1,13 +1,11 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Draw spot with its real script in a private home: its boards, a rename, a delete, and its app's source.
 final class DrawPluginTests: SampleSpotsCase {
     private func draw() throws -> Spot {
         try XCTUnwrap(try scan.spots.first { $0.id == "draw" })
     }
 
-    /// Runs the body with the data folder of Draw under a private config.
     private func withBoards(_ body: (URL, URL) async throws -> Void) async throws {
         try await withPrivateHome { folder in
             let config = folder.appendingPathComponent(".config/openspot")

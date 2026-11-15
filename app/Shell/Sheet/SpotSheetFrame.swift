@@ -1,47 +1,77 @@
 import OpenspotCore
 import SwiftUI
 
-/// Places the sheet in the panel, so that it can grow out of a card and collapse back into it. The content keeps the sheet's
-/// size and moves by an offset alone; a shape that grows from the card's rect to the sheet's rect clips it and draws its
-/// glass. A frame of the motion lays out nothing.
 struct SpotSheetFrame: ViewModifier {
-    /// Where the surface lies now: the card's rect before the sheet opens, and the sheet's rect when it is open.
     let rect: CGRect
     let radius: CGFloat
-    /// Where the content lies when the sheet is open.
     let sheetRect: CGRect
-    /// How far the content lies from its open place: as far as the card lies from the sheet's corner, and none when open.
     let shift: CGSize
-    /// Reads whether the card is selected where it is called, which shows its ring as the card's look until the sheet opens.
     let isSelected: () -> Bool
-    /// How far the sheet is open, from 0 on its card to 1.
     let progress: Double
-    /// The arrow of the card, which stays at the moving trailing edge as the sheet grows out of the card.
     var arrow: AnyView?
-    /// The size of the card, in whose top trailing corner the arrow lies.
     var arrowBox: CGSize = .zero
+    var step = SheetStep()
     @Environment(\.spotIsShown) private var isShown
+    @Environment(\.spotPanels) private var panels
 
     func body(content: Content) -> some View {
         let shape = SpotSurfaceShape(rect: rect, radius: radius)
+        let width = panels.frame.width
         ZStack(alignment: .topLeading) {
-            SpotSurface(rect: rect, radius: radius)
-            content
-                .frame(width: sheetRect.width, height: sheetRect.height, alignment: .topLeading)
-                .offset(x: sheetRect.minX + shift.width, y: sheetRect.minY + shift.height)
-                .opacity(isShown ? 1 : MotionTokens.hiddenOpacity)
-                .animation(SpotMotion.fade(isShown: isShown), value: isShown)
-                .allowsHitTesting(isShown)
-            if let arrow {
-                arrow
-                    .frame(width: arrowBox.width, height: arrowBox.height, alignment: .topTrailing)
-                    .offset(x: rect.maxX - arrowBox.width, y: rect.minY)
+            SpotSurface(rect: rect, radius: radius, marks: step.marks, markRoom: step.room ?? sheetRect)
+            ZStack(alignment: .topLeading) {
+                content
+                    .frame(width: sheetRect.width, height: sheetRect.height, alignment: .topLeading)
+                    .offset(x: sheetRect.minX + shift.width, y: sheetRect.minY + shift.height)
+                    .opacity(isShown ? 1 : MotionTokens.hiddenOpacity)
+                    .animation(SpotMotion.fade(isShown: isShown), value: isShown)
+                    .allowsHitTesting(isShown)
+                if let field = step.field {
+                    field
+                }
+                if let arrow {
+                    arrow
+                        .frame(width: arrowBox.width, height: arrowBox.height, alignment: .topTrailing)
+                        .offset(x: rect.maxX - arrowBox.width, y: rect.minY)
+                }
+            }
+            .frame(width: width, height: SpotTokens.panelHeight, alignment: .topLeading)
+            .modifier(PageFit(rect: step.fit ?? sheetRect, natural: sheetRect, isFitting: step.fit != nil, width: width))
+            .clipShape(shape)
+            if let leaving = step.leaving {
+                leaving.look
+                    .frame(width: width, height: SpotTokens.panelHeight, alignment: .topLeading)
+                    .modifier(PageFit(rect: leaving.rect, natural: leaving.from, isFitting: true, width: width))
+                    .clipShape(SpotSurfaceShape(rect: leaving.rect, radius: SpotTokens.radius))
+                    .allowsHitTesting(false)
             }
         }
-        .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
-        .clipShape(shape)
+        .frame(width: width, height: SpotTokens.panelHeight, alignment: .topLeading)
         .modifier(SpotLiveSelectionRing(isSelected: isSelected, shape: shape, progress: progress))
-        .scaleEffect(isShown ? 1 : MotionTokens.hiddenScale, anchor: UnitPoint(x: rect.midX / SpotTokens.panelWidth, y: rect.midY / SpotTokens.panelHeight))
+        .scaleEffect(isShown ? 1 : MotionTokens.hiddenScale, anchor: UnitPoint(x: rect.midX / width, y: rect.midY / SpotTokens.panelHeight))
         .animation(SpotMotion.fade(isShown: isShown), value: isShown)
+    }
+}
+
+private struct PageFit: ViewModifier, @preconcurrency Animatable {
+    var rect: CGRect
+    let natural: CGRect
+    let isFitting: Bool
+    let width: CGFloat
+
+    var animatableData: CGRect.AnimatableData {
+        get { rect.animatableData }
+        set { rect.animatableData = newValue }
+    }
+
+    func body(content: Content) -> some View {
+        let rect = isFitting ? rect : natural
+        let scale = min(rect.height / max(natural.height, 1), 1)
+        let width = min(rect.width / max(natural.width, 1), 1)
+        let shown = min(max((width - MotionTokens.stepFadeWidth) / (1 - MotionTokens.stepFadeWidth), MotionTokens.hiddenOpacity), 1)
+        content
+            .scaleEffect(scale, anchor: UnitPoint(x: natural.midX / self.width, y: natural.minY / SpotTokens.panelHeight))
+            .offset(x: rect.midX - natural.midX, y: rect.minY - natural.minY)
+            .opacity(shown)
     }
 }

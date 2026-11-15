@@ -1,7 +1,5 @@
 import Foundation
 
-/// The windows that the person works in, such as the playground or an update. While one is open, the app is a regular app
-/// in the Dock and in Command-Tab; with none, it is a menu bar app.
 public struct WorkWindows: Equatable, Sendable {
     private var count = 0
 

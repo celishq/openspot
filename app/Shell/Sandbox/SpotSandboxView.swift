@@ -1,9 +1,6 @@
 import OpenspotCore
 import SwiftUI
 
-/// The playground: the text of a spot on the left; on the right the place where it shows, its sheet, its card or its rows in
-/// the main search, on the panel's glass, with its faults; and below them each call that the spot got, with what it
-/// printed. A drag of a divider resizes each pane, and nothing keeps the sizes.
 struct SpotSandboxView: View {
     @Bindable var model: SpotSandboxModel
 
@@ -68,7 +65,6 @@ struct SpotSandboxView: View {
         .fixedSize()
     }
 
-    /// The faults of the spot and what the person did to it, under the stage on the window's own background.
     private var faults: some View {
         let faults = (model.fault.map { [$0] } ?? []) + (model.lack.map { [$0] } ?? []) + model.sandbox.faults
         return VStack(alignment: .leading, spacing: SpotType.lineGap) {
@@ -107,7 +103,6 @@ struct SpotSandboxView: View {
         }
     }
 
-    /// The colour of a line of a call, by its mark: the call and its end in ink, stderr in orange, the rest secondary.
     private func color(of line: String) -> Color {
         switch line.first {
         case "$", "=": SpotTheme.ink

@@ -1,8 +1,5 @@
 import Foundation
 
-/// A capability with state, which it keeps in a helper process. The first call starts the helper, each call reaches it over
-/// a local socket, and it exits after its idle time with no call. A lock that the system frees at any exit keeps it to one.
-/// The helper is the same program, started with the arguments `helper <name>`, in its own process group.
 public struct Capability: Sendable {
     public enum Failure: LocalizedError, Equatable {
         case notStarted(name: String, cause: String, fix: String)
@@ -19,8 +16,7 @@ public struct Capability: Sendable {
     private static let startLimit: TimeInterval = 10
     private static let retryPause: TimeInterval = 0.01
     private static let queueLength: Int32 = 64
-    /// The seconds that the helper waits for one stalled caller, so that the caller does not stop every other call.
-    private static let callerLimit = 5
+    private static let stalledCallerSeconds = 5
 
     public let name: String
     private let folder: URL
@@ -36,8 +32,6 @@ public struct Capability: Sendable {
     private var lockPath: String { folder.appendingPathComponent("openspot-\(name).lock").path }
     private var folderFix: String { "Make sure that you can write to \(folder.path), then run the call again." }
 
-    /// Sends one request to the helper, and starts the helper if it does not run. An answer can be empty, and a helper that
-    /// ends first is a failure, so silence never counts as an answer.
     public func call(_ request: Data) throws -> Data {
         signal(SIGPIPE, SIG_IGN)
         let connection = try reach()
@@ -46,9 +40,6 @@ public struct Capability: Sendable {
         return answer
     }
 
-    /// Runs as the helper: answers one call at a time until the idle time passes with no call and no work, such as a
-    /// recording. It exits at once when another helper holds the lock, and with a line on stderr and code 1 when it cannot listen.
-    /// `runMain` keeps the main thread, such as the event loop of an app that a framework needs.
     public func serve(
         isBusy: @escaping @Sendable () async -> Bool = { false },
         runMain: () -> Never = dispatchMain,
@@ -76,8 +67,6 @@ public struct Capability: Sendable {
         runMain()
     }
 
-    /// A connection to the helper. The helper shows that it runs by taking the connection. A helper that lost the race to
-    /// another one exits with code 0, and any other exit is a failed start.
     private func reach() throws -> Connection {
         guard Connection.address(of: socketPath) != nil else {
             throw Failure.notStarted(name: name, cause: "the path \(socketPath) is too long for a socket", fix: "Use a shorter folder.")
@@ -122,8 +111,6 @@ public struct Capability: Sendable {
         return .notStarted(name: name, cause: said.isEmpty ? "it exited with code \(process.terminationStatus)" : said, fix: folderFix)
     }
 
-    /// Takes the lock and listens, and returns the socket. A helper that crashed leaves a socket file and no lock, so the
-    /// file goes first.
     private func listen() -> Int32 {
         do {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -155,7 +142,6 @@ public struct Capability: Sendable {
         exit(1)
     }
 
-    /// Waits for a call on the socket, and returns false when the time passes with none.
     private static func isReady(_ listener: Int32, seconds: TimeInterval) -> Bool {
         var request = pollfd(fd: listener, events: Int16(POLLIN), revents: 0)
         while true {
@@ -165,24 +151,21 @@ public struct Capability: Sendable {
         }
     }
 
-    /// Answers one call. A caller that stopped before its whole request arrived gets nothing, and changes nothing.
     private static func answerNext(on listener: Int32, with answer: @Sendable (Data) async -> Data) async {
         let descriptor = accept(listener, nil, nil)
         guard descriptor >= 0 else { return }
-        let connection = Connection(descriptor: descriptor, limit: callerLimit)
+        let connection = Connection(descriptor: descriptor, limit: stalledCallerSeconds)
         defer { connection.close() }
         guard let request = connection.receive() else { return }
         _ = connection.send(await answer(request))
     }
 }
 
-/// One end of a socket between a call and its helper. Each message has its length first, so that a cut one is not read as whole.
 private struct Connection: Sendable {
     private static let chunk = 65_536
 
     private let descriptor: Int32
 
-    /// The address of a path, or nil when the path is too long for one.
     static func address(of path: String) -> sockaddr_un? {
         var address = sockaddr_un()
         address.sun_family = sa_family_t(AF_UNIX)
@@ -192,7 +175,6 @@ private struct Connection: Sendable {
         return address
     }
 
-    /// Connects to a socket, or returns nil when nothing listens on it.
     init?(path: String) {
         guard let address = Self.address(of: path) else { return nil }
         descriptor = socket(AF_UNIX, SOCK_STREAM, 0)
@@ -206,7 +188,6 @@ private struct Connection: Sendable {
         }
     }
 
-    /// Takes a connection that the helper accepted, with a limit in seconds on each read and write.
     init(descriptor: Int32, limit: Int) {
         self.descriptor = descriptor
         var time = timeval(tv_sec: limit, tv_usec: 0)
@@ -218,13 +199,11 @@ private struct Connection: Sendable {
         Darwin.close(descriptor)
     }
 
-    /// Sends one message, and returns whether all of it went.
     func send(_ message: Data) -> Bool {
         var length = UInt64(message.count).littleEndian
         return withUnsafeBytes(of: &length) { write($0) } && message.withUnsafeBytes { write($0) }
     }
 
-    /// Reads one message, or returns nil when the other end stops before all of it arrives.
     func receive() -> Data? {
         guard let head = read(count: MemoryLayout<UInt64>.size) else { return nil }
         let length = head.reduce(UInt64(0)) { ($0 >> 8) | (UInt64($1) << 56) }

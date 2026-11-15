@@ -1,8 +1,6 @@
 import OpenspotCore
 import SwiftUI
 
-/// Shows a view while the panel shows, and fades and shrinks it as the panel hides. Only its own look moves on the fade, so
-/// no other change that comes with a show or a hide moves the view's content. A hidden view takes no click.
 struct SpotShownFade: ViewModifier {
     let isShown: Bool
     var hiddenScale: CGFloat = 1

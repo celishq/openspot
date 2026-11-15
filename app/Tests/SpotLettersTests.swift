@@ -1,8 +1,6 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the letters of the spots: the person gives each one in Edit Spots, and a core spot takes its letter from the
-/// default config, which the person's config overrides.
 @MainActor
 final class SpotLettersTests: XCTestCase {
     private static let deleteCode: UInt32 = 51
@@ -62,7 +60,6 @@ final class SpotLettersTests: XCTestCase {
         try XCTUnwrap(CommandKey(name: name)).code
     }
 
-    /// Starts to record the letter of a spot in Edit Spots.
     private func startLetter(of id: String) throws {
         model.beginEditing()
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == id })
@@ -75,6 +72,20 @@ final class SpotLettersTests: XCTestCase {
         model.reload()
 
         XCTAssertEqual(letter(of: "notes"), "N")
+        model.isChainHeld = true
+        XCTAssertTrue(model.handleChain(code: try code("n"), modifiers: model.entryKey.modifiers))
+    }
+
+    func testALetterOpensItsSpotOnlyWhileTheLettersShowSoACommandKeyOfTheCardStaysItsOwn() throws {
+        try script("notes")
+        model.reload()
+
+        XCTAssertFalse(model.showsChain)
+        XCTAssertFalse(model.handleChain(code: try code("n"), modifiers: model.entryKey.modifiers))
+        XCTAssertNil(model.openList)
+
+        model.isChainHeld = true
+        XCTAssertTrue(model.showsChain)
         XCTAssertTrue(model.handleChain(code: try code("n"), modifiers: model.entryKey.modifiers))
     }
 

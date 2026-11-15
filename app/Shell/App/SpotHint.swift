@@ -1,11 +1,8 @@
 import OpenspotCore
 import SwiftUI
 
-/// The keys that work now, on the surface of a toast, under the content of the panel. Each key lies on a chip beside its words,
-/// and a click on a key and its words does what the key does.
 struct SpotHint: View {
     let words: HintWords
-    /// The key whose layer is open, such as the actions menu, which the accent ring marks.
     var activeKey: String?
     var onPress: (String) -> Void = { _ in }
 

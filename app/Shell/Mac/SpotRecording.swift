@@ -2,8 +2,6 @@ import AppKit
 import AVFoundation
 import OpenspotCore
 
-/// `openspot screen record`: the command finds the source and asks for the mic and the camera, and the `screen` helper keeps
-/// one recording until a stop, after the call that started it ends (S10).
 @MainActor
 enum SpotRecording {
     nonisolated static let capability = Capability(name: "screen")
@@ -11,8 +9,6 @@ enum SpotRecording {
     nonisolated private static let cameraPane = "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera"
     private static var session: SpotRecordingSession?
 
-    /// Starts a recording of the source, and returns nothing. A cancel of the pick starts none. A relative file starts in
-    /// `folder`. It runs on the thread of its call, apart from the pick.
     nonisolated static func start(_ capture: ScreenCapture, in folder: URL) async throws -> String {
         guard let target = try await SpotScreenTarget.target(of: capture.source) else { return "" }
         let file = try CaptureFile(path: capture.file, kind: .video, folder: SpotScreen.screenshots, current: folder).url
@@ -33,7 +29,6 @@ enum SpotRecording {
         return ""
     }
 
-    /// Ends the recording, and returns each file on a line, the video first.
     nonisolated static func stop() throws -> String {
         let block = try ask(.stop)
         return ["file", "camera", "events"].compactMap { block.value($0) }.map { $0 + "\n" }.joined()
@@ -43,8 +38,6 @@ enum SpotRecording {
         try ask(.status).text
     }
 
-    /// Runs as the helper: answers each request, and stays while a recording runs. It runs the event loop of the app on
-    /// the main thread, where ScreenCaptureKit draws its mark of a recording in the menu bar.
     static func serve() -> Never {
         let app = NSApplication.shared
         capability.serve(isBusy: { await SpotRecording.session != nil }, runMain: { MainActor.assumeIsolated { app.run() }; exit(0) }) { request in
@@ -52,7 +45,6 @@ enum SpotRecording {
         }
     }
 
-    /// Sends a request to the helper, and turns an answer with a fault into a failure with its fix.
     nonisolated private static func ask(_ request: RecordingRequest) throws -> TextBlock {
         let answer = String(decoding: try capability.call(Data(request.text.utf8)), as: UTF8.self)
         let block = TextBlock.blocks(in: answer).first ?? TextBlock(fields: [])
@@ -61,7 +53,6 @@ enum SpotRecording {
         throw SpotError.fault(fault)
     }
 
-    /// Asks macOS for a device when the person has not answered yet, and fails with the fix when it is not allowed.
     nonisolated private static func allow(_ media: AVMediaType, _ fault: String, _ pane: String) async throws {
         guard AVCaptureDevice.authorizationStatus(for: media) != .authorized else { return }
         guard await AVCaptureDevice.requestAccess(for: media) else { throw SpotError.failedWithFix(1, fault, URL(string: pane)!) }

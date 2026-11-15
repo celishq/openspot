@@ -1,8 +1,6 @@
 import OpenspotCore
 import SwiftUI
 
-/// What the search field says while a `.spot` file is dragged over the panel, and as a review grows out of it. It lies as the
-/// header of a sheet lies, so that the two are one thing.
 struct SpotDropView: View {
     let drop: SpotDrop
 

@@ -1,9 +1,6 @@
 import OpenspotCore
 import SwiftUI
 
-/// A round tick before the words of a thing to do: a ring while it is open, and a filled tick when it is done. It takes the
-/// place of a row's picture, so its words line up with the words of other rows. A press sends the other state, and the
-/// words fade when it is done.
 struct SpotTick<Words: View>: View {
     let isOn: Bool
     let words: Words

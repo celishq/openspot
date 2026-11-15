@@ -1,6 +1,5 @@
 import Foundation
 
-/// One time of an event in a calendar. A repeating event gives one for each time.
 public struct Event: Equatable, Sendable {
     private static let meetingHosts = [
         "zoom.us", "zoom.com", "meet.google.com", "teams.microsoft.com", "teams.live.com", "webex.com", "whereby.com", "meet.jit.si",
@@ -29,7 +28,6 @@ public struct Event: Equatable, Sendable {
         self.notes = notes
     }
 
-    /// The address of a call in its address, location or notes, such as a Zoom or Meet link.
     var meeting: String? {
         let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
         for text in [url, location, notes].compactMap(\.self) {
@@ -39,7 +37,6 @@ public struct Event: Equatable, Sendable {
         return nil
     }
 
-    /// Its row (E2). The id names this time of the event, so each time of a repeating event has its own.
     func row(_ clock: CalendarClock) -> TextBlock {
         let meeting = meeting
         let isOn = !isAllDay && start <= clock.now && clock.now < end
@@ -61,7 +58,6 @@ public struct Event: Equatable, Sendable {
         return TextBlock(fields: fields)
     }
 
-    /// When it is, in words: its day unless it is today, then its times, or `All day`.
     private func when(_ clock: CalendarClock) -> String {
         let started = start < clock.startOfToday
         if isAllDay { return started ? "All day" : clock.day(start) ?? "All day" }

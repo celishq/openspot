@@ -1,9 +1,5 @@
 import Foundation
 
-/// The reader of a typed sum of dates and times: a date moved by lengths, such as `today + 3 weeks`; a count to or from a date, such as
-/// `days until 25 dec`; the days between two dates; a time in another zone, such as `3pm tokyo in kyiv`; or a date alone,
-/// such as `next friday`. `now`, `today`, `tomorrow` and `yesterday` read from the clock, and other dates from the date
-/// finder of macOS. A count since a date with no year counts from its last time, not its next.
 enum CalcDate {
     private static let units: [String: Calendar.Component] = [
         "d": .day, "day": .day, "days": .day, "w": .weekOfYear, "wk": .weekOfYear, "week": .weekOfYear, "weeks": .weekOfYear,
@@ -12,14 +8,12 @@ enum CalcDate {
     ]
     private static let relative = ["today", "tomorrow", "yesterday", "now", "next", "last", "in", "ago"]
 
-    /// The answer to a text, or nil when it is no sum of dates.
     static func answer(to text: String, locale: Locale, clock: Calendar, now: Date) -> CalcAnswer? {
         let text = text.lowercased().trimmingCharacters(in: .whitespaces)
         let format = Format(locale: locale, clock: clock)
         return moved(text, format, now) ?? count(text, format, now) ?? zoned(text, format, now) ?? alone(text, format, now)
     }
 
-    /// `<date> + <n> <unit>`, with as many lengths as it has.
     private static func moved(_ text: String, _ format: Format, _ now: Date) -> CalcAnswer? {
         guard let match = text.firstMatch(of: /^(.+?)\s*((?:[+-]\s*\d+\s*[a-z]+\s*)+)$/),
               let start = moment(String(match.1), format.clock, now) else { return nil }
@@ -35,7 +29,6 @@ enum CalcDate {
         return CalcAnswer(value: format.value(date, hasTime: hasTime), title: format.day(date, hasTime: hasTime), detail: "\(format.day(start.date, hasTime: start.hasTime)) \(lengths)")
     }
 
-    /// `<unit> until <date>` or `<unit> since <date>`, and `<date> - <date>` in days.
     private static func count(_ text: String, _ format: Format, _ now: Date) -> CalcAnswer? {
         let unit: Calendar.Component
         var from: (date: Date, hasTime: Bool)
@@ -67,7 +60,6 @@ enum CalcDate {
         return CalcAnswer(value: String(count), title: length.title, detail: detail, unit: length.unit)
     }
 
-    /// `<time> [zone] in <zone>`, such as `3pm tokyo in kyiv`, or `now in <zone>`.
     private static func zoned(_ text: String, _ format: Format, _ now: Date) -> CalcAnswer? {
         for match in text.matches(of: /\s+in\s+/).reversed() {
             guard let target = zone(String(text[match.range.upperBound...])) else { continue }
@@ -96,7 +88,6 @@ enum CalcDate {
         return nil
     }
 
-    /// A date with nothing else, when it holds a digit or a word such as `next`, so that a word such as `may` is no date.
     private static func alone(_ text: String, _ format: Format, _ now: Date) -> CalcAnswer? {
         let words = text.split(separator: " ").map(String.init)
         guard text.contains(where: \.isNumber) || words.contains(where: relative.contains),
@@ -105,7 +96,6 @@ enum CalcDate {
         return CalcAnswer(value: format.value(date.date, hasTime: date.hasTime), title: format.day(date.date, hasTime: date.hasTime), detail: text)
     }
 
-    /// The moment of a whole text: a word of the clock, or a date that the finder reads from all of it.
     private static func moment(_ text: String, _ clock: Calendar, _ now: Date) -> (date: Date, hasTime: Bool)? {
         let today = clock.startOfDay(for: now)
         switch text.trimmingCharacters(in: .whitespaces) {
@@ -114,13 +104,12 @@ enum CalcDate {
         case "tomorrow": return clock.date(byAdding: .day, value: 1, to: today).map { ($0, false) }
         case "yesterday": return clock.date(byAdding: .day, value: -1, to: today).map { ($0, false) }
         default:
-            guard let found = CalcFormats.dates?.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+            guard let found = CalcFormats.dateFinder?.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
                   found.range == NSRange(text.startIndex..., in: text), let date = found.date else { return nil }
             return (date, CalendarEntry.hasTime(found))
         }
     }
 
-    /// The zone of a city, such as `tokyo` or `new york`, or of an abbreviation, such as `utc` or `pst`.
     private static func zone(_ name: String) -> TimeZone? {
         let name = name.trimmingCharacters(in: .whitespaces)
         if let abbreviation = TimeZone.abbreviationDictionary[name.uppercased()] { return TimeZone(identifier: abbreviation) }
@@ -134,7 +123,6 @@ enum CalcDate {
         zone.identifier.split(separator: "/").last.map { $0.replacingOccurrences(of: "_", with: " ") } ?? zone.identifier
     }
 
-    /// The ways of the Mac to write a date, a time, a value and a length.
     private struct Format {
         let locale: Locale
         let clock: Calendar
@@ -147,14 +135,12 @@ enum CalcDate {
             written(date, "EEEjmm", in: zone)
         }
 
-        /// The half of the day that ends a time, such as `AM`, on a Mac with a 12-hour clock.
         func half(of time: String) -> String? {
             let formatter = DateFormatter()
             formatter.locale = locale
             return [formatter.amSymbol, formatter.pmSymbol].compactMap { $0 }.first { time.hasSuffix($0) }
         }
 
-        /// A date as `2026-12-02`, or `2026-12-02 15:00` with its time.
         func value(_ date: Date, hasTime: Bool, in zone: TimeZone? = nil) -> String {
             let zone = zone ?? clock.timeZone
             let pattern = hasTime ? "yyyy-MM-dd HH:mm" : "yyyy-MM-dd"
@@ -168,7 +154,6 @@ enum CalcDate {
             return formatter.string(from: date)
         }
 
-        /// A count of a unit in words, such as `44 days`, and its words with no number, such as `days`.
         func length(_ count: Int, _ unit: Calendar.Component) -> (title: String, unit: String?) {
             let allowed: NSCalendar.Unit = unit == .weekOfYear ? .weekOfMonth : Self.unit(unit)
             let formatter = CalcFormats.formatter(DateComponentsFormatter.self, "length|\(allowed.rawValue)|\(CalcFormats.key(locale, clock))") {
