@@ -5,6 +5,7 @@ public struct ItemForm: Equatable, Sendable {
         public enum Kind: String, Sendable {
             case text
             case multiline
+            case secret
             case choice
             case `switch`
             case slider

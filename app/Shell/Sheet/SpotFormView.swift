@@ -45,13 +45,16 @@ struct SpotFormView: View {
     @ViewBuilder
     private func control(for field: ItemForm.Field) -> some View {
         switch field.type {
-        case .text:
+        case .text, .secret:
             HStack(spacing: 0) {
-                TextField(
-                    field.label,
-                    text: value(of: field),
-                    prompt: Text(field.placeholder ?? field.label).foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
-                )
+                let prompt = Text(field.placeholder ?? field.label).foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
+                Group {
+                    if field.type == .secret {
+                        SecureField(field.label, text: value(of: field), prompt: prompt)
+                    } else {
+                        TextField(field.label, text: value(of: field), prompt: prompt)
+                    }
+                }
                 .labelsHidden()
                 .textFieldStyle(.plain)
                 .focused($focus, equals: field.name)

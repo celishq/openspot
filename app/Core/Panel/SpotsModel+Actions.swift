@@ -452,7 +452,7 @@ extension SpotsModel {
         guard let entry = entry(id), let sheet = sheets[id] else { return false }
         if let field = entry.spot.settings.first(where: { $0.id == key && $0.isSecret }) {
             pushFirst(id, moving: true)
-            let form = ItemForm(title: field.title, fields: [ItemForm.Field(name: key, label: field.title)])
+            let form = ItemForm(title: field.title, fields: [ItemForm.Field(name: key, label: field.title, type: .secret)])
             let action = CommandAction(id: Self.secretPrefix + key, title: "Change \(field.title)", scope: .spot, after: .stay)
             self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: action, item: nil, openedSheet: true)
             return true

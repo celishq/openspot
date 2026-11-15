@@ -50,7 +50,7 @@ prompt() {
 
 # The words of the field: the ones on stdin when the sheet sends them, or else the draft that a last call kept. A draft that
 # was copied is done, so the sheet opens empty.
-case "$nl$_openspot_stdin" in
+case "$nl$(openspot_input)" in
   *"${nl}describe="*)
     typed=$(value describe; printf x)
     typed=${typed%x}

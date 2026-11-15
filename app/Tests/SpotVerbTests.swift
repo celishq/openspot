@@ -355,6 +355,7 @@ final class SpotVerbTests: XCTestCase {
         model.panelWillShow(holding: [])
 
         XCTAssertTrue(model.changeSetting("token", of: "weather"))
+        let field = model.form?.draft.form.fields.first
         model.setFormValue("1234567", for: "token")
         model.submitForm()
         let short = host.notes.last
@@ -363,6 +364,7 @@ final class SpotVerbTests: XCTestCase {
         model.submitForm()
         try await wait("the kept secret") { model.form == nil }
 
+        XCTAssertEqual(field?.type, .secret)
         XCTAssertEqual(short, "Openspot didn't keep this secret, because it is shorter than 8 characters. Type the whole value.")
         XCTAssertEqual(kept, [:])
         XCTAssertNil(model.form)
