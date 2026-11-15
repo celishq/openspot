@@ -57,8 +57,8 @@ struct PublisherCard: View {
         .frame(width: size.width, height: size.height)
         .clipShape(shape)
         .overlay(shape.strokeBorder(.white.opacity(0.3), lineWidth: 1))
-        .rotation3DEffect(.degrees(tilt.x * 12), axis: (x: 0, y: 1, z: 0), perspective: 0.6)
-        .rotation3DEffect(.degrees(-tilt.y * 9), axis: (x: 1, y: 0, z: 0), perspective: 0.6)
+        .rotation3DEffect(.degrees(tilt.x * MotionTokens.cardTurn), axis: (x: 0, y: 1, z: 0), perspective: MotionTokens.cardPerspective)
+        .rotation3DEffect(.degrees(-tilt.y * MotionTokens.cardLean), axis: (x: 1, y: 0, z: 0), perspective: MotionTokens.cardPerspective)
         .shadow(color: .black.opacity(0.5), radius: 12, x: -tilt.x * 8, y: 8 - tilt.y * 6)
     }
 
