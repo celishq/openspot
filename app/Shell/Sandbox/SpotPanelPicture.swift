@@ -7,7 +7,7 @@ enum SpotPanelPicture {
     private static let settle = 0.8
 
     static func run(path: String) -> Never {
-        NSApplication.shared.setActivationPolicy(.prohibited)
+        SpotPicture.start()
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
         Task { @MainActor in
             await model.reload()
@@ -28,40 +28,30 @@ enum SpotPanelPicture {
             let bottom = (shapes.map(\.0.maxY).max() ?? SpotTokens.gridTop) + SpotTokens.hintBlock + SpotTokens.halo
             let size = CGSize(width: SpotTokens.panelWidth, height: min(bottom, SpotTokens.panelHeight))
             let seed = URL(fileURLWithPath: path).lastPathComponent
-            let view = NSHostingView(rootView: ZStack(alignment: .topLeading) {
-                SpotWallpaper(seed: seed)
-                SpotWallpaper.blurred(seed: seed, size: size)
-                    .overlay(Color.black.opacity(SpotWallpaper.glassShade))
-                    .overlay(SpotTheme.glass)
-                    .mask {
-                        ZStack(alignment: .topLeading) {
-                            ForEach(Array(shapes.enumerated()), id: \.offset) { _, shape in
-                                RoundedRectangle(cornerRadius: shape.1, style: .continuous)
-                                    .frame(width: shape.0.width, height: shape.0.height)
-                                    .offset(x: shape.0.minX, y: shape.0.minY)
+            let panel = ZStack(alignment: .topLeading) {
+                if !SpotPicture.isOnScreen {
+                    SpotWallpaper(seed: seed)
+                    SpotWallpaper.blurred(seed: seed, size: size)
+                        .overlay(Color.black.opacity(SpotWallpaper.glassShade))
+                        .overlay(SpotTheme.glass)
+                        .mask {
+                            ZStack(alignment: .topLeading) {
+                                ForEach(Array(shapes.enumerated()), id: \.offset) { _, shape in
+                                    SpotRoundShape(radius: shape.1)
+                                        .frame(width: shape.0.width, height: shape.0.height)
+                                        .offset(x: shape.0.minX, y: shape.0.minY)
+                                }
                             }
+                            .frame(width: size.width, height: size.height, alignment: .topLeading)
                         }
-                        .frame(width: size.width, height: size.height, alignment: .topLeading)
-                    }
+                }
                 SpotsView(model: model)
                     .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
             }
             .frame(width: size.width, height: size.height, alignment: .topLeading)
             .clipped()
             .environment(\.spotIsShown, true)
-            .environment(\.spotDrawsGlass, false)
-            .preferredColorScheme(.dark))
-            let window = NSWindow(contentRect: NSRect(x: -9000, y: -9000, width: size.width, height: size.height), styleMask: .borderless, backing: .buffered, defer: false)
-            window.contentView = view
-            window.orderBack(nil)
-            DispatchQueue.main.asyncAfter(deadline: .now() + settle) {
-                MainActor.assumeIsolated {
-                    guard let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { exit(1) }
-                    view.cacheDisplay(in: view.bounds, to: bitmap)
-                    let data = bitmap.representation(using: .png, properties: [:])
-                    exit(FileManager.default.createFile(atPath: path, contents: data) ? 0 : 1)
-                }
-            }
+            SpotPicture(of: panel, size: size, path: path).save(after: settle)
         }
         NSApplication.shared.run()
         exit(0)

@@ -26,6 +26,8 @@ final class CheckScriptTests: XCTestCase {
         ("glass", "app/Shell/Panel.swift", "let part = layers.first { $0.name == \"back" + "drop\" }\n"),
         ("glass", "app/Shell/Panel.swift", "let filter = NSClassFromString(\"CA" + "Filter\")\n"),
         ("glass", "app/Shell/Panel.swift", "part.setValue(24, forKeyPath: \"filters.gaussian" + "Blur.inputRadius\")\n"),
+        ("glass", "app/Shell/Sandbox/PanelPicture.swift", "view.cache" + "Display(in: view.bounds, to: bitmap)\n"),
+        ("glass", "app/Shell/Surface/SpotGlass.swift", "let blur = NSVisual" + "EffectView()\n"),
         ("processes", "app/Client/main.swift", "_ = posix_spawn(&started, path, nil, nil, words, environ)\n"),
         ("spots", "spots/weather.spot/weather.sh", "#!/bin/sh\n# title=Weather\n# on=clock.5\necho\n"),
         ("spots", "examples/weather.spot/weather.sh", "#!/bin/sh\n# title=Weather\necho 1 > \"${TMPDIR:-/tmp}/weather\"\n")
@@ -96,6 +98,24 @@ final class CheckScriptTests: XCTestCase {
         try "app/Core/PanelManager.swift\tPanelManager\n".write(to: root.appendingPathComponent("scripts/breaks/names.txt"), atomically: true, encoding: .utf8)
 
         XCTAssertEqual(try status(of: "names", in: root), 0)
+    }
+
+    func testTheGlassCheckPassesOnAPictureFileThatTurnsSystemGlassOff() throws {
+        let root = try cleanTree()
+        let file = root.appendingPathComponent("app/Shell/Sandbox/PanelPicture.swift")
+        try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try ("content.environment(\\.spotDrawsGlass, false)\nview.cache" + "Display(in: view.bounds, to: bitmap)\n").write(to: file, atomically: true, encoding: .utf8)
+
+        XCTAssertEqual(try status(of: "glass", in: root), 0)
+    }
+
+    func testTheGlassCheckAllowsThePrivateBlurInTheBackdropFileAlone() throws {
+        let root = try cleanTree()
+        let file = root.appendingPathComponent("app/Shell/Surface/SpotBackdropBlur.swift")
+        try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try ("let blur = NSVisual" + "EffectView()\nlet filter = NSClassFromString(\"CA" + "Filter\")\n").write(to: file, atomically: true, encoding: .utf8)
+
+        XCTAssertEqual(try status(of: "glass", in: root), 0)
     }
 
     func testEachCheckFailsWhenAFolderItScansIsMissing() throws {

@@ -87,6 +87,7 @@ struct SpotsView: View {
         .overlayPreferenceValue(SpotMenuAnchor.self, alignment: .topLeading) { item in
             SpotMenuLayer(model: model, item: item, fieldIsInSheet: fieldIsInSheet)
         }
+        .background(alignment: .topLeading) { SpotBackdrop(model: model) }
         .environment(\.spotIsShown, model.isShown)
         .environment(\.spotPanels, model.panels)
         .onChange(of: model.isShown) { _, isShown in

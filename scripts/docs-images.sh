@@ -53,7 +53,7 @@ for example in "$work"/examples/*.example; do
   done
   size=""
   [ -n "$card" ] && size="--card $card"
-  OPENSPOT_SPOTS="$work/spots" OPENSPOT_CONFIG="$work/config" OPENSPOT_CORE="$work/core" \
+  OPENSPOT_PICTURE_ON_SCREEN=1 OPENSPOT_SPOTS="$work/spots" OPENSPOT_CONFIG="$work/config" OPENSPOT_CORE="$work/core" \
     "$app" render --spot "$name" $size "docs/images/$name.png"
   cp "$example" "docs/images/$name.example"
   echo "docs/images/$name.png"
@@ -65,6 +65,6 @@ for spot in system system-info battery cpu memory devices; do cp -R "spots/$spot
 cp -R examples/now-playing.spot "$work/spots/"
 cp docs/sample/config.toml "$work/config/config.toml"
 OPENSPOT_SPOTS="$work/spots" OPENSPOT_CONFIG="$work/config" OPENSPOT_CORE="$work/core" "$app" check >/dev/null
-OPENSPOT_SPOTS="$work/spots" OPENSPOT_CONFIG="$work/config" OPENSPOT_CORE="$work/core" \
+OPENSPOT_PICTURE_ON_SCREEN=1 OPENSPOT_SPOTS="$work/spots" OPENSPOT_CONFIG="$work/config" OPENSPOT_CORE="$work/core" \
   "$app" render --panel docs/images/panel.png
 echo docs/images/panel.png

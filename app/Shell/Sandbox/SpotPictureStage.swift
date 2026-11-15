@@ -14,19 +14,21 @@ struct SpotPictureStage<Content: View>: View {
         self.content = content()
     }
 
+    @Environment(\.spotDrawsGlass) private var drawsGlass
+
     static var margin: CGFloat { 48 }
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
         ZStack {
-            SpotWallpaper(seed: seed)
-            SpotWallpaper.blurred(seed: seed, size: CGSize(width: size.width + 2 * Self.margin, height: size.height + 2 * Self.margin))
-                .overlay(Color.black.opacity(SpotWallpaper.glassShade))
-                .overlay(SpotTheme.glass)
-                .mask { shape.frame(width: size.width, height: size.height) }
+            if !drawsGlass {
+                SpotWallpaper(seed: seed)
+                SpotWallpaper.blurred(seed: seed, size: CGSize(width: size.width + 2 * Self.margin, height: size.height + 2 * Self.margin))
+                    .overlay(Color.black.opacity(SpotWallpaper.glassShade))
+                    .overlay(SpotTheme.glass)
+                    .mask { SpotRoundShape(radius: radius).frame(width: size.width, height: size.height) }
+            }
             content
                 .frame(width: size.width, height: size.height)
-                .overlay { shape.strokeBorder(SpotTheme.pictureRim, lineWidth: 0.5) }
         }
         .frame(width: size.width + 2 * Self.margin, height: size.height + 2 * Self.margin)
     }

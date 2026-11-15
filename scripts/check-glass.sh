@@ -1,10 +1,18 @@
 #!/bin/sh
 . "$(dirname "$0")/checks.sh"
 need app/Shell
-found=$(grep -rnE --include='*.swift' 'NSVisualEffectView|"backdrop"|CAFilter|gaussianBlur|setValue\([^)]*forKeyPath:' app/Shell)
+found=$(grep -rnE --include='*.swift' 'NSVisualEffectView|"backdrop"|CAFilter|gaussianBlur|setValue\([^)]*forKeyPath:' app/Shell | grep -v '^app/Shell/Surface/SpotBackdropBlur\.swift:')
 if [ -n "$found" ]; then
-  echo "Shell draws glass by a private layer or a visual effect view. Use glassEffect, as Shell/Surface does:" >&2
+  echo "Shell draws glass by a private layer or a visual effect view. Use glassEffect, as Shell/Surface does. Only SpotBackdropBlur may:" >&2
   echo "$found" >&2
+  exit 1
+fi
+bare=$(grep -rlE --include='*.swift' 'cacheDisplay' app/Shell/Sandbox 2>/dev/null | while read -r file; do
+  grep -qE '\\\.spotDrawsGlass,' "$file" || echo "$file"
+done)
+if [ -n "$bare" ]; then
+  echo "A picture is drawn off screen with system glass on, which draws wrongly there. Draw it through SpotPicture:" >&2
+  echo "$bare" >&2
   exit 1
 fi
 echo "Glass check passed."

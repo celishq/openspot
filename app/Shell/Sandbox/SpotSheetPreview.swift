@@ -33,6 +33,6 @@ struct SpotSheetPreview: View {
         }
         .padding(SpotTokens.padding)
         .frame(width: frame.width, height: frame.height, alignment: .topLeading)
-        .background { SpotPictureStage(size: frame, radius: SpotTokens.radius, seed: seed) { Color.clear }.padding(-SpotPictureStage<Color>.margin) }
+        .background { SpotPictureStage(size: frame, radius: SpotTokens.radius, seed: seed) { Color.clear.spotGlass(in: SpotRoundShape(radius: SpotTokens.radius)) }.padding(-SpotPictureStage<Color>.margin) }
     }
 }
