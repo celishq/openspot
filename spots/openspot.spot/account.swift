@@ -6,6 +6,7 @@ struct SpotView: View {
     let spot: SpotInput
     @State private var pointer: CGPoint?
     @State private var tilt = Tilt()
+    @State private var isOnPill = false
 
     var body: some View {
         let look = Look(key: spot["npub"] ?? "")
@@ -25,9 +26,16 @@ struct SpotView: View {
 
     private func card(_ look: Look, size: CGSize, tilt: CGPoint) -> some View {
         let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
+        let pill = pillSize
         return ZStack {
             Rectangle().fill(.white).colorEffect(look.shader(size: size, tilt: tilt))
+            Rectangle().fill(.white).colorEffect(look.shader(size: size, tilt: tilt))
+                .blur(radius: 6)
+                .mask(alignment: .bottomTrailing) { Capsule().frame(width: pill.width, height: pill.height).padding(16) }
             face(look, tilt: tilt)
+            glassPill(look, size: pill)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                .padding(16)
         }
         .frame(width: size.width, height: size.height)
         .clipShape(shape)
@@ -68,9 +76,31 @@ struct SpotView: View {
     private var bottom: some View {
         HStack(alignment: .bottom) {
             if let since = spot["since"] { Text("Since \(since)").font(.system(size: 10.5, weight: .medium)) }
-            Spacer(minLength: 8)
-            Text(spot["short"] ?? "").font(.system(size: 10.5, weight: .medium, design: .monospaced))
+            Spacer(minLength: 0)
         }
+        .frame(height: pillSize.height, alignment: .bottom)
+    }
+
+    /// The size of the pill, from the short key in a monospaced font, so the blur under it can take the same shape.
+    private var pillSize: CGSize {
+        CGSize(width: Double((spot["short"] ?? "").count) * 6.3 + 33, height: 22)
+    }
+
+    /// The short key and a copy icon on frosted glass, which copies the whole key.
+    private func glassPill(_ look: Look, size: CGSize) -> some View {
+        HStack(spacing: 5) {
+            Text(spot["short"] ?? "").font(.system(size: 10.5, weight: .medium, design: .monospaced))
+            Image(systemName: "doc.on.doc").font(.system(size: 9, weight: .semibold))
+        }
+        .foregroundStyle(look.engrave)
+        .frame(width: size.width, height: size.height)
+        .background(Capsule().fill(look.engrave.opacity(isOnPill ? 0.18 : 0.1)))
+        .overlay(Capsule().strokeBorder(look.engrave.opacity(0.22), lineWidth: 1))
+        .overlay(Capsule().strokeBorder(LinearGradient(colors: [.white.opacity(0.45), .clear], startPoint: .top, endPoint: .center), lineWidth: 1))
+        .contentShape(Capsule())
+        .onHover { isOnPill = $0 }
+        .onTapGesture { spot.send("copy") }
+        .help("Copy your whole key")
     }
 }
 

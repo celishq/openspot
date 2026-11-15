@@ -19,6 +19,7 @@ class BuiltInCase: XCTestCase {
         func reminderStore() -> any ReminderStore { FakeReminderStore() }
         func showCalendar(at time: Date) throws {}
         func open(_ link: URL) -> Bool { true }
+        func copy(text: String) throws { mac.copied.append(text) }
     }
 
     final class MacSettings: @unchecked Sendable {
@@ -26,6 +27,7 @@ class BuiltInCase: XCTestCase {
         var login: LoginItem?
         var link: CommandLink?
         var elevated: [String] = []
+        var copied: [String] = []
     }
 
     private static let names = ["PATH", "OPENSPOT_CONFIG", "OPENSPOT_SPOTS", "OPENSPOT_CORE"]

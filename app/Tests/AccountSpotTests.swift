@@ -72,6 +72,15 @@ final class AccountSpotTests: BuiltInCase {
         XCTAssertFalse(made.contains("pop=true"), made)
     }
 
+    func testThePillOfTheCardCopiesTheKeyAndSaysSo() async throws {
+        let key = try store.keyMadeOnce(name: "Tony")
+
+        let copied = try await frame(["card", "copy"])
+
+        XCTAssertEqual(mac.copied, [key.npub])
+        XCTAssertEqual(toast(in: copied), "Copied your key")
+    }
+
     func testAKeyNotBackedUpOpensOnTheAccountNotOnTheWords() async throws {
         _ = try store.keyMadeOnce()
 

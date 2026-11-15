@@ -3,7 +3,7 @@
 # icon=person.crop.circle
 # detail=Signs what you publish
 # on=sheet.open
-# uses=app,account
+# uses=app,account,clipboard
 # view=account.swift
 # offers=card
 # offers=search
@@ -312,6 +312,11 @@ case "$1" in
     sheet
     ;;
   own) go restore; sheet ;;
+  card)
+    facts
+    if [ "$2" = copy ] && printf '%s' "$npub" | openspot clipboard copy; then toast='Copied your key'; fi
+    sheet
+    ;;
   how) go how; sheet ;;
   about) go about; sheet ;;
   show) go words; sheet ;;
