@@ -29,6 +29,7 @@ final class CheckScriptTests: XCTestCase {
         ("glass", "app/Shell/Picture/PanelPicture.swift", "view.cache" + "Display(in: view.bounds, to: bitmap)\n"),
         ("glass", "app/Shell/Surface/SpotGlass.swift", "let blur = NSVisual" + "EffectView()\n"),
         ("glass", "app/Shell/Grid/SpotGridView.swift", "SpotGridShade(shade: model.grid" + "Shade)\n"),
+        ("glass", "app/Shell/Field/SpotFieldView.swift", "SpotFieldShade(shade: model.grid" + "Shade)\n"),
         ("glass", "app/Shell/Surface/SpotFocusLook.swift", "content.environment(\\.spot" + "Fade, 0.35)\n"),
         ("shapes", "app/Shell/Panel.swift", "let edge = Rounded" + "Rectangle(cornerRadius: 8, style: .continuous)\n"),
         ("shapes", "app/Shell/Grid/Card.swift", "content.overlay(Rounded" + "Rectangle(cornerRadius: SpotTokens.radius).strokeBorder(.red))\n"),

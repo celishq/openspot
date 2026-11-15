@@ -27,7 +27,8 @@ struct SpotFieldView: View {
                 .opacity(model.isEditing ? 1 : MotionTokens.hiddenOpacity)
                 .allowsHitTesting(model.isEditing)
         }
-        .modifier(FieldDim(isDim: model.isMenuOpen))
+        .modifier(FieldDim(isDim: model.dimsField))
+        .overlay(alignment: .topLeading) { SpotFieldShade(model: model) }
         .background(SpotFieldFocus(model: model, isFocused: $isFocused))
     }
 

@@ -59,6 +59,10 @@ extension SpotsModel {
         sheets[entry.id]?.setLevel((entry.state.level ?? 0) + delta)
     }
 
+    public var dimsField: Bool {
+        isMenuOpen && openSheetID != nil
+    }
+
     public func focus(ofCard index: Int) -> CardFocus {
         isMenuOpen && openSheetID == nil && index == selected ? .focused : .none
     }

@@ -477,6 +477,9 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertEqual(others.filter { model.focus(ofCard: $0) != .none }, [])
         XCTAssertTrue(model.gridShade.isOn)
         XCTAssertEqual(model.gridShade.cards.map(\.rect), model.placements.filter { $0.index != weather }.map(\.rect))
+        XCTAssertTrue(model.gridShade.coversField)
+        XCTAssertFalse(model.dimsField)
+        XCTAssertFalse(GridShade(over: model.placements, leaving: model.visible.count, isOn: true).coversField)
         nonisolated(unsafe) var moved = false
         withObservationTracking { _ = model.gridShade } onChange: { moved = true }
         XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
