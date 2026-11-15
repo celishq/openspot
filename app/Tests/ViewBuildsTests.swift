@@ -116,6 +116,17 @@ final class ViewBuildsTests: XCTestCase {
         XCTAssertEqual(found, built)
     }
 
+    func testABuiltViewSaysWhetherItsSourceReadsIsShown() async throws {
+        let builds = try builds(compiler: writes)
+
+        let plain = try await builds.built(of: try source())
+        let reading = try await builds.built(of: try source(view.replacingOccurrences(of: "Text(\"cups\")", with: "Text(spot.isShown ? \"cups\" : \"\")")))
+
+        XCTAssertFalse(plain.readsShown)
+        XCTAssertTrue(reading.readsShown)
+        XCTAssertNotEqual(plain.library, reading.library)
+    }
+
     func testOnlyTheLatestFaultsAreKept() async throws {
         let builds = try builds(compiler: breaks)
         for index in 0...ViewBuilds.faultLimit {

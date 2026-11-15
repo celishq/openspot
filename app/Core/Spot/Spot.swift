@@ -57,6 +57,7 @@ public struct Spot: Equatable, Sendable {
         settings: [CommandOffer] = [],
         view: String? = nil,
         viewDate: Date? = nil,
+        sources: [String] = [],
         emits: [String] = [],
         pages: [String] = [],
         uses: Set<SpotUse> = [],
@@ -68,7 +69,7 @@ public struct Spot: Equatable, Sendable {
             id: id, name: name, url: url, size: size, headerIcon: icon, baseSymbol: symbol, subtitle: subtitle, read: read,
             offeredPlaces: offeredPlaces, isFound: isFound, answers: answers, order: order, layout: layout, places: places,
             opens: opens, host: host, growsFromField: growsFromField, mode: mode, pressRuns: pressRuns, drop: drop,
-            dataName: dataName, isOnGrid: isOnGrid, view: view, viewDate: viewDate, emits: emits, pages: pages, uses: uses,
+            dataName: dataName, isOnGrid: isOnGrid, view: view, viewDate: viewDate, sources: sources, emits: emits, pages: pages, uses: uses,
             offers: offers, offeredActions: offeredActions, settings: settings, keywords: keywords, sample: sample,
             editsSpots: editsSpots
         ))

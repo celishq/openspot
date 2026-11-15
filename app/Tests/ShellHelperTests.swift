@@ -336,6 +336,132 @@ final class ShellHelperTests: XCTestCase {
         XCTAssertEqual(output, "one")
     }
 
+    func testAScriptReadsAValueOfAGivenTextInEachShell() async throws {
+        for shell in ["/bin/sh", "/bin/dash"] {
+            let url = try script("PATH=/none\ntext=$(/bin/cat \"$1\"; printf x)\na=$(openspot_value a \"${text%x}\"; printf x)\nprintf '%s|%s' \"${a%x}\" \"$(openspot_value none \"${text%x}\")\"", shell: shell)
+            for text in Self.hard {
+                let file = folder.appendingPathComponent(UUID().uuidString)
+                try TextBlock(fields: [.init(key: "first", value: "not this"), .init(key: "a", value: text)]).text.write(to: file, atomically: true, encoding: .utf8)
+
+                let output = try await ScriptProcess.output(url: url, arguments: [file.path], input: "a=stdin\n", limit: 10)
+
+                XCTAssertEqual(output, "\(text)|", "\(shell) \(text.debugDescription)")
+            }
+        }
+    }
+
+    func testAReadOfAGivenTextLeavesStdinForValue() async throws {
+        let url = try script("openspot_value a 'a=given' > /dev/null\nprintf '%s' \"$(value a)\"")
+
+        let output = try await ScriptProcess.output(url: url, input: "a=stdin\n", limit: 10)
+
+        XCTAssertEqual(output, "stdin")
+    }
+
+    func testAKeptValueIsTheWholeNewTextOrTheWholeOldOne() async throws {
+        let file = folder.appendingPathComponent("state/look")
+        let url = try script("""
+        openspot_keep "$1" 'first
+        line' || exit 1
+        printf 'second' | openspot_keep "$1" || exit 2
+        for part in "$1".*; do [ -e "$part" ] && exit 3; done
+        false | openspot_keep /none/dir/file 2>/dev/null && exit 4
+        printf done
+        """)
+
+        let output = try await ScriptProcess.output(url: url, arguments: [file.path], limit: 10)
+
+        XCTAssertEqual(output, "done")
+        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), "second")
+    }
+
+    func testAKeepThatCannotWriteLeavesTheOldValue() async throws {
+        let locked = folder.appendingPathComponent("locked")
+        try FileManager.default.createDirectory(at: locked, withIntermediateDirectories: true)
+        let file = locked.appendingPathComponent("look")
+        try "old".write(to: file, atomically: true, encoding: .utf8)
+        chmod(locked.path, 0o555)
+        defer { chmod(locked.path, 0o755) }
+        let url = try script("openspot_keep \"$1\" new\nprintf 'code=%s' \"$?\"")
+
+        let output = try await ScriptProcess.output(url: url, arguments: [file.path], limit: 10)
+
+        XCTAssertEqual(output, "code=1")
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: locked.path), ["look"])
+        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), "old")
+    }
+
+    private func clipboard(paste: String, holding text: String?) throws -> (script: URL, board: URL, log: URL) {
+        let tools = folder.appendingPathComponent("tools-\(UUID().uuidString)")
+        let board = tools.appendingPathComponent("board")
+        let log = tools.appendingPathComponent("log")
+        try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
+        if let text { try text.write(to: board, atomically: true, encoding: .utf8) }
+        try """
+        #!/bin/sh
+        case "$1 $2" in
+          'clipboard read') [ -f '\(board.path)' ] && /bin/cat '\(board.path)' ;;
+          'clipboard copy') /bin/cat > '\(board.path)' ;;
+          'clipboard paste') printf 'pasted=%s\\n' "$(/bin/cat '\(board.path)')" >> '\(log.path)'; \(paste) ;;
+        esac
+        """.writeScript(to: tools.appendingPathComponent("openspot"))
+        let url = try script("PATH='\(tools.path)':$PATH\n_openspot_paste_pause=0\nopenspot_paste \"$1\"\nprintf 'code=%s' \"$?\"")
+        return (url, board, log)
+    }
+
+    func testAPasteKeepsTheClipboardOfThePerson() async throws {
+        for text in ["mine", "two\nlines\n", "back\\slash %s"] {
+            let (url, board, log) = try clipboard(paste: "exit 0", holding: text)
+
+            let output = try await ScriptProcess.output(url: url, arguments: ["a snippet\nof two lines"], limit: 10)
+
+            XCTAssertEqual(output, "code=0")
+            XCTAssertEqual(try String(contentsOf: log, encoding: .utf8), "pasted=a snippet\nof two lines\n")
+            XCTAssertEqual(try String(contentsOf: board, encoding: .utf8), text)
+        }
+    }
+
+    func testAPasteClearsAClipboardThatHeldNoText() async throws {
+        for paste in ["exit 0", "exit 1"] {
+            let (url, board, log) = try clipboard(paste: paste, holding: nil)
+
+            _ = try await ScriptProcess.output(url: url, arguments: ["a secret"], limit: 10)
+
+            XCTAssertEqual(try String(contentsOf: log, encoding: .utf8), "pasted=a secret\n")
+            XCTAssertEqual(try String(contentsOf: board, encoding: .utf8), "")
+        }
+    }
+
+    func testAPasteThatFailsStillPutsTheClipboardBackAndFails() async throws {
+        let (url, board, _) = try clipboard(paste: "echo 'toast=Openspot cannot paste.'; exit 1", holding: "mine")
+
+        let output = try await ScriptProcess.output(url: url, arguments: ["a snippet"], limit: 10)
+
+        XCTAssertEqual(output, "toast=Openspot cannot paste.\ncode=1")
+        XCTAssertEqual(try String(contentsOf: board, encoding: .utf8), "mine")
+    }
+
+    func testAPasteWaitsBeforeItPutsTheClipboardBack() async throws {
+        let (url, _, _) = try clipboard(paste: "exit 0", holding: "mine")
+        let text = try String(contentsOf: url, encoding: .utf8).replacingOccurrences(of: "_openspot_paste_pause=0\n", with: "sleep() { printf 'sleep=%s|' \"$1\"; }\n")
+        try text.writeScript(to: url)
+
+        let output = try await ScriptProcess.output(url: url, arguments: ["a snippet"], limit: 10)
+
+        XCTAssertEqual(output, "sleep=0.3|code=0")
+    }
+
+    func testEachSpotRunsWithAUTF8LocaleAndTheCommonPaths() async throws {
+        let url = try script("printf '%s|%s|' \"$LC_ALL\" \"$PATH\"\nprintf 'ÅÄö' | /usr/bin/tr '[:upper:]' '[:lower:]'")
+
+        let output = try await ScriptProcess.output(url: url, limit: 10, base: ["HOME": folder.path, "PATH": "/usr/bin:/mine", "LC_ALL": "C", "OPENSPOT_SH": try XCTUnwrap(ProcessInfo.processInfo.environment["OPENSPOT_SH"])])
+
+        let parts = output.split(separator: "|", omittingEmptySubsequences: false).map(String.init)
+        XCTAssertEqual(parts.first, "en_US.UTF-8")
+        XCTAssertEqual(parts.dropFirst().first?.split(separator: ":").dropFirst().map(String.init), ["/usr/bin", "/mine", "/opt/homebrew/bin", "/usr/local/bin", "/bin", "/usr/sbin", "/sbin"])
+        XCTAssertEqual(parts.last, "åäö")
+    }
+
     func testTheFileInTheBundleOfTheAppComesFirst() throws {
         let contents = folder.appendingPathComponent("Openspot.app/Contents")
         let resources = contents.appendingPathComponent("Resources")

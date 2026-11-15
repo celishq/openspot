@@ -237,10 +237,11 @@ final class SampleSpotsTests: SampleSpotsCase {
         XCTAssertEqual(places.count, Set(places).count)
     }
 
-    func testTheSpotsFitThePanelWithNoScrolling() throws {
+    func testTheSpotsOfANewMacFitThePanelWithNoScrolling() throws {
         let spots = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
-        let all = Set(try FileManager.default.contentsOfDirectory(atPath: spots.path).map { ($0 as NSString).deletingPathExtension })
-        let core = try SpotsFolder(url: spots.appendingPathComponent("none"), core: spots, enabled: all).scan()
+        let starting = Set(SpotsFolder(url: spots.appendingPathComponent("none"), core: spots).startingSpots())
+        XCTAssertGreaterThan(starting.count, 5)
+        let core = try SpotsFolder(url: spots.appendingPathComponent("none"), core: spots, enabled: starting).scan()
         let defaults = Config(text: try String(contentsOf: spots.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8)).arrangement
         let placements = SpotGrid().place(core.spots.filter { (defaults.isOnGrid(of: $0.id) ?? $0.isOnGrid) && !$0.isBuiltIn }.map { defaults.size(of: $0.id) ?? $0.size })
         let rows = placements.map { $0.row + $0.size.rows }.max()
@@ -254,8 +255,13 @@ final class SampleSpotsTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             try "#!/bin/sh\ncase \"$1 $2\" in 'app status') echo '{}' ;; 'spot list'|'setting list') echo '[]' ;; esac\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
             let views = ViewLibrary(cache: folder.appendingPathComponent("views"))
-            for name in ["spots", "examples"] {
-                let faults = await SpotCheck(folder: SpotsFolder(url: root.appendingPathComponent(name)), timeout: 60, views: views, environment: TestEnvironment.values).faults()
+            let shipped = Set(try FileManager.default.contentsOfDirectory(atPath: root.appendingPathComponent("spots").path).map { ($0 as NSString).deletingPathExtension })
+            let places = [
+                "spots": SpotsFolder(url: folder.appendingPathComponent("none"), core: root.appendingPathComponent("spots"), enabled: shipped),
+                "examples": SpotsFolder(url: root.appendingPathComponent("examples"))
+            ]
+            for (name, place) in places {
+                let faults = await SpotCheck(folder: place, timeout: 60, views: views, environment: TestEnvironment.values).faults()
 
                 XCTAssertEqual(faults, [], name)
             }

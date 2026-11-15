@@ -95,6 +95,14 @@ extension SpotsModel {
         endFlow()
     }
 
+    public func close(_ place: ViewPlace) {
+        switch place {
+        case .card, .sample: break
+        case .sheet(let id): if openSheetID == id { closeSheet(moving: true) }
+        case .detached(let id): if runs.floating.contains(id) { land(id) }
+        }
+    }
+
     public func panelDidHide() {
         finishPick()
         for entry in entries where entry.spot.answers != nil { sheets[entry.id]?.answer("") }

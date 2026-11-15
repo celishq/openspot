@@ -35,7 +35,9 @@ struct ScreenCalls {
     }
 
     func stop() -> CommandAPI.Work {
-        CommandAnswer.work { [mac] in try await Self.screen(mac).stopRecording().paths }
+        { [mac] in
+            do { return try await Self.screen(mac).stopRecording().stopAnswer } catch { return CommandAnswer(failure: error) }
+        }
     }
 
     func status() -> CommandAPI.Work {

@@ -84,20 +84,20 @@ final class PlaygroundCallTests: SpotRunsCase {
         XCTAssertEqual(PlaygroundCall(record: record, reason: nil).lines, ["$ move 'row 1' true", "> toast=Hi", "> ---", "> text=t", "= It took too long."])
     }
 
-    func testTheSandboxKeepsTheNewestCallsFirst() {
-        var sandbox = SheetSandbox()
+    func testThePlaygroundKeepsTheNewestCallsFirst() {
+        var playground = Playground()
         let record = { (id: String) in CallLog.Record(spot: "a", arguments: [id], input: nil, frames: [], errors: "", end: .exited(0), started: Date(), seconds: 0) }
 
-        for index in 0..<30 { sandbox.take(call: PlaygroundCall(record: record("c\(index)"), reason: nil)) }
+        for index in 0..<30 { playground.take(call: PlaygroundCall(record: record("c\(index)"), reason: nil)) }
 
-        XCTAssertEqual(sandbox.calls.count, 20)
-        XCTAssertEqual(sandbox.calls.first?.lines.first, "$ c29")
+        XCTAssertEqual(playground.calls.count, 20)
+        XCTAssertEqual(playground.calls.first?.lines.first, "$ c29")
     }
 
     func testThePresetsAreTheRunnableExamplesOfTheGuideAndEachSheetAsASpot() {
         let guide = "# Guide\n\n```sh\n#!/bin/sh\n# title=Hello\nsay hi\n```\n\n```text\nnot run\n```\n\n```js\n// title=Sum\nfunction main() { return '' }\n```\n"
 
-        let presets = SheetSandbox.presets(guide: guide)
+        let presets = Playground.presets(guide: guide)
 
         XCTAssertEqual(presets.prefix(2).map(\.name), ["Hello", "Sum"])
         XCTAssertEqual(presets[1].text, "// title=Sum\nfunction main() { return '' }\n")
@@ -107,7 +107,7 @@ final class PlaygroundCallTests: SpotRunsCase {
     }
 
     func testAFileOfJavaScriptRunsAsJavaScript() {
-        XCTAssertEqual(SheetSandbox.fileExtension(of: "// title=Sum\n"), "js")
-        XCTAssertEqual(SheetSandbox.fileExtension(of: "#!/bin/sh\n"), "sh")
+        XCTAssertEqual(Playground.fileExtension(of: "// title=Sum\n"), "js")
+        XCTAssertEqual(Playground.fileExtension(of: "#!/bin/sh\n"), "sh")
     }
 }

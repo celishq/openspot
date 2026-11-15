@@ -1,5 +1,4 @@
 import AppKit
-import Carbon.HIToolbox
 import ObjectiveC
 import OpenspotCore
 import SwiftUI
@@ -72,7 +71,7 @@ final class SpotsPanel: NSPanel {
     }
 
     private func open(ordering order: () -> Void) {
-        model?.panelWillShow(holding: Self.modifiers(of: NSEvent.modifierFlags))
+        model?.panelWillShow(holding: Shortcut.Modifiers(NSEvent.modifierFlags))
         order()
     }
 
@@ -119,41 +118,57 @@ final class SpotsPanel: NSPanel {
     }
 
     override func sendEvent(_ event: NSEvent) {
-        if event.type == .flagsChanged {
-            model?.takeHeld(Self.modifiers(of: event.modifierFlags))
-            if let modifier = tap.take(Self.modifiers(of: event.modifierFlags), at: event.timestamp), model?.recording != nil {
-                model?.recordTap(modifier)
-            }
+        switch event.type {
+        case .flagsChanged: takeFlags(event)
+        case .pressure: takePressure(event)
+        case .keyDown: if takeKey(event) { return }
+        case .scrollWheel: if takeSwipe(event) { return }
+        case .rightMouseDown: if takeRightClick(event) { return }
+        default: break
         }
-        if event.type == .pressure { takePressure(event) }
-        if isForceDragging, let model {
-            switch event.type {
-            case .leftMouseDragged:
-                model.dragMenu(to: panelPoint(of: event))
-            case .leftMouseUp:
-                isForceDragging = false
-                super.sendEvent(event)
-                model.releaseMenu(at: panelPoint(of: event))
-                return
-            default: break
-            }
-        }
-        if event.type == .scrollWheel, takeSwipe(event) { return }
-        if event.type == .rightMouseDown, let model, model.isShown, !model.isEditing, model.openSheetID == nil {
-            openMenu(at: event)
-            return
-        }
-        if event.type == .keyDown {
-            tap.spoil()
-            if model?.recording != nil {
-                if let key = Self.actionKey(of: event), model?.handleKey(key) == true { return }
-                model?.record(code: UInt32(event.keyCode), modifiers: Self.modifiers(of: event.modifierFlags))
-                return
-            }
-            if let key = Self.actionKey(of: event), !textKeepsKey(key), model?.handleKey(key) == true { return }
-            if model?.handleChain(code: UInt32(event.keyCode), modifiers: Self.modifiers(of: event.modifierFlags)) == true { return }
-        }
+        if isForceDragging, takeForceDrag(event) { return }
         super.sendEvent(event)
+    }
+
+    private func takeFlags(_ event: NSEvent) {
+        model?.takeHeld(event.keyModifiers)
+        if let modifier = tap.take(event.keyModifiers, at: event.timestamp), model?.recording != nil {
+            model?.recordTap(modifier)
+        }
+    }
+
+    private func takeKey(_ event: NSEvent) -> Bool {
+        tap.spoil()
+        guard let model else { return false }
+        let key = event.actionKey
+        if model.recording != nil {
+            if let key, model.handleKey(key) { return true }
+            model.record(code: UInt32(event.keyCode), modifiers: event.keyModifiers)
+            return true
+        }
+        if let key, !textKeeps(key), model.handleKey(key) { return true }
+        return model.handleChain(code: UInt32(event.keyCode), modifiers: event.keyModifiers)
+    }
+
+    private func takeRightClick(_ event: NSEvent) -> Bool {
+        guard let model, model.isShown, !model.isEditing, model.openSheetID == nil else { return false }
+        openMenu(at: event)
+        return true
+    }
+
+    private func takeForceDrag(_ event: NSEvent) -> Bool {
+        guard let model else { return false }
+        switch event.type {
+        case .leftMouseDragged:
+            model.dragMenu(to: panelPoint(of: event))
+        case .leftMouseUp:
+            isForceDragging = false
+            super.sendEvent(event)
+            model.releaseMenu(at: panelPoint(of: event))
+            return true
+        default: break
+        }
+        return false
     }
 
     private func takePressure(_ event: NSEvent) {
@@ -169,25 +184,6 @@ final class SpotsPanel: NSPanel {
 
     private func panelPoint(of event: NSEvent) -> CGPoint {
         CGPoint(x: event.locationInWindow.x - place.left, y: (contentView?.bounds.height ?? 0) - event.locationInWindow.y)
-    }
-
-    private func textKeepsKey(_ key: ActionKey) -> Bool {
-        guard let text = firstResponder as? NSTextView else { return false }
-        if text.hasMarkedText() { return true }
-        guard key == ActionKey(name: "up") || key == ActionKey(name: "down"), text.isEditable, !text.isFieldEditor else { return false }
-        let line = { (location: Int) in text.firstRect(forCharacterRange: NSRange(location: location, length: 0), actualRange: nil).midY }
-        let caret = line(text.selectedRange().location)
-        let edge = line(key.name == "up" ? 0 : (text.string as NSString).length)
-        return abs(caret - edge) > 1
-    }
-
-    static func modifiers(of flags: NSEvent.ModifierFlags) -> Shortcut.Modifiers {
-        var modifiers: Shortcut.Modifiers = []
-        if flags.contains(.command) { modifiers.insert(.command) }
-        if flags.contains(.control) { modifiers.insert(.control) }
-        if flags.contains(.option) { modifiers.insert(.option) }
-        if flags.contains(.shift) { modifiers.insert(.shift) }
-        return modifiers
     }
 
     private func takeSwipe(_ event: NSEvent) -> Bool {
@@ -208,25 +204,6 @@ final class SpotsPanel: NSPanel {
         case .forward: return model.forward()
         case nil: return false
         }
-    }
-
-    static func actionKey(of event: NSEvent) -> ActionKey? {
-        let isCommand = event.modifierFlags.contains(.command)
-        let isShift = event.modifierFlags.contains(.shift)
-        let name: String
-        switch Int(event.keyCode) {
-        case kVK_Return, kVK_ANSI_KeypadEnter: name = "return"
-        case kVK_Delete: name = "backspace"
-        case kVK_Escape: name = "escape"
-        case kVK_UpArrow: name = "up"
-        case kVK_DownArrow: name = "down"
-        case kVK_LeftArrow: name = "left"
-        case kVK_RightArrow: name = "right"
-        default:
-            guard let typed = event.charactersIgnoringModifiers else { return nil }
-            return ActionKey(typed: typed, code: event.keyCode, isCommand: isCommand, isShift: isShift, latin: SpotKeyLayouts.latin)
-        }
-        return ActionKey(name: name, isCommand: isCommand, isShift: isShift)
     }
 
     override func becomeKey() {
@@ -265,8 +242,9 @@ final class SpotsPanel: NSPanel {
 
     private func watchPaste(model: SpotsModel) {
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak model] event in
-            guard Int(event.keyCode) == kVK_ANSI_V, Self.modifiers(of: event.modifierFlags) == .command else { return event }
-            let isTaken = MainActor.assumeIsolated { model?.isShown == true && model?.pasteSpot() == true }
+            let isTaken = MainActor.assumeIsolated {
+                event.keyModifiers == .command && event.actionKey?.name == "v" && model?.isShown == true && model?.pasteSpot() == true
+            }
             return isTaken ? nil : event
         }
     }

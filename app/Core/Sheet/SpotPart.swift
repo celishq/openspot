@@ -63,7 +63,16 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let align: Align?
     public let look: Look?
     public let mark: MetricValue?
-    public let values: [String: [String]]
+    public private(set) var values: [String: [String]]
+
+    public private(set) var rows: [[String]] = []
+
+    func holding(rows: [[String]]) -> SpotPart {
+        guard isOpen, !rows.isEmpty else { return self }
+        var part = self
+        part.rows = rows
+        return part
+    }
 
     public struct NumberPiece: Equatable, Sendable {
         public let text: String

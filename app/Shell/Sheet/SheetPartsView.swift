@@ -31,7 +31,6 @@ struct SheetPartsView: View {
     private static let narrowGap: CGFloat = 2
     private static let markValueWidth: CGFloat = 36
     private static let symbolWidth: CGFloat = 22
-    private static let numberFont = Font.system(size: 24, weight: .semibold, design: .rounded).monospacedDigit()
 
     private var shape: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
@@ -132,7 +131,7 @@ struct SheetPartsView: View {
     private func drawn(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         if part.isOpen {
             if let viewSource {
-                SpotCustomView(source: viewSource, values: part.values, card: .square, room: frame.rect.size, answers: panel.answered, date: viewDate, views: views) { onSet(part, $0) }
+                SpotCustomView(source: viewSource, values: part.values, rows: part.rows, card: .square, room: frame.rect.size, answers: panel.answered, date: viewDate, views: views) { onSet(part, $0) }
                     .equatable()
             }
         } else {
@@ -368,7 +367,7 @@ struct SheetPartsView: View {
                     .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)
                 Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(SpotType.mark)
                     .modifier(SpotSecondaryText())
             }
             .padding(.horizontal, frame.isOnTop ? 10 : 0)
@@ -463,7 +462,7 @@ struct SheetPartsView: View {
     }
 
     private func number(_ part: SpotPart) -> some View {
-        SpotNumberView(part: part, font: Self.numberFont, leastScale: 0.6, alignment: part.look == .bare ? .trailing : .leading)
+        SpotNumberView(part: part, font: SpotType.number, leastScale: 0.6, alignment: part.look == .bare ? .trailing : .leading)
             .padding(.horizontal, part.look == .bare ? 0 : SpotTokens.padding)
             .background(SpotTheme.ink.opacity(part.look == .bare ? 0 : SpotTheme.fill), in: shape)
     }

@@ -8,7 +8,7 @@ enum SpotCardPicture {
     private static let margin = SpotPictureStage<Color>.margin
 
     static func run(text: String, size: SpotSize, path: String) -> Never {
-        NSApplication.shared.setActivationPolicy(.prohibited)
+        SpotPicture.start()
         let output = SpotOutput(text: text)
         let face = output.face
         guard let layout = face.layout(for: size) else {
@@ -16,34 +16,24 @@ enum SpotCardPicture {
             exit(1)
         }
         let card = CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))
-        let shape = RoundedRectangle(cornerRadius: SpotTokens.corner(for: size), style: .continuous)
-        let view = NSHostingView(rootView: SpotPictureStage(size: card, radius: SpotTokens.corner(for: size), seed: URL(fileURLWithPath: path).lastPathComponent) {
+        let shape = SpotRoundShape(radius: SpotTokens.corner(for: size))
+        let stage = SpotPictureStage(size: card, radius: SpotTokens.corner(for: size), seed: URL(fileURLWithPath: path).lastPathComponent) {
             SpotCardDrawing(layout: layout, face: face, card: size) { _, _ in }
                 .padding(SpotTokens.cardPadding(for: size, isWidget: true))
                 .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
+                .spotGlass(in: shape)
         }
-        .preferredColorScheme(.dark))
-        let frame = NSRect(x: -9000, y: -9000, width: card.width + 2 * margin, height: card.height + 2 * margin)
-        let window = NSWindow(contentRect: frame, styleMask: .borderless, backing: .buffered, defer: false)
-        window.contentView = view
-        window.orderBack(nil)
+        let picture = SpotPicture(of: stage, size: CGSize(width: card.width + 2 * margin, height: card.height + 2 * margin), path: path)
         Task { @MainActor in
             for picture in WebPictures.named(in: text) { _ = await WebPictures.shared.path(of: picture) }
-            DispatchQueue.main.asyncAfter(deadline: .now() + settle) {
-                MainActor.assumeIsolated {
-                    guard let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { exit(1) }
-                    view.cacheDisplay(in: view.bounds, to: bitmap)
-                    let data = bitmap.representation(using: .png, properties: [:])
-                    exit(FileManager.default.createFile(atPath: path, contents: data) ? 0 : 1)
-                }
-            }
+            picture.save(after: settle)
         }
         NSApplication.shared.run()
         exit(0)
     }
 
     static func run(spot id: String, size: SpotSize, path: String) -> Never {
-        NSApplication.shared.setActivationPolicy(.prohibited)
+        SpotPicture.start()
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
         Task { @MainActor in
             await model.reload()
@@ -54,23 +44,11 @@ enum SpotCardPicture {
             let draw = {
                 let card = CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))
                 let shown = model.entries.first { $0.id == id } ?? entry
-                let view = NSHostingView(rootView: SpotPictureStage(size: card, radius: SpotTokens.corner(for: size), seed: URL(fileURLWithPath: path).lastPathComponent) {
+                let stage = SpotPictureStage(size: card, radius: SpotTokens.corner(for: size), seed: URL(fileURLWithPath: path).lastPathComponent) {
                     SpotCardView(entry: shown, size: size, index: -1, isPressed: false, takesDrag: false, isDropTarget: false, chainLetter: nil, model: model)
                         .environment(\.spotIsShown, true)
                 }
-                .preferredColorScheme(.dark))
-                let frame = NSRect(x: -9000, y: -9000, width: card.width + 2 * margin, height: card.height + 2 * margin)
-                let window = NSWindow(contentRect: frame, styleMask: .borderless, backing: .buffered, defer: false)
-                window.contentView = view
-                window.orderBack(nil)
-                DispatchQueue.main.asyncAfter(deadline: .now() + settle) {
-                    MainActor.assumeIsolated {
-                        guard let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { exit(1) }
-                        view.cacheDisplay(in: view.bounds, to: bitmap)
-                        let data = bitmap.representation(using: .png, properties: [:])
-                        exit(FileManager.default.createFile(atPath: path, contents: data) ? 0 : 1)
-                    }
-                }
+                SpotPicture(of: stage, size: CGSize(width: card.width + 2 * margin, height: card.height + 2 * margin), path: path).save(after: settle)
             }
             if entry.kind == .widget {
                 model.panelWillShow(holding: [])

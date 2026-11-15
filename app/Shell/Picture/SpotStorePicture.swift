@@ -5,9 +5,10 @@ import SwiftUI
 @MainActor
 enum SpotStorePicture {
     private static let margin: CGFloat = 20
+    private static let settle = 1.0
 
     static func run(path: String) -> Never {
-        NSApplication.shared.setActivationPolicy(.prohibited)
+        SpotPicture.start()
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
         Task { @MainActor in
             await model.reload()
@@ -29,26 +30,17 @@ enum SpotStorePicture {
         let size = SpotTokens.windowSize
         let whole = CGSize(width: size.width + 2 * margin, height: size.height + 2 * margin)
         let seed = URL(fileURLWithPath: path).lastPathComponent
-        let view = NSHostingView(rootView: ZStack {
-            SpotWallpaper(seed: seed)
-            SpotWallpaper.blurred(seed: seed, size: size)
-                .clipShape(RoundedRectangle(cornerRadius: SpotTokens.radius, style: .continuous))
-                .padding(margin)
+        let store = ZStack {
+            if !SpotPicture.isOnScreen {
+                SpotWallpaper(seed: seed)
+                SpotWallpaper.blurred(seed: seed, size: size)
+                    .clipShape(RoundedRectangle(cornerRadius: SpotTokens.radius, style: .continuous))
+                    .padding(margin)
+            }
             SpotFloatView(model: model, id: id, fills: true) { _ in }
                 .padding(margin)
         }
         .frame(width: whole.width, height: whole.height)
-        .environment(\.spotDrawsGlass, false)
-        .preferredColorScheme(.dark))
-        let window = NSWindow(contentRect: NSRect(x: -9000, y: -9000, width: whole.width, height: whole.height), styleMask: .borderless, backing: .buffered, defer: false)
-        window.contentView = view
-        window.orderBack(nil)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            MainActor.assumeIsolated {
-                guard let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { exit(1) }
-                view.cacheDisplay(in: view.bounds, to: bitmap)
-                exit(FileManager.default.createFile(atPath: path, contents: bitmap.representation(using: .png, properties: [:])) ? 0 : 1)
-            }
-        }
+        SpotPicture(of: store, size: whole, path: path).save(after: settle)
     }
 }

@@ -1,10 +1,15 @@
 import AVFoundation
 import ScreenCaptureKit
 
-final class SpotFileEnd: NSObject, SCRecordingOutputDelegate, AVCaptureFileOutputRecordingDelegate, @unchecked Sendable {
+final class SpotFileEnd: NSObject, SCStreamDelegate, SCRecordingOutputDelegate, AVCaptureFileOutputRecordingDelegate, @unchecked Sendable {
     private let lock = NSLock()
+    private let onStart: @Sendable () -> Void
     private var result: Result<Void, Error>?
-    private var waiter: CheckedContinuation<Void, Error>?
+    private var waiters: [CheckedContinuation<Void, Error>] = []
+
+    init(onStart: @escaping @Sendable () -> Void = {}) {
+        self.onStart = onStart
+    }
 
     func wait() async throws {
         try await withCheckedThrowingContinuation { (waiter: CheckedContinuation<Void, Error>) in
@@ -13,7 +18,7 @@ final class SpotFileEnd: NSObject, SCRecordingOutputDelegate, AVCaptureFileOutpu
             if let result {
                 waiter.resume(with: result)
             } else {
-                self.waiter = waiter
+                waiters.append(waiter)
             }
         }
     }
@@ -23,8 +28,16 @@ final class SpotFileEnd: NSObject, SCRecordingOutputDelegate, AVCaptureFileOutpu
         defer { lock.unlock() }
         guard self.result == nil else { return }
         self.result = result
-        waiter?.resume(with: result)
-        waiter = nil
+        waiters.forEach { $0.resume(with: result) }
+        waiters = []
+    }
+
+    func stream(_ stream: SCStream, didStopWithError error: any Error) {
+        end(.failure(error))
+    }
+
+    func recordingOutputDidStartRecording(_ recordingOutput: SCRecordingOutput) {
+        onStart()
     }
 
     func recordingOutputDidFinishRecording(_ recordingOutput: SCRecordingOutput) {

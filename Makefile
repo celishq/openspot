@@ -11,6 +11,7 @@ verify:
 	sh scripts/check-spots.sh
 	sh scripts/check-processes.sh
 	sh scripts/check-glass.sh
+	sh scripts/check-tools.sh
 	cd app && xcodegen generate >/dev/null
 	cd app && DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project Openspot.xcodeproj -scheme Openspot -destination 'platform=macOS' test
 

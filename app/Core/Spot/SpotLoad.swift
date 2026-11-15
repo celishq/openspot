@@ -37,9 +37,10 @@ public struct SpotLoad: Sendable {
     let loose: [ScanResult.Refusal]
     let failure: String?
     public let stamp: [String: [Int]]
+    let sources: [String: [String]]
     public let hasAppSpots: Bool
 
-    public static let empty = SpotLoad(entries: [], loose: [], failure: nil, stamp: [:], hasAppSpots: false)
+    public static let empty = SpotLoad(entries: [], loose: [], failure: nil, stamp: [:], sources: [:], hasAppSpots: false)
 
     public func result(enabled: Set<String>, disabled: Set<String>, hosted: [Spot] = []) throws -> ScanResult {
         if let failure { throw SpotError.fault(failure) }
@@ -67,7 +68,8 @@ public struct SpotLoad: Sendable {
     }
 
     public func stamp(of spot: Spot) -> [Int]? {
-        stamp[spot.url.path]
+        guard let own = stamp[spot.url.path] else { return nil }
+        return (sources[spot.url.path] ?? []).reduce(own) { $0 + (stamp[$1] ?? []) }
     }
 
     public func faultSpots(of scan: ScanResult, prompt: AgentPrompt) -> [Spot] {

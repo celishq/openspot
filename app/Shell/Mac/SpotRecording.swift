@@ -8,6 +8,11 @@ enum SpotRecording {
     nonisolated private static let microphonePane = "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone"
     nonisolated private static let cameraPane = "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera"
     private static var session: SpotRecordingSession?
+    private static var ended: ScreenRecording?
+
+    private static var isBusy: Bool {
+        session != nil || ended != nil
+    }
 
     nonisolated static func start(_ capture: ScreenCapture, in folder: URL) async throws {
         guard let target = try await SpotScreenTarget.target(of: capture.source) else { return }
@@ -41,7 +46,7 @@ enum SpotRecording {
 
     static func serve() -> Never {
         let app = NSApplication.shared
-        capability.serve(isBusy: { await SpotRecording.session != nil }, runMain: { MainActor.assumeIsolated { app.run() }; exit(0) }) { request in
+        capability.serve(isBusy: { await SpotRecording.isBusy }, runMain: { MainActor.assumeIsolated { app.run() }; exit(0) }) { request in
             await SpotRecording.answer(to: String(decoding: request, as: UTF8.self))
         }
     }
@@ -78,16 +83,25 @@ enum SpotRecording {
                 let name = URL(fileURLWithPath: session.status.file).lastPathComponent
                 throw SpotError.fault("Openspot is already recording to \(name). Run `openspot screen record stop` first.")
             }
-            session = try await SpotRecordingSession.start(plan)
+            ended = nil
+            session = try await SpotRecordingSession.start(plan) { stopped, recording in
+                guard session === stopped else { return }
+                session = nil
+                ended = recording
+            }
             return TextBlock(fields: [.init(key: "state", value: ScreenRecording.State.recording.rawValue)])
         case .stop?:
-            guard let running = session else {
+            if let running = session {
+                session = nil
+                return await running.stop().block
+            }
+            guard let last = ended else {
                 throw SpotError.fault("Openspot is not recording. Start a recording with `openspot screen record start`.")
             }
-            session = nil
-            return try await running.stop().block
+            ended = nil
+            return last.block
         case .status?:
-            return session?.status.block ?? TextBlock(fields: [.init(key: "state", value: ScreenRecording.State.idle.rawValue)])
+            return session?.status.block ?? ended?.block ?? TextBlock(fields: [.init(key: "state", value: ScreenRecording.State.idle.rawValue)])
         case nil:
             throw SpotError.fault("The recording helper cannot read this call. Run the command again.")
         }

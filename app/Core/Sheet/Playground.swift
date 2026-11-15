@@ -1,6 +1,6 @@
 import Foundation
 
-public struct SheetSandbox: Equatable, Sendable {
+public struct Playground: Equatable, Sendable {
     public private(set) var text = ""
     public private(set) var panel: SheetParts?
     public private(set) var faults: [String] = []

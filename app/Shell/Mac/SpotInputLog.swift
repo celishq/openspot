@@ -1,7 +1,8 @@
 import AppKit
 import OpenspotCore
+import Synchronization
 
-final class SpotEventLog: @unchecked Sendable {
+final class SpotInputLog: @unchecked Sendable {
     private static let pointer: [CGEventType] = [
         .mouseMoved, .leftMouseDragged, .rightMouseDragged, .otherMouseDragged,
         .leftMouseDown, .leftMouseUp, .rightMouseDown, .rightMouseUp, .otherMouseDown, .otherMouseUp
@@ -13,10 +14,11 @@ final class SpotEventLog: @unchecked Sendable {
 
     private let handle: FileHandle
     private let frame: CGRect
-    private let start = ProcessInfo.processInfo.systemUptime
+    private let span = Mutex(InputLogSpan())
     private var tap: CFMachPort?
     private var loop: CFRunLoop?
     private let ended = DispatchSemaphore(value: 0)
+    private var isStopped = false
 
     init(path: String, frame: CGRect, scale: CGFloat) throws {
         let url = URL(fileURLWithPath: path)
@@ -34,7 +36,7 @@ final class SpotEventLog: @unchecked Sendable {
         let types = Self.pointer + (keys ? [.keyDown] : [])
         let mask = types.reduce(CGEventMask(0)) { $0 | (1 << $1.rawValue) }
         let callback: CGEventTapCallBack = { _, type, event, info in
-            if let info { Unmanaged<SpotEventLog>.fromOpaque(info).takeUnretainedValue().note(type, event) }
+            if let info { Unmanaged<SpotInputLog>.fromOpaque(info).takeUnretainedValue().note(type, event) }
             return Unmanaged.passUnretained(event)
         }
         guard let tap = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .tailAppendEventTap, options: .listenOnly, eventsOfInterest: mask, callback: callback, userInfo: Unmanaged.passUnretained(self).toOpaque()) else {
@@ -56,7 +58,18 @@ final class SpotEventLog: @unchecked Sendable {
         ready.wait()
     }
 
+    func begin() {
+        let time = ProcessInfo.processInfo.systemUptime
+        span.withLock { $0.begin(at: time) }
+    }
+
+    var isFull: Bool {
+        span.withLock { $0.isFull }
+    }
+
     func stop() {
+        guard !isStopped else { return }
+        isStopped = true
         guard let tap, let loop else {
             try? handle.close()
             return
@@ -71,8 +84,8 @@ final class SpotEventLog: @unchecked Sendable {
             tap.map { CGEvent.tapEnable(tap: $0, enable: true) }
             return
         }
-        let time = (Double(event.timestamp) / 1_000_000_000 - start) * 1000
-        var line: [String: Any] = ["t": time.rounded() / 1000]
+        guard let seconds = span.withLock({ $0.seconds(at: Double(event.timestamp) / 1_000_000_000) }) else { return }
+        var line: [String: Any] = ["t": (seconds * 1000).rounded() / 1000]
         if type == .keyDown {
             line["type"] = "key"
             line["key"] = Self.key(of: event)
@@ -91,7 +104,8 @@ final class SpotEventLog: @unchecked Sendable {
     }
 
     private func write(_ line: [String: Any]) {
-        guard let data = try? JSONSerialization.data(withJSONObject: line, options: [.sortedKeys]) else { return }
+        guard let data = try? JSONSerialization.data(withJSONObject: line, options: [.sortedKeys]),
+              span.withLock({ $0.admits(data.count + 1) }) else { return }
         try? handle.write(contentsOf: data + Data("\n".utf8))
     }
 

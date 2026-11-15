@@ -32,6 +32,7 @@ struct SpotFloatView: View {
         .onChange(of: size, initial: true) { onSize(size) }
         .environment(\.spotIsShown, true)
         .environment(\.spotCards, SpotCardSource(model: model))
+        .environment(\.spotViewPlace, SpotViewPlace(model: model, place: .detached(id)))
     }
 
     private func size(_ entry: SpotsModel.Entry?, _ run: SpotRun?) -> CGSize {
@@ -48,7 +49,7 @@ struct SpotFloatView: View {
             if !fills { header(entry, run) }
             if let part = sole, let view = entry.spot.view {
                 GeometryReader { area in
-                    SpotCustomView(source: view, values: part.values, card: .square, room: area.size, answers: run.panel?.answered ?? 0, date: entry.spot.viewDate, views: .shared) { run.set(part, to: $0) }
+                    SpotCustomView(source: view, values: part.values, rows: part.rows, card: .square, room: area.size, answers: run.panel?.answered ?? 0, date: entry.spot.viewDate, views: .shared) { run.set(part, to: $0) }
                         .equatable()
                 }
                 .ignoresSafeArea()

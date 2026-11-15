@@ -46,6 +46,7 @@ public struct StatsReport: Sendable {
             parts += ["\(Self.time(count.cpu)) CPU", "\(Self.bytes(count.read)) read", "\(Self.bytes(count.written)) written", "\(count.wakeups) wakeups"]
             parts += count.calls.sorted { $0.key < $1.key }.map { "\($0.key) \($0.value)" }
             if count.network { parts.append("network declared") }
+            if let view = count.view { parts.append(Self.words(of: view, split: ", ")) }
             lines.append("\(count.name ?? id): \(parts.joined(separator: " · "))")
             if let fault = count.fault { lines.append("  Last fault: \(fault.replacingOccurrences(of: "\n", with: " "))") }
         }
@@ -76,6 +77,9 @@ public struct StatsReport: Sendable {
             ]
             fields += count.calls.sorted { $0.key < $1.key }.map { .init(key: "call.\($0.key)", value: String($0.value)) }
             if count.network { fields.append(.init(key: "network", value: "declared")) }
+            if let view = count.view {
+                fields += [.init(key: "bodies", value: String(view.bodies)), .init(key: "body", value: String(format: "%.6f", view.seconds))]
+            }
             if let fault = count.fault { fields += [.init(key: "fault", value: fault), .init(key: "tone", value: "bad")] }
             return TextBlock(fields: fields).text
         }
@@ -107,9 +111,15 @@ public struct StatsReport: Sendable {
     }
 
     private static func detail(of count: SpotUsage.Count) -> String {
-        let cpu = "\(time(count.cpu)) CPU"
-        guard count.runs > 0 else { return cpu }
-        return "\(cpu) · \(count.runs) \(count.runs == 1 ? "run" : "runs") · \(time(count.seconds / Double(count.runs))) each"
+        var parts = ["\(time(count.cpu)) CPU"]
+        if count.runs > 0 { parts.append("\(count.runs) \(count.runs == 1 ? "run" : "runs") · \(time(count.seconds / Double(count.runs))) each") }
+        if let view = count.view { parts.append(words(of: view, split: " · ")) }
+        return parts.joined(separator: " · ")
+    }
+
+    private static func words(of view: SpotUsage.ViewTime, split: String) -> String {
+        let each = view.seconds / Double(max(view.bodies, 1)) * 1000
+        return "\(view.bodies) \(view.bodies == 1 ? "body" : "bodies") of its view\(split)\(String(format: "%.2f", each)) ms each"
     }
 
     private static func time(_ seconds: TimeInterval) -> String {

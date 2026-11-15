@@ -18,7 +18,7 @@ struct SpotSheetPreview: View {
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             HStack(spacing: SpotTokens.padding - 5) {
                 Image(systemName: symbol)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(SpotType.glyph)
                     .foregroundStyle(SpotTheme.ink)
                     .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
                     .background(SpotTheme.ink.opacity(SpotTheme.disc), in: Circle())
@@ -33,6 +33,6 @@ struct SpotSheetPreview: View {
         }
         .padding(SpotTokens.padding)
         .frame(width: frame.width, height: frame.height, alignment: .topLeading)
-        .background { SpotPictureStage(size: frame, radius: SpotTokens.radius, seed: seed) { Color.clear }.padding(-SpotPictureStage<Color>.margin) }
+        .background { SpotPictureStage(size: frame, radius: SpotTokens.radius, seed: seed) { Color.clear.spotGlass(in: SpotRoundShape(radius: SpotTokens.radius)) }.padding(-SpotPictureStage<Color>.margin) }
     }
 }

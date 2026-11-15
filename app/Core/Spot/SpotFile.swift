@@ -84,6 +84,16 @@ public struct SpotFile: Equatable, Sendable {
         if let view, URL(fileURLWithPath: view).pathExtension != SwiftProgram.sourceExtension {
             throw SpotError.fault("\(name) needs a Swift file for its view, such as view=\(url.deletingPathExtension().lastPathComponent).swift")
         }
+        let sources = header.values(HeaderKey.source)
+        if !sources.isEmpty, url.pathExtension != SwiftProgram.sourceExtension {
+            throw SpotError.fault("\(name) has source=\(sources[0]), which only a Swift spot takes. Remove it, or write the spot in a .swift file")
+        }
+        if let source = sources.first(where: { !SpotPackage.isSafe(entry: $0) || $0.isEmpty }) {
+            throw SpotError.fault("\(name) has source=\(source), which is outside its folder. Name a Swift file or a folder beside the spot, such as source=model")
+        }
+        if let source = sources.first(where: { $0.split(separator: "/", omittingEmptySubsequences: false).contains { $0.isEmpty || $0 == "." } }) {
+            throw SpotError.fault("\(name) has `source=\(source)`, which is not a plain path. Write it with no `.`, no `..` and no `/` at its start or end, such as `source=model`.")
+        }
         let edits = header.value(HeaderKey.edits)
         guard edits == nil || edits == "spots" else { throw SpotError.fault("\(name) has an unknown edits: \(edits!). Use edits=spots") }
         let places: Set<Place> = namedPlaces ?? (offeredActions.isEmpty && !answersOnly ? [.card] : [])
@@ -110,6 +120,7 @@ public struct SpotFile: Equatable, Sendable {
             settings: header.children.filter { HeaderBlock(block: $0) == .field }.compactMap { CommandOffer(setting: $0) },
             view: view.map { Self.path($0, beside: url) },
             viewDate: view.flatMap { Self.viewDate(of: Self.path($0, beside: url), script: url) },
+            sources: sources,
             emits: emits,
             pages: header.values(HeaderKey.pages),
             uses: uses,

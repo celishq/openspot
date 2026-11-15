@@ -7,6 +7,7 @@ struct SpotTheme {
     let onSolid: NSColor
     let glyphOnSolid: NSColor
     let glass: NSColor
+    let shade: NSColor
     let keycap: NSColor
     let window: NSColor
     let preview: NSColor
@@ -25,6 +26,7 @@ struct SpotTheme {
         onSolid: .black,
         glyphOnSolid: .controlAccentColor,
         glass: .clear,
+        shade: .black.withAlphaComponent(0.2),
         keycap: NSColor(white: 0.2, alpha: 1),
         window: NSColor(white: 0.16, alpha: 1),
         preview: NSColor(white: 0.3, alpha: 1),
@@ -44,6 +46,7 @@ struct SpotTheme {
         onSolid: .white,
         glyphOnSolid: .white,
         glass: .white.withAlphaComponent(0.5),
+        shade: .black.withAlphaComponent(0.08),
         keycap: NSColor(white: 0.98, alpha: 1),
         window: NSColor(white: 0.93, alpha: 1),
         preview: NSColor(white: 0.98, alpha: 1),
@@ -72,12 +75,16 @@ struct SpotTheme {
     @MainActor private static var chosen: (appearance: NSAppearance, theme: SpotTheme)?
 
     static let pictureRim = Color.white.opacity(0.25)
+    static let backdropBlur: CGFloat = 3
     static let glassFadeReach = 3.0
 
     static func glassStrength(at fade: Double) -> Double {
         min(fade * glassFadeReach, 1)
     }
     static let accent = Color.accentColor
+    static let good = Color.green
+    static let warn = Color.orange
+    static let bad = Color.red
     static let secondaryLight = 0.7
     static let dragFill = 0.4
     static let hover = 0.08
@@ -97,6 +104,7 @@ struct SpotTheme {
     static let onSolid = color(\.onSolid)
     static let glyphOnSolid = color(\.glyphOnSolid)
     static let glass = color(\.glass)
+    static let shade = color(\.shade)
     static let keycap = color(\.keycap)
     static let window = color(\.window)
     static let preview = color(\.preview)

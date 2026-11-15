@@ -36,11 +36,18 @@ public final class KeptScan: Sendable {
         let app = core.filter { $0.lastPathComponent == SpotsFolder.appName }
         entries += read(core.filter { !app.contains($0) }, origin: .core, into: &stamp, visiting: &visited)
         entries += read(app, origin: .app, into: &stamp, visiting: &visited)
+        var sources: [String: [String]] = [:]
+        for spot in entries.flatMap({ $0.spots ?? [] }) where !spot.sources.isEmpty {
+            let folder = spot.url.deletingLastPathComponent()
+            let paths = SwiftProgram.paths(named: spot.sources, beside: spot.url).map { folder.appendingPathComponent($0).path }
+            for path in paths where stamp[path] == nil { stamp[path] = Self.state(of: path) }
+            sources[spot.url.path] = paths
+        }
         kept.withLock { kept in
             if kept.count > limit { kept = kept.filter { visited.contains($0.key) } }
         }
         let failure = own == nil && folder.core == nil ? "Openspot cannot read the folder \(folder.url.path)." : nil
-        return SpotLoad(entries: entries, loose: loose, failure: failure, stamp: stamp, hasAppSpots: !app.isEmpty)
+        return SpotLoad(entries: entries, loose: loose, failure: failure, stamp: stamp, sources: sources, hasAppSpots: !app.isEmpty)
     }
 
     private func read(_ folders: [URL], origin: SpotLoad.Origin, into stamp: inout [String: [Int]], visiting visited: inout Set<String>) -> [SpotLoad.Entry] {

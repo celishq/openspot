@@ -18,6 +18,7 @@ public struct FrameCheck: Equatable, Sendable {
             guard let kind = BlockKind.of(block, in: kinds), let id = block.value(kind.word) else { continue }
             guard kind.presses, !placed.contains(id) else {
                 faults += PartCatalog.faults(in: block, kind: kind)
+                if kind.isOpen, block.value(BlockKind.row) != nil { faults.append("the view \(id) has the key `row`, which starts a row block. Give the key another name.") }
                 continue
             }
             if taken.contains(id), id != SpotOutput.open { faults.append("an action cannot be called \(id)") }

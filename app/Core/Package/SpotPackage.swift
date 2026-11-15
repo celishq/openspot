@@ -79,7 +79,8 @@ public struct SpotPackage: Equatable, Sendable {
         }
         let sources = files.filter { $0.path.hasSuffix(".\(SwiftProgram.sourceExtension)") }
         try self.init(files: files.filter { file in
-            !ViewLibrary.isLibrary(file.path) || sources.contains { ViewLibrary.path(beside: $0.path, text: $0.contents) == file.path }
+            if SwiftProgram.isProgram(URL(fileURLWithPath: file.path)) { return false }
+            return !ViewLibrary.isLibrary(file.path) || sources.contains { ViewLibrary.path(beside: $0.path, text: $0.contents) == file.path }
         })
     }
 
@@ -94,22 +95,27 @@ public struct SpotPackage: Equatable, Sendable {
 
     public func compiled(by program: SwiftProgram = SwiftProgram(), views: ViewLibrary = .standard()) async throws -> SpotPackage {
         var all = files
-        for (file, path) in uncompiled {
-            all.append(File(path: path, isExecutable: true, contents: try await program.build(source: file.contents)))
+        for (file, path, more) in uncompiled {
+            all.append(File(path: path, isExecutable: true, contents: try await program.build(source: file.contents, with: more)))
         }
         for (file, path) in unbuiltViews {
             let name = URL(fileURLWithPath: file.path).lastPathComponent
-            all.append(File(path: path, isExecutable: false, contents: try await views.build(source: file.contents, named: name, kinds: SwiftProgram.kinds)))
+            all.append(File(path: path, isExecutable: false, contents: try await views.build(source: file.contents, named: name, kinds: SwiftBuild.kinds)))
         }
         return try SpotPackage(files: all)
     }
 
-    private var uncompiled: [(file: File, path: String)] {
-        let roles = SpotFiles(package: self)
-        return files.compactMap { file in
-            guard file.isExecutable, let path = SwiftProgram.path(beside: file.path), roles.program(of: file.path) == nil else { return nil }
-            return (file, path)
+    private var uncompiled: [(file: File, path: String, more: [SwiftBuild.File])] {
+        files.compactMap { file in
+            guard file.isExecutable, file.path.hasSuffix(".\(SwiftProgram.sourceExtension)") else { return nil }
+            let program = Self.program(of: file, in: files)
+            return files.contains { $0.path == program.path } ? nil : (file, program.path, program.more)
         }
+    }
+
+    private static func program(of script: File, in files: [File]) -> (path: String, more: [SwiftBuild.File]) {
+        let more = SwiftProgram.sources(of: script, in: files)
+        return (SwiftProgram.path(beside: script.path, hash: SwiftProgram.name(of: script.contents, with: more)), more)
     }
 
     private var unbuiltViews: [(file: File, path: String)] {

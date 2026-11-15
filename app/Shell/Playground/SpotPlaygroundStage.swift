@@ -2,7 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotPlaygroundStage: View {
-    @Bindable var model: SpotSandboxModel
+    @Bindable var model: SpotPlaygroundModel
 
     var body: some View {
         VStack(spacing: 0) {
