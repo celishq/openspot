@@ -157,14 +157,15 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot account new [handle]                Makes an account key, with that handle, when the Mac holds none. The calls from here
                                                  to sign-out answer only Openspot's Account spot.
     openspot account words                       Prints the 12 words, after Touch ID.
-    openspot account check <place> <place>       Prints 4 choices for each place of the words.
-    openspot account checked                     Takes a place and a word on each line of stdin, and marks the
-                                                 words backed up when each one is right.
+    openspot account checked                     Takes a place and a word on each line of stdin, for two places or
+                                                 more, and marks the words backed up when all are right. It says
+                                                 only that the set is right or wrong.
     openspot account phrase                      Reads a phrase on stdin, and prints its counter, its unknown
                                                  words, a completion, a problem or the account it opens.
-    openspot account sign-in                     Keeps the key of the 12 words or the nsec on stdin.
+    openspot account sign-in                     Keeps the key of the 12 words or the nsec on stdin, after Touch ID.
     openspot account sign-out                    Removes the account key, after Touch ID.
-    openspot account sync on|off                 Keeps your account in iCloud Keychain, or on this Mac only.
+    openspot account sync on|off                 Keeps your account in iCloud Keychain, or on this Mac only, after
+                                                 Touch ID.
     openspot clipboard copy [file]               Copies the file as Finder does, or the text on stdin.
     openspot clipboard paste                     Pastes the clipboard into the front app.
     openspot clipboard read                      Prints the text on the clipboard, or nothing when it holds none.

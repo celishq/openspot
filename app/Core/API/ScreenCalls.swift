@@ -2,12 +2,8 @@ import Foundation
 
 struct ScreenCalls {
     let mac: any Mac
-    let environment: [String: String]
+    let folder: URL
     let fence: (caller: CallerTokens.Caller, mode: CarefulMode)?
-
-    private var folder: URL {
-        URL(fileURLWithPath: environment["PWD"] ?? FileManager.default.currentDirectoryPath, isDirectory: true)
-    }
 
     func sources() -> CommandAPI.Work {
         { [mac] in CommandAnswer(output: await mac.screenSources()) }

@@ -44,7 +44,7 @@ final class CallRouteTests: XCTestCase {
         folder = URL(fileURLWithPath: String(cString: temp), isDirectory: true).appendingPathComponent("cr-\(UUID().uuidString.prefix(8))", isDirectory: true)
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         let runs = await SpotRuns()
-        socket = CommandSocket(folder: folder, api: CommandAPI(mac: host, app: FakeRunningApp(), runs: runs))
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: host, places: .test(ProcessInfo.processInfo.environment.merging(variables) { _, new in new }), app: FakeRunningApp(), runs: runs))
     }
 
     override func tearDown() async throws {
@@ -57,7 +57,8 @@ final class CallRouteTests: XCTestCase {
         let call = try XCTUnwrap(CommandLineCall(arguments: argv, environment: environment))
         let printed = Printed()
         let output = CommandOutput { text, isError in printed.add(text, isError: isError) }
-        let work = try XCTUnwrap(CommandAPI(mac: host).work(for: call, input: { input ?? "" }, environment: environment, isPiped: input != nil, output: output))
+        let request = CommandRequest(arguments: argv, folder: folder.path, isPiped: input != nil)
+        let work = try XCTUnwrap(CommandAPI(mac: host, places: .test(environment)).work(for: call, request: request, input: { input ?? "" }, output: output))
         let answer = await work()
         output.print(answer.output)
         output.report(answer.errors)
@@ -67,7 +68,7 @@ final class CallRouteTests: XCTestCase {
     private func app(_ argv: [String], input: String?) throws -> Answer {
         let connection = SocketConnection(path: folder.appendingPathComponent(CommandSocket.name).path)
         defer { connection.close() }
-        try connection.send(["jsonrpc": "2.0", "id": 1, "method": "ask", "params": ["argv": argv, "cwd": folder.path, "env": variables, "piped": input != nil]])
+        try connection.send(["jsonrpc": "2.0", "id": 1, "method": "ask", "params": ["argv": argv, "cwd": folder.path, "piped": input != nil]])
         let exchange = try connection.exchange(input: input.map { [$0] } ?? [])
         return Answer(stdout: exchange.stdout, stderr: exchange.stderr, code: exchange.code ?? -1)
     }

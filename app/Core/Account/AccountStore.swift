@@ -55,21 +55,21 @@ public struct AccountStore: Sendable {
             guard FileManager.default.fileExists(atPath: file.path) else { return }
             return try FileManager.default.removeItem(at: file)
         }
-        let status = SecItemDelete(query(in: keychain) as CFDictionary)
+        let status = SecItemDelete(query(in: Self.keychain) as CFDictionary)
         guard status == errSecSuccess || status == errSecItemNotFound else { throw Self.fault(status) }
     }
 
-    public var canSync: Bool {
-        file == nil && keychain == .synced
+    public func canSync() -> Bool {
+        file == nil && Self.keychain == .synced
     }
 
     public func isSyncing() throws -> Bool {
-        guard canSync else { return false }
+        guard canSync() else { return false }
         return try item()?.isSynced == true
     }
 
     public func setSyncing(_ isOn: Bool) throws {
-        guard canSync else { throw SpotError.fault("This copy of Openspot keeps your account on this Mac only.") }
+        guard canSync() else { throw SpotError.fault("This copy of Openspot keeps your account on this Mac only.") }
         guard let item = try item(), item.isSynced != isOn else { return }
         try add(item.data, in: .synced, syncing: isOn)
         let status = SecItemDelete(query(in: .synced, adding: [kSecAttrSynchronizable: item.isSynced]) as CFDictionary)
@@ -80,16 +80,14 @@ public struct AccountStore: Sendable {
         case synced, login
     }
 
-    private static let place: Keychain = {
+    private static let keychain = findKeychain()
+
+    private static func findKeychain() -> Keychain {
         let probe: [CFString: Any] = [
             kSecClass: kSecClassGenericPassword, kSecAttrService: service + ".probe", kSecUseDataProtectionKeychain: true,
             kSecAttrSynchronizable: kSecAttrSynchronizableAny
         ]
         return SecItemDelete(probe as CFDictionary) == errSecMissingEntitlement ? .login : .synced
-    }()
-
-    private var keychain: Keychain {
-        Self.place
     }
 
     private func lines() throws -> [String]? {
@@ -111,7 +109,7 @@ public struct AccountStore: Sendable {
             return
         }
         let data = Data(text.utf8)
-        let place = keychain
+        let place = Self.keychain
         let status = SecItemUpdate(query(in: place) as CFDictionary, [kSecValueData: data] as CFDictionary)
         if status == errSecItemNotFound { return try add(data, in: place, syncing: place == .synced) }
         guard status == errSecSuccess else { throw Self.fault(status) }
@@ -120,7 +118,7 @@ public struct AccountStore: Sendable {
     private func item() throws -> (data: Data, isSynced: Bool)? {
         var result: CFTypeRef?
         let more: [CFString: Any] = [kSecReturnData: true, kSecReturnAttributes: true, kSecMatchLimit: kSecMatchLimitOne]
-        let status = SecItemCopyMatching(query(in: keychain, adding: more) as CFDictionary, &result)
+        let status = SecItemCopyMatching(query(in: Self.keychain, adding: more) as CFDictionary, &result)
         guard status != errSecItemNotFound else { return nil }
         guard status == errSecSuccess, let found = result as? [CFString: Any], let data = found[kSecValueData] as? Data else { throw Self.fault(status) }
         return (data, (found[kSecAttrSynchronizable] as? Bool) ?? ((found[kSecAttrSynchronizable] as? NSNumber)?.boolValue ?? false))

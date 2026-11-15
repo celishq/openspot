@@ -2,6 +2,7 @@ import Foundation
 
 struct SettingCalls {
     let environment: [String: String]
+    let caller: String?
     let app: (any RunningApp)?
 
     func get(_ key: String, of spot: String) -> CommandAPI.Work {
@@ -11,9 +12,9 @@ struct SettingCalls {
     }
 
     func set(_ key: String, of spot: String, to value: String?) -> CommandAPI.Work {
-        CommandAnswer.work { [environment, app] in
+        CommandAnswer.work { [environment, caller, app] in
             try ConfigFile.standard(environment: environment).set(setting: key, of: spot, to: value)
-            await app?.configChanged(key == ReservedSetting.icon ? .spots([spot]) : .value(spot: spot, caller: environment["OPENSPOT_ID"]))
+            await app?.configChanged(key == ReservedSetting.icon ? .spots([spot]) : .value(spot: spot, caller: caller))
             return ""
         }
     }

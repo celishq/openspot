@@ -2,11 +2,10 @@ import Foundation
 
 struct ClipboardCalls {
     let mac: any Mac
-    let environment: [String: String]
+    let folder: URL
 
     func copy(_ path: String?, input: @escaping @Sendable () async -> String) -> CommandAPI.Work {
-        let folder = URL(fileURLWithPath: environment["PWD"] ?? FileManager.default.currentDirectoryPath, isDirectory: true)
-        return CommandAnswer.work { [mac] in
+        CommandAnswer.work { [mac, folder] in
             if let path {
                 try mac.copy(file: URL(fileURLWithPath: path, relativeTo: folder).standardizedFileURL)
             } else {

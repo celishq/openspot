@@ -44,11 +44,17 @@ final class AccountKeyTests: XCTestCase {
         XCTAssertTrue(AccountKey.isValid(try key.sign(message), of: message, by: key.publicKey))
     }
 
-    func testTheWordsOfCelisGiveTheAccountOfCelis() throws {
-        let key = try AccountKey(words: phrase.split(separator: " ").map(String.init))
+    func testTheWordsOfNIP06GiveItsKeys() throws {
+        let vectors = [
+            ("leader monkey parrot ring guide accident before fence cannon height naive bean", "7f7ff03d123792d6ac594bfa67bf6d0c0ab55b6b1fdb6249303fe861f1ccba9a", "17162c921dc4d2518f9a101db33695df1afb56ab82f5ff3e5da6eec3ca5cd917")
+        ]
+        for (phrase, secret, publicKey) in vectors {
+            let key = try AccountKey(words: phrase.split(separator: " ").map(String.init))
 
-        XCTAssertEqual(key.npub, npub)
-        XCTAssertEqual(key.words?.joined(separator: " "), phrase)
+            XCTAssertEqual(key.nsec, Bech32.encode("nsec", data(secret)))
+            XCTAssertEqual(key.publicKey, publicKey)
+            XCTAssertEqual(key.words?.joined(separator: " "), phrase)
+        }
     }
 
     func testNewWordsMakeTheSameKeyAgain() throws {
@@ -96,13 +102,13 @@ final class AccountKeyTests: XCTestCase {
     }
 
     func testAnNsecGivesBackTheSameKeyWithNoWords() throws {
-        let key = try AccountKey(words: phrase.split(separator: " ").map(String.init))
+        let key = try AccountKey(words: "leader monkey parrot ring guide accident before fence cannon height naive bean".split(separator: " ").map(String.init))
 
         let again = try AccountKey(nsec: key.nsec)
 
         XCTAssertEqual(again, key)
         XCTAssertNil(again.words)
-        XCTAssertEqual(key.nsec, "nsec1q8tm3l7xd7rvd2naddytwcw0pv573l9e8pjjs4knr2ltgtxeql2qag9wtk")
+        XCTAssertEqual(key.nsec, "nsec10allq0gjx7fddtzef0ax00mdps9t2kmtrldkyjfs8l5xruwvh2dq0lhhkp")
         XCTAssertThrowsError(try AccountKey(nsec: npub))
         XCTAssertThrowsError(try AccountKey(nsec: String(key.nsec.dropLast()) + "q"))
     }

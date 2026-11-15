@@ -342,7 +342,7 @@ final class SpotEventsTests: SpotRunsCase {
         try FileManager.default.createDirectory(at: client.deletingLastPathComponent(), withIntermediateDirectories: true)
         try FileManager.default.copyItem(at: Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot"), to: client)
         let runs = runs!
-        let socket = try XCTUnwrap(CommandSocket(folder: config, api: CommandAPI(mac: NoHost(), raise: { event in await MainActor.run { runs.raise(event) } })))
+        let socket = try XCTUnwrap(CommandSocket(folder: config, api: CommandAPI(mac: NoHost(), places: .test(["OPENSPOT_CONFIG": config.path]), raise: { event in await MainActor.run { runs.raise(event) } })))
         defer { socket.close() }
         let shell = Process()
         shell.executableURL = URL(fileURLWithPath: "/bin/sh")

@@ -92,6 +92,16 @@ final class ProtocolContractTests: XCTestCase {
             .filter { $0.hasPrefix("<spot> ") }.map { $0.split(separator: " ")[1] }.filter { !$0.hasPrefix("<") }.map(String.init)
         let calls = Set(literals(in: output) + docCalls).filter { $0.range(of: #"^[a-z]+$"#, options: .regularExpression) != nil }.filter(isCallWord)
 
+        let variable = #"OPENSPOT_[A-Z_]*[A-Z]"#
+        let scripts = try ["spots", "examples"].flatMap { folder -> [String] in
+            let files = FileManager.default.enumerator(at: RepoDoc.repo.appendingPathComponent(folder), includingPropertiesForKeys: nil)?.compactMap { $0 as? URL } ?? []
+            return try files.filter { ["sh", "js", "swift", "py"].contains($0.pathExtension) }.map { try String(contentsOf: $0, encoding: .utf8) }
+        }
+        let read = Set(scripts.flatMap { RepoDoc.matches(variable, in: $0).map { $0[0] } })
+        let core = FileManager.default.enumerator(at: RepoDoc.repo.appendingPathComponent("app/Core"), includingPropertiesForKeys: nil)?.compactMap { $0 as? URL } ?? []
+        let set = Set(try core.filter { $0.pathExtension == "swift" }.flatMap { RepoDoc.matches(variable, in: try String(contentsOf: $0, encoding: .utf8)).map { $0[0] } })
+        let docVariables = Set(RepoDoc.matches(variable, in: doc.text).map { $0[0] })
+
         let helper = try source("Shell/openspot.sh")
         let functions = Set(RepoDoc.matches(#"(?m)^([a-z][a-z_]*)\(\)"#, in: helper).map { $0[1] })
         let docFunctions = RepoDoc.tableRows(in: doc.section("The calls")).flatMap { RepoDoc.code($0[0]) }
@@ -107,6 +117,7 @@ final class ProtocolContractTests: XCTestCase {
             + compare("use", code: uses, doc: Set(docUses))
             + compare("call", code: calls, doc: Set(docCalls))
             + compare("shell helper", code: functions, doc: Set(docFunctions))
+            + compare("variable", code: read.union(docVariables.intersection(set)), doc: docVariables)
     }
 
     func testEachKeyKindAndCallOfTheProtocolIsOneTheCodeTakesAndTheOtherWayRound() throws {

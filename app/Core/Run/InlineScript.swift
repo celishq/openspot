@@ -144,7 +144,11 @@ final class InlineScript: @unchecked Sendable {
         }
         let env = environment.filter { ["OPENSPOT_ID", CallerTokens.variable].contains($0.key) }.merging(call.variables) { _, new in new }
         variables = call.variables
-        defer { variables = [:] }
+        if let token { tokens?.setReason(call.variables["OPENSPOT_REASON"], of: token) }
+        defer {
+            variables = [:]
+            if let token { tokens?.setReason(nil, of: token) }
+        }
         let result = function.call(withArguments: [call.arguments, env, call.input ?? ""])
         try rethrow()
         guard let result, !result.isUndefined, !result.isNull else { return "" }
@@ -195,8 +199,9 @@ final class InlineScript: @unchecked Sendable {
         guard let call = CommandLineCall(arguments: arguments, environment: environment) else {
             return CommandAnswer(errors: "openspot needs a call, such as calc solve 2+2.\n", code: 2)
         }
-        if let api, api.work(for: call, input: { input ?? "" }, environment: environment) != nil,
-           let work = api.work(for: api.admit(call, arguments: arguments, environment: environment), input: { input ?? "" }, environment: environment) {
+        let request = CommandRequest(arguments: arguments, folder: environment["PWD"] ?? FileManager.default.currentDirectoryPath, token: token)
+        if let api, api.work(for: call, request: request, input: { input ?? "" }) != nil,
+           let work = api.work(for: api.admit(call, request: request), request: request, input: { input ?? "" }) {
             let box = Box()
             let done = DispatchSemaphore(value: 0)
             Task.detached(priority: .userInitiated) {

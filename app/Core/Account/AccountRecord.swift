@@ -1,6 +1,7 @@
 import Foundation
 
 public struct AccountRecord: Equatable, Sendable {
+    private static let wordsPrefix = "nip06 "
     private static let backedUpLine = "backed-up"
     private static let handlePrefix = "handle "
     private static let sincePrefix = "since "
@@ -18,8 +19,15 @@ public struct AccountRecord: Equatable, Sendable {
     }
 
     init?(lines: [String]) throws {
-        guard let first = lines.first, !first.isEmpty else { return nil }
-        let key = first.hasPrefix("nsec") ? try AccountKey(nsec: first) : try AccountKey(words: first.split(separator: " ").map(String.init))
+        guard let first = lines.first else { return nil }
+        let key: AccountKey
+        if first.hasPrefix("nsec") {
+            key = try AccountKey(nsec: first)
+        } else if first.hasPrefix(Self.wordsPrefix) {
+            key = try AccountKey(words: first.dropFirst(Self.wordsPrefix.count).split(separator: " ").map(String.init))
+        } else {
+            return nil
+        }
         let rest = lines.dropFirst()
         func value(_ prefix: String) -> String? {
             rest.first { $0.hasPrefix(prefix) }.map { String($0.dropFirst(prefix.count)) }
@@ -28,7 +36,7 @@ public struct AccountRecord: Equatable, Sendable {
     }
 
     var lines: [String] {
-        [key.words?.joined(separator: " ") ?? key.nsec]
+        [key.words.map { Self.wordsPrefix + $0.joined(separator: " ") } ?? key.nsec]
             + (isBackedUp ? [Self.backedUpLine] : [])
             + (handle.map { [Self.handlePrefix + $0] } ?? [])
             + (since.map { [Self.sincePrefix + $0] } ?? [])

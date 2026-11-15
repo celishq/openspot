@@ -38,7 +38,7 @@ final class CommandSocketTests: XCTestCase {
 
     override func setUpWithError() throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("os-\(UUID().uuidString.prefix(8))", isDirectory: true)
-        socket = CommandSocket(folder: folder, api: CommandAPI(mac: FakeMac()))
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: FakeMac(), places: .test(["OPENSPOT_CONFIG": folder.path, "OPENSPOT_SPOTS": folder.appendingPathComponent("spots").path])))
     }
 
     override func tearDownWithError() throws {
@@ -51,7 +51,7 @@ final class CommandSocketTests: XCTestCase {
     }
 
     private func request(_ argv: [String], env: [String: String]? = nil, cwd: String? = nil) -> [String: Any] {
-        ["jsonrpc": "2.0", "id": 7, "method": "ask", "params": ["argv": argv, "cwd": cwd ?? folder.path, "env": env ?? ["OPENSPOT_CONFIG": folder.path]]]
+        ["jsonrpc": "2.0", "id": 7, "method": "ask", "params": ["argv": argv, "cwd": cwd ?? folder.path].merging(env.map { ["env": $0] } ?? [:]) { _, new in new }]
     }
 
     private func ask(_ argv: [String], env: [String: String]? = nil, cwd: String? = nil, input: [String] = []) throws -> SocketConnection.Exchange {
@@ -103,7 +103,7 @@ final class CommandSocketTests: XCTestCase {
 
     func testASlowCallSendsItsFirstChunkBeforeItsEnd() async throws {
         socket?.close()
-        socket = CommandSocket(folder: folder, api: CommandAPI(mac: FakeMac(), app: SlowApp(folder: folder)))
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: FakeMac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: SlowApp(folder: folder)))
         let connection = connect()
         defer { connection.close() }
         try connection.send(request(["batch"]))
@@ -120,7 +120,7 @@ final class CommandSocketTests: XCTestCase {
 
     func testAClosedConnectionStopsItsCallAndTheCallChangesNothing() async throws {
         socket?.close()
-        socket = CommandSocket(folder: folder, api: CommandAPI(mac: FakeMac(), app: SlowApp(folder: folder)))
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: FakeMac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: SlowApp(folder: folder)))
         let connection = connect()
         try connection.send(request(["setting", "change", "--spot", "repos", "folder"]))
         try await wait("the start of the work") { exists("started") }
@@ -131,16 +131,19 @@ final class CommandSocketTests: XCTestCase {
         XCTAssertFalse(exists("far"))
     }
 
-    func testARelativeFolderOfTheCallerIsReadFromItsWorkingFolder() throws {
-        _ = try ask(["setting", "set", "--spot", "notes", "tone", "warm"], env: ["OPENSPOT_CONFIG": "own"])
+    func testTheConfigAndTheSpotsOfACallerChangeNothingTheAppWrites() throws {
+        let other = folder.appendingPathComponent("other")
+        let env = ["OPENSPOT_CONFIG": other.appendingPathComponent("config").path, "OPENSPOT_SPOTS": other.appendingPathComponent("spots").path, "OPENSPOT_ID": "home/coffee"]
 
-        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("own/config.toml").path))
-    }
+        _ = try ask(["setting", "set", "--spot", "notes", "tone", "warm"], env: env)
+        _ = try ask(["setting", "set", "tone", "warm"], env: env)
+        _ = try ask(["spot", "new", "Tea"], env: env)
 
-    func testAVariableThatIsNoPathPassesAsItIs() throws {
-        _ = try ask(["setting", "set", "tone", "warm"], env: ["OPENSPOT_CONFIG": folder.path, "OPENSPOT_ID": "home/coffee"])
-
-        XCTAssertEqual(ConfigFile(url: folder.appendingPathComponent("config.toml")).read().setting("tone", of: "home/coffee"), "warm")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: other.path))
+        let config = ConfigFile(url: folder.appendingPathComponent("config.toml")).read()
+        XCTAssertEqual(config.setting("tone", of: "notes"), "warm")
+        XCTAssertNil(config.setting("tone", of: "home/coffee"))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("spots/tea.spot").path))
     }
 
     func testARelativeSourceOfSpotAddIsReadFromTheWorkingFolderOfTheCaller() throws {
@@ -149,7 +152,7 @@ final class CommandSocketTests: XCTestCase {
         try "#!/bin/sh\n".writeScript(to: source.appendingPathComponent("tea.sh"))
         let spots = folder.appendingPathComponent("spots").path
 
-        let answer = try ask(["spot", "add", "tea"], env: ["OPENSPOT_CONFIG": folder.path, "OPENSPOT_SPOTS": spots], cwd: folder.appendingPathComponent("sources").path)
+        let answer = try ask(["spot", "add", "tea"], cwd: folder.appendingPathComponent("sources").path)
 
         XCTAssertEqual(answer.code, 0, answer.stderr)
         XCTAssertTrue(FileManager.default.fileExists(atPath: spots + "/tea.spot/tea.sh"))

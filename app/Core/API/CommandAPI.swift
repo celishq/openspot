@@ -6,13 +6,17 @@ public final class CommandAPI: @unchecked Sendable {
     private let mac: any Mac
     private let raise: (@Sendable (SpotEvent) async -> Void)?
     private let app: (any RunningApp)?
+    private let places: AppPlaces
+    private let account: Account?
     private weak var runs: SpotRuns?
     private let calendar: CalendarCalls
     private let reminders: RemindersCalls
     private let keywords = GlyphKeywordCache()
 
-    public init(mac: any Mac, raise: (@Sendable (SpotEvent) async -> Void)? = nil, app: (any RunningApp)? = nil, runs: SpotRuns? = nil) {
+    public init(mac: any Mac, places: AppPlaces, raise: (@Sendable (SpotEvent) async -> Void)? = nil, app: (any RunningApp)? = nil, runs: SpotRuns? = nil) {
         self.mac = mac
+        self.places = places
+        account = app.map { app in Account(store: places.account, allows: { await app.allows($0) }) }
         self.runs = runs
         self.raise = raise
         self.app = app
@@ -20,26 +24,38 @@ public final class CommandAPI: @unchecked Sendable {
         reminders = RemindersCalls(mac: mac)
     }
 
-    public func environment(of peer: pid_t, over environment: [String: String]) -> [String: String] {
-        runs?.tokens.environment(of: peer, over: environment) ?? environment
+    public func request(_ request: CommandRequest, from peer: pid_t) -> CommandRequest {
+        guard let runs else { return request }
+        var request = request
+        request.token = runs.tokens.token(of: peer, claimed: request.token)
+        return request
     }
 
-    public func admit(_ call: CommandLineCall, arguments: [String], environment: [String: String]) -> CommandLineCall {
+    public func call(of request: CommandRequest) -> CommandLineCall? {
+        CommandLineCall(arguments: request.arguments, environment: variables(of: request))
+    }
+
+    private func variables(of request: CommandRequest) -> [String: String] {
+        guard let runs else { return places.environment }
+        return runs.tokens.variables(of: request.token)
+    }
+
+    private func caller(of request: CommandRequest) -> CallerTokens.Caller? {
+        runs?.tokens.caller(of: request.token)
+    }
+
+    public func admit(_ call: CommandLineCall, request: CommandRequest) -> CommandLineCall {
         switch call {
         case .refused, .unknown: return call
+        case .account(let account) where account.reachesKey: return call
         default: break
         }
-        if case .account(let account) = call, account.reachesKey {
-            let caller = runs?.tokens.caller(of: environment)
-            guard caller?.reachesAccountKey == true else { return .refused("Only Openspot's Account spot can reach your account key.") }
-            return call
-        }
-        guard let runs, let caller = runs.tokens.caller(of: environment) else { return call }
+        guard let runs, let caller = caller(of: request) else { return call }
         if case .appCareful = call, !caller.isBuiltIn {
             return .refused("\(caller.name) cannot change Careful mode. Only you can, in Settings or with `openspot setting set --spot openspot careful true` in Terminal.")
         }
 
-        guard let needed = SpotUseCall(arguments: arguments, of: caller.id) else { return call }
+        guard let needed = SpotUseCall(arguments: request.arguments, of: caller.id) else { return call }
         if runs.tokens.isCareful, !caller.uses.contains(needed.use) {
             return .refused("Careful mode stopped \(caller.name), because it \(needed.words) without `uses=\(needed.use.rawValue)` in its header. Add it, or turn Careful mode off.")
         }
@@ -47,20 +63,25 @@ public final class CommandAPI: @unchecked Sendable {
         return call
     }
 
-    public func work(for call: CommandLineCall, input: @escaping @Sendable () async -> String, environment: [String: String], isPiped: Bool = true, isSandboxed: Bool = false, output: CommandOutput? = nil) -> Work? {
+    public func work(for call: CommandLineCall, request: CommandRequest, input: @escaping @Sendable () async -> String, isSandboxed: Bool = false, output: CommandOutput? = nil) -> Work? {
         guard let output else {
             let kept = CommandOutput()
-            guard let work = work(for: call, input: input, environment: environment, isPiped: isPiped, isSandboxed: isSandboxed, output: kept) else { return nil }
+            guard let work = work(for: call, request: request, input: input, isSandboxed: isSandboxed, output: kept) else { return nil }
             return { kept.answer(ending: await work()) }
         }
-        let isRead = environment["OPENSPOT_REASON"] != nil
-        let spots = SpotCalls(environment: environment, app: app, runs: runs)
-        let settings = SettingCalls(environment: environment, app: app)
+        let environment = places.environment
+        let folder = request.place
+        let caller = caller(of: request)
+        let variables = variables(of: request)
+        let isRead = variables["OPENSPOT_REASON"] != nil
+        let isPiped = request.isPiped
+        let spots = SpotCalls(environment: environment, folder: folder, app: app, runs: runs)
+        let settings = SettingCalls(environment: environment, caller: variables["OPENSPOT_ID"], app: app)
         let keys = KeyCalls(environment: environment, app: app)
         let apps = AppCalls(mac: mac, environment: environment, app: app)
-        let clipboard = ClipboardCalls(mac: mac, environment: environment)
-        let screen = ScreenCalls(mac: mac, environment: environment, fence: fence(of: environment))
-        if Self.startsScripts(call), isSandboxed || runs?.tokens.isCareful == true && runs?.tokens.caller(of: environment) != nil { return nil }
+        let clipboard = ClipboardCalls(mac: mac, folder: folder)
+        let screen = ScreenCalls(mac: mac, folder: folder, fence: fence(of: caller))
+        if Self.startsScripts(call), isSandboxed || runs?.tokens.isCareful == true && caller != nil { return nil }
         switch call {
         case .help: return HelpCalls().list()
         case .guideOf(let noun): return HelpCalls().guide(of: noun)
@@ -69,16 +90,16 @@ public final class CommandAPI: @unchecked Sendable {
         case .guide: return GuideCalls(mac: mac).text()
         case .promptNew(let words): return PromptCalls(mac: mac, environment: environment).new(words)
         case .promptChange(let id, let words, let failure): return PromptCalls(mac: mac, environment: environment).change(id, words: words, failure: failure)
-        case .checkSheet: return CheckCalls(input: input, environment: environment).sheet()
-        case .check(let path): return CheckCalls(input: input, environment: environment, tokens: runs?.tokens).folder(path, json: false, careful: fence(environment))
-        case .checkJSON(let path): return CheckCalls(input: input, environment: environment, tokens: runs?.tokens).folder(path, json: true, careful: fence(environment))
-        case .spotRun(let id, let arguments): return spots.run(id, arguments, input: isPiped ? input : nil, careful: fence(environment), output: output)
+        case .checkSheet: return CheckCalls(input: input, environment: environment, place: folder).sheet()
+        case .check(let path): return CheckCalls(input: input, environment: environment, place: folder, tokens: runs?.tokens).folder(path, json: false, careful: fence)
+        case .checkJSON(let path): return CheckCalls(input: input, environment: environment, place: folder, tokens: runs?.tokens).folder(path, json: true, careful: fence)
+        case .spotRun(let id, let arguments): return spots.run(id, arguments, input: isPiped ? input : nil, careful: fence, output: output)
         case .spotShow(let id): return spots.show(id)
-        case .sandbox(let path): return SandboxCalls(environment: environment, app: app).open(path, isCareful: runs?.tokens.isCareful == true)
+        case .sandbox(let path): return SandboxCalls(folder: folder, app: app).open(path, isCareful: runs?.tokens.isCareful == true)
         case .settingGet(let spot, let key): return settings.get(key, of: spot)
         case .settingSet(let spot, let key, let value): return settings.set(key, of: spot, to: value)
         case .settingList(let frame): return settings.list(frame: frame)
-        case .batch: return BatchCalls(api: self, environment: environment).run(input, output: output)
+        case .batch: return BatchCalls(api: self, request: request).run(input, output: output)
         case .settingChange(let spot, let key): return settings.change(key, of: spot)
         case .spotList(let core, let frame): return spots.list(core: core, frame: frame)
         case .spotTurn(let ids, let isOn): return spots.turn(ids, on: isOn)
@@ -108,7 +129,7 @@ public final class CommandAPI: @unchecked Sendable {
         case .appQuit: return apps.quit()
         case .updateCheck: return UpdateCalls(app: app).check()
         case .updateInstall: return UpdateCalls(app: app).install()
-        case .account(let call): return AccountCalls(environment: environment, app: app).work(for: call, input: input)
+        case .account(let call): return AccountCalls(account: account, caller: caller).work(for: call, input: input)
         case .eventEmit(let name, let value): return EventCalls(raise: raise).emit(name, value: value)
         case .calcSolve(let words): return CalcCalls().solve(words)
         case .emoji(let tone): return EmojiCalls(keywords: keywords).rows(tone: tone)
@@ -151,12 +172,12 @@ public final class CommandAPI: @unchecked Sendable {
         }
     }
 
-    private func fence(_ environment: [String: String]) -> Set<SpotUse>? {
+    private var fence: Set<SpotUse>? {
         runs?.tokens.isCareful == true ? Set(SpotUse.allCases) : nil
     }
 
-    private func fence(of environment: [String: String]) -> (caller: CallerTokens.Caller, mode: CarefulMode)? {
-        guard let runs, runs.tokens.isCareful, let caller = runs.tokens.caller(of: environment), !caller.uses.contains(.files) else { return nil }
+    private func fence(of caller: CallerTokens.Caller?) -> (caller: CallerTokens.Caller, mode: CarefulMode)? {
+        guard let runs, runs.tokens.isCareful, let caller, !caller.uses.contains(.files) else { return nil }
         return (caller, CarefulMode(uses: caller.uses))
     }
 }

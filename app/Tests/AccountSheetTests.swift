@@ -241,7 +241,7 @@ final class AccountSheetTests: BuiltInCase {
         _ = try await frame(["pick-\(wrong.place)-\(wrong.word)"])
         let after = try await frame(["pick-\(places[1])-\(words[places[1] - 1])"])
 
-        XCTAssertEqual(block("head", in: after)["title"], "That isn't word \(places[0]). Look at your words again.")
+        XCTAssertEqual(block("head", in: after)["title"], "One of these words is wrong. Look at your words again.")
         XCTAssertFalse(try store.record()?.isBackedUp == true)
     }
 

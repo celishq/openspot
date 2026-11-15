@@ -86,31 +86,32 @@ public final class CallerTokens: @unchecked Sendable {
         }
     }
 
-    public func caller(of environment: [String: String]) -> Caller? {
-        guard let token = environment[Self.variable] else { return nil }
+    public func caller(of token: String?) -> Caller? {
+        guard let token else { return nil }
         return lock.withLock { records[token]?.caller }
     }
 
-    public func environment(of peer: pid_t, over environment: [String: String]) -> [String: String] {
+    func variables(of token: String?) -> [String: String] {
+        guard let token, let record = lock.withLock({ records[token] }), !record.caller.id.isEmpty else { return [:] }
+        var variables = ["OPENSPOT_ID": record.caller.id]
+        variables[Self.reason] = record.reason
+        return variables
+    }
+
+    public func token(of peer: pid_t, claimed: String?) -> String? {
         let group = getpgid(peer)
-        guard group > 0 else { return environment }
-        let known: (String, Record)? = lock.withLock {
+        guard group > 0 else { return claimed }
+        let known: String? = lock.withLock {
             guard let token = groups[group], let record = records[token] else { return nil }
             guard kill(group, 0) != 0 || Self.start(of: group) == record.start else {
                 groups[group] = nil
                 return nil
             }
-            return (token, record)
+            return token
         }
-        guard let (token, record) = known else {
-            guard isCareful, caller(of: environment) == nil, Self.isSandboxed(peer) else { return environment }
-            return environment.merging([Self.variable: Self.sandboxed]) { _, new in new }
-        }
-        var environment = environment
-        environment[Self.variable] = token
-        environment["OPENSPOT_ID"] = record.caller.id
-        environment[Self.reason] = record.reason
-        return environment
+        if let known { return known }
+        guard isCareful, caller(of: claimed) == nil, Self.isSandboxed(peer) else { return claimed }
+        return Self.sandboxed
     }
 
     private static func start(of id: pid_t) -> UInt64 {

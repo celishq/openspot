@@ -292,7 +292,7 @@ final class NewSpotTests: BuiltInCase {
     }
 
     func testTheGuideTeachesNoOldKeyOrCall() {
-        for old in ["read=open", "read=click", "live=true", "search=live", "form <action>", "search <text>", "set <id>", "press <id>", "press <word>", "event=", "OPENSPOT_CONFIG", "openspot catalog", "while next", "openspot.input", "function read("] {
+        for old in ["read=open", "read=click", "live=true", "search=live", "form <action>", "search <text>", "set <id>", "press <id>", "press <word>", "event=", "openspot catalog", "while next", "openspot.input", "function read("] {
             XCTAssertFalse(guideText.contains(old), old)
         }
     }

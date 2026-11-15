@@ -74,7 +74,7 @@ public actor AccountSheet {
                 phrase = fields?.value("phrase") ?? ""
                 let typed = AccountPhrase(phrase)
                 if typed.canSignIn {
-                    try account.signIn(typed)
+                    try await account.signIn(typed)
                     saved = .account
                     phrase = ""
                     toast = "Signed in"
@@ -123,9 +123,9 @@ public actor AccountSheet {
             saved = nil
             toast = "Signed out"
         case "sync":
-            try account.sync(arguments.dropFirst().first == "true")
+            try await account.sync(arguments.dropFirst().first == "true")
         case let id where id.hasPrefix("pick-"):
-            toast = try picked(id)
+            toast = try await picked(id)
         default:
             throw SpotError.failed(1, "Account cannot do that.")
         }
@@ -149,7 +149,7 @@ public actor AccountSheet {
         return true
     }
 
-    private func picked(_ id: String) throws -> String? {
+    private func picked(_ id: String) async throws -> String? {
         let rest = id.dropFirst("pick-".count)
         guard let dash = rest.firstIndex(of: "-"), let place = Int(rest[..<dash]) else { return nil }
         let word = String(rest[rest.index(after: dash)...])
@@ -160,7 +160,7 @@ public actor AccountSheet {
             return nil
         }
         do {
-            try account.confirm([(first.place, first.word), (place, word)])
+            try await account.confirm([(first.place, first.word), (place, word)])
         } catch let error as SpotError {
             check.pick = nil
             check.mistake = error.reason

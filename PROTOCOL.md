@@ -496,7 +496,10 @@ Each call has three parts:
   on stdin.
 - **Variables:** `OPENSPOT_REASON` and `OPENSPOT_VALUE` of a read, `OPENSPOT_PAGE`, the page that shows, `OPENSPOT_ID`, the spot's id, `OPENSPOT_DATA`, a
   folder for its files that one spot folder shares, `OPENSPOT_SH`, the shell helper, and `PATH`, with the `openspot`
-  command first.
+  command first. Five more are for the spots that ship inside Openspot: `OPENSPOT_CONFIG`, the folder of the config,
+  `OPENSPOT_SPOTS`, the spots folder when it isn't `spots` in that folder, and for the sheet that changes a spot,
+  `OPENSPOT_EDIT`, the id of that spot, `OPENSPOT_EDIT_FILE`, its file when the user owns it, and
+  `OPENSPOT_EDIT_FAILURE`, its last failure.
 - **Stdin:** one block of what the user filled in and typed: a line for each field of the sheet, `search=` with the
   search text, and a `form=` line for each other text the user may have meant, such as the same keys in another
   keyboard layout. A value that isn't a field comes as `value=`.
@@ -935,7 +938,7 @@ openspot app quit
 | `calendar`  | each call of `calendar` and `reminders`                                                                                                                         |
 | `network`   | No call. The spot reaches the network.                                                                                                                          |
 | `files`     | No call. The spot writes outside its data folder.                                                                                                               |
-| `account`   | `account new`, `words`, `check`, `checked`, `phrase`, `sign-in`, `sign-out` and `sync`. Only a spot that ships inside Openspot can have it.                      |
+| `account`   | `account new`, `words`, `checked`, `phrase`, `sign-in`, `sign-out` and `sync`. Only a spot that ships inside Openspot can have it.                               |
 
 - A call that needs a use the header doesn't name still runs, and shows one toast for each spot, use and day.
   `openspot check` can't report it, because only a run shows it.
@@ -952,9 +955,11 @@ openspot app quit
 - `openspot account` tells any spot the public facts: whether an account is signed in, its `npub`, the `handle` it was
   made with, the day it was made (`since`), whether its words are backed up, and whether it syncs.
 - `openspot account new <handle>` makes the key with that handle: 3 to 20 of a–z, 0–9, `-` and `_`. It and every other
-  call of `account` reach the key, so they answer only a spot that ships inside Openspot and names `account` in its uses.
-  `words` and `sign-out` ask for Touch ID first, which counts for 5 minutes. The calls of such a spot stay out of the
+  call of `account` reach the key, so they answer only a spot that ships inside Openspot and names `account` in its uses,
+  and only while the app runs. `words`, `checked`, `sign-in`, `sign-out` and `sync` ask for Touch ID first, which counts
+  for 5 minutes. `checked` says only whether the whole set of words is right. The calls of such a spot stay out of the
   call log and the playground.
+- The 12 words of an account give its key as NIP-06 says, so they open the same account in another Nostr client.
 
 ## Messages
 

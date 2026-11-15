@@ -5,7 +5,6 @@ public enum AccountCall: Equatable, Sendable {
     case sync(Bool)
     case new(String?)
     case words
-    case check([Int])
     case checked
     case phrase
     case signIn
@@ -19,10 +18,6 @@ public enum AccountCall: Equatable, Sendable {
             let handle = words.dropFirst().joined(separator: " ").trimmingCharacters(in: .whitespaces)
             self = .new(handle.isEmpty ? nil : handle)
         case ("words", 1): self = .words
-        case ("check", 2...):
-            let places = words.dropFirst().compactMap { Int($0) }.filter { (1...AccountPhrase.wordCount).contains($0) }
-            guard places.count == words.count - 1 else { return nil }
-            self = .check(places)
         case ("checked", 1): self = .checked
         case ("phrase", 1): self = .phrase
         case ("sign-in", 1): self = .signIn
@@ -32,14 +27,25 @@ public enum AccountCall: Equatable, Sendable {
         }
     }
 
+    var name: String {
+        switch self {
+        case .status: "account"
+        case .sync: "account sync"
+        case .new: "account new"
+        case .words: "account words"
+        case .checked: "account checked"
+        case .phrase: "account phrase"
+        case .signIn: "account sign-in"
+        case .signOut: "account sign-out"
+        }
+    }
+
     var change: (name: String, act: String)? {
         switch self {
-        case .new: ("openspot account new", "makes an account")
-        case .checked: ("openspot account checked", "changes your account")
-        case .signIn: ("openspot account sign-in", "changes your account")
-        case .signOut: ("openspot account sign-out", "changes your account")
-        case .sync: ("openspot account sync", "changes where your account is kept")
-        case .status, .words, .check, .phrase: nil
+        case .new: ("openspot \(name)", "makes an account")
+        case .checked, .signIn, .signOut: ("openspot \(name)", "changes your account")
+        case .sync: ("openspot \(name)", "changes where your account is kept")
+        case .status, .words, .phrase: nil
         }
     }
 

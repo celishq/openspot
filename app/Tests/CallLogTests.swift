@@ -36,6 +36,22 @@ final class CallLogTests: SpotRunsCase {
         XCTAssertEqual(log.text(of: "two"), "")
     }
 
+    func testTheCallsOfASpotThatReachesTheAccountKeyStayOutOfTheLog() async throws {
+        try script("vault", "echo secret-words")
+        try script("plain", "echo plain")
+        let found = try scanned()
+        var vault = try XCTUnwrap(found.scripts.first { $0.id == "vault" })
+        vault.uses = [.account]
+
+        runs.sheet(for: vault.builtIn()).pressCard()
+        try await wait("the call of the vault") { !self.log().isEmpty }
+        try await allEnded()
+        runs.sheets["plain"]?.pressCard()
+        try await wait("the record of the plain spot") { self.log.text(of: "plain").contains("exit 0") }
+
+        XCTAssertEqual(log.text(of: "vault"), "")
+    }
+
     func testATimedReadThatEndsWellLeavesNoRecordAndAPanelReadDoes() async throws {
         try script(header: "on=panel.open", "echo \"title=$OPENSPOT_REASON\"")
         let sheet = try sheet()

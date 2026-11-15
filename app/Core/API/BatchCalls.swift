@@ -2,17 +2,18 @@ import Foundation
 
 struct BatchCalls {
     let api: CommandAPI
-    let environment: [String: String]
+    let request: CommandRequest
 
     func run(_ input: @escaping @Sendable () async -> String, output: CommandOutput) -> CommandAPI.Work {
-        { [api, environment] in
+        { [api, request] in
             for line in await input().split(separator: "\n") {
                 guard !Task.isCancelled else { return CommandAnswer(code: 130) }
                 let words = line.split { $0 == " " || $0 == "\t" }.map(String.init)
                 guard !words.isEmpty else { continue }
-                guard let call = CommandLineCall(arguments: words, environment: environment), call != .batch, !Self.isRefused(call),
-                      api.work(for: call, input: { "" }, environment: environment) != nil,
-                      let work = api.work(for: api.admit(call, arguments: words, environment: environment), input: { "" }, environment: environment)
+                let asked = request.asking(words)
+                guard let call = api.call(of: asked), call != .batch, !Self.isRefused(call),
+                      api.work(for: call, request: asked, input: { "" }) != nil,
+                      let work = api.work(for: api.admit(call, request: asked), request: asked, input: { "" })
                 else {
                     return CommandAnswer(errors: "openspot batch cannot run `\(line)`, because it does not print data. Run it on its own.\n", code: 2)
                 }

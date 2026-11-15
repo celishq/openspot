@@ -4,10 +4,11 @@ import Foundation
 import P256K
 
 public struct AccountKey: Equatable, Sendable {
-    private static let salt = Data("celis-identity-v1".utf8)
-    private static let info = Data("account-secp256k1".utf8)
+    private static let hardened: UInt32 = 1 << 31
+    private static let path: [UInt32] = [44 | hardened, 1237 | hardened, hardened, 0, 0]
 
     public let words: [String]?
+    public let publicKey: String
     private let secret: Data
 
     public static func make() throws -> AccountKey {
@@ -29,9 +30,7 @@ public struct AccountKey: Equatable, Sendable {
         guard Self.number(bits[128...]) == Self.checksum(of: entropy) else {
             throw SpotError.fault("These words are not an account key: one of them is wrong.")
         }
-        let seed = try Self.seed(of: words.joined(separator: " "))
-        let key = HKDF<CryptoKit.SHA256>.deriveKey(inputKeyMaterial: SymmetricKey(data: seed), salt: Self.salt, info: Self.info, outputByteCount: 32)
-        try self.init(words: words, secret: key.withUnsafeBytes { Data($0) })
+        try self.init(words: words, secret: Self.secret(of: Self.seed(of: words.joined(separator: " "))))
     }
 
     public init(nsec: String) throws {
@@ -42,13 +41,9 @@ public struct AccountKey: Equatable, Sendable {
     }
 
     private init(words: [String]?, secret: Data) throws {
-        _ = try P256K.Schnorr.PrivateKey(dataRepresentation: secret)
+        publicKey = Data(try P256K.Schnorr.PrivateKey(dataRepresentation: secret).xonly.bytes).hex
         self.words = words
         self.secret = secret
-    }
-
-    public var publicKey: String {
-        Data((try? P256K.Schnorr.PrivateKey(dataRepresentation: secret))?.xonly.bytes ?? []).hex
     }
 
     static func short(_ npub: String) -> String {
@@ -102,6 +97,18 @@ public struct AccountKey: Equatable, Sendable {
         let status = CCKeyDerivationPBKDF(CCPBKDFAlgorithm(kCCPBKDF2), password, password.count, salt, salt.count, CCPseudoRandomAlgorithm(kCCPRFHmacAlgSHA512), 2048, &seed, seed.count)
         guard status == kCCSuccess else { throw SpotError.fault("Openspot cannot make the key of these words.") }
         return Data(seed)
+    }
+
+    private static func secret(of seed: Data) throws -> Data {
+        var node = Data(HMAC<SHA512>.authenticationCode(for: seed, using: SymmetricKey(data: Data("Bitcoin seed".utf8))))
+        for index in path {
+            let key = Data(node.prefix(32))
+            let parent = try P256K.Signing.PrivateKey(dataRepresentation: key)
+            let head = index >= hardened ? Data([0]) + key : parent.publicKey.dataRepresentation
+            let mixed = Data(HMAC<SHA512>.authenticationCode(for: head + withUnsafeBytes(of: index.bigEndian) { Data($0) }, using: SymmetricKey(data: Data(node.suffix(32)))))
+            node = try parent.add(Array(mixed.prefix(32))).dataRepresentation + Data(mixed.suffix(32))
+        }
+        return Data(node.prefix(32))
     }
 
     public static func == (lhs: AccountKey, rhs: AccountKey) -> Bool {

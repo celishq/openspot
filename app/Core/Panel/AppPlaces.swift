@@ -6,6 +6,7 @@ public struct AppPlaces {
     public let defaults: UserDefaults
     public let trash: (URL) throws -> URL
     public let defaultConfig: URL?
+    public let account: AccountStore
 
     public init(
         environment: [String: String],
@@ -19,6 +20,7 @@ public struct AppPlaces {
         self.defaults = defaults
         self.trash = trash
         self.defaultConfig = defaultConfig
+        account = .standard(environment: environment, home: home)
     }
 
     public static func systemTrash(_ url: URL) throws -> URL {
@@ -46,10 +48,6 @@ public struct AppPlaces {
 
     public var folder: SpotsFolder {
         folder(config.read())
-    }
-
-    public var account: AccountStore {
-        .standard(environment: environment, home: home)
     }
 
     public var store: URL {

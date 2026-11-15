@@ -76,18 +76,10 @@ func request() -> [UInt8] {
     let argv = CommandLine.arguments.dropFirst().map(JSON.quoted).joined(separator: ",")
     var folder = [CChar](repeating: 0, count: Int(PATH_MAX))
     let cwd = getcwd(&folder, folder.count) == nil ? "" : String(decoding: folder.prefix { $0 != 0 }.map(UInt8.init(bitPattern:)), as: UTF8.self)
-    var variables: [String] = []
-    var entry = environ
-    while let pair = entry.pointee {
-        let text = String(cString: pair)
-        if let mark = text.firstIndex(of: "=") {
-            variables.append(JSON.quoted(String(text[..<mark])) + ":" + JSON.quoted(String(text[text.index(after: mark)...])))
-        }
-        entry = entry.advanced(by: 1)
-    }
+    let token = getenv("OPENSPOT_TOKEN").map { "\"token\":" + JSON.quoted(String(cString: $0)) + "," } ?? ""
     var info = stat()
     let isPiped = fstat(STDIN_FILENO, &info) == 0 && (info.st_mode & S_IFMT == S_IFIFO || info.st_mode & S_IFMT == S_IFREG)
-    let line = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ask\",\"params\":{\"argv\":[\(argv)],\"cwd\":\(JSON.quoted(cwd)),\"env\":{\(variables.joined(separator: ","))},\"piped\":\(isPiped)}}\n"
+    let line = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ask\",\"params\":{\"argv\":[\(argv)],\"cwd\":\(JSON.quoted(cwd)),\(token)\"piped\":\(isPiped)}}\n"
     return Array(line.utf8)
 }
 

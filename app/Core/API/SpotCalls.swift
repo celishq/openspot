@@ -2,6 +2,7 @@ import Foundation
 
 struct SpotCalls {
     let environment: [String: String]
+    let folder: URL
     let app: (any RunningApp)?
     let runs: SpotRuns?
 
@@ -26,10 +27,9 @@ struct SpotCalls {
     }
 
     func add(_ source: String, isConfirmed: Bool) -> CommandAPI.Work {
-        CommandAnswer.work { [environment] in
-            let place = URL(fileURLWithPath: environment["PWD"] ?? FileManager.default.currentDirectoryPath, isDirectory: true)
-            let folder = SpotsFolder.standard(environment: environment, enabled: [], disabled: [])
-            return try await SpotLock.standard(environment: environment).add(SpotSource(text: source, place: place), to: folder.url, isConfirmed: isConfirmed)
+        CommandAnswer.work { [environment, folder] in
+            let spots = SpotsFolder.standard(environment: environment, enabled: [], disabled: [])
+            return try await SpotLock.standard(environment: environment).add(SpotSource(text: source, place: folder), to: spots.url, isConfirmed: isConfirmed)
         }
     }
 
@@ -91,21 +91,20 @@ struct SpotCalls {
     }
 
     func run(_ id: String, _ arguments: [String], input: (@Sendable () async -> String)?, careful: Set<SpotUse>?, output: CommandOutput) -> CommandAPI.Work {
-        { [environment, runs] in
-            let folder = SpotsFolder.standard(environment: environment)
+        { [environment, folder, runs] in
+            let spots = SpotsFolder.standard(environment: environment)
             let found: Spot?
             do {
-                found = try folder.scan().scripts.first { $0.id == id }
+                found = try spots.scan().scripts.first { $0.id == id }
             } catch {
                 return CommandAnswer(errors: "\((error as? SpotError)?.reason ?? error.localizedDescription)\n", code: 1)
             }
             guard var spot = found else {
-                return CommandAnswer(errors: "Openspot has no spot \(id) in \(folder.url.path). Run `openspot check` to see each file that does not load.\n", code: 1)
+                return CommandAnswer(errors: "Openspot has no spot \(id) in \(spots.url.path). Run `openspot check` to see each file that does not load.\n", code: 1)
             }
             if let careful { spot.uses.formIntersection(careful) }
             let text = await input?()
-            let place = environment["PWD"].map { URL(fileURLWithPath: $0, isDirectory: true) }
-            let run = TerminalRun(spot: spot, arguments: arguments, input: text, careful: careful == nil ? nil : spot.uses, tokens: runs?.tokens, environment: environment, folder: place)
+            let run = TerminalRun(spot: spot, arguments: arguments, input: text, careful: careful == nil ? nil : spot.uses, tokens: runs?.tokens, environment: environment, folder: folder)
             var first = true
             let end = await run.start { frame in
                 output.print((first ? "" : "---\n") + frame)

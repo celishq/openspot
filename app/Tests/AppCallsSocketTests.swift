@@ -24,22 +24,22 @@ final class AppCallsSocketTests: XCTestCase {
     }
 
     private func listen(app: (any RunningApp)? = nil, runs: SpotRuns? = nil) {
-        socket = CommandSocket(folder: folder, api: CommandAPI(mac: FakeMac(), app: app, runs: runs))
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: FakeMac(), places: .test(ProcessInfo.processInfo.environment.merging(["OPENSPOT_CONFIG": config.path, "OPENSPOT_SPOTS": spots.path, "TONE": "warm"]) { _, new in new }), app: app, runs: runs))
     }
 
     private func connect() -> SocketConnection {
         SocketConnection(path: folder.appendingPathComponent(CommandSocket.name).path)
     }
 
-    private func request(_ argv: [String], env: [String: String] = [:], cwd: URL? = nil, piped: Bool = false) -> [String: Any] {
-        let variables = ["OPENSPOT_CONFIG": config.path, "OPENSPOT_SPOTS": spots.path].merging(env) { _, new in new }
-        return ["jsonrpc": "2.0", "id": 1, "method": "ask", "params": ["argv": argv, "cwd": (cwd ?? folder).path, "env": variables, "piped": piped]]
+    private func request(_ argv: [String], token: String? = nil, cwd: URL? = nil, piped: Bool = false) -> [String: Any] {
+        let params: [String: Any] = ["argv": argv, "cwd": (cwd ?? folder).path, "piped": piped]
+        return ["jsonrpc": "2.0", "id": 1, "method": "ask", "params": params.merging(token.map { ["token": $0] } ?? [:]) { _, new in new }]
     }
 
-    private func ask(_ argv: [String], env: [String: String] = [:], cwd: URL? = nil, input: [String]? = nil) throws -> SocketConnection.Exchange {
+    private func ask(_ argv: [String], token: String? = nil, cwd: URL? = nil, input: [String]? = nil) throws -> SocketConnection.Exchange {
         let connection = connect()
         defer { connection.close() }
-        try connection.send(request(argv, env: env, cwd: cwd, piped: input != nil))
+        try connection.send(request(argv, token: token, cwd: cwd, piped: input != nil))
         return try connection.exchange(input: input ?? [])
     }
 
@@ -51,11 +51,11 @@ final class AppCallsSocketTests: XCTestCase {
         FileManager.default.fileExists(atPath: file.path)
     }
 
-    func testASpotRunGetsTheFolderTheVariablesAndTheStdinOfItsCaller() throws {
+    func testASpotRunGetsTheFolderAndTheStdinOfItsCallerAndTheVariablesOfTheApp() throws {
         try spot("echo", "printf 'folder=%s\\ntone=%s\\n---\\n' \"$PWD\" \"$TONE\"; cat")
         listen()
 
-        let answer = try ask(["spot", "run", "echo"], env: ["TONE": "warm"], cwd: outside, input: ["note=", "hi\n"])
+        let answer = try ask(["spot", "run", "echo"], cwd: outside, input: ["note=", "hi\n"])
 
         XCTAssertEqual(answer.stdout, "folder=\(outside.path)\ntone=warm\n---\nnote=hi\n")
         XCTAssertEqual(answer.code, 0, answer.stderr)
@@ -104,7 +104,7 @@ final class AppCallsSocketTests: XCTestCase {
         let token = runs.tokens.issue(for: reader)
 
         let person = try ask(["spot", "run", "writer", "person"])
-        let spot = try ask(["spot", "run", "writer", "spot"], env: [CallerTokens.variable: token])
+        let spot = try ask(["spot", "run", "writer", "spot"], token: token)
 
         XCTAssertEqual(person.stdout, "wrote\n", person.stderr)
         XCTAssertTrue(exists(outside.appendingPathComponent("person")))
@@ -138,7 +138,7 @@ final class AppCallsSocketTests: XCTestCase {
         try connection.send(request(["check"]))
         try await wait("the read") { !((try? String(contentsOf: token, encoding: .utf8)) ?? "").isEmpty }
 
-        let caller = runs.tokens.caller(of: [CallerTokens.variable: try String(contentsOf: token, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)])
+        let caller = runs.tokens.caller(of: try String(contentsOf: token, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines))
         FileManager.default.createFile(atPath: go.path, contents: nil)
 
         XCTAssertEqual(caller?.id, "reader")

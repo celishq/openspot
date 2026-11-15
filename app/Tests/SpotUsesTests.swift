@@ -14,7 +14,7 @@ final class SpotUsesTests: SpotRunsCase {
         client = folder.appendingPathComponent("A.app/Contents/Helpers/openspot")
         try FileManager.default.createDirectory(at: client.deletingLastPathComponent(), withIntermediateDirectories: true)
         try FileManager.default.copyItem(at: Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot"), to: client)
-        let api = CommandAPI(mac: FakeMac(opens: false), runs: runs)
+        let api = CommandAPI(mac: FakeMac(opens: false), places: .test(["OPENSPOT_CONFIG": config.path]), app: FakeRunningApp(), runs: runs)
         runs.api = api
         socket = try XCTUnwrap(CommandSocket(folder: config, api: api))
         runs.onReport = { [unowned self] _, report in

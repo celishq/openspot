@@ -55,17 +55,17 @@ final class CommandClientTests: XCTestCase {
     }
 
     private func listen() {
-        socket = CommandSocket(folder: config, api: CommandAPI(mac: FakeMac()))
+        socket = CommandSocket(folder: config, api: CommandAPI(mac: FakeMac(), places: .test(["OPENSPOT_CONFIG": config.path])))
     }
 
-    private func run(_ program: URL, _ arguments: [String], input: String = "") throws -> (output: String, errors: String, code: Int32) {
+    private func run(_ program: URL, _ arguments: [String], input: String = "", variables: [String: String] = [:]) throws -> (output: String, errors: String, code: Int32) {
         let process = Process()
         let output = Pipe()
         let errors = Pipe()
         let stdin = Pipe()
         process.executableURL = program
         process.arguments = arguments
-        process.environment = ["OPENSPOT_CONFIG": config.path, "PATH": "/usr/bin:/bin"]
+        process.environment = ["OPENSPOT_CONFIG": config.path, "PATH": "/usr/bin:/bin"].merging(variables) { _, new in new }
         process.standardOutput = output
         process.standardError = errors
         process.standardInput = stdin
@@ -76,6 +76,21 @@ final class CommandClientTests: XCTestCase {
         let said = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
         process.waitUntilExit()
         return (printed, said, process.terminationStatus)
+    }
+
+    func testTheTokenOfACallerNamesItsSpotAndNoOtherVariableDoes() async throws {
+        let runs = await SpotRuns()
+        socket = CommandSocket(folder: config, api: CommandAPI(mac: FakeMac(), places: .test(["OPENSPOT_CONFIG": config.path]), runs: runs))
+        let token = runs.tokens.issue(for: Spot(id: "home/coffee", name: "Coffee", url: folder.appendingPathComponent("coffee.sh")))
+
+        let named = try run(client, ["setting", "set", "tone", "warm"], variables: [CallerTokens.variable: token])
+        let claimed = try run(client, ["setting", "set", "tone", "cold"], variables: ["OPENSPOT_ID": "home/tea"])
+
+        XCTAssertEqual(named.code, 0, named.errors)
+        XCTAssertNotEqual(claimed.code, 0)
+        let kept = ConfigFile(url: config.appendingPathComponent("config.toml")).read()
+        XCTAssertEqual(kept.setting("tone", of: "home/coffee"), "warm")
+        XCTAssertNil(kept.setting("tone", of: "home/tea"))
     }
 
     func testTheRunningAppAnswersACalcSum() throws {
@@ -199,7 +214,7 @@ final class CommandClientTests: XCTestCase {
     }
 
     func testCtrlCStopsTheWorkOfTheCallInTheAppAndItChangesNothing() async throws {
-        socket = CommandSocket(folder: config, api: CommandAPI(mac: FakeMac(), app: SlowApp(folder: folder)))
+        socket = CommandSocket(folder: config, api: CommandAPI(mac: FakeMac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: SlowApp(folder: folder)))
         let run = try start(["setting", "change", "--spot", "repos", "folder"])
         try await wait("the start of the work") { exists("started") }
 

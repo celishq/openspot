@@ -7,12 +7,12 @@ enum SpotCommandLine {
 
     static func run(_ call: CommandLineCall) -> Never {
         enterBundle()
-        let environment = ProcessInfo.processInfo.environment.merging(["PWD": FileManager.default.currentDirectoryPath]) { _, real in real }
         let output = CommandOutput { text, isError in (isError ? FileHandle.standardError : FileHandle.standardOutput).write(Data(text.utf8)) }
         if runsScripts(call) { TerminalStop.watch() }
         var info = stat()
         let isPiped = fstat(0, &info) == 0 && (info.st_mode & S_IFMT == S_IFIFO || info.st_mode & S_IFMT == S_IFREG)
-        if let work = CommandAPI(mac: SpotMac()).work(for: call, input: { standardInput }, environment: environment, isPiped: isPiped, output: output) {
+        let request = CommandRequest(arguments: Array(CommandLine.arguments.dropFirst()), folder: FileManager.default.currentDirectoryPath, isPiped: isPiped)
+        if let work = CommandAPI(mac: SpotMac(), places: .standard).work(for: call, request: request, input: { standardInput }, output: output) {
             Task {
                 let answer = await work()
                 output.print(answer.output)

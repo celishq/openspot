@@ -69,7 +69,7 @@ final class MacCallsTests: XCTestCase {
         let built = Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot")
         try FileManager.default.copyItem(at: built, to: client)
         try "#!/bin/sh\necho \"alone: $*\"\n".writeScript(to: folder.appendingPathComponent("A.app/Contents/MacOS/Openspot"))
-        socket = CommandSocket(folder: config, api: CommandAPI(mac: host))
+        socket = CommandSocket(folder: config, api: CommandAPI(mac: host, places: .test(["OPENSPOT_CONFIG": config.path])))
     }
 
     override func tearDownWithError() throws {
@@ -106,7 +106,7 @@ final class MacCallsTests: XCTestCase {
         let deep = folder.appendingPathComponent(String(repeating: "deep-folder-", count: 10), isDirectory: true)
         try FileManager.default.createDirectory(at: deep, withIntermediateDirectories: true)
         XCTAssertGreaterThan(deep.appendingPathComponent(CommandSocket.name).path.utf8.count, 103)
-        let socket = try XCTUnwrap(CommandSocket(folder: deep, api: CommandAPI(mac: host)))
+        let socket = try XCTUnwrap(CommandSocket(folder: deep, api: CommandAPI(mac: host, places: .test(["OPENSPOT_CONFIG": deep.path]))))
         defer { socket.close() }
 
         let answer = try Self.run(client, config: deep, ["clipboard", "read"], input: "", in: folder)
@@ -159,7 +159,7 @@ final class MacCallsTests: XCTestCase {
         runs.isCareful = true
         let fenced = runs.tokens.issue(for: Spot(id: "shots", name: "Shots", url: folder.appendingPathComponent("shots.sh"), dataName: "shots", uses: [.screen]))
         let free = runs.tokens.issue(for: Spot(id: "files", name: "Files", url: folder.appendingPathComponent("files.sh"), dataName: "files", uses: [.screen, .files]))
-        let api = CommandAPI(mac: host, runs: runs)
+        let api = CommandAPI(mac: host, places: .test(["OPENSPOT_CONFIG": config.path]), runs: runs)
         let home = URL(fileURLWithPath: try XCTUnwrap(ProcessInfo.processInfo.environment["HOME"], "the test scheme gives a private home"), isDirectory: true).standardizedFileURL
         let data = URL(fileURLWithPath: try XCTUnwrap(ScriptProcess.environment(base: ProcessInfo.processInfo.environment, app: "", dataName: "shots")["OPENSPOT_DATA"]), isDirectory: true)
         let outside = home.appendingPathComponent("Documents/mc-\(UUID().uuidString.prefix(8))", isDirectory: true)
@@ -168,8 +168,8 @@ final class MacCallsTests: XCTestCase {
         try? FileManager.default.removeItem(at: data.appendingPathComponent("away"))
         try FileManager.default.createSymbolicLink(at: data.appendingPathComponent("away"), withDestinationURL: outside)
         func answer(_ arguments: [String], _ token: String, in place: URL) async throws -> CommandAnswer {
-            let environment = [CallerTokens.variable: token, "PWD": place.path]
-            let work = try XCTUnwrap(api.work(for: try XCTUnwrap(CommandLineCall(arguments: arguments, environment: environment)), input: { "" }, environment: environment))
+            let request = CommandRequest(arguments: arguments, folder: place.path, token: token)
+            let work = try XCTUnwrap(api.work(for: try XCTUnwrap(api.call(of: request)), request: request, input: { "" }))
             return await work()
         }
 

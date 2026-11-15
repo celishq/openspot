@@ -63,13 +63,13 @@ public final class CommandSocket: @unchecked Sendable {
         setsockopt(connection, SOL_SOCKET, SO_RCVTIMEO, &time, socklen_t(MemoryLayout<timeval>.size))
         let (line, rest) = receive(connection)
         let link = CommandConnection(descriptor: connection, rest: rest)
-        guard let request = CommandRequest(line: line) else {
+        guard let asked = CommandRequest(line: line) else {
             return link.end(fault(unreadableCode, "Openspot cannot read this request.", id: nil))
         }
-        let environment = api.environment(of: peer(of: connection), over: request.environment(over: ProcessInfo.processInfo.environment))
-        let call = CommandLineCall(arguments: request.arguments, environment: environment).map { api.admit($0, arguments: request.arguments, environment: environment) }
+        let request = api.request(asked, from: peer(of: connection))
+        let call = api.call(of: request).map { api.admit($0, request: request) }
         let output = CommandOutput { text, isError in link.notify(isError ? "stderr" : "stdout", text: text) }
-        guard let call, let work = api.work(for: call, input: { await link.stdin() }, environment: environment, isPiped: request.isPiped, isSandboxed: CallerTokens.isSandboxedApart(peer(of: connection)), output: output) else {
+        guard let call, let work = api.work(for: call, request: request, input: { await link.stdin() }, isSandboxed: CallerTokens.isSandboxedApart(peer(of: connection)), output: output) else {
             return link.end(fault(aloneCode, "Run this call in a process of its own.", id: request.id))
         }
         let stop = CommandStop()

@@ -4,7 +4,7 @@ import XCTest
 @MainActor
 final class CallerTokensTests: SpotRunsCase {
     private func caller(_ token: String?) -> String? {
-        runs.tokens.caller(of: token.map { [CallerTokens.variable: $0] } ?? [:])?.id
+        runs.tokens.caller(of: token)?.id
     }
 
     private func token(in name: String) async throws -> String {
