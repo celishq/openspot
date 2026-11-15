@@ -7,8 +7,12 @@ echo "This shows each picture in the middle of the main screen and takes the key
 rm -rf "$work"
 mkdir -p "$work/spots" "$work/config" "$work/core" "$work/examples" docs/images
 awk -v out="$work/examples" '
-  /^```(sh|js)$/ { inside = 1; text = ""; kind = substr($0, 4); next }
-  inside && /^```$/ { inside = 0; last = text; lastkind = kind; draw = ""; card = ""; next }
+  /^```(sh|js|swift)$/ { inside = 1; text = ""; kind = substr($0, 4); next }
+  inside && /^```$/ {
+    inside = 0
+    if (text !~ /^(#!|\/\/)/) { more[++extras] = text; next }
+    last = text; lastkind = kind; draw = ""; card = ""; extras = 0; next
+  }
   inside { text = text $0 "\n"; next }
   /^<!-- draw: .* -->$/ { draw = $0; sub(/^<!-- draw: /, "", draw); sub(/ -->$/, "", draw); next }
   /^<!-- card: [a-z]+ -->$/ { card = $3; next }
@@ -18,7 +22,8 @@ awk -v out="$work/examples" '
     printf "%s", lastkind > (out "/" name ".kind"); close(out "/" name ".kind")
     printf "%s", draw > (out "/" name ".draw"); close(out "/" name ".draw")
     printf "%s", card > (out "/" name ".card"); close(out "/" name ".card")
-    last = ""; draw = ""; card = ""
+    for (i = 1; i <= extras; i++) { printf "%s", more[i] > (out "/" name ".more." i); close(out "/" name ".more." i) }
+    last = ""; draw = ""; card = ""; extras = 0
   }
 ' GUIDE.md
 stub() {
@@ -37,18 +42,25 @@ for example in "$work"/examples/*.example; do
   draw=$(cat "$work/examples/$name.draw")
   card=$(cat "$work/examples/$name.card")
   rm -rf "$work"/spots/*
+  spot="$work/spots/$name.spot"
+  mkdir -p "$spot"
   if [ -n "$draw" ]; then
     cp "$example" "$work/$name.source"
     {
       printf '#!/bin/sh\n'
       sed '1{/^#!/d;}' "$example" | sed -E -n '/^(#|\/\/)/!q; p' | sed 's|^//|#|'
       printf 'EXAMPLE="%s"\n%s\n' "$work/$name.source" "$draw"
-    } > "$work/spots/$name.sh"
-    chmod +x "$work/spots/$name.sh"
+    } > "$spot/$name.sh"
+    chmod +x "$spot/$name.sh"
   else
-    cp "$example" "$work/spots/$name.$kind"
-    [ "$kind" = js ] || chmod +x "$work/spots/$name.$kind"
+    cp "$example" "$spot/$name.$kind"
+    [ "$kind" = js ] || chmod +x "$spot/$name.$kind"
   fi
+  number=0
+  for file in $(sed -n -E 's/^(#|\/\/) (view|source)=//p' "$example"); do
+    number=$((number + 1))
+    cp "$work/examples/$name.more.$number" "$spot/$file"
+  done
   for word in $(sed -n -e 's/^# grid\.[a-z]*=//p' -e 's/^# to=//p' "$example"); do
     [ -f "$work/spots/$word.sh" ] || stub "$word"
   done

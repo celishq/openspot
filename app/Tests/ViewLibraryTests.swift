@@ -1,3 +1,5 @@
+import SwiftUI
+import Synchronization
 import XCTest
 @testable import OpenspotCore
 
@@ -48,6 +50,83 @@ final class ViewLibraryTests: XCTestCase {
 
         let handle = try XCTUnwrap(dlopen(library.path, RTLD_NOW | RTLD_LOCAL), String(cString: dlerror()))
         XCTAssertNotNil(dlsym(handle, ViewLibrary.entry))
+    }
+
+    private typealias Make = ([String: [String]], [String: Any], @escaping (String) -> Void) -> AnyView
+
+    @MainActor
+    private func drawn(_ text: String, values: [String: [String]], card: [String: Any]) async throws -> [String] {
+        let library = try await ViewLibrary(cache: cache).library(of: try source("words.swift", text))
+        let handle = try XCTUnwrap(dlopen(library.path, RTLD_NOW | RTLD_LOCAL), String(cString: dlerror()))
+        let entry = unsafeBitCast(try XCTUnwrap(dlsym(handle, ViewLibrary.entry)), to: (@convention(c) () -> UnsafeMutableRawPointer).self)
+        let make = try XCTUnwrap(Unmanaged<AnyObject>.fromOpaque(entry()).takeRetainedValue() as? Make)
+        var sent: [String] = []
+        let host = NSHostingView(rootView: make(values, card) { sent.append($0) })
+        host.frame = NSRect(x: 0, y: 0, width: 200, height: 100)
+        host.layoutSubtreeIfNeeded()
+        return sent
+    }
+
+    @MainActor
+    func testAViewReadsTheRowsOfItsFrameAndWhetherItShowsAndClosesItsSheet() async throws {
+        let text = """
+        import SwiftUI
+
+        struct SpotView: View {
+            let spot: SpotInput
+            @State private var word = "state"
+
+            var body: some View {
+                let rows = spot.rows.map { "\\($0.id):\\($0["title"] ?? "-"):\\($0.all("tag").joined(separator: "+"))" }
+                let _ = spot.send("\\(word) \\(spot.isShown) \\(rows.joined(separator: ","))")
+                let _ = spot.isShown ? () : spot.close()
+                Text(word)
+            }
+        }
+
+        """
+        let rows = [["row", "a", "title", "One", "tag", "x", "tag", "y"], ["row", "b"]]
+        var closed = 0
+        var times: [Duration] = []
+        let card: [String: Any] = ["isShown": false, "rows": rows, "close": { closed += 1 }, "bodyTime": { (time: Duration) in times.append(time) }]
+
+        let sent = try await drawn(text, values: ["view": ["words"], "row": ["mine"]], card: card)
+
+        XCTAssertEqual(sent, ["state false a:One:x+y,b:-:"])
+        XCTAssertEqual(closed, 1)
+        XCTAssertEqual(times.count, 1)
+        XCTAssertGreaterThan(times.first ?? .zero, .zero)
+    }
+
+    @MainActor
+    func testAViewWithNoHostWordsShowsAndHasNoRows() async throws {
+        let sent = try await drawn(view.replacingOccurrences(of: "Text(", with: "let _ = spot.send(\"\\(spot.rows.count) \\(spot.isShown) \\(spot[\"row\"] ?? \"-\")\")\n        Text("), values: ["title": ["Hi"], "row": ["mine"]], card: [:])
+
+        XCTAssertEqual(sent, ["0 true mine"])
+    }
+
+    @MainActor
+    func testAViewThatClosesFromAnotherThreadClosesOnTheMainThread() async throws {
+        let text = """
+        import SwiftUI
+
+        struct SpotView: View {
+            let spot: SpotInput
+
+            var body: some View {
+                let _ = Thread.detachNewThread { spot.close() }
+                Text("close")
+            }
+        }
+
+        """
+        let threads = Mutex<[Bool]>([])
+        let close: @Sendable () -> Void = { threads.withLock { $0.append(Thread.isMainThread) } }
+
+        _ = try await drawn(text, values: [:], card: ["close": close as () -> Void])
+        try await wait("the close") { !threads.withLock { $0 }.isEmpty }
+
+        XCTAssertFalse(threads.withLock { $0 }.contains(false))
     }
 
     func testEachViewThatAScriptUnderAFolderNamesIsBuiltBesideItsSourceForBothKindsOfMac() async throws {

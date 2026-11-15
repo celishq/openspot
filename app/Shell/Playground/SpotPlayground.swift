@@ -3,18 +3,18 @@ import OpenspotCore
 import SwiftUI
 
 @MainActor
-final class SpotSandbox: NSObject, NSApplicationDelegate, NSWindowDelegate {
-    private static var kept: Set<SpotSandbox> = []
+final class SpotPlayground: NSObject, NSApplicationDelegate, NSWindowDelegate {
+    private static var kept: Set<SpotPlayground> = []
 
     private static let size = CGSize(width: 1180, height: 940)
 
     private let window: NSWindow
-    private let model: SpotSandboxModel
+    private let model: SpotPlaygroundModel
     private var closed: CheckedContinuation<Void, Never>?
 
     private init(path: String?, isCareful: Bool) {
-        model = SpotSandboxModel(path: path, isCareful: isCareful)
-        let view = NSHostingView(rootView: SpotSandboxView(model: model))
+        model = SpotPlaygroundModel(path: path, isCareful: isCareful)
+        let view = NSHostingView(rootView: SpotPlaygroundView(model: model))
         window = NSWindow(
             contentRect: NSRect(origin: .zero, size: Self.size),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
@@ -31,28 +31,29 @@ final class SpotSandbox: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     static func run(path: String?) -> Never {
         let app = NSApplication.shared
-        let sandbox = SpotSandbox(path: path, isCareful: false)
-        kept.insert(sandbox)
-        app.delegate = sandbox
+        let playground = SpotPlayground(path: path, isCareful: false)
+        kept.insert(playground)
+        app.delegate = playground
         app.setActivationPolicy(.regular)
         EditMenu.install()
-        sandbox.window.makeKeyAndOrderFront(nil)
+        SpotKeyLayouts.start()
+        playground.window.makeKeyAndOrderFront(nil)
         app.activate(ignoringOtherApps: true)
         app.run()
         exit(0)
     }
 
     static func show(path: String?, isCareful: Bool) async {
-        let sandbox = SpotSandbox(path: path, isCareful: isCareful)
-        kept.insert(sandbox)
+        let playground = SpotPlayground(path: path, isCareful: isCareful)
+        kept.insert(playground)
         AppPresence.open()
-        sandbox.window.makeKeyAndOrderFront(nil)
+        playground.window.makeKeyAndOrderFront(nil)
         await withTaskCancellationHandler {
-            await withCheckedContinuation { sandbox.closed = $0 }
+            await withCheckedContinuation { playground.closed = $0 }
         } onCancel: {
-            Task { @MainActor in sandbox.window.close() }
+            Task { @MainActor in playground.window.close() }
         }
-        kept.remove(sandbox)
+        kept.remove(playground)
         AppPresence.close()
     }
 

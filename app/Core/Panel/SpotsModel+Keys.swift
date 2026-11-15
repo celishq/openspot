@@ -49,6 +49,7 @@ extension SpotsModel {
             let hasActions = target.flatMap(actionMenu(on:)) != nil
             return parts.hint(escape: escapeWords, stopping: { work(of: $0) != nil }, actions: hasActions)
         }
+        if let confirm = confirmRow.hint { return [confirm, settingsRow.hint, "⌘K Actions"].compactMap { $0 }.joined(separator: "   ") }
         if let soleHint { return soleHint }
         let keys = target.flatMap { target in
             actionMenu(on: target)?.hint(
@@ -276,8 +277,13 @@ extension SpotsModel {
         return rows
     }
 
+    private var confirmRow: KeyRow {
+        KeyRow("return", shift: nil, words: waitingWords) { [self] _ in runConfirmed() ? true : nil }
+    }
+
     private var searchRows: [KeyRow] {
         [
+            confirmRow,
             KeyRow("return", shift: nil) { [self] _ in
                 runSelected()
                 return true

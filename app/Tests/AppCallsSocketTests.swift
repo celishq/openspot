@@ -170,7 +170,7 @@ final class AppCallsSocketTests: XCTestCase {
         XCTAssertEqual(opened, ["reveal notes", "reveal gone"])
     }
 
-    func testSandboxOpensAsAWindowOfTheAppWithTheFileOfTheCallersFolder() async throws {
+    func testPlaygroundOpensAsAWindowOfTheAppWithTheFileOfTheCallersFolder() async throws {
         let app = FakeRunningApp()
         listen(app: app)
 

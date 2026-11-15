@@ -8,6 +8,7 @@ struct CallContext {
     let app: (any RunningApp)?
     let runs: SpotRuns?
     let account: Account?
+    let secrets: SecretStore
     let raise: (@Sendable (SpotEvent) async -> Void)?
     let caller: CallerTokens.Caller?
     let spot: String?

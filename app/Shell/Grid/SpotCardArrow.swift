@@ -7,7 +7,7 @@ struct SpotCardArrow: View {
 
     var body: some View {
         Image(systemName: "chevron.right")
-            .font(.system(size: 9, weight: .semibold))
+            .font(SpotType.mark)
             .frame(width: Self.width)
             .modifier(SpotInk())
     }

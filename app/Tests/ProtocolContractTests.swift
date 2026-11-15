@@ -56,7 +56,7 @@ final class ProtocolContractTests: XCTestCase {
         let read = Set(scripts.flatMap { RepoDoc.matches(variable, in: $0).map { $0[0] } })
         let core = FileManager.default.enumerator(at: RepoDoc.repo.appendingPathComponent("app/Core"), includingPropertiesForKeys: nil)?.compactMap { $0 as? URL } ?? []
         let set = Set(try core.filter { $0.pathExtension == "swift" }.flatMap { RepoDoc.matches(variable, in: try String(contentsOf: $0, encoding: .utf8)).map { $0[0] } })
-        let docVariables = Set(RepoDoc.matches(variable, in: doc.text).map { $0[0] })
+        let docVariables = Set(RepoDoc.matches(variable, in: doc.text).map { $0[0] }.filter { !$0.hasPrefix(FieldValues.variablePrefix) })
 
         let helper = try source("Shell/openspot.sh")
         let functions = Set(RepoDoc.matches(#"(?m)^([a-z][a-z_]*)\(\)"#, in: helper).map { $0[1] })

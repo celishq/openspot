@@ -23,6 +23,7 @@ struct SpotSampleSheet: View {
         .frame(width: size.width, height: size.height, alignment: .topLeading)
         .modifier(SpotGlass())
         .environment(\.spotIsShown, true)
+        .environment(\.spotViewPlace, SpotViewPlace(model: model, place: .sample))
         .task(id: entry.id) {
             if let view = entry.spot.view { await SpotViews.shared.load(view) }
             guard let output = await model.sample(id) else { return }

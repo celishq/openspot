@@ -10,7 +10,8 @@ public final class ScriptProcess: @unchecked Sendable {
     private static let errorsPause: TimeInterval = 0.5
     private static let forcePause: TimeInterval = 0.1
 
-    private let url: URL
+    private var url: URL
+    private let build: (@Sendable () async throws -> URL)?
     private let name: String?
     private let arguments: [String]
     private let mode: Mode
@@ -42,9 +43,11 @@ public final class ScriptProcess: @unchecked Sendable {
     private let errorText: ErrorTail
     private var unended: String?
     private var reader = SheetFrames()
+    var fix: @Sendable () -> URL? = { nil }
 
-    public init(url: URL, name: String? = nil, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], errorLimit: Int? = 64 * 1024, careful: Set<SpotUse>? = nil, base: [String: String]? = nil, folder: URL? = nil) {
+    public init(url: URL, name: String? = nil, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], errorLimit: Int? = 64 * 1024, careful: Set<SpotUse>? = nil, base: [String: String]? = nil, folder: URL? = nil, build: (@Sendable () async throws -> URL)? = nil) {
         self.name = name
+        self.build = build
         self.base = base
         self.folder = folder
         self.careful = careful.map(CarefulMode.init)
@@ -58,13 +61,18 @@ public final class ScriptProcess: @unchecked Sendable {
         self.stopPause = stopPause
     }
 
+    static let locale = "en_US.UTF-8"
+    static let commonPaths = ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin", "/usr/sbin", "/sbin"]
+
     public static func environment(base: [String: String], app: String, dataName: String? = nil) -> [String: String] {
         let contents = URL(fileURLWithPath: app).deletingLastPathComponent().deletingLastPathComponent()
         let helpers = contents.appendingPathComponent("Helpers").path
         let config = SpotsFolder.config(environment: base, home: home(of: base))
         let data = dataFolder(base: base, dataName: dataName)
         try? FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
-        var environment = base.merging(["PATH": "\(helpers):\(base["PATH"] ?? "")", "OPENSPOT_DATA": data.path, "OPENSPOT_CONFIG": config.path], uniquingKeysWith: { _, new in new })
+        var paths = [helpers] + (base["PATH"] ?? "").split(separator: ":").map(String.init)
+        paths += commonPaths.filter { !paths.contains($0) }
+        var environment = base.merging(["PATH": paths.joined(separator: ":"), "LC_ALL": locale, "OPENSPOT_DATA": data.path, "OPENSPOT_CONFIG": config.path], uniquingKeysWith: { _, new in new })
         let shell = contents.appendingPathComponent("Resources/openspot.sh").path
         if FileManager.default.fileExists(atPath: shell) { environment["OPENSPOT_SH"] = shell }
         return environment
@@ -94,7 +102,20 @@ public final class ScriptProcess: @unchecked Sendable {
         continuation.onTermination = { [self] reason in
             if case .cancelled = reason, case .once = mode { stop() }
         }
-        DispatchQueue.global(qos: .userInitiated).async { [self] in launch() }
+        guard let build else {
+            DispatchQueue.global(qos: .userInitiated).async { [self] in launch() }
+            return stream
+        }
+        Task.detached(priority: .userInitiated) { [self] in
+            do {
+                let program = try await build()
+                lock.withLock { url = program }
+                DispatchQueue.global(qos: .userInitiated).async { [self] in launch() }
+            } catch {
+                abandon()
+                finish(throwing: error)
+            }
+        }
         return stream
     }
 
@@ -301,12 +322,13 @@ public final class ScriptProcess: @unchecked Sendable {
     private func end(errorsRead: DispatchSemaphore, lastErrors: LastLine) {
         let hasExited = waitForExit(seconds: Self.exitPause)
         _ = errorsRead.wait(timeout: .now() + Self.errorsPause)
+        let given = fix()
         guard !isStopped else { return lock.withLock { ended = true } }
         if hasExited, exitCode != 0 {
             let line = lastErrors.text
             let last = reader.finish()
             lock.withLock { unended = last }
-            let fix = last.flatMap { FrameHead(text: $0).link }.flatMap(URL.init(string:))
+            let fix = last.flatMap { FrameHead(text: $0).link }.flatMap(URL.init(string:)) ?? given
             finish(throwing: fix.map { SpotError.failedWithFix(exitCode, line, $0) } ?? SpotError.failed(exitCode, line))
             return
         }
@@ -373,6 +395,7 @@ public final class ScriptProcess: @unchecked Sendable {
         var none = sigset_t()
         sigemptyset(&none)
         posix_spawnattr_setsigmask(&attributes, &none)
+        let url = lock.withLock { self.url }
         let words = (wrapper.isEmpty ? [name ?? url.path] + arguments : wrapper + [url.path] + arguments).map { strdup($0) } + [nil]
         let pairs = environment.map { strdup("\($0.key)=\($0.value)") } + [nil]
         defer { (words + pairs).forEach { free($0) } }

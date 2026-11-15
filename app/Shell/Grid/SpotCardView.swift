@@ -27,6 +27,7 @@ struct SpotCardView: View, @MainActor Equatable {
     var body: some View {
         ZStack(alignment: .topLeading) { content }
             .environment(\.spotIsOnSolid, isFilled)
+            .environment(\.spotViewPlace, SpotViewPlace(model: model))
             .padding(drawnView != nil && !isDrawn ? 0 : SpotTokens.cardPadding(for: size, isWidget: entry.kind == .widget || isDrawn))
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
             .background(shape.fill(SpotTheme.accent).opacity(dropFill))
@@ -206,7 +207,7 @@ struct SpotCardView: View, @MainActor Equatable {
 
     private var symbolGlyph: some View {
         Image(systemName: entry.symbol)
-            .font(.system(size: 17, weight: .semibold))
+            .font(SpotType.glyph)
             .foregroundStyle(isFilled ? SpotTheme.glyphOnSolid : SpotTheme.ink)
             .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
             .background(glyphDisc, in: Circle())
@@ -243,7 +244,7 @@ private struct FailureMark: View {
         if entry.failure != nil {
             let inset = SpotTokens.corner(for: size) * SpotTokens.rimPoint - SpotTokens.keycap / 2
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 10, weight: .semibold))
+                .font(SpotType.cornerFault)
                 .foregroundStyle(SpotTheme.ink)
                 .frame(width: SpotTokens.keycap, height: SpotTokens.keycap)
                 .background(SpotTheme.keycap, in: RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous))

@@ -9,7 +9,7 @@ final class SpotFloatPanel: NSPanel {
     override var canBecomeKey: Bool { true }
 
     override func sendEvent(_ event: NSEvent) {
-        if event.type == .keyDown, let model, let key = SpotsPanel.actionKey(of: event), model.handleFloatKey(key, in: id) { return }
+        if event.type == .keyDown, let model, let key = event.actionKey, !textKeeps(key), model.handleFloatKey(key, in: id) { return }
         super.sendEvent(event)
     }
 

@@ -32,4 +32,11 @@ final class KeyLayoutTests: XCTestCase {
     func testOneLayoutGivesNoForms() {
         XCTAssertEqual(SearchQuery(text: "saf", layouts: [latin]).forms, [])
     }
+
+    func testTheCodeOfALetterIsWhereTheLayoutPutsIt() {
+        let dvorak = KeyLayout(keys: [9: ".", 47: "v"])
+
+        XCTAssertEqual(dvorak.code(of: "v"), 47)
+        XCTAssertNil(latin.code(of: "v"))
+    }
 }

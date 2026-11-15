@@ -1,14 +1,13 @@
 import OpenspotCore
 import SwiftUI
 
-struct SpotSandboxView: View {
-    @Bindable var model: SpotSandboxModel
+struct SpotPlaygroundView: View {
+    @Bindable var model: SpotPlaygroundModel
 
     private static let minTextWidth: CGFloat = 320
     private static let minStageWidth: CGFloat = SpotTokens.gridWidth + 2 * SpotTokens.padding
     private static let minTopHeight: CGFloat = 360
     private static let minLogHeight: CGFloat = 120
-    private static let codeFont = Font.system(size: 12, design: .monospaced)
 
     private var text: Binding<String> {
         Binding(get: { model.source }, set: { model.edit($0) })
@@ -48,7 +47,7 @@ struct SpotSandboxView: View {
             }
             .frame(height: SpotTokens.glyphSize)
             TextEditor(text: text)
-                .font(Self.codeFont)
+                .font(SpotType.code)
                 .scrollContentBackground(.hidden)
                 .autocorrectionDisabled()
         }
@@ -66,11 +65,11 @@ struct SpotSandboxView: View {
     }
 
     private var faults: some View {
-        let faults = (model.fault.map { [$0] } ?? []) + (model.lack.map { [$0] } ?? []) + model.sandbox.faults
+        let faults = (model.fault.map { [$0] } ?? []) + (model.lack.map { [$0] } ?? []) + model.playground.faults
         return VStack(alignment: .leading, spacing: SpotType.lineGap) {
-            lines(faults.isEmpty ? ["No faults"] : faults, color: faults.isEmpty ? SpotTheme.ink.opacity(SpotTheme.secondaryLight) : .orange)
-            if !model.sandbox.log.isEmpty {
-                lines(model.sandbox.log, color: SpotTheme.ink.opacity(SpotTheme.secondaryLight))
+            lines(faults.isEmpty ? ["No faults"] : faults, color: faults.isEmpty ? SpotTheme.ink.opacity(SpotTheme.secondaryLight) : SpotTheme.warn)
+            if !model.playground.log.isEmpty {
+                lines(model.playground.log, color: SpotTheme.ink.opacity(SpotTheme.secondaryLight))
             }
         }
         .padding(SpotTokens.padding)
@@ -81,16 +80,16 @@ struct SpotSandboxView: View {
     private var calls: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
-                if model.sandbox.calls.isEmpty {
+                if model.playground.calls.isEmpty {
                     Text("Each call of the spot shows here: $ its arguments, < its stdin, > its frames, ! its stderr and = its end.")
-                        .font(Self.codeFont)
+                        .font(SpotType.code)
                         .modifier(SpotSecondaryText())
                 }
-                ForEach(Array(model.sandbox.calls.enumerated()), id: \.offset) { _, call in
+                ForEach(Array(model.playground.calls.enumerated()), id: \.offset) { _, call in
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(Array(call.lines.enumerated()), id: \.offset) { _, line in
                             Text(line)
-                                .font(Self.codeFont)
+                                .font(SpotType.code)
                                 .foregroundStyle(color(of: line))
                                 .textSelection(.enabled)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -106,7 +105,7 @@ struct SpotSandboxView: View {
     private func color(of line: String) -> Color {
         switch line.first {
         case "$", "=": SpotTheme.ink
-        case "!": .orange
+        case "!": SpotTheme.warn
         default: SpotTheme.ink.opacity(SpotTheme.secondaryLight)
         }
     }
@@ -115,7 +114,7 @@ struct SpotSandboxView: View {
         VStack(alignment: .leading, spacing: SpotType.lineGap) {
             ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
                 Text(line)
-                    .font(Self.codeFont)
+                    .font(SpotType.code)
                     .foregroundStyle(color)
                     .textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)

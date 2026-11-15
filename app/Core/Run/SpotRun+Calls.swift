@@ -83,21 +83,22 @@ extension SpotRun {
             callEnded(call.made)
         case .form(let waiting):
             callEnded(call.made)
-            Self.answer(waiting, of: call, end)
+            answer(waiting, of: call, end)
         }
     }
 
     private func log(_ call: OpenCall, _ end: ScriptCall.End, errors: String) {
         guard !script.answersInApp else { return }
         let request = call.request
-        runs.record(spot, request.action, input: request.input, frames: call.frames, errors: errors, end: end, reason: request.reason, started: call.made.started, begin: call.begin)
+        let values = fieldValues
+        runs.record(spot, request.action, input: values.hiding(request.input), frames: call.frames.map(values.hiding), errors: values.hiding(errors), end: end, reason: request.reason, started: call.made.started, begin: call.begin)
     }
 
-    private static func answer(_ waiting: CheckedContinuation<SpotOutput?, Error>, of call: OpenCall, _ end: ScriptCall.End) {
+    private func answer(_ waiting: CheckedContinuation<SpotOutput?, Error>, of call: OpenCall, _ end: ScriptCall.End) {
         switch end {
         case .stopped: waiting.resume(returning: nil)
         case .ended: waiting.resume(returning: call.form.selecting(call.selected))
-        case .failed(let error): waiting.resume(throwing: error)
+        case .failed(let error): waiting.resume(throwing: fieldValues.hiding(error))
         }
     }
 
@@ -105,7 +106,7 @@ extension SpotRun {
         let purpose = call.request.purpose
         if case .form(let waiting) = purpose {
             callEnded(call.made)
-            return Self.answer(waiting, of: call, end)
+            return answer(waiting, of: call, end)
         }
         let isAnswer = if case .ask(let ask) = purpose { ask.isAnswer } else { false }
         if case .ended = end, failure != nil, !isAnswer { failure = nil }

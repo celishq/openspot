@@ -34,7 +34,7 @@ enum SpotCommandLine {
         case RenderCall.spot(let id, nil, let path) as RenderCall:
             renderSheet(of: id, to: path)
         case PlaygroundCommand.open(let path) as PlaygroundCommand:
-            SpotSandbox.run(path: path)
+            SpotPlayground.run(path: path)
         case RenderCall.sheet(let path, let view) as RenderCall:
             SpotSheetPicture.run(text: standardInput, path: path, view: view)
         case RenderCall.card(let size, let path) as RenderCall:

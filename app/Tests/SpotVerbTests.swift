@@ -331,6 +331,45 @@ final class SpotVerbTests: XCTestCase {
         try await wait("the file again") { FileManager.default.fileExists(atPath: self.spots.spotFile("weather").path) }
     }
 
+    func testTheSecretOfARemovedSpotGoesWithItAndComesBackWithItsUndo() async throws {
+        try script("weather", header: "title=Weather\n\nfield=token\ntype=secret")
+        try script("clock", header: "title=Clock\n\nfield=token\ntype=secret")
+        try model.files.secrets.keep("weather-secret", key: "token", of: "weather")
+        try model.files.secrets.keep("clock-secret", key: "token", of: "clock")
+        await model.reload()
+
+        XCTAssertTrue(model.act(.delete, on: "weather"))
+        try await wait("the toast of the removal") { self.host.confirms.contains { $0.hasPrefix("Moved Weather to the Trash") } }
+        let removed = try SecretStore(file: model.files.secrets.file).read()
+        XCTAssertTrue(model.handleKey(ActionKey(name: "z", isCommand: true)))
+        try await wait("the toast of the undo") { self.host.confirms.contains("Put Weather back.") }
+
+        XCTAssertEqual(removed, ["clock": ["token": "clock-secret"]])
+        XCTAssertEqual(try SecretStore(file: model.files.secrets.file).read()["weather"], ["token": "weather-secret"])
+    }
+
+    func testTheFormOfASecretKeepsItInTheStoreNotTheConfigAndRefusesAShortOne() async throws {
+        try script("weather", header: "title=Weather\non=sheet.open\n\nfield=token\ntype=secret")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+
+        XCTAssertTrue(model.changeSetting("token", of: "weather"))
+        model.setFormValue("1234567", for: "token")
+        model.submitForm()
+        let short = host.notes.last
+        let kept = try SecretStore(file: model.files.secrets.file).read()
+        model.setFormValue("12345678", for: "token")
+        model.submitForm()
+        try await wait("the kept secret") { model.form == nil }
+
+        XCTAssertEqual(short, "Openspot didn't keep this secret, because it is shorter than 8 characters. Type the whole value.")
+        XCTAssertEqual(kept, [:])
+        XCTAssertNil(model.form)
+        XCTAssertEqual(try SecretStore(file: model.files.secrets.file).read(), ["weather": ["token": "12345678"]])
+        XCTAssertFalse((try? String(contentsOf: model.files.config.url, encoding: .utf8))?.contains("12345678") ?? false)
+    }
+
     func testARightOrForceClickOnACardOpensItsMenuAndTheClickThatEndsItRunsNothing() async throws {
         try script("weather", header: "title=Weather")
         try script("clock", header: "title=Clock")

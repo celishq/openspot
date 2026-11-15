@@ -8,8 +8,9 @@
   - `Shell/` — the menu bar app, the panel and the hotkey. Imports AppKit and SwiftUI.
   - `Client/` — the `openspot` command, which talks to the running app.
   - `StandIn/` — a small program for tests: a capability that needs no Mac feature. It does not ship.
-  - `Views/` — `openspot-views`, which a Release build runs to compile each view of the core spots into a `.view` beside
-    its source, so that it draws on a Mac with no developer tools. It does not ship. Debug compiles a view at its first use.
+  - `Views/` — `openspot-views`, which a Release build runs to compile each view of the core spots into a `.view`, and each
+    Swift spot into a `.program`, beside its source, so that it runs on a Mac with no developer tools. It does not ship.
+    Debug compiles each at its first use.
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
 - `app/Keywords/` holds the CLDR keywords of emoji and symbols, one xz file per language. `scripts/emoji-keywords.py` writes
   it from a pinned CLDR version, and the build copies it into the app.
@@ -94,7 +95,7 @@ Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these 
   and laid as nine fixed pieces that only move and scale (`SpotBackdropEdge`, by `BackdropEdge` in Core), and it hides by
   opacity alone.
 - A picture drawn off screen cannot hold system glass. It goes through `SpotPicture`, which turns the glass off, and the
-  glass check fails on a file of `Shell/Sandbox` that draws one another way.
+  glass check fails on a file of `Shell/Picture` that draws one another way.
 
 ## Performance
 

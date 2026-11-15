@@ -167,11 +167,9 @@ adding() {
   printf 'row=add-%s\ntitle=%s\ndetail=%s · %s\nicon=plus.circle\nhides=join\nhides=tick\n\n' "$3" "$4" "$(field title "$made")" "$(field detail "$made")"
 }
 
-# Asks macOS for leave with a call outside a read, and shows the link to the fix when the person said no.
+# Asks macOS for leave with a call outside a read. When the person said no, Openspot shows the link to the fix.
 allow() {
-  out=$(openspot "$@" </dev/null) && return 0
-  printf '%s\n' "$out" | grep '^link='
-  exit 1
+  openspot "$@" </dev/null >/dev/null || exit 1
 }
 
 case "$1" in

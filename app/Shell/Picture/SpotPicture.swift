@@ -38,6 +38,7 @@ final class SpotPicture {
         seed = URL(fileURLWithPath: path).lastPathComponent
         let root = content
             .environment(\.spotDrawsGlass, Self.isOnScreen)
+            .environment(\.spotIsStill, true)
             .preferredColorScheme(.dark)
         let view = NSHostingView(rootView: root)
         self.view = view

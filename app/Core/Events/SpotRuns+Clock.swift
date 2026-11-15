@@ -3,6 +3,7 @@ import Foundation
 extension SpotRuns {
     func updateClock() {
         watchClipboard()
+        watchLoad()
         schedule(tick())
     }
 

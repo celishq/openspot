@@ -78,8 +78,10 @@ extension SpotRun {
 
     func takeAnswer(_ lines: SpotOutput, frame: String, to ask: Ask, keeping: String? = nil, answers: Bool = true) async {
         if case .answer(let query) = ask { return takeAnswers(lines.answers, to: query) }
+        if case .read = ask, !frame.isEmpty, frame == shownFrame, lines.parts.isEmpty, panel == nil, !list.hasFailed { return takeRepeat(lines, answers: answers) }
         let next: ItemList.Rows? = if case .read = ask { await newRows(lines.items, search: Self.search(of: lines, in: spot)) } else { nil }
         lastAnswer = lines
+        shownFrame = if case .read = ask, !frame.isEmpty, frame.utf8.count <= Self.shownFrameLimit { frame } else { nil }
         report(toastOf: lines)
         spot = spot.taking(lines)
         switch ask {
@@ -116,6 +118,24 @@ extension SpotRun {
         if !lines.errors.isEmpty {
             onReport(.failure("\(spot.name) sent \(lines.errors.count) items Openspot cannot read."))
         }
+    }
+
+    private static let shownFrameLimit = 256 * 1024
+
+    private func takeRepeat(_ lines: SpotOutput, answers: Bool) {
+        report(toastOf: lines)
+        if answers { answered = runs.now() }
+        takeValue(lines)
+        let kept = selecting
+        selecting = nil
+        if list.isLoading || kept != nil {
+            changeList {
+                $0.stopLoading()
+                if let kept { $0.select(run: kept) }
+            }
+        }
+        if answers { answerArrived() }
+        readAgainIfAsked()
     }
 
     @discardableResult
@@ -179,7 +199,7 @@ extension SpotRun {
     }
 
     func report(toastOf lines: SpotOutput) {
-        if let text = lines.toast { onReport(.toast(text)) }
+        if let text = lines.toast { onReport(.toast(fieldValues.hiding(text))) }
     }
 
     private func changeReading(_ change: (inout MetricReading) -> Void) {
@@ -205,13 +225,14 @@ extension SpotRun {
     }
 
     func fail(_ error: Error, tells: Bool = true) {
-        let text = switch error as? SpotError {
+        let said = switch error as? SpotError {
         case .failed(_, let message) where !message.isEmpty, .failedWithFix(_, let message, _) where !message.isEmpty: message
         case .timedOut: "\(spot.name) took too long, so Openspot stopped it."
         case .tooLarge: "\(spot.name) printed more than 32 MB in one frame, so Openspot stopped it."
         case let error?: "\(spot.name) failed. \(error.reason)"
         case nil: "\(spot.name) failed. \(error.localizedDescription)"
         }
+        let text = fieldValues.hiding(said)
         failure = text
         runs.usage.failed(spot, fault: text, at: runs.now())
         guard tells else { return Self.appLog.info("\(text, privacy: .public)") }

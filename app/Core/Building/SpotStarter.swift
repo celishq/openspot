@@ -58,13 +58,14 @@ public enum SpotStarter: String, CaseIterable, Sendable {
             # title=\(title)
             # icon=\(symbol)
             # on=sheet.open
+            . "$OPENSPOT_SH"
             case "$1" in
               read)
-                printf 'row=first\\ntitle=First row\\ndetail=Press Enter to pick it\\n\\n'
-                printf 'row=second\\ntitle=Second row\\ndetail=Press Enter to pick it\\n'
+                printf 'row=first\\ntitle=First row\\ndetail=Press Enter to pick it\\nnote=Hello\\n\\n'
+                printf 'row=second\\ntitle=Second row\\ndetail=Press Enter to pick it\\nnote=Hello again\\n'
                 ;;
               open)
-                printf 'toast=You picked %s\\n' "$2"
+                openspot_kv toast "You picked the row that says: $(value note)"
                 ;;
             esac
 

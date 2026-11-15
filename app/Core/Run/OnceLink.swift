@@ -21,7 +21,8 @@ final class OnceLink: ScriptLink {
         let request = call.request
         let made = call.made
         let id = run.spot.id
-        let (stream, halt, process) = runs.frames(of: run.spot, request.action, input: request.input, limit: request.limit, variables: run.withPage(request.variables))
+        let values = run.fieldValues
+        let (stream, halt, process) = runs.frames(of: run.spot, request.action, input: values.input(with: request.input), limit: request.limit, variables: run.sent(request.variables, values: values))
         made.halt = halt
         if case .ask(let ask) = request.purpose, !ask.isAnswer { asking.append(made) }
         run.track(made)

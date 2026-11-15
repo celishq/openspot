@@ -11,9 +11,14 @@ final class GuideImageTests: XCTestCase {
         var last = ""
         var example: String?
         for line in guide.components(separatedBy: "\n") {
-            if line == "```sh" || line == "```js" { example = ""; continue }
+            if line == "```sh" || line == "```js" || line == "```swift" { example = ""; continue }
             if let text = example {
-                if line == "```" { last = text; example = nil } else { example = text + line + "\n" }
+                if line != "```" {
+                    example = text + line + "\n"
+                    continue
+                }
+                if text.hasPrefix("#!") || text.hasPrefix("//") { last = text }
+                example = nil
                 continue
             }
             if line.hasPrefix("!["), let start = line.range(of: "](docs/images/"), line.hasSuffix(".png)") {
@@ -31,7 +36,7 @@ final class GuideImageTests: XCTestCase {
             let folder = repo.appendingPathComponent("docs/images")
             XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("\(name).png").path), name)
             let drawn = try? String(contentsOf: folder.appendingPathComponent("\(name).example"), encoding: .utf8)
-            XCTAssertFalse(example.isEmpty, "\(name) has no sh or js example right above it")
+            XCTAssertFalse(example.isEmpty, "\(name) has no example of a spot right above it")
             XCTAssertEqual(drawn, example, "\(name).png shows an older example. Run make docs-images.")
         }
     }

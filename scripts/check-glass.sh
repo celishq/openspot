@@ -7,7 +7,7 @@ if [ -n "$found" ]; then
   echo "$found" >&2
   exit 1
 fi
-bare=$(grep -rlE --include='*.swift' 'cacheDisplay' app/Shell/Sandbox 2>/dev/null | while read -r file; do
+bare=$(grep -rlE --include='*.swift' 'cacheDisplay' app/Shell/Picture 2>/dev/null | while read -r file; do
   grep -qE '\\\.spotDrawsGlass,' "$file" || echo "$file"
 done)
 if [ -n "$bare" ]; then

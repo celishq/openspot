@@ -1,0 +1,51 @@
+import AppKit
+import OpenspotCore
+
+@MainActor
+final class DetachedWindows {
+    private let model: SpotsModel
+    private var floats: [String: SpotFloatPanel] = [:]
+    private var windows: [String: SpotSheetWindow] = [:]
+
+    init(model: SpotsModel) {
+        self.model = model
+    }
+
+    func float(_ entry: SpotsModel.Entry, followsDrag: Bool) {
+        let pointer = NSEvent.mouseLocation
+        if let shown = floats[entry.id] {
+            shown.show(at: pointer, isDragging: followsDrag)
+            return
+        }
+        let window = SpotFloatPanel.make(model: model, id: entry.id)
+        floats[entry.id] = window
+        Task { @MainActor [model] in
+            let end = ContinuousClock.now + .seconds(model.runs.opening.answerPause)
+            while model.sheets[entry.id]?.kind == .waiting, ContinuousClock.now < end {
+                try? await Task.sleep(for: .milliseconds(10))
+            }
+            guard floats[entry.id] === window else { return }
+            window.contentView?.layoutSubtreeIfNeeded()
+            window.show(at: pointer, isDragging: followsDrag)
+        }
+    }
+
+    func window(_ entry: SpotsModel.Entry) {
+        let window = windows[entry.id] ?? SpotSheetWindow.make(model: model, entry: entry)
+        windows[entry.id] = window
+        window.show()
+    }
+
+    func land(_ id: String) {
+        floats.removeValue(forKey: id)?.orderOut(nil)
+        windows.removeValue(forKey: id)?.close()
+    }
+
+    func floatTakesDrop(at point: NSPoint) -> Bool {
+        floats.values.contains { $0.isVisible && $0.frame.contains(point) }
+    }
+
+    var isPointerOverWindow: Bool {
+        windows.values.contains { $0.isVisible && $0.frame.contains(NSEvent.mouseLocation) }
+    }
+}

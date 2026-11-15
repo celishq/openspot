@@ -189,7 +189,7 @@ struct SpotMetricView: View {
     private var symbol: some View {
         if let name = reading?.symbol {
             Image(systemName: name)
-                .font(.system(size: 17, weight: .semibold))
+                .font(SpotType.glyph)
                 .foregroundStyle(markColour)
         }
     }
@@ -306,9 +306,9 @@ struct SpotMetricView: View {
 
     static func colour(_ tone: MetricValue.Tone) -> Color {
         switch tone {
-        case .good: .green
-        case .warn: .orange
-        case .bad: .red
+        case .good: SpotTheme.good
+        case .warn: SpotTheme.warn
+        case .bad: SpotTheme.bad
         }
     }
 

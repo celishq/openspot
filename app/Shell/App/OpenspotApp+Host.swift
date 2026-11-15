@@ -6,7 +6,7 @@ import SwiftUI
 extension OpenspotApp: SpotsHost {
     func dismiss() {
         panel?.hide()
-        if NSApp.isActive { previousApp?.activate() }
+        if NSApp.isActive { previous.app?.activate() }
     }
 
     func show() {
@@ -33,44 +33,34 @@ extension OpenspotApp: SpotsHost {
         toast?.show(text, kind: .work, for: nil)
     }
 
+    func applyConfig(_ config: Config) {
+        keys.apply(config)
+    }
+
+    func setEntryKey(on isOn: Bool) {
+        keys.setEntry(on: isOn)
+    }
+
+    func hold(_ keys: [GlobalKey]) {
+        self.keys.hold(keys)
+    }
+
     func float(_ entry: SpotsModel.Entry, followsDrag: Bool) {
-        let pointer = NSEvent.mouseLocation
-        if let shown = floats[entry.id] {
-            shown.show(at: pointer, isDragging: followsDrag)
-            return
-        }
-        let window = SpotFloatPanel.make(model: model, id: entry.id)
-        floats[entry.id] = window
-        Task { @MainActor [model] in
-            let end = ContinuousClock.now + .seconds(model.runs.opening.answerPause)
-            while model.sheets[entry.id]?.kind == .waiting, ContinuousClock.now < end {
-                try? await Task.sleep(for: .milliseconds(10))
-            }
-            guard floats[entry.id] === window else { return }
-            window.contentView?.layoutSubtreeIfNeeded()
-            window.show(at: pointer, isDragging: followsDrag)
-        }
+        windows.float(entry, followsDrag: followsDrag)
     }
 
     func land(_ id: String) {
-        floats.removeValue(forKey: id)?.orderOut(nil)
-        spotWindows.removeValue(forKey: id)?.close()
+        windows.land(id)
     }
 
     func window(_ entry: SpotsModel.Entry) {
         if model.isShown { panel?.hide() }
-        let window = spotWindows[entry.id] ?? SpotSheetWindow.make(model: model, entry: entry)
-        spotWindows[entry.id] = window
-        window.show()
-    }
-
-    func hold(_ keys: [GlobalKey]) {
-        wantedKeys = keys
-        holdWantedKeys()
+        recordFront()
+        windows.window(entry)
     }
 
     func takesDrop(at point: NSPoint) -> Bool {
-        liesOnPanelDrop(point) || floats.values.contains { $0.isVisible && $0.frame.contains(point) }
+        liesOnPanelDrop(point) || windows.floatTakesDrop(at: point)
     }
 
     var isPointerOverDrop: Bool {
@@ -78,7 +68,7 @@ extension OpenspotApp: SpotsHost {
     }
 
     var isPointerOverWindow: Bool {
-        spotWindows.values.contains { $0.isVisible && $0.frame.contains(NSEvent.mouseLocation) }
+        windows.isPointerOverWindow
     }
 
     private func liesOnPanelDrop(_ point: NSPoint) -> Bool {

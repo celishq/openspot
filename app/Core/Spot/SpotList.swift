@@ -87,8 +87,9 @@ struct SpotList {
         }
     }
 
-    func values(_ form: PrintForm) throws -> String {
-        try form.text(of: config.settings.map { Value(spot: $0.spot, key: $0.key, value: $0.value) })
+    func values(_ form: PrintForm, secrets: SecretStore.Values) throws -> String {
+        let hidden = secrets.sorted { $0.key < $1.key }.flatMap { spot, values in values.keys.sorted().map { Value(spot: spot, key: $0, value: FieldValues.hidden) } }
+        return try form.text(of: config.settings.map { Value(spot: $0.spot, key: $0.key, value: $0.value) } + hidden)
     }
 
     private static func picture(of spot: Spot) -> String {

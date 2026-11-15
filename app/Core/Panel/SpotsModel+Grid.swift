@@ -2,6 +2,33 @@ import Foundation
 
 extension SpotsModel {
     public func press(_ key: GlobalKey) {
+        if confirming == key, runConfirmed() { return }
+        if confirmWords(of: key) != nil, showCard(key.spot) {
+            confirming = key
+            return
+        }
+        run(key)
+    }
+
+    private func confirmWords(of key: GlobalKey) -> String? {
+        guard case .command(let command) = key.act else { return nil }
+        return sheets[key.spot]?.spot.offers.first { $0.id == command }?.confirm
+    }
+
+    var waitingWords: String? {
+        guard openSheetID == nil, let key = confirming, selectedEntry?.id == key.spot else { return nil }
+        return confirmWords(of: key)
+    }
+
+    func runConfirmed() -> Bool {
+        guard waitingWords != nil, let key = confirming else { return false }
+        confirming = nil
+        if isShown { host.dismiss() }
+        run(key)
+        return true
+    }
+
+    private func run(_ key: GlobalKey) {
         guard case .command(let command) = key.act else { return float(key.spot) }
         guard let sheet = sheets[key.spot] else { return }
         sheet.pressKey(command)
@@ -179,14 +206,17 @@ extension SpotsModel {
         guard assignedKeys.contains(where: { $0.spot == entry.id && $0.act == .command(command) }) else {
             return "⏎ Set key   ⌘⏎ Settings   ⌘K Actions"
         }
-        let title = entry.spot.offers.first?.title ?? command
-        return "⏎ \(title)   ⌘⏎ Settings   ⌘K Actions"
+        return "⏎ \(entry.spot.offers.first?.title ?? command)   ⌘⏎ Settings   ⌘K Actions"
     }
 
     private func runSole(_ command: String, of entry: Entry) {
         if let key = assignedKeys.first(where: { $0.spot == entry.id && $0.act == .command(command) }) {
+            if confirmWords(of: key) != nil {
+                if confirming != key || !runConfirmed() { confirming = key }
+                return
+            }
             if isShown { host.dismiss() }
-            press(key)
+            run(key)
         } else {
             openSettings(of: entry)
             toggleRecording(id: SpotSettings.keyRun(spot: entry.id, command: command))

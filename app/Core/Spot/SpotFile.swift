@@ -60,6 +60,15 @@ public struct SpotFile: Equatable, Sendable {
         if let field = header.children.compactMap({ $0.value(HeaderBlock.field) }).first(where: ReservedSetting.isReserved) {
             throw SpotError.fault("\(name) has field=\(field), a key that Openspot keeps for the person. Give the field another name.")
         }
+        if let field = header.children.first(where: { HeaderBlock(block: $0) == .field && $0.value("type").map { $0 != CommandOffer.secret } == true }) {
+            throw SpotError.fault("\(name) has an unknown type on the field `\(field.value(HeaderBlock.field) ?? "")`: `\(field.value("type") ?? "")`. Use `type=secret`, or no type.")
+        }
+        let fieldKeys = header.children.compactMap { $0.value(HeaderBlock.field) }
+        if let (first, second) = fieldKeys.enumerated().lazy.compactMap({ place, key in
+            fieldKeys[..<place].first { $0 != key && FieldValues.variable(of: $0) == FieldValues.variable(of: key) }.map { ($0, key) }
+        }).first {
+            throw SpotError.fault("\(name) has field=\(first) and field=\(second), which both give `\(FieldValues.variable(of: first))`. Rename one of them.")
+        }
         let buttons = header.children.filter { HeaderBlock(block: $0) == .button }
         let offeredActions = try OfferedAction.read(buttons, owner: id, of: name, isInline: mode == .inline)
         let offeredIDs = Set(offeredActions.map(\.action.id))
@@ -74,6 +83,16 @@ public struct SpotFile: Equatable, Sendable {
         let view = header.value(HeaderKey.view)
         if let view, URL(fileURLWithPath: view).pathExtension != SwiftProgram.sourceExtension {
             throw SpotError.fault("\(name) needs a Swift file for its view, such as view=\(url.deletingPathExtension().lastPathComponent).swift")
+        }
+        let sources = header.values(HeaderKey.source)
+        if !sources.isEmpty, url.pathExtension != SwiftProgram.sourceExtension {
+            throw SpotError.fault("\(name) has source=\(sources[0]), which only a Swift spot takes. Remove it, or write the spot in a .swift file")
+        }
+        if let source = sources.first(where: { !SpotPackage.isSafe(entry: $0) || $0.isEmpty }) {
+            throw SpotError.fault("\(name) has source=\(source), which is outside its folder. Name a Swift file or a folder beside the spot, such as source=model")
+        }
+        if let source = sources.first(where: { $0.split(separator: "/", omittingEmptySubsequences: false).contains { $0.isEmpty || $0 == "." } }) {
+            throw SpotError.fault("\(name) has `source=\(source)`, which is not a plain path. Write it with no `.`, no `..` and no `/` at its start or end, such as `source=model`.")
         }
         let edits = header.value(HeaderKey.edits)
         guard edits == nil || edits == "spots" else { throw SpotError.fault("\(name) has an unknown edits: \(edits!). Use edits=spots") }
@@ -101,6 +120,7 @@ public struct SpotFile: Equatable, Sendable {
             settings: header.children.filter { HeaderBlock(block: $0) == .field }.compactMap { CommandOffer(setting: $0) },
             view: view.map { Self.path($0, beside: url) },
             viewDate: view.flatMap { Self.viewDate(of: Self.path($0, beside: url), script: url) },
+            sources: sources,
             emits: emits,
             pages: header.values(HeaderKey.pages),
             uses: uses,

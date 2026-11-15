@@ -8,6 +8,7 @@ extension EnvironmentValues {
     @Entry var spotScrollFade: SpotEdgeFade?
     @Entry var spotDrawsGlass = true
     @Entry var spotIsHeld = false
+    @Entry var spotIsStill = false
 }
 
 enum SpotMotion {

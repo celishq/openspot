@@ -70,7 +70,7 @@ struct SpotRunningApp: RunningApp {
     }
 
     func playground(_ file: URL?, isCareful: Bool) async {
-        await SpotSandbox.show(path: file?.path, isCareful: isCareful)
+        await SpotPlayground.show(path: file?.path, isCareful: isCareful)
     }
 
     func changeSetting(_ key: String, of spot: String) async -> Bool {

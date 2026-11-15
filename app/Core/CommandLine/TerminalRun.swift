@@ -39,15 +39,16 @@ public struct TerminalRun {
     public func start(isolation: isolated (any Actor)? = #isolation, frame: (String) -> Void) async -> End {
         let isRead = action == .read
         if spot.mode == .inline { return await inline(isRead: isRead, frame: frame) }
-        let program = SwiftProgram().runnable(for: spot.url, builds: false)
+        let swift = SwiftProgram()
+        let program = swift.runnable(for: spot, builds: false)
         let token = tokens?.issue(for: spot)
         let variables = ["OPENSPOT_ID": spot.id].merging(isRead ? ReadReason.sheet.variables : [:]) { _, new in new }.merging(token.map { [CallerTokens.variable: $0] } ?? [:]) { _, new in new }
         let process: ScriptProcess
         if spot.mode.stays {
-            process = ScriptProcess(url: program, name: spot.url.path, mode: .stays, limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder)
+            process = ScriptProcess(url: program, name: spot.url.path, mode: .stays, limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder, build: swift.build(of: spot))
         } else {
             let sent = action.sent(input: input)
-            process = ScriptProcess(url: program, name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder)
+            process = ScriptProcess(url: program, name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder, build: swift.build(of: spot))
         }
         if let tokens, let token {
             process.onStart { group in tokens.enter(group, token: token) }
