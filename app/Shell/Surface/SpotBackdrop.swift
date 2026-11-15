@@ -10,8 +10,10 @@ struct SpotBackdrop: View {
         if drawsGlass {
             let rect = model.backdrop.offsetBy(dx: -model.panels.frame.minX, dy: 0)
             ZStack(alignment: .topLeading) {
-                SpotBackdropBlur()
-                    .mask { SpotBackdropEdge(edge: .blur, rect: rect) }
+                ForEach(Array(BackdropEdge.blurs.enumerated()), id: \.offset) { step, edge in
+                    SpotBackdropBlur(radius: SpotTheme.backdropBlur * CGFloat(step + 1) / CGFloat(BackdropEdge.blurs.count))
+                        .mask { SpotBackdropEdge(edge: edge, rect: rect) }
+                }
                 SpotBackdropEdge(edge: .shade, rect: rect)
                     .foregroundStyle(SpotTheme.shade)
             }

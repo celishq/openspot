@@ -97,9 +97,10 @@ Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these 
   window follows the corner that macOS gives it: its glass is a `ConcentricRectangle`. A borderless window gives its
   content view the edge of its surface (`NSWindow.take`). `make verify` runs `scripts/check-shapes.sh`, which fails on a
   `RoundedRectangle` in `Shell/` outside `Shell/Surface/SpotRoundShape.swift`.
-- The soft backdrop of the panel is one fixed `SpotBackdropBlur` under the glass. Its soft edge is a picture drawn once
-  and laid as nine fixed pieces that only move and scale (`SpotBackdropEdge`, by `BackdropEdge` in Core), and it hides by
-  opacity alone.
+- The soft backdrop of the panel is a progressive blur under the glass: fixed `SpotBackdropBlur` views of rising radius,
+  each under a soft edge further in, so the blur grows weaker toward its edge. Each soft edge is a picture drawn once and
+  laid as nine fixed pieces that only move and scale (`SpotBackdropEdge`, by `BackdropEdge` in Core), and the backdrop
+  hides by opacity alone.
 - A picture drawn off screen cannot hold system glass. It goes through `SpotPicture`, which turns the glass off, and the
   glass check fails on a file of `Shell/Picture` that draws one another way.
 

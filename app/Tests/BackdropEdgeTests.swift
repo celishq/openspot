@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 final class BackdropEdgeTests: XCTestCase {
-    private let edges = [BackdropEdge.blur, BackdropEdge.shade]
+    private let edges = BackdropEdge.blurs + [BackdropEdge.shade]
     private let shortest = SpotTokens.contentHeight(gridHeight: 0)
 
     func testTwoCapsFitInTheShortestBackdropSoTheEdgeIsNeverSqueezed() {
@@ -35,7 +35,7 @@ final class BackdropEdgeTests: XCTestCase {
 
     func testThePiecesTileATallWideBackdropAndOnlyTheMiddleOnesAreScaled() {
         let rect = CGRect(x: -300, y: 0, width: 1069, height: 700)
-        let edge = BackdropEdge.blur
+        let edge = BackdropEdge.blurs[0]
         let pieces = edge.pieces(in: rect)
 
         XCTAssertEqual(pieces[0].frame, CGRect(x: -300, y: 0, width: edge.cap.width, height: edge.cap.height))
@@ -45,5 +45,21 @@ final class BackdropEdgeTests: XCTestCase {
         XCTAssertEqual(pieces.reduce(0) { $0 + $1.frame.width * $1.frame.height }, rect.width * rect.height, accuracy: 0.001)
         for index in [0, 2, 6, 8] { XCTAssertEqual(pieces[index].scale, CGSize(width: 1, height: 1)) }
         XCTAssertEqual(pieces.map(\.source).reduce(CGRect.null) { $0.union($1) }, CGRect(origin: .zero, size: edge.pictureSize))
+    }
+
+    func testTheBlurGrowsWeakerInStepsWhoseFadesMeetSoNoLineShows() {
+        let blurs = BackdropEdge.blurs
+        XCTAssertGreaterThanOrEqual(blurs.count, 3)
+        for (outer, inner) in zip(blurs, blurs.dropFirst()) {
+            XCTAssertGreaterThan(inner.inset, outer.inset)
+            XCTAssertLessThanOrEqual(inner.inset - outer.inset, 2 * min(inner.softness, outer.softness))
+        }
+    }
+
+    func testTheBlurReachesAsFarPastTheCardsAsBeforeAndBothStayInTheWindow() {
+        let reach = { (edge: BackdropEdge) in SpotTokens.halo - edge.inset + BackdropEdge.reach * edge.softness }
+        XCTAssertGreaterThanOrEqual(reach(BackdropEdge.blurs[0]), 55)
+        XCTAssertLessThanOrEqual(reach(BackdropEdge.blurs[0]), SpotTokens.halo)
+        XCTAssertLessThanOrEqual(reach(BackdropEdge.shade), SpotTokens.halo)
     }
 }

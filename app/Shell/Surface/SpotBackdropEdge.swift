@@ -5,11 +5,10 @@ struct SpotBackdropEdge: View {
     let edge: BackdropEdge
     let rect: CGRect
 
-    @MainActor private static let blur = pictures(of: .blur)
-    @MainActor private static let shade = pictures(of: .shade)
+    @MainActor private static let drawn = Dictionary(uniqueKeysWithValues: (BackdropEdge.blurs + [.shade]).map { ($0, pictures(of: $0)) })
 
     var body: some View {
-        let pictures = edge == .blur ? Self.blur : Self.shade
+        let pictures = Self.drawn[edge] ?? []
         ZStack(alignment: .topLeading) {
             ForEach(Array(edge.pieces(in: rect).enumerated()), id: \.offset) { index, piece in
                 pictures[index]
