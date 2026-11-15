@@ -69,8 +69,6 @@ struct SpotView: View {
         }
     }
 
-    /// One spot of the store: its id, its name, what its button does, its origin, its description, its size, whether it
-    /// has sample data, and the folded words that a search compares, made once.
     /// A line of a readme: a heading, a line of text with its inline styles, or a picture or a video with its caption.
     private enum Line {
         case heading(String)
@@ -89,6 +87,8 @@ struct SpotView: View {
         }
     }
 
+    /// One spot of the store: its id, its name, what its button does, its origin, its description, its size, whether it
+    /// has sample data, and the folded words that a search compares, made once.
     private struct Item: Identifiable {
         let id: String
         let name: String
