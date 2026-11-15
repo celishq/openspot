@@ -301,6 +301,17 @@ final class ScriptProcessTests: XCTestCase {
         XCTAssertFalse(process.isRunning)
     }
 
+    func testTheLateKillOfAStoppedScriptIsCancelledWhenItsGroupIsReaped() async throws {
+        let spot = try writeSpot("plain.sh", "#!/bin/sh\nprintf 'a=1\\n---\\n'\nexec sleep 30\n")
+        let process = ScriptProcess(url: spot.url, stopPause: 30)
+        var frames = process.start().makeAsyncIterator()
+        _ = try await frames.next()
+
+        process.stop()
+
+        try await wait("the reaped process with no late kill") { !process.isRunning && !process.needsFinish }
+    }
+
     func testAStopLeavesAChildAloneAfterItsCallEndedByItself() async throws {
         let spot = try writeSpot("away.sh", "#!/bin/sh\n\(deafChild())\n")
         let process = ScriptProcess(url: spot.url, stopPause: Self.stopPause)

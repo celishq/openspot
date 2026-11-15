@@ -106,6 +106,8 @@ below is one a reviewer can check in a diff.
   a getter or a static factory that reads the disk.
 - The model and the views do not read the disk. A loader, such as `SpotScan` or `ConfigFile`, reads it at a load, and the
   rest read the value it kept.
+- Code starts a process only through `ScriptProcess`, which gives it a limit, a stop and the end of its group.
+  `scripts/check-processes.sh` fails on another `Process()`.
 - A stamp holds only what changes the result it guards. A choice that filters the result, such as which spots are on, is
   applied after the kept result, not put in the stamp.
 

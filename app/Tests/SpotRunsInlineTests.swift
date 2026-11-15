@@ -219,6 +219,31 @@ final class SpotRunsInlineTests: SpotRunsCase {
         try await wait("the next answer") { sheet.list.shown.map(\.run) == ["a"] }
     }
 
+    func testACallThatHangsInOpenspotCallEndsAtItsLimitAndTheNextCallGetsANewScript() async throws {
+        let bin = folder.appendingPathComponent("bin")
+        try FileManager.default.createDirectory(at: bin, withIntermediateDirectories: true)
+        try "#!/bin/sh\necho $$ > '\(path("child"))'\nexec sleep 30\n".writeScript(to: bin.appendingPathComponent("openspot"))
+        var environment = ProcessInfo.processInfo.environment
+        environment["PATH"] = "\(bin.path):\(environment["PATH"] ?? "/usr/bin:/bin")"
+        runs.quit()
+        runs = SpotRuns(environment: environment, readLimit: 0.5, now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50))
+        try inline(header: "on=sheet.open", """
+        function main(args, env) {
+          if (env.OPENSPOT_REASON === "sheet.open") openspot.call(["calc", "solve", "1"])
+          return "row=a\\ntitle=A\\n"
+        }
+        """)
+        let (sheet, told) = try toldSheet()
+        sheet.open {}
+        try await wait("the failure") { told().contains { $0.contains("took too long, so Openspot stopped it.") } }
+        let child = try await pid("child")
+        try await wait("the end of the hung child") { kill(child, 0) != 0 }
+
+        sheet.read(need: .change)
+
+        try await wait("the next answer") { sheet.list.shown.map(\.run) == ["a"] }
+    }
+
     func testTheScriptLoadsAtItsFirstCallAndLetsGoAfterItsIdleTime() async throws {
         runs(idle: 0.3)
         try answering()

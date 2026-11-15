@@ -31,7 +31,8 @@ public final class ScriptProcess: @unchecked Sendable {
     private var hasFrame = false
     private var stopped = false
     private var ended = false
-    private var killsLater = false
+    private var lateKill: Int?
+    private var stops = 0
     private var id: pid_t = 0
     private var waitStatus: Int32?
     private var endTime: ProcessTime?
@@ -104,10 +105,8 @@ public final class ScriptProcess: @unchecked Sendable {
             text = given
             hasInput = given != nil
         }
-        let app = Bundle.main.executablePath ?? ""
-        let own = Self.environment(base: ProcessInfo.processInfo.environment, app: app, dataName: dataName).merging(variables) { _, new in new }
-        let environment = base.map { Self.environment(base: $0, app: app, dataName: dataName).merging(variables) { _, new in new } } ?? own
-        let fence = careful?.words(in: own) ?? []
+        let environment = Self.environment(base: base ?? ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "", dataName: dataName).merging(variables) { _, new in new }
+        let fence = careful?.words(in: environment) ?? []
         let errors = errorOutput
         signal(SIGPIPE, SIG_IGN)
         guard !isStopped else {
@@ -202,7 +201,7 @@ public final class ScriptProcess: @unchecked Sendable {
     }
 
     var needsFinish: Bool {
-        lock.withLock { !ended || killsLater }
+        lock.withLock { !ended || lateKill != nil }
     }
 
     func leave() {
@@ -247,13 +246,20 @@ public final class ScriptProcess: @unchecked Sendable {
     }
 
     private func stopGroup() {
-        lock.withLock { killsLater = true }
+        let stop = lock.withLock {
+            stops += 1
+            lateKill = stops
+            return stops
+        }
         deliver(SIGTERM)
-        let id = lock.withLock { id }
-        DispatchQueue.global().asyncAfter(deadline: .now() + stopPause) { [weak self] in
+        DispatchQueue.global().asyncAfter(deadline: .now() + stopPause) { [self] in killLate(stop) }
+    }
+
+    private func killLate(_ stop: Int) {
+        lock.withLock {
+            guard lateKill == stop else { return }
+            lateKill = nil
             if id > 0 { kill(-id, SIGKILL) }
-            guard let self else { return }
-            lock.withLock { killsLater = false }
         }
     }
 
@@ -404,8 +410,11 @@ public final class ScriptProcess: @unchecked Sendable {
         repeat { result = wait4(started, &code, 0, &usage) } while result == -1 && errno == EINTR
         if result == -1 { code = 1 << 8 }
         let time = read ?? ProcessTime(usage)
-        if kill(-started, 0) != 0 { TerminalStop.leave(started) }
         let handlers = lock.withLock {
+            if kill(-started, 0) != 0 {
+                TerminalStop.leave(started)
+                lateKill = nil
+            }
             waitStatus = code
             endTime = time
             defer { exitHandlers = [] }

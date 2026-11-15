@@ -6,11 +6,10 @@ final class SpotAddTests: XCTestCase {
     private var spots: URL!
 
     private var environment: [String: String] {
-        ["OPENSPOT_CONFIG": root.path, "OPENSPOT_SPOTS": spots.path, "OPENSPOT_CORE": root.appendingPathComponent("core").path, "PWD": root.path]
+        ["OPENSPOT_CONFIG": root.path, "OPENSPOT_SPOTS": spots.path, "OPENSPOT_CORE": root.appendingPathComponent("core").path, "PWD": root.path, "PATH": "/usr/bin:/bin", "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_NOSYSTEM": "1"]
     }
 
     override func setUpWithError() throws {
-        GitRepo.isolate()
         root = FileManager.default.temporaryDirectory.appendingPathComponent("spot-add-\(UUID().uuidString.prefix(8))")
         spots = root.appendingPathComponent("spots")
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
@@ -125,7 +124,7 @@ final class SpotAddTests: XCTestCase {
             }
         }
         let port = UInt16(bigEndian: address.sin_port)
-        let lock = SpotLock(url: root.appendingPathComponent("spots.lock"))
+        let lock = SpotLock(url: root.appendingPathComponent("spots.lock"), environment: environment)
         let adding = Task { [spots] in try await lock.add(.git("git://127.0.0.1:\(port)/coffee"), to: spots!) }
         let connection = await Task.detached { Self.accepted(on: listener) }.value
         XCTAssertGreaterThanOrEqual(connection, 0, "git reached the fake server")

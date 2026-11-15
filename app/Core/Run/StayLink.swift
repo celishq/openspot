@@ -33,6 +33,8 @@ final class StayLink: ScriptLink {
     private var failures: [Date] = []
     private var givenUp: Date??
     private var formAnswer: CheckedContinuation<String?, Error>?
+    private var formID: Int?
+    private var formTimer: Task<Void, Never>?
     private var heldScript = false
     private var slowAsks = 0
     private var openCalls: [Int: OpenCall] = [:]
@@ -96,9 +98,24 @@ final class StayLink: ScriptLink {
         guard formAnswer == nil else { return nil }
         return try await withCheckedThrowingContinuation { continuation in
             formAnswer = continuation
-            send(action, input: nil)
-            if script == nil { answerForm(with: .success(nil)) }
+            guard let id = send(action, input: nil, key: key) else { return answerForm(with: .success(nil)) }
+            formID = id
+            let limit = runs.readLimit
+            formTimer = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(limit))
+                guard !Task.isCancelled else { return }
+                self?.formTimedOut(id)
+            }
         }
+    }
+
+    private func formTimedOut(_ id: Int) {
+        guard formID == id else { return }
+        script?.send(text: SpotAction.stopEvent(id: id))
+        drop(id)
+        close(id, .failed(SpotError.timedOut))
+        answerForm(with: .failure(SpotError.timedOut))
+        settle()
     }
 
     func submit(_ action: SpotAction, key: String, values: String) async throws -> String? {
@@ -112,6 +129,7 @@ final class StayLink: ScriptLink {
         if let number = Int(id) {
             drop(number)
             close(number, .stopped)
+            if number == formID { answerForm(with: .success(nil)) }
         }
     }
 
@@ -293,6 +311,13 @@ final class StayLink: ScriptLink {
     private func answerForm(with answer: Result<String?, Error>) {
         let waiting = formAnswer
         formAnswer = nil
+        formTimer?.cancel()
+        formTimer = nil
+        if let formID {
+            self.formID = nil
+            close(formID, .ended)
+            endCalls([String(formID)])
+        }
         waiting?.resume(with: answer)
     }
 
@@ -313,7 +338,7 @@ final class StayLink: ScriptLink {
                     run?.report(toastOf: lines)
                     continue
                 }
-                if !lines.fields.isEmpty, formAnswer != nil {
+                if formAnswer != nil, !lines.fields.isEmpty || lines.ends.contains(formID.map(String.init) ?? "") {
                     answerForm(with: .success(text))
                     settle()
                     continue

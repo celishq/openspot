@@ -27,6 +27,8 @@ final class InlineScript: @unchecked Sendable {
 
     private let url: URL
     private let name: String
+    private let dataName: String?
+    private let base: [String: String]
     private let environment: [String: String]
     private let api: CommandAPI?
     private let tokens: CallerTokens?
@@ -40,6 +42,9 @@ final class InlineScript: @unchecked Sendable {
     private var isEnded = false
     private var hasThread = false
     private var isOverTime = false
+    private var isOverdue = false
+    private var running: InlineCall?
+    private var deadline = DispatchTime.now()
     private var context: JSContext?
     private var thrown: JSValue?
     private var variables: [String: String] = [:]
@@ -48,6 +53,8 @@ final class InlineScript: @unchecked Sendable {
         self.careful = careful.map(CarefulMode.init)
         url = spot.url
         name = spot.id
+        dataName = spot.dataName
+        self.base = base
         self.api = api
         self.limit = limit
         self.idle = idle
@@ -65,6 +72,10 @@ final class InlineScript: @unchecked Sendable {
 
     var isRunning: Bool {
         condition.withLock { hasThread }
+    }
+
+    var hasEnded: Bool {
+        condition.withLock { isEnded }
     }
 
     func send(_ call: InlineCall) {
@@ -93,8 +104,8 @@ final class InlineScript: @unchecked Sendable {
     private func follow() {
         while true {
             condition.lock()
-            let deadline = Date().addingTimeInterval(idle)
-            while calls.isEmpty, !isEnded, condition.wait(until: deadline) {}
+            let idleEnd = Date().addingTimeInterval(idle)
+            while calls.isEmpty, !isEnded, condition.wait(until: idleEnd) {}
             if isEnded || calls.isEmpty {
                 let dropped = calls
                 calls = []
@@ -111,6 +122,9 @@ final class InlineScript: @unchecked Sendable {
                 continue
             }
             let start = Self.threadTime()
+            deadline = .now() + limit
+            condition.withLock { running = call }
+            DispatchQueue.global().asyncAfter(deadline: deadline) { [weak self] in self?.overdue(call) }
             autoreleasepool {
                 do {
                     call.finish(.frame(try run(call)))
@@ -118,8 +132,20 @@ final class InlineScript: @unchecked Sendable {
                     call.finish(.failed(error))
                 }
             }
+            condition.withLock { running = nil }
             spent(Self.threadTime() - start)
         }
+    }
+
+    private func overdue(_ call: InlineCall) {
+        let isLate = condition.withLock {
+            guard running === call else { return false }
+            isOverdue = true
+            isEnded = true
+            condition.signal()
+            return true
+        }
+        if isLate { call.finish(.failed(SpotError.timedOut)) }
     }
 
     private static func threadTime() -> TimeInterval {
@@ -195,6 +221,7 @@ final class InlineScript: @unchecked Sendable {
     }
 
     private func ask(_ arguments: [String], input: String?) -> CommandAnswer {
+        guard !condition.withLock({ isOverdue }) else { return Self.late }
         let environment = environment.merging(variables) { _, new in new }
         guard let call = CommandLineCall(arguments: arguments, environment: environment) else {
             return CommandAnswer(errors: "openspot needs a call, such as calc solve 2+2.\n", code: 2)
@@ -202,41 +229,41 @@ final class InlineScript: @unchecked Sendable {
         let request = CommandRequest(arguments: arguments, folder: environment["PWD"] ?? FileManager.default.currentDirectoryPath, token: token, isBound: true)
         if let api, api.work(for: call, request: request, input: { input ?? "" }) != nil,
            let work = api.work(for: api.admit(call, request: request), request: request, input: { input ?? "" }) {
-            let box = Box()
-            let done = DispatchSemaphore(value: 0)
-            Task.detached(priority: .userInitiated) {
-                box.answer = await work()
-                done.signal()
-            }
-            done.wait()
-            return box.answer
+            return answer { await work() }
         }
-        return process(arguments, input: input, environment: environment)
+        let child = ScriptProcess(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["openspot"] + arguments, mode: .once(input: input), dataName: dataName, variables: self.environment.filter { ["OPENSPOT_ID", CallerTokens.variable].contains($0.key) }.merging(variables) { _, new in new }, careful: careful?.uses, base: base)
+        return answer { await Self.answer(of: child) }
     }
 
-    private func process(_ arguments: [String], input: String?, environment: [String: String]) -> CommandAnswer {
-        let words = (careful?.words(in: environment) ?? []) + ["/usr/bin/env", "openspot"] + arguments
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: words[0])
-        process.arguments = Array(words.dropFirst())
-        process.environment = environment
-        let output = Pipe()
-        let stdin = Pipe()
-        process.standardOutput = output
-        process.standardInput = stdin
-        process.standardError = FileHandle.nullDevice
+    private static var late: CommandAnswer {
+        CommandAnswer(errors: SpotError.timedOut.reason + "\n", code: 1)
+    }
+
+    private func answer(_ work: @escaping @Sendable () async -> CommandAnswer) -> CommandAnswer {
+        let box = Box()
+        let done = DispatchSemaphore(value: 0)
+        let task = Task.detached(priority: .userInitiated) {
+            box.answer = await work()
+            done.signal()
+        }
+        guard done.wait(timeout: deadline) == .success else {
+            task.cancel()
+            return Self.late
+        }
+        return box.answer
+    }
+
+    private static func answer(of child: ScriptProcess) async -> CommandAnswer {
+        var frames: [String] = []
         do {
-            try process.run()
+            for try await frame in child.start() { frames.append(frame) }
+            return CommandAnswer(output: frames.joined(separator: SheetFrameReader.mark + "\n"), code: 0)
+        } catch SpotError.failed(let code, _), SpotError.failedWithFix(let code, _, _) {
+            return CommandAnswer(output: (frames + (child.failedFrame.map { [$0] } ?? [])).joined(separator: SheetFrameReader.mark + "\n"), code: code)
+        } catch let error as SpotError {
+            return CommandAnswer(errors: error.reason + "\n", code: 1)
         } catch {
             return CommandAnswer(errors: error.localizedDescription, code: 127)
         }
-        let writer = stdin.fileHandleForWriting
-        DispatchQueue.global().async {
-            if let input { writer.write(Data(input.utf8)) }
-            try? writer.close()
-        }
-        let data = output.fileHandleForReading.readDataToEndOfFile()
-        process.waitUntilExit()
-        return CommandAnswer(output: String(decoding: data, as: UTF8.self), code: process.terminationStatus)
     }
 }

@@ -3,11 +3,6 @@ import Foundation
 struct GitRepo {
     let url: URL
 
-    static func isolate() {
-        setenv("GIT_CONFIG_GLOBAL", "/dev/null", 1)
-        setenv("GIT_CONFIG_NOSYSTEM", "1", 1)
-    }
-
     init(at url: URL) throws {
         self.url = url
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)

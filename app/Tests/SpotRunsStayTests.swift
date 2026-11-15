@@ -212,6 +212,69 @@ final class SpotRunsStayTests: SpotRunsCase {
         }
     }
 
+    private static let silentForm = """
+    while IFS= read -r line; do
+      printf '%%s\\n' "$line" >> '%@'
+      case "$line" in
+        call=*) call=${line#call=} ;;
+        arg=new) ;;
+        arg=done) printf 'end=%%s\\n---\\n' "$call" ;;
+        arg=read) printf 'end=%%s\\n\\nbutton=new\\ntitle=New\\nscope=spot\\nform=true\\n\\nbutton=done\\ntitle=Done\\nscope=spot\\nform=true\\n---\\n' "$call" ;;
+      esac
+    done
+    """
+
+    private func silentFormSheet(limit: TimeInterval = 10) async throws -> (SpotRun, CommandAction, CommandAction) {
+        runs.quit()
+        runs = SpotRuns(environment: ProcessInfo.processInfo.environment, readLimit: limit, now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50))
+        try script(header: "mode=stay\noffers=card\noffers=menubar", String(format: Self.silentForm, path("asked")))
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the actions") { sheet.spot.actions.count == 2 }
+        return (sheet, try XCTUnwrap(sheet.spot.actions.first { $0.id == "new" }), try XCTUnwrap(sheet.spot.actions.first { $0.id == "done" }))
+    }
+
+    func testAFormOfAStayingScriptThatNeverAnswersEndsAtTheLimitAndStopsItsCall() async throws {
+        let (sheet, new, _) = try await silentFormSheet(limit: 0.5)
+
+        do {
+            _ = try await sheet.form(new, item: nil)
+            XCTFail("It should time out.")
+        } catch {
+            XCTAssertEqual(error as? SpotError, .timedOut)
+        }
+
+        try await wait("the stop of the form") { self.log("asked").contains { $0.hasPrefix("stop=") } }
+        XCTAssertFalse(sheet.link.holdsScript)
+    }
+
+    func testAFormOfAStayingScriptWhoseCallEndsWithNoFieldIsABadForm() async throws {
+        let (sheet, _, done) = try await silentFormSheet()
+
+        do {
+            _ = try await sheet.form(done, item: nil)
+            XCTFail("It should have no form.")
+        } catch {
+            XCTAssertEqual(error as? SpotError, .badForm)
+        }
+        XCTAssertFalse(sheet.link.holdsScript)
+    }
+
+    func testAPressAgainStopsAFormOfAStayingScript() async throws {
+        let (sheet, new, _) = try await silentFormSheet()
+
+        async let first = sheet.form(new, item: nil)
+        try await wait("the ask") { self.log("asked").contains("arg=new") }
+        time = time.addingTimeInterval(SpotRun.pressPause)
+        let second = try await sheet.form(new, item: nil)
+        let answer = try await first
+
+        XCTAssertNil(second)
+        XCTAssertNil(answer)
+        try await wait("the stop of the form") { self.log("asked").contains { $0.hasPrefix("stop=") } }
+    }
+
     func testASearchReachesTheRunningStayingScript() async throws {
         try staying(header: "mode=stay\non=sheet.text\noffers=card\noffers=menubar", frame: "row=a\\ntitle=A\\n")
         let sheet = try sheet()

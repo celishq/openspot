@@ -9,6 +9,7 @@ verify:
 	sh scripts/check-files.sh
 	sh scripts/check-getters.sh
 	sh scripts/check-spots.sh
+	sh scripts/check-processes.sh
 	cd app && xcodegen generate >/dev/null
 	cd app && DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project Openspot.xcodeproj -scheme Openspot -destination 'platform=macOS' test
 

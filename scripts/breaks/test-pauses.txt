@@ -12,8 +12,6 @@ app/Tests/CommandClientTests.swift	Task.sleep
 app/Tests/CommandSocketTests.swift	Task.sleep
 app/Tests/DictateExampleTests.swift	Task.sleep
 app/Tests/DoomExampleTests.swift	Task.sleep
-app/Tests/GitRepo.swift	setenv
-app/Tests/GitRepo.swift	setenv
 app/Tests/LinksSpotTests.swift	Task.sleep
 app/Tests/LinksSpotTests.swift	Task.sleep
 app/Tests/LinksSpotTests.swift	Task.sleep

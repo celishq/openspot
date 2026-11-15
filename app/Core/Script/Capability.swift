@@ -4,11 +4,15 @@ public struct Capability: Sendable {
     public enum Failure: LocalizedError, Equatable {
         case notStarted(name: String, cause: String, fix: String)
         case noAnswer(name: String)
+        case noAnswerInTime(name: String, seconds: TimeInterval)
+        case tooLarge(name: String)
 
         public var errorDescription: String? {
             switch self {
             case .notStarted(let name, let cause, let fix): "openspot could not start its \(name) helper: \(cause). \(fix)"
             case .noAnswer(let name): "The \(name) helper of openspot ended before it answered. Run the call again."
+            case .noAnswerInTime(let name, let seconds): "The \(name) helper of openspot did not answer in \(seconds.formatted()) seconds. Run the call again."
+            case .tooLarge(let name): "The \(name) helper of openspot sent an answer over \(Capability.messageLimit >> 20) MB, so openspot dropped it. Run the call again."
             }
         }
     }
@@ -16,16 +20,19 @@ public struct Capability: Sendable {
     private static let startLimit: TimeInterval = 10
     private static let retryPause: TimeInterval = 0.01
     private static let queueLength: Int32 = 64
-    private static let stalledCallerSeconds = 5
+    private static let stalledCallerSeconds: TimeInterval = 5
+    static let messageLimit = 64 << 20
 
     public let name: String
     private let folder: URL
     private let idle: TimeInterval
+    private let limit: TimeInterval
 
-    public init(name: String, folder: URL = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true), idle: TimeInterval = 30) {
+    public init(name: String, folder: URL = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true), idle: TimeInterval = 30, limit: TimeInterval = 30) {
         self.name = name
         self.folder = folder
         self.idle = idle
+        self.limit = limit
     }
 
     private var socketPath: String { folder.appendingPathComponent("openspot-\(name).socket").path }
@@ -36,8 +43,13 @@ public struct Capability: Sendable {
         signal(SIGPIPE, SIG_IGN)
         let connection = try reach()
         defer { connection.close() }
-        guard connection.send(request), let answer = connection.receive() else { throw Failure.noAnswer(name: name) }
-        return answer
+        guard connection.send(request) else { throw Failure.noAnswer(name: name) }
+        switch connection.receive() {
+        case .message(let answer): return answer
+        case .tooLarge: throw Failure.tooLarge(name: name)
+        case .late: throw Failure.noAnswerInTime(name: name, seconds: limit)
+        case .ended: throw Failure.noAnswer(name: name)
+        }
     }
 
     public func serve(
@@ -75,7 +87,7 @@ public struct Capability: Sendable {
         let ended = DispatchSemaphore(value: 0)
         var helper: (process: Process, errors: Pipe)?
         while Date() < deadline {
-            if let connection = Connection(path: socketPath) { return connection }
+            if let connection = Connection(path: socketPath, limit: limit) { return connection }
             guard let running = helper else {
                 helper = try start(signalling: ended)
                 continue
@@ -156,12 +168,19 @@ public struct Capability: Sendable {
         guard descriptor >= 0 else { return }
         let connection = Connection(descriptor: descriptor, limit: stalledCallerSeconds)
         defer { connection.close() }
-        guard let request = connection.receive() else { return }
+        guard case .message(let request) = connection.receive() else { return }
         _ = connection.send(await answer(request))
     }
 }
 
 private struct Connection: Sendable {
+    enum Received {
+        case message(Data)
+        case tooLarge
+        case late
+        case ended
+    }
+
     private static let chunk = 65_536
 
     private let descriptor: Int32
@@ -175,22 +194,24 @@ private struct Connection: Sendable {
         return address
     }
 
-    init?(path: String) {
+    init?(path: String, limit: TimeInterval) {
         guard let address = Self.address(of: path) else { return nil }
-        descriptor = socket(AF_UNIX, SOCK_STREAM, 0)
+        let descriptor = socket(AF_UNIX, SOCK_STREAM, 0)
         guard descriptor >= 0 else { return nil }
-        let result = withUnsafePointer(to: address) { [descriptor] in
+        let result = withUnsafePointer(to: address) {
             $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { connect(descriptor, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) }
         }
         guard result == 0 else {
             Darwin.close(descriptor)
             return nil
         }
+        self.init(descriptor: descriptor, limit: limit)
     }
 
-    init(descriptor: Int32, limit: Int) {
+    init(descriptor: Int32, limit: TimeInterval) {
         self.descriptor = descriptor
-        var time = timeval(tv_sec: limit, tv_usec: 0)
+        let seconds = Int(limit)
+        var time = timeval(tv_sec: seconds, tv_usec: Int32((limit - Double(seconds)) * 1_000_000))
         setsockopt(descriptor, SOL_SOCKET, SO_RCVTIMEO, &time, socklen_t(MemoryLayout<timeval>.size))
         setsockopt(descriptor, SOL_SOCKET, SO_SNDTIMEO, &time, socklen_t(MemoryLayout<timeval>.size))
     }
@@ -204,9 +225,11 @@ private struct Connection: Sendable {
         return withUnsafeBytes(of: &length) { write($0) } && message.withUnsafeBytes { write($0) }
     }
 
-    func receive() -> Data? {
-        guard let head = read(count: MemoryLayout<UInt64>.size) else { return nil }
-        let length = head.reduce(UInt64(0)) { ($0 >> 8) | (UInt64($1) << 56) }
+    func receive() -> Received {
+        let head = read(count: MemoryLayout<UInt64>.size)
+        guard case .message(let bytes) = head else { return head }
+        let length = bytes.reduce(UInt64(0)) { ($0 >> 8) | (UInt64($1) << 56) }
+        guard length <= UInt64(Capability.messageLimit) else { return .tooLarge }
         return read(count: Int(length))
     }
 
@@ -223,17 +246,19 @@ private struct Connection: Sendable {
         return true
     }
 
-    private func read(count: Int) -> Data? {
+    private func read(count: Int) -> Received {
         var data = Data()
         var buffer = [UInt8](repeating: 0, count: Self.chunk)
         while data.count < count {
             let got = Darwin.read(descriptor, &buffer, min(Self.chunk, count - data.count))
             if got > 0 {
                 data.append(contentsOf: buffer[..<got])
+            } else if got < 0, errno == EAGAIN {
+                return .late
             } else if got == 0 || errno != EINTR {
-                return nil
+                return .ended
             }
         }
-        return data
+        return .message(data)
     }
 }

@@ -78,7 +78,7 @@ final class InlineLink: ScriptLink {
 
     private func current(for run: SpotRun) -> InlineScript {
         let date = fileDate
-        if let script, loadedFileDate == date { return script }
+        if let script, loadedFileDate == date, !script.hasEnded { return script }
         script?.end()
         let script = runs.inline(run.spot)
         self.script = script

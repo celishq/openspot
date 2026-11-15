@@ -202,6 +202,91 @@ final class CapabilityTests: XCTestCase {
         XCTAssertEqual(answer, text)
     }
 
+    func testACallToAHelperThatNeverAnswersEndsAtItsLimit() async throws {
+        let listener = try fakeHelper { _ in }
+        defer { Darwin.close(listener) }
+        let capability = Capability(name: label, folder: folder, limit: 0.3)
+
+        let outcome = Outcome()
+        Thread.detachNewThread { outcome.set(Result { try capability.call(Data("count".utf8)) }) }
+
+        try await wait("the end of the call") { outcome.value != nil }
+        XCTAssertEqual(outcome.failure, .noAnswerInTime(name: label, seconds: 0.3))
+    }
+
+    func testAnAnswerOverTheLimitFailsAtItsLength() async throws {
+        let listener = try fakeHelper { connection in
+            var length = UInt64(Capability.messageLimit + 1).littleEndian
+            _ = withUnsafeBytes(of: &length) { Darwin.write(connection, $0.baseAddress, $0.count) }
+        }
+        defer { Darwin.close(listener) }
+        let capability = Capability(name: label, folder: folder, limit: 30)
+
+        let outcome = Outcome()
+        Thread.detachNewThread { outcome.set(Result { try capability.call(Data("count".utf8)) }) }
+
+        try await wait("the end of the call") { outcome.value != nil }
+        XCTAssertEqual(outcome.failure, .tooLarge(name: label))
+    }
+
+    func testARequestOverTheLimitLeavesTheHelperAnswering() async throws {
+        let id = try field("pid", in: try await call())
+        let connection = Darwin.socket(AF_UNIX, SOCK_STREAM, 0)
+        defer { Darwin.close(connection) }
+        var address = Self.address(of: socket)
+        let connected = withUnsafePointer(to: &address) { $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { Darwin.connect(connection, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) } }
+        XCTAssertEqual(connected, 0)
+
+        var length = UInt64.max
+        _ = withUnsafeBytes(of: &length) { Darwin.write(connection, $0.baseAddress, $0.count) }
+        var byte: UInt8 = 0
+        XCTAssertEqual(Darwin.read(connection, &byte, 1), 0)
+
+        let next = try await call()
+        XCTAssertEqual(try field("pid", in: next), id)
+    }
+
+    private final class Outcome: @unchecked Sendable {
+        private let lock = NSLock()
+        private var result: Result<Data, Error>?
+
+        var value: Result<Data, Error>? {
+            lock.withLock { result }
+        }
+
+        var failure: Capability.Failure? {
+            guard case .failure(let error) = value else { return nil }
+            return error as? Capability.Failure
+        }
+
+        func set(_ result: Result<Data, Error>) {
+            lock.withLock { self.result = result }
+        }
+    }
+
+    private static func address(of path: String) -> sockaddr_un {
+        var address = sockaddr_un()
+        address.sun_family = sa_family_t(AF_UNIX)
+        withUnsafeMutableBytes(of: &address.sun_path) { $0.copyBytes(from: Array(path.utf8)) }
+        return address
+    }
+
+    private func fakeHelper(answer: @escaping @Sendable (Int32) -> Void) throws -> Int32 {
+        let listener = Darwin.socket(AF_UNIX, SOCK_STREAM, 0)
+        var address = Self.address(of: socket)
+        let bound = withUnsafePointer(to: &address) { $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { Darwin.bind(listener, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) } }
+        XCTAssertEqual(bound, 0)
+        XCTAssertEqual(Darwin.listen(listener, 4), 0)
+        Thread.detachNewThread {
+            let connection = Darwin.accept(listener, nil, nil)
+            guard connection >= 0 else { return }
+            var head = [UInt8](repeating: 0, count: 8)
+            _ = Darwin.read(connection, &head, 8)
+            answer(connection)
+        }
+        return listener
+    }
+
     func testAFailedStartFailsWithOneLineThatNamesTheCauseAndTheFix() async throws {
         try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: folder.path)
 

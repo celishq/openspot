@@ -1,0 +1,5 @@
+app/Core/Package/SpotPackage.swift	Process()
+app/Core/Script/Capability.swift	Process()
+app/Shell/App/AppCommandLink.swift	Process()
+app/Shell/Grid/SpotGlyphShelf.swift	Process()
+app/Shell/Mac/SpotCalendarApp.swift	Process()

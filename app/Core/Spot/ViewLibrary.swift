@@ -189,29 +189,13 @@ public struct ViewLibrary: Sendable {
     }
 
     private func run(_ name: String, _ arguments: [String]) async throws {
-        let process = Process()
-        process.executableURL = tools.appendingPathComponent(name)
-        process.arguments = arguments
-        process.standardOutput = FileHandle.nullDevice
-        let errors = Pipe()
-        process.standardError = errors
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            let ended = DispatchSemaphore(value: 0)
-            process.terminationHandler = { _ in ended.signal() }
-            do {
-                try process.run()
-            } catch {
-                continuation.resume(throwing: error)
-                return
-            }
-            DispatchQueue.global().async {
-                let text = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-                ended.wait()
-                guard process.terminationStatus != 0 else { return continuation.resume() }
-                let lines = text.split(separator: "\n").map(String.init)
-                let line = lines.first { $0.contains("error:") } ?? lines.last ?? "\(name) failed."
-                continuation.resume(throwing: SpotError.fault(Self.withoutFolders(line)))
-            }
+        let process = ScriptProcess(url: tools.appendingPathComponent(name), arguments: arguments)
+        do {
+            for try await _ in process.start() {}
+        } catch SpotError.failed {
+            let lines = process.errors.split(separator: "\n").map(String.init)
+            let line = lines.first { $0.contains("error:") } ?? lines.last ?? "\(name) failed."
+            throw SpotError.fault(Self.withoutFolders(line))
         }
     }
 
