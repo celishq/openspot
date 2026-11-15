@@ -90,7 +90,8 @@ extension SpotRun {
     private func log(_ call: OpenCall, _ end: ScriptCall.End, errors: String) {
         guard !script.answersInApp else { return }
         let request = call.request
-        runs.record(spot, request.action, input: request.input, frames: call.frames, errors: errors, end: end, reason: request.reason, started: call.made.started, begin: call.begin)
+        let values = fieldValues
+        runs.record(spot, request.action, input: values.hiding(request.input), frames: call.frames.map(values.hiding), errors: values.hiding(errors), end: end, reason: request.reason, started: call.made.started, begin: call.begin)
     }
 
     private static func answer(_ waiting: CheckedContinuation<SpotOutput?, Error>, of call: OpenCall, _ end: ScriptCall.End) {

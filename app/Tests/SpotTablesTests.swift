@@ -47,8 +47,9 @@ final class SpotTablesTests: XCTestCase {
     func testAHeaderFieldThatAsksForAHotkeyIsAFault() {
         XCTAssertEqual(
             fault(ofHeader: "# title=T\n# on=sheet.open\n#\n# field=key\n# type=hotkey\n# title=Shortcut\n"),
-            "T has an unknown key on the field key: type"
+            "T has an unknown type on the field key: hotkey. Use type=secret, or no type"
         )
+        XCTAssertNil(fault(ofHeader: "# title=T\n# on=sheet.open\n#\n# field=token\n# type=secret\n"))
     }
 
     func testARowHoldsKeysOfItsOwnWhichACheckDoesNotReport() async throws {

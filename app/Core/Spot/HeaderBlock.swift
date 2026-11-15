@@ -4,7 +4,7 @@ public enum HeaderBlock: String, CaseIterable, Sendable {
     public var keys: Set<String> {
         switch self {
         case .button: [rawValue, "title", "icon", "offers", "when", "shortcut", "scope", "close", "form", "confirm"]
-        case .field: [rawValue, "title", "icon"]
+        case .field: [rawValue, "title", "icon", "type"]
         }
     }
 

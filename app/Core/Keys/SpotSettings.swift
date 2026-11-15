@@ -37,6 +37,7 @@ public struct SpotSettings: Equatable, Sendable {
     private static let open = "open"
     static let soleTitle = "shortcut"
     public static let unset = "Record"
+    static let secretWord = "Set, and hidden"
     static let menuBarIcon = "menubar.rectangle"
     static let floatIcon = "pip"
     static let keyIcon = "keyboard"
@@ -122,7 +123,7 @@ public struct SpotSettings: Equatable, Sendable {
             TextBlock(fields: [.init(key: "button", value: Self.open), .init(key: "title", value: "Change"), .init(key: "close", value: "false")]),
             TextBlock(fields: [.init(key: "button", value: Self.clear), .init(key: "title", value: "Remove"), .init(key: "shortcut", value: "cmd+backspace")])
         ]
-        let named = fields.map { ($0, config.setting($0.id, of: spot).flatMap { $0.isEmpty ? nil : $0 }) }
+        let named = fields.map { field in (field, config.setting(field.id, of: spot).flatMap { $0.isEmpty ? nil : field.isSecret ? Self.secretWord : $0 }) }
         let kept = kept(in: config).compactMap { value in CommandOffer(setting: value.key).map { ($0, Optional(value.value)) } }
         blocks += (named + kept).map(fieldRow)
         blocks += keyRows(config.keys)

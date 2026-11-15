@@ -19,14 +19,17 @@ public final class CallerTokens: @unchecked Sendable {
         var group: pid_t?
         var start: UInt64 = 0
         var hasEnded = false
+        var fix: URL?
     }
 
     public static let variable = "OPENSPOT_TOKEN"
     private static let reason = ReadReason.variable
+    private static let fixLimit = 64
 
     private let lock = NSLock()
     private var records: [String: Record] = [:]
     private var groups: [pid_t: String] = [:]
+    private var fixes: [String: URL] = [:]
     private var careful = false
 
     private static let sandboxed = "sandboxed"
@@ -77,12 +80,30 @@ public final class CallerTokens: @unchecked Sendable {
 
     func release(_ token: String) {
         lock.withLock {
+            if let fix = records[token]?.fix {
+                if fixes.count >= Self.fixLimit { fixes = [:] }
+                fixes[token] = fix
+            }
             guard let group = records[token]?.group, kill(-group, 0) == 0 else {
                 if let group = records[token]?.group { groups[group] = nil }
                 records[token] = nil
                 return
             }
             records[token]?.hasEnded = true
+        }
+    }
+
+    func note(_ fix: URL?, of token: String) {
+        lock.withLock {
+            guard records[token]?.hasEnded == false else { return }
+            records[token]?.fix = fix
+        }
+    }
+
+    func fix(of token: String) -> URL? {
+        lock.withLock {
+            defer { fixes[token] = nil }
+            return fixes[token] ?? records[token]?.fix
         }
     }
 

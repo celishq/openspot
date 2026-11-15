@@ -75,9 +75,15 @@ public final class CommandAPI: @unchecked Sendable {
         let caller = caller(of: request)
         if call.rule.flags.contains(.startsScripts), isSandboxed || runs?.tokens.isCareful == true && caller != nil { return nil }
         let (spot, reason) = values(of: request)
-        return call.call.work(in: CallContext(
+        let work = call.call.work(in: CallContext(
             mac: mac, api: self, request: request, environment: places.environment, app: app, runs: runs, account: account, raise: raise, caller: caller,
             spot: spot, isRead: reason != nil, input: input, output: output, calendar: calendar, reminders: reminders, rates: rates, nouns: nouns
         ))
+        guard let work, let tokens = runs?.tokens, let token = request.token, caller != nil else { return work }
+        return {
+            let answer = await work()
+            tokens.note(answer.code == 0 ? nil : answer.fix, of: token)
+            return answer
+        }
     }
 }

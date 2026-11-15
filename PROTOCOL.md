@@ -1,6 +1,6 @@
 # Openspot protocol
 
-`1.0` `draft`
+`1.1` `draft`
 
 This is the contract between a spot and Openspot: what a spot prints, which calls it gets, and what it can ask. To learn
 by example, start with the [guide](GUIDE.md).
@@ -124,7 +124,7 @@ The header says what a spot is. Openspot reads it without running the spot.
 
 | Block         | Meaning                                                                                                   |
 | ------------- | --------------------------------------------------------------------------------------------------------- |
-| `button=<id>` | A command, with its `title` and `icon`. The user can give it a hotkey.                                    |
+| `button=<id>` | A command, with its `title` and `icon`. The user can give it a hotkey. `confirm` asks for a second press. |
 | `field=<key>` | A setting the user chooses, with its `title` (by default, its key) and `icon`. See [Settings](#settings). |
 
 - A spot with a `button` in its header has no card. It gives its commands instead.
@@ -132,6 +132,18 @@ The header says what a spot is. Openspot reads it without running the spot.
   opens its [Settings](#settings) and records one.
 - A spot with one `button` and its own rows runs the command on Return, and its rows open as its History on `⌘Y`. A
   spot with more `button`s runs them by their hotkeys and from its ⌘K menu. See [The keys of a spot](#the-keys-of-a-spot).
+- `confirm=<words>` on a header `button` makes a press of its card, or its row in the ⌘K menu, ask twice: the first
+  press shows the words, and the second runs the command. A hotkey runs it at once.
+
+```sh
+#!/bin/sh
+# title=Empty Trash
+#
+# button=empty
+# title=Empty Trash
+# confirm=Press again to empty the Trash
+case "$1" in empty) echo 'toast=Emptied' ;; esac
+```
 
 ## Frames
 
@@ -172,6 +184,8 @@ printf 'text=done\ntitle=Copied\n'
   of a key that shows twice in a block where only a list repeats, and of a key that the head or a kind doesn't take. A
   row can hold keys of its own, which Openspot skips.
 - Openspot reads `ESC ] 9;4;1;<percent>` as `progress` and `ESC ] 9;<text>` as a toast, and removes other escape codes.
+- A read that prints the same frame of rows or of a card as the one that shows changes nothing, so Openspot skips it.
+  Its toast still shows.
 
 ## Blocks
 
@@ -448,6 +462,15 @@ An event makes Openspot ask a spot what to show. The header lists the events whe
   sheet.
 - Openspot never asks a spot with no event. A press of its card sends `<spot> open`.
 - Each read gets the event in `OPENSPOT_REASON` and its value in `OPENSPOT_VALUE`.
+- Openspot measures the load once for all the spots that list `system.load`, and only while one of them is wanted.
+
+```sh
+#!/bin/sh
+# title=Load
+# on=system.load
+# offers=menubar
+printf 'text=load\ntitle=%s\n' "${OPENSPOT_VALUE:-cpu=0 memory=0}"
+```
 
 | Event              | When Openspot raises it                                                   | Value         |
 | ------------------ | ------------------------------------------------------------------------- | ------------- |
@@ -461,6 +484,10 @@ An event makes Openspot ask a spot what to show. The header lists the events whe
 | `app.update`       | When Openspot has downloaded an update.                                   | its version   |
 | `app.launch`       | Once when Openspot starts.                                                |               |
 | `screen.wake`      | When the screen wakes.                                                    |               |
+| `system.load`      | Every 5 seconds while the spot is wanted.                                 | `cpu=<percent> memory=<percent>` |
+| `power.change`     | When the Mac moves to another power source.                               | `ac`, `battery` or `ups` |
+| `disk.mount`       | When a disk or a volume mounts.                                           | its path      |
+| `device.connect`   | When a USB device connects.                                               | its name      |
 
 - Openspot also asks a spot for these reasons, which aren't events:
   - `spot.change`: after a call that printed nothing;
@@ -501,7 +528,8 @@ Each call has three parts:
 
 - **Arguments:** the id, its row, then its values, so that `case "$1"` handles each call. A value over 64 KB goes only
   on stdin.
-- **Variables:** `OPENSPOT_REASON` and `OPENSPOT_VALUE` of a read, `OPENSPOT_PAGE`, the page that shows, `OPENSPOT_ID`, the spot's id, `OPENSPOT_DATA`, a
+- **Variables:** `OPENSPOT_REASON` and `OPENSPOT_VALUE` of a read, `OPENSPOT_PAGE`, the page that shows, `OPENSPOT_SETTING_<KEY>`, the value of each
+  `field` of the header that has one, with its key in capitals and `_` for any other sign (see [Settings](#settings)), `OPENSPOT_ID`, the spot's id, `OPENSPOT_DATA`, a
   folder for its files that one spot folder shares, `OPENSPOT_SH`, the shell helper, and `PATH`, with the `openspot`
   command first. Five more are for the spots that ship inside Openspot: `OPENSPOT_CONFIG`, the folder of the config,
   `OPENSPOT_SPOTS`, the spots folder when it isn't `spots` in that folder, and for the sheet that changes a spot,
@@ -510,6 +538,8 @@ Each call has three parts:
 - **Stdin:** one block of what the user filled in and typed: a line for each field of the sheet, `search=` with the
   search text, and a `form=` line for each other text the user may have meant, such as the same keys in another
   keyboard layout. A value that isn't a field comes as `value=`.
+- An action or a pick on a row that holds keys of its own, such as `meeting=`, also gets every key of that row on
+  stdin. The calls of a form don't.
 
 ```ini
 title=Groceries
@@ -558,6 +588,8 @@ start ──► frame ──► frame ──► ... ──► end        exit 0:
 - A call ends when its output closes. A stopped call changes nothing.
 - Exit code 0 means success. Any other code is a failure, and the user sees the last line of stderr. A failure can print
   `link=<url>`, a page that helps fix it.
+- When the last `openspot` call of a failed call failed with a page that fixes it, Openspot shows that page with the
+  failure, so a spot doesn't need to pass `link=` on.
 - A failed read at `panel.open` only marks its card, and goes to the app log.
 - A stop can come at any time, and two calls can run at once. Never leave a file half written.
 
@@ -895,6 +927,25 @@ on its card, a press of the card with `⌘`, or **Settings** in its ⌘K menu op
   `openspot` command.
 - A `field` block in the header names a setting. Return on it runs the action with the same id, which can answer with a
   form. `⌘⌫` removes the value.
+- Each call gets the value of each `field` in `OPENSPOT_SETTING_<KEY>`, such as `OPENSPOT_SETTING_FOLDER`, so a spot
+  reads its settings with no `openspot` call. A spot never gets the settings of another spot this way.
+- `type=secret` on a header `field` keeps a value such as a key of a service. Return on its row asks for the value in
+  Openspot's own form. Each call gets it only on stdin, as `setting.<key>=<value>`, never in a variable or an argument.
+  Settings show only that it is set, and Openspot hides it in the call log, the stats, a toast and a failure line.
+
+```sh
+#!/bin/sh
+# title=Weather
+# on=sheet.open
+#
+# field=city
+#
+# field=token
+# type=secret
+. "$OPENSPOT_SH"
+printf 'text=city\ntitle=%s\n' "${OPENSPOT_SETTING_CITY:-Paris}"
+if [ -n "$(value setting.token)" ]; then printf 'text=token\ntitle=Signed in\n'; fi
+```
 - `openspot setting get <key>` prints the value, or nothing. `openspot setting set <key> [value]` keeps the value, or
   removes it when there's no value. In a terminal, `--spot <id>` names the spot.
 - Keep a choice of the user in a setting. Keep what the spot makes, such as a cache, in `OPENSPOT_DATA`.

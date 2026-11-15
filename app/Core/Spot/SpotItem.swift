@@ -74,7 +74,7 @@ public struct SpotItem: Equatable, Sendable {
             isOn: block.flag(RowKey.value) ?? false,
             tone: block.value(RowKey.tone).flatMap(MetricValue.Tone.init),
             file: block.value(RowKey.file).flatMap { $0.hasPrefix("/") ? $0 : nil },
-            fields: block.value(RowKey.pushSpot) == nil ? nil : block.text,
+            fields: block.value(RowKey.pushSpot) != nil || block.fields.contains { RowKey(rawValue: $0.key) == nil } ? block.text : nil,
             pin: block.value(RowKey.pin).flatMap(Pin.init(rawValue:)),
             openTitle: block.value(RowKey.open),
             staysOnPick: block.flag(RowKey.close) == false,

@@ -4,6 +4,7 @@ import OpenspotCore
 @MainActor
 final class SpotMac: MacEvents {
     private var observers: [NSObjectProtocol] = []
+    private let system = SpotSystemEvents()
 
     nonisolated var mac: Mac {
         Mac(
@@ -25,7 +26,12 @@ final class SpotMac: MacEvents {
         NSPasteboard.general.changeCount
     }
 
+    var load: LoadSample {
+        SpotSystemEvents.load
+    }
+
     func listen(_ heard: @escaping @MainActor (SpotEvent) -> Void) {
+        system.listen(heard)
         let center = NSWorkspace.shared.notificationCenter
         observers.forEach(center.removeObserver)
         observers = [

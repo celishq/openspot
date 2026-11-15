@@ -172,12 +172,18 @@ extension SpotsModel {
         guard assignedKeys.contains(where: { $0.spot == entry.id && $0.act == .command(command) }) else {
             return "⏎ Set key   ⌘⏎ Settings   ⌘K Actions"
         }
-        let title = entry.spot.offers.first?.title ?? command
-        return "⏎ \(title)   ⌘⏎ Settings   ⌘K Actions"
+        let offer = entry.spot.offers.first
+        if confirming == entry.id, let confirm = offer?.confirm { return "⏎ \(confirm)   ⌘⏎ Settings   ⌘K Actions" }
+        return "⏎ \(offer?.title ?? command)   ⌘⏎ Settings   ⌘K Actions"
     }
 
     private func runSole(_ command: String, of entry: Entry) {
         if let key = assignedKeys.first(where: { $0.spot == entry.id && $0.act == .command(command) }) {
+            if entry.spot.offers.first?.confirm != nil, confirming != entry.id {
+                confirming = entry.id
+                return
+            }
+            confirming = nil
             if isShown { host.dismiss() }
             press(key)
         } else {

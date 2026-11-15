@@ -197,6 +197,7 @@ public final class SpotRun {
         didSet { settle() }
     }
     @ObservationIgnored var lastAnswer: SpotOutput?
+    @ObservationIgnored var shownFrame: String?
     @ObservationIgnored var readReason: ReadReason?
     @ObservationIgnored var finishesRead = false
     @ObservationIgnored var hasAsked = false
@@ -250,6 +251,7 @@ public final class SpotRun {
             link.run = self
             old.end()
         }
+        shownFrame = nil
         spot = lastAnswer.map(new.taking) ?? new
         if reading.label != new.name || reading.headerSymbol != new.headerSymbol {
             reading = MetricReading(label: new.name, headerSymbol: new.headerSymbol)

@@ -38,6 +38,8 @@ public final class SpotRuns {
     @ObservationIgnored var source: (any MacEvents)?
     @ObservationIgnored var clipboardWatch: Task<Void, Never>?
     @ObservationIgnored var clipboardSeen: Int?
+    @ObservationIgnored var loadWatch: Task<Void, Never>?
+    @ObservationIgnored let loadPause: Duration
     @ObservationIgnored private(set) var hasQuit = false
     @ObservationIgnored private let recent: (String) -> [String]
     @ObservationIgnored private let prepare: ([SpotItem], [String]) async -> Void
@@ -73,6 +75,13 @@ public final class SpotRuns {
     @ObservationIgnored var answerWaits: [(DispatchTime) -> Void]?
     @ObservationIgnored private let swift: SwiftProgram
     @ObservationIgnored let environment: [String: String]
+    @ObservationIgnored private(set) var settings: [String: [String: String]] = [:]
+
+    public func take(settings values: [SpotSetting]) {
+        var next: [String: [String: String]] = [:]
+        for value in values { next[value.spot, default: [:]][value.key] = value.value }
+        settings = next
+    }
 
     public init(
         environment: [String: String] = ProcessInfo.processInfo.environment,
@@ -81,6 +90,7 @@ public final class SpotRuns {
         clock: RunClock = RunClock(),
         stopPause: TimeInterval = 2,
         clipboardPause: Duration = .milliseconds(500),
+        loadPause: Duration = .seconds(5),
         recent: @escaping (String) -> [String] = { _ in [] },
         prepare: @escaping ([SpotItem], [String]) async -> Void = { _, _ in },
         inlineIdle: TimeInterval = 30,
@@ -103,6 +113,7 @@ public final class SpotRuns {
         now = clock.now
         self.stopPause = stopPause
         self.clipboardPause = clipboardPause
+        self.loadPause = loadPause
         self.recent = recent
         self.prepare = prepare
     }
@@ -212,6 +223,8 @@ public final class SpotRuns {
         ticks = nil
         clipboardWatch?.cancel()
         clipboardWatch = nil
+        loadWatch?.cancel()
+        loadWatch = nil
         opening.end()
         let live = processes.filter(\.needsFinish)
         sheets.values.forEach { $0.prepareToQuit() }
@@ -283,7 +296,8 @@ public final class SpotRuns {
     }
 
     func intake(_ frame: String, of id: String?) async -> SpotOutput {
-        let lines = await SpotOutput.reading(frame)
+        let shown = id.flatMap { sheets[$0] }.flatMap { $0.shownFrame == frame ? $0.lastAnswer : nil }
+        let lines = if let shown { shown } else { await SpotOutput.reading(frame) }
         guard let id, opening.moving == id else { return lines }
         sheets[id]?.hear(lines)
         await opening.waitForMotion(of: id)
@@ -355,6 +369,7 @@ public final class SpotRuns {
             let token = tokens.issue(for: spot, reason: variables[ReadReason.variable])
             let process = ScriptProcess(url: swift.runnable(for: spot.url), name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: variables.merging(["OPENSPOT_ID": spot.id]) { given, _ in given }.merging([CallerTokens.variable: token]) { _, own in own }, careful: isCareful ? spot.uses : nil, base: environment)
             track(process, of: spot.id, token: token)
+            process.fix = { [tokens] in tokens.fix(of: token) }
             let stream = process.start()
             keep(process)
             return (stream, { process.stop() }, process)

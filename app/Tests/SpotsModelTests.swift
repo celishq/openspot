@@ -487,7 +487,7 @@ final class SpotsModelTests: XCTestCase {
 
     func testAReadOfTheSameRowsGivesTheGlyphsItCollectedBefore() async throws {
         let calls = folder.appendingPathComponent("calls").path
-        try script("faces", header: "on=sheet.open", "echo x >> '\(calls)'; for i in $(seq 1 100); do printf 'row=f%s\\ntitle=Face %s\\nicon=😀\\n\\n' $i $i; done")
+        try script("faces", header: "on=sheet.open", "echo x >> '\(calls)'; printf 'title=Read %s\\n\\n' $(wc -l < '\(calls)'); for i in $(seq 1 100); do printf 'row=f%s\\ntitle=Face %s\\nicon=😀\\n\\n' $i $i; done")
         await model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])

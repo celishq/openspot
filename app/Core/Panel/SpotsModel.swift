@@ -74,7 +74,12 @@ public final class SpotsModel {
         if shownPanels != shown { shownPanels = shown }
     }
     public private(set) var gridHeight = SpotTokens.backdropHeight(gridHeight: 0)
-    public var selected = 0
+    public var selected = 0 {
+        didSet {
+            if confirming != nil, selected != oldValue { confirming = nil }
+        }
+    }
+    public internal(set) var confirming: String?
     public private(set) var openList: String?
     public internal(set) var flow = Flow() {
         didSet {
@@ -174,7 +179,11 @@ public final class SpotsModel {
     @ObservationIgnored private var loading: Task<Void, Never>?
     @ObservationIgnored private var lastScan = ScanResult(files: [], refused: [])
     @ObservationIgnored private var loaded: (stamp: [String: [Int]], hosted: [Spot])?
-    @ObservationIgnored private(set) var kept = KeptConfig()
+    @ObservationIgnored private(set) var kept = KeptConfig() {
+        didSet {
+            if kept.config.settings != oldValue.config.settings { runs.take(settings: kept.config.settings) }
+        }
+    }
     @ObservationIgnored private(set) var gridBuilds = 0
     @ObservationIgnored var removal: Removal?
     @ObservationIgnored private var fileStamps: [String: [Int]] = [:]
@@ -403,6 +412,7 @@ public final class SpotsModel {
 
     public func panelWillHide() {
         formAsk = nil
+        confirming = nil
         takeHeld([])
         stopRecording()
         closeMenu()

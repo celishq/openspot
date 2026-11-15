@@ -88,6 +88,38 @@ final class SoleCommandTests: XCTestCase {
         XCTAssertNil(model.recording)
     }
 
+    func testACommandWithConfirmAsksForASecondPressOfItsCard() async throws {
+        try script("wipe", header: "title=Wipe\n\nbutton=wipe\ntitle=Wipe\nconfirm=Press again to wipe")
+        _ = try model.files.config.change { $0.assign(.tap(.option), to: "wipe", act: .command("wipe")) }
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.query = "wipe"
+        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "wipe" })
+
+        model.run(try entry("wipe"))
+
+        XCTAssertEqual(model.hint, "⏎ Press again to wipe   ⌘⏎ Settings   ⌘K Actions")
+        XCTAssertEqual(host.dismissals, 0)
+        model.run(try entry("wipe"))
+        try await wait("the command") { host.confirms == ["Ran wipe"] }
+        XCTAssertEqual(model.hint, "⏎ Wipe   ⌘⏎ Settings   ⌘K Actions")
+    }
+
+    func testACommandWithConfirmAsksForASecondPressInTheMenu() async throws {
+        try script("wipe", header: "title=Wipe\non=sheet.open\n\nbutton=wipe\ntitle=Wipe\nconfirm=Press again to wipe\n\nbutton=keep\ntitle=Keep")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.query = "wipe"
+        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "wipe" })
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        let menu = try XCTUnwrap(model.menu)
+
+        XCTAssertEqual(menu.rows.first { $0.title == "Wipe" }?.action?.confirm, "Press again to wipe")
+    }
+
     func testTheFooterOfASpotWithOneCommandAndNoSheetNamesWhatReturnDoes() async throws {
         try script("party", header: "title=Party\non=panel.open\n\nbutton=play\ntitle=Play")
         await model.reload()

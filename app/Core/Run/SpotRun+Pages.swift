@@ -22,6 +22,7 @@ extension SpotRun {
         panel = kept?.panel
         answered = nil
         lastAnswer = nil
+        shownFrame = nil
         if showsSheet { read(need: .change, reason: .sheet) }
         return kept != nil
     }
@@ -35,8 +36,13 @@ extension SpotRun {
         pageStates.removeAll { $0.page == page }
     }
 
-    func withPage(_ variables: [String: String]) -> [String: String] {
-        guard let page else { return variables }
-        return variables.merging(["OPENSPOT_PAGE": page]) { _, own in own }
+    func sent(_ variables: [String: String], values: FieldValues) -> [String: String] {
+        let given = values.variables.merging(variables) { _, given in given }
+        guard let page else { return given }
+        return given.merging(["OPENSPOT_PAGE": page]) { _, own in own }
+    }
+
+    var fieldValues: FieldValues {
+        FieldValues(of: spot, in: runs.settings)
     }
 }
