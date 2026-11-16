@@ -293,7 +293,7 @@ case "$1" in
 esac
 ```
 
-Type `/notes`, and the grey hint **What to note** shows after it. Type `buy milk` after it. The footer says **⏎ Notes "buy milk"**. Press Return, and Openspot runs
+Type `/notes`, and the grey hint **What to note** shows after it. Type `buy milk` after it. The row **Add note** is highlighted, and the footer says **⏎ Add note "buy milk"**. Press Return, and Openspot runs
 `notes add` with `search=buy milk` on stdin. The spot saves the note, and the panel closes. When the spot prints a form
 instead, the form opens, and its values go to the same call.
 

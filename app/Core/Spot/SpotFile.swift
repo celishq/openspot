@@ -125,6 +125,7 @@ public struct SpotFile: Equatable, Sendable {
             pages: header.values(HeaderKey.pages),
             uses: uses,
             keywords: header.list(HeaderKey.keywords),
+            placeholder: header.value(HeaderKey.placeholder),
             sample: Self.sample(beside: url),
             editsSpots: edits != nil
         )

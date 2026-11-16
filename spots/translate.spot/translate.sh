@@ -1,6 +1,7 @@
 #!/bin/sh
 # icon=translate
 # detail=Between languages
+# placeholder=Text to translate
 # on=sheet.open
 # uses=clipboard
 # offers=card

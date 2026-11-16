@@ -62,6 +62,7 @@ public struct Spot: Equatable, Sendable {
         pages: [String] = [],
         uses: Set<SpotUse> = [],
         keywords: [String] = [],
+        placeholder: String? = nil,
         sample: URL? = nil,
         editsSpots: Bool = false
     ) {
@@ -70,7 +71,7 @@ public struct Spot: Equatable, Sendable {
             offeredPlaces: offeredPlaces, isFound: isFound, answers: answers, order: order, layout: layout, places: places,
             opens: opens, host: host, growsFromField: growsFromField, mode: mode, pressRuns: pressRuns, drop: drop,
             dataName: dataName, isOnGrid: isOnGrid, view: view, viewDate: viewDate, sources: sources, emits: emits, pages: pages, uses: uses,
-            offers: offers, offeredActions: offeredActions, settings: settings, keywords: keywords, sample: sample,
+            offers: offers, offeredActions: offeredActions, settings: settings, keywords: keywords, placeholder: placeholder, sample: sample,
             editsSpots: editsSpots
         ))
         self.kind = kind

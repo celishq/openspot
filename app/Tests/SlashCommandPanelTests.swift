@@ -44,11 +44,11 @@ final class SlashCommandPanelTests: PanelCase {
         type("/note buy milk")
 
         XCTAssertEqual(model.slash, SlashCommand("/note buy milk"))
-        XCTAssertEqual(model.visible.map(\.state.title), ["Notes", "Add note", "Find note"])
+        XCTAssertEqual(model.visible.map(\.state.title), ["Add note", "Find note"])
         XCTAssertEqual(model.selected, 0)
-        XCTAssertEqual(model.hint, "⏎ Notes \"buy milk\"")
-        XCTAssertTrue(model.handleSearchKey(ActionKey(name: "down")))
         XCTAssertEqual(model.hint, "⏎ Add note \"buy milk\"")
+        XCTAssertTrue(model.handleSearchKey(ActionKey(name: "down")))
+        XCTAssertEqual(model.hint, "⏎ Find note \"buy milk\"")
     }
 
     func testTheHintOfTheHighlightedCommandShowsUntilTextFollows() async throws {
@@ -62,9 +62,20 @@ final class SlashCommandPanelTests: PanelCase {
         XCTAssertNil(model.slashPlaceholder)
 
         type("/note")
-        XCTAssertNil(model.slashPlaceholder)
-        XCTAssertTrue(model.handleSearchKey(ActionKey(name: "down")))
         XCTAssertEqual(model.slashPlaceholder, "What to add")
+        XCTAssertTrue(model.handleSearchKey(ActionKey(name: "down")))
+        XCTAssertNil(model.slashPlaceholder)
+    }
+
+    func testEachRowSaysWhatReturnDoesWithTheText() async throws {
+        try writeNotes()
+        await open()
+
+        type("/note")
+        XCTAssertEqual(model.visible.map(\.state.subtitle), ["What to add", "Notes"])
+
+        type("/note milk")
+        XCTAssertEqual(model.visible.map(\.state.subtitle), ["With \"milk\"", "With \"milk\""])
     }
 
     func testAStayingSpotAnswersASlashCommand() async throws {
@@ -93,13 +104,15 @@ final class SlashCommandPanelTests: PanelCase {
         try await wait("the toast") { self.host.confirms == ["Saved buy milk"] }
     }
 
-    func testWithNoTextTheFooterNamesWhatReturnDoesOnTheCard() async throws {
+    func testWithNoTextReturnRunsTheCommandOfItsRow() async throws {
         try script("solo", header: "title=Solo\n\nbutton=solo\ntitle=Solo", "printf 'toast=Ran\\n'")
         await open()
 
         type("/solo")
+        XCTAssertEqual(model.hint, "⏎ Solo")
+        model.runSelected()
 
-        XCTAssertEqual(model.hint, "⏎ Set key   ⌘⏎ Settings   ⌘K Actions")
+        try await wait("the command") { self.host.confirms == ["Ran"] }
     }
 
     func testTheLeadKeepsTheSpacesTypedBeforeTheCommand() async throws {
@@ -111,16 +124,32 @@ final class SlashCommandPanelTests: PanelCase {
         XCTAssertEqual(model.slash?.lead, "  ")
     }
 
-    func testALoneSlashListsEveryCommand() async throws {
+    func testALoneSlashListsEveryCommandThatTakesText() async throws {
         try writeNotes()
         try script("trash", header: "title=Trash", "printf 'toast=Emptied\\n'")
+        try script("say", header: "title=Say\nplaceholder=What to say", "printf 'toast=Said\\n'")
         await open()
 
         type("/")
 
         XCTAssertEqual(model.slash, SlashCommand("/"))
-        XCTAssertEqual(Set(model.visible.map(\.state.title)), ["Notes", "Add note", "Find note", "Trash"])
+        XCTAssertEqual(Set(model.visible.map(\.state.title)), ["Add note", "Find note", "Say"])
         XCTAssertEqual(model.selected, 0)
+    }
+
+    func testASpotWithAPlaceholderRunsOpenWithTheText() async throws {
+        try script("say", header: "title=Say\nplaceholder=What to say", """
+        stdin=$(cat)
+        printf '%s\\n%s\\n' "$*" "$stdin" >> '\(input.path)'
+        printf 'toast=Said\\n'
+        """)
+        await open()
+
+        type("/say hi")
+        model.runSelected()
+
+        try await wait("the toast") { self.host.confirms == ["Said"] }
+        XCTAssertTrue(sent.contains("open\nsearch=hi"), sent)
     }
 
     func testAWordThatNamesNoCommandStaysText() async throws {
@@ -175,7 +204,7 @@ final class SlashCommandPanelTests: PanelCase {
     }
 
     func testASheetSpotGetsTheTextOnTheStdinOfItsRead() async throws {
-        try script("translate", header: "title=Translate\non=sheet.open", """
+        try script("translate", header: "title=Translate\non=sheet.open\nplaceholder=Text to translate", """
         stdin=$(cat)
         printf '%s\\n%s\\n' "$*" "$stdin" >> '\(input.path)'
         printf 'field=input\\n'

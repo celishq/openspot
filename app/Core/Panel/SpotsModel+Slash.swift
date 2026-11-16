@@ -3,15 +3,15 @@ import Foundation
 extension SpotsModel {
     func commandEntries(_ command: SlashCommand) -> [Entry] {
         let cards = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        return commands.entries(matching: runs.search(of: command.word), limit: command.word.isEmpty ? .max : Self.searchLimit, cards: cards)
+        return commands.entries(matching: runs.search(of: command.word), text: command.text, limit: command.word.isEmpty ? .max : Self.searchLimit, cards: cards)
     }
 
     func launch(_ shown: Entry, with text: String) {
         guard let entry = entry(shown.spot.id) else { return }
-        let offer = commands.command(of: shown)
+        let offer = commands.button(of: shown)
         if text.isEmpty {
-            if let offer, shown.item != nil { return run(CommandAction.command(offer), on: (entry, nil)) }
-            return run(seen: shown)
+            if let offer { return run(CommandAction.command(offer), on: (entry, nil)) }
+            return run(seen: entry)
         }
         if let offer {
             return call(CommandAction.command(offer), of: entry, text)
@@ -23,7 +23,7 @@ extension SpotsModel {
             pushFirst(entry.id, moving: true)
             sheets[entry.id]?.type(text)
         default:
-            run(seen: shown)
+            run(seen: entry)
         }
     }
 
@@ -33,7 +33,7 @@ extension SpotsModel {
 
     public var slashPlaceholder: String? {
         guard let slash, slash.text.isEmpty, let shown = selectedEntry else { return nil }
-        return commands.command(of: shown)?.placeholder
+        return commands.button(of: shown).map { $0.placeholder } ?? shown.spot.placeholder
     }
 
     var slashHint: String? {

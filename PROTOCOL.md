@@ -110,6 +110,7 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `icon`        | The icon, as in a block (see [Blocks](#blocks)). A path that doesn't start with `/` starts at the spot's folder.                 |
 | `detail`      | The line under the title.                                                                                                        |
 | `keywords`    | More words that find the spot in the main search, split by commas, such as `keywords=coffee, cup`.                               |
+| `placeholder` | The text the spot takes in a [slash command](#slash-commands), such as `placeholder=Text to translate`. It lists the spot there. |
 | `on`          | An event that makes Openspot ask the spot what to show. One line for each event. See [Events](#events).                          |
 | `emits`       | The events the spot raises, split by commas. See [Events](#events).                                                              |
 | `offers`      | A place where the spot can show: `card`, `search`, `menubar`, `float` or `window`. One line each. See [Places](#places).         |
@@ -590,25 +591,28 @@ openspot_kv value "$(value input)"
 
 ## Slash commands
 
-A slash command runs a spot, or a `button` of its header, with the text that the user typed, in one Return.
+A slash command runs a `button` of a spot's header, or a spot with a `placeholder`, with the text that the user typed, in
+one Return. A plain search finds spots; `/` runs one with text.
 
 ```text
 /translate hello world     Return opens Translate, and its read gets search=hello world
 buy milk /notes            Return runs notes add, with search=buy milk on stdin
 ```
 
-- In the main search, `/` at the start of a word, with a letter after it, lists the spots and the header `button`s
-  whose name matches the word, and `/` alone lists them all. A word that matches none stays text, so `10/2` and `/Users`
-  search as before.
-- The first row is highlighted, ↑ and ↓ move it, and the footer names what Return runs.
+- In the main search, `/` at the start of a word, with a letter after it, lists the header `button`s and the spots with
+  a `placeholder` whose name matches the word, and `/` alone lists them all. A word that matches none stays text, so
+  `10/2` and `/Users` search as before.
+- The first row is highlighted, ↑ and ↓ move it, and the footer names what Return runs. Each row's detail is its
+  `placeholder` until text follows, then the text that Return sends.
 - The text is the rest of the line, trimmed. The call gets it as `search=<text>` on stdin, with the arguments of a plain
-  press, so `case "$1"` handles it as any other call. With no text, Return does what it does on the card.
+  press, so `case "$1"` handles it as any other call. With no text, a `button` runs as its hotkey does, and a spot does
+  what Return does on its card.
 
-| Command                                                     | The call with text                                 |
-| ----------------------------------------------------------- | -------------------------------------------------- |
-| A header `button`, or a spot whose Return runs its `button` | `<spot> <id>`                                      |
-| A spot with no sheet                                        | `<spot> open`                                      |
-| A spot with a sheet                                         | Its sheet opens, and the read of the sheet gets it |
+| Command                               | The call with text                                 |
+| ------------------------------------- | -------------------------------------------------- |
+| A header `button`                     | `<spot> <id>`                                      |
+| A spot with a `placeholder`, no sheet | `<spot> open`                                      |
+| A spot with a `placeholder` and sheet | Its sheet opens, and the read of the sheet gets it |
 
 - The first frame of the call decides what shows. A frame with fields is a form, as for a `form=true` button, and Return
   in it sends the values to the same call. Other blocks open the spot's sheet when the `button` has `close=false`.

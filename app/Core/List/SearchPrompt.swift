@@ -2,7 +2,7 @@ import Foundation
 
 public enum SearchPrompt {
     public static let verb = "Search"
-    public static let grid = "spots, / for commands"
+    public static let grid = "spots, or / to run with text"
 
     public static func word(for title: String) -> String {
         title.split(separator: " ", omittingEmptySubsequences: false).map { word in

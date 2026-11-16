@@ -28,7 +28,7 @@ extension SpotsModel {
             fixedState = spot.headerState
         }
 
-        public init(spot: Spot, item: SpotItem, isAnswer: Bool = false) {
+        public init(spot: Spot, item: SpotItem, isAnswer: Bool = false, detail: String? = nil) {
             id = "\(spot.id)\n\(item.run)"
             sizeChoice = item.card?.face.answerSize ?? .strip
             defaultSize = nil
@@ -39,7 +39,7 @@ extension SpotsModel {
             self.isAnswer = isAnswer
             run = nil
             fixedSpot = spot
-            fixedState = item.card ?? SpotState(title: item.title, subtitle: isAnswer ? item.subtitle ?? spot.name : item.path(in: spot))
+            fixedState = item.card ?? SpotState(title: item.title, subtitle: detail ?? (isAnswer ? item.subtitle ?? spot.name : item.path(in: spot)))
         }
 
         @MainActor public var spot: Spot {
