@@ -65,4 +65,26 @@ final class ShortcutTests: XCTestCase {
         XCTAssertEqual(KeyCode(code: 17)?.name, "t")
         XCTAssertNil(KeyCode(code: 49))
     }
+
+    func testEachSignKeyMakesAShortcutByItsPlaceOnTheKeyboard() throws {
+        let signs: [(code: UInt32, name: String)] = [
+            (27, "-"), (24, "="), (33, "["), (30, "]"), (41, ";"), (39, "'"), (43, ","), (47, "."), (44, "/"), (42, "\\"), (50, "`")
+        ]
+        for sign in signs {
+            let shortcut = try XCTUnwrap(Shortcut(code: sign.code, modifiers: .option), sign.name)
+            XCTAssertEqual(shortcut.text, "option+\(sign.name)")
+            XCTAssertEqual(shortcut.label, "⌥\(sign.name)")
+            XCTAssertEqual(Shortcut(text: "option+\(sign.name)"), shortcut)
+            XCTAssertEqual(Shortcut.keyLabel(of: sign.code), sign.name)
+        }
+        XCTAssertNil(Shortcut(code: 27, modifiers: .shift))
+    }
+
+    func testASignKeyIsKeptInTheConfigAndReadBack() throws {
+        for text in ["ctrl+option+-", "option+/", "ctrl+\\", "option+,"] {
+            let config = Config(text: "panel-key = \(ConfigDocument.Value.string(text).text)\n")
+            XCTAssertEqual(config.panelKey, Shortcut(text: text), text)
+            XCTAssertEqual(config.faults, [], text)
+        }
+    }
 }

@@ -417,9 +417,9 @@ final class PanelKeysTests: PanelCase {
         try await openPick()
         try await wait("the recording") { self.model.recording == "key" }
 
-        model.record(code: 27, modifiers: .option)
+        model.record(code: 122, modifiers: .option)
 
-        XCTAssertEqual(model.keyStatus, "Hold ⌃, ⌥ or ⌘ with a letter, a digit, an arrow, Space, Return or Tab.")
+        XCTAssertEqual(model.keyStatus, "Hold ⌃, ⌥ or ⌘ with a letter, a digit, a sign, an arrow, Space, Return or Tab.")
         XCTAssertEqual(model.recording, "key")
         XCTAssertEqual(keyField?.value, "")
     }

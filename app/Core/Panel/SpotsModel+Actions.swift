@@ -151,11 +151,11 @@ extension SpotsModel {
         let item = openItems?.shown.first { $0.run == recording }
         let isField = recordsField
         guard let shortcut = Shortcut(code: code, modifiers: modifiers) else {
-            guard isField else { return host.notify("Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.") }
+            guard isField else { return host.notify("Hold cmd, ctrl or option with a letter, a digit, a sign, an arrow, space, return or tab.") }
             pressedKey = Shortcut.keyLabel(of: code)
             isKeyDown = pressedKey != nil
             keyStatus = pressedKey == nil && modifiers.makesShortcut
-                ? "Hold ⌃, ⌥ or ⌘ with a letter, a digit, an arrow, Space, Return or Tab."
+                ? "Hold ⌃, ⌥ or ⌘ with a letter, a digit, a sign, an arrow, Space, Return or Tab."
                 : "Hold ⌃, ⌥ or ⌘ with a key."
             return
         }

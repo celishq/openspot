@@ -173,7 +173,7 @@ public struct Config: Equatable, Sendable {
         guard let value else { return standard }
         if case .string(let text) = value, let shortcut = Shortcut(text: text) { return shortcut }
         let word = if case .string(let text) = value { text } else { "this value" }
-        faults.append("config.toml: \(name) cannot use \(word). Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.")
+        faults.append("config.toml: \(name) cannot use \(word). Hold cmd, ctrl or option with a letter, a digit, a sign, an arrow, space, return or tab.")
         return nil
     }
 
