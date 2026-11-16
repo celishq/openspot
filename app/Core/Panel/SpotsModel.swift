@@ -161,6 +161,7 @@ public final class SpotsModel {
     public internal(set) var mode = PanelMode.grid
     public internal(set) var keyStatus: String?
     @ObservationIgnored var takenKeys: [TakenKey] = []
+    @ObservationIgnored var filledFields: Set<String> = []
     @ObservationIgnored private var problems: [String] = []
     public internal(set) var menuSession: ActionMenuSession? {
         didSet {
@@ -521,6 +522,7 @@ public final class SpotsModel {
             if mayMove(id) { updateVisible() }
         case .frame(let frame):
             markFound(id)
+            if id == openSheetID { recordClearedField() }
             if let spot = sheets[id]?.spot, spot.holdsSettings, let owner = spot.settingsSheet?.spot, keyFrames.updateValue(frame, forKey: id) != frame {
                 settingsChanged(of: owner)
             }

@@ -269,11 +269,14 @@ final class PanelKeysTests: PanelCase {
         if let key { try key.write(to: pickData.appendingPathComponent("key"), atomically: true, encoding: .utf8) }
         try script("pick", header: "title=Pick\non=sheet.open", """
         data='\(pickData.path)'
-        if [ "$1" = read ]; then
-          printf 'title=Choose your key\\ngrid=key\\ngrid=keep\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n\\nbutton=keep\\ntitle=Keep\\nshortcut=escape\\n' "$(cat "$data/key" 2>/dev/null)"
-        else
-          echo "$*" >> "$data/calls"
-        fi
+        [ "$1" = read ] || echo "$*" >> "$data/calls"
+        case "$1" in
+          key) printf %s "$2" > "$data/key" ;;
+          again) rm -f "$data/key" ;;
+        esac
+        case "$1" in
+          read|key|again) printf 'title=Choose your key\\ngrid=key\\ngrid=keep\\ngrid=again\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n\\nbutton=keep\\ntitle=Keep\\nshortcut=escape\\n\\nbutton=again\\ntitle=Try again\\nshortcut=backspace\\n' "$(cat "$data/key" 2>/dev/null)" ;;
+        esac
         """)
     }
 
@@ -361,6 +364,22 @@ final class PanelKeysTests: PanelCase {
 
         XCTAssertEqual(model.keyStatus, "⌥Space is free.")
         try await wait("the key call") { self.pickCalls.contains("key option+space") }
+    }
+
+    func testAFieldThatTurnsEmptyRecordsAgain() async throws {
+        try await openPick()
+        try await wait("the recording") { self.model.recording == "key" }
+        model.record(code: 49, modifiers: .option)
+        XCTAssertNil(model.recording)
+        try await wait("the kept key") { self.pickCalls.contains("key option+space") && self.model.sheets["pick"]?.calls.isEmpty == true }
+        XCTAssertEqual(keyField?.value, "option+space")
+        XCTAssertNil(model.recording)
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "backspace")))
+
+        try await wait("the cleared key") { self.keyField?.value == "" }
+        XCTAssertTrue(pickCalls.contains("again"))
+        try await wait("the recording again") { self.model.recording == "key" }
     }
 
     private func openKeyRow() async throws {

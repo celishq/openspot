@@ -84,7 +84,21 @@ extension SpotsModel {
     }
 
     func recordEmptyField() {
-        guard recording == nil, let part = openParts?.parts.first(where: { $0.control == .shortcut("") }) else { return }
+        recordField { $0.control == .shortcut("") }
+    }
+
+    func recordClearedField() {
+        let filled = filledFields
+        recordField { $0.control == .shortcut("") && filled.contains($0.id) }
+    }
+
+    private func recordField(where takes: (SpotPart) -> Bool) {
+        let parts = openParts?.parts ?? []
+        filledFields = Set(parts.compactMap { part in
+            guard case .shortcut(let text) = part.control, !text.isEmpty else { return nil }
+            return part.id
+        })
+        guard recording == nil, let part = parts.first(where: takes) else { return }
         toggleRecording(part)
     }
 
