@@ -1,0 +1,101 @@
+import XCTest
+@testable import OpenspotCore
+
+final class WelcomeSpotTests: BuiltInCase {
+    private var welcome: Spot {
+        get throws {
+            try spot("welcome")
+        }
+    }
+
+    private func answer(_ arguments: [String]) async throws -> SpotOutput {
+        try await welcome.answer(SpotAction(arguments: arguments), timeout: 60)
+    }
+
+    private func read() async throws -> SpotOutput {
+        try await welcome.items(timeout: 60)
+    }
+
+    private func part(_ id: String, in output: SpotOutput) throws -> SpotPart {
+        try XCTUnwrap(output.parts.first { $0.id == id })
+    }
+
+    func testItTakesTheLaunchRoleAndOffersNoCard() throws {
+        let spot = try welcome
+
+        XCTAssertEqual(spot.edits, .launch)
+        XCTAssertFalse(spot.offersCard)
+    }
+
+    func testAReadShowsAnEmptyKeyFieldAndKeepNamesTheCurrentKey() async throws {
+        try file.set("panel-key", to: "option+space")
+
+        let output = try await read()
+
+        let key = try part("key", in: output)
+        XCTAssertEqual(key.control, .shortcut(""))
+        XCTAssertEqual(try part("keep", in: output).title, "Keep ⌥Space")
+        XCTAssertEqual(try part("use", in: output).title, "Use this key")
+        XCTAssertEqual(try part("again", in: output).title, "Try again")
+        XCTAssertNil(output.move)
+    }
+
+    func testKeepNamesTheStandardKeyWithNoFile() async throws {
+        let output = try await read()
+
+        XCTAssertEqual(try part("keep", in: output).title, "Keep ⌃Space")
+    }
+
+    func testAKeyIsKeptUntilUseSavesIt() async throws {
+        try file.set("panel-key", to: "option+space")
+
+        let kept = try await answer(["key", "ctrl+option+space"])
+        let again = try await read()
+        let before = file.read().panelKey
+        let used = try await answer(["use"])
+
+        XCTAssertEqual(try part("key", in: kept).control, .shortcut("ctrl+option+space"))
+        XCTAssertEqual(try part("key", in: again).control, .shortcut("ctrl+option+space"))
+        XCTAssertEqual(before, Shortcut(text: "option+space"))
+        XCTAssertEqual(file.read().panelKey, Shortcut(text: "ctrl+option+space"))
+        XCTAssertEqual(used.move, .pop(all: false))
+    }
+
+    func testKeepAndUseWithNoKeyChangeNothing() async throws {
+        try file.set("panel-key", to: "option+space")
+
+        let kept = try await answer(["keep"])
+        let used = try await answer(["use"])
+
+        XCTAssertEqual(kept.move, .pop(all: false))
+        XCTAssertNil(used.move)
+        XCTAssertEqual(used.toast, "Press the keys you want first.")
+        XCTAssertEqual(file.read().panelKey, Shortcut(text: "option+space"))
+    }
+
+    func testKeepForgetsAKeyThatWasRecorded() async throws {
+        _ = try await answer(["key", "ctrl+option+space"])
+
+        _ = try await answer(["keep"])
+        let output = try await read()
+
+        XCTAssertEqual(try part("key", in: output).control, .shortcut(""))
+    }
+
+    func testAgainClearsTheKey() async throws {
+        _ = try await answer(["key", "ctrl+option+space"])
+
+        let output = try await answer(["again"])
+
+        XCTAssertEqual(try part("key", in: output).control, .shortcut(""))
+        let next = try await read()
+        XCTAssertEqual(try part("key", in: next).control, .shortcut(""))
+    }
+
+    func testEachBlockHasAPlaceSoNoButtonBecomesAnAction() async throws {
+        let output = try await read()
+
+        XCTAssertEqual(output.actions, [])
+        XCTAssertEqual(output.layout?.areas.keys.sorted(), ["again", "keep", "key", "use"])
+    }
+}
