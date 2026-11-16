@@ -6,7 +6,7 @@
 # uses=app
 # offers=card
 warned="$OPENSPOT_DATA/updates-warned"
-status=$(openspot app status --frame) || exit 1
+status=$(openspot app status) || exit 1
 version= ready= calls=0
 while IFS='=' read -r key value; do
   case $key in

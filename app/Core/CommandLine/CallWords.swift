@@ -18,7 +18,7 @@ public struct CallWords: Sendable {
     }
 
     var form: PrintForm? {
-        options([PrintForm.frameWord]).map { $0.isEmpty ? .json : .frame }
+        options([PrintForm.jsonWord]).map { $0.isEmpty ? .frame : .json }
     }
 
     var one: String? {

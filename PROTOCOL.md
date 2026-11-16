@@ -958,8 +958,9 @@ A spot asks the Mac and Openspot for things through one command, which works the
 - `openspot help` lists each command, grouped by what it's for. `openspot help <noun>`, or `--help` after a noun or a
   verb, prints only its verbs, then the guide of a noun that has one, such as `screen` or `calendar`. `openspot help --json`
   prints each verb with its form, its effect and whether it needs the app.
-- Words that `openspot` doesn't take print the verbs of the noun they name, or the command they're closest to, and exit
-  with code 2.
+- A call exits with code 0 when it's done, 1 when it failed, 2 when `openspot` doesn't take its words, and 3 when it
+  needs the app and no app answered. Words that `openspot` doesn't take print the verbs of the noun they name, or the
+  command they're closest to.
 - A capability that can't answer prints `status=<word>`. A capability that keeps state keeps it in its own helper.
 - `openspot translate` prints `status=unknown` when it cannot tell the language of the text, `status=missing` when macOS
   has not downloaded a language, `status=unsupported` when it knows no way between the two, and `status=failed` for any
@@ -977,7 +978,8 @@ A spot asks the Mac and Openspot for things through one command, which works the
     `update check`, `calendar show` and `reminders show`.
 - `calendar add --dry-run` and `reminders add --dry-run` change nothing, so they work in a read.
 - `openspot batch` runs one call for each line of stdin, and prints `---` after each. It stops at the first failure.
-- `--frame` makes `app status`, `account`, `spot list`, `store list` and `setting list` print blocks instead of JSON.
+- Each call that lists or reports, such as `app status`, `account`, `spot list`, `spot stats`, `store list` and `setting list`,
+  prints blocks, the format of a frame. `--json` prints the same as JSON.
 
 The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The others:
 
@@ -999,11 +1001,11 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                                |
 | `openspot spot stats`                              | Prints what each spot cost and used. See [Stats](#stats).                                       |
 | `openspot grid edit`                               | Opens the panel in Edit Spots, to arrange the grid.                                             |
-| `openspot store list [--frame]`                    | Prints each spot of the store and its step: `get`, `publish`, or `added` once you have it.      |
+| `openspot store list [--json]`                     | Prints each spot of the store and its step: `get`, `publish`, or `added` once you have it.      |
 | `openspot store get <id>`                          | Gets a spot of the store: turns it on, or adds its package to your spots folder.                |
 | `openspot store add <folder>`                      | Adds a folder that holds spot folders as a store, so the Store lists its spots. The folder's name is the store's name. |
 | `openspot store remove <folder>`                   | Removes a store that `store add` added. The spots you got from it stay.                         |
-| `openspot store folders [--frame]`                 | Prints the built-in store Openspot, which holds the examples, then each store that `store add` added, with its name and whether its folder is found. |
+| `openspot store folders [--json]`                  | Prints the built-in store Openspot, which holds the examples, then each store that `store add` added, with its name and whether its folder is found. |
 | `openspot store publish <id>`                      | Publishes a spot of your spots folder to the store. It needs a `readme.md` beside its script. Only the Store spot can run it, so you publish from the Store spot. |
 | `openspot playground [file]`                       | Opens the Playground on a spot that you type or on a file.                                      |
 | `openspot check --sheet`                           | Reports the faults of a sheet on stdin.                                                         |
@@ -1016,7 +1018,7 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot emoji [--tone name]`                     | Prints each emoji as a row, with its name in the language of the Mac.                           |
 | `openspot symbols`                                 | Prints each symbol of the Character Viewer as a row.                                            |
 | `openspot translate [--from code] [--to code]`     | Translates the text on stdin. `openspot translate languages` prints the languages it knows.     |
-| `openspot account [--frame]`                       | Prints the public facts of the account that signs what you publish. See [Trust](#trust).        |
+| `openspot account [--json]`                        | Prints the public facts of the account that signs what you publish. See [Trust](#trust).        |
 
 ### Settings
 
@@ -1077,13 +1079,13 @@ if [ -n "$(value setting.token)" ]; then printf 'text=token\ntitle=Signed in\n';
 Openspot counts what each spot cost and used, so that the user can see it.
 
 ```sh
-openspot spot stats --days 7 --frame
+openspot spot stats --days 7
 ```
 
 - Openspot keeps one file for each day, for 90 days. Today's numbers are live.
 - `--days N` adds up the last N days. `--spot <id>` shows one spot.
-- `--frame` prints a `row=<id>` block for each spot, the most CPU first, then a `use=<n>` block for each call that needs
-  a use, the newest first.
+- It prints a `row=<id>` block for each spot, the most CPU first, then a `use=<n>` block for each call that needs a
+  use, the newest first. `--json` prints the days.
 
 | Row key              | Meaning                                                               |
 | -------------------- | --------------------------------------------------------------------- |

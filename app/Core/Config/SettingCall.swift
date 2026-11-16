@@ -24,7 +24,7 @@ public enum SettingCall: NounCall {
         ) { words in
             pair(words, sets: true) { spot, key, value in reserved(spot, key, value, isRead: words.isRead) ?? Self.set(spot: spot, key: key, value: value) }
         },
-        CommandVerb("list", "[--frame]", "Prints each value that a spot keeps as JSON, with its spot and key. --frame prints a field=<key> block with spot and value for each.", rule: CallRule(use: .spots, used: "read the settings of each spot")) { words in
+        CommandVerb("list", "[--json]", "Prints a field=<key> block with spot and value for each value that a spot keeps. --json prints them as JSON.", rule: CallRule(use: .spots, used: "read the settings of each spot")) { words in
             words.form.map(Self.list)
         },
         CommandVerb("change", "[--spot id] <key>", "Runs the action of the setting in the panel, which can ask with a form.", rule: CallRule(read: .changes("opens a form"), flags: .needsApp)) { words in

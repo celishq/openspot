@@ -27,7 +27,7 @@ extension CommandAnswer {
     static func notRunning(_ call: String) -> CommandAPI.Work {
         {
             let call = "openspot \(call)"
-            return CommandAnswer(errors: "`\(call)` needs the Openspot app, and no app answers. Open Openspot, or quit it and open it again if it is open, then run `\(call)` again.\n", code: 1)
+            return CommandAnswer(errors: "`\(call)` needs the Openspot app, and no app answers. Open Openspot, or quit it and open it again if it is open, then run `\(call)` again.\n", code: 3)
         }
     }
 

@@ -4,7 +4,7 @@ public enum PrintForm: Hashable, Sendable {
     case json
     case frame
 
-    static let frameWord = "--frame"
+    static let jsonWord = "--json"
 
     func text(of record: some PrintedRecord) throws -> String {
         switch self {

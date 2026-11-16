@@ -43,7 +43,7 @@ final class CommandAPITests: XCTestCase {
     }
 
     func testABatchPrintsTheOutputOfEachCallWithAMarkAfterIt() async throws {
-        let answer = try await answer(["batch"], input: "calc solve 2+2\n\nsetting list --frame\n")
+        let answer = try await answer(["batch"], input: "calc solve 2+2\n\nsetting list\n")
 
         XCTAssertEqual(answer.code, 0)
         XCTAssertEqual(answer.output.components(separatedBy: "---\n").count, 3)
@@ -224,7 +224,7 @@ final class CommandAPITests: XCTestCase {
     func testStatsComeFromTheLiveCountsOfTheRunningApp() async throws {
         let runs = SpotRuns()
         runs.usage.called(Spot(id: "a", name: "Alpha", url: folder), seconds: 1, isFailure: false, at: Date())
-        let call = try XCTUnwrap(CommandLineCall(arguments: ["spot", "stats", "--frame"], environment: environment))
+        let call = try XCTUnwrap(CommandLineCall(arguments: ["spot", "stats"], environment: environment))
         let work = try XCTUnwrap(CommandAPI(mac: host, places: .test(environment), runs: runs, rates: .offline).work(for: call, request: .test(), input: { "" }))
 
         let answer = await work()

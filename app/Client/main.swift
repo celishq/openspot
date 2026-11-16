@@ -11,10 +11,10 @@ func runAlone(_ app: AppBundle) -> Never {
     fail("openspot cannot start \(program): \(String(cString: strerror(errno))).")
 }
 
-func fail(_ line: String) -> Never {
+func fail(_ line: String, code: Int32 = 1) -> Never {
     let bytes = Array((line + "\n").utf8)
     _ = write(STDERR_FILENO, bytes, bytes.count)
-    exit(1)
+    exit(code)
 }
 
 func startInBackground(_ app: AppBundle, config: String) {
@@ -47,7 +47,7 @@ func reachStarted(_ app: AppBundle, config: String) -> Int32 {
         waited += 0.05
     }
     let seconds = startWaitSeconds == startWaitSeconds.rounded() ? String(Int(startWaitSeconds)) : String(startWaitSeconds)
-    fail("Openspot did not start within \(seconds) seconds, so this call did not run. Open Openspot, then run it again.")
+    fail("Openspot did not start within \(seconds) seconds, so this call did not run. Open Openspot, then run it again.", code: 3)
 }
 
 func reach(_ config: String) -> Int32 {
@@ -122,7 +122,7 @@ signal(SIGINT) { _ in
     _exit(130)
 }
 guard deliver(request(), on: connection) else {
-    guard !isLive else { fail("Openspot stopped before it took the call. Run the call again.") }
+    guard !isLive else { fail("Openspot stopped before it took the call. Run the call again.", code: 3) }
     runAlone(app)
 }
 var input = InputLink(socket: connection)
@@ -135,12 +135,12 @@ while true {
     guard watched[0].revents != 0 else { continue }
     let count = read(connection, &buffer, buffer.count)
     if count < 0, errno == EINTR { continue }
-    guard count > 0 else { fail("Openspot stopped before it answered. Run the call again.") }
+    guard count > 0 else { fail("Openspot stopped before it answered. Run the call again.", code: 3) }
     pending += buffer[..<count]
     while let end = pending.firstIndex(of: UInt8(ascii: "\n")) {
         let line = JSON(Array(pending[..<end]))
         pending.removeFirst(end + 1)
-        guard let line else { fail("Openspot stopped before it answered. Run the call again.") }
+        guard let line else { fail("Openspot stopped before it answered. Run the call again.", code: 3) }
         if case .text(let method)? = line["method"] {
             let text: [UInt8] = if case .text(let text)? = line["params"]?["text"] { text } else { [] }
             switch String(decoding: method, as: UTF8.self) {

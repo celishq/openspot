@@ -32,15 +32,15 @@ public enum SpotCall: NounCall {
         },
         CommandVerb("log", "<id>", "Prints the last calls that the app made to a spot.", rule: CallRule(use: .spots, used: "read the calls of a spot")) { $0.one.map(Self.log) },
         CommandVerb(
-            "stats", "[--days n] [--spot id] [--frame|--json]",
-            "Prints what each spot cost and used today, or over the last n days: its runs, failures, CPU time, disk bytes, wakeups, each call that needs a use and its last fault, then each such call. --frame prints a row for each spot and a use block for each call; --json prints the days."
+            "stats", "[--days n] [--spot id] [--json]",
+            "Prints what each spot cost and used today, or over the last n days: a row for each spot with its runs, failures, CPU time, disk bytes, wakeups, each call that needs a use and its last fault, then a use block for each such call. --json prints the days."
         ) { stats($0.rest) },
         CommandVerb("show", "<id>", "Opens the panel with the spot selected.", rule: CallRule(read: .changes(panel), flags: .needsApp)) { $0.one.map(Self.show) },
         CommandVerb(
-            "list", "[--core] [--frame]",
-            "Prints each spot that the app loads as JSON, with its buttons, its fields and their keys. --core prints each spot that comes with the app, and whether it is on. --frame prints a spot=<id> block for each spot, with a button=<id> or field=<id> block for each of its own."
+            "list", "[--core] [--json]",
+            "Prints a spot=<id> block for each spot that the app loads, with a button=<id> or field=<id> block for each of its own. --core prints each spot that comes with the app, and whether it is on. --json prints them as JSON, with their keys."
         ) { words in
-            words.options(["--core", PrintForm.frameWord]).map { Self.list(core: $0.contains("--core"), form: $0.contains(PrintForm.frameWord) ? .frame : .json) }
+            words.options(["--core", PrintForm.jsonWord]).map { Self.list(core: $0.contains("--core"), form: $0.contains(PrintForm.jsonWord) ? .json : .frame) }
         },
         CommandVerb(
             "add", "[git url | folder | file.spot] [--yes]",
@@ -77,12 +77,12 @@ public enum SpotCall: NounCall {
     private static func stats(_ words: [String]) -> SpotCall? {
         var days = 1
         var spot: String?
-        var format = StatsReport.Format.text
+        var format = StatsReport.Format.frame
         var seen: Set<String> = []
         var index = 0
         while index < words.count {
             let word = words[index]
-            guard seen.insert(["--frame", "--json"].contains(word) ? "format" : word).inserted else { return nil }
+            guard seen.insert(word).inserted else { return nil }
             switch word {
             case "--days":
                 guard index + 1 < words.count, let number = Int(words[index + 1]), number > 0 else { return nil }
@@ -92,8 +92,7 @@ public enum SpotCall: NounCall {
                 guard index + 1 < words.count else { return nil }
                 spot = words[index + 1]
                 index += 1
-            case PrintForm.frameWord: format = .frame
-            case "--json": format = .json
+            case PrintForm.jsonWord: format = .json
             default: return nil
             }
             index += 1

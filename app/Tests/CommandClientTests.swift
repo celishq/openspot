@@ -213,7 +213,7 @@ final class CommandClientTests: XCTestCase {
         try await wait("the end of the call") { !run.process.isRunning }
 
         let printed = String(decoding: run.output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-        XCTAssertTrue(printed.hasPrefix("{"), printed)
+        XCTAssertTrue(printed.hasPrefix("version="), printed)
         XCTAssertEqual(run.process.terminationStatus, 0)
     }
 
@@ -225,7 +225,7 @@ final class CommandClientTests: XCTestCase {
         let said = String(decoding: run.errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
         XCTAssertEqual(said, "Openspot did not start within 0.3 seconds, so this call did not run. Open Openspot, then run it again.\n")
         XCTAssertEqual(String(decoding: run.output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self), "")
-        XCTAssertEqual(run.process.terminationStatus, 1)
+        XCTAssertEqual(run.process.terminationStatus, 3)
     }
 
     func testAQuitOrTheStatsOfAClosedAppStartNoApp() async throws {

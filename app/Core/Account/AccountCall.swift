@@ -4,7 +4,7 @@ public enum AccountCall: NounCall {
     case status(PrintForm)
 
     static let noun = CommandNoun("account", group: .app, verbs: [
-        CommandVerb("", "[--frame]", "Prints the account that signs what you publish as JSON: signedIn, npub, handle, since, backedUp and sync. --frame prints them as one block.") { words in
+        CommandVerb("", "[--json]", "Prints the account that signs what you publish as one block: signedIn, npub, handle, since, backedUp and sync. --json prints it as JSON.") { words in
             words.form.map(Self.status)
         }
     ])

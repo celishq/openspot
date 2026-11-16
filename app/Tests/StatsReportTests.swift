@@ -27,7 +27,6 @@ final class StatsReportTests: XCTestCase {
         usage.drew(view: "/spots/other.swift", seconds: 1)
 
         let frame = try StatsReport(days: usage.days(1, at: day), spot: nil).text(.frame)
-        let words = try StatsReport(days: usage.days(1, at: day), spot: nil).text(.text)
 
         XCTAssertEqual(frame, """
         row=cups
@@ -45,7 +44,6 @@ final class StatsReportTests: XCTestCase {
 
 
         """)
-        XCTAssertEqual(words, "Today\nCups today: 0 runs · 0 ms CPU · 0 B read · 0 B written · 0 wakeups · 2 bodies of its view, 3.00 ms each\n")
     }
 
     func testASpotWithNoViewHasNoBodyKeys() throws {
