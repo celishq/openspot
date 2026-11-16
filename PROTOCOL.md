@@ -985,7 +985,7 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 
 | Command                                            | Does                                                                                            |
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `openspot guide [topic \| --topics]`               | Prints the guide, then this protocol. A topic prints one section, and `--topics` lists them.    |
+| `openspot guide [topic \| --topics]`               | Prints the guide, then this protocol. A topic prints one section or the page of a noun, such as `screen`, and `--topics` lists them. |
 | `openspot version`                                 | Prints the version of Openspot, as `openspot --version` does.                                   |
 | `openspot spot open <id> [--select]`               | Opens the panel on a spot, as a new flow. See [Pages](#pages). `--select` only selects its card. |
 | `openspot spot push <id> [page]`                   | Pushes a spot, or a page of it, over the flow that shows. See [Pages](#pages).                  |

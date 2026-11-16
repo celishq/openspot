@@ -9,7 +9,7 @@ enum HelpCall: NounCall {
     private static let flags = ["--help", "-h"]
 
     static let noun = CommandNoun("help", group: .start, flags: flags, verbs: [
-        CommandVerb("", "[noun [verb]] [--json]", "Prints this list, or the verbs of a noun and its guide, which \(CommandNoun.guides) have. --help after any noun or verb does the same. --json prints each verb with its form, its effect and whether it needs the app.") { words in
+        CommandVerb("", "[noun [verb]] [--json]", "Prints this list, or the verbs of a noun and its page of the guide, when it has one. --help after any noun or verb does the same. --json prints each verb with its form, its effect and whether it needs the app.") { words in
             if words.rest == [Self.jsonWord] { return Self.json }
             if words.rest.count == 1, Self.flags.contains(words.rest[0]) { return Self.list }
             guard let first = words.rest.first, !first.hasPrefix("-") else { return words.none ? Self.list : nil }
@@ -29,9 +29,8 @@ enum HelpCall: NounCall {
                 return { CommandAnswer(errors: help.unknown([name] + verb), code: 2) }
             }
             guard verb.isEmpty, noun.guide != nil else { return { CommandAnswer(output: text) } }
-            return CommandAnswer.work { [nouns = context.nouns] in
-                guard let folder = Bundle.main.url(forResource: "Help", withExtension: nil) else { throw SpotError.fault("This copy of Openspot has no guides. Install Openspot again.") }
-                return text + "\n" + (try CommandGuide(folder: folder, nouns: nouns).text(of: name))
+            return CommandAnswer.work { [mac = context.mac, page = noun.guide] in
+                text + (try Guide.read(from: mac).topic(page ?? name).map { "\n" + $0.text } ?? "")
             }
         }
     }

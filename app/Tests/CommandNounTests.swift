@@ -53,7 +53,6 @@ final class CommandNounTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["bell", "ring", "a"])?.value as? CallFault, .unknown(["bell", "ring", "a"]))
         XCTAssertTrue(CommandLineCall.usage(of: nouns).contains("openspot bell ring <words>...                Rings the bell with the words.\n"))
         XCTAssertFalse(CommandLineCall.usage.contains("openspot bell"))
-        XCTAssertEqual(CommandGuide(folder: folder, nouns: nouns).names, ["bell", "calendar", "reminders", "screen"])
 
         let answer = try await ask(["bell", "ring", "hi"])
 

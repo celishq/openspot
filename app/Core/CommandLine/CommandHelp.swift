@@ -16,19 +16,15 @@ public struct CommandHelp: Sendable {
 
     let nouns: [CommandNoun]
 
-    private var guides: String {
-        CommandNoun.listed(nouns.filter { $0.guide != nil }.map(\.name).sorted())
-    }
-
     var text: String {
         CommandGroup.allCases.compactMap { group in
-            let lines = nouns.filter { $0.group == group }.flatMap { $0.lines(guides: guides) }
+            let lines = nouns.filter { $0.group == group }.flatMap { $0.lines() }
             return lines.isEmpty ? nil : group.rawValue + "\n\n" + lines.map { $0 + "\n" }.joined()
         }.joined(separator: "\n")
     }
 
     func verbs(of noun: CommandNoun, verb: [String] = []) -> String {
-        noun.lines(guides: guides, verb: verb).map { $0 + "\n" }.joined()
+        noun.lines(verb: verb).map { $0 + "\n" }.joined()
     }
 
     var entries: [Entry] {
@@ -37,7 +33,7 @@ public struct CommandHelp: Sendable {
                 let (effect, does) = verb.rule.act
                 return Entry(
                     command: (["openspot", noun.name] + verb.words).joined(separator: " "), form: verb.form,
-                    about: verb.about.replacingOccurrences(of: CommandNoun.guides, with: guides), group: noun.group.rawValue,
+                    about: verb.about, group: noun.group.rawValue,
                     effect: effect, does: does, needsApp: verb.rule.flags.contains(.needsApp), use: verb.rule.use?.rawValue
                 )
             }

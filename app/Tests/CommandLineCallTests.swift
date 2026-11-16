@@ -153,7 +153,7 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["help"])?.value as? HelpCall, .list)
         XCTAssertEqual(CommandLineCall(arguments: ["help", "reminders"])?.value as? HelpCall, .verbs("reminders", verb: []))
         XCTAssertTrue(CommandLineCall.usage.contains("openspot help [noun [verb]] [--json]"))
-        XCTAssertTrue(CommandHelp(nouns: CommandNoun.all).entries.first { $0.command == "openspot help" }?.about.contains("which calendar, reminders or screen have.") == true)
+        XCTAssertTrue(CommandHelp(nouns: CommandNoun.all).entries.first { $0.command == "openspot help" }?.about.contains("its page of the guide, when it has one.") == true)
         XCTAssertFalse(CommandLineCall.usage.hasSuffix("\n\n"))
     }
 

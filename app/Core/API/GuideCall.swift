@@ -17,18 +17,17 @@ enum GuideCall: NounCall {
     ])
 
     func work(in context: CallContext) -> CommandAPI.Work? {
-        let guide = context.mac.guide
+        let mac = context.mac
         return {
             do {
-                guard let guide else { throw SpotError.fault("This copy of Openspot has no guide. Install Openspot again.") }
-                let text = try String(contentsOf: guide, encoding: .utf8)
+                let guide = try Guide.read(from: mac)
+                let topics = guide.topics
                 switch self {
-                case .text: return CommandAnswer(output: text)
+                case .text: return CommandAnswer(output: guide.text)
                 case .topics:
-                    return CommandAnswer(output: Self.list(GuideTopic.all(in: text)))
+                    return CommandAnswer(output: Self.list(topics))
                 case .topic(let name):
-                    let topics = GuideTopic.all(in: text)
-                    if let topic = topics.first(where: { $0.slug == name.lowercased() || $0.title.lowercased() == name.lowercased() }) { return CommandAnswer(output: topic.text) }
+                    if let topic = guide.topic(name) { return CommandAnswer(output: topic.text) }
                     let found = GuideTopic.found(name, in: topics)
                     if found.count == 1 { return CommandAnswer(output: found[0].text) }
                     if !found.isEmpty { return CommandAnswer(output: Self.list(found)) }
