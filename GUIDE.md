@@ -277,6 +277,7 @@ A slash command runs a spot with text that the user types after its name, in one
 #
 # button=add
 # title=Add note
+# placeholder=What to note
 . "$OPENSPOT_SH"
 case "$1" in
   add)
@@ -292,7 +293,7 @@ case "$1" in
 esac
 ```
 
-Type `/notes buy milk` in the main search. The footer says **⏎ Notes "buy milk"**. Press Return, and Openspot runs
+Type `/notes`, and the grey hint **What to note** shows after it. Type `buy milk` after it. The footer says **⏎ Notes "buy milk"**. Press Return, and Openspot runs
 `notes add` with `search=buy milk` on stdin. The spot saves the note, and the panel closes. When the spot prints a form
 instead, the form opens, and its values go to the same call.
 

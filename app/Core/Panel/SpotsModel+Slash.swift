@@ -30,7 +30,7 @@ extension SpotsModel {
 
     func launch(_ shown: Entry, with text: String) {
         guard let entry = entry(shown.spot.id) else { return }
-        let offer = commandOffers[shown.id] ?? entry.spot.soleCommand.flatMap { id in entry.spot.offers.first { $0.id == id && $0.confirm == nil } }
+        let offer = commandOffer(of: shown)
         if text.isEmpty {
             if let offer, shown.item != nil { return run(CommandAction.command(offer), on: (entry, nil)) }
             return run(seen: shown)
@@ -49,6 +49,11 @@ extension SpotsModel {
         default:
             run(seen: shown)
         }
+    }
+
+    public var slashPlaceholder: String? {
+        guard let slash, slash.text.isEmpty, let shown = selectedEntry else { return nil }
+        return commandOffer(of: shown)?.placeholder
     }
 
     var slashHint: String? {
@@ -81,6 +86,10 @@ extension SpotsModel {
                 break
             }
         }
+    }
+
+    private func commandOffer(of shown: Entry) -> CommandOffer? {
+        commandOffers[shown.id] ?? shown.spot.soleCommand.flatMap { id in shown.spot.offers.first { $0.id == id && $0.confirm == nil } }
     }
 
     private static func commandItem(_ offer: CommandOffer) -> SpotItem {

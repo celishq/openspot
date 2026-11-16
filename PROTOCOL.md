@@ -123,10 +123,10 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `grid.<size>` | A card made of other spots. Each word is a spot id. See [Cards of other spots](#cards-of-other-spots).                           |
 | `to`          | The spot that opens when the user presses a card of other spots. See [Cards of other spots](#cards-of-other-spots).              |
 
-| Block         | Meaning                                                                                                                                                                                |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `button=<id>` | A command, with its `title` and `icon`. The user can give it a hotkey. `confirm` asks for a second press. `close=false` keeps its sheet open after a [slash command](#slash-commands). |
-| `field=<key>` | A setting the user chooses, with its `title` (by default, its key) and `icon`. See [Settings](#settings).                                                                              |
+| Block         | Meaning                                                                                                                                                                                                                                         |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `button=<id>` | A command, with its `title` and `icon`. The user can give it a hotkey. `confirm` asks for a second press. `close=false` keeps its sheet open after a [slash command](#slash-commands), and `placeholder` is the grey hint after its name there. |
+| `field=<key>` | A setting the user chooses, with its `title` (by default, its key) and `icon`. See [Settings](#settings).                                                                                                                                       |
 
 - A spot with a `button` in its header has no card. It gives its commands instead.
 - Return on a spot with one `button` and no `on=` events runs it, as its hotkey does. When it has no hotkey yet, Return

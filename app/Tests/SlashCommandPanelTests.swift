@@ -7,7 +7,7 @@ final class SlashCommandPanelTests: PanelCase {
     }
 
     private func writeNotes() throws {
-        try script("notes", header: "title=Notes\non=sheet.open\n\nbutton=add\ntitle=Add note\n\nbutton=find\ntitle=Find note\nclose=false", """
+        try script("notes", header: "title=Notes\non=sheet.open\n\nbutton=add\ntitle=Add note\nplaceholder=What to add\n\nbutton=find\ntitle=Find note\nclose=false", """
         stdin=$(cat)
         printf '%s\\n%s\\n' "$*" "$stdin" >> '\(input.path)'
         search=$(printf '%s\\n' "$stdin" | sed -n 's/^search=//p' | head -n 1)
@@ -49,6 +49,22 @@ final class SlashCommandPanelTests: PanelCase {
         XCTAssertEqual(model.hint, "⏎ Notes \"buy milk\"")
         XCTAssertTrue(model.handleSearchKey(ActionKey(name: "down")))
         XCTAssertEqual(model.hint, "⏎ Add note \"buy milk\"")
+    }
+
+    func testTheHintOfTheHighlightedCommandShowsUntilTextFollows() async throws {
+        try writeNotes()
+        await open()
+
+        type("/add")
+        XCTAssertEqual(model.slashPlaceholder, "What to add")
+
+        type("/add milk")
+        XCTAssertNil(model.slashPlaceholder)
+
+        type("/note")
+        XCTAssertNil(model.slashPlaceholder)
+        XCTAssertTrue(model.handleSearchKey(ActionKey(name: "down")))
+        XCTAssertEqual(model.slashPlaceholder, "What to add")
     }
 
     func testAWordThatNamesNoCommandStaysText() async throws {
