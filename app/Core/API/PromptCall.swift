@@ -4,7 +4,7 @@ enum PromptCall: NounCall {
     case new(String)
     case change(id: String, words: String, failure: String?)
 
-    static let noun = CommandNoun("prompt", verbs: [
+    static let noun = CommandNoun("prompt", group: .build, verbs: [
         CommandVerb("new", "[words]...", "Prints a prompt that asks a coding agent to build a spot that does what the words say. With no words, the agent asks you first.") { words in
             Self.new(words.rest.joined(separator: " "))
         },

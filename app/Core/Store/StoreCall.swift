@@ -8,7 +8,7 @@ enum StoreCall: NounCall {
     case remove(String)
     case folders(PrintForm)
 
-    static let noun = CommandNoun("store", verbs: [
+    static let noun = CommandNoun("store", group: .build, verbs: [
         CommandVerb("list", "[--frame]", "Prints each spot of the store, and whether you have it.", rule: CallRule(use: .spots, used: "read the store")) { words in
             words.form.map(Self.list)
         },

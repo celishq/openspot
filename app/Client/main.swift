@@ -5,7 +5,7 @@ nonisolated(unsafe) var connection: Int32 = -1
 
 func runAlone(_ app: AppBundle) -> Never {
     let program = app.program
-    var argv: [UnsafeMutablePointer<CChar>?] = ([program] + CommandLine.arguments.dropFirst()).map { strdup($0) }
+    var argv: [UnsafeMutablePointer<CChar>?] = ([program] + arguments).map { strdup($0) }
     argv.append(nil)
     execv(program, argv)
     fail("openspot cannot start \(program): \(String(cString: strerror(errno))).")
@@ -73,7 +73,7 @@ func reach(_ config: String) -> Int32 {
 }
 
 func request() -> [UInt8] {
-    let argv = CommandLine.arguments.dropFirst().map(JSON.quoted).joined(separator: ",")
+    let argv = arguments.map(JSON.quoted).joined(separator: ",")
     var folder = [CChar](repeating: 0, count: Int(PATH_MAX))
     let cwd = getcwd(&folder, folder.count) == nil ? "" : String(decoding: folder.prefix { $0 != 0 }.map(UInt8.init(bitPattern:)), as: UTF8.self)
     let token = getenv("OPENSPOT_TOKEN").map { "\"token\":" + JSON.quoted(String(cString: $0)) + "," } ?? ""
@@ -109,7 +109,7 @@ func put(_ bytes: [UInt8], to descriptor: Int32) {
 }
 
 guard let app = AppBundle() else { fail("openspot cannot find the path of its own program.") }
-let arguments = Array(CommandLine.arguments.dropFirst())
+let arguments = CommandLine.arguments.count > 1 ? Array(CommandLine.arguments.dropFirst()) : ["help"]
 if CommandKind.isPure(arguments) { runAlone(app) }
 let isLive = CommandKind.needsApp(arguments)
 connection = app.configFolder.map(reach) ?? -1

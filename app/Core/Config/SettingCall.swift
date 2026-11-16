@@ -14,7 +14,7 @@ public enum SettingCall: NounCall {
     case careful(Bool)
     case slow(Bool)
 
-    static let noun = CommandNoun("setting", verbs: [
+    static let noun = CommandNoun("setting", group: .app, verbs: [
         CommandVerb("get", "[--spot id] <key>", "Prints the value the person chose for the spot, or nothing. A secret prints as •••.") { words in
             pair(words, sets: false) { spot, key, _ in Self.get(spot: spot, key: key) }
         },

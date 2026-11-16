@@ -176,6 +176,10 @@ final class CommandClientTests: XCTestCase {
         XCTAssertEqual(try run(client, ["guide"]).output, "app: guide\n")
     }
 
+    func testWithNoWordsItAsksForHelp() throws {
+        XCTAssertEqual(try run(client, []).output, "app: help\n")
+    }
+
     func testACallThatRunsAloneStartsTheApp() throws {
         listen()
 

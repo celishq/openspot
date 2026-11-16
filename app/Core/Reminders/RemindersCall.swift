@@ -10,7 +10,7 @@ enum RemindersCall: NounCall {
     private static let read = "read your reminders"
     private static let change = "changes your reminders"
 
-    static let noun = CommandNoun("reminders", guide: "calendar", verbs: [
+    static let noun = CommandNoun("reminders", group: .mac, guide: "calendar", verbs: [
         CommandVerb("due", "[--days n] [--hide id]...", "Prints each open reminder that is late or due through the end of day n, and each one done today, as a row. --hide leaves out a list.", rule: CallRule(use: .calendar, used: read)) { words in
             CallWords.listing(words.rest).map { Self.due(days: $0.days, hidden: $0.hidden) }
         },

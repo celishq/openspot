@@ -955,8 +955,11 @@ A spot asks the Mac and Openspot for things through one command, which works the
 - A call that reads files or asks the Mac gives the same answer whether Openspot is running or not. A call that needs the
   running app starts it, and waits up to 10 seconds.
 - Ctrl-C stops a call, and the stopped work changes nothing.
-- `openspot help` lists each capability. `openspot help <noun>` prints the guide of a noun, such as `screen` or
-  `calendar`.
+- `openspot help` lists each command, grouped by what it's for. `openspot help <noun>`, or `--help` after a noun or a
+  verb, prints only its verbs, then the guide of a noun that has one, such as `screen` or `calendar`. `openspot help --json`
+  prints each verb with its form, its effect and whether it needs the app.
+- Words that `openspot` doesn't take print the verbs of the noun they name, or the command they're closest to, and exit
+  with code 2.
 - A capability that can't answer prints `status=<word>`. A capability that keeps state keeps it in its own helper.
 - `openspot translate` prints `status=unknown` when it cannot tell the language of the text, `status=missing` when macOS
   has not downloaded a language, `status=unsupported` when it knows no way between the two, and `status=failed` for any
@@ -980,7 +983,8 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 
 | Command                                            | Does                                                                                            |
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `openspot guide`                                   | Prints the guide, then this protocol.                                                           |
+| `openspot guide [topic \| --topics]`               | Prints the guide, then this protocol. A topic prints one section, and `--topics` lists them.    |
+| `openspot version`                                 | Prints the version of Openspot, as `openspot --version` does.                                   |
 | `openspot spot show <id>`                          | Opens the panel with the spot selected.                                                         |
 | `openspot spot open <id>`                          | Opens the panel on a spot, as a new flow. See [Pages](#pages).                                  |
 | `openspot spot push <id> [page]`                   | Pushes a spot, or a page of it, over the flow that shows. See [Pages](#pages).                  |

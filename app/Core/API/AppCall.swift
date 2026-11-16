@@ -4,7 +4,7 @@ enum AppCall: NounCall {
     case status(PrintForm)
     case quit
 
-    static let noun = CommandNoun("app", verbs: [
+    static let noun = CommandNoun("app", group: .app, verbs: [
         CommandVerb("status", "[--frame]", "Prints the state of the app as JSON: version, panel-key, fix-key, careful, slow, login, link, update, calls and firstLaunch. --frame prints them as one block.", rule: CallRule(flags: .needsApp)) { words in
             words.form.map(Self.status)
         },

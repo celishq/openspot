@@ -5,7 +5,7 @@ private enum BellCall: NounCall {
     case ring(String)
     case count
 
-    static let noun = CommandNoun("bell", guide: "screen", verbs: [
+    static let noun = CommandNoun("bell", group: .app, guide: "screen", verbs: [
         CommandVerb("ring", "<words>...", "Rings the bell with the words.", rule: CallRule(use: .network, used: "rang a bell", read: .changes("rings a bell"))) { words in
             words.none ? nil : Self.ring(words.rest.joined(separator: " "))
         },

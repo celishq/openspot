@@ -3,7 +3,7 @@ import Foundation
 public enum AccountCall: NounCall {
     case status(PrintForm)
 
-    static let noun = CommandNoun("account", verbs: [
+    static let noun = CommandNoun("account", group: .app, verbs: [
         CommandVerb("", "[--frame]", "Prints the account that signs what you publish as JSON: signedIn, npub, handle, since, backedUp and sync. --frame prints them as one block.") { words in
             words.form.map(Self.status)
         }

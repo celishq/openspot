@@ -3,7 +3,7 @@ import Foundation
 enum BatchCall: NounCall {
     case run
 
-    static let noun = CommandNoun("batch", verbs: [
+    static let noun = CommandNoun("batch", group: .app, verbs: [
         CommandVerb("", "", "Runs one call for each line of stdin, its words split at spaces, and prints the output of each with a line --- after it. It stops at the first call that fails, and takes only a call that the app answers.", rule: CallRule(flags: [.readsInput, .needsApp])) { $0.none ? Self.run : nil }
     ])
 

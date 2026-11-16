@@ -4,7 +4,7 @@ enum ThemeCall: NounCall {
     case reload
     case open
 
-    static let noun = CommandNoun("theme", verbs: [
+    static let noun = CommandNoun("theme", group: .app, verbs: [
         CommandVerb("reload", "", "Reads the theme of the app again from its file, and draws with it.", rule: CallRule(use: .app, used: "reloaded the theme", read: .changes("redraws Openspot"))) { $0.none ? Self.reload : nil },
         CommandVerb("open", "", "Opens your copy of the theme in the text editor, and makes it from the theme of the app the first time.", rule: CallRule(use: .app, used: "opened the theme", read: .changes("opens a window"))) { $0.none ? Self.open : nil }
     ])

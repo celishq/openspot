@@ -9,7 +9,7 @@ public enum RenderCall: NounCall {
 
     private static let rule = CallRule(flags: .ownProcess)
 
-    static let noun = CommandNoun("render", verbs: [
+    static let noun = CommandNoun("render", group: .build, verbs: [
         CommandVerb("", "[--view file] <file.png>", "Draws the sheet on stdin to a picture, with its view from a Swift file.", rule: rule) { words in
             switch words.rest.count {
             case 1 where !words.rest[0].hasPrefix("-"): Self.sheet(words.rest[0], view: nil)

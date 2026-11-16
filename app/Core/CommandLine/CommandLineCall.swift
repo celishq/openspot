@@ -16,8 +16,7 @@ public struct CommandLineCall: Equatable, Sendable {
     public static let usage = usage(of: CommandNoun.all)
 
     static func usage(of nouns: [CommandNoun]) -> String {
-        let guides = CommandNoun.listed(nouns.filter { $0.guide != nil }.map(\.name).sorted())
-        return nouns.flatMap { $0.lines(guides: guides) }.map { $0 + "\n" }.joined()
+        CommandHelp(nouns: nouns).text
     }
 
     init(name: String, rule: CallRule = CallRule(), call: any NounCall) {
@@ -27,11 +26,15 @@ public struct CommandLineCall: Equatable, Sendable {
     }
 
     public init?(arguments: [String], spot: String? = nil, reason: String? = nil, nouns: [CommandNoun] = CommandNoun.all) {
-        guard let first = arguments.first, first == HelpCall.flag || !first.hasPrefix("-") else { return nil }
-        let noun = first == HelpCall.flag && arguments.count == 1 ? HelpCall.noun.name : first
+        guard let first = arguments.first, first.hasPrefix("--") || HelpCall.flags.contains(first) || !first.hasPrefix("-") else { return nil }
+        let noun = HelpCall.flags.contains(first) && arguments.count == 1 ? HelpCall.noun.name : first == VersionCall.flag ? VersionCall.noun.name : first
         let spot = spot?.isEmpty == true ? nil : spot
-        let rest = Array(arguments.dropFirst())
+        let rest = noun == first ? Array(arguments.dropFirst()) : []
         let unknown = CommandLineCall(name: noun, call: CallFault.unknown(arguments.joined(separator: " ")))
+        if noun != HelpCall.noun.name, let last = rest.last, HelpCall.flags.contains(last), nouns.contains(where: { $0.name == noun }) {
+            self.init(name: HelpCall.noun.name, call: HelpCall.noun(noun, verb: Array(rest.dropLast())))
+            return
+        }
         guard let found = nouns.first(where: { $0.name == noun }), let verb = found.verb(of: rest),
               let call = verb.parse(CallWords(rest: Array(rest.dropFirst(verb.words.count)), spot: spot, reason: reason))
         else {

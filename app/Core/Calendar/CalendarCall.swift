@@ -8,7 +8,7 @@ enum CalendarCall: NounCall {
 
     private static let read = "read your calendar"
 
-    static let noun = CommandNoun("calendar", guide: "calendar", verbs: [
+    static let noun = CommandNoun("calendar", group: .mac, guide: "calendar", verbs: [
         CommandVerb("events", "[--days n] [--hide id]...", "Prints each event that has not ended through the end of day n as a row. Day 1, the default, is today. --hide leaves out a calendar.", rule: CallRule(use: .calendar, used: read)) { words in
             CallWords.listing(words.rest).map { Self.events(days: $0.days, hidden: $0.hidden) }
         },

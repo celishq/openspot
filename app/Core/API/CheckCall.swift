@@ -4,7 +4,7 @@ enum CheckCall: NounCall {
     case folder(String?, json: Bool)
     case sheet
 
-    static let noun = CommandNoun("check", verbs: [
+    static let noun = CommandNoun("check", group: .build, verbs: [
         CommandVerb("", "[--json] [folder]", "Reports the faults of a spots folder.", rule: CallRule(flags: .startsScripts)) { words in
             let json = words.rest.first == "--json"
             let rest = json ? Array(words.rest.dropFirst()) : words.rest

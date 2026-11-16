@@ -20,7 +20,7 @@ public enum SpotCall: NounCall {
     private static let panel = "opens the panel"
     private static let window = "opens a window"
 
-    static let noun = CommandNoun("spot", verbs: [
+    static let noun = CommandNoun("spot", group: .build, verbs: [
         CommandVerb("new", "<name> [--from kind]", "Writes a working spot to change. A kind is button, list, number or form.", rule: CallRule(use: .spots, used: "wrote a new spot")) { words in
             let rest = words.rest
             if rest.count == 1 { return Self.new(name: rest[0], starter: .button) }
