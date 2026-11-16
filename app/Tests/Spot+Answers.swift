@@ -51,8 +51,8 @@ extension Spot {
     func hook(_ function: String, card: String, origin: String) async -> Bool {
         let runs = SpotRuns(environment: TestEnvironment.values)
         let answer = await withCheckedContinuation { continuation in
-            if let now = runs.ask(function, of: self, card: card, origin: origin, later: { continuation.resume(returning: $0) }) {
-                continuation.resume(returning: now)
+            if let now = runs.answer(function, of: self, card: card, origin: origin, later: { continuation.resume(returning: !$0.isEmpty) }) {
+                continuation.resume(returning: !now.isEmpty)
             }
         }
         withExtendedLifetime(runs) {}
@@ -62,7 +62,7 @@ extension Spot {
     func hotkey(_ function: String, card: String, origin: String) async -> String {
         let runs = SpotRuns(environment: TestEnvironment.values)
         let answer = await withCheckedContinuation { continuation in
-            if let now = runs.hotkey(function, of: self, card: card, origin: origin, later: { continuation.resume(returning: $0) }) {
+            if let now = runs.answer(function, of: self, card: card, origin: origin, later: { continuation.resume(returning: $0) }) {
                 continuation.resume(returning: now)
             }
         }

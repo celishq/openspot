@@ -1,15 +1,7 @@
 import Foundation
 
 extension SpotRuns {
-    func ask(_ function: String, of spot: Spot, card: String, origin: String, until deadline: DispatchTime? = nil, later: @escaping @MainActor (Bool) -> Void) -> Bool? {
-        answer(function, of: spot, card: card, origin: origin, until: deadline) { later(!$0.isEmpty) }.map { !$0.isEmpty }
-    }
-
-    func hotkey(_ function: String, of spot: Spot, card: String, origin: String, until deadline: DispatchTime? = nil, later: @escaping @MainActor (String) -> Void) -> String? {
-        answer(function, of: spot, card: card, origin: origin, until: deadline, later: later)
-    }
-
-    private func answer(_ function: String, of spot: Spot, card: String, origin: String, until deadline: DispatchTime?, later: @escaping @MainActor (String) -> Void) -> String? {
+    func answer(_ function: String, of spot: Spot, card: String, origin: String, until deadline: DispatchTime? = nil, later: @escaping @MainActor (String) -> Void) -> String? {
         let script = script(of: spot)
         let call = InlineCall(arguments: [card, origin], function: function, limit: readLimit)
         script.send(call)

@@ -719,6 +719,7 @@
 		DB912A1E68DF8234D5038B1B /* ScreenCalls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F6658AC35B5F39C8150B5F0 /* ScreenCalls.swift */; };
 		DB93016041ECEBA8CCEF34DF /* SpotSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E0B67E537A4FA55D86942D0 /* SpotSurface.swift */; };
 		DBC230393CF874C437542081 /* SpotBlocking.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE7051C07C60049ADCA9629 /* SpotBlocking.swift */; };
+		DBE8268E48F12AFD16040976 /* HookAnswers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D203723750660C5ACB1972C /* HookAnswers.swift */; };
 		DBFE2DADC9DDDBE960986293 /* EmojiCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0D761DB9A1CD3CA9B19C764 /* EmojiCall.swift */; };
 		DC54280DE35C6EE3B2BD156A /* CalcRatesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B894C1134E1A0D2F7204CCD /* CalcRatesTests.swift */; };
 		DD03629B44348F2596212FA7 /* AccountPhrase.swift in Sources */ = {isa = PBXBuildFile; fileRef = A140BCF3C0B568616F9BB942 /* AccountPhrase.swift */; };
@@ -965,6 +966,7 @@
 		1BE313B422EC952BB6E4703F /* SpotReadme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotReadme.swift; sourceTree = "<group>"; };
 		1C362E457EDE5671E191C260 /* SpotTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotTheme.swift; sourceTree = "<group>"; };
 		1CAD5CE39CAD25C7A95410C8 /* StayLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StayLink.swift; sourceTree = "<group>"; };
+		1D203723750660C5ACB1972C /* HookAnswers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HookAnswers.swift; sourceTree = "<group>"; };
 		1D7B8FC971C5895746897ABA /* GlyphKeywords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlyphKeywords.swift; sourceTree = "<group>"; };
 		1DDCDFD7FA971F9107B9E74C /* SpotsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotsPanel.swift; sourceTree = "<group>"; };
 		1E0601BD88DD547C35CD4385 /* FakeDisk.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeDisk.swift; sourceTree = "<group>"; };
@@ -2508,6 +2510,7 @@
 				DD9D2BCA9B9D255E63A92912 /* ActionMenuFrame.swift */,
 				0B0AB60FF3C911FCCABA17CB /* ActionMenuSession.swift */,
 				40E457C68F8BB4CB7234147D /* CardAct.swift */,
+				1D203723750660C5ACB1972C /* HookAnswers.swift */,
 				EA01C66CE777BCA02E8ACF00 /* OfferedAction.swift */,
 				FA5E0E63AFDDD60B9D9F8F45 /* SpotRuns+Hooks.swift */,
 			);
@@ -3514,6 +3517,7 @@
 				BF6AF25496069D1C82881BA1 /* HelperCall.swift in Sources */,
 				BE61D30092F9EA96A8FDAEEF /* HexColor.swift in Sources */,
 				BCE416C19F5777B28C90D7E3 /* HintWords.swift in Sources */,
+				DBE8268E48F12AFD16040976 /* HookAnswers.swift in Sources */,
 				E11DDC7E6B39383D67D67698 /* HostSheet.swift in Sources */,
 				1E49D0C6D845A360914F704E /* Icon.swift in Sources */,
 				28699ABE2685693D7ABE3DDA /* IconBody.swift in Sources */,
