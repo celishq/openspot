@@ -1,11 +1,7 @@
 ids() {
-  { "$OPENSPOT" spot list --json 2>/dev/null || "$OPENSPOT" spot list; } </dev/null | python3 -I -c '
+  "$OPENSPOT" spot list --json </dev/null | python3 -I -c '
 import json, sys
-text = sys.stdin.read()
-try:
-    print("\n".join(spot["id"] for spot in json.loads(text)))
-except ValueError:
-    print("\n".join(line[5:] for line in text.splitlines() if line.startswith("spot=")))
+print("\n".join(spot["id"] for spot in json.load(sys.stdin)))
 '
 }
 
@@ -14,8 +10,7 @@ own_id() {
 }
 
 lint() {
-  found=$("$OPENSPOT" check --json "$PLACE/spots" </dev/null 2>&1)
-  [ $? -eq 2 ] && found=$("$OPENSPOT" check spots --json "$PLACE/spots" </dev/null 2>&1)
+  found=$("$OPENSPOT" check spots --json "$PLACE/spots" </dev/null 2>&1)
   echo "check: $found"
   [ "$found" = "[]" ]
 }

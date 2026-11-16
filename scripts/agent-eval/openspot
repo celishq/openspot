@@ -2,7 +2,7 @@
 real="@REAL@"
 log="$OPENSPOT_CONFIG/calls.tsv"
 kept=$(mktemp)
-if [ "$1 $2" = "spot show" ] || [ "$1 $2 $4" = "spot open --select" ]; then
+if [ "$1 $2 $4" = "spot open --select" ]; then
   echo "$3" >>"$OPENSPOT_CONFIG/shows.txt"
   echo "Openspot shows $3." >"$kept"
   code=0
