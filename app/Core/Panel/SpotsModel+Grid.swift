@@ -29,7 +29,7 @@ extension SpotsModel {
     }
 
     private func run(_ key: GlobalKey) {
-        if key.act == .open { return pressCard(of: key.spot) }
+        if key.act == .open { return entry(key.spot).map { $0.soleCommand == nil ? press($0.id) : run($0) } ?? () }
         guard case .command(let command) = key.act else { return float(key.spot) }
         guard let sheet = sheets[key.spot] else { return }
         sheet.pressKey(command)
@@ -151,7 +151,7 @@ extension SpotsModel {
         case .list:
             if openSheetID == entry.id {
                 closeSheet(moving: true)
-            } else if let command = entry.spot.soleCommand {
+            } else if let command = entry.soleCommand {
                 runSole(command, of: entry)
             } else {
                 pushFirst(entry.id, moving: true)
@@ -181,22 +181,17 @@ extension SpotsModel {
     }
 
     var soleHint: String? {
-        guard openSheetID == nil, let entry = selectedEntry, entry.kind == .list, !entry.spot.pressRuns, let command = entry.spot.soleCommand else { return nil }
+        guard openSheetID == nil, let entry = selectedEntry, let command = entry.soleCommand else { return nil }
         guard assignedKeys.contains(where: { $0.spot == entry.id && $0.act == .command(command) }) else {
             return "⏎ Set key   ⌘⏎ Settings   ⌘K Actions"
         }
         return "⏎ \(entry.spot.offers.first?.title ?? command)   ⌘⏎ Settings   ⌘K Actions"
     }
 
-    private func pressCard(of id: String) {
-        guard let entry = entry(id), entry.kind == .list, !entry.spot.pressRuns, let command = entry.spot.soleCommand else { return press(id) }
-        if let key = assignedKeys.first(where: { $0.spot == id && $0.act == .command(command) }) { return press(key) }
-        runSole(command, of: entry)
-    }
-
     private func runSole(_ command: String, of entry: Entry) {
         if let key = assignedKeys.first(where: { $0.spot == entry.id && $0.act == .command(command) }) {
             if confirmWords(of: key) != nil {
+                guard isShown else { return press(key) }
                 if confirming != key || !runConfirmed() { confirming = key }
                 return
             }
