@@ -1,20 +1,33 @@
 import Foundation
 
 public enum MotionTokens {
-    public static let slow = Double(ProcessInfo.processInfo.environment["OPENSPOT_MOTION_SLOW"] ?? "") ?? 1
+    private static let launchSlow = Double(ProcessInfo.processInfo.environment["OPENSPOT_MOTION_SLOW"] ?? "") ?? 1
+    nonisolated(unsafe) public private(set) static var slow = launchSlow
+    public static let slowMotion = 10.0
 
-    public static let grow = 0.15 * slow
-    public static let shrink = 0.2 * slow
-    public static let move = 0.25 * slow
-    public static let fadeIn = 0.1 * slow
-    public static let fadeOut = 0.12 * slow
-    public static let press = 0.2 * slow
+    public static var isSlow: Bool {
+        slow != launchSlow
+    }
+
+    @discardableResult
+    public static func toggleSlowMotion() -> Bool {
+        slow = slow == launchSlow ? launchSlow * slowMotion : launchSlow
+        return slow != launchSlow
+    }
+
+    public static var grow: Double { 0.15 * slow }
+    public static var shrink: Double { 0.2 * slow }
+    public static var move: Double { 0.25 * slow }
+    public static var fadeIn: Double { 0.1 * slow }
+    public static var fadeOut: Double { 0.12 * slow }
+    public static var press: Double { 0.2 * slow }
     public static let pressBounce = 0.2
 
-    public static let growSettle = 0.25 * slow
+    public static var growSettle: Double { 0.25 * slow }
     public static let answerPause = 0.15
 
     public static let cardShare = 0.5
+    public static let contentStart = 0.2
 
     public static let hiddenScale = 1.04
     public static let pressedScale = 1.04

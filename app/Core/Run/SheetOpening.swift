@@ -3,7 +3,7 @@ import Foundation
 @MainActor
 public final class SheetOpening {
     public let answerPause: TimeInterval
-    public let motionLength: TimeInterval
+    private let fixedLength: TimeInterval?
     public var moving: String? {
         didSet {
             guard moving != oldValue else { return }
@@ -16,9 +16,13 @@ public final class SheetOpening {
     private var held: (id: String, start: () -> Void)?
     private var pause: Task<Void, Never>?
 
-    public init(answerPause: TimeInterval = MotionTokens.answerPause, motionLength: TimeInterval = MotionTokens.growSettle) {
+    public init(answerPause: TimeInterval = MotionTokens.answerPause, motionLength: TimeInterval? = nil) {
         self.answerPause = answerPause
-        self.motionLength = motionLength
+        fixedLength = motionLength
+    }
+
+    public var motionLength: TimeInterval {
+        fixedLength ?? MotionTokens.growSettle
     }
 
     nonisolated deinit {}

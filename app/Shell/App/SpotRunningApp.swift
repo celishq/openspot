@@ -17,6 +17,10 @@ struct SpotRunningApp: RunningApp {
         await MainActor.run { (update?.readyVersion, model.workCount, model.isFirstLaunch) }
     }
 
+    func slowMotion(_ isOn: Bool?) async -> Bool? {
+        await MainActor.run { model.slowMotion(isOn) }
+    }
+
     func checkUpdate() async -> Bool {
         await MainActor.run {
             guard let update else { return false }

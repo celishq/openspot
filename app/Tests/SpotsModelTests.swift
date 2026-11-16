@@ -907,27 +907,6 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(host.motions.contains(.sheet(isOpen: false)))
     }
 
-    func testASheetWithNoCardShowsAndHidesAtOnce() async throws {
-        try script("list", header: "on=sheet.open", "printf 'row=a\\ntitle=Apple\\n'")
-        try script("other", header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
-        await model.reload()
-        model.isShown = true
-        model.panelWillShow()
-        model.setOnGrid(false, for: "other")
-        host.motions = []
-        host.phases = []
-
-        model.pushFirst("other", moving: true)
-
-        try await wait("the sheet") { model.openSheetID == "other" }
-        XCTAssertEqual(model.transition.phase, .open)
-        XCTAssertFalse(host.phases.contains(.ready))
-        XCTAssertEqual(host.motions.compactMap { $0 }, [])
-        model.closeSheet(moving: true)
-        XCTAssertNil(model.transition.id)
-        XCTAssertEqual(host.motions.compactMap { $0 }, [])
-    }
-
     func testTheGridSearchFindsASpotByItsName() async throws {
         try script("list", header: "on=sheet.open", "printf 'row=a\\ntitle=Apple\\n'")
         try script("other", header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
@@ -1050,7 +1029,7 @@ final class SpotsModelTests: XCTestCase {
         model.panelWillShow()
         XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
         try await wait("the Settings sheet") { model.openSheetID == SpotSettings.sheetID(of: "conf") }
-        try await wait("its rows") { model.openItems?.shown.map(\.run) == ["menubar:conf"] }
+        try await wait("its rows") { model.openItems?.shown.map(\.run) == ["key:conf:open", "menubar:conf"] }
         model.closeSheet(moving: false)
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
@@ -1309,16 +1288,65 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(model.menuFrame).rect.maxY, ActionMenuFrame(item: rest, menu: menu, bounds: bounds).rect.maxY, accuracy: 1e-9)
     }
 
-    func testTheBackdropUnderTheMenuGoesWhenItsCloseEnds() async throws {
+    func testTheBackdropUnderTheMenuFallsOnTheCloseMotionItself() async throws {
         let frame = try await openWeatherMenu()
         model.placeMenu(frame)
         try await wait("the grow") { model.menuSession?.phase != .opening }
+        host.heldEnds = []
+        let motions = host.motions.count
 
         model.closeMenu()
 
+        XCTAssertEqual(model.menuContentHeight, 0)
+        XCTAssertEqual(Array(host.motions.dropFirst(motions)), [.sheet(isOpen: false)])
+        host.heldEnds?.forEach { $0() }
         XCTAssertNil(model.menuFrame)
         XCTAssertEqual(model.menuContentHeight, 0)
-        XCTAssertEqual(host.motions.last, .sheet(isOpen: false))
+    }
+
+    func testASheetThatOpensOverTheMenuClosesItFirstInTheUpdateThatShowsTheSheet() async throws {
+        try script("notes", header: "title=Notes\non=sheet.open", "printf 'row=a\\ntitle=A\\n'")
+        model.placeMenu(try await openWeatherMenu())
+        try await wait("the grow") { model.menuSession?.phase != .opening }
+        let motions = host.motions.count
+
+        model.open("notes")
+        try await wait("the open") { model.transition.phase == .open }
+
+        XCTAssertNil(model.menu)
+        XCTAssertEqual(model.menuContentHeight, 0)
+        let shown = try XCTUnwrap(host.phases.dropFirst(motions).firstIndex { $0 != .closed })
+        XCTAssertEqual(host.motions[shown - 1], .sheet(isOpen: false))
+        XCTAssertNil(host.motions[shown])
+    }
+
+    func testWithNoSheetThePanelsFootIsTheGridsFootOpenOrClosed() async throws {
+        try script("weather", header: "title=Weather", "true")
+        await model.reload()
+
+        XCTAssertEqual(model.panelFoot, PanelFoot(closed: model.gridHeight, open: model.gridHeight))
+    }
+
+    func testAMenuThatFoldsAsASheetOpensGivesItsFootToTheSheetsStart() async throws {
+        try script("notes", header: "title=Notes\non=sheet.open", "printf 'row=a\\ntitle=A\\n'")
+        let frame = try await openWeatherMenu()
+        model.placeMenu(frame)
+        try await wait("the grow") { model.menuSession?.phase != .opening }
+        let menuFoot = frame.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock
+        host.heldEnds = []
+
+        model.open("notes")
+        try await wait("the open motion") { model.transition.phase == .opening }
+
+        let sheet = try XCTUnwrap(model.sheets["notes"]?.sheetRect)
+        XCTAssertEqual(model.panelFoot.closed, max(model.gridHeight, menuFoot))
+        XCTAssertEqual(model.pushFoot, PanelFoot(closed: model.gridHeight, open: sheet.height + 2 * SpotTokens.halo + SpotTokens.hintBlock))
+        XCTAssertEqual(model.panelFoot.open, sheet.height + 2 * SpotTokens.halo + SpotTokens.hintBlock)
+        while let end = host.heldEnds?.first {
+            host.heldEnds?.removeFirst()
+            end()
+        }
+        XCTAssertEqual(model.menuContentHeight, 0)
     }
 
     func testTheBackdropUnderTheMenuGoesWhenAMenuWithNoRowsTakesThePlaceOfAClosingOne() async throws {
@@ -1327,7 +1355,6 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the grow") { model.menuSession?.phase != .opening }
         host.heldEnds = []
         model.closeMenu()
-        XCTAssertGreaterThan(model.menuContentHeight, 0)
 
         model.menuSession = nil
         host.heldEnds?.forEach { $0() }

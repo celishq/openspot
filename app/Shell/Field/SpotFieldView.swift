@@ -42,9 +42,7 @@ struct SpotFieldView: View {
                 .fill(SpotTheme.ink.opacity(isInSheet ? SpotTheme.fill : 0))
                 .mask { insideSheet }
             ZStack(alignment: .topLeading) {
-                Image(systemName: "magnifyingglass")
-                    .modifier(SpotSecondaryText())
-                    .frame(width: SpotTokens.glyphSize, height: SpotTokens.rowHeight)
+                SpotFieldPrompt.glyph
                     .offset(x: glyphLeft, y: top)
                 searchText
                     .frame(width: Self.fieldTextWidth, height: SpotTokens.rowHeight, alignment: .leading)
@@ -142,19 +140,8 @@ struct SpotFieldView: View {
     }
 
     private var promptWords: some View {
-        HStack(spacing: 0) {
-            Text("\(SearchPrompt.verb) ")
-            ZStack(alignment: .leading) {
-                Text(SearchPrompt.grid)
-                    .morph(progress, opacity: SheetMorph.cardLook(at:))
-                Text(sheetWord)
-                    .morph(progress, opacity: SheetMorph.sheetLook(at:))
-            }
-        }
-        .font(SpotType.input)
-        .foregroundStyle(SpotTheme.glassSecondary)
-        .lineLimit(1)
-        .morph(progress, opacity: crossing)
+        SpotFieldPrompt(word: sheetWord, progress: progress)
+            .morph(progress, opacity: crossing)
         .modifier(SpotEmptyField(model: model, isHidden: model.showsFieldDrop))
     }
 

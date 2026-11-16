@@ -12,6 +12,7 @@ public enum SettingCall: NounCall {
     case login(Bool)
     case link(Bool)
     case careful(Bool)
+    case slow(Bool)
 
     static let noun = CommandNoun("setting", verbs: [
         CommandVerb("get", "[--spot id] <key>", "Prints the value the person chose for the spot, or nothing. A secret prints as •••.") { words in
@@ -19,7 +20,7 @@ public enum SettingCall: NounCall {
         },
         CommandVerb(
             "set", "[--spot id] <key> [value]",
-            "Keeps a value for the spot, or removes it with no value. The person's choices of a spot: enabled, menubar (true or false), open, float and key.<command> (a key such as ctrl+option+k, or shake; none takes it away). Of the spot openspot: login, link, careful (true or false), panel-key and fix-key."
+            "Keeps a value for the spot, or removes it with no value. The person's choices of a spot: enabled, menubar (true or false), open, float and key.<command> (a key such as ctrl+option+k, or shake; none takes it away). Of the spot openspot: login, link, careful, slow (true or false), panel-key and fix-key."
         ) { words in
             pair(words, sets: true) { spot, key, value in reserved(spot, key, value, isRead: words.isRead) ?? Self.set(spot: spot, key: key, value: value) }
         },
@@ -70,6 +71,7 @@ public enum SettingCall: NounCall {
             case "login": return on("changes your Mac", Self.login)
             case "link": return on("changes your Mac", Self.link)
             case "careful": return on("changes how spots run", Self.careful)
+            case "slow": return on("changes how fast the panel moves", Self.slow)
             default: return nil
             }
         }
@@ -95,6 +97,7 @@ public enum SettingCall: NounCall {
         case .login: CallRule(use: .app, used: "changed whether Openspot opens at login")
         case .link: CallRule(use: .app, used: "changed the openspot command in Terminal")
         case .careful: CallRule(use: .app, used: "changed Careful mode", onlyPerson: Self.careful)
+        case .slow: CallRule(use: .app, used: "changed slow motion")
         default: rule
         }
     }
@@ -115,6 +118,7 @@ public enum SettingCall: NounCall {
         case .login(let isOn): apps.login(isOn)
         case .link(let isOn): apps.link(isOn)
         case .careful(let isOn): apps.careful(isOn)
+        case .slow(let isOn): apps.slow(isOn)
         }
     }
 }

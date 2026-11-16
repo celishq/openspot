@@ -1,13 +1,22 @@
 import Foundation
 
 public struct SpotSettings: Equatable, Sendable {
+    struct Key: Equatable, Sendable {
+        let act: GlobalKey.Act
+        let title: String
+        let icon: String
+    }
+
     enum Row: Equatable {
+        case key(GlobalKey.Act)
         case menuBar
         case setting(String)
 
         init?(id: String, of spot: String) {
             let named = { (word: String) in id.hasPrefix("\(word):\(spot):") ? String(id.dropFirst(word.count + spot.count + 2)) : nil }
-            if let key = named("setting") {
+            if let act = named("key").flatMap(GlobalKey.Act.init(setting:)) {
+                self = .key(act)
+            } else if let key = named("setting") {
                 self = .setting(key)
             } else if id == "menubar:\(spot)" {
                 self = .menuBar
@@ -18,6 +27,7 @@ public struct SpotSettings: Equatable, Sendable {
 
         func id(of spot: String) -> String {
             switch self {
+            case .key(let act): "key:\(spot):\(act.setting)"
             case .menuBar: "menubar:\(spot)"
             case .setting(let key): "setting:\(spot):\(key)"
             }
@@ -30,6 +40,7 @@ public struct SpotSettings: Equatable, Sendable {
     static let secretWord = "Set, and hidden"
     static let menuBarIcon = "menubar.rectangle"
     static let valueIcon = "slider.horizontal.3"
+    static let unsetKey = "Press ⏎ to set"
 
     public static func sheetID(of spot: String) -> String {
         OwnedSheet.settings.id(of: spot)
@@ -44,9 +55,10 @@ public struct SpotSettings: Equatable, Sendable {
     public let spot: String
     let fields: [HeaderField]
     let showsInMenuBar: Bool
+    let keys: [Key]
 
     public func hasRows(in config: Config) -> Bool {
-        showsInMenuBar || !fields.isEmpty || !kept(in: config).isEmpty
+        !keys.isEmpty || showsInMenuBar || !fields.isEmpty || !kept(in: config).isEmpty
     }
 
     public func field(of run: String) -> String? {
@@ -65,6 +77,13 @@ public struct SpotSettings: Equatable, Sendable {
         case (Self.open, .menuBar):
             try file.change { $0.arrangement.set(isInMenuBar: !$0.arrangement.menuBar.contains(spot), of: spot) }
             return ""
+        case (let id?, nil) where arguments.count == 2:
+            guard case .key(let act)? = self.row(id), keys.contains(where: { $0.act == act }) else { throw SpotError.failed(1, "This sheet cannot do that.") }
+            guard let trigger = Trigger(text: arguments[1]) else {
+                throw SpotError.failed(1, "Openspot cannot use `\(arguments[1])`. Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab, or use shake.")
+            }
+            try file.change { $0.assign(trigger, to: spot, act: act) }
+            return ""
         default:
             throw SpotError.failed(1, "This sheet cannot do that.")
         }
@@ -76,6 +95,7 @@ public struct SpotSettings: Equatable, Sendable {
 
     private func clear(_ row: Row) throws {
         switch row {
+        case .key(let act): try file.change { $0.assign(nil, to: spot, act: act) }
         case .menuBar: try file.change { $0.arrangement.set(isInMenuBar: false, of: spot) }
         case .setting(let key) where fields.contains { $0.id == key && $0.isSecret }: try secrets.keep(nil, key: key, of: spot)
         case .setting(let key): try file.change { $0.set(setting: key, of: spot, to: nil) }
@@ -94,6 +114,7 @@ public struct SpotSettings: Equatable, Sendable {
             TextBlock(fields: [.init(key: "button", value: Self.open), .init(key: "title", value: "Change"), .init(key: "close", value: "false")]),
             TextBlock(fields: [.init(key: "button", value: Self.clear), .init(key: "title", value: "Remove"), .init(key: "shortcut", value: "cmd+backspace")])
         ]
+        blocks += keys.map { key in keyRow(key, config.keys.first { $0.spot == spot && $0.act == key.act }) }
         let named = fields.map { field in
             (field, field.isSecret ? secrets[field.id].map { _ in Self.secretWord } : config.setting(field.id, of: spot).flatMap { $0.isEmpty ? nil : $0 })
         }
@@ -106,6 +127,15 @@ public struct SpotSettings: Equatable, Sendable {
             ]))
         }
         return blocks.map(\.text).joined(separator: "\n")
+    }
+
+    private func keyRow(_ key: Key, _ given: GlobalKey?) -> TextBlock {
+        let text = given?.trigger.text
+        return TextBlock(fields: [
+            .init(key: "row", value: Row.key(key.act).id(of: spot)), .init(key: "title", value: key.title), .init(key: "icon", value: key.icon),
+            .init(key: "type", value: "hotkey"), .init(key: "shake", value: "true"), .init(key: "close", value: "false"),
+            .init(key: "shortcut", value: text ?? "Record")
+        ] + (text == nil ? [.init(key: "detail", value: Self.unsetKey), .init(key: "hides", value: Self.clear)] : []))
     }
 
     private func fieldRow(_ field: HeaderField, _ value: String?) -> TextBlock {

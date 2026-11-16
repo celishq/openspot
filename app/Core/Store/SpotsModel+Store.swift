@@ -70,6 +70,14 @@ extension SpotsModel {
         guard let id = waitingPublish else { return false }
         waitingPublish = nil
         await publish(id)
+        leaveAccount()
         return true
+    }
+
+    private func leaveAccount() {
+        guard openSheetID == AccountSheet.id else { return }
+        let behind = flow.pages[...flow.index].reversed().prefix { $0.spot == AccountSheet.id }.count
+        guard behind <= flow.index else { return }
+        popPage(steps: behind)
     }
 }

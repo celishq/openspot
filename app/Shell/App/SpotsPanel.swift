@@ -139,6 +139,10 @@ final class SpotsPanel: NSPanel {
     private func takeKey(_ event: NSEvent) -> Bool {
         tap.spoil()
         guard let model else { return false }
+        if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == [.control, .option, .command], event.charactersIgnoringModifiers == "m" {
+            model.toggleSlowMotion()
+            return true
+        }
         let key = event.actionKey
         if model.recording != nil {
             if let key, model.handleKey(key) { return true }

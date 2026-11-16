@@ -9,14 +9,10 @@ struct SpotFieldLook: View {
         ZStack(alignment: .topLeading) {
             SpotSurfaceShape(rect: SpotFieldView.sheetRow, radius: SpotFieldView.sheetRadius)
                 .fill(SpotTheme.ink.opacity(SpotTheme.fill))
-            Image(systemName: "magnifyingglass")
-                .modifier(SpotSecondaryText())
-                .frame(width: SpotTokens.glyphSize, height: SpotTokens.rowHeight)
+            SpotFieldPrompt.glyph
                 .offset(x: SpotFieldView.sheetGlyphLeft, y: SpotFieldView.sheetTop)
             words
-                .font(SpotType.input)
-                .lineLimit(1)
-                .frame(width: SpotFieldView.fieldTextWidth, height: SpotTokens.rowHeight, alignment: .leading)
+                .frame(height: SpotTokens.rowHeight)
                 .offset(x: SpotFieldView.sheetTextLeft, y: SpotFieldView.sheetTop)
         }
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
@@ -26,11 +22,13 @@ struct SpotFieldLook: View {
     @ViewBuilder
     private var words: some View {
         if query.isEmpty {
-            Text("\(SearchPrompt.verb) \(SearchPrompt.word(for: title))")
-                .foregroundStyle(SpotTheme.glassSecondary)
+            SpotFieldPrompt(word: SearchPrompt.word(for: title))
         } else {
             Text(query)
+                .font(SpotType.input)
                 .foregroundStyle(SpotTheme.glassInk)
+                .lineLimit(1)
+                .frame(width: SpotFieldView.fieldTextWidth, alignment: .leading)
         }
     }
 }

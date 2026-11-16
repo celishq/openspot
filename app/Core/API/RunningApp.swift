@@ -20,4 +20,11 @@ public protocol RunningApp: Sendable {
     func playground(_ file: URL?, isCareful: Bool) async
     func changeSetting(_ key: String, of spot: String) async -> Bool
     func allows(_ reason: String) async -> Bool
+    func slowMotion(_ isOn: Bool?) async -> Bool?
+}
+
+extension RunningApp {
+    public func slowMotion(_ isOn: Bool?) async -> Bool? {
+        nil
+    }
 }
