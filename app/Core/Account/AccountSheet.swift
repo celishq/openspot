@@ -35,12 +35,29 @@ public actor AccountSheet {
         case choose, handle, how, about, words, check(WordCheck), account, leave, restore
     }
 
+    private enum Page: String, CaseIterable {
+        case handle, restore, how, about, check, leave
+    }
+
+    private enum Move {
+        case push(Page), pop, popAll
+
+        func write(to frame: inout AccountFrame) {
+            switch self {
+            case .push(let page): frame.head("push", page.rawValue)
+            case .pop: frame.head("pop", "true")
+            case .popAll: frame.head("pop", "all")
+            }
+        }
+    }
+
     public static let id = "openspot/account"
     public static let card = "openspot:account-card"
 
     private let account: Account
     private let links: Links
-    private var saved: Step?
+    private var shows = false
+    private var wordCheck: WordCheck?
 
     public init(store: AccountStore, links: Links) {
         account = Account(store: store, allows: links.allows)
@@ -51,39 +68,37 @@ public actor AccountSheet {
         Spot(
             id: Self.id, name: "Account", url: URL(fileURLWithPath: NSTemporaryDirectory()), kind: .list, icon: .symbol("person.crop.circle"),
             subtitle: "Signs what you publish", read: .sheet, host: .account(self), offeredPlaces: [.search], dataName: "account",
-            isOnGrid: false, view: Self.card, uses: [.app, .account, .clipboard]
+            isOnGrid: false, view: Self.card, pages: Page.allCases.map(\.rawValue), uses: [.app, .account, .clipboard]
         ).builtIn()
     }
 
     func answer(_ arguments: [String], input: String?, variables: [String: String]) async throws -> String {
         let fields = TextBlock.blocks(in: input ?? "").first
         let reason = variables["OPENSPOT_REASON"]
+        let page = variables["OPENSPOT_PAGE"].flatMap(Page.init(rawValue:))
         var toast: String?
         var phrase = ""
         var handle: String?
-        var pops = false
+        var move: Move?
+        if reason != nil { shows = false }
         let action = arguments.first ?? ""
         switch action {
         case "read":
             break
         case "sign_in":
-            if try step(reason: reason, try account.status()) == .restore {
-                phrase = fields?.value("phrase") ?? ""
-                let typed = AccountPhrase(phrase)
-                if typed.canSignIn {
-                    try await account.signIn(typed)
-                    saved = .account
-                    phrase = ""
-                    toast = "Signed in"
-                    pops = await publishWaiting()
-                }
-            } else {
-                saved = .restore
+            phrase = fields?.value("phrase") ?? ""
+            let typed = AccountPhrase(phrase)
+            if typed.canSignIn {
+                try await account.signIn(typed)
+                phrase = ""
+                toast = "Signed in"
+                _ = await links.publish()
+                move = .popAll
             }
         case "phrase":
             phrase = arguments.count > 1 ? arguments[1] : ""
         case "new":
-            saved = .handle
+            move = .push(.handle)
         case "handle":
             handle = AccountHandle.suggestion(from: arguments.dropFirst().first ?? "")
         case "create":
@@ -93,90 +108,88 @@ public actor AccountSheet {
                 break
             }
             try account.make(handle: typed)
-            saved = nil
-            pops = await publishWaiting()
+            _ = await links.publish()
+            move = .popAll
         case "own":
-            saved = .restore
+            move = .push(.restore)
         case "card":
             if arguments.dropFirst().first == "copy", let npub = try account.status().npub, await links.copy(npub) { toast = "Copied your key" }
         case "how":
-            saved = .how
+            move = .push(.how)
         case "about":
-            saved = .about
-        case "show", "again":
-            saved = .words
+            move = .push(.about)
+        case "show":
+            shows = true
         case "wrote":
+            shows = false
             if try account.status().sync == true {
-                saved = nil
+                move = .pop
             } else {
-                saved = .check(WordCheck(places: Self.twoPlaces()))
+                wordCheck = WordCheck(places: Self.twoPlaces())
+                move = .push(.check)
             }
         case "leave":
-            saved = .leave
-        case "back", "cancel", "done", "later":
-            saved = nil
+            move = .push(.leave)
+        case "again", "cancel", "done", "later":
+            shows = false
+            move = .pop
         case "sign_out":
             try await account.signOut()
-            saved = nil
             toast = "Signed out"
+            move = .popAll
         case "sync":
             try await account.sync(arguments.dropFirst().first == "true")
         case let id where id.hasPrefix("pick-"):
-            toast = try await picked(id)
+            (toast, move) = try await picked(id)
         default:
             throw SpotError.failed(1, "Account cannot do that.")
         }
-        return try await sheet(reason: action == "read" ? reason : nil, toast: toast, phrase: phrase, handle: handle, pops: pops)
+        return try await sheet(on: page, toast: toast, phrase: phrase, handle: handle, move: move)
     }
 
-    private func step(reason: String?, _ facts: AccountStatus) throws -> Step {
-        if reason != nil, saved == .words { saved = nil }
-        switch (saved, facts.signedIn) {
-        case let (step?, _) where [.how, .restore].contains(step): return step
+    private func step(on page: Page?, _ facts: AccountStatus) -> Step {
+        switch (page, facts.signedIn) {
+        case (.how?, _): return .how
+        case (.restore?, _): return .restore
         case (.handle?, false): return .handle
-        case let (step?, true) where [.about, .words, .account, .leave].contains(step): return step
-        case let (.check(check)?, true) where facts.backedUp != true: return .check(check)
+        case (.about?, true): return shows ? .words : .about
+        case (.leave?, true): return .leave
+        case (.check?, true) where facts.backedUp != true: return .check(wordCheck ?? WordCheck(places: Self.twoPlaces()))
         default: return facts.signedIn ? .account : .choose
         }
     }
 
-    private func publishWaiting() async -> Bool {
-        guard await links.publish() else { return false }
-        saved = nil
-        return true
-    }
-
-    private func picked(_ id: String) async throws -> String? {
+    private func picked(_ id: String) async throws -> (String?, Move?) {
         let rest = id.dropFirst("pick-".count)
-        guard let dash = rest.firstIndex(of: "-"), let place = Int(rest[..<dash]) else { return nil }
+        guard let dash = rest.firstIndex(of: "-"), let place = Int(rest[..<dash]) else { return (nil, nil) }
         let word = String(rest[rest.index(after: dash)...])
-        guard case .check(var check)? = saved else { return nil }
+        guard var check = wordCheck else { return (nil, nil) }
         guard let first = check.pick, first.place != place else {
             check.pick = Pick(place: place, word: word)
-            saved = .check(check)
-            return nil
+            wordCheck = check
+            return (nil, nil)
         }
         do {
             try await account.confirm([(first.place, first.word), (place, word)])
         } catch let error as SpotError {
             check.pick = nil
             check.mistake = error.reason
-            saved = .check(check)
-            return nil
+            wordCheck = check
+            return (nil, nil)
         }
-        saved = .account
-        return "Your words are backed up"
+        wordCheck = nil
+        return ("Your words are backed up", .popAll)
     }
 
     private static func twoPlaces() -> [Int] {
         Array((1...AccountPhrase.wordCount).shuffled().prefix(2)).sorted()
     }
 
-    private func sheet(reason: String?, toast: String?, phrase: String, handle: String?, pops: Bool) async throws -> String {
+    private func sheet(on page: Page?, toast: String?, phrase: String, handle: String?, move: Move?) async throws -> String {
         let facts = try account.status()
         var frame = AccountFrame()
-        if pops { frame.head("pop", "true") }
-        switch try step(reason: reason, facts) {
+        move?.write(to: &frame)
+        switch step(on: page, facts) {
         case .restore: restore(&frame, facts, phrase: phrase, toast: toast)
         case .check(let check): self.check(&frame, check, toast: toast)
         case .choose: choose(&frame, toast: toast)
@@ -204,13 +217,12 @@ public actor AccountSheet {
         let problem = typed != nil && AccountHandle(value) == nil ? AccountHandle.rule : nil
         frame.grid("head head", "head head", "label label", "handle handle")
         if problem != nil { frame.grid("status status") }
-        frame.grid("back create")
+        frame.grid("create create")
         frame.toast(toast)
         frame.line("head", "Pick your handle", icon: "at", detail: "It names you on the spots you publish, and in their links.")
         frame.block(["section": "label", "title": "Handle"], order: ["section", "title"])
         frame.block(["field": "handle", "grow": "false", "placeholder": "yourname", "value": value], order: ["field", "grow", "placeholder", "value"])
         if let problem { frame.line("status", problem, icon: "exclamationmark.triangle", tone: "bad") }
-        frame.button("back", "Back")
         frame.button("create", "Create key", .main)
         frame.howAction()
     }
@@ -314,12 +326,11 @@ public actor AccountSheet {
         }
         frame.grid("phrase phrase", "phrase phrase", "phrase phrase")
         if status != nil { frame.grid("status status") }
-        frame.grid("back sign_in")
+        frame.grid("sign_in sign_in")
         frame.toast(toast)
         frame.block(["field": "phrase", "type": "multiline", "grow": "false", "placeholder": "Your 12 words, or an nsec", "value": phrase], order: ["field", "type", "grow", "placeholder", "value"])
         if let status { frame.line("status", status.title, icon: status.icon, tone: status.tone, detail: status.detail) }
         frame.button("sign_in", "Sign in", .main)
-        frame.button("back", "Back")
     }
 
     private func check(_ frame: inout AccountFrame, _ check: WordCheck, toast: String?) {
