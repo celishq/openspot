@@ -86,7 +86,7 @@ final class FirstLaunchTests: XCTestCase {
         try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
         let spot = TestSpot(header: Self.launchHeader, body: "printf 'row=a\\ntitle=A\\n'")
         if launch { try spot.write(to: core.spotFile("openspot/hello")) }
-        if own { try spot.write(to: spots.spotFile("openspot/hello")) }
+        if own { try spot.write(to: spots.spotFile("mine/hello")) }
         let suite = "openspot-first-\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         let host = FakeHost()
@@ -130,6 +130,17 @@ final class FirstLaunchTests: XCTestCase {
 
         await model.reload()
 
+        XCTAssertTrue(model.sheets.keys.contains("mine/hello"), "\(model.sheets.keys)")
         XCTAssertNil(model.runs.launchSheet)
+    }
+
+    @MainActor
+    func testTheBuiltInSpotTakesTheLaunchRoleBesideAnOwnOne() async throws {
+        let (model, _) = try await firstLaunch(core: true, own: true)
+
+        await model.reload()
+
+        XCTAssertTrue(model.sheets.keys.contains("mine/hello"), "\(model.sheets.keys)")
+        XCTAssertEqual(model.runs.launchSheet, "openspot/hello")
     }
 }
