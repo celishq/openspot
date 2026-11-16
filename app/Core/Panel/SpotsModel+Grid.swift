@@ -29,6 +29,7 @@ extension SpotsModel {
     }
 
     private func run(_ key: GlobalKey) {
+        if key.act == .open { return pressCard(of: key.spot) }
         guard case .command(let command) = key.act else { return float(key.spot) }
         guard let sheet = sheets[key.spot] else { return }
         sheet.pressKey(command)
@@ -210,6 +211,12 @@ extension SpotsModel {
             return "⏎ Set key   ⌘⏎ Settings   ⌘K Actions"
         }
         return "⏎ \(entry.spot.offers.first?.title ?? command)   ⌘⏎ Settings   ⌘K Actions"
+    }
+
+    private func pressCard(of id: String) {
+        guard let entry = entry(id), entry.kind == .list, !entry.spot.pressRuns, let command = entry.spot.soleCommand else { return press(id) }
+        if !assignedKeys.contains(where: { $0.spot == id && $0.act == .command(command) }) { host.show() }
+        runSole(command, of: entry)
     }
 
     private func runSole(_ command: String, of entry: Entry) {

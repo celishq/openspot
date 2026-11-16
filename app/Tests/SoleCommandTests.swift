@@ -264,4 +264,21 @@ final class SoleCommandTests: XCTestCase {
         }
         XCTAssertGreaterThan(host.shows, 0)
     }
+
+    func testAnOpenKeyOfASpotWithOneCommandRecordsItsKeyAndThenRunsTheCommand() async throws {
+        try script("dictate", header: "title=Dictate\n\nbutton=dictate\ntitle=Dictate")
+        await model.reload()
+        let open = GlobalKey(spot: "dictate", act: .open, trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+d"))))
+
+        model.press(open)
+        XCTAssertEqual(host.shows, 1)
+        XCTAssertEqual(model.recording, "key:dictate:dictate")
+        model.stopRecording()
+        _ = try model.files.config.change { $0.assign(.tap(.option), to: "dictate", act: .command("dictate")) }
+        await model.reload()
+        model.press(open)
+
+        XCTAssertEqual(host.shows, 1)
+        try await wait("the command") { host.confirms == ["Ran dictate"] }
+    }
 }

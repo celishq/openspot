@@ -164,7 +164,10 @@ public struct Config: Equatable, Sendable {
         guard case .string(let spot)? = table["spot"], case .string(let text)? = table["key"] else {
             return unread(table, "config.toml: a key needs a spot and a key.")
         }
-        let act: GlobalKey.Act = if case .string(let command)? = table["command"] { .command(command) } else { .float }
+        if let open = table["open"], open != .boolean(true) {
+            return unread(table, "config.toml: the key of \(spot) takes open = true, or no open line.")
+        }
+        let act: GlobalKey.Act = if case .string(let command)? = table["command"] { .command(command) } else if table["open"] != nil { .open } else { .float }
         guard let trigger = Trigger(text: text) else {
             let name = if case .command(let command) = act { "\(spot) \(command)" } else { spot }
             return unread(table, "config.toml: \(name) cannot use \(text).")

@@ -1671,6 +1671,15 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.menuBarSymbol(during: .failure), "rectangle.lefthalf.inset.filled")
     }
 
+    func testAnOpenKeyShowsThePanelWithTheSheetOfItsSpot() async throws {
+        try script("list", header: "on=sheet.open", "printf 'row=a\\ntitle=Apple\\n'")
+        await model.reload()
+
+        model.press(GlobalKey(spot: "list", act: .open, trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+l")))))
+
+        try await wait("the open list") { model.openSheetID == "list" && host.shows == 1 }
+    }
+
     func testAKeyOfAScriptThatIsGoneShowsNothing() async throws {
         await model.reload()
 

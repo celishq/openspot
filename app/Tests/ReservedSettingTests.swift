@@ -12,6 +12,8 @@ final class ReservedSettingTests: XCTestCase {
         XCTAssertEqual(call("setting", "set", "--spot", "shelf", "float", "shake")?.value as? SettingCall, .key(spot: "shelf", act: .float, key: "shake"))
         XCTAssertEqual(call("setting", "set", "--spot", "move", "key.left", "ctrl+left")?.value as? SettingCall, .key(spot: "move", act: .command("left"), key: "ctrl+left"))
         XCTAssertEqual(call("setting", "set", "--spot", "move", "key.left")?.value as? SettingCall, .key(spot: "move", act: .command("left"), key: nil))
+        XCTAssertEqual(call("setting", "set", "--spot", "notes", "open", "ctrl+option+n")?.value as? SettingCall, .key(spot: "notes", act: .open, key: "ctrl+option+n"))
+        XCTAssertEqual(call("setting", "set", "--spot", "notes", "open")?.value as? SettingCall, .key(spot: "notes", act: .open, key: nil))
     }
 
     func testASettingOfTheAppRunsTheCallThatDoesTheWork() {

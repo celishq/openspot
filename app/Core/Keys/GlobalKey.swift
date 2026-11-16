@@ -2,6 +2,7 @@ import Foundation
 
 public struct GlobalKey: Hashable, Sendable {
     public enum Act: Hashable, Sendable {
+        case open
         case float
         case command(String)
     }
@@ -22,6 +23,6 @@ public struct GlobalKey: Hashable, Sendable {
 
     var table: ConfigDocument.Table {
         let command: String? = if case .command(let id) = act { id } else { nil }
-        return ConfigDocument.Table("keys", [("spot", .string(spot)), ("command", command.map { .string($0) }), ("key", .string(trigger.text))])
+        return ConfigDocument.Table("keys", [("spot", .string(spot)), ("command", command.map { .string($0) }), ("open", act == .open ? .boolean(true) : nil), ("key", .string(trigger.text))])
     }
 }

@@ -15,13 +15,14 @@ struct SpotList {
         let detail: String?
         let buttons: [Offer]
         let fields: [Offer]
+        let openKey: String?
         let float: Bool
         let floatKey: String?
         let menubar: Bool
         let inMenuBar: Bool
 
         var blocks: [[(String, String?)]] {
-            [[("spot", id), ("name", name), ("icon", icon), ("detail", detail), ("float", String(float)), ("floatKey", floatKey), ("menubar", String(menubar)), ("inMenuBar", String(inMenuBar))]]
+            [[("spot", id), ("name", name), ("icon", icon), ("detail", detail), ("openKey", openKey), ("float", String(float)), ("floatKey", floatKey), ("menubar", String(menubar)), ("inMenuBar", String(inMenuBar))]]
                 + buttons.map { [("button", $0.id), ("title", $0.title), ("icon", $0.icon), ("key", $0.key)] }
                 + fields.map { [("field", $0.id), ("title", $0.title), ("icon", $0.icon)] }
         }
@@ -66,6 +67,7 @@ struct SpotList {
                     Loaded.Offer(id: offer.id, title: offer.title, icon: offer.icon, key: keys.first { $0.spot == script.id && $0.act == .command(offer.id) }?.trigger.text)
                 },
                 fields: script.settings.map { Loaded.Offer(id: $0.id, title: $0.title, icon: $0.icon, key: nil) },
+                openKey: keys.first { $0.spot == script.id && $0.act == .open }?.trigger.text,
                 float: script.offersFloat,
                 floatKey: keys.first { $0.spot == script.id && $0.act == .float }?.trigger.text,
                 menubar: script.canShowInMenuBar,
