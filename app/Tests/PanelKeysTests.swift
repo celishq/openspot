@@ -280,6 +280,10 @@ final class PanelKeysTests: PanelCase {
         """)
     }
 
+    private func nextTurn() async {
+        await withCheckedContinuation { done in DispatchQueue.main.async { done.resume() } }
+    }
+
     private func openPick(key: String? = nil) async throws {
         try writePick(key: key)
         await model.reload()
@@ -308,10 +312,41 @@ final class PanelKeysTests: PanelCase {
         try await wait("the recording") { self.model.recording == "key" }
     }
 
+    func testAnEmptyFieldDoesNotRecordWhileThePanelHides() async throws {
+        try writePick()
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        await nextTurn()
+        model.pushFirst("pick", moving: false)
+
+        model.panelWillHide()
+
+        try await wait("the key field") { self.keyField != nil }
+        await nextTurn()
+        XCTAssertNil(model.recording)
+    }
+
+    func testAnEmptyFieldRecordsWhenThePanelShowsAgain() async throws {
+        try writePick()
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        await nextTurn()
+        model.pushFirst("pick", moving: false)
+        model.panelWillHide()
+        try await wait("the key field") { self.keyField != nil }
+
+        model.panelWillShow()
+
+        try await wait("the recording") { self.model.recording == "key" }
+    }
+
     func testAFieldWithAKeyDoesNotRecordUntilPressed() async throws {
         try await openPick(key: "option+space")
 
         XCTAssertEqual(keyField?.value, "option+space")
+        await nextTurn()
         XCTAssertNil(model.recording)
         XCTAssertTrue(model.handleKey(enter))
         XCTAssertEqual(model.recording, "key")
@@ -340,6 +375,7 @@ final class PanelKeysTests: PanelCase {
         XCTAssertNil(model.recording)
         XCTAssertEqual(model.openSheetID, "pick")
         try await wait("the press of keep") { self.pickCalls.contains("keep") }
+        await nextTurn()
         XCTAssertNil(model.recording)
         XCTAssertEqual(host.dismissals, 0)
     }
@@ -373,6 +409,7 @@ final class PanelKeysTests: PanelCase {
         XCTAssertNil(model.recording)
         try await wait("the kept key") { self.pickCalls.contains("key option+space") && self.model.sheets["pick"]?.calls.isEmpty == true }
         XCTAssertEqual(keyField?.value, "option+space")
+        await nextTurn()
         XCTAssertNil(model.recording)
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "backspace")))

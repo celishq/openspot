@@ -472,7 +472,10 @@ public final class SpotsModel {
         selected = 0
         runs.panelOpened(readsToEnd: isWarming)
         askAnswers()
-        DispatchQueue.main.async { [weak self] in self?.isShown = true }
+        DispatchQueue.main.async { [weak self] in
+            self?.isShown = true
+            self?.recordEmptyField()
+        }
     }
 
     public func panelWillHide() {

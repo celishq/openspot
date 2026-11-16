@@ -98,8 +98,13 @@ extension SpotsModel {
             guard case .shortcut(let text) = part.control, !text.isEmpty else { return nil }
             return part.id
         })
-        guard recording == nil, let part = parts.first(where: takes) else { return }
-        toggleRecording(part)
+        guard isShown, !isWarming, recording == nil, let sheet = openSheetID, let id = parts.first(where: takes)?.id else { return }
+        DispatchQueue.main.async { [weak self] in
+            guard let self, isShown, !isWarming, recording == nil, openSheetID == sheet,
+                  let part = openParts?.parts.first(where: { $0.id == id && $0.control == .shortcut("") })
+            else { return }
+            toggleRecording(part)
+        }
     }
 
     public func toggleRecording(id: String) {
