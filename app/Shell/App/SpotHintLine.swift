@@ -12,12 +12,13 @@ struct SpotHintLine: View {
     let progress: Double
 
     var body: some View {
-        let height = surfaceIsOut ? max(sheetHeight + model.flowEdges.heldHeight(of: sheetRect), menuHeight) : gridHeight
+        let open = max(sheetHeight + model.flowEdges.heldHeight(of: sheetRect), menuHeight)
+        let closed = surfaceIsOut && progress == 0 ? open : gridHeight
         ZStack(alignment: .top) {
             hint(model.gridHint, isShown: !surfaceIsOut)
             hint(sheetWords, isShown: surfaceIsOut)
         }
-        .modifier(FootPlace(height: height, morph: morph, progress: progress))
+        .modifier(FootPlace(closed: closed, open: open, isOut: surfaceIsOut, morph: morph, progress: progress))
         .onAppear { model.followHint() }
     }
 
@@ -39,20 +40,23 @@ struct SpotHintLine: View {
 }
 
 private struct FootPlace: ViewModifier, @preconcurrency Animatable {
-    var height: CGFloat
+    var closed: CGFloat
+    var open: CGFloat
+    let isOut: Bool
     let morph: SheetMorph?
     var progress: Double
 
-    var animatableData: AnimatablePair<CGFloat, Double> {
-        get { AnimatablePair(height, progress) }
+    var animatableData: AnimatablePair<AnimatablePair<CGFloat, CGFloat>, Double> {
+        get { AnimatablePair(AnimatablePair(closed, open), progress) }
         set {
-            height = newValue.first
+            closed = newValue.first.first
+            open = newValue.first.second
             progress = newValue.second
         }
     }
 
     func body(content: Content) -> some View {
-        let foot = morph.map { max(height, $0.foot(at: progress)) } ?? height
+        let foot = morph.map { $0.blurFoot(over: SheetPush.Foot(closed: closed, open: open), at: progress) } ?? (isOut ? open : closed)
         content.offset(y: foot - SpotTokens.halo - SpotTokens.hintPillHeight)
     }
 }

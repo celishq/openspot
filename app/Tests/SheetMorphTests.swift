@@ -104,4 +104,19 @@ final class SheetMorphTests: XCTestCase {
         XCTAssertEqual(morph.foot(at: 1), 520 + below, accuracy: 0.001)
         XCTAssertEqual(morph.foot(at: 0.5), 374.5 + below, accuracy: 0.001)
     }
+
+    func testTheBlurHoldsTheGridWhileItFadesThenRidesOnTheMovingShape() {
+        let below = SpotTokens.halo + SpotTokens.hintBlock
+        let foot = SheetPush.Foot(closed: 900, open: 520 + below)
+
+        XCTAssertEqual(morph.blurFoot(over: foot, at: 0), 900, accuracy: 0.001)
+        XCTAssertEqual(morph.blurFoot(over: foot, at: MotionTokens.cardShare), 520 + below, accuracy: 0.001)
+        XCTAssertEqual(morph.blurFoot(over: foot, at: 1), 520 + below, accuracy: 0.001)
+        XCTAssertEqual(morph.blurFoot(over: SheetPush.Foot(closed: 300, open: 520 + below), at: 0.5), 374.5 + below, accuracy: 0.001)
+    }
+
+    func testTheMovingShapesFootEndsAtTheFootItIsGiven() {
+        let below = SpotTokens.halo + SpotTokens.hintBlock
+        XCTAssertEqual(morph.blurFoot(over: SheetPush.Foot(closed: 300, open: 600 + below), at: 1), 600 + below, accuracy: 0.001)
+    }
 }

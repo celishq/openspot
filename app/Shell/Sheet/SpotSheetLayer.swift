@@ -74,7 +74,7 @@ struct SpotSheetLayer: View {
     }
 
     private func leaving(_ edges: FlowEdges, around room: CGRect) -> SheetStep.Leaving? {
-        guard let page = edges.leavingPage, let edge = edges.leavingEdge, let held = model.entries.first(where: { $0.id == page.spot }) else { return nil }
+        guard let page = edges.leavingPage, let edge = edges.leavingEdge, let held = model.sheetEntry(page.spot) else { return nil }
         let look = ZStack(alignment: .topLeading) {
             SpotSheetView(
                 model: model,
