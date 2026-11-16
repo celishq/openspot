@@ -10,18 +10,20 @@ final class SheetMorphTests: XCTestCase {
         XCTAssertEqual(morph.size(at: 0.5).width, 176.5, accuracy: 0.001)
     }
 
-    func testTheCardsLookIsGoneAThirdOfTheWayAndTheSheetsLookStartsThere() {
+    func testTheCardsLookIsGoneHalfWayAndTheSheetsLookStartsAtAThird() {
         XCTAssertEqual(SheetMorph.cardLook(at: 0), 1)
-        XCTAssertEqual(SheetMorph.cardLook(at: 0.35), 0)
+        XCTAssertGreaterThan(SheetMorph.cardLook(at: 0.4), 0)
+        XCTAssertEqual(SheetMorph.cardLook(at: 0.5), 0)
         XCTAssertEqual(SheetMorph.sheetLook(at: 0.35), 0)
-        XCTAssertGreaterThan(SheetMorph.sheetLook(at: 0.5), 0)
+        XCTAssertGreaterThan(SheetMorph.sheetLook(at: 0.4), 0)
         XCTAssertEqual(SheetMorph.sheetLook(at: 1), 1)
     }
 
-    func testTheTwoLooksNeverShowTogether() {
+    func testTheTwoLooksShowTogetherOnlyBetweenAThirdAndAHalf() {
         for step in 0...100 {
             let progress = Double(step) / 100
-            XCTAssertEqual(SheetMorph.cardLook(at: progress) * SheetMorph.sheetLook(at: progress), 0, "at \(progress)")
+            let both = SheetMorph.cardLook(at: progress) * SheetMorph.sheetLook(at: progress) > 0
+            XCTAssertEqual(both, progress > 0.35 && progress < 0.5, "at \(progress)")
         }
     }
 

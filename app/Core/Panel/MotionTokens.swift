@@ -14,7 +14,8 @@ public enum MotionTokens {
     public static let growSettle = 0.25 * slow
     public static let answerPause = 0.15
 
-    public static let cardShare = 0.35
+    public static let cardShare = 0.5
+    public static let contentStart = 0.35
 
     public static let hiddenScale = 1.04
     public static let pressedScale = 1.04

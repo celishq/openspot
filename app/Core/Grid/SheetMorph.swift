@@ -22,7 +22,7 @@ public struct SheetMorph: Equatable, Sendable {
     }
 
     public static func sheetLook(at progress: Double) -> Double {
-        ease((progress - MotionTokens.cardShare) / (1 - MotionTokens.cardShare))
+        ease((progress - MotionTokens.contentStart) / (1 - MotionTokens.contentStart))
     }
 
     public func origin(at progress: Double) -> CGPoint {
