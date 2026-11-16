@@ -262,6 +262,21 @@ final class FlowNavigationTests: PanelCase {
         XCTAssertNil(model.sheets["list"]?.page)
     }
 
+    func testASheetWithNoCardGrowsFromTheFieldAndShrinksBackIntoIt() async throws {
+        try script("hidden", header: "on=sheet.open\noffers=search", "printf 'row=h\\ntitle=Hidden\\n'")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        XCTAssertNil(SpotSheetCard.of("hidden", in: model))
+
+        XCTAssertTrue(model.open("hidden"))
+        try await wait("the open sheet") { self.model.transition.phase == .open && self.titles == ["Hidden"] }
+        XCTAssertTrue(host.motions.contains(.sheet(isOpen: true)))
+
+        model.closeSheet(moving: true)
+        XCTAssertTrue(host.motions.contains(.sheet(isOpen: false)))
+    }
+
     func testAnOpenKeyStartsANewFlowWithNothingBehind() async throws {
         try await openList()
         try await openPage()

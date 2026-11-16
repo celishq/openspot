@@ -892,27 +892,6 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(host.motions.contains(.sheet(isOpen: false)))
     }
 
-    func testASheetWithNoCardShowsAndHidesAtOnce() async throws {
-        try script("list", header: "on=sheet.open", "printf 'row=a\\ntitle=Apple\\n'")
-        try script("other", header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
-        await model.reload()
-        model.isShown = true
-        model.panelWillShow()
-        model.setOnGrid(false, for: "other")
-        host.motions = []
-        host.phases = []
-
-        model.pushFirst("other", moving: true)
-
-        try await wait("the sheet") { model.openSheetID == "other" }
-        XCTAssertEqual(model.transition.phase, .open)
-        XCTAssertFalse(host.phases.contains(.ready))
-        XCTAssertEqual(host.motions.compactMap { $0 }, [])
-        model.closeSheet(moving: true)
-        XCTAssertNil(model.transition.id)
-        XCTAssertEqual(host.motions.compactMap { $0 }, [])
-    }
-
     func testTheGridSearchFindsASpotByItsName() async throws {
         try script("list", header: "on=sheet.open", "printf 'row=a\\ntitle=Apple\\n'")
         try script("other", header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")

@@ -22,7 +22,7 @@ struct SpotSheetLayer: View {
             showsFill: entry.isActive,
             rect: sheetRect,
             closeShift: isInstall ? 0 : showsArrow ? (frame?.width ?? sheetRect.width) - sheetRect.width : nil,
-            cardWidth: isInstall ? SpotFieldView.rect.width : frame?.width ?? sheetRect.width,
+            cardWidth: isInstall ? SpotFieldView.rect.width : frame?.width ?? SpotFieldView.rect.width,
             hasCardLook: card?.look != nil,
             morph: SheetMorph(card: closedRect, sheet: sheetRect)
         )
@@ -44,7 +44,7 @@ struct SpotSheetLayer: View {
         }
         .modifier(SpotSheetFrame(
             rect: isOpen ? step.fit ?? sheetRect : closedRect,
-            radius: isOpen ? SpotTokens.radius : isInstall ? SurfaceEdge(card: .strip).radius : SurfaceEdge(card: card?.placement.size ?? entry.size).radius,
+            radius: isOpen ? SpotTokens.radius : isInstall || card == nil ? SurfaceEdge(card: .strip).radius : SurfaceEdge(card: card?.placement.size ?? entry.size).radius,
             sheetRect: sheetRect,
             shift: isOpen ? .zero : shift(to: closedRect),
             isSelected: { [model, id = card?.look?.id ?? entry.id] in
@@ -107,7 +107,7 @@ struct SpotSheetLayer: View {
     }
 
     private var closedRect: CGRect {
-        isInstall ? SpotFieldView.rect : frame ?? sheetRect
+        isInstall ? SpotFieldView.rect : frame ?? SpotFieldView.rect
     }
 
     private func shift(to closed: CGRect) -> CGSize {

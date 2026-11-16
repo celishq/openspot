@@ -166,7 +166,7 @@ extension SpotsModel {
 
     func hasPlace(_ id: String?) -> Bool {
         guard let id else { return false }
-        return id == fieldSheet || SpotSheetCard.of(id, in: self) != nil
+        return id == fieldSheet || sheets[id] != nil || SpotSheetCard.of(id, in: self) != nil
     }
 
     private func animate(isOpen: Bool, _ body: () -> Void) {
