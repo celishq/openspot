@@ -180,7 +180,9 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
 - The field travels into the sheet's search row, and the sheet's moving shape cuts its glass, so one glass shape shows.
 - The blur's foot is the lower of the moving shape's foot and the grid's foot, which reaches the sheet's foot while the
   grid fades. The footer sits on it, and a grid card has faded by the time it reaches the card (`SheetPush.Foot`).
-- A step of the flow, a push, a back or a forward, is the same grow motion as a sheet that opens.
+- A step of the flow, a push, a back or a forward, is the same grow motion as a sheet that opens. Its stand-ins, the leaving page and the
+  field's copy, give way to the real views when its animation is removed, not when it is logically complete, so the page
+  and the field land where they moved to.
 - Hide a view that comes back with a mask or with opacity 0.001, not with opacity 0, which drops its drawing.
 
 ### Idle and memory
