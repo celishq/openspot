@@ -36,7 +36,7 @@ extension SpotsModel {
             return run(seen: shown)
         }
         if let offer {
-            return call(CommandAction(id: offer.id, title: offer.title, scope: .spot, after: offer.closes ? .close : .stay), of: entry, text)
+            return call(CommandAction.command(offer), of: entry, text)
         }
         switch entry.spot.mainAct {
         case .run:

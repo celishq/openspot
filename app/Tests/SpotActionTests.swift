@@ -12,6 +12,11 @@ final class SpotActionTests: XCTestCase {
         XCTAssertEqual(SpotAction.toggle(state).arguments, ["wifi", "false"])
     }
 
+    func testTheCommandOfAHeaderButtonSendsItsOwnID() throws {
+        let offer = try XCTUnwrap(CommandOffer(block: TextBlock(fields: [.init(key: "button", value: "add"), .init(key: "title", value: "Add")])))
+        XCTAssertEqual(SpotAction.action(CommandAction.command(offer), item: nil).arguments, ["add"])
+    }
+
     func testASliderLevelIsSentAsARoundedNumber() {
         XCTAssertEqual(SpotAction.level(69.6, of: "volume").arguments, ["volume", "70"])
     }
