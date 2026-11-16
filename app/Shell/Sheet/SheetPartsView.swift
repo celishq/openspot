@@ -503,7 +503,10 @@ struct SheetPartsView: View {
     @ViewBuilder
     private func textArea(_ part: SpotPart, _ frame: SheetPlacement.Frame, text: String, placeholder: String?, isReadOnly: Bool) -> some View {
         let inset = SpotTokens.padding
-        let space = EdgeInsets(top: inset + frame.clearTop, leading: inset, bottom: inset + frame.clearBottom, trailing: inset)
+        let line = max((frame.rect.height - SpotType.titleLine) / 2, 0)
+        let space = frame.rect.height > SpotTokens.listRowHeight
+            ? EdgeInsets(top: inset + frame.clearTop, leading: inset, bottom: inset + frame.clearBottom, trailing: inset)
+            : EdgeInsets(top: line, leading: inset, bottom: line, trailing: inset)
         ZStack(alignment: .topLeading) {
             if isReadOnly {
                 ScrollView(showsIndicators: false) {

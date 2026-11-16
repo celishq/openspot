@@ -143,6 +143,7 @@ extension SpotRun {
             break
         }
         callEnded(call.made)
+        if case .work(let work) = purpose { work.ended?() }
         readAgainIfAsked()
     }
 }

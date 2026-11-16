@@ -23,6 +23,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private(set) var item: OpenspotItem?
     private(set) lazy var model = SpotsModel(host: self)
     private(set) var panel: SpotsPanel?
+    let frame = NextFrame()
     private(set) var toast: ToastPanel?
     private(set) var previous = PreviousApp<NSRunningApplication>()
     private(set) lazy var keys = GlobalKeys(

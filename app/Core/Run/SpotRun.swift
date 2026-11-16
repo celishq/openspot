@@ -38,6 +38,7 @@ public final class SpotRun {
         var keeping: String?
         var readsAfter = true
         var undo: SpotState?
+        var ended: (() -> Void)?
         var first: FirstFrame?
     }
 

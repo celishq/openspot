@@ -65,7 +65,7 @@ final class SpotSettingsSheetTests: XCTestCase {
         XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
 
         try await wait("the Settings sheet") { model.openSheetID == settings }
-        try await wait("its rows") { model.openItems?.shown.map(\.run) == ["menubar:draw"] }
+        try await wait("its rows") { model.openItems?.shown.map(\.run) == ["key:draw:open", "key:draw:float", "menubar:draw"] }
         XCTAssertEqual(model.openEntry?.id, settings)
         XCTAssertEqual(model.openEntry?.state.title, "Draw Settings")
         XCTAssertEqual(SpotSheetCard.of(model.openSheetID, in: model)?.id, "draw")
@@ -84,7 +84,7 @@ final class SpotSettingsSheetTests: XCTestCase {
 
         XCTAssertEqual(model.hint, "⏎ Run   ⌘⏎ Settings   ⌘K Actions")
         XCTAssertTrue(model.openSelectedSettings())
-        try await wait("its settings") { model.openItems?.shown.map(\.run) == ["menubar:conf"] }
+        try await wait("its settings") { model.openItems?.shown.map(\.run) == ["key:conf:open", "key:conf:float", "menubar:conf"] }
         XCTAssertEqual(model.openSheetID, SpotSettings.sheetID(of: "conf"))
         model.closeSheet(moving: false)
 
@@ -113,14 +113,14 @@ final class SpotSettingsSheetTests: XCTestCase {
         XCTAssertFalse(model.handleKey(ActionKey(name: "k", isCommand: true)))
         XCTAssertNil(model.menu)
         XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
-        try await wait("its place in the menu bar") { model.openItems?.shown.map(\.run) == ["menubar:quit"] }
+        try await wait("its place in the menu bar") { model.openItems?.shown.map(\.run) == ["key:quit:open", "menubar:quit"] }
         XCTAssertEqual(model.openSheetID, SpotSettings.sheetID(of: "quit"))
         model.closeSheet(moving: false)
 
         try await show(selecting: "lock")
         XCTAssertTrue(model.openSelectedSettings())
-        try await wait("the value") { model.openItems?.shown.map(\.run) == ["setting:lock:theme", "menubar:lock"] }
-        XCTAssertEqual(model.openItems?.shown.first?.subtitle, "dark")
+        try await wait("the value") { model.openItems?.shown.map(\.run) == ["key:lock:open", "setting:lock:theme", "menubar:lock"] }
+        XCTAssertEqual(model.openItems?.shown.first { $0.run == "setting:lock:theme" }?.subtitle, "dark")
         XCTAssertEqual(calls, [])
     }
 
@@ -128,7 +128,7 @@ final class SpotSettingsSheetTests: XCTestCase {
         try script("cups", header: "title=Cups\non=sheet.open\non=clock.60\noffers=card\noffers=float\n\nfield=size")
         try await show(selecting: "cups", search: "cups")
         XCTAssertTrue(model.openSelectedSettings())
-        try await wait("the rows") { model.openItems?.shown.map(\.run) == ["setting:cups:size", "menubar:cups"] }
+        try await wait("the rows") { model.openItems?.shown.map(\.run) == ["key:cups:open", "key:cups:float", "setting:cups:size", "menubar:cups"] }
 
         model.moveItemToEdge(last: true)
         model.runSelectedItem()
@@ -137,6 +137,7 @@ final class SpotSettingsSheetTests: XCTestCase {
         XCTAssertEqual(model.openSheetID, SpotSettings.sheetID(of: "cups"))
 
         model.moveItemToEdge(last: false)
+        model.moveItem(by: 2)
         model.runSelectedItem()
         try await wait("the action of the field") { calls.contains("size") }
     }

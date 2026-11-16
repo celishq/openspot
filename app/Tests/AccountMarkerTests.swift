@@ -116,22 +116,23 @@ final class AccountMarkerTests: BuiltInCase {
 
         let check = { (words: [String], wrongFirst: Bool) async throws in
             _ = await frame(["about"], nil, nil)
-            let shown = await frame(["show"], nil, nil)
+            let shown = await frame(["show"], nil, "about")
             XCTAssertTrue(shown.contains("title=\(words[0])"), shown)
-            let asked = await frame(["wrote"], nil, nil)
+            _ = await frame(["wrote"], nil, "about")
+            let asked = await frame(["read"], nil, "check")
             let places = Array(Set(picks(asked).map(\.place))).sorted()
             XCTAssertEqual(places.count, 2, asked)
             if wrongFirst {
                 let wrong = try XCTUnwrap(picks(asked).first { $0.place == places[0] && $0.word != words[places[0] - 1] })
-                _ = await frame(["pick-\(wrong.place)-\(wrong.word)"], nil, nil)
-                _ = await frame(["pick-\(places[1])-\(words[places[1] - 1])"], nil, nil)
+                _ = await frame(["pick-\(wrong.place)-\(wrong.word)"], nil, "check")
+                _ = await frame(["pick-\(places[1])-\(words[places[1] - 1])"], nil, "check")
                 return
             }
-            for place in places { _ = await frame(["pick-\(place)-\(words[place - 1])"], nil, nil) }
+            for place in places { _ = await frame(["pick-\(place)-\(words[place - 1])"], nil, "check") }
         }
 
         _ = await frame(["new"], nil, nil)
-        _ = await frame(["create"], "handle=tony\n", nil)
+        _ = await frame(["create"], "handle=tony\n", "handle")
         XCTAssertEqual(try store.record()?.handle, "tony")
         let made = try XCTUnwrap(try store.key()?.words)
         try await check(made, true)
@@ -139,11 +140,11 @@ final class AccountMarkerTests: BuiltInCase {
         try await check(made, false)
         XCTAssertTrue(try store.record()?.isBackedUp == true)
         _ = await frame(["leave"], nil, nil)
-        _ = await frame(["sign_out"], nil, nil)
+        _ = await frame(["sign_out"], nil, "leave")
         XCTAssertNil(try store.key())
         _ = await frame(["own"], nil, nil)
-        _ = await frame(["phrase", "abandon abandon"], nil, nil)
-        _ = await frame(["sign_in"], "phrase=\(phrase)\n", nil)
+        _ = await frame(["phrase", "abandon abandon"], nil, "restore")
+        _ = await frame(["sign_in"], "phrase=\(phrase)\n", "restore")
         let words = try XCTUnwrap(try store.key()?.words)
         XCTAssertEqual(words.joined(separator: " "), phrase)
         try keepTheKey()
@@ -152,8 +153,8 @@ final class AccountMarkerTests: BuiltInCase {
         try await check(words, false)
         XCTAssertTrue(try store.record()?.isBackedUp == true)
         await app.set(allows: false)
-        _ = await frame(["show"], nil, nil)
-        _ = await frame(["sign_out"], nil, nil)
+        _ = await frame(["show"], nil, "about")
+        _ = await frame(["sign_out"], nil, "leave")
         await app.set(allows: true)
         _ = await frame(["new"], nil, "publish:evil")
 

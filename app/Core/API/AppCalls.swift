@@ -9,11 +9,13 @@ struct AppCalls {
         CommandAnswer.work { [mac, environment, app] in
             let config = ConfigFile.standard(environment: environment).read()
             let running = await app?.status()
+            let slow = await app?.slowMotion(nil) ?? nil
             return try form.text(of: AppStatus(
                 version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "",
                 panelKey: (config.panelKey ?? .standard).text,
                 fixKey: (config.fixKey ?? .fix).text,
                 careful: config.isCareful,
+                slow: slow,
                 login: mac.login()?.isOn(),
                 link: mac.link()?.isOn,
                 update: running?.update,
@@ -43,6 +45,14 @@ struct AppCalls {
         CommandAnswer.work { [environment, app] in
             let config = try ConfigFile.standard(environment: environment).change { $0.set(isCareful: isOn) }
             await app?.configChanged(.careful, to: config)
+            return ""
+        }
+    }
+
+    func slow(_ isOn: Bool) -> CommandAPI.Work {
+        guard let app else { return CommandAnswer.notRunning("setting set --spot openspot slow") }
+        return CommandAnswer.work {
+            _ = await app.slowMotion(isOn)
             return ""
         }
     }

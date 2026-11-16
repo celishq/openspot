@@ -9,6 +9,7 @@ struct ModelApp: RunningApp {
     func spotsChanged() async { await model.spotsChanged() }
     func status() async -> (update: String?, calls: Int, isFirstLaunch: Bool) { (nil, 0, false) }
     func checkUpdate() async -> Bool { false }
+    func slowMotion(_ isOn: Bool?) async -> Bool? { await model.slowMotion(isOn) }
     func installUpdate() async -> Bool { false }
     func quit() async {}
     func open(_ id: String) async -> Bool { false }

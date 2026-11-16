@@ -597,6 +597,25 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
     }
 
+    func testAPublishThatAccountFinishesGoesBackToTheSheetBehindAccount() async throws {
+        try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
+        try "#!/bin/sh\n# on=sheet.open\nprintf 'row=x\\ntitle=X\\n'\n".writeScript(to: spots.appendingPathComponent("b.spot/b.sh"))
+        await model.reload()
+        try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
+        model.endEditing(moving: false)
+        model.isShown = true
+        model.panelWillShow()
+        XCTAssertTrue(model.open("b"))
+        try await wait("the sheet of b") { self.model.openSheetID == "b" }
+
+        _ = await model.publish("a")
+        try await wait("the account") { self.model.openSheetID == AccountSheet.id }
+        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["create"]), input: "handle=tony\n", limit: 60, variables: ["OPENSPOT_PAGE": "handle"])
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
+        try await wait("the sheet behind") { self.model.flow.current == FlowSheet(spot: "b") }
+    }
+
     func testAPushOfAPublishPageFromACallerPublishesNothing() async throws {
         try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
         await model.reload()

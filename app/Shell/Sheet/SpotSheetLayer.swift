@@ -17,14 +17,15 @@ struct SpotSheetLayer: View {
         SpotSheetView(
             model: model,
             entry: entry,
-            cardSize: card?.placement.size ?? entry.size,
+            cardSize: card?.placement.size ?? .strip,
             isOpen: isOpen,
             showsFill: entry.isActive,
             rect: sheetRect,
             closeShift: isInstall ? 0 : showsArrow ? (frame?.width ?? sheetRect.width) - sheetRect.width : nil,
-            cardWidth: isInstall ? SpotFieldView.rect.width : frame?.width ?? sheetRect.width,
+            cardWidth: isInstall ? SpotFieldView.rect.width : frame?.width ?? SpotFieldView.rect.width,
             hasCardLook: card?.look != nil,
-            morph: SheetMorph(card: closedRect, sheet: sheetRect)
+            morph: morph,
+            cardState: card?.state
         )
         .id(entry.id)
         .morph(progress, opacity: contentOpacity)
@@ -39,12 +40,12 @@ struct SpotSheetLayer: View {
         .background {
             if entry.isActive {
                 SpotTheme.solid
-                    .morph(progress, opacity: SheetMorph.cardLook(at:))
+                    .morph(progress, opacity: { [morph] in morph.sourceLook(at: $0) })
             }
         }
         .modifier(SpotSheetFrame(
             rect: isOpen ? step.fit ?? sheetRect : closedRect,
-            radius: isOpen ? SpotTokens.radius : isInstall ? SurfaceEdge(card: .strip).radius : SurfaceEdge(card: card?.placement.size ?? entry.size).radius,
+            radius: isOpen ? SpotTokens.radius : isInstall || card == nil ? SurfaceEdge(card: .strip).radius : SurfaceEdge(card: card?.placement.size ?? entry.size).radius,
             sheetRect: sheetRect,
             shift: isOpen ? .zero : shift(to: closedRect),
             isSelected: { [model, id = card?.look?.id ?? entry.id] in
@@ -73,7 +74,7 @@ struct SpotSheetLayer: View {
     }
 
     private func leaving(_ edges: FlowEdges, around room: CGRect) -> SheetStep.Leaving? {
-        guard let page = edges.leavingPage, let edge = edges.leavingEdge, let held = model.entries.first(where: { $0.id == page.spot }) else { return nil }
+        guard let page = edges.leavingPage, let edge = edges.leavingEdge, let held = model.sheetEntry(page.spot) else { return nil }
         let look = ZStack(alignment: .topLeading) {
             SpotSheetView(
                 model: model,
@@ -106,8 +107,12 @@ struct SpotSheetLayer: View {
         return { SheetMorph.sheetLook(at: $0) }
     }
 
+    private var morph: SheetMorph {
+        SheetMorph(card: closedRect, sheet: sheetRect, source: card == nil ? .field : .card)
+    }
+
     private var closedRect: CGRect {
-        isInstall ? SpotFieldView.rect : frame ?? sheetRect
+        isInstall ? SpotFieldView.rect : frame ?? SpotFieldView.rect
     }
 
     private func shift(to closed: CGRect) -> CGSize {

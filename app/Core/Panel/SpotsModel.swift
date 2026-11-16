@@ -106,6 +106,7 @@ public final class SpotsModel {
     }
     public internal(set) var flowEdges = FlowEdges()
     @ObservationIgnored var edgeStep = 0
+    @ObservationIgnored var landedStep = -1
     @ObservationIgnored var waitingPush = false
     public internal(set) var transition = SheetTransition() {
         didSet {
@@ -157,6 +158,8 @@ public final class SpotsModel {
                 isMenuOpen = isOpen
                 takeMode()
             }
+            let isGrown = menuSession?.isGrown == true
+            if isGrown != isMenuGrown { isMenuGrown = isGrown }
             takeShade()
             guard menuSession == nil else { return }
             if menuFrame != nil { menuFrame = nil }
@@ -164,6 +167,7 @@ public final class SpotsModel {
         }
     }
     public private(set) var isMenuOpen = false
+    public private(set) var isMenuGrown = false
     public private(set) var gridShade = GridShade()
 
     private func takeShade() {
@@ -459,7 +463,7 @@ public final class SpotsModel {
         selected = 0
         runs.panelOpened(readsToEnd: isWarming)
         askAnswers()
-        DispatchQueue.main.async { [weak self] in self?.isShown = true }
+        host.nextFrame { [weak self] in self?.isShown = true }
     }
 
     public func panelWillHide() {

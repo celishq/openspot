@@ -94,8 +94,8 @@ struct SpotGridView: View {
     }
 
     private func anchor(of placement: SpotPlacement) -> UnitPoint {
-        guard let push else { return .center }
-        let away = placement.direction(awayFrom: push.open)
+        guard let open = push?.open else { return .center }
+        let away = placement.direction(awayFrom: open)
         return away.columns < 0 ? .trailing : away.columns > 0 ? .leading : away.rows < 0 ? .bottom : away.rows > 0 ? .top : .center
     }
 

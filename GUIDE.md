@@ -156,7 +156,7 @@ Learn more in [The main block and the card](PROTOCOL.md#the-main-block-and-the-c
 A button runs a command. Give each button an id. When the user presses it, Openspot runs your spot with that id.
 
 Buttons in the header turn the spot into a set of commands, with no card. The user finds each command in the main
-search, and gives it a hotkey with Keys… in its ⌘K menu.
+search, and gives it a hotkey in its Settings.
 
 ```sh
 #!/bin/sh

@@ -149,6 +149,19 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertFalse(opensAtLogin)
     }
 
+    func testTheSlowMotionRowShowsWithARunningAppAndAPickTurnsItOnAndOff() async throws {
+        await app.offerSlowMotion()
+
+        let off = try await items()
+        let row = try XCTUnwrap(off.first { $0.run == "slow_motion" })
+        XCTAssertEqual(row.title, "Slow motion")
+        XCTAssertEqual(row.isOn, false)
+
+        try await call(["open", "slow_motion"])
+        let on = try await items()
+        XCTAssertEqual(on.first { $0.run == "slow_motion" }?.isOn, true)
+    }
+
     func testTheCarefulRowShowsItsStateAndAPickTurnsItOnAndOff() async throws {
         let off = try await items()
         let row = try XCTUnwrap(off.first { $0.run == "careful_mode" })

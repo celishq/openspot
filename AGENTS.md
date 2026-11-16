@@ -72,8 +72,8 @@ Each spot follows [The keys of a spot](PROTOCOL.md#the-keys-of-a-spot): Return d
 Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these for every spot, so a rule changes in one place.
 
 - Settings follow the level they change. openspot's Settings hold only the app's rows. Each spot's own Settings hold its
-  menu bar and fields. Its keys, Open, each command and Float, are in Keys… in its ⌘K menu, with the same Not set and
-  `⌘⌫` Remove on every key row.
+  keys first, Open, each command and Float, then its fields and its menu bar, with the same Not set and `⌘⌫` Remove on
+  every key row.
 - A card's ⌘K menu holds the standard acts in one order, which `spots/openspot.spot/actions.js` offers to every card.
   A key that a footer already shows does not need a ⌘K menu of its own.
 - Making and changing a spot both go through one form: describe it, then Copy prompt (`⌘⏎`), which flashes `✓ Copied`
@@ -170,10 +170,26 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
 - Change words by a crossfade of two laid-out copies, not by a reflow.
 - Do not put an AppKit view in a view that moves or resizes.
 - The model starts a motion where its cause happens, not a view: no `onChange` chain, and no `.animation(_:value:)` on a
-  container. A view that is just built lies at its first place for one turn, and its motion starts on the next turn.
+  container. A view that is just built lies at its first place for one frame, and its motion starts on the next frame
+  (`SpotsHost.nextFrame`), never on the next turn of the queue, which can run before that frame is drawn.
 - During a motion, no state is written from a measure, such as `onGeometryChange` or a scroll's geometry. Compute frames
   from the layout's own numbers, and scale the content inside a scroll view, not the scroll view.
 - Content that reaches a surface during its open motion is applied when the motion ends.
+- A sheet opens and closes by one rule, whatever its source (`SheetMorph.Source`): a card in sight, or the field for any
+  other sheet. The source shows its own look and words, and they fade over the first half of the motion. The sheet's
+  content, its title too, fades in from `MotionTokens.contentStart`. No part pops in when the shape has room for it.
+- The field travels into the sheet's search row, and the sheet's moving shape cuts its glass, so one glass shape shows.
+- The blur's foot is the lower of the moving shape's foot and the grid's foot, which reaches the sheet's foot while the
+  grid fades. The footer sits on it, and a grid card has faded by the time it reaches the card (`PanelFoot`).
+- The actions menu is placed from its card's resting frame, never from the card's moving outline, and the card's focus
+  grows on the menu's own grow (`isMenuGrown`).
+- A sheet that opens over the actions menu folds the menu in the update that shows the sheet, and the menu's foot is
+  where the sheet's footer starts. A menu row that another spot runs keeps the menu until its run ends, so whatever
+  the run opens takes the menu's place in one motion.
+- A step of the flow, a push, a back or a forward, is the same grow motion as a sheet that opens. Its stand-ins, the leaving page and the
+  field's copy, give way to the real views when its animation is removed, so the page and the field land where they
+  moved to. A press may start the next step once the step is logically complete (`SpotsHost.change(_:_:completion:removal:)`).
+  A stand-in draws with the same views as what it stands in for (`SpotFieldPrompt`), so the hand-off shows no change.
 - Hide a view that comes back with a mask or with opacity 0.001, not with opacity 0, which drops its drawing.
 
 ### Idle and memory
