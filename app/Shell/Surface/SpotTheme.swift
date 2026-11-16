@@ -13,6 +13,9 @@ struct SpotTheme {
     let preview: NSColor
     let confirm: NSColor
     let onConfirm: NSColor
+    let capFace: NSColor
+    let capRim: NSColor
+    let capEdge: NSColor
     let fillStrength: Double
     let selectedStrength: Double
     let discStrength: Double
@@ -32,6 +35,9 @@ struct SpotTheme {
         preview: NSColor(white: 0.3, alpha: 1),
         confirm: NSColor(red: 0.78, green: 0.16, blue: 0.14, alpha: 1),
         onConfirm: .white,
+        capFace: .white.withAlphaComponent(0.08),
+        capRim: .white.withAlphaComponent(0.14),
+        capEdge: .black.withAlphaComponent(0.35),
         fillStrength: 0.1,
         selectedStrength: 0.22,
         discStrength: 0.2,
@@ -52,6 +58,9 @@ struct SpotTheme {
         preview: NSColor(white: 0.98, alpha: 1),
         confirm: NSColor(red: 0.78, green: 0.16, blue: 0.14, alpha: 1),
         onConfirm: .white,
+        capFace: .white.withAlphaComponent(0.6),
+        capRim: .black.withAlphaComponent(0.1),
+        capEdge: .black.withAlphaComponent(0.14),
         fillStrength: 0.08,
         selectedStrength: 0.12,
         discStrength: 0,
@@ -82,6 +91,9 @@ struct SpotTheme {
         min(fade * glassFadeReach, 1)
     }
     static let accent = Color.accentColor
+    static let onAccent = Color.white
+    static let capGlow = 0.28
+    static let capBlank = 0.55
     static let good = Color.green
     static let warn = Color.orange
     static let bad = Color.red
@@ -113,6 +125,9 @@ struct SpotTheme {
     static let preview = color(\.preview)
     static let confirm = color(\.confirm)
     static let onConfirm = color(\.onConfirm)
+    static let capFace = color(\.capFace)
+    static let capRim = color(\.capRim)
+    static let capEdge = color(\.capEdge)
 
     private static func color(_ part: KeyPath<SpotTheme, NSColor> & Sendable) -> Color {
         Color(nsColor: NSColor(name: nil) { palette(for: $0)[keyPath: part] })

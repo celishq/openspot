@@ -10,6 +10,8 @@ struct SheetPartsView: View {
     let onPress: (SpotPart) -> Void
     var recordingPart: String?
     var onRecord: (SpotPart) -> Void = { _ in }
+    var heldKeys: () -> Shortcut.Modifiers = { [] }
+    var keyStatus: () -> String? = { nil }
     var list = ItemList()
     var onRun: (SpotItem) -> Void = { _ in }
     var onDragOut: ([SpotItem]) -> Void = { _ in }
@@ -164,6 +166,8 @@ struct SheetPartsView: View {
             image(path)
         case .progress(let level):
             progress(part, level: level)
+        case .shortcut(let text):
+            shortcut(part, text: text)
         default:
             if part.press == .line {
                 lineButton(part, frame)
@@ -343,8 +347,6 @@ struct SheetPartsView: View {
                 .labelsHidden()
         case .menu(let options, let value):
             menu(part, frame, options: options, value: value)
-        case .shortcut(let text):
-            shortcut(part, text: text)
         case .swatches(let colors, let value):
             if let color = colors.first {
                 swatch(part, color: color, isChosen: color == value, size: Self.smallSwatch)
@@ -395,7 +397,8 @@ struct SheetPartsView: View {
 
     private func shortcut(_ part: SpotPart, text: String) -> some View {
         Button { onRecord(part) } label: {
-            SpotKeyLabel(text: text, isRecording: recordingPart == part.id)
+            LiveKeycaps(value: text, isRecording: recordingPart == part.id, held: heldKeys, status: keyStatus)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -530,6 +533,17 @@ struct SheetPartsView: View {
         .font(SpotType.body)
         .foregroundStyle(SpotTheme.ink)
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
+    }
+}
+
+private struct LiveKeycaps: View {
+    let value: String
+    let isRecording: Bool
+    let held: () -> Shortcut.Modifiers
+    let status: () -> String?
+
+    var body: some View {
+        SpotKeycaps(value: value, held: isRecording ? held() : [], isRecording: isRecording, status: status())
     }
 }
 

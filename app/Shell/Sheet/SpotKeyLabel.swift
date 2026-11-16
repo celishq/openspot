@@ -5,9 +5,15 @@ struct SpotKeyLabel: View {
     let text: String
     let isRecording: Bool
     var recordingWords = "Press keys"
+    var held: Shortcut.Modifiers = []
+
+    private var words: String {
+        if isRecording { return held.isEmpty ? recordingWords : "\(held.marks) …" }
+        return text == Trigger.unset ? "Not set" : Trigger(text: text)?.label ?? text
+    }
 
     var body: some View {
-        Text(isRecording ? recordingWords : text == Trigger.unset ? "Not set" : Trigger(text: text)?.label ?? text)
+        Text(words)
             .font(SpotType.action)
             .foregroundStyle(SpotTheme.ink)
             .padding(.horizontal, SpotTokens.padding)

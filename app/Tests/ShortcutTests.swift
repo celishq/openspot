@@ -34,6 +34,15 @@ final class ShortcutTests: XCTestCase {
         XCTAssertEqual(Shortcut(text: "cmd+option+shift+ctrl+k")?.label, "⌃⌥⇧⌘K")
     }
 
+    func testWritesTheHeldModifiersAndTheKeyApart() {
+        XCTAssertEqual(Shortcut.Modifiers([.command, .option, .control]).marks, "⌃⌥⌘")
+        XCTAssertEqual(Shortcut.Modifiers.shift.marks, "⇧")
+        XCTAssertEqual(Shortcut.Modifiers().marks, "")
+        XCTAssertEqual(Shortcut(text: "option+space")?.keyLabel, "Space")
+        XCTAssertEqual(Shortcut(text: "ctrl+return")?.keyLabel, "⏎")
+        XCTAssertEqual(Shortcut(text: "cmd+shift+k")?.keyLabel, "K")
+    }
+
     func testReadsAPressByItsPlaceOnTheKeyboard() {
         XCTAssertEqual(Shortcut(code: 49, modifiers: [.option]), Shortcut(text: "option+space"))
         XCTAssertEqual(Shortcut(code: 17, modifiers: [.command, .shift]), Shortcut(text: "cmd+shift+t"))

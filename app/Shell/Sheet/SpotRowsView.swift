@@ -6,6 +6,7 @@ struct SpotRowsView: View {
     let list: ItemList
     var recording: String?
     var recordingWords = "Press keys"
+    var heldKeys: () -> Shortcut.Modifiers = { [] }
     let onRun: (SpotItem) -> Void
     var onPoint: (SpotItem) -> Void = { _ in }
     var selection: (() -> Int)?
@@ -198,7 +199,7 @@ struct SpotRowsView: View {
             }
             Spacer(minLength: 0)
             if let shortcut = item.shortcut {
-                SpotKeyLabel(text: shortcut, isRecording: recording == item.run, recordingWords: recordingWords)
+                LiveKeyLabel(text: shortcut, isRecording: recording == item.run, words: recordingWords, held: heldKeys)
             }
             if item.isOn {
                 Image(systemName: "checkmark")
@@ -212,6 +213,17 @@ struct SpotRowsView: View {
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
         .modifier(SpotLiveSelectionRing(isSelected: { [selectedRun, run = item.run] in selectedRun() == run }, shape: row, marksMenu: true))
         .contentShape(row)
+    }
+}
+
+private struct LiveKeyLabel: View {
+    let text: String
+    let isRecording: Bool
+    let words: String
+    let held: () -> Shortcut.Modifiers
+
+    var body: some View {
+        SpotKeyLabel(text: text, isRecording: isRecording, recordingWords: words, held: isRecording ? held() : [])
     }
 }
 

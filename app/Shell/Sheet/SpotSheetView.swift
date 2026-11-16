@@ -62,6 +62,8 @@ struct SpotSheetView: View {
                         onPress: { model.pressPart($0) },
                         recordingPart: held == nil ? model.recording : nil,
                         onRecord: { model.toggleRecording($0) },
+                        heldKeys: { model.heldKeys },
+                        keyStatus: { [held] in held == nil ? model.keyStatus : nil },
                         list: list,
                         onRun: { model.runItem($0) },
                         onDragOut: { model.dragOut($0, of: entry.id) },
@@ -89,7 +91,7 @@ struct SpotSheetView: View {
                         }
                         .buttonStyle(.plain)
                     } else {
-                        SpotRowsView(list: list, recording: held == nil ? model.recording : nil, recordingWords: model.recordingWords, onRun: { model.runItem($0) }, onPoint: { model.point(at: .item($0)) }, selection: selection, onDragOut: { model.dragOut($0, of: entry.id) })
+                        SpotRowsView(list: list, recording: held == nil ? model.recording : nil, recordingWords: model.recordingWords, heldKeys: { model.heldKeys }, onRun: { model.runItem($0) }, onPoint: { model.point(at: .item($0)) }, selection: selection, onDragOut: { model.dragOut($0, of: entry.id) })
                     }
                 }
             }

@@ -30,6 +30,10 @@ public struct Shortcut: Hashable, Sendable {
             Shortcut.modifierWords.first { $0.modifier == self }?.mark
         }
 
+        public var marks: String {
+            KeyText(modifiers: self, name: "").marks
+        }
+
         static var all: [Modifiers] {
             Shortcut.modifierWords.map(\.modifier)
         }
@@ -84,5 +88,9 @@ public struct Shortcut: Hashable, Sendable {
 
     public var label: String {
         KeyText(modifiers: modifiers, name: name).label
+    }
+
+    public var keyLabel: String {
+        KeyText(modifiers: modifiers, name: name).keyLabel
     }
 }
