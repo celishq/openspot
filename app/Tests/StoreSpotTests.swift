@@ -42,7 +42,7 @@ final class StoreSpotTests: BuiltInCase {
     func testItListsEachSpotWithWhatItsButtonDoes() async throws {
         let rows = try await items()
 
-        XCTAssertEqual(rows.map { Array($0.prefix(4)) }, [["mine", "Mine", "publish", "mine"], ["shared", "Shared", "get", "store"], ["timer", "Timer", "get", "core"]])
+        XCTAssertEqual(rows.map { Array($0.prefix(4)) }, [["mine", "Mine", "added", "mine"], ["shared", "Shared", "get", "store"], ["timer", "Timer", "get", "core"]])
         XCTAssertEqual(rows.first { $0[0] == "timer" }?[4], "Counts down")
         XCTAssertEqual(rows.map { $0[6] }, ["", "", "sample"])
     }
@@ -60,22 +60,21 @@ final class StoreSpotTests: BuiltInCase {
         XCTAssertEqual(rows.first { $0[0] == "timer" }?[2], "added")
     }
 
-    func testAFailedGetOrPublishSaysWhyInAToast() async throws {
-        _ = try AccountStore.standard(environment: ["OPENSPOT_CONFIG": root.path], home: root, devState: nil).keyMadeOnce()
-
+    func testAFailedGetSaysWhyInAToast() async throws {
         let got = SpotOutput(text: try await runs.answer(of: store, SpotAction(arguments: ["gallery", "get:nothing"]), limit: 60)).summary?.value("toast")
-        let published = SpotOutput(text: try await runs.answer(of: store, SpotAction(arguments: ["gallery", "publish:unread"]), limit: 60)).summary?.value("toast")
 
         XCTAssertNotNil(got)
-        XCTAssertEqual(published, "unread has no readme.md. Write one beside its script, then publish again.")
     }
 
-    func testAPublishWithNoKeySaysNothingSinceOpenspotOpensTheAccount() async throws {
-        let published = SpotOutput(text: try await runs.answer(of: store, SpotAction(arguments: ["gallery", "publish:unread"]), limit: 60)).summary?.value("toast")
+    func testPublishDoesNothingUntilTheStoreOpensIt() async throws {
+        _ = try AccountStore.standard(environment: ["OPENSPOT_CONFIG": root.path], home: root, devState: nil).keyMadeOnce()
 
-        XCTAssertNil(published)
+        let text = try await runs.answer(of: store, SpotAction(arguments: ["gallery", "publish:mine"]), limit: 60)
+
+        XCTAssertNil(SpotOutput(text: text).summary?.value("toast"))
         let opened = await app.opened
-        XCTAssertEqual(opened, ["publish unread"])
+        XCTAssertEqual(opened, [])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("store/mine.spot").path))
     }
 
     func testGetTurnsBackOnYourOwnSpotThatEditSpotsTurnedOff() async throws {
@@ -110,15 +109,5 @@ final class StoreSpotTests: BuiltInCase {
 
         let lines = (SpotOutput(text: text).parts.first?.values["readme"] ?? []).filter { $0.hasPrefix("timer\t") }
         XCTAssertEqual(lines, ["timer\t![The sheet](\(folder.path)/shot.png)", "timer\t![](/tmp/a.mov)", "timer\t![Web](https://example.com/a.jpg)"])
-    }
-
-    func testPublishPublishesYourOwnSpotInTheApp() async throws {
-        let rows = try await items()
-        let id = try XCTUnwrap(rows.first { $0[2] == "publish" }?[0])
-
-        _ = try await runs.answer(of: store, SpotAction(arguments: ["gallery", "publish:\(id)"]), limit: 60)
-
-        let opened = await app.opened
-        XCTAssertEqual(opened, ["publish mine"])
     }
 }

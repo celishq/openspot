@@ -2,7 +2,7 @@
 # title=Store
 # icon=bag
 # detail=Get spots
-# keywords=store, get spots, publish
+# keywords=store, get spots
 # on=sheet.open
 # uses=spots,account
 # view=store.swift
@@ -19,14 +19,6 @@ get() {
   if said=$(openspot store get "$1" 2>&1); then toast "$said"; else toast "$said"; return 1; fi
 }
 
-# Publishes spot $1, and says in a toast why it did not. Openspot says itself that it did, and opens Account
-# when no key signs it yet.
-publish() {
-  said=$(openspot store publish "$1" 2>&1 >/dev/null) && return 0
-  openspot account --frame | grep -qx 'signedIn=true' || return 0
-  toast "$said"
-}
-
 # Prints the gallery: a row for each spot with its id, its name, its step, its origin, its description, its size and
 # whether it has sample data, and the readme of the spot that $1 names, a line after its id, when its sheet asks.
 gallery() {
@@ -36,7 +28,7 @@ gallery() {
         n = index($i, "="); key = substr($i, 1, n - 1); f[key] = substr($i, n + 1)
         if (key == "readme" && f["spot"] == want) readme = readme "readme=" want "\t" f[key] "\n"
       }
-      rows = rows "\nrow=" f["spot"] "\ntitle=" f["name"] "\nstep=" f["step"] "\norigin=" f["origin"] "\n"
+      rows = rows "\nrow=" f["spot"] "\ntitle=" f["name"] "\nstep=" (f["step"] == "publish" ? "added" : f["step"]) "\norigin=" f["origin"] "\n"
       if (f["detail"] != "") rows = rows "detail=" f["detail"] "\n"
       rows = rows "size=" f["size"] "\n"
       if (f["sample"] == "true") rows = rows "sample=true\n" }
@@ -50,7 +42,6 @@ case "$1" in
   gallery)
     case "$2" in
       get:*) get "${2#get:}" ;;
-      publish:*) publish "${2#publish:}" ;;
       readme:*) gallery "${2#readme:}"; exit 0 ;;
     esac
     gallery
