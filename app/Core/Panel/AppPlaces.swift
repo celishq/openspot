@@ -10,6 +10,7 @@ public struct AppPlaces {
     public let account: AccountStore
     public let secrets: SecretStore
     public let config: ConfigFile
+    public let systemKeys: SystemKeys
 
     public init(
         environment: [String: String],
@@ -28,6 +29,7 @@ public struct AppPlaces {
         self.defaultConfig = defaultConfig
         account = .standard(environment: environment, home: home)
         secrets = .standard(environment: environment, home: home)
+        systemKeys = .standard(home: home)
         config = ConfigFile(url: ConfigFile.standard(environment: environment, home: home).url, disk: disk)
     }
 

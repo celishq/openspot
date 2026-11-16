@@ -149,6 +149,8 @@ public final class SpotsModel {
         didSet { takeMode() }
     }
     public internal(set) var mode = PanelMode.grid
+    public internal(set) var keyStatus: String?
+    @ObservationIgnored var takenKeys: [TakenKey] = []
     @ObservationIgnored private var problems: [String] = []
     public internal(set) var menuSession: ActionMenuSession? {
         didSet {

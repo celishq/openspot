@@ -252,6 +252,42 @@ final class PanelKeysTests: PanelCase {
         XCTAssertEqual(model.openSheetID, sheet)
     }
 
+    private func openKeyRow() async throws {
+        try script("draw", header: "title=Draw\non=sheet.open", "printf 'row=float\\ntitle=Float\\ntype=hotkey\\nshortcut=Record\\n'")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.press("draw")
+        try await wait("its rows") { self.model.openItems?.shown.map(\.run) == ["float"] }
+    }
+
+    func testRecordingAKeyThatMacOSKeepsSaysWhoseItIs() async throws {
+        let folder = self.folder.appendingPathComponent("Library/Preferences", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let entry: [String: Any] = ["enabled": true, "value": ["parameters": [32, 49, 1048576], "type": "standard"] as [String: Any]]
+        let data = try PropertyListSerialization.data(fromPropertyList: ["AppleSymbolicHotKeys": ["64": entry]], format: .binary, options: 0)
+        try data.write(to: folder.appendingPathComponent("com.apple.symbolichotkeys.plist"))
+        try await openKeyRow()
+
+        model.toggleRecording(id: "float")
+        try await wait("the taken keys") { !self.model.takenKeys.isEmpty }
+        model.record(code: 49, modifiers: .command)
+
+        XCTAssertEqual(host.notes, ["⌘Space is Spotlight's key."])
+    }
+
+    func testAKeyOfAnotherSpotIsTakenByThatSpot() async throws {
+        try script("shelf", header: "title=Shelf", "true")
+        _ = try model.files.config.change { $0.assign(.key(try XCTUnwrap(Shortcut(text: "ctrl+option+s"))), to: "shelf", act: .open) }
+        try await openKeyRow()
+
+        model.toggleRecording(id: "float")
+        try await wait("the taken keys") { !self.model.takenKeys.isEmpty }
+        model.record(code: 1, modifiers: [.control, .option])
+
+        XCTAssertEqual(host.notes, ["⌃⌥S is Shelf's key."])
+    }
+
     func testCommandYOpensTheHistoryOfASpotWhoseReturnRunsItsCommand() async throws {
         try script("dictate", header: "title=Dictate\non=sheet.open\n\nbutton=dictate\ntitle=Dictate", "printf 'row=a\\ntitle=Said\\n'")
         await model.reload()
