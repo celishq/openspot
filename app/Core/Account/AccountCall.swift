@@ -10,7 +10,7 @@ public enum AccountCall: NounCall {
     ])
 
     func work(in context: CallContext) -> CommandAPI.Work? {
-        guard let account = context.account else { return CommandAnswer.notRunning("account") }
+        guard let account = context.account else { return CommandAnswer.notRunning("account show") }
         return CommandAnswer.work {
             switch self {
             case .status(let form): try form.text(of: account.status())

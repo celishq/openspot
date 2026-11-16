@@ -978,8 +978,8 @@ A spot asks the Mac and Openspot for things through one command, which works the
     `update check`, `calendar show` and `reminders show`.
 - `calendar add --dry-run` and `reminders add --dry-run` change nothing, so they work in a read.
 - `openspot batch` runs one call for each line of stdin, and prints `---` after each. It stops at the first failure.
-- Each call that lists or reports, such as `app status`, `account`, `spot list`, `spot stats`, `store list` and `setting list`,
-  prints blocks, the format of a frame. `--json` prints the same as JSON.
+- Each call that lists or reports, such as `app status`, `account show`, `spot list`, `spot stats`, `store list` and `setting list`,
+  prints blocks, the format of a frame. `--json` prints JSON.
 
 The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The others:
 

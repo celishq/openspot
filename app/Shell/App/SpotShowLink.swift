@@ -55,7 +55,7 @@ enum SpotShowLink {
             exit(1)
         case nil:
             FileHandle.standardError.write(Data("Openspot did not answer. Open Openspot, then run this again.\n".utf8))
-            exit(1)
+            exit(3)
         }
     }
 }

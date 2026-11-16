@@ -260,6 +260,11 @@ final class CommandClientTests: XCTestCase {
         }
     }
 
+    func testHelpOfALiveCallNeedsNoApp() {
+        XCTAssertFalse(CommandKind.needsApp(["spot", "open", "--help"]))
+        XCTAssertFalse(CommandKind.needsApp(["app", "status", "-h"]))
+    }
+
     func testTheListsOfTheClientAreTheFlagsOfTheVerbTable() {
         var live: Set<String> = []
         var pure: Set<String> = []

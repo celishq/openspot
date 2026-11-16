@@ -11,6 +11,7 @@ enum HelpCall: NounCall {
     static let noun = CommandNoun("help", group: .start, verbs: [
         CommandVerb("", "[noun [verb]] [--json]", "Prints this list, or the verbs of a noun and its guide, which \(CommandNoun.guides) have. --help after any noun or verb does the same. --json prints each verb with its form, its effect and whether it needs the app.") { words in
             if words.rest == [Self.jsonWord] { return Self.json }
+            if words.rest.count == 1, Self.flags.contains(words.rest[0]) { return Self.list }
             guard let first = words.rest.first, !first.hasPrefix("-") else { return words.none ? Self.list : nil }
             return Self.noun(first, verb: Array(words.rest.dropFirst()))
         }

@@ -73,6 +73,12 @@ final class CommandHelpTests: XCTestCase {
         XCTAssertFalse(CommandLineCall(arguments: ["version"])?.rule.flags.contains(.needsApp) ?? true)
     }
 
+    func testTheFlagsAboutTheCommandTakeNoOtherWords() {
+        XCTAssertEqual(CommandLineCall(arguments: ["--version", "foo"])?.value as? CallFault, .unknown("--version foo"))
+        XCTAssertEqual(CommandLineCall(arguments: ["help", "--help"])?.value as? HelpCall, .list)
+        XCTAssertEqual(CommandLineCall(arguments: ["--help", "spot"])?.value as? HelpCall, .noun("spot", verb: []))
+    }
+
     func testAnUnknownLongFlagIsAFaultAndNeverStartsTheAppWindow() {
         XCTAssertEqual(CommandLineCall(arguments: ["--frobnicate"])?.value as? CallFault, .unknown("--frobnicate"))
         XCTAssertNil(CommandLineCall(arguments: ["-NSDocumentRevisionsDebugMode", "YES"]))

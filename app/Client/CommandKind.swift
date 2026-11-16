@@ -6,7 +6,7 @@ enum CommandKind {
     static let pure: Set<String> = ["emoji list", "symbols list"]
 
     static func needsApp(_ arguments: [String]) -> Bool {
-        holds(arguments, in: live)
+        !arguments.contains { $0 == "--help" || $0 == "-h" } && holds(arguments, in: live)
     }
 
     static func isPure(_ arguments: [String]) -> Bool {
