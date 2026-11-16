@@ -174,6 +174,7 @@
 		360DD355FBEF9D7341EB426E /* SpotDropView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8975CD677A24BB55FD2AD7CC /* SpotDropView.swift */; };
 		36115651EF9BDFC95938A30D /* UpdateCalls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A64455A79AD1BE4A5F45FD7 /* UpdateCalls.swift */; };
 		3630136FDF31B7109594B5BF /* MacTranslation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00DA644C79932F84A7B7FFE /* MacTranslation.swift */; };
+		364C8060C93FA851525B2A06 /* StoreFolder.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC25D79B9771126E95F70475 /* StoreFolder.swift */; };
 		36537421D287DD7787BCA1DE /* SpotSheetWarmth.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB8B8A575D1F7D0150E8576C /* SpotSheetWarmth.swift */; };
 		365A1A3E1429F243D6267720 /* HeaderField.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA9A33084038814D3B1F39EE /* HeaderField.swift */; };
 		368B134E51DC38B853C46F0E /* ActionKeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B544E30E1DA9391508F10DD2 /* ActionKeyTests.swift */; };
@@ -1603,6 +1604,7 @@
 		DB1EBC8A775417C83BACD740 /* AnswerPattern.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnswerPattern.swift; sourceTree = "<group>"; };
 		DB9E25BF928BA841FDAF138A /* SpotList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotList.swift; sourceTree = "<group>"; };
 		DBFDBEA64DA20838FD117994 /* SpotRead.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotRead.swift; sourceTree = "<group>"; };
+		DC25D79B9771126E95F70475 /* StoreFolder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreFolder.swift; sourceTree = "<group>"; };
 		DC933F3BAB8564385C412E65 /* SpotType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotType.swift; sourceTree = "<group>"; };
 		DC9DB55A3E5991608C7EEDC4 /* SheetArea.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetArea.swift; sourceTree = "<group>"; };
 		DCEAFAAD1530234B5C063AD8 /* CalcUnit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalcUnit.swift; sourceTree = "<group>"; };
@@ -2837,6 +2839,7 @@
 				D26EA864055BDD8CAA1E5735 /* SpotStore.swift */,
 				74A64DC629CBB934BF448CF0 /* StoreCall.swift */,
 				60B10AC6C094A6932202B245 /* StoreCalls.swift */,
+				DC25D79B9771126E95F70475 /* StoreFolder.swift */,
 			);
 			path = Store;
 			sourceTree = "<group>";
@@ -3734,6 +3737,7 @@
 				2D70BDB9FA41937888CF1383 /* StayLink.swift in Sources */,
 				607C98570C2F610D8F3FA2F8 /* StoreCall.swift in Sources */,
 				1FCA8008BC0AC655060C9A92 /* StoreCalls.swift in Sources */,
+				364C8060C93FA851525B2A06 /* StoreFolder.swift in Sources */,
 				844882A40C6D6EF850788B3B /* SurfaceEdge.swift in Sources */,
 				E94ECFC24F716AD3396C344C /* SwiftBuild.swift in Sources */,
 				E84631A262B0391BAEED7C3B /* SwiftProgram.swift in Sources */,

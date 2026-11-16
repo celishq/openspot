@@ -967,6 +967,9 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot grid edit`                               | Opens the panel in Edit Spots, to arrange the grid.                                             |
 | `openspot store list [--frame]`                    | Prints each spot of the store and its step: `get`, `publish`, or `added` once you have it.      |
 | `openspot store get <id>`                          | Gets a spot of the store: turns it on, or adds its package to your spots folder.                |
+| `openspot store add <folder>`                      | Adds a folder that holds spot folders as a store, so the Store lists its spots. The folder's name is the store's name. |
+| `openspot store remove <folder>`                   | Removes a store that `store add` added. The spots you got from it stay.                         |
+| `openspot store folders [--frame]`                 | Prints each store that `store add` added, with its name and whether its folder is found.       |
 | `openspot store publish <id>`                      | Publishes a spot of your spots folder to the store. It needs a `readme.md` beside its script. Only the Store spot can run it, so you publish from the Store spot. |
 | `openspot playground [file]`                       | Opens the Playground on a spot that you type or on a file.                                      |
 | `openspot check --sheet`                           | Reports the faults of a sheet on stdin.                                                         |

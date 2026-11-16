@@ -9,6 +9,7 @@ public struct SpotStore: Sendable {
         public let size: SpotSize
         public let publication: SpotPublication?
         public let hasSample: Bool
+        public let store: URL?
 
         public var runsSample: Bool {
             origin != .store
@@ -27,11 +28,13 @@ public struct SpotStore: Sendable {
     public let url: URL
     let folder: SpotsFolder
     let arrangement: SpotArrangement
+    let stores: [StoreFolder]
 
-    public init(url: URL, folder: SpotsFolder, arrangement: SpotArrangement) {
+    public init(url: URL, folder: SpotsFolder, arrangement: SpotArrangement, stores: [StoreFolder] = []) {
         self.url = url
         self.folder = folder
         self.arrangement = arrangement
+        self.stores = stores
     }
 
     public static func url(environment: [String: String], home: URL = FileManager.default.homeDirectoryForCurrentUser) -> URL {
@@ -58,20 +61,23 @@ public struct SpotStore: Sendable {
         let mine = own.files.compactMap { file in
             file.spots.first.map { item($0, id: file.id, origin: .mine, isAdded: !disabled.contains(file.id), publication: publications[$0.id]) }
         }
-        let stored = ((try? SpotsFolder(url: url).scan())?.files ?? []).filter { !ownIDs.contains($0.id) }.compactMap { file in
-            file.spots.first.map { item($0, id: file.id, origin: .store, isAdded: false) }
+        let stored = ([url] + stores.map(\.url)).flatMap { store in
+            ((try? SpotsFolder(url: store).scan())?.files ?? []).filter { !ownIDs.contains($0.id) }.compactMap { file in
+                file.spots.first.map { item($0, id: file.id, origin: .store, isAdded: false, store: store) }
+            }
         }
-        return (core + mine + stored).sorted { $0.spot.name.localizedCaseInsensitiveCompare($1.spot.name) == .orderedAscending }
+        var seen = Set<String>()
+        return (core + mine + stored).filter { seen.insert($0.id).inserted }.sorted { $0.spot.name.localizedCaseInsensitiveCompare($1.spot.name) == .orderedAscending }
     }
 
     public func item(_ id: String) -> Item? {
         items(publications: false).first { $0.id == id }
     }
 
-    private func item(_ spot: Spot, id: String, origin: SpotOrigin, isAdded: Bool, publication: SpotPublication? = nil) -> Item {
+    private func item(_ spot: Spot, id: String, origin: SpotOrigin, isAdded: Bool, publication: SpotPublication? = nil, store: URL? = nil) -> Item {
         Item(
             id: id, spot: spot, origin: origin, isAdded: isAdded, size: arrangement.size(of: id) ?? spot.size, publication: publication,
-            hasSample: SpotSample.exists(for: spot, runsScript: origin != .store)
+            hasSample: SpotSample.exists(for: spot, runsScript: origin != .store), store: store
         )
     }
 
@@ -111,14 +117,14 @@ public struct SpotStore: Sendable {
 
     private struct Printed: PrintedRecord {
         let id, name, icon, size, origin, step: String
-        let detail, published, path: String?
+        let detail, published, path, store: String?
         let readme: [String]
         let added, sample: Bool
 
         var blocks: [[(String, String?)]] {
             [[
                 ("spot", id), ("name", name), ("icon", icon), ("detail", detail), ("size", size), ("origin", origin), ("added", String(added)), ("step", step),
-                ("published", published), ("path", path), ("sample", sample ? "true" : nil)
+                ("published", published), ("path", path), ("store", store), ("sample", sample ? "true" : nil)
             ] + readme.map { ("readme", $0) }]
         }
 
@@ -134,6 +140,7 @@ public struct SpotStore: Sendable {
             sample = item.hasSample
             published = item.publication?.rawValue
             path = item.package?.path
+            store = item.store?.path
             readme = SpotReadme.lines(at: SpotReadme.url(beside: item.spot.url))
         }
     }

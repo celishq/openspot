@@ -16,6 +16,7 @@ public struct Config: Equatable, Sendable {
     public var arrangement = SpotArrangement()
     public var keys: [GlobalKey] = []
     public private(set) var settings: [SpotSetting] = []
+    public private(set) var stores: [StoreFolder] = []
     public private(set) var isCareful = false
     public private(set) var panels = GridPanels()
     public private(set) var isReadable = true
@@ -40,7 +41,7 @@ public struct Config: Equatable, Sendable {
     public init(document: ConfigDocument) {
         kept = document
         kept.tables = []
-        let known = ["spots", "keys", "settings"]
+        let known = ["spots", "keys", "settings", "stores"]
         let names = Array(document.values.keys) + Set(document.tables.map(\.name))
         for key in names.sorted() where !(["panel-key", "fix-key", "careful"] + known + GridPanel.allCases.compactMap(\.configKey)).contains(key) {
             faults.append("config.toml: \(key) is not a setting.")
@@ -48,6 +49,7 @@ public struct Config: Equatable, Sendable {
         arrangement = SpotArrangement(choices: document.tables(named: "spots").compactMap { choice(of: $0) })
         keys = document.tables(named: "keys").compactMap { key(of: $0) }
         settings = document.tables(named: "settings").compactMap { setting(of: $0) }
+        stores = document.tables(named: "stores").compactMap { store(of: $0) }
         kept.tables += document.tables.filter { !known.contains($0.name) }
         panelKey = shortcut(document.values["panel-key"], named: "panel-key", or: .standard)
         fixKey = shortcut(document.values["fix-key"], named: "fix-key", or: .fix)
@@ -68,7 +70,7 @@ public struct Config: Equatable, Sendable {
 
     public var text: String {
         var document = kept
-        document.tables = arrangement.tables + keys.map(\.table) + settings.map(\.table) + kept.tables
+        document.tables = arrangement.tables + keys.map(\.table) + settings.map(\.table) + stores.map(\.table) + kept.tables
         return document.text
     }
 
@@ -123,6 +125,14 @@ public struct Config: Equatable, Sendable {
         }
     }
 
+    public mutating func add(store: StoreFolder) {
+        if !stores.contains(store) { stores.append(store) }
+    }
+
+    public mutating func remove(store: StoreFolder) {
+        stores.removeAll { $0 == store }
+    }
+
     public mutating func assign(_ trigger: Trigger?, to spot: String, act: GlobalKey.Act) {
         if trigger == .shake { keys.removeAll { $0.trigger == .shake && ($0.spot != spot || $0.act != act) } }
         let place = keys.firstIndex { $0.spot == spot && $0.act == act }
@@ -150,6 +160,13 @@ public struct Config: Equatable, Sendable {
             return unread(table, "config.toml: a setting needs a spot, a key and a value.")
         }
         return SpotSetting(spot: spot, key: key, value: value)
+    }
+
+    private mutating func store(of table: ConfigDocument.Table) -> StoreFolder? {
+        guard case .string(let path)? = table["path"], path.hasPrefix("/") else {
+            return unread(table, "config.toml: a store needs the full path of its folder.")
+        }
+        return StoreFolder(url: URL(fileURLWithPath: path))
     }
 
     private mutating func shortcut(_ value: ConfigDocument.Value?, named name: String, or standard: Shortcut) -> Shortcut? {

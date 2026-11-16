@@ -29,6 +29,78 @@ final class StoreSpotTests: BuiltInCase {
         try await store.perform(SpotAction(arguments: arguments), timeout: 60)
     }
 
+    private func answer(_ arguments: [String]) async throws -> String {
+        try await runs.answer(of: store, SpotAction(arguments: arguments), limit: 60)
+    }
+
+    private func pick(_ folder: URL) throws {
+        let real = tools.appendingPathComponent("openspot-real")
+        if !FileManager.default.fileExists(atPath: real.path) {
+            try FileManager.default.moveItem(at: tools.appendingPathComponent("openspot"), to: real)
+        }
+        try fake("openspot", "if [ \"$1 $2\" = 'folder pick' ]; then echo '\(folder.path)'; exit 0; fi\nexec '\(real.path)' \"$@\"")
+    }
+
+    private func friends() throws -> URL {
+        let friends = root.appendingPathComponent("friends")
+        try "#!/bin/sh\n# title=Clock\n".writeScript(to: friends.appendingPathComponent("clock.spot/clock.sh"))
+        return friends
+    }
+
+    func testAddStoreKeepsThePickedFolderAndShowsItsSpotsUnderIt() async throws {
+        let friends = try friends()
+        try pick(friends)
+
+        let text = try await answer(["gallery", "add"])
+
+        XCTAssertEqual(file.read().stores.map(\.url.path), [friends.path])
+        XCTAssertEqual(SpotOutput(text: text).parts.first?.values["folder"], ["\(friends.path)\tfriends\tfound"])
+        XCTAssertEqual(TextBlock.blocks(in: text).first { $0.value("row") == "clock" }?.value("store"), friends.path)
+    }
+
+    func testAddStoreRefusesAFolderWithNoSpot() async throws {
+        let empty = root.appendingPathComponent("empty")
+        try FileManager.default.createDirectory(at: empty, withIntermediateDirectories: true)
+        try pick(empty)
+
+        let text = try await answer(["gallery", "add"])
+
+        XCTAssertEqual(SpotOutput(text: text).summary?.value("toast"), "empty has no spot folder, so it cannot be a store. Pick a folder that holds a folder such as weather.spot.")
+        XCTAssertEqual(file.read().stores, [])
+    }
+
+    func testAGoneStoreSaysSoUntilRemoveDropsIt() async throws {
+        let gone = root.appendingPathComponent("gone")
+        _ = try file.change { $0.add(store: StoreFolder(url: gone)) }
+
+        let text = try await runs.answer(of: store, .read, limit: 60)
+        XCTAssertEqual(SpotOutput(text: text).parts.first?.values["folder"], ["\(gone.path)\tgone\tmissing"])
+
+        try await call(["gallery", "remove:\(gone.path)"])
+        XCTAssertEqual(file.read().stores, [])
+    }
+
+    func testLocateMovesAGoneStoreToThePickedFolder() async throws {
+        let gone = root.appendingPathComponent("gone")
+        _ = try file.change { $0.add(store: StoreFolder(url: gone)) }
+        let friends = try friends()
+        try pick(friends)
+
+        try await call(["gallery", "locate:\(gone.path)"])
+
+        XCTAssertEqual(file.read().stores.map(\.url.path), [friends.path])
+    }
+
+    func testGetCopiesASpotOfAStoreFolder() async throws {
+        let friends = try friends()
+        _ = try file.change { $0.add(store: StoreFolder(url: friends)) }
+
+        try await call(["gallery", "get:clock"])
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: spots.appendingPathComponent("clock.spot/clock.sh").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: friends.appendingPathComponent("clock.spot/clock.sh").path))
+    }
+
     func testItOpensInAWindowWithItsGalleryView() throws {
         let spot = try store
 

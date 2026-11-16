@@ -5,7 +5,51 @@ struct StoreCalls {
     let app: (any RunningApp)?
 
     private static func store(in environment: [String: String]) -> SpotStore {
-        SpotStore(url: SpotStore.url(environment: environment), folder: SpotsFolder.standard(environment: environment), arrangement: ConfigFile.standard(environment: environment).read().arrangement)
+        let config = ConfigFile.standard(environment: environment).read()
+        return SpotStore(url: SpotStore.url(environment: environment), folder: SpotsFolder.standard(environment: environment), arrangement: config.arrangement, stores: config.stores)
+    }
+
+    private struct PrintedFolder: PrintedRecord {
+        let store, name: String
+        let found: Bool
+
+        var blocks: [[(String, String?)]] {
+            [[("store", store), ("name", name), ("found", String(found))]]
+        }
+    }
+
+    func add(_ path: String) -> CommandAPI.Work {
+        CommandAnswer.work { [environment, app] in
+            let expanded = (path as NSString).expandingTildeInPath
+            guard expanded.hasPrefix("/") else { throw SpotError.failed(1, "Give the full path of the folder, such as `~/Spots`.") }
+            let store = StoreFolder(url: URL(fileURLWithPath: expanded))
+            guard store.exists() else { throw SpotError.failed(1, "Openspot cannot find \(store.url.path).") }
+            guard !((try? SpotsFolder(url: store.url).scan())?.files ?? []).isEmpty else {
+                throw SpotError.failed(1, "\(store.name) has no spot folder, so it cannot be a store. Pick a folder that holds a folder such as weather.spot.")
+            }
+            _ = try ConfigFile.standard(environment: environment).change { $0.add(store: store) }
+            await app?.spotsChanged()
+            return "Added the store \(store.name).\n"
+        }
+    }
+
+    func remove(_ path: String) -> CommandAPI.Work {
+        CommandAnswer.work { [environment, app] in
+            let store = StoreFolder(url: URL(fileURLWithPath: (path as NSString).expandingTildeInPath))
+            let file = ConfigFile.standard(environment: environment)
+            guard file.read().stores.contains(store) else {
+                throw SpotError.failed(1, "\(store.url.path) is not a store. Run `openspot store folders` to see each one.")
+            }
+            _ = try file.change { $0.remove(store: store) }
+            await app?.spotsChanged()
+            return "Removed the store \(store.name).\n"
+        }
+    }
+
+    func folders(_ form: PrintForm) -> CommandAPI.Work {
+        CommandAnswer.work { [environment] in
+            try form.text(of: ConfigFile.standard(environment: environment).read().stores.map { PrintedFolder(store: $0.url.path, name: $0.name, found: $0.exists()) })
+        }
     }
 
     func list(_ form: PrintForm) -> CommandAPI.Work {

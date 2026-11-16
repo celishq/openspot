@@ -24,10 +24,35 @@ final class SpotStoreTests: XCTestCase {
         ConfigFile(url: folder.appendingPathComponent("config.toml"))
     }
 
-    private func list(enabled: Set<String> = ["apps"]) -> SpotStore {
+    private func list(enabled: Set<String> = ["apps"], stores: [StoreFolder] = []) -> SpotStore {
         var arrangement = config.read().arrangement
         enabled.forEach { arrangement.set(isEnabled: true, of: $0) }
-        return SpotStore(url: store, folder: SpotsFolder(url: spots, core: core, enabled: [], disabled: []), arrangement: arrangement)
+        return SpotStore(url: store, folder: SpotsFolder(url: spots, core: core, enabled: [], disabled: []), arrangement: arrangement, stores: stores)
+    }
+
+    func testEachStoreFolderListsItsSpotsWithTheFolderTheyCameFrom() throws {
+        let friends = folder.appendingPathComponent("friends", isDirectory: true)
+        try "#!/bin/sh\n# title=Clock\n".writeScript(to: friends.appendingPathComponent("clock.spot/clock.sh"))
+        let shelf = list(stores: [StoreFolder(url: friends), StoreFolder(url: folder.appendingPathComponent("gone"))])
+
+        XCTAssertEqual(shelf.items.map(\.id), ["apps", "clock", "mine", "shared", "timer"])
+        XCTAssertEqual(shelf.items.first { $0.id == "clock" }?.origin, .store)
+        XCTAssertEqual(shelf.items.first { $0.id == "clock" }?.store?.path, friends.path)
+        XCTAssertEqual(shelf.items.first { $0.id == "shared" }?.store?.path, store.path)
+        XCTAssertNil(shelf.items.first { $0.id == "mine" }?.store)
+        XCTAssertTrue(try shelf.text(.frame).contains("store=\(friends.path)\n"))
+    }
+
+    func testTheConfigKeepsEachStoreFolderOnce() throws {
+        let friends = StoreFolder(url: folder.appendingPathComponent("friends"))
+
+        _ = try config.change { $0.add(store: friends); $0.add(store: StoreFolder(url: folder.appendingPathComponent("friends/"))) }
+        XCTAssertEqual(config.read().stores, [friends])
+        XCTAssertEqual(friends.name, "friends")
+
+        _ = try config.change { $0.remove(store: friends) }
+        XCTAssertEqual(config.read().stores, [])
+        XCTAssertEqual(config.read().faults, [])
     }
 
     func testItListsTheCoreSpotsYourOwnAndThePackagesOfTheStoreWithWhetherYouHaveThem() {

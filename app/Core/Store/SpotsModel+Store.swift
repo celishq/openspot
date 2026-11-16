@@ -46,7 +46,7 @@ extension SpotsModel {
     }
 
     var store: SpotStore {
-        SpotStore(url: files.store, folder: folder, arrangement: arrangement)
+        SpotStore(url: files.store, folder: folder, arrangement: arrangement, stores: config.stores)
     }
 
     func ownSpot(_ id: String) -> Spot? {
