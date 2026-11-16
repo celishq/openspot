@@ -62,8 +62,11 @@ extension SpotsModel {
     }
 
     private var recordingRows: [KeyRow] {
-        let cancel = KeyRow("escape", command: nil, shift: nil, words: "Cancel") { [self] _ in
+        let parts = openParts?.parts ?? []
+        let button = parts.contains { $0.id == recording } ? parts.first { $0.key == ActionKey(name: "escape") } : nil
+        let cancel = KeyRow("escape", command: nil, shift: nil, words: button?.title ?? "Cancel") { [self] _ in
             stopRecording()
+            if let button { pressPart(button) }
             return true
         }
         return [cancel]

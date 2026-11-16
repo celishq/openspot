@@ -114,6 +114,7 @@ public final class SpotsModel {
             let shown = transition.shown
             if shown != openSheetID {
                 openSheetID = shown
+                recordEmptyField()
                 takeMode()
                 if shown != nil, followsHint { takeSheetHint(HintWords(hint)) }
             }
@@ -146,7 +147,16 @@ public final class SpotsModel {
 
     public var entryKey = Shortcut.standard
     public var recording: String? {
-        didSet { takeMode() }
+        didSet {
+            if recording == nil, !heldKeys.isEmpty { heldKeys = [] }
+            takeMode()
+        }
+    }
+    public private(set) var heldKeys: Shortcut.Modifiers = []
+
+    public func hold(_ modifiers: Shortcut.Modifiers) {
+        guard recording != nil, modifiers != heldKeys else { return }
+        heldKeys = modifiers
     }
     public internal(set) var mode = PanelMode.grid
     public internal(set) var keyStatus: String?

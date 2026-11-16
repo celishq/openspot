@@ -131,6 +131,7 @@ final class SpotsPanel: NSPanel {
     }
 
     private func takeFlags(_ event: NSEvent) {
+        model?.hold(event.keyModifiers)
         if let modifier = tap.take(event.keyModifiers, at: event.timestamp), model?.recording != nil {
             model?.recordTap(modifier)
         }

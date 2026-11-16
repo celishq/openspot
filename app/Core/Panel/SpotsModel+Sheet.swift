@@ -217,6 +217,7 @@ extension SpotsModel {
 
     func bringParts(of id: String, _ bring: () -> Void) {
         change(transition.id == id && transition.isOpen ? PanelMotion.sheet(isOpen: true) : nil, bring)
+        if id == openSheetID { recordEmptyField() }
     }
 
     public func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void = {}) {

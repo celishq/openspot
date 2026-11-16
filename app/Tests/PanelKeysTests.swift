@@ -252,6 +252,117 @@ final class PanelKeysTests: PanelCase {
         XCTAssertEqual(model.openSheetID, sheet)
     }
 
+    private var pickData: URL {
+        folder.appendingPathComponent("pick", isDirectory: true)
+    }
+
+    private var pickCalls: [String] {
+        ((try? String(contentsOf: pickData.appendingPathComponent("calls"), encoding: .utf8)) ?? "").split(separator: "\n").map(String.init)
+    }
+
+    private var keyField: SpotPart? {
+        model.openParts?.parts.first { $0.id == "key" }
+    }
+
+    private func writePick(key: String? = nil) throws {
+        try FileManager.default.createDirectory(at: pickData, withIntermediateDirectories: true)
+        if let key { try key.write(to: pickData.appendingPathComponent("key"), atomically: true, encoding: .utf8) }
+        try script("pick", header: "title=Pick\non=sheet.open", """
+        data='\(pickData.path)'
+        if [ "$1" = read ]; then
+          printf 'title=Choose your key\\ngrid=key\\ngrid=keep\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n\\nbutton=keep\\ntitle=Keep\\nshortcut=escape\\n' "$(cat "$data/key" 2>/dev/null)"
+        else
+          echo "$*" >> "$data/calls"
+        fi
+        """)
+    }
+
+    private func openPick(key: String? = nil) async throws {
+        try writePick(key: key)
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.press("pick")
+        try await wait("the key field") { self.keyField != nil }
+    }
+
+    func testAnEmptyHotkeyFieldRecordsAsSoonAsItsSheetShows() async throws {
+        try await openPick()
+
+        try await wait("the recording") { self.model.recording == "key" }
+    }
+
+    func testAnEmptyHotkeyFieldRecordsWhenItsPartsComeAfterItsSheet() async throws {
+        try writePick()
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+
+        model.pushFirst("pick", moving: false)
+        XCTAssertEqual(model.openSheetID, "pick")
+        XCTAssertNil(keyField)
+
+        try await wait("the recording") { self.model.recording == "key" }
+    }
+
+    func testAFieldWithAKeyDoesNotRecordUntilPressed() async throws {
+        try await openPick(key: "option+space")
+
+        XCTAssertEqual(keyField?.value, "option+space")
+        XCTAssertNil(model.recording)
+        XCTAssertTrue(model.handleKey(enter))
+        XCTAssertEqual(model.recording, "key")
+    }
+
+    func testHeldKeysShowOnlyWhileRecording() async throws {
+        model.hold([.option])
+        XCTAssertEqual(model.heldKeys, [])
+
+        try await openPick()
+        try await wait("the recording") { self.model.recording == "key" }
+        model.hold([.option])
+        XCTAssertEqual(model.heldKeys, [.option])
+
+        model.stopRecording()
+        XCTAssertEqual(model.heldKeys, [])
+    }
+
+    func testEscWhileAFieldRecordsPressesTheEscapeButton() async throws {
+        try await openPick()
+        try await wait("the recording") { self.model.recording == "key" }
+        XCTAssertEqual(model.hint, "Esc Keep")
+
+        XCTAssertTrue(model.handleKey(escape))
+
+        XCTAssertNil(model.recording)
+        XCTAssertEqual(model.openSheetID, "pick")
+        try await wait("the press of keep") { self.pickCalls.contains("keep") }
+        XCTAssertNil(model.recording)
+        XCTAssertEqual(host.dismissals, 0)
+    }
+
+    func testReturnBeforeAnyKeyAsksForAModifierAndSavesNothing() async throws {
+        try await openPick()
+        try await wait("the recording") { self.model.recording == "key" }
+
+        model.record(code: 36, modifiers: [])
+
+        XCTAssertEqual(model.keyStatus, "Hold ⌃, ⌥ or ⌘ with a key.")
+        XCTAssertEqual(model.recording, "key")
+        XCTAssertEqual(keyField?.value, "")
+        XCTAssertFalse(pickCalls.contains { $0.hasPrefix("key") })
+    }
+
+    func testAFieldThatRecordsAFreeKeySaysItIsFree() async throws {
+        try await openPick()
+        try await wait("the recording") { self.model.recording == "key" }
+
+        model.record(code: 49, modifiers: .option)
+
+        XCTAssertEqual(model.keyStatus, "⌥Space is free.")
+        try await wait("the key call") { self.pickCalls.contains("key option+space") }
+    }
+
     private func openKeyRow() async throws {
         try script("draw", header: "title=Draw\non=sheet.open", "printf 'row=float\\ntitle=Float\\ntype=hotkey\\nshortcut=Record\\n'")
         await model.reload()

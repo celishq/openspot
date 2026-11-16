@@ -83,6 +83,11 @@ extension SpotsModel {
         toggleRecording(id: part.id)
     }
 
+    func recordEmptyField() {
+        guard recording == nil, let part = openParts?.parts.first(where: { $0.control == .shortcut("") }) else { return }
+        toggleRecording(part)
+    }
+
     public func toggleRecording(id: String) {
         if recording == id {
             stopRecording()
