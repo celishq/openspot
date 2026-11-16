@@ -56,19 +56,29 @@ extension SpotsModel {
         finding = nil
         let text = query.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else {
+            if slash != nil { slash = nil }
             foundSpots = []
             return show(dragged(cards.filter(\.isOnGrid) + (isEditing ? shelfCards : [])))
+        }
+        if spotListIsStale {
+            spotListIsStale = false
+            spotListBuilds += 1
+            spotList.replace(cards.filter(\.spot.isFound).map(Self.foundItem))
+            takeCommands()
+        }
+        let command = isEditing ? nil : SlashCommand(text)
+        let commands = command.map(commandEntries) ?? []
+        let next = commands.isEmpty ? nil : command
+        if slash != next { slash = next }
+        if !commands.isEmpty {
+            foundSpots = []
+            return show(commands)
         }
         var ids = Set<String>()
         let answers = entries.filter { $0.spot.answers.map { runs.answerMatches.matches($0, text) } == true }
             .flatMap { entry in (sheets[entry.id]?.answers ?? []).map { Entry(spot: entry.spot, item: $0, isAnswer: true) } }
             .filter { ids.insert($0.id).inserted }
             .prefix(Self.searchLimit)
-        if spotListIsStale {
-            spotListIsStale = false
-            spotListBuilds += 1
-            spotList.replace(cards.filter(\.spot.isFound).map(Self.foundItem))
-        }
         let sources = entries.filter { $0.spot.isGlobal && arrangement.isGlobal(of: $0.id) != false }
         let ask = SearchAsk(
             query: runs.search(of: text),

@@ -50,6 +50,7 @@ extension SpotsModel {
             return parts.hint(escape: escapeWords, stopping: { work(of: $0) != nil }, actions: hasActions)
         }
         if let confirm = confirmRow.hint { return [confirm, settingsRow.hint, "⌘K Actions"].compactMap { $0 }.joined(separator: "   ") }
+        if let slashHint { return slashHint }
         if let soleHint { return soleHint }
         let keys = target.flatMap { target in
             actionMenu(on: target)?.hint(

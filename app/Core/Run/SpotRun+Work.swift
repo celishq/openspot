@@ -152,6 +152,26 @@ extension SpotRun {
         return .done
     }
 
+    public func launch(_ action: CommandAction, input: String) async -> FirstAnswer {
+        let call = SpotAction.action(action, item: nil)
+        let key = Self.key(call: call)
+        if let running = running(key) {
+            stopPressed(running)
+            return .stopped
+        }
+        answered = nil
+        return await withCheckedContinuation { waiting in
+            let first = FirstFrame(waiting)
+            if !send(Call(action: call, key: key, input: input, purpose: .work(Work(first: first)))) { first.take(.stopped) }
+        }
+    }
+
+    public func type(_ text: String) {
+        typed = text
+        if list.holdsItems { search(text) }
+        read(need: .change)
+    }
+
     public func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft) async throws -> FormAnswer? {
         let call = SpotAction.action(action, item: item)
         let key = Self.key(call: call)

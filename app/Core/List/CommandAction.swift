@@ -16,7 +16,7 @@ public struct CommandAction: Equatable, Sendable {
     private static let commandPrefix = "openspot.command."
 
     public static func command(_ offer: CommandOffer) -> CommandAction {
-        CommandAction(id: commandPrefix + offer.id, title: offer.title, scope: .spot, after: .close, confirm: offer.confirm)
+        CommandAction(id: commandPrefix + offer.id, title: offer.title, scope: .spot, after: offer.closes ? .close : .stay, confirm: offer.confirm)
     }
 
     public static func command(of action: CommandAction) -> String? {

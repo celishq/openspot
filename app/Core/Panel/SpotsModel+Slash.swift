@@ -1,0 +1,89 @@
+import Foundation
+
+extension SpotsModel {
+    func takeCommands() {
+        var items: [SpotItem] = []
+        var offers: [String: CommandOffer] = [:]
+        for card in cards where card.spot.isFound && card.spot.fault == nil {
+            items.append(SpotItem(title: card.state.title, run: card.id, keywords: [card.id]))
+            guard card.spot.host == nil, card.spot.offers.count > 1 else { continue }
+            for offer in card.spot.offers where offer.confirm == nil {
+                let id = Entry(spot: card.spot, item: Self.commandItem(offer)).id
+                items.append(SpotItem(title: offer.title, subtitle: card.state.title, run: id, keywords: [offer.id]))
+                offers[id] = offer
+            }
+        }
+        commandList.replace(items)
+        commandOffers = offers
+    }
+
+    func commandEntries(_ command: SlashCommand) -> [Entry] {
+        let spots = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        return runs.search(of: command.word).matching(in: [commandList], limit: Self.searchLimit).compactMap { match in
+            if let offer = commandOffers[match.item.run] {
+                let spot = spots[String(match.item.run.prefix { $0 != "\n" })]
+                return spot.map { Entry(spot: $0.spot, item: Self.commandItem(offer)) }
+            }
+            return spots[match.item.run]
+        }
+    }
+
+    func launch(_ shown: Entry, with text: String) {
+        guard let entry = entry(shown.spot.id) else { return }
+        let offer = commandOffers[shown.id] ?? entry.spot.soleCommand.flatMap { id in entry.spot.offers.first { $0.id == id && $0.confirm == nil } }
+        if text.isEmpty {
+            if let offer, shown.item != nil { return run(CommandAction.command(offer), on: (entry, nil)) }
+            return run(seen: shown)
+        }
+        if let offer {
+            return call(CommandAction(id: offer.id, title: offer.title, scope: .spot, after: offer.closes ? .close : .stay), of: entry, text)
+        }
+        switch entry.kind {
+        case .launch:
+            call(CommandAction(id: SpotAction.open.arguments[0], title: entry.state.title, scope: .spot, after: .close), of: entry, text)
+        case .list where entry.spot.pressRuns:
+            call(CommandAction(id: SpotAction.open.arguments[0], title: entry.state.title, scope: .spot, after: .close), of: entry, text)
+        case .list where entry.spot.soleCommand == nil:
+            pushFirst(entry.id, moving: true)
+            sheets[entry.id]?.type(text)
+        default:
+            run(seen: shown)
+        }
+    }
+
+    var slashHint: String? {
+        guard let slash, openSheetID == nil, form == nil, menu == nil, let entry = selectedEntry else { return nil }
+        let title = commandOffers[entry.id]?.title ?? entry.state.title
+        return slash.text.isEmpty ? "⏎ \(title)" : "⏎ \(title) \"\(slash.text)\""
+    }
+
+    private func call(_ action: CommandAction, of entry: Entry, _ text: String) {
+        let ask = UUID()
+        formAsk = ask
+        let id = entry.id
+        Task {
+            guard let answer = await sheets[id]?.launch(action, input: SearchQuery(text: text).input), formAsk == ask else { return }
+            formAsk = nil
+            switch answer {
+            case .frame(let frame):
+                if !frame.fields.isEmpty {
+                    guard let form = ItemForm(output: frame) else { return host.notify("\(action.title) failed. \(Self.reason(SpotError.badForm))") }
+                    pushFirst(id, moving: isShown)
+                    self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: action, item: nil, openedSheet: true)
+                } else if action.after == .stay {
+                    pushFirst(id, moving: isShown)
+                } else if isShown {
+                    host.dismiss()
+                }
+            case .ended:
+                if action.after == .close, isShown { host.dismiss() }
+            case .stopped:
+                break
+            }
+        }
+    }
+
+    private static func commandItem(_ offer: CommandOffer) -> SpotItem {
+        SpotItem(title: offer.title, run: offer.id, picture: Icon(text: offer.icon))
+    }
+}

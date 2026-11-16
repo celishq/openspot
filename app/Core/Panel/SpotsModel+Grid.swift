@@ -91,10 +91,11 @@ extension SpotsModel {
             return
         }
         guard let entry = selectedEntry else { return }
+        if let slash { return launch(entry, with: slash.text) }
         run(seen: entry)
     }
 
-    private func run(seen entry: Entry) {
+    func run(seen entry: Entry) {
         if entry.isAnswer, let sheet = sheets[entry.spot.id], sheet.isAnswering {
             sheet.afterAnswers { [weak self] in
                 guard let self, let next = selectedEntry, next.isAnswer, next.spot.id == entry.spot.id else { return }
