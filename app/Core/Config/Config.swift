@@ -42,7 +42,7 @@ public struct Config: Equatable, Sendable {
         kept = document
         kept.tables = []
         let known = ["spots", "keys", "settings", "stores"]
-        let names = Array(document.values.keys) + Set(document.tables.map(\.name))
+        let names = Array(document.values.keys) + Set(document.tables.map(\.name)) + document.sections.map(\.name)
         for key in names.sorted() where !(["panel-key", "fix-key", "careful"] + known + GridPanel.allCases.compactMap(\.configKey)).contains(key) {
             faults.append("config.toml: \(key) is not a setting.")
         }

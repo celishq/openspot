@@ -14,9 +14,10 @@
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
 - `app/Keywords/` holds the CLDR keywords of emoji and symbols, one xz file per language. `scripts/emoji-keywords.py` writes
   it from a pinned CLDR version, and the build copies it into the app.
-- `app/Themes/` holds the theme of the app, `openspot.theme/theme.toml`, which gives each appearance its glass tint. The build
-  copies it into the app. `openspot theme open` copies it to `themes/` beside the config, and the app reads that copy in its
-  place, at launch and at `openspot theme reload`.
+- `app/Themes/` holds the theme of the app, `openspot.theme/theme.toml`, which gives every colour and strength: `[dark]` and
+  `[light]` for each appearance, `[shared]` for both. A colour is `#RRGGBB`, `#RRGGBBAA`, or a system colour: `accent`,
+  `green`, `orange` or `red`. The build copies it into the app. `openspot theme open` copies it to `themes/` beside the config,
+  and the app reads each key of that copy over the built-in file, at launch and at `openspot theme reload`.
 - `app/Help/` holds the guide of each `openspot` noun that has one, which `openspot help <noun>` prints. The build copies it
   into the app.
 - `spots/` holds the source of the core spots, each a `<name>.spot` folder. The build copies it into the app, and they run
@@ -90,8 +91,8 @@ Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these 
 - Logic that a window needs goes in `Core/`. Only drawing and window handling go in `Shell/`.
 - Each size, colour, strength, font and motion value has one name in a token file: `SpotTokens` (measured base values in
   `Core/Grid/SpotTokens.swift`, formulas over them in `Core/Grid/SpotTokens+Derived.swift`, sizes of single parts in
-  `Core/Grid/SpotTokens+Parts.swift`), `SpotTheme`, `SpotType` and `MotionTokens`. A new theme is one more value of
-  `SpotTheme`, except the glass tint, which `app/Themes/` holds. `make verify` runs `scripts/check-tokens.sh`, which fails
+  `Core/Grid/SpotTokens+Parts.swift`), `SpotTheme`, `SpotType` and `MotionTokens`. `SpotTheme` reads each colour and
+  strength from the theme file in `app/Themes/`, so a new theme is one more file. `make verify` runs `scripts/check-tokens.sh`, which fails
   on a number or a colour written for the look in `Shell/`, outside the token files, `Shell/Picture`, `Shell/Mac` and
   `Shell/Tools`.
 - Glass is system glass, drawn by `spotGlass`, which wraps `glassEffect`. Each shape draws its own glass, outside a

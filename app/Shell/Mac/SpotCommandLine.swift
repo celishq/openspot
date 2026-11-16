@@ -26,6 +26,9 @@ enum SpotCommandLine {
             }
             dispatchMain()
         }
+        if call.value is RenderCall || call.value is PlaygroundCommand {
+            SpotLoadedTheme.shared.take(ThemeFile.standard(environment: ProcessInfo.processInfo.environment, builtIn: SpotMac().mac.theme).read())
+        }
         switch call.value {
         case SpotCall.show(let id) as SpotCall:
             SpotShowLink.send(id)

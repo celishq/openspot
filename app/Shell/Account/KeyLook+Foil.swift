@@ -2,11 +2,11 @@ import OpenspotCore
 import SwiftUI
 
 extension KeyLook {
-    var engrave: Color {
+    @MainActor var engrave: Color {
         isDark ? SpotTheme.engraveDark : SpotTheme.engraveLight
     }
 
-    var catchLight: Color {
+    @MainActor var catchLight: Color {
         isDark ? SpotTheme.catchLightDark : SpotTheme.catchLightLight
     }
 

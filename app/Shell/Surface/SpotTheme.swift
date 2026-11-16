@@ -1,4 +1,5 @@
 import AppKit
+import OpenspotCore
 import SwiftUI
 
 struct SpotTheme {
@@ -7,6 +8,7 @@ struct SpotTheme {
     let onSolid: NSColor
     let glyphOnSolid: NSColor
     let glass: NSColor
+    let glassTint: NSColor
     let cornerFill: NSColor
     let window: NSColor
     let preview: NSColor
@@ -19,80 +21,64 @@ struct SpotTheme {
     let controlStrength: Double
     let trackStrength: Double
 
-    static let dark = SpotTheme(
-        ink: .white,
-        solid: .white,
-        onSolid: .black,
-        glyphOnSolid: .controlAccentColor,
-        glass: .clear,
-        cornerFill: NSColor(white: 0.2, alpha: 1),
-        window: NSColor(white: 0.16, alpha: 1),
-        preview: NSColor(white: 0.3, alpha: 1),
-        confirm: NSColor(red: 0.78, green: 0.16, blue: 0.14, alpha: 1),
-        onConfirm: .white,
-        fillStrength: 0.1,
-        selectedStrength: 0.22,
-        discStrength: 0.2,
-        chipStrength: 0.25,
-        controlStrength: 0.2,
-        trackStrength: 0.2
-    )
+    init(_ look: Theme.Look) {
+        ink = look.ink.nsColor
+        solid = look.solid.nsColor
+        onSolid = look.onSolid.nsColor
+        glyphOnSolid = look.glyphOnSolid.nsColor
+        glass = look.glass.nsColor
+        glassTint = look.glassTint.nsColor
+        cornerFill = look.cornerFill.nsColor
+        window = look.window.nsColor
+        preview = look.preview.nsColor
+        confirm = look.confirm.nsColor
+        onConfirm = look.onConfirm.nsColor
+        fillStrength = look.fill
+        selectedStrength = look.selected
+        discStrength = look.disc
+        chipStrength = look.chip
+        controlStrength = look.control
+        trackStrength = look.track
+    }
 
-    static let light = SpotTheme(
-        ink: NSColor(white: 0.11, alpha: 1),
-        solid: NSColor(white: 0.12, alpha: 1),
-        onSolid: .white,
-        glyphOnSolid: .white,
-        glass: .white.withAlphaComponent(0.5),
-        cornerFill: NSColor(white: 0.98, alpha: 1),
-        window: NSColor(white: 0.93, alpha: 1),
-        preview: NSColor(white: 0.98, alpha: 1),
-        confirm: NSColor(red: 0.78, green: 0.16, blue: 0.14, alpha: 1),
-        onConfirm: .white,
-        fillStrength: 0.08,
-        selectedStrength: 0.12,
-        discStrength: 0,
-        chipStrength: 0.1,
-        controlStrength: 0.09,
-        trackStrength: 0.12
-    )
-
-    static func palette(for appearance: NSAppearance) -> SpotTheme {
-        isDark(appearance) ? dark : light
+    @MainActor static func palette(for appearance: NSAppearance) -> SpotTheme {
+        isDark(appearance) ? loaded.dark : loaded.light
     }
 
     static func isDark(_ appearance: NSAppearance) -> Bool {
         appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
     }
 
+    @MainActor static var loaded: SpotPalette { SpotLoadedTheme.shared.palette }
+
     @MainActor private static var current: SpotTheme {
         let appearance = NSApp?.effectiveAppearance ?? NSAppearance.currentDrawing()
-        if let chosen, chosen.appearance === appearance { return chosen.theme }
-        let theme = palette(for: appearance)
-        chosen = (appearance, theme)
-        return theme
+        if let chosen, chosen.appearance === appearance { return chosen.isDark ? loaded.dark : loaded.light }
+        let isDark = isDark(appearance)
+        chosen = (appearance, isDark)
+        return isDark ? loaded.dark : loaded.light
     }
 
-    @MainActor private static var chosen: (appearance: NSAppearance, theme: SpotTheme)?
+    @MainActor private static var chosen: (appearance: NSAppearance, isDark: Bool)?
 
-    static let pictureRim = Color.white.opacity(0.25)
+    @MainActor static var pictureRim: Color { loaded.pictureRim }
     static let backdropBlur: CGFloat = 3
     static let glassFadeReach = 3.0
 
     static func glassStrength(at fade: Double) -> Double {
         min(fade * glassFadeReach, 1)
     }
-    static let accent = Color.accentColor
-    static let good = Color.green
-    static let warn = Color.orange
-    static let bad = Color.red
-    static let secondaryLight = 0.7
-    static let dragFill = 0.4
-    static let hover = 0.08
-    static let menuDim = 0.4
+    @MainActor static var accent: Color { loaded.accent }
+    @MainActor static var good: Color { loaded.good }
+    @MainActor static var warn: Color { loaded.warn }
+    @MainActor static var bad: Color { loaded.bad }
+    @MainActor static var secondaryLight: Double { loaded.shared.secondary }
+    @MainActor static var dragFill: Double { loaded.shared.dragFill }
+    @MainActor static var hover: Double { loaded.shared.hover }
+    @MainActor static var menuDim: Double { loaded.shared.menuDim }
     static let liftShadow: CGFloat = 14
-    static let liftShadowStrength = 0.25
-    static let unfocusedCardStrength = 0.35
+    @MainActor static var liftShadowStrength: Double { loaded.shared.liftShadowStrength }
+    @MainActor static var unfocusedCardStrength: Double { loaded.shared.unfocusedCard }
     @MainActor static var fill: Double { current.fillStrength }
     static let edgeStrengths = [1.0, 0.7, 0.45]
     @MainActor static var disc: Double { current.discStrength }
@@ -101,21 +87,17 @@ struct SpotTheme {
     @MainActor static var track: Double { current.trackStrength }
     @MainActor static var control: Double { current.controlStrength }
 
-    static let ink = color(\.ink)
+    @MainActor static var ink: Color { loaded.ink }
     static let glassInk = HierarchicalShapeStyle.primary
     static let glassSecondary = HierarchicalShapeStyle.secondary
-    static let solid = color(\.solid)
-    static let onSolid = color(\.onSolid)
-    static let glyphOnSolid = color(\.glyphOnSolid)
-    static let glass = color(\.glass)
-    @MainActor static var glassTint: Color { SpotLoadedTheme.shared.glassTint }
-    static let cornerFill = color(\.cornerFill)
-    static let window = color(\.window)
-    static let preview = color(\.preview)
-    static let confirm = color(\.confirm)
-    static let onConfirm = color(\.onConfirm)
-
-    private static func color(_ part: KeyPath<SpotTheme, NSColor> & Sendable) -> Color {
-        Color(nsColor: NSColor(name: nil) { palette(for: $0)[keyPath: part] })
-    }
+    @MainActor static var solid: Color { loaded.solid }
+    @MainActor static var onSolid: Color { loaded.onSolid }
+    @MainActor static var glyphOnSolid: Color { loaded.glyphOnSolid }
+    @MainActor static var glass: Color { loaded.glass }
+    @MainActor static var glassTint: Color { loaded.glassTint }
+    @MainActor static var cornerFill: Color { loaded.cornerFill }
+    @MainActor static var window: Color { loaded.window }
+    @MainActor static var preview: Color { loaded.preview }
+    @MainActor static var confirm: Color { loaded.confirm }
+    @MainActor static var onConfirm: Color { loaded.onConfirm }
 }

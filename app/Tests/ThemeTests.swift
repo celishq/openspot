@@ -2,24 +2,56 @@ import XCTest
 @testable import OpenspotCore
 
 final class ThemeTests: XCTestCase {
-    func testAThemeGivesEachAppearanceItsGlassTint() {
-        let theme = Theme(text: "dark.glass-tint = \"#00000099\"\nlight.glass-tint = \"#FFFFFF\"\n")
+    private let builtInURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Themes/openspot.theme/theme.toml")
+
+    func testAThemeGivesEachAppearanceAndBothItsValuesFromSections() {
+        let theme = Theme(text: """
+        [dark]
+        glass-tint = "#00000099"
+        glyph-on-solid = "accent"
+        fill = 0.1
+
+        [light]
+        ink = "#FFFFFF"
+        disc = 0
+
+        [shared]
+        good = "green"
+        hover = 0.08
+        """)
 
         XCTAssertEqual(theme.faults, [])
-        XCTAssertEqual(theme.dark.glassTint, HexColor(text: "#00000099"))
-        XCTAssertEqual(theme.dark.glassTint.alpha, 0.6, accuracy: 0.001)
-        XCTAssertEqual(theme.light.glassTint.red, 1)
-        XCTAssertEqual(theme.light.glassTint.alpha, 1)
+        XCTAssertEqual(theme.dark.glassTint, .hex(HexColor(red: 0, green: 0, blue: 0, alpha: 0.6)))
+        XCTAssertEqual(theme.dark.glyphOnSolid, .accent)
+        XCTAssertEqual(theme.dark.fill, 0.1)
+        XCTAssertEqual(theme.light.ink, .hex(HexColor(red: 1, green: 1, blue: 1)))
+        XCTAssertEqual(theme.light.disc, 0)
+        XCTAssertEqual(theme.shared.good, .green)
+        XCTAssertEqual(theme.shared.hover, 0.08)
     }
 
     func testAThemeNamesEachValueItCannotRead() {
-        let theme = Theme(text: "dark.glass-tint = \"black\"\ndark.ink = \"#FFFFFF\"\n")
+        let theme = Theme(text: """
+        dark.glass-tint = "#00000099"
+
+        [dark]
+        glass-tint = "black"
+        fill = 2
+        size = 3
+
+        [glass]
+        variant = "clear"
+        """)
 
         XCTAssertEqual(theme.faults, [
-            "theme.toml: dark.glass-tint is a colour such as #00000099.",
-            "theme.toml: dark.ink is not a key of a theme."
+            "theme.toml: dark.glass-tint is not a key of a theme.",
+            "theme.toml: [dark] glass-tint is a colour such as #00000099.",
+            "theme.toml: [dark] fill is a strength from 0 to 1, such as 0.2.",
+            "theme.toml: [dark] size is not a key of a theme.",
+            "theme.toml: [glass] variant is not a key of a theme."
         ])
-        XCTAssertEqual(theme.dark.glassTint.alpha, 0)
+        XCTAssertEqual(theme.dark.glassTint, Theme().dark.glassTint)
+        XCTAssertEqual(theme.dark.fill, 0)
     }
 
     func testAFileThatIsNotThereIsAFault() throws {
@@ -28,27 +60,32 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(theme.faults, ["theme.toml cannot be read. Install Openspot again."])
     }
 
-    func testTheBuiltInThemeTintsTheGlassAt60Percent() throws {
-        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Themes/openspot.theme/theme.toml")
+    func testTheBuiltInThemeSetsEveryKeyOnce() throws {
+        let document = try ConfigDocument(text: String(contentsOf: builtInURL, encoding: .utf8))
 
-        let theme = ThemeFile(builtIn: url).read()
+        let theme = ThemeFile(builtIn: builtInURL).read()
 
         XCTAssertEqual(theme.faults, [])
-        XCTAssertEqual(theme.dark.glassTint, HexColor(text: "#00000099"))
-        XCTAssertEqual(theme.light.glassTint, HexColor(text: "#FFFFFF99"))
+        XCTAssertEqual(document.sections.flatMap { section in section.keys.map { "[\(section.name)] \($0)" } }.sorted(), Theme.keys)
+        XCTAssertEqual(theme.dark.glassTint, .hex(HexColor(red: 0, green: 0, blue: 0, alpha: 0.6)))
+        XCTAssertEqual(theme.light.glassTint, ThemeColor(text: "#FFFFFF99"))
     }
 
-    func testACopyIsMadeOnceFromTheBuiltInThemeAndIsReadInItsPlace() throws {
+    func testACopyOverridesTheBuiltInThemeKeyByKey() throws {
         let folder = try temporaryFolder()
         let builtIn = folder.appendingPathComponent("built-in.toml")
-        try "dark.glass-tint = \"#00000099\"\n".write(to: builtIn, atomically: true, encoding: .utf8)
+        try "[dark]\nink = \"#FFFFFF\"\nfill = 0.1\n\n[shared]\nhover = 0.08\n".write(to: builtIn, atomically: true, encoding: .utf8)
         let file = ThemeFile(builtIn: builtIn, copy: folder.appendingPathComponent("themes/openspot.theme/theme.toml"))
 
         let copy = try file.makeCopy()
-        try "dark.glass-tint = \"#00000033\"\n".write(to: copy, atomically: true, encoding: .utf8)
+        try "[dark]\nfill = 0.3\nsize = 1\n".write(to: copy, atomically: true, encoding: .utf8)
         XCTAssertEqual(try file.makeCopy(), copy)
 
-        XCTAssertEqual(file.read().dark.glassTint, HexColor(text: "#00000033"))
+        let theme = file.read()
+        XCTAssertEqual(theme.dark.fill, 0.3)
+        XCTAssertEqual(theme.dark.ink, ThemeColor(text: "#FFFFFF"))
+        XCTAssertEqual(theme.shared.hover, 0.08)
+        XCTAssertEqual(theme.faults, ["theme.toml: [dark] size is not a key of a theme."])
     }
 
     func testTheCopyLivesBesideTheConfig() {

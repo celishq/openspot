@@ -188,7 +188,7 @@ final class SettingsSpotTests: BuiltInCase {
 
         XCTAssertEqual(said, "Reloaded the theme")
         let themes = await app.themes
-        XCTAssertEqual(themes.map(\.light.glassTint), [HexColor(text: "#FFFFFF99")])
+        XCTAssertEqual(themes.map(\.light.glassTint), [ThemeColor(text: "#FFFFFF99")])
     }
 
     func testTheOpenThemeRowOpensACopyOfTheThemeThatReloadThenReads() async throws {
@@ -199,10 +199,11 @@ final class SettingsSpotTests: BuiltInCase {
 
         let copy = root.appendingPathComponent("themes/openspot.theme/theme.toml")
         XCTAssertEqual(mac.opened, [copy])
-        try "dark.glass-tint = \"#00000033\"\nlight.glass-tint = \"#FFFFFF33\"\n".write(to: copy, atomically: true, encoding: .utf8)
+        try "[light]\nink = \"#123456\"\n".write(to: copy, atomically: true, encoding: .utf8)
         try await call(["open", "reload_theme"])
         let themes = await app.themes
-        XCTAssertEqual(themes.last?.light.glassTint, HexColor(text: "#FFFFFF33"))
+        XCTAssertEqual(themes.last?.light.ink, ThemeColor(text: "#123456"))
+        XCTAssertEqual(themes.last?.light.glassTint, ThemeColor(text: "#FFFFFF99"))
     }
 
     func testTheLinkRowIsOffUntilALinkPointsAtTheAppAndAPickLinksAndRemovesIt() async throws {

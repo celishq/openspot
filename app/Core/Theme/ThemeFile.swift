@@ -17,11 +17,12 @@ public struct ThemeFile: Sendable {
     }
 
     public func read() -> Theme {
-        let url = copy.flatMap { FileManager.default.fileExists(atPath: $0.path) ? $0 : nil } ?? builtIn
-        guard let url, let text = try? String(contentsOf: url, encoding: .utf8) else {
+        guard let builtIn, let text = try? String(contentsOf: builtIn, encoding: .utf8) else {
             return Theme(unreadable: "theme.toml cannot be read. Install Openspot again.")
         }
-        return Theme(text: text)
+        let theme = Theme(text: text)
+        guard let copy, let own = try? String(contentsOf: copy, encoding: .utf8) else { return theme }
+        return Theme(text: own, over: theme)
     }
 
     public func makeCopy() throws -> URL {

@@ -186,6 +186,16 @@ final class ConfigFileTests: XCTestCase {
         XCTAssertEqual(file.read().faults, ["config.toml: themes is not a setting."])
     }
 
+    func testASectionSurvivesASaveAndIsNotASetting() throws {
+        try write("[look]\nink = \"#FFFFFF\"\n")
+
+        try file.turn("x", on: true)
+
+        let text = try String(contentsOf: file.url, encoding: .utf8)
+        XCTAssertTrue(text.contains("[look]\nink = \"#FFFFFF\"\n"), text)
+        XCTAssertEqual(file.read().faults, ["config.toml: look is not a setting."])
+    }
+
     func testAKeyWithAQuoteInItsSpotAndCommandSurvivesASave() throws {
         let key = GlobalKey(spot: "a\"b", command: "c\\d\"", shortcut: try XCTUnwrap(Shortcut(text: "ctrl+left")))
 

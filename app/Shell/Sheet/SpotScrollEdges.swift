@@ -5,7 +5,7 @@ struct SpotScrollEdges: Equatable {
     var top = 0.0
     var bottom = 0.0
 
-    static func end(fading strength: Double, from edge: UnitPoint) -> LinearGradient {
+    @MainActor static func end(fading strength: Double, from edge: UnitPoint) -> LinearGradient {
         LinearGradient(stops: [
             .init(color: SpotTheme.mask.opacity(1 - strength), location: 0),
             .init(color: SpotTheme.mask.opacity(1 - SpotTheme.fadeNear * strength), location: 1.0 / SpotTheme.fadeSteps),
@@ -14,11 +14,11 @@ struct SpotScrollEdges: Equatable {
         ], startPoint: edge, endPoint: edge == .top ? .bottom : .top)
     }
 
-    func gradient(height: CGFloat) -> LinearGradient {
+    @MainActor func gradient(height: CGFloat) -> LinearGradient {
         LinearGradient(stops: levels(height: height).map { .init(color: SpotTheme.mask.opacity($0.strength), location: $0.location) }, startPoint: .top, endPoint: .bottom)
     }
 
-    private func levels(height: CGFloat) -> [(location: CGFloat, strength: Double)] {
+    @MainActor private func levels(height: CGFloat) -> [(location: CGFloat, strength: Double)] {
         let start = (SpotTokens.halo + SpotTokens.rowHeight) / SpotTokens.panelHeight
         let end = (height - SpotTokens.halo - SpotTokens.hintBlock) / SpotTokens.panelHeight
         let length = SpotTokens.scrollFadeLength / SpotTokens.panelHeight
