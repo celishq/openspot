@@ -4,15 +4,19 @@ public struct SpotStore: Sendable {
     public struct Item: Sendable {
         public let id: String
         public let spot: Spot
-        public let origin: SpotOrigin
         public let isAdded: Bool
         public let size: SpotSize
         public let publication: SpotPublication?
         public let hasSample: Bool
-        public let store: URL?
+        public let store: StoreFolder?
+        let isCore: Bool
+
+        public var origin: SpotOrigin {
+            store != nil ? .store : isCore ? .core : .mine
+        }
 
         public var runsSample: Bool {
-            origin != .store
+            store == nil
         }
 
         public var step: String {
@@ -21,17 +25,17 @@ public struct SpotStore: Sendable {
         }
 
         public var package: URL? {
-            origin == .store ? spot.url.deletingLastPathComponent() : nil
+            store == nil ? nil : spot.url.deletingLastPathComponent()
         }
     }
 
-    public let url: URL
+    let published: URL
     let folder: SpotsFolder
     let arrangement: SpotArrangement
     let stores: [StoreFolder]
 
-    public init(url: URL, folder: SpotsFolder, arrangement: SpotArrangement, stores: [StoreFolder] = []) {
-        self.url = url
+    public init(published: URL, folder: SpotsFolder, arrangement: SpotArrangement, stores: [StoreFolder]) {
+        self.published = published
         self.folder = folder
         self.arrangement = arrangement
         self.stores = stores
@@ -52,18 +56,18 @@ public struct SpotStore: Sendable {
     public func items(publications reads: Bool) -> [Item] {
         let own = (try? SpotsFolder(url: folder.url).scan()) ?? ScanResult(files: [], refused: [])
         let ownIDs = Set(own.files.map(\.id))
-        let publications = reads ? Self.publications(of: own, in: url) : [:]
+        let publications = reads ? Self.publications(of: own, in: published) : [:]
         let enabled = arrangement.enabled.union(folder.enabled)
         let disabled = arrangement.disabled.union(folder.disabled)
         let core = folder.coreChoices().filter { !ownIDs.contains(SpotsFolder.coreID(of: $0)) }.map { spot in
-            item(spot, id: SpotsFolder.coreID(of: spot), origin: .core, isAdded: enabled.contains(SpotsFolder.coreID(of: spot)))
+            item(spot, id: SpotsFolder.coreID(of: spot), isAdded: enabled.contains(SpotsFolder.coreID(of: spot)), isCore: true)
         }
         let mine = own.files.compactMap { file in
-            file.spots.first.map { item($0, id: file.id, origin: .mine, isAdded: !disabled.contains(file.id), publication: publications[$0.id]) }
+            file.spots.first.map { item($0, id: file.id, isAdded: !disabled.contains(file.id), publication: publications[$0.id]) }
         }
-        let stored = ([url] + stores.map(\.url)).flatMap { store in
-            ((try? SpotsFolder(url: store).scan())?.files ?? []).filter { !ownIDs.contains($0.id) }.compactMap { file in
-                file.spots.first.map { item($0, id: file.id, origin: .store, isAdded: false, store: store) }
+        let stored = stores.flatMap { store in
+            ((try? SpotsFolder(url: store.url).scan())?.files ?? []).filter { !ownIDs.contains($0.id) }.compactMap { file in
+                file.spots.first.map { item($0, id: file.id, isAdded: false, store: store) }
             }
         }
         var seen = Set<String>()
@@ -74,10 +78,10 @@ public struct SpotStore: Sendable {
         items(publications: false).first { $0.id == id }
     }
 
-    private func item(_ spot: Spot, id: String, origin: SpotOrigin, isAdded: Bool, publication: SpotPublication? = nil, store: URL? = nil) -> Item {
+    private func item(_ spot: Spot, id: String, isAdded: Bool, isCore: Bool = false, publication: SpotPublication? = nil, store: StoreFolder? = nil) -> Item {
         Item(
-            id: id, spot: spot, origin: origin, isAdded: isAdded, size: arrangement.size(of: id) ?? spot.size, publication: publication,
-            hasSample: SpotSample.exists(for: spot, runsScript: origin != .store), store: store
+            id: id, spot: spot, isAdded: isAdded, size: arrangement.size(of: id) ?? spot.size, publication: publication,
+            hasSample: SpotSample.exists(for: spot, runsScript: store == nil), store: store, isCore: isCore
         )
     }
 
@@ -91,7 +95,7 @@ public struct SpotStore: Sendable {
             throw SpotError.failed(1, "`\(id)` is not a spot of the store. Run `openspot store list` to see each one.")
         }
         guard !item.isAdded else { return item }
-        if item.origin == .store { try await add(item, environment: environment) } else {
+        if item.store != nil { try await add(item, environment: environment) } else {
             try config.change { $0.arrangement.set(isEnabled: true, of: item.id) }
         }
         return item
@@ -140,7 +144,7 @@ public struct SpotStore: Sendable {
             sample = item.hasSample
             published = item.publication?.rawValue
             path = item.package?.path
-            store = item.store?.path
+            store = item.store?.url.path
             readme = SpotReadme.lines(at: SpotReadme.url(beside: item.spot.url))
         }
     }

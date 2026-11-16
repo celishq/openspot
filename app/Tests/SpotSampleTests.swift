@@ -27,7 +27,7 @@ final class SpotSampleTests: XCTestCase {
     }
 
     private func output(of id: String) async throws -> SpotOutput? {
-        let items = SpotStore(url: store, folder: SpotsFolder(url: spots, core: core), arrangement: SpotArrangement()).items(publications: false)
+        let items = SpotStore(published: store, folder: SpotsFolder(url: spots, core: core), arrangement: SpotArrangement(), stores: [StoreFolder(url: store)]).items(publications: false)
         return await SpotSample.output(of: try XCTUnwrap(items.first { $0.id == id }), runs: runs)
     }
 

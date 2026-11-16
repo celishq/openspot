@@ -6,7 +6,7 @@ struct StoreCalls {
 
     private static func store(in environment: [String: String]) -> SpotStore {
         let config = ConfigFile.standard(environment: environment).read()
-        return SpotStore(url: SpotStore.url(environment: environment), folder: SpotsFolder.standard(environment: environment), arrangement: config.arrangement, stores: StoreFolder.all(environment: environment, config: config))
+        return SpotStore(published: SpotStore.url(environment: environment), folder: SpotsFolder.standard(environment: environment), arrangement: config.arrangement, stores: StoreFolder.all(environment: environment, config: config))
     }
 
     private struct PrintedFolder: PrintedRecord {

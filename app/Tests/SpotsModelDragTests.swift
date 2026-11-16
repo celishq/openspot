@@ -676,7 +676,9 @@ final class SpotsModelDragTests: XCTestCase {
 
     func testTheStoreFindsTheCardOfASpotThatIsOffByItsStoreID() async throws {
         try "#!/bin/sh\n# detail=Counts down\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
-        try "#!/bin/sh\n# title=Shared\n".writeScript(to: store.appendingPathComponent("shared.spot/shared.sh"))
+        let friends = folder.appendingPathComponent("friends", isDirectory: true)
+        try "#!/bin/sh\n# title=Shared\n".writeScript(to: friends.appendingPathComponent("shared.spot/shared.sh"))
+        _ = try ConfigFile(url: folder.appendingPathComponent("config/config.toml")).change { $0.add(store: StoreFolder(url: friends)) }
         await model.reload()
 
         XCTAssertEqual(model.storeEntry("a")?.id, "a")
