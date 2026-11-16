@@ -126,7 +126,7 @@ The header says what a spot is. Openspot reads it without running the spot.
 
 | Block         | Meaning                                                                                                                                                                                                                                         |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `button=<id>` | A command, with its `title` and `icon`. The user can give it a hotkey. `confirm` asks for a second press. `close=false` keeps its sheet open after a [slash command](#slash-commands), and `placeholder` is the grey hint after its name there. |
+| `button=<id>` | A command, with its `title` and `icon`. The user can give it a hotkey. `confirm` asks for a second press. `close=false` keeps its sheet open after a [slash command](#slash-commands), and `placeholder` lists it there, as the grey hint after its name. |
 | `field=<key>` | A setting the user chooses, with its `title` (by default, its key) and `icon`. See [Settings](#settings).                                                                                                                                       |
 
 - A spot with a `button` in its header has no card. It gives its commands instead.
@@ -591,16 +591,16 @@ openspot_kv value "$(value input)"
 
 ## Slash commands
 
-A slash command runs a `button` of a spot's header, or a spot with a `placeholder`, with the text that the user typed, in
-one Return. A plain search finds spots; `/` runs one with text.
+A slash command runs a header `button` or a spot that has a `placeholder`, with the text that the user typed, in one
+Return. A `placeholder` says that a command takes text. A plain search finds spots; `/` runs one with text.
 
 ```text
 /translate hello world     Return opens Translate, and its read gets search=hello world
 buy milk /notes            Return runs notes add, with search=buy milk on stdin
 ```
 
-- In the main search, `/` at the start of a word, with a letter after it, lists the header `button`s and the spots with
-  a `placeholder` whose name matches the word, and `/` alone lists them all. A word that matches none stays text, so
+- In the main search, `/` at the start of a word, with a letter after it, lists the header `button`s and the spots that
+  have a `placeholder`, whose name matches the word, and `/` alone lists them all. A word that matches none stays text, so
   `10/2` and `/Users` search as before.
 - The first row is highlighted, ↑ and ↓ move it, and the footer names what Return runs. Each row's detail is its
   `placeholder` until text follows, then the text that Return sends.
@@ -608,11 +608,11 @@ buy milk /notes            Return runs notes add, with search=buy milk on stdin
   press, so `case "$1"` handles it as any other call. With no text, a `button` runs as its hotkey does, and a spot does
   what Return does on its card.
 
-| Command                               | The call with text                                 |
-| ------------------------------------- | -------------------------------------------------- |
-| A header `button`                     | `<spot> <id>`                                      |
-| A spot with a `placeholder`, no sheet | `<spot> open`                                      |
-| A spot with a `placeholder` and sheet | Its sheet opens, and the read of the sheet gets it |
+| Command                                | The call with text                                 |
+| -------------------------------------- | -------------------------------------------------- |
+| A header `button` with a `placeholder` | `<spot> <id>`                                      |
+| A spot with a `placeholder`, no sheet  | `<spot> open`                                      |
+| A spot with a `placeholder` and sheet  | Its sheet opens, and the read of the sheet gets it |
 
 - The first frame of the call decides what shows. A frame with fields is a form, as for a `form=true` button, and Return
   in it sends the values to the same call. Other blocks open the spot's sheet when the `button` has `close=false`.

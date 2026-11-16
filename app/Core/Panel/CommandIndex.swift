@@ -12,7 +12,7 @@ struct CommandIndex {
         var items: [SpotItem] = []
         for card in cards where card.spot.isFound && card.spot.fault == nil {
             let offers = card.spot.host == nil ? card.spot.offers.filter { $0.confirm == nil } : []
-            for offer in offers {
+            for offer in offers where offer.placeholder != nil {
                 let id = SpotsModel.Entry(spot: card.spot, item: Self.item(offer)).id
                 items.append(SpotItem(title: offer.title, subtitle: card.state.title, run: id, keywords: [offer.id, card.id]))
                 buttons[id] = offer
@@ -31,7 +31,7 @@ struct CommandIndex {
         query.matching(in: [list], limit: limit).compactMap { match in
             guard let spot = spots[match.item.run] else { return nil }
             let offer = buttons[match.item.run]
-            let detail = text.isEmpty ? offer.map { $0.placeholder ?? spot.name } ?? spot.placeholder : "With \"\(text)\""
+            let detail = text.isEmpty ? offer?.placeholder ?? spot.placeholder : "With \"\(text)\""
             let item = offer.map(Self.item) ?? cards[spot.id].map(Self.item(of:)) ?? SpotItem(title: spot.name, run: "")
             return SpotsModel.Entry(spot: spot, item: item, detail: detail)
         }
