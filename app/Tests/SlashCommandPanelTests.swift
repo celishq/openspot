@@ -153,6 +153,17 @@ final class SlashCommandPanelTests: PanelCase {
         XCTAssertTrue(sent.contains("open\nsearch=hi"), sent)
     }
 
+    func testASlashAfterTheTextListsEveryCommandAndReturnSendsTheText() async throws {
+        try writeNotes()
+        await open()
+
+        type("buy milk /")
+        XCTAssertEqual(model.visible.map(\.state.title), ["Add note", "Find note"])
+        model.runSelected()
+
+        try await wait("the toast") { self.host.confirms == ["Saved buy milk"] }
+    }
+
     func testAWordThatNamesNoCommandStaysText() async throws {
         try writeNotes()
         await open()

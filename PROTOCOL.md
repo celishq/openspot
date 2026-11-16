@@ -600,7 +600,7 @@ buy milk /notes            Return runs notes add, with search=buy milk on stdin
 ```
 
 - In the main search, `/` at the start of a word, with a letter after it, lists the header `button`s and the spots that
-  have a `placeholder`, whose name matches the word, and `/` alone lists them all. A word that matches none stays text, so
+  have a `placeholder`, whose name matches the word, and `/` alone, or after the text, lists them all. A word that matches none stays text, so
   `10/2` and `/Users` search as before.
 - The first row is highlighted, ↑ and ↓ move it, and the footer names what Return runs. Each row's detail is its
   `placeholder` until text follows, then the text that Return sends.
