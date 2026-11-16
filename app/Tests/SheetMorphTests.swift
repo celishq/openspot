@@ -10,10 +10,11 @@ final class SheetMorphTests: XCTestCase {
         XCTAssertEqual(morph.size(at: 0.5).width, 176.5, accuracy: 0.001)
     }
 
-    func testTheCardsLookIsGoneHalfWayAndTheSheetsLookStartsThere() {
+    func testTheCardsLookIsGoneAThirdOfTheWayAndTheSheetsLookStartsThere() {
         XCTAssertEqual(SheetMorph.cardLook(at: 0), 1)
-        XCTAssertEqual(SheetMorph.cardLook(at: 0.5), 0)
-        XCTAssertEqual(SheetMorph.sheetLook(at: 0.5), 0)
+        XCTAssertEqual(SheetMorph.cardLook(at: 0.35), 0)
+        XCTAssertEqual(SheetMorph.sheetLook(at: 0.35), 0)
+        XCTAssertGreaterThan(SheetMorph.sheetLook(at: 0.5), 0)
         XCTAssertEqual(SheetMorph.sheetLook(at: 1), 1)
     }
 
