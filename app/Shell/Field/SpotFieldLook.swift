@@ -27,10 +27,10 @@ struct SpotFieldLook: View {
     private var words: some View {
         if query.isEmpty {
             Text("\(SearchPrompt.verb) \(SearchPrompt.word(for: title))")
-                .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
+                .foregroundStyle(SpotTheme.glassSecondary)
         } else {
             Text(query)
-                .foregroundStyle(SpotTheme.ink)
+                .foregroundStyle(SpotTheme.glassInk)
         }
     }
 }

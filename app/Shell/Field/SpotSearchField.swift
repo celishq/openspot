@@ -9,11 +9,11 @@ struct SpotSearchField: View {
     var isFocused: FocusState<Bool>.Binding
 
     var body: some View {
-        TextField(prompt, text: Binding(get: { text }, set: onSearch), prompt: Text(prompt).foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight)))
+        TextField(prompt, text: Binding(get: { text }, set: onSearch), prompt: Text(prompt).foregroundStyle(SpotTheme.glassSecondary))
             .labelsHidden()
             .textFieldStyle(.plain)
             .font(SpotType.body)
-            .foregroundStyle(SpotTheme.ink)
+            .foregroundStyle(SpotTheme.glassInk)
             .focused(isFocused)
             .padding(.horizontal, SpotTokens.padding - SpotTokens.menuPadding + 4)
             .frame(height: SpotTokens.menuRowHeight)

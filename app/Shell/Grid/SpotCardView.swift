@@ -206,7 +206,7 @@ struct SpotCardView: View, @MainActor Equatable {
     private var symbolGlyph: some View {
         Image(systemName: entry.symbol)
             .font(SpotType.glyph)
-            .foregroundStyle(isFilled ? SpotTheme.glyphOnSolid : SpotTheme.ink)
+            .foregroundStyle(isFilled ? AnyShapeStyle(SpotTheme.glyphOnSolid) : AnyShapeStyle(SpotTheme.glassInk))
             .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
             .background(glyphDisc, in: Circle())
     }

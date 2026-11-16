@@ -14,8 +14,6 @@ struct SpotBackdrop: View {
                     SpotBackdropBlur(radius: SpotTheme.backdropBlur * CGFloat(step + 1) / CGFloat(BackdropEdge.blurs.count))
                         .mask { SpotBackdropEdge(edge: edge, rect: rect) }
                 }
-                SpotBackdropEdge(edge: .shade, rect: rect)
-                    .foregroundStyle(SpotTheme.shade)
             }
             .modifier(PanelSpan(panels: model.panels))
             .modifier(SpotShownFade(isShown: isShown))
