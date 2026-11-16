@@ -275,7 +275,7 @@ final class PanelKeysTests: PanelCase {
           again) rm -f "$data/key" ;;
         esac
         case "$1" in
-          read|key|again) printf 'title=Choose your key\\ngrid=key\\ngrid=keep\\ngrid=again\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n\\nbutton=keep\\ntitle=Keep\\nshortcut=escape\\n\\nbutton=again\\ntitle=Try again\\nshortcut=backspace\\n' "$(cat "$data/key" 2>/dev/null)" ;;
+          read|key|again) printf 'title=Choose your key\\ngrid=key\\ngrid=keep\\ngrid=again\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n\\nbutton=keep\\ntitle=Keep\\n\\nbutton=again\\ntitle=Try again\\nshortcut=escape\\n' "$(cat "$data/key" 2>/dev/null)" ;;
         esac
         """)
     }
@@ -308,19 +308,39 @@ final class PanelKeysTests: PanelCase {
         try await wait("the open key again") { self.host.entryKeyIsOn }
     }
 
-    func testAPressOnAShownKeyReplacesItOrIsTakenWithoutABeep() async throws {
+    func testAPressOnAChosenKeyIsTakenAndChangesNothing() async throws {
         try await openPick()
         try await wait("the recording") { self.model.recording == "key" }
         model.record(code: 49, modifiers: .option)
         try await wait("the kept key") { self.keyField?.control == .shortcut("option+space") }
         XCTAssertNil(model.recording)
 
-        XCTAssertTrue(model.pressKeyField(code: 1, modifiers: []))
-        XCTAssertEqual(keyField?.control, .shortcut("option+space"))
-        XCTAssertTrue(model.pressKeyField(code: 49, modifiers: .control))
+        XCTAssertTrue(model.takesEveryKey)
+        await nextTurn()
 
-        try await wait("the new key") { self.keyField?.control == .shortcut("ctrl+space") }
         XCTAssertNil(model.recording)
+        XCTAssertEqual(keyField?.control, .shortcut("option+space"))
+        XCTAssertFalse(pickCalls.contains("key ctrl+space"))
+    }
+
+    func testRecordingPutsTheFocusOnTheField() async throws {
+        try await openPick()
+        try await wait("the recording") { self.model.recording == "key" }
+
+        XCTAssertEqual(model.openParts?.selectedPart?.id, "key")
+    }
+
+    func testAPressThatLeavesTheFieldEmptyRecordsAgain() async throws {
+        try await openPick()
+        try await wait("the recording") { self.model.recording == "key" }
+        XCTAssertTrue(model.handleKey(escape))
+        XCTAssertNil(model.recording)
+        await nextTurn()
+
+        XCTAssertTrue(model.handleKey(escape))
+
+        try await wait("the press of again") { self.pickCalls.contains("again") }
+        try await wait("the recording again") { self.model.recording == "key" }
     }
 
     func testAPressWithNoKeyFieldIsLeftToThePanel() async throws {
@@ -331,7 +351,7 @@ final class PanelKeysTests: PanelCase {
         await nextTurn()
 
         XCTAssertNil(model.openSheetID)
-        XCTAssertFalse(model.pressKeyField(code: 49, modifiers: .control))
+        XCTAssertFalse(model.takesEveryKey)
     }
 
     func testTheOpenKeyComesBackWhenThePanelHidesOverAKeyField() async throws {
@@ -430,18 +450,18 @@ final class PanelKeysTests: PanelCase {
         XCTAssertEqual(model.heldKeys, [])
     }
 
-    func testEscWhileAFieldRecordsPressesTheEscapeButton() async throws {
+    func testEscWhileAFieldRecordsStopsOnlyTheRecording() async throws {
         try await openPick()
         try await wait("the recording") { self.model.recording == "key" }
-        XCTAssertEqual(model.hint, "Esc Keep")
+        XCTAssertEqual(model.hint, "Esc Cancel")
 
         XCTAssertTrue(model.handleKey(escape))
+        await nextTurn()
 
         XCTAssertNil(model.recording)
         XCTAssertEqual(model.openSheetID, "pick")
-        try await wait("the press of keep") { self.pickCalls.contains("keep") }
-        await nextTurn()
-        XCTAssertNil(model.recording)
+        XCTAssertEqual(model.openParts?.selectedPart?.id, "key")
+        XCTAssertTrue(pickCalls.isEmpty)
         XCTAssertEqual(host.dismissals, 0)
     }
 
@@ -577,7 +597,7 @@ final class PanelKeysTests: PanelCase {
         await nextTurn()
         XCTAssertNil(model.recording)
 
-        XCTAssertTrue(model.handleKey(ActionKey(name: "backspace")))
+        XCTAssertTrue(model.handleKey(escape))
 
         try await wait("the cleared key") { self.keyField?.value == "" }
         XCTAssertTrue(pickCalls.contains("again"))

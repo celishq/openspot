@@ -16,7 +16,8 @@ struct SpotKeycaps: View {
     private static let gap: CGFloat = 5
     private static let statusGap: CGFloat = 8
     private static let statusLines = 2
-    private static let waiting = "Press the keys together."
+    private static let waiting = "Recording… press the keys together."
+    private static let idle = "Press Return to record a key."
     private static let symbolFont = Font.system(size: 15, weight: .medium)
 
     var body: some View {
@@ -33,7 +34,7 @@ struct SpotKeycaps: View {
                     .modifier(SpotSecondaryText())
                 Keycap(symbol: key ?? "key", name: "", font: key == nil ? SpotType.detail : SpotType.title, width: 2 * Self.side, height: Self.side, isLit: shown != nil || (pressed != nil && isKeyDown), isBlank: key == nil)
             }
-            ToastView.styled(status ?? (isRecording ? Self.waiting : ""))
+            ToastView.styled(isRecording ? status ?? Self.waiting : status ?? (shown == nil ? Self.idle : ""))
                 .textRenderer(ToastKeyFill(fill: SpotTheme.ink.opacity(SpotTheme.track)))
                 .font(SpotType.detail)
                 .modifier(SpotSecondaryText())

@@ -158,6 +158,7 @@ public final class SpotsModel {
     public internal(set) var pressedKey: String?
     public internal(set) var isKeyDown = false
     @ObservationIgnored var entryKeyIsOff = false
+    @ObservationIgnored var pressedSheet: String?
 
     public func hold(_ modifiers: Shortcut.Modifiers) {
         guard recording != nil, modifiers != heldKeys else { return }

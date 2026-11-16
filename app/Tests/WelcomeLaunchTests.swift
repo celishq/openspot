@@ -57,14 +57,18 @@ final class WelcomeLaunchTests: XCTestCase {
         try await wait("the recording") { self.model.recording == "key" }
     }
 
-    func testEscWhileItRecordsKeepsTheKeyAndShowsTheGrid() async throws {
+    func testEscWhileItRecordsStopsTheRecordingAndAnotherEscRecordsAgain() async throws {
         try await launch()
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
-
-        try await wait("the end of keep") { self.hasEnded }
-        try await wait("the grid") { self.model.openSheetID == nil }
         XCTAssertNil(model.recording)
+        XCTAssertEqual(model.openSheetID, Self.welcome)
+        XCTAssertEqual(model.openParts?.selectedPart?.id, "key")
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
+
+        try await wait("the recording again") { self.model.recording == "key" }
+        XCTAssertEqual(model.openSheetID, Self.welcome)
         XCTAssertEqual(model.files.config.read().panelKey, .standard)
     }
 

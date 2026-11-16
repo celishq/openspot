@@ -75,6 +75,7 @@ extension SpotsModel {
     }
 
     public func pressPart(_ part: SpotPart) {
+        pressedSheet = openSheetID
         openSheet?.press(part)
         if part.closes, isShown { host.dismiss() }
     }
@@ -89,7 +90,20 @@ extension SpotsModel {
 
     func recordClearedField() {
         let filled = filledFields
-        recordField { $0.control == .shortcut("") && filled.contains($0.id) }
+        let pressed = pressedSheet == openSheetID
+        pressedSheet = nil
+        recordField { $0.control == .shortcut("") && (pressed || filled.contains($0.id)) }
+    }
+
+    func focusAfterRecording(_ field: String) {
+        guard let parts = openParts else { return }
+        let order = parts.focusOrder
+        let isEmpty = parts.parts.contains { $0.id == field && $0.control == .shortcut("") }
+        guard !isEmpty, let index = order.firstIndex(where: { $0.id == field }), order.indices.contains(index + 1) else {
+            openSheet?.focusPart(field)
+            return
+        }
+        openSheet?.focusPart(order[index + 1].id)
     }
 
     private func recordField(where takes: (SpotPart) -> Bool) {
@@ -114,6 +128,7 @@ extension SpotsModel {
         } else {
             recording = id
             keyStatus = nil
+            if openParts?.parts.contains(where: { $0.id == id }) == true { openSheet?.focusPart(id) }
             if !entryKeyIsOff {
                 entryKeyIsOff = true
                 host.setEntryKey(on: false)
@@ -154,13 +169,8 @@ extension SpotsModel {
         openParts?.parts.first { if case .shortcut = $0.control { true } else { false } }
     }
 
-    public func pressKeyField(code: UInt32, modifiers: Shortcut.Modifiers) -> Bool {
-        guard isShown, recording == nil, let field = keyField else { return false }
-        if modifiers.makesShortcut {
-            toggleRecording(field)
-            record(code: code, modifiers: modifiers)
-        }
-        return true
+    public var takesEveryKey: Bool {
+        isShown && recording == nil && keyField != nil
     }
 
     func takeEntryKey() {
@@ -210,7 +220,7 @@ extension SpotsModel {
         stopRecording()
         if let part {
             setPart(part, to: shortcut.text)
-            openSheet?.movePartLine(by: 1)
+            focusAfterRecording(part.id)
         }
         if let item, let entry = openEntry { give(shortcut.text, to: item, of: entry) }
     }

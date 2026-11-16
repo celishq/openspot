@@ -118,17 +118,15 @@ final class WelcomeSpotTests: BuiltInCase {
         output.parts.first { $0.key == ActionKey(name: name) }?.id
     }
 
-    func testEscKeepsTheKeyWhileItListensAndTriesAgainOnceAKeyShows() async throws {
+    func testEscIsAlwaysTryAgainAndOnlyAPressOfUseOrKeepLeaves() async throws {
         let listening = try await read()
-        XCTAssertEqual(button(on: "escape", in: listening), "keep")
-        XCTAssertEqual(button(on: "backspace", in: listening), "again")
-
         let shown = try await answer(["key", "ctrl+option+space"])
-        XCTAssertEqual(button(on: "escape", in: shown), "again")
-        XCTAssertNil(try part("keep", in: shown).key)
 
-        let again = try await answer(["again"])
-        XCTAssertEqual(button(on: "escape", in: again), "keep")
+        for output in [listening, shown] {
+            XCTAssertEqual(button(on: "escape", in: output), "again")
+            XCTAssertNil(try part("keep", in: output).key)
+            XCTAssertNil(try part("use", in: output).key)
+        }
     }
 
     func testEachBlockHasAPlaceSoNoButtonBecomesAnAction() async throws {

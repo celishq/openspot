@@ -143,13 +143,14 @@ final class SpotsPanel: NSPanel {
         guard let model else { return false }
         let key = event.actionKey
         if model.recording != nil {
+            if event.isARepeat { return true }
             if let key, model.handleKey(key) { return true }
             model.record(code: UInt32(event.keyCode), modifiers: event.keyModifiers)
             return true
         }
         if let key, textKeeps(key) { return false }
         if let key, model.handleKey(key) { return true }
-        return model.pressKeyField(code: UInt32(event.keyCode), modifiers: event.keyModifiers)
+        return model.takesEveryKey
     }
 
     private func takeRightClick(_ event: NSEvent) -> Bool {
