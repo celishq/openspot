@@ -79,7 +79,7 @@ final class CoreSpotsTests: XCTestCase {
         XCTAssertEqual(scan.refused, [])
     }
 
-    func testEachLetterOfTheDefaultConfigIsALetterOfOneSpotThatShips() throws {
+    func testEachSpotOfTheDefaultConfigIsASpotThatShips() throws {
         let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let config = Config(text: try String(contentsOf: repo.appendingPathComponent("app/defaults.toml"), encoding: .utf8))
         let spots = try FileManager.default.contentsOfDirectory(atPath: repo.appendingPathComponent("spots").path)
@@ -88,9 +88,7 @@ final class CoreSpotsTests: XCTestCase {
         XCTAssertEqual(config.faults, [])
         for choice in config.arrangement.choices {
             XCTAssertTrue(app.contains(choice.id) || spots.contains { $0.hasPrefix("\(choice.id).") }, choice.id)
-            if let letter = choice.letter { XCTAssertNotNil(CommandKey(name: letter), choice.id) }
         }
-        XCTAssertEqual(config.arrangement.letters(over: SpotArrangement()).count, config.arrangement.choices.filter { $0.letter?.isEmpty == false }.count)
     }
 
     @MainActor func testAMetricThatAGetTurnsOnShowsItsCard() throws {

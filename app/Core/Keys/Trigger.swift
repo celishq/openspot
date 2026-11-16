@@ -5,6 +5,8 @@ public enum Trigger: Hashable, Sendable {
     case tap(Shortcut.Modifiers)
     case shake
 
+    public static let unset = "Record"
+
     private static let shakeWord = "shake"
 
     public init?(text: String) {

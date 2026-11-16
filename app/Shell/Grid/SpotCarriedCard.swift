@@ -15,7 +15,6 @@ struct SpotCarriedCard: View {
                     isPressed: false,
                     takesDrag: false,
                     isDropTarget: false,
-                    chainLetter: nil,
                     model: model,
                     onTap: {}
                 )

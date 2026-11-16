@@ -12,7 +12,7 @@ enum SpotStorePicture {
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
         Task { @MainActor in
             await model.reload()
-            model.panelWillShow(holding: [])
+            model.panelWillShow()
             guard let entry = model.cards.first(where: { model.place(ofSheet: $0.id) == .window }) else {
                 FileHandle.standardError.write(Data("No spot offers a window.\n".utf8))
                 exit(1)

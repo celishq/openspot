@@ -81,7 +81,7 @@ final class SpotHeaderTests: XCTestCase {
 
         let spot = try XCTUnwrap(try SpotFile(file: js, id: "icon")?.spots.first)
 
-        XCTAssertEqual(spot.offeredActions.first?.when, "hasIcon")
+        XCTAssertEqual(spot.offeredActions.first?.hooks[.when], "hasIcon")
         XCTAssertThrowsError(try SpotFile(file: shell, id: "shell")) { XCTAssertTrue((($0 as? SpotError)?.reason ?? "").contains("only a JavaScript spot"), "\($0)") }
         XCTAssertThrowsError(try SpotFile(file: wrong, id: "wrong")) { XCTAssertTrue((($0 as? SpotError)?.reason ?? "").contains("such as when=hasIcon"), "\($0)") }
     }

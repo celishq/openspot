@@ -55,7 +55,7 @@ class PanelCase: XCTestCase {
         try script("other", header: "on=sheet.open", "printf 'row=o\\ntitle=Other\\n'")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.press("list")
         try await wait("the open list") { self.model.transition.phase == .open && self.titles == ["A"] }
     }

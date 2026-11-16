@@ -12,7 +12,7 @@ struct SpotCardSource {
     func view(_ id: String) -> AnyView {
         guard let model, let entry = model.storeEntry(id) else { return AnyView(EmptyView()) }
         return AnyView(
-            SpotCardView(entry: entry, size: entry.size, index: Self.unselectable, isPressed: false, takesDrag: false, isDropTarget: false, chainLetter: nil, model: model)
+            SpotCardView(entry: entry, size: entry.size, index: Self.unselectable, isPressed: false, takesDrag: false, isDropTarget: false, model: model)
                 .allowsHitTesting(false)
         )
     }

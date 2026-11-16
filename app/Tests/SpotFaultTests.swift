@@ -152,7 +152,7 @@ final class SpotFaultTests: XCTestCase {
         try script("cups", header: "on=panel.open", "printf 'title=One cup\\n'")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         try await wait("the first read") { entry("cups")?.state.title == "One cup" }
 
         try script("cups", header: "on=panel.open", "printf 'title=Two cups\\n'")

@@ -41,7 +41,7 @@ public final class PlaygroundPanel {
         self.file = target
         try model.files.config.change { $0.arrangement = SpotArrangement(choices: [SpotArrangement.Choice(id: id, isOnGrid: true)]) }
         await model.reload()
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         return id
     }
 

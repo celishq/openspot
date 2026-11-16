@@ -164,7 +164,10 @@ public struct Config: Equatable, Sendable {
         guard case .string(let spot)? = table["spot"], case .string(let text)? = table["key"] else {
             return unread(table, "config.toml: a key needs a spot and a key.")
         }
-        let act: GlobalKey.Act = if case .string(let command)? = table["command"] { .command(command) } else { .float }
+        if let open = table["open"], open != .boolean(true) {
+            return unread(table, "config.toml: the key of \(spot) takes open = true, or no open line.")
+        }
+        let act: GlobalKey.Act = if case .string(let command)? = table["command"] { .command(command) } else if table["open"] != nil { .open } else { .float }
         guard let trigger = Trigger(text: text) else {
             let name = if case .command(let command) = act { "\(spot) \(command)" } else { spot }
             return unread(table, "config.toml: \(name) cannot use \(text).")
@@ -192,10 +195,6 @@ public struct Config: Equatable, Sendable {
         if case .string(let name)? = table["side"] {
             choice.panel = GridPanel(rawValue: name).flatMap { $0 == .center ? nil : $0 }
             if choice.panel == nil { faults.append("config.toml: \(id) cannot use the side \(name).") }
-        }
-        if case .string(let letter)? = table["letter"] {
-            choice.letter = letter.isEmpty ? "" : CommandKey(name: letter)?.name
-            if choice.letter == nil { faults.append("config.toml: \(id) cannot use the letter \(letter).") }
         }
         for key in table.keys.sorted() where !["id", "size", "grid", "enabled", "global", "tray", "letter", "key", "side"].contains(key) {
             faults.append("config.toml: \(key) is not a setting of a spot.")

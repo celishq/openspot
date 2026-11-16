@@ -8,8 +8,12 @@ struct SettingCalls {
 
     func get(_ key: String, of spot: String) -> CommandAPI.Work {
         CommandAnswer.work { [environment, secrets] in
+            let config = ConfigFile.standard(environment: environment).read()
+            if let act = GlobalKey.Act(setting: key) {
+                return config.keys.first { $0.spot == spot && $0.act == act }.map { $0.trigger.text + "\n" } ?? ""
+            }
             if try secrets.read()[spot]?[key] != nil { return FieldValues.hidden + "\n" }
-            return ConfigFile.standard(environment: environment).read().setting(key, of: spot).map { $0 + "\n" } ?? ""
+            return config.setting(key, of: spot).map { $0 + "\n" } ?? ""
         }
     }
 

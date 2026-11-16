@@ -9,7 +9,7 @@ struct SpotTheme {
     let glass: NSColor
     let shade: NSColor
     let dim: NSColor
-    let keycap: NSColor
+    let cornerFill: NSColor
     let window: NSColor
     let preview: NSColor
     let confirm: NSColor
@@ -29,7 +29,7 @@ struct SpotTheme {
         glass: .clear,
         shade: .black.withAlphaComponent(0.2),
         dim: NSColor(white: 0.37, alpha: 0.65),
-        keycap: NSColor(white: 0.2, alpha: 1),
+        cornerFill: NSColor(white: 0.2, alpha: 1),
         window: NSColor(white: 0.16, alpha: 1),
         preview: NSColor(white: 0.3, alpha: 1),
         confirm: NSColor(red: 0.78, green: 0.16, blue: 0.14, alpha: 1),
@@ -50,7 +50,7 @@ struct SpotTheme {
         glass: .white.withAlphaComponent(0.5),
         shade: .black.withAlphaComponent(0.08),
         dim: NSColor(white: 0.925, alpha: 0.65),
-        keycap: NSColor(white: 0.98, alpha: 1),
+        cornerFill: NSColor(white: 0.98, alpha: 1),
         window: NSColor(white: 0.93, alpha: 1),
         preview: NSColor(white: 0.98, alpha: 1),
         confirm: NSColor(red: 0.78, green: 0.16, blue: 0.14, alpha: 1),
@@ -109,7 +109,7 @@ struct SpotTheme {
     static let glass = color(\.glass)
     static let shade = color(\.shade)
     static let dim = color(\.dim)
-    static let keycap = color(\.keycap)
+    static let cornerFill = color(\.cornerFill)
     static let window = color(\.window)
     static let preview = color(\.preview)
     static let confirm = color(\.confirm)

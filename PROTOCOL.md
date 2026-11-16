@@ -50,7 +50,7 @@ what it has.
 | Key          | What it does                                                                                              |
 | ------------ | --------------------------------------------------------------------------------------------------------- |
 | Return       | The main act of the spot: it runs the spot, or opens its rows when the rows are what the spot is for.     |
-| `⌘` Return   | Opens the spot's [Settings](#settings): Float, Show in the menu bar, its keys and each `field`.           |
+| `⌘` Return   | Opens the spot's [Settings](#settings): Show in the menu bar and each `field`.                            |
 | `⌘Y`         | Opens the rows of a spot whose Return runs its command, as its **History**.                               |
 | `⌘K`         | Opens the menu of all acts, when it holds more than the footer shows.                                     |
 
@@ -114,7 +114,7 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `emits`       | The events the spot raises, split by commas. See [Events](#events).                                                              |
 | `offers`      | A place where the spot can show: `card`, `search`, `menubar`, `float` or `window`. One line each. See [Places](#places).         |
 | `drop`        | The files its card takes: extensions such as `mov,mkv`, `folder`, or `*`. See [The calls](#the-calls).                           |
-| `edits`       | `spots`: its sheet is also the Edit sheet of each spot, which grows from that spot's card. Only a spot of the app takes it.      |
+| `edits`       | `spots`: its sheet is also the Edit sheet of each spot. `keys`: its sheet, on the page `spot:<id>`, sets the keys of each spot. Only a spot of the app takes it. |
 | `view`        | A SwiftUI file next to the spot, such as `view=cups.swift`. See [Views](#views).                                                 |
 | `source`      | A Swift file, or a folder of Swift files, that a Swift spot is built with. One line each. See [A Swift spot](#a-swift-spot).     |
 | `mode`        | `once` (the default), `stay` or `always`. See [Modes](#modes).                                                                   |
@@ -130,7 +130,7 @@ The header says what a spot is. Openspot reads it without running the spot.
 
 - A spot with a `button` in its header has no card. It gives its commands instead.
 - Return on a spot with one `button` and no `on=` events runs it, as its hotkey does. When it has no hotkey yet, Return
-  opens its [Settings](#settings) and records one.
+  opens its Keys, the sheet of Keys… in its ⌘K menu, and records one.
 - A spot with one `button` and its own rows runs the command on Return, and its rows open as its History on `⌘Y`. A
   spot with more `button`s runs them by their hotkeys and from its ⌘K menu. See [The keys of a spot](#the-keys-of-a-spot).
 - `confirm=<words>` on a header `button` makes a press of its card, or its row in the ⌘K menu, ask twice: the first
@@ -320,13 +320,15 @@ A button is a verb. If the layout places it, the sheet draws it. If not, it's an
   card. ⌘K calls it with the card's spot ID and its origin, `mine`, `core` or `builtin`, and shows the action when it
   returns `true`. Keep it fast: the menu waits 2 ms for it, and an answer that comes later joins the open menu. A
   function that throws says no, and an action that its function hides hides its submenu too.
+- `hotkey=<function>` on an offered button of a JavaScript spot names a function that returns the card's hotkey, such as
+  `ctrl+option+n`, or nothing. ⌘K calls it as it calls `when`, and the action's row ends in that key.
 - The ⌘K menu lists the spot's own actions first, then Openspot's under them, then the actions of other spots, grouped
   by spot, A to Z by its name. Each group of another spot has a header, which a search hides. Openspot's own actions, such as Edit,
   Delete and Change Icon, come from its built-in spots in the same way.
 - `close=true` closes the panel after the call. `confirm` asks for a second press.
 - A button `shortcut` is a letter, a digit, `return`, `backspace` or `,`, after `cmd+`, `shift+`, both or neither, such as
   `cmd+shift+n`, or `escape` alone. A row `shortcut` is any text (see [Rows](#rows)). The user gives a `button` in the
-  header its hotkey in the spot's [Settings](#settings).
+  header its hotkey with Keys… in the ⌘K menu of a card.
 - An action needs a `title`. `openspot check` reports an action with no title, or with a shortcut it can't use.
 - `shortcut=escape` presses the button instead of closing the sheet, like a Cancel button.
 - In a ⌘K menu of more than 5 rows, a field searches them, so only a `shortcut` with `cmd` works there.
@@ -362,7 +364,7 @@ Rows are a list that the user searches and picks from. See [Show a list](GUIDE.m
 | `pin`      | `top` or `bottom`: the row stays above or under the rows that scroll, even in a search.        |
 | `focus`    | The line under the title while the row is selected, in place of `detail`.                      |
 | `open`     | What Return does on this row, in place of the `title` of `button=open`.                        |
-| `close`    | `false` keeps the panel open after a pick of this row.                                         |
+| `close`    | `false` keeps the panel open after a pick of this row, or a hotkey it records.                 |
 | `file`     | The file the row stands for. See [Files out](#files-out).                                      |
 | `push`     | A page that a pick pushes, in place of `<spot> open <id>`, with `push.spot` and `push.title`. See [Pages](#pages). |
 
@@ -641,13 +643,14 @@ The user decides where a spot shows. A spot only offers, with one `offers` line 
   the places it names.
 - A spot that offers a place without what it needs, or an unknown place, doesn't load.
 - The user gives each spot its hotkey, puts spots in the menu bar, floats them, and orders and sizes the cards. A spot
-  can't claim a hotkey or a place. The hotkeys, the float and the menu bar are in the spot's [Settings](#settings).
+  can't claim a hotkey or a place. The hotkeys are in Keys… in the ⌘K menu of its card, and the menu bar
+  is in its [Settings](#settings).
 - `offers=search` shows the spot's rows in the main search. It needs `on=panel.open`, `on=sheet.open` or a `clock`. With
   only `on=sheet.open`, Openspot reads the rows when it loads the spots, as it starts or after a spot changes, after each
   change of the config, and at each open of the sheet. A panel open doesn't read them. Openspot ranks the
   rows by the user's picks.
-- The user can give a spot that offers `float` a hotkey, or a shake of the pointer, in its Settings. It shows the spot in a
-  small window at the pointer, which stays while the user works in other apps. The spot never learns where it shows.
+- The user can give a spot that offers `float` a hotkey, or a shake of the pointer, with Keys… in the ⌘K menu of its
+  card. It shows the spot in a small window at the pointer, which stays while the user works in other apps. The spot never learns where it shows.
 - A spot that offers `window` opens its sheet in a normal window, from its card, the main search or `openspot spot open`.
   The user moves, resizes and closes it, and Openspot shows in the Dock while it's open. Use it for a sheet that needs
   room, such as a catalog. The window has no title bar buttons: Esc closes it, so give a view that fills it a way
@@ -1025,9 +1028,9 @@ if [ -n "$(value setting.token)" ]; then printf 'text=token\ntitle=Signed in\n';
 - Keep a choice of the user in a setting. Keep what the spot makes, such as a cache, in `OPENSPOT_DATA`.
 - Openspot keeps some keys for the user, and a `field` can't use them:
   - of any spot: `icon`, the path of a picture that draws in place of the header's icon, which Change Icon in the menu
-    of a card keeps; `enabled` and `menubar`, `true` or `false`, and `float` and `key.<command>`, a hotkey such as
-    `ctrl+option+k`, `shake`, or one modifier alone, such as `option`, which a tap of that key presses, or no value to
-    remove it;
+    of a card keeps; `enabled` and `menubar`, `true` or `false`, and `open`, `float` and `key.<command>`, a hotkey such
+    as `ctrl+option+k`, `shake`, or one modifier alone, such as `option`, which a tap of that key presses, or no value
+    to remove it. The key of `open` does what a press of the spot's card does, from any app;
   - of the spot `openspot`, which is the app: `login`, `link` and `careful`, `true` or `false`, and `panel-key` and
     `fix-key`.
 - Each of these keys needs the use of the call that does the work (see [Trust](#trust)).
@@ -1080,7 +1083,7 @@ openspot app quit
 
 | Use         | The calls that need it                                                                                                                                          |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app`       | `app quit`, `update check`, `update install`, and `setting set` of `menubar`, `float`, `key.<command>` or of the spot `openspot`                                |
+| `app`       | `app quit`, `update check`, `update install`, and `setting set` of `menubar`, `open`, `float`, `key.<command>` or of the spot `openspot`                                |
 | `spots`     | `spot add`, `spot remove`, `spot settings`, `spot edit`, `spot prompt`, `spot share`, `spot delete`, `spot new`, `spot run`, `spot log`, `setting list`, `setting set` of `enabled`, and `setting get`, `set` or `change` of another spot |
 | `screen`    | `screen sources`, `screen shot`, `screen record`, `window frame`, `window move` and `color pick`                                                                |
 | `clipboard` | `clipboard copy`, `clipboard paste` and `clipboard read`                                                                                                        |

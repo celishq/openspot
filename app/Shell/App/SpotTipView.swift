@@ -34,6 +34,6 @@ struct SpotTipView: View {
         let inset = SurfaceEdge(card: placement.size).rim
         let origin = model.gridOrigin
         let x = tip.anchor == .trailingCorner ? rect.maxX - inset : rect.minX + inset
-        return CGPoint(x: origin.x + x, y: origin.y + rect.minY + inset + SpotTokens.keycap / 2)
+        return CGPoint(x: origin.x + x, y: origin.y + rect.minY + inset + SpotTokens.cornerMark / 2)
     }
 }

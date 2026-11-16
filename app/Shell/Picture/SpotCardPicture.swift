@@ -45,13 +45,13 @@ enum SpotCardPicture {
                 let card = CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))
                 let shown = model.entries.first { $0.id == id } ?? entry
                 let stage = SpotPictureStage(size: card, radius: SurfaceEdge(card: size).radius, seed: URL(fileURLWithPath: path).lastPathComponent) {
-                    SpotCardView(entry: shown, size: size, index: -1, isPressed: false, takesDrag: false, isDropTarget: false, chainLetter: nil, model: model)
+                    SpotCardView(entry: shown, size: size, index: -1, isPressed: false, takesDrag: false, isDropTarget: false, model: model)
                         .environment(\.spotIsShown, true)
                 }
                 SpotPicture(of: stage, size: CGSize(width: card.width + 2 * margin, height: card.height + 2 * margin), path: path).save(after: settle)
             }
             if entry.kind == .widget {
-                model.panelWillShow(holding: [])
+                model.panelWillShow()
                 Task { @MainActor in
                     try? await Task.sleep(for: .milliseconds(300))
                     await model.waitForReads()

@@ -1,6 +1,6 @@
 import Foundation
 
-public struct CommandKey: Equatable, Sendable {
+public struct KeyCode: Equatable, Sendable {
     private static let codes: [String: UInt32] = [
         "a": 0, "s": 1, "d": 2, "f": 3, "h": 4, "g": 5, "z": 6, "x": 7, "c": 8, "v": 9, "b": 11, "q": 12,
         "w": 13, "e": 14, "r": 15, "y": 16, "t": 17, "1": 18, "2": 19, "3": 20, "4": 21, "6": 22, "5": 23,

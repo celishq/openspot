@@ -269,7 +269,7 @@ final class SpotMotionProbe: NSObject {
         panel.ignoresMouseEvents = false
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKey()
-        let inset = SpotTokens.keycap / 2
+        let inset = SpotTokens.cornerMark / 2
         let corner = CGPoint(x: window.place.left + end.x - inset, y: end.y - inset)
         let reach = CGSize(width: 2 * (SpotTokens.cell + SpotTokens.columnGap), height: SpotTokens.rowHeight + SpotTokens.rowGap)
         func post(_ type: NSEvent.EventType, _ share: CGFloat) {
@@ -331,7 +331,7 @@ final class SpotMotionProbe: NSObject {
         panel.alphaValue = 0.02
         let pressed = CACurrentMediaTime()
         panel.place(over: NSWorkspace.shared.frontmostApplication)
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         panel.orderFrontRegardless()
         pressTimes.append((CACurrentMediaTime() - pressed) * 1000)
         frames.append(pressed)
@@ -487,7 +487,7 @@ final class SpotMotionProbe: NSObject {
         panel.makeKey()
         model.isSettlingDrop = true
         let height = panel.contentView?.bounds.height ?? 0
-        let inset = SpotTokens.keycap / 2
+        let inset = SpotTokens.cornerMark / 2
         let point = row == "corner" ? CGPoint(x: rect.maxX - inset, y: rect.maxY - inset) : row == "minus" ? CGPoint(x: rect.minX + inset, y: rect.minY + inset) : CGPoint(x: rect.midX, y: rect.midY)
         let edgeMove = CGSize(width: 0, height: SpotTokens.panelHeight - SpotTokens.halo - SpotTokens.hintBlock - 10 - (SpotTokens.gridTop + rect.midY))
         let translation = row == "corner" ? CGSize(width: 0, height: SpotTokens.rowHeight + SpotTokens.rowGap) : row == "minus" ? .zero : row == "edge" ? edgeMove : move

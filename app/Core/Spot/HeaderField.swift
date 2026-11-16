@@ -1,23 +1,15 @@
 import Foundation
 
-public struct CommandOffer: Equatable, Sendable {
+public struct HeaderField: Equatable, Sendable {
     public static let secret = "secret"
 
     public let id: String
     public let title: String
     public let icon: String?
-    public let confirm: String?
     public let isSecret: Bool
 
-    public init?(block: TextBlock) {
-        guard let id = block.value(HeaderBlock.button), let title = block.value("title"), id != "read", !id.contains(where: \.isWhitespace) else {
-            return nil
-        }
-        self.init(id: id, title: title, icon: block.value("icon"), confirm: block.value("confirm"))
-    }
-
     public init?(setting block: TextBlock) {
-        guard let key = block.value(HeaderBlock.field), let named = CommandOffer(setting: key) else { return nil }
+        guard let key = block.value(HeaderBlock.field), let named = HeaderField(setting: key) else { return nil }
         self.init(id: key, title: block.value("title") ?? named.title, icon: block.value("icon"), isSecret: block.value("type") == Self.secret)
     }
 
@@ -26,11 +18,10 @@ public struct CommandOffer: Equatable, Sendable {
         self.init(id: key, title: key.prefix(1).uppercased() + key.dropFirst(), icon: nil)
     }
 
-    private init(id: String, title: String, icon: String?, confirm: String? = nil, isSecret: Bool = false) {
+    private init(id: String, title: String, icon: String?, isSecret: Bool = false) {
         self.id = id
         self.title = title
         self.icon = icon
-        self.confirm = confirm
         self.isSecret = isSecret
     }
 }

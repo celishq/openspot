@@ -127,7 +127,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
         model.runs.api = CommandAPI(mac: Mac(), places: files, runs: model.runs, rates: .offline)
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.searchText = "2+2"
         model.landSearch()
         for _ in 0..<6000 where model.visible.first?.id != "calculator\n4" { try await Task.sleep(for: .milliseconds(10)) }

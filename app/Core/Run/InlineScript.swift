@@ -165,6 +165,7 @@ final class InlineScript: @unchecked Sendable {
         if call.function != nil {
             let result = function.call(withArguments: call.arguments)
             try rethrow()
+            if let result, result.isString { return result.toString() ?? "" }
             return result?.toBool() == true ? "true" : ""
         }
         let env = environment.filter { ["OPENSPOT_ID", CallerTokens.variable].contains($0.key) }.merging(call.variables) { _, new in new }

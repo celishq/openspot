@@ -8,13 +8,12 @@ struct SpotCardView: View, @MainActor Equatable {
     let isPressed: Bool
     let takesDrag: Bool
     let isDropTarget: Bool
-    let chainLetter: String?
     let model: SpotsModel
     var onTap: (() -> Void)?
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.entry == rhs.entry && lhs.size == rhs.size && lhs.index == rhs.index && lhs.isPressed == rhs.isPressed
-            && lhs.takesDrag == rhs.takesDrag && lhs.isDropTarget == rhs.isDropTarget && lhs.chainLetter == rhs.chainLetter
+            && lhs.takesDrag == rhs.takesDrag && lhs.isDropTarget == rhs.isDropTarget
             && lhs.model === rhs.model
     }
 
@@ -34,7 +33,6 @@ struct SpotCardView: View, @MainActor Equatable {
             .modifier(CardPress(shape: shape(of: .press), isFilled: isFilled, showsPress: showsPress))
             .modifier(SpotPointerMove { model.point(at: .card(entry.id)) })
             .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape(of: .ring))).allowsHitTesting(false))
-            .overlay(alignment: .topTrailing) { chainLetter.map { ChainKeycap(model: model, letter: $0, size: size) } }
             .overlay(alignment: .topTrailing) { FailureMark(entry: entry, size: size) }
             .modifier(SpotGlass(shape: shape(of: .glass), isSolid: isFilled))
             .contentShape(shape(of: .hit))
@@ -242,38 +240,17 @@ private struct FailureMark: View {
 
     var body: some View {
         if entry.failure != nil {
-            let inset = SurfaceEdge(card: size).rim - SpotTokens.keycap / 2
-            let cap = SpotRoundShape(radius: SpotTokens.keycapRadius)
+            let inset = SurfaceEdge(card: size).rim - SpotTokens.cornerMark / 2
+            let cap = SpotRoundShape(radius: SpotTokens.cornerMarkRadius)
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(SpotType.cornerFault)
                 .foregroundStyle(SpotTheme.ink)
-                .frame(width: SpotTokens.keycap, height: SpotTokens.keycap)
-                .background(SpotTheme.keycap, in: cap)
+                .frame(width: SpotTokens.cornerMark, height: SpotTokens.cornerMark)
+                .background(SpotTheme.cornerFill, in: cap)
                 .overlay(cap.strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
                 .offset(x: -inset, y: inset)
                 .accessibilityLabel("Last run failed")
                 .allowsHitTesting(false)
         }
-    }
-}
-
-private struct ChainKeycap: View {
-    let model: SpotsModel
-    let letter: String
-    let size: SpotSize
-
-    var body: some View {
-        let inset = SurfaceEdge(card: size).rim - SpotTokens.keycap / 2
-        let cap = SpotRoundShape(radius: SpotTokens.keycapRadius)
-        return Text(letter)
-            .font(SpotType.keycap)
-            .foregroundStyle(SpotTheme.ink)
-            .frame(width: SpotTokens.keycap, height: SpotTokens.keycap)
-            .background(SpotTheme.keycap, in: cap)
-            .overlay(cap.strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
-            .offset(x: -inset, y: inset)
-            .opacity(model.showsChain ? 1 : MotionTokens.hiddenOpacity)
-            .animation(SpotMotion.fade(isShown: true), value: model.showsChain)
-            .allowsHitTesting(false)
     }
 }
