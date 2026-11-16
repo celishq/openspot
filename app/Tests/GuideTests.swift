@@ -25,6 +25,14 @@ final class GuideTests: XCTestCase {
         XCTAssertTrue(screen.output.contains("(S11)"))
     }
 
+    func testTheHelpOfANounFindsItsPageWithNoGuideFile() async throws {
+        let bare = CommandAPI(mac: Mac(guide: nil, pages: pages), places: .test(["OPENSPOT_CONFIG": try temporaryFolder().path]), rates: .offline)
+
+        let screen = try await XCTUnwrap(bare.work(for: .test(["help", "screen"]), input: { "" }))()
+
+        XCTAssertTrue(screen.output.contains("\n# openspot screen"), screen.output)
+    }
+
     func testTheHelpOfANounPrintsItsVerbsThenItsPage() async throws {
         let reminders = try await answer(["help", "reminders"])
         let calendar = try await answer(["guide", "calendar"])

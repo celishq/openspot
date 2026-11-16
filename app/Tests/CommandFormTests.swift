@@ -38,6 +38,15 @@ final class CommandFormTests: XCTestCase {
         XCTAssertEqual(CommandForm("[--dry-run] <words>...").fit(["--dry-run", "buy", "--fast"])?.rest, ["buy", "--fast"])
     }
 
+    func testAnOpenFormReadsItsOptionsOnlyBeforeItsFreeWords() {
+        let form = CommandForm("<id> [--failure <text>] [words]...")
+
+        XCTAssertEqual(form.fit(["notes", "--failure", "boom", "fix", "it"])?.value("--failure"), "boom")
+        XCTAssertEqual(form.fit(["notes", "stop", "--failure", "mode"])?.rest, ["notes", "stop", "--failure", "mode"])
+        XCTAssertEqual(form.fit(["notes", "--failure"])?.rest, nil)
+        XCTAssertEqual(CommandForm("[--dry-run] <words>...").fit(["lunch", "--dry-run"])?.rest, ["lunch", "--dry-run"])
+    }
+
     func testAnOptionCanBeOneChoiceOfAGroup() {
         let form = CommandForm("[topic | --topics]")
 

@@ -33,15 +33,17 @@ public struct CommandForm: Sendable {
 
     private let options: [String: Option]
     private let isOpen: Bool
+    private let fixed: Int
 
     init(_ form: String) {
         var options: [String: Option] = [:]
         var isOpen = false
+        var fixed = 0
         let groups = try? NSRegularExpression(pattern: #"\[((?:[^\[\]]|\[[^\]]*\])*)\](\.\.\.)?|(\S+)"#)
         for match in groups?.matches(in: form, range: NSRange(form.startIndex..., in: form)) ?? [] {
             let text = { (index: Int) in Range(match.range(at: index), in: form).map { String(form[$0]) } }
             guard let inside = text(1) else {
-                if text(3)?.hasSuffix("...") == true { isOpen = true }
+                if text(3)?.hasSuffix("...") == true { isOpen = true } else if !isOpen { fixed += 1 }
                 continue
             }
             let repeats = text(2) != nil
@@ -51,10 +53,11 @@ public struct CommandForm: Sendable {
                 options[name] = Option(takesValue: choice.count > 1, repeats: repeats)
                 named = true
             }
-            if repeats, !named { isOpen = true }
+            if repeats, !named { isOpen = true } else if !named, !isOpen { fixed += 1 }
         }
         self.options = options
         self.isOpen = isOpen
+        self.fixed = fixed
     }
 
     func fit(_ words: [String]) -> Words? {
@@ -64,7 +67,7 @@ public struct CommandForm: Sendable {
         while index < words.count {
             let word = words[index]
             index += 1
-            guard let option = options[word] else {
+            guard let option = options[word], !isOpen || rest.count <= fixed else {
                 guard isOpen || !word.hasPrefix("--") else { return nil }
                 rest.append(word)
                 continue
