@@ -24,21 +24,21 @@ final class SystemKeysTests: XCTestCase {
         return SystemKeys(url: url)
     }
 
-    func testAnEnabledKeyIsTakenWithItsName() throws {
+    func testAnEnabledKeyIsTakenWithWhatItDoes() throws {
         let keys = try write(["64": (true, [32, 49, 1048576])])
-        XCTAssertEqual(keys.read(), [TakenKey(shortcut: Shortcut(code: 49, modifiers: .command)!, owner: "Spotlight")])
+        XCTAssertEqual(keys.read(), [TakenKey(shortcut: Shortcut(code: 49, modifiers: .command)!, use: "opens Spotlight")])
     }
 
-    func testTheInputSourceKeysAndFinderSearchHaveNames() throws {
+    func testTheInputSourceKeysAndFinderSearchSayWhatTheyDo() throws {
         let keys = try write([
             "60": (true, [32, 49, 262144]),
             "61": (true, [32, 49, 786432]),
             "65": (true, [32, 49, 1572864]),
         ])
         XCTAssertEqual(keys.read(), [
-            TakenKey(shortcut: Shortcut(code: 49, modifiers: .control)!, owner: "the previous input source"),
-            TakenKey(shortcut: Shortcut(code: 49, modifiers: [.control, .option])!, owner: "the next input source"),
-            TakenKey(shortcut: Shortcut(code: 49, modifiers: [.option, .command])!, owner: "Finder search"),
+            TakenKey(shortcut: Shortcut(code: 49, modifiers: .control)!, use: "switches to the previous input source"),
+            TakenKey(shortcut: Shortcut(code: 49, modifiers: [.control, .option])!, use: "switches to the next input source"),
+            TakenKey(shortcut: Shortcut(code: 49, modifiers: [.option, .command])!, use: "opens a Finder search"),
         ])
     }
 

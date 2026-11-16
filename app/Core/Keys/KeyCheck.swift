@@ -7,12 +7,12 @@ public struct KeyCheck: Sendable {
         self.taken = taken
     }
 
-    public func owner(of shortcut: Shortcut) -> String? {
-        taken.first { $0.shortcut == shortcut }?.owner
+    public func use(of shortcut: Shortcut) -> String? {
+        taken.first { $0.shortcut == shortcut }?.use
     }
 
     public func words(for shortcut: Shortcut) -> String {
-        guard let owner = owner(of: shortcut) else { return "\(shortcut.label) is free." }
-        return "\(shortcut.label) is \(owner)'s key."
+        guard let use = use(of: shortcut) else { return "\(shortcut.label) is free." }
+        return "\(shortcut.label) \(use)."
     }
 }

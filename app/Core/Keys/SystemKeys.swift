@@ -1,8 +1,8 @@
 import Foundation
 
 public struct SystemKeys: Sendable {
-    private static let owners: [Int: String] = [
-        60: "the previous input source", 61: "the next input source", 64: "Spotlight", 65: "Finder search"
+    private static let uses: [Int: String] = [
+        60: "switches to the previous input source", 61: "switches to the next input source", 64: "opens Spotlight", 65: "opens a Finder search"
     ]
     private static let masks: [(mask: Int, modifier: Shortcut.Modifiers)] = [
         (131072, .shift), (262144, .control), (524288, .option), (1048576, .command)
@@ -28,7 +28,7 @@ public struct SystemKeys: Sendable {
     }
 
     private static func taken(id: Int, entry: Any) -> TakenKey? {
-        guard let owner = owners[id],
+        guard let use = uses[id],
               let entry = entry as? [String: Any],
               (entry["enabled"] as? NSNumber)?.boolValue == true,
               let value = entry["value"] as? [String: Any],
@@ -39,6 +39,6 @@ public struct SystemKeys: Sendable {
         let modifiers = masks.reduce(into: Shortcut.Modifiers()) { held, entry in
             if mask & entry.mask != 0 { held.insert(entry.modifier) }
         }
-        return Shortcut(code: UInt32(code), modifiers: modifiers).map { TakenKey(shortcut: $0, owner: owner) }
+        return Shortcut(code: UInt32(code), modifiers: modifiers).map { TakenKey(shortcut: $0, use: use) }
     }
 }

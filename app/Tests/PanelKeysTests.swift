@@ -450,7 +450,7 @@ final class PanelKeysTests: PanelCase {
         try await wait("its rows") { self.model.openItems?.shown.map(\.run) == ["float"] }
     }
 
-    func testRecordingAKeyThatMacOSKeepsSaysWhoseItIs() async throws {
+    func testRecordingAKeyThatMacOSKeepsSaysWhatItDoes() async throws {
         let folder = self.folder.appendingPathComponent("Library/Preferences", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let entry: [String: Any] = ["enabled": true, "value": ["parameters": [32, 49, 1048576], "type": "standard"] as [String: Any]]
@@ -462,10 +462,10 @@ final class PanelKeysTests: PanelCase {
         try await wait("the taken keys") { !self.model.takenKeys.isEmpty }
         model.record(code: 49, modifiers: .command)
 
-        XCTAssertEqual(host.notes, ["⌘Space is Spotlight's key."])
+        XCTAssertEqual(host.notes, ["⌘Space opens Spotlight."])
     }
 
-    func testAKeyOfAnotherSpotIsTakenByThatSpot() async throws {
+    func testAKeyOfAnotherSpotSaysItOpensThatSpot() async throws {
         try script("shelf", header: "title=Shelf", "true")
         _ = try model.files.config.change { $0.assign(.key(try XCTUnwrap(Shortcut(text: "ctrl+option+s"))), to: "shelf", act: .open) }
         try await openKeyRow()
@@ -474,7 +474,7 @@ final class PanelKeysTests: PanelCase {
         try await wait("the taken keys") { !self.model.takenKeys.isEmpty }
         model.record(code: 1, modifiers: [.control, .option])
 
-        XCTAssertEqual(host.notes, ["⌃⌥S is Shelf's key."])
+        XCTAssertEqual(host.notes, ["⌃⌥S opens Shelf."])
     }
 
     func testCommandYOpensTheHistoryOfASpotWhoseReturnRunsItsCommand() async throws {

@@ -126,7 +126,7 @@ extension SpotsModel {
             var taken = systemKeys.read()
             for key in config.read().keys {
                 guard case .key(let shortcut) = key.trigger else { continue }
-                taken.append(TakenKey(shortcut: shortcut, owner: names[key.spot] ?? key.spot))
+                taken.append(TakenKey(shortcut: shortcut, use: "opens \(names[key.spot] ?? key.spot)"))
             }
             await self?.take(taken)
         }
@@ -167,7 +167,7 @@ extension SpotsModel {
         }
         let check = KeyCheck(taken: takenKeys)
         if item != nil {
-            if check.owner(of: shortcut) != nil { host.notify(check.words(for: shortcut)) }
+            if check.use(of: shortcut) != nil { host.notify(check.words(for: shortcut)) }
         } else if isField {
             keyStatus = check.words(for: shortcut)
         }
