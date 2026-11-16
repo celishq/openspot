@@ -1,44 +1,55 @@
 #!/bin/sh
 set -e
 cd "$(dirname "$0")/.."
-out="$PWD/.temp/agent-eval"
-rm -rf "$out/runs" "$out/result.txt"
-mkdir -p "$out/bin"
+root="$PWD"
+tasks="$root/scripts/agent-eval"
+out="$root/.temp/agent-eval"
+real="$out/build/Build/Products/Debug/Openspot.app/Contents/Helpers/openspot"
+
+if [ "$1" = "--run" ]; then
+  set +e
+  label=$2 task=$3 n=$4
+  place="$out/$label/runs/$task-$n"
+  rm -rf "$place"
+  mkdir -p "$place/spots" "$place/work"
+  prompt="You have the \`openspot\` command of the Openspot Mac app on your PATH. $(cat "$tasks/$task/prompt")"
+  start=$(date +%s)
+  (cd "$place/work" && OPENSPOT_CONFIG="$place" PATH="$out/bin:$PATH" perl -e 'alarm shift; exec @ARGV' 900 \
+    claude -p "$prompt" --model sonnet --output-format json --permission-mode acceptEdits \
+    --allowedTools "Bash Read Write Edit" </dev/null >"$place/report.json" 2>"$place/agent.err")
+  seconds=$(($(date +%s) - start))
+  touch "$place/calls.tsv"
+  (cd "$place/work" && PLACE="$place" OPENSPOT="$real" OPENSPOT_CONFIG="$place" TASKS="$tasks" \
+    perl -e 'alarm shift; exec @ARGV' 300 sh "$tasks/$task/check.sh" >"$place/check.txt" 2>&1)
+  result=$([ $? -eq 0 ] && echo pass || echo fail)
+  OPENSPOT_CONFIG="$place" "$real" app quit >/dev/null 2>&1 </dev/null
+  python3 -I "$tasks/run.py" "$place" "$task" "$n" "$result" "$seconds" >>"$out/$label/runs.tsv"
+  echo "$result  $task #$n  (${seconds}s)"
+  exit 0
+fi
+
+label=${1:-base}
+repeats=${2:-3}
+picked=$(cd "$tasks" && for t in */; do printf '%s ' "${t%/}"; done)
+if [ $# -gt 2 ]; then
+  shift 2
+  picked=$*
+fi
+rm -rf "${out:?}/$label"
+mkdir -p "$out/bin" "$out/$label"
 (cd app && xcodegen generate >/dev/null)
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project app/Openspot.xcodeproj -scheme Openspot \
   -configuration Debug -derivedDataPath "$out/build" build -quiet >"$out/build.log" 2>&1 || { grep error: "$out/build.log"; exit 1; }
-real="$out/build/Build/Products/Debug/Openspot.app/Contents/Helpers/openspot"
-cat >"$out/bin/openspot" <<STAND
-#!/bin/sh
-if [ "\$1 \$2" = "spot show" ]; then echo "\$3" >> "\$OPENSPOT_CONFIG/shows.txt"; echo "Openspot shows \$3."; exit 0; fi
-exec "$real" "\$@"
-STAND
+sed "s|@REAL@|$real|" "$tasks/openspot" >"$out/bin/openspot"
 chmod +x "$out/bin/openspot"
-passed=0
-total=0
-while IFS= read -r task; do
-  total=$((total + 1))
-  place="$out/runs/$total"
-  mkdir -p "$place/spots"
-  (cd "$place/spots" && OPENSPOT_CONFIG="$place" PATH="$out/bin:$PATH" claude -p \
-    "Run \`openspot guide\` and read all of it. Then build an Openspot spot in this folder that $task." \
-    --permission-mode acceptEdits --allowedTools "Bash Read Write Edit" </dev/null >"$place/agent.txt" 2>&1) || true
-  OPENSPOT_CONFIG="$place" "$real" check --json "$place/spots" >"$place/check.json" 2>&1 || true
-  spots=$(find "$place/spots" -maxdepth 2 -type f -perm -u+x | wc -l | tr -d ' ')
-  if [ "$(cat "$place/check.json")" = "[]" ] && [ "$spots" -gt 0 ]; then
-    passed=$((passed + 1))
-    echo "pass  $task" | tee -a "$out/result.txt"
-  else
-    echo "fail  $task: $(cat "$place/check.json")" | tee -a "$out/result.txt"
-  fi
-done <<TASKS
-$(head -n "${1:-5}" <<LIST
-shows the time in Tokyo
-lists the files on the Desktop, newest first, and opens the one that I pick
-shows how full the main disk is
-asks for a note and keeps each note in a file
-copies a new UUID to the clipboard
-LIST
-)
-TASKS
-echo "$passed of $total passed" | tee -a "$out/result.txt"
+printf 'task\tn\tresult\tseconds\tturns\tcost\tcalls\tusage\thangs\thelp\n' >"$out/$label/runs.tsv"
+git rev-parse --short HEAD >"$out/$label/commit"
+n=1
+while [ "$n" -le "$repeats" ]; do
+  for task in $picked; do echo "$task $n"; done
+  n=$((n + 1))
+done | xargs -P "${PARALLEL:-4}" -n 2 sh "$0" --run "$label" &
+runs=$!
+trap 'kill $runs 2>/dev/null; pkill -f "$out/build/" 2>/dev/null; exit 130' INT TERM
+wait $runs
+python3 -I "$tasks/summary.py" "$out/$label/runs.tsv" | tee "$out/$label/summary.txt"

@@ -1,4 +1,4 @@
-.PHONY: verify test perf film shots eval-agent docs-images spots dev-state examples release release-build
+.PHONY: verify test perf film shots eval-agent eval-compare docs-images spots dev-state examples release release-build
 
 verify:
 	sh scripts/check-core.sh
@@ -31,7 +31,10 @@ shots:
 	sh scripts/menu-shots.sh
 
 eval-agent:
-	sh scripts/agent-eval.sh $(N)
+	sh scripts/agent-eval.sh $(or $(LABEL),base) $(or $(N),3) $(TASKS)
+
+eval-compare:
+	python3 -I scripts/agent-eval/summary.py $(foreach l,$(LABELS),.temp/agent-eval/$(l)/runs.tsv)
 
 docs-images:
 	cd app && xcodegen generate >/dev/null

@@ -1,0 +1,18 @@
+#!/bin/sh
+real="@REAL@"
+log="$OPENSPOT_CONFIG/calls.tsv"
+kept=$(mktemp)
+if [ "$1 $2" = "spot show" ]; then
+  echo "$3" >>"$OPENSPOT_CONFIG/shows.txt"
+  echo "Openspot shows $3." >"$kept"
+  code=0
+else
+  perl -e 'alarm shift; exec @ARGV' 120 "$real" "$@" >"$kept" 2>"$kept.err"
+  code=$?
+fi
+touch "$kept.err"
+cat "$kept"
+cat "$kept.err" >&2
+printf '%s\t%s\t%s\n' "$code" "$(cat "$kept" "$kept.err" | wc -c | tr -d ' ')" "$*" >>"$log"
+rm -f "$kept" "$kept.err"
+exit "$code"
