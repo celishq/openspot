@@ -1031,8 +1031,8 @@ if [ -n "$(value setting.token)" ]; then printf 'text=token\ntitle=Signed in\n';
     of a card keeps; `enabled` and `menubar`, `true` or `false`, and `open`, `float` and `key.<command>`, a hotkey such
     as `ctrl+option+k`, `shake`, or one modifier alone, such as `option`, which a tap of that key presses, or no value
     to remove it. The key of `open` does what a press of the spot's card does, from any app;
-  - of the spot `openspot`, which is the app: `login`, `link` and `careful`, `true` or `false`, and `panel-key` and
-    `fix-key`.
+  - of the spot `openspot`, which is the app: `login`, `link`, `careful` and `slow`, `true` or `false`, and `panel-key`
+    and `fix-key`. `slow` runs each motion of the panel ten times slower until the app quits.
 - Each of these keys needs the use of the call that does the work (see [Trust](#trust)).
 
 ### Stats

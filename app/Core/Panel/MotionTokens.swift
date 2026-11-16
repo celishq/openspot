@@ -5,6 +5,10 @@ public enum MotionTokens {
     nonisolated(unsafe) public private(set) static var slow = launchSlow
     public static let slowMotion = 10.0
 
+    public static var isSlow: Bool {
+        slow != launchSlow
+    }
+
     @discardableResult
     public static func toggleSlowMotion() -> Bool {
         slow = slow == launchSlow ? launchSlow * slowMotion : launchSlow
