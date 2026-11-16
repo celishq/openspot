@@ -419,7 +419,7 @@ final class SpotMotionProbe: NSObject {
             let action = ActionKey(name: words.last ?? "", isCommand: words.contains("cmd"), isShift: words.contains("shift"))
             if !model.handleKey(action) { _ = model.handleSearchKey(action) }
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.play(Array(keys.dropFirst())) }
+        Timer.scheduledTimer(withTimeInterval: pause, repeats: false) { _ in MainActor.assumeIsolated { self.play(Array(keys.dropFirst())) } }
     }
 
     private var history: [ActionKey] {

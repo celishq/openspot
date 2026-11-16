@@ -230,7 +230,7 @@ extension SpotsModel {
     func openMenu(on target: Target) {
         var answers = HookAnswers()
         menuSession = actionMenu(on: target, answers: &answers, asks: true).map { ActionMenuSession(menu: $0, target: target, answers: answers) }
-        DispatchQueue.main.async { [weak self] in
+        host.nextFrame { [weak self] in
             guard let self, menuSession?.phase == .opening else { return }
             change(.sheet(isOpen: true), {
                 self.menuSession?.phase = .open

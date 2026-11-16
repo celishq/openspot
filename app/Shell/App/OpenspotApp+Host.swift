@@ -123,6 +123,10 @@ extension OpenspotApp: SpotsHost {
         AgentPrompt(folder: folder, guide: Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder, app: AgentPrompt.command(of: Bundle.main.executablePath ?? ""))
     }
 
+    func nextFrame(_ body: @escaping @MainActor () -> Void) {
+        frame.run(in: panel?.contentView, body)
+    }
+
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void) {
         var transaction = Transaction(animation: motion.map(SpotMotion.animation))
         transaction.disablesAnimations = motion == nil

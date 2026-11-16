@@ -29,10 +29,15 @@ public protocol SpotsHost: AnyObject {
     func prepareCards(glyphs: [String])
     func agentPrompt(for folder: URL) -> AgentPrompt
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void)
+    func nextFrame(_ body: @escaping @MainActor () -> Void)
     func allows(_ reason: String) async -> Bool
 }
 
 extension SpotsHost {
+    public func nextFrame(_ body: @escaping @MainActor () -> Void) {
+        DispatchQueue.main.async(execute: body)
+    }
+
     public func allows(_ reason: String) async -> Bool {
         true
     }

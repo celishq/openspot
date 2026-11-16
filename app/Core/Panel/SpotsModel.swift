@@ -457,7 +457,7 @@ public final class SpotsModel {
         selected = 0
         runs.panelOpened()
         askAnswers()
-        DispatchQueue.main.async { [weak self] in self?.isShown = true }
+        host.nextFrame { [weak self] in self?.isShown = true }
     }
 
     public func panelWillHide() {

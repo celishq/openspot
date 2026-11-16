@@ -153,7 +153,7 @@ extension SpotsModel {
             transition.show(list, moves: true)
             holdFieldDrop()
         }
-        DispatchQueue.main.async { [weak self] in
+        host.nextFrame { [weak self] in
             self?.animate(isOpen: true) { self?.transition.start() }
         }
     }

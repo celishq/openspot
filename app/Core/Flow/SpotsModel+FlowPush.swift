@@ -45,8 +45,9 @@ extension SpotsModel {
             loading = swap()
         }
         let step = edgeStep
-        let move = { [weak self] in
-            DispatchQueue.main.async { [weak self] in
+        let move: () -> Void = { [weak self] in
+            guard let self else { return }
+            host.nextFrame { [weak self] in
                 guard let self, step == edgeStep else { return }
                 change(.flow, { moveEdges(to: target) }) { [weak self] in self?.settleEdges(step) }
             }

@@ -459,6 +459,7 @@
 		946D3754DC89588AED017F63 /* SpotReadme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BE313B422EC952BB6E4703F /* SpotReadme.swift */; };
 		94808A51A99C200BF30D042D /* SpotsModel+Flow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11CA4D7D57188F0F8D27100B /* SpotsModel+Flow.swift */; };
 		94CD72A9F32F21CE8D3B5960 /* SpotAddTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4374EE54070A419614E4233D /* SpotAddTests.swift */; };
+		9553377AA679F02620F6EA29 /* NextFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119728FB0E58DB9F52D4E64E /* NextFrame.swift */; };
 		956E7B50645AC5AF11834F79 /* FlowEdges.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8184F15CDEF8277660D2E61 /* FlowEdges.swift */; };
 		95C1F39365169D5EF49AEA1C /* SpotRunsFrameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD185DC9EA26F1015F708A8F /* SpotRunsFrameTests.swift */; };
 		95E9AF05A4ABDF4FA9AE2075 /* CardMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89B6FBC67648B13F55341FB8 /* CardMark.swift */; };
@@ -937,6 +938,7 @@
 		0F9D96F5B7F915FCCD751403 /* InputLogSpanTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputLogSpanTests.swift; sourceTree = "<group>"; };
 		0FB1B59E3ECBF7F6F5660991 /* CalcCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalcCall.swift; sourceTree = "<group>"; };
 		11809BB092F0369982D0C390 /* OwnedSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnedSheet.swift; sourceTree = "<group>"; };
+		119728FB0E58DB9F52D4E64E /* NextFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextFrame.swift; sourceTree = "<group>"; };
 		11A9FF66BD0C43B005C63BC6 /* HeadKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeadKey.swift; sourceTree = "<group>"; };
 		11CA4D7D57188F0F8D27100B /* SpotsModel+Flow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Flow.swift"; sourceTree = "<group>"; };
 		124AA7A68424A8152F101C6E /* AccountSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountSheet.swift; sourceTree = "<group>"; };
@@ -2111,6 +2113,7 @@
 				E726A4D788CE727C98EE6161 /* EditMenu.swift */,
 				F2DA0E776E8D9411FBA47CCB /* GlobalKeys.swift */,
 				48341C1F654BB89F7DF8B4BE /* HotKey.swift */,
+				119728FB0E58DB9F52D4E64E /* NextFrame.swift */,
 				A403F80489A189FFC6569D8C /* NSEvent+Key.swift */,
 				D77D6E92B70215AEBC52D397 /* NSWindow+Text.swift */,
 				8C5560019E060B304559DE2B /* OpenspotApp.swift */,
@@ -3794,6 +3797,7 @@
 				4691F0F3F98E01ED573A438D /* NSEvent+Key.swift in Sources */,
 				3900FB072CB279FD4EEA3674 /* NSWindow+Edge.swift in Sources */,
 				4A5F1E4CF5526F7E62FCA758 /* NSWindow+Text.swift in Sources */,
+				9553377AA679F02620F6EA29 /* NextFrame.swift in Sources */,
 				AB371E421B7AD912D259B7AB /* OpenspotApp+Host.swift in Sources */,
 				D4FCC1ED72664CC622423052 /* OpenspotApp.swift in Sources */,
 				2D51CC9D9FE59E9DF47125C3 /* OpenspotItem.swift in Sources */,
