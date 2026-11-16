@@ -51,6 +51,10 @@ extension SpotsModel {
         }
     }
 
+    public var marksSlash: Bool {
+        slash != nil && openSheetID == nil && form == nil
+    }
+
     public var slashPlaceholder: String? {
         guard let slash, slash.text.isEmpty, let shown = selectedEntry else { return nil }
         return commandOffer(of: shown)?.placeholder

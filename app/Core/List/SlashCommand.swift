@@ -4,12 +4,14 @@ public struct SlashCommand: Equatable, Sendable {
     public let word: String
     public let text: String
     public let lead: String
+    public let tail: String
 
     public init?(_ query: String) {
         let words = query.split(whereSeparator: \.isWhitespace)
         guard let found = words.first(where: Self.isCommand) else { return nil }
         word = String(found.dropFirst())
         lead = String(query[..<found.startIndex])
+        tail = String(query[found.endIndex...])
         let before = query[..<found.startIndex].trimmingCharacters(in: .whitespaces)
         let after = query[found.endIndex...].trimmingCharacters(in: .whitespaces)
         text = [before, after].filter { !$0.isEmpty }.joined(separator: " ")

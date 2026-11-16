@@ -232,9 +232,15 @@ final class SpotMotionProbe: NSObject {
     }
 
     private func shootSlash(into folder: String) {
+        panel.makeKeyAndOrderFront(nil)
         model.searchText = searchText
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             self.save(to: "\(folder)/slash.png")
+            self.saveSharp(to: "\(folder)/slash-focused.png")
+            self.panel.makeFirstResponder(nil)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            self.saveSharp(to: "\(folder)/slash-unfocused.png")
             self.finish(with: "shots\n" + self.model.hint + "\n")
         }
     }
