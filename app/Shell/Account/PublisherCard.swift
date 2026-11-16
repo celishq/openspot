@@ -35,9 +35,11 @@ struct PublisherCard: View {
         values[key]?.last
     }
 
+    static let tiltReach = CGSize(width: 10, height: 7)
+
     static func fit(in place: CGSize) -> CGSize {
         let ratio = 263.0 / 166.0
-        let width = min(place.width, place.height * ratio)
+        let width = min(place.width - 2 * tiltReach.width, (place.height - 2 * tiltReach.height) * ratio)
         return CGSize(width: width, height: width / ratio)
     }
 
@@ -59,7 +61,6 @@ struct PublisherCard: View {
         .overlay(shape.strokeBorder(.white.opacity(0.3), lineWidth: 1))
         .rotation3DEffect(.degrees(tilt.x * MotionTokens.cardTurn), axis: (x: 0, y: 1, z: 0), perspective: MotionTokens.cardPerspective)
         .rotation3DEffect(.degrees(-tilt.y * MotionTokens.cardLean), axis: (x: 1, y: 0, z: 0), perspective: MotionTokens.cardPerspective)
-        .shadow(color: .black.opacity(0.5), radius: 12, x: -tilt.x * 8, y: 8 - tilt.y * 6)
     }
 
     private func face(_ look: KeyLook, tilt: CGPoint) -> some View {
