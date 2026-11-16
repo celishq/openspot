@@ -20,11 +20,14 @@ final class WelcomeSpotTests: BuiltInCase {
         try XCTUnwrap(output.parts.first { $0.id == id })
     }
 
-    func testItTakesTheLaunchRoleAndOffersNoCard() throws {
+    func testItTakesTheLaunchRoleOffersNoCardAndItsHeaderNamesThePage() throws {
         let spot = try welcome
 
         XCTAssertEqual(spot.edits, .launch)
         XCTAssertFalse(spot.offersCard)
+        XCTAssertEqual(spot.name, "Choose your key")
+        XCTAssertEqual(spot.subtitle, "It opens Openspot from any app")
+        XCTAssertEqual(spot.symbol, "keyboard")
     }
 
     func testAReadShowsAnEmptyKeyFieldAndKeepNamesTheCurrentKey() async throws {
@@ -38,8 +41,6 @@ final class WelcomeSpotTests: BuiltInCase {
         XCTAssertEqual(try part("use", in: output).title, "Use this key")
         XCTAssertEqual(try part("again", in: output).title, "Try again")
         XCTAssertNil(output.move)
-        XCTAssertEqual(output.summary?.value("title"), "Choose your key")
-        XCTAssertEqual(output.summary?.value("detail"), "It opens Openspot from any app")
     }
 
     func testAFailingStatusFailsTheReadAndNamesNoKey() async throws {
@@ -55,6 +56,16 @@ final class WelcomeSpotTests: BuiltInCase {
         let output = try await read()
 
         XCTAssertEqual(try part("keep", in: output).title, "Keep ⌃Space")
+    }
+
+    func testKeepNamesTheKeyAsTheAppLabelsIt() async throws {
+        for text in ["cmd+ctrl+option+shift+k", "cmd+option+k", "ctrl+return", "option+left", "ctrl+up", "ctrl+tab"] {
+            try file.set("panel-key", to: text)
+
+            let output = try await read()
+
+            XCTAssertEqual(try part("keep", in: output).title, "Keep \(try XCTUnwrap(Shortcut(text: text)).label)", text)
+        }
     }
 
     func testAKeyIsKeptUntilUseSavesIt() async throws {

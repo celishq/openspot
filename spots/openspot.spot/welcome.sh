@@ -1,7 +1,7 @@
 #!/bin/sh
-# title=Welcome
-# icon=hand.wave
-# detail=Choose your key
+# title=Choose your key
+# icon=keyboard
+# detail=It opens Openspot from any app
 # on=sheet.open
 # uses=app
 # offers=none
@@ -25,34 +25,33 @@ $state
 EOF2
 }
 
-# Prints the label of the key text $1, such as ⌥Space for option+space.
+# Prints the label of the key text $1 as the app draws it, such as ⌥Space for option+space: marks in the order ⌃⌥⇧⌘.
 label() {
   rest=${1:-ctrl+space}
-  out=
-  while :; do
+  marks=
+  key=
+  last=
+  while [ -z "$last" ]; do
     case $rest in
       *+*) word=${rest%%+*}; rest=${rest#*+} ;;
-      *) word=$rest; rest=; last=1 ;;
+      *) word=$rest; last=1 ;;
     esac
     case $word in
-      ctrl) out="${out}⌃" ;;
-      option) out="${out}⌥" ;;
-      shift) out="${out}⇧" ;;
-      cmd) out="${out}⌘" ;;
-      *)
-        first=$(printf '%s' "$word" | cut -c1 | tr '[:lower:]' '[:upper:]')
-        out="${out}${first}$(printf '%s' "$word" | cut -c2-)"
-        ;;
+      ctrl|option|shift|cmd) marks="$marks $word" ;;
+      return) key=⏎ ;;
+      *) key="$(printf '%s' "$word" | cut -c1 | tr '[:lower:]' '[:upper:]')$(printf '%s' "$word" | cut -c2-)" ;;
     esac
-    [ -z "${last-}" ] || break
   done
-  printf '%s' "$out"
+  out=
+  for mark in ctrl:⌃ option:⌥ shift:⇧ cmd:⌘; do
+    case " $marks " in *" ${mark%%:*} "*) out="$out${mark#*:}" ;; esac
+  done
+  printf '%s%s' "$out" "$key"
 }
 
 # Prints the head and the blocks of the page, with the head lines in $1 before its layout.
 page() {
   printf '%s' "${1-}"
-  printf 'title=Choose your key\ndetail=It opens Openspot from any app\n'
   printf 'grid=key key key key\ngrid=key key key key\ngrid=use use use use\ngrid=keep keep again again\n\n'
   printf 'field=key\ntype=hotkey\n'
   openspot_kv value "$(chosen)"
