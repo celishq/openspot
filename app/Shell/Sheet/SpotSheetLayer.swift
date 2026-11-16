@@ -25,8 +25,7 @@ struct SpotSheetLayer: View {
             cardWidth: isInstall ? SpotFieldView.rect.width : frame?.width ?? SpotFieldView.rect.width,
             hasCardLook: card?.look != nil,
             morph: morph,
-            cardState: card?.state,
-            content: model.sheetContent(of: entry)
+            cardState: card?.state
         )
         .id(entry.id)
         .morph(progress, opacity: contentOpacity)
@@ -87,7 +86,7 @@ struct SpotSheetLayer: View {
                 closeShift: nil,
                 cardWidth: page.rect.width,
                 morph: SheetMorph(card: page.rect, sheet: page.rect),
-                content: SheetContent(page: page)
+                held: page
             )
             .frame(width: page.rect.width, height: page.rect.height, alignment: .topLeading)
             .offset(x: page.rect.minX, y: page.rect.minY)

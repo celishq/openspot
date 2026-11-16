@@ -9,28 +9,31 @@ struct SpotBackdrop: View {
 
     var body: some View {
         if drawsGlass {
-            FootMotion(foot: model.panelFoot, motion: motion) { height in
-                BackdropShape(rect: model.backdrop.offsetBy(dx: -model.panels.frame.minX, dy: 0), height: height)
-            }
-            .modifier(PanelSpan(panels: model.panels))
-            .modifier(SpotShownFade(isShown: isShown))
-            .allowsHitTesting(false)
+            BackdropShape(rect: model.backdrop.offsetBy(dx: -model.panels.frame.minX, dy: 0), foot: model.panelFoot, motion: motion)
+                .modifier(PanelSpan(panels: model.panels))
+                .modifier(SpotShownFade(isShown: isShown))
+                .allowsHitTesting(false)
         }
     }
 }
 
 private struct BackdropShape: View, @preconcurrency Animatable {
     var rect: CGRect
-    let height: CGFloat
+    var foot: PanelFoot
+    var motion: SheetMotion
 
-    var animatableData: CGRect.AnimatableData {
-        get { rect.animatableData }
-        set { rect.animatableData = newValue }
+    var animatableData: AnimatablePair<CGRect.AnimatableData, AnimatablePair<PanelFoot.AnimatableData, Double>> {
+        get { AnimatablePair(rect.animatableData, AnimatablePair(foot.animatableData, motion.progress)) }
+        set {
+            rect.animatableData = newValue.first
+            foot.animatableData = newValue.second.first
+            motion.progress = newValue.second.second
+        }
     }
 
     var body: some View {
         var rect = rect
-        rect.size.height = height
+        rect.size.height = motion.place(of: foot)
         return ZStack(alignment: .topLeading) {
             ForEach(Array(BackdropEdge.blurs.enumerated()), id: \.offset) { step, edge in
                 SpotBackdropBlur(radius: SpotTheme.backdropBlur * CGFloat(step + 1) / CGFloat(BackdropEdge.blurs.count))

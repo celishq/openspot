@@ -2,6 +2,29 @@ import SwiftUI
 import OpenspotCore
 
 struct SpotSheetView: View {
+    let model: SpotsModel
+    let entry: SpotsModel.Entry
+    let cardSize: SpotSize
+    let isOpen: Bool
+    let showsFill: Bool
+    let rect: CGRect
+    let closeShift: CGFloat?
+    let cardWidth: CGFloat
+    var hasCardLook = false
+    let morph: SheetMorph
+    var cardState: SpotState?
+    var held: SheetPage?
+
+    var body: some View {
+        SheetContentView(
+            model: model, entry: entry, cardSize: cardSize, isOpen: isOpen, showsFill: showsFill, rect: rect, closeShift: closeShift,
+            cardWidth: cardWidth, hasCardLook: hasCardLook, morph: morph, cardState: cardState,
+            content: held.map(SheetContent.init(page:)) ?? model.sheetContent(of: entry)
+        )
+    }
+}
+
+private struct SheetContentView: View {
     @Environment(\.spotSurfaceEdge) private var surface
     let model: SpotsModel
     let entry: SpotsModel.Entry

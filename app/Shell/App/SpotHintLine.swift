@@ -7,13 +7,11 @@ struct SpotHintLine: View {
     let motion: SheetMotion
 
     var body: some View {
-        FootMotion(foot: foot, motion: motion) { place in
-            ZStack(alignment: .top) {
-                hint(model.gridHint, isShown: !surfaceIsOut)
-                hint(sheetWords, isShown: surfaceIsOut)
-            }
-            .offset(y: place - SpotTokens.halo - SpotTokens.hintPillHeight)
+        ZStack(alignment: .top) {
+            hint(model.gridHint, isShown: !surfaceIsOut)
+            hint(sheetWords, isShown: surfaceIsOut)
         }
+        .modifier(FootOffset(foot: foot, motion: motion, inset: SpotTokens.halo + SpotTokens.hintPillHeight))
         .onAppear { model.followHint() }
     }
 
