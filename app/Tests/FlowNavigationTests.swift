@@ -119,6 +119,26 @@ final class FlowNavigationTests: PanelCase {
         XCTAssertEqual(model.flowEdges.room(around: try XCTUnwrap(model.sheets["list"]?.sheetRect)), held.rect)
     }
 
+    func testAHeldPageGivesWhatItDrewAtThePressAndTakesNoActWhileTheLivePageReadsTheModel() async throws {
+        try await openList()
+        host.heldEnds = []
+
+        XCTAssertTrue(model.push(FlowSheet(spot: "list", page: "a")))
+
+        let page = try XCTUnwrap(model.flowEdges.leavingPage)
+        let held = SheetContent(page: page)
+        let live = model.sheetContent(of: try XCTUnwrap(model.sheetEntry("list")))
+        XCTAssertEqual(held.list, page.list)
+        XCTAssertEqual(held.state, page.state)
+        XCTAssertEqual(held.selection(), page.selection)
+        XCTAssertNil(held.form)
+        XCTAssertNil(held.recording)
+        XCTAssertNil(held.create())
+        XCTAssertFalse(held.takesFiles)
+        XCTAssertEqual(live.list, model.sheets["list"]?.list)
+        XCTAssertNotEqual(live.list, held.list)
+    }
+
     func testAStepSaysWhichSideItsNewPageComesFromUntilItEnds() async throws {
         try await openList()
         host.edgeChanges = []

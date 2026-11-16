@@ -14,35 +14,26 @@ struct SpotSheetView: View {
     var hasCardLook = false
     let morph: SheetMorph
     var cardState: SpotState?
-    var held: SheetPage?
+    let content: SheetContent
 
     private var progress: Double {
         isOpen ? 1 : 0
     }
 
-    private var panel: SheetParts? {
-        if let held { return held.panel }
-        return model.shownParts(of: entry.id)
-    }
-
     private var list: ItemList {
-        held?.list ?? model.sheets[entry.id]?.list ?? ItemList()
+        content.list
     }
 
     private var state: SpotState {
-        held?.state ?? entry.shownState
+        content.state
     }
 
     private var selection: () -> Int {
-        if let held { return { held.selection } }
-        return { [model, id = entry.id] in
-            guard let sheet = model.sheets[id] else { return 0 }
-            return sheet.panel?.selectedPart == nil ? sheet.selection : Int.max
-        }
+        content.selection
     }
 
     private var form: FormDraft? {
-        held == nil && model.form?.entry.id == entry.id ? model.form?.draft : nil
+        content.form
     }
 
     private var row: SpotRoundShape {
@@ -54,22 +45,22 @@ struct SpotSheetView: View {
             header
                 .morph(progress, offset: { [rowCardDrop] in SheetMorph.place(onCard: CGSize(width: 0, height: rowCardDrop), at: $0) })
             VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
-                if let panel {
+                if let panel = content.panel {
                     if panel.showsRows { Color.clear.frame(height: SpotTokens.listRowHeight) }
                     SheetPartsView(
                         panel: panel,
-                        work: { [held] in held == nil ? model.work(of: $0) : nil },
+                        work: content.work,
                         onSet: { model.setPart($0, to: $1) },
                         onPress: { model.pressPart($0) },
-                        recordingPart: held == nil ? model.recording : nil,
+                        recordingPart: content.recording,
                         onRecord: { model.toggleRecording($0) },
                         list: list,
                         onRun: { model.runItem($0) },
                         onDragOut: { model.dragOut($0, of: entry.id) },
                         selection: selection,
-                        selectedPart: { [model, id = entry.id, held] in held.map(\.selectedPart) ?? model.sheets[id]?.selectedPart?.id },
-                        nudge: { [held] in held == nil ? model.sheets[entry.id]?.nudge ?? SheetParts.Nudge.rest : SheetParts.Nudge.rest },
-                        menuOpening: { [held] in held == nil ? model.sheets[entry.id]?.menuOpening : nil },
+                        selectedPart: content.selectedPart,
+                        nudge: content.nudge,
+                        menuOpening: content.menuOpening,
                         onFocus: { model.focusPart($0) },
                         viewSource: entry.spot.view,
                         viewDate: entry.spot.viewDate
@@ -84,13 +75,13 @@ struct SpotSheetView: View {
                     )
                 } else {
                     if list.search != .off { Color.clear.frame(height: SpotTokens.listRowHeight) }
-                    if held == nil, let create = model.createAction {
+                    if let create = content.create() {
                         Button { model.createFromSearch() } label: {
                             CreateLabel(model: model, title: create.title, shape: row)
                         }
                         .buttonStyle(.plain)
                     } else {
-                        SpotRowsView(list: list, recording: held == nil ? model.recording : nil, recordingWords: model.recordingWords, onRun: { model.runItem($0) }, onPoint: { model.point(at: .item($0)) }, selection: selection, onDragOut: { model.dragOut($0, of: entry.id) })
+                        SpotRowsView(list: list, recording: content.recording, recordingWords: model.recordingWords, onRun: { model.runItem($0) }, onPoint: { model.point(at: .item($0)) }, selection: selection, onDragOut: { model.dragOut($0, of: entry.id) })
                     }
                 }
             }
@@ -194,7 +185,7 @@ struct SpotSheetView: View {
 
     @ViewBuilder
     private var fileDrag: some View {
-        if isOpen, held == nil, list.hasFiles {
+        if isOpen, content.takesFiles {
             Color.clear
                 .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
                 .contentShape(Rectangle())
