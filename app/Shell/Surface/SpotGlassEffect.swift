@@ -7,7 +7,7 @@ struct SpotGlassEffect<Edge: Shape>: ViewModifier {
 
     func body(content: Content) -> some View {
         if drawsGlass {
-            content.glassEffect(isOn ? .regular : .identity, in: shape)
+            content.glassEffect(isOn ? .clear.tint(SpotTheme.glassTint) : .identity, in: shape)
         } else {
             content.overlay { shape.stroke(isOn ? SpotTheme.pictureRim : .clear, lineWidth: 0.5) }
         }

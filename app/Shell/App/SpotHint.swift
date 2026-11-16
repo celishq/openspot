@@ -18,7 +18,7 @@ struct SpotHint: View {
             }
         }
         .font(SpotType.detail)
-        .foregroundStyle(SpotTheme.ink)
+        .foregroundStyle(SpotTheme.glassInk)
         .lineLimit(1)
         .padding(.leading, words.groups.first?.key == nil ? SpotTokens.hintEndPadding : SpotTokens.hintKeyInset)
         .padding(.trailing, SpotTokens.hintEndPadding)

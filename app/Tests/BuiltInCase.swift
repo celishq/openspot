@@ -69,7 +69,8 @@ class BuiltInCase: XCTestCase {
             "PATH": root.appendingPathComponent("tools").path + ":/usr/bin:/bin",
             "OPENSPOT_CONFIG": root.path,
             "OPENSPOT_SPOTS": root.appendingPathComponent("spots").path,
-            "OPENSPOT_CORE": root.appendingPathComponent("core").path
+            "OPENSPOT_CORE": root.appendingPathComponent("core").path,
+            "OPENSPOT_EXAMPLES": root.appendingPathComponent("examples").path
         ]) { _, new in new }
         TestEnvironment.$values.withValue(environment) { super.invokeTest() }
     }

@@ -28,7 +28,7 @@ struct SpotFieldView: View {
                 .allowsHitTesting(model.isEditing)
         }
         .modifier(FieldDim(isDim: model.dimsField))
-        .overlay(alignment: .topLeading) { SpotFieldShade(model: model) }
+        .modifier(SpotMenuDim(model: model, index: nil))
         .background(SpotFieldFocus(model: model, isFocused: $isFocused))
     }
 
@@ -47,6 +47,10 @@ struct SpotFieldView: View {
                 searchText
                     .frame(width: Self.fieldTextWidth, height: SpotTokens.rowHeight, alignment: .leading)
                     .offset(x: fieldTextLeft, y: top)
+                SpotSlashMark(model: model)
+                    .frame(width: Self.fieldTextWidth, height: SpotTokens.rowHeight, alignment: .leading)
+                    .offset(x: fieldTextLeft, y: top)
+                    .allowsHitTesting(false)
             }
             .morph(progress, opacity: crossing)
             .modifier(SpotFaded())
@@ -63,7 +67,7 @@ struct SpotFieldView: View {
             }
         }
         .font(SpotType.input)
-        .foregroundStyle(SpotTheme.ink)
+        .foregroundStyle(SpotTheme.glassInk)
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
         .animation(SpotMotion.fade(isShown: model.isShown)) {
             $0.scaleEffect(model.isShown ? 1 : MotionTokens.hiddenScale, anchor: UnitPoint(x: 0.5, y: Self.rect.midY / SpotTokens.panelHeight))

@@ -14,10 +14,10 @@ struct SpotSteadyField: View {
     var body: some View {
         ZStack {
             words(prompt)
-                .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
+                .foregroundStyle(SpotTheme.glassSecondary)
                 .opacity(text.isEmpty ? 1 : MotionTokens.hiddenOpacity)
             words(text)
-                .foregroundStyle(SpotTheme.ink)
+                .foregroundStyle(SpotTheme.glassInk)
                 .animation(nil) { $0.opacity(isSettled || text.isEmpty ? MotionTokens.hiddenOpacity : 1) }
             SpotSearchField(prompt: prompt, text: text, onSearch: onSearch, isFocused: $isFocused)
                 .animation(nil) { $0.opacity(isSettled ? 1 : 0.001) }

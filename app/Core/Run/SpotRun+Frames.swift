@@ -91,13 +91,20 @@ extension SpotRun {
             takeValue(lines)
             let kept = selecting
             selecting = nil
-            changeList {
-                $0.take(search: Self.search(of: lines, in: spot))
-                $0.take(drawing: lines.drawing)
-                if let next { $0.replace(next) }
-                if let kept { $0.select(run: kept) }
+            let search = Self.search(of: lines, in: spot)
+            let takeRows = {
+                self.changeList {
+                    $0.take(search: search)
+                    $0.take(drawing: lines.drawing)
+                    if let next { $0.replace(next) }
+                    if let kept { $0.select(run: kept) }
+                }
             }
-            if showsSheet || panel != nil { takePanel(lines, generation: generation, keeping: keeping) }
+            if showsSheet || panel != nil {
+                takePanel(lines, generation: generation, keeping: keeping, rows: takeRows)
+            } else {
+                takeRows()
+            }
             if list.search == .script, !list.query.isEmpty, list.query != query { self.ask() }
         case .answer:
             return
@@ -214,13 +221,18 @@ extension SpotRun {
         list = next
     }
 
-    private func takePanel(_ lines: SpotOutput, generation: Int?, keeping: String?) {
+    private func takePanel(_ lines: SpotOutput, generation: Int?, keeping: String?, rows: () -> Void) {
         if lines.parts.isEmpty {
+            rows()
             panel = nil
         } else if let current = panel?.generation {
+            rows()
             panel?.take(lines, answering: generation ?? current, keeping: keeping)
         } else {
-            partsArrival { panel = SheetParts(output: lines) }
+            partsArrival {
+                panel = SheetParts(output: lines)
+                rows()
+            }
         }
     }
 

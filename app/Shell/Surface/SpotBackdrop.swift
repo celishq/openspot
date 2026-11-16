@@ -39,8 +39,6 @@ private struct BackdropShape: View, @preconcurrency Animatable {
                 SpotBackdropBlur(radius: SpotTheme.backdropBlur * CGFloat(step + 1) / CGFloat(BackdropEdge.blurs.count))
                     .mask { SpotBackdropEdge(edge: edge, rect: rect) }
             }
-            SpotBackdropEdge(edge: .shade, rect: rect)
-                .foregroundStyle(SpotTheme.shade)
         }
     }
 }

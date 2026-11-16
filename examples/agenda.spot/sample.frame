@@ -1,0 +1,118 @@
+main=next
+recents=false
+grid=items
+grid.small=at
+grid.wide=next
+grid.strip=next
+grid.square=next next
+grid.square=next next
+grid.large=next next next next
+grid.large=next next next next
+grid.square=todo late
+grid.large=r1 r1 r1 due-r1
+grid.large=r2 r2 r2 due-r2
+
+number=next
+value=14:30
+title=Design review
+color=#1BADF8
+
+number=at
+value=14:30
+title=Design review
+
+text=todo
+title=3 to do
+
+text=late
+title=1 late
+tone=bad
+
+switch=r1
+type=tick
+title=Send the invoice
+value=false
+
+text=due-r1
+detail=Late
+tone=bad
+
+switch=r2
+type=tick
+title=Book the dentist
+value=false
+
+text=due-r2
+detail=Today 17:00
+
+repeat=items
+
+button=open
+title=Open
+
+button=join
+title=Join call
+shortcut=cmd+j
+close=true
+
+button=tick
+title=Mark as done
+shortcut=cmd+shift+c
+
+button=calendars
+title=Choose calendars
+form=true
+scope=spot
+
+row=event:e1
+title=Team standup
+detail=09:30–09:45 · Work
+icon=video
+color=#1BADF8
+hides=tick
+
+row=event:e2
+title=Design review
+detail=14:30–15:30 · Work
+icon=video
+color=#1BADF8
+meeting=https://example.com/call
+hides=tick
+
+row=event:e3
+title=Yoga
+detail=18:00–19:00 · Home
+icon=calendar
+color=#63DA38
+hides=tick
+hides=join
+
+row=event:e4
+title=Lunch with Sam
+detail=Tomorrow 12:30–13:30 · Home
+icon=calendar
+color=#63DA38
+hides=tick
+hides=join
+
+row=reminder:r1
+title=Send the invoice
+detail=Late · Yesterday · Tasks
+icon=circle
+tone=bad
+done=false
+hides=join
+
+row=reminder:r2
+title=Book the dentist
+detail=Today 17:00 · Tasks
+icon=circle
+done=false
+hides=join
+
+row=reminder:r3
+title=Water the plants
+detail=Tomorrow · Home
+icon=circle
+done=false
+hides=join

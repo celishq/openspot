@@ -2,7 +2,7 @@
 # title=Store
 # icon=bag
 # detail=Get spots
-# keywords=store, get spots, publish
+# keywords=store, get spots
 # on=sheet.open
 # uses=spots,account
 # view=store.swift
@@ -19,28 +19,39 @@ get() {
   if said=$(openspot store get "$1" 2>&1); then toast "$said"; else toast "$said"; return 1; fi
 }
 
-# Publishes spot $1, and says in a toast why it did not. Openspot says itself that it did, and opens Account
-# when no key signs it yet.
-publish() {
-  said=$(openspot store publish "$1" 2>&1 >/dev/null) && return 0
-  openspot account --frame | grep -qx 'signedIn=true' || return 0
+# Asks for a folder and adds it as a store, and says in a toast that it did, or why it did not.
+add() {
+  folder=$(openspot folder pick) && [ -n "$folder" ] || return 1
+  said=$(openspot store add "$folder" 2>&1) || { toast "$said"; return 1; }
   toast "$said"
 }
 
-# Prints the gallery: a row for each spot with its id, its name, its step, its origin, its description, its size and
-# whether it has sample data, and the readme of the spot that $1 names, a line after its id, when its sheet asks.
+# Removes store $1, and says in a toast why it did not.
+remove() {
+  said=$(openspot store remove "$1" 2>&1) || toast "$said"
+}
+
+# Prints the gallery: a folder line for each store with its path, its name, whether it is found and whether it is built in, a row for
+# each spot with its id, its name, its step, its origin, its store, its description, its size and whether it has sample
+# data, and the readme of the spot that $1 names, a line after its id, when its sheet asks.
 gallery() {
+  printf 'view=gallery\n'
+  openspot store folders --frame | awk 'BEGIN { RS = ""; FS = "\n" }
+    { delete f
+      for (i = 1; i <= NF; i++) { n = index($i, "="); f[substr($i, 1, n - 1)] = substr($i, n + 1) }
+      printf "folder=%s\t%s\t%s\t%s\n", f["store"], f["name"], (f["found"] == "true" ? "found" : "missing"), (f["builtin"] == "true" ? "builtin" : "added") }'
   openspot store list --frame | awk -v want="${1-}" 'BEGIN { RS = ""; FS = "\n" }
     { delete f
       for (i = 1; i <= NF; i++) {
         n = index($i, "="); key = substr($i, 1, n - 1); f[key] = substr($i, n + 1)
         if (key == "readme" && f["spot"] == want) readme = readme "readme=" want "\t" f[key] "\n"
       }
-      rows = rows "\nrow=" f["spot"] "\ntitle=" f["name"] "\nstep=" f["step"] "\norigin=" f["origin"] "\n"
+      rows = rows "\nrow=" f["spot"] "\ntitle=" f["name"] "\nstep=" (f["step"] == "publish" ? "added" : f["step"]) "\norigin=" f["origin"] "\n"
+      if (f["store"] != "") rows = rows "store=" f["store"] "\n"
       if (f["detail"] != "") rows = rows "detail=" f["detail"] "\n"
       rows = rows "size=" f["size"] "\n"
       if (f["sample"] == "true") rows = rows "sample=true\n" }
-    END { printf "view=gallery\n"; if (want != "") printf "readme=%s\n%s", want, readme; printf "%s", rows }'
+    END { if (want != "") printf "readme=%s\n%s", want, readme; printf "%s", rows }'
 }
 
 case "$1" in
@@ -50,7 +61,9 @@ case "$1" in
   gallery)
     case "$2" in
       get:*) get "${2#get:}" ;;
-      publish:*) publish "${2#publish:}" ;;
+      add) add || true ;;
+      remove:*) remove "${2#remove:}" ;;
+      locate:*) if add; then remove "${2#locate:}"; fi ;;
       readme:*) gallery "${2#readme:}"; exit 0 ;;
     esac
     gallery

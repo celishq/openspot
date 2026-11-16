@@ -442,28 +442,42 @@ extension SpotsModel {
         guard place(ofSheet: target.entry.id) == .panel else {
             return host.notify("\(action.title) asks with a form, which a window does not show yet.")
         }
+        ask(action, on: target, prefill: prefill) { [sheets] in
+            try await sheets[target.entry.id]?.form(action, item: target.item).map(CallAnswer.form)
+        }
+    }
+
+    func ask(_ action: CommandAction, on target: Target, prefill: String = "", whileShown: Bool = false, _ call: @escaping @MainActor () async throws -> CallAnswer?) {
         let ask = UUID()
-        formAsk = ask
+        pendingAsk = ask
         Task {
             do {
-                guard let form = try await sheets[target.entry.id]?.form(action, item: target.item), formAsk == ask else { return }
-                formAsk = nil
-                closeMenu()
-                let opensSheet = openSheetID != target.entry.id
-                if opensSheet {
-                    pushFirst(target.entry.id, moving: isShown)
-                }
-                self.form = FormSession(
-                    draft: FormDraft(form: form, prefill: prefill),
-                    entry: target.entry,
-                    action: action,
-                    item: target.item,
-                    openedSheet: opensSheet
-                )
+                guard let answer = try await call(), pendingAsk == ask else { return }
+                pendingAsk = nil
+                if whileShown, !isShown, case .form = answer { return }
+                show(answer, of: action, on: target, prefill: prefill)
             } catch {
+                if pendingAsk == ask { pendingAsk = nil }
                 closeMenu()
                 host.notify("\(action.title) failed. \(Self.reason(error))")
             }
+        }
+    }
+
+    private func show(_ answer: CallAnswer, of action: CommandAction, on target: Target, prefill: String) {
+        let id = target.entry.id
+        switch answer {
+        case .form(let form):
+            closeMenu()
+            let opensSheet = openSheetID != id
+            if opensSheet { pushFirst(id, moving: isShown) }
+            self.form = FormSession(draft: FormDraft(form: form, prefill: prefill), entry: target.entry, action: action, item: target.item, openedSheet: opensSheet)
+        case .shown where target.entry.spot.kind.opensSheet:
+            if openSheetID != id { pushFirst(id, moving: isShown) }
+        case .shown, .done:
+            if action.after == .close, isShown { host.dismiss() }
+        case .stopped:
+            break
         }
     }
 
@@ -477,23 +491,7 @@ extension SpotsModel {
             return true
         }
         let action = CommandAction(id: key, title: "Change \(key)", scope: .spot, after: .close)
-        let ask = UUID()
-        formAsk = ask
-        Task {
-            do {
-                switch try await sheet.change(action) {
-                case .form(let form)? where isShown && formAsk == ask:
-                    pushFirst(id, moving: true)
-                    self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: action, item: nil, openedSheet: true)
-                case .done?:
-                    if isShown { host.dismiss() }
-                default:
-                    break
-                }
-            } catch {
-                host.notify("\(action.title) failed. \(Self.reason(error))")
-            }
-        }
+        ask(action, on: (entry, nil), whileShown: true) { try await sheet.change(action) }
         return true
     }
 
@@ -507,7 +505,7 @@ extension SpotsModel {
     }
 
     public func cancelForm() {
-        formAsk = nil
+        pendingAsk = nil
         guard let form else { return }
         self.form = nil
         if form.openedSheet {

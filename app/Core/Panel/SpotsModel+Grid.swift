@@ -79,7 +79,7 @@ extension SpotsModel {
         selected = position
         if opening, openSelectedSettings() { return }
         guard !isEditing else { return }
-        if openSheetID == nil { run(seen: visible[position]) } else { runSelectedItem() }
+        if openSheetID == nil, let slash { launch(visible[position], with: slash.text) } else if openSheetID == nil { run(seen: visible[position]) } else { runSelectedItem() }
     }
 
     public func setLevel(_ id: String, to value: Double) {
@@ -98,10 +98,11 @@ extension SpotsModel {
             return
         }
         guard let entry = selectedEntry else { return }
+        if let slash { return launch(entry, with: slash.text) }
         run(seen: entry)
     }
 
-    private func run(seen entry: Entry) {
+    func run(seen entry: Entry) {
         if entry.isAnswer, let sheet = sheets[entry.spot.id], sheet.isAnswering {
             sheet.afterAnswers { [weak self] in
                 guard let self, let next = selectedEntry, next.isAnswer, next.spot.id == entry.spot.id else { return }
@@ -145,27 +146,22 @@ extension SpotsModel {
             sheet.afterAnswer { [weak self] in self?.run(entry) }
             return
         }
-        switch entry.kind {
+        switch entry.spot.mainAct {
         case .toggle:
             sheets[entry.id]?.pressCard()
-        case .launch:
-            if isShown, sheets[entry.id]?.isCardRunning != true, !entry.spot.takesDrops { host.dismiss() }
+        case .run(let closes):
+            if closes, isShown, sheets[entry.id]?.isCardRunning != true { host.dismiss() }
             sheets[entry.id]?.pressCard()
-        case .list where entry.spot.pressRuns:
-            if isShown, sheets[entry.id]?.isCardRunning != true { host.dismiss() }
-            sheets[entry.id]?.pressCard()
-        case .list:
-            if openSheetID == entry.id {
-                closeSheet(moving: true)
-            } else if let command = entry.soleCommand {
-                runSole(command, of: entry)
-            } else {
-                pushFirst(entry.id, moving: true)
-            }
-        case .slider:
+        case .command where openSheetID == entry.id, .sheet where openSheetID == entry.id:
+            closeSheet(moving: true)
+        case .command(let command):
+            runSole(command, of: entry)
+        case .sheet:
+            pushFirst(entry.id, moving: true)
+        case .open(let opens):
+            press(opens)
+        case .none:
             break
-        case .widget:
-            if let opens = entry.spot.opens { press(opens) }
         }
     }
 
@@ -187,7 +183,7 @@ extension SpotsModel {
     }
 
     var soleHint: String? {
-        guard openSheetID == nil, let entry = selectedEntry, let command = entry.soleCommand else { return nil }
+        guard openSheetID == nil, let entry = selectedEntry, entry.item == nil, case .command(let command) = entry.spot.mainAct else { return nil }
         guard assignedKeys.contains(where: { $0.spot == entry.id && $0.act == .command(command) }) else {
             return "⏎ Set key   ⌘⏎ Settings   ⌘K Actions"
         }

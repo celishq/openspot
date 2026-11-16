@@ -34,7 +34,7 @@ public final class SpotsModel {
         let next = entries.filter { $0.id != fieldSheet }
         if next != cards { cards = next }
     }
-    @ObservationIgnored var storeCards: [String: (entry: Entry, item: SpotStore.Item)]?
+    @ObservationIgnored var storeCards: [String: (entry: Entry, item: SpotCatalog.Item)]?
     @ObservationIgnored private var entryPlaces: [String: Int] = [:]
     public private(set) var cards: [Entry] = []
     public var entries: [Entry] = [] {
@@ -63,6 +63,8 @@ public final class SpotsModel {
     @ObservationIgnored var laidOutGrid = SpotGrid()
     @ObservationIgnored var spotList = ItemList()
     @ObservationIgnored var spotListIsStale = true
+    @ObservationIgnored var commands = CommandIndex()
+    public internal(set) var slash: SlashCommand?
     @ObservationIgnored var keyFrames: [String: String] = [:]
     @ObservationIgnored var spotListBuilds = 0
     @ObservationIgnored var visibleUpdates = 0
@@ -197,7 +199,7 @@ public final class SpotsModel {
     public private(set) var formHasChoices = false
     public private(set) var formIsMultiple = false
     public private(set) var formHint = HintWords("")
-    @ObservationIgnored var formAsk: UUID?
+    @ObservationIgnored var pendingAsk: UUID?
     public var isEditing = false {
         didSet { takeMode() }
     }
@@ -459,13 +461,13 @@ public final class SpotsModel {
     public func panelWillShow() {
         finishPick()
         selected = 0
-        runs.panelOpened()
+        runs.panelOpened(readsToEnd: isWarming)
         askAnswers()
         host.nextFrame { [weak self] in self?.isShown = true }
     }
 
     public func panelWillHide() {
-        formAsk = nil
+        pendingAsk = nil
         if confirming != nil { confirming = nil }
         stopRecording()
         closeMenu()

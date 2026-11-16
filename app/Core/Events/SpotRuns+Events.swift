@@ -12,8 +12,8 @@ extension SpotRuns {
         }
     }
 
-    public func panelOpened() {
-        raise(.panel)
+    public func panelOpened(readsToEnd: Bool = false) {
+        openPanel(readsToEnd: readsToEnd)
     }
 
     public func launched() {
@@ -107,7 +107,7 @@ extension SpotRuns {
         }
     }
 
-    private func openPanel() {
+    private func openPanel(readsToEnd: Bool = false) {
         let wasOpen = isPanelOpen
         isPanelOpen = true
         if !wasOpen { sheets.values.forEach { $0.panelOpened() } }
@@ -117,16 +117,16 @@ extension SpotRuns {
             watchClipboard(looksNow: true)
         }
         updateClock()
-        readPanel()
+        readPanel(toEnd: readsToEnd)
         for id in placed {
             guard let sheet = sheets[id], let read = sheet.spot.read, read.seconds == nil, !read.has(.panel) else { continue }
-            sheet.read(reason: .want)
+            if readsToEnd { sheet.readToEnd(reason: .want) } else { sheet.read(reason: .want) }
         }
     }
 
-    private func readPanel() {
+    private func readPanel(toEnd: Bool = false) {
         for sheet in sheets.values where sheet.spot.read?.has(.panel) == true {
-            sheet.read(need: .moment, reason: .panel)
+            if toEnd { sheet.readToEnd(reason: .panel) } else { sheet.read(need: .moment, reason: .panel) }
         }
         sheets.values.forEach { $0.settleScript() }
     }

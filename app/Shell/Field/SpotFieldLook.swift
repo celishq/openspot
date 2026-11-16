@@ -26,7 +26,7 @@ struct SpotFieldLook: View {
         } else {
             Text(query)
                 .font(SpotType.input)
-                .foregroundStyle(SpotTheme.ink)
+                .foregroundStyle(SpotTheme.glassInk)
                 .lineLimit(1)
                 .frame(width: SpotFieldView.fieldTextWidth, alignment: .leading)
         }

@@ -265,6 +265,40 @@ Choose **Add note**, and a form with one field opens. Type a note and press Retu
 
 Learn more in [Buttons and actions](PROTOCOL.md#buttons-and-actions) and [The head](PROTOCOL.md#the-head).
 
+## Run a command with text
+
+A slash command runs a spot with text that the user types after its name, in one Return. Read the text with
+`value search`, and print a form when you need more.
+
+```sh
+#!/bin/sh
+# title=Notes
+# icon=note.text
+#
+# button=add
+# title=Add note
+# placeholder=What to note
+. "$OPENSPOT_SH"
+case "$1" in
+  add)
+    note=$(value note)
+    [ -n "$note" ] || note=$(value search)
+    if [ -z "$note" ]; then
+      printf 'title=New note\n\nfield=note\ntitle=Note\n'
+    else
+      printf '%s\n' "$note" >> "$OPENSPOT_DATA/notes"
+      openspot_kv toast "Saved"
+    fi
+    ;;
+esac
+```
+
+Type `/notes`, and the grey hint **What to note** shows after it. Type `buy milk` after it. The row **Add note** is highlighted, and the footer says **⏎ Add note "buy milk"**. Press Return, and Openspot runs
+`notes add` with `search=buy milk` on stdin. The spot saves the note, and the panel closes. When the spot prints a form
+instead, the form opens, and its values go to the same call.
+
+Learn more in [Slash commands](PROTOCOL.md#slash-commands).
+
 ## Answer the main search
 
 A spot can answer what the user types in the main search, like a calculator. Add `on=search.text` with a pattern. When

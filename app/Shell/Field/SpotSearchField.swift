@@ -13,7 +13,7 @@ struct SpotSearchField: View {
             .labelsHidden()
             .textFieldStyle(.plain)
             .font(SpotType.body)
-            .foregroundStyle(SpotTheme.ink)
+            .foregroundStyle(SpotTheme.glassInk)
             .focused(isFocused)
             .padding(.horizontal, SpotTokens.padding - SpotTokens.menuPadding + 4)
             .frame(height: SpotTokens.menuRowHeight)

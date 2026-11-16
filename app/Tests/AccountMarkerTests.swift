@@ -157,14 +157,11 @@ final class AccountMarkerTests: BuiltInCase {
         _ = await frame(["sign_out"], nil, "leave")
         await app.set(allows: true)
         _ = await frame(["new"], nil, "publish:evil")
-        let published = try await runs.answer(of: try spot("store"), SpotAction(arguments: ["gallery", "publish:a"]), limit: 60)
-        let opened = await app.opened
-        XCTAssertTrue(opened.contains("publish a"), "\(opened)")
 
         let verbs = await verbsSaid()
         let ran = try await runsSaid()
         runs.quit()
-        let reached = verbs + ran + lines + failures + mac.copied + [published, everything(in: root.appendingPathComponent("logs")), everything(in: root.appendingPathComponent("stats"))]
+        let reached = verbs + ran + lines + failures + mac.copied + [everything(in: root.appendingPathComponent("logs")), everything(in: root.appendingPathComponent("stats"))]
         XCTAssertFalse(failures.isEmpty)
         for said in reached {
             XCTAssertFalse(said.contains(marker), said)

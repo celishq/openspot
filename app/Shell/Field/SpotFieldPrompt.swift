@@ -16,7 +16,7 @@ struct SpotFieldPrompt: View {
             }
         }
         .font(SpotType.input)
-        .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
+        .foregroundStyle(SpotTheme.glassSecondary)
         .lineLimit(1)
     }
 

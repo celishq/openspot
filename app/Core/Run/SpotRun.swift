@@ -39,6 +39,7 @@ public final class SpotRun {
         var readsAfter = true
         var undo: SpotState?
         var ended: (() -> Void)?
+        var first: FirstFrame?
     }
 
     enum Purpose {
@@ -215,6 +216,7 @@ public final class SpotRun {
     @ObservationIgnored var eventAgain: ReadReason?
     @ObservationIgnored var pauses: [String: Task<Void, Never>] = [:]
     @ObservationIgnored var editing: String?
+    @ObservationIgnored var typed: String?
     @ObservationIgnored var waitingFiles: [SpotAction] = []
     @ObservationIgnored var waitingKeys: [String] = []
     @ObservationIgnored var clockRead: Date?

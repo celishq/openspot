@@ -21,7 +21,7 @@ public struct SpotAction: Equatable, Sendable {
     }
 
     public static func action(_ action: CommandAction, item: SpotItem?) -> SpotAction {
-        SpotAction(arguments: [action.id] + (item.map { [$0.run] } ?? []))
+        SpotAction(arguments: [CommandAction.command(of: action) ?? action.id] + (item.map { [$0.run] } ?? []))
     }
 
     public static func set(_ part: String, to value: String) -> SpotAction {

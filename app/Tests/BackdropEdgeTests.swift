@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 final class BackdropEdgeTests: XCTestCase {
-    private let edges = BackdropEdge.blurs + [BackdropEdge.shade]
+    private let edges = BackdropEdge.blurs
     private let shortest = SpotTokens.contentHeight(gridHeight: 0)
 
     func testTwoCapsFitInTheShortestBackdropSoTheEdgeIsNeverSqueezed() {
@@ -60,6 +60,5 @@ final class BackdropEdgeTests: XCTestCase {
         let reach = { (edge: BackdropEdge) in SpotTokens.halo - edge.inset + BackdropEdge.reach * edge.softness }
         XCTAssertGreaterThanOrEqual(reach(BackdropEdge.blurs[0]), 55)
         XCTAssertLessThanOrEqual(reach(BackdropEdge.blurs[0]), SpotTokens.halo)
-        XCTAssertLessThanOrEqual(reach(BackdropEdge.shade), SpotTokens.halo)
     }
 }

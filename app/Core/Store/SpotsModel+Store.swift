@@ -17,7 +17,7 @@ extension SpotsModel {
         do {
             let read = try await Task.detached(priority: .userInitiated) {
                 let shared = try SpotPackage(sharing: spot, from: SpotsFolder(url: folder.url).scan())
-                return (shared: shared, isCurrent: SpotStore.publication(of: shared, in: store) == .current)
+                return (shared: shared, isCurrent: SpotCatalog.publication(of: shared, in: store) == .current)
             }.value
             var shared = read.shared
             guard !read.isCurrent else {
@@ -45,8 +45,8 @@ extension SpotsModel {
         return try await Task.detached(priority: .userInitiated) { try await package.release(by: key, keepingLogIn: spots) }.value
     }
 
-    var store: SpotStore {
-        SpotStore(url: files.store, folder: folder, arrangement: arrangement)
+    var catalog: SpotCatalog {
+        SpotCatalog(published: files.store, folder: folder, arrangement: arrangement, stores: Store.all(environment: files.environment, config: config))
     }
 
     func ownSpot(_ id: String) -> Spot? {

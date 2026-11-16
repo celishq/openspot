@@ -8,8 +8,8 @@
   - `Shell/` — the menu bar app, the panel and the hotkey. Imports AppKit and SwiftUI.
   - `Client/` — the `openspot` command, which talks to the running app.
   - `StandIn/` — a small program for tests: a capability that needs no Mac feature. It does not ship.
-  - `Views/` — `openspot-views`, which a Release build runs to compile each view of the core spots into a `.view`, and each
-    Swift spot into a `.program`, beside its source, so that it runs on a Mac with no developer tools. It does not ship.
+  - `Views/` — `openspot-views`, which a Release build runs to compile each view of the core spots and the examples into a
+    `.view`, and each Swift spot into a `.program`, beside its source, so that it runs on a Mac with no developer tools. It does not ship.
     Debug compiles each at its first use.
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
 - `app/Keywords/` holds the CLDR keywords of emoji and symbols, one xz file per language. `scripts/emoji-keywords.py` writes
@@ -20,8 +20,8 @@
   from there. `spots/openspot.spot/` holds the spots of the app itself, such as Settings, which are always on and use only the `openspot`
   API. No code outside that folder names one of them. They run only from the app, so a change to one needs a build. [spots/AGENTS.md](spots/AGENTS.md) holds the rules of a spot and of an
   example.
-- `examples/` holds spots that show a feature, such as a view. The app does not ship them, and a test checks them.
-  `make examples` copies them into the spots of a Debug build.
+- `examples/` holds spots that show a feature, such as a view. The app ships them as its built-in store, Openspot, and a
+  test checks them. `make examples` copies them into the spots of a Debug build.
 - `plans/` holds design plans. It is git-ignored.
 - `.temp/` holds throwaway mock-ups and screenshots. It is git-ignored.
 - `.temp/openspot/` holds the spots and the config of a Debug build, so that it never changes `spots/` or
@@ -164,7 +164,8 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
   first place. Do not animate a frame, a padding, a font, a text width or a blur radius.
 - Grow a surface with an animated shape that clips its content and shapes its glass. Do not scale a surface that has corners,
   a rim or words.
-- A fade of many glass surfaces is one layer over them, such as `SpotGridShade`. A glass holds still during a motion it is
+- A fade of many glass surfaces is one layer over them. The ⌘K dim is the one exception: it fades each other card and the
+  field by opacity (`SpotMenuDim`), and `make perf ACTION=menu` guards its cost. A glass holds still during a motion it is
   not the subject of, since the system draws a glass again on each frame in which its content or its opacity changes.
 - Change words by a crossfade of two laid-out copies, not by a reflow.
 - Do not put an AppKit view in a view that moves or resizes.
@@ -179,7 +180,7 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
   content, its title too, fades in from `MotionTokens.contentStart`. No part pops in when the shape has room for it.
 - The field travels into the sheet's search row, and the sheet's moving shape cuts its glass, so one glass shape shows.
 - The blur's foot is the lower of the moving shape's foot and the grid's foot, which reaches the sheet's foot while the
-  grid fades. The footer sits on it, and a grid card has faded by the time it reaches the card (`SheetPush.Foot`).
+  grid fades. The footer sits on it, and a grid card has faded by the time it reaches the card (`PanelFoot`).
 - The actions menu is placed from its card's resting frame, never from the card's moving outline, and the card's focus
   grows on the menu's own grow (`isMenuGrown`).
 - A sheet that opens over the actions menu folds the menu in the update that shows the sheet, and the menu's foot is
@@ -243,7 +244,7 @@ make verify                # the checks in scripts/check-*.sh, then the XCTest s
 make test T=SpotRunsTests  # one test class, while you work on it
 make perf N=3              # times a Release sheet that opens and closes 20 times, 3 runs; ACTION picks another motion
 make film SPOT=caffeinate  # films the open and close of a sheet 10x slower (SLOW=1 for real speed) into .temp/film
-make shots                 # saves pictures of the actions menu in the running panel into .temp/shots
+make shots                 # saves pictures of the actions menu in the running panel into .temp/shots; ACTION=search TEXT=/translate shoots a typed search
 make docs-images           # shows each GUIDE.md example on screen, focused, and takes its image; GuideImageTests fail when one is out of date
 make eval-agent N=1        # gives N tasks to claude -p with only `openspot guide`, and checks each spot; it costs money
 ```
@@ -258,6 +259,36 @@ under "Proving a speed fix".
 
 - The team is `NNK86LQK58` (set in `app/project.yml`). Local builds use ad-hoc signing (`CODE_SIGN_IDENTITY "-"`).
 - Do not commit a signing identity or a provisioning profile.
+
+## A local build of main
+
+A local build puts the newest `main` on your Mac before a release holds it. Build it in a throwaway `git worktree`, so
+that your own checkout stays as it is:
+
+```sh
+(cd app && xcodegen generate >/dev/null)
+xcodebuild -project app/Openspot.xcodeproj -scheme Openspot -configuration Release -destination 'platform=macOS' \
+  -derivedDataPath .temp/local ONLY_ACTIVE_ARCH=YES build \
+  CURRENT_PROJECT_VERSION=$(git rev-list --count HEAD) \
+  UPDATE_PUBLIC_KEY=$(defaults read /Applications/Openspot.app/Contents/Info SUPublicEDKey) \
+  CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO
+osascript -e 'quit app "Openspot"'
+rm -rf /Applications/Openspot.app && ditto .temp/local/Build/Products/Release/Openspot.app /Applications/Openspot.app
+open /Applications/Openspot.app
+```
+
+- `CURRENT_PROJECT_VERSION` numbers the build by its count of commits, as `make release` does. The updater then keeps it
+  until a release of a later commit replaces it.
+- `UPDATE_PUBLIC_KEY` takes the key of the installed release, so that the build still checks for updates.
+- The build is signed ad hoc ([Signing](#signing)), so macOS may ask again for a permission that the release had.
+
+Xcode 26.5, with Swift 6.3.2, fails on `main` in two places. Patch only the throwaway copy, never a commit, in a way that
+changes nothing on macOS 26:
+
+- `main` calls an API of the macOS 27 SDK, such as `concentricCornerRadii`, behind `if #available(macOS 27.0, *)`. Replace
+  that block with its fallback, since it never runs on macOS 26.
+- The compiler crashes in IR generation, on a reabstraction thunk, when a `@MainActor @Sendable` function value is passed
+  as a closure, such as `Binding(get: { text }, set: onSearch)`. Pass a closure that calls it: `set: { onSearch($0) }`.
 
 ## Release
 

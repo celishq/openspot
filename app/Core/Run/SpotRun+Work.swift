@@ -129,47 +129,60 @@ extension SpotRun {
 
     public func form(_ action: CommandAction, item: SpotItem?) async throws -> ItemForm? {
         let call = SpotAction.action(action, item: item)
-        let key = Self.key(call: call)
-        if let running = running(key) {
-            stopPressed(running)
-            return nil
-        }
-        guard let output = try await answer(to: call, key: key, input: nil) else { return nil }
+        guard let key = freeKey(call), let output = try await answer(to: call, key: key, input: nil) else { return nil }
         guard let form = ItemForm(output: output) else { throw SpotError.badForm }
         return form
     }
 
-    public func change(_ action: CommandAction) async throws -> FormAnswer? {
+    public func change(_ action: CommandAction) async throws -> CallAnswer {
         let call = SpotAction.action(action, item: nil)
-        let key = Self.key(call: call)
-        if let running = running(key) {
-            stopPressed(running)
-            return nil
-        }
-        guard let output = try await answer(to: call, key: key, input: nil) else { return nil }
-        if let form = ItemForm(output: output), !form.fields.isEmpty { return .form(form) }
+        guard let key = freeKey(call), let output = try await answer(to: call, key: key, input: nil) else { return .stopped }
+        if let form = Self.form(in: output) { return .form(form) }
         read(need: .change)
         return .done
     }
 
-    public func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft) async throws -> FormAnswer? {
-        let call = SpotAction.action(action, item: item)
-        let key = Self.key(call: call)
-        if let running = running(key) {
-            stopPressed(running)
-            return nil
+    public func launch(_ action: CommandAction, input: String, onCard: Bool = false) async throws -> CallAnswer {
+        let call = SpotAction.action(action, item: nil)
+        guard let key = freeKey(call, onCard: onCard) else { return .stopped }
+        answered = nil
+        return try await withCheckedThrowingContinuation { waiting in
+            let first = FirstFrame(waiting)
+            if !send(Call(action: call, key: key, input: input, purpose: .work(Work(first: first)))) { first.end(.stopped) }
         }
+    }
+
+    public func type(_ text: String) {
+        typed = text
+        if list.holdsItems { search(text) }
+        read(need: .change)
+    }
+
+    public func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft) async throws -> CallAnswer {
+        let call = SpotAction.action(action, item: item)
+        guard let key = freeKey(call) else { return .stopped }
         guard !script.keepsState else {
             work(call, key: key, input: draft.text)
             return .done
         }
-        guard let output = try await answer(to: call, key: key, input: draft.text) else { return nil }
-        if let form = ItemForm(output: output), !form.fields.isEmpty {
+        guard let output = try await answer(to: call, key: key, input: draft.text) else { return .stopped }
+        if let form = Self.form(in: output) {
             if draft.isMultiple { read(need: .change) }
             return .form(form)
         }
         read(selecting: output.select, need: .change)
         return .done
+    }
+
+    private func freeKey(_ call: SpotAction, onCard: Bool = false) -> String? {
+        let key = onCard ? Self.cardKey : Self.key(call: call)
+        guard let running = running(key) else { return key }
+        stopPressed(running)
+        return nil
+    }
+
+    private static func form(in output: SpotOutput) -> ItemForm? {
+        ItemForm(output: output).flatMap { $0.fields.isEmpty ? nil : $0 }
     }
 
     public func stop(_ call: ScriptCall) {
