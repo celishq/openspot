@@ -37,7 +37,7 @@ final class SpotMotionProbe: NSObject {
         action = environment["OPENSPOT_ACTION"].flatMap { $0.isEmpty ? nil : $0 }
         row = environment["OPENSPOT_ROW"]
         shotsFolder = environment["OPENSPOT_SHOTS"]
-        searchText = environment["OPENSPOT_TEXT"].flatMap { $0.isEmpty ? nil : $0 } ?? (action == "slash" ? "/translate hello" : "2*(3+4)")
+        searchText = environment["OPENSPOT_TEXT"].flatMap { $0.isEmpty ? nil : $0 } ?? "2*(3+4)"
     }
 
     func run(show: () -> Void) {
@@ -51,8 +51,7 @@ final class SpotMotionProbe: NSObject {
 
     private func begin() {
         if action == "panel" { return beginOpens() }
-        if action == "search" { return beginSearch() }
-        if action == "slash" { return shotsFolder.map(shootSlash) ?? beginSearch() }
+        if action == "search" { return shotsFolder.map(shootTyping) ?? beginSearch() }
         if action == "drag" || action == "mouse" { return beginDrag() }
         if action == "edit" { return beginEdit() }
         if action == "menu" { return beginMenus() }
@@ -231,16 +230,16 @@ final class SpotMotionProbe: NSObject {
         }
     }
 
-    private func shootSlash(into folder: String) {
+    private func shootTyping(into folder: String) {
         panel.makeKeyAndOrderFront(nil)
         model.searchText = searchText
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            self.save(to: "\(folder)/slash.png")
-            self.saveSharp(to: "\(folder)/slash-focused.png")
+            self.save(to: "\(folder)/search.png")
+            self.saveSharp(to: "\(folder)/search-focused.png")
             self.panel.makeFirstResponder(nil)
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            self.saveSharp(to: "\(folder)/slash-unfocused.png")
+            self.saveSharp(to: "\(folder)/search-unfocused.png")
             self.finish(with: "shots\n" + self.model.hint + "\n")
         }
     }
