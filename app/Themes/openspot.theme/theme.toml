@@ -65,3 +65,11 @@ fade-far = 0.2
 publisher-pill = 0.1
 publisher-pill-hover = 0.18
 publisher-pill-ring = 0.22
+
+[glass]
+variant = "clear"
+backdrop-blur = 3
+fade-reach = 3.0
+edge-near = 1.0
+edge-middle = 0.7
+edge-far = 0.45

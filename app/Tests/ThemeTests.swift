@@ -40,7 +40,11 @@ final class ThemeTests: XCTestCase {
         size = 3
 
         [glass]
-        variant = "clear"
+        variant = "frosted"
+        backdrop-blur = -1
+        fade-reach = 0.5
+        edge-far = 3
+        tint = "#000000"
         """)
 
         XCTAssertEqual(theme.faults, [
@@ -48,10 +52,33 @@ final class ThemeTests: XCTestCase {
             "theme.toml: [dark] glass-tint is a colour such as #00000099.",
             "theme.toml: [dark] fill is a strength from 0 to 1, such as 0.2.",
             "theme.toml: [dark] size is not a key of a theme.",
-            "theme.toml: [glass] variant is not a key of a theme."
+            "theme.toml: [glass] variant is clear or regular.",
+            "theme.toml: [glass] backdrop-blur is a number of points, such as 3.",
+            "theme.toml: [glass] fade-reach is a number from 1 up, such as 3.",
+            "theme.toml: [glass] edge-far is a strength from 0 to 1, such as 0.2.",
+            "theme.toml: [glass] tint is not a key of a theme."
         ])
+        XCTAssertEqual(theme.glass, Theme().glass)
         XCTAssertEqual(theme.dark.glassTint, Theme().dark.glassTint)
         XCTAssertEqual(theme.dark.fill, 0)
+    }
+
+    func testAThemeGivesTheGlassItsVariantBlurReachAndEdges() {
+        let theme = Theme(text: """
+        [glass]
+        variant = "regular"
+        backdrop-blur = 8
+        fade-reach = 2.5
+        edge-near = 0.9
+        edge-middle = 0.6
+        edge-far = 0.3
+        """)
+
+        XCTAssertEqual(theme.faults, [])
+        XCTAssertEqual(theme.glass.variant, .regular)
+        XCTAssertEqual(theme.glass.backdropBlur, 8)
+        XCTAssertEqual(theme.glass.fadeReach, 2.5)
+        XCTAssertEqual(theme.glass.edgeStrengths, [0.9, 0.6, 0.3])
     }
 
     func testAFileThatIsNotThereIsAFault() throws {
@@ -69,6 +96,10 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(document.sections.flatMap { section in section.keys.map { "[\(section.name)] \($0)" } }.sorted(), Theme.keys)
         XCTAssertEqual(theme.dark.glassTint, .hex(HexColor(red: 0, green: 0, blue: 0, alpha: 0.6)))
         XCTAssertEqual(theme.light.glassTint, ThemeColor(text: "#FFFFFF99"))
+        XCTAssertEqual(theme.glass.variant, .clear)
+        XCTAssertEqual(theme.glass.backdropBlur, 3)
+        XCTAssertEqual(theme.glass.fadeReach, 3)
+        XCTAssertEqual(theme.glass.edgeStrengths, [1, 0.7, 0.45])
     }
 
     func testACopyOverridesTheBuiltInThemeKeyByKey() throws {

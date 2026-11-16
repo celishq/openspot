@@ -62,11 +62,17 @@ struct SpotTheme {
     @MainActor private static var chosen: (appearance: NSAppearance, isDark: Bool)?
 
     @MainActor static var pictureRim: Color { loaded.pictureRim }
-    static let backdropBlur: CGFloat = 3
-    static let glassFadeReach = 3.0
+    @MainActor static var backdropBlur: CGFloat { loaded.backdropBlur }
 
-    static func glassStrength(at fade: Double) -> Double {
-        min(fade * glassFadeReach, 1)
+    @MainActor static var glassVariant: Glass {
+        switch loaded.glassVariant {
+        case .clear: .clear
+        case .regular: .regular
+        }
+    }
+
+    @MainActor static func glassStrength(at fade: Double) -> Double {
+        min(fade * loaded.glassFadeReach, 1)
     }
     @MainActor static var accent: Color { loaded.accent }
     @MainActor static var good: Color { loaded.good }
@@ -80,7 +86,7 @@ struct SpotTheme {
     @MainActor static var liftShadowStrength: Double { loaded.shared.liftShadowStrength }
     @MainActor static var unfocusedCardStrength: Double { loaded.shared.unfocusedCard }
     @MainActor static var fill: Double { current.fillStrength }
-    static let edgeStrengths = [1.0, 0.7, 0.45]
+    @MainActor static var edgeStrengths: [Double] { loaded.edgeStrengths }
     @MainActor static var disc: Double { current.discStrength }
     @MainActor static var chip: Double { current.chipStrength }
     @MainActor static var selectedFill: Double { current.selectedStrength }

@@ -206,6 +206,19 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(themes.last?.light.glassTint, ThemeColor(text: "#FFFFFF99"))
     }
 
+    func testACopyThatChangesTheBackdropBlurReloadsWithIt() async throws {
+        try await call(["open", "open_theme"])
+        let copy = root.appendingPathComponent("themes/openspot.theme/theme.toml")
+        try "[glass]\nbackdrop-blur = 8\n".write(to: copy, atomically: true, encoding: .utf8)
+
+        try await call(["open", "reload_theme"])
+
+        let themes = await app.themes
+        XCTAssertEqual(themes.last?.glass.backdropBlur, 8)
+        XCTAssertEqual(themes.last?.glass.variant, .clear)
+        XCTAssertEqual(themes.last?.faults, [])
+    }
+
     func testTheLinkRowIsOffUntilALinkPointsAtTheAppAndAPickLinksAndRemovesIt() async throws {
         offerLink()
 

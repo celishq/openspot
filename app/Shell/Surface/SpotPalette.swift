@@ -30,6 +30,10 @@ final class SpotPalette: Sendable {
     let catchLightOnDark: Color
     let catchLightOnLight: Color
     let shared: Theme.Shared
+    let glassVariant: Theme.Glass.Variant
+    let backdropBlur: CGFloat
+    let glassFadeReach: Double
+    let edgeStrengths: [Double]
 
     init(_ theme: Theme) {
         let dark = SpotTheme(theme.dark)
@@ -66,5 +70,9 @@ final class SpotPalette: Sendable {
         catchLightOnDark = shared.catchLightOnDark.color
         catchLightOnLight = shared.catchLightOnLight.color
         self.shared = shared
+        glassVariant = theme.glass.variant
+        backdropBlur = theme.glass.backdropBlur
+        glassFadeReach = theme.glass.fadeReach
+        edgeStrengths = theme.glass.edgeStrengths
     }
 }

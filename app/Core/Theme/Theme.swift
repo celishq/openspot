@@ -84,13 +84,62 @@ public struct Theme: Equatable, Sendable {
         }
     }
 
+    public struct Glass: Equatable, Sendable {
+        public enum Variant: String, Equatable, Sendable {
+            case clear
+            case regular
+        }
+
+        public fileprivate(set) var variant = Variant.clear
+        public fileprivate(set) var backdropBlur = 0.0
+        public fileprivate(set) var fadeReach = 1.0
+        public fileprivate(set) var edgeNear = 0.0
+        public fileprivate(set) var edgeMiddle = 0.0
+        public fileprivate(set) var edgeFar = 0.0
+
+        public var edgeStrengths: [Double] {
+            [edgeNear, edgeMiddle, edgeFar]
+        }
+
+        fileprivate static var strengths: [String: WritableKeyPath<Glass, Double>] {
+            ["edge-near": \.edgeNear, "edge-middle": \.edgeMiddle, "edge-far": \.edgeFar]
+        }
+
+        fileprivate static var points: [String: WritableKeyPath<Glass, Double>] {
+            ["backdrop-blur": \.backdropBlur]
+        }
+
+        fileprivate static var reaches: [String: WritableKeyPath<Glass, Double>] {
+            ["fade-reach": \.fadeReach]
+        }
+    }
+
     public private(set) var dark = Look()
     public private(set) var light = Look()
     public private(set) var shared = Shared()
+    public private(set) var glass = Glass()
     public private(set) var faults: [String] = []
 
+    private static let variant = "[glass] variant"
+
     public static var keys: [String] {
-        (Array(paths(Look.colours, Shared.colours).keys) + Array(paths(Look.strengths, Shared.strengths).keys)).sorted()
+        (Array(colours.keys) + [strengths, points, reaches].flatMap(\.keys) + [variant]).sorted()
+    }
+
+    private static var colours: [String: WritableKeyPath<Theme, ThemeColor>] {
+        paths(look: Look.colours, shared: Shared.colours)
+    }
+
+    private static var strengths: [String: WritableKeyPath<Theme, Double>] {
+        paths(look: Look.strengths, shared: Shared.strengths, glass: Glass.strengths)
+    }
+
+    private static var points: [String: WritableKeyPath<Theme, Double>] {
+        paths(glass: Glass.points)
+    }
+
+    private static var reaches: [String: WritableKeyPath<Theme, Double>] {
+        paths(glass: Glass.reaches)
     }
 
     public init() {}
@@ -111,8 +160,7 @@ public struct Theme: Equatable, Sendable {
         for key in document.values.keys.sorted() {
             faults.append("theme.toml: \(key) is not a key of a theme.")
         }
-        let colours = Self.paths(Look.colours, Shared.colours)
-        let strengths = Self.paths(Look.strengths, Shared.strengths)
+        let (colours, strengths, points, reaches) = (Self.colours, Self.strengths, Self.points, Self.reaches)
         for section in document.sections {
             for key in section.keys {
                 let name = "[\(section.name)] \(key)"
@@ -128,6 +176,24 @@ public struct Theme: Equatable, Sendable {
                         continue
                     }
                     self[keyPath: part] = strength
+                } else if let part = points[name] {
+                    guard let number = Self.number(section[key]), number >= 0 else {
+                        faults.append("theme.toml: \(name) is a number of points, such as 3.")
+                        continue
+                    }
+                    self[keyPath: part] = number
+                } else if let part = reaches[name] {
+                    guard let number = Self.number(section[key]), number >= 1 else {
+                        faults.append("theme.toml: \(name) is a number from 1 up, such as 3.")
+                        continue
+                    }
+                    self[keyPath: part] = number
+                } else if name == Self.variant {
+                    guard case .string(let text)? = section[key], let variant = Glass.Variant(rawValue: text) else {
+                        faults.append("theme.toml: \(name) is clear or regular.")
+                        continue
+                    }
+                    glass.variant = variant
                 } else {
                     faults.append("theme.toml: \(name) is not a key of a theme.")
                 }
@@ -136,24 +202,31 @@ public struct Theme: Equatable, Sendable {
     }
 
     private static func paths<Value>(
-        _ look: [String: WritableKeyPath<Look, Value>], _ shared: [String: WritableKeyPath<Shared, Value>]
+        look: [String: WritableKeyPath<Look, Value>] = [:],
+        shared: [String: WritableKeyPath<Shared, Value>] = [:],
+        glass: [String: WritableKeyPath<Glass, Value>] = [:]
     ) -> [String: WritableKeyPath<Theme, Value>] {
-        var all: [String: WritableKeyPath<Theme, Value>] = [:]
-        let looks: [(String, WritableKeyPath<Theme, Look>)] = [("dark", \.dark), ("light", \.light)]
-        for (section, part) in looks {
-            for (key, value) in look { all["[\(section)] \(key)"] = part.appending(path: value) }
-        }
-        let both: WritableKeyPath<Theme, Shared> = \.shared
-        for (key, value) in shared { all["[shared] \(key)"] = both.appending(path: value) }
-        return all
+        named("dark", \.dark, look)
+            .merging(named("light", \.light, look)) { one, _ in one }
+            .merging(named("shared", \.shared, shared)) { one, _ in one }
+            .merging(named("glass", \.glass, glass)) { one, _ in one }
     }
 
-    private static func strength(_ value: ConfigDocument.Value?) -> Double? {
-        let number: Double? = switch value {
+    private static func named<Part, Value>(
+        _ section: String, _ part: WritableKeyPath<Theme, Part>, _ keys: [String: WritableKeyPath<Part, Value>]
+    ) -> [String: WritableKeyPath<Theme, Value>] {
+        Dictionary(uniqueKeysWithValues: keys.map { ("[\(section)] \($0.key)", part.appending(path: $0.value)) })
+    }
+
+    private static func number(_ value: ConfigDocument.Value?) -> Double? {
+        switch value {
         case .number(let number)?: number
         case .integer(let number)?: Double(number)
         default: nil
         }
-        return number.flatMap { (0...1).contains($0) ? $0 : nil }
+    }
+
+    private static func strength(_ value: ConfigDocument.Value?) -> Double? {
+        number(value).flatMap { (0...1).contains($0) ? $0 : nil }
     }
 }
