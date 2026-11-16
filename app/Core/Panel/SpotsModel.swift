@@ -457,7 +457,7 @@ public final class SpotsModel {
     public func panelWillShow() {
         finishPick()
         selected = 0
-        runs.panelOpened()
+        runs.panelOpened(readsToEnd: isWarming)
         askAnswers()
         DispatchQueue.main.async { [weak self] in self?.isShown = true }
     }

@@ -278,6 +278,21 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.visibleUpdates, updates)
     }
 
+    func testAReadOfTheWarmUpRunsToItsEndAfterThePanelHides() async throws {
+        let gate = folder.appendingPathComponent("gate").path
+        try script("slow", header: "on=panel.open", "while [ ! -e '\(gate)' ]; do sleep 0.01; done\nprintf 'title=Read\\n'")
+        await model.reload()
+        model.isWarming = true
+        model.panelWillShow()
+        model.isWarming = false
+        model.panelWillHide()
+        model.panelDidHide()
+
+        FileManager.default.createFile(atPath: gate, contents: nil)
+
+        try await wait("the read of the warm-up") { self.model.sheets["slow"]?.state.title == "Read" }
+    }
+
     func testAnOpenWithNoChangeTellsNoReaderOfTheCards() async throws {
         try script("one", header: "title=One", "")
         await model.reload()
