@@ -428,17 +428,17 @@ extension SpotsModel {
         }
     }
 
-    func ask(_ action: CommandAction, on target: Target, prefill: String = "", _ call: @escaping @MainActor () async throws -> CallAnswer?) {
+    func ask(_ action: CommandAction, on target: Target, prefill: String = "", whileShown: Bool = false, _ call: @escaping @MainActor () async throws -> CallAnswer?) {
         let ask = UUID()
         pendingAsk = ask
         Task {
             do {
                 guard let answer = try await call(), pendingAsk == ask else { return }
                 pendingAsk = nil
+                if whileShown, !isShown, case .form = answer { return }
                 show(answer, of: action, on: target, prefill: prefill)
             } catch {
-                guard pendingAsk == ask else { return }
-                pendingAsk = nil
+                if pendingAsk == ask { pendingAsk = nil }
                 closeMenu()
                 host.notify("\(action.title) failed. \(Self.reason(error))")
             }
@@ -472,7 +472,7 @@ extension SpotsModel {
             return true
         }
         let action = CommandAction(id: key, title: "Change \(key)", scope: .spot, after: .close)
-        ask(action, on: (entry, nil)) { try await sheet.change(action) }
+        ask(action, on: (entry, nil), whileShown: true) { try await sheet.change(action) }
         return true
     }
 
