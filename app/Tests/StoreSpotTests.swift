@@ -54,6 +54,7 @@ final class StoreSpotTests: BuiltInCase {
         let text = try await answer(["gallery", "add"])
 
         XCTAssertEqual(file.read().stores.map(\.url.path), [friends.path])
+        XCTAssertEqual(SpotOutput(text: text).summary?.value("toast"), "Added the store friends with 1 spot.")
         XCTAssertEqual(SpotOutput(text: text).parts.first?.values["folder"], ["\(friends.path)\tfriends\tfound\tadded"])
         XCTAssertEqual(TextBlock.blocks(in: text).first { $0.value("row") == "clock" }?.value("store"), friends.path)
     }

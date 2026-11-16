@@ -19,10 +19,11 @@ get() {
   if said=$(openspot store get "$1" 2>&1); then toast "$said"; else toast "$said"; return 1; fi
 }
 
-# Asks for a folder and adds it as a store, and says in a toast why it did not.
+# Asks for a folder and adds it as a store, and says in a toast that it did, or why it did not.
 add() {
   folder=$(openspot folder pick) && [ -n "$folder" ] || return 1
   said=$(openspot store add "$folder" 2>&1) || { toast "$said"; return 1; }
+  toast "$said"
 }
 
 # Removes store $1, and says in a toast why it did not.

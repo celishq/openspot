@@ -18,6 +18,7 @@ struct SpotView: View {
     @State private var readmes: [String: [Line]] = [:]
     @State private var hovered: String?
     @State private var tip: String?
+    @Environment(\.openURL) private var openURL
 
     /// Where the spots that the sidebar keeps come from.
     private enum Origin: String, CaseIterable, Identifiable {
@@ -175,8 +176,12 @@ struct SpotView: View {
             .allowsHitTesting(false)
         }
         .onChange(of: spot.answers, initial: true) {
+            let asked = pending
             pending = nil
             let next = spot.all("folder").compactMap(Folder.init)
+            if asked == "add" || asked?.hasPrefix("locate:") == true, let new = next.first(where: { folder in !folders.contains { $0.id == folder.id } }) {
+                chosen = new.id
+            }
             if next != folders { folders = next }
             if let chosen, !next.contains(where: { $0.id == chosen }) { self.chosen = nil }
             let lines = spot.all("readme").map { $0.split(separator: "\t", maxSplits: 1, omittingEmptySubsequences: false) }
@@ -229,20 +234,27 @@ struct SpotView: View {
             search
                 .padding(.bottom, 10)
             ForEach(Origin.allCases) { each in
-                row(each, count: each.word.map { word in all.filter { $0.origin == word }.count } ?? all.count)
+                let count = each.word.map { word in all.filter { $0.origin == word }.count } ?? all.count
+                if count > 0 || each == .all || (chosen == nil && origin == each) { row(each, count: count) }
             }
-            if !folders.isEmpty {
-                Text("Stores")
-                    .font(Self.caption)
-                    .foregroundStyle(spot.ink.opacity(spot.secondary))
-                    .padding(.horizontal, 10)
-                    .padding(.top, 12)
-                    .padding(.bottom, 2)
-            }
+            Text("Stores")
+                .font(Self.caption)
+                .foregroundStyle(spot.ink.opacity(spot.secondary))
+                .padding(.horizontal, 10)
+                .padding(.top, 12)
+                .padding(.bottom, 2)
             ForEach(folders) { folder in
                 row(folder, count: all.filter { $0.store == folder.id }.count)
             }
             add
+            if !folders.contains(where: { !$0.isBuiltIn }) {
+                Text("A store is a folder of spots, such as a repo you cloned or a folder a friend shared. Its spots show here, ready to get.")
+                    .font(Self.caption)
+                    .foregroundStyle(spot.ink.opacity(spot.secondary))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 10)
+                    .padding(.top, 2)
+            }
             Spacer(minLength: 0)
         }
         .padding([.leading, .top, .bottom], spot.inset)
@@ -325,6 +337,7 @@ struct SpotView: View {
         .contentShape(shape)
         .onTapGesture { chosen = folder.id }
         .contextMenu {
+            if folder.isFound { Button("Show in Finder") { openURL(URL(fileURLWithPath: folder.id, isDirectory: true)) } }
             if !folder.isBuiltIn { Button("Remove Store") { send("remove:\(folder.id)") } }
         }
         .accessibilityAddTraits(chosen == folder.id ? [.isButton, .isSelected] : .isButton))
@@ -437,7 +450,7 @@ struct SpotView: View {
     /// The hint of what a card does, the order of the cards and Done, which closes the store.
     private var footer: some View {
         HStack(spacing: 12) {
-            Text("Click a spot to read about it and try it. The plus adds it to your grid.")
+            Text(hint)
                 .font(Self.text)
                 .foregroundStyle(spot.ink.opacity(spot.secondary))
                 .lineLimit(1)
@@ -456,6 +469,16 @@ struct SpotView: View {
         }
         .padding([.trailing, .bottom], spot.inset)
         .padding(.top, spot.rowGap)
+    }
+
+    /// The footer's line, which says where the spots of the chosen store come from, and what a card does.
+    private var hint: String {
+        guard let folder = folders.first(where: { $0.id == chosen }) else {
+            return "Click a spot to read about it and try it. The plus adds it to your grid."
+        }
+        if folder.isBuiltIn { return "Examples that come with Openspot. The plus adds one to your grid." }
+        if !folder.isFound { return "The folder of \(folder.name) moved or was deleted." }
+        return "From \((folder.id as NSString).abbreviatingWithTildeInPath). The plus copies a spot into your spots, and the folder stays as it is."
     }
 
     /// A group of cards under its title, whose line matches the search field's, so that both columns start on one line.
@@ -505,7 +528,7 @@ struct SpotView: View {
                             .font(Self.text)
                             .foregroundStyle(.secondary)
                     }
-                    Text(Item.label(of: item.origin))
+                    Text(folders.first { $0.id == item.store }.map { "From \($0.name)" } ?? Item.label(of: item.origin))
                         .font(Self.caption)
                         .foregroundStyle(.secondary)
                 }

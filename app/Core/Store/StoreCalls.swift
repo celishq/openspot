@@ -24,12 +24,13 @@ struct StoreCalls {
             guard expanded.hasPrefix("/") else { throw SpotError.failed(1, "Give the full path of the folder, such as `~/Spots`.") }
             let store = StoreFolder(url: URL(fileURLWithPath: expanded))
             guard store.exists() else { throw SpotError.failed(1, "Openspot cannot find \(store.url.path).") }
-            guard !((try? SpotsFolder(url: store.url).scan())?.files ?? []).isEmpty else {
+            let count = ((try? SpotsFolder(url: store.url).scan())?.files ?? []).count
+            guard count > 0 else {
                 throw SpotError.failed(1, "\(store.name) has no spot folder, so it cannot be a store. Pick a folder that holds a folder such as weather.spot.")
             }
             _ = try ConfigFile.standard(environment: environment).change { $0.add(store: store) }
             await app?.spotsChanged()
-            return "Added the store \(store.name).\n"
+            return "Added the store \(store.name) with \(count) \(count == 1 ? "spot" : "spots").\n"
         }
     }
 
