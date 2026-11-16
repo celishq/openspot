@@ -103,6 +103,8 @@ struct SpotTheme {
     @MainActor static var control: Double { current.controlStrength }
 
     static let ink = color(\.ink)
+    static let glassInk = HierarchicalShapeStyle.primary
+    static let glassSecondary = HierarchicalShapeStyle.secondary
     static let solid = color(\.solid)
     static let onSolid = color(\.onSolid)
     static let glyphOnSolid = color(\.glyphOnSolid)

@@ -12,7 +12,7 @@ struct SpotGlyph: View {
         } else {
             Image(systemName: entry.symbol)
                 .font(SpotType.glyph)
-                .foregroundStyle(isOnSolid ? SpotTheme.glyphOnSolid : SpotTheme.ink)
+                .foregroundStyle(isOnSolid ? AnyShapeStyle(SpotTheme.glyphOnSolid) : AnyShapeStyle(SpotTheme.glassInk))
                 .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
                 .background(SpotTheme.ink.opacity(showsDisc ? SpotTheme.disc : 0), in: Circle())
         }
