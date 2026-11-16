@@ -66,7 +66,7 @@ extension SpotsModel {
             spotList.replace(cards.filter(\.spot.isFound).map(Self.foundItem))
             takeCommands()
         }
-        let command = isEditing ? nil : SlashCommand(text)
+        let command = isEditing ? nil : SlashCommand(query)
         let commands = command.map(commandEntries) ?? []
         let next = commands.isEmpty ? nil : command
         if slash != next { slash = next }

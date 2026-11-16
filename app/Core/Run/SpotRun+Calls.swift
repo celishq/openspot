@@ -115,6 +115,7 @@ extension SpotRun {
         if case .ended = end, failure != nil, !isAnswer { failure = nil }
         switch (purpose, end) {
         case (.ask(.read), .stopped):
+            typed = nil
             list.stopLoading()
             if !call.hasAnswer {
                 waiter = nil

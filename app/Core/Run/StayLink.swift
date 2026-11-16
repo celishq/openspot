@@ -81,7 +81,7 @@ final class StayLink: ScriptLink {
             stop(\.isAnswer)
             if !post(call, isTimed: true) { run?.takeAnswers([], to: text) }
         case .work(let work):
-            call.request.purpose = .work(SpotRun.Work(keeping: work.keeping, readsAfter: false, undo: work.undo))
+            call.request.purpose = .work(SpotRun.Work(keeping: work.keeping, readsAfter: false, undo: work.undo, first: work.first))
             if post(call, isTimed: false) { run?.track(call.made) }
         case .form:
             guard !records.values.contains(where: \.isForm), post(call, isTimed: true) else { return false }

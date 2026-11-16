@@ -33,8 +33,8 @@ extension SpotRun {
             reason: action == read ? reason : nil,
             purpose: .ask(.read(generation: panel?.generation, reports: need != .clock, query: query, tells: reason != .panel))
         ))
+        self.typed = nil
         if isSent {
-            self.typed = nil
             readReason = reason
             if !list.holdsItems || list.hasFailed { list.beginLoading() }
         }

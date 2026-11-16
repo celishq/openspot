@@ -72,7 +72,7 @@ extension SpotsModel {
         selected = position
         if opening, openSelectedSettings() { return }
         guard !isEditing else { return }
-        if openSheetID == nil { run(seen: visible[position]) } else { runSelectedItem() }
+        if openSheetID == nil, let slash { launch(visible[position], with: slash.text) } else if openSheetID == nil { run(seen: visible[position]) } else { runSelectedItem() }
     }
 
     public func setLevel(_ id: String, to value: Double) {

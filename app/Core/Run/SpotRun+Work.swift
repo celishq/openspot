@@ -152,9 +152,9 @@ extension SpotRun {
         return .done
     }
 
-    public func launch(_ action: CommandAction, input: String) async -> FirstAnswer {
+    public func launch(_ action: CommandAction, input: String, onCard: Bool = false) async -> FirstAnswer {
         let call = SpotAction.action(action, item: nil)
-        let key = Self.key(call: call)
+        let key = onCard ? Self.cardKey : Self.key(call: call)
         if let running = running(key) {
             stopPressed(running)
             return .stopped

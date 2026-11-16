@@ -40,9 +40,9 @@ extension SpotsModel {
         }
         switch entry.kind {
         case .launch:
-            call(CommandAction(id: SpotAction.open.arguments[0], title: entry.state.title, scope: .spot, after: .close), of: entry, text)
+            call(CommandAction(id: SpotAction.open.arguments[0], title: entry.state.title, scope: .spot, after: .close), of: entry, text, onCard: true)
         case .list where entry.spot.pressRuns:
-            call(CommandAction(id: SpotAction.open.arguments[0], title: entry.state.title, scope: .spot, after: .close), of: entry, text)
+            call(CommandAction(id: SpotAction.open.arguments[0], title: entry.state.title, scope: .spot, after: .close), of: entry, text, onCard: true)
         case .list where entry.spot.soleCommand == nil:
             pushFirst(entry.id, moving: true)
             sheets[entry.id]?.type(text)
@@ -58,16 +58,17 @@ extension SpotsModel {
 
     var slashHint: String? {
         guard let slash, openSheetID == nil, form == nil, menu == nil, let entry = selectedEntry else { return nil }
+        guard !slash.text.isEmpty || commandOffers[entry.id] != nil else { return nil }
         let title = commandOffers[entry.id]?.title ?? entry.state.title
         return slash.text.isEmpty ? "⏎ \(title)" : "⏎ \(title) \"\(slash.text)\""
     }
 
-    private func call(_ action: CommandAction, of entry: Entry, _ text: String) {
+    private func call(_ action: CommandAction, of entry: Entry, _ text: String, onCard: Bool = false) {
         let ask = UUID()
         formAsk = ask
         let id = entry.id
         Task {
-            guard let answer = await sheets[id]?.launch(action, input: SearchQuery(text: text).input), formAsk == ask else { return }
+            guard let answer = await sheets[id]?.launch(action, input: SearchQuery(text: text).input, onCard: onCard), formAsk == ask else { return }
             formAsk = nil
             switch answer {
             case .frame(let frame):

@@ -67,6 +67,50 @@ final class SlashCommandPanelTests: PanelCase {
         XCTAssertEqual(model.slashPlaceholder, "What to add")
     }
 
+    func testAStayingSpotAnswersASlashCommand() async throws {
+        try script("ping", header: "title=Ping\nmode=stay\n\nbutton=ping\ntitle=Ping\n\nbutton=pong\ntitle=Pong", """
+        . "$OPENSPOT_SH"
+        main() { case "$1" in ping) openspot_kv toast "Ping $(value search)" ;; esac; }
+        openspot_serve main "$@"
+        """)
+        await open()
+
+        type("/ping hi")
+        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "ping\nping" })
+        model.runSelected()
+
+        try await wait("the toast") { self.host.confirms == ["Ping hi"] }
+        try await wait("the close") { self.host.dismissals == 1 }
+    }
+
+    func testAClickOnACommandRunsItWithTheText() async throws {
+        try writeNotes()
+        await open()
+
+        type("/add buy milk")
+        model.tap(try XCTUnwrap(model.visible.first).id)
+
+        try await wait("the toast") { self.host.confirms == ["Saved buy milk"] }
+    }
+
+    func testWithNoTextTheFooterNamesWhatReturnDoesOnTheCard() async throws {
+        try script("solo", header: "title=Solo\n\nbutton=solo\ntitle=Solo", "printf 'toast=Ran\\n'")
+        await open()
+
+        type("/solo")
+
+        XCTAssertEqual(model.hint, "⏎ Set key   ⌘⏎ Settings   ⌘K Actions")
+    }
+
+    func testTheLeadKeepsTheSpacesTypedBeforeTheCommand() async throws {
+        try writeNotes()
+        await open()
+
+        type("  /add x")
+
+        XCTAssertEqual(model.slash?.lead, "  ")
+    }
+
     func testAWordThatNamesNoCommandStaysText() async throws {
         try writeNotes()
         await open()
