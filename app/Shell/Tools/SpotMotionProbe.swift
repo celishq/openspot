@@ -69,6 +69,13 @@ final class SpotMotionProbe: NSObject {
             start = CACurrentMediaTime()
             return press(target.id, left: presses)
         }
+        if action == "keys" {
+            if let placement = model.placements.first(where: { model.visible[$0.index].id == target.id }) { model.selected = placement.index } else { model.open(target.id) }
+            return DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                self.start = CACurrentMediaTime()
+                self.play(self.keys)
+            }
+        }
         model.press(target.id)
         whenRowsArrive {
             self.start = CACurrentMediaTime()
@@ -390,6 +397,25 @@ final class SpotMotionProbe: NSObject {
     private func pick() {
         if let item = model.openItems?.shown.first(where: { $0.run == row }) { model.runItem(item) }
         DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.end() }
+    }
+
+    private var keys: [String] {
+        (ProcessInfo.processInfo.environment["OPENSPOT_KEYS"] ?? "").split(separator: ",").map(String.init)
+    }
+
+    private func play(_ keys: [String]) {
+        guard let key = keys.first else { return DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.end() } }
+        if key.hasPrefix("text:") {
+            model.searchText = String(key.dropFirst(5))
+        } else if key.hasPrefix("part:") {
+            let id = String(key.dropFirst(5))
+            if let part = model.openSheet?.panel?.parts.first(where: { $0.id == id }) { model.pressPart(part) }
+        } else {
+            let words = key.split(separator: "+").map(String.init)
+            let action = ActionKey(name: words.last ?? "", isCommand: words.contains("cmd"), isShift: words.contains("shift"))
+            if !model.handleKey(action) { _ = model.handleSearchKey(action) }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.play(Array(keys.dropFirst())) }
     }
 
     private var history: [ActionKey] {
