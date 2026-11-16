@@ -29,7 +29,7 @@ public enum SpotSample {
     }
 
     @MainActor
-    public static func output(of item: SpotStore.Item, runs: SpotRuns) async -> SpotOutput? {
+    public static func output(of item: SpotCatalog.Item, runs: SpotRuns) async -> SpotOutput? {
         if item.runsSample, let sampled = item.spot.sampled {
             guard let text = try? await runs.answer(of: sampled, .read, limit: limit) else { return nil }
             return await SpotOutput.reading(text)

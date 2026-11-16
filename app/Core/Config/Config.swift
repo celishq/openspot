@@ -16,7 +16,7 @@ public struct Config: Equatable, Sendable {
     public var arrangement = SpotArrangement()
     public var keys: [GlobalKey] = []
     public private(set) var settings: [SpotSetting] = []
-    public private(set) var stores: [StoreFolder] = []
+    public private(set) var stores: [Store] = []
     public private(set) var isCareful = false
     public private(set) var panels = GridPanels()
     public private(set) var isReadable = true
@@ -125,11 +125,11 @@ public struct Config: Equatable, Sendable {
         }
     }
 
-    public mutating func add(store: StoreFolder) {
+    public mutating func add(store: Store) {
         if !stores.contains(store) { stores.append(store) }
     }
 
-    public mutating func remove(store: StoreFolder) {
+    public mutating func remove(store: Store) {
         stores.removeAll { $0 == store }
     }
 
@@ -162,11 +162,11 @@ public struct Config: Equatable, Sendable {
         return SpotSetting(spot: spot, key: key, value: value)
     }
 
-    private mutating func store(of table: ConfigDocument.Table) -> StoreFolder? {
+    private mutating func store(of table: ConfigDocument.Table) -> Store? {
         guard case .string(let path)? = table["path"], path.hasPrefix("/") else {
             return unread(table, "config.toml: a store needs the full path of its folder.")
         }
-        return StoreFolder(url: URL(fileURLWithPath: path))
+        return Store(url: URL(fileURLWithPath: path))
     }
 
     private mutating func shortcut(_ value: ConfigDocument.Value?, named name: String, or standard: Shortcut) -> Shortcut? {

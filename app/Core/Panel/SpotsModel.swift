@@ -34,7 +34,7 @@ public final class SpotsModel {
         let next = entries.filter { $0.id != fieldSheet }
         if next != cards { cards = next }
     }
-    @ObservationIgnored var storeCards: [String: (entry: Entry, item: SpotStore.Item)]?
+    @ObservationIgnored var storeCards: [String: (entry: Entry, item: SpotCatalog.Item)]?
     @ObservationIgnored private var entryPlaces: [String: Int] = [:]
     public private(set) var cards: [Entry] = []
     public var entries: [Entry] = [] {

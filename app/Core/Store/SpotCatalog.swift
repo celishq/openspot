@@ -1,6 +1,6 @@
 import Foundation
 
-public struct SpotStore: Sendable {
+public struct SpotCatalog: Sendable {
     public struct Item: Sendable {
         public let id: String
         public let spot: Spot
@@ -8,7 +8,7 @@ public struct SpotStore: Sendable {
         public let size: SpotSize
         public let publication: SpotPublication?
         public let hasSample: Bool
-        public let store: StoreFolder?
+        public let store: Store?
         let isCore: Bool
 
         public var origin: SpotOrigin {
@@ -32,9 +32,9 @@ public struct SpotStore: Sendable {
     let published: URL
     let folder: SpotsFolder
     let arrangement: SpotArrangement
-    let stores: [StoreFolder]
+    let stores: [Store]
 
-    public init(published: URL, folder: SpotsFolder, arrangement: SpotArrangement, stores: [StoreFolder]) {
+    public init(published: URL, folder: SpotsFolder, arrangement: SpotArrangement, stores: [Store]) {
         self.published = published
         self.folder = folder
         self.arrangement = arrangement
@@ -78,7 +78,7 @@ public struct SpotStore: Sendable {
         items(publications: false).first { $0.id == id }
     }
 
-    private func item(_ spot: Spot, id: String, isAdded: Bool, isCore: Bool = false, publication: SpotPublication? = nil, store: StoreFolder? = nil) -> Item {
+    private func item(_ spot: Spot, id: String, isAdded: Bool, isCore: Bool = false, publication: SpotPublication? = nil, store: Store? = nil) -> Item {
         Item(
             id: id, spot: spot, isAdded: isAdded, size: arrangement.size(of: id) ?? spot.size, publication: publication,
             hasSample: SpotSample.exists(for: spot, runsScript: store == nil), store: store, isCore: isCore

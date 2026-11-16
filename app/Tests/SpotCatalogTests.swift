@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class SpotStoreTests: XCTestCase {
+final class SpotCatalogTests: XCTestCase {
     private var folder: URL!
 
     override func setUpWithError() throws {
@@ -24,16 +24,16 @@ final class SpotStoreTests: XCTestCase {
         ConfigFile(url: folder.appendingPathComponent("config.toml"))
     }
 
-    private func list(enabled: Set<String> = ["apps"], stores: [StoreFolder]? = nil) -> SpotStore {
+    private func list(enabled: Set<String> = ["apps"], stores: [Store]? = nil) -> SpotCatalog {
         var arrangement = config.read().arrangement
         enabled.forEach { arrangement.set(isEnabled: true, of: $0) }
-        return SpotStore(published: store, folder: SpotsFolder(url: spots, core: core, enabled: [], disabled: []), arrangement: arrangement, stores: stores ?? [StoreFolder(url: store)])
+        return SpotCatalog(published: store, folder: SpotsFolder(url: spots, core: core, enabled: [], disabled: []), arrangement: arrangement, stores: stores ?? [Store(url: store)])
     }
 
     func testEachStoreFolderListsItsSpotsWithTheFolderTheyCameFrom() throws {
         let friends = folder.appendingPathComponent("friends", isDirectory: true)
         try "#!/bin/sh\n# title=Clock\n".writeScript(to: friends.appendingPathComponent("clock.spot/clock.sh"))
-        let shelf = list(stores: [StoreFolder(url: friends), StoreFolder(url: folder.appendingPathComponent("gone")), StoreFolder(url: store)])
+        let shelf = list(stores: [Store(url: friends), Store(url: folder.appendingPathComponent("gone")), Store(url: store)])
 
         XCTAssertEqual(shelf.items.map(\.id), ["apps", "clock", "mine", "shared", "timer"])
         XCTAssertEqual(shelf.items.first { $0.id == "clock" }?.origin, .store)
@@ -45,7 +45,7 @@ final class SpotStoreTests: XCTestCase {
 
     func testTheBuiltInStoreIsNamedOpenspotAndComesFromTheExamplesOfTheApp() throws {
         let examples = folder.appendingPathComponent("examples", isDirectory: true)
-        let builtIn = try XCTUnwrap(StoreFolder.builtIn(environment: ["OPENSPOT_EXAMPLES": examples.path]))
+        let builtIn = try XCTUnwrap(Store.builtIn(environment: ["OPENSPOT_EXAMPLES": examples.path]))
         try "#!/bin/sh\n# title=Year\n".writeScript(to: examples.appendingPathComponent("year.spot/year.sh"))
 
         XCTAssertEqual(builtIn.name, "Openspot")
@@ -59,9 +59,9 @@ final class SpotStoreTests: XCTestCase {
     }
 
     func testTheConfigKeepsEachStoreFolderOnce() throws {
-        let friends = StoreFolder(url: folder.appendingPathComponent("friends"))
+        let friends = Store(url: folder.appendingPathComponent("friends"))
 
-        _ = try config.change { $0.add(store: friends); $0.add(store: StoreFolder(url: folder.appendingPathComponent("friends/"))) }
+        _ = try config.change { $0.add(store: friends); $0.add(store: Store(url: folder.appendingPathComponent("friends/"))) }
         XCTAssertEqual(config.read().stores, [friends])
         XCTAssertEqual(friends.name, "friends")
 

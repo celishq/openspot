@@ -1,6 +1,6 @@
 import Foundation
 
-public struct StoreFolder: Hashable, Sendable {
+public struct Store: Hashable, Sendable {
     public let url: URL
     public let name: String
     public let isBuiltIn: Bool
@@ -17,13 +17,13 @@ public struct StoreFolder: Hashable, Sendable {
         isBuiltIn = true
     }
 
-    public static func builtIn(environment: [String: String]) -> StoreFolder? {
+    public static func builtIn(environment: [String: String]) -> Store? {
         let url = environment["OPENSPOT_EXAMPLES"].flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0) }
             ?? Bundle.main.resourceURL?.appendingPathComponent("examples", isDirectory: true)
-        return url.map { StoreFolder(builtIn: $0) }
+        return url.map { Store(builtIn: $0) }
     }
 
-    public static func all(environment: [String: String], config: Config) -> [StoreFolder] {
+    public static func all(environment: [String: String], config: Config) -> [Store] {
         [builtIn(environment: environment)].compactMap { $0 } + config.stores
     }
 
