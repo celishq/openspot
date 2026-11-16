@@ -28,7 +28,7 @@ extension SpotsModel {
     }
 
     var isStepping: Bool {
-        waitingPush || flowEdges.from != nil
+        waitingPush || (flowEdges.from != nil && landedStep != edgeStep)
     }
 
     func showEdges() {
@@ -49,10 +49,16 @@ extension SpotsModel {
             guard let self else { return }
             host.nextFrame { [weak self] in
                 guard let self, step == edgeStep else { return }
-                change(.flow, { moveEdges(to: target) }) { [weak self] in self?.settleEdges(step) }
+                host.change(.flow, { moveEdges(to: target) }, completion: { [weak self] in self?.land(step) }, removal: { [weak self] in self?.settleEdges(step) })
             }
         }
         if let loading { loading.holdPageMotion(start: move) } else { move() }
+    }
+
+    private func land(_ step: Int) {
+        guard step == edgeStep else { return }
+        landedStep = step
+        showQueued()
     }
 
     private func settleEdges(_ step: Int) {

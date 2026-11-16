@@ -184,8 +184,9 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
   where the sheet's footer starts. A menu row that another spot runs keeps the menu until its run ends, so whatever
   the run opens takes the menu's place in one motion.
 - A step of the flow, a push, a back or a forward, is the same grow motion as a sheet that opens. Its stand-ins, the leaving page and the
-  field's copy, give way to the real views when its animation is removed, not when it is logically complete, so the page
-  and the field land where they moved to.
+  field's copy, give way to the real views when its animation is removed, so the page and the field land where they
+  moved to. A press may start the next step once the step is logically complete (`SpotsHost.change(_:_:completion:removal:)`).
+  A stand-in draws with the same views as what it stands in for (`SpotFieldPrompt`), so the hand-off shows no change.
 - Hide a view that comes back with a mask or with opacity 0.001, not with opacity 0, which drops its drawing.
 
 ### Idle and memory

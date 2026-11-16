@@ -166,6 +166,21 @@ final class FlowNavigationTests: PanelCase {
         XCTAssertEqual(host.edgeChanges.filter { $0.motion == .flow }.count, 1)
     }
 
+    func testAPressStartsItsStepOnceTheStepBeforeIsLogicallyCompleteThoughItsAnimationStillRuns() async throws {
+        try await openList()
+        host.heldRemovals = []
+        XCTAssertTrue(model.push(FlowSheet(spot: "list", page: "a")))
+        try await wait("the step to move") { self.model.flowEdges.isMoving }
+
+        XCTAssertTrue(model.handleKey(back))
+
+        try await wait("the back step at the press") { self.model.sheets["list"]?.page == nil }
+        let removals = host.heldRemovals ?? []
+        host.heldRemovals = nil
+        removals.forEach { $0() }
+        try await wait("the back step to settle") { self.model.flowEdges.from == nil && self.model.flowEdges.titles(on: .ahead) == ["A"] }
+    }
+
     func testBackPutsThePageItLeavesInABarAheadThatAClickGoesForwardTo() async throws {
         try await openList()
         try await openPage()
