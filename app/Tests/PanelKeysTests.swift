@@ -424,6 +424,21 @@ final class PanelKeysTests: PanelCase {
         XCTAssertEqual(keyField?.value, "")
     }
 
+    func testAPressedKeyIsDownUntilItsRelease() async throws {
+        try await openPick()
+        try await wait("the recording") { self.model.recording == "key" }
+        XCTAssertFalse(model.isKeyDown)
+
+        model.record(code: 49, modifiers: [])
+        XCTAssertTrue(model.isKeyDown)
+        XCTAssertEqual(model.pressedKey, "Space")
+        model.releaseKey()
+
+        XCTAssertFalse(model.isKeyDown)
+        XCTAssertEqual(model.pressedKey, "Space")
+        XCTAssertEqual(model.recording, "key")
+    }
+
     func testAPressThatMakesNoShortcutShowsItsKeyUntilAKeyIsRecorded() async throws {
         try await openPick()
         try await wait("the recording") { self.model.recording == "key" }

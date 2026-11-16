@@ -122,6 +122,7 @@ final class SpotsPanel: NSPanel {
         case .flagsChanged: takeFlags(event)
         case .pressure: takePressure(event)
         case .keyDown: if takeKey(event) { return }
+        case .keyUp: model?.releaseKey()
         case .scrollWheel: if takeSwipe(event) { return }
         case .rightMouseDown: if takeRightClick(event) { return }
         default: break

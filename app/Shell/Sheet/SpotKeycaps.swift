@@ -7,6 +7,7 @@ struct SpotKeycaps: View {
     let isRecording: Bool
     let status: String?
     var pressed: String?
+    var isKeyDown = false
 
     private static let caps: [(modifier: Shortcut.Modifiers, name: String)] = [
         (.control, "control"), (.option, "option"), (.shift, "shift"), (.command, "command")
@@ -30,7 +31,7 @@ struct SpotKeycaps: View {
                 Text("+")
                     .font(SpotType.body)
                     .modifier(SpotSecondaryText())
-                Keycap(symbol: key ?? "key", name: "", font: key == nil ? SpotType.detail : SpotType.title, width: 2 * Self.side, height: Self.side, isLit: shown != nil, isBlank: key == nil)
+                Keycap(symbol: key ?? "key", name: "", font: key == nil ? SpotType.detail : SpotType.title, width: 2 * Self.side, height: Self.side, isLit: shown != nil || (pressed != nil && isKeyDown), isBlank: key == nil)
             }
             ToastView.styled(status ?? (isRecording ? Self.waiting : ""))
                 .textRenderer(ToastKeyFill(fill: SpotTheme.ink.opacity(SpotTheme.track)))
