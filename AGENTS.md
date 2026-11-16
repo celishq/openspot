@@ -15,7 +15,7 @@
 - `app/Keywords/` holds the CLDR keywords of emoji and symbols, one xz file per language. `scripts/emoji-keywords.py` writes
   it from a pinned CLDR version, and the build copies it into the app.
 - `app/Themes/` holds the theme of the app, `openspot.theme/theme.toml`, which gives each appearance its glass tint. The build
-  copies it into the app, which reads it at launch and at `openspot app theme`.
+  copies it into the app, which reads it at launch and at `openspot theme reload`.
 - `app/Help/` holds the guide of each `openspot` noun that has one, which `openspot help <noun>` prints. The build copies it
   into the app.
 - `spots/` holds the source of the core spots, each a `<name>.spot` folder. The build copies it into the app, and they run

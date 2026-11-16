@@ -49,7 +49,7 @@ case "$1" in
         exec openspot setting set --spot openspot login "$on"
         ;;
       reload_theme)
-        openspot app theme && echo 'toast=Reloaded the theme'
+        openspot theme reload && echo 'toast=Reloaded the theme'
         ;;
       careful_mode)
         if [ "$(status careful)" = true ]; then on=false; else on=true; fi

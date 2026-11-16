@@ -37,4 +37,9 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(theme.dark.glassTint, HexColor(text: "#00000099"))
         XCTAssertEqual(theme.light.glassTint, HexColor(text: "#FFFFFF99"))
     }
+
+    func testThemeReloadIsAVerbOfItsOwnNoun() {
+        XCTAssertEqual(CommandLineCall(arguments: ["theme", "reload"], environment: [:])?.value as? ThemeCall, .reload)
+        XCTAssertNil(CommandLineCall(arguments: ["app", "theme"], environment: [:])?.value as? AppCall)
+    }
 }
