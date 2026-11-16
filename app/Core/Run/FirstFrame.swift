@@ -10,10 +10,10 @@ final class FirstFrame {
 
     @discardableResult
     func take(_ frame: SpotOutput) -> Bool {
-        guard let waiting else { return false }
+        guard let waiting, !frame.isMark else { return false }
         self.waiting = nil
         if frame.fields.isEmpty {
-            waiting.resume(returning: frame.isPicture ? .shown : .done)
+            waiting.resume(returning: frame.isPicture || !frame.items.isEmpty ? .shown : .done)
         } else if let form = ItemForm(output: frame) {
             waiting.resume(returning: .form(form))
         } else {
