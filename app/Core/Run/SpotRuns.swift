@@ -180,6 +180,10 @@ public final class SpotRuns {
         sheets.values.lazy.map(\.spot).first { $0.edits == .keys && $0.isBuiltIn }?.id
     }
 
+    public var launchSheet: String? {
+        sheets.values.lazy.map(\.spot).first { $0.edits == .launch && $0.isBuiltIn }?.id
+    }
+
     private var editor: Spot? {
         sheets.values.lazy.map(\.spot).first { $0.editsSpots && $0.isBuiltIn }
     }

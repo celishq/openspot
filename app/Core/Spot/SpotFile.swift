@@ -96,7 +96,7 @@ public struct SpotFile: Equatable, Sendable {
         }
         let editsWord = header.value(HeaderKey.edits)
         let edits = editsWord.flatMap(SpotEdits.init(rawValue:))
-        guard editsWord == nil || edits != nil else { throw SpotError.fault("\(name) has an unknown edits: \(editsWord ?? ""). Use edits=spots or edits=keys") }
+        guard editsWord == nil || edits != nil else { throw SpotError.fault("\(name) has an unknown edits: \(editsWord ?? ""). Use edits=spots, edits=keys or edits=launch.") }
         let places: Set<Place> = namedPlaces ?? (offeredActions.isEmpty && !answersOnly ? [.card] : [])
         let kind: SpotKind = mode.stays || places.contains(.search) || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch
         try Place.check(places, read: read, mode: mode, kind: kind, of: name)
