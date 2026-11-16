@@ -147,7 +147,20 @@ extension SpotsModel {
     }
 
     var holdsKeyField: Bool {
-        openParts?.parts.contains { if case .shortcut = $0.control { true } else { false } } == true
+        keyField != nil
+    }
+
+    private var keyField: SpotPart? {
+        openParts?.parts.first { if case .shortcut = $0.control { true } else { false } }
+    }
+
+    public func pressKeyField(code: UInt32, modifiers: Shortcut.Modifiers) -> Bool {
+        guard isShown, recording == nil, let field = keyField else { return false }
+        if modifiers.makesShortcut {
+            toggleRecording(field)
+            record(code: code, modifiers: modifiers)
+        }
+        return true
     }
 
     func takeEntryKey() {

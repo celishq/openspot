@@ -308,6 +308,32 @@ final class PanelKeysTests: PanelCase {
         try await wait("the open key again") { self.host.entryKeyIsOn }
     }
 
+    func testAPressOnAShownKeyReplacesItOrIsTakenWithoutABeep() async throws {
+        try await openPick()
+        try await wait("the recording") { self.model.recording == "key" }
+        model.record(code: 49, modifiers: .option)
+        try await wait("the kept key") { self.keyField?.control == .shortcut("option+space") }
+        XCTAssertNil(model.recording)
+
+        XCTAssertTrue(model.pressKeyField(code: 1, modifiers: []))
+        XCTAssertEqual(keyField?.control, .shortcut("option+space"))
+        XCTAssertTrue(model.pressKeyField(code: 49, modifiers: .control))
+
+        try await wait("the new key") { self.keyField?.control == .shortcut("ctrl+space") }
+        XCTAssertNil(model.recording)
+    }
+
+    func testAPressWithNoKeyFieldIsLeftToThePanel() async throws {
+        try writePick()
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        await nextTurn()
+
+        XCTAssertNil(model.openSheetID)
+        XCTAssertFalse(model.pressKeyField(code: 49, modifiers: .control))
+    }
+
     func testTheOpenKeyComesBackWhenThePanelHidesOverAKeyField() async throws {
         try await openPick(key: "option+space")
         await nextTurn()
