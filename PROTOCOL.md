@@ -123,10 +123,10 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `grid.<size>` | A card made of other spots. Each word is a spot id. See [Cards of other spots](#cards-of-other-spots).                           |
 | `to`          | The spot that opens when the user presses a card of other spots. See [Cards of other spots](#cards-of-other-spots).              |
 
-| Block         | Meaning                                                                                                   |
-| ------------- | --------------------------------------------------------------------------------------------------------- |
-| `button=<id>` | A command, with its `title` and `icon`. The user can give it a hotkey. `confirm` asks for a second press. |
-| `field=<key>` | A setting the user chooses, with its `title` (by default, its key) and `icon`. See [Settings](#settings). |
+| Block         | Meaning                                                                                                                                                                                |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `button=<id>` | A command, with its `title` and `icon`. The user can give it a hotkey. `confirm` asks for a second press. `close=false` keeps its sheet open after a [slash command](#slash-commands). |
+| `field=<key>` | A setting the user chooses, with its `title` (by default, its key) and `icon`. See [Settings](#settings).                                                                              |
 
 - A spot with a `button` in its header has no card. It gives its commands instead.
 - Return on a spot with one `button` and no `on=` events runs it, as its hotkey does. When it has no hotkey yet, Return
@@ -518,6 +518,7 @@ out.
 | `<spot> drop <path> [path]...`     | A drop of files on its card.                                              |
 | `<spot> drag <row id> [row id]...` | A drag of rows that stand for files out of its sheet.                     |
 | `<spot> <command>`                 | A press of the hotkey the user gave a command.                            |
+| `<spot> <command>`, `<spot> open`  | A [slash command](#slash-commands), with `search=<text>` on stdin.        |
 
 - `read` is the only reserved call. `open`, `drop` and `drag` are default ids. A block can't use them, but a button can
   use `open`.
@@ -586,6 +587,32 @@ The shell helper reads and writes values for you:
 printf 'field=output\n'
 openspot_kv value "$(value input)"
 ```
+
+## Slash commands
+
+A slash command runs a spot, or a `button` of its header, with the text that the user typed, in one Return.
+
+```text
+/translate hello world     Return opens Translate, and its read gets search=hello world
+buy milk /notes            Return runs notes add, with search=buy milk on stdin
+```
+
+- In the main search, `/` at the start of a word, with a letter after it, lists the spots and the header `button`s
+  whose name matches the word. A word that matches none stays text, so `10/2` and `/Users` search as before.
+- The first row is highlighted, ↑ and ↓ move it, and the footer names what Return runs.
+- The text is the rest of the line, trimmed. The call gets it as `search=<text>` on stdin, with the arguments of a plain
+  press, so `case "$1"` handles it as any other call. With no text, Return does what it does on the card.
+
+| Command                                                     | The call with text                                 |
+| ----------------------------------------------------------- | -------------------------------------------------- |
+| A header `button`, or a spot whose Return runs its `button` | `<spot> <id>`                                      |
+| A spot with no sheet                                        | `<spot> open`                                      |
+| A spot with a sheet                                         | Its sheet opens, and the read of the sheet gets it |
+
+- The first frame of the call decides what shows. A frame with fields is a form, as for a `form=true` button, and Return
+  in it sends the values to the same call. Other blocks open the spot's sheet when the `button` has `close=false`.
+  Anything else closes the panel.
+- A header `button` with `confirm` isn't listed, since a slash command doesn't ask twice.
 
 ## The life of a call
 
