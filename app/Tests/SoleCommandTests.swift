@@ -47,7 +47,7 @@ final class SoleCommandTests: XCTestCase {
         try script("dictate", header: "title=Dictate\n\nbutton=dictate\ntitle=Dictate")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
 
         model.query = "dictate"
         model.landSearch()
@@ -95,7 +95,7 @@ final class SoleCommandTests: XCTestCase {
         _ = try model.files.config.change { $0.assign(.tap(.option), to: "wipe", act: .command("wipe")) }
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.query = "wipe"
         model.landSearch()
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "wipe" })
@@ -131,7 +131,7 @@ final class SoleCommandTests: XCTestCase {
         try script("wipe", header: "title=Wipe\non=sheet.open\n\nbutton=wipe\ntitle=Wipe\nconfirm=Press again to wipe\n\nbutton=keep\ntitle=Keep")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.query = "wipe"
         model.landSearch()
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "wipe" })
@@ -146,7 +146,7 @@ final class SoleCommandTests: XCTestCase {
         try script("party", header: "title=Party\non=panel.open\n\nbutton=play\ntitle=Play")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.query = "party"
         model.landSearch()
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "party" })
@@ -163,7 +163,7 @@ final class SoleCommandTests: XCTestCase {
         try script("windows", header: "title=Windows\n\nbutton=left\ntitle=Left\n\nbutton=right\ntitle=Right")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
 
         model.run(try entry("windows"))
 
@@ -178,7 +178,7 @@ final class SoleCommandTests: XCTestCase {
             .writeScript(to: spots.appendingPathComponent("dictate.sh"))
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.query = "dictate"
         model.landSearch()
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "dictate" })
@@ -222,7 +222,7 @@ final class SoleCommandTests: XCTestCase {
             .writeScript(to: spots.appendingPathComponent("get.sh"))
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.run(try entry("get"))
         try await wait("the rows") { model.openItems?.shown.count == 2 }
 
@@ -242,7 +242,7 @@ final class SoleCommandTests: XCTestCase {
             .writeScript(to: spots.appendingPathComponent("dictate.sh"))
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
 
         model.run(.history, on: SpotsModel.Target(entry: try entry("dictate"), item: nil))
 

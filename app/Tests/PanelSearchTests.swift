@@ -8,7 +8,7 @@ final class PanelSearchTests: PanelCase {
         try script("beta", header: "title=Beta", "true")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
     }
 
     private var shown: [String] {

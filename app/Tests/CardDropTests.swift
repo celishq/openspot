@@ -7,7 +7,7 @@ final class CardDropTests: PanelCase {
         try script("plain", header: "drop=*", "true")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         let file = folder.appendingPathComponent("a.txt")
         try Data().write(to: file)
 

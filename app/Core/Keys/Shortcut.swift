@@ -85,8 +85,4 @@ public struct Shortcut: Hashable, Sendable {
     public var label: String {
         KeyText(modifiers: modifiers, name: name).label
     }
-
-    public func chains(to key: CommandKey, code: UInt32, modifiers: Modifiers) -> Bool {
-        modifiers == self.modifiers && code == key.code
-    }
 }

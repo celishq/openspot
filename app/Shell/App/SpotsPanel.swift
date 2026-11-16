@@ -71,7 +71,7 @@ final class SpotsPanel: NSPanel {
     }
 
     private func open(ordering order: () -> Void) {
-        model?.panelWillShow(holding: Shortcut.Modifiers(NSEvent.modifierFlags))
+        model?.panelWillShow()
         order()
     }
 
@@ -131,7 +131,6 @@ final class SpotsPanel: NSPanel {
     }
 
     private func takeFlags(_ event: NSEvent) {
-        model?.takeHeld(event.keyModifiers)
         if let modifier = tap.take(event.keyModifiers, at: event.timestamp), model?.recording != nil {
             model?.recordTap(modifier)
         }
@@ -146,8 +145,8 @@ final class SpotsPanel: NSPanel {
             model.record(code: UInt32(event.keyCode), modifiers: event.keyModifiers)
             return true
         }
-        if let key, !textKeeps(key), model.handleKey(key) { return true }
-        return model.handleChain(code: UInt32(event.keyCode), modifiers: event.keyModifiers)
+        guard let key, !textKeeps(key) else { return false }
+        return model.handleKey(key)
     }
 
     private func takeRightClick(_ event: NSEvent) -> Bool {

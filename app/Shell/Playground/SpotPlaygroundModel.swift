@@ -83,7 +83,7 @@ final class SpotPlaygroundModel {
     func rerun() async {
         guard let id else { return }
         await panel.model.reload()
-        panel.model.panelWillShow(holding: [])
+        panel.model.panelWillShow()
         if place == .sheet { panel.model.sheets[id]?.read(need: .change) }
     }
 

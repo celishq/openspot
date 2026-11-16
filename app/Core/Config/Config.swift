@@ -196,10 +196,6 @@ public struct Config: Equatable, Sendable {
             choice.panel = GridPanel(rawValue: name).flatMap { $0 == .center ? nil : $0 }
             if choice.panel == nil { faults.append("config.toml: \(id) cannot use the side \(name).") }
         }
-        if case .string(let letter)? = table["letter"] {
-            choice.letter = letter.isEmpty ? "" : CommandKey(name: letter)?.name
-            if choice.letter == nil { faults.append("config.toml: \(id) cannot use the letter \(letter).") }
-        }
         for key in table.keys.sorted() where !["id", "size", "grid", "enabled", "global", "tray", "letter", "key", "side"].contains(key) {
             faults.append("config.toml: \(key) is not a setting of a spot.")
         }

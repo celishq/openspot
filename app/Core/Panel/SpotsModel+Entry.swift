@@ -11,16 +11,14 @@ extension SpotsModel {
         private let fixedSpot: Spot
         private let fixedState: SpotState
         private let gridChoice: Bool?
-        public let letter: CommandKey?
         public let panel: GridPanel
 
-        public init(spot: Spot, run: SpotRun?, choice: SpotArrangement = SpotArrangement(), defaults: SpotArrangement = SpotArrangement(), letter: CommandKey? = nil) {
+        public init(spot: Spot, run: SpotRun?, choice: SpotArrangement = SpotArrangement(), defaults: SpotArrangement = SpotArrangement()) {
             id = spot.id
             sizeChoice = choice.size(of: spot.id)
             defaultSize = defaults.size(of: spot.id)
             gridChoice = choice.isOnGrid(of: spot.id) ?? defaults.isOnGrid(of: spot.id)
             panel = choice.panel(of: spot.id) ?? .center
-            self.letter = letter
             item = nil
             isAnswer = false
             self.run = run
@@ -34,7 +32,6 @@ extension SpotsModel {
             defaultSize = nil
             gridChoice = nil
             panel = .center
-            letter = nil
             self.item = item
             self.isAnswer = isAnswer
             run = nil
@@ -100,8 +97,7 @@ extension SpotsModel {
         }
 
         public static func == (lhs: Entry, rhs: Entry) -> Bool {
-            lhs.id == rhs.id && lhs.item == rhs.item && lhs.sizeChoice == rhs.sizeChoice && lhs.gridChoice == rhs.gridChoice && lhs.panel == rhs.panel
-                && lhs.letter == rhs.letter && lhs.defaultSize == rhs.defaultSize && lhs.isAnswer == rhs.isAnswer
+            lhs.id == rhs.id && lhs.item == rhs.item && lhs.sizeChoice == rhs.sizeChoice && lhs.gridChoice == rhs.gridChoice && lhs.panel == rhs.panel && lhs.defaultSize == rhs.defaultSize && lhs.isAnswer == rhs.isAnswer
                 && lhs.run === rhs.run && lhs.fixedSpot == rhs.fixedSpot && lhs.fixedState == rhs.fixedState
         }
     }

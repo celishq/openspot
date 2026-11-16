@@ -11,7 +11,7 @@ enum SpotPanelPicture {
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
         Task { @MainActor in
             await model.reload()
-            model.panelWillShow(holding: [])
+            model.panelWillShow()
             try? await Task.sleep(for: .milliseconds(300))
             await model.waitForReads()
             for sheet in model.sheets.values {

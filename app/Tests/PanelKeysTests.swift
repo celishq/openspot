@@ -19,7 +19,7 @@ final class PanelKeysTests: PanelCase {
         try script("weather", header: "title=Weather\non=sheet.open\npress=open", ":")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
     }
 
     private func select(_ id: String) throws {
@@ -32,7 +32,7 @@ final class PanelKeysTests: PanelCase {
         """)
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.press("info")
         try await wait("the first sheet") { self.model.openParts?.parts.first?.title == "First" }
     }
@@ -66,10 +66,10 @@ final class PanelKeysTests: PanelCase {
         model.beginEditing()
         let rows = model.keyRows(of: .edit)
 
-        XCTAssertEqual(KeyRow.hint(of: rows), "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done")
+        XCTAssertEqual(KeyRow.hint(of: rows), "S Size   H Hide   ⇧ Arrows Move   Esc Done")
         XCTAssertEqual(model.hint, KeyRow.hint(of: rows))
         let added = rows + [KeyRow("x", words: "Extra") { _ in true }]
-        XCTAssertEqual(KeyRow.hint(of: added), "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done   X Extra")
+        XCTAssertEqual(KeyRow.hint(of: added), "S Size   H Hide   ⇧ Arrows Move   Esc Done   X Extra")
     }
 
     func testOnTheGridEscClearsTheSearchThenHidesAndTabGoesToTheText() async throws {
@@ -127,7 +127,7 @@ final class PanelKeysTests: PanelCase {
         try script("fruit", header: "on=sheet.open", "printf 'row=a\\ntitle=Apple\\n\\nrow=b\\ntitle=Banana\\n\\nrow=c\\ntitle=Cherry\\n'")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.press("fruit")
         try await wait("the rows") { self.model.openItems?.shown.count == 3 }
 
@@ -235,7 +235,7 @@ final class PanelKeysTests: PanelCase {
         try script("draw", header: "title=Draw\non=sheet.open\noffers=card\noffers=float", "printf 'row=own\\ntitle=Own\\n'")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "draw" })
         XCTAssertTrue(model.handleKey(settings))
         let sheet = SpotSettings.sheetID(of: "draw")
@@ -257,7 +257,7 @@ final class PanelKeysTests: PanelCase {
         try script("dictate", header: "title=Dictate\non=sheet.open\n\nbutton=dictate\ntitle=Dictate", "printf 'row=a\\ntitle=Said\\n'")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.query = "dictate"
         model.landSearch()
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "dictate" })

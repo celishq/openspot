@@ -119,38 +119,13 @@ extension SpotsModel {
         presentSheet(of: id, moving: isShown) { host.show() }
     }
 
-    public func takeHeld(_ modifiers: Shortcut.Modifiers) {
-        chainWatch?.cancel()
-        guard modifiers == entryKey.modifiers else {
-            isChainHeld = false
-            return
-        }
-        chainWatch = Task { [weak self] in
-            try? await Task.sleep(for: Self.chainPause)
-            if !Task.isCancelled { self?.isChainHeld = true }
-        }
-    }
 
-    public var showsChain: Bool {
-        (isChainHeld && isOnGrid) || isEditing
-    }
 
-    public func chainLetter(of entry: Entry) -> String? {
-        entry.letter?.name.uppercased()
-    }
 
     private var isOnGrid: Bool {
         menu == nil && form == nil && openSheetID == nil && !isEditing
     }
 
-    public func handleChain(code: UInt32, modifiers: Shortcut.Modifiers) -> Bool {
-        guard isChainHeld, isOnGrid, let entry = entries.first(where: { entry in
-            entry.letter.map { entryKey.chains(to: $0, code: code, modifiers: modifiers) } ?? false
-        }) else { return false }
-        press(entry.id)
-        if entry.kind == .toggle { host.dismiss() }
-        return true
-    }
 
     public func run(_ entry: Entry) {
         if let item = entry.item, let list = self.entry(entry.spot.id) {

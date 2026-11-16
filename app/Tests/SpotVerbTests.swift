@@ -352,7 +352,7 @@ final class SpotVerbTests: XCTestCase {
         try script("weather", header: "title=Weather\non=sheet.open\n\nfield=token\ntype=secret")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
 
         XCTAssertTrue(model.changeSetting("token", of: "weather"))
         let field = model.form?.draft.form.fields.first

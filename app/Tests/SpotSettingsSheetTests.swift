@@ -50,7 +50,7 @@ final class SpotSettingsSheetTests: XCTestCase {
     private func show(selecting id: String, search: String = "") async throws {
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.query = search
         model.landSearch()
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == id })

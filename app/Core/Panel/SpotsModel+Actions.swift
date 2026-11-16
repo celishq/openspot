@@ -99,7 +99,6 @@ extension SpotsModel {
     }
 
     public func record(code: UInt32, modifiers: Shortcut.Modifiers) {
-        if isEditing { return recordLetter(code: code, modifiers: modifiers) }
         guard let shortcut = Shortcut(code: code, modifiers: modifiers) else {
             host.notify("Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.")
             return

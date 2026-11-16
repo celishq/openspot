@@ -65,15 +65,7 @@ extension SpotsModel {
             stopRecording()
             return true
         }
-        guard isEditing else { return [cancel] }
-        return [
-            .words("Press a letter"),
-            KeyRow("backspace", command: nil, shift: nil, words: "Remove") { [self] _ in
-                recordLetter(code: Self.deleteCode, modifiers: [])
-                return true
-            },
-            cancel,
-        ]
+        return [cancel]
     }
 
     private var menuRows: [KeyRow] {
@@ -141,9 +133,6 @@ extension SpotsModel {
             .any { [self] key in openSheet(on: key) ? true : nil },
             KeyRow("s", command: nil, shift: nil, words: "Size", act: always { [self] in stepSelectedSize() }),
             KeyRow("h", command: nil, shift: nil, words: "Hide", act: always { [self] in toggleSelectedOnGrid() }),
-            KeyRow("l", command: nil, shift: nil, words: "Letter", act: always { [self] in
-                if let entry = selectedEntry, entry.item == nil { toggleRecording(id: entry.id) }
-            }),
             shifted("left", -1, "⇧ Arrows"),
             shifted("up", -1, nil),
             shifted("right", 1, nil),

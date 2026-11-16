@@ -331,7 +331,7 @@ final class SpotMotionProbe: NSObject {
         panel.alphaValue = 0.02
         let pressed = CACurrentMediaTime()
         panel.place(over: NSWorkspace.shared.frontmostApplication)
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         panel.orderFrontRegardless()
         pressTimes.append((CACurrentMediaTime() - pressed) * 1000)
         frames.append(pressed)

@@ -41,17 +41,6 @@ final class ShortcutTests: XCTestCase {
         XCTAssertNil(Shortcut(code: 999, modifiers: [.control]))
     }
 
-    func testAChainHoldsTheSameModifiersAndPressesTheLetterOfASpot() throws {
-        let entry = try XCTUnwrap(Shortcut(text: "option+space"))
-        let letter = try XCTUnwrap(CommandKey(name: "t"))
-
-        XCTAssertTrue(entry.chains(to: letter, code: 17, modifiers: [.option]))
-        XCTAssertFalse(entry.chains(to: letter, code: 17, modifiers: [.control]))
-        XCTAssertFalse(entry.chains(to: letter, code: 17, modifiers: [.option, .shift]))
-        XCTAssertFalse(entry.chains(to: letter, code: 17, modifiers: []))
-        XCTAssertFalse(entry.chains(to: letter, code: 0, modifiers: [.option]))
-    }
-
     func testReadsAnArrowKey() throws {
         let shortcut = try XCTUnwrap(Shortcut(text: "ctrl+option+left"))
 
