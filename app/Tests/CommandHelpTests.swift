@@ -95,7 +95,7 @@ final class CommandHelpTests: XCTestCase {
         let answer = try await answer(["help", "--json"])
         let entries = try JSONSerialization.jsonObject(with: Data(answer.output.utf8)) as? [[String: Any]] ?? []
         let copy = entries.first { $0["command"] as? String == "openspot clipboard copy" }
-        let show = entries.first { $0["command"] as? String == "openspot spot show" }
+        let show = entries.first { $0["command"] as? String == "openspot spot open" }
 
         XCTAssertEqual(copy?["form"] as? String, "[file]")
         XCTAssertEqual(copy?["group"] as? String, "Ask the Mac")

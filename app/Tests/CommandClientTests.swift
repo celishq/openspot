@@ -126,8 +126,8 @@ final class CommandClientTests: XCTestCase {
     func testStdinStderrAndTheCodeComeThroughTheSocket() throws {
         listen()
 
-        XCTAssertEqual(try run(client, ["check", "--sheet"], input: "title=Hi\n").output, "the sheet has no parts\n1 faults.\n")
-        XCTAssertEqual(try run(client, ["check", "--sheet"], input: "title=Hi\n").code, 1)
+        XCTAssertEqual(try run(client, ["check", "sheet"], input: "title=Hi\n").output, "the sheet has no parts\n1 faults.\n")
+        XCTAssertEqual(try run(client, ["check", "sheet"], input: "title=Hi\n").code, 1)
         let unknown = try run(client, ["calc", "2+2"])
         XCTAssertTrue(unknown.errors.hasPrefix("openspot cannot do this: calc 2+2\n"))
         XCTAssertEqual(unknown.code, 2)
@@ -158,7 +158,7 @@ final class CommandClientTests: XCTestCase {
         let output = Pipe()
         let stdin = Pipe()
         process.executableURL = client
-        process.arguments = ["check", "--sheet"]
+        process.arguments = ["check", "sheet"]
         process.environment = ["OPENSPOT_CONFIG": config.path, "PATH": "/usr/bin:/bin"]
         process.standardOutput = output
         process.standardInput = stdin
@@ -183,7 +183,7 @@ final class CommandClientTests: XCTestCase {
     func testACallThatRunsAloneStartsTheApp() throws {
         listen()
 
-        XCTAssertEqual(try run(client, ["render", "x.png"]).output, "app: render x.png\n")
+        XCTAssertEqual(try run(client, ["render", "sheet", "x.png"]).output, "app: render sheet x.png\n")
     }
 
     private func start(_ arguments: [String], variables: [String: String] = [:]) throws -> (process: Process, output: Pipe, errors: Pipe) {
@@ -280,7 +280,7 @@ final class CommandClientTests: XCTestCase {
     func testAPureCallOpensNoSocketAndRunsInItsOwnProcess() throws {
         listen()
 
-        for call in [["emoji", "--tone", "dark"], ["symbols"]] {
+        for call in [["emoji", "list", "--tone", "dark"], ["symbols", "list"]] {
             XCTAssertEqual(try run(client, call).output, "app: \(call.joined(separator: " "))\n")
         }
     }

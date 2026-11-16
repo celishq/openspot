@@ -35,7 +35,6 @@ public enum SpotCall: NounCall {
             "stats", "[--days n] [--spot id] [--json]",
             "Prints what each spot cost and used today, or over the last n days: a row for each spot with its runs, failures, CPU time, disk bytes, wakeups, each call that needs a use and its last fault, then a use block for each such call. --json prints the days."
         ) { stats($0.rest) },
-        CommandVerb("show", "<id>", "Opens the panel with the spot selected.", rule: CallRule(read: .changes(panel), flags: .needsApp)) { $0.one.map(Self.show) },
         CommandVerb(
             "list", "[--core] [--json]",
             "Prints a spot=<id> block for each spot that the app loads, with a button=<id> or field=<id> block for each of its own. --core prints each spot that comes with the app, and whether it is on. --json prints them as JSON, with their keys."
@@ -52,7 +51,13 @@ public enum SpotCall: NounCall {
             return Self.add(sources.first, isConfirmed: sources.count < words.rest.count)
         },
         CommandVerb("remove", "<id>", "Moves a spot that spot add added to the Trash, and drops it from spots.lock.", rule: CallRule(use: .spots, used: "removed a spot", read: .changes(folder))) { $0.one.map(Self.remove) },
-        CommandVerb("open", "<id>", "Opens the panel on a spot, as a new flow.", rule: CallRule(read: .changes(panel), flags: .needsApp)) { $0.one.map(Self.open) },
+        CommandVerb("open", "<id> [--select]", "Opens the panel on a spot, as a new flow. --select only selects its card on the grid.", rule: CallRule(read: .changes(panel), flags: .needsApp)) { words in
+            switch words.rest.count {
+            case 1: Self.open(words.rest[0])
+            case 2 where words.rest[1] == "--select": Self.show(words.rest[0])
+            default: nil
+            }
+        },
         CommandVerb("push", "<id> [page] [--replace] [--title <words>]", "Pushes a spot, or a page of it, over the flow that shows.", rule: CallRule(read: .changes(panel))) { push($0.rest) },
         CommandVerb("pop", "<id> [--all]", "Goes back one sheet of a spot that shows, or to its first sheet.", rule: CallRule(read: .changes("moves the panel"))) { words in
             switch words.rest.count {

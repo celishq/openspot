@@ -51,7 +51,7 @@ enum SpotShowLink {
             print("Openspot shows \(id).")
             exit(0)
         case false?:
-            FileHandle.standardError.write(Data("Openspot has no spot \(id). Run `openspot check` to see each file that does not load.\n".utf8))
+            FileHandle.standardError.write(Data("Openspot has no spot \(id). Run `openspot check spots` to see each file that does not load.\n".utf8))
             exit(1)
         case nil:
             FileHandle.standardError.write(Data("Openspot did not answer. Open Openspot, then run this again.\n".utf8))

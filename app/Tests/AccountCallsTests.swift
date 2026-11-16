@@ -57,7 +57,7 @@ final class AccountCallsTests: XCTestCase {
     func testAnyoneReadsThePublicFacts() async throws {
         let key = try store.keyMadeOnce()
 
-        let facts = try await call(["account"], from: spot(uses: [], isBuiltIn: false))
+        let facts = try await call(["account", "show"], from: spot(uses: [], isBuiltIn: false))
 
         XCTAssertEqual(facts.output, "signedIn=true\nnpub=\(key.npub)\nsince=\(try XCTUnwrap(try store.record()?.since))\nbackedUp=false\n")
     }
@@ -94,7 +94,7 @@ final class AccountCallsTests: XCTestCase {
         XCTAssertThrowsError(try secret.make(handle: "Tony P"))
         try secret.make(handle: "tony")
 
-        let facts = try await call(["account"], from: spot(uses: [], isBuiltIn: false))
+        let facts = try await call(["account", "show"], from: spot(uses: [], isBuiltIn: false))
 
         XCTAssertTrue(facts.output.contains("\nhandle=tony\n"), facts.output)
         XCTAssertNotNil(facts.output.range(of: "\nsince=\\d{4}-\\d{2}-\\d{2}\n", options: .regularExpression), facts.output)
@@ -134,7 +134,7 @@ final class AccountCallsTests: XCTestCase {
 
     func testTheFactsRunAloneAnswerThatTheAppIsNotRunning() async throws {
         let alone = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), rates: .offline)
-        let request = CommandRequest(arguments: ["account"], folder: folder.path)
+        let request = CommandRequest(arguments: ["account", "show"], folder: folder.path)
 
         let work = try XCTUnwrap(alone.work(for: try XCTUnwrap(alone.call(of: request)), request: request, input: { "" }))
         let answer = await work()
@@ -162,7 +162,7 @@ final class AccountCallsTests: XCTestCase {
         let other = folder.appendingPathComponent("other", isDirectory: true)
         let line = try JSONSerialization.data(withJSONObject: [
             "jsonrpc": "2.0", "id": 1, "method": "ask",
-            "params": ["argv": ["account"], "cwd": other.path, "env": ["OPENSPOT_CONFIG": other.path]]
+            "params": ["argv": ["account", "show"], "cwd": other.path, "env": ["OPENSPOT_CONFIG": other.path]]
         ])
         let request = try XCTUnwrap(CommandRequest(line: line))
         let work = try XCTUnwrap(api.work(for: api.admit(try XCTUnwrap(api.call(of: request)), request: request), request: request, input: { "" }))

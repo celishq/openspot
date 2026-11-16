@@ -46,7 +46,7 @@ final class AgentPromptTests: XCTestCase {
         XCTAssertTrue(prompt.contains("one at a time"))
         XCTAssertTrue(prompt.contains(folder.path))
         XCTAssertTrue(prompt.contains("\"openspot\" guide"))
-        XCTAssertTrue(prompt.contains("\"openspot\" spot show <id>"))
+        XCTAssertTrue(prompt.contains("\"openspot\" spot open <id> --select"))
         XCTAssertFalse(prompt.contains("does this:"))
     }
 

@@ -5,7 +5,7 @@ These rules hold for the core spots in `spots/` and the spots in `examples/`. A 
 
 ## Rules
 
-- A spot opens with its header, as [The header](../PROTOCOL.md#the-header) shows. `openspot check` reports a spot
+- A spot opens with its header, as [The header](../PROTOCOL.md#the-header) shows. `openspot check spots` reports a spot
   with no header.
 - A spot may hold comments.
 - A spot keeps its state in `OPENSPOT_DATA`. A folder from `mktemp` that the spot removes is not state.

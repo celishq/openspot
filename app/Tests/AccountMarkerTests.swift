@@ -27,7 +27,7 @@ final class AccountMarkerTests: BuiltInCase {
             caller("openspot/store", uses: [.app, .account], isBuiltIn: true)
         ]
         let verbs = [
-            ["account"], ["account", "--json"], ["account", "words"], ["account", "choices", "1", "2"], ["account", "choices", "3", "4"],
+            ["account", "show"], ["account", "show", "--json"], ["account", "words"], ["account", "choices", "1", "2"], ["account", "choices", "3", "4"],
             ["account", "checked"], ["account", "phrase"], ["account", "sign-in"], ["account", "new"], ["account", "new", "tony"],
             ["account", "sign-out"], ["account", "sync", "off"], ["account", "key"], ["account", "show"], ["help", "account"]
         ]

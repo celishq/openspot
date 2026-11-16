@@ -5,7 +5,7 @@ enum TranslateCall: NounCall {
     case languages
 
     static let noun = CommandNoun("translate", group: .mac, verbs: [
-        CommandVerb("", "[--from code] [--to code]", "Translates the text on stdin.", rule: CallRule(flags: .readsInput)) { words in
+        CommandVerb("text", "[--from code] [--to code]", "Translates the text on stdin.", rule: CallRule(flags: .readsInput)) { words in
             let rest = words.rest
             guard rest.count.isMultiple(of: 2) else { return nil }
             var options: [String: String] = [:]

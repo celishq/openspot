@@ -240,7 +240,7 @@ final class MacCallsTests: XCTestCase {
     }
 
     func testTheAppTranslatesStdinAndListsItsLanguages() throws {
-        let translated = try run(["translate", "--to", "en"], input: "hola")
+        let translated = try run(["translate", "text", "--to", "en"], input: "hola")
         let languages = try run(["translate", "languages"])
 
         XCTAssertEqual(translated.output, "text=hello\n")
@@ -270,7 +270,7 @@ final class MacCallsTests: XCTestCase {
         let frame = try await answer(["window", "frame"])
         let copied = try await answer(["clipboard", "copy", "a.txt"])
         let sources = try await answer(["screen", "sources"])
-        let translated = try await answer(["translate"])
+        let translated = try await answer(["translate", "text"])
         let events = try await answer(["calendar", "events"])
         let colour = try await answer(["color", "pick"])
 

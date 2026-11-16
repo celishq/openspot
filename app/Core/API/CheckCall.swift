@@ -5,12 +5,12 @@ enum CheckCall: NounCall {
     case sheet
 
     static let noun = CommandNoun("check", group: .build, verbs: [
-        CommandVerb("", "[--json] [folder]", "Reports the faults of a spots folder.", rule: CallRule(flags: .startsScripts)) { words in
+        CommandVerb("spots", "[--json] [folder]", "Loads each spot of a spots folder, runs it once, and reports each fault.", rule: CallRule(flags: .startsScripts)) { words in
             let json = words.rest.first == "--json"
             let rest = json ? Array(words.rest.dropFirst()) : words.rest
             return rest.count <= 1 ? Self.folder(rest.first, json: json) : nil
         },
-        CommandVerb("--sheet", "", "Reports the faults of a sheet on stdin.") { $0.none ? Self.sheet : nil }
+        CommandVerb("sheet", "", "Reports the faults of a sheet on stdin.") { $0.none ? Self.sheet : nil }
     ])
 
     func work(in context: CallContext) -> CommandAPI.Work? {

@@ -1,9 +1,9 @@
 enum CommandKind {
     static let live: Set<String> = [
-        "batch", "app status", "update check", "update install", "spot open", "spot show", "spot review", "setting change",
+        "batch", "app status", "update check", "update install", "spot open", "spot review", "setting change",
         "event emit"
     ]
-    static let pure: Set<String> = ["emoji", "symbols"]
+    static let pure: Set<String> = ["emoji list", "symbols list"]
 
     static func needsApp(_ arguments: [String]) -> Bool {
         holds(arguments, in: live)
