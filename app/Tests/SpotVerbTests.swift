@@ -120,12 +120,12 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
 
         let menu = try XCTUnwrap(model.menu)
-        XCTAssertEqual(menu.rows.count, 6)
+        XCTAssertEqual(menu.rows.count, 7)
         let rows = menu.rows.filter { $0.action != nil }
-        XCTAssertEqual(rows.map(\.title), ["Share", "Settings", "Edit", "Change Icon", "Delete"])
-        XCTAssertEqual(rows.map(\.keyLabel), ["⇧⌘C", "⌘⏎", "⌘E", "›", "⌘⌫"])
+        XCTAssertEqual(rows.map(\.title), ["Share", "Settings", "Edit", "Change Icon", "Keys…", "Delete"])
+        XCTAssertEqual(rows.map(\.keyLabel), ["⇧⌘C", "⌘⏎", "⌘E", "›", "", "⌘⌫"])
         XCTAssertEqual(rows.first { $0.title == "Change Icon" }?.children.map(\.title), ["Draw…", "Choose File…"])
-        XCTAssertEqual(rows.map(\.isDestructive), [false, false, false, false, true])
+        XCTAssertEqual(rows.map(\.isDestructive), [false, false, false, false, false, true])
         XCTAssertEqual(menu.headers.map(\.title), [])
         XCTAssertFalse(menu.rows.contains { $0.title == "Copy prompt for AI" })
     }
@@ -184,7 +184,7 @@ final class SpotVerbTests: XCTestCase {
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
         let rows = try XCTUnwrap(model.menu?.rows.filter { $0.action != nil })
-        XCTAssertEqual(rows.map(\.title), ["Share", "Settings", "Edit", "Change Icon", "Turn off"])
+        XCTAssertEqual(rows.map(\.title), ["Share", "Settings", "Edit", "Change Icon", "Keys…", "Turn off"])
         XCTAssertEqual(rows.first { $0.title == "Edit" }?.keyLabel, "⌘E")
         model.closeMenu()
         XCTAssertTrue(model.handleKey(ActionKey(name: "e", isCommand: true)))
@@ -211,7 +211,7 @@ final class SpotVerbTests: XCTestCase {
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
         let menu = try XCTUnwrap(model.menu)
-        XCTAssertEqual(menu.rows.dropFirst().map(\.title), ["Share", "Settings", "Edit", "Change Icon", "Delete", "Star"])
+        XCTAssertEqual(menu.rows.dropFirst().map(\.title), ["Share", "Settings", "Edit", "Change Icon", "Keys…", "Delete", "Star"])
         XCTAssertEqual(menu.headers.map(\.title), ["Stars"])
         model.menu?.select(try XCTUnwrap(menu.rows.last?.action))
         XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
@@ -548,11 +548,21 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertFalse(model.handleKey(ActionKey(name: "z", isCommand: true)))
     }
 
+    func testTheKeysRowOfTheMenuEndsInTheOpenKeyOfTheCard() async throws {
+        try script("weather", header: "title=Weather")
+        _ = try model.files.config.change { $0.assign(.key(try XCTUnwrap(Shortcut(text: "ctrl+option+w"))), to: "weather", act: .open) }
+        _ = try await select("weather")
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+
+        try await wait("the open key on Keys…") { model.menu?.rows.first { $0.title == "Keys…" }?.keyLabel == "⌃⌥W" }
+    }
+
     func testACardOfAFileThatDoesNotLoadIsThePersonsAndCanBeDeleted() async throws {
         try script("broken", header: "mode=huge")
         _ = try await select("broken")
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
-        XCTAssertEqual(model.menu?.rows.filter { $0.action != nil }.map(\.title), ["Share", "Settings", "Edit", "Change Icon", "Delete"])
+        XCTAssertEqual(model.menu?.rows.filter { $0.action != nil }.map(\.title), ["Share", "Settings", "Edit", "Change Icon", "Keys…", "Delete"])
         model.closeMenu()
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "backspace", isCommand: true)))

@@ -44,14 +44,25 @@ extension Spot {
     }
 
     @discardableResult
-    func perform(_ action: SpotAction, input: String? = nil, timeout: TimeInterval) async throws -> String? {
-        try await output(action, input: input, timeout: timeout).summary?.value("toast")
+    func perform(_ action: SpotAction, input: String? = nil, page: String? = nil, timeout: TimeInterval) async throws -> String? {
+        try await output(action, input: input, variables: page.map { ["OPENSPOT_PAGE": $0] } ?? [:], timeout: timeout).summary?.value("toast")
     }
 
     func hook(_ function: String, card: String, origin: String) async -> Bool {
         let runs = SpotRuns(environment: TestEnvironment.values)
         let answer = await withCheckedContinuation { continuation in
             if let now = runs.ask(function, of: self, card: card, origin: origin, later: { continuation.resume(returning: $0) }) {
+                continuation.resume(returning: now)
+            }
+        }
+        withExtendedLifetime(runs) {}
+        return answer
+    }
+
+    func hotkey(_ function: String, card: String, origin: String) async -> String {
+        let runs = SpotRuns(environment: TestEnvironment.values)
+        let answer = await withCheckedContinuation { continuation in
+            if let now = runs.hotkey(function, of: self, card: card, origin: origin, later: { continuation.resume(returning: $0) }) {
                 continuation.resume(returning: now)
             }
         }

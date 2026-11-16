@@ -281,4 +281,20 @@ final class SoleCommandTests: XCTestCase {
         XCTAssertEqual(host.shows, 1)
         try await wait("the command") { host.confirms == ["Ran dictate"] }
     }
+
+    func testAKeyRecordedOnARowThatStaysOpenKeepsThePanelOpen() async throws {
+        try "#!/bin/sh\n# on=sheet.open\ncase \"$1\" in read) printf 'row=k\\ntitle=Key\\ntype=hotkey\\nclose=false\\nshortcut=Record\\n' ;; esac\n".writeScript(to: spots.appendingPathComponent("keys.sh"))
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.press("keys")
+        try await wait("the key row") { model.openItems?.shown.first?.run == "k" }
+
+        model.toggleRecording(id: "k")
+        model.record(code: 0, modifiers: [.control, .option])
+
+        XCTAssertNil(model.recording)
+        XCTAssertEqual(host.dismissals, 0)
+        XCTAssertEqual(model.openSheetID, "keys")
+    }
 }

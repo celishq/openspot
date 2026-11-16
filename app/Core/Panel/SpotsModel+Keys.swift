@@ -287,8 +287,9 @@ extension SpotsModel {
     private func runAction(with key: ActionKey, on target: Target) -> Bool? {
         let typesKey = !searchText.isEmpty && Self.editsText(key)
         var noHooks: Set<String> = []
+        var noKeys: [String: String] = [:]
         if !typesKey, !target.entry.spot.actions(for: target.item).contains(where: { $0.key == key }),
-           let offer = offered(on: target, yes: &noHooks, asks: false).first(where: { $0.action.key == key }) {
+           let offer = offered(on: target, yes: &noHooks, keys: &noKeys, asks: false).first(where: { $0.action.key == key }) {
             if offer.action.confirm != nil {
                 openMenu(on: target)
                 menu?.select(offer.action)

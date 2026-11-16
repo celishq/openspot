@@ -9,6 +9,7 @@ public struct ActionMenuSession {
     public let target: SpotsModel.Target
     public var phase = Phase.opening
     public var hookYes: Set<String> = []
+    public var hookKeys: [String: String] = [:]
     public var submenuRow: CGRect?
 
     public var isGrown: Bool {

@@ -76,10 +76,8 @@ public enum SettingCall: NounCall {
         switch key {
         case "enabled": return on("turns a spot on or off") { .turn(spot: spot, on: $0) }
         case "menubar": return on("changes the menu bar") { .menuBar(spot: spot, isShown: $0) }
-        case "open": return changing(.key(spot: spot, act: .open, key: value), "sets a key of your Mac")
-        case "float": return changing(.key(spot: spot, act: .float, key: value), "sets a key of your Mac")
-        case let key where key.hasPrefix(ReservedSetting.commandKey):
-            return changing(.key(spot: spot, act: .command(String(key.dropFirst(ReservedSetting.commandKey.count))), key: value), "sets a key of your Mac")
+        case let key where ReservedSetting.act(of: key) != nil:
+            return changing(.key(spot: spot, act: ReservedSetting.act(of: key) ?? .float, key: value), "sets a key of your Mac")
         default: return nil
         }
     }
