@@ -62,4 +62,15 @@ final class ActionsSpotTests: BuiltInCase {
         XCTAssertEqual(opened, ["push openspot/keys spot:shelf"])
         XCTAssertEqual([before, after], ["", "ctrl+option+s"])
     }
+
+    func testAWhenFunctionThatReturnsAnyTextSaysYes() async throws {
+        let js = try temporaryFolder().appendingPathComponent("hooks.js")
+        try "// title=Hooks\n//\n// button=go\n// title=Go\n// when=named\n// offers=actions\nfunction named(id) { return id === \"a\" ? \"yes\" : \"\"; }\n".write(to: js, atomically: true, encoding: .utf8)
+        let hooks = try XCTUnwrap(try SpotFile(file: js, id: "hooks")?.spots.first)
+
+        let a = await hooks.hook("named", card: "a", origin: "mine")
+        let b = await hooks.hook("named", card: "b", origin: "mine")
+
+        XCTAssertEqual([a, b], [true, false])
+    }
 }

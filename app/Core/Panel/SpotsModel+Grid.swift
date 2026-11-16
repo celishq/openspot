@@ -190,7 +190,8 @@ extension SpotsModel {
 
     private func pressCard(of id: String) {
         guard let entry = entry(id), entry.kind == .list, !entry.spot.pressRuns, let command = entry.spot.soleCommand else { return press(id) }
-        if !assignedKeys.contains(where: { $0.spot == id && $0.act == .command(command) }) { host.show() }
+        if let key = assignedKeys.first(where: { $0.spot == id && $0.act == .command(command) }) { return press(key) }
+        host.show()
         runSole(command, of: entry)
     }
 

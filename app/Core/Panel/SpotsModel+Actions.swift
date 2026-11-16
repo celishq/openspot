@@ -282,24 +282,25 @@ extension SpotsModel {
         guard openSheetID == nil, target.item == nil, let origin = origin(of: target.entry.spot) else { return [] }
         let word = OfferedAction.originWords.first { $0.value == origin }?.key ?? ""
         var shown: [OfferedAction] = []
+        let deadline = DispatchTime.now() + runs.frameWait
         for spot in sheets.values.lazy.map(\.spot).filter({ !$0.offeredActions.isEmpty }).sorted(by: { $0.id < $1.id }) {
             var hidden: [String] = []
             for offer in spot.offeredActions {
                 let id = offer.action.id
-                let shows = offer.fits(origin) && !hidden.contains { id.hasPrefix($0 + ".") } && hookSaysYes(offer, of: spot, on: target, origin: word, yes: &yes, asks: asks)
-                if shows { shown.append(labeled(offer, of: spot, on: target, origin: word, keys: &keys, asks: asks)) } else { hidden.append(id) }
+                let shows = offer.fits(origin) && !hidden.contains { id.hasPrefix($0 + ".") } && hookSaysYes(offer, of: spot, on: target, origin: word, until: deadline, yes: &yes, asks: asks)
+                if shows { shown.append(labeled(offer, of: spot, on: target, origin: word, until: deadline, keys: &keys, asks: asks)) } else { hidden.append(id) }
             }
         }
         return shown
     }
 
-    private func hookSaysYes(_ offer: OfferedAction, of spot: Spot, on target: Target, origin: String, yes: inout Set<String>, asks: Bool) -> Bool {
+    private func hookSaysYes(_ offer: OfferedAction, of spot: Spot, on target: Target, origin: String, until deadline: DispatchTime, yes: inout Set<String>, asks: Bool) -> Bool {
         guard let when = offer.when else { return true }
         let key = "\(spot.id) \(offer.action.id)"
         if yes.contains(key) { return true }
         guard asks else { return false }
         let card = target.entry.id
-        let answer = runs.ask(when, of: spot, card: card, origin: origin) { [weak self] said in
+        let answer = runs.ask(when, of: spot, card: card, origin: origin, until: deadline) { [weak self] said in
             guard said, let self, let session = menuSession, session.phase != .closing, session.target.entry.id == card, session.menu.parent == nil else { return }
             var answers = session.hookYes
             answers.insert(key)
@@ -310,14 +311,15 @@ extension SpotsModel {
         return answer == true
     }
 
-    private func labeled(_ offer: OfferedAction, of spot: Spot, on target: Target, origin: String, keys: inout [String: String], asks: Bool) -> OfferedAction {
+    private func labeled(_ offer: OfferedAction, of spot: Spot, on target: Target, origin: String, until deadline: DispatchTime, keys: inout [String: String], asks: Bool) -> OfferedAction {
         guard let function = offer.hotkey else { return offer }
         let key = "\(spot.id) \(offer.action.id)"
         if let text = keys[key] { return offer.labeled(text) }
         guard asks else { return offer }
         let card = target.entry.id
-        let answer = runs.hotkey(function, of: spot, card: card, origin: origin) { [weak self] text in
-            guard !text.isEmpty, let self, let session = menuSession, session.phase != .closing, session.target.entry.id == card, session.menu.parent == nil else { return }
+        let answer = runs.hotkey(function, of: spot, card: card, origin: origin, until: deadline) { [weak self] text in
+            guard !text.isEmpty, let self, let session = menuSession, session.phase != .closing, session.target.entry.id == card, session.menu.parent == nil,
+                  session.hookKeys[key] == nil else { return }
             var answers = session.hookYes
             var keys = session.hookKeys
             keys[key] = text

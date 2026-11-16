@@ -297,4 +297,18 @@ final class SoleCommandTests: XCTestCase {
         XCTAssertEqual(host.dismissals, 0)
         XCTAssertEqual(model.openSheetID, "keys")
     }
+
+    func testAnOpenKeyOfACommandWithConfirmShowsItsCardAskingAndReturnRunsIt() async throws {
+        try script("wipe", header: "title=Wipe\n\nbutton=wipe\ntitle=Wipe\nconfirm=Press again to wipe")
+        _ = try model.files.config.change { $0.assign(.tap(.option), to: "wipe", act: .command("wipe")) }
+        await model.reload()
+
+        model.press(GlobalKey(spot: "wipe", act: .open, trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+w")))))
+
+        XCTAssertEqual(host.shows, 1)
+        XCTAssertEqual(model.hint, "⏎ Press again to wipe   ⌘⏎ Settings   ⌘K Actions")
+        try await wait("the panel") { self.model.isShown }
+        XCTAssertTrue(model.handleSearchKey(ActionKey(name: "return")))
+        try await wait("the command") { host.confirms == ["Ran wipe"] }
+    }
 }
