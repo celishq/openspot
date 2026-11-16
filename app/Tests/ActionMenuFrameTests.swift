@@ -38,6 +38,29 @@ final class ActionMenuFrameTests: XCTestCase {
         XCTAssertEqual(place(right).maxX, right.maxX)
     }
 
+    func testAWideCardWithNoRoomAboveOrUnderLiftsSoTheMenuOpensUnderIt() {
+        let item = card(column: 1, row: 3, columns: 2)
+        let tall: CGFloat = 340
+        XCTAssertGreaterThan(item.maxY + ActionMenuFrame.gap + tall, bounds.maxY)
+        XCTAssertLessThan(item.minY - ActionMenuFrame.gap - tall, bounds.minY)
+
+        let frame = ActionMenuFrame(item: item, height: tall, bounds: bounds)
+        let lifted = item.offsetBy(dx: 0, dy: frame.lift)
+
+        XCTAssertLessThan(frame.lift, 0)
+        XCTAssertEqual(frame.rect.minY, lifted.maxY + ActionMenuFrame.gap)
+        XCTAssertEqual(frame.rect.maxY, bounds.maxY)
+        XCTAssertGreaterThanOrEqual(lifted.minY, bounds.minY)
+        XCTAssertFalse(frame.rect.intersects(lifted))
+        XCTAssertEqual(frame.stillEdge, .top)
+    }
+
+    func testACardWithRoomOrAFieldAboveTheBoundsDoesNotLift() {
+        XCTAssertEqual(ActionMenuFrame(item: card(column: 0, columns: 2), height: height, bounds: bounds).lift, 0)
+        XCTAssertEqual(ActionMenuFrame(item: card(column: 0, row: 6, columns: 2), height: height, bounds: bounds).lift, 0)
+        XCTAssertEqual(ActionMenuFrame(item: CGRect(x: 103, y: 90, width: 263, height: 64), height: 480, bounds: bounds).lift, 0)
+    }
+
     func testTheMenuOfARowNearTheBottomOpensOverIt() {
         let row = CGRect(x: 103, y: 600, width: 263, height: 40)
 

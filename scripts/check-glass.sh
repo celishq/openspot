@@ -15,9 +15,9 @@ if [ -n "$bare" ]; then
   echo "$bare" >&2
   exit 1
 fi
-faded=$(grep -rnE --include='*.swift' 'gridShade' app/Shell | grep -vE '^app/Shell/Grid/SpotMenuDim\.swift:')
+faded=$(grep -rnE --include='*.swift' 'gridShade' app/Shell | grep -vE '^app/Shell/Grid/SpotMenuFocus\.swift:')
 if [ -n "$faded" ]; then
-  echo "A view reads the shade of the grid, so it runs again when a menu opens. Only SpotMenuDim may:" >&2
+  echo "A view reads the shade of the grid, so it runs again when a menu opens. Only SpotMenuFocus may:" >&2
   echo "$faded" >&2
   exit 1
 fi

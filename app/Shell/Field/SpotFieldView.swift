@@ -28,7 +28,7 @@ struct SpotFieldView: View {
                 .allowsHitTesting(model.isEditing)
         }
         .modifier(FieldDim(isDim: model.dimsField))
-        .modifier(SpotMenuDim(model: model, index: nil))
+        .modifier(SpotMenuFocus(model: model, index: nil))
         .background(SpotFieldFocus(model: model, isFocused: $isFocused))
     }
 

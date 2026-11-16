@@ -168,10 +168,12 @@ public final class SpotsModel {
 
     private func takeShade() {
         var next = GridShade()
-        if let menuSession, openSheetID == nil { next = GridShade(over: placements, leaving: selected, isOn: menuSession.isGrown) }
+        if let menuSession, openSheetID == nil { next = GridShade(over: placements, leaving: selected, isOn: menuSession.isGrown, lift: menuFrame?.lift ?? 0) }
         if next != gridShade { gridShade = next }
     }
-    public internal(set) var menuFrame: ActionMenuFrame?
+    public internal(set) var menuFrame: ActionMenuFrame? {
+        didSet { takeShade() }
+    }
     public internal(set) var menuContentHeight: CGFloat = 0
     public internal(set) var gridHint = HintWords("")
     public internal(set) var sheetHint = HintWords("")
