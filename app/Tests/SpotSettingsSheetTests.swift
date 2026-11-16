@@ -65,19 +65,11 @@ final class SpotSettingsSheetTests: XCTestCase {
         XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
 
         try await wait("the Settings sheet") { model.openSheetID == settings }
-        try await wait("its rows") { model.openItems?.shown.map(\.run) == ["float:draw", "menubar:draw"] }
+        try await wait("its rows") { model.openItems?.shown.map(\.run) == ["menubar:draw"] }
         XCTAssertEqual(model.openEntry?.id, settings)
         XCTAssertEqual(model.openEntry?.state.title, "Draw Settings")
         XCTAssertEqual(SpotSheetCard.of(model.openSheetID, in: model)?.id, "draw")
         XCTAssertFalse(calls.contains("read"))
-
-        model.runSelectedItem()
-        XCTAssertEqual(model.recording, "float:draw")
-        model.record(code: 1, modifiers: [.control, .option])
-        try await wait("the key in the file") { model.files.config.read().keys.map(\.act) == [.float] }
-        try await wait("the key in its row") { model.openItems?.shown.first?.shortcut == "ctrl+option+s" }
-        XCTAssertEqual(model.openSheetID, settings)
-        XCTAssertEqual(host.dismissals, 0)
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
         XCTAssertNil(model.openSheetID)
@@ -92,7 +84,7 @@ final class SpotSettingsSheetTests: XCTestCase {
 
         XCTAssertEqual(model.hint, "⏎ Run   ⌘⏎ Settings   ⌘K Actions")
         XCTAssertTrue(model.openSelectedSettings())
-        try await wait("its settings") { model.openItems?.shown.map(\.run) == ["float:conf", "menubar:conf"] }
+        try await wait("its settings") { model.openItems?.shown.map(\.run) == ["menubar:conf"] }
         XCTAssertEqual(model.openSheetID, SpotSettings.sheetID(of: "conf"))
         model.closeSheet(moving: false)
 
@@ -136,7 +128,7 @@ final class SpotSettingsSheetTests: XCTestCase {
         try script("cups", header: "title=Cups\non=sheet.open\non=clock.60\noffers=card\noffers=float\n\nfield=size")
         try await show(selecting: "cups", search: "cups")
         XCTAssertTrue(model.openSelectedSettings())
-        try await wait("the rows") { model.openItems?.shown.map(\.run) == ["setting:cups:size", "float:cups", "menubar:cups"] }
+        try await wait("the rows") { model.openItems?.shown.map(\.run) == ["setting:cups:size", "menubar:cups"] }
 
         model.moveItemToEdge(last: true)
         model.runSelectedItem()

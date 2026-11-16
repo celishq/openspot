@@ -94,8 +94,9 @@ public struct SpotFile: Equatable, Sendable {
         if let source = sources.first(where: { $0.split(separator: "/", omittingEmptySubsequences: false).contains { $0.isEmpty || $0 == "." } }) {
             throw SpotError.fault("\(name) has `source=\(source)`, which is not a plain path. Write it with no `.`, no `..` and no `/` at its start or end, such as `source=model`.")
         }
-        let edits = header.value(HeaderKey.edits)
-        guard edits == nil || edits == "spots" else { throw SpotError.fault("\(name) has an unknown edits: \(edits!). Use edits=spots") }
+        let editsWord = header.value(HeaderKey.edits)
+        let edits = editsWord.flatMap(SpotEdits.init(rawValue:))
+        guard editsWord == nil || edits != nil else { throw SpotError.fault("\(name) has an unknown edits: \(editsWord ?? ""). Use edits=spots or edits=keys") }
         let places: Set<Place> = namedPlaces ?? (offeredActions.isEmpty && !answersOnly ? [.card] : [])
         let kind: SpotKind = mode.stays || places.contains(.search) || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch
         try Place.check(places, read: read, mode: mode, kind: kind, of: name)
@@ -126,7 +127,7 @@ public struct SpotFile: Equatable, Sendable {
             uses: uses,
             keywords: header.list(HeaderKey.keywords),
             sample: Self.sample(beside: url),
-            editsSpots: edits != nil
+            edits: edits
         )
         self.init(id: id, spots: [command])
     }

@@ -42,7 +42,7 @@ public struct ActionMenu: Equatable, Sendable {
 
     public init?(spot: Spot, item: SpotItem?, showsOpen: Bool = true, extras: [CommandAction] = [], offered: [OfferedAction] = []) {
         var rows: [Row] = []
-        let keyTitle = item.flatMap { $0.records ? ($0.shortcut == SpotSettings.unset ? Self.setTitle : Self.changeTitle) : nil }
+        let keyTitle = item.flatMap { $0.records ? ($0.shortcut == Trigger.unset ? Self.setTitle : Self.changeTitle) : nil }
         if showsOpen, let title = item?.openTitle ?? keyTitle ?? spot.openTitle(hasItem: item != nil) {
             rows.append(Row(title: title, keyLabel: "⏎", action: nil))
         }

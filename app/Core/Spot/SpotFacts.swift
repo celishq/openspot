@@ -36,6 +36,10 @@ public struct SpotFacts: Equatable, Sendable {
     public internal(set) var isBuiltIn = false
     public let keywords: [String]
     public let sample: URL?
-    public let editsSpots: Bool
+    public let edits: SpotEdits?
     public internal(set) var editedFile: URL?
+
+    public var editsSpots: Bool {
+        edits == .spots
+    }
 }

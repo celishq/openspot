@@ -5,6 +5,7 @@
 // uses=app,spots
 // offers=none
 // pages=spot:*
+// edits=keys
 const none = { text: "none", title: "No spot", detail: "Choose Keys… in the menu of a card" };
 
 // The spot whose keys the sheet shows, from the page that Keys… pushed.
@@ -33,7 +34,7 @@ function blocks(id) {
 
 function row(id, title, icon, key) {
   return {
-    row: id, title, icon, type: "hotkey", shake: "true", close: "false",
+    row: id, title, detail: key ? undefined : "Press ⏎ to set", icon, type: "hotkey", shake: "true", close: "false",
     hides: key ? undefined : "clear", shortcut: key || "Record",
   };
 }

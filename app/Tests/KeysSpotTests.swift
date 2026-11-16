@@ -74,4 +74,16 @@ final class KeysSpotTests: BuiltInCase {
         XCTAssertEqual(output.items, [])
         XCTAssertEqual(file.read().keys, [])
     }
+
+    func testAShakeOnARowTakesTheShakeFromTheSpotThatHadIt() async throws {
+        try script("shelf.sh", "title=Shelf\non=sheet.open\noffers=card\noffers=float")
+        try script("notes.sh", "title=Notes\non=sheet.open\noffers=card\noffers=float")
+
+        try await call(["float", "shake"], page: "spot:shelf")
+        try await call(["float", "shake"], page: "spot:notes")
+
+        XCTAssertEqual(file.read().keys, [GlobalKey(spot: "notes", act: .float, trigger: .shake)])
+        let rows = try await items(page: "spot:notes").items
+        XCTAssertEqual(rows.first { $0.run == "float" }?.shortcut, "shake")
+    }
 }

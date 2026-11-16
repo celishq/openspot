@@ -232,21 +232,20 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testEscWhileAKeyIsRecordedStopsTheRecordingAndKeepsTheSheet() async throws {
-        try script("draw", header: "title=Draw\non=sheet.open\noffers=card\noffers=float", "printf 'row=own\\ntitle=Own\\n'")
+        try script("draw", header: "title=Draw\non=sheet.open", "printf 'row=float\\ntitle=Float\\ntype=hotkey\\nshortcut=Record\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
-        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "draw" })
-        XCTAssertTrue(model.handleKey(settings))
-        let sheet = SpotSettings.sheetID(of: "draw")
-        try await wait("its rows") { self.model.openItems?.shown.map(\.run) == ["float:draw", "menubar:draw"] }
+        model.press("draw")
+        let sheet = "draw"
+        try await wait("its rows") { self.model.openItems?.shown.map(\.run) == ["float"] }
         XCTAssertTrue(model.handleSearchKey(enter))
-        XCTAssertEqual(model.recording, "float:draw")
+        XCTAssertEqual(model.recording, "float")
         XCTAssertEqual(model.hint, "Esc Cancel")
 
         XCTAssertFalse(model.handleKey(ActionKey(name: "s")))
         XCTAssertFalse(model.handleKey(enter))
-        XCTAssertEqual(model.recording, "float:draw")
+        XCTAssertEqual(model.recording, "float")
         XCTAssertTrue(model.handleKey(escape))
 
         XCTAssertNil(model.recording)

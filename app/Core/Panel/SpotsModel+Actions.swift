@@ -264,7 +264,7 @@ extension SpotsModel {
         let spot = target.entry.spot
         let opens: [CommandAction] = spot.pressRuns && target.entry.kind.opensSheet ? [.open] : []
         let history: [CommandAction] = spot.keepsHistory ? [.history] : []
-        let commands = spot.opensToSettings || spot.soleCommand != nil ? [] : spot.offers.map(CommandAction.command)
+        let commands = spot.opensToKeys || spot.soleCommand != nil ? [] : spot.offers.map(CommandAction.command)
         return opens + history + commands
     }
 

@@ -15,14 +15,24 @@ final class SoleCommandTests: XCTestCase {
         suite = "openspot-sole-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         host = FakeHost()
+        let core = folder.appendingPathComponent("core/openspot.spot", isDirectory: true)
+        try FileManager.default.createDirectory(at: core, withIntermediateDirectories: true)
+        let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        try FileManager.default.createSymbolicLink(at: core.appendingPathComponent("keys.js"), withDestinationURL: repo.appendingPathComponent("spots/openspot.spot/keys.js"))
         let files = AppPlaces(
-            environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
+            environment: [
+                "OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path,
+                "OPENSPOT_CORE": core.deletingLastPathComponent().path
+            ],
             home: folder,
             defaults: defaults
         )
         model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
         host.model = model
+        model.runs.api = CommandAPI(mac: Mac(), places: files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
     }
+
+    private let keys = "openspot/keys"
 
     override func tearDown() async throws {
         model.quit()
@@ -55,24 +65,21 @@ final class SoleCommandTests: XCTestCase {
         XCTAssertEqual(model.hint, "⏎ Set key   ⌘⏎ Settings   ⌘K Actions")
         model.run(try entry("dictate"))
 
-        XCTAssertEqual(model.recording, "key:dictate:dictate")
-        try await wait("the key row") { model.openItems?.shown.contains { $0.run == "key:dictate:dictate" } == true }
-        XCTAssertEqual(model.openSheetID, SpotSettings.sheetID(of: "dictate"))
+        XCTAssertEqual(model.recording, "key:dictate")
+        try await wait("the key row") { model.openItems?.shown.contains { $0.run == "key:dictate" } == true }
+        XCTAssertEqual(model.openSheetID, keys)
         XCTAssertEqual(model.recordingWords, "Press keys or shake")
         model.record(code: 125, modifiers: .command)
-        XCTAssertEqual(model.recording, "key:dictate:dictate")
+        XCTAssertEqual(model.recording, "key:dictate")
         XCTAssertEqual(host.notes.last, "`⌘Down` belongs to the apps on the Mac. Hold `⌥` or `⌃` with a key, or tap one key such as `⌥`.")
-        XCTAssertEqual(model.openItems?.shown.first?.title, "Dictate shortcut")
-        XCTAssertEqual(model.openItems?.shown.first?.subtitle, "Press ⏎ to set")
+        XCTAssertEqual(model.openItems?.shown.first { $0.run == "key:dictate" }?.subtitle, "Press ⏎ to set")
         model.recordTap(.option)
         try await wait("the tap in the file") {
             model.files.config.read().keys == [GlobalKey(spot: "dictate", act: .command("dictate"), trigger: .tap(.option))]
         }
-        try await wait("the new key in its row") { model.openItems?.shown.first?.shortcut == "option" }
-        XCTAssertEqual(model.openItems?.shown.first?.subtitle, "Press ⌘↓ to select")
-        XCTAssertEqual(model.openItems?.shown.first?.focusSubtitle, "Press ⏎ to change")
+        try await wait("the new key in its row") { model.openItems?.shown.first { $0.run == "key:dictate" }?.shortcut == "option" }
         XCTAssertNil(model.recording)
-        XCTAssertEqual(model.openSheetID, SpotSettings.sheetID(of: "dictate"))
+        XCTAssertEqual(model.openSheetID, keys)
         XCTAssertEqual(host.dismissals, 0)
 
         model.closeSheet(moving: false)
@@ -167,8 +174,8 @@ final class SoleCommandTests: XCTestCase {
 
         model.run(try entry("windows"))
 
-        try await wait("the key rows") { model.openSheetID == SpotSettings.sheetID(of: "windows") }
-        try await wait("their rows") { model.openItems?.shown.map(\.run) == ["key:windows:left", "key:windows:right", "menubar:windows"] }
+        try await wait("the key rows") { model.openSheetID == keys }
+        try await wait("their rows") { model.openItems?.shown.map(\.run) == ["spot", "key:left", "key:right"] }
         XCTAssertNil(model.recording)
     }
 
@@ -203,13 +210,13 @@ final class SoleCommandTests: XCTestCase {
 
         model.runSelected()
         try await wait("its settings, recording its key") {
-            model.recording == SpotSettings.keyRun(spot: "dictate", command: "dictate") && model.openSheetID == SpotSettings.sheetID(of: "dictate")
+            model.recording == "key:dictate" && model.openSheetID == keys
         }
     }
 
     func testAKeyRowSaysSetUntilItHasAKeyAndChangeAfter() {
         let spot = Spot(id: "d", name: "d", url: URL(fileURLWithPath: "/d.sh"))
-        let unset = SpotOutput(text: "row=key:d:d\ntitle=Dictate\ntype=hotkey\nshortcut=\(SpotSettings.unset)\n").items.first
+        let unset = SpotOutput(text: "row=key:d:d\ntitle=Dictate\ntype=hotkey\nshortcut=\(Trigger.unset)\n").items.first
         let set = SpotOutput(text: "row=key:d:d\ntitle=Dictate\ntype=hotkey\nshortcut=option\n").items.first
 
         XCTAssertEqual(ActionMenu(spot: spot, item: unset)?.rows.first?.title, "Set")
@@ -260,7 +267,7 @@ final class SoleCommandTests: XCTestCase {
         model.openFromMenuBar("pen")
 
         try await wait("its key, as the first Return records it") {
-            model.recording == SpotSettings.keyRun(spot: "pen", command: "draw") && model.openSheetID == SpotSettings.sheetID(of: "pen")
+            model.recording == "key:draw" && model.openSheetID == keys
         }
         XCTAssertGreaterThan(host.shows, 0)
     }
@@ -272,7 +279,7 @@ final class SoleCommandTests: XCTestCase {
 
         model.press(open)
         XCTAssertEqual(host.shows, 1)
-        XCTAssertEqual(model.recording, "key:dictate:dictate")
+        XCTAssertEqual(model.recording, "key:dictate")
         model.stopRecording()
         _ = try model.files.config.change { $0.assign(.tap(.option), to: "dictate", act: .command("dictate")) }
         await model.reload()
