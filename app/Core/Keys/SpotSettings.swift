@@ -42,7 +42,7 @@ public struct SpotSettings: Equatable, Sendable {
     public let file: ConfigFile
     let secrets: SecretStore
     public let spot: String
-    let fields: [CommandOffer]
+    let fields: [HeaderField]
     let showsInMenuBar: Bool
 
     public func hasRows(in config: Config) -> Bool {
@@ -84,7 +84,7 @@ public struct SpotSettings: Equatable, Sendable {
 
     private func kept(in config: Config) -> [SpotSetting] {
         config.settings.filter { value in
-            value.spot == spot && !ReservedSetting.isReserved(value.key) && CommandOffer(setting: value.key) != nil && !fields.contains { $0.id == value.key }
+            value.spot == spot && !ReservedSetting.isReserved(value.key) && HeaderField(setting: value.key) != nil && !fields.contains { $0.id == value.key }
         }
     }
 
@@ -97,7 +97,7 @@ public struct SpotSettings: Equatable, Sendable {
         let named = fields.map { field in
             (field, field.isSecret ? secrets[field.id].map { _ in Self.secretWord } : config.setting(field.id, of: spot).flatMap { $0.isEmpty ? nil : $0 })
         }
-        let kept = kept(in: config).compactMap { value in CommandOffer(setting: value.key).map { ($0, Optional(value.value)) } }
+        let kept = kept(in: config).compactMap { value in HeaderField(setting: value.key).map { ($0, Optional(value.value)) } }
         blocks += (named + kept).map(fieldRow)
         if showsInMenuBar {
             blocks.append(TextBlock(fields: [
@@ -108,7 +108,7 @@ public struct SpotSettings: Equatable, Sendable {
         return blocks.map(\.text).joined(separator: "\n")
     }
 
-    private func fieldRow(_ field: CommandOffer, _ value: String?) -> TextBlock {
+    private func fieldRow(_ field: HeaderField, _ value: String?) -> TextBlock {
         TextBlock(fields: [
             .init(key: "row", value: Row.setting(field.id).id(of: spot)), .init(key: "title", value: field.title),
             .init(key: "detail", value: value ?? "Not set"), .init(key: "icon", value: Self.valueIcon)

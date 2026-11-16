@@ -240,13 +240,13 @@ private struct FailureMark: View {
 
     var body: some View {
         if entry.failure != nil {
-            let inset = SurfaceEdge(card: size).rim - SpotTokens.keycap / 2
-            let cap = SpotRoundShape(radius: SpotTokens.keycapRadius)
+            let inset = SurfaceEdge(card: size).rim - SpotTokens.cornerMark / 2
+            let cap = SpotRoundShape(radius: SpotTokens.cornerMarkRadius)
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(SpotType.cornerFault)
                 .foregroundStyle(SpotTheme.ink)
-                .frame(width: SpotTokens.keycap, height: SpotTokens.keycap)
-                .background(SpotTheme.keycap, in: cap)
+                .frame(width: SpotTokens.cornerMark, height: SpotTokens.cornerMark)
+                .background(SpotTheme.cornerFill, in: cap)
                 .overlay(cap.strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
                 .offset(x: -inset, y: inset)
                 .accessibilityLabel("Last run failed")

@@ -145,15 +145,15 @@ final class CallInputTests: SpotRunsCase {
         XCTAssertEqual(text("env"), "OPENSPOT_SETTING_CITY=Paris\n")
     }
 
-    private func settingsSheet(fields: [CommandOffer], config: String = "") throws -> String {
+    private func settingsSheet(fields: [HeaderField], config: String = "") throws -> String {
         let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
         try config.write(to: file.url, atomically: true, encoding: .utf8)
         let settings = SpotSettings(file: file, secrets: try secrets(["token": marker]), spot: "script", fields: fields, showsInMenuBar: false)
         return try settings.answer(["read"])
     }
 
-    private func field(_ key: String, secret: Bool) throws -> CommandOffer {
-        try XCTUnwrap(CommandOffer(setting: TextBlock(fields: [.init(key: "field", value: key)] + (secret ? [.init(key: "type", value: "secret")] : []))))
+    private func field(_ key: String, secret: Bool) throws -> HeaderField {
+        try XCTUnwrap(HeaderField(setting: TextBlock(fields: [.init(key: "field", value: key)] + (secret ? [.init(key: "type", value: "secret")] : []))))
     }
 
     func testTheSettingsSheetShowsThatASecretIsSetAndNotItsValue() throws {

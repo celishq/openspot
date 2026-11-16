@@ -60,7 +60,7 @@ public struct SpotFile: Equatable, Sendable {
         if let field = header.children.compactMap({ $0.value(HeaderBlock.field) }).first(where: ReservedSetting.isReserved) {
             throw SpotError.fault("\(name) has field=\(field), a key that Openspot keeps for the person. Give the field another name.")
         }
-        if let field = header.children.first(where: { HeaderBlock(block: $0) == .field && $0.value("type").map { $0 != CommandOffer.secret } == true }) {
+        if let field = header.children.first(where: { HeaderBlock(block: $0) == .field && $0.value("type").map { $0 != HeaderField.secret } == true }) {
             throw SpotError.fault("\(name) has an unknown type on the field `\(field.value(HeaderBlock.field) ?? "")`: `\(field.value("type") ?? "")`. Use `type=secret`, or no type.")
         }
         let fieldKeys = header.children.compactMap { $0.value(HeaderBlock.field) }
@@ -73,7 +73,7 @@ public struct SpotFile: Equatable, Sendable {
         let offeredActions = try OfferedAction.read(buttons, owner: id, of: name, isInline: mode == .inline)
         let offeredIDs = Set(offeredActions.map(\.action.id))
         let offers = try buttons.filter { !offeredIDs.contains($0.value(HeaderBlock.button) ?? "") }.map { block in
-            guard let offer = CommandOffer(block: block) else {
+            guard let offer = HeaderButton(block: block) else {
                 throw SpotError.fault("\(name) cannot read the button \(block.value(HeaderBlock.button) ?? ""). Give it an ID with no space and a title, such as button=left with title=Left side")
             }
             return offer
@@ -118,7 +118,7 @@ public struct SpotFile: Equatable, Sendable {
             isOnGrid: places.contains(.card) && offers.isEmpty && read?.seconds == nil && !answersOnly,
             offers: offers,
             offeredActions: offeredActions,
-            settings: header.children.filter { HeaderBlock(block: $0) == .field }.compactMap { CommandOffer(setting: $0) },
+            settings: header.children.filter { HeaderBlock(block: $0) == .field }.compactMap { HeaderField(setting: $0) },
             view: view.map { Self.path($0, beside: url) },
             viewDate: view.flatMap { Self.viewDate(of: Self.path($0, beside: url), script: url) },
             sources: sources,

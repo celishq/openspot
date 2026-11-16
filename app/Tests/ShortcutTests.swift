@@ -53,7 +53,7 @@ final class ShortcutTests: XCTestCase {
     }
 
     func testAKeyIsFoundByItsCode() {
-        XCTAssertEqual(CommandKey(code: 17)?.name, "t")
-        XCTAssertNil(CommandKey(code: 49))
+        XCTAssertEqual(KeyCode(code: 17)?.name, "t")
+        XCTAssertNil(KeyCode(code: 49))
     }
 }

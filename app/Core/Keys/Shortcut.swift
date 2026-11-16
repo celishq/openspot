@@ -54,14 +54,14 @@ public struct Shortcut: Hashable, Sendable {
     }
 
     public init?(text: String) {
-        guard let key = KeyText(text: text), let code = Self.namedCodes[key.name] ?? CommandKey(name: key.name)?.code, Self.isHeld(key.modifiers) else {
+        guard let key = KeyText(text: text), let code = Self.namedCodes[key.name] ?? KeyCode(name: key.name)?.code, Self.isHeld(key.modifiers) else {
             return nil
         }
         self.init(name: key.name, code: code, modifiers: key.modifiers)
     }
 
     public init?(code: UInt32, modifiers: Modifiers) {
-        guard let name = Self.namedCodes.first(where: { $0.value == code })?.key ?? CommandKey(code: code)?.name,
+        guard let name = Self.namedCodes.first(where: { $0.value == code })?.key ?? KeyCode(code: code)?.name,
               Self.isHeld(modifiers) else { return nil }
         self.init(name: name, code: code, modifiers: modifiers)
     }
