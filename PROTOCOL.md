@@ -591,16 +591,16 @@ openspot_kv value "$(value input)"
 
 ## Slash commands
 
-A slash command runs a header `button` or a spot that has a `placeholder`, with the text that the user typed, in one
-Return. A `placeholder` says that a command takes text. A plain search finds spots; `/` runs one with text.
+A slash command runs a `button` or a spot that has a `placeholder`, with the text that the user typed, in one Return.
+A `placeholder` says that a command takes text. A plain search finds spots; `/` runs one with text.
 
 ```text
 /translate hello world     Return opens Translate, and its read gets search=hello world
 buy milk /notes            Return runs notes add, with search=buy milk on stdin
 ```
 
-- In the main search, `/` at the start of a word, with a letter after it, lists the header `button`s and the spots that
-  have a `placeholder`, whose name matches the word, and `/` alone, or after the text, lists them all. A word that matches none stays text, so
+- In the main search, `/` at the start of a word, with a letter after it, lists the header `button`s, the `scope=spot`
+  `button`s of a sheet, and the spots that have a `placeholder`, whose name matches the word, and `/` alone, or after the text, lists them all. A word that matches none stays text, so
   `10/2` and `/Users` search as before.
 - The first row is highlighted, ↑ and ↓ move it, and the footer names what Return runs. Each row's detail is its
   `placeholder` until text follows, then the text that Return sends.
@@ -610,7 +610,7 @@ buy milk /notes            Return runs notes add, with search=buy milk on stdin
 
 | Command                                | The call with text                                 |
 | -------------------------------------- | -------------------------------------------------- |
-| A header `button` with a `placeholder` | `<spot> <id>`                                      |
+| A `button` with a `placeholder`        | `<spot> <id>`                                      |
 | A spot with a `placeholder`, no sheet  | `<spot> open`                                      |
 | A spot with a `placeholder` and sheet  | Its sheet opens, and the read of the sheet gets it |
 

@@ -87,7 +87,7 @@ final class SlashCommandPanelTests: PanelCase {
         await open()
 
         type("/ping hi")
-        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "ping\nping" })
+        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.state.title == "Ping" })
         model.runSelected()
 
         try await wait("the toast") { self.host.confirms == ["Ping hi"] }
@@ -162,6 +162,24 @@ final class SlashCommandPanelTests: PanelCase {
         model.runSelected()
 
         try await wait("the toast") { self.host.confirms == ["Saved buy milk"] }
+    }
+
+    func testAFormButtonOfASpotWithAPlaceholderOpensItsFormFilledByTheSpot() async throws {
+        try script("jot", header: "title=Jot\non=panel.open\non=sheet.open", """
+        . "$OPENSPOT_SH"
+        case "$1" in
+          new) printf 'title=New jot\\n\\nfield=text\\ntitle=Text\\n'; openspot_kv value "$(value search)" ;;
+          *) printf 'row=a\\ntitle=A\\n\\nbutton=new\\ntitle=New jot\\nscope=spot\\nform=true\\nplaceholder=What to jot\\n' ;;
+        esac
+        """)
+        await open()
+        try await wait("the button of the read") { self.model.entry("jot")?.spot.actions.isEmpty == false }
+
+        type("/jot milk")
+        XCTAssertEqual(model.visible.map(\.state.title), ["New jot"])
+        model.runSelected()
+
+        try await wait("the form") { self.model.form?.draft.values["text"] == "milk" }
     }
 
     func testAWordThatNamesNoCommandStaysText() async throws {

@@ -146,7 +146,7 @@ case "$1" in
     printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+r\nclose=true\n\n'
     printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\n\n'
     printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\n\n'
-    printf 'button=new\ntitle=New link\nshortcut=cmd+n\nscope=spot\nform=true\n\n'
+    printf 'button=new\ntitle=New link\nshortcut=cmd+n\nscope=spot\nform=true\nplaceholder=Link to add\n\n'
     [ -s "$data" ] || exit 0
     set --
     for icon in "$icons"/*.png; do [ -e "$icon" ] && set -- "$@" "${icon##*/}"; done
@@ -161,7 +161,7 @@ case "$1" in
     ;;
   new)
     if [ -z "$(value title)$(value url)" ]; then
-      form "New link" '{"title":"","url":""}'
+      form "New link" "$(jq -nc --arg url "$(value search)" '{title: "", url: $url}')"
       exit 0
     fi
     id=$(uuidgen)

@@ -2,19 +2,18 @@ import Foundation
 
 extension SpotsModel {
     func commandEntries(_ command: SlashCommand) -> [Entry] {
-        let cards = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        return commands.entries(matching: runs.search(of: command.word), text: command.text, limit: command.word.isEmpty ? .max : Self.searchLimit, cards: cards)
+        commands.entries(matching: runs.search(of: command.word), text: command.text, limit: command.word.isEmpty ? .max : Self.searchLimit)
     }
 
     func launch(_ shown: Entry, with text: String) {
         guard let entry = entry(shown.spot.id) else { return }
-        let offer = commands.button(of: shown)
+        let button = commands.button(of: shown)
         if text.isEmpty {
-            if let offer { return run(CommandAction.command(offer), on: (entry, nil)) }
+            if let button { return run(button, on: (entry, nil)) }
             return run(seen: entry)
         }
-        if let offer {
-            return call(CommandAction.command(offer), of: entry, text)
+        if let button {
+            return call(button, of: entry, text)
         }
         switch entry.spot.mainAct {
         case .run:

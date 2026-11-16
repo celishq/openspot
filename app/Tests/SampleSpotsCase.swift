@@ -143,6 +143,11 @@ class SampleSpotsCase: XCTestCase {
         _ = try await links.submit(new, item: nil, draft: draft, timeout: 60)
     }
 
+    @MainActor
+    static func answer(of spot: Spot, _ arguments: [String], input: String) async throws -> SpotOutput {
+        SpotOutput(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, SpotAction(arguments: arguments), input: input, limit: 30))
+    }
+
     func action(_ id: String, of spot: Spot) async throws -> CommandAction {
         let actions = try await spot.items(timeout: 60).actions
         return try XCTUnwrap(actions.first { $0.id == id })

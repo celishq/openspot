@@ -67,6 +67,7 @@ extension SpotsModel {
             commands = CommandIndex(cards)
         }
         let command = isEditing ? nil : SlashCommand(query)
+        if command != nil, slash == nil { commands = CommandIndex(cards) }
         let rows = command.map(commandEntries) ?? []
         let next = rows.isEmpty ? nil : command
         if slash != next { slash = next }
