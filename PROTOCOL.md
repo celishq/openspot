@@ -124,10 +124,10 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `grid.<size>` | A card made of other spots. Each word is a spot id. See [Cards of other spots](#cards-of-other-spots).                           |
 | `to`          | The spot that opens when the user presses a card of other spots. See [Cards of other spots](#cards-of-other-spots).              |
 
-| Block         | Meaning                                                                                                                                                                                                                                         |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `button=<id>` | A command, with its `title` and `icon`. The user can give it a hotkey. `confirm` asks for a second press. `close=false` keeps its sheet open after a [slash command](#slash-commands), and `placeholder` lists it there, as the grey hint after its name. |
-| `field=<key>` | A setting the user chooses, with its `title` (by default, its key) and `icon`. See [Settings](#settings).                                                                                                                                       |
+| Block         | Meaning                                                                                                                                                                                                                                                                      |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `button=<id>` | A command, with its `title` and `icon`. The user can give it a hotkey. `confirm` asks for a second press. `close=false` keeps the panel open after a [slash command](#slash-commands) that shows nothing, and `placeholder` lists it there, as the grey hint after its name. |
+| `field=<key>` | A setting the user chooses, with its `title` (by default, its key) and `icon`. See [Settings](#settings).                                                                                                                                                                    |
 
 - A spot with a `button` in its header has no card. It gives its commands instead.
 - Return on a spot with one `button` and no `on=` events runs it, as its hotkey does. When it has no hotkey yet, Return
@@ -615,8 +615,8 @@ buy milk /notes            Return runs notes add, with search=buy milk on stdin
 | A spot with a `placeholder` and sheet  | Its sheet opens, and the read of the sheet gets it |
 
 - The first frame of the call decides what shows. A frame with fields is a form, as for a `form=true` button, and Return
-  in it sends the values to the same call. Other blocks open the spot's sheet when the `button` has `close=false`.
-  Anything else closes the panel.
+  in it sends the values to the same call. Other blocks open the spot's sheet with them. A frame with nothing to show,
+  such as only a `toast`, or the end of the call closes the panel, unless the `button` has `close=false`.
 - A header `button` with `confirm` isn't listed, since a slash command doesn't ask twice.
 
 ## The life of a call

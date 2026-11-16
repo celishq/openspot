@@ -13,7 +13,7 @@ final class FirstFrame {
         guard let waiting else { return false }
         self.waiting = nil
         if frame.fields.isEmpty {
-            waiting.resume(returning: .shown)
+            waiting.resume(returning: frame.isPicture ? .shown : .done)
         } else if let form = ItemForm(output: frame) {
             waiting.resume(returning: .form(form))
         } else {

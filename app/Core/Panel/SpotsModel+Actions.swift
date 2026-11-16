@@ -453,7 +453,7 @@ extension SpotsModel {
             let opensSheet = openSheetID != id
             if opensSheet { pushFirst(id, moving: isShown) }
             self.form = FormSession(draft: FormDraft(form: form, prefill: prefill), entry: target.entry, action: action, item: target.item, openedSheet: opensSheet)
-        case .shown where action.after == .stay:
+        case .shown where target.entry.spot.kind.opensSheet:
             if openSheetID != id { pushFirst(id, moving: isShown) }
         case .shown, .done:
             if action.after == .close, isShown { host.dismiss() }

@@ -7,7 +7,7 @@ final class SlashCommandPanelTests: PanelCase {
     }
 
     private func writeNotes() throws {
-        try script("notes", header: "title=Notes\non=sheet.open\n\nbutton=add\ntitle=Add note\nplaceholder=What to add\n\nbutton=find\ntitle=Find note\nclose=false\nplaceholder=What to find", """
+        try script("notes", header: "title=Notes\non=sheet.open\n\nbutton=add\ntitle=Add note\nplaceholder=What to add\n\nbutton=find\ntitle=Find note\nplaceholder=What to find", """
         stdin=$(cat)
         printf '%s\\n%s\\n' "$*" "$stdin" >> '\(input.path)'
         search=$(printf '%s\\n' "$stdin" | sed -n 's/^search=//p' | head -n 1)
@@ -220,7 +220,7 @@ final class SlashCommandPanelTests: PanelCase {
         XCTAssertTrue(sent.contains("name=bread"), sent)
     }
 
-    func testACommandThatStaysOpensItsSheetAtItsFirstFrame() async throws {
+    func testAFirstFrameWithSomethingToShowOpensTheSheet() async throws {
         try writeNotes()
         await open()
 
