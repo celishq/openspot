@@ -28,6 +28,11 @@ final class SlashCommandTests: XCTestCase {
         }
     }
 
+    func testTheLeadIsTheTextBeforeTheCommandWordAsTyped() {
+        XCTAssertEqual(SlashCommand("hello  /tr x")?.lead, "hello  ")
+        XCTAssertEqual(SlashCommand("/tr x")?.lead, "")
+    }
+
     func testTheFirstCommandWordIsTheCommandAndALaterOneIsText() {
         XCTAssertEqual(parse("/a /b c"), ["a", "/b c"])
     }
