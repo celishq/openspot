@@ -84,13 +84,13 @@ final class WelcomeLaunchTests: XCTestCase {
         XCTAssertEqual(host.confirms.last, key.openHint)
     }
 
-    func testBackspaceAfterAKeyEmptiesTheFieldAndRecordsAgain() async throws {
+    func testEscAfterAKeyEmptiesTheFieldAndRecordsAgain() async throws {
         try await launch()
         model.record(code: 49, modifiers: .option)
         try await wait("the kept key") { self.hasEnded }
         XCTAssertNil(model.recording)
 
-        XCTAssertTrue(model.handleKey(ActionKey(name: "backspace")))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
 
         try await wait("the empty field") { self.keyField?.value == "" }
         try await wait("the recording again") { self.model.recording == "key" }

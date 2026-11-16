@@ -49,15 +49,19 @@ label() {
   printf '%s%s' "$out" "$key"
 }
 
-# Prints the head and the blocks of the page, with the head lines in $1 before its layout.
+# Prints the head and the blocks of the page, with the head lines in $1 before its layout. Esc keeps the current key
+# while the page listens, and tries again once a key shows.
 page() {
+  shown=$(chosen)
   printf '%s' "${1-}"
   printf 'grid=key key key key\ngrid=key key key key\ngrid=use use use use\ngrid=keep keep again again\n\n'
   printf 'field=key\ntype=hotkey\n'
-  openspot_kv value "$(chosen)"
+  openspot_kv value "$shown"
   printf '\nbutton=use\ntitle=Use this key\nlook=strong\nshortcut=return\n'
-  printf '\nbutton=keep\ntitle=Keep %s\nshortcut=escape\n' "$(label "$now")"
-  printf '\nbutton=again\ntitle=Try again\nshortcut=backspace\n'
+  printf '\nbutton=keep\ntitle=Keep %s\n' "$(label "$now")"
+  [ -n "$shown" ] || printf 'shortcut=escape\n'
+  printf '\nbutton=again\ntitle=Try again\n'
+  if [ -n "$shown" ]; then printf 'shortcut=escape\n'; else printf 'shortcut=backspace\n'; fi
 }
 
 case "$1" in

@@ -114,6 +114,23 @@ final class WelcomeSpotTests: BuiltInCase {
         XCTAssertEqual(try part("key", in: next).control, .shortcut(""))
     }
 
+    private func button(on name: String, in output: SpotOutput) -> String? {
+        output.parts.first { $0.key == ActionKey(name: name) }?.id
+    }
+
+    func testEscKeepsTheKeyWhileItListensAndTriesAgainOnceAKeyShows() async throws {
+        let listening = try await read()
+        XCTAssertEqual(button(on: "escape", in: listening), "keep")
+        XCTAssertEqual(button(on: "backspace", in: listening), "again")
+
+        let shown = try await answer(["key", "ctrl+option+space"])
+        XCTAssertEqual(button(on: "escape", in: shown), "again")
+        XCTAssertNil(try part("keep", in: shown).key)
+
+        let again = try await answer(["again"])
+        XCTAssertEqual(button(on: "escape", in: again), "keep")
+    }
+
     func testEachBlockHasAPlaceSoNoButtonBecomesAnAction() async throws {
         let output = try await read()
 
