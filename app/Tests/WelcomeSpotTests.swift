@@ -38,6 +38,17 @@ final class WelcomeSpotTests: BuiltInCase {
         XCTAssertEqual(try part("use", in: output).title, "Use this key")
         XCTAssertEqual(try part("again", in: output).title, "Try again")
         XCTAssertNil(output.move)
+        XCTAssertEqual(output.summary?.value("title"), "Choose your key")
+        XCTAssertEqual(output.summary?.value("detail"), "It opens Openspot from any app")
+    }
+
+    func testAFailingStatusFailsTheReadAndNamesNoKey() async throws {
+        try fake("openspot", "exit 1")
+
+        do {
+            _ = try await read()
+            XCTFail("showed a key with no status")
+        } catch {}
     }
 
     func testKeepNamesTheStandardKeyWithNoFile() async throws {
