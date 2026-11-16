@@ -64,8 +64,7 @@ public final class SpotsModel {
     @ObservationIgnored var laidOutGrid = SpotGrid()
     @ObservationIgnored var spotList = ItemList()
     @ObservationIgnored var spotListIsStale = true
-    @ObservationIgnored var commandList = ItemList()
-    @ObservationIgnored var commandOffers: [String: CommandOffer] = [:]
+    @ObservationIgnored var commands = CommandIndex()
     public internal(set) var slash: SlashCommand?
     @ObservationIgnored var keyFrames: [String: String] = [:]
     @ObservationIgnored var spotListBuilds = 0

@@ -64,15 +64,15 @@ extension SpotsModel {
             spotListIsStale = false
             spotListBuilds += 1
             spotList.replace(cards.filter(\.spot.isFound).map(Self.foundItem))
-            takeCommands()
+            commands = CommandIndex(cards)
         }
         let command = isEditing ? nil : SlashCommand(query)
-        let commands = command.map(commandEntries) ?? []
-        let next = commands.isEmpty ? nil : command
+        let rows = command.map(commandEntries) ?? []
+        let next = rows.isEmpty ? nil : command
         if slash != next { slash = next }
-        if !commands.isEmpty {
+        if !rows.isEmpty {
             foundSpots = []
-            return show(commands)
+            return show(rows)
         }
         var ids = Set<String>()
         let answers = entries.filter { $0.spot.answers.map { runs.answerMatches.matches($0, text) } == true }

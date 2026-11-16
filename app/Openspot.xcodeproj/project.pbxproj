@@ -708,6 +708,7 @@
 		D76F7916D5206BF1C167FCA1 /* openspot.sh in Resources */ = {isa = PBXBuildFile; fileRef = 94B0E4567AE631D558192FF8 /* openspot.sh */; };
 		D780233D72D94732060B07C1 /* SpotPackage+Release.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0FD2E4AE61ADD248A6B84BA /* SpotPackage+Release.swift */; };
 		D7A87C07F9C3823586B2A9AC /* ViewBuildsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E516E416148586FA2A245E1 /* ViewBuildsTests.swift */; };
+		D7CBBAAB1E360EEBA9D9EA62 /* CommandIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EA46F1BE68701EFEE8698F /* CommandIndex.swift */; };
 		D7D3E70D6854D2B02993DC25 /* PanelSpan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B383898EBB18E715FB418D9 /* PanelSpan.swift */; };
 		D7E76053A99C4AA71A70B77E /* AppSpotInputTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C4A126DC0E9B87D9BCD2FE4 /* AppSpotInputTests.swift */; };
 		D81371BCEA7BA1D45FF16691 /* SpotsModelDragTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AECA7E4958B376D25475BDFB /* SpotsModelDragTests.swift */; };
@@ -911,6 +912,7 @@
 		04798119A31A08BDE55ED6D1 /* libOpenspotCore.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libOpenspotCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		04EAD151E5E058F2D0C0B967 /* SpotFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotFormView.swift; sourceTree = "<group>"; };
 		0593FF6BEE540B9D2F8DC85E /* ClipboardCalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardCalls.swift; sourceTree = "<group>"; };
+		05EA46F1BE68701EFEE8698F /* CommandIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandIndex.swift; sourceTree = "<group>"; };
 		0745D0A7BFD828B792C1C501 /* SpotCardPicture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotCardPicture.swift; sourceTree = "<group>"; };
 		076DB9583EF76B9C46B1710A /* Foil.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Foil.metal; sourceTree = "<group>"; };
 		07FE276A36343F10EAA2BA9F /* SpotWindows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotWindows.swift; sourceTree = "<group>"; };
@@ -2756,6 +2758,7 @@
 			children = (
 				0C61FD75A81E3E043BED3219 /* AppPlaces.swift */,
 				8F0B93899AB75660556596CF /* BackdropEdge.swift */,
+				05EA46F1BE68701EFEE8698F /* CommandIndex.swift */,
 				2F879BAF9F25DE9FFF84989F /* KeyRow.swift */,
 				67D401B5A9ACE369B0FAE465 /* MotionTokens.swift */,
 				FD976DD868930EE4BFE7D84E /* PanelMode.swift */,
@@ -3467,6 +3470,7 @@
 				A977216BA7B3236678E4F84C /* CommandAnswer.swift in Sources */,
 				24E80D6CB9AEBD2CB75584FB /* CommandConnection.swift in Sources */,
 				AAC46201AE86DE77B4BAC609 /* CommandGuide.swift in Sources */,
+				D7CBBAAB1E360EEBA9D9EA62 /* CommandIndex.swift in Sources */,
 				939FE0E4820E06879EE4A38E /* CommandKey.swift in Sources */,
 				AA9FE6ABD0E15CAABE58D838 /* CommandKind.swift in Sources */,
 				71702FDE7671AFF3814ED1DB /* CommandLineCall.swift in Sources */,
