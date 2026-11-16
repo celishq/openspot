@@ -29,7 +29,7 @@ extension SpotsModel {
     }
 
     private func run(_ key: GlobalKey) {
-        if key.act == .open { return entry(key.spot).map { $0.soleCommand == nil ? press($0.id) : run($0) } ?? () }
+        if key.act == .open { return entry(key.spot).map(open(byKey:)) ?? () }
         guard case .command(let command) = key.act else { return float(key.spot) }
         guard let sheet = sheets[key.spot] else { return }
         sheet.pressKey(command)
@@ -39,6 +39,12 @@ extension SpotsModel {
             try? await Task.sleep(for: flashPause)
             if !Task.isCancelled { self?.flashSymbol = nil }
         }
+    }
+
+    private func open(byKey entry: Entry) {
+        guard entry.soleCommand == nil else { return run(entry) }
+        if entry.kind.opensSheet, !entry.spot.pressRuns { endFlow() }
+        press(entry.id)
     }
 
     public func menuBarSymbol(during toast: ToastKind?) -> String? {

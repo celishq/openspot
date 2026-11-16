@@ -86,7 +86,7 @@ extension SpotsModel {
         if openSheetID == nil { endFlow() }
         flow.push(FlowSheet(spot: id, title: title))
         sheets[id]?.show(page: nil)
-        waitPush(moving: moving && openSheetID != nil && openSheetID != id)
+        waitPush(moving: moving && openSheetID != nil && openSheetID != id && flow.index > 0)
         present(id, moving: moving)
     }
 

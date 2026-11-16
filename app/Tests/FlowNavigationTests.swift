@@ -262,6 +262,17 @@ final class FlowNavigationTests: PanelCase {
         XCTAssertNil(model.sheets["list"]?.page)
     }
 
+    func testAnOpenKeyStartsANewFlowWithNothingBehind() async throws {
+        try await openList()
+        try await openPage()
+
+        model.press(GlobalKey(spot: "other", act: .open, trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+h")))))
+
+        try await wait("the other spot") { self.model.openSheetID == "other" && self.titles == ["Other"] }
+        XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "other")])
+        try await wait("no bar behind") { self.model.flowEdges.from == nil && self.model.flowEdges.titles(on: .behind) == [] }
+    }
+
     func testARunForgetsWhatEachPageShowedOnceThePageLeavesTheFlow() async throws {
         try await openList()
         try await openPage()
