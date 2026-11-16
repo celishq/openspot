@@ -25,12 +25,13 @@ enum GuideCall: NounCall {
                 switch self {
                 case .text: return CommandAnswer(output: text)
                 case .topics:
-                    let topics = GuideTopic.all(in: text)
-                    let width = (topics.map(\.slug.count).max() ?? 0) + 4
-                    return CommandAnswer(output: topics.map { $0.slug.padding(toLength: width, withPad: " ", startingAt: 0) + $0.title + "\n" }.joined())
+                    return CommandAnswer(output: Self.list(GuideTopic.all(in: text)))
                 case .topic(let name):
                     let topics = GuideTopic.all(in: text)
                     if let topic = topics.first(where: { $0.slug == name.lowercased() || $0.title.lowercased() == name.lowercased() }) { return CommandAnswer(output: topic.text) }
+                    let found = GuideTopic.found(name, in: topics)
+                    if found.count == 1 { return CommandAnswer(output: found[0].text) }
+                    if !found.isEmpty { return CommandAnswer(output: Self.list(found)) }
                     let close = CommandHelp.closest(to: name.lowercased(), in: topics.map(\.slug)).map { " Did you mean `openspot guide \($0)`?" } ?? ""
                     return CommandAnswer(errors: "The guide has no topic \(name).\(close) Run `openspot guide --topics` to see each topic.\n", code: 2)
                 }
@@ -38,5 +39,10 @@ enum GuideCall: NounCall {
                 return CommandAnswer(failure: error)
             }
         }
+    }
+
+    private static func list(_ topics: [GuideTopic]) -> String {
+        let width = (topics.map(\.slug.count).max() ?? 0) + 4
+        return topics.map { $0.slug.padding(toLength: width, withPad: " ", startingAt: 0) + $0.title + "\n" }.joined()
     }
 }

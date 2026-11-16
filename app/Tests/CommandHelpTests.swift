@@ -115,4 +115,13 @@ final class CommandHelpTests: XCTestCase {
         XCTAssertEqual(missing.errors, "The guide has no topic show-list. Did you mean `openspot guide show-a-list`? Run `openspot guide --topics` to see each topic.\n")
         XCTAssertEqual(missing.code, 2)
     }
+
+    func testAWordOfTheGuideFindsEachTopicThatNamesIt() async throws {
+        let one = try await answer(["guide", "buttons"])
+        let many = try await answer(["guide", "print"])
+
+        XCTAssertEqual(one.output, "## Add buttons\n\nPrint buttons.\n")
+        XCTAssertEqual(many.output, "show-a-list    Show a list\nadd-buttons    Add buttons\n")
+        XCTAssertEqual(many.code, 0)
+    }
 }

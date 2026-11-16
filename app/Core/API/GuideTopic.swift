@@ -29,6 +29,13 @@ struct GuideTopic: Equatable, Sendable {
         return topics
     }
 
+    static func found(_ word: String, in topics: [GuideTopic]) -> [GuideTopic] {
+        let word = word.lowercased()
+        guard !word.contains("-") else { return [] }
+        let titled = topics.filter { $0.slug.split(separator: "-").contains { $0 == word || $0 == word + "s" || $0 + "s" == word } }
+        return titled.isEmpty ? topics.filter { $0.text.lowercased().range(of: "\\b\(NSRegularExpression.escapedPattern(for: word))\\b", options: .regularExpression) != nil } : titled
+    }
+
     private static func slug(of title: String) -> String {
         String(title.lowercased().unicodeScalars.filter { CharacterSet.alphanumerics.contains($0) || $0 == " " || $0 == "-" }.map(Character.init))
             .replacingOccurrences(of: " ", with: "-")
