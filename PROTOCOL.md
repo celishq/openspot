@@ -243,6 +243,7 @@ confirm=Press again to forget
 
 - A field's `type`: none for one line of text, `multiline` for several lines, `slider` from `min` to `max` (0 to 100 by
   default), which sends a whole number when the user lets go, and `hotkey` for a hotkey that a press records.
+- A `hotkey` field shows as keycaps. With no `grid=` line, it takes two lines of the full width.
 - `type=multiple` lets a choice pick several options (see [Buttons and actions](#buttons-and-actions)).
 - Every kind also takes `title`, `detail`, `tone` and `icon`. Openspot skips a key that a kind doesn't take.
 - A `text` that covers two lines or more shows its `detail` under its `title`, on as many lines as the place holds.

@@ -309,6 +309,16 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(sheet.frames["left"]).rect.width, SheetPlacement.width)
     }
 
+    func testAHotkeyFieldWithNoDrawingTakesTwoLinesOfTheFullWidth() throws {
+        let sheet = try placement("title=Welcome\n\nfield=key\ntype=hotkey\n")
+        let placed = try placement("grid=key\ngrid=go\n\nfield=key\ntype=hotkey\n\nbutton=go\ntitle=Go\n")
+
+        let key = try XCTUnwrap(sheet.frames["key"]).rect
+        XCTAssertEqual(key.width, SheetPlacement.width)
+        XCTAssertEqual(key.height, 2 * SheetPlacement.rowHeight + SheetPlacement.gap)
+        XCTAssertEqual(try XCTUnwrap(placed.frames["key"]).rect.height, SheetPlacement.rowHeight)
+    }
+
     func testAPartStartsWithItsPartKey() throws {
         let first = output("grid=job\ngrid=job\n\ngraph=job\ntitle=Copying\nvalue=0.3\n")
         let later = output("grid=p\ngrid=p\n\nblock=progress\npart=job\ncell=p\ntitle=Copying\nlevel=30\n")

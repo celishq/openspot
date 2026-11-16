@@ -184,6 +184,11 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         }
     }
 
+    var flatLines: Int {
+        if case .shortcut = control { return 2 }
+        return 1
+    }
+
     var growsRow: Bool {
         guard grows else { return false }
         if isOpen { return true }

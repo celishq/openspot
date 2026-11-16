@@ -31,7 +31,7 @@ public struct SheetLayout: Equatable, Sendable {
         for part in parts {
             if part.isSection, !rows.isEmpty { rows.append([Self.divider]) }
             if part.isSection, part.title == nil, part.press == .none, part.control == .none { continue }
-            rows.append([part.id])
+            rows += Array(repeating: [part.id], count: part.flatLines)
         }
         if let repeating { rows.append([repeating.area]) }
         self.rows = rows
