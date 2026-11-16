@@ -1,0 +1,30 @@
+grid.large=cover cover cover song song song
+grid.large=cover cover cover time time time
+grid.large=cover cover cover prev play next
+main=song
+
+picture=cover
+icon=music.note
+
+text=song
+title=Midnight Drive
+detail=Neon Coast
+
+graph=time
+title=1:42
+value=0.42
+
+button=prev
+title=Previous
+icon=backward.fill
+look=bare
+
+button=play
+title=Pause
+icon=pause.fill
+look=bare
+
+button=next
+title=Next
+icon=forward.fill
+look=bare

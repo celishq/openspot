@@ -1,0 +1,81 @@
+button=open
+title=Open in Visual Studio Code
+
+button=in-2
+close=true
+title=Open in Zed
+
+button=page-1
+close=true
+title=Open on GitHub
+
+button=page-2
+close=true
+title=Open on GitLab
+
+button=reveal
+title=Show in Finder
+shortcut=cmd+return
+close=true
+
+button=terminal
+title=Open in Terminal
+shortcut=cmd+t
+close=true
+
+button=copy
+title=Copy path
+shortcut=cmd+shift+c
+close=true
+
+button=editor
+title=Change default app
+scope=spot
+form=true
+
+button=folder
+title=Change folder
+scope=spot
+close=true
+
+row=/Users/you/Developer/api-gateway
+title=api-gateway
+detail=main
+icon=/Users/you/Developer/api-gateway
+page=https://github.com/northwind/api-gateway
+hides=page-2
+
+row=/Users/you/Developer/design-tokens
+title=design-tokens
+detail=feature/dark-mode
+icon=/Users/you/Developer/design-tokens
+page=https://github.com/northwind/design-tokens
+hides=page-2
+
+row=/Users/you/Developer/dotfiles
+title=dotfiles
+detail=main
+icon=/Users/you/Developer/dotfiles
+hides=page-1
+hides=page-2
+
+row=/Users/you/Developer/invoice-cli
+title=invoice-cli
+detail=fix/rounding
+icon=/Users/you/Developer/invoice-cli
+page=https://gitlab.com/maple/invoice-cli
+hides=page-1
+
+row=/Users/you/Developer/mobile-app
+title=mobile-app
+detail=release/2.4
+icon=/Users/you/Developer/mobile-app
+page=https://github.com/northwind/mobile-app
+hides=page-2
+
+row=/Users/you/Developer/notes-site
+title=notes-site
+detail=main
+icon=/Users/you/Developer/notes-site
+page=https://gitlab.com/maple/notes-site
+hides=page-1

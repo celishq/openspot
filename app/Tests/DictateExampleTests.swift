@@ -84,7 +84,7 @@ final class DictateExampleTests: SampleSpotsCase {
         XCTAssertEqual(spot.sources, ["dictate"])
         XCTAssertEqual(spot.soleCommand, "dictate")
         XCTAssertEqual(spot.read?.moments, [.sheet])
-        XCTAssertEqual(files.sorted(), ["dictate", "dictate.swift"])
+        XCTAssertEqual(files.sorted(), ["dictate", "dictate.swift", "readme.md"])
     }
 
     func testTheSheetListsPastTextsNewestFirstAndCopiesOrDeletesOne() async throws {
