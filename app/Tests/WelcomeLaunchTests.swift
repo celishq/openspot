@@ -53,33 +53,48 @@ final class WelcomeLaunchTests: XCTestCase {
 
     private func launch() async throws {
         await model.beginFirstLaunch()
-        try await wait("the welcome sheet") { self.model.openSheetID == Self.welcome && self.keyField != nil }
-        try await wait("the recording") { self.model.recording == "key" }
+        try await wait("the welcome sheet") { self.model.openSheetID == Self.welcome && self.keyField?.value == "ctrl+space" }
+        try await wait("the focus on use") { self.model.openParts?.selectedPart?.id == "use" }
     }
 
-    func testEscWhileItRecordsStopsTheRecordingAndAnotherEscRecordsAgain() async throws {
+    private func press(_ name: String) -> Bool {
+        model.handleKey(ActionKey(name: name))
+    }
+
+    func testTheFirstLaunchShowsTheKeyThatOpensOpenspotChosenAndReturnKeepsIt() async throws {
         try await launch()
-
-        XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
         XCTAssertNil(model.recording)
-        XCTAssertEqual(model.openSheetID, Self.welcome)
-        XCTAssertEqual(model.openParts?.selectedPart?.id, "key")
 
-        XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
+        XCTAssertTrue(press("return"))
 
-        try await wait("the recording again") { self.model.recording == "key" }
-        XCTAssertEqual(model.openSheetID, Self.welcome)
+        try await wait("the end of use") { self.hasEnded }
+        try await wait("the grid") { self.model.openSheetID == nil }
         XCTAssertEqual(model.files.config.read().panelKey, .standard)
     }
 
-    func testReturnSavesTheRecordedKeyShowsTheGridAndTheToastNamesIt() async throws {
+    func testEscRecordsAndEscAgainBringsTheKeyBack() async throws {
+        try await launch()
+
+        XCTAssertTrue(press("escape"))
+        XCTAssertEqual(model.recording, "key")
+        XCTAssertTrue(press("escape"))
+        await nextTurn()
+
+        XCTAssertNil(model.recording)
+        XCTAssertEqual(keyField?.value, "ctrl+space")
+        XCTAssertEqual(model.openSheetID, Self.welcome)
+        XCTAssertEqual(model.openParts?.selectedPart?.id, "use")
+    }
+
+    func testANewKeyIsSavedByReturnAndTheToastNamesIt() async throws {
         let key = try XCTUnwrap(Shortcut(text: "option+space"))
         try await launch()
+        XCTAssertTrue(press("escape"))
         model.record(code: 49, modifiers: .option)
-        try await wait("the kept key") { self.hasEnded }
-        XCTAssertEqual(keyField?.value, "option+space")
+        try await wait("the kept key") { self.hasEnded && self.keyField?.value == "option+space" }
+        XCTAssertEqual(model.openParts?.selectedPart?.id, "use")
 
-        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+        XCTAssertTrue(press("return"))
 
         try await wait("the end of use") { self.hasEnded }
         try await wait("the grid") { self.model.openSheetID == nil }
@@ -88,31 +103,17 @@ final class WelcomeLaunchTests: XCTestCase {
         XCTAssertEqual(host.confirms.last, key.openHint)
     }
 
-    func testAfterAKeyTheFocusIsOnUseAndTheArrowsReachKeep() async throws {
+    func testTheArrowsReachRecordAndSpacePressesIt() async throws {
         try await launch()
-        model.record(code: 49, modifiers: .option)
-        try await wait("the kept key") { self.hasEnded }
-        XCTAssertEqual(model.openParts?.selectedPart?.id, "use")
 
-        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
-        XCTAssertEqual(model.openParts?.selectedPart?.id, "keep")
-        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+        XCTAssertTrue(press("down"))
+        XCTAssertEqual(model.openParts?.selectedPart?.id, "record")
+        XCTAssertTrue(press(" "))
 
-        try await wait("the end of keep") { self.hasEnded }
-        try await wait("the grid") { self.model.openSheetID == nil }
-        XCTAssertEqual(model.files.config.read().panelKey, .standard)
+        XCTAssertEqual(model.recording, "key")
     }
 
-    func testEscAfterAKeyEmptiesTheFieldAndRecordsAgain() async throws {
-        try await launch()
-        model.record(code: 49, modifiers: .option)
-        try await wait("the kept key") { self.hasEnded }
-        XCTAssertNil(model.recording)
-
-        XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
-
-        try await wait("the empty field") { self.keyField?.value == "" }
-        try await wait("the recording again") { self.model.recording == "key" }
-        XCTAssertEqual(model.openSheetID, Self.welcome)
+    private func nextTurn() async {
+        await withCheckedContinuation { done in DispatchQueue.main.async { done.resume() } }
     }
 }

@@ -22,7 +22,7 @@ public struct SheetParts: Equatable, Sendable {
     public private(set) var pictureTimes: [String: Double]
     private var focusOffsets: [Int] = []
     private var focusLineOffsets: [[Int]] = []
-    private var selected: String?
+    public private(set) var selected: String?
 
     public init?(output: SpotOutput) {
         guard !output.parts.isEmpty else { return nil }

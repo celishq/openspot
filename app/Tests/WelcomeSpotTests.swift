@@ -30,17 +30,27 @@ final class WelcomeSpotTests: BuiltInCase {
         XCTAssertEqual(spot.symbol, "keyboard")
     }
 
-    func testAReadShowsAnEmptyKeyFieldAndKeepNamesTheCurrentKey() async throws {
+    func testAReadShowsTheCurrentKeyChosenWithUseAndRecord() async throws {
         try file.set("panel-key", to: "option+space")
 
         let output = try await read()
 
-        let key = try part("key", in: output)
-        XCTAssertEqual(key.control, .shortcut(""))
-        XCTAssertEqual(try part("keep", in: output).title, "Keep ⌥Space")
-        XCTAssertEqual(try part("use", in: output).title, "Use this key")
-        XCTAssertEqual(try part("again", in: output).title, "Try again")
+        XCTAssertEqual(try part("key", in: output).control, .shortcut("option+space"))
+        let use = try part("use", in: output)
+        XCTAssertEqual(use.title, "Use this key")
+        XCTAssertEqual(use.key, ActionKey(name: "return"))
+        let record = try part("record", in: output)
+        XCTAssertEqual(record.title, "Record new combination")
+        XCTAssertEqual(record.records, "key")
+        XCTAssertEqual(record.key, ActionKey(name: "escape"))
+        XCTAssertEqual(output.parts.map(\.id).sorted(), ["key", "record", "use"])
         XCTAssertNil(output.move)
+    }
+
+    func testAReadWithNoKeyInTheFileShowsTheStandardKey() async throws {
+        let output = try await read()
+
+        XCTAssertEqual(try part("key", in: output).control, .shortcut("ctrl+space"))
     }
 
     func testAFailingStatusFailsTheReadAndNamesNoKey() async throws {
@@ -52,87 +62,36 @@ final class WelcomeSpotTests: BuiltInCase {
         } catch {}
     }
 
-    func testKeepNamesTheStandardKeyWithNoFile() async throws {
-        let output = try await read()
-
-        XCTAssertEqual(try part("keep", in: output).title, "Keep ⌃Space")
-    }
-
-    func testKeepNamesTheKeyAsTheAppLabelsIt() async throws {
-        for text in ["cmd+ctrl+option+shift+k", "cmd+option+k", "ctrl+return", "option+left", "ctrl+up", "ctrl+tab"] {
-            try file.set("panel-key", to: text)
-
-            let output = try await read()
-
-            XCTAssertEqual(try part("keep", in: output).title, "Keep \(try XCTUnwrap(Shortcut(text: text)).label)", text)
-        }
-    }
-
-    func testAKeyIsKeptUntilUseSavesIt() async throws {
+    func testARecordedKeyShowsUntilUseSavesIt() async throws {
         try file.set("panel-key", to: "option+space")
 
         let kept = try await answer(["key", "ctrl+option+space"])
         let again = try await read()
         let before = file.read().panelKey
         let used = try await answer(["use"])
+        let after = try await read()
 
         XCTAssertEqual(try part("key", in: kept).control, .shortcut("ctrl+option+space"))
         XCTAssertEqual(try part("key", in: again).control, .shortcut("ctrl+option+space"))
         XCTAssertEqual(before, Shortcut(text: "option+space"))
         XCTAssertEqual(file.read().panelKey, Shortcut(text: "ctrl+option+space"))
         XCTAssertEqual(used.move, .pop(all: false))
+        XCTAssertEqual(try part("key", in: after).control, .shortcut("ctrl+option+space"))
     }
 
-    func testKeepAndUseWithNoKeyChangeNothing() async throws {
+    func testUseWithTheCurrentKeyLeavesAndChangesNothing() async throws {
         try file.set("panel-key", to: "option+space")
 
-        let kept = try await answer(["keep"])
         let used = try await answer(["use"])
 
-        XCTAssertEqual(kept.move, .pop(all: false))
-        XCTAssertNil(used.move)
-        XCTAssertEqual(used.toast, "Press the keys you want first.")
+        XCTAssertEqual(used.move, .pop(all: false))
         XCTAssertEqual(file.read().panelKey, Shortcut(text: "option+space"))
-    }
-
-    func testKeepForgetsAKeyThatWasRecorded() async throws {
-        _ = try await answer(["key", "ctrl+option+space"])
-
-        _ = try await answer(["keep"])
-        let output = try await read()
-
-        XCTAssertEqual(try part("key", in: output).control, .shortcut(""))
-    }
-
-    func testAgainClearsTheKey() async throws {
-        _ = try await answer(["key", "ctrl+option+space"])
-
-        let output = try await answer(["again"])
-
-        XCTAssertEqual(try part("key", in: output).control, .shortcut(""))
-        let next = try await read()
-        XCTAssertEqual(try part("key", in: next).control, .shortcut(""))
-    }
-
-    private func button(on name: String, in output: SpotOutput) -> String? {
-        output.parts.first { $0.key == ActionKey(name: name) }?.id
-    }
-
-    func testEscIsAlwaysTryAgainAndOnlyAPressOfUseOrKeepLeaves() async throws {
-        let listening = try await read()
-        let shown = try await answer(["key", "ctrl+option+space"])
-
-        for output in [listening, shown] {
-            XCTAssertEqual(button(on: "escape", in: output), "again")
-            XCTAssertNil(try part("keep", in: output).key)
-            XCTAssertNil(try part("use", in: output).key)
-        }
     }
 
     func testEachBlockHasAPlaceSoNoButtonBecomesAnAction() async throws {
         let output = try await read()
 
         XCTAssertEqual(output.actions, [])
-        XCTAssertEqual(output.layout?.areas.keys.sorted(), ["again", "keep", "key", "use"])
+        XCTAssertEqual(output.layout?.areas.keys.sorted(), ["key", "record", "use"])
     }
 }

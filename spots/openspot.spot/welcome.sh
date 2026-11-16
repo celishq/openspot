@@ -25,41 +25,14 @@ $state
 EOF2
 }
 
-# Prints the label of the key text $1 as the app draws it, such as ⌥Space for option+space: marks in the order ⌃⌥⇧⌘.
-label() {
-  rest=${1:-ctrl+space}
-  marks=
-  key=
-  last=
-  while [ -z "$last" ]; do
-    case $rest in
-      *+*) word=${rest%%+*}; rest=${rest#*+} ;;
-      *) word=$rest; last=1 ;;
-    esac
-    case $word in
-      ctrl|option|shift|cmd) marks="$marks $word" ;;
-      return) key=⏎ ;;
-      *) key="$(printf '%s' "$word" | cut -c1 | tr '[:lower:]' '[:upper:]')$(printf '%s' "$word" | cut -c2-)" ;;
-    esac
-  done
-  out=
-  for mark in ctrl:⌃ option:⌥ shift:⇧ cmd:⌘; do
-    case " $marks " in *" ${mark%%:*} "*) out="$out${mark#*:}" ;; esac
-  done
-  printf '%s%s' "$out" "$key"
-}
-
-# Prints the head and the blocks of the page, with the head lines in $1 before its layout. Esc tries again; only a
-# press of Use or Keep leaves the page.
+# Prints the page: the chosen key, or the key that opens Openspot, then Use this key and Record new combination.
 page() {
   shown=$(chosen)
-  printf '%s' "${1-}"
-  printf 'grid=key key key key\ngrid=key key key key\ngrid=use use use use\ngrid=keep keep again again\n\n'
+  printf 'grid=key key key key\ngrid=key key key key\ngrid=use use use use\ngrid=record record record record\n\n'
   printf 'field=key\ntype=hotkey\n'
-  openspot_kv value "$shown"
-  printf '\nbutton=use\ntitle=Use this key\nlook=strong\n'
-  printf '\nbutton=keep\ntitle=Keep %s\n' "$(label "$now")"
-  printf '\nbutton=again\ntitle=Try again\nshortcut=escape\n'
+  openspot_kv value "${shown:-$now}"
+  printf '\nbutton=use\ntitle=Use this key\nlook=strong\nshortcut=return\n'
+  printf '\nbutton=record\ntitle=Record new combination\nrecords=key\nshortcut=escape\n'
 }
 
 case "$1" in
@@ -71,24 +44,11 @@ case "$1" in
     ;;
   use)
     key=$(chosen)
-    if [ -z "$key" ]; then
-      current
-      page 'toast=Press the keys you want first.
-'
-    else
+    if [ -n "$key" ]; then
       openspot setting set --spot openspot panel-key "$key" || exit 1
       rm -f "$keyfile"
-      printf 'pop=true\n'
     fi
-    ;;
-  keep)
-    rm -f "$keyfile"
     printf 'pop=true\n'
-    ;;
-  again)
-    rm -f "$keyfile"
-    current
-    page
     ;;
   *)
     echo 'Welcome cannot do that.' >&2

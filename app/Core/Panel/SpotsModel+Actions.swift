@@ -47,7 +47,7 @@ extension SpotsModel {
             } else {
                 openSheet?.movePart(by: step)
             }
-        case ActionKey(name: "return"):
+        case ActionKey(name: "return"), ActionKey(name: " "):
             guard !part.isEditable else { return false }
             useSelected(part)
         default:
@@ -75,6 +75,10 @@ extension SpotsModel {
     }
 
     public func pressPart(_ part: SpotPart) {
+        if let id = part.records {
+            if recording == nil, let field = openParts?.parts.first(where: { $0.id == id }), case .shortcut = field.control { toggleRecording(field) }
+            return
+        }
         pressedSheet = openSheetID
         openSheet?.press(part)
         if part.closes, isShown { host.dismiss() }
@@ -86,6 +90,10 @@ extension SpotsModel {
 
     func recordEmptyField() {
         recordField { $0.control == .shortcut("") }
+        if recording == nil, let parts = openParts, parts.selected == nil, let field = keyField, field.control != .shortcut(""),
+           parts.selectedPart?.id == field.id {
+            focusAfterRecording(field.id)
+        }
     }
 
     func recordClearedField() {

@@ -58,6 +58,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public private(set) var control: Control
     public let press: Press
     public let key: ActionKey?
+    public let records: String?
     public let closes: Bool
     let grows: Bool
     public let align: Align?
@@ -95,6 +96,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         title = block.value("title")
         detail = block.value("detail")
         key = kind == .hotkey ? nil : block.value("shortcut").flatMap(ActionKey.init(text:))
+        records = block.value("records")
         closes = block.flag("close") ?? false
         grows = block.flag("grow") ?? true
         align = block.value("align").flatMap(Align.init(rawValue:))

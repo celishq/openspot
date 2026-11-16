@@ -284,6 +284,61 @@ final class PanelKeysTests: PanelCase {
         await withCheckedContinuation { done in DispatchQueue.main.async { done.resume() } }
     }
 
+    private func openChoice() async throws {
+        try FileManager.default.createDirectory(at: pickData, withIntermediateDirectories: true)
+        try script("choice", header: "title=Choice\non=sheet.open", """
+        data='\(pickData.path)'
+        [ "$1" = read ] || echo "$*" >> "$data/calls"
+        [ "$1" = key ] && printf %s "$2" > "$data/key"
+        case "$1" in
+          read|key) printf 'grid=key\\ngrid=key\\ngrid=use\\ngrid=record\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n\\nbutton=use\\ntitle=Use\\nshortcut=return\\n\\nbutton=record\\ntitle=Record\\nrecords=key\\nshortcut=escape\\n' "$(cat "$data/key" 2>/dev/null || printf ctrl+space)" ;;
+        esac
+        """)
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.press("choice")
+        try await wait("the key field") { self.keyField?.control == .shortcut("ctrl+space") }
+        await nextTurn()
+    }
+
+    func testARecordsButtonRecordsItsFieldAndEscBringsTheKeyBack() async throws {
+        try await openChoice()
+        XCTAssertNil(model.recording)
+
+        XCTAssertTrue(model.handleKey(escape))
+        XCTAssertEqual(model.recording, "key")
+        XCTAssertTrue(model.handleKey(escape))
+        await nextTurn()
+
+        XCTAssertNil(model.recording)
+        XCTAssertEqual(keyField?.control, .shortcut("ctrl+space"))
+        XCTAssertEqual(model.openParts?.selectedPart?.id, "use")
+        XCTAssertTrue(pickCalls.isEmpty)
+    }
+
+    func testAKeyRecordedThroughTheButtonIsSentAndTheFocusGoesToUse() async throws {
+        try await openChoice()
+        XCTAssertTrue(model.handleKey(escape))
+
+        model.record(code: 49, modifiers: .option)
+
+        try await wait("the sent key") { self.pickCalls == ["key option+space"] && self.model.sheets["choice"]?.calls.isEmpty == true }
+        XCTAssertEqual(keyField?.control, .shortcut("option+space"))
+        XCTAssertEqual(model.openParts?.selectedPart?.id, "use")
+    }
+
+    func testSpacePressesTheFocusedButton() async throws {
+        try await openChoice()
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+        XCTAssertEqual(model.openParts?.selectedPart?.id, "record")
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: " ")))
+
+        XCTAssertEqual(model.recording, "key")
+    }
+
     private func openPick(key: String? = nil) async throws {
         try writePick(key: key)
         await model.reload()
@@ -433,6 +488,8 @@ final class PanelKeysTests: PanelCase {
         XCTAssertEqual(keyField?.value, "option+space")
         await nextTurn()
         XCTAssertNil(model.recording)
+        XCTAssertEqual(model.openParts?.selectedPart?.id, "keep")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "up")))
         XCTAssertTrue(model.handleKey(enter))
         XCTAssertEqual(model.recording, "key")
     }

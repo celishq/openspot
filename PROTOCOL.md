@@ -236,7 +236,7 @@ confirm=Press again to forget
 | `field`   | A text field, or another input with a `type`.                                                                   | `value`, `type`, `placeholder`, `required`, `readonly`, `min`, `max` | `<id> <value>`         |
 | `choice`  | A menu of the `option` blocks after it, a list when it covers two lines or more, or swatches of `color` lines.  | `color`, `value`, `type`                                             | `<id> <option id>`     |
 | `option`  | One option of the `choice` right before it.                                                                     | `title`, `icon`                                                      |                        |
-| `button`  | A button, or an action (see [Buttons and actions](#buttons-and-actions)).                                       | `shortcut`, `confirm`, `close`, `look`, `form`, `scope`              | `<id>`                 |
+| `button`  | A button, or an action (see [Buttons and actions](#buttons-and-actions)).                                       | `shortcut`, `confirm`, `close`, `look`, `form`, `scope`, `records`              | `<id>`                 |
 | `section` | A title over the blocks after it.                                                                               |                                                                      |                        |
 | `repeat`  | The place of the rows (see [Rows](#rows)).                                                                      | `grid` lines                                                         |                        |
 | `row`     | One item of a list (see [Rows](#rows)).                                                                         | the keys in [Rows](#rows)                                            | `open <id>`            |
@@ -244,6 +244,15 @@ confirm=Press again to forget
 - A field's `type`: none for one line of text, `multiline` for several lines, `slider` from `min` to `max` (0 to 100 by
   default), which sends a whole number when the user lets go, and `hotkey` for a hotkey that a press records.
 - A `hotkey` field shows as keycaps. With no `grid=` line, it takes two lines of the full width.
+- A `hotkey` field records a key in Openspot. An empty field records as soon as its sheet shows, and again after a
+  press that leaves it empty. A field with a key records when the user presses Return on it, clicks it, or presses a
+  button with `records=<field id>`.
+- While a field records, every key goes to it. Esc stops the recording and brings back the key it had. A key that
+  makes a shortcut ends the recording, sends `<id> <key>`, and moves the focus past the field.
+- While a sheet with a `hotkey` field shows, Openspot's own keys are off, so only a press of a button saves a key, and a
+  key that nothing on the sheet takes does nothing.
+- The line under the keycaps comes from Openspot: whether the key is free, what macOS or another spot does with it, or
+  which app took it.
 - `type=multiple` lets a choice pick several options (see [Buttons and actions](#buttons-and-actions)).
 - Every kind also takes `title`, `detail`, `tone` and `icon`. Openspot skips a key that a kind doesn't take.
 - A `text` that covers two lines or more shows its `detail` under its `title`, on as many lines as the place holds.
@@ -333,6 +342,10 @@ A button is a verb. If the layout places it, the sheet draws it. If not, it's an
   header its hotkey with Keys… in the ⌘K menu of a card.
 - An action needs a `title`. `openspot check` reports an action with no title, or with a shortcut it can't use.
 - `shortcut=escape` presses the button instead of closing the sheet, like a Cancel button.
+- A placed button with a `shortcut` shows its key at its end, such as `⏎` or `Esc`.
+- `records=<field id>` on a button makes a press record that `hotkey` field, in Openspot, with no call to the spot.
+- Return presses the button with `shortcut=return`; Space presses the part that has the focus, as Return does on a
+  part with no such button.
 - In a ⌘K menu of more than 5 rows, a field searches them, so only a `shortcut` with `cmd` works there.
 - Return on a row runs the action `open`. `button=open` gives it a `title`, and `close=false` keeps the panel open after
   a pick.
