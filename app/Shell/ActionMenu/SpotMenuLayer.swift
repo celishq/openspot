@@ -11,8 +11,7 @@ struct SpotMenuLayer: View {
         GeometryReader { proxy in
             if let session = model.menuSession {
                 let menu = session.menu
-                let lift = session.isGrown ? model.menuFrame?.lift ?? 0 : 0
-                let rect = (item.map { proxy[$0.bounds] } ?? SpotFieldView.rect).offsetBy(dx: 0, dy: -lift)
+                let rect = item.map { proxy[$0.bounds] } ?? SpotFieldView.rect
                 let isClosing = session.phase == .closing
                 let fresh = ActionMenuFrame(item: rect, menu: menu, bounds: bounds)
                 let resting = ActionMenuFrame(item: model.menuItemAtRest(rect), menu: menu, bounds: bounds)

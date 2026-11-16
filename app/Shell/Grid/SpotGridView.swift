@@ -67,7 +67,7 @@ struct SpotGridView: View {
                 ))
                 .modifier(SpotLiftedCard(isLifted: card.isLifted, isSolid: card.isHeld, size: card.size))
                 .modifier(SpotFocusLook(focus: card.focus))
-                .modifier(SpotMenuFocus(model: model, index: placement.index))
+                .modifier(SpotMenuDim(model: model, index: placement.index))
                 .modifier(SpotCardPlace(motion: card.motion, lift: card.isLifted ? model.lift : nil))
                 .zIndex(card.isHeld ? 1 : 0)
                 .opacity(entry.id == openID ? 0.001 : 1)

@@ -13,7 +13,6 @@ public struct ActionMenuFrame: Equatable, Sendable {
     public let rect: CGRect
     public let stillEdge: Edge
     public let side: Side
-    public let lift: CGFloat
 
     public init(item: CGRect, menu: ActionMenu, bounds: CGRect) {
         self.init(item: item, height: SpotTokens.menuHeight(rows: menu.fullLines), bounds: bounds)
@@ -22,24 +21,19 @@ public struct ActionMenuFrame: Equatable, Sendable {
     public init(item: CGRect, height: CGFloat, bounds: CGRect) {
         let isOnLeft = item.midX <= bounds.midX + Self.leftTie
         var origin: CGPoint
-        var lift: CGFloat = 0
         if item.width <= SpotTokens.cell {
             origin = CGPoint(x: isOnLeft ? item.maxX + Self.gap : item.minX - Self.gap - Self.width, y: item.minY)
         } else {
             let under = item.maxY + Self.gap
             let over = item.minY - Self.gap - height
-            if under + height > bounds.maxY, over < bounds.minY {
-                lift = min(0, max(bounds.maxY - height - Self.gap - item.maxY, bounds.minY - item.minY))
-            }
-            let y = under + height <= bounds.maxY || over < bounds.minY ? under + lift : over
+            let y = under + height <= bounds.maxY || over < bounds.minY ? under : over
             origin = CGPoint(x: isOnLeft ? item.minX : item.maxX - Self.width, y: y)
         }
         origin.x = min(max(origin.x, bounds.minX), bounds.maxX - Self.width)
         origin.y = max(min(origin.y, bounds.maxY - height), bounds.minY)
         rect = CGRect(origin: origin, size: CGSize(width: Self.width, height: height))
-        stillEdge = origin.y + height / 2 < item.midY + lift ? .bottom : .top
+        stillEdge = origin.y + height / 2 < item.midY ? .bottom : .top
         side = isOnLeft ? .left : .right
-        self.lift = lift
     }
 
     public static func bounds(under top: CGFloat, in panel: CGRect = GridPanels().frame) -> CGRect {

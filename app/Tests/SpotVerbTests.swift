@@ -457,7 +457,7 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertFalse(model.gridShade.dims(weather))
         XCTAssertTrue(model.gridShade.coversField)
         XCTAssertFalse(model.dimsField)
-        XCTAssertFalse(GridShade(over: model.placements, leaving: model.visible.count, isOn: true, lift: 0).coversField)
+        XCTAssertFalse(GridShade(over: model.placements, leaving: model.visible.count, isOn: true).coversField)
         nonisolated(unsafe) var moved = false
         withObservationTracking { _ = model.gridShade } onChange: { moved = true }
         XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
@@ -491,27 +491,6 @@ final class SpotVerbTests: XCTestCase {
         let others = model.placements.map(\.index).filter { $0 != weather }
         XCTAssertEqual(others.filter { model.gridShade.dims($0) }, others)
         XCTAssertFalse(model.gridShade.dims(weather))
-    }
-
-    func testTheShadeLiftsOnlyTheFocusedCardByItsMenusLiftOnceTheMenuGrows() async throws {
-        try script("weather", header: "title=Weather")
-        try script("clock", header: "title=Clock")
-        _ = try await select("weather")
-        let weather = try XCTUnwrap(model.visible.firstIndex { $0.id == "weather" })
-        let clock = try XCTUnwrap(model.visible.firstIndex { $0.id == "clock" })
-        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
-        let item = CGRect(x: 165, y: 380, width: 139, height: 64)
-        model.placeMenu(ActionMenuFrame(item: item, height: 340, bounds: CGRect(x: 16, y: 166, width: 437, height: 500)))
-        let lift = try XCTUnwrap(model.menuFrame?.lift)
-        XCTAssertLessThan(lift, 0)
-        XCTAssertEqual(model.gridShade.offset(of: weather), 0)
-
-        try await wait("the grown menu") { model.menuSession?.isGrown == true }
-
-        XCTAssertEqual(model.gridShade.offset(of: weather), lift)
-        XCTAssertEqual(model.gridShade.offset(of: clock), 0)
-        model.closeMenu()
-        XCTAssertEqual(model.gridShade.offset(of: weather), 0)
     }
 
     func testCopyPromptForAICopiesTheFileAndTheLastFailure() async throws {
