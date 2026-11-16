@@ -77,7 +77,9 @@ final class FakeHost: SpotsHost {
         confirms.append(text)
     }
 
-    func applyConfig(_ config: Config) {}
+    func applyConfig(_ config: Config) {
+        if let key = config.panelKey { model?.entryKey = key }
+    }
 
     func setEntryKey(on isOn: Bool) {}
 
