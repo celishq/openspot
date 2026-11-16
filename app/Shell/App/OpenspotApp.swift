@@ -47,6 +47,9 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         toast = ToastPanel.make()
+        let theme = mac.mac.theme.read()
+        SpotLoadedTheme.shared.take(theme)
+        if !theme.faults.isEmpty { notify(theme.faults.joined(separator: "\n")) }
         let item = OpenspotItem(
             model: model, toast: toast?.toast, target: self, action: #selector(pressItem),
             onDragEnter: { [weak self] in self?.showPanelForDrag() }, onDrop: { [weak self] in self?.model.review($0) }

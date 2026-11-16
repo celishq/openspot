@@ -14,6 +14,8 @@
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
 - `app/Keywords/` holds the CLDR keywords of emoji and symbols, one xz file per language. `scripts/emoji-keywords.py` writes
   it from a pinned CLDR version, and the build copies it into the app.
+- `app/Themes/` holds the theme of the app, `openspot.theme/theme.toml`, which gives each appearance its glass tint. The build
+  copies it into the app, which reads it at launch and at `openspot app theme`.
 - `app/Help/` holds the guide of each `openspot` noun that has one, which `openspot help <noun>` prints. The build copies it
   into the app.
 - `spots/` holds the source of the core spots, each a `<name>.spot` folder. The build copies it into the app, and they run
@@ -85,7 +87,8 @@ Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these 
   and Synchronization. `make verify` runs `scripts/check-core.sh`, which fails on any other import, also after an attribute
   such as `@preconcurrency`.
 - Logic that a window needs goes in `Core/`. Only drawing and window handling go in `Shell/`.
-- Each colour and strength of the panel is in `Shell/Surface/SpotTheme.swift`, and a new theme is one more value there.
+- Each colour and strength of the panel is in `Shell/Surface/SpotTheme.swift`, and a new theme is one more value there,
+  except the glass tint, which `app/Themes/` holds.
 - Glass is system glass, drawn by `spotGlass`, which wraps `glassEffect`. Each shape draws its own glass, outside a
   `GlassEffectContainer`, since a container drops an opacity after `glassEffect`, and the grid hides an open card and
   hides the panel by opacity. The grid's scroll edge is one gradient mask over the scroll view, so it cuts each card and

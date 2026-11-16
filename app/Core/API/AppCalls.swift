@@ -47,6 +47,15 @@ struct AppCalls {
         }
     }
 
+    func theme() -> CommandAPI.Work {
+        CommandAnswer.work { [mac, app] in
+            let theme = mac.theme.read()
+            guard theme.faults.isEmpty else { throw SpotError.failed(1, theme.faults.joined(separator: "\n")) }
+            await app?.apply(theme)
+            return ""
+        }
+    }
+
     func quit() -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("app quit") }
         return {

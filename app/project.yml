@@ -112,6 +112,8 @@ targets:
           sh "$SRCROOT/../scripts/guide.sh" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/GUIDE.md"
           rm -rf "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Help"
           cp -R "$SRCROOT/Help" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Help"
+          rm -rf "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Themes"
+          cp -R "$SRCROOT/Themes" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Themes"
       - name: Copy the core spots and their defaults
         basedOnDependencyAnalysis: false
         script: |

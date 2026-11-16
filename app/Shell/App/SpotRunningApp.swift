@@ -33,6 +33,10 @@ struct SpotRunningApp: RunningApp {
         await MainActor.run { NSApp.terminate(nil) }
     }
 
+    func apply(_ theme: Theme) async {
+        await SpotLoadedTheme.shared.take(theme)
+    }
+
     func open(_ id: String) async -> Bool {
         await model.open(id)
     }

@@ -7,6 +7,7 @@ public protocol RunningApp: Sendable {
     func checkUpdate() async -> Bool
     func installUpdate() async -> Bool
     func quit() async
+    func apply(_ theme: Theme) async
     func open(_ id: String) async -> Bool
     func push(_ id: String, page: String?, title: String?, replace: Bool) async -> Bool
     func pop(_ id: String, all: Bool) async -> Bool

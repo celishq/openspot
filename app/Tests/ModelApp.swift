@@ -11,6 +11,7 @@ struct ModelApp: RunningApp {
     func checkUpdate() async -> Bool { false }
     func installUpdate() async -> Bool { false }
     func quit() async {}
+    func apply(_ theme: Theme) async {}
     func open(_ id: String) async -> Bool { false }
     func push(_ id: String, page: String?, title: String?, replace: Bool) async -> Bool { false }
     func pop(_ id: String, all: Bool) async -> Bool { false }
