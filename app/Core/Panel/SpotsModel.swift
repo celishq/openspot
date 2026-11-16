@@ -157,6 +157,7 @@ public final class SpotsModel {
     public private(set) var heldKeys: Shortcut.Modifiers = []
     public internal(set) var pressedKey: String?
     public internal(set) var isKeyDown = false
+    @ObservationIgnored var entryKeyIsOff = false
 
     public func hold(_ modifiers: Shortcut.Modifiers) {
         guard recording != nil, modifiers != heldKeys else { return }
@@ -500,6 +501,7 @@ public final class SpotsModel {
         closeMenu()
         endEditing(moving: false)
         isShown = false
+        takeEntryKey()
     }
 
     public func waitForReads() async {

@@ -293,6 +293,45 @@ final class PanelKeysTests: PanelCase {
         try await wait("the key field") { self.keyField != nil }
     }
 
+    func testTheOpenKeyStaysOffWhileASheetWithAKeyFieldShowsAndComesBackWhenItCloses() async throws {
+        try await openPick()
+        try await wait("the recording") { self.model.recording == "key" }
+        XCTAssertFalse(host.entryKeyIsOn)
+
+        model.record(code: 49, modifiers: .option)
+        try await wait("the kept key") { self.keyField?.control == .shortcut("option+space") }
+        await nextTurn()
+        XCTAssertNil(model.recording)
+        XCTAssertFalse(host.entryKeyIsOn)
+
+        model.closeSheet(moving: false)
+        try await wait("the open key again") { self.host.entryKeyIsOn }
+    }
+
+    func testTheOpenKeyComesBackWhenThePanelHidesOverAKeyField() async throws {
+        try await openPick(key: "option+space")
+        await nextTurn()
+        XCTAssertFalse(host.entryKeyIsOn)
+
+        model.panelWillHide()
+
+        try await wait("the open key again") { self.host.entryKeyIsOn }
+    }
+
+    func testAfterAKeyTheFocusMovesToTheNextLineAndReturnPressesWhatTheArrowsChose() async throws {
+        try await openPick()
+        try await wait("the recording") { self.model.recording == "key" }
+
+        model.record(code: 49, modifiers: .option)
+        try await wait("the kept key") { self.keyField?.control == .shortcut("option+space") }
+        XCTAssertEqual(model.openParts?.selectedPart?.id, "keep")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+        XCTAssertEqual(model.openParts?.selectedPart?.id, "again")
+        XCTAssertTrue(model.handleKey(enter))
+
+        try await wait("the press of again") { (try? String(contentsOf: self.pickData.appendingPathComponent("calls"), encoding: .utf8))?.contains("again") == true }
+    }
+
     func testAnEmptyHotkeyFieldRecordsAsSoonAsItsSheetShows() async throws {
         try await openPick()
 

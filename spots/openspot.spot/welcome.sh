@@ -57,7 +57,7 @@ page() {
   printf 'grid=key key key key\ngrid=key key key key\ngrid=use use use use\ngrid=keep keep again again\n\n'
   printf 'field=key\ntype=hotkey\n'
   openspot_kv value "$shown"
-  printf '\nbutton=use\ntitle=Use this key\nlook=strong\nshortcut=return\n'
+  printf '\nbutton=use\ntitle=Use this key\nlook=strong\n'
   printf '\nbutton=keep\ntitle=Keep %s\n' "$(label "$now")"
   [ -n "$shown" ] || printf 'shortcut=escape\n'
   printf '\nbutton=again\ntitle=Try again\n'

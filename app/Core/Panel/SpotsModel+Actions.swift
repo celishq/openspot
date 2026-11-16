@@ -93,6 +93,7 @@ extension SpotsModel {
     }
 
     private func recordField(where takes: (SpotPart) -> Bool) {
+        takeEntryKey()
         let parts = openParts?.parts ?? []
         filledFields = Set(parts.compactMap { part in
             guard case .shortcut(let text) = part.control, !text.isEmpty else { return nil }
@@ -113,7 +114,10 @@ extension SpotsModel {
         } else {
             recording = id
             keyStatus = nil
-            host.setEntryKey(on: false)
+            if !entryKeyIsOff {
+                entryKeyIsOff = true
+                host.setEntryKey(on: false)
+            }
             readTakenKeys()
         }
     }
@@ -139,7 +143,21 @@ extension SpotsModel {
     public func stopRecording() {
         guard recording != nil else { return }
         recording = nil
-        host.setEntryKey(on: true)
+        takeEntryKey()
+    }
+
+    var holdsKeyField: Bool {
+        openParts?.parts.contains { if case .shortcut = $0.control { true } else { false } } == true
+    }
+
+    func takeEntryKey() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            let off = isShown && (recording != nil || holdsKeyField)
+            guard off != entryKeyIsOff else { return }
+            entryKeyIsOff = off
+            host.setEntryKey(on: !off)
+        }
     }
 
     var recordsField: Bool {
@@ -177,7 +195,10 @@ extension SpotsModel {
             keyStatus = check.words(for: shortcut)
         }
         stopRecording()
-        if let part { setPart(part, to: shortcut.text) }
+        if let part {
+            setPart(part, to: shortcut.text)
+            openSheet?.movePartLine(by: 1)
+        }
         if let item, let entry = openEntry { give(shortcut.text, to: item, of: entry) }
     }
 

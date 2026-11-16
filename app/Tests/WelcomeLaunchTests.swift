@@ -84,6 +84,21 @@ final class WelcomeLaunchTests: XCTestCase {
         XCTAssertEqual(host.confirms.last, key.openHint)
     }
 
+    func testAfterAKeyTheFocusIsOnUseAndTheArrowsReachKeep() async throws {
+        try await launch()
+        model.record(code: 49, modifiers: .option)
+        try await wait("the kept key") { self.hasEnded }
+        XCTAssertEqual(model.openParts?.selectedPart?.id, "use")
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+        XCTAssertEqual(model.openParts?.selectedPart?.id, "keep")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+
+        try await wait("the end of keep") { self.hasEnded }
+        try await wait("the grid") { self.model.openSheetID == nil }
+        XCTAssertEqual(model.files.config.read().panelKey, .standard)
+    }
+
     func testEscAfterAKeyEmptiesTheFieldAndRecordsAgain() async throws {
         try await launch()
         model.record(code: 49, modifiers: .option)

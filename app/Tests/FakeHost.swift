@@ -81,7 +81,11 @@ final class FakeHost: SpotsHost {
         if let key = config.panelKey { model?.entryKey = key }
     }
 
-    func setEntryKey(on isOn: Bool) {}
+    var entryKeyIsOn = true
+
+    func setEntryKey(on isOn: Bool) {
+        entryKeyIsOn = isOn
+    }
 
     var held: [[GlobalKey]] = []
 
