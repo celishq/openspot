@@ -43,6 +43,17 @@ final class SpotStoreTests: XCTestCase {
         XCTAssertTrue(try shelf.text(.frame).contains("store=\(friends.path)\n"))
     }
 
+    func testTheBuiltInStoreIsNamedOpenspotAndComesFromTheExamplesOfTheApp() throws {
+        let examples = folder.appendingPathComponent("examples", isDirectory: true)
+        let builtIn = try XCTUnwrap(StoreFolder.builtIn(environment: ["OPENSPOT_EXAMPLES": examples.path]))
+        try "#!/bin/sh\n# title=Year\n".writeScript(to: examples.appendingPathComponent("year.spot/year.sh"))
+
+        XCTAssertEqual(builtIn.name, "Openspot")
+        XCTAssertTrue(builtIn.isBuiltIn)
+        XCTAssertEqual(builtIn.url.path, examples.path)
+        XCTAssertEqual(list(stores: [builtIn]).items.first { $0.id == "year" }?.store?.path, examples.path)
+    }
+
     func testTheConfigKeepsEachStoreFolderOnce() throws {
         let friends = StoreFolder(url: folder.appendingPathComponent("friends"))
 

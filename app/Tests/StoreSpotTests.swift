@@ -54,7 +54,7 @@ final class StoreSpotTests: BuiltInCase {
         let text = try await answer(["gallery", "add"])
 
         XCTAssertEqual(file.read().stores.map(\.url.path), [friends.path])
-        XCTAssertEqual(SpotOutput(text: text).parts.first?.values["folder"], ["\(friends.path)\tfriends\tfound"])
+        XCTAssertEqual(SpotOutput(text: text).parts.first?.values["folder"], ["\(friends.path)\tfriends\tfound\tadded"])
         XCTAssertEqual(TextBlock.blocks(in: text).first { $0.value("row") == "clock" }?.value("store"), friends.path)
     }
 
@@ -69,12 +69,26 @@ final class StoreSpotTests: BuiltInCase {
         XCTAssertEqual(file.read().stores, [])
     }
 
+    func testTheBuiltInStoreComesFirstWhenTheAppHasItsExamples() async throws {
+        let examples = root.appendingPathComponent("examples")
+        let friends = try friends()
+        _ = try file.change { $0.add(store: StoreFolder(url: friends)) }
+        let before = try await runs.answer(of: store, .read, limit: 60)
+        XCTAssertEqual(SpotOutput(text: before).parts.first?.values["folder"], ["\(friends.path)\tfriends\tfound\tadded"])
+
+        try "#!/bin/sh\n# title=Year\n".writeScript(to: examples.appendingPathComponent("year.spot/year.sh"))
+        let text = try await runs.answer(of: store, .read, limit: 60)
+
+        XCTAssertEqual(SpotOutput(text: text).parts.first?.values["folder"], ["\(examples.path)\tOpenspot\tfound\tbuiltin", "\(friends.path)\tfriends\tfound\tadded"])
+        XCTAssertEqual(TextBlock.blocks(in: text).first { $0.value("row") == "year" }?.value("store"), examples.path)
+    }
+
     func testAGoneStoreSaysSoUntilRemoveDropsIt() async throws {
         let gone = root.appendingPathComponent("gone")
         _ = try file.change { $0.add(store: StoreFolder(url: gone)) }
 
         let text = try await runs.answer(of: store, .read, limit: 60)
-        XCTAssertEqual(SpotOutput(text: text).parts.first?.values["folder"], ["\(gone.path)\tgone\tmissing"])
+        XCTAssertEqual(SpotOutput(text: text).parts.first?.values["folder"], ["\(gone.path)\tgone\tmissing\tadded"])
 
         try await call(["gallery", "remove:\(gone.path)"])
         XCTAssertEqual(file.read().stores, [])

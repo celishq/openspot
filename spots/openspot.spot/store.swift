@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The store, laid out on 16 columns of the grid: a sidebar of 4 with the search, a row for each origin, a row for each store
-/// folder you added and Add Store…, and 12 with each spot as its card at the size it takes on the grid, under the title of
+/// folder, the built-in Openspot first, and Add Store…, and 12 with each spot as its card at the size it takes on the grid, under the title of
 /// its group. A plus on a card gets the spot, and a click opens a sheet with its readme, which it asks for then, and, when
 /// it has sample data, its sheet to try. A store whose folder is gone shows Locate… and Remove. A footer holds a hint, the
 /// sort and Done. Each spot is a row of the frame.
@@ -55,16 +55,17 @@ struct SpotView: View {
         }
     }
 
-    /// A store folder you added: its path, its name and whether Openspot finds it.
+    /// A store folder: its path, its name, whether Openspot finds it, and whether it comes with Openspot, which has no Remove.
     private struct Folder: Identifiable, Equatable {
         let id: String
         let name: String
         let isFound: Bool
+        let isBuiltIn: Bool
 
         init?(_ line: String) {
             let parts = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
-            guard parts.count == 3 else { return nil }
-            (id, name, isFound) = (parts[0], parts[1], parts[2] == "found")
+            guard parts.count == 4 else { return nil }
+            (id, name, isFound, isBuiltIn) = (parts[0], parts[1], parts[2] == "found", parts[3] == "builtin")
         }
     }
 
@@ -323,7 +324,9 @@ struct SpotView: View {
         .background(chosen == folder.id ? spot.ink.opacity(0.1) : .clear, in: shape)
         .contentShape(shape)
         .onTapGesture { chosen = folder.id }
-        .contextMenu { Button("Remove Store") { send("remove:\(folder.id)") } }
+        .contextMenu {
+            if !folder.isBuiltIn { Button("Remove Store") { send("remove:\(folder.id)") } }
+        }
         .accessibilityAddTraits(chosen == folder.id ? [.isButton, .isSelected] : .isButton))
     }
 

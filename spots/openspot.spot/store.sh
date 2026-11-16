@@ -30,7 +30,7 @@ remove() {
   said=$(openspot store remove "$1" 2>&1) || toast "$said"
 }
 
-# Prints the gallery: a folder line for each store you added with its path, its name and whether it is found, a row for
+# Prints the gallery: a folder line for each store with its path, its name, whether it is found and whether it is built in, a row for
 # each spot with its id, its name, its step, its origin, its store, its description, its size and whether it has sample
 # data, and the readme of the spot that $1 names, a line after its id, when its sheet asks.
 gallery() {
@@ -38,7 +38,7 @@ gallery() {
   openspot store folders --frame | awk 'BEGIN { RS = ""; FS = "\n" }
     { delete f
       for (i = 1; i <= NF; i++) { n = index($i, "="); f[substr($i, 1, n - 1)] = substr($i, n + 1) }
-      printf "folder=%s\t%s\t%s\n", f["store"], f["name"], (f["found"] == "true" ? "found" : "missing") }'
+      printf "folder=%s\t%s\t%s\t%s\n", f["store"], f["name"], (f["found"] == "true" ? "found" : "missing"), (f["builtin"] == "true" ? "builtin" : "added") }'
   openspot store list --frame | awk -v want="${1-}" 'BEGIN { RS = ""; FS = "\n" }
     { delete f
       for (i = 1; i <= NF; i++) {

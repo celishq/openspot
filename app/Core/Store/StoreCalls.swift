@@ -6,15 +6,15 @@ struct StoreCalls {
 
     private static func store(in environment: [String: String]) -> SpotStore {
         let config = ConfigFile.standard(environment: environment).read()
-        return SpotStore(url: SpotStore.url(environment: environment), folder: SpotsFolder.standard(environment: environment), arrangement: config.arrangement, stores: config.stores)
+        return SpotStore(url: SpotStore.url(environment: environment), folder: SpotsFolder.standard(environment: environment), arrangement: config.arrangement, stores: StoreFolder.all(environment: environment, config: config))
     }
 
     private struct PrintedFolder: PrintedRecord {
         let store, name: String
-        let found: Bool
+        let found, builtin: Bool
 
         var blocks: [[(String, String?)]] {
-            [[("store", store), ("name", name), ("found", String(found))]]
+            [[("store", store), ("name", name), ("found", String(found)), ("builtin", builtin ? "true" : nil)]]
         }
     }
 
@@ -48,7 +48,8 @@ struct StoreCalls {
 
     func folders(_ form: PrintForm) -> CommandAPI.Work {
         CommandAnswer.work { [environment] in
-            try form.text(of: ConfigFile.standard(environment: environment).read().stores.map { PrintedFolder(store: $0.url.path, name: $0.name, found: $0.exists()) })
+            let stores = StoreFolder.all(environment: environment, config: ConfigFile.standard(environment: environment).read()).filter { !$0.isBuiltIn || $0.exists() }
+            return try form.text(of: stores.map { PrintedFolder(store: $0.url.path, name: $0.name, found: $0.exists(), builtin: $0.isBuiltIn) })
         }
     }
 

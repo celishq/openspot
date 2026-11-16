@@ -8,8 +8,8 @@
   - `Shell/` — the menu bar app, the panel and the hotkey. Imports AppKit and SwiftUI.
   - `Client/` — the `openspot` command, which talks to the running app.
   - `StandIn/` — a small program for tests: a capability that needs no Mac feature. It does not ship.
-  - `Views/` — `openspot-views`, which a Release build runs to compile each view of the core spots into a `.view`, and each
-    Swift spot into a `.program`, beside its source, so that it runs on a Mac with no developer tools. It does not ship.
+  - `Views/` — `openspot-views`, which a Release build runs to compile each view of the core spots and the examples into a
+    `.view`, and each Swift spot into a `.program`, beside its source, so that it runs on a Mac with no developer tools. It does not ship.
     Debug compiles each at its first use.
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
 - `app/Keywords/` holds the CLDR keywords of emoji and symbols, one xz file per language. `scripts/emoji-keywords.py` writes
@@ -20,8 +20,8 @@
   from there. `spots/openspot.spot/` holds the spots of the app itself, such as Settings, which are always on and use only the `openspot`
   API. No code outside that folder names one of them. They run only from the app, so a change to one needs a build. [spots/AGENTS.md](spots/AGENTS.md) holds the rules of a spot and of an
   example.
-- `examples/` holds spots that show a feature, such as a view. The app does not ship them, and a test checks them.
-  `make examples` copies them into the spots of a Debug build.
+- `examples/` holds spots that show a feature, such as a view. The app ships them as its built-in store, Openspot, and a
+  test checks them. `make examples` copies them into the spots of a Debug build.
 - `plans/` holds design plans. It is git-ignored.
 - `.temp/` holds throwaway mock-ups and screenshots. It is git-ignored.
 - `.temp/openspot/` holds the spots and the config of a Debug build, so that it never changes `spots/` or
