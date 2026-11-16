@@ -12,6 +12,7 @@ struct SheetPartsView: View {
     var onRecord: (SpotPart) -> Void = { _ in }
     var heldKeys: () -> Shortcut.Modifiers = { [] }
     var keyStatus: () -> String? = { nil }
+    var pressedKey: () -> String? = { nil }
     var list = ItemList()
     var onRun: (SpotItem) -> Void = { _ in }
     var onDragOut: ([SpotItem]) -> Void = { _ in }
@@ -397,7 +398,7 @@ struct SheetPartsView: View {
 
     private func shortcut(_ part: SpotPart, text: String) -> some View {
         Button { onRecord(part) } label: {
-            LiveKeycaps(value: text, isRecording: recordingPart == part.id, held: heldKeys, status: keyStatus)
+            LiveKeycaps(value: text, isRecording: recordingPart == part.id, held: heldKeys, status: keyStatus, pressed: pressedKey)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -541,9 +542,10 @@ private struct LiveKeycaps: View {
     let isRecording: Bool
     let held: () -> Shortcut.Modifiers
     let status: () -> String?
+    let pressed: () -> String?
 
     var body: some View {
-        SpotKeycaps(value: value, held: isRecording ? held() : [], isRecording: isRecording, status: status())
+        SpotKeycaps(value: value, held: isRecording ? held() : [], isRecording: isRecording, status: status(), pressed: isRecording ? pressed() : nil)
     }
 }
 

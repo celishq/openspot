@@ -6,6 +6,7 @@ struct SpotKeycaps: View {
     let held: Shortcut.Modifiers
     let isRecording: Bool
     let status: String?
+    var pressed: String?
 
     private static let caps: [(modifier: Shortcut.Modifiers, name: String)] = [
         (.control, "control"), (.option, "option"), (.shift, "shift"), (.command, "command")
@@ -20,6 +21,7 @@ struct SpotKeycaps: View {
     var body: some View {
         let shown = isRecording ? nil : Shortcut(text: value)
         let lit = isRecording ? held : shown?.modifiers ?? []
+        let key = shown?.keyLabel ?? (isRecording ? pressed : nil)
         VStack(spacing: Self.statusGap) {
             HStack(spacing: Self.gap) {
                 ForEach(Self.caps, id: \.name) { cap in
@@ -28,7 +30,7 @@ struct SpotKeycaps: View {
                 Text("+")
                     .font(SpotType.body)
                     .modifier(SpotSecondaryText())
-                Keycap(symbol: shown?.keyLabel ?? "key", name: "", font: shown == nil ? SpotType.detail : SpotType.title, width: 2 * Self.side, height: Self.side, isLit: shown != nil, isBlank: shown == nil)
+                Keycap(symbol: key ?? "key", name: "", font: key == nil ? SpotType.detail : SpotType.title, width: 2 * Self.side, height: Self.side, isLit: shown != nil, isBlank: key == nil)
             }
             ToastView.styled(status ?? (isRecording ? Self.waiting : ""))
                 .textRenderer(ToastKeyFill(fill: SpotTheme.ink.opacity(SpotTheme.track)))

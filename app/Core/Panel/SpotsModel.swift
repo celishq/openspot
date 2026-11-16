@@ -149,10 +149,12 @@ public final class SpotsModel {
     public var recording: String? {
         didSet {
             if recording == nil, !heldKeys.isEmpty { heldKeys = [] }
+            if pressedKey != nil { pressedKey = nil }
             takeMode()
         }
     }
     public private(set) var heldKeys: Shortcut.Modifiers = []
+    public internal(set) var pressedKey: String?
 
     public func hold(_ modifiers: Shortcut.Modifiers) {
         guard recording != nil, modifiers != heldKeys else { return }

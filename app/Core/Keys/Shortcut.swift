@@ -77,6 +77,10 @@ public struct Shortcut: Hashable, Sendable {
         namedCodes.first { $0.value == code }?.key ?? KeyCode(code: code)?.name
     }
 
+    static func keyLabel(of code: UInt32) -> String? {
+        name(of: code).map { KeyText(modifiers: [], name: $0).keyLabel }
+    }
+
     public var isAppKey: Bool {
         modifiers == .command || modifiers == [.command, .shift]
     }

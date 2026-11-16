@@ -64,6 +64,7 @@ struct SpotSheetView: View {
                         onRecord: { model.toggleRecording($0) },
                         heldKeys: { model.heldKeys },
                         keyStatus: { [held] in held == nil ? model.keyStatus : nil },
+                        pressedKey: { [held] in held == nil ? model.pressedKey : nil },
                         list: list,
                         onRun: { model.runItem($0) },
                         onDragOut: { model.dragOut($0, of: entry.id) },

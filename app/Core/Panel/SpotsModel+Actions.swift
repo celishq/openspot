@@ -142,18 +142,20 @@ extension SpotsModel {
         host.setEntryKey(on: true)
     }
 
+    var recordsField: Bool {
+        openItems?.shown.contains { $0.run == recording } != true && openParts?.parts.contains { $0.id == recording } == true
+    }
+
     public func record(code: UInt32, modifiers: Shortcut.Modifiers) {
         let part = openParts?.parts.first { $0.id == recording }
         let item = openItems?.shown.first { $0.run == recording }
-        let isField = item == nil && part != nil
+        let isField = recordsField
         guard let shortcut = Shortcut(code: code, modifiers: modifiers) else {
-            if !isField {
-                host.notify("Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.")
-            } else if Shortcut.name(of: code) == nil, modifiers.makesShortcut {
-                keyStatus = "Hold ⌃, ⌥ or ⌘ with a letter, a digit, an arrow, Space, Return or Tab."
-            } else {
-                keyStatus = "Hold ⌃, ⌥ or ⌘ with a key."
-            }
+            guard isField else { return host.notify("Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.") }
+            pressedKey = Shortcut.keyLabel(of: code)
+            keyStatus = pressedKey == nil && modifiers.makesShortcut
+                ? "Hold ⌃, ⌥ or ⌘ with a letter, a digit, an arrow, Space, Return or Tab."
+                : "Hold ⌃, ⌥ or ⌘ with a key."
             return
         }
         let appWords = "`\(shortcut.label)` belongs to the apps on the Mac. Hold `⌥` or `⌃` with a key"
@@ -162,6 +164,7 @@ extension SpotsModel {
             return
         }
         if isField, shortcut.isAppKey {
+            pressedKey = shortcut.keyLabel
             keyStatus = "\(appWords)."
             return
         }

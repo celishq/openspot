@@ -424,6 +424,36 @@ final class PanelKeysTests: PanelCase {
         XCTAssertEqual(keyField?.value, "")
     }
 
+    func testAPressThatMakesNoShortcutShowsItsKeyUntilAKeyIsRecorded() async throws {
+        try await openPick()
+        try await wait("the recording") { self.model.recording == "key" }
+        XCTAssertNil(model.pressedKey)
+
+        model.record(code: 1, modifiers: [])
+        XCTAssertEqual(model.pressedKey, "S")
+        XCTAssertEqual(model.keyStatus, "Hold ⌃, ⌥ or ⌘ with a key.")
+        model.record(code: 8, modifiers: .command)
+        XCTAssertEqual(model.pressedKey, "C")
+        model.record(code: 36, modifiers: [])
+        XCTAssertEqual(model.pressedKey, "⏎")
+        model.record(code: 49, modifiers: .option)
+
+        XCTAssertNil(model.pressedKey)
+        XCTAssertEqual(keyField?.value, "option+space")
+    }
+
+    func testANewRecordingStartsWithNoPressedKey() async throws {
+        try await openPick()
+        try await wait("the recording") { self.model.recording == "key" }
+        model.record(code: 1, modifiers: [])
+        model.stopRecording()
+
+        model.toggleRecording(id: "key")
+
+        XCTAssertEqual(model.recording, "key")
+        XCTAssertNil(model.pressedKey)
+    }
+
     func testAFieldThatTurnsEmptyRecordsAgain() async throws {
         try await openPick()
         try await wait("the recording") { self.model.recording == "key" }
