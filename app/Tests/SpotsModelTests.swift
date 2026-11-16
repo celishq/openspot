@@ -1014,7 +1014,7 @@ final class SpotsModelTests: XCTestCase {
         model.panelWillShow()
         XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
         try await wait("the Settings sheet") { model.openSheetID == SpotSettings.sheetID(of: "conf") }
-        try await wait("its rows") { model.openItems?.shown.map(\.run) == ["menubar:conf"] }
+        try await wait("its rows") { model.openItems?.shown.map(\.run) == ["key:conf:open", "menubar:conf"] }
         model.closeSheet(moving: false)
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
