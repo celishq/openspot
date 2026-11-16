@@ -145,22 +145,30 @@ extension SpotsModel {
     public func record(code: UInt32, modifiers: Shortcut.Modifiers) {
         let part = openParts?.parts.first { $0.id == recording }
         let item = openItems?.shown.first { $0.run == recording }
+        let isField = item == nil && part != nil
         guard let shortcut = Shortcut(code: code, modifiers: modifiers) else {
-            if item == nil, part != nil {
-                keyStatus = "Hold ⌃, ⌥ or ⌘ with a key."
-            } else {
+            if !isField {
                 host.notify("Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.")
+            } else if Shortcut.name(of: code) == nil, modifiers.makesShortcut {
+                keyStatus = "Hold ⌃, ⌥ or ⌘ with a letter, a digit, an arrow, Space, Return or Tab."
+            } else {
+                keyStatus = "Hold ⌃, ⌥ or ⌘ with a key."
             }
             return
         }
+        let appWords = "`\(shortcut.label)` belongs to the apps on the Mac. Hold `⌥` or `⌃` with a key"
         if takesShake, shortcut.isAppKey {
-            host.notify("`\(shortcut.label)` belongs to the apps on the Mac. Hold `⌥` or `⌃` with a key, or tap one key such as `⌥`.")
+            host.notify("\(appWords), or tap one key such as `⌥`.")
+            return
+        }
+        if isField, shortcut.isAppKey {
+            keyStatus = "\(appWords)."
             return
         }
         let check = KeyCheck(taken: takenKeys)
         if item != nil {
             if check.owner(of: shortcut) != nil { host.notify(check.words(for: shortcut)) }
-        } else if part != nil {
+        } else if isField {
             keyStatus = check.words(for: shortcut)
         }
         stopRecording()

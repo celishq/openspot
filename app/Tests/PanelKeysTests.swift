@@ -402,6 +402,28 @@ final class PanelKeysTests: PanelCase {
         try await wait("the key call") { self.pickCalls.contains("key option+space") }
     }
 
+    func testAFieldKeepsNoKeyOfTheAppsAndRecordsOn() async throws {
+        try await openPick()
+        try await wait("the recording") { self.model.recording == "key" }
+
+        model.record(code: 8, modifiers: .command)
+
+        XCTAssertEqual(model.keyStatus, "`⌘C` belongs to the apps on the Mac. Hold `⌥` or `⌃` with a key.")
+        XCTAssertEqual(model.recording, "key")
+        XCTAssertEqual(keyField?.value, "")
+    }
+
+    func testAKeyWithNoNameBesideAHeldModifierNamesTheKeysThatWork() async throws {
+        try await openPick()
+        try await wait("the recording") { self.model.recording == "key" }
+
+        model.record(code: 27, modifiers: .option)
+
+        XCTAssertEqual(model.keyStatus, "Hold ⌃, ⌥ or ⌘ with a letter, a digit, an arrow, Space, Return or Tab.")
+        XCTAssertEqual(model.recording, "key")
+        XCTAssertEqual(keyField?.value, "")
+    }
+
     func testAFieldThatTurnsEmptyRecordsAgain() async throws {
         try await openPick()
         try await wait("the recording") { self.model.recording == "key" }

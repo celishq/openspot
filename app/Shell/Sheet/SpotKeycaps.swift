@@ -30,7 +30,8 @@ struct SpotKeycaps: View {
                     .modifier(SpotSecondaryText())
                 Keycap(symbol: shown?.keyLabel ?? "key", name: "", font: shown == nil ? SpotType.detail : SpotType.title, width: 2 * Self.side, height: Self.side, isLit: shown != nil, isBlank: shown == nil)
             }
-            Text(status ?? (isRecording ? Self.waiting : ""))
+            ToastView.styled(status ?? (isRecording ? Self.waiting : ""))
+                .textRenderer(ToastKeyFill(fill: SpotTheme.ink.opacity(SpotTheme.track)))
                 .font(SpotType.detail)
                 .modifier(SpotSecondaryText())
                 .multilineTextAlignment(.center)

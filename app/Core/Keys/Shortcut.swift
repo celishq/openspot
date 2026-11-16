@@ -34,6 +34,10 @@ public struct Shortcut: Hashable, Sendable {
             KeyText(modifiers: self, name: "").marks
         }
 
+        var makesShortcut: Bool {
+            !isDisjoint(with: [.command, .control, .option])
+        }
+
         static var all: [Modifiers] {
             Shortcut.modifierWords.map(\.modifier)
         }
@@ -58,20 +62,19 @@ public struct Shortcut: Hashable, Sendable {
     }
 
     public init?(text: String) {
-        guard let key = KeyText(text: text), let code = Self.namedCodes[key.name] ?? KeyCode(name: key.name)?.code, Self.isHeld(key.modifiers) else {
+        guard let key = KeyText(text: text), let code = Self.namedCodes[key.name] ?? KeyCode(name: key.name)?.code, key.modifiers.makesShortcut else {
             return nil
         }
         self.init(name: key.name, code: code, modifiers: key.modifiers)
     }
 
     public init?(code: UInt32, modifiers: Modifiers) {
-        guard let name = Self.namedCodes.first(where: { $0.value == code })?.key ?? KeyCode(code: code)?.name,
-              Self.isHeld(modifiers) else { return nil }
+        guard let name = Self.name(of: code), modifiers.makesShortcut else { return nil }
         self.init(name: name, code: code, modifiers: modifiers)
     }
 
-    private static func isHeld(_ modifiers: Modifiers) -> Bool {
-        !modifiers.isDisjoint(with: [.command, .control, .option])
+    static func name(of code: UInt32) -> String? {
+        namedCodes.first { $0.value == code }?.key ?? KeyCode(code: code)?.name
     }
 
     public var isAppKey: Bool {
