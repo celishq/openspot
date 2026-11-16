@@ -28,7 +28,7 @@ struct SpotsView: View {
                     model: model,
                     isSheetOpen: sheetOpen,
                     openID: card?.id,
-                    push: card.map(push(from:)),
+                    push: push(from: card),
                     dropTarget: $dropTarget
                 )
                     .offset(y: gridPush)
@@ -101,11 +101,13 @@ struct SpotsView: View {
         return (SheetMorph(card: frame, sheet: sheetRect), SurfaceEdge(card: card.placement.size).radius)
     }
 
-    private func push(from card: SpotSheetCard) -> SheetPush {
+    private func push(from card: SpotSheetCard?) -> SheetPush? {
+        guard sheetID != nil, !isInstall else { return nil }
         let origin = SpotTokens.gridOrigin(scrollOffset: model.cardScroll, left: model.panels.leftExtent)
         let panel = model.panels.frame
         let window = CGRect(x: panel.minX - origin.x, y: SpotTokens.halo - origin.y, width: panel.width, height: panel.height - SpotTokens.halo)
-        return SheetPush(open: card.placement, sheet: sheetRect.offsetBy(dx: -origin.x, dy: -origin.y), window: window)
+        let foot = SheetPush.Foot(closed: gridHeight - SpotTokens.halo - origin.y, open: sheetHeight - SpotTokens.halo - origin.y)
+        return SheetPush(open: card?.placement, sheet: sheetRect.offsetBy(dx: -origin.x, dy: -origin.y), window: window, foot: foot)
     }
 
     private var sheetRect: CGRect {

@@ -41,9 +41,10 @@ final class SheetPushTests: XCTestCase {
         XCTAssertEqual(wide.offset(of: card(row: 0, column: 5)), CGSize(width: 0, height: -152))
     }
 
-    func testTheOpenCardStaysAndNeverFades() {
-        XCTAssertEqual(push.offset(of: push.open), .zero)
-        XCTAssertEqual(push.fade(of: push.open, movedBy: .zero), 0)
+    func testTheOpenCardStaysAndNeverFades() throws {
+        let open = try XCTUnwrap(push.open)
+        XCTAssertEqual(push.offset(of: open), .zero)
+        XCTAssertEqual(push.fade(of: open, movedBy: .zero), 0)
     }
 
     func testACardHasFadedByTheShareOfItsWayToWhereItsCentreMeetsTheWindowsEdge() {
@@ -59,5 +60,29 @@ final class SheetPushTests: XCTestCase {
     func testACardThatThePushLeavesInPlaceHasNoFadeOfItsOwn() {
         let tall = SheetPush(open: push.open, sheet: CGRect(x: 75, y: 0, width: 64, height: 300), window: push.window)
         XCTAssertNil(tall.fade(of: card(row: 1, column: 0), movedBy: .zero))
+    }
+
+    func testACardBelowHasFadedWhenItsFootMeetsTheShrinkingBlursFoot() {
+        let shrinking = SheetPush(open: push.open, sheet: push.sheet, window: push.window, foot: SheetPush.Foot(closed: 400, open: 250))
+        let below = card(row: 2, column: 0)
+        let meeting = 184.0 / 334.0
+
+        XCTAssertEqual(shrinking.fade(of: below, movedBy: CGSize(width: 0, height: 92)) ?? -1, 0.5 / meeting, accuracy: 0.001)
+        XCTAssertEqual(shrinking.fade(of: below, movedBy: CGSize(width: 0, height: 184 * meeting)) ?? -1, 1, accuracy: 0.001)
+    }
+
+    func testABlurThatGrowsLeavesTheWindowToEndTheFade() {
+        let growing = SheetPush(open: push.open, sheet: push.sheet, window: push.window, foot: SheetPush.Foot(closed: 250, open: 600))
+        XCTAssertEqual(growing.fade(of: card(row: 0, column: 1), movedBy: CGSize(width: 0, height: -66)) ?? -1, 0.5, accuracy: 0.001)
+    }
+
+    func testWithNoCardACardThatStaysHasFadedWhenTheShrinkingBlursFootReachesIt() {
+        let field = SheetPush(open: nil, sheet: push.sheet, window: push.window, foot: SheetPush.Foot(closed: 400, open: 200))
+        let below = card(row: 2, column: 0)
+
+        XCTAssertEqual(field.offset(of: below), .zero)
+        XCTAssertEqual(field.fade(of: below, share: 0.46), 0.5, accuracy: 0.001)
+        XCTAssertEqual(field.fade(of: below, share: 0.92), 1, accuracy: 0.001)
+        XCTAssertEqual(field.fade(of: card(row: 0, column: 0), share: 0.5), 0.5, accuracy: 0.001)
     }
 }
