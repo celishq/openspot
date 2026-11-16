@@ -121,7 +121,7 @@ final class AppCallsSocketTests: XCTestCase {
 
         let answer = try ask(["check", "spots", "spots"], cwd: config)
 
-        XCTAssertEqual(answer.stdout, "No faults in \(spots.path).\n")
+        XCTAssertEqual(answer.stdout, "")
         XCTAssertEqual(answer.code, 0)
         XCTAssertFalse(exists(leak))
     }

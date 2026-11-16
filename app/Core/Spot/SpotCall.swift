@@ -4,7 +4,7 @@ public enum SpotCall: NounCall {
     case new(name: String, starter: SpotStarter)
     case run(id: String, arguments: [String])
     case log(String)
-    case stats(days: Int, spot: String?, format: StatsReport.Format)
+    case stats(days: Int, spot: String?, format: PrintForm)
     case show(String)
     case list(core: Bool, form: PrintForm)
     case add(String?, isConfirmed: Bool)
@@ -82,7 +82,7 @@ public enum SpotCall: NounCall {
     private static func stats(_ words: [String]) -> SpotCall? {
         var days = 1
         var spot: String?
-        var format = StatsReport.Format.frame
+        var format = PrintForm.frame
         var seen: Set<String> = []
         var index = 0
         while index < words.count {

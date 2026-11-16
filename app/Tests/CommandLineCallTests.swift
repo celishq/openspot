@@ -118,8 +118,8 @@ final class CommandLineCallTests: XCTestCase {
     }
 
     func testACheckCanPrintJSONAndARenderCanNameAnInstalledSpot() {
-        XCTAssertEqual(CommandLineCall(arguments: ["check", "spots", "--json"])?.value as? CheckCall, .folder(nil, json: true))
-        XCTAssertEqual(CommandLineCall(arguments: ["check", "spots", "--json", "spots"])?.value as? CheckCall, .folder("spots", json: true))
+        XCTAssertEqual(CommandLineCall(arguments: ["check", "spots", "--json"])?.value as? CheckCall, .folder(nil, form: .json))
+        XCTAssertEqual(CommandLineCall(arguments: ["check", "spots", "--json", "spots"])?.value as? CheckCall, .folder("spots", form: .json))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "spot", "weather", "a.png"])?.value as? RenderCall, .spot(id: "weather", size: nil, path: "a.png"))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "spot", "weather", "--card", "wide", "a.png"])?.value as? RenderCall, .spot(id: "weather", size: .wide, path: "a.png"))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "spot", "weather", "--card", "huge", "a.png"])?.value as? CallFault, .unknown("render spot weather --card huge a.png"))
@@ -135,8 +135,8 @@ final class CommandLineCallTests: XCTestCase {
     }
 
     func testReadsEachCall() {
-        XCTAssertEqual(CommandLineCall(arguments: ["check", "spots"])?.value as? CheckCall, .folder(nil, json: false))
-        XCTAssertEqual(CommandLineCall(arguments: ["check", "spots", "/a"])?.value as? CheckCall, .folder("/a", json: false))
+        XCTAssertEqual(CommandLineCall(arguments: ["check", "spots"])?.value as? CheckCall, .folder(nil, form: .frame))
+        XCTAssertEqual(CommandLineCall(arguments: ["check", "spots", "/a"])?.value as? CheckCall, .folder("/a", form: .frame))
         XCTAssertEqual(CommandLineCall(arguments: ["color", "pick"])?.value as? ColorCall, .pick)
         XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "copy", "/a b.mov"])?.value as? ClipboardCall, .copy("/a b.mov"))
         XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "paste"])?.value as? ClipboardCall, .paste)

@@ -65,8 +65,8 @@ Try each example of this page in the playground before you put it in the spots f
   `openspot render card <size> <file.png>` draws its card, and `openspot render spot <id> <file.png>` draws an
   installed spot.
 - **Log.** `openspot spot log <id>` prints the last calls to a spot, with their stdin, stdout, stderr and exit code.
-- **Check.** `openspot check spots [--json] <folder>` loads each spot, runs it once, and prints each error. Run it before you
-  share a spot.
+- **Check.** `openspot check spots [--json] <folder>` loads each spot, runs it once, and prints a `fault` block for each error,
+  or nothing. Run it before you share a spot.
 
 ## Show a list
 

@@ -166,7 +166,7 @@ struct SpotCalls {
         }
     }
 
-    func stats(days: Int, spot: String?, format: StatsReport.Format) -> CommandAPI.Work {
+    func stats(days: Int, spot: String?, format: PrintForm) -> CommandAPI.Work {
         CommandAnswer.work { [environment, runs] in
             let counts: [SpotUsage.Day]
             if let runs {

@@ -1,10 +1,6 @@
 import Foundation
 
 public struct StatsReport: Sendable {
-    public enum Format: Equatable, Sendable {
-        case frame, json
-    }
-
     let days: [SpotUsage.Day]
     let spot: String?
 
@@ -13,7 +9,7 @@ public struct StatsReport: Sendable {
         self.spot = spot
     }
 
-    public func text(_ format: Format) throws -> String {
+    public func text(_ format: PrintForm) throws -> String {
         switch format {
         case .frame: frame
         case .json: try json
