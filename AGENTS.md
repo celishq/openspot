@@ -173,11 +173,12 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
 - During a motion, no state is written from a measure, such as `onGeometryChange` or a scroll's geometry. Compute frames
   from the layout's own numbers, and scale the content inside a scroll view, not the scroll view.
 - Content that reaches a surface during its open motion is applied when the motion ends.
-- A sheet opens and closes by one rule, whatever its source: a card, the field or a sheet before it. The source shows its
-  own look and words, and they fade over the first half of the motion. The sheet's content, its title too, fades in from
-  `MotionTokens.contentStart`. No part pops in when the shape has room for it.
-- A part outside the sheet follows the blur's moving edge: the footer sits on it, and a grid card has faded by the time
-  the edge reaches it (`SheetPush`).
+- A sheet opens and closes by one rule, whatever its source (`SheetMorph.Source`): a card in sight, or the field for any
+  other sheet. The source shows its own look and words, and they fade over the first half of the motion. The sheet's
+  content, its title too, fades in from `MotionTokens.contentStart`. No part pops in when the shape has room for it.
+- The field travels into the sheet's search row, and the sheet's moving shape cuts its glass, so one glass shape shows.
+- The blur's foot is the lower of the moving shape's foot and the way from the grid's height to the sheet's. The footer
+  sits on it, and a grid card has faded by the time it reaches the card (`SheetPush`).
 - A step of the flow, a push, a back or a forward, is the same grow motion as a sheet that opens.
 - Hide a view that comes back with a mask or with opacity 0.001, not with opacity 0, which drops its drawing.
 
