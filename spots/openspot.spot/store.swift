@@ -8,8 +8,7 @@ import SwiftUI
 struct SpotView: View {
     let spot: SpotInput
     @State private var query = ""
-    @State private var origin = Origin.all
-    @State private var chosen: String?
+    @State private var place = Place.origin(.all)
     @State private var folders: [Folder] = []
     @State private var order = Order.name
     @State private var opened: String?
@@ -20,9 +19,15 @@ struct SpotView: View {
     @State private var tip: String?
     @Environment(\.openURL) private var openURL
 
+    /// The row of the sidebar that is chosen: an origin, or a store by the path of its folder.
+    private enum Place: Equatable {
+        case origin(Origin)
+        case store(String)
+    }
+
     /// Where the spots that the sidebar keeps come from.
     private enum Origin: String, CaseIterable, Identifiable {
-        case all = "All", core = "Core", mine = "Yours", store = "Shared"
+        case all = "All", core = "Core", mine = "Yours"
 
         var id: Self { self }
 
@@ -32,7 +37,6 @@ struct SpotView: View {
             case .all: nil
             case .core: "core"
             case .mine: "mine"
-            case .store: "store"
             }
         }
 
@@ -41,7 +45,6 @@ struct SpotView: View {
             case .all: "square.grid.2x2"
             case .core: "shippingbox"
             case .mine: "person.crop.circle"
-            case .store: "person.2"
             }
         }
 
@@ -51,7 +54,6 @@ struct SpotView: View {
             case .all: "Show every spot"
             case .core: "Show the spots that come with Openspot"
             case .mine: "Show the spots you made"
-            case .store: "Show the spots shared with you"
             }
         }
     }
@@ -151,7 +153,7 @@ struct SpotView: View {
             sidebar(all)
             VStack(spacing: 0) {
                 ZStack {
-                    if let folder = folders.first(where: { $0.id == chosen }), !folder.isFound {
+                    if let folder = chosenFolder, !folder.isFound {
                         missing(folder)
                     } else {
                         gallery(items)
@@ -180,10 +182,10 @@ struct SpotView: View {
             pending = nil
             let next = spot.all("folder").compactMap(Folder.init)
             if asked == "add" || asked?.hasPrefix("locate:") == true, let new = next.first(where: { folder in !folders.contains { $0.id == folder.id } }) {
-                chosen = new.id
+                place = .store(new.id)
             }
             if next != folders { folders = next }
-            if let chosen, !next.contains(where: { $0.id == chosen }) { self.chosen = nil }
+            if case .store(let id) = place, !next.contains(where: { $0.id == id }) { place = .origin(.all) }
             let lines = spot.all("readme").map { $0.split(separator: "\t", maxSplits: 1, omittingEmptySubsequences: false) }
             for (id, parts) in Dictionary(grouping: lines, by: { String($0[0]) }) {
                 readmes[id] = parts.filter { $0.count > 1 }.map { Line(String($0[1])) }
@@ -197,11 +199,25 @@ struct SpotView: View {
         }
     }
 
-    /// The spots that the search and the origin keep, in the chosen order.
+    /// The store that the sidebar has chosen, if a store is chosen.
+    private var chosenFolder: Folder? {
+        guard case .store(let id) = place else { return nil }
+        return folders.first { $0.id == id }
+    }
+
+    /// Whether a spot belongs to the chosen row of the sidebar.
+    private func isKept(_ item: Item) -> Bool {
+        switch place {
+        case .origin(let origin): origin.word == nil || item.origin == origin.word
+        case .store(let id): item.store == id
+        }
+    }
+
+    /// The spots that the search and the chosen row keep, in the chosen order.
     private func kept(_ all: [Item]) -> [Item] {
         let folded = query.trimmingCharacters(in: .whitespaces).folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
         let kept = all.filter { item in
-            (chosen.map { item.store == $0 } ?? (origin.word == nil || item.origin == origin.word)) && (folded.isEmpty || item.words.contains(folded))
+            isKept(item) && (folded.isEmpty || item.words.contains(folded))
         }
         switch order {
         case .name: return kept.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
@@ -233,9 +249,11 @@ struct SpotView: View {
         VStack(alignment: .leading, spacing: 2) {
             search
                 .padding(.bottom, 10)
-            ForEach(Origin.allCases.filter { $0 != .store }) { each in
+            ForEach(Origin.allCases) { each in
                 let count = each.word.map { word in all.filter { $0.origin == word }.count } ?? all.count
-                if count > 0 || each == .all || (chosen == nil && origin == each) { row(each, count: count) }
+                if count > 0 || each == .all || place == .origin(each) {
+                    row(each.symbol, each.rawValue, trailing: "\(count)", tip: each.tip, chosen: place == .origin(each)) { place = .origin(each) }
+                }
             }
             Text("Stores")
                 .font(Self.caption)
@@ -244,9 +262,18 @@ struct SpotView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 2)
             ForEach(folders) { folder in
-                row(folder, count: all.filter { $0.store == folder.id }.count)
+                row(
+                    folder.isFound ? "folder" : "questionmark.folder", folder.name,
+                    trailing: folder.isFound ? "\(all.filter { $0.store == folder.id }.count)" : "Not Found",
+                    tip: folder.isFound ? "Show the spots of \(folder.name)" : "Openspot cannot find \(folder.id)",
+                    chosen: place == .store(folder.id), dimmed: !folder.isFound
+                ) { place = .store(folder.id) }
+                .contextMenu {
+                    if folder.isFound { Button("Show in Finder") { openURL(URL(fileURLWithPath: folder.id, isDirectory: true)) } }
+                    if !folder.isBuiltIn { Button("Remove Store") { send("remove:\(folder.id)") } }
+                }
             }
-            add
+            row("plus", "Add Store…", tip: "Add a folder of spots as a store", dimmed: true) { send("add") }
             if !folders.contains(where: { !$0.isBuiltIn }) {
                 Text("A store is a folder of spots, such as a repo you cloned or a folder a friend shared. Its spots show here, ready to get.")
                     .font(Self.caption)
@@ -286,81 +313,29 @@ struct SpotView: View {
         .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
-    /// The row of an origin, filled while it is the chosen one.
-    private func row(_ each: Origin, count: Int) -> some View {
+    /// A row of the sidebar: a picture, a title and a trailing word, filled while it is the chosen one, which a click presses.
+    private func row(_ symbol: String, _ title: String, trailing: String = "", tip: String, chosen: Bool = false, dimmed: Bool = false, action: @escaping () -> Void) -> some View {
         let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
-        return tipped(each.tip, HStack(spacing: 10) {
-            Image(systemName: each.symbol)
+        return tipped(tip, HStack(spacing: 10) {
+            Image(systemName: symbol)
                 .font(.system(size: 14))
                 .foregroundStyle(spot.ink.opacity(spot.secondary))
                 .frame(width: 20)
-            Text(each.rawValue)
+            Text(title)
                 .font(Self.text)
-                .foregroundStyle(spot.ink)
-            Spacer(minLength: 0)
-            Text("\(count)")
-                .font(Self.caption)
-                .foregroundStyle(spot.ink.opacity(spot.secondary))
-        }
-        .padding(.horizontal, 10)
-        .frame(height: Self.line)
-        .background(chosen == nil && origin == each ? spot.ink.opacity(0.1) : .clear, in: shape)
-        .contentShape(shape)
-        .onTapGesture {
-            origin = each
-            chosen = nil
-        }
-        .accessibilityAddTraits(chosen == nil && origin == each ? [.isButton, .isSelected] : .isButton))
-    }
-
-    /// The row of a store folder, filled while it is the chosen one, which says when its folder is gone, and whose menu
-    /// removes it.
-    private func row(_ folder: Folder, count: Int) -> some View {
-        let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
-        return tipped(folder.isFound ? "Show the spots of \(folder.name)" : "Openspot cannot find \(folder.id)", HStack(spacing: 10) {
-            Image(systemName: folder.isFound ? "folder" : "questionmark.folder")
-                .font(.system(size: 14))
-                .foregroundStyle(spot.ink.opacity(spot.secondary))
-                .frame(width: 20)
-            Text(folder.name)
-                .font(Self.text)
-                .foregroundStyle(spot.ink.opacity(folder.isFound ? 1 : spot.secondary))
+                .foregroundStyle(spot.ink.opacity(dimmed ? spot.secondary : 1))
                 .lineLimit(1)
             Spacer(minLength: 0)
-            Text(folder.isFound ? "\(count)" : "Not Found")
+            Text(trailing)
                 .font(Self.caption)
                 .foregroundStyle(spot.ink.opacity(spot.secondary))
         }
         .padding(.horizontal, 10)
         .frame(height: Self.line)
-        .background(chosen == folder.id ? spot.ink.opacity(0.1) : .clear, in: shape)
+        .background(chosen ? spot.ink.opacity(0.1) : .clear, in: shape)
         .contentShape(shape)
-        .onTapGesture { chosen = folder.id }
-        .contextMenu {
-            if folder.isFound { Button("Show in Finder") { openURL(URL(fileURLWithPath: folder.id, isDirectory: true)) } }
-            if !folder.isBuiltIn { Button("Remove Store") { send("remove:\(folder.id)") } }
-        }
-        .accessibilityAddTraits(chosen == folder.id ? [.isButton, .isSelected] : .isButton))
-    }
-
-    /// The row that asks for a folder and adds it as a store.
-    private var add: some View {
-        let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
-        return tipped("Add a folder of spots as a store", HStack(spacing: 10) {
-            Image(systemName: "plus")
-                .font(.system(size: 14))
-                .foregroundStyle(spot.ink.opacity(spot.secondary))
-                .frame(width: 20)
-            Text("Add Store…")
-                .font(Self.text)
-                .foregroundStyle(spot.ink.opacity(spot.secondary))
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 10)
-        .frame(height: Self.line)
-        .contentShape(shape)
-        .onTapGesture { send("add") }
-        .accessibilityAddTraits(.isButton))
+        .onTapGesture(perform: action)
+        .accessibilityAddTraits(chosen ? [.isButton, .isSelected] : .isButton))
     }
 
     /// What shows for a store whose folder is gone: why, and the two steps that fix it.
@@ -419,27 +394,25 @@ struct SpotView: View {
     /// What shows when no spot is kept: a picture, why, and the step that brings spots back.
     private var empty: some View {
         let isSearch = !query.trimmingCharacters(in: .whitespaces).isEmpty
-        let place = folders.first { $0.id == chosen }
+        let folder = chosenFolder
+        let origin = if case .origin(let origin) = place { origin } else { Origin.all }
         return VStack(spacing: 8) {
-            Image(systemName: isSearch ? "magnifyingglass" : place == nil ? origin.symbol : "folder")
+            Image(systemName: isSearch ? "magnifyingglass" : folder == nil ? origin.symbol : "folder")
                 .font(.system(size: 36, weight: .light))
                 .foregroundStyle(spot.ink.opacity(spot.secondary))
                 .padding(.bottom, 4)
             Text(isSearch ? "No Spots Match “\(query)”" : "No Spots Here")
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(spot.ink)
-            Text(isSearch ? "Check the spelling, or try other words." : place.map { "You have each spot of \($0.name)." } ?? (origin == .all ? "The store has no spots yet." : "Nothing is in \(origin.rawValue) yet."))
+            Text(isSearch ? "Check the spelling, or try other words." : folder.map { "You have each spot of \($0.name)." } ?? (origin == .all ? "The store has no spots yet." : "Nothing is in \(origin.rawValue) yet."))
                 .font(Self.text)
                 .foregroundStyle(spot.ink.opacity(spot.secondary))
                 .multilineTextAlignment(.center)
             if isSearch {
                 Button("Clear Search") { query = "" }
                     .padding(.top, 6)
-            } else if origin != .all || place != nil {
-                Button("Show All Spots") {
-                    origin = .all
-                    chosen = nil
-                }
+            } else if place != .origin(.all) {
+                Button("Show All Spots") { place = .origin(.all) }
                     .padding(.top, 6)
             }
         }
@@ -473,7 +446,7 @@ struct SpotView: View {
 
     /// The footer's line, which says where the spots of the chosen store come from, and what a card does.
     private var hint: String {
-        guard let folder = folders.first(where: { $0.id == chosen }) else {
+        guard let folder = chosenFolder else {
             return "Click a spot to read about it and try it. The plus adds it to your grid."
         }
         if folder.isBuiltIn { return "Examples that come with Openspot. The plus adds one to your grid." }
