@@ -10,10 +10,11 @@ enum HelpCall: NounCall {
 
     static let noun = CommandNoun("help", group: .start, flags: flags, verbs: [
         CommandVerb("", "[noun [verb]] [--json]", "Prints this list, or the verbs of a noun and its page of the guide, when it has one. --help after any noun or verb does the same. --json prints each verb with its form, its effect and whether it needs the app.") { words in
-            if words.rest == [Self.jsonWord] { return Self.json }
             if words.rest.count == 1, Self.flags.contains(words.rest[0]) { return Self.list }
-            guard let first = words.rest.first, !first.hasPrefix("-") else { return words.none ? Self.list : nil }
-            return Self.verbs(first, verb: Array(words.rest.dropFirst()))
+            guard let fit = words.fit else { return nil }
+            if fit.has(Self.jsonWord) { return fit.rest.isEmpty ? Self.json : nil }
+            guard let first = fit.rest.first, !first.hasPrefix("-") else { return fit.rest.isEmpty ? Self.list : nil }
+            return Self.verbs(first, verb: Array(fit.rest.dropFirst()))
         }
     ])
 

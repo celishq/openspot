@@ -7,10 +7,10 @@ enum GuideCall: NounCall {
 
     static let noun = CommandNoun("guide", group: .start, verbs: [
         CommandVerb("", "[topic | --topics]", "Prints the guide to building a spot. Read it before you write one. A topic prints one part of it, and --topics lists them.") { words in
-            switch words.rest {
-            case []: Self.text
-            case ["--topics"]: Self.topics
-            case let rest where rest.count == 1 && !rest[0].hasPrefix("-"): Self.topic(rest[0])
+            switch (words.fit?.has("--topics"), words.fit?.rest ?? []) {
+            case (false?, []): Self.text
+            case (true?, []): Self.topics
+            case (false?, let rest) where rest.count == 1 && !rest[0].hasPrefix("-"): Self.topic(rest[0])
             default: nil
             }
         }

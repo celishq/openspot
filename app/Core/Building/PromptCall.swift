@@ -9,10 +9,8 @@ enum PromptCall: NounCall {
             Self.new(words.rest.joined(separator: " "))
         },
         CommandVerb("change", "<id> [--failure <text>] [words]...", "Prints a prompt that asks a coding agent to change the spot as the words say. With no words, the agent asks you what to change.") { words in
-            guard let id = words.rest.first else { return nil }
-            let rest = Array(words.rest.dropFirst())
-            let failure = rest.first == "--failure" && rest.count > 1 ? rest[1] : nil
-            return Self.change(id: id, words: (failure == nil ? rest : Array(rest.dropFirst(2))).joined(separator: " "), failure: failure)
+            guard let fit = words.fit, let id = fit.rest.first else { return nil }
+            return Self.change(id: id, words: fit.rest.dropFirst().joined(separator: " "), failure: fit.value("--failure"))
         }
     ])
 

@@ -623,6 +623,7 @@
 		BEAF47A9670E7FB58341D9FB /* SpotRun.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A749466EBCB8DDA8582D335 /* SpotRun.swift */; };
 		BF0E4916E2B8461F0DA30AD2 /* CalendarList.swift in Sources */ = {isa = PBXBuildFile; fileRef = C36B3E477AAAF5EDB054FBD2 /* CalendarList.swift */; };
 		BF54A49FAF5CFA05DAE6C580 /* SpotType.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC933F3BAB8564385C412E65 /* SpotType.swift */; };
+		BFFF012AD2959595FAF09C87 /* CommandForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAF386C7C120901ECF8F36DF /* CommandForm.swift */; };
 		C03BEA075D3CA5180E64361A /* SpotPlaygroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B06039093C58181DCF0E63F /* SpotPlaygroundView.swift */; };
 		C0BC6A0B253A732718DC5D22 /* SpotCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A7870208A864039D06EDA17 /* SpotCatalog.swift */; };
 		C0C0064DF1B807E064B70852 /* ScreenPickTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CA1033CFE63319B46175D39 /* ScreenPickTests.swift */; };
@@ -820,6 +821,7 @@
 		F0D0AF2E53E252D2E7F6E989 /* DetachedWindows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1342655153D87E75A4225C5F /* DetachedWindows.swift */; };
 		F0D8034BB2F943967DD56AB3 /* AgentNoteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50F4220BE5A4D4FC319E038B /* AgentNoteTests.swift */; };
 		F1599EF124DA9174DBC2EB0A /* SoleCommandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F790F652A58A8853C46BF0A /* SoleCommandTests.swift */; };
+		F16627C7DC2C9B8622226878 /* CommandFormTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52DD271085F7DD9A6EAFEE11 /* CommandFormTests.swift */; };
 		F1D26F5CD6E998E438A73ED1 /* AccountKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CB75ADB73E5F9963AEBAC8E /* AccountKey.swift */; };
 		F253211191C09B5429E12197 /* SpotLiveSelectionRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4039E8E60D4AE498C34C8E3 /* SpotLiveSelectionRing.swift */; };
 		F333763D9F6144D486AB03F4 /* SpotKind.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60BFE28A6D2DB76E1F2FCD3F /* SpotKind.swift */; };
@@ -1179,6 +1181,7 @@
 		51D21CF903F24FBEACCADEC5 /* SpotChoiceMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotChoiceMenu.swift; sourceTree = "<group>"; };
 		51DBC9B32C783376E0F2C10A /* SpotFloatPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotFloatPanel.swift; sourceTree = "<group>"; };
 		52C57E14B4C713AF33ACC3AF /* Reminders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reminders.swift; sourceTree = "<group>"; };
+		52DD271085F7DD9A6EAFEE11 /* CommandFormTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandFormTests.swift; sourceTree = "<group>"; };
 		536064B6D357B642DB6E4691 /* FrameCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameCheck.swift; sourceTree = "<group>"; };
 		543D5468269D31A816BBADA7 /* SpotsWindowPlace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotsWindowPlace.swift; sourceTree = "<group>"; };
 		54721534E4A59D8BE9117831 /* BigPasteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BigPasteTests.swift; sourceTree = "<group>"; };
@@ -1719,6 +1722,7 @@
 		EA209D9AD4FD095679CB5F54 /* InlineCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineCall.swift; sourceTree = "<group>"; };
 		EA5BC0434C9402119869A138 /* GlyphBookTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlyphBookTests.swift; sourceTree = "<group>"; };
 		EAC3D4BE09B34914C178CEBB /* SpotArrangement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotArrangement.swift; sourceTree = "<group>"; };
+		EAF386C7C120901ECF8F36DF /* CommandForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandForm.swift; sourceTree = "<group>"; };
 		EB160BC4C30BBFD00FB5FDC6 /* SpotsModel+Pointer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Pointer.swift"; sourceTree = "<group>"; };
 		EB8B60927B6B65387FC5CCAF /* SpotGlyphPicture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotGlyphPicture.swift; sourceTree = "<group>"; };
 		ED1EECEC069C9C84A4342D06 /* KeyText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyText.swift; sourceTree = "<group>"; };
@@ -2313,6 +2317,7 @@
 				6552E5F292394568C1A4AD12 /* ClockExampleTests.swift */,
 				397CEA709720AFBD838D24EA /* CommandAPITests.swift */,
 				7167E24FE15BACE4A458F71D /* CommandClientTests.swift */,
+				52DD271085F7DD9A6EAFEE11 /* CommandFormTests.swift */,
 				CECF468B975F5CB95A36410C /* CommandHelpTests.swift */,
 				5ABDF1A6D88542249105D14B /* CommandLineCall+Test.swift */,
 				144AE8063E284949FC39AC18 /* CommandLineCallTests.swift */,
@@ -2937,6 +2942,7 @@
 				25D394B5CC8A44EFA00960B7 /* CallWords.swift */,
 				9B3A8B9E9E0B4E8A8A9EB473 /* CommandAnswer.swift */,
 				BD839535DF2B1A931F521D9A /* CommandAPI.swift */,
+				EAF386C7C120901ECF8F36DF /* CommandForm.swift */,
 				7F2B1486394255E7A96195CD /* CommandGroup.swift */,
 				D88033C45E3D04A382DA9E2F /* CommandHelp.swift */,
 				24B274120A3F3CC61A5258BB /* CommandLineCall.swift */,
@@ -3573,6 +3579,7 @@
 				9D0078F431E1F42A3FB8D611 /* CommandAction.swift in Sources */,
 				824B57353ED1440127B98D05 /* CommandAnswer.swift in Sources */,
 				5D1DD30392B7BC41C013CC04 /* CommandConnection.swift in Sources */,
+				BFFF012AD2959595FAF09C87 /* CommandForm.swift in Sources */,
 				74B8A5FCBA5CF559BF6FB379 /* CommandGroup.swift in Sources */,
 				14C099D79F0698A5D42B6569 /* CommandHelp.swift in Sources */,
 				D7CBBAAB1E360EEBA9D9EA62 /* CommandIndex.swift in Sources */,
@@ -4150,6 +4157,7 @@
 				889181434259B98D5A2C5E7B /* ClockExampleTests.swift in Sources */,
 				E548ABC46BFF2A55AEC029B6 /* CommandAPITests.swift in Sources */,
 				E8D9384903380E56E7E4994A /* CommandClientTests.swift in Sources */,
+				F16627C7DC2C9B8622226878 /* CommandFormTests.swift in Sources */,
 				07F40EE46CDFAB9329EFF7BC /* CommandHelpTests.swift in Sources */,
 				7E4CF4DEF9660D8A731F4A0B /* CommandLineCall+Test.swift in Sources */,
 				B2E3C86E6FCF335C8CFD98EE /* CommandLineCallTests.swift in Sources */,

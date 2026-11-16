@@ -11,21 +11,18 @@ public enum RenderCall: NounCall {
 
     static let noun = CommandNoun("render", group: .build, verbs: [
         CommandVerb("sheet", "[--view file] <file.png>", "Draws the sheet on stdin to a picture, with its view from a Swift file.", rule: rule) { words in
-            switch words.rest.count {
-            case 1 where !words.rest[0].hasPrefix("-"): Self.sheet(words.rest[0], view: nil)
-            case 3 where words.rest[0] == "--view": Self.sheet(words.rest[2], view: words.rest[1])
-            default: nil
-            }
+            guard let fit = words.fit, fit.rest.count == 1, !fit.rest[0].hasPrefix("-") else { return nil }
+            return Self.sheet(fit.rest[0], view: fit.value("--view"))
         },
         CommandVerb("card", "<size> <file.png>", "Draws the card of the sheet on stdin at a size, such as wide, to a picture.", rule: rule) { words in
             guard words.rest.count == 2, let size = SpotSize(name: words.rest[0]) else { return nil }
             return Self.card(size, words.rest[1])
         },
         CommandVerb("spot", "<id> [--card <size>] <file.png>", "Draws the sheet of an installed spot, or its card at a size.", rule: rule) { words in
-            let rest = words.rest
-            if rest.count == 2 { return Self.spot(id: rest[0], size: nil, path: rest[1]) }
-            guard rest.count == 4, rest[1] == "--card", let size = SpotSize(name: rest[2]) else { return nil }
-            return Self.spot(id: rest[0], size: size, path: rest[3])
+            guard let fit = words.fit, fit.rest.count == 2 else { return nil }
+            let size = fit.value("--card").map { SpotSize(name: $0) }
+            guard size != .some(nil) else { return nil }
+            return Self.spot(id: fit.rest[0], size: size ?? nil, path: fit.rest[1])
         },
         CommandVerb("panel", "<file.png>", "Draws the panel with each installed spot on its grid.", rule: rule) { $0.one.map(Self.panel) },
         CommandVerb("store", "<file.png>", "Draws the window of the Store with each spot as its card.", rule: rule) { $0.one.map(Self.store) }

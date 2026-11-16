@@ -36,7 +36,7 @@ public struct CommandLineCall: Equatable, Sendable {
             return
         }
         guard let found = nouns.first(where: { $0.name == noun }), let verb = found.verb(of: rest),
-              let call = verb.parse(CallWords(rest: Array(rest.dropFirst(verb.words.count)), spot: spot, reason: reason))
+              let call = verb.parse(CallWords(rest: Array(rest.dropFirst(verb.words.count)), spot: spot, reason: reason, form: verb.shape))
         else {
             self = unknown
             return

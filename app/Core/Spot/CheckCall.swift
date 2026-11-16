@@ -6,9 +6,7 @@ enum CheckCall: NounCall {
 
     static let noun = CommandNoun("check", group: .build, verbs: [
         CommandVerb("spots", "[--json] [folder]", "Loads each spot of a spots folder, runs it once, and reports each fault.", rule: CallRule(flags: .startsScripts)) { words in
-            let json = words.rest.first == PrintForm.jsonWord
-            let rest = json ? Array(words.rest.dropFirst()) : words.rest
-            return rest.count <= 1 ? Self.folder(rest.first, form: json ? .json : .frame) : nil
+            words.fit.flatMap { $0.rest.count <= 1 ? Self.folder($0.rest.first, form: $0.form) : nil }
         },
         CommandVerb("sheet", "", "Reports the faults of a sheet on stdin.") { $0.none ? Self.sheet : nil }
     ])

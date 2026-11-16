@@ -22,10 +22,8 @@ public enum SpotCall: NounCall {
 
     static let noun = CommandNoun("spot", group: .build, verbs: [
         CommandVerb("new", "<name> [--from kind]", "Writes a working spot to change. A kind is button, list, number or form.", rule: CallRule(use: .spots, used: "wrote a new spot")) { words in
-            let rest = words.rest
-            if rest.count == 1 { return Self.new(name: rest[0], starter: .button) }
-            guard rest.count == 3, rest[1] == "--from", let starter = SpotStarter(rawValue: rest[2]) else { return nil }
-            return Self.new(name: rest[0], starter: starter)
+            guard let fit = words.fit, fit.rest.count == 1, let starter = fit.value("--from").map { SpotStarter(rawValue: $0) } ?? .button else { return nil }
+            return Self.new(name: fit.rest[0], starter: starter)
         },
         CommandVerb("run", "<id> [call] [value]...", "Makes one call of a spot as the app does, and prints all that it prints.", rule: CallRule(use: .spots, used: "ran a spot", flags: .startsScripts)) { words in
             words.rest.first.map { Self.run(id: $0, arguments: Array(words.rest.dropFirst())) }
@@ -34,37 +32,30 @@ public enum SpotCall: NounCall {
         CommandVerb(
             "stats", "[--days n] [--spot id] [--json]",
             "Prints what each spot cost and used today, or over the last n days: a row for each spot with its runs, failures, CPU time, disk bytes, wakeups, each call that needs a use and its last fault, then a use block for each such call. --json prints the days."
-        ) { stats($0.rest) },
+        ) { $0.fit.flatMap(stats) },
         CommandVerb(
             "list", "[--core] [--json]",
             "Prints a spot=<id> block for each spot that the app loads, with a button=<id> or field=<id> block for each of its own. --core prints each spot that comes with the app, and whether it is on. --json prints them as JSON, with their keys."
         ) { words in
-            words.options(["--core", PrintForm.jsonWord]).map { Self.list(core: $0.contains("--core"), form: $0.contains(PrintForm.jsonWord) ? .json : .frame) }
+            words.fit.flatMap { $0.rest.isEmpty ? Self.list(core: $0.has("--core"), form: $0.form) : nil }
         },
         CommandVerb(
             "add", "[git url | folder | file.spot] [--yes]",
             "Puts a spot in the spots folder, a git one at its newest commit, and records it in spots.lock. A source that spots.lock has already updates its spot. With no source, it adds each spot of spots.lock that is missing, at its commit. An update that adds a use needs --yes.",
             rule: CallRule(use: .spots, used: "added a spot", read: .changes(folder))
         ) { words in
-            let sources = words.rest.filter { $0 != "--yes" }
-            guard sources.count <= 1, words.rest.count - sources.count <= 1 else { return nil }
-            return Self.add(sources.first, isConfirmed: sources.count < words.rest.count)
+            guard let fit = words.fit, fit.rest.count <= 1 else { return nil }
+            return Self.add(fit.rest.first, isConfirmed: fit.has("--yes"))
         },
         CommandVerb("remove", "<id>", "Moves a spot that spot add added to the Trash, and drops it from spots.lock.", rule: CallRule(use: .spots, used: "removed a spot", read: .changes(folder))) { $0.one.map(Self.remove) },
         CommandVerb("open", "<id> [--select]", "Opens the panel on a spot, as a new flow. --select only selects its card on the grid.", rule: CallRule(read: .changes(panel), flags: .needsApp)) { words in
-            switch words.rest.count {
-            case 1: Self.open(words.rest[0])
-            case 2 where words.rest[1] == "--select": Self.show(words.rest[0])
-            default: nil
-            }
+            guard let fit = words.fit, fit.rest.count == 1 else { return nil }
+            return fit.has("--select") ? Self.show(fit.rest[0]) : Self.open(fit.rest[0])
         },
-        CommandVerb("push", "<id> [page] [--replace] [--title <words>]", "Pushes a spot, or a page of it, over the flow that shows.", rule: CallRule(read: .changes(panel))) { push($0.rest) },
+        CommandVerb("push", "<id> [page] [--replace] [--title <words>]", "Pushes a spot, or a page of it, over the flow that shows.", rule: CallRule(read: .changes(panel))) { $0.fit.flatMap(push) },
         CommandVerb("pop", "<id> [--all]", "Goes back one sheet of a spot that shows, or to its first sheet.", rule: CallRule(read: .changes("moves the panel"))) { words in
-            switch words.rest.count {
-            case 1: Self.pop(words.rest[0], all: false)
-            case 2 where words.rest[1] == "--all": Self.pop(words.rest[0], all: true)
-            default: nil
-            }
+            guard let fit = words.fit, fit.rest.count == 1 else { return nil }
+            return Self.pop(fit.rest[0], all: fit.has("--all"))
         },
         CommandVerb("choose", "<id>", "Asks for files and drops them on a spot that takes them.", rule: CallRule(read: .changes(window))) { $0.one.map(Self.choose) },
         act(.settings, "Opens the Settings of a spot, as the row of a card's menu does.", rule: CallRule(read: .changes(window))),
@@ -79,49 +70,15 @@ public enum SpotCall: NounCall {
         CommandVerb(act.rawValue, "<id>", about, rule: rule) { words in words.one.map { Self.act(act, $0) } }
     }
 
-    private static func stats(_ words: [String]) -> SpotCall? {
-        var days = 1
-        var spot: String?
-        var format = PrintForm.frame
-        var seen: Set<String> = []
-        var index = 0
-        while index < words.count {
-            let word = words[index]
-            guard seen.insert(word).inserted else { return nil }
-            switch word {
-            case "--days":
-                guard index + 1 < words.count, let number = Int(words[index + 1]), number > 0 else { return nil }
-                days = min(number, SpotUsage.keptDays)
-                index += 1
-            case CallWords.spotWord:
-                guard index + 1 < words.count else { return nil }
-                spot = words[index + 1]
-                index += 1
-            case PrintForm.jsonWord: format = .json
-            default: return nil
-            }
-            index += 1
-        }
-        return .stats(days: days, spot: spot, format: format)
+    private static func stats(_ words: CommandForm.Words) -> SpotCall? {
+        guard words.rest.isEmpty else { return nil }
+        guard let days = words.value("--days").map({ Int($0).flatMap { $0 > 0 ? min($0, SpotUsage.keptDays) : nil } }) ?? 1 else { return nil }
+        return .stats(days: days, spot: words.value(CallWords.spotWord), format: words.form)
     }
 
-    private static func push(_ words: [String]) -> SpotCall? {
-        guard let id = words.first else { return nil }
-        var page: String?
-        var title: String?
-        var replace = false
-        var rest = words.dropFirst()
-        while let word = rest.popFirst() {
-            switch word {
-            case "--replace": replace = true
-            case "--title":
-                guard let words = rest.popFirst() else { return nil }
-                title = words
-            case _ where page == nil && !word.hasPrefix("--"): page = word
-            default: return nil
-            }
-        }
-        return .push(id, page: page, title: title, replace: replace)
+    private static func push(_ words: CommandForm.Words) -> SpotCall? {
+        guard let id = words.rest.first, words.rest.count <= 2 else { return nil }
+        return .push(id, page: words.rest.dropFirst().first, title: words.value("--title"), replace: words.has("--replace"))
     }
 
     func work(in context: CallContext) -> CommandAPI.Work? {
