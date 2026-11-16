@@ -123,8 +123,8 @@ extension SpotRun {
         press(.set(item.run, to: value))
     }
 
-    public func run(_ action: CommandAction, item: SpotItem?) {
-        press(.action(action, item: item), input: item?.fields)
+    public func run(_ action: CommandAction, item: SpotItem?, ended: (() -> Void)? = nil) {
+        press(.action(action, item: item), input: item?.fields, ended: ended)
     }
 
     public func form(_ action: CommandAction, item: SpotItem?) async throws -> ItemForm? {
@@ -224,10 +224,10 @@ extension SpotRun {
         work(action, key: key, input: values, as: Work(generation: generation, keeping: keeping, readsAfter: !closes))
     }
 
-    private func press(_ action: SpotAction, input: String? = nil) {
+    private func press(_ action: SpotAction, input: String? = nil, ended: (() -> Void)? = nil) {
         let key = Self.key(call: action)
         if let running = running(key) { return pressAgain(running) }
-        work(action, key: key, input: input)
+        work(action, key: key, input: input, as: Work(ended: ended))
     }
 
     private func work(_ action: SpotAction, key: String, input: String? = nil, as work: Work = Work()) {

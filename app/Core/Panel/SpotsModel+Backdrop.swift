@@ -10,7 +10,7 @@ extension SpotsModel {
     public var backdropFoot: SheetPush.Foot {
         let sheet = formRect ?? backdropSheet?.sheetRect ?? SpotTokens.sheetRect(rows: 0)
         let open = sheet.height + 2 * SpotTokens.halo + SpotTokens.hintBlock + flowEdges.heldHeight(of: sheet)
-        return SheetPush.Foot(closed: max(gridHeight, menuContentHeight), open: max(open, menuContentHeight))
+        return SheetPush.Foot(closed: max(gridHeight, menuContentHeight), open: max(open, isMenuOpen ? menuContentHeight : 0))
     }
 
     func spanBackdrop() {

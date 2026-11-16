@@ -149,6 +149,7 @@ extension SpotsModel {
             }
             return
         }
+        closeMenu(keepsFoot: true)
         change(nil) {
             transition.show(list, moves: true)
             holdFieldDrop()

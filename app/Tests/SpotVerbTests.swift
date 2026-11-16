@@ -197,6 +197,23 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertEqual(saved("calls"), "star weather\n")
     }
 
+    func testAMenuRowThatAnotherSpotRunsKeepsTheMenuUntilItsRunEnds() async throws {
+        let gate = folder.appendingPathComponent("gate").path
+        try script("weather", header: "title=Weather")
+        try "#!/bin/sh\n# title=Stars\n#\n# button=star\n# title=Star\n# offers=actions\n[ \"$1\" = star ] && touch '\(gate).run' && while [ ! -f '\(gate)' ]; do sleep 0.01; done; true\n".writeScript(to: spots.spotFile("stars"))
+        _ = try await select("weather")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        let row = try XCTUnwrap(model.menu?.rows.last)
+        model.menu?.select(try XCTUnwrap(row.action))
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+        try await wait("the run of the star") { FileManager.default.fileExists(atPath: gate + ".run") }
+        XCTAssertNotNil(model.menu)
+
+        try Data().write(to: URL(fileURLWithPath: gate))
+        try await wait("the close at the end of the run") { model.menu == nil }
+    }
+
     func testTheSheetOfTheIconSpotOpensThoughItHasNoCard() async throws {
         try script("weather", header: "title=Weather")
         await model.reload()
@@ -414,7 +431,7 @@ final class SpotVerbTests: XCTestCase {
 
         model.dragMenu(to: row(2))
         model.releaseMenu(at: row(2))
-        XCTAssertNil(model.menu)
+        try await wait("the close at the end of the row's run") { model.menu == nil }
     }
 
     func testPointingAtACardSelectsItUnlessAMenuIsOpenOrTheGridIsEdited() async throws {

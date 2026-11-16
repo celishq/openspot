@@ -329,8 +329,14 @@ extension SpotsModel {
     }
 
     public func run(_ action: CommandAction, offeredBy owner: String, on target: Target) {
-        if action.after == .close, isShown { host.dismiss() }
-        sheets[owner]?.run(action, item: SpotItem(title: target.entry.state.title, run: target.entry.id))
+        if action.after == .close {
+            closeMenu()
+            if isShown { host.dismiss() }
+        }
+        sheets[owner]?.run(action, item: SpotItem(title: target.entry.state.title, run: target.entry.id)) { [weak self] in
+            guard let self, flow.current == nil || transition.id != nil else { return }
+            closeMenu()
+        }
     }
 
     public func followHint() {
@@ -364,13 +370,16 @@ extension SpotsModel {
         return entry.state.title
     }
 
-    public func closeMenu() {
+    public func closeMenu(keepsFoot: Bool = false) {
         guard menu != nil else { return }
         if menuSession?.submenuRow != nil {
             menuSession?.submenuRow = nil
             host.hideSubmenu()
         }
-        change(.sheet(isOpen: false), { menuSession?.phase = .closing }, completion: { [weak self] in
+        change(.sheet(isOpen: false), {
+            menuSession?.phase = .closing
+            if !keepsFoot, menuContentHeight != 0 { menuContentHeight = 0 }
+        }, completion: { [weak self] in
             if self?.menuSession?.phase == .closing { self?.menuSession = nil }
         })
     }
@@ -390,10 +399,11 @@ extension SpotsModel {
             openForm(action, on: target)
             return
         }
-        closeMenu()
         if let action = row.action, let owner = row.owner {
-            run(action, offeredBy: owner, on: target)
-        } else if let action = row.action {
+            return run(action, offeredBy: owner, on: target)
+        }
+        closeMenu()
+        if let action = row.action {
             run(action, on: target)
         } else if let item = target.item {
             pick(item, of: target.entry)
