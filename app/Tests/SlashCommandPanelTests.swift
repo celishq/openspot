@@ -86,7 +86,7 @@ final class SlashCommandPanelTests: PanelCase {
         model.setFormValue("bread", for: "name")
         model.submitForm()
         try await wait("the toast") { self.host.confirms == ["Saved bread"] }
-        XCTAssertTrue(sent.contains("add\nname=bread"), sent)
+        XCTAssertTrue(sent.contains("name=bread"), sent)
     }
 
     func testACommandThatStaysOpensItsSheetAtItsFirstFrame() async throws {

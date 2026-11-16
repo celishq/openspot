@@ -123,6 +123,7 @@ show() {
 
 input=$(value input; printf x)
 input=${input%x}
+[ -n "$input" ] || input=$(value search)
 source=$(value source)
 target=$(value target)
 [ -n "$source" ] || source=$(field source "$(cat "$saved" 2>/dev/null)")

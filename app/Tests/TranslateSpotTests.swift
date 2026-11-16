@@ -50,6 +50,20 @@ final class TranslateSpotTests: SampleSpotsCase {
         }
     }
 
+    func testTranslateTakesTheTextOfASlashCommandAsItsInput() async throws {
+        try await withPrivateHome { folder in
+            let translate = try self.fakeTranslate(in: folder)
+            let output = try await Self.read(translate, input: "source=ru\ntarget=en\nsearch=hi\n")
+
+            XCTAssertEqual(self.text(of: "input", in: output), "hi")
+        }
+    }
+
+    @MainActor
+    private static func read(_ spot: Spot, input: String) async throws -> SpotOutput {
+        SpotOutput(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, .read, input: input, limit: 30))
+    }
+
     func testTranslateMovesItsTargetWhenTheTextIsAlreadyInIt() async throws {
         try await withPrivateHome { folder in
             let translate = try self.fakeTranslate(in: folder)
