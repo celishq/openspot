@@ -2,7 +2,7 @@ import Foundation
 
 public enum SpotSample {
     public static let scriptName = "sample.sh"
-    public static let textName = "sample.txt"
+    public static let textName = "sample.frame"
     private static let limit: TimeInterval = 10
 
     public static func script(beside file: URL) -> URL {

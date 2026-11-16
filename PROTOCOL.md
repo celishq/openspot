@@ -22,7 +22,7 @@ press   ─ on a block ─►  <spot> <id>    the user or an agent acts
 - A spot lives in a **spot folder**: a folder `<name>.spot` in the spots folder, such as `coffee.spot/coffee.sh`. The
   folder holds its scripts, its `readme.md`, its `sample.sh` and any file that they need.
 - `sample.sh` prints what the spot would show, with made-up data, so that the store can show the spot before you add it.
-  A click on that sample runs nothing. Publish runs it once and ships what it printed as `sample.txt`, which is all a
+  A click on that sample runs nothing. Publish runs it once and ships what it printed as `sample.frame`, a frame like any other, which is all a
   shared spot shows before you add it. `sample.sh` is a spot of its own only in `sample.spot`.
 - A line of `readme.md` that holds only a Markdown image shows a picture or a video from the folder: PNG, JPEG, MOV or
   MP4. A picture can also be an `https` address, which Openspot fetches once, with no cookies. A video at an `https`
