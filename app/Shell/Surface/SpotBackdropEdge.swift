@@ -5,7 +5,7 @@ struct SpotBackdropEdge: View {
     let edge: BackdropEdge
     let rect: CGRect
 
-    @MainActor private static let drawn = Dictionary(uniqueKeysWithValues: (BackdropEdge.blurs + [.shade]).map { ($0, pictures(of: $0)) })
+    @MainActor private static let drawn = Dictionary(uniqueKeysWithValues: BackdropEdge.blurs.map { ($0, pictures(of: $0)) })
 
     var body: some View {
         let pictures = Self.drawn[edge] ?? []
