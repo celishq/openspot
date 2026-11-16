@@ -51,6 +51,12 @@ actor FakeRunningApp: RunningApp {
         quits += 1
     }
 
+    private(set) var themes: [Theme] = []
+
+    func apply(_ theme: Theme) {
+        themes.append(theme)
+    }
+
     func open(_ id: String) -> Bool {
         opened.append("open \(id)")
         return id != "gone"

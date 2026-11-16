@@ -18,7 +18,8 @@ final class SpotMac: MacEvents {
             login: { AppLogin.item },
             link: { AppCommandLink.item },
             pickColor: { await SpotColorPick.pick() },
-            pickFolder: { await SpotFolderPick.pick() }
+            pickFolder: { await SpotFolderPick.pick() },
+            openText: { SpotTextEditor.open($0) }
         )
     }
 
