@@ -30,7 +30,7 @@ public struct CommandLineCall: Equatable, Sendable {
         let noun = HelpCall.flags.contains(first) ? HelpCall.noun.name : first == VersionCall.flag ? VersionCall.noun.name : first
         let spot = spot?.isEmpty == true ? nil : spot
         let rest = Array(arguments.dropFirst())
-        let unknown = CommandLineCall(name: noun, call: CallFault.unknown(arguments.joined(separator: " ")))
+        let unknown = CommandLineCall(name: noun, call: CallFault.unknown(arguments))
         if noun != HelpCall.noun.name, let last = rest.last, HelpCall.flags.contains(last), nouns.contains(where: { $0.name == noun }) {
             self.init(name: HelpCall.noun.name, call: HelpCall.noun(noun, verb: Array(rest.dropLast())))
             return

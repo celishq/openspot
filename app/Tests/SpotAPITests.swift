@@ -133,7 +133,7 @@ final class SpotAPITests: XCTestCase {
 
     func testOnWithNoSpotIsUnknown() {
         XCTAssertEqual(CommandLineCall(arguments: ["setting", "set", "--spot", "a", "enabled"], environment: [:])?.value as? CallFault, .refused("`enabled` takes `true` or `false`, such as `openspot setting set --spot a enabled true`."))
-        XCTAssertEqual(CommandLineCall(arguments: ["spot", "list", "--all"], environment: [:])?.value as? CallFault, .unknown("spot list --all"))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "list", "--all"], environment: [:])?.value as? CallFault, .unknown(["spot", "list", "--all"]))
     }
 
     func testTheValuesListHoldsEachValueWithItsSpot() async throws {
@@ -325,7 +325,7 @@ final class SpotAPITests: XCTestCase {
     func testThePromptChangeCallTakesTheSpotTheFailureAndTheWords() {
         XCTAssertEqual(CommandLineCall(arguments: ["prompt", "change", "weather", "Add", "a button"], environment: [:])?.value as? PromptCall, .change(id: "weather", words: "Add a button", failure: nil))
         XCTAssertEqual(CommandLineCall(arguments: ["prompt", "change", "weather", "--failure", "It broke"], environment: [:])?.value as? PromptCall, .change(id: "weather", words: "", failure: "It broke"))
-        XCTAssertEqual(CommandLineCall(arguments: ["prompt", "change"], environment: [:])?.value as? CallFault, .unknown("prompt change"))
+        XCTAssertEqual(CommandLineCall(arguments: ["prompt", "change"], environment: [:])?.value as? CallFault, .unknown(["prompt", "change"]))
     }
 
     func testThePromptWithNoWordsAsksThePersonWhatToBuild() async throws {

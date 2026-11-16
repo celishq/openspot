@@ -26,7 +26,7 @@ enum HelpCall: NounCall {
             return CommandAnswer.work { try PrintForm.json(help.entries) }
         case .noun(let name, let verb):
             guard let noun = context.nouns.first(where: { $0.name == name }), case let text = help.verbs(of: noun, verb: verb), !text.isEmpty else {
-                return { CommandAnswer(errors: help.unknown(([name] + verb).joined(separator: " ")), code: 2) }
+                return { CommandAnswer(errors: help.unknown([name] + verb), code: 2) }
             }
             guard verb.isEmpty, noun.guide != nil else { return { CommandAnswer(output: text) } }
             return CommandAnswer.work { [nouns = context.nouns] in

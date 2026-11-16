@@ -49,8 +49,8 @@ final class CommandNounTests: XCTestCase {
 
     func testANounInOneFolderIsParsedListedAndRun() async throws {
         XCTAssertEqual(CommandLineCall(arguments: ["bell", "ring", "a", "b"], nouns: nouns)?.value as? BellCall, .ring("a b"))
-        XCTAssertEqual(CommandLineCall(arguments: ["bell", "ring"], nouns: nouns)?.value as? CallFault, .unknown("bell ring"))
-        XCTAssertEqual(CommandLineCall(arguments: ["bell", "ring", "a"])?.value as? CallFault, .unknown("bell ring a"))
+        XCTAssertEqual(CommandLineCall(arguments: ["bell", "ring"], nouns: nouns)?.value as? CallFault, .unknown(["bell", "ring"]))
+        XCTAssertEqual(CommandLineCall(arguments: ["bell", "ring", "a"])?.value as? CallFault, .unknown(["bell", "ring", "a"]))
         XCTAssertTrue(CommandLineCall.usage(of: nouns).contains("openspot bell ring <words>...                Rings the bell with the words.\n"))
         XCTAssertFalse(CommandLineCall.usage.contains("openspot bell"))
         XCTAssertEqual(CommandGuide(folder: folder, nouns: nouns).names, ["bell", "calendar", "reminders", "screen"])

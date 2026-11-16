@@ -2,7 +2,7 @@ import Foundation
 
 public enum CallFault: NounCall {
     case refused(String)
-    case unknown(String)
+    case unknown([String])
 
     func work(in context: CallContext) -> CommandAPI.Work? {
         switch self {

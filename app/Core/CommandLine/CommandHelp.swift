@@ -44,9 +44,8 @@ public struct CommandHelp: Sendable {
         }
     }
 
-    func unknown(_ words: String) -> String {
-        let parts = words.split(separator: " ").map(String.init)
-        let first = "openspot cannot do this: \(words)\n"
+    func unknown(_ parts: [String]) -> String {
+        let first = "openspot cannot do this: \(parts.joined(separator: " "))\n"
         guard let word = parts.first else { return first + Self.hint }
         let rest = Array(parts.dropFirst())
         guard let noun = nouns.first(where: { $0.name == word }) else {
