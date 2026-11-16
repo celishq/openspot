@@ -94,7 +94,7 @@ struct SpotSheetView: View {
                     }
                 }
             }
-            .morph(progress, opacity: { [morph, firstRow] in morph.shown(firstRow, at: $0) })
+            .morph(progress, opacity: { [morph, firstRow] in min(morph.shown(firstRow, at: $0), SheetMorph.sheetLook(at: $0)) })
         }
         .padding(SpotTokens.padding)
         .frame(width: rect.width, height: rect.height, alignment: .topLeading)
@@ -105,12 +105,12 @@ struct SpotSheetView: View {
     private var header: some View {
             HStack(spacing: SpotTokens.padding - 5) {
                 glyph
-                ZStack(alignment: .topLeading) {
+                ZStack(alignment: .leading) {
                     if showsCardWords {
                         words(title: cardState?.title, subtitle: cardState.map(\.subtitle) ?? state.subtitle)
                             .environment(\.spotIsOnSolid, showsFill)
                             .frame(width: max(cardWordsWidth, 0), alignment: .leading)
-                            .morph(progress, opacity: SheetMorph.cardLook(at:))
+                            .morph(progress, opacity: { [morph] in morph.sourceLook(at: $0) })
                     }
                     words(subtitle: list.perLine > 1 ? nil : state.subtitle, selectedName: list.perLine > 1)
                         .frame(width: max(sheetWordsWidth, 0), alignment: .leading)
@@ -143,7 +143,7 @@ struct SpotSheetView: View {
     }
 
     private var showsCardWords: Bool {
-        !hasCardLook && cardSize != .small
+        morph.source == .card && !hasCardLook && cardSize != .small
     }
 
     private var sheetWordsOpacity: (Double) -> Double {
@@ -176,7 +176,7 @@ struct SpotSheetView: View {
         } else {
             let place = CGRect(x: rect.width - SpotTokens.padding - SpotTokens.glyphSize, y: SpotTokens.padding, width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
             button
-                .morph(progress, opacity: { [morph] in morph.growth(of: place, at: $0) })
+                .morph(progress, opacity: { [morph] in min(morph.growth(of: place, at: $0), morph.headerLook(at: $0)) })
         }
     }
 
@@ -186,10 +186,10 @@ struct SpotSheetView: View {
             if glyphDiffersOnCard {
                 SpotGlyph(entry: entry, showsDisc: !(isSmallCard || showsFill))
                     .environment(\.spotIsOnSolid, showsFill)
-                    .morph(progress, opacity: SheetMorph.cardLook(at:))
+                    .morph(progress, opacity: { [morph] in morph.sourceLook(at: $0) })
             }
         }
-        .morph(progress, offset: { [smallCardShift] in SheetMorph.place(onCard: CGSize(width: smallCardShift, height: 0), at: $0) })
+        .morph(progress, offset: { [smallCardShift] in SheetMorph.place(onCard: CGSize(width: smallCardShift, height: 0), at: $0) }, opacity: { [morph] in morph.headerLook(at: $0) })
     }
 
     @ViewBuilder

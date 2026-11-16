@@ -10,20 +10,20 @@ final class SheetMorphTests: XCTestCase {
         XCTAssertEqual(morph.size(at: 0.5).width, 176.5, accuracy: 0.001)
     }
 
-    func testTheCardsLookIsGoneHalfWayAndTheSheetsLookStartsAtAThird() {
+    func testTheCardsLookIsGoneHalfWayAndTheSheetsLookStartsAtAFifth() {
         XCTAssertEqual(SheetMorph.cardLook(at: 0), 1)
         XCTAssertGreaterThan(SheetMorph.cardLook(at: 0.4), 0)
         XCTAssertEqual(SheetMorph.cardLook(at: 0.5), 0)
-        XCTAssertEqual(SheetMorph.sheetLook(at: 0.35), 0)
-        XCTAssertGreaterThan(SheetMorph.sheetLook(at: 0.4), 0)
+        XCTAssertEqual(SheetMorph.sheetLook(at: 0.2), 0)
+        XCTAssertGreaterThan(SheetMorph.sheetLook(at: 0.25), 0)
         XCTAssertEqual(SheetMorph.sheetLook(at: 1), 1)
     }
 
-    func testTheTwoLooksShowTogetherOnlyBetweenAThirdAndAHalf() {
+    func testTheTwoLooksShowTogetherOnlyBetweenAFifthAndAHalf() {
         for step in 0...100 {
             let progress = Double(step) / 100
             let both = SheetMorph.cardLook(at: progress) * SheetMorph.sheetLook(at: progress) > 0
-            XCTAssertEqual(both, progress > 0.35 && progress < 0.5, "at \(progress)")
+            XCTAssertEqual(both, progress > 0.2 && progress < 0.5, "at \(progress)")
         }
     }
 
@@ -76,5 +76,32 @@ final class SheetMorphTests: XCTestCase {
             }
         }
         XCTAssertEqual(morph.crossing(of: words(0), header: header, at: 0), 1)
+    }
+
+    func testAFieldSourceShowsNoLookOfItsOwnWhileACardShowsItsLookUntilHalfWay() {
+        let field = SheetMorph(card: CGRect(x: 24, y: 24, width: 289, height: 52), sheet: CGRect(x: 24, y: 24, width: 289, height: 430), source: .field)
+
+        XCTAssertEqual(field.sourceLook(at: 0), 0)
+        XCTAssertEqual(morph.sourceLook(at: 0), 1)
+        XCTAssertEqual(morph.sourceLook(at: 0.5), 0)
+    }
+
+    func testTheFieldsWordsStayWholeOverAHeaderThatHasNotFadedInYet() {
+        let field = SheetMorph(card: CGRect(x: 24, y: 24, width: 289, height: 52), sheet: CGRect(x: 24, y: 24, width: 289, height: 430), source: .field)
+        let header = CGRect(x: 14, y: 14, width: 261, height: 36)
+        let words = CGRect(x: 24, y: 41, width: 289, height: 18)
+
+        for step in 0...100 {
+            let progress = Double(step) / 100
+            XCTAssertEqual(field.crossing(of: words, header: header, at: progress), 1 - SheetMorph.sheetLook(at: progress), accuracy: 0.001, "at \(progress)")
+        }
+    }
+
+    func testTheBlursFootLiesUnderTheMovingShapeWithRoomForTheFooter() {
+        let below = SpotTokens.halo + SpotTokens.hintBlock
+
+        XCTAssertEqual(morph.foot(at: 0), 229 + below, accuracy: 0.001)
+        XCTAssertEqual(morph.foot(at: 1), 520 + below, accuracy: 0.001)
+        XCTAssertEqual(morph.foot(at: 0.5), 374.5 + below, accuracy: 0.001)
     }
 }

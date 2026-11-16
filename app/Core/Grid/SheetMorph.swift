@@ -2,14 +2,33 @@ import CoreGraphics
 import Foundation
 
 public struct SheetMorph: Equatable, Sendable {
+    public enum Source: Equatable, Sendable {
+        case card
+        case field
+    }
+
     public let card: CGRect
     public let sheet: CGRect
+    public let source: Source
 
     public static let clearance = SpotTokens.padding
 
-    public init(card: CGRect, sheet: CGRect) {
+    public init(card: CGRect, sheet: CGRect, source: Source = .card) {
         self.card = card
         self.sheet = sheet
+        self.source = source
+    }
+
+    public func foot(at progress: Double) -> CGFloat {
+        origin(at: progress).y + size(at: progress).height + SpotTokens.halo + SpotTokens.hintBlock
+    }
+
+    public func headerLook(at progress: Double) -> Double {
+        source == .field ? Self.sheetLook(at: progress) : 1
+    }
+
+    public func sourceLook(at progress: Double) -> Double {
+        source == .field ? 0 : Self.cardLook(at: progress)
     }
 
     public func size(at progress: Double) -> CGSize {
@@ -34,7 +53,7 @@ public struct SheetMorph: Equatable, Sendable {
         let corner = origin(at: progress)
         let placed = header.offsetBy(dx: corner.x, dy: corner.y)
         let gap = max(words.minY - placed.maxY, placed.minY - words.maxY)
-        return Self.ease(Double(gap / Self.clearance))
+        return 1 - headerLook(at: progress) * (1 - Self.ease(Double(gap / Self.clearance)))
     }
 
     public static func place(onCard: CGSize, at progress: Double) -> CGSize {

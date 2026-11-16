@@ -26,4 +26,10 @@ public struct SpotSheetCard {
         let origin = SpotTokens.gridOrigin(scrollOffset: scrollOffset, left: left)
         return placement.rect.offsetBy(dx: origin.x, dy: origin.y)
     }
+
+    public func isSeen(scrollOffset: CGFloat, gridHeight: CGFloat) -> Bool {
+        let middle = frame(scrollOffset: scrollOffset).midY
+        let bottom = min(gridHeight, SpotTokens.panelHeight) - SpotTokens.halo - SpotTokens.hintBlock
+        return middle >= SpotTokens.gridTop && middle <= bottom
+    }
 }

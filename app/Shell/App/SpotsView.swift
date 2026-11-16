@@ -20,7 +20,7 @@ struct SpotsView: View {
     fileprivate static let gridBottom: CGFloat = SpotTokens.halo + SpotTokens.hintBlock
 
     var body: some View {
-        let card = SpotSheetCard.of(sheetID, in: model)
+        let card = SpotSheetCard.of(sheetID, in: model).flatMap { $0.isSeen(scrollOffset: model.cardScroll, gridHeight: gridHeight) ? $0 : nil }
         let frame = card?.frame(scrollOffset: model.cardScroll)
         ZStack(alignment: .topLeading) {
             ScrollView(showsIndicators: false) {
@@ -46,7 +46,7 @@ struct SpotsView: View {
             .modifier(GridFadeMask(fade: fade, height: cardHeight))
             .fade(coversGrid ? 0 : 1) { SheetMorph.sheetLook(at: $0) }
             .modifier(PanelSpan(panels: model.panels))
-            SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: max(gridHeight, model.menuContentHeight), sheetHeight: sheetID == nil ? gridHeight : sheetHeight, sheetRect: sheetRect, menuHeight: model.menuContentHeight)
+            SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: max(gridHeight, model.menuContentHeight), sheetHeight: sheetID == nil ? gridHeight : sheetHeight, sheetRect: sheetRect, menuHeight: model.menuContentHeight, morph: morph(of: card, at: frame), progress: sheetOpen ? 1 : 0)
                 .modifier(SpotShownFade(isShown: model.isShown))
             if sheetOpen, sheetID != nil {
                 SpotFlowEdges(model: model, rect: sheetRect)
@@ -87,7 +87,7 @@ struct SpotsView: View {
         .overlayPreferenceValue(SpotMenuAnchor.self, alignment: .topLeading) { item in
             SpotMenuLayer(model: model, item: item, fieldIsInSheet: fieldIsInSheet)
         }
-        .background(alignment: .topLeading) { SpotBackdrop(model: model) }
+        .background(alignment: .topLeading) { SpotBackdrop(model: model, morph: morph(of: card, at: frame), progress: sheetOpen ? 1 : 0) }
         .environment(\.spotIsShown, model.isShown)
         .environment(\.spotViewPlace, SpotViewPlace(model: model))
         .environment(\.spotPanels, model.panels)
@@ -97,8 +97,14 @@ struct SpotsView: View {
     }
 
     private func fieldSheet(on card: SpotSheetCard?, at frame: CGRect?) -> (morph: SheetMorph, cardRadius: CGFloat)? {
-        guard let card, let frame, !isInstall else { return nil }
-        return (SheetMorph(card: frame, sheet: sheetRect), SurfaceEdge(card: card.placement.size).radius)
+        guard !isInstall, let morph = morph(of: card, at: frame) else { return nil }
+        return (morph, SurfaceEdge(card: card?.placement.size ?? .strip).radius)
+    }
+
+    private func morph(of card: SpotSheetCard?, at frame: CGRect?) -> SheetMorph? {
+        guard sheetID != nil else { return nil }
+        guard card != nil, let frame else { return SheetMorph(card: SpotFieldView.rect, sheet: sheetRect, source: .field) }
+        return SheetMorph(card: frame, sheet: sheetRect)
     }
 
     private func push(from card: SpotSheetCard?) -> SheetPush? {

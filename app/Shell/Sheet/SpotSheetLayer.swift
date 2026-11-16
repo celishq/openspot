@@ -17,14 +17,14 @@ struct SpotSheetLayer: View {
         SpotSheetView(
             model: model,
             entry: entry,
-            cardSize: card?.placement.size ?? entry.size,
+            cardSize: card?.placement.size ?? .strip,
             isOpen: isOpen,
             showsFill: entry.isActive,
             rect: sheetRect,
             closeShift: isInstall ? 0 : showsArrow ? (frame?.width ?? sheetRect.width) - sheetRect.width : nil,
             cardWidth: isInstall ? SpotFieldView.rect.width : frame?.width ?? SpotFieldView.rect.width,
             hasCardLook: card?.look != nil,
-            morph: SheetMorph(card: closedRect, sheet: sheetRect),
+            morph: morph,
             cardState: card?.state
         )
         .id(entry.id)
@@ -40,7 +40,7 @@ struct SpotSheetLayer: View {
         .background {
             if entry.isActive {
                 SpotTheme.solid
-                    .morph(progress, opacity: SheetMorph.cardLook(at:))
+                    .morph(progress, opacity: { [morph] in morph.sourceLook(at: $0) })
             }
         }
         .modifier(SpotSheetFrame(
@@ -105,6 +105,10 @@ struct SpotSheetLayer: View {
     private var contentOpacity: (Double) -> Double {
         if card?.look == nil { return { _ in 1 } }
         return { SheetMorph.sheetLook(at: $0) }
+    }
+
+    private var morph: SheetMorph {
+        SheetMorph(card: closedRect, sheet: sheetRect, source: card == nil ? .field : .card)
     }
 
     private var closedRect: CGRect {

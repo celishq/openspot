@@ -405,7 +405,11 @@ final class SpotMotionProbe: NSObject {
 
     private func play(_ keys: [String]) {
         guard let key = keys.first else { return DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.end() } }
-        if key.hasPrefix("text:") {
+        if key == "close" {
+            model.closeSheet(moving: true)
+        } else if key == "settings" {
+            model.openSettings()
+        } else if key.hasPrefix("text:") {
             model.searchText = String(key.dropFirst(5))
         } else if key.hasPrefix("part:") {
             let id = String(key.dropFirst(5))
