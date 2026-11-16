@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The store, laid out on 16 columns of the grid: a sidebar of 4 with the search, a row for each origin, a row for each store
+/// The store, laid out on 16 columns of the grid: a sidebar of 4 with the search, a row for All, Core and Yours, a row for each store
 /// folder, the built-in Openspot first, and Add Store…, and 12 with each spot as its card at the size it takes on the grid, under the title of
 /// its group. A plus on a card gets the spot, and a click opens a sheet with its readme, which it asks for then, and, when
 /// it has sample data, its sheet to try. A store whose folder is gone shows Locate… and Remove. A footer holds a hint, the
@@ -233,7 +233,7 @@ struct SpotView: View {
         VStack(alignment: .leading, spacing: 2) {
             search
                 .padding(.bottom, 10)
-            ForEach(Origin.allCases) { each in
+            ForEach(Origin.allCases.filter { $0 != .store }) { each in
                 let count = each.word.map { word in all.filter { $0.origin == word }.count } ?? all.count
                 if count > 0 || each == .all || (chosen == nil && origin == each) { row(each, count: count) }
             }
