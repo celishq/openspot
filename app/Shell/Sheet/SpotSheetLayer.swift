@@ -24,7 +24,8 @@ struct SpotSheetLayer: View {
             closeShift: isInstall ? 0 : showsArrow ? (frame?.width ?? sheetRect.width) - sheetRect.width : nil,
             cardWidth: isInstall ? SpotFieldView.rect.width : frame?.width ?? SpotFieldView.rect.width,
             hasCardLook: card?.look != nil,
-            morph: SheetMorph(card: closedRect, sheet: sheetRect)
+            morph: SheetMorph(card: closedRect, sheet: sheetRect),
+            cardState: card?.state
         )
         .id(entry.id)
         .morph(progress, opacity: contentOpacity)

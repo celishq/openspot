@@ -13,6 +13,7 @@ struct SpotSheetView: View {
     let cardWidth: CGFloat
     var hasCardLook = false
     let morph: SheetMorph
+    var cardState: SpotState?
     var held: SheetPage?
 
     private var progress: Double {
@@ -106,7 +107,7 @@ struct SpotSheetView: View {
                 glyph
                 ZStack(alignment: .topLeading) {
                     if showsCardWords {
-                        words(subtitle: state.subtitle)
+                        words(title: cardState?.title, subtitle: cardState.map(\.subtitle) ?? state.subtitle)
                             .environment(\.spotIsOnSolid, showsFill)
                             .frame(width: max(cardWordsWidth, 0), alignment: .leading)
                             .morph(progress, opacity: SheetMorph.cardLook(at:))
@@ -122,9 +123,9 @@ struct SpotSheetView: View {
             .overlay(alignment: .trailing) { closeButton }
     }
 
-    private func words(subtitle: String?, selectedName: Bool = false) -> some View {
+    private func words(title: String? = nil, subtitle: String?, selectedName: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: SpotType.lineGap) {
-            Text(form?.form.title ?? state.title)
+            Text(title ?? form?.form.title ?? state.title)
                 .font(SpotType.title)
                 .frame(height: SpotType.titleLine)
                 .modifier(SpotInk())
@@ -147,14 +148,7 @@ struct SpotSheetView: View {
 
     private var sheetWordsOpacity: (Double) -> Double {
         if hasCardLook { return { _ in 1 } }
-        if !isSmallCard { return SheetMorph.sheetLook(at:) }
-        let left = SpotTokens.padding + SpotTokens.glyphSize + Self.wordsGap
-        let words = CGRect(x: left, y: SpotTokens.padding, width: min(wordsWidth, max(sheetWordsWidth, 0)), height: SpotType.titleLine)
-        return { [morph] in morph.shown(words, at: $0) }
-    }
-
-    private var wordsWidth: CGFloat {
-        SpotWordsWidth.of(title: form?.form.title ?? state.title, detail: state.subtitle)
+        return SheetMorph.sheetLook(at:)
     }
 
     private static let wordsGap = SpotTokens.padding - 5

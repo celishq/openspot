@@ -327,5 +327,7 @@ final class SoleCommandTests: XCTestCase {
         try await wait("the settings") { self.model.openSheetID == settings }
 
         XCTAssertEqual(SpotSheetCard.of(settings, in: model)?.id, "dictate")
+        XCTAssertEqual(SpotSheetCard.of(settings, in: model)?.state?.title, "Dictate")
+        XCTAssertNil(SpotSheetCard.of("dictate", in: model)?.state)
     }
 }
