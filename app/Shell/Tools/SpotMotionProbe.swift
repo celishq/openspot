@@ -407,6 +407,8 @@ final class SpotMotionProbe: NSObject {
         guard let key = keys.first else { return DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.end() } }
         if key == "close" {
             model.closeSheet(moving: true)
+        } else if key == "slow" {
+            MotionTokens.toggleSlowMotion()
         } else if key == "settings" {
             model.openSettings()
         } else if key.hasPrefix("text:") {
