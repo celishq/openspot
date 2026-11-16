@@ -111,6 +111,18 @@ final class SlashCommandPanelTests: PanelCase {
         XCTAssertEqual(model.slash?.lead, "  ")
     }
 
+    func testALoneSlashListsEveryCommand() async throws {
+        try writeNotes()
+        try script("trash", header: "title=Trash", "printf 'toast=Emptied\\n'")
+        await open()
+
+        type("/")
+
+        XCTAssertEqual(model.slash, SlashCommand("/"))
+        XCTAssertEqual(Set(model.visible.map(\.state.title)), ["Notes", "Add note", "Find note", "Trash"])
+        XCTAssertEqual(model.selected, 0)
+    }
+
     func testAWordThatNamesNoCommandStaysText() async throws {
         try writeNotes()
         await open()

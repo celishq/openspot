@@ -8,7 +8,7 @@ public struct SlashCommand: Equatable, Sendable {
 
     public init?(_ query: String) {
         let words = query.split(whereSeparator: \.isWhitespace)
-        guard let found = words.first(where: Self.isCommand) else { return nil }
+        guard let found = words.count == 1 && words[0] == "/" ? words.first : words.first(where: Self.isCommand) else { return nil }
         word = String(found.dropFirst())
         lead = String(query[..<found.startIndex])
         tail = String(query[found.endIndex...])

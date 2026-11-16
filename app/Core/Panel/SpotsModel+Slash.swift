@@ -19,7 +19,7 @@ extension SpotsModel {
 
     func commandEntries(_ command: SlashCommand) -> [Entry] {
         let spots = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        return runs.search(of: command.word).matching(in: [commandList], limit: Self.searchLimit).compactMap { match in
+        return runs.search(of: command.word).matching(in: [commandList], limit: command.word.isEmpty ? .max : Self.searchLimit).compactMap { match in
             if let offer = commandOffers[match.item.run] {
                 let spot = spots[String(match.item.run.prefix { $0 != "\n" })]
                 return spot.map { Entry(spot: $0.spot, item: Self.commandItem(offer)) }

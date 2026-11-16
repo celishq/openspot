@@ -598,7 +598,8 @@ buy milk /notes            Return runs notes add, with search=buy milk on stdin
 ```
 
 - In the main search, `/` at the start of a word, with a letter after it, lists the spots and the header `button`s
-  whose name matches the word. A word that matches none stays text, so `10/2` and `/Users` search as before.
+  whose name matches the word, and `/` alone lists them all. A word that matches none stays text, so `10/2` and `/Users`
+  search as before.
 - The first row is highlighted, ↑ and ↓ move it, and the footer names what Return runs.
 - The text is the rest of the line, trimmed. The call gets it as `search=<text>` on stdin, with the arguments of a plain
   press, so `case "$1"` handles it as any other call. With no text, Return does what it does on the card.
