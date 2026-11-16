@@ -4,9 +4,10 @@ enum CommandKind {
         "event emit"
     ]
     static let pure: Set<String> = ["emoji list", "symbols list"]
+    static let help: Set<String> = ["--help", "-h"]
 
     static func needsApp(_ arguments: [String]) -> Bool {
-        !arguments.contains { $0 == "--help" || $0 == "-h" } && holds(arguments, in: live)
+        !arguments.contains(where: help.contains) && holds(arguments, in: live)
     }
 
     static func isPure(_ arguments: [String]) -> Bool {

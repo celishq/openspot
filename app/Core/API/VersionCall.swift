@@ -3,9 +3,7 @@ import Foundation
 enum VersionCall: NounCall {
     case text
 
-    static let flag = "--version"
-
-    static let noun = CommandNoun("version", group: .start, verbs: [
+    static let noun = CommandNoun("version", group: .start, flags: ["--version"], verbs: [
         CommandVerb("", "", "Prints the version of Openspot, as --version does.") { $0.none ? Self.text : nil }
     ])
 

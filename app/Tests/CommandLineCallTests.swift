@@ -151,7 +151,7 @@ final class CommandLineCallTests: XCTestCase {
 
     func testHelpCanNameTheNounWhoseGuideItPrints() {
         XCTAssertEqual(CommandLineCall(arguments: ["help"])?.value as? HelpCall, .list)
-        XCTAssertEqual(CommandLineCall(arguments: ["help", "reminders"])?.value as? HelpCall, .noun("reminders", verb: []))
+        XCTAssertEqual(CommandLineCall(arguments: ["help", "reminders"])?.value as? HelpCall, .verbs("reminders", verb: []))
         XCTAssertTrue(CommandLineCall.usage.contains("openspot help [noun [verb]] [--json]"))
         XCTAssertTrue(CommandHelp(nouns: CommandNoun.all).entries.first { $0.command == "openspot help" }?.about.contains("which calendar, reminders or screen have.") == true)
         XCTAssertFalse(CommandLineCall.usage.hasSuffix("\n\n"))

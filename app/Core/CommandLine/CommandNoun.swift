@@ -4,13 +4,15 @@ public struct CommandNoun: Sendable {
     public let name: String
     public let group: CommandGroup
     public let guide: String?
+    public let flags: [String]
     public let verbs: [CommandVerb]
     let loose: (@Sendable (_ verb: CommandVerb, _ rest: [String], _ spot: String) -> CallRule?)?
 
-    init(_ name: String, group: CommandGroup, guide: String? = nil, verbs: [CommandVerb], loose: (@Sendable (_ verb: CommandVerb, _ rest: [String], _ spot: String) -> CallRule?)? = nil) {
+    init(_ name: String, group: CommandGroup, guide: String? = nil, flags: [String] = [], verbs: [CommandVerb], loose: (@Sendable (_ verb: CommandVerb, _ rest: [String], _ spot: String) -> CallRule?)? = nil) {
         self.name = name
         self.group = group
         self.guide = guide
+        self.flags = flags
         self.verbs = verbs
         self.loose = loose
     }

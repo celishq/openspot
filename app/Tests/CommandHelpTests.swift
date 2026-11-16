@@ -58,9 +58,9 @@ final class CommandHelpTests: XCTestCase {
     }
 
     func testHelpOfANounPrintsItsVerbsThenItsGuide() {
-        XCTAssertEqual(CommandLineCall(arguments: ["help", "spot"])?.value as? HelpCall, .noun("spot", verb: []))
-        XCTAssertEqual(CommandLineCall(arguments: ["help", "screen"])?.value as? HelpCall, .noun("screen", verb: []))
-        XCTAssertEqual(CommandLineCall(arguments: ["help", "spot", "run"])?.value as? HelpCall, .noun("spot", verb: ["run"]))
+        XCTAssertEqual(CommandLineCall(arguments: ["help", "spot"])?.value as? HelpCall, .verbs("spot", verb: []))
+        XCTAssertEqual(CommandLineCall(arguments: ["help", "screen"])?.value as? HelpCall, .verbs("screen", verb: []))
+        XCTAssertEqual(CommandLineCall(arguments: ["help", "spot", "run"])?.value as? HelpCall, .verbs("spot", verb: ["run"]))
     }
 
     func testTheVersionNeedsNoApp() async throws {
@@ -76,7 +76,7 @@ final class CommandHelpTests: XCTestCase {
     func testTheFlagsAboutTheCommandTakeNoOtherWords() {
         XCTAssertEqual(CommandLineCall(arguments: ["--version", "foo"])?.value as? CallFault, .unknown(["--version", "foo"]))
         XCTAssertEqual(CommandLineCall(arguments: ["help", "--help"])?.value as? HelpCall, .list)
-        XCTAssertEqual(CommandLineCall(arguments: ["--help", "spot"])?.value as? HelpCall, .noun("spot", verb: []))
+        XCTAssertEqual(CommandLineCall(arguments: ["--help", "spot"])?.value as? HelpCall, .verbs("spot", verb: []))
     }
 
     func testAnUnknownLongFlagIsAFaultAndNeverStartsTheAppWindow() {

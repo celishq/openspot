@@ -260,6 +260,10 @@ final class CommandClientTests: XCTestCase {
         }
     }
 
+    func testTheHelpFlagsOfTheClientAreThoseOfTheHelpNoun() {
+        XCTAssertEqual(CommandKind.help, Set(HelpCall.noun.flags))
+    }
+
     func testHelpOfALiveCallNeedsNoApp() {
         XCTAssertFalse(CommandKind.needsApp(["spot", "open", "--help"]))
         XCTAssertFalse(CommandKind.needsApp(["app", "status", "-h"]))

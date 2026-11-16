@@ -3,17 +3,17 @@ import Foundation
 enum HelpCall: NounCall {
     case list
     case json
-    case noun(String, verb: [String])
+    case verbs(String, verb: [String])
 
-    static let flags: Set<String> = ["--help", "-h"]
     static let jsonWord = "--json"
+    private static let flags = ["--help", "-h"]
 
-    static let noun = CommandNoun("help", group: .start, verbs: [
+    static let noun = CommandNoun("help", group: .start, flags: flags, verbs: [
         CommandVerb("", "[noun [verb]] [--json]", "Prints this list, or the verbs of a noun and its guide, which \(CommandNoun.guides) have. --help after any noun or verb does the same. --json prints each verb with its form, its effect and whether it needs the app.") { words in
             if words.rest == [Self.jsonWord] { return Self.json }
             if words.rest.count == 1, Self.flags.contains(words.rest[0]) { return Self.list }
             guard let first = words.rest.first, !first.hasPrefix("-") else { return words.none ? Self.list : nil }
-            return Self.noun(first, verb: Array(words.rest.dropFirst()))
+            return Self.verbs(first, verb: Array(words.rest.dropFirst()))
         }
     ])
 
@@ -24,7 +24,7 @@ enum HelpCall: NounCall {
             return { CommandAnswer(output: help.text) }
         case .json:
             return CommandAnswer.work { try PrintForm.json(help.entries) }
-        case .noun(let name, let verb):
+        case .verbs(let name, let verb):
             guard let noun = context.nouns.first(where: { $0.name == name }), case let text = help.verbs(of: noun, verb: verb), !text.isEmpty else {
                 return { CommandAnswer(errors: help.unknown([name] + verb), code: 2) }
             }

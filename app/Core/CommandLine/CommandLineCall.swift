@@ -26,13 +26,13 @@ public struct CommandLineCall: Equatable, Sendable {
     }
 
     public init?(arguments: [String], spot: String? = nil, reason: String? = nil, nouns: [CommandNoun] = CommandNoun.all) {
-        guard let first = arguments.first, first.hasPrefix("--") || HelpCall.flags.contains(first) || !first.hasPrefix("-") else { return nil }
-        let noun = HelpCall.flags.contains(first) ? HelpCall.noun.name : first == VersionCall.flag ? VersionCall.noun.name : first
+        guard let first = arguments.first, first.hasPrefix("--") || nouns.contains(where: { $0.flags.contains(first) }) || !first.hasPrefix("-") else { return nil }
+        let noun = nouns.first { $0.flags.contains(first) }?.name ?? first
         let spot = spot?.isEmpty == true ? nil : spot
         let rest = Array(arguments.dropFirst())
         let unknown = CommandLineCall(name: noun, call: CallFault.unknown(arguments))
-        if noun != HelpCall.noun.name, let last = rest.last, HelpCall.flags.contains(last), nouns.contains(where: { $0.name == noun }) {
-            self.init(name: HelpCall.noun.name, call: HelpCall.noun(noun, verb: Array(rest.dropLast())))
+        if noun != HelpCall.noun.name, let last = rest.last, HelpCall.noun.flags.contains(last), nouns.contains(where: { $0.name == noun }) {
+            self.init(name: HelpCall.noun.name, call: HelpCall.verbs(noun, verb: Array(rest.dropLast())))
             return
         }
         guard let found = nouns.first(where: { $0.name == noun }), let verb = found.verb(of: rest),
