@@ -34,12 +34,7 @@ public struct CommandHelp: Sendable {
     var entries: [Entry] {
         nouns.flatMap { noun in
             noun.shown.map { verb in
-                let (effect, does): (String, String?) = switch verb.rule.read {
-                case .free: ("read", nil)
-                case .changes(let act): ("changes", act)
-                case .waits: ("waits", "waits for the person")
-                case .captures: ("captures", "captures the screen")
-                }
+                let (effect, does) = verb.rule.act
                 return Entry(
                     command: (["openspot", noun.name] + verb.words).joined(separator: " "), form: verb.form,
                     about: verb.about.replacingOccurrences(of: CommandNoun.guides, with: guides), group: noun.group.rawValue,
