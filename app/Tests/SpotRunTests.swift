@@ -235,6 +235,22 @@ final class SpotRunTests: XCTestCase {
         sheet.close()
     }
 
+    func testTheFirstRowsOfASheetArriveWithItsParts() async throws {
+        let sheet = try holding("sleep 0.2\nprintf 'choice=tone\\ntitle=Tone\\nvalue=a\\n\\noption=a\\ntitle=A\\n\\nrow=x\\ntitle=X\\n\\n'", pause: 0.02)
+        var rowsBeforeParts: Int?
+        runs.last?.partsArrival = { _, bring in
+            rowsBeforeParts = sheet.list.shown.count
+            bring()
+        }
+
+        sheet.open(waits: true) {}
+
+        try await wait("the parts") { sheet.panel != nil }
+        XCTAssertEqual(rowsBeforeParts, 0)
+        XCTAssertEqual(sheet.list.shown.count, 1)
+        sheet.close()
+    }
+
     func testASheetSaysItAwaitsItsFirstAnswerUntilItComes() async throws {
         let sheet = try holding("sleep 0.2\nprintf 'text=a\\ntitle=A\\n'", pause: 0.02)
 
