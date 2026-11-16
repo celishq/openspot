@@ -13,6 +13,10 @@ if [ "$1" = "--run" ]; then
   rm -rf "$place"
   mkdir -p "$place/spots" "$place/work"
   prompt="You have the \`openspot\` command of the Openspot Mac app on your PATH. $(cat "$tasks/$task/prompt")"
+  if [ -f "$tasks/$task/live" ]; then
+    until mkdir "$out/live.lock" 2>/dev/null; do sleep 2; done
+    trap 'rmdir "$out/live.lock" 2>/dev/null' EXIT
+  fi
   start=$(date +%s)
   (cd "$place/work" && OPENSPOT_CONFIG="$place" PATH="$out/bin:$PATH" perl -e 'alarm shift; exec @ARGV' 900 \
     claude -p "$prompt" --model sonnet --output-format json --permission-mode acceptEdits \
@@ -37,6 +41,7 @@ if [ $# -gt 2 ]; then
 fi
 rm -rf "${out:?}/$label"
 mkdir -p "$out/bin" "$out/$label"
+rmdir "$out/live.lock" 2>/dev/null || true
 (cd app && xcodegen generate >/dev/null)
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project app/Openspot.xcodeproj -scheme Openspot \
   -configuration Debug -derivedDataPath "$out/build" build -quiet >"$out/build.log" 2>&1 || { grep error: "$out/build.log"; exit 1; }
