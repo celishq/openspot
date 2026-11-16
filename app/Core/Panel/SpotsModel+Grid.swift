@@ -203,7 +203,7 @@ extension SpotsModel {
             if isShown { host.dismiss() }
             run(key)
         } else {
-            openKeys(of: entry.id, recording: SpotEdits.keyRow(of: command))
+            openKeys(of: entry.id, recording: GlobalKey.Act.command(command).setting)
         }
     }
 

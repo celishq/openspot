@@ -32,7 +32,7 @@ final class KeysSpotTests: BuiltInCase {
         let output = try await items()
 
         XCTAssertEqual(output.summary?.value("title"), "Shelf")
-        XCTAssertEqual(output.items.map(\.run), ["spot", "key:add", "float"])
+        XCTAssertEqual(output.items.map(\.run), ["spot", "key.add", "float"])
         XCTAssertEqual(output.items.map(\.title), ["Open", "Add", "Float"])
         XCTAssertEqual(output.items.map(\.symbol), ["tray.full", "plus", "tray.full"])
         XCTAssertEqual(output.items.map(\.shortcut), ["Record", "Record", "Record"])
@@ -45,11 +45,11 @@ final class KeysSpotTests: BuiltInCase {
         try script("shelf.sh", "title=Shelf\non=sheet.open\noffers=card\noffers=float\n\nbutton=add\ntitle=Add")
 
         try await call(["spot", "ctrl+option+s"])
-        try await call(["key:add", "ctrl+option+a"])
+        try await call(["key.add", "ctrl+option+a"])
         try await call(["float", "shake"])
         let set = try await items().items
         try await call(["clear", "spot"])
-        try await call(["clear", "key:add"])
+        try await call(["clear", "key.add"])
         try await call(["clear", "float"])
         let cleared = try await items().items
 

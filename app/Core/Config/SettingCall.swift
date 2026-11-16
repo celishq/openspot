@@ -76,8 +76,8 @@ public enum SettingCall: NounCall {
         switch key {
         case "enabled": return on("turns a spot on or off") { .turn(spot: spot, on: $0) }
         case "menubar": return on("changes the menu bar") { .menuBar(spot: spot, isShown: $0) }
-        case let key where ReservedSetting.act(of: key) != nil:
-            return changing(.key(spot: spot, act: ReservedSetting.act(of: key) ?? .float, key: value), "sets a key of your Mac")
+        case let key where GlobalKey.Act(setting: key) != nil:
+            return changing(.key(spot: spot, act: GlobalKey.Act(setting: key) ?? .float, key: value), "sets a key of your Mac")
         default: return nil
         }
     }

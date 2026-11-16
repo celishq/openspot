@@ -65,19 +65,19 @@ final class SoleCommandTests: XCTestCase {
         XCTAssertEqual(model.hint, "⏎ Set key   ⌘⏎ Settings   ⌘K Actions")
         model.run(try entry("dictate"))
 
-        XCTAssertEqual(model.recording, "key:dictate")
-        try await wait("the key row") { model.openItems?.shown.contains { $0.run == "key:dictate" } == true }
+        XCTAssertEqual(model.recording, "key.dictate")
+        try await wait("the key row") { model.openItems?.shown.contains { $0.run == "key.dictate" } == true }
         XCTAssertEqual(model.openSheetID, keys)
         XCTAssertEqual(model.recordingWords, "Press keys or shake")
         model.record(code: 125, modifiers: .command)
-        XCTAssertEqual(model.recording, "key:dictate")
+        XCTAssertEqual(model.recording, "key.dictate")
         XCTAssertEqual(host.notes.last, "`⌘Down` belongs to the apps on the Mac. Hold `⌥` or `⌃` with a key, or tap one key such as `⌥`.")
-        XCTAssertEqual(model.openItems?.shown.first { $0.run == "key:dictate" }?.subtitle, "Press ⏎ to set")
+        XCTAssertEqual(model.openItems?.shown.first { $0.run == "key.dictate" }?.subtitle, "Press ⏎ to set")
         model.recordTap(.option)
         try await wait("the tap in the file") {
             model.files.config.read().keys == [GlobalKey(spot: "dictate", act: .command("dictate"), trigger: .tap(.option))]
         }
-        try await wait("the new key in its row") { model.openItems?.shown.first { $0.run == "key:dictate" }?.shortcut == "option" }
+        try await wait("the new key in its row") { model.openItems?.shown.first { $0.run == "key.dictate" }?.shortcut == "option" }
         XCTAssertNil(model.recording)
         XCTAssertEqual(model.openSheetID, keys)
         XCTAssertEqual(host.dismissals, 0)
@@ -175,7 +175,7 @@ final class SoleCommandTests: XCTestCase {
         model.run(try entry("windows"))
 
         try await wait("the key rows") { model.openSheetID == keys }
-        try await wait("their rows") { model.openItems?.shown.map(\.run) == ["spot", "key:left", "key:right"] }
+        try await wait("their rows") { model.openItems?.shown.map(\.run) == ["spot", "key.left", "key.right"] }
         XCTAssertNil(model.recording)
     }
 
@@ -210,7 +210,7 @@ final class SoleCommandTests: XCTestCase {
 
         model.runSelected()
         try await wait("its settings, recording its key") {
-            model.recording == "key:dictate" && model.openSheetID == keys
+            model.recording == "key.dictate" && model.openSheetID == keys
         }
     }
 
@@ -267,7 +267,7 @@ final class SoleCommandTests: XCTestCase {
         model.openFromMenuBar("pen")
 
         try await wait("its key, as the first Return records it") {
-            model.recording == "key:draw" && model.openSheetID == keys
+            model.recording == "key.draw" && model.openSheetID == keys
         }
         XCTAssertGreaterThan(host.shows, 0)
     }
@@ -279,7 +279,7 @@ final class SoleCommandTests: XCTestCase {
 
         model.press(open)
         XCTAssertEqual(host.shows, 1)
-        XCTAssertEqual(model.recording, "key:dictate")
+        XCTAssertEqual(model.recording, "key.dictate")
         model.stopRecording()
         _ = try model.files.config.change { $0.assign(.tap(.option), to: "dictate", act: .command("dictate")) }
         await model.reload()

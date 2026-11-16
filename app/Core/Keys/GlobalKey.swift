@@ -5,6 +5,25 @@ public struct GlobalKey: Hashable, Sendable {
         case open
         case float
         case command(String)
+
+        private static let commandPrefix = "key."
+
+        public init?(setting: String) {
+            switch setting {
+            case "open": self = .open
+            case "float": self = .float
+            case let key where key.hasPrefix(Self.commandPrefix): self = .command(String(key.dropFirst(Self.commandPrefix.count)))
+            default: return nil
+            }
+        }
+
+        public var setting: String {
+            switch self {
+            case .open: "open"
+            case .float: "float"
+            case .command(let id): Self.commandPrefix + id
+            }
+        }
     }
 
     public let spot: String

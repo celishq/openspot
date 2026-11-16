@@ -7,8 +7,4 @@ public enum SpotEdits: String, Sendable {
     public static func page(of spot: String) -> String {
         "spot:\(spot)"
     }
-
-    public static func keyRow(of command: String) -> String {
-        "key:\(command)"
-    }
 }

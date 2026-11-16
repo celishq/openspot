@@ -45,7 +45,7 @@ function sheet(id) {
   const [spot, ...rest] = found;
   const buttons = rest.filter((block) => block.button !== undefined);
   const rows = [row("spot", "Open", spot.icon, spot.openKey)]
-    .concat(buttons.map((button) => row(`key:${button.button}`, button.title || button.button, button.icon || spot.icon, button.key)))
+    .concat(buttons.map((button) => row(`key.${button.button}`, button.title || button.button, button.icon || spot.icon, button.key)))
     .concat(spot.float === "true" ? [row("float", "Float", spot.icon, spot.floatKey)] : []);
   return openspot.frame([
     { title: spot.name, detail: "Keys", recents: "false" },
@@ -55,11 +55,10 @@ function sheet(id) {
   ]);
 }
 
-// The setting of the target that holds the key of a row.
+// The setting of the target that holds the key of a row, which is the row's id but for Open, since `open` is a call.
 function setting(row) {
   if (row === "spot") return "open";
-  if (row === "float") return "float";
-  if (row && row.startsWith("key:")) return `key.${row.slice(4)}`;
+  if (row === "float" || (row && row.startsWith("key."))) return row;
   return null;
 }
 
