@@ -120,15 +120,20 @@ targets:
           mkdir -p "$(dirname "$core")"
           cp -RL "$SRCROOT/../spots" "$core"
           rm -rf "$core"/*.spot/tests
+          examples="$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/examples"
+          rm -rf "$examples"
+          cp -RL "$SRCROOT/../examples" "$examples"
+          rm -rf "$examples"/*.spot/tests
           cp "$SRCROOT/defaults.toml" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/defaults.toml"
-      - name: Build the views of the core spots
+      - name: Build the views of the core spots and the examples
         basedOnDependencyAnalysis: false
         script: |
           set -e
           [ "$CONFIGURATION" = Release ] || exit 0
           list="$DERIVED_FILE_DIR/views.txt"
           mkdir -p "$DERIVED_FILE_DIR"
-          "$BUILT_PRODUCTS_DIR/openspot-views" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/spots" > "$list"
+          resources="$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH"
+          { "$BUILT_PRODUCTS_DIR/openspot-views" "$resources/spots"; "$BUILT_PRODUCTS_DIR/openspot-views" "$resources/examples"; } > "$list"
           while IFS= read -r library; do
             codesign --force --sign "${EXPANDED_CODE_SIGN_IDENTITY:--}" -o runtime $OTHER_CODE_SIGN_FLAGS "$library"
           done < "$list"

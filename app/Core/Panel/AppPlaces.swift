@@ -51,7 +51,7 @@ public struct AppPlaces {
     }
 
     public var store: URL {
-        SpotStore.url(environment: environment, home: home)
+        SpotCatalog.url(environment: environment, home: home)
     }
 
     public var log: CallLog {

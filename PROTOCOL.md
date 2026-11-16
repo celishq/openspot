@@ -22,7 +22,7 @@ press   ─ on a block ─►  <spot> <id>    the user or an agent acts
 - A spot lives in a **spot folder**: a folder `<name>.spot` in the spots folder, such as `coffee.spot/coffee.sh`. The
   folder holds its scripts, its `readme.md`, its `sample.sh` and any file that they need.
 - `sample.sh` prints what the spot would show, with made-up data, so that the store can show the spot before you add it.
-  A click on that sample runs nothing. Publish runs it once and ships what it printed as `sample.txt`, which is all a
+  A click on that sample runs nothing. Publish runs it once and ships what it printed as `sample.frame`, a frame like any other, which is all a
   shared spot shows before you add it. `sample.sh` is a spot of its own only in `sample.spot`.
 - A line of `readme.md` that holds only a Markdown image shows a picture or a video from the folder: PNG, JPEG, MOV or
   MP4. A picture can also be an `https` address, which Openspot fetches once, with no cookies. A video at an `https`
@@ -999,6 +999,9 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot grid edit`                               | Opens the panel in Edit Spots, to arrange the grid.                                             |
 | `openspot store list [--frame]`                    | Prints each spot of the store and its step: `get`, `publish`, or `added` once you have it.      |
 | `openspot store get <id>`                          | Gets a spot of the store: turns it on, or adds its package to your spots folder.                |
+| `openspot store add <folder>`                      | Adds a folder that holds spot folders as a store, so the Store lists its spots. The folder's name is the store's name. |
+| `openspot store remove <folder>`                   | Removes a store that `store add` added. The spots you got from it stay.                         |
+| `openspot store folders [--frame]`                 | Prints the built-in store Openspot, which holds the examples, then each store that `store add` added, with its name and whether its folder is found. |
 | `openspot store publish <id>`                      | Publishes a spot of your spots folder to the store. It needs a `readme.md` beside its script. Only the Store spot can run it, so you publish from the Store spot. |
 | `openspot playground [file]`                       | Opens the Playground on a spot that you type or on a file.                                      |
 | `openspot check --sheet`                           | Reports the faults of a sheet on stdin.                                                         |

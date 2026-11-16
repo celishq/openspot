@@ -1,0 +1,43 @@
+recents=false
+
+button=reveal
+title=Show in Finder
+shortcut=cmd+return
+
+button=remove
+title=Remove from Shelf
+shortcut=cmd+backspace
+
+button=clear
+title=Clear Shelf
+scope=spot
+
+row=/Users/you/Desktop/Launch plan.pdf
+title=Launch plan.pdf
+detail=~/Desktop
+icon=/Users/you/Desktop/Launch plan.pdf
+file=/Users/you/Desktop/Launch plan.pdf
+
+row=/Users/you/Downloads/brand-assets.zip
+title=brand-assets.zip
+detail=~/Downloads
+icon=/Users/you/Downloads/brand-assets.zip
+file=/Users/you/Downloads/brand-assets.zip
+
+row=/Users/you/Documents/Budget 2026.numbers
+title=Budget 2026.numbers
+detail=~/Documents
+icon=/Users/you/Documents/Budget 2026.numbers
+file=/Users/you/Documents/Budget 2026.numbers
+
+row=/Users/you/Pictures/Screenshots/onboarding-step-2.png
+title=onboarding-step-2.png
+detail=~/Pictures/Screenshots
+icon=/Users/you/Pictures/Screenshots/onboarding-step-2.png
+file=/Users/you/Pictures/Screenshots/onboarding-step-2.png
+
+row=/Users/you/Documents/Contracts/Lease renewal.pdf
+title=Lease renewal.pdf
+detail=~/Documents/Contracts
+icon=/Users/you/Documents/Contracts/Lease renewal.pdf
+file=/Users/you/Documents/Contracts/Lease renewal.pdf

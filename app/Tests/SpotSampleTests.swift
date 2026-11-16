@@ -27,7 +27,7 @@ final class SpotSampleTests: XCTestCase {
     }
 
     private func output(of id: String) async throws -> SpotOutput? {
-        let items = SpotStore(url: store, folder: SpotsFolder(url: spots, core: core), arrangement: SpotArrangement()).items(publications: false)
+        let items = SpotCatalog(published: store, folder: SpotsFolder(url: spots, core: core), arrangement: SpotArrangement(), stores: [Store(url: store)]).items(publications: false)
         return await SpotSample.output(of: try XCTUnwrap(items.first { $0.id == id }), runs: runs)
     }
 
@@ -82,7 +82,7 @@ final class SpotSampleTests: XCTestCase {
 
     func testASpotWithOnlyAKeptSampleShowsIt() async throws {
         try "#!/bin/sh\nprintf 'title=Real row\\n'\n".writeScript(to: core.appendingPathComponent("coin.spot/coin.sh"))
-        try "row=s\ntitle=Kept\n".write(to: core.appendingPathComponent("coin.spot/sample.txt"), atomically: true, encoding: .utf8)
+        try "row=s\ntitle=Kept\n".write(to: core.appendingPathComponent("coin.spot/sample.frame"), atomically: true, encoding: .utf8)
 
         let sample = try await output(of: "coin")
 
@@ -93,7 +93,7 @@ final class SpotSampleTests: XCTestCase {
         let shared = store.appendingPathComponent("shared.spot")
         try "#!/bin/sh\n# title=Shared\n".writeScript(to: shared.appendingPathComponent("shared.sh"))
         try "#!/bin/sh\nprintf 'row=s\\ntitle=Ran\\n'\n".writeScript(to: shared.appendingPathComponent("sample.sh"))
-        try "row=s\ntitle=Kept\n".write(to: shared.appendingPathComponent("sample.txt"), atomically: true, encoding: .utf8)
+        try "row=s\ntitle=Kept\n".write(to: shared.appendingPathComponent("sample.frame"), atomically: true, encoding: .utf8)
 
         let sample = try await output(of: "shared")
 
