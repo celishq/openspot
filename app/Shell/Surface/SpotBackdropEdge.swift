@@ -30,7 +30,7 @@ struct SpotBackdropEdge: View {
         let whole = renderer.cgImage
         return edge.pieces(in: CGRect(origin: .zero, size: size)).map { piece in
             guard let part = whole?.cropping(to: piece.source) else { return Image(systemName: "square.fill") }
-            return Image(decorative: part, scale: 1).resizable().renderingMode(.template)
+            return Image(decorative: part, scale: 1).resizable().antialiased(false).renderingMode(.template)
         }
     }
 }
