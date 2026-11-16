@@ -51,7 +51,7 @@ final class SpotMotionProbe: NSObject {
 
     private func begin() {
         if action == "panel" { return beginOpens() }
-        if action == "search" { return beginSearch() }
+        if action == "search" { return shotsFolder.map(shootTyping) ?? beginSearch() }
         if action == "drag" || action == "mouse" { return beginDrag() }
         if action == "edit" { return beginEdit() }
         if action == "menu" { return beginMenus() }
@@ -227,6 +227,20 @@ final class SpotMotionProbe: NSObject {
                     self.shootResults(into: folder)
                 }
             }
+        }
+    }
+
+    private func shootTyping(into folder: String) {
+        panel.makeKeyAndOrderFront(nil)
+        model.searchText = searchText
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            self.save(to: "\(folder)/search.png")
+            self.saveSharp(to: "\(folder)/search-focused.png")
+            self.panel.makeFirstResponder(nil)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            self.saveSharp(to: "\(folder)/search-unfocused.png")
+            self.finish(with: "shots\n" + self.model.hint + "\n")
         }
     }
 

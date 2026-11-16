@@ -63,6 +63,8 @@ public final class SpotsModel {
     @ObservationIgnored var laidOutGrid = SpotGrid()
     @ObservationIgnored var spotList = ItemList()
     @ObservationIgnored var spotListIsStale = true
+    @ObservationIgnored var commands = CommandIndex()
+    public internal(set) var slash: SlashCommand?
     @ObservationIgnored var keyFrames: [String: String] = [:]
     @ObservationIgnored var spotListBuilds = 0
     @ObservationIgnored var visibleUpdates = 0
@@ -193,7 +195,7 @@ public final class SpotsModel {
     public private(set) var formHasChoices = false
     public private(set) var formIsMultiple = false
     public private(set) var formHint = HintWords("")
-    @ObservationIgnored var formAsk: UUID?
+    @ObservationIgnored var pendingAsk: UUID?
     public var isEditing = false {
         didSet { takeMode() }
     }
@@ -461,7 +463,7 @@ public final class SpotsModel {
     }
 
     public func panelWillHide() {
-        formAsk = nil
+        pendingAsk = nil
         if confirming != nil { confirming = nil }
         stopRecording()
         closeMenu()

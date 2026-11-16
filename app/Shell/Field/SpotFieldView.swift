@@ -49,6 +49,10 @@ struct SpotFieldView: View {
                 searchText
                     .frame(width: Self.fieldTextWidth, height: SpotTokens.rowHeight, alignment: .leading)
                     .offset(x: fieldTextLeft, y: top)
+                SpotSlashMark(model: model)
+                    .frame(width: Self.fieldTextWidth, height: SpotTokens.rowHeight, alignment: .leading)
+                    .offset(x: fieldTextLeft, y: top)
+                    .allowsHitTesting(false)
             }
             .morph(progress, opacity: crossing)
             .modifier(SpotFaded())

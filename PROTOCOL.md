@@ -110,6 +110,7 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `icon`        | The icon, as in a block (see [Blocks](#blocks)). A path that doesn't start with `/` starts at the spot's folder.                 |
 | `detail`      | The line under the title.                                                                                                        |
 | `keywords`    | More words that find the spot in the main search, split by commas, such as `keywords=coffee, cup`.                               |
+| `placeholder` | The text the spot takes in a [slash command](#slash-commands), such as `placeholder=Text to translate`. It lists the spot there. |
 | `on`          | An event that makes Openspot ask the spot what to show. One line for each event. See [Events](#events).                          |
 | `emits`       | The events the spot raises, split by commas. See [Events](#events).                                                              |
 | `offers`      | A place where the spot can show: `card`, `search`, `menubar`, `float` or `window`. One line each. See [Places](#places).         |
@@ -123,10 +124,10 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `grid.<size>` | A card made of other spots. Each word is a spot id. See [Cards of other spots](#cards-of-other-spots).                           |
 | `to`          | The spot that opens when the user presses a card of other spots. See [Cards of other spots](#cards-of-other-spots).              |
 
-| Block         | Meaning                                                                                                   |
-| ------------- | --------------------------------------------------------------------------------------------------------- |
-| `button=<id>` | A command, with its `title` and `icon`. The user can give it a hotkey. `confirm` asks for a second press. |
-| `field=<key>` | A setting the user chooses, with its `title` (by default, its key) and `icon`. See [Settings](#settings). |
+| Block         | Meaning                                                                                                                                                                                                                                                                      |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `button=<id>` | A command, with its `title` and `icon`. The user can give it a hotkey. `confirm` asks for a second press. `close=false` keeps the panel open after a [slash command](#slash-commands) that shows nothing, and `placeholder` lists it there, as the grey hint after its name. |
+| `field=<key>` | A setting the user chooses, with its `title` (by default, its key) and `icon`. See [Settings](#settings).                                                                                                                                                                    |
 
 - A spot with a `button` in its header has no card. It gives its commands instead.
 - Return on a spot with one `button` and no `on=` events runs it, as its hotkey does. When it has no hotkey yet, Return
@@ -520,6 +521,7 @@ out.
 | `<spot> drop <path> [path]...`     | A drop of files on its card.                                              |
 | `<spot> drag <row id> [row id]...` | A drag of rows that stand for files out of its sheet.                     |
 | `<spot> <command>`                 | A press of the hotkey the user gave a command.                            |
+| `<spot> <command>`, `<spot> open`  | A [slash command](#slash-commands), with `search=<text>` on stdin.        |
 
 - `read` is the only reserved call. `open`, `drop` and `drag` are default ids. A block can't use them, but a button can
   use `open`.
@@ -588,6 +590,36 @@ The shell helper reads and writes values for you:
 printf 'field=output\n'
 openspot_kv value "$(value input)"
 ```
+
+## Slash commands
+
+A slash command runs a `button` or a spot that has a `placeholder`, with the text that the user typed, in one Return.
+A `placeholder` says that a command takes text. A plain search finds spots; `/` runs one with text.
+
+```text
+/translate hello world     Return opens Translate, and its read gets search=hello world
+buy milk /notes            Return runs notes add, with search=buy milk on stdin
+```
+
+- In the main search, `/` at the start of a word, with a letter after it, lists the header `button`s, the `scope=spot`
+  `button`s of a sheet, and the spots that have a `placeholder`, whose name matches the word, and `/` alone, or after the text, lists them all. A word that matches none stays text, so
+  `10/2` and `/Users` search as before.
+- The first row is highlighted, ↑ and ↓ move it, and the footer names what Return runs. Each row's detail is its
+  `placeholder` until text follows, then the text that Return sends.
+- The text is the rest of the line, trimmed. The call gets it as `search=<text>` on stdin, with the arguments of a plain
+  press, so `case "$1"` handles it as any other call. With no text, a `button` runs as its hotkey does, and a spot does
+  what Return does on its card.
+
+| Command                                | The call with text                                 |
+| -------------------------------------- | -------------------------------------------------- |
+| A `button` with a `placeholder`        | `<spot> <id>`                                      |
+| A spot with a `placeholder`, no sheet  | `<spot> open`                                      |
+| A spot with a `placeholder` and sheet  | Its sheet opens, and the read of the sheet gets it |
+
+- The first frame of the call decides what shows. A frame with fields is a form, as for a `form=true` button, and Return
+  in it sends the values to the same call. Other blocks open the spot's sheet with them. A frame with nothing to show,
+  such as only a `toast`, or the end of the call closes the panel, unless the `button` has `close=false`.
+- A header `button` with `confirm` isn't listed, since a slash command doesn't ask twice.
 
 ## The life of a call
 

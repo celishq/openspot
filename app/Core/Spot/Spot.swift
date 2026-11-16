@@ -62,6 +62,7 @@ public struct Spot: Equatable, Sendable {
         pages: [String] = [],
         uses: Set<SpotUse> = [],
         keywords: [String] = [],
+        placeholder: String? = nil,
         sample: URL? = nil,
         edits: SpotEdits? = nil
     ) {
@@ -70,7 +71,7 @@ public struct Spot: Equatable, Sendable {
             offeredPlaces: offeredPlaces, isFound: isFound, answers: answers, order: order, layout: layout, places: places,
             opens: opens, host: host, growsFromField: growsFromField, mode: mode, pressRuns: pressRuns, drop: drop,
             dataName: dataName, isOnGrid: isOnGrid, view: view, viewDate: viewDate, sources: sources, emits: emits, pages: pages, uses: uses,
-            offers: offers, offeredActions: offeredActions, settings: settings, keywords: keywords, sample: sample,
+            offers: offers, offeredActions: offeredActions, settings: settings, keywords: keywords, placeholder: placeholder, sample: sample,
             edits: edits
         ))
         self.kind = kind
@@ -158,8 +159,19 @@ public struct Spot: Equatable, Sendable {
         return self.offers.first?.id
     }
 
+    public var mainAct: MainAct {
+        switch kind {
+        case .toggle: .toggle
+        case .launch: .run(closes: !takesDrops)
+        case .list where self.pressRuns: .run(closes: true)
+        case .list: soleCommand.map(MainAct.command) ?? .sheet
+        case .slider: MainAct.none
+        case .widget: self.opens.map(MainAct.open) ?? MainAct.none
+        }
+    }
+
     public var opensOnReturn: Bool {
-        kind.opensSheet && !self.pressRuns && soleCommand == nil
+        mainAct == .sheet
     }
 
     public var keepsHistory: Bool {
@@ -346,12 +358,12 @@ public struct Spot: Equatable, Sendable {
 
     public func openTitle(hasItem: Bool) -> String? {
         if hasItem { return openTitle ?? "Open" }
-        switch kind {
-        case .launch: return "Run"
+        switch mainAct {
+        case .run: return "Run"
         case .toggle: return "Toggle"
-        case .list: return soleCommand.flatMap { command in self.offers.first { $0.id == command }?.title } ?? (self.pressRuns ? "Run" : "Open")
-        case .slider: return nil
-        case .widget: return self.opens == nil ? nil : "Open"
+        case .command(let command): return self.offers.first { $0.id == command }?.title ?? "Open"
+        case .sheet, .open: return "Open"
+        case .none: return nil
         }
     }
 
