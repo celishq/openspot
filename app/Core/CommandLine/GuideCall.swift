@@ -20,7 +20,7 @@ enum GuideCall: NounCall {
         let mac = context.mac
         return {
             do {
-                let guide = try Guide.read(from: mac)
+                let guide = try mac.readGuide()
                 let topics = guide.topics
                 switch self {
                 case .text: return CommandAnswer(output: guide.text)

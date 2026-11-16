@@ -30,7 +30,7 @@ enum HelpCall: NounCall {
             }
             guard verb.isEmpty, noun.guide != nil else { return { CommandAnswer(output: text) } }
             return CommandAnswer.work { [mac = context.mac, page = noun.guide] in
-                text + (try Guide.read(from: mac).topic(page ?? name).map { "\n" + $0.text } ?? "")
+                text + (try mac.readGuide().topic(page ?? name).map { "\n" + $0.text } ?? "")
             }
         }
     }
