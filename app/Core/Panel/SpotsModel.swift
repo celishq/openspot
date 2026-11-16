@@ -160,6 +160,12 @@ public final class SpotsModel {
         guard recording != nil, modifiers != heldKeys else { return }
         heldKeys = modifiers
     }
+
+    public func appCameToFront(_ name: String) {
+        guard recordsField, !heldKeys.isEmpty else { return }
+        keyStatus = "\(heldKeys.marks) and a key opened \(name). Change that key in \(name), or press another one."
+        heldKeys = []
+    }
     public internal(set) var mode = PanelMode.grid
     public internal(set) var keyStatus: String?
     @ObservationIgnored var takenKeys: [TakenKey] = []

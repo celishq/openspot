@@ -240,6 +240,18 @@ final class SpotsPanel: NSPanel {
         return true
     }
 
+    private func watchFrontApp(model: SpotsModel) {
+        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { [weak model] note in
+            guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+                  app.processIdentifier != ProcessInfo.processInfo.processIdentifier,
+                  let name = app.localizedName else { return }
+            MainActor.assumeIsolated {
+                guard let model, model.recording != nil else { return }
+                model.appCameToFront(name)
+            }
+        }
+    }
+
     private func watchPaste(model: SpotsModel) {
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak model] event in
             let isTaken = MainActor.assumeIsolated {
@@ -285,6 +297,7 @@ final class SpotsPanel: NSPanel {
         hosting.sizingOptions = []
         panel.contentView = hosting
         panel.watchPaste(model: model)
+        panel.watchFrontApp(model: model)
         panel.center()
         panel.followSides()
         return panel

@@ -454,6 +454,39 @@ final class PanelKeysTests: PanelCase {
         XCTAssertNil(model.pressedKey)
     }
 
+    func testAnAppThatOpensWhileKeysAreHeldIsNamedAndTheRecordingGoesOn() async throws {
+        try await openPick()
+        try await wait("the recording") { self.model.recording == "key" }
+        model.hold([.command, .shift])
+
+        model.appCameToFront("Raycast")
+
+        XCTAssertEqual(model.keyStatus, "⇧⌘ and a key opened Raycast. Change that key in Raycast, or press another one.")
+        XCTAssertEqual(model.heldKeys, [])
+        XCTAssertEqual(model.recording, "key")
+    }
+
+    func testAnAppThatOpensWithNoKeyHeldChangesNothing() async throws {
+        try await openPick()
+        try await wait("the recording") { self.model.recording == "key" }
+
+        model.appCameToFront("Raycast")
+
+        XCTAssertNil(model.keyStatus)
+        XCTAssertEqual(model.recording, "key")
+    }
+
+    func testAnAppThatOpensWhileARowRecordsChangesNothing() async throws {
+        try await openKeyRow()
+        model.toggleRecording(id: "float")
+        model.hold([.command])
+
+        model.appCameToFront("Raycast")
+
+        XCTAssertNil(model.keyStatus)
+        XCTAssertEqual(model.heldKeys, [.command])
+    }
+
     func testAFieldThatTurnsEmptyRecordsAgain() async throws {
         try await openPick()
         try await wait("the recording") { self.model.recording == "key" }
