@@ -25,7 +25,6 @@ final class CatalogSpotTests: BuiltInCase {
         XCTAssertEqual(defaults.arrangement.size(of: spot.id), .small)
         XCTAssertTrue(spot.isOnGrid)
         XCTAssertEqual(spot.keywords, ["edit spots"])
-        XCTAssertEqual(defaults.arrangement.choices.first { $0.id == spot.id }?.letter, "p")
     }
 
     func testAPressOpensEditSpotsInTheApp() async throws {

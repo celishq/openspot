@@ -17,7 +17,6 @@ public final class SpotsModel {
 
     static let searchLimit = 8
     public static let dragWatchPause: Duration = .milliseconds(16)
-    static let chainPause: Duration = .milliseconds(200)
     private static let loadLimit: Duration = .seconds(2)
     private static let loadPause: Duration = .milliseconds(20)
     public static let dropPause: Duration = .milliseconds(300)
@@ -146,8 +145,6 @@ public final class SpotsModel {
     public var isAsking = false
 
     public var entryKey = Shortcut.standard
-    var isChainHeld = false
-    @ObservationIgnored var chainWatch: Task<Void, Never>?
     public var recording: String? {
         didSet { takeMode() }
     }
@@ -430,10 +427,9 @@ public final class SpotsModel {
 
     private func patchEntries(_ ids: Set<String>) {
         let named: (Spot) -> Bool = { ids.contains($0.id) || ids.contains(SpotsFolder.coreID(of: $0)) }
-        let letters = arrangement.letters(over: defaultArrangement)
         var next = entries.filter { !named($0.spot) }
         for (index, spot) in ordered().enumerated() where named(spot) {
-            next.insert(Entry(spot: spot, run: runs.sheets[spot.id], choice: arrangement, defaults: defaultArrangement, letter: letters[spot.id]), at: min(index, next.count))
+            next.insert(Entry(spot: spot, run: runs.sheets[spot.id], choice: arrangement, defaults: defaultArrangement), at: min(index, next.count))
         }
         if next != entries { entries = next }
     }
@@ -447,8 +443,7 @@ public final class SpotsModel {
 
     public func rebuildEntries() {
         gridBuilds += 1
-        let letters = arrangement.letters(over: defaultArrangement)
-        let next = ordered().map { Entry(spot: $0, run: runs.sheets[$0.id], choice: arrangement, defaults: defaultArrangement, letter: letters[$0.id]) }
+        let next = ordered().map { Entry(spot: $0, run: runs.sheets[$0.id], choice: arrangement, defaults: defaultArrangement) }
         let field = next.first { $0.spot.growsFromField }?.id
         if field != fieldSheet { fieldSheet = field }
         if next != entries { entries = next }
@@ -459,10 +454,9 @@ public final class SpotsModel {
         return arrangement.ordered(defaultArrangement.ordered(sorted))
     }
 
-    public func panelWillShow(holding modifiers: Shortcut.Modifiers) {
+    public func panelWillShow() {
         finishPick()
         selected = 0
-        takeHeld(modifiers)
         runs.panelOpened()
         askAnswers()
         DispatchQueue.main.async { [weak self] in self?.isShown = true }
@@ -471,7 +465,6 @@ public final class SpotsModel {
     public func panelWillHide() {
         pendingAsk = nil
         if confirming != nil { confirming = nil }
-        takeHeld([])
         stopRecording()
         closeMenu()
         endEditing(moving: false)

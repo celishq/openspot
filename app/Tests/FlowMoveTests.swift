@@ -7,7 +7,7 @@ final class FlowMoveTests: PanelCase {
         try writeFlow()
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.press("flow")
         try await wait("the flow") { self.model.transition.phase == .open && self.titles == ["Page first"] && self.model.sheets["flow"]?.spot.actions.count == 5 }
     }
@@ -93,7 +93,7 @@ final class FlowMoveTests: PanelCase {
         try script("reader", header: "title=Reader\non=sheet.open", "printf 'push=elsewhere\\n\\nrow=r\\ntitle=R\\n'")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.press("reader")
 
         try await wait("the reader") { self.titles == ["R"] && !self.model.runs.isReading }

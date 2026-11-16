@@ -39,7 +39,7 @@ final class PanelViewReadsTests: XCTestCase {
         try TestSpot(header: "on=sheet.open", body: "printf 'row=a\\ntitle=Apple\\n\\nrow=b\\ntitle=Banana\\n'").write(to: spots.spotFile("list"))
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.press("list")
         try await wait("the open list") { model.transition.phase == .open && model.openSheetID == "list" && model.openItems?.shown.count == 2 }
     }

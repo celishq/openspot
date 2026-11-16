@@ -2,7 +2,6 @@ import Foundation
 import Observation
 
 extension SpotsModel {
-    static let deleteCode: UInt32 = 51
 
     public func sizes(of entry: Entry) -> [SpotSize] {
         entry.item == nil ? entry.spot.sizes : []
@@ -141,27 +140,6 @@ extension SpotsModel {
         land(selecting: first, landed: apply)
     }
 
-    func recordLetter(code: UInt32, modifiers: Shortcut.Modifiers) {
-        guard let id = recording else { return }
-        let letter = CommandKey(code: code)
-        guard code == Self.deleteCode || (letter != nil && modifiers.isEmpty) else {
-            host.notify("Press a letter or a digit with no other key, or Delete to take the letter away.")
-            return
-        }
-        stopRecording()
-        let order = visible.map(\.id)
-        var holder: String?
-        let isSaved = save { next in
-            next.arrange(order)
-            holder = next.give(code == Self.deleteCode ? nil : letter, to: id, over: self.defaultArrangement)
-        }
-        guard isSaved else { return }
-        if let holder, let letter {
-            let name = { (spot: String) in self.entry(spot)?.spot.name ?? spot }
-            host.notify("\(letter.name.uppercased()) now runs \(name(id)), so \(name(holder)) has no letter.")
-        }
-        land(selecting: id)
-    }
 
     func saveArrangement(_ edit: (inout SpotArrangement) -> Void, selecting id: String, ending: () -> Void = {}, landed: @escaping @MainActor () -> Void = {}) {
         save(edit)

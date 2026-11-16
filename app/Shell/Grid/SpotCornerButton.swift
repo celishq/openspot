@@ -14,13 +14,13 @@ struct SpotCornerButton: View {
     let action: () -> Void
 
     var body: some View {
-        let inset = SurfaceEdge(card: size).rim - SpotTokens.keycap / 2
+        let inset = SurfaceEdge(card: size).rim - SpotTokens.cornerMark / 2
         Button(action: action) {
             Image(systemName: symbol)
                 .font(SpotType.cornerMark)
                 .foregroundStyle(SpotTheme.ink)
-                .frame(width: SpotTokens.keycap, height: SpotTokens.keycap)
-                .background(SpotTheme.keycap, in: Circle())
+                .frame(width: SpotTokens.cornerMark, height: SpotTokens.cornerMark)
+                .background(SpotTheme.cornerFill, in: Circle())
                 .overlay(Circle().strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
                 .contentShape(Circle())
         }

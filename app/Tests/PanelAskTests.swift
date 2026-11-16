@@ -34,7 +34,7 @@ final class PanelAskTests: PanelCase {
         """)
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         let entry = try XCTUnwrap(model.entry("notes"))
 
         model.openForm(CommandAction(id: "add", title: "Add", scope: .spot, isForm: true), on: (entry, nil))

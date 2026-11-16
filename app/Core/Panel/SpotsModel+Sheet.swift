@@ -67,9 +67,17 @@ extension SpotsModel {
         pushFirst(id, moving: true)
     }
 
+    @discardableResult
+    func openKeys(of id: String, recording row: String? = nil) -> Bool {
+        guard let keys = runs.keysSheet, push(FlowSheet(spot: keys, page: SpotEdits.page(of: id), title: nil)) else { return false }
+        if let row { toggleRecording(id: row) }
+        return true
+    }
+
     public func pushFirst(_ id: String, moving: Bool, title: String? = nil) {
-        if let spot = sheets[id]?.spot, spot.opensToSettings {
-            return pushFirst(SpotSettings.sheetID(of: id), moving: moving, title: title)
+        if let spot = sheets[id]?.spot, spot.opensToKeys {
+            openKeys(of: id)
+            return
         }
         if let owner = SpotSettings.owner(of: id), let spot = sheets[owner]?.spot ?? entry(owner)?.spot {
             runs.settingsSheet(of: spot)

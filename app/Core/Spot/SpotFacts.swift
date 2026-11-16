@@ -29,14 +29,18 @@ public struct SpotFacts: Equatable, Sendable {
     public let emits: [String]
     public let pages: [String]
     public internal(set) var uses: Set<SpotUse>
-    public let offers: [CommandOffer]
+    public let offers: [HeaderButton]
     public internal(set) var offeredActions: [OfferedAction]
-    public let settings: [CommandOffer]
+    public let settings: [HeaderField]
     public internal(set) var holdsSettings = false
     public internal(set) var isBuiltIn = false
     public let keywords: [String]
     public let placeholder: String?
     public let sample: URL?
-    public let editsSpots: Bool
+    public let edits: SpotEdits?
     public internal(set) var editedFile: URL?
+
+    public var editsSpots: Bool {
+        edits == .spots
+    }
 }

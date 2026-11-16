@@ -29,7 +29,7 @@ final class SlashCommandPanelTests: PanelCase {
     private func open() async {
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
     }
 
     private var sent: String {

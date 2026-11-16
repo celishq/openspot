@@ -29,6 +29,7 @@ public struct ScanResult: Equatable, Sendable {
     public func offered(_ keys: [GlobalKey]) -> [GlobalKey] {
         keys.filter { key in
             switch key.act {
+            case .open: scripts.contains { $0.id == key.spot && !$0.offeredPlaces.isDisjoint(with: [.card, .search]) }
             case .float: scripts.contains { $0.id == key.spot && $0.offersFloat }
             case .command(let command): scripts.contains { $0.id == key.spot && $0.offers.contains { $0.id == command } }
             }

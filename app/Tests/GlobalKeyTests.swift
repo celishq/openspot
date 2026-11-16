@@ -80,6 +80,23 @@ final class GlobalKeyTests: XCTestCase {
         XCTAssertFalse(try String(contentsOf: file.url, encoding: .utf8).contains("command"))
     }
 
+    func testAnOpenKeyIsAKeyThatTheFileKeepsAndThatStaysForASpotWithACardOrASearch() throws {
+        let folder = try temporaryFolder()
+        let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
+        let config = Config(text: "[[keys]]\nspot = \"notes\"\nopen = true\nkey = \"ctrl+option+n\"\n\n[[keys]]\nspot = \"mail\"\nopen = \"yes\"\nkey = \"ctrl+option+m\"\n")
+        let notes = GlobalKey(spot: "notes", act: .open, trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+n"))))
+        try "#!/bin/sh\n".writeScript(to: folder.spotFile("notes"))
+        try "#!/bin/sh\n# offers=none\n".writeScript(to: folder.spotFile("hidden"))
+
+        XCTAssertEqual(config.keys, [notes])
+        XCTAssertEqual(config.faults, ["config.toml: the key of mail takes open = true, or no open line."])
+        try file.write(keys: config.keys)
+        XCTAssertEqual(file.read().keys, [notes])
+        XCTAssertTrue(try String(contentsOf: file.url, encoding: .utf8).contains("open = true"))
+        let others = [GlobalKey(spot: "gone", act: .open, trigger: notes.trigger), GlobalKey(spot: "hidden", act: .open, trigger: notes.trigger)]
+        XCTAssertEqual(try SpotsFolder(url: folder).scan().offered([notes] + others), [notes])
+    }
+
     func testAShakeIsAKeyThatTheFileKeeps() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-keys-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: folder) }

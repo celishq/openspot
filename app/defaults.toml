@@ -1,43 +1,34 @@
 [[spots]]
 id = "apps"
-letter = "a"
 
 [[spots]]
 id = "caffeinate"
 size = "small"
-letter = "c"
 
 [[spots]]
 id = "color-picker"
 size = "small"
-letter = "o"
 
 [[spots]]
 id = "confetti"
-letter = "k"
 
 [[spots]]
 id = "draw"
 size = "small"
-letter = "b"
 
 [[spots]]
 id = "emoji"
 size = "small"
-letter = "e"
 
 [[spots]]
 id = "files"
-letter = "f"
 
 [[spots]]
 id = "links"
-letter = "l"
 
 [[spots]]
 id = "paste-screenshot"
 size = "small"
-letter = "v"
 
 [[spots]]
 id = "running"
@@ -51,17 +42,14 @@ grid = false
 [[spots]]
 id = "snippets"
 size = "small"
-letter = "n"
 
 [[spots]]
 id = "translate"
 size = "small"
-letter = "t"
 
 [[spots]]
 id = "openspot/spots"
 size = "small"
-letter = "p"
 
 [[spots]]
 id = "openspot/store"

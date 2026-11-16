@@ -143,7 +143,7 @@ final class SpotsModelTests: XCTestCase {
         try script("list", header: "on=sheet.open", "printf 'row=a\\ntitle=Apple\\n\\nrow=b\\ntitle=Banana\\n'")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.press("list")
         try await wait("the open list") { model.transition.phase == .open && model.openSheetID == "list" && model.openItems?.shown.count == 2 }
     }
@@ -153,7 +153,7 @@ final class SpotsModelTests: XCTestCase {
         try script("year", header: "on=panel.open\nview=year.swift", "printf 'view=year\\ntitle=2026\\n\\nrow=e\\ntitle=Standup\\n'")
         try script("list", header: "on=panel.open", "printf 'row=a\\ntitle=Apple\\n'")
         await model.reload()
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
 
         try await wait("the drawn cards") {
             SpotSheetCard.of("agenda", in: model)?.look?.id == "agenda" && SpotSheetCard.of("year", in: model)?.look?.id == "year"
@@ -281,13 +281,13 @@ final class SpotsModelTests: XCTestCase {
     func testAnOpenWithNoChangeTellsNoReaderOfTheCards() async throws {
         try script("one", header: "title=One", "")
         await model.reload()
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.panelWillHide()
         nonisolated(unsafe) var changed = false
         withObservationTracking { _ = model.entries } onChange: { changed = true }
         withObservationTracking { _ = model.sheets["one"]?.spot } onChange: { changed = true }
 
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
 
         XCTAssertFalse(changed)
     }
@@ -301,7 +301,7 @@ final class SpotsModelTests: XCTestCase {
         try model.files.config.write(arrangement)
         try script("three", header: "title=Three", "")
 
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
 
         XCTAssertEqual(model.visible.map(\.id), ["one", "two"])
     }
@@ -323,7 +323,7 @@ final class SpotsModelTests: XCTestCase {
         try script("cups", header: "on=panel.open", "printf 'title=One cup\\n'")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         try await wait("the first read") { model.entries.first { $0.id == "cups" }?.state.title == "One cup" }
 
         try "#!/bin/sh\n# on=panel.open\nprintf 'title=Two cups\\n'\n".write(to: spots.spotFile("cups"), atomically: false, encoding: .utf8)
@@ -346,7 +346,7 @@ final class SpotsModelTests: XCTestCase {
         try script("list", header: "on=sheet.open", "printf 'button=copy\\ntitle=Copy\\nshortcut=cmd+c\\n\\nbutton=mark\\ntitle=Mark\\n\\nrow=a\\ntitle=Apple\\n\\nrow=b\\ntitle=Banana\\n'")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.press("list")
         try await wait("the open list") { model.openSheetID == "list" && model.openItems?.shown.count == 2 }
         let rows = try XCTUnwrap(model.openItems?.shown)
@@ -379,7 +379,7 @@ final class SpotsModelTests: XCTestCase {
         """)
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.press("list")
         try await wait("the open list") { model.openSheetID == "list" && model.openItems?.shown.count == 2 }
 
@@ -395,7 +395,7 @@ final class SpotsModelTests: XCTestCase {
         try script("list", header: "on=sheet.open", "printf 'row=a\\ntitle=Apple\\n\\nrow=b\\ntitle=Banana\\n\\nrow=c\\ntitle=Blueberry\\n'")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.press("list")
         try await wait("the open list") { model.openSheetID == "list" && model.openItems?.shown.count == 3 }
 
@@ -428,7 +428,7 @@ final class SpotsModelTests: XCTestCase {
         """)
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.press("list")
         try await wait("the open list") { model.openSheetID == "list" && model.openItems?.shown.count == 1 }
 
@@ -443,7 +443,7 @@ final class SpotsModelTests: XCTestCase {
         try script("apps", header: "on=sheet.open", "for i in $(seq 1 100); do printf 'row=a%s\\ntitle=App %s\\nicon=/Applications/A%s.app\\n\\n' $i $i $i; done")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.press("apps")
         try await wait("the rows and their pictures") { model.openItems?.shown.count == 100 && !host.prepared.isEmpty }
 
@@ -460,7 +460,7 @@ final class SpotsModelTests: XCTestCase {
         defer { ranked.quit() }
         await ranked.reload()
         ranked.isShown = true
-        ranked.panelWillShow(holding: [])
+        ranked.panelWillShow()
         ranked.press("apps")
         try await wait("the rows and their pictures") { ranked.openItems?.shown.count == 100 && !host.prepared.isEmpty }
 
@@ -472,7 +472,7 @@ final class SpotsModelTests: XCTestCase {
         try script("faces", header: "on=sheet.open", "for i in $(seq 1 100); do printf 'row=f%s\\ntitle=Face %s\\nicon=😀\\n\\n' $i $i; done")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.press("faces")
         try await wait("the glyphs") { !host.glyphLists.isEmpty }
 
@@ -496,7 +496,7 @@ final class SpotsModelTests: XCTestCase {
         try script("faces", header: "on=sheet.open", "echo x >> '\(calls)'; printf 'title=Read %s\\n\\n' $(wc -l < '\(calls)'); for i in $(seq 1 100); do printf 'row=f%s\\ntitle=Face %s\\nicon=😀\\n\\n' $i $i; done")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.press("faces")
         try await wait("the glyphs") { !host.glyphLists.isEmpty }
         let sheet = try XCTUnwrap(model.sheets["faces"])
@@ -567,7 +567,7 @@ final class SpotsModelTests: XCTestCase {
         try script("parts", header: "on=sheet.open", "printf 'text=a\\ntitle=A\\n'")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.pushFirst("parts", moving: true)
         try await wait("the open sheet") { model.openSheetID == "parts" && model.openParts != nil }
 
@@ -584,7 +584,7 @@ final class SpotsModelTests: XCTestCase {
     func testASizeInAReadLeavesTheCardAtItsDefaultSize() async throws {
         try script("grow", header: "on=panel.open", "printf 'detail=Read\\nsize=large\\n'")
         await model.reload()
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         try await wait("the read") { model.visible.first?.state.subtitle == "Read" }
 
         XCTAssertEqual(model.visible.first?.size, .wide)
@@ -609,7 +609,7 @@ final class SpotsModelTests: XCTestCase {
         """)
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.press("list")
         try await wait("the open list") { model.openSheetID == "list" && model.openEntry?.spot.actions.contains(where: \.isForm) == true }
         let entry = try XCTUnwrap(model.openEntry)
@@ -643,20 +643,20 @@ final class SpotsModelTests: XCTestCase {
 
         XCTAssertFalse(model.isEditing)
         XCTAssertFalse(model.isShown)
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         XCTAssertEqual(model.selected, 0)
         try await wait("the shown panel") { model.isShown }
     }
 
     func testTheSearchStaysThroughAHideUntilEsc() async {
         await model.reload()
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.searchText = "ban"
         model.landSearch()
 
         model.panelWillHide()
         model.panelDidHide()
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
 
         XCTAssertEqual(model.searchText, "ban")
         XCTAssertTrue(model.stepBack())
@@ -667,7 +667,7 @@ final class SpotsModelTests: XCTestCase {
         let gate = folder.appendingPathComponent("gate").path
         try script("stuck", header: "on=panel.open", "n=0; while [ ! -f '\(gate)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done")
         await model.reload()
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         let start = ContinuousClock.now
 
         await model.waitForReads()
@@ -709,7 +709,7 @@ final class SpotsModelTests: XCTestCase {
         let readCount = { ((try? String(contentsOfFile: reads, encoding: .utf8)) ?? "").split(separator: "\n").count }
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.press("list")
         try await wait("the open list") { model.openSheetID == "list" && model.openEntry?.spot.actions.contains(where: \.isForm) == true }
         let entry = try XCTUnwrap(model.openEntry)
@@ -746,7 +746,7 @@ final class SpotsModelTests: XCTestCase {
         let sends = { ((try? String(contentsOfFile: sent, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init) }
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.press("list")
         try await wait("the open list") { model.openSheetID == "list" && model.openEntry?.spot.actions.contains(where: \.isForm) == true }
         let entry = try XCTUnwrap(model.openEntry)
@@ -781,7 +781,7 @@ final class SpotsModelTests: XCTestCase {
         """)
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         XCTAssertFalse(model.changeSetting("pick", of: "gone"))
         XCTAssertTrue(model.changeSetting("pick", of: "list"))
         try await wait("the form") { model.form != nil }
@@ -804,7 +804,7 @@ final class SpotsModelTests: XCTestCase {
         """)
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.press("agenda")
         try await wait("the sheet of parts") { model.shownParts(of: "agenda")?.showsRows == true }
         XCTAssertTrue(model.changeSetting("pick", of: "agenda"))
@@ -828,7 +828,7 @@ final class SpotsModelTests: XCTestCase {
         """)
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.press("list")
         try await wait("the open list") { model.openSheetID == "list" && model.openEntry?.spot.actions.isEmpty == false }
         let entry = try XCTUnwrap(model.openEntry)
@@ -874,7 +874,7 @@ final class SpotsModelTests: XCTestCase {
         await model.reload()
         model.setOnGrid(false, for: "build")
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.press("picker")
         try await wait("the open list") { model.openSheetID == "picker" && model.transition.phase == .open }
         let entry = try XCTUnwrap(model.openEntry)
@@ -897,7 +897,7 @@ final class SpotsModelTests: XCTestCase {
         try script("other", header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.setOnGrid(false, for: "other")
         host.motions = []
         host.phases = []
@@ -929,7 +929,7 @@ final class SpotsModelTests: XCTestCase {
         try script("parts", header: "on=sheet.open", "if [ \"$1\" = read ]; then printf '\(sheet)'; else echo \"$@\" >> '\(calls.path)'; fi")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.pushFirst("parts", moving: true)
         try await wait("the open sheet") { model.openSheetID == "parts" && model.openParts != nil }
         return calls
@@ -1022,7 +1022,7 @@ final class SpotsModelTests: XCTestCase {
         try script("conf", header: "on=sheet.open\npress=open", "if [ \"$1\" = read ]; then printf 'row=a\\ntitle=A\\n'; else echo \"$@\" >> '\(log.path)'; fi")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         let calls = { ((try? String(contentsOf: log, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init) }
 
         XCTAssertEqual(model.hint, "⏎ Run   ⌘⏎ Settings   ⌘K Actions")
@@ -1032,7 +1032,7 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(host.dismissals, 1)
 
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
         try await wait("the Settings sheet") { model.openSheetID == SpotSettings.sheetID(of: "conf") }
         try await wait("its rows") { model.openItems?.shown.map(\.run) == ["menubar:conf"] }
@@ -1051,7 +1051,7 @@ final class SpotsModelTests: XCTestCase {
         try script("conf", header: "on=sheet.open\npress=open", "if [ \"$1\" = read ]; then printf 'row=a\\ntitle=A\\n'; else echo \"$@\" >> '\(log.path)'; fi")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
 
         model.tap("conf", opening: true)
 
@@ -1063,7 +1063,7 @@ final class SpotsModelTests: XCTestCase {
         try script("list", header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
 
         XCTAssertEqual(model.hint, "⏎ Open   ⌘⏎ Settings")
         XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
@@ -1075,7 +1075,7 @@ final class SpotsModelTests: XCTestCase {
         try script("shortcuts", header: "title=Shortcuts\non=panel.open\noffers=search", "printf 'row=daily\\ntitle=Daily\\n'")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
 
         model.searchText = "shortcuts"
         model.landSearch()
@@ -1088,7 +1088,7 @@ final class SpotsModelTests: XCTestCase {
         try script("settings", header: "title=System Settings\non=panel.open\noffers=search", "printf 'row=sound\\ntitle=Sound Settings\\n'")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
 
         model.searchText = "settings"
         model.landSearch()
@@ -1102,7 +1102,7 @@ final class SpotsModelTests: XCTestCase {
         try script("mail", header: "title=Mail", "true")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         let before = model.spotListBuilds
 
         for text in ["n", "no", "not", "note", "notes"] {
@@ -1123,7 +1123,7 @@ final class SpotsModelTests: XCTestCase {
         """)
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.press("list")
         try await wait("the open list") { model.openSheetID == "list" && model.openEntry?.spot.actions.contains(where: \.isForm) == true }
         let entry = try XCTUnwrap(model.openEntry)
@@ -1194,7 +1194,7 @@ final class SpotsModelTests: XCTestCase {
         """)
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.press("list")
         try await wait("the open list") { model.openSheetID == "list" && model.openEntry?.spot.actions.contains(where: \.isForm) == true }
         let entry = try XCTUnwrap(model.openEntry)
@@ -1215,7 +1215,7 @@ final class SpotsModelTests: XCTestCase {
         try script("fruit", header: "on=sheet.open", "for i in $(seq 1 50); do printf 'row=a%s\\ntitle=Apple %s\\n\\nrow=p%s\\ntitle=Pear %s\\n\\n' $i $i $i $i; done")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.press("fruit")
         try await wait("the open list") { model.openSheetID == "fruit" && model.openItems?.shown.count == 100 }
         try await wait("the end of the open motion") { model.transition.phase == .open }
@@ -1393,7 +1393,7 @@ final class SpotsModelTests: XCTestCase {
         model.searchText = "c"
         model.landSearch()
         XCTAssertEqual(model.visible.map(\.id), ["mood"])
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         try await wait("the read title") { model.sheets["mood"]?.state.title == "Stormy" }
 
         model.searchText = "st"
@@ -1406,7 +1406,7 @@ final class SpotsModelTests: XCTestCase {
         try script("mood", header: "title=Calm\non=panel.open", "printf 'title=Stormy\nvalue=%s\n' \"$(date +%N)\"")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         let sheet = try XCTUnwrap(model.sheets["mood"])
         try await wait("the read title") { sheet.state.title == "Stormy" && sheet.answered != nil }
         model.searchText = "s"
@@ -1444,7 +1444,7 @@ final class SpotsModelTests: XCTestCase {
         try script("notes", header: "title=Notes 2\non=sheet.open", "printf 'row=a\\ntitle=A\\n'")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
     }
 
     func testAKeyBuildsItsSearchOnceForTheCardsAndEachSpotThatAnswers() async throws {
@@ -1483,7 +1483,7 @@ final class SpotsModelTests: XCTestCase {
         try script("notes", header: "title=Notes 2\non=sheet.open", "printf 'row=a\\ntitle=A\\n'")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
 
         model.searchText = "2"
         model.landSearch()
@@ -1500,7 +1500,7 @@ final class SpotsModelTests: XCTestCase {
         try script("units", header: "title=Units\non=search.text [0-9] ?(km|mi)", "true")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         let before = model.answerMatches.count
 
         for text in ["1", "12", "12 k", "12 km", "12 kmh"] {
@@ -1540,14 +1540,14 @@ final class SpotsModelTests: XCTestCase {
         try script("calc", header: "title=Calc\non=search.text ^[0-9]", body)
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.searchText = "2"
         model.landSearch()
         try await wait("the first answer") { model.visible.first?.state.title == "Call 1" }
 
         model.panelDidHide()
         XCTAssertFalse(model.visible.contains { $0.id == "calc\n2" })
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
 
         try await wait("the answer asked again") { model.visible.first?.state.title == "Call 2" }
     }
@@ -1580,7 +1580,7 @@ final class SpotsModelTests: XCTestCase {
         """.write(to: spots.spotFile("calc", extension: "js"), atomically: true, encoding: .utf8)
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.searchText = "1"
         model.landSearch()
         try await wait("the first answer") { model.visible.first?.id == "calc\n1" }
@@ -1603,14 +1603,14 @@ final class SpotsModelTests: XCTestCase {
         """)
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.searchText = "5"
         model.landSearch()
         try await wait("the answer") { model.visible.first?.id == "calc\n5" }
 
         model.panelWillHide()
         model.panelDidHide()
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
 
         try await wait("the answer again") { model.visible.first?.id == "calc\n5" }
     }
@@ -1619,7 +1619,7 @@ final class SpotsModelTests: XCTestCase {
         try script("both", header: "title=Both\non=panel.open\noffers=search\non=search.text ^[0-9]", "printf 'row=7\\ntitle=7 days\\n'")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
 
         model.searchText = "7"
         model.landSearch()
@@ -1633,7 +1633,7 @@ final class SpotsModelTests: XCTestCase {
         try script("calc", header: "title=Calc\non=panel.open\non=search.text ^[0-9]", body)
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         try await wait("the failure of the read") { model.sheets["calc"]?.failure != nil }
 
         model.searchText = "2"
@@ -1669,6 +1669,15 @@ final class SpotsModelTests: XCTestCase {
         model.press(GlobalKey(spot: "move", command: "left", shortcut: try XCTUnwrap(Shortcut(text: "ctrl+left"))))
 
         XCTAssertEqual(model.menuBarSymbol(during: .failure), "rectangle.lefthalf.inset.filled")
+    }
+
+    func testAnOpenKeyShowsThePanelWithTheSheetOfItsSpot() async throws {
+        try script("list", header: "on=sheet.open", "printf 'row=a\\ntitle=Apple\\n'")
+        await model.reload()
+
+        model.press(GlobalKey(spot: "list", act: .open, trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+l")))))
+
+        try await wait("the open list") { model.openSheetID == "list" && host.shows == 1 }
     }
 
     func testAKeyOfAScriptThatIsGoneShowsNothing() async throws {

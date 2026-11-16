@@ -12,7 +12,7 @@ struct SpotTipPill: View {
             .fixedSize()
             .padding(.horizontal, SpotTokens.hintKeyPadding)
             .frame(height: SpotTokens.hintPillHeight)
-            .background(SpotTheme.keycap, in: Capsule())
+            .background(SpotTheme.cornerFill, in: Capsule())
             .overlay(Capsule().strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
     }
 }

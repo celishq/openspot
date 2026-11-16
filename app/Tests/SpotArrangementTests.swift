@@ -65,6 +65,20 @@ final class SpotArrangementTests: XCTestCase {
         XCTAssertEqual(config.arrangement.isGlobal(of: "files"), false)
     }
 
+    func testAnOldLetterIsNoFaultAndAWriteDropsIt() throws {
+        let folder = try temporaryFolder()
+        let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
+        try "[[spots]]\nid = \"apps\"\nletter = \"a\"\nsize = \"small\"\n".write(to: file.url, atomically: true, encoding: .utf8)
+
+        var arrangement = file.read().arrangement
+        XCTAssertEqual(file.read().faults, [])
+        arrangement.set(size: .large, of: "apps")
+        try file.write(arrangement)
+
+        XCTAssertFalse(try String(contentsOf: file.url, encoding: .utf8).contains("letter"))
+        XCTAssertEqual(file.read().arrangement.choices, [choice("apps", size: .large)])
+    }
+
     func testTheConfigKeepsTheSpotsThatThePersonPutInTheMenuBar() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-arrangement-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -80,42 +94,6 @@ final class SpotArrangementTests: XCTestCase {
         XCTAssertEqual(config.arrangement.menuBar, ["cups"])
         XCTAssertEqual(config.arrangement.size(of: "apps"), .small)
         XCTAssertEqual(Config(text: "[[spots]]\nid = \"cups\"\ntray = true\n").arrangement.menuBar, ["cups"])
-    }
-
-    func testTheConfigReadsAndWritesTheLetterOfASpot() {
-        let config = Config(text: "[[spots]]\nid = \"mail\"\nletter = \"M\"\n\n[[spots]]\nid = \"notes\"\nletter = \"\"\n\n[[spots]]\nid = \"bad\"\nletter = \"??\"\n")
-
-        XCTAssertEqual(config.faults, ["config.toml: bad cannot use the letter ??."])
-        XCTAssertEqual(config.arrangement.choices.map(\.letter), ["m", "", nil])
-        XCTAssertEqual(Config(text: config.text).arrangement.choices.map(\.letter), ["m", "", nil])
-    }
-
-    func testThePersonsLettersWinOverTheDefaultLetters() {
-        let defaults = SpotArrangement(choices: [
-            SpotArrangement.Choice(id: "apps", letter: "a"),
-            SpotArrangement.Choice(id: "notes", letter: "n"),
-            SpotArrangement.Choice(id: "files", letter: "f")
-        ])
-        let person = SpotArrangement(choices: [
-            SpotArrangement.Choice(id: "mail", letter: "a"),
-            SpotArrangement.Choice(id: "notes", letter: "")
-        ])
-
-        let letters = person.letters(over: defaults)
-
-        XCTAssertEqual(letters.mapValues(\.name), ["mail": "a", "files": "f"])
-    }
-
-    func testGivingALetterTakesItFromTheSpotThatHeldIt() {
-        let defaults = SpotArrangement(choices: [SpotArrangement.Choice(id: "notes", letter: "n")])
-        var person = SpotArrangement(choices: [SpotArrangement.Choice(id: "mail", letter: "m")])
-
-        let lost = person.give(CommandKey(name: "n"), to: "mail", over: defaults)
-
-        XCTAssertEqual(lost, "notes")
-        XCTAssertEqual(person.letters(over: defaults).mapValues(\.name), ["mail": "n"])
-        XCTAssertNil(person.give(nil, to: "mail", over: defaults))
-        XCTAssertEqual(person.letters(over: defaults).mapValues(\.name), [:])
     }
 
     func testTheConfigReportsWhatItCannotUseAndKeepsTheRest() {

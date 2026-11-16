@@ -81,7 +81,7 @@ final class FlowNavigationTests: PanelCase {
         """)
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.press("info")
         try await wait("the first sheet") { self.model.openParts?.parts.first?.title == "First" }
         XCTAssertTrue(model.push(FlowSheet(spot: "info", page: "a")))

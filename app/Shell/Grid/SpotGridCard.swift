@@ -8,13 +8,12 @@ struct SpotGridCard: View, @MainActor Equatable {
     let isHeld: Bool
     let takesDrag: Bool
     let isDropTarget: Bool
-    let chainLetter: String?
     let model: SpotsModel
     @GestureState private var isPressed = false
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.entry == rhs.entry && lhs.size == rhs.size && lhs.index == rhs.index && lhs.isHeld == rhs.isHeld
-            && lhs.takesDrag == rhs.takesDrag && lhs.isDropTarget == rhs.isDropTarget && lhs.chainLetter == rhs.chainLetter
+            && lhs.takesDrag == rhs.takesDrag && lhs.isDropTarget == rhs.isDropTarget
             && lhs.model === rhs.model
     }
 
@@ -26,7 +25,6 @@ struct SpotGridCard: View, @MainActor Equatable {
             isPressed: isPressed && !isHeld,
             takesDrag: takesDrag,
             isDropTarget: isDropTarget,
-            chainLetter: chainLetter,
             model: model
         )
         .equatable()

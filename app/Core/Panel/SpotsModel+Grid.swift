@@ -29,6 +29,7 @@ extension SpotsModel {
     }
 
     private func run(_ key: GlobalKey) {
+        if key.act == .open { return entry(key.spot).map { $0.soleCommand == nil ? press($0.id) : run($0) } ?? () }
         guard case .command(let command) = key.act else { return float(key.spot) }
         guard let sheet = sheets[key.spot] else { return }
         sheet.pressKey(command)
@@ -119,38 +120,13 @@ extension SpotsModel {
         presentSheet(of: id, moving: isShown) { host.show() }
     }
 
-    public func takeHeld(_ modifiers: Shortcut.Modifiers) {
-        chainWatch?.cancel()
-        guard modifiers == entryKey.modifiers else {
-            isChainHeld = false
-            return
-        }
-        chainWatch = Task { [weak self] in
-            try? await Task.sleep(for: Self.chainPause)
-            if !Task.isCancelled { self?.isChainHeld = true }
-        }
-    }
 
-    public var showsChain: Bool {
-        (isChainHeld && isOnGrid) || isEditing
-    }
 
-    public func chainLetter(of entry: Entry) -> String? {
-        entry.letter?.name.uppercased()
-    }
 
     private var isOnGrid: Bool {
         menu == nil && form == nil && openSheetID == nil && !isEditing
     }
 
-    public func handleChain(code: UInt32, modifiers: Shortcut.Modifiers) -> Bool {
-        guard isChainHeld, isOnGrid, let entry = entries.first(where: { entry in
-            entry.letter.map { entryKey.chains(to: $0, code: code, modifiers: modifiers) } ?? false
-        }) else { return false }
-        press(entry.id)
-        if entry.kind == .toggle { host.dismiss() }
-        return true
-    }
 
     public func run(_ entry: Entry) {
         if let item = entry.item, let list = self.entry(entry.spot.id) {
@@ -211,14 +187,14 @@ extension SpotsModel {
     private func runSole(_ command: String, of entry: Entry) {
         if let key = assignedKeys.first(where: { $0.spot == entry.id && $0.act == .command(command) }) {
             if confirmWords(of: key) != nil {
+                guard isShown else { return press(key) }
                 if confirming != key || !runConfirmed() { confirming = key }
                 return
             }
             if isShown { host.dismiss() }
             run(key)
         } else {
-            openSettings(of: entry)
-            toggleRecording(id: SpotSettings.keyRun(spot: entry.id, command: command))
+            openKeys(of: entry.id, recording: GlobalKey.Act.command(command).setting)
         }
     }
 

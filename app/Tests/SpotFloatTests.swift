@@ -139,7 +139,7 @@ final class SpotFloatTests: XCTestCase {
         model.press(try key("note"))
         try await wait("the parts") { model.sheets["note"]?.panel != nil }
 
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.runs.panelOpened()
         host.dismiss()
 
@@ -204,7 +204,7 @@ final class SpotFloatTests: XCTestCase {
         try "[[spots]]\nid = \"keys\"\nkey = \"cmd+,\"\n".write(to: folder.appendingPathComponent("config/config.toml"), atomically: true, encoding: .utf8)
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         model.openSettings()
         try await wait("the rows of the keys") { model.openItems?.shown.contains { $0.run == "float:shelf" } == true }
 

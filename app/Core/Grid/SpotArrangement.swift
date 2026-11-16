@@ -8,18 +8,16 @@ public struct SpotArrangement: Equatable, Sendable {
         public var isEnabled: Bool?
         public var isGlobal: Bool?
         public var isInMenuBar: Bool?
-        public var letter: String?
         public var key: ActionKey?
         public var panel: GridPanel?
 
-        public init(id: String, size: SpotSize? = nil, isOnGrid: Bool? = nil, isEnabled: Bool? = nil, isGlobal: Bool? = nil, isInMenuBar: Bool? = nil, letter: String? = nil, key: ActionKey? = nil) {
+        public init(id: String, size: SpotSize? = nil, isOnGrid: Bool? = nil, isEnabled: Bool? = nil, isGlobal: Bool? = nil, isInMenuBar: Bool? = nil, key: ActionKey? = nil) {
             self.id = id
             self.size = size
             self.isOnGrid = isOnGrid
             self.isEnabled = isEnabled
             self.isGlobal = isGlobal
             self.isInMenuBar = isInMenuBar
-            self.letter = letter
             self.key = key
         }
     }
@@ -61,27 +59,6 @@ public struct SpotArrangement: Equatable, Sendable {
 
     public func isGlobal(of id: String) -> Bool? {
         choice(of: id)?.isGlobal
-    }
-
-    public func letters(over defaults: SpotArrangement) -> [String: CommandKey] {
-        var letters: [String: CommandKey] = [:]
-        var taken = Set<String>()
-        for choice in choices where letters[choice.id] == nil {
-            guard let key = choice.letter.flatMap(CommandKey.init(name:)), taken.insert(key.name).inserted else { continue }
-            letters[choice.id] = key
-        }
-        for choice in defaults.choices where letters[choice.id] == nil && self.choice(of: choice.id)?.letter == nil {
-            guard let key = choice.letter.flatMap(CommandKey.init(name:)), taken.insert(key.name).inserted else { continue }
-            letters[choice.id] = key
-        }
-        return letters
-    }
-
-    public mutating func give(_ letter: CommandKey?, to id: String, over defaults: SpotArrangement) -> String? {
-        let holder = letter.flatMap { key in letters(over: defaults).first { $0.value == key && $0.key != id }?.key }
-        if let holder { change(holder) { $0.letter = "" } }
-        change(id) { $0.letter = letter?.name ?? "" }
-        return holder
     }
 
     public var menuBar: Set<String> {
@@ -141,7 +118,6 @@ public struct SpotArrangement: Equatable, Sendable {
                 ("enabled", choice.isEnabled.map { .boolean($0) }),
                 ("global", choice.isGlobal.map { .boolean($0) }),
                 ("tray", choice.isInMenuBar.map { .boolean($0) }),
-                ("letter", choice.letter.map { .string($0) }),
                 ("key", (choice.key?.text).map { .string($0) }),
                 ("side", (choice.panel?.rawValue).map { .string($0) })
             ])

@@ -209,13 +209,13 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testTheHKeyPutsTheSelectedSpotInSearchOnly() {
-        XCTAssertEqual(model.hint, "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done")
+        XCTAssertEqual(model.hint, "S Size   H Hide   ⇧ Arrows Move   Esc Done")
 
         _ = model.handleKey(ActionKey(name: "h"))
 
         XCTAssertEqual(order, ["b", "c", "d", "a"])
         XCTAssertEqual(model.cards.first { $0.id == "a" }?.isOnGrid, false)
-        XCTAssertEqual(model.hint, "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done")
+        XCTAssertEqual(model.hint, "S Size   H Hide   ⇧ Arrows Move   Esc Done")
     }
 
     func testEscapePutsTheCardsBackAndKeepsEditSpots() async {

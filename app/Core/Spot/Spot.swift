@@ -22,7 +22,7 @@ public struct Spot: Equatable, Sendable {
     public private(set) var openTitle: String?
     public private(set) var actions: [CommandAction]
     public private(set) var settingsSheet: SpotSettings?
-    public private(set) var opensToSettings = false
+    public private(set) var opensToKeys = false
     private var chosenIcon: Icon?
 
     public init(
@@ -52,9 +52,9 @@ public struct Spot: Equatable, Sendable {
         offeredPlaces: Set<Place> = [.card, .menubar],
         dataName: String? = nil,
         isOnGrid: Bool = true,
-        offers: [CommandOffer] = [],
+        offers: [HeaderButton] = [],
         offeredActions: [OfferedAction] = [],
-        settings: [CommandOffer] = [],
+        settings: [HeaderField] = [],
         view: String? = nil,
         viewDate: Date? = nil,
         sources: [String] = [],
@@ -64,7 +64,7 @@ public struct Spot: Equatable, Sendable {
         keywords: [String] = [],
         placeholder: String? = nil,
         sample: URL? = nil,
-        editsSpots: Bool = false
+        edits: SpotEdits? = nil
     ) {
         header = Header(SpotFacts(
             id: id, name: name, url: url, size: size, headerIcon: icon, baseSymbol: symbol, subtitle: subtitle, read: read,
@@ -72,7 +72,7 @@ public struct Spot: Equatable, Sendable {
             opens: opens, host: host, growsFromField: growsFromField, mode: mode, pressRuns: pressRuns, drop: drop,
             dataName: dataName, isOnGrid: isOnGrid, view: view, viewDate: viewDate, sources: sources, emits: emits, pages: pages, uses: uses,
             offers: offers, offeredActions: offeredActions, settings: settings, keywords: keywords, placeholder: placeholder, sample: sample,
-            editsSpots: editsSpots
+            edits: edits
         ))
         self.kind = kind
         self.pick = pick
@@ -98,7 +98,7 @@ public struct Spot: Equatable, Sendable {
         (left.header === right.header || left.header.facts == right.header.facts) && left.kind == right.kind && left.pick == right.pick
             && left.pickForm == right.pickForm && left.keepsRecent == right.keepsRecent && left.openTitle == right.openTitle
             && left.actions == right.actions && left.settingsSheet == right.settingsSheet
-            && left.opensToSettings == right.opensToSettings && left.chosenIcon == right.chosenIcon
+            && left.opensToKeys == right.opensToKeys && left.chosenIcon == right.chosenIcon
     }
 
     public var icon: Icon? {
@@ -175,7 +175,7 @@ public struct Spot: Equatable, Sendable {
     }
 
     public var keepsHistory: Bool {
-        soleCommand != nil && !self.opensToSettings && self.read != nil
+        soleCommand != nil && !self.opensToKeys && self.read != nil
     }
 
     func takingSettings(in config: ConfigFile, secrets: SecretStore) -> Spot {
@@ -185,14 +185,12 @@ public struct Spot: Equatable, Sendable {
             file: config,
             secrets: secrets,
             spot: self.id,
-            offers: self.offers,
             fields: self.settings,
-            offersFloat: offersFloat,
             showsInMenuBar: canShowInMenuBar
         )
         if self.read == nil, !self.offers.isEmpty {
             spot.kind = .list
-            spot.opensToSettings = true
+            spot.opensToKeys = true
         }
         return spot
     }

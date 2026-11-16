@@ -13,7 +13,7 @@ final class SpotActionTests: XCTestCase {
     }
 
     func testTheCommandOfAHeaderButtonSendsItsOwnID() throws {
-        let offer = try XCTUnwrap(CommandOffer(block: TextBlock(fields: [.init(key: "button", value: "add"), .init(key: "title", value: "Add")])))
+        let offer = try XCTUnwrap(HeaderButton(block: TextBlock(fields: [.init(key: "button", value: "add"), .init(key: "title", value: "Add")])))
         XCTAssertEqual(SpotAction.action(CommandAction.command(offer), item: nil).arguments, ["add"])
     }
 

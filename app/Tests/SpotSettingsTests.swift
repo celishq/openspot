@@ -32,7 +32,7 @@ final class SpotSettingsTests: XCTestCase {
         SpotOutput(text: try await runs.answer(of: spot, .read, limit: 1)).items
     }
 
-    func testAScriptWithCommandsAndNoReadOpensToTheKeysOfItsOwnCommands() async throws {
+    func testAScriptWithCommandsAndNoReadOpensToItsKeysAndItsSettingsHoldNoKey() async throws {
         try "#!/bin/sh\n# title=Move\n#\n# button=left\n# title=Left side\n[ \"$1\" = left ] && printf 'toast=Left\\n'\n".writeScript(to: folder.spotFile("move"))
         try "#!/bin/sh\n# title=Other\n#\n# button=up\n# title=Up\n".writeScript(to: folder.spotFile("other"))
         let move = try spot("move")
@@ -40,19 +40,12 @@ final class SpotSettingsTests: XCTestCase {
         let runs = SpotRuns()
 
         XCTAssertEqual(move.kind, .list)
-        XCTAssertTrue(move.opensToSettings)
+        XCTAssertTrue(move.opensToKeys)
         XCTAssertEqual(move.soleCommand, "left")
         let items = try await rows(of: settings, in: runs)
-        XCTAssertEqual(items.map(\.run), ["key:move:left", "menubar:move"])
-        XCTAssertEqual(items.map(\.title), ["Left side shortcut", "Show in the menu bar"])
-        XCTAssertEqual(items.map(\.subtitle), ["Press ⏎ to set", nil])
-        XCTAssertEqual(items.map(\.shortcut), ["Record", nil])
-        _ = try await runs.answer(of: settings, .set("key:move:left", to: "ctrl+option+left"), limit: 1)
-        XCTAssertEqual(file.read().keys.map(\.act), [.command("left")])
+        XCTAssertEqual(items.map(\.run), ["menubar:move"])
         let press = try await runs.answer(of: move, .press("left"), limit: 60)
         XCTAssertEqual(press, "toast=Left\n")
-        _ = try await runs.answer(of: settings, SpotAction(arguments: ["clear", "key:move:left"]), limit: 1)
-        XCTAssertEqual(file.read().keys, [])
     }
 
     func testAValueWithANewLineStaysInItsRow() async throws {
@@ -66,7 +59,7 @@ final class SpotSettingsTests: XCTestCase {
         XCTAssertEqual(items.first?.subtitle, "far\n\nrow=other\ntitle=Other")
     }
 
-    func testItTakesNoKeyOfAnotherSpotAndNoKeyItCannotUse() async throws {
+    func testItsSettingsTakeNoKey() async throws {
         try "#!/bin/sh\n# title=Move\n#\n# button=left\n# title=Left side\n".writeScript(to: folder.spotFile("move"))
         let move = try XCTUnwrap(try spot("move").settingsSpot)
         let runs = SpotRuns()
@@ -85,13 +78,13 @@ final class SpotSettingsTests: XCTestCase {
         let move = try spot("move")
         let runs = SpotRuns()
 
-        XCTAssertFalse(move.opensToSettings)
+        XCTAssertFalse(move.opensToKeys)
         XCTAssertEqual(move.soleCommand, "left")
         XCTAssertTrue(move.keepsHistory)
         let own = try await rows(of: move, in: runs)
         XCTAssertEqual(own.map(\.run), ["own"])
         let settings = try await rows(of: try XCTUnwrap(move.settingsSpot), in: runs)
-        XCTAssertEqual(settings.map(\.run), ["key:move:left", "float:move", "menubar:move"])
+        XCTAssertEqual(settings.map(\.run), ["menubar:move"])
     }
 
     func testAListSpotKeepsItsSettingsInASheetOfTheirOwn() async throws {
@@ -108,28 +101,23 @@ final class SpotSettingsTests: XCTestCase {
         XCTAssertEqual(SpotSettings.owner(of: settings.id), "shelf")
         XCTAssertEqual(settings.name, "Shelf Settings")
         let before = try await rows(of: settings, in: runs)
-        XCTAssertEqual(before.map(\.run), ["setting:shelf:folder", "setting:shelf:editor", "setting:shelf:theme", "key:shelf:left", "key:shelf:right", "float:shelf", "menubar:shelf"])
-        XCTAssertEqual(before.map(\.title), ["Folder", "Default app", "Theme", "Left side", "Right side", "Float", "Show in the menu bar"])
-        XCTAssertEqual(before.map(\.subtitle), ["~/Code", "Not set", "dark", nil, nil, nil, nil])
-        XCTAssertEqual(before.map(\.symbol), ["slider.horizontal.3", "slider.horizontal.3", "slider.horizontal.3", "keyboard", "keyboard", "pip", "menubar.rectangle"])
-        XCTAssertEqual(before.map(\.records), [false, false, false, true, true, true, false])
-        XCTAssertEqual(before.map { $0.hides ?? [] }, [[], ["clear"], [], ["clear"], ["clear"], ["clear"], ["clear"]])
+        XCTAssertEqual(before.map(\.run), ["setting:shelf:folder", "setting:shelf:editor", "setting:shelf:theme", "menubar:shelf"])
+        XCTAssertEqual(before.map(\.title), ["Folder", "Default app", "Theme", "Show in the menu bar"])
+        XCTAssertEqual(before.map(\.subtitle), ["~/Code", "Not set", "dark", nil])
+        XCTAssertEqual(before.map(\.symbol), ["slider.horizontal.3", "slider.horizontal.3", "slider.horizontal.3", "menubar.rectangle"])
+        XCTAssertEqual(before.map(\.records), [false, false, false, false])
+        XCTAssertEqual(before.map { $0.hides ?? [] }, [[], ["clear"], [], ["clear"]])
         let own = try await runs.answer(of: shelf, .read, limit: 60)
         XCTAssertEqual(SpotOutput(text: own).items.map(\.run), ["own"])
 
-        _ = try await runs.answer(of: settings, .set("float:shelf", to: "ctrl+option+s"), limit: 1)
-        _ = try await runs.answer(of: settings, .set("key:shelf:left", to: "shake"), limit: 1)
         _ = try await runs.answer(of: settings, SpotAction(arguments: ["open", "menubar:shelf"]), limit: 1)
-        XCTAssertEqual(file.read().keys.map(\.act), [.float, .command("left")])
         XCTAssertEqual(file.read().arrangement.menuBar, ["shelf"])
         let after = try await rows(of: settings, in: runs)
         XCTAssertEqual(after.first { $0.run == "menubar:shelf" }?.isOn, true)
-        XCTAssertEqual(after.first { $0.run == "float:shelf" }?.shortcut, "ctrl+option+s")
 
-        for run in ["float:shelf", "key:shelf:left", "menubar:shelf", "setting:shelf:folder"] {
+        for run in ["menubar:shelf", "setting:shelf:folder"] {
             _ = try await runs.answer(of: settings, SpotAction(arguments: ["clear", run]), limit: 1)
         }
-        XCTAssertEqual(file.read().keys, [])
         XCTAssertEqual(file.read().arrangement.menuBar, [])
         XCTAssertNil(file.read().setting("folder", of: "shelf"))
         XCTAssertEqual(file.read().setting("theme", of: "other"), "light")
@@ -164,21 +152,5 @@ final class SpotSettingsTests: XCTestCase {
         XCTAssertEqual(rows.map(\.title), ["Show in the menu bar"])
         XCTAssertEqual(rows.map(\.symbol), ["menubar.rectangle"])
         XCTAssertEqual(rows.map { $0.hides ?? [] }, [["clear"]])
-    }
-
-    func testAShakeOnARowTakesTheShakeFromTheRowThatHadIt() async throws {
-        try "#!/bin/sh\n# title=Shelf\n# on=sheet.open\n# offers=card\n# offers=float\n".writeScript(to: folder.spotFile("shelf"))
-        try "#!/bin/sh\n# title=Notes\n# on=sheet.open\n# offers=card\n# offers=float\n".writeScript(to: folder.spotFile("notes"))
-        let shelf = try XCTUnwrap(try spot("shelf").settingsSpot)
-        let notes = try XCTUnwrap(try spot("notes").settingsSpot)
-        let runs = SpotRuns()
-
-        _ = try await runs.answer(of: shelf, .set("float:shelf", to: "shake"), limit: 1)
-        XCTAssertEqual(file.read().keys, [GlobalKey(spot: "shelf", act: .float, trigger: .shake)])
-        _ = try await runs.answer(of: notes, .set("float:notes", to: "shake"), limit: 1)
-
-        XCTAssertEqual(file.read().keys, [GlobalKey(spot: "notes", act: .float, trigger: .shake)])
-        let rows = try await rows(of: notes, in: runs)
-        XCTAssertEqual(rows.first { $0.run == "float:notes" }?.shortcut, "shake")
     }
 }

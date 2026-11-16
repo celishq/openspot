@@ -1,6 +1,6 @@
 // title=Card actions
 // icon=ellipsis.circle
-// detail=Share, set, edit, change the icon of, delete or turn off a spot
+// detail=Share, set, edit, change the icon or the keys of, delete or turn off a spot
 // uses=spots
 //
 // button=share
@@ -33,6 +33,11 @@
 // title=Reset Icon
 // when=hasIcon
 //
+// button=keys
+// title=Keys…
+// hotkey=openKey
+// offers=actions
+//
 // button=delete
 // title=Delete
 // shortcut=cmd+backspace
@@ -52,6 +57,7 @@ const calls = {
   "icon.draw": (id) => ["spot", "run", "openspot/icon", "draw", id],
   "icon.file": (id) => ["spot", "run", "openspot/icon", "file", id],
   "icon.reset": (id) => ["spot", "run", "openspot/icon", "reset", id],
+  keys: (id) => ["spot", "push", "openspot/keys", `spot:${id}`],
 };
 
 function main(args) {
@@ -64,4 +70,8 @@ function main(args) {
 
 function hasIcon(id) {
   return openspot.call(["setting", "get", "--spot", id, "icon"]).stdout.trim() !== "";
+}
+
+function openKey(id) {
+  return openspot.call(["setting", "get", "--spot", id, "open"]).stdout.trim();
 }

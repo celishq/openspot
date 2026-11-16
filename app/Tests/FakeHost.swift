@@ -37,7 +37,7 @@ final class FakeHost: SpotsHost {
 
     func show() {
         shows += 1
-        model?.panelWillShow(holding: [])
+        model?.panelWillShow()
     }
 
     var presents = 0

@@ -176,7 +176,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
         try await wait("the first call") { sheet.reading.value?.title == "1" }
 
         let said = await withCheckedContinuation { waiting in
-            if let now = runs.ask("asked", of: sheet.spot, card: "", origin: "", later: { waiting.resume(returning: $0) }) { waiting.resume(returning: now) }
+            if let now = runs.answer("asked", of: sheet.spot, card: "", origin: "", later: { waiting.resume(returning: !$0.isEmpty) }) { waiting.resume(returning: !now.isEmpty) }
         }
         sheet.read(need: .change)
 

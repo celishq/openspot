@@ -99,7 +99,6 @@ extension SpotsModel {
     }
 
     public func record(code: UInt32, modifiers: Shortcut.Modifiers) {
-        if isEditing { return recordLetter(code: code, modifiers: modifiers) }
         guard let shortcut = Shortcut(code: code, modifiers: modifiers) else {
             host.notify("Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.")
             return
@@ -117,7 +116,7 @@ extension SpotsModel {
 
     private func give(_ key: String, to item: SpotItem, of entry: Entry) {
         sheets[entry.id]?.set(item, to: key)
-        guard !entry.spot.holdsSettings else { return }
+        guard !entry.spot.holdsSettings, !item.staysOnPick else { return }
         closingPick = (item, entry)
         if isShown {
             host.dismiss()
@@ -229,8 +228,8 @@ extension SpotsModel {
     }
 
     func openMenu(on target: Target) {
-        var yes: Set<String> = []
-        menuSession = actionMenu(on: target, yes: &yes, asks: true).map { ActionMenuSession(menu: $0, target: target, hookYes: yes) }
+        var answers = HookAnswers()
+        menuSession = actionMenu(on: target, answers: &answers, asks: true).map { ActionMenuSession(menu: $0, target: target, answers: answers) }
         DispatchQueue.main.async { [weak self] in
             guard let self, menuSession?.phase == .opening else { return }
             change(.sheet(isOpen: true), {
@@ -243,18 +242,18 @@ extension SpotsModel {
     }
 
     func actionMenu(on target: Target) -> ActionMenu? {
-        var none: Set<String> = []
-        return actionMenu(on: target, yes: &none, asks: false)
+        var none = HookAnswers()
+        return actionMenu(on: target, answers: &none, asks: false)
     }
 
-    private func actionMenu(on target: Target, yes: inout Set<String>, asks: Bool) -> ActionMenu? {
+    private func actionMenu(on target: Target, answers: inout HookAnswers, asks: Bool) -> ActionMenu? {
         let isOpenList = openSheetID == target.entry.id
         return ActionMenu(
             spot: target.entry.spot,
             item: target.item,
             showsOpen: !isOpenList || target.item != nil,
             extras: extras(on: target),
-            offered: offered(on: target, yes: &yes, asks: asks)
+            offered: offered(on: target, answers: &answers, asks: asks)
         )
     }
 
@@ -263,7 +262,7 @@ extension SpotsModel {
         let spot = target.entry.spot
         let opens: [CommandAction] = spot.pressRuns && target.entry.kind.opensSheet ? [.open] : []
         let history: [CommandAction] = spot.keepsHistory ? [.history] : []
-        let commands = spot.opensToSettings || spot.soleCommand != nil ? [] : spot.offers.map(CommandAction.command)
+        let commands = spot.opensToKeys || spot.soleCommand != nil ? [] : spot.offers.map(CommandAction.command)
         return opens + history + commands
     }
 
@@ -277,39 +276,49 @@ extension SpotsModel {
         return true
     }
 
-    func offered(on target: Target, yes: inout Set<String>, asks: Bool) -> [OfferedAction] {
+    func offered(on target: Target, answers: inout HookAnswers, asks: Bool) -> [OfferedAction] {
         guard openSheetID == nil, target.item == nil, let origin = origin(of: target.entry.spot) else { return [] }
         let word = OfferedAction.originWords.first { $0.value == origin }?.key ?? ""
         var shown: [OfferedAction] = []
+        let deadline = DispatchTime.now() + runs.frameWait
         for spot in sheets.values.lazy.map(\.spot).filter({ !$0.offeredActions.isEmpty }).sorted(by: { $0.id < $1.id }) {
             var hidden: [String] = []
             for offer in spot.offeredActions {
                 let id = offer.action.id
-                let shows = offer.fits(origin) && !hidden.contains { id.hasPrefix($0 + ".") } && hookSaysYes(offer, of: spot, on: target, origin: word, yes: &yes, asks: asks)
-                if shows { shown.append(offer) } else { hidden.append(id) }
+                func ask(_ hook: ActionHook) -> String? {
+                    answer(hook, of: offer, by: spot, on: target, origin: word, until: deadline, answers: &answers, asks: asks)
+                }
+                let shows = offer.fits(origin) && !hidden.contains { id.hasPrefix($0 + ".") } && (offer.hooks[.when] == nil || ask(.when)?.isEmpty == false)
+                if shows { shown.append(ask(.hotkey).map(offer.labeled) ?? offer) } else { hidden.append(id) }
             }
         }
         return shown
     }
 
-    private func hookSaysYes(_ offer: OfferedAction, of spot: Spot, on target: Target, origin: String, yes: inout Set<String>, asks: Bool) -> Bool {
-        guard let when = offer.when else { return true }
-        let key = "\(spot.id) \(offer.action.id)"
-        if yes.contains(key) { return true }
-        guard asks else { return false }
+    private func answer(
+        _ hook: ActionHook, of offer: OfferedAction, by spot: Spot, on target: Target, origin: String, until deadline: DispatchTime, answers: inout HookAnswers, asks: Bool
+    ) -> String? {
+        guard let function = offer.hooks[hook] else { return nil }
+        if let text = answers.text(hook, of: offer, in: spot.id) { return text }
+        guard asks else { return nil }
         let card = target.entry.id
-        let answer = runs.ask(when, of: spot, card: card, origin: origin) { [weak self] said in
-            guard said, let self, let session = menuSession, session.phase != .closing, session.target.entry.id == card, session.menu.parent == nil else { return }
-            var answers = session.hookYes
-            answers.insert(key)
-            guard var menu = actionMenu(on: session.target, yes: &answers, asks: false) else { return }
-            menu.search(session.menu.query)
-            if let action = session.menu.selectedRow?.action { menu.select(action) }
-            menuSession?.hookYes = answers
-            menuSession?.menu = menu
+        let now = runs.answer(function, of: spot, card: card, origin: origin, until: deadline) { [weak self] text in
+            guard !text.isEmpty, let self, let session = menuSession, session.phase != .closing, session.target.entry.id == card, session.menu.parent == nil,
+                  session.answers.text(hook, of: offer, in: spot.id) == nil else { return }
+            var answers = session.answers
+            answers.keep(text, for: hook, of: offer, in: spot.id)
+            remake(session, answers: &answers)
         }
-        if answer == true { yes.insert(key) }
-        return answer == true
+        if let now { answers.keep(now, for: hook, of: offer, in: spot.id) }
+        return now
+    }
+
+    private func remake(_ session: ActionMenuSession, answers: inout HookAnswers) {
+        guard var menu = actionMenu(on: session.target, answers: &answers, asks: false) else { return }
+        menu.search(session.menu.query)
+        if let action = session.menu.selectedRow?.action { menu.select(action) }
+        menuSession?.answers = answers
+        menuSession?.menu = menu
     }
 
     func origin(of spot: Spot) -> SpotOrigin? {

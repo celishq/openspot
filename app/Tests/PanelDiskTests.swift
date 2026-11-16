@@ -79,7 +79,7 @@ final class PanelDiskTests: PanelCase {
         try script("notes", header: "title=Notes\non=sheet.open\ndrop=txt", "true")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         let movie = file("a.mov")
         host.draggedPaths = [movie]
         host.isMouseDown = true
@@ -108,7 +108,7 @@ final class PanelDiskTests: PanelCase {
         try script("shelf", header: "title=Shelf\non=sheet.open\ndrop=mov", "true")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         let movie = file("a.mov")
         nonisolated(unsafe) var told = false
         withObservationTracking { _ = (model.draggedSpot, model.dragPaths, model.takesDrag("shelf")) } onChange: { told = true }
@@ -144,7 +144,7 @@ final class PanelDiskTests: PanelCase {
         try script("second", header: "title=Second", "true")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         XCTAssertTrue(model.act(.delete, on: "first"))
         try await wait("the first toast") { self.host.confirms.contains { $0.hasPrefix("Moved First") } }
         let gate = DispatchSemaphore(value: 0)
@@ -163,7 +163,7 @@ final class PanelDiskTests: PanelCase {
         try script("second", header: "title=Second", "true")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         let gate = DispatchSemaphore(value: 0)
         slow.hold("first", behind: gate)
 
@@ -182,7 +182,7 @@ final class PanelDiskTests: PanelCase {
     func testASpotFileOverThePanelIsOpenedAwayFromThePress() async throws {
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         let package = folder.appendingPathComponent("broken.spot").path
         FileManager.default.createFile(atPath: package, contents: Data("no zip".utf8))
         host.draggedPaths = [package]
@@ -200,7 +200,7 @@ final class PanelDiskTests: PanelCase {
     func testAReviewOpensItsFileAwayFromThePress() async throws {
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         let package = folder.appendingPathComponent("broken.spot")
         FileManager.default.createFile(atPath: package.path, contents: Data("no zip".utf8))
 
@@ -214,7 +214,7 @@ final class PanelDiskTests: PanelCase {
         try script("gone", header: "title=Gone", "true")
         await model.reload()
         model.isShown = true
-        model.panelWillShow(holding: [])
+        model.panelWillShow()
         XCTAssertNotNil(model.card(id: "gone"))
 
         XCTAssertTrue(model.act(.delete, on: "gone"))

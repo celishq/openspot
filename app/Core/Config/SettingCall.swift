@@ -19,7 +19,7 @@ public enum SettingCall: NounCall {
         },
         CommandVerb(
             "set", "[--spot id] <key> [value]",
-            "Keeps a value for the spot, or removes it with no value. The person's choices of a spot: enabled, menubar (true or false), float and key.<command> (a key such as ctrl+option+k, or shake; none takes it away). Of the spot openspot: login, link, careful (true or false), panel-key and fix-key."
+            "Keeps a value for the spot, or removes it with no value. The person's choices of a spot: enabled, menubar (true or false), open, float and key.<command> (a key such as ctrl+option+k, or shake; none takes it away). Of the spot openspot: login, link, careful (true or false), panel-key and fix-key."
         ) { words in
             pair(words, sets: true) { spot, key, value in reserved(spot, key, value, isRead: words.isRead) ?? Self.set(spot: spot, key: key, value: value) }
         },
@@ -76,9 +76,8 @@ public enum SettingCall: NounCall {
         switch key {
         case "enabled": return on("turns a spot on or off") { .turn(spot: spot, on: $0) }
         case "menubar": return on("changes the menu bar") { .menuBar(spot: spot, isShown: $0) }
-        case "float": return changing(.key(spot: spot, act: .float, key: value), "sets a key of your Mac")
-        case let key where key.hasPrefix(ReservedSetting.commandKey):
-            return changing(.key(spot: spot, act: .command(String(key.dropFirst(ReservedSetting.commandKey.count))), key: value), "sets a key of your Mac")
+        case let key where GlobalKey.Act(setting: key) != nil:
+            return changing(.key(spot: spot, act: GlobalKey.Act(setting: key) ?? .float, key: value), "sets a key of your Mac")
         default: return nil
         }
     }

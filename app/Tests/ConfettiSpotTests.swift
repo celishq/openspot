@@ -46,7 +46,7 @@ final class ConfettiSpotTests: SampleSpotsCase {
         XCTAssertEqual(spot.settings.map(\.id), ["look"])
         XCTAssertEqual(spot.sources, ["confetti"])
         XCTAssertEqual(spot.soleCommand, "play")
-        XCTAssertTrue(spot.opensToSettings)
+        XCTAssertTrue(spot.opensToKeys)
     }
 
     func testTheLookRowAsksForEachLookWithTheKeptOneChosenAndTheSampleShowsTheSameForm() async throws {
