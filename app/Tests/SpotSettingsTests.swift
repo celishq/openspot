@@ -48,6 +48,20 @@ final class SpotSettingsTests: XCTestCase {
         XCTAssertEqual(press, "toast=Left\n")
     }
 
+    func testAShakeOnAFloatRowTakesTheShakeFromTheSpotThatHadIt() async throws {
+        try "#!/bin/sh\n# title=Shelf\n# on=sheet.open\n# offers=card\n# offers=float\n".writeScript(to: folder.spotFile("shelf"))
+        try "#!/bin/sh\n# title=Notes\n# on=sheet.open\n# offers=card\n# offers=float\n".writeScript(to: folder.spotFile("notes"))
+        let runs = SpotRuns()
+
+        _ = try await runs.answer(of: try XCTUnwrap(try spot("shelf").settingsSpot), .set("key:shelf:float", to: "shake"), limit: 60)
+        let notes = try XCTUnwrap(try spot("notes").settingsSpot)
+        _ = try await runs.answer(of: notes, .set("key:notes:float", to: "shake"), limit: 60)
+
+        XCTAssertEqual(file.read().keys, [GlobalKey(spot: "notes", act: .float, trigger: .shake)])
+        let rows = try await rows(of: notes, in: runs)
+        XCTAssertEqual(rows.first { $0.run == "key:notes:float" }?.shortcut, "shake")
+    }
+
     func testAValueWithANewLineStaysInItsRow() async throws {
         try "#!/bin/sh\n# title=Move\n#\n# field=place\n# title=Place\n".writeScript(to: folder.spotFile("move"))
         try file.set(setting: "place", of: "move", to: "far\n\nrow=other\ntitle=Other")

@@ -68,9 +68,12 @@ extension SpotsModel {
     }
 
     @discardableResult
-    func openKeys(of id: String, recording row: String? = nil) -> Bool {
-        guard let keys = runs.keysSheet, push(FlowSheet(spot: keys, page: SpotEdits.page(of: id), title: nil)) else { return false }
-        if let row { toggleRecording(id: row) }
+    func openKeys(of id: String, recording act: GlobalKey.Act? = nil) -> Bool {
+        guard let entry = entry(id), let settings = settingsSheet(of: entry) else { return false }
+        let moves = isShown
+        if !moves { host.show() }
+        pushFirst(settings, moving: moves)
+        if let act { toggleRecording(id: SpotSettings.Row.key(act).id(of: id)) }
         return true
     }
 

@@ -5,11 +5,11 @@ final class ActionsSpotTests: BuiltInCase {
     func testEachCommandFitsTheCardsOfItsOriginAndHasNoCard() throws {
         let actions = try spot("actions")
 
-        XCTAssertEqual(actions.offeredActions.map(\.action.title), ["Share", "Settings", "Edit", "Change Icon", "Draw…", "Choose File…", "Reset Icon", "Keys…", "Delete", "Turn off"])
-        XCTAssertEqual(actions.offeredActions.map(\.origins), [[.mine, .core], [], [.mine, .core], [], [], [], [], [], [.mine], [.core]])
-        XCTAssertEqual(actions.offeredActions.map { $0.action.key?.label ?? "" }, ["⇧⌘C", "⌘⏎", "⌘E", "", "", "", "", "", "⌘⌫", "⌘⌫"])
-        XCTAssertEqual(actions.offeredActions.map(\.hooks), [[:], [:], [:], [:], [:], [:], [.when: "hasIcon"], [.hotkey: "openKey"], [:], [:]])
-        XCTAssertNil(actions.offeredActions[8].action.confirm)
+        XCTAssertEqual(actions.offeredActions.map(\.action.title), ["Share", "Settings", "Edit", "Change Icon", "Draw…", "Choose File…", "Reset Icon", "Delete", "Turn off"])
+        XCTAssertEqual(actions.offeredActions.map(\.origins), [[.mine, .core], [], [.mine, .core], [], [], [], [], [.mine], [.core]])
+        XCTAssertEqual(actions.offeredActions.map { $0.action.key?.label ?? "" }, ["⇧⌘C", "⌘⏎", "⌘E", "", "", "", "", "⌘⌫", "⌘⌫"])
+        XCTAssertEqual(actions.offeredActions.map(\.hooks), [[:], [:], [:], [:], [:], [:], [.when: "hasIcon"], [:], [:]])
+        XCTAssertNil(actions.offeredActions[7].action.confirm)
         XCTAssertFalse(actions.offersCard)
     }
 
@@ -46,20 +46,6 @@ final class ActionsSpotTests: BuiltInCase {
         let opened = await app.opened
         XCTAssertEqual([before, drawn, after], [false, true, false])
         XCTAssertEqual(opened, ["open openspot/icon", "choose openspot/icon"])
-    }
-
-    func testKeysPushesTheKeysSheetOnThePageOfTheCardAndItsRowEndsInTheOpenKey() async throws {
-        let actions = try spot("actions")
-        try script("shelf.sh", "title=Shelf\non=sheet.open")
-        let before = await actions.hotkey("openKey", card: "shelf", origin: "mine")
-        _ = try file.change { $0.assign(.key(try XCTUnwrap(Shortcut(text: "ctrl+option+s"))), to: "shelf", act: .open) }
-
-        try await actions.perform(SpotAction(arguments: ["keys", "shelf"]), timeout: 60)
-        let after = await actions.hotkey("openKey", card: "shelf", origin: "mine")
-
-        let opened = await app.opened
-        XCTAssertEqual(opened, ["push openspot/keys spot:shelf"])
-        XCTAssertEqual([before, after], ["", "ctrl+option+s"])
     }
 
     func testAWhenFunctionThatReturnsAnyTextSaysYes() async throws {

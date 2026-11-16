@@ -90,7 +90,6 @@ extension SpotsModel {
     }
 
     func show(_ page: FlowSheet, moving: Bool) {
-        if page.spot == runs.keysSheet, let owner = page.page.flatMap(SpotEdits.spot(onPage:)), owner != keysOwner { keysOwner = owner }
         guard !(moving && isStepping) else { return }
         guard let sheet = sheets[page.spot] else {
             flow.remove(spot: page.spot)

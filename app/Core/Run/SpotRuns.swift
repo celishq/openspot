@@ -176,10 +176,6 @@ public final class SpotRuns {
         editor != nil
     }
 
-    public var keysSheet: String? {
-        sheets.values.lazy.map(\.spot).first { $0.edits == .keys && $0.isBuiltIn }?.id
-    }
-
     private var editor: Spot? {
         sheets.values.lazy.map(\.spot).first { $0.editsSpots && $0.isBuiltIn }
     }

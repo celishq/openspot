@@ -10,7 +10,7 @@ public struct SpotSheetCard {
     @MainActor
     public static func of(_ sheetID: String?, in model: SpotsModel) -> SpotSheetCard? {
         guard let sheetID else { return nil }
-        let owner = OwnedSheet.owner(of: sheetID)?.spot ?? (sheetID == model.runs.keysSheet ? model.keysOwner : nil) ?? sheetID
+        let owner = OwnedSheet.owner(of: sheetID)?.spot ?? sheetID
         let visible = model.visible
         let index = visible.firstIndex { $0.id == owner }
             ?? visible.firstIndex { $0.kind == .widget && $0.spot.opens == owner }
