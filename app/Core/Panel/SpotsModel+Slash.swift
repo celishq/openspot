@@ -72,23 +72,24 @@ extension SpotsModel {
         formAsk = ask
         let id = entry.id
         Task {
-            guard let answer = await sheets[id]?.launch(action, input: SearchQuery(text: text).input, onCard: onCard), formAsk == ask else { return }
-            formAsk = nil
-            switch answer {
-            case .frame(let frame):
-                if !frame.fields.isEmpty {
-                    guard let form = ItemForm(output: frame) else { return host.notify("\(action.title) failed. \(Self.reason(SpotError.badForm))") }
+            do {
+                guard let answer = try await sheets[id]?.launch(action, input: SearchQuery(text: text).input, onCard: onCard), formAsk == ask else { return }
+                formAsk = nil
+                switch answer {
+                case .form(let form):
                     pushFirst(id, moving: isShown)
                     self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: action, item: nil, openedSheet: true)
-                } else if action.after == .stay {
+                case .shown where action.after == .stay:
                     pushFirst(id, moving: isShown)
-                } else if isShown {
-                    host.dismiss()
+                case .shown, .done:
+                    if action.after == .close, isShown { host.dismiss() }
+                case .stopped:
+                    break
                 }
-            case .ended:
-                if action.after == .close, isShown { host.dismiss() }
-            case .stopped:
-                break
+            } catch {
+                guard formAsk == ask else { return }
+                formAsk = nil
+                host.notify("\(action.title) failed. \(Self.reason(error))")
             }
         }
     }

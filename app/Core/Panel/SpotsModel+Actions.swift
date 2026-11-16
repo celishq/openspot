@@ -463,10 +463,10 @@ extension SpotsModel {
         Task {
             do {
                 switch try await sheet.change(action) {
-                case .form(let form)? where isShown && formAsk == ask:
+                case .form(let form) where isShown && formAsk == ask:
                     pushFirst(id, moving: true)
                     self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: action, item: nil, openedSheet: true)
-                case .done?:
+                case .done:
                     if isShown { host.dismiss() }
                 default:
                     break

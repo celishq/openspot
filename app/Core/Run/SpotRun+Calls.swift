@@ -25,7 +25,7 @@ extension SpotRun {
                 takeEffects(lines, frame: text)
             }
         case .work(let work):
-            if work.first?.take(.frame(lines)) == true, !lines.fields.isEmpty { return }
+            if work.first?.take(lines) == true, !lines.fields.isEmpty { return }
             takeMove(lines)
             if lines.isPicture {
                 if await takePicture(lines, frame: text, of: work) {
@@ -78,7 +78,7 @@ extension SpotRun {
         case .ask:
             break
         case .work(let work):
-            work.first?.take(.stopped)
+            work.first?.end(.stopped)
             if let undo = work.undo { state = undo }
             callEnded(call.made)
         case .form(let waiting):
@@ -109,7 +109,7 @@ extension SpotRun {
             return answer(waiting, of: call, end)
         }
         if case .work(let work) = purpose {
-            if case .stopped = end { work.first?.take(.stopped) } else { work.first?.take(.ended) }
+            if case .stopped = end { work.first?.end(.stopped) } else { work.first?.end(.done) }
         }
         let isAnswer = if case .ask(let ask) = purpose { ask.isAnswer } else { false }
         if case .ended = end, failure != nil, !isAnswer { failure = nil }
