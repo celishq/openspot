@@ -58,7 +58,7 @@ final class SpotAPITests: XCTestCase {
         ])
         try file.showInMenuBar("cups", true)
 
-        let spots = try await json(["spot", "list"])
+        let spots = try await json(["spot", "list", "--json"])
 
         XCTAssertEqual(spots.map { $0["id"] as? String }, ["cups", "move"])
         let move = try XCTUnwrap(spots.last)
@@ -80,7 +80,7 @@ final class SpotAPITests: XCTestCase {
         try "#!/bin/sh\n".writeScript(to: spots.spotFile("files"))
         try file.turn("zebra", on: true)
 
-        let spots = try await json(["spot", "list", "--core"])
+        let spots = try await json(["spot", "list", "--core", "--json"])
 
         XCTAssertEqual(spots.map { $0["name"] as? String }, ["Apps", "Files", "Zebra"])
         XCTAssertEqual(spots.map { $0["on"] as? Bool }, [false, true, true])
@@ -133,14 +133,14 @@ final class SpotAPITests: XCTestCase {
 
     func testOnWithNoSpotIsUnknown() {
         XCTAssertEqual(CommandLineCall(arguments: ["setting", "set", "--spot", "a", "enabled"], environment: [:])?.value as? CallFault, .refused("`enabled` takes `true` or `false`, such as `openspot setting set --spot a enabled true`."))
-        XCTAssertEqual(CommandLineCall(arguments: ["spot", "list", "--all"], environment: [:])?.value as? CallFault, .unknown("spot list --all"))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "list", "--all"], environment: [:])?.value as? CallFault, .unknown(["spot", "list", "--all"]))
     }
 
     func testTheValuesListHoldsEachValueWithItsSpot() async throws {
         try file.set(setting: "folder", of: "repos", to: "~/Code")
         try file.set(setting: "editor", of: "gone", to: "Zed")
 
-        let values = try await json(["setting", "list"])
+        let values = try await json(["setting", "list", "--json"])
 
         XCTAssertEqual(values.map { $0["spot"] as? String }, ["repos", "gone"])
         XCTAssertEqual(values.map { $0["key"] as? String }, ["folder", "editor"])
@@ -214,8 +214,8 @@ final class SpotAPITests: XCTestCase {
         try file.set("panel-key", to: "option+space")
         await app.set(update: "0.3.0", calls: 2, isFirstLaunch: true)
 
-        let running = try await answer(["app", "status"])
-        let alone = try await XCTUnwrap(appWork(["app", "status"]))()
+        let running = try await answer(["app", "status", "--json"])
+        let alone = try await XCTUnwrap(appWork(["app", "status", "--json"]))()
 
         let status = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(running.output.utf8)) as? [String: Any])
         XCTAssertEqual(status["panel-key"] as? String, "option+space")
@@ -237,7 +237,7 @@ final class SpotAPITests: XCTestCase {
         _ = try await answer(["setting", "set", "--spot", "openspot", "login", "true"], host: host)
         XCTAssertTrue(state.isOn)
         let status = try await answer(["app", "status"], host: host)
-        XCTAssertTrue(status.output.contains("\"login\":true"))
+        XCTAssertTrue(status.output.contains("login=true\n"), status.output)
 
         _ = try await answer(["setting", "set", "--spot", "openspot", "login", "false"], host: host)
         XCTAssertFalse(state.isOn)
@@ -268,7 +268,7 @@ final class SpotAPITests: XCTestCase {
             let answer = try await XCTUnwrap(appWork(arguments))()
             let call = "openspot " + arguments.joined(separator: " ")
             XCTAssertEqual(answer.errors, "`\(call)` needs the Openspot app, and no app answers. Open Openspot, or quit it and open it again if it is open, then run `\(call)` again.\n", call)
-            XCTAssertEqual(answer.code, 1)
+            XCTAssertEqual(answer.code, 3)
         }
     }
 
@@ -277,7 +277,7 @@ final class SpotAPITests: XCTestCase {
 
         XCTAssertEqual(CommandLineCall(arguments: ["app", "quit"], environment: read)?.value as? CallFault, .refused("`openspot app quit` ends Openspot, so it cannot run in a read. Run it from a pick or an action."))
         XCTAssertEqual(CommandLineCall(arguments: ["update", "install"], environment: read)?.value as? CallFault, .refused("`openspot update install` restarts Openspot, so it cannot run in a read. Run it from a pick or an action."))
-        XCTAssertEqual(CommandLineCall(arguments: ["app", "status"], environment: read)?.value as? AppCall, .status(.json))
+        XCTAssertEqual(CommandLineCall(arguments: ["app", "status"], environment: read)?.value as? AppCall, .status(.frame))
     }
 
     func testTheRunningAppOpensASheetAReviewAndAChangeOfASetting() async throws {
@@ -298,7 +298,7 @@ final class SpotAPITests: XCTestCase {
         XCTAssertEqual(goneReview.code, 1)
         for arguments in [["spot", "open", "notes"], ["spot", "review", "apps"], ["setting", "change", "--spot", "a", "b"]] {
             let answer = try await XCTUnwrap(appWork(arguments))()
-            XCTAssertEqual(answer.code, 1, arguments.joined(separator: " "))
+            XCTAssertEqual(answer.code, 3, arguments.joined(separator: " "))
         }
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "open", "notes"], environment: ["OPENSPOT_REASON": "panel"])?.value as? CallFault, .refused("`openspot spot open` opens the panel, so it cannot run in a read. Run it from a pick or an action."))
     }
@@ -325,7 +325,7 @@ final class SpotAPITests: XCTestCase {
     func testThePromptChangeCallTakesTheSpotTheFailureAndTheWords() {
         XCTAssertEqual(CommandLineCall(arguments: ["prompt", "change", "weather", "Add", "a button"], environment: [:])?.value as? PromptCall, .change(id: "weather", words: "Add a button", failure: nil))
         XCTAssertEqual(CommandLineCall(arguments: ["prompt", "change", "weather", "--failure", "It broke"], environment: [:])?.value as? PromptCall, .change(id: "weather", words: "", failure: "It broke"))
-        XCTAssertEqual(CommandLineCall(arguments: ["prompt", "change"], environment: [:])?.value as? CallFault, .unknown("prompt change"))
+        XCTAssertEqual(CommandLineCall(arguments: ["prompt", "change"], environment: [:])?.value as? CallFault, .unknown(["prompt", "change"]))
     }
 
     func testThePromptWithNoWordsAsksThePersonWhatToBuild() async throws {

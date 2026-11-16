@@ -80,9 +80,9 @@ public struct AgentPrompt: Equatable, Sendable {
     private func steps(for id: String) -> String {
         """
         First run "\(app)" guide, and read all of it.
-        Try each call with "\(app)" spot run \(id) [call] [value]..., and look at its card with "\(app)" render --spot \(id) --card wide card.png.
-        When it is ready, run "\(app)" check --json "\(folder.path)" and fix each fault until it prints [].
-        At the end of your answer, run "\(app)" spot show \(id), and tell me what the spot runs on my computer.
+        Try each call with "\(app)" spot run \(id) [call] [value]..., and look at its card with "\(app)" render spot \(id) --card wide card.png.
+        When it is ready, run "\(app)" check spots --json "\(folder.path)" and fix each fault until it prints [].
+        At the end of your answer, run "\(app)" spot open \(id) --select, and tell me what the spot runs on my computer.
 
         """
     }

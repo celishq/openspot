@@ -52,7 +52,7 @@ with **Last at 14:20** at the end of the line.
 
 Try each example of this page in the playground before you put it in the spots folder.
 
-- **Playground.** Open the Playground spot, or run `openspot playground [file]`. Type a spot, or pick one from Examples.
+- **Playground.** Open the Playground spot, or run `openspot playground open [file]`. Type a spot, or pick one from Examples.
   It runs in a panel of its own: pick its sheet or its card, and type in the panel's search to try its answers. Under
   it, you see each call with its arguments, its stdin, what it printed, its stderr and how it ended. When you open a
   file, edits go straight to the file.
@@ -61,11 +61,12 @@ Try each example of this page in the playground before you put it in the spots f
 - **One call.** `openspot spot run <id> [call] [value]...` runs one call the way Openspot does, and prints everything the
   spot prints. With no call, it asks the spot what to show. While Openspot is open, the script gets the variables of
   the app, not those of your shell.
-- **Image.** `openspot render [--view <file>] <file.png>` draws the sheet that stdin holds. `--card <size>` draws its card,
-  and `--spot <id>` draws an installed spot.
+- **Image.** `openspot render sheet [--view <file>] <file.png>` draws the sheet that stdin holds.
+  `openspot render card <size> <file.png>` draws its card, and `openspot render spot <id> <file.png>` draws an
+  installed spot.
 - **Log.** `openspot spot log <id>` prints the last calls to a spot, with their stdin, stdout, stderr and exit code.
-- **Check.** `openspot check [--json] <folder>` loads each spot, runs it once, and prints each error. Run it before you
-  share a spot.
+- **Check.** `openspot check spots [--json] <folder>` loads each spot, runs it once, and prints a `fault` block for each error,
+  or nothing. Run it before you share a spot.
 
 ## Show a list
 

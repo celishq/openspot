@@ -51,7 +51,7 @@ save() {
 
 # Asks for the translation of the input. A failure leaves its message in `failure`.
 ask() {
-  answer=$(printf %s "$input" | openspot translate --from "$source" --to "$target" 2>&1) && return
+  answer=$(printf %s "$input" | openspot translate text --from "$source" --to "$target" 2>&1) && return
   failure=$answer
   answer=
   return 1

@@ -4,16 +4,10 @@ enum TranslateCall: NounCall {
     case text(from: String?, to: String?)
     case languages
 
-    static let noun = CommandNoun("translate", verbs: [
-        CommandVerb("", "[--from code] [--to code]", "Translates the text on stdin.", rule: CallRule(flags: .readsInput)) { words in
-            let rest = words.rest
-            guard rest.count.isMultiple(of: 2) else { return nil }
-            var options: [String: String] = [:]
-            for index in stride(from: 0, to: rest.count, by: 2) {
-                guard rest[index] == "--from" || rest[index] == "--to" else { return nil }
-                options[rest[index]] = rest[index + 1]
-            }
-            return Self.text(from: options["--from"].flatMap { $0 == "auto" ? nil : $0 }, to: options["--to"])
+    static let noun = CommandNoun("translate", group: .mac, verbs: [
+        CommandVerb("text", "[--from code] [--to code]", "Translates the text on stdin.", rule: CallRule(flags: .readsInput)) { words in
+            guard let fit = words.fit, fit.rest.isEmpty else { return nil }
+            return Self.text(from: fit.value("--from").flatMap { $0 == "auto" ? nil : $0 }, to: fit.value("--to"))
         },
         CommandVerb("languages", "", "Prints the languages it knows.") { $0.none ? Self.languages : nil }
     ])

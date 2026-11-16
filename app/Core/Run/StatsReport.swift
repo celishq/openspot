@@ -1,10 +1,6 @@
 import Foundation
 
 public struct StatsReport: Sendable {
-    public enum Format: Equatable, Sendable {
-        case text, frame, json
-    }
-
     let days: [SpotUsage.Day]
     let spot: String?
 
@@ -13,9 +9,8 @@ public struct StatsReport: Sendable {
         self.spot = spot
     }
 
-    public func text(_ format: Format) throws -> String {
+    public func text(_ format: PrintForm) throws -> String {
         switch format {
-        case .text: words
         case .frame: frame
         case .json: try json
         }
@@ -33,32 +28,6 @@ public struct StatsReport: Sendable {
 
     private var uses: [SpotUsage.Use] {
         days.flatMap(\.uses).filter { spot == nil || $0.spot == spot }.sorted { $0.time > $1.time }
-    }
-
-    private var words: String {
-        let counts = counts
-        guard !counts.isEmpty else { return "Openspot has counted no run on these days.\n" }
-        let head = days.count == 1 ? "Today" : "The last \(days.count) days"
-        var lines = [head]
-        for (id, count) in counts {
-            var parts = ["\(count.runs) \(count.runs == 1 ? "run" : "runs")"]
-            if count.failures > 0 { parts.append("\(count.failures) failed") }
-            parts += ["\(Self.time(count.cpu)) CPU", "\(Self.bytes(count.read)) read", "\(Self.bytes(count.written)) written", "\(count.wakeups) wakeups"]
-            parts += count.calls.sorted { $0.key < $1.key }.map { "\($0.key) \($0.value)" }
-            if count.network { parts.append("network declared") }
-            if let view = count.view { parts.append(Self.words(of: view, split: ", ")) }
-            lines.append("\(count.name ?? id): \(parts.joined(separator: " · "))")
-            if let fault = count.fault { lines.append("  Last fault: \(fault.replacingOccurrences(of: "\n", with: " "))") }
-        }
-        let uses = uses
-        if !uses.isEmpty {
-            let names = Dictionary(counts.map { ($0.id, $0.count.name ?? $0.id) }) { first, _ in first }
-            let clock = DateFormatter()
-            clock.dateFormat = days.count == 1 ? "HH:mm" : "yyyy-MM-dd HH:mm"
-            lines += ["", "Uses"]
-            lines += uses.map { "\(clock.string(from: $0.time)) \(names[$0.spot] ?? $0.spot) \($0.call)\($0.declared ? "" : ", not in its uses")" }
-        }
-        return lines.joined(separator: "\n") + "\n"
     }
 
     private var frame: String {
@@ -124,9 +93,5 @@ public struct StatsReport: Sendable {
 
     private static func time(_ seconds: TimeInterval) -> String {
         seconds < 1 ? "\(Int((seconds * 1000).rounded())) ms" : String(format: "%.1f s", seconds)
-    }
-
-    private static func bytes(_ count: UInt64) -> String {
-        count < 1024 ? "\(count) B" : count < 1_048_576 ? String(format: "%.1f KB", Double(count) / 1024) : String(format: "%.1f MB", Double(count) / 1_048_576)
     }
 }

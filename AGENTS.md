@@ -250,7 +250,9 @@ make perf N=3              # times a Release sheet that opens and closes 20 time
 make film SPOT=caffeinate  # films the open and close of a sheet 10x slower (SLOW=1 for real speed) into .temp/film
 make shots                 # saves pictures of the actions menu in the running panel into .temp/shots; ACTION=search TEXT=/translate shoots a typed search
 make docs-images           # shows each GUIDE.md example on screen, focused, and takes its image; GuideImageTests fail when one is out of date
-make eval-agent N=1        # gives N tasks to claude -p with only `openspot guide`, and checks each spot; it costs money
+make eval-agent LABEL=base # gives each task of scripts/agent-eval/ to claude -p (Sonnet) N=3 times, grades what it did and how it used
+                           # the command, into .temp/agent-eval/base; TASKS=calc picks tasks; it costs money
+make eval-compare LABELS="base phase1"  # prints the summaries of two eval runs one after the other
 ```
 
 `make verify` runs `xcodegen generate` before it builds, so the project file matches the folders on disk.

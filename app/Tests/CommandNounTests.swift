@@ -5,7 +5,7 @@ private enum BellCall: NounCall {
     case ring(String)
     case count
 
-    static let noun = CommandNoun("bell", guide: "screen", verbs: [
+    static let noun = CommandNoun("bell", group: .app, guide: "screen", verbs: [
         CommandVerb("ring", "<words>...", "Rings the bell with the words.", rule: CallRule(use: .network, used: "rang a bell", read: .changes("rings a bell"))) { words in
             words.none ? nil : Self.ring(words.rest.joined(separator: " "))
         },
@@ -49,11 +49,10 @@ final class CommandNounTests: XCTestCase {
 
     func testANounInOneFolderIsParsedListedAndRun() async throws {
         XCTAssertEqual(CommandLineCall(arguments: ["bell", "ring", "a", "b"], nouns: nouns)?.value as? BellCall, .ring("a b"))
-        XCTAssertEqual(CommandLineCall(arguments: ["bell", "ring"], nouns: nouns)?.value as? CallFault, .unknown("bell ring"))
-        XCTAssertEqual(CommandLineCall(arguments: ["bell", "ring", "a"])?.value as? CallFault, .unknown("bell ring a"))
+        XCTAssertEqual(CommandLineCall(arguments: ["bell", "ring"], nouns: nouns)?.value as? CallFault, .unknown(["bell", "ring"]))
+        XCTAssertEqual(CommandLineCall(arguments: ["bell", "ring", "a"])?.value as? CallFault, .unknown(["bell", "ring", "a"]))
         XCTAssertTrue(CommandLineCall.usage(of: nouns).contains("openspot bell ring <words>...                Rings the bell with the words.\n"))
         XCTAssertFalse(CommandLineCall.usage.contains("openspot bell"))
-        XCTAssertEqual(CommandGuide(folder: folder, nouns: nouns).names, ["bell", "calendar", "reminders", "screen"])
 
         let answer = try await ask(["bell", "ring", "hi"])
 

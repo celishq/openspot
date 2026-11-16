@@ -84,10 +84,10 @@ final class CallRouteTests: XCTestCase {
         try "#!/bin/sh\n# on=sheet.open\nprintf 'title=Notes\\n'\n".writeScript(to: spots.spotFile("notes"))
         try "#!/bin/sh\nprintf 'args=%s\\nfolder=%s\\ntone=%s\\n---\\n' \"$*\" \"$PWD\" \"$TONE\"; cat; echo 'said' >&2; exit 3\n".writeScript(to: spots.spotFile("echo"))
         let calls: [([String], String?)] = [
-            (["check"], nil),
-            (["check", "--json"], nil),
-            (["check", "config/spots"], nil),
-            (["check", "--sheet"], "title=Hi\n"),
+            (["check", "spots"], nil),
+            (["check", "spots", "--json"], nil),
+            (["check", "spots", "config/spots"], nil),
+            (["check", "sheet"], "title=Hi\n"),
             (["spot", "run", "echo", "open", "home"], "note=hi\n"),
             (["spot", "run", "echo"], nil),
             (["spot", "run", "gone"], nil),
@@ -102,7 +102,7 @@ final class CallRouteTests: XCTestCase {
             (["screen", "record", "start"], nil),
             (["screen", "record", "status"], nil),
             (["screen", "record", "stop"], nil),
-            (["translate"], "hello"),
+            (["translate", "text"], "hello"),
             (["translate", "languages"], nil),
             (["color", "pick"], nil),
             (["folder", "pick"], nil)

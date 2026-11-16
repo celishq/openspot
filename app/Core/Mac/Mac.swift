@@ -13,6 +13,7 @@ public struct Mac: Sendable {
     public var pickColor: (@MainActor @Sendable () async -> HexColor?)?
     public var pickFolder: (@MainActor @Sendable () async -> URL?)?
     public var guide: URL?
+    public var pages: URL?
     public var theme: URL?
     public var openText: (@MainActor @Sendable (URL) async -> Void)?
 
@@ -29,6 +30,7 @@ public struct Mac: Sendable {
         pickColor: (@MainActor @Sendable () async -> HexColor?)? = nil,
         pickFolder: (@MainActor @Sendable () async -> URL?)? = nil,
         guide: URL? = Bundle.main.url(forResource: "GUIDE", withExtension: "md"),
+        pages: URL? = Bundle.main.url(forResource: "Help", withExtension: nil),
         theme: URL? = ThemeFile.builtInURL,
         openText: (@MainActor @Sendable (URL) async -> Void)? = nil
     ) {
@@ -44,6 +46,7 @@ public struct Mac: Sendable {
         self.pickColor = pickColor
         self.pickFolder = pickFolder
         self.guide = guide
+        self.pages = pages
         self.theme = theme
         self.openText = openText
     }

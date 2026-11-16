@@ -79,7 +79,7 @@ enum SpotCommandLine {
         }
         while !loaded { RunLoop.main.run(mode: .default, before: .distantFuture) }
         guard let spot = model.entries.first(where: { $0.id == id })?.spot else {
-            FileHandle.standardError.write(Data("Openspot has no spot \(id). Run `openspot check` to see each file that does not load.\n".utf8))
+            FileHandle.standardError.write(Data("Openspot has no spot \(id). Run `openspot check spots` to see each file that does not load.\n".utf8))
             exit(1)
         }
         var answer: Result<String, Error>?

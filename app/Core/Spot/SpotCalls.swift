@@ -96,7 +96,7 @@ struct SpotCalls {
     func show(_ id: String) -> CommandAPI.Work? {
         guard let app else { return nil }
         return CommandAnswer.work {
-            guard await app.reveal(id) else { throw SpotError.failed(1, "Openspot has no spot \(id). Run `openspot check` to see each file that does not load.") }
+            guard await app.reveal(id) else { throw SpotError.failed(1, "Openspot has no spot \(id). Run `openspot check spots` to see each file that does not load.") }
             return "Openspot shows \(id).\n"
         }
     }
@@ -111,7 +111,7 @@ struct SpotCalls {
                 return CommandAnswer(errors: "\((error as? SpotError)?.reason ?? error.localizedDescription)\n", code: 1)
             }
             guard var spot = found else {
-                return CommandAnswer(errors: "Openspot has no spot \(id) in \(spots.url.path). Run `openspot check` to see each file that does not load.\n", code: 1)
+                return CommandAnswer(errors: "Openspot has no spot \(id) in \(spots.url.path). Run `openspot check spots` to see each file that does not load.\n", code: 1)
             }
             if let careful { spot.uses.formIntersection(careful) }
             let text = await input?()
@@ -166,7 +166,7 @@ struct SpotCalls {
         }
     }
 
-    func stats(days: Int, spot: String?, format: StatsReport.Format) -> CommandAPI.Work {
+    func stats(days: Int, spot: String?, format: PrintForm) -> CommandAPI.Work {
         CommandAnswer.work { [environment, runs] in
             let counts: [SpotUsage.Day]
             if let runs {

@@ -20,7 +20,7 @@ EOF
 
 # Prints the value of a key of the state of the app.
 status() {
-  state=$(openspot app status --frame) || exit 1
+  state=$(openspot app status) || exit 1
   value "$state" "$1"
 }
 
@@ -42,7 +42,7 @@ sheet() {
 
 case "$1" in
   read)
-    state=$(openspot app status --frame) || exit 1
+    state=$(openspot app status) || exit 1
     sheet "$state"
     ;;
   open)
