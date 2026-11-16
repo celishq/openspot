@@ -55,9 +55,7 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         window.setFrameAutosaveName("spot-window-\(entry.id)")
         let host = NSHostingController(rootView: SpotFloatView(model: model, id: entry.id, fills: true) { _ in })
         host.sizingOptions = []
-        host.sceneBridgingOptions = [.toolbars]
         window.contentViewController = host
-        window.toolbarStyle = .unifiedCompact
         window.setContentSize(SpotTokens.windowSize)
         if window.frame.origin == .zero { window.center() }
         return window
