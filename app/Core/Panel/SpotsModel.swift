@@ -199,7 +199,7 @@ public final class SpotsModel {
     public private(set) var formHasChoices = false
     public private(set) var formIsMultiple = false
     public private(set) var formHint = HintWords("")
-    @ObservationIgnored var formAsk: UUID?
+    @ObservationIgnored var pendingAsk: UUID?
     public var isEditing = false {
         didSet { takeMode() }
     }
@@ -470,7 +470,7 @@ public final class SpotsModel {
     }
 
     public func panelWillHide() {
-        formAsk = nil
+        pendingAsk = nil
         if confirming != nil { confirming = nil }
         takeHeld([])
         stopRecording()

@@ -68,29 +68,8 @@ extension SpotsModel {
     }
 
     private func call(_ action: CommandAction, of entry: Entry, _ text: String, onCard: Bool = false) {
-        let ask = UUID()
-        formAsk = ask
-        let id = entry.id
-        Task {
-            do {
-                guard let answer = try await sheets[id]?.launch(action, input: SearchQuery(text: text).input, onCard: onCard), formAsk == ask else { return }
-                formAsk = nil
-                switch answer {
-                case .form(let form):
-                    pushFirst(id, moving: isShown)
-                    self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: action, item: nil, openedSheet: true)
-                case .shown where action.after == .stay:
-                    pushFirst(id, moving: isShown)
-                case .shown, .done:
-                    if action.after == .close, isShown { host.dismiss() }
-                case .stopped:
-                    break
-                }
-            } catch {
-                guard formAsk == ask else { return }
-                formAsk = nil
-                host.notify("\(action.title) failed. \(Self.reason(error))")
-            }
+        ask(action, on: (entry, nil)) { [sheets] in
+            try await sheets[entry.id]?.launch(action, input: SearchQuery(text: text).input, onCard: onCard)
         }
     }
 
