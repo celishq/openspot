@@ -7,7 +7,6 @@ struct SpotTheme {
     let onSolid: NSColor
     let glyphOnSolid: NSColor
     let glass: NSColor
-    let dim: NSColor
     let cornerFill: NSColor
     let window: NSColor
     let preview: NSColor
@@ -26,7 +25,6 @@ struct SpotTheme {
         onSolid: .black,
         glyphOnSolid: .controlAccentColor,
         glass: .clear,
-        dim: .black.withAlphaComponent(0.35),
         cornerFill: NSColor(white: 0.2, alpha: 1),
         window: NSColor(white: 0.16, alpha: 1),
         preview: NSColor(white: 0.3, alpha: 1),
@@ -46,7 +44,6 @@ struct SpotTheme {
         onSolid: .white,
         glyphOnSolid: .white,
         glass: .white.withAlphaComponent(0.5),
-        dim: .white.withAlphaComponent(0.4),
         cornerFill: NSColor(white: 0.98, alpha: 1),
         window: NSColor(white: 0.93, alpha: 1),
         preview: NSColor(white: 0.98, alpha: 1),
@@ -88,6 +85,7 @@ struct SpotTheme {
     static let secondaryLight = 0.7
     static let dragFill = 0.4
     static let hover = 0.08
+    static let menuDim = 0.4
     static let liftShadow: CGFloat = 14
     static let liftShadowStrength = 0.25
     static let unfocusedCardStrength = 0.35
@@ -106,7 +104,6 @@ struct SpotTheme {
     static let onSolid = color(\.onSolid)
     static let glyphOnSolid = color(\.glyphOnSolid)
     static let glass = color(\.glass)
-    static let dim = color(\.dim)
     static let cornerFill = color(\.cornerFill)
     static let window = color(\.window)
     static let preview = color(\.preview)

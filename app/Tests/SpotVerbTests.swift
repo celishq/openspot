@@ -435,7 +435,7 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertEqual(model.selectedEntry?.id, "clock")
     }
 
-    func testOpeningTheMenuChangesTheFadeOfNoCardAndOneShade() async throws {
+    func testOpeningTheMenuDimsEachOtherCardOnceItGrows() async throws {
         try script("weather", header: "title=Weather")
         try script("clock", header: "title=Clock")
         try script("notes", header: "title=Notes")
@@ -448,12 +448,13 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
 
         XCTAssertFalse(model.gridShade.isOn)
-        XCTAssertEqual(model.gridShade.cards.map(\.id), others)
+        XCTAssertFalse(model.gridShade.dims(others[0]))
         try await wait("the grown menu") { model.menuSession?.isGrown == true }
         XCTAssertEqual(model.focus(ofCard: weather), .focused)
         XCTAssertEqual(others.filter { model.focus(ofCard: $0) != .none }, [])
         XCTAssertTrue(model.gridShade.isOn)
-        XCTAssertEqual(model.gridShade.cards.map(\.rect), model.placements.filter { $0.index != weather }.map(\.rect))
+        XCTAssertEqual(others.filter { model.gridShade.dims($0) }, others)
+        XCTAssertFalse(model.gridShade.dims(weather))
         XCTAssertTrue(model.gridShade.coversField)
         XCTAssertFalse(model.dimsField)
         XCTAssertFalse(GridShade(over: model.placements, leaving: model.visible.count, isOn: true).coversField)
@@ -466,13 +467,13 @@ final class SpotVerbTests: XCTestCase {
         model.closeMenu()
 
         XCTAssertFalse(model.gridShade.isOn)
-        XCTAssertEqual(model.gridShade.cards.map(\.id), others)
+        XCTAssertFalse(model.gridShade.dims(others[0]))
         for end in host.heldEnds ?? [] { end() }
         XCTAssertEqual(model.gridShade, GridShade())
         XCTAssertEqual(model.focus(ofCard: weather), .none)
     }
 
-    func testAGridThatChangesUnderAnOpenMenuMovesTheShade() async throws {
+    func testAGridThatChangesUnderAnOpenMenuDimsItsNewCards() async throws {
         try script("weather", header: "title=Weather")
         try script("clock", header: "title=Clock")
         _ = try await select("weather")
@@ -487,8 +488,9 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertEqual(model.selected, weather)
         XCTAssertNotEqual(model.gridShade, before)
         XCTAssertTrue(model.gridShade.isOn)
-        XCTAssertEqual(model.gridShade.cards.map(\.id), model.placements.map(\.index).filter { $0 != weather })
-        XCTAssertEqual(model.gridShade.cards.map(\.rect), model.placements.filter { $0.index != weather }.map(\.rect))
+        let others = model.placements.map(\.index).filter { $0 != weather }
+        XCTAssertEqual(others.filter { model.gridShade.dims($0) }, others)
+        XCTAssertFalse(model.gridShade.dims(weather))
     }
 
     func testCopyPromptForAICopiesTheFileAndTheLastFailure() async throws {
