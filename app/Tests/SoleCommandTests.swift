@@ -318,4 +318,18 @@ final class SoleCommandTests: XCTestCase {
         XCTAssertTrue(model.handleSearchKey(ActionKey(name: "return")))
         try await wait("the command") { host.confirms == ["Ran wipe"] }
     }
+
+    func testKeysGrowsFromTheCardOfItsSpotAndClosesBackIntoIt() async throws {
+        try script("dictate", header: "title=Dictate\nshown=true")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+
+        XCTAssertTrue(model.openKeys(of: "dictate"))
+        try await wait("the keys sheet") { self.model.openSheetID == self.keys }
+
+        XCTAssertEqual(SpotSheetCard.of(keys, in: model)?.id, "dictate")
+        model.closeSheet(moving: true)
+        XCTAssertEqual(SpotSheetCard.of(keys, in: model)?.id, "dictate")
+    }
 }

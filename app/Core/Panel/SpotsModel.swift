@@ -103,6 +103,7 @@ public final class SpotsModel {
         }
     }
     public internal(set) var flowEdges = FlowEdges()
+    public internal(set) var keysOwner: String?
     @ObservationIgnored var edgeStep = 0
     @ObservationIgnored var waitingPush = false
     public internal(set) var transition = SheetTransition() {
