@@ -180,6 +180,8 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
 - The field travels into the sheet's search row, and the sheet's moving shape cuts its glass, so one glass shape shows.
 - The blur's foot is the lower of the moving shape's foot and the grid's foot, which reaches the sheet's foot while the
   grid fades. The footer sits on it, and a grid card has faded by the time it reaches the card (`SheetPush.Foot`).
+- The actions menu is placed from its card's resting frame, never from the card's moving outline, and the card's focus
+  grows on the menu's own grow (`isMenuGrown`).
 - A sheet that opens over the actions menu folds the menu in the update that shows the sheet, and the menu's foot is
   where the sheet's footer starts. A menu row that another spot runs keeps the menu until its run ends, so whatever
   the run opens takes the menu's place in one motion.

@@ -205,7 +205,7 @@ extension SpotsModel {
     }
 
     public func menuItemAtRest(_ item: CGRect) -> CGRect {
-        guard focus(ofCard: selected) == .focused, let size = placements.first(where: { $0.index == selected })?.size else { return item }
+        guard isMenuOpen, openSheetID == nil, let size = placements.first(where: { $0.index == selected })?.size else { return item }
         let width = SpotTokens.width(columns: size.columns) * MotionTokens.focusedScale
         let height = SpotTokens.height(rows: size.rows) * MotionTokens.focusedScale
         return CGRect(x: item.midX - width / 2, y: item.midY - height / 2, width: width, height: height)

@@ -13,9 +13,8 @@ struct SpotMenuLayer: View {
                 let menu = session.menu
                 let rect = item.map { proxy[$0.bounds] } ?? SpotFieldView.rect
                 let isClosing = session.phase == .closing
-                let fresh = ActionMenuFrame(item: rect, menu: menu, bounds: bounds)
                 let resting = ActionMenuFrame(item: model.menuItemAtRest(rect), menu: menu, bounds: bounds)
-                let frame = isClosing ? model.menuFrame ?? fresh : fresh
+                let frame = isClosing ? model.menuFrame ?? resting : resting
                 let shown = frame.rect(of: menu)
                 let isGrown = session.isGrown
                 let scale = isGrown ? 1 : MotionTokens.menuStartScale

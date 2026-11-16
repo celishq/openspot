@@ -156,6 +156,8 @@ public final class SpotsModel {
                 isMenuOpen = isOpen
                 takeMode()
             }
+            let isGrown = menuSession?.isGrown == true
+            if isGrown != isMenuGrown { isMenuGrown = isGrown }
             takeShade()
             guard menuSession == nil else { return }
             if menuFrame != nil { menuFrame = nil }
@@ -163,6 +165,7 @@ public final class SpotsModel {
         }
     }
     public private(set) var isMenuOpen = false
+    public private(set) var isMenuGrown = false
     public private(set) var gridShade = GridShade()
 
     private func takeShade() {

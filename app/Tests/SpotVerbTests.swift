@@ -465,7 +465,13 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
 
         XCTAssertFalse(model.gridShade.isOn)
+        XCTAssertEqual(model.focus(ofCard: weather), .none)
         XCTAssertEqual(model.gridShade.cards.map(\.id), others)
+        let card = try XCTUnwrap(model.placements.first { $0.index == weather }).rect
+        let rest = card.insetBy(dx: -card.width * (MotionTokens.focusedScale - 1) / 2, dy: -card.height * (MotionTokens.focusedScale - 1) / 2)
+        let placed = model.menuItemAtRest(card)
+        XCTAssertEqual(placed.minX, rest.minX, accuracy: 1e-9)
+        XCTAssertEqual(placed.maxY, rest.maxY, accuracy: 1e-9)
         try await wait("the grown menu") { model.menuSession?.isGrown == true }
         XCTAssertEqual(model.focus(ofCard: weather), .focused)
         XCTAssertEqual(others.filter { model.focus(ofCard: $0) != .none }, [])
