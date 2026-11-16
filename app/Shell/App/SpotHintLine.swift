@@ -4,22 +4,22 @@ import SwiftUI
 struct SpotHintLine: View {
     let model: SpotsModel
     let surfaceIsOut: Bool
-    let gridHeight: CGFloat
-    let sheetHeight: CGFloat
-    let sheetRect: CGRect
-    let menuHeight: CGFloat
-    let morph: SheetMorph?
-    let progress: Double
+    let motion: SheetMotion
 
     var body: some View {
-        let open = max(sheetHeight + model.flowEdges.heldHeight(of: sheetRect), menuHeight)
-        let closed = surfaceIsOut && progress == 0 ? open : gridHeight
-        ZStack(alignment: .top) {
-            hint(model.gridHint, isShown: !surfaceIsOut)
-            hint(sheetWords, isShown: surfaceIsOut)
+        FootMotion(foot: foot, motion: motion) { place in
+            ZStack(alignment: .top) {
+                hint(model.gridHint, isShown: !surfaceIsOut)
+                hint(sheetWords, isShown: surfaceIsOut)
+            }
+            .offset(y: place - SpotTokens.halo - SpotTokens.hintPillHeight)
         }
-        .modifier(FootPlace(closed: closed, open: open, isOut: surfaceIsOut, morph: morph, progress: progress))
         .onAppear { model.followHint() }
+    }
+
+    private var foot: PanelFoot {
+        let foot = model.panelFoot
+        return surfaceIsOut && motion.progress == 0 ? PanelFoot(closed: foot.open, open: foot.open) : foot
     }
 
     private func hint(_ words: HintWords, isShown: Bool) -> some View {
@@ -36,27 +36,5 @@ struct SpotHintLine: View {
 
     private var sheetWords: HintWords {
         model.formRect == nil ? model.sheetHint : model.formHint
-    }
-}
-
-private struct FootPlace: ViewModifier, @preconcurrency Animatable {
-    var closed: CGFloat
-    var open: CGFloat
-    let isOut: Bool
-    let morph: SheetMorph?
-    var progress: Double
-
-    var animatableData: AnimatablePair<AnimatablePair<CGFloat, CGFloat>, Double> {
-        get { AnimatablePair(AnimatablePair(closed, open), progress) }
-        set {
-            closed = newValue.first.first
-            open = newValue.first.second
-            progress = newValue.second
-        }
-    }
-
-    func body(content: Content) -> some View {
-        let foot = morph.map { $0.blurFoot(over: SheetPush.Foot(closed: closed, open: open), at: progress) } ?? (isOut ? open : closed)
-        content.offset(y: foot - SpotTokens.halo - SpotTokens.hintPillHeight)
     }
 }

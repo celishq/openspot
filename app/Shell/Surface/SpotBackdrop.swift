@@ -3,15 +3,15 @@ import SwiftUI
 
 struct SpotBackdrop: View {
     let model: SpotsModel
-    let morph: SheetMorph?
-    let progress: Double
+    let motion: SheetMotion
     @Environment(\.spotDrawsGlass) private var drawsGlass
     @Environment(\.spotIsShown) private var isShown
 
     var body: some View {
         if drawsGlass {
-            let foot = model.backdropFoot
-            BackdropShape(rect: model.backdrop.offsetBy(dx: -model.panels.frame.minX, dy: 0), closed: foot.closed, open: foot.open, morph: morph, progress: progress)
+            FootMotion(foot: model.panelFoot, motion: motion) { height in
+                BackdropShape(rect: model.backdrop.offsetBy(dx: -model.panels.frame.minX, dy: 0), height: height)
+            }
             .modifier(PanelSpan(panels: model.panels))
             .modifier(SpotShownFade(isShown: isShown))
             .allowsHitTesting(false)
@@ -21,24 +21,16 @@ struct SpotBackdrop: View {
 
 private struct BackdropShape: View, @preconcurrency Animatable {
     var rect: CGRect
-    var closed: CGFloat
-    var open: CGFloat
-    let morph: SheetMorph?
-    var progress: Double
+    let height: CGFloat
 
-    var animatableData: AnimatablePair<CGRect.AnimatableData, AnimatablePair<AnimatablePair<CGFloat, CGFloat>, Double>> {
-        get { AnimatablePair(rect.animatableData, AnimatablePair(AnimatablePair(closed, open), progress)) }
-        set {
-            rect.animatableData = newValue.first
-            closed = newValue.second.first.first
-            open = newValue.second.first.second
-            progress = newValue.second.second
-        }
+    var animatableData: CGRect.AnimatableData {
+        get { rect.animatableData }
+        set { rect.animatableData = newValue }
     }
 
     var body: some View {
         var rect = rect
-        if let morph { rect.size.height = morph.blurFoot(over: SheetPush.Foot(closed: closed, open: open), at: progress) }
+        rect.size.height = height
         return ZStack(alignment: .topLeading) {
             ForEach(Array(BackdropEdge.blurs.enumerated()), id: \.offset) { step, edge in
                 SpotBackdropBlur(radius: SpotTheme.backdropBlur * CGFloat(step + 1) / CGFloat(BackdropEdge.blurs.count))

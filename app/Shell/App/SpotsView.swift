@@ -22,6 +22,7 @@ struct SpotsView: View {
     var body: some View {
         let card = SpotSheetCard.of(sheetID, in: model).flatMap { $0.isSeen(scrollOffset: model.cardScroll, gridHeight: gridHeight) ? $0 : nil }
         let frame = card?.frame(scrollOffset: model.cardScroll)
+        let motion = SheetMotion(morph: morph(of: card, at: frame), progress: sheetOpen ? 1 : 0)
         ZStack(alignment: .topLeading) {
             ScrollView(showsIndicators: false) {
                 SpotGridView(
@@ -46,7 +47,7 @@ struct SpotsView: View {
             .modifier(GridFadeMask(fade: fade, height: cardHeight))
             .fade(coversGrid ? 0 : 1) { SheetMorph.sheetLook(at: $0) }
             .modifier(PanelSpan(panels: model.panels))
-            SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: max(gridHeight, model.menuContentHeight), sheetHeight: sheetID == nil ? gridHeight : sheetHeight, sheetRect: sheetRect, menuHeight: model.isMenuOpen ? model.menuContentHeight : 0, morph: morph(of: card, at: frame), progress: sheetOpen ? 1 : 0)
+            SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, motion: motion)
                 .modifier(SpotShownFade(isShown: model.isShown))
             if sheetOpen, sheetID != nil {
                 SpotFlowEdges(model: model, rect: sheetRect)
@@ -71,7 +72,7 @@ struct SpotsView: View {
                 isInstall: isInstall,
                 showsField: showsSearchField,
                 surfaceIsOut: surfaceIsOut,
-                sheet: fieldSheet(on: card, at: frame)
+                sheet: fieldSheet(on: card, motion: motion)
             )
             .modifier(FlowFieldHide(model: model, isInSheet: fieldIsInSheet))
             if model.isMenuOpen {
@@ -87,7 +88,7 @@ struct SpotsView: View {
         .overlayPreferenceValue(SpotMenuAnchor.self, alignment: .topLeading) { item in
             SpotMenuLayer(model: model, item: item, fieldIsInSheet: fieldIsInSheet)
         }
-        .background(alignment: .topLeading) { SpotBackdrop(model: model, morph: morph(of: card, at: frame), progress: sheetOpen ? 1 : 0) }
+        .background(alignment: .topLeading) { SpotBackdrop(model: model, motion: motion) }
         .environment(\.spotIsShown, model.isShown)
         .environment(\.spotViewPlace, SpotViewPlace(model: model))
         .environment(\.spotPanels, model.panels)
@@ -96,8 +97,8 @@ struct SpotsView: View {
         }
     }
 
-    private func fieldSheet(on card: SpotSheetCard?, at frame: CGRect?) -> (morph: SheetMorph, cardRadius: CGFloat)? {
-        guard !isInstall, let morph = morph(of: card, at: frame) else { return nil }
+    private func fieldSheet(on card: SpotSheetCard?, motion: SheetMotion) -> (morph: SheetMorph, cardRadius: CGFloat)? {
+        guard !isInstall, let morph = motion.morph else { return nil }
         return (morph, SurfaceEdge(card: card?.placement.size ?? .strip).radius)
     }
 
@@ -112,8 +113,7 @@ struct SpotsView: View {
         let origin = SpotTokens.gridOrigin(scrollOffset: model.cardScroll, left: model.panels.leftExtent)
         let panel = model.panels.frame
         let window = CGRect(x: panel.minX - origin.x, y: SpotTokens.halo - origin.y, width: panel.width, height: panel.height - SpotTokens.halo)
-        let foot = SheetPush.Foot(closed: gridHeight - SpotTokens.halo - origin.y, open: sheetHeight - SpotTokens.halo - origin.y)
-        return SheetPush(open: card?.placement, sheet: sheetRect.offsetBy(dx: -origin.x, dy: -origin.y), window: window, foot: foot)
+        return SheetPush(open: card?.placement, sheet: sheetRect.offsetBy(dx: -origin.x, dy: -origin.y), window: window, foot: model.pushFoot.moved(by: -SpotTokens.halo - origin.y))
     }
 
     private var sheetRect: CGRect {
@@ -122,10 +122,6 @@ struct SpotsView: View {
 
     private func rect(of id: String?) -> CGRect {
         model.sheets[id ?? ""]?.sheetRect ?? SpotTokens.sheetRect(rows: 0)
-    }
-
-    private static func blurHeight(of sheet: CGRect) -> CGFloat {
-        sheet.height + 2 * SpotTokens.halo + SpotTokens.hintBlock
     }
 
     private var gridPush: CGFloat {
@@ -142,14 +138,6 @@ struct SpotsView: View {
 
     private var fieldIsInSheet: Bool {
         sheetOpen && !isInstall
-    }
-
-    private var contentHeight: CGFloat {
-        sheetOpen ? sheetHeight : gridHeight
-    }
-
-    private var sheetHeight: CGFloat {
-        Self.blurHeight(of: sheetRect)
     }
 
     private var gridHeight: CGFloat {

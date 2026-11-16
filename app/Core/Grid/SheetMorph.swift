@@ -23,10 +23,6 @@ public struct SheetMorph: Equatable, Sendable {
         origin(at: progress).y + size(at: progress).height + SpotTokens.halo + SpotTokens.hintBlock
     }
 
-    public func blurFoot(over path: SheetPush.Foot, at progress: Double) -> CGFloat {
-        max(foot(at: progress) - foot(at: 1) + path.open, path.path(at: progress))
-    }
-
     public func headerLook(at progress: Double) -> Double {
         source == .field ? Self.sheetLook(at: progress) : 1
     }

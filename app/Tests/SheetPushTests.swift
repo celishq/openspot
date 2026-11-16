@@ -63,7 +63,7 @@ final class SheetPushTests: XCTestCase {
     }
 
     func testACardBelowHasFadedWhenItsFootMeetsTheShrinkingBlursFoot() {
-        let shrinking = SheetPush(open: push.open, sheet: push.sheet, window: push.window, foot: SheetPush.Foot(closed: 400, open: 250))
+        let shrinking = SheetPush(open: push.open, sheet: push.sheet, window: push.window, foot: PanelFoot(closed: 400, open: 250))
         let below = card(row: 2, column: 0)
         let meeting = 184.0 / 484.0
 
@@ -72,29 +72,17 @@ final class SheetPushTests: XCTestCase {
     }
 
     func testABlurThatGrowsLeavesTheWindowToEndTheFade() {
-        let growing = SheetPush(open: push.open, sheet: push.sheet, window: push.window, foot: SheetPush.Foot(closed: 250, open: 600))
+        let growing = SheetPush(open: push.open, sheet: push.sheet, window: push.window, foot: PanelFoot(closed: 250, open: 600))
         XCTAssertEqual(growing.fade(of: card(row: 0, column: 1), movedBy: CGSize(width: 0, height: -66)) ?? -1, 0.5, accuracy: 0.001)
     }
 
     func testWithNoCardACardThatStaysHasFadedWhenTheShrinkingBlursFootReachesIt() {
-        let field = SheetPush(open: nil, sheet: push.sheet, window: push.window, foot: SheetPush.Foot(closed: 400, open: 200))
+        let field = SheetPush(open: nil, sheet: push.sheet, window: push.window, foot: PanelFoot(closed: 400, open: 200))
         let below = card(row: 2, column: 0)
 
         XCTAssertEqual(field.offset(of: below), .zero)
         XCTAssertEqual(field.fade(of: below, share: 0.23), 0.5, accuracy: 0.001)
         XCTAssertEqual(field.fade(of: below, share: 0.46), 1, accuracy: 0.001)
         XCTAssertEqual(field.fade(of: card(row: 0, column: 0), share: 0.5), 0.5, accuracy: 0.001)
-    }
-
-    func testAShrinkingBlurReachesTheSheetsFootByTheEndOfTheGridsFade() {
-        let foot = SheetPush.Foot(closed: 700, open: 400)
-        XCTAssertEqual(foot.path(at: 0), 700)
-        XCTAssertEqual(foot.path(at: MotionTokens.cardShare / 2), 550, accuracy: 0.001)
-        XCTAssertEqual(foot.path(at: MotionTokens.cardShare), 400)
-        XCTAssertEqual(foot.path(at: 0.9), 400)
-    }
-
-    func testAGrowingBlurHoldsTheGridsFoot() {
-        XCTAssertEqual(SheetPush.Foot(closed: 300, open: 500).path(at: 0.7), 300)
     }
 }

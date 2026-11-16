@@ -1305,6 +1305,13 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertNil(host.motions[shown])
     }
 
+    func testWithNoSheetThePanelsFootIsTheGridsFootOpenOrClosed() async throws {
+        try script("weather", header: "title=Weather", "true")
+        await model.reload()
+
+        XCTAssertEqual(model.panelFoot, PanelFoot(closed: model.gridHeight, open: model.gridHeight))
+    }
+
     func testAMenuThatFoldsAsASheetOpensGivesItsFootToTheSheetsStart() async throws {
         try script("notes", header: "title=Notes\non=sheet.open", "printf 'row=a\\ntitle=A\\n'")
         let frame = try await openWeatherMenu()
@@ -1317,8 +1324,9 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the open motion") { model.transition.phase == .opening }
 
         let sheet = try XCTUnwrap(model.sheets["notes"]?.sheetRect)
-        XCTAssertEqual(model.backdropFoot.closed, max(model.gridHeight, menuFoot))
-        XCTAssertEqual(model.backdropFoot.open, sheet.height + 2 * SpotTokens.halo + SpotTokens.hintBlock)
+        XCTAssertEqual(model.panelFoot.closed, max(model.gridHeight, menuFoot))
+        XCTAssertEqual(model.pushFoot, PanelFoot(closed: model.gridHeight, open: sheet.height + 2 * SpotTokens.halo + SpotTokens.hintBlock))
+        XCTAssertEqual(model.panelFoot.open, sheet.height + 2 * SpotTokens.halo + SpotTokens.hintBlock)
         while let end = host.heldEnds?.first {
             host.heldEnds?.removeFirst()
             end()
