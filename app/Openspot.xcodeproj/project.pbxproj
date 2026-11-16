@@ -356,6 +356,7 @@
 		76014275E6E1531BE95022E1 /* ScreenDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7075A2E17CBBE1ADA35AC877 /* ScreenDevice.swift */; };
 		76275FF4660CF70F4F195246 /* SpotTick.swift in Sources */ = {isa = PBXBuildFile; fileRef = 725E312D3C764B1610D51C5A /* SpotTick.swift */; };
 		764A7538CAE1E95752FBF903 /* SheetLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4684CFCCFEE5A86E21A2323A /* SheetLayout.swift */; };
+		769F3C87CAC846A0738C812D /* ActionHook.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2176BD66BF1EDB10AA654949 /* ActionHook.swift */; };
 		772AED2E50FA0118C7C0C426 /* ViewBuilds.swift in Sources */ = {isa = PBXBuildFile; fileRef = 512BF6DBBEACDE1F6DB00ACC /* ViewBuilds.swift */; };
 		77BEAA45A47F0153AD74F0E0 /* SpotChoiceMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51D21CF903F24FBEACCADEC5 /* SpotChoiceMenu.swift */; };
 		783C0CC5185B8D8ACBA7FFFA /* SpotHover.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FBA5882CA947E9AF6565AF0 /* SpotHover.swift */; };
@@ -978,6 +979,7 @@
 		208B439877CC5DD1DCD3F2C3 /* SpotHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotHeader.swift; sourceTree = "<group>"; };
 		212290B63B7D0AE43BF65CD5 /* SpotReminderStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotReminderStore.swift; sourceTree = "<group>"; };
 		2150D92B6506978B7EB6E19F /* SpotFiles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotFiles.swift; sourceTree = "<group>"; };
+		2176BD66BF1EDB10AA654949 /* ActionHook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionHook.swift; sourceTree = "<group>"; };
 		21BFE08731F6CD652D67FACF /* PreviousAppTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviousAppTests.swift; sourceTree = "<group>"; };
 		21E0E5E6BFAC23C763466E93 /* CardPushTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardPushTests.swift; sourceTree = "<group>"; };
 		22868BC546570091C47C9DE4 /* SpotCardArrow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotCardArrow.swift; sourceTree = "<group>"; };
@@ -2501,6 +2503,7 @@
 		7E7939FE234045F6A43F6233 /* Actions */ = {
 			isa = PBXGroup;
 			children = (
+				2176BD66BF1EDB10AA654949 /* ActionHook.swift */,
 				E3A528E71CE22F9C5AA7A772 /* ActionMenu.swift */,
 				DD9D2BCA9B9D255E63A92912 /* ActionMenuFrame.swift */,
 				0B0AB60FF3C911FCCABA17CB /* ActionMenuSession.swift */,
@@ -3387,6 +3390,7 @@
 				966A61476E172786A654DCF4 /* AccountStatus.swift in Sources */,
 				8E2B424C121D2E8FB1D12CC3 /* AccountStore.swift in Sources */,
 				00235104392EF7291E3EFED1 /* AccountWords.swift in Sources */,
+				769F3C87CAC846A0738C812D /* ActionHook.swift in Sources */,
 				9135837B0731689D6C701BAE /* ActionKey.swift in Sources */,
 				1E7E2C64B91EADA3912287AE /* ActionMenu.swift in Sources */,
 				4BC5969F87B3D833EA84E8D2 /* ActionMenuFrame.swift in Sources */,

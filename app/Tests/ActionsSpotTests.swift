@@ -8,8 +8,7 @@ final class ActionsSpotTests: BuiltInCase {
         XCTAssertEqual(actions.offeredActions.map(\.action.title), ["Share", "Settings", "Edit", "Change Icon", "Draw…", "Choose File…", "Reset Icon", "Keys…", "Delete", "Turn off"])
         XCTAssertEqual(actions.offeredActions.map(\.origins), [[.mine, .core], [], [.mine, .core], [], [], [], [], [], [.mine], [.core]])
         XCTAssertEqual(actions.offeredActions.map { $0.action.key?.label ?? "" }, ["⇧⌘C", "⌘⏎", "⌘E", "", "", "", "", "", "⌘⌫", "⌘⌫"])
-        XCTAssertEqual(actions.offeredActions.map(\.when), [nil, nil, nil, nil, nil, nil, "hasIcon", nil, nil, nil])
-        XCTAssertEqual(actions.offeredActions.map(\.hotkey), [nil, nil, nil, nil, nil, nil, nil, "openKey", nil, nil])
+        XCTAssertEqual(actions.offeredActions.map(\.hooks), [[:], [:], [:], [:], [:], [:], [.when: "hasIcon"], [.hotkey: "openKey"], [:], [:]])
         XCTAssertNil(actions.offeredActions[8].action.confirm)
         XCTAssertFalse(actions.offersCard)
     }

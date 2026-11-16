@@ -5,21 +5,19 @@ public struct OfferedAction: Equatable, Sendable {
     public let owner: String
     public private(set) var group: String?
     public let origins: Set<SpotOrigin>
-    public let when: String?
-    public let hotkey: String?
+    public let hooks: [ActionHook: String]
     public private(set) var keyLabel: String?
 
     static let place = "actions"
 
     static let originWords: [String: SpotOrigin] = ["mine": .mine, "core": .core, "builtin": .builtIn]
 
-    public init(action: CommandAction, owner: String = "", group: String? = nil, origins: Set<SpotOrigin> = [], when: String? = nil, hotkey: String? = nil) {
+    public init(action: CommandAction, owner: String = "", group: String? = nil, origins: Set<SpotOrigin> = [], hooks: [ActionHook: String] = [:]) {
         self.action = action
         self.owner = owner
         self.group = group
         self.origins = origins
-        self.when = when
-        self.hotkey = hotkey
+        self.hooks = hooks
     }
 
     static func read(_ buttons: [TextBlock], owner: String, of name: String, isInline: Bool) throws -> [OfferedAction] {
@@ -39,23 +37,24 @@ public struct OfferedAction: Equatable, Sendable {
             if let parent, line != nil {
                 throw SpotError.fault("\(name) offers the button \(button), which shows in the submenu of \(parent.action.id) and takes its place. Remove its offers line")
             }
-            let when = try function("when", of: block, example: "hasIcon", name: name, isInline: isInline)
-            let hotkey = try function("hotkey", of: block, example: "openKey", name: name, isInline: isInline)
+            var hooks: [ActionHook: String] = [:]
+            for hook in ActionHook.allCases { hooks[hook] = try function(hook, of: block, name: name, isInline: isInline) }
             let menuAction = CommandAction(id: action.id, title: action.title, key: action.key, scope: .spot, after: action.after, isForm: action.isForm, confirm: action.confirm)
             let origins = try parent?.origins ?? Self.origins(String((line ?? place).dropFirst(place.count)), of: name)
-            offered.append(OfferedAction(action: menuAction, owner: owner, group: name, origins: origins, when: when, hotkey: hotkey))
+            offered.append(OfferedAction(action: menuAction, owner: owner, group: name, origins: origins, hooks: hooks))
         }
         return offered
     }
 
-    private static func function(_ word: String, of block: TextBlock, example: String, name: String, isInline: Bool) throws -> String? {
+    private static func function(_ hook: ActionHook, of block: TextBlock, name: String, isInline: Bool) throws -> String? {
+        let word = hook.rawValue
         guard let function = block.value(word) else { return nil }
         let button = block.value("button") ?? ""
         guard isInline else {
             throw SpotError.fault("\(name) has \(word)=\(function) on the button \(button), which only a JavaScript spot can answer. Remove it, or write the spot as a .js file")
         }
         guard function.range(of: "^[A-Za-z_$][A-Za-z0-9_$]*$", options: .regularExpression) != nil else {
-            throw SpotError.fault("\(name) has \(word)=\(function) on the button \(button). Name a function of the spot, such as \(word)=\(example)")
+            throw SpotError.fault("\(name) has \(word)=\(function) on the button \(button). Name a function of the spot, such as \(word)=\(hook.example)")
         }
         return function
     }

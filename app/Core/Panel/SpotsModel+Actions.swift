@@ -295,7 +295,7 @@ extension SpotsModel {
     }
 
     private func hookSaysYes(_ offer: OfferedAction, of spot: Spot, on target: Target, origin: String, until deadline: DispatchTime, yes: inout Set<String>, asks: Bool) -> Bool {
-        guard let when = offer.when else { return true }
+        guard let when = offer.hooks[.when] else { return true }
         let key = "\(spot.id) \(offer.action.id)"
         if yes.contains(key) { return true }
         guard asks else { return false }
@@ -312,7 +312,7 @@ extension SpotsModel {
     }
 
     private func labeled(_ offer: OfferedAction, of spot: Spot, on target: Target, origin: String, until deadline: DispatchTime, keys: inout [String: String], asks: Bool) -> OfferedAction {
-        guard let function = offer.hotkey else { return offer }
+        guard let function = offer.hooks[.hotkey] else { return offer }
         let key = "\(spot.id) \(offer.action.id)"
         if let text = keys[key] { return offer.labeled(text) }
         guard asks else { return offer }
