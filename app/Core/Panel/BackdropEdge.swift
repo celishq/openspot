@@ -14,9 +14,9 @@ public struct BackdropEdge: Hashable, Sendable {
     public let inset: CGFloat
     public let softness: CGFloat
 
-    public static let blurs = [5, 3.5, 2].map { BackdropEdge(inset: SpotTokens.halo * (1 - $0 / 12), softness: SpotTokens.halo / 12) }
-    public static let reach: CGFloat = 2.5
-    public static let middle: CGFloat = 2
+    public static let blurs = SpotTokens.backdropSteps.map { BackdropEdge(inset: SpotTokens.halo * (1 - $0 / SpotTokens.backdropParts), softness: SpotTokens.halo / SpotTokens.backdropParts) }
+    public static let reach = SpotTokens.backdropReach
+    public static let middle = SpotTokens.backdropMiddle
 
     public var corner: CGFloat {
         SpotTokens.radius + SpotTokens.halo - inset

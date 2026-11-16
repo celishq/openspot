@@ -6,8 +6,6 @@ import SwiftUI
 final class SpotPlayground: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private static var kept: Set<SpotPlayground> = []
 
-    private static let size = CGSize(width: 1180, height: 940)
-
     private let window: NSWindow
     private let model: SpotPlaygroundModel
     private var closed: CheckedContinuation<Void, Never>?
@@ -16,7 +14,7 @@ final class SpotPlayground: NSObject, NSApplicationDelegate, NSWindowDelegate {
         model = SpotPlaygroundModel(path: path, isCareful: isCareful)
         let view = NSHostingView(rootView: SpotPlaygroundView(model: model))
         window = NSWindow(
-            contentRect: NSRect(origin: .zero, size: Self.size),
+            contentRect: NSRect(origin: .zero, size: SpotTokens.playgroundSize),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false

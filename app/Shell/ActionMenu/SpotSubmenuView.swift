@@ -34,7 +34,7 @@ struct SpotSubmenuView: View {
                     .font(SpotType.detail)
                     .modifier(SpotSecondaryText())
             }
-            .padding(.horizontal, SpotTokens.padding - SpotTokens.menuPadding + 4)
+            .padding(.horizontal, SpotTokens.menuTextInset)
             .frame(height: SpotTokens.menuRowHeight)
             .modifier(SpotLiveSelectionRing(isSelected: { [model] in model.menuSession?.menu.submenu?.selected == index }, shape: shape))
             .contentShape(shape)

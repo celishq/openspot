@@ -17,8 +17,6 @@ struct SpotCardView: View, @MainActor Equatable {
             && lhs.model === rhs.model
     }
 
-    private static let lineReach: CGFloat = 6
-
     private func shape(of mark: CardMark) -> SpotRoundShape {
         SpotRoundShape(SurfaceEdge(card: size, mark: mark))
     }
@@ -117,13 +115,13 @@ struct SpotCardView: View, @MainActor Equatable {
     }
 
     private var row: some View {
-        HStack(spacing: SpotTokens.padding - 5) {
+        HStack(spacing: SpotTokens.wordsGap) {
             glyph
             text
                 .frame(maxWidth: .infinity, alignment: .leading)
             accessory
         }
-        .padding(.trailing, -Self.lineReach)
+        .padding(.trailing, -SpotTokens.cardLineReach)
         .frame(maxHeight: .infinity)
     }
 
@@ -229,7 +227,7 @@ private struct CardPress: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .overlay(shape.fill((isFilled ? SpotTheme.onSolid : SpotTheme.ink).opacity(showsPress ? 0.12 : 0)).allowsHitTesting(false))
+            .overlay(shape.fill((isFilled ? SpotTheme.onSolid : SpotTheme.ink).opacity(showsPress ? SpotTheme.pressFill : 0)).allowsHitTesting(false))
             .contentShape(shape)
     }
 }

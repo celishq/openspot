@@ -3,8 +3,6 @@ import OpenspotCore
 import SwiftUI
 
 final class SpotSubmenuWindow: NSPanel {
-    private static let menuGap: CGFloat = 4
-
     override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
 
@@ -29,8 +27,8 @@ final class SpotSubmenuWindow: NSPanel {
     func show(rows: Int, beside row: CGRect, of menu: CGRect, in panel: NSWindow) {
         let size = CGSize(width: ActionMenuFrame.width, height: SpotTokens.menuHeight(rows: rows))
         let top = panel.frame.maxY - (row.minY - SpotTokens.menuPadding)
-        let right = panel.frame.minX + menu.maxX + Self.menuGap
-        let left = panel.frame.minX + menu.minX - Self.menuGap - size.width
+        let right = panel.frame.minX + menu.maxX + SpotTokens.submenuGap
+        let left = panel.frame.minX + menu.minX - SpotTokens.submenuGap - size.width
         let area = panel.screen?.visibleFrame ?? .infinite
         let x = right + size.width <= area.maxX || left < area.minX ? right : left
         setFrame(NSRect(x: x, y: top - size.height, width: size.width, height: size.height), display: false)

@@ -11,13 +11,16 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
             SpotCommandLine.run(call)
         }
         let app = NSApplication.shared
+        #if OPENSPOT_TOOLS
+        SpotMotionProbe.takeAppearance()
+        #endif
         let delegate = OpenspotApp()
         app.delegate = delegate
         app.setActivationPolicy(.accessory)
         app.run()
     }
 
-    private static let dragSourceFocusDelay = 0.2
+    private static let dragSourceFocusDelay: TimeInterval = 0.2
     static var unlocks = UnlockPass()
 
     private(set) var item: OpenspotItem?

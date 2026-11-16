@@ -23,7 +23,7 @@ struct SpotBackdropEdge: View {
     @MainActor private static func pictures(of edge: BackdropEdge) -> [Image] {
         let size = edge.pictureSize
         let renderer = ImageRenderer(content: RoundedRectangle(cornerRadius: edge.corner, style: .continuous)
-            .fill(Color.black)
+            .fill(SpotTheme.mask)
             .padding(edge.inset)
             .frame(width: size.width, height: size.height)
             .blur(radius: edge.softness))

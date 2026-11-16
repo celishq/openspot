@@ -166,8 +166,8 @@ struct SpotRowsView: View {
     }
 
     private func bentoCell(_ item: SpotItem, size: CGSize) -> some View {
-        SpotItemIcon(item: item, size: min(size.width, size.height) * 0.5)
-            .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: min(size.width, size.height) * 0.5) }
+        SpotItemIcon(item: item, size: min(size.width, size.height) * SpotTokens.tileIconShare)
+            .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: min(size.width, size.height) * SpotTokens.tileIconShare) }
             .frame(width: size.width, height: size.height)
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
         .contentShape(row)
@@ -179,7 +179,7 @@ struct SpotRowsView: View {
     }
 
     private func rowLabel(_ item: SpotItem) -> some View {
-        HStack(spacing: SpotTokens.padding - 5) {
+        HStack(spacing: SpotTokens.wordsGap) {
             SpotItemIcon(item: item, size: SpotTokens.listIconSize)
                 .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: SpotTokens.listIconSize) }
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
@@ -238,10 +238,10 @@ private struct RowsFade: ViewModifier {
             .modifier(SpotScrollEdgeTracker(edges: $edges))
             .mask {
                 VStack(spacing: 0) {
-                    LinearGradient(colors: [.black.opacity(1 - edges.top), .black], startPoint: .top, endPoint: .bottom)
+                    LinearGradient(colors: [SpotTheme.mask.opacity(1 - edges.top), SpotTheme.mask], startPoint: .top, endPoint: .bottom)
                         .frame(height: SpotTokens.padding)
-                    Color.black
-                    LinearGradient(colors: [.black, .black.opacity(1 - edges.bottom)], startPoint: .top, endPoint: .bottom)
+                    SpotTheme.mask
+                    LinearGradient(colors: [SpotTheme.mask, SpotTheme.mask.opacity(1 - edges.bottom)], startPoint: .top, endPoint: .bottom)
                         .frame(height: bottom)
                 }
             }

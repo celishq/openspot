@@ -15,7 +15,7 @@ struct SpotSearchField: View {
             .font(SpotType.body)
             .foregroundStyle(SpotTheme.glassInk)
             .focused(isFocused)
-            .padding(.horizontal, SpotTokens.padding - SpotTokens.menuPadding + 4)
+            .padding(.horizontal, SpotTokens.menuTextInset)
             .frame(height: SpotTokens.menuRowHeight)
             .contentShape(shape)
             .pointerStyle(.horizontalText)

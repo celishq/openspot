@@ -24,7 +24,7 @@ struct SpotEditControls: ViewModifier {
             .overlay(alignment: .bottomTrailing) {
                 if sizes.count > 1 {
                     SpotResizeHandle(size: size)
-                        .opacity(showsHandle ? 1 : 0.001)
+                        .opacity(showsHandle ? 1 : MotionTokens.hiddenOpacity)
                         .animation(SpotMotion.fade(isShown: showsHandle), value: showsHandle)
                         .background(SpotHandleArea(model: model, id: id, size: size, sizes: sizes))
                 }

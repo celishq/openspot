@@ -74,8 +74,8 @@ struct SpotFormView: View {
                     moveFocus(from: field)
                     return .handled
                 }
-                .padding(.horizontal, SpotTokens.padding - 5)
-                .padding(.vertical, SpotTokens.padding - 5)
+                .padding(.horizontal, SpotTokens.formInset)
+                .padding(.vertical, SpotTokens.formInset)
                 .frame(height: SpotTokens.formTextHeight)
                 .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
         case .choice:

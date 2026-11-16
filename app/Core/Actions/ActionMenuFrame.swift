@@ -7,7 +7,7 @@ public struct ActionMenuFrame: Equatable, Sendable {
     public static let width = SpotTokens.width(columns: 3)
     public static let gap = SpotTokens.placeGap
     private static let leftTie: CGFloat = 1
-    private static let margin: CGFloat = 16
+    private static let margin = SpotTokens.menuMargin
     private static let step = SpotTokens.menuRowHeight + SpotTokens.menuRowGap
 
     public let rect: CGRect

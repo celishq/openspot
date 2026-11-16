@@ -5,7 +5,6 @@ import OpenspotCore
 @MainActor
 final class SpotPictureStore {
     static let shared = SpotPictureStore()
-    nonisolated static let scale: CGFloat = 2
 
     struct Key: Hashable, Sendable {
         let path: String
@@ -20,7 +19,7 @@ final class SpotPictureStore {
         }
     }
 
-    nonisolated private static let shortSide = Int(max(SpotTokens.gridWidth, SpotTokens.sheetMaxHeight) * scale)
+    nonisolated private static let shortSide = Int(max(SpotTokens.gridWidth, SpotTokens.sheetMaxHeight) * SpotTokens.pictureScale)
     private static let byteLimit = 16 << 20
 
     private let bitmaps = NSCache<NSString, Bitmap>()

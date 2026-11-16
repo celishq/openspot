@@ -19,7 +19,7 @@ struct SpotSlotView: View {
                 .tint(SpotTheme.ink)
             ViewThatFits(in: .horizontal) {
                 if part.title != nil || part.detail != nil {
-                    HStack(spacing: 8) {
+                    HStack(spacing: SpotTokens.slotSwitchGap) {
                         words.fixedSize()
                         Spacer(minLength: 0)
                         toggle
@@ -45,14 +45,14 @@ struct SpotSlotView: View {
         case .chart(let points):
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
                 if part.title != nil || part.detail != nil { words.fixedSize(horizontal: false, vertical: true) }
-                SpotBars(points: points, gap: 2, radius: 1.5)
+                SpotBars(points: points, gap: SpotTokens.slotBarGap, radius: SpotTokens.slotBarRadius)
             }
         case .shortcut(let text):
             SpotKeyLabel(text: text, isRecording: false)
         case .text(let text, let placeholder, let isReadOnly):
             SpotSlotField(text: text, placeholder: placeholder ?? part.title ?? "", isReadOnly: isReadOnly) { onSlot(part.id, $0) }
         case .number:
-            SpotNumberView(part: part, font: .system(size: numberSize, weight: .semibold, design: .rounded), leastScale: numberSize > 28 ? 0.2 : 0.5)
+            SpotNumberView(part: part, font: SpotType.slotNumber(size: numberSize), leastScale: numberSize > SpotType.slotNumberSize ? SpotType.leastBigNumberScale : SpotType.leastNumberScale)
         case .image(let path):
             picture(icon: .image(path))
         default:
@@ -63,7 +63,7 @@ struct SpotSlotView: View {
                     Image(systemName: symbol)
                         .font(SpotType.body.weight(.semibold))
                         .foregroundStyle(SpotTheme.ink)
-                        .frame(width: 28, height: 28)
+                        .frame(width: SpotTokens.slotButton, height: SpotTokens.slotButton)
                         .background(SpotTheme.ink.opacity(SpotTheme.chip), in: Circle())
                         .contentShape(Circle())
                 }
@@ -74,8 +74,8 @@ struct SpotSlotView: View {
                     Text(part.title ?? part.id.capitalized)
                         .font(SpotType.action)
                         .foregroundStyle(SpotTheme.ink)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 5)
+                        .padding(.horizontal, SpotTokens.slotChipPaddingX)
+                        .padding(.vertical, SpotTokens.chipPaddingY)
                         .background(SpotTheme.ink.opacity(SpotTheme.chip), in: Capsule())
                 }
                 .buttonStyle(.plain)
@@ -87,7 +87,7 @@ struct SpotSlotView: View {
     }
 
     private var numberSize: CGFloat {
-        part.title == nil ? height.map { $0 * 0.8 } ?? 28 : 28
+        part.title == nil ? height.map { $0 * SpotType.slotNumberShare } ?? SpotType.slotNumberSize : SpotType.slotNumberSize
     }
 
     private var words: some View {

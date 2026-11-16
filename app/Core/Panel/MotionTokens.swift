@@ -22,6 +22,7 @@ public enum MotionTokens {
     public static var fadeOut: Double { 0.12 * slow }
     public static var press: Double { 0.2 * slow }
     public static let pressBounce = 0.2
+    public static let shrinkCurve = (x1: 0.2, y1: 0.1, x2: 0.2, y2: 1.0)
 
     public static var growSettle: Double { 0.25 * slow }
     public static let answerPause = 0.15
@@ -38,6 +39,8 @@ public enum MotionTokens {
     public static let menuStartScale = 0.9
     public static let hiddenOpacity = 0.001
     public static let edgeScrollSpeed = 500.0
+    public static let menuBarWorkScale = 0.72
+    public static let menuBarSwapScale = 0.5
 
     public static let cardTurn = 12.0
     public static let cardLean = 9.0

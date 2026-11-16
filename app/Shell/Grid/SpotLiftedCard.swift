@@ -13,7 +13,7 @@ struct SpotLiftedCard: ViewModifier {
                 ZStack {
                     if isSolid {
                         shape.fill(SpotTheme.window)
-                            .shadow(color: .black.opacity(SpotTheme.liftShadowStrength), radius: SpotTheme.liftShadow, y: 4)
+                            .shadow(color: SpotTheme.liftShadowColor.opacity(SpotTheme.liftShadowStrength), radius: SpotTheme.liftShadow, y: SpotTheme.liftShadowDrop)
                             .transition(.opacity)
                     }
                 }

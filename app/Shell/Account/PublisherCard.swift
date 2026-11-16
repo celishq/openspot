@@ -28,37 +28,36 @@ struct PublisherCard: View {
     }
 
     static func make(_ values: [String: [String]], _ card: [String: Any], _ send: @escaping (String) -> Void) -> AnyView {
-        AnyView(PublisherCard(values: values, place: card["size"] as? CGSize ?? CGSize(width: 263, height: 178), send: send))
+        AnyView(PublisherCard(values: values, place: card["size"] as? CGSize ?? SpotTokens.publisherPlace, send: send))
     }
 
     private func value(_ key: String) -> String? {
         values[key]?.last
     }
 
-    static let tiltReach = CGSize(width: 10, height: 7)
-
     static func fit(in place: CGSize) -> CGSize {
-        let ratio = 263.0 / 166.0
-        let width = min(place.width - 2 * tiltReach.width, (place.height - 2 * tiltReach.height) * ratio)
+        let ratio = SpotTokens.publisherRatio
+        let reach = SpotTokens.publisherTiltReach
+        let width = min(place.width - 2 * reach.width, (place.height - 2 * reach.height) * ratio)
         return CGSize(width: width, height: width / ratio)
     }
 
     private func card(_ look: KeyLook, size: CGSize, tilt: CGPoint) -> some View {
-        let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: SpotTokens.publisherRadius, style: .continuous)
         let pill = pillSize
         return ZStack {
-            Rectangle().fill(.white).colorEffect(look.shader(size: size, tilt: tilt))
-            Rectangle().fill(.white).colorEffect(look.shader(size: size, tilt: tilt))
-                .blur(radius: 6)
-                .mask(alignment: .bottomTrailing) { Capsule().frame(width: pill.width, height: pill.height).padding(16) }
+            Rectangle().fill(SpotTheme.foilBase).colorEffect(look.shader(size: size, tilt: tilt))
+            Rectangle().fill(SpotTheme.foilBase).colorEffect(look.shader(size: size, tilt: tilt))
+                .blur(radius: SpotTokens.publisherPillBlur)
+                .mask(alignment: .bottomTrailing) { Capsule().frame(width: pill.width, height: pill.height).padding(SpotTokens.publisherInset) }
             face(look, tilt: tilt)
             glassPill(look, size: pill)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-                .padding(16)
+                .padding(SpotTokens.publisherInset)
         }
         .frame(width: size.width, height: size.height)
         .clipShape(shape)
-        .overlay(shape.strokeBorder(.white.opacity(0.3), lineWidth: 1))
+        .overlay(shape.strokeBorder(SpotTheme.publisherRim, lineWidth: 1))
         .rotation3DEffect(.degrees(tilt.x * MotionTokens.cardTurn), axis: (x: 0, y: 1, z: 0), perspective: MotionTokens.cardPerspective)
         .rotation3DEffect(.degrees(-tilt.y * MotionTokens.cardLean), axis: (x: 1, y: 0, z: 0), perspective: MotionTokens.cardPerspective)
     }
@@ -68,45 +67,45 @@ struct PublisherCard: View {
             top(look)
             Spacer(minLength: 0)
             if let handle = value("handle") {
-                Text("@\(handle)").font(.system(size: 24, weight: .bold)).lineLimit(1).minimumScaleFactor(0.6)
+                Text("@\(handle)").font(SpotType.publisherHandle).lineLimit(1).minimumScaleFactor(SpotType.leastValueScale)
             }
-            bottom.padding(.top, 8)
+            bottom.padding(.top, SpotTokens.publisherLineGap)
         }
-        .padding(16)
+        .padding(SpotTokens.publisherInset)
         .foregroundStyle(look.engrave)
-        .shadow(color: look.catchLight, radius: 0, x: -tilt.x * 0.8, y: 1 - tilt.y * 0.8)
+        .shadow(color: look.catchLight, radius: 0, x: -tilt.x * SpotTokens.publisherCatchShift, y: 1 - tilt.y * SpotTokens.publisherCatchShift)
     }
 
     private func top(_ look: KeyLook) -> some View {
         HStack(alignment: .top) {
-            Text("OPENSPOT PUBLISHER").font(.system(size: 9.5, weight: .bold)).tracking(1.9)
+            Text("OPENSPOT PUBLISHER").font(SpotType.publisherTitle).tracking(SpotType.publisherTracking)
             Spacer()
-            CardEmblem(dots: look.emblem).fill(look.engrave).frame(width: 26, height: 26)
+            CardEmblem(dots: look.emblem).fill(look.engrave).frame(width: SpotTokens.emblemSide, height: SpotTokens.emblemSide)
         }
     }
 
     private var bottom: some View {
         HStack(alignment: .bottom) {
-            if let since = value("since") { Text("Since \(since)").font(.system(size: 10.5, weight: .medium)) }
+            if let since = value("since") { Text("Since \(since)").font(SpotType.publisherSince) }
             Spacer(minLength: 0)
         }
         .frame(height: pillSize.height, alignment: .bottom)
     }
 
     private var pillSize: CGSize {
-        CGSize(width: Double((value("short") ?? "").count) * 6.3 + 33, height: 22)
+        CGSize(width: Double((value("short") ?? "").count) * SpotTokens.publisherPillCharWidth + SpotTokens.publisherPillRoom, height: SpotTokens.publisherPillHeight)
     }
 
     private func glassPill(_ look: KeyLook, size: CGSize) -> some View {
-        HStack(spacing: 5) {
-            Text(value("short") ?? "").font(.system(size: 10.5, weight: .medium, design: .monospaced))
-            Image(systemName: "doc.on.doc").font(.system(size: 9, weight: .semibold))
+        HStack(spacing: SpotTokens.publisherPillGap) {
+            Text(value("short") ?? "").font(SpotType.publisherKey)
+            Image(systemName: "doc.on.doc").font(SpotType.publisherCopy)
         }
         .foregroundStyle(look.engrave)
         .frame(width: size.width, height: size.height)
-        .background(Capsule().fill(look.engrave.opacity(isOnPill ? 0.18 : 0.1)))
-        .overlay(Capsule().strokeBorder(look.engrave.opacity(0.22), lineWidth: 1))
-        .overlay(Capsule().strokeBorder(LinearGradient(colors: [.white.opacity(0.45), .clear], startPoint: .top, endPoint: .center), lineWidth: 1))
+        .background(Capsule().fill(look.engrave.opacity(isOnPill ? SpotTheme.publisherPillHover : SpotTheme.publisherPill)))
+        .overlay(Capsule().strokeBorder(look.engrave.opacity(SpotTheme.publisherPillRing), lineWidth: 1))
+        .overlay(Capsule().strokeBorder(LinearGradient(colors: [SpotTheme.publisherPillShine, .clear], startPoint: .top, endPoint: .center), lineWidth: 1))
         .contentShape(Capsule())
         .onHover { isOnPill = $0 }
         .onTapGesture { send("copy") }

@@ -49,7 +49,18 @@ final class SpotMotionProbe: NSObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.begin() }
     }
 
+    nonisolated static let drawsGlass = ProcessInfo.processInfo.environment["OPENSPOT_GLASS"] != "off"
+
+    static func takeAppearance(environment: [String: String] = ProcessInfo.processInfo.environment) {
+        switch environment["OPENSPOT_APPEARANCE"] {
+        case "dark": NSApplication.shared.appearance = NSAppearance(named: .darkAqua)
+        case "light": NSApplication.shared.appearance = NSAppearance(named: .aqua)
+        default: break
+        }
+    }
+
     private func begin() {
+        if action == "pixels" { return shotsFolder.map(shootPixels) ?? finish(with: "no shots folder\n") }
         if action == "panel" { return beginOpens() }
         if action == "search" { return shotsFolder.map(shootTyping) ?? beginSearch() }
         if action == "drag" || action == "mouse" { return beginDrag() }
@@ -189,8 +200,9 @@ final class SpotMotionProbe: NSObject {
     private func saveWithChildren(to path: String) {
         let windows = [panel as NSWindow] + (panel.childWindows ?? []).filter(\.isVisible)
         let whole = windows.map(\.frame).reduce(panel.frame) { $0.union($1) }
+        let appearance = NSApp.effectiveAppearance
         let image = NSImage(size: whole.size, flipped: false) { bounds in
-            NSColor(SpotTheme.window).setFill()
+            SpotTheme.palette(for: appearance).window.setFill()
             bounds.fill()
             for window in windows {
                 guard let view = window.contentView, let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { continue }
@@ -235,6 +247,61 @@ final class SpotMotionProbe: NSObject {
                 }
             }
         }
+    }
+
+    private func shootPixels(into folder: String) {
+        try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
+        panel.makeFirstResponder(nil)
+        let small = model.placements.first { $0.size == .small }?.index ?? 0
+        let steps: [(name: String?, wait: Double, act: () -> Void)] = [
+            ("panel", 1, {}),
+            ("menu", 1, {
+                self.model.selected = small
+                _ = self.model.handleKey(ActionKey(name: "k", isCommand: true))
+            }),
+            (nil, 1, { self.model.closeMenu() }),
+            ("search", 1.5, { self.model.searchText = "ro" }),
+            (nil, 1, { self.model.searchText = "" }),
+            ("edit", 1.5, { self.model.beginEditing() }),
+            ("tip", 1, { self.model.tip = self.model.visible.first.map { SpotTip(id: $0.id, anchor: .trailingCorner, text: "Hide from grid") } }),
+            (nil, 1.5, {
+                self.model.tip = nil
+                self.model.endEditing()
+            }),
+            ("rows", 2, { self.model.press("rows") }),
+            (nil, 1.5, { self.model.closeSheet(moving: false) }),
+            ("parts", 2, { self.model.press("parts") }),
+            (nil, 1.5, { self.model.closeSheet(moving: false) }),
+            (nil, 2, { self.model.press("asks") }),
+            (nil, 1, { _ = self.model.handleKey(ActionKey(name: "k", isCommand: true)) }),
+            ("form", 2, {
+                if let row = self.model.menu?.shown.firstIndex(where: { $0.title == "Add" }) { self.model.pressMenu(row: row) }
+            }),
+            (nil, 1.5, {
+                self.model.cancelForm()
+                self.model.closeSheet(moving: false)
+            }),
+            ("toast", 1, { self.model.host.confirm("Saved to the shelf") })
+        ]
+        func next(_ left: ArraySlice<(name: String?, wait: Double, act: () -> Void)>) {
+            guard let step = left.first else { return finish(with: "shots\n") }
+            step.act()
+            panel.makeFirstResponder(nil)
+            DispatchQueue.main.asyncAfter(deadline: .now() + step.wait) {
+                if let name = step.name {
+                    if name == "toast" { self.saveToast(to: "\(folder)/\(name).png") } else { self.saveWithChildren(to: "\(folder)/\(name).png") }
+                }
+                next(left.dropFirst())
+            }
+        }
+        next(steps[...])
+    }
+
+    private func saveToast(to path: String) {
+        guard let view = NSApp.windows.first(where: { $0 is ToastPanel && $0.isVisible })?.contentView,
+              let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
+        view.cacheDisplay(in: view.bounds, to: bitmap)
+        FileManager.default.createFile(atPath: path, contents: bitmap.representation(using: .png, properties: [:]))
     }
 
     private func shootTyping(into folder: String) {

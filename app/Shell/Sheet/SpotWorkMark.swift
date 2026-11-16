@@ -8,11 +8,6 @@ struct SpotWorkMark: View {
     @Environment(\.spotIsOnSolid) private var isOnSolid
     @Environment(\.colorScheme) private var scheme
 
-    private static let thickLine: CGFloat = 4
-    private static let thinLine: CGFloat = 2.5
-    private static let squareRatio: CGFloat = 0.28
-    private static let squareCorner: CGFloat = 0.06
-
     private var isLarge: Bool {
         side >= SpotTokens.glyphSize
     }
@@ -26,7 +21,7 @@ struct SpotWorkMark: View {
             if let fill = call?.fill {
                 SpotRing(
                     fill: fill,
-                    line: isLarge ? Self.thickLine : Self.thinLine,
+                    line: isLarge ? SpotTokens.workThickLine : SpotTokens.workThinLine,
                     colour: colour,
                     track: (isOnSolid ? SpotTheme.onSolid : SpotTheme.ink).opacity(SpotTheme.track)
                 )
@@ -37,9 +32,9 @@ struct SpotWorkMark: View {
                     .environment(\.colorScheme, isOnSolid ? (scheme == .dark ? .light : .dark) : scheme)
             }
             if stops {
-                RoundedRectangle(cornerRadius: side * Self.squareCorner)
+                RoundedRectangle(cornerRadius: side * SpotTokens.workSquareCorner)
                     .fill(colour)
-                    .frame(width: side * Self.squareRatio, height: side * Self.squareRatio)
+                    .frame(width: side * SpotTokens.workSquareShare, height: side * SpotTokens.workSquareShare)
             }
         }
         .frame(width: side, height: side)

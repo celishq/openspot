@@ -20,15 +20,15 @@ public struct SheetPlacement: Equatable, Sendable {
         }
     }
 
-    public static let width: CGFloat = 263
-    public static let maxHeight: CGFloat = 442
-    public static let gap: CGFloat = 6
-    public static let groupGap: CGFloat = SpotTokens.padding
-    public static let rowHeight: CGFloat = 40
-    public static let maxRound: CGFloat = 44
-    public static let dividerHeight: CGFloat = 1
-    public static let fieldRoom: CGFloat = 54
-    private static let seamClearance: CGFloat = 22
+    public static let width = SpotTokens.partsWidth
+    public static let maxHeight = SpotTokens.partsMaxHeight
+    public static let gap = SpotTokens.partGap
+    public static let groupGap = SpotTokens.padding
+    public static let rowHeight = SpotTokens.partRowHeight
+    public static let maxRound = SpotTokens.partMaxRound
+    public static let dividerHeight = SpotTokens.dividerHeight
+    public static let fieldRoom = SpotTokens.partFieldRoom
+    private static let seamClearance = SpotTokens.partSeamClearance
 
     public let frames: [String: Frame]
     public let lines: [CGRect]

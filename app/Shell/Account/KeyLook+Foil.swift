@@ -3,11 +3,11 @@ import SwiftUI
 
 extension KeyLook {
     var engrave: Color {
-        isDark ? Color(red: 236 / 255, green: 238 / 255, blue: 244 / 255).opacity(0.9) : Color(red: 18 / 255, green: 20 / 255, blue: 26 / 255).opacity(0.8)
+        isDark ? SpotTheme.engraveDark : SpotTheme.engraveLight
     }
 
     var catchLight: Color {
-        isDark ? .black.opacity(0.6) : .white.opacity(0.55)
+        isDark ? SpotTheme.catchLightDark : SpotTheme.catchLightLight
     }
 
     func shader(size: CGSize, tilt: CGPoint) -> Shader {

@@ -20,7 +20,7 @@ struct SpotSteadyField: View {
                 .foregroundStyle(SpotTheme.glassInk)
                 .animation(nil) { $0.opacity(isSettled || text.isEmpty ? MotionTokens.hiddenOpacity : 1) }
             SpotSearchField(prompt: prompt, text: text, onSearch: onSearch, isFocused: $isFocused)
-                .animation(nil) { $0.opacity(isSettled ? 1 : 0.001) }
+                .animation(nil) { $0.opacity(isSettled ? 1 : MotionTokens.hiddenOpacity) }
         }
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: SpotRoundShape(surface.inner()))
         .onAppear {
@@ -34,7 +34,7 @@ struct SpotSteadyField: View {
             .lineLimit(1)
             .offset(y: -Self.textFieldRise)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, SpotTokens.padding - SpotTokens.menuPadding + 4)
+            .padding(.horizontal, SpotTokens.menuTextInset)
             .frame(height: SpotTokens.menuRowHeight)
             .allowsHitTesting(false)
     }

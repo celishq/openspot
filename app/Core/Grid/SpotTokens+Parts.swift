@@ -1,0 +1,115 @@
+import Foundation
+
+extension SpotTokens {
+    public static let arrowWidth: CGFloat = 7
+    public static let fieldTextGap: CGFloat = 8
+    public static let tipGap: CGFloat = 4
+    public static let submenuGap: CGFloat = 4
+    public static let groupTitleGap: CGFloat = 6
+    public static let cardLineReach: CGFloat = 6
+    public static let mediaRadius: CGFloat = 8
+    public static let tileIconShare: CGFloat = 0.5
+    public static let pictureScale: CGFloat = 2
+    public static let pictureRimLine: CGFloat = 0.5
+    public static let offScreen = CGPoint(x: -9000, y: -9000)
+    public static let scrollFadeLength = 56.0
+    public static let scrollFadeDistance = 24.0
+
+    public static let toastMargin: CGFloat = 16
+    public static let toastMaxSize = CGSize(width: 560, height: 120)
+    public static let toastGlyphGap: CGFloat = 8
+    public static let toastMarkSide: CGFloat = 16
+    public static let toastPaddingY: CGFloat = 10
+    public static let toastKeySpace: CGFloat = 2
+
+    public static let metricBigRingLine: CGFloat = 8
+    public static let metricRingLine: CGFloat = 4
+    public static let metricBarLine: CGFloat = 4
+    public static let metricRowLine: CGFloat = 15
+    public static let metricTitleGap: CGFloat = 4
+    public static let metricControlBars = CGSize(width: 33, height: 16)
+    public static let ringInsideGap: CGFloat = 2
+    public static let trendBar: CGFloat = 3
+    public static let trendGap: CGFloat = 2
+    public static let toneDot: CGFloat = 7
+    public static let edgeMarkWidth: CGFloat = 44
+    public static let lineTrendHeight: CGFloat = 12
+    public static let lineRingSide: CGFloat = 30
+    public static let lineRingLine: CGFloat = 2
+
+    public static let menuBarIconWidth: CGFloat = 30
+    public static let menuBarPillInset: CGFloat = 2
+    public static let menuBarGap: CGFloat = 5
+    public static let menuBarCountGap: CGFloat = 3
+    public static let menuBarPadding: CGFloat = 6
+    public static let menuBarRing: CGFloat = 14
+    public static let menuBarRingLine: CGFloat = 2.5
+    public static let menuBarBar: CGFloat = 2
+    public static let menuBarBarGap: CGFloat = 1
+    public static let menuBarBarsHeight: CGFloat = 14
+
+    public static let partsWidth: CGFloat = 263
+    public static let partsMaxHeight: CGFloat = 442
+    public static let partGap: CGFloat = 6
+    public static let partRowHeight: CGFloat = 40
+    public static let partMaxRound: CGFloat = 44
+    public static let partFieldRoom: CGFloat = 54
+    public static let partSeamClearance: CGFloat = 22
+    public static let dividerHeight: CGFloat = 1
+    public static let menuMargin: CGFloat = 16
+    public static let backdropSteps: [CGFloat] = [5, 3.5, 2]
+    public static let backdropParts: CGFloat = 12
+    public static let backdropReach: CGFloat = 2.5
+    public static let backdropMiddle: CGFloat = 2
+
+    public static let swatchSize: CGFloat = 22
+    public static let smallSwatch: CGFloat = 16
+    public static let partLineGap: CGFloat = 8
+    public static let partBarGap: CGFloat = 3
+    public static let partBarRadius: CGFloat = 2
+    public static let narrowCell: CGFloat = 80
+    public static let narrowGap: CGFloat = 2
+    public static let markValueWidth: CGFloat = 36
+    public static let partSymbolWidth: CGFloat = 22
+    public static let chipPaddingY: CGFloat = 5
+    public static let choiceChevronGap: CGFloat = 4
+    public static let choicePaddingX: CGFloat = 10
+    public static let colorBarWidth: CGFloat = 4
+    public static let colorBarGap: CGFloat = 8
+
+    public static let slotSwitchGap: CGFloat = 8
+    public static let slotBarGap: CGFloat = 2
+    public static let slotBarRadius: CGFloat = 1.5
+    public static let slotButton: CGFloat = 28
+    public static let slotChipPaddingX: CGFloat = 12
+
+    public static let workThickLine: CGFloat = 4
+    public static let workThinLine: CGFloat = 2.5
+    public static let workSquareShare: CGFloat = 0.28
+    public static let workSquareCorner: CGFloat = 0.06
+    public static let toneDotParts: CGFloat = 4
+    public static let toneDotLeast: CGFloat = 5
+    public static let toneDotShiftParts: CGFloat = 12
+    public static let dragIconSide: CGFloat = 32
+    public static let dragFan: CGFloat = 6
+
+    public static let playgroundSize = CGSize(width: 1180, height: 940)
+    public static let playgroundTextWidth: CGFloat = 320
+    public static let playgroundTextIdeal: CGFloat = 440
+    public static let playgroundTopHeight: CGFloat = 360
+    public static let playgroundLogHeight: CGFloat = 120
+
+    public static let emblemSide: CGFloat = 26
+    public static let publisherPlace = CGSize(width: 263, height: 178)
+    public static let publisherTiltReach = CGSize(width: 10, height: 7)
+    public static let publisherRatio = 263.0 / 166.0
+    public static let publisherRadius: CGFloat = 14
+    public static let publisherInset: CGFloat = 16
+    public static let publisherLineGap: CGFloat = 8
+    public static let publisherCatchShift: CGFloat = 0.8
+    public static let publisherPillBlur: CGFloat = 6
+    public static let publisherPillGap: CGFloat = 5
+    public static let publisherPillHeight: CGFloat = 22
+    public static let publisherPillCharWidth = 6.3
+    public static let publisherPillRoom = 33.0
+}

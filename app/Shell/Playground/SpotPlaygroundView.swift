@@ -4,11 +4,6 @@ import SwiftUI
 struct SpotPlaygroundView: View {
     @Bindable var model: SpotPlaygroundModel
 
-    private static let minTextWidth: CGFloat = 320
-    private static let minStageWidth: CGFloat = SpotTokens.gridWidth + 2 * SpotTokens.padding
-    private static let minTopHeight: CGFloat = 360
-    private static let minLogHeight: CGFloat = 120
-
     private var text: Binding<String> {
         Binding(get: { model.source }, set: { model.edit($0) })
     }
@@ -17,21 +12,21 @@ struct SpotPlaygroundView: View {
         VSplitView {
             HSplitView {
                 source
-                    .frame(minWidth: Self.minTextWidth, idealWidth: 440, maxHeight: .infinity)
+                    .frame(minWidth: SpotTokens.playgroundTextWidth, idealWidth: SpotTokens.playgroundTextIdeal, maxHeight: .infinity)
                     .background(SpotTheme.window)
                 VStack(spacing: 0) {
                     SpotPlaygroundStage(model: model)
                     faults
                 }
-                .frame(minWidth: Self.minStageWidth, idealWidth: SpotTokens.panelWidth, maxHeight: .infinity)
+                .frame(minWidth: SpotTokens.playgroundStageWidth, idealWidth: SpotTokens.panelWidth, maxHeight: .infinity)
             }
-            .frame(minHeight: Self.minTopHeight, idealHeight: SpotTokens.panelHeight + 120)
+            .frame(minHeight: SpotTokens.playgroundTopHeight, idealHeight: SpotTokens.playgroundTopIdeal)
             .layoutPriority(1)
             calls
-                .frame(minHeight: Self.minLogHeight, idealHeight: Self.minLogHeight, maxHeight: .infinity)
+                .frame(minHeight: SpotTokens.playgroundLogHeight, idealHeight: SpotTokens.playgroundLogHeight, maxHeight: .infinity)
                 .background(SpotTheme.window)
         }
-        .frame(minWidth: Self.minTextWidth + Self.minStageWidth, minHeight: Self.minTopHeight + Self.minLogHeight)
+        .frame(minWidth: SpotTokens.playgroundTextWidth + SpotTokens.playgroundStageWidth, minHeight: SpotTokens.playgroundTopHeight + SpotTokens.playgroundLogHeight)
     }
 
     private var source: some View {

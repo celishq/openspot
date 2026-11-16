@@ -88,8 +88,12 @@ Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these 
   and Synchronization. `make verify` runs `scripts/check-core.sh`, which fails on any other import, also after an attribute
   such as `@preconcurrency`.
 - Logic that a window needs goes in `Core/`. Only drawing and window handling go in `Shell/`.
-- Each colour and strength of the panel is in `Shell/Surface/SpotTheme.swift`, and a new theme is one more value there,
-  except the glass tint, which `app/Themes/` holds.
+- Each size, colour, strength, font and motion value has one name in a token file: `SpotTokens` (measured base values in
+  `Core/Grid/SpotTokens.swift`, formulas over them in `Core/Grid/SpotTokens+Derived.swift`, sizes of single parts in
+  `Core/Grid/SpotTokens+Parts.swift`), `SpotTheme`, `SpotType` and `MotionTokens`. A new theme is one more value of
+  `SpotTheme`, except the glass tint, which `app/Themes/` holds. `make verify` runs `scripts/check-tokens.sh`, which fails
+  on a number or a colour written for the look in `Shell/`, outside the token files, `Shell/Picture`, `Shell/Mac` and
+  `Shell/Tools`.
 - Glass is system glass, drawn by `spotGlass`, which wraps `glassEffect`. Each shape draws its own glass, outside a
   `GlassEffectContainer`, since a container drops an opacity after `glassEffect`, and the grid hides an open card and
   hides the panel by opacity. The grid's scroll edge is one gradient mask over the scroll view, so it cuts each card and
@@ -249,6 +253,8 @@ make test T=SpotRunsTests  # one test class, while you work on it
 make perf N=3              # times a Release sheet that opens and closes 20 times, 3 runs; ACTION picks another motion
 make film SPOT=caffeinate  # films the open and close of a sheet 10x slower (SLOW=1 for real speed) into .temp/film
 make shots                 # saves pictures of the actions menu in the running panel into .temp/shots; ACTION=search TEXT=/translate shoots a typed search
+sh scripts/pixel-diff.sh shoot before  # saves pictures of fixed screens, dark and light, into .temp/pixels/before
+sh scripts/pixel-diff.sh compare before after  # counts the pixels that differ in each picture, and marks them in .temp/pixels/marks
 make docs-images           # shows each GUIDE.md example on screen, focused, and takes its image; GuideImageTests fail when one is out of date
 make eval-agent N=1        # gives N tasks to claude -p with only `openspot guide`, and checks each spot; it costs money
 ```

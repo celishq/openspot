@@ -3,12 +3,11 @@ import SwiftUI
 
 struct ToastView: View {
     let toast: Toast
-    private static let markSide: CGFloat = 16
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: SpotTokens.toastGlyphGap) {
             if toast.kind == .work {
-                SpotWorkMark(call: nil, side: Self.markSide)
+                SpotWorkMark(call: nil, side: SpotTokens.toastMarkSide)
             } else if let symbol = toast.kind.symbol {
                 Image(systemName: symbol)
                     .font(SpotType.strong)
@@ -21,12 +20,12 @@ struct ToastView: View {
                 .lineLimit(3)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.horizontal, ToastPanel.margin)
-        .padding(.vertical, 10)
-        .modifier(SpotGlass(shape: SpotRoundShape(radius: SpotTokens.rowHeight / 3)))
+        .padding(.horizontal, SpotTokens.toastMargin)
+        .padding(.vertical, SpotTokens.toastPaddingY)
+        .modifier(SpotGlass(shape: SpotRoundShape(radius: SpotTokens.toastRadius)))
         .contentShape(Rectangle())
         .onTapGesture { toast.open?() }
-        .padding(ToastPanel.margin)
+        .padding(SpotTokens.toastMargin)
         .environment(\.spotIsShown, toast.isShown)
     }
 

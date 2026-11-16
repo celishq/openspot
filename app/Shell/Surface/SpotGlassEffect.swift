@@ -1,3 +1,4 @@
+import OpenspotCore
 import SwiftUI
 
 struct SpotGlassEffect<Edge: Shape>: ViewModifier {
@@ -9,7 +10,7 @@ struct SpotGlassEffect<Edge: Shape>: ViewModifier {
         if drawsGlass {
             content.glassEffect(isOn ? .clear.tint(SpotTheme.glassTint) : .identity, in: shape)
         } else {
-            content.overlay { shape.stroke(isOn ? SpotTheme.pictureRim : .clear, lineWidth: 0.5) }
+            content.overlay { shape.stroke(isOn ? SpotTheme.pictureRim : .clear, lineWidth: SpotTokens.pictureRimLine) }
         }
     }
 }

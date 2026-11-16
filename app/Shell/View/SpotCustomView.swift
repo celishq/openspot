@@ -140,7 +140,7 @@ struct SpotCustomView: View, @MainActor Equatable {
         case .failed(let reason):
             Text(reason)
                 .font(SpotType.detail)
-                .minimumScaleFactor(0.5)
+                .minimumScaleFactor(SpotType.leastViewScale)
                 .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
                 .padding(SpotTokens.padding)
         }

@@ -11,7 +11,7 @@ struct SpotKeyLabel: View {
             .font(SpotType.action)
             .foregroundStyle(SpotTheme.ink)
             .padding(.horizontal, SpotTokens.padding)
-            .padding(.vertical, 5)
+            .padding(.vertical, SpotTokens.chipPaddingY)
             .fixedSize()
             .background(SpotTheme.ink.opacity(SpotTheme.selectedFill), in: Capsule())
             .contentShape(Capsule())

@@ -16,7 +16,7 @@ struct SpotSheetPreview: View {
     var body: some View {
         let frame = SpotSheetBody.size(of: panel, rows: list.shown.count)
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
-            HStack(spacing: SpotTokens.padding - 5) {
+            HStack(spacing: SpotTokens.wordsGap) {
                 Image(systemName: symbol)
                     .font(SpotType.glyph)
                     .foregroundStyle(SpotTheme.ink)

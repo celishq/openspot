@@ -5,7 +5,7 @@ struct SpotDropView: View {
     let drop: SpotDrop
 
     var body: some View {
-        HStack(spacing: SpotTokens.padding - 5) {
+        HStack(spacing: SpotTokens.wordsGap) {
             Image(systemName: drop.symbol)
                 .font(SpotType.glyph)
                 .foregroundStyle(SpotTheme.ink)

@@ -172,7 +172,7 @@ private struct SheetFadeMask: ViewModifier {
         content.mask {
             ZStack {
                 fade.edges.gradient(height: height)
-                isOpen ? Color.black : Color.clear
+                isOpen ? SpotTheme.mask : Color.clear
             }
             .padding(.leading, panels.leftExtent)
             .offset(x: panels.frame.minX)

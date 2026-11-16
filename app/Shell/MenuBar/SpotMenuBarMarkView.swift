@@ -4,25 +4,12 @@ import SwiftUI
 struct SpotMenuBarMarkView: View {
     let mark: MenuBarMark
 
-    private static let gap: CGFloat = 5
-    private static let countGap: CGFloat = 3
-    private static let padding: CGFloat = 6
-    private static let dot: CGFloat = 7
-    private static let ring: CGFloat = 14
-    private static let ringLine: CGFloat = 2.5
-    private static let track = 0.25
-    private static let bar: CGFloat = 2
-    private static let barGap: CGFloat = 1
-    private static let barsHeight: CGFloat = 14
-    private static let oldBar = 0.55
-    private static let staleLight = 0.5
-
     private var markColour: Color {
         mark.tone.map(SpotMetricView.colour) ?? .primary
     }
 
     var body: some View {
-        HStack(spacing: Self.gap) {
+        HStack(spacing: SpotTokens.menuBarGap) {
             if let symbol = mark.symbol, !mark.isRing {
                 Image(systemName: symbol).foregroundStyle(markColour)
             }
@@ -31,9 +18,9 @@ struct SpotMenuBarMarkView: View {
         .font(SpotType.menuBar)
         .foregroundStyle(.primary)
         .lineLimit(1)
-        .padding(.horizontal, Self.padding)
+        .padding(.horizontal, SpotTokens.menuBarPadding)
         .frame(maxHeight: .infinity)
-        .opacity(mark.isStale ? Self.staleLight : 1)
+        .opacity(mark.isStale ? SpotTheme.stale : 1)
         .fixedSize(horizontal: true, vertical: false)
     }
 
@@ -42,7 +29,7 @@ struct SpotMenuBarMarkView: View {
         switch mark.content {
         case .counts(let counts):
             ForEach(Array(counts.enumerated()), id: \.offset) { _, count in
-                HStack(spacing: Self.countGap) {
+                HStack(spacing: SpotTokens.menuBarCountGap) {
                     if let tone = count.tone { dot(SpotMetricView.colour(tone)) }
                     Text("\(count.count)")
                 }
@@ -64,23 +51,23 @@ struct SpotMenuBarMarkView: View {
     }
 
     private func dot(_ colour: Color) -> some View {
-        Circle().fill(colour).frame(width: Self.dot, height: Self.dot)
+        Circle().fill(colour).frame(width: SpotTokens.toneDot, height: SpotTokens.toneDot)
     }
 
     private func ring(fill: Double) -> some View {
-        SpotRing(fill: fill, line: Self.ringLine, colour: markColour, track: .primary.opacity(Self.track))
-            .frame(width: Self.ring, height: Self.ring)
+        SpotRing(fill: fill, line: SpotTokens.menuBarRingLine, colour: markColour, track: .primary.opacity(SpotTheme.menuBarTrack))
+            .frame(width: SpotTokens.menuBarRing, height: SpotTokens.menuBarRing)
     }
 
     private func bars(_ points: [Double]) -> some View {
-        HStack(alignment: .bottom, spacing: Self.barGap) {
+        HStack(alignment: .bottom, spacing: SpotTokens.menuBarBarGap) {
             ForEach(Array(points.enumerated()), id: \.offset) { index, point in
                 Capsule()
-                    .fill(markColour.opacity(index == points.count - 1 ? 1 : Self.oldBar))
-                    .frame(width: Self.bar, height: max(CGFloat(point) * Self.barsHeight, Self.bar))
+                    .fill(markColour.opacity(index == points.count - 1 ? 1 : SpotTheme.oldBar))
+                    .frame(width: SpotTokens.menuBarBar, height: max(CGFloat(point) * SpotTokens.menuBarBarsHeight, SpotTokens.menuBarBar))
             }
         }
-        .frame(height: Self.barsHeight, alignment: .bottom)
+        .frame(height: SpotTokens.menuBarBarsHeight, alignment: .bottom)
     }
 }
 

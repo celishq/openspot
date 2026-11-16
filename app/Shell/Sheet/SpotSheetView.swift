@@ -117,7 +117,7 @@ private struct SheetContentView: View {
     }
 
     private var header: some View {
-            HStack(spacing: SpotTokens.padding - 5) {
+            HStack(spacing: SpotTokens.wordsGap) {
                 glyph
                 ZStack(alignment: .leading) {
                     if showsCardWords {
@@ -165,16 +165,14 @@ private struct SheetContentView: View {
         return SheetMorph.sheetLook(at:)
     }
 
-    private static let wordsGap = SpotTokens.padding - 5
-
     private var sheetWordsWidth: CGFloat {
-        rect.width - SpotTokens.padding - SpotTokens.glyphSize - 2 * Self.wordsGap - SpotTokens.glyphSize - SpotTokens.padding
+        rect.width - SpotTokens.padding - SpotTokens.glyphSize - 2 * SpotTokens.wordsGap - SpotTokens.glyphSize - SpotTokens.padding
     }
 
     private var cardWordsWidth: CGFloat {
         if cardSize.rows > 1 { return cardWidth - 2 * SpotTokens.padding }
-        let arrow = closeShift == nil ? 0 : SpotCardArrow.width + Self.wordsGap
-        return max(cardWidth - SpotCardArrow.rowInset - arrow - SpotTokens.padding - SpotTokens.glyphSize - Self.wordsGap, 0)
+        let arrow = closeShift == nil ? 0 : SpotTokens.arrowWidth + SpotTokens.wordsGap
+        return max(cardWidth - SpotTokens.arrowRowInset - arrow - SpotTokens.padding - SpotTokens.glyphSize - SpotTokens.wordsGap, 0)
     }
 
     @ViewBuilder
@@ -244,7 +242,7 @@ private struct SheetContentView: View {
         let row = max(SpotTokens.glyphSize, wordsHeight)
         let top = SpotTokens.padding + (row - wordsHeight) / 2
         return CGSize(
-            width: -(SpotTokens.glyphSize + SpotTokens.padding - 5),
+            width: -(SpotTokens.glyphSize + SpotTokens.wordsGap),
             height: SpotTokens.height(rows: cardSize.rows) - SpotTokens.padding - wordsHeight - top
         )
     }
