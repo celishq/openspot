@@ -164,27 +164,22 @@ extension SpotsModel {
             sheet.afterAnswer { [weak self] in self?.run(entry) }
             return
         }
-        switch entry.kind {
+        switch entry.spot.mainAct {
         case .toggle:
             sheets[entry.id]?.pressCard()
-        case .launch:
-            if isShown, sheets[entry.id]?.isCardRunning != true, !entry.spot.takesDrops { host.dismiss() }
+        case .run(let closes):
+            if closes, isShown, sheets[entry.id]?.isCardRunning != true { host.dismiss() }
             sheets[entry.id]?.pressCard()
-        case .list where entry.spot.pressRuns:
-            if isShown, sheets[entry.id]?.isCardRunning != true { host.dismiss() }
-            sheets[entry.id]?.pressCard()
-        case .list:
-            if openSheetID == entry.id {
-                closeSheet(moving: true)
-            } else if let command = entry.spot.soleCommand {
-                runSole(command, of: entry)
-            } else {
-                pushFirst(entry.id, moving: true)
-            }
-        case .slider:
+        case .command where openSheetID == entry.id, .sheet where openSheetID == entry.id:
+            closeSheet(moving: true)
+        case .command(let command):
+            runSole(command, of: entry)
+        case .sheet:
+            pushFirst(entry.id, moving: true)
+        case .open(let opens):
+            press(opens)
+        case .none:
             break
-        case .widget:
-            if let opens = entry.spot.opens { press(opens) }
         }
     }
 
@@ -206,7 +201,7 @@ extension SpotsModel {
     }
 
     var soleHint: String? {
-        guard openSheetID == nil, let entry = selectedEntry, entry.kind == .list, !entry.spot.pressRuns, let command = entry.spot.soleCommand else { return nil }
+        guard openSheetID == nil, let entry = selectedEntry, entry.item == nil, case .command(let command) = entry.spot.mainAct else { return nil }
         guard assignedKeys.contains(where: { $0.spot == entry.id && $0.act == .command(command) }) else {
             return "⏎ Set key   ⌘⏎ Settings   ⌘K Actions"
         }

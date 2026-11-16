@@ -38,12 +38,10 @@ extension SpotsModel {
         if let offer {
             return call(CommandAction(id: offer.id, title: offer.title, scope: .spot, after: offer.closes ? .close : .stay), of: entry, text)
         }
-        switch entry.kind {
-        case .launch:
+        switch entry.spot.mainAct {
+        case .run:
             call(CommandAction(id: SpotAction.open.arguments[0], title: entry.state.title, scope: .spot, after: .close), of: entry, text, onCard: true)
-        case .list where entry.spot.pressRuns:
-            call(CommandAction(id: SpotAction.open.arguments[0], title: entry.state.title, scope: .spot, after: .close), of: entry, text, onCard: true)
-        case .list where entry.spot.soleCommand == nil:
+        case .sheet:
             pushFirst(entry.id, moving: true)
             sheets[entry.id]?.type(text)
         default:
