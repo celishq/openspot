@@ -20,6 +20,19 @@ final class SnippetsSpotTests: SampleSpotsCase {
         }
     }
 
+    func testNewTakesTheTextOfASlashCommandAsItsText() async throws {
+        let snippets = try XCTUnwrap(try scan.spots.first { $0.name == "Snippets" })
+        try await withPrivateHome { _ in
+            let new = try await self.action("new", of: snippets)
+            XCTAssertEqual(new.placeholder, "Text to keep")
+
+            let output = try await Self.answer(of: snippets, ["new"], input: "search=hello there\n")
+            let form = try XCTUnwrap(ItemForm(output: output))
+
+            XCTAssertEqual(FormDraft(form: form).values["content"], "hello there")
+        }
+    }
+
     func testAReadStartsOnlyJq() async throws {
         let snippets = try XCTUnwrap(try scan.spots.first { $0.name == "Snippets" })
         try await withPrivateHome { folder in

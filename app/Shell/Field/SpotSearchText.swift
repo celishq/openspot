@@ -7,5 +7,6 @@ struct SpotSearchText: View {
 
     var body: some View {
         TextField(title, text: Binding(get: { model.searchText }, set: { model.searchText = $0 }), prompt: Text(""))
+            .foregroundStyle(model.marksSlash ? Color.clear : SpotTheme.ink)
     }
 }

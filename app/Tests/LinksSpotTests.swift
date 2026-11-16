@@ -227,6 +227,19 @@ final class LinksSpotTests: SampleSpotsCase {
         }
     }
 
+    func testNewTakesTheTextOfASlashCommandAsItsLink() async throws {
+        let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
+        try await withPrivateHome { _ in
+            let new = try await self.action("new", of: links)
+            XCTAssertEqual(new.placeholder, "Link to add")
+
+            let output = try await Self.answer(of: links, ["new"], input: "search=example.com\n")
+            let form = try XCTUnwrap(ItemForm(output: output))
+
+            XCTAssertEqual(FormDraft(form: form).values["url"], "example.com")
+        }
+    }
+
     func testLinksCompletesALinkAndOpensAndCopiesIt() async throws {
         let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
         try await withPrivateHome { folder in

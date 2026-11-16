@@ -23,7 +23,8 @@ extension SpotRun {
         let query = list.search == .script && !script.keepsState ? list.query : ""
         let read = SpotAction.read
         let action = spot.read == nil ? spot.click : read
-        let values = [showsSheet ? panel?.values : nil, query.isEmpty ? nil : SearchQuery(text: query).input].compactMap { $0 }
+        let typed = query.isEmpty ? typed ?? "" : query
+        let values = [showsSheet ? panel?.values : nil, typed.isEmpty ? nil : SearchQuery(text: typed).input].compactMap { $0 }
         let isSent = send(Call(
             action: action,
             key: Self.readKey,
@@ -32,6 +33,7 @@ extension SpotRun {
             reason: action == read ? reason : nil,
             purpose: .ask(.read(generation: panel?.generation, reports: need != .clock, query: query, tells: reason != .panel))
         ))
+        self.typed = nil
         if isSent {
             readReason = reason
             if !list.holdsItems || list.hasFailed { list.beginLoading() }

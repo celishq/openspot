@@ -96,7 +96,7 @@ extension SpotsModel {
     }
 
     public func closeSheet(moving: Bool) {
-        formAsk = nil
+        pendingAsk = nil
         stopRecording()
         showSheet(nil, moving: moving)
         runs.closeOpen()

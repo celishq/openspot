@@ -68,6 +68,36 @@ final class CaffeinateSpotTests: XCTestCase {
         XCTAssertEqual(sheet.list.all.first?.run, "off")
     }
 
+    private func start(in sheet: SpotRun) async throws -> CommandAction {
+        try await wait("the button to start") { sheet.spot.actions.contains { $0.id == "start" } }
+        let start = try XCTUnwrap(sheet.spot.actions.first { $0.id == "start" })
+        XCTAssertEqual(start.placeholder, "Minutes, such as 45")
+        return start
+    }
+
+    func testMinutesFromASlashCommandKeepTheMacAwakeAndShowNothing() async throws {
+        let sheet = try sheet()
+        let start = try await start(in: sheet)
+
+        let answer = try await sheet.launch(start, input: "search=45\n")
+
+        XCTAssertEqual(answer, .done)
+        try await wait("caffeinate") { self.running().count == 1 }
+        XCTAssertTrue(try String(contentsOf: folder.appendingPathComponent("awake"), encoding: .utf8).contains("-di -t 2700"))
+        try await wait("the toast") { self.toasts.last == "Caffeinate is on for 45 minutes" }
+    }
+
+    func testTextThatIsNoNumberShowsAnErrorAndTheDurations() async throws {
+        let sheet = try sheet()
+        let start = try await start(in: sheet)
+
+        let answer = try await sheet.launch(start, input: "search=soon\n")
+
+        XCTAssertEqual(answer, .shown)
+        try await wait("the toast") { self.toasts.last == "Caffeinate takes minutes as a number, such as 45." }
+        XCTAssertTrue(running().isEmpty)
+    }
+
     func testTurnOffEndsCaffeinateAndItsCall() async throws {
         let sheet = try sheet()
         try await pick("0", in: sheet)

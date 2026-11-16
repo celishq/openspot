@@ -45,6 +45,7 @@ duration() {
 sheet() {
   printf 'recents=false\n\n'
   printf 'button=open\ntitle=Select\n\n'
+  printf 'button=start\ntitle=Keep awake for…\nscope=spot\nform=true\nclose=true\nplaceholder=Minutes, such as 45\n\n'
   awake && printf 'row=off\ntitle=Turn off\n\n'
   duration 1800 '30 minutes'; echo
   duration 3600 '1 hour'; echo
@@ -84,6 +85,11 @@ release() {
   held=
 }
 
+# Prints a value of the stdin of the call, which comes escaped on its input line.
+given() {
+  printf '%b\n' "$input" | sed -n "s/^$1=//p" | head -n 1
+}
+
 toast() {
   minutes=$(( $1 / 60 ))
   if [ "$1" = 0 ]; then echo "Caffeinate is on until you turn it off"
@@ -103,6 +109,23 @@ serve() {
       release
       printf '%scall=%s\n---\ntoast=Caffeinate is off\n%s\n---\nend=%s\n---\n' "$ended" "$call" "$(sheet)" "$call"
       ;;
+    start*)
+      minutes=$(given minutes)
+      [ -n "$minutes" ] || minutes=$(given search)
+      case $minutes in
+        '')
+          printf 'call=%s\n---\ntitle=Keep the Mac awake\n\nfield=minutes\ntitle=Minutes\nplaceholder=45\n---\nend=%s\n---\n' "$call" "$call"
+          ;;
+        *[!0-9]* | 0*)
+          printf 'call=%s\n---\ntoast=Caffeinate takes minutes as a number, such as 45.\n%s\n---\nend=%s\n---\n' "$call" "$(sheet)" "$call"
+          ;;
+        *)
+          release
+          hold "$call" $(( minutes * 60 ))
+          printf '%s%s\n---\ncall=%s\n---\ntoast=%s\ndetail=%s\n---\n' "$ended" "$(sheet)" "$call" "$(toast "$secs")" "$(left)"
+          ;;
+      esac
+      ;;
     open\ [0-9]*)
       release
       hold "$call" "${2%%.*}"
@@ -121,9 +144,11 @@ detail=$(left)
 }
 
 call=
+input=
 while IFS= read -r line; do
   case $line in
-    call=*) call=${line#call=}; set -- ;;
+    call=*) call=${line#call=}; input=; set -- ;;
+    input=*) input=${line#input=} ;;
     arg=*) set -- "$@" "${line#arg=}" ;;
     stop=*)
       if [ "${line#stop=}" = "$held" ]; then

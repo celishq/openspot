@@ -1,6 +1,7 @@
 #!/bin/sh
 # icon=translate
 # detail=Between languages
+# placeholder=Text to translate
 # on=sheet.open
 # uses=clipboard
 # offers=card
@@ -123,6 +124,8 @@ show() {
 
 input=$(value input; printf x)
 input=${input%x}
+typed=$(value search)
+[ -z "$typed" ] || input=$typed
 source=$(value source)
 target=$(value target)
 [ -n "$source" ] || source=$(field source "$(cat "$saved" 2>/dev/null)")

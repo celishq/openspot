@@ -499,7 +499,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         let asked = try await sheet.change(CommandAction(id: "editor", title: "Change editor"))
         let done = try await sheet.change(CommandAction(id: "folder", title: "Change folder"))
 
-        guard case .form(let form)? = asked else { return XCTFail("no form: \(String(describing: asked))") }
+        guard case .form(let form) = asked else { return XCTFail("no form: \(String(describing: asked))") }
         XCTAssertEqual(form.fields.map(\.name), ["editor"])
         XCTAssertEqual(done, .done)
         XCTAssertTrue(exists("folder"))

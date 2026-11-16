@@ -49,7 +49,7 @@ case "$1" in
     printf 'button=paste\ntitle=Paste\nshortcut=cmd+return\nclose=true\n\n'
     printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\n\n'
     printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\n\n'
-    printf 'button=new\ntitle=New snippet\nshortcut=cmd+n\nscope=spot\nform=true\n\n'
+    printf 'button=new\ntitle=New snippet\nshortcut=cmd+n\nscope=spot\nform=true\nplaceholder=Text to keep\n\n'
     [ -s "$data" ] || exit 0
     jq -r "$esc"'.[] | "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.content | gsub("\\s+"; " ") | .[0:200] | esc)\n"' "$data"
     ;;
@@ -57,7 +57,7 @@ case "$1" in
     title=$(value title)
     text=$(value content; printf x)
     if [ -z "$title${text%x}" ]; then
-      form "New snippet" '{"title":"","content":""}'
+      form "New snippet" "$(jq -nc --arg content "$(value search)" '{title: "", content: $content}')"
       exit 0
     fi
     id=$(uuidgen)
