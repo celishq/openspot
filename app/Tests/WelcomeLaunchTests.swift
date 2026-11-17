@@ -51,29 +51,65 @@ final class WelcomeLaunchTests: XCTestCase {
         model.sheets[Self.welcome]?.calls.isEmpty == true
     }
 
+    private var focus: String? {
+        model.openParts?.selectedPart?.id
+    }
+
+    private var shownPages: [String?] {
+        model.flow.pages.map(\.page)
+    }
+
     private func launch() async throws {
         await model.beginFirstLaunch()
-        try await wait("the welcome sheet") { self.model.openSheetID == Self.welcome && self.keyField?.value == "ctrl+space" }
-        try await wait("the focus on use") { self.model.openParts?.selectedPart?.id == "use" }
+        try await wait("the welcome") { self.model.openSheetID == Self.welcome && self.model.openParts?.parts.first { $0.id == "head" }?.title == "Welcome to Openspot" }
+        try await wait("the focus on continue") { self.focus == "next" }
+    }
+
+    private func toKeyPage() async throws {
+        XCTAssertTrue(press("return"))
+        try await wait("the key page") { self.keyField?.value == "ctrl+space" && self.focus == "use" && self.shownPages == [nil, "key"] }
+    }
+
+    private func toLastPage() async throws {
+        XCTAssertTrue(press("return"))
+        try await wait("the last page") { self.hasEnded && self.model.openParts?.parts.contains { $0.id == "done" } == true }
+    }
+
+    private func recordOptionSpace() async throws {
+        XCTAssertTrue(press("escape"))
+        model.record(code: 49, modifiers: .option)
+        try await wait("the kept key") { self.hasEnded && self.keyField?.value == "option+space" }
     }
 
     private func press(_ name: String) -> Bool {
         model.handleKey(ActionKey(name: name))
     }
 
-    func testTheFirstLaunchShowsTheKeyThatOpensOpenspotChosenAndReturnKeepsIt() async throws {
+    func testThreeReturnsWalkThePagesToTheGridAndKeepTheKey() async throws {
         try await launch()
-        XCTAssertNil(model.recording)
+        try await toKeyPage()
+        try await toLastPage()
 
+        XCTAssertEqual(shownPages, [nil, "key", "agent"])
+        XCTAssertEqual(model.flow.pages.dropLast().map { model.title(of: $0) }, ["Welcome", "Choose your key"])
         XCTAssertTrue(press("return"))
 
-        try await wait("the end of use") { self.hasEnded }
+        try await wait("the grid") { self.model.openSheetID == nil }
+        XCTAssertEqual(model.files.config.read().panelKey, .standard)
+    }
+
+    func testEscOnTheWelcomeShowsTheGridAndKeepsTheKey() async throws {
+        try await launch()
+
+        XCTAssertTrue(press("escape"))
+
         try await wait("the grid") { self.model.openSheetID == nil }
         XCTAssertEqual(model.files.config.read().panelKey, .standard)
     }
 
     func testEscRecordsAndEscAgainBringsTheKeyBack() async throws {
         try await launch()
+        try await toKeyPage()
 
         XCTAssertTrue(press("escape"))
         XCTAssertEqual(model.recording, "key")
@@ -83,34 +119,70 @@ final class WelcomeLaunchTests: XCTestCase {
         XCTAssertNil(model.recording)
         XCTAssertEqual(keyField?.value, "ctrl+space")
         XCTAssertEqual(model.openSheetID, Self.welcome)
-        XCTAssertEqual(model.openParts?.selectedPart?.id, "use")
+        XCTAssertEqual(focus, "use")
     }
 
     func testANewKeyIsSavedByReturnAndTheToastNamesIt() async throws {
         let key = try XCTUnwrap(Shortcut(text: "option+space"))
         try await launch()
-        XCTAssertTrue(press("escape"))
-        model.record(code: 49, modifiers: .option)
-        try await wait("the kept key") { self.hasEnded && self.keyField?.value == "option+space" }
-        XCTAssertEqual(model.openParts?.selectedPart?.id, "use")
+        try await toKeyPage()
+        try await recordOptionSpace()
+        XCTAssertEqual(focus, "use")
 
+        try await toLastPage()
+        XCTAssertEqual(model.files.config.read().panelKey, key)
         XCTAssertTrue(press("return"))
 
-        try await wait("the end of use") { self.hasEnded }
         try await wait("the grid") { self.model.openSheetID == nil }
-        XCTAssertEqual(model.files.config.read().panelKey, key)
         host.dismiss()
         XCTAssertEqual(host.confirms.last, key.openHint)
     }
 
     func testTheArrowsReachRecordAndSpacePressesIt() async throws {
         try await launch()
+        try await toKeyPage()
 
         XCTAssertTrue(press("down"))
-        XCTAssertEqual(model.openParts?.selectedPart?.id, "record")
+        XCTAssertEqual(focus, "record")
         XCTAssertTrue(press(" "))
 
         XCTAssertEqual(model.recording, "key")
+    }
+
+    func testBackFromTheLastPageShowsTheSavedKeyAndReturnComesBack() async throws {
+        try await launch()
+        try await toKeyPage()
+        try await recordOptionSpace()
+        try await toLastPage()
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "[", isCommand: true)))
+
+        try await wait("the key page again") { self.hasEnded && self.keyField?.value == "option+space" && self.model.flow.index == 1 }
+        XCTAssertTrue(press("return"))
+        try await wait("the last page again") { self.hasEnded && self.model.openParts?.parts.contains { $0.id == "done" } == true }
+        XCTAssertEqual(shownPages, [nil, "key", "agent"])
+    }
+
+    func testEscOnTheLastPageGoesBackToTheKeyPage() async throws {
+        try await launch()
+        try await toKeyPage()
+        try await toLastPage()
+
+        XCTAssertTrue(press("escape"))
+
+        try await wait("the key page again") { self.model.flow.index == 1 && self.focus == "use" }
+        XCTAssertEqual(model.openSheetID, Self.welcome)
+    }
+
+    func testClosingThePanelBeforeUseKeepsTheOldKeyAndTheToastNamesIt() async throws {
+        try await launch()
+        try await toKeyPage()
+        try await recordOptionSpace()
+
+        host.dismiss()
+
+        XCTAssertEqual(host.confirms.last, Shortcut.standard.openHint)
+        XCTAssertEqual(model.files.config.read().panelKey, .standard)
     }
 
     private func nextTurn() async {
