@@ -404,12 +404,6 @@ final class SpotUsageTests: SpotRunsCase {
         XCTAssertEqual(version?.first, day)
     }
 
-    func testTheVersionOfASpotIsShortAndFollowsItsStamp() {
-        XCTAssertEqual(SpotUsage.version(of: [1, 2, 3]).count, 8)
-        XCTAssertEqual(SpotUsage.version(of: [1, 2, 3]), SpotUsage.version(of: [1, 2, 3]))
-        XCTAssertNotEqual(SpotUsage.version(of: [1, 2, 3]), SpotUsage.version(of: [1, 2, 4]))
-    }
-
     func testADayKeptBeforeVersionsReadsItsCountsAsOneUnknownVersion() throws {
         try FileManager.default.createDirectory(at: stats, withIntermediateDirectories: true)
         try Data(#"{"day":"2026-11-11","spots":{"a":{"runs":2}}}"#.utf8).write(to: file("2026-11-11"))

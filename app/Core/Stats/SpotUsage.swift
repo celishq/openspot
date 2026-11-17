@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 
 public final class SpotUsage: @unchecked Sendable {
@@ -126,11 +125,6 @@ public final class SpotUsage: @unchecked Sendable {
 
     func take(versions: [String: String]) {
         lock.withLock { spotVersions = versions }
-    }
-
-    static func version(of stamp: [Int]) -> String {
-        let bytes = stamp.flatMap { withUnsafeBytes(of: Int64($0).littleEndian, Array.init) }
-        return SHA256.hash(data: bytes).prefix(4).map { String(format: "%02x", $0) }.joined()
     }
 
     public func drew(view source: String, seconds: TimeInterval) {
