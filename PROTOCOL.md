@@ -1021,6 +1021,7 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot render --store <file.png>`               | Draws the window of the Store with each spot as its card.                                       |
 | `openspot prompt new [words]...`                   | Prints a prompt that asks a coding agent to build a spot that does what the words say.          |
 | `openspot prompt change <id> [words]...`           | Prints a prompt that asks a coding agent to change a spot as the words say.                     |
+| `openspot prompt theme <name> [words]...`          | Prints a prompt that asks a coding agent to change a theme as the words say.                    |
 | `openspot emoji [--tone name]`                     | Prints each emoji as a row, with its name in the language of the Mac.                           |
 | `openspot symbols`                                 | Prints each symbol of the Character Viewer as a row.                                            |
 | `openspot translate [--from code] [--to code]`     | Translates the text on stdin. `openspot translate languages` prints the languages it knows.     |
@@ -1040,7 +1041,7 @@ on its card, a press of the card with `⌘`, or **Settings** in its ⌘K menu op
 - Each shortcut is a row with `type=hotkey` (see [Rows](#rows)). Return on it records a key, and `⌘⌫` removes the key.
 - Openspot makes the Settings sheet, and it grows from the spot's card. Its rows never show in the spot's own sheet.
 - The Settings spot of Openspot holds only the settings of the app: its keys, Careful mode, Slow
-  motion, Open at login and the `openspot` command.
+  motion, Open at login and the `openspot` command. The Themes spot of Openspot changes its look.
 - A `field` block in the header names a setting. Return on it runs the action with the same id, which can answer with a
   form. `⌘⌫` removes the value.
 - Each call gets the value of each `field` in `OPENSPOT_SETTING_<KEY>`, such as `OPENSPOT_SETTING_FOLDER`, so a spot

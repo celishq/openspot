@@ -94,7 +94,8 @@ final class ThemeCallTests: XCTestCase {
         let parse = { (words: [String]) in CommandLineCall(arguments: ["theme"] + words, environment: [:])?.value as? ThemeCall }
 
         XCTAssertEqual(parse(["reload"]), .reload)
-        XCTAssertEqual(parse(["open"]), .open)
+        XCTAssertEqual(parse(["open"]), .open(nil))
+        XCTAssertEqual(parse(["open", "Dusk"]), .open("Dusk"))
         XCTAssertNil(parse(["edit"]))
         XCTAssertEqual(parse(["list"]), .list(.json))
         XCTAssertEqual(parse(["use", "Dusk"]), .use("Dusk"))

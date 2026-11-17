@@ -556,6 +556,11 @@ The box sits `padding` inside the view's place, so its corner is `radius.inner`,
 
 A theme gives Openspot its colours, glass, sizes, type and motion. Change it to make Openspot look your way.
 
+Open **Themes** in Openspot to see each theme, with the one in use checked. Return uses a theme. Its ⌘K menu
+duplicates, renames, moves to the Trash or opens the file of a theme, and **Copy prompt** hands a theme to your agent:
+describe the look you want, and `⌘⏎` copies a prompt that changes the theme's file. The same prompt comes from
+`openspot prompt theme <name> [words]...`.
+
 Each theme lives in one file, `theme.toml`. Run `openspot theme open`, which opens the file of the theme in use, and the
 first time makes a copy of `Openspot`, `Openspot copy`, and uses it. Change a value and save:
 
@@ -599,6 +604,7 @@ used=true
 | `openspot theme duplicate [name]`         | Copies the theme in use, or the named one, as `<name> copy`, and uses the copy.          |
 | `openspot theme rename <name> <new name>` | Renames a theme.                                                                         |
 | `openspot theme delete <name>`            | Moves a theme to the Trash. Deleting the one in use switches to `Openspot`.              |
+| `openspot theme open [name]`             | Opens the file of the theme in use, or the named one, and copies a built-in theme first.  |
 
 Each section of the file holds one kind of value:
 

@@ -7,7 +7,7 @@ enum ThemeCall: NounCall, Equatable {
     case duplicate(String?)
     case rename(String, String)
     case delete(String)
-    case open
+    case open(String?)
     case reload
 
     private static let changes = CallRule.Read.changes("changes the theme")
@@ -23,7 +23,9 @@ enum ThemeCall: NounCall, Equatable {
             words.rest.count == 2 ? Self.rename(words.rest[0], words.rest[1]) : nil
         },
         CommandVerb("delete", "<name>", "Moves a theme to the Trash. Deleting the one in use switches to the built-in one.", rule: CallRule(use: .app, used: "deleted a theme", read: changes)) { $0.one.map(Self.delete) },
-        CommandVerb("open", "", "Opens the file of the theme in use in the text editor. The built-in theme can't change, so it opens a copy, which it uses.", rule: CallRule(use: .app, used: "opened the theme", read: .changes("opens a window"))) { $0.none ? Self.open : nil },
+        CommandVerb("open", "[name]", "Opens the file of the theme in use, or the named one, in the text editor. A built-in theme can't change, so it opens a copy, which it uses.", rule: CallRule(use: .app, used: "opened the theme", read: .changes("opens a window"))) { words in
+            words.rest.count < 2 ? Self.open(words.rest.first) : nil
+        },
         CommandVerb("reload", "", "Reads the theme in use again from its file, and draws with it.", rule: CallRule(use: .app, used: "reloaded the theme", read: .changes("redraws Openspot"))) { $0.none ? Self.reload : nil }
     ])
 
@@ -68,11 +70,11 @@ enum ThemeCall: NounCall, Equatable {
             }
         case .reload:
             CommandAnswer.work { try await draw("") }
-        case .open:
+        case .open(let name):
             CommandAnswer.work { [openText = context.mac.openText] in
                 guard let openText else { throw SpotError.fault("This Mac has no text editor.") }
-                let isBuiltIn = ThemeFolder.isBuiltIn(themes.readInUse(), among: themes.scanBuiltIns())
-                let file = try themes.edit()
+                let isBuiltIn = ThemeFolder.isBuiltIn(try name.map(themes.find) ?? themes.readInUse(), among: themes.scanBuiltIns())
+                let file = try themes.edit(name)
                 if isBuiltIn { _ = try await draw("") }
                 await openText(file)
                 return ""

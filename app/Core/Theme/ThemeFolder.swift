@@ -126,8 +126,8 @@ public struct ThemeFolder: Sendable {
         return isInUse
     }
 
-    public func edit() throws -> URL {
-        let name = readInUse()
+    public func edit(_ named: String? = nil) throws -> URL {
+        let name = try named.map(find) ?? readInUse()
         return file(of: Self.isBuiltIn(name, among: scanBuiltIns()) ? try duplicate(name) : name)
     }
 
@@ -162,7 +162,7 @@ public struct ThemeFolder: Sendable {
         guard name.rangeOfCharacter(from: .newlines) == nil else { throw SpotError.failed(1, "A theme's name cannot hold a new line. Pick a name such as `Dusk`.") }
     }
 
-    private func find(_ name: String) throws -> String {
+    public func find(_ name: String) throws -> String {
         try check(name)
         guard let found = scan().first(where: { $0.caseInsensitiveCompare(name) == .orderedSame }) else {
             throw SpotError.failed(1, "There is no theme named \(name). Run `openspot theme list` to see each one.")

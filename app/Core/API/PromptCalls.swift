@@ -26,6 +26,15 @@ struct PromptCalls {
         }
     }
 
+    func theme(_ name: String, words: String) -> CommandAPI.Work {
+        CommandAnswer.work { [mac, environment] in
+            let themes = ThemeFolder.standard(environment: environment, builtIn: mac.theme)
+            let found = try themes.find(name)
+            let app = AgentPrompt.command(of: Bundle.main.executablePath ?? "openspot")
+            return ThemePrompt(theme: found, folder: themes.url, isBuiltIn: ThemeFolder.isBuiltIn(found, among: themes.scanBuiltIns()), base: mac.theme, app: app).asking(words)
+        }
+    }
+
     private static func prompt(in folder: URL, mac: Mac) -> AgentPrompt {
         AgentPrompt(folder: folder, guide: mac.guide ?? folder, app: AgentPrompt.command(of: Bundle.main.executablePath ?? "openspot"))
     }
