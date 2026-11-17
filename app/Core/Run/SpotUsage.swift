@@ -119,8 +119,8 @@ public final class SpotUsage: @unchecked Sendable {
         change(spot, at: date) { $0.act(at: date) }
     }
 
-    func called(_ spot: Spot, seconds: TimeInterval, answered: TimeInterval? = nil, failure: Failure? = nil, reason: String? = nil, at date: Date) {
-        change(spot, at: date) { $0.call(seconds: seconds, answered: answered, failure: failure, reason: reason, network: spot.uses.contains(.network), at: date) }
+    func called(_ spot: Spot, _ outcome: CallOutcome, at date: Date) {
+        change(spot, at: date) { $0.call(outcome, network: spot.uses.contains(.network), at: date) }
     }
 
     func failedRun(_ spot: Spot, failure: Failure, at date: Date) {

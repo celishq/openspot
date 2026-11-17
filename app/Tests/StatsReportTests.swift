@@ -54,8 +54,8 @@ final class StatsReportTests: XCTestCase {
         let alpha = Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh"))
         usage.acted(alpha, at: day.addingTimeInterval(-5))
         usage.acted(alpha, at: day)
-        usage.called(alpha, seconds: 0.3, answered: 0.07, reason: "sheet.open", at: day)
-        usage.called(alpha, seconds: 9, answered: 2, failure: .timeout, at: day)
+        usage.called(alpha, CallOutcome(seconds: 0.3, answered: 0.07, reason: "sheet.open"), at: day)
+        usage.called(alpha, CallOutcome(seconds: 9, answered: 2, failure: .timeout), at: day)
         usage.add(ProcessTime(cpu: 0.25, wakeups: 4, memory: 5_000_000), to: "a", at: day)
         usage.failed(alpha, fault: "Alpha took too long.", at: day)
 
@@ -96,7 +96,7 @@ final class StatsReportTests: XCTestCase {
 
     func testASpotWithNoViewHasNoBodyKeys() throws {
         let usage = SpotUsage(at: day)
-        usage.called(Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh")), seconds: 1, at: day)
+        usage.called(Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh")), CallOutcome(seconds: 1), at: day)
 
         let frame = try StatsReport(days: usage.days(1, at: day), spot: nil).text(.frame)
 

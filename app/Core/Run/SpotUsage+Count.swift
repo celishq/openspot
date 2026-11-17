@@ -25,12 +25,12 @@ extension SpotUsage {
             last = date
         }
 
-        mutating func call(seconds: TimeInterval, answered: TimeInterval?, failure: Failure?, reason: String?, network: Bool, at date: Date) {
+        mutating func call(_ outcome: CallOutcome, network: Bool, at date: Date) {
             runs += 1
-            self.seconds += seconds
-            if let answered { answers.add(answered) }
-            if let failure { failures.add(failure, at: date) }
-            if let reason { reads[reason, default: 0] += 1 }
+            seconds += outcome.seconds
+            if let answered = outcome.answered { answers.add(answered) }
+            if let failure = outcome.failure { failures.add(failure, at: date) }
+            if let reason = outcome.reason { reads[reason, default: 0] += 1 }
             self.network = network
         }
 
