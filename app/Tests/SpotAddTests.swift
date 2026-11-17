@@ -191,6 +191,26 @@ final class SpotAddTests: XCTestCase {
         XCTAssertEqual(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries(), [])
     }
 
+    func testTrustKeepsTheAuthorOfAnAddedSpotInTheConfig() async throws {
+        let key = try AccountKey.make().publicKey
+        try "#!/bin/sh\n".writeScript(to: spots.spotFile("cups"))
+        try JSONEncoder().encode([SpotLock.Entry(source: "https://example.com/cups.git", commit: nil, paths: ["cups.spot"], hash: nil, uses: [], key: key)]).write(to: root.appendingPathComponent("spots.lock"))
+
+        let answer = try await answer(["spot", "trust", "cups"])
+
+        XCTAssertEqual(answer.output, "Trusted the author of cups.\n")
+        XCTAssertEqual(ConfigFile(url: root.appendingPathComponent("config.toml")).read().trusted, [.author(key)])
+    }
+
+    func testTrustLeavesASpotThatAddDidNotAdd() async throws {
+        try "#!/bin/sh\n".writeScript(to: spots.spotFile("mine"))
+
+        let answer = try await answer(["spot", "trust", "mine"])
+
+        XCTAssertEqual(answer.code, 1)
+        XCTAssertEqual(answer.errors, "`openspot spot add` did not add mine, so it runs as you made it.\n")
+    }
+
     func testRemoveLeavesASpotThatAddDidNotAdd() async throws {
         try "#!/bin/sh\n".writeScript(to: spots.spotFile("mine"))
 

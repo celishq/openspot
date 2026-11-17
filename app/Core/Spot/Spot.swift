@@ -195,7 +195,8 @@ public struct Spot: Equatable, Sendable {
             spot: self.id,
             fields: self.settings,
             showsInMenuBar: canShowInMenuBar,
-            keys: settingKeys
+            keys: settingKeys,
+            grant: self.grant
         )
         if self.read == nil, !self.offers.isEmpty {
             spot.kind = .list
@@ -258,9 +259,10 @@ public struct Spot: Equatable, Sendable {
         return spot
     }
 
-    func restricted() -> Spot {
+    func restricted(lifting grant: Trusted? = nil) -> Spot {
         var spot = self
         spot.isRestricted = true
+        spot.grant = grant
         spot.view = nil
         return spot
     }

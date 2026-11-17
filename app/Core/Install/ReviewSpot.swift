@@ -57,6 +57,7 @@ public struct ReviewSpot: Equatable, Sendable {
                 programs + ["It can do all that you can. Add it only if you trust the sender."]
                     + (programs.contains(where: SpotFiles(package: spot).isBuilt) ? ["The source beside it may not match the program."] : [])
             ),
+            scan.scripts.contains { $0.view != nil } ? Self.section("Its own view", ["Openspot shows its cards without it until you trust the spot in its Settings."]) : nil,
             uses.isEmpty ? "Uses nothing\n\n" : Self.section("Uses", [uses.map(\.rawValue).joined(separator: ", ")]),
             Self.section("Can also", canAlso),
             runs.isEmpty ? "\(quiet)\n\n" : Self.section("Runs by itself", runs),

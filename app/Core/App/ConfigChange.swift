@@ -4,6 +4,7 @@ public enum ConfigChange: Equatable, Sendable {
     case keys
     case spots([String])
     case careful
+    case trusted
     case value(spot: String, caller: String?)
 
     var sections: Set<Config.Section> {
@@ -11,6 +12,7 @@ public enum ConfigChange: Equatable, Sendable {
         case .keys: [.keys]
         case .spots: [.spots]
         case .careful: [.careful]
+        case .trusted: []
         case .value: [.settings]
         }
     }

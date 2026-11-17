@@ -10,6 +10,7 @@ public struct SpotSettings: Equatable, Sendable {
     enum Row: Equatable {
         case key(GlobalKey.Act)
         case menuBar
+        case trust
         case setting(String)
 
         init?(id: String, of spot: String) {
@@ -20,6 +21,8 @@ public struct SpotSettings: Equatable, Sendable {
                 self = .setting(key)
             } else if id == "menubar:\(spot)" {
                 self = .menuBar
+            } else if id == "trust:\(spot)" {
+                self = .trust
             } else {
                 return nil
             }
@@ -29,6 +32,7 @@ public struct SpotSettings: Equatable, Sendable {
             switch self {
             case .key(let act): "key:\(spot):\(act.setting)"
             case .menuBar: "menubar:\(spot)"
+            case .trust: "trust:\(spot)"
             case .setting(let key): "setting:\(spot):\(key)"
             }
         }
@@ -56,9 +60,10 @@ public struct SpotSettings: Equatable, Sendable {
     let fields: [HeaderField]
     let showsInMenuBar: Bool
     let keys: [Key]
+    let grant: Trusted?
 
     public func hasRows(in config: Config) -> Bool {
-        !keys.isEmpty || showsInMenuBar || !fields.isEmpty || !kept(in: config).isEmpty
+        !keys.isEmpty || showsInMenuBar || grant != nil || !fields.isEmpty || !kept(in: config).isEmpty
     }
 
     public func field(of run: String) -> String? {
@@ -77,6 +82,10 @@ public struct SpotSettings: Equatable, Sendable {
         case (Self.open, .menuBar):
             try file.change { $0.arrangement.set(isInMenuBar: !$0.arrangement.menuBar.contains(spot), of: spot) }
             return ""
+        case (Self.open, .trust):
+            guard let grant else { throw SpotError.failed(1, "This sheet cannot do that.") }
+            try file.change { $0.trust(grant) }
+            return TextBlock(fields: [.init(key: "toast", value: "Trusted")]).text
         case (let id?, nil) where arguments.count == 2:
             guard case .key(let act)? = self.row(id), keys.contains(where: { $0.act == act }) else { throw SpotError.failed(1, "This sheet cannot do that.") }
             guard let trigger = Trigger(text: arguments[1]) else {
@@ -97,6 +106,7 @@ public struct SpotSettings: Equatable, Sendable {
         switch row {
         case .key(let act): try file.change { $0.assign(nil, to: spot, act: act) }
         case .menuBar: try file.change { $0.arrangement.set(isInMenuBar: false, of: spot) }
+        case .trust: break
         case .setting(let key) where fields.contains { $0.id == key && $0.isSecret }: try secrets.keep(nil, key: key, of: spot)
         case .setting(let key): try file.change { $0.set(setting: key, of: spot, to: nil) }
         }
@@ -124,6 +134,13 @@ public struct SpotSettings: Equatable, Sendable {
             blocks.append(TextBlock(fields: [
                 .init(key: "row", value: Row.menuBar.id(of: spot)), .init(key: "title", value: "Show in the menu bar"), .init(key: "icon", value: Self.menuBarIcon),
                 .init(key: "hides", value: Self.clear), .init(key: "value", value: String(config.arrangement.menuBar.contains(spot)))
+            ]))
+        }
+        if let grant {
+            blocks.append(TextBlock(fields: [
+                .init(key: "row", value: Row.trust.id(of: spot)), .init(key: "title", value: grant.title),
+                .init(key: "detail", value: "Runs in Careful mode, with no view of its own"), .init(key: "icon", value: "checkmark.shield"),
+                .init(key: "hides", value: Self.clear)
             ]))
         }
         return blocks.map(\.text).joined(separator: "\n")

@@ -46,7 +46,7 @@ extension SpotsModel {
     }
 
     var catalog: SpotCatalog {
-        SpotCatalog(published: files.store, folder: folder, arrangement: arrangement, stores: Store.all(environment: files.environment, config: config), trust: trust)
+        SpotCatalog(published: files.store, folder: folder, arrangement: arrangement, stores: Store.all(environment: files.environment, config: config), trust: trust.granting(config.trusted))
     }
 
     func ownSpot(_ id: String) -> Spot? {

@@ -148,7 +148,7 @@ final class CallInputTests: SpotRunsCase {
     private func settingsSheet(fields: [HeaderField], config: String = "") throws -> String {
         let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
         try config.write(to: file.url, atomically: true, encoding: .utf8)
-        let settings = SpotSettings(file: file, secrets: try secrets(["token": marker]), spot: "script", fields: fields, showsInMenuBar: false, keys: [])
+        let settings = SpotSettings(file: file, secrets: try secrets(["token": marker]), spot: "script", fields: fields, showsInMenuBar: false, keys: [], grant: nil)
         return try settings.answer(["read"])
     }
 
@@ -177,7 +177,7 @@ final class CallInputTests: SpotRunsCase {
     func testRemoveOnTheRowOfASecretDropsItFromTheStore() throws {
         let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
         let store = try secrets(["token": marker])
-        let settings = try SpotSettings(file: file, secrets: store, spot: "script", fields: [field("token", secret: true)], showsInMenuBar: false, keys: [])
+        let settings = try SpotSettings(file: file, secrets: store, spot: "script", fields: [field("token", secret: true)], showsInMenuBar: false, keys: [], grant: nil)
 
         _ = try settings.answer(["clear", "setting:script:token"])
 

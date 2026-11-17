@@ -975,7 +975,7 @@ A spot asks the Mac and Openspot for things through one command, which works the
   - calls that capture the screen: `screen shot`, `screen record start` and `screen record stop`;
   - calls that change the Mac or the user's data: `window move`, `clipboard copy`, `clipboard paste`, `calendar add`,
     `reminders add`, `reminders done`, `spot add`, `spot remove` and `spot delete`;
-  - calls that change Openspot or its places: `app quit`, `theme reload`, `update install`, and `setting set` of a key that Openspot
+  - calls that change Openspot or its places: `app quit`, `theme reload`, `update install`, `spot trust`, and `setting set` of a key that Openspot
     keeps for the user (see [Settings](#settings));
   - calls that open a window or the panel: `spot open`, `spot choose`, `spot settings`, `spot edit`, `spot prompt`, `spot share`, `spot review`, `grid edit`, `setting change`, `theme open`,
     `update check`, `calendar show` and `reminders show`.
@@ -1001,6 +1001,7 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot spot delete <id>`                        | Moves a spot to the Trash, and `⌘Z` in the panel puts it back.                                  |
 | `openspot spot add <git url, folder or .spot>`     | Adds a spot, and records it in `spots.lock`. An update that needs a new use also needs `--yes`. |
 | `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                                |
+| `openspot spot trust <id>`                         | Trusts the author of a spot that `spot add` added, so that its spots run unrestricted. See [Trust](#trust). |
 | `openspot spot stats`                              | Prints what each spot cost and used. See [Stats](#stats).                                       |
 | `openspot grid edit`                               | Opens the panel in Edit Spots, to arrange the grid.                                             |
 | `openspot store list [--json]`                     | Prints each spot of the store and its step: `get`, `publish`, or `added` once you have it.      |
@@ -1151,7 +1152,7 @@ openspot app quit
 | Use         | The calls that need it                                                                                                                                          |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `app`       | `app quit`, `theme reload`, `theme open`, `update check`, `update install`, and `setting set` of `menubar`, `open`, `float`, `key.<command>` or of the spot `openspot`                                |
-| `spots`     | `spot add`, `spot remove`, `spot settings`, `spot edit`, `spot prompt`, `spot share`, `spot delete`, `spot new`, `spot run`, `spot log`, `setting list`, `setting set` of `enabled`, and `setting get`, `set` or `change` of another spot |
+| `spots`     | `spot add`, `spot remove`, `spot trust`, `spot settings`, `spot edit`, `spot prompt`, `spot share`, `spot delete`, `spot new`, `spot run`, `spot log`, `setting list`, `setting set` of `enabled`, and `setting get`, `set` or `change` of another spot |
 | `screen`    | `screen sources`, `screen shot`, `screen record`, `window frame`, `window move` and `color pick`                                                                |
 | `clipboard` | `clipboard copy`, `clipboard paste` and `clipboard read`                                                                                                        |
 | `calendar`  | each call of `calendar` and `reminders`                                                                                                                         |
@@ -1177,6 +1178,12 @@ openspot app quit
   can also write to the Desktop, Movies and the screenshots folder. In Careful mode, a call that needs a use the header
   doesn't name fails.
 - Without Careful mode, the data folder is no boundary.
+- A spot that came from someone else runs restricted: in Careful mode, and with no view of its own, so its cards show
+  only its blocks. That is a spot that `spot add` or a store added, unless it comes from Openspot's own store or your
+  account key signed it. A spot that you made or put in the spots folder yourself runs as you made it.
+- To lift it, choose **Trust its author** in the spot's Settings, or run `openspot spot trust <id>`. That trusts each spot
+  that the same key signed. A spot that no key signed shows **Trust this spot**, which trusts only that spot. Only you
+  can trust a spot: a spot that calls `spot trust` fails.
 - A spot folder can hold `releases.jsonl`, the signed releases of the spot. Openspot writes it when the user shares or
   publishes the spot, and refuses a shared spot whose files don't match its last release. A spot reads nothing from it.
 - `openspot account show` tells any spot the public facts: whether an account is signed in, its `npub`, the `handle` it was

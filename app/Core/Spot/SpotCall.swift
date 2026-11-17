@@ -9,6 +9,7 @@ public enum SpotCall: NounCall {
     case list(core: Bool, form: PrintForm)
     case add(String?, isConfirmed: Bool)
     case remove(String)
+    case trust(String)
     case open(String)
     case push(String, page: String?, title: String?, replace: Bool)
     case pop(String, all: Bool)
@@ -48,6 +49,11 @@ public enum SpotCall: NounCall {
             return Self.add(fit.rest.first, isConfirmed: fit.has("--yes"))
         },
         CommandVerb("remove", "<id>", "Moves a spot that spot add added to the Trash, and drops it from spots.lock.", rule: CallRule(use: .spots, used: "removed a spot", read: .changes(folder))) { $0.one.map(Self.remove) },
+        CommandVerb(
+            "trust", "<id>",
+            "Trusts the author of a spot that spot add added, or the spot when no key signed it, so that it runs outside Careful mode and shows its own view.",
+            rule: CallRule(use: .spots, used: "trusted a spot", read: .changes("changes how spots run"), onlyPerson: "cannot trust a spot. Only you can, in its Settings or with `openspot spot trust <id>` in Terminal.")
+        ) { $0.one.map(Self.trust) },
         CommandVerb("open", "<id> [--select]", "Opens the panel on a spot, as a new flow. --select only selects its card on the grid.", rule: CallRule(read: .changes(panel), flags: .needsApp)) { words in
             guard let fit = words.fit, fit.rest.count == 1 else { return nil }
             return fit.has("--select") ? Self.show(fit.rest[0]) : Self.open(fit.rest[0])
@@ -95,6 +101,7 @@ public enum SpotCall: NounCall {
         case .add(let source?, let isConfirmed): spots.add(source, isConfirmed: isConfirmed)
         case .add(nil, let isConfirmed): spots.restore(isConfirmed: isConfirmed)
         case .remove(let id): spots.remove(id)
+        case .trust(let id): spots.trust(id)
         case .open(let id): spots.open(id)
         case .push(let id, let page, let title, let replace): spots.push(id, page: page, title: title, replace: replace)
         case .pop(let id, let all): spots.pop(id, all: all)

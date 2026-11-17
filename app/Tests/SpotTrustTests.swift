@@ -66,4 +66,45 @@ final class SpotTrustTests: PanelCase {
         XCTAssertNil(item.spot.view)
         XCTAssertTrue(item.spot.isRestricted)
     }
+
+    private func writeConfig(_ text: String) throws {
+        let url = model.files.config.url
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try text.write(to: url, atomically: true, encoding: .utf8)
+    }
+
+    func testASpotWhoseAuthorThePersonTrustsIsNotRestricted() async throws {
+        let key = try AccountKey.make().publicKey
+        try addCups(source: "https://example.com/cups.git", key: key)
+        try writeConfig("[[trusted]]\nauthor = \"\(key)\"\n")
+
+        await model.reload()
+
+        XCTAssertEqual(cups?.isRestricted, false)
+        XCTAssertNotNil(cups?.view)
+    }
+
+    func testAnUnsignedSpotThatThePersonTrustsIsNotRestricted() async throws {
+        try addCups(source: "https://example.com/cups.git")
+        try writeConfig("[[trusted]]\nspot = \"cups\"\n")
+
+        await model.reload()
+
+        XCTAssertEqual(cups?.isRestricted, false)
+    }
+
+    func testTheSettingsOfARestrictedSpotTrustItsAuthor() async throws {
+        let key = try AccountKey.make().publicKey
+        try addCups(source: "https://example.com/cups.git", key: key)
+        await model.reload()
+        let settings = try XCTUnwrap(cups?.settingsSheet)
+
+        XCTAssertTrue(try settings.answer(["read"]).contains("row=trust:cups\ntitle=Trust its author\n"))
+        _ = try settings.answer(["open", "trust:cups"])
+        await model.reload()
+
+        XCTAssertEqual(model.config.trusted, [.author(key)])
+        XCTAssertEqual(cups?.isRestricted, false)
+        XCTAssertNil(cups?.settingsSheet.flatMap { try? $0.answer(["read"]) }?.range(of: "row=trust:"))
+    }
 }

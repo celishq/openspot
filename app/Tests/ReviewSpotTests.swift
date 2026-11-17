@@ -88,6 +88,17 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertTrue(text.hasPrefix("\(review.name)\n\nProgram that Openspot cannot show\ntool.spot/tool\nIt can do all that you can. Add it only if you trust the sender.\n\n"), text)
     }
 
+    func testASpotWithItsOwnViewSaysThatTheViewWaitsForTrust() throws {
+        let review = try ReviewSpot(
+            spot: spot([("cups.spot/cups.sh", "#!/bin/sh\n# view=cups.swift\n", true), ("cups.spot/cups.swift", "", false)]),
+            folder: folder
+        )
+
+        let text = try shown(review)
+
+        XCTAssertTrue(text.contains("Its own view\nOpenspot shows its cards without it until you trust the spot in its Settings.\n\n"), text)
+    }
+
     func testVeryLongTextIsNamedAndNotDrawn() throws {
         let long = String(repeating: "x", count: ReviewSpot.textLimit + 1)
         let files = [

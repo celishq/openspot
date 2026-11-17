@@ -63,6 +63,18 @@ struct SpotCalls {
         }
     }
 
+    func trust(_ id: String) -> CommandAPI.Work {
+        CommandAnswer.work { [environment, app] in
+            guard let entry = try SpotLock.standard(environment: environment).entries().first(where: { $0.holds(id) }) else {
+                throw SpotError.failed(1, "`openspot spot add` did not add \(id), so it runs as you made it.")
+            }
+            let grant = SpotTrust.grant(of: entry)
+            let config = try ConfigFile.standard(environment: environment).change { $0.trust(grant) }
+            await app?.configChanged(.trusted, to: config)
+            return grant == .spot(entry.name) ? "Trusted \(entry.name).\n" : "Trusted the author of \(entry.name).\n"
+        }
+    }
+
     func open(_ id: String) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot open \(id)") }
         return CommandAnswer.work {
