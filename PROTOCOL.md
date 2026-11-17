@@ -1090,7 +1090,7 @@ openspot spot stats --days 7
   or ran one of its actions. A read is never an act, and acts on one spot within 2 seconds count as one.
 - `--days N` adds up the last N days. `--spot <id>` shows one spot.
 - `--by version` prints a row for each version of a spot, the oldest first, so you can compare a spot before and after
-  a change. A version is a short hash that changes each time a file of the spot changes.
+  a change. A version is a short hash that changes each time a file of the spot is written, replaced or touched.
 - `--openmetrics` prints each counter as [OpenMetrics](https://openmetrics.io) text, labelled by `spot`, and by
   `version` with `--by version`, so that any tool for metrics can read it.
 - It prints a `row=<id>` block for each spot, the most CPU first, then a `use=<n>` block for each call that needs a
@@ -1122,10 +1122,9 @@ openspot spot stats --days 7
 | `bodies`, `body`     | The runs of the `body` of its `SpotView`, and their seconds in all.   |
 | `fault`, `tone`      | Its last error, with `tone=bad`.                                      |
 
-- A `search` block holds a search of the panel that found nothing, folded to lower case, and its `count`. A search counts
-  when you clear it or hide the panel without a result, and only with 3 letters or more. A day keeps 50.
-- A `search` block holds a search of the panel that found nothing, folded to lower case, and its `count`. A search counts
-  when you clear it or hide the panel with no result, and only with 3 letters or more. A day keeps 50.
+- A `search` block holds a search of the panel that found nothing, folded to lower case, and its `count`. A search of
+  3 letters or more counts when you clear it or hide the panel with no pick, by the longest text that found nothing.
+  A day keeps 50.
 - A `use` block holds `time`, `spot`, `call`, such as `app.quit`, and `declared`. Only a call that the header doesn't
   declare is logged, so `declared` is `false`; `call.<noun>.<verb>` counts each call.
 

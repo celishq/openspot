@@ -51,7 +51,7 @@ public final class SpotsModel {
     public var query = "" {
         didSet {
             guard query != oldValue else { return }
-            if query.trimmingCharacters(in: .whitespaces).isEmpty { noteMiss(of: oldValue) } else { notedMiss = nil }
+            if query.trimmingCharacters(in: .whitespaces).isEmpty { noteMiss() }
             selected = 0
             askAnswers()
             updateVisible()
@@ -69,7 +69,7 @@ public final class SpotsModel {
     @ObservationIgnored var keyFrames: [String: String] = [:]
     @ObservationIgnored var spotListBuilds = 0
     @ObservationIgnored var visibleUpdates = 0
-    @ObservationIgnored var notedMiss: String?
+    @ObservationIgnored var pendingMiss: String?
     var answerMatches: AnswerMatches {
         runs.answerMatches
     }

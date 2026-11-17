@@ -162,10 +162,17 @@ public struct StatsReport: Sendable {
                 let day: String
                 let countsActs: Bool
                 let spots: [String: SpotUsage.Count]
+                let versions: [String: [String: SpotUsage.Version]]?
                 let uses: [SpotUsage.Use]
+                let searches: [String: Int]?
             }
             let kept = days.map { day in
-                Shown(day: day.day, countsActs: day.countsActs, spots: day.spots.filter { spot == nil || $0.key == spot }, uses: day.uses.filter { spot == nil || $0.spot == spot })
+                Shown(
+                    day: day.day, countsActs: day.countsActs, spots: day.spots.filter { spot == nil || $0.key == spot },
+                    versions: byVersion ? day.versions.filter { spot == nil || $0.key == spot } : nil,
+                    uses: day.uses.filter { spot == nil || $0.spot == spot },
+                    searches: spot == nil && !day.searches.isEmpty ? day.searches : nil
+                )
             }
             return try PrintForm.json(kept, dates: .iso8601)
         }

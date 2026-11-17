@@ -53,6 +53,29 @@ final class EmptySearchTests: PanelCase {
         XCTAssertEqual(searches, ["timezone": 1])
     }
 
+    func testASearchClearedOneLetterAtATimeCountsItsLongestText() async throws {
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+
+        for end in (1..."timezone".count).reversed() { search(String("timezone".prefix(end))) }
+        search("")
+
+        XCTAssertEqual(searches, ["timezone": 1])
+    }
+
+    func testEnteringEditSpotsCountsNoSearch() async throws {
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+
+        search("timezone")
+        model.beginEditing()
+        model.panelDidHide()
+
+        XCTAssertEqual(searches, [:])
+    }
+
     func testADayKeepsAtMostFiftySearches() {
         let usage = SpotUsage()
         for index in 0..<60 { usage.missed("search \(index)", at: Date()) }
@@ -71,5 +94,6 @@ final class EmptySearchTests: PanelCase {
         let days = usage.days(1, at: Date())
         XCTAssertTrue(try StatsReport(days: days, spot: nil).text(.frame).hasSuffix("search=timezone\ncount=2\n\n"))
         XCTAssertTrue(try StatsReport(days: days, spot: nil).text(.metrics).contains("# TYPE openspot_search_empty counter\nopenspot_search_empty_total{query=\"timezone\"} 2\n"))
+        XCTAssertTrue(try StatsReport(days: days, spot: nil).text(.json).contains("\"searches\":{\"timezone\":2}"))
     }
 }

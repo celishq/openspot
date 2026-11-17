@@ -44,7 +44,6 @@ struct StatsMetrics {
                 let bound = index < SpotUsage.AnswerTimes.bounds.count ? Self.number(SpotUsage.AnswerTimes.bounds[index]) : "+Inf"
                 family.samples.append("\(family.name)_bucket\(labels(of: row, [("le", bound)])) \(seen)")
             }
-            family.samples.append("\(family.name)_count\(labels(of: row, [])) \(row.count.answers.total)")
         }
         return family
     }

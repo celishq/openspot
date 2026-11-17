@@ -164,6 +164,7 @@ final class StatsReportTests: XCTestCase {
         XCTAssertTrue(blocks[0].contains("\nruns=1\nfailures=1\n"), frame)
         XCTAssertTrue(blocks[1].hasPrefix("row=a\nversion=v2\nsince=\(ISO8601DateFormatter().string(from: day.addingTimeInterval(60)))\n"), frame)
         XCTAssertTrue(blocks[1].contains("\nruns=2\nfailures=0\n"), frame)
+        XCTAssertTrue(try StatsReport(days: usage.days(1, at: day), spot: nil, byVersion: true).text(.json).contains("\"versions\":{\"a\":{\"v1\""))
     }
 
     func testOpenMetricsPrintsEachCounterOfASpotWithItsLabels() throws {
@@ -209,7 +210,6 @@ final class StatsReportTests: XCTestCase {
         openspot_spot_answer_seconds_bucket{spot="a",le="3.2"} 2
         openspot_spot_answer_seconds_bucket{spot="a",le="6.4"} 2
         openspot_spot_answer_seconds_bucket{spot="a",le="+Inf"} 2
-        openspot_spot_answer_seconds_count{spot="a"} 2
         # TYPE openspot_spot_reads counter
         openspot_spot_reads_total{spot="a",reason="sheet.open"} 1
         # EOF
