@@ -8,7 +8,7 @@ final class TrustTests: PanelCase {
         try "".write(to: spots.appendingPathComponent("cups.spot/cups.swift"), atomically: true, encoding: .utf8)
         let lock = SpotLock.standard(environment: model.files.environment, home: model.files.home)
         try FileManager.default.createDirectory(at: lock.url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try JSONEncoder().encode([SpotLock.Entry(source: source, commit: nil, paths: ["cups.spot"], hash: nil, uses: [], key: key, isShipped: isShipped)]).write(to: lock.url)
+        try JSONEncoder().encode([SpotLock.Entry.added("cups", from: source, key: key, isShipped: isShipped)]).write(to: lock.url)
     }
 
     private var cups: Spot? {

@@ -47,7 +47,7 @@ class SpotRunsCase: XCTestCase {
     }
 
     func restrict(_ name: String = "script") {
-        trust = Trust(entries: [SpotLock.Entry(source: "https://example.com/\(name).git", commit: nil, paths: ["\(name).spot"], hash: nil, uses: [])])
+        trust = .restricting(name)
     }
 
     @discardableResult

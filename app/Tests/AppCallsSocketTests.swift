@@ -112,14 +112,10 @@ final class AppCallsSocketTests: XCTestCase {
         XCTAssertEqual((spot.reply["error"] as? [String: Any])?["code"] as? Int, -32000)
     }
 
-    private func restricted(_ name: String) -> Trust {
-        Trust(entries: [SpotLock.Entry(source: "https://example.com/\(name).git", commit: nil, paths: ["\(name).spot"], hash: nil, uses: [])])
-    }
-
     func testAPersonsSpotRunOfARestrictedSpotRunsInItsUses() async throws {
         try spot("writer", header: "uses=network", "echo a > '\(outside.path)/'\"$1\" && echo wrote")
         let runs = await SpotRuns()
-        runs.tokens.trust = restricted("writer")
+        runs.tokens.trust = .restricting("writer")
         listen(runs: runs)
 
         _ = try ask(["spot", "run", "writer", "person"])
@@ -131,7 +127,7 @@ final class AppCallsSocketTests: XCTestCase {
         let leak = outside.appendingPathComponent("leak")
         try spot("leaky", header: "on=sheet.open", "echo a > '\(leak.path)'; printf 'title=Leaky\\n'")
         let runs = await SpotRuns()
-        runs.tokens.trust = restricted("leaky")
+        runs.tokens.trust = .restricting("leaky")
         listen(runs: runs)
 
         _ = try ask(["check", "spots"])

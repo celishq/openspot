@@ -194,7 +194,7 @@ final class SpotAddTests: XCTestCase {
     func testTrustKeepsTheAuthorOfAnAddedSpotInTheConfig() async throws {
         let key = try AccountKey.make().publicKey
         try "#!/bin/sh\n".writeScript(to: spots.spotFile("cups"))
-        try JSONEncoder().encode([SpotLock.Entry(source: "https://example.com/cups.git", commit: nil, paths: ["cups.spot"], hash: nil, uses: [], key: key)]).write(to: root.appendingPathComponent("spots.lock"))
+        try JSONEncoder().encode([SpotLock.Entry.added("cups", key: key)]).write(to: root.appendingPathComponent("spots.lock"))
 
         let answer = try await answer(["spot", "trust", "cups"])
 
