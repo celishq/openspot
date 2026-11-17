@@ -45,6 +45,8 @@ targets:
     platform: macOS
     sources:
       - path: Shell
+      - path: Power/PowerService.swift
+      - path: Power/PowerDaemon.swift
     dependencies:
       - target: OpenspotCore
       - package: secp256k1
@@ -54,6 +56,9 @@ targets:
         link: false
         embed: false
       - target: OpenspotViews
+        link: false
+        embed: false
+      - target: OpenspotPower
         link: false
         embed: false
     info:
@@ -106,6 +111,14 @@ targets:
           mkdir -p "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers"
           rm -f "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers/openspot"
           cp "$BUILT_PRODUCTS_DIR/openspot" "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers/openspot"
+      - name: Copy the power helper and its launch daemon
+        basedOnDependencyAnalysis: false
+        script: |
+          daemons="$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Library/LaunchDaemons"
+          mkdir -p "$daemons"
+          rm -f "$TARGET_BUILD_DIR/$EXECUTABLE_FOLDER_PATH/openspot-power"
+          cp "$BUILT_PRODUCTS_DIR/openspot-power" "$TARGET_BUILD_DIR/$EXECUTABLE_FOLDER_PATH/openspot-power"
+          cp "$SRCROOT/Power/openspot.celis.ai.power.plist" "$daemons/"
       - name: Join the guide, and copy the guides of the nouns
         basedOnDependencyAnalysis: false
         script: |
@@ -184,6 +197,20 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: dev.openspot.client
         SKIP_INSTALL: YES
         LD_OBJC_RUNTIME_ARGS: ""
+  OpenspotPower:
+    type: tool
+    platform: macOS
+    sources:
+      - path: Power
+        excludes:
+          - "*.plist"
+    settings:
+      base:
+        PRODUCT_NAME: openspot-power
+        PRODUCT_BUNDLE_IDENTIFIER: openspot.celis.ai.power
+        GENERATE_INFOPLIST_FILE: YES
+        CREATE_INFOPLIST_SECTION_IN_BINARY: YES
+        SKIP_INSTALL: YES
   OpenspotViews:
     type: tool
     platform: macOS

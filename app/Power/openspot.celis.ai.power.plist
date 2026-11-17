@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>openspot.celis.ai.power</string>
+	<key>BundleProgram</key>
+	<string>Contents/MacOS/openspot-power</string>
+	<key>MachServices</key>
+	<dict>
+		<key>openspot.celis.ai.power</key>
+		<true/>
+	</dict>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>AssociatedBundleIdentifiers</key>
+	<array>
+		<string>openspot.celis.ai</string>
+	</array>
+</dict>
+</plist>
