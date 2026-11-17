@@ -228,7 +228,7 @@ private struct SheetContentView: View {
     }
 
     private var firstRow: CGRect {
-        CGRect(x: SpotTokens.padding, y: SpotTokens.padding + SpotTokens.glyphSize + SpotTokens.rowGap, width: rect.width - 2 * SpotTokens.padding, height: SpotTokens.listRowHeight)
+        CGRect(x: SpotTokens.padding, y: SpotTokens.sheetFieldDrop, width: rect.width - 2 * SpotTokens.padding, height: SpotTokens.listRowHeight)
     }
 
     private var isSmallCard: Bool {

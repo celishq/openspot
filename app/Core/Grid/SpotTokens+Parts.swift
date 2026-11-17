@@ -51,7 +51,6 @@ extension SpotTokens {
     public static var partsWidth: CGFloat { sizes.partsWidth }
     public static let partsMaxHeight: CGFloat = 442
     public static let partGap: CGFloat = 6
-    public static let partRowHeight: CGFloat = 40
     public static let partMaxRound: CGFloat = 44
     public static let partFieldRoom: CGFloat = 54
     public static let partSeamClearance: CGFloat = 22
@@ -119,7 +118,7 @@ extension SpotTokens {
     public static let themeMarkLine: CGFloat = 3
 
     public static let emblemSide: CGFloat = 26
-    public static let publisherPlace = CGSize(width: 263, height: 178)
+    public static var publisherPlace: CGSize { CGSize(width: partsWidth, height: 178) }
     public static let publisherTiltReach = CGSize(width: 10, height: 7)
     public static let publisherRatio = 263.0 / 166.0
     public static let publisherRadius: CGFloat = 14

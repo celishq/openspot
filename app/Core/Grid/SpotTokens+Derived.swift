@@ -68,7 +68,7 @@ extension SpotTokens {
             let lines = CGFloat(max((rows + perLine - 1) / perLine, 1))
             content = lines * (perLine > 1 ? square(perLine: perLine) : listRowHeight) + (lines - 1) * listRowGap
         }
-        return CGSize(width: gridWidth, height: min(padding + glyphSize + rowGap + content + padding, sheetMaxHeight))
+        return CGSize(width: gridWidth, height: min(sheetFieldDrop + content + padding, sheetMaxHeight))
     }
 
     public static func sheetFits(rows: Int, perLine: Int = 1) -> Bool {
@@ -77,21 +77,21 @@ extension SpotTokens {
 
     public static func panelRect(_ panel: SheetParts) -> CGRect {
         let field = panel.showsRows ? SheetPlacement.fieldRoom : 0
-        let height = padding + glyphSize + rowGap + field + panel.placement.height + padding
+        let height = sheetFieldDrop + field + panel.placement.height + padding
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 
     public static func formRect(_ form: ItemForm) -> CGRect {
         if let choice = form.soleChoice {
             let rows = CGFloat(max(choice.options.count, 1))
-            let height = padding + glyphSize + rowGap + listRowHeight + rowGap + rows * listRowHeight + (rows - 1) * listRowGap + padding
+            let height = sheetRowsTop + rows * listRowHeight + (rows - 1) * listRowGap + padding
             return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
         }
         let fields = form.fields.reduce(CGFloat(0)) { sum, field in
             sum + formLabelHeight + formLabelGap + (field.type == .multiline ? formTextHeight : listRowHeight)
         }
         let gaps = CGFloat(max(form.fields.count - 1, 0)) * formFieldGap
-        let height = padding + glyphSize + rowGap + fields + gaps + padding
+        let height = sheetFieldDrop + fields + gaps + padding
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 

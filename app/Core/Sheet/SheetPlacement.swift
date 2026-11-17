@@ -24,7 +24,7 @@ public struct SheetPlacement: Equatable, Sendable {
     public static let maxHeight = SpotTokens.partsMaxHeight
     public static let gap = SpotTokens.partGap
     public static var groupGap: CGFloat { SpotTokens.padding }
-    public static let rowHeight = SpotTokens.partRowHeight
+    public static var rowHeight: CGFloat { SpotTokens.listRowHeight }
     public static let maxRound = SpotTokens.partMaxRound
     public static let dividerHeight = SpotTokens.dividerHeight
     public static let fieldRoom = SpotTokens.partFieldRoom
