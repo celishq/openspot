@@ -13,7 +13,7 @@ struct SpotThemeCell: View {
     @State private var colour = Color.clear
 
     var body: some View {
-        HStack(spacing: SpotTokens.menuPadding) {
+        HStack(spacing: SpotTokens.themeSpacing) {
             if isLocked { words } else { control }
             if !isLocked {
                 Button { model.write(nil, of: key, in: cell.section) } label: { Image(systemName: "arrow.uturn.backward") }
@@ -23,6 +23,7 @@ struct SpotThemeCell: View {
                     .disabled(!cell.isSet)
             }
         }
+        .controlSize(.small)
         .opacity(cell.isSet || isLocked ? 1 : SpotTheme.secondaryLight)
         .onAppear(perform: take)
         .onChange(of: cell.value) { take() }
@@ -31,10 +32,11 @@ struct SpotThemeCell: View {
     @ViewBuilder
     private var words: some View {
         if kind == .colour {
-            Circle().fill(colour).frame(width: SpotTokens.themeSwatch, height: SpotTokens.themeSwatch)
-                .overlay { Circle().strokeBorder(.separator) }
+            ColorPicker("", selection: .constant(colour), supportsOpacity: true)
+                .labelsHidden()
+                .disabled(true)
         }
-        Text(text).font(SpotType.body.monospacedDigit()).lineLimit(1)
+        value(text)
     }
 
     @ViewBuilder
@@ -43,7 +45,7 @@ struct SpotThemeCell: View {
         case .colour:
             ColorPicker("", selection: Binding(get: { colour }, set: change), supportsOpacity: true)
                 .labelsHidden()
-            Text(text).font(SpotType.detail.monospacedDigit()).foregroundStyle(.secondary).lineLimit(1)
+            value(text)
             Spacer(minLength: 0)
         case .variant:
             Picker("", selection: Binding(get: { text }, set: { model.write(.string($0), of: key, in: cell.section) })) {
@@ -56,10 +58,8 @@ struct SpotThemeCell: View {
             Slider(value: Binding(get: { number }, set: slide), in: kind.range) { isMoving in
                 if !isMoving { model.save() }
             }
-            .controlSize(.small)
             .frame(maxWidth: .infinity)
-            Text(kind.value(number).number.map { $0.formatted(.number.precision(.fractionLength(2))) } ?? "")
-                .font(SpotType.detail.monospacedDigit())
+            value(kind.value(number).number.map { $0.formatted(.number.precision(.fractionLength(2))) } ?? "")
                 .frame(width: SpotTokens.themeNumberWidth, alignment: .trailing)
         case .points, .reach, .seconds, .scale:
             TextField("", value: Binding(get: { number }, set: step), format: .number.precision(.fractionLength(0...2)))
@@ -68,6 +68,13 @@ struct SpotThemeCell: View {
             Stepper("", value: Binding(get: { number }, set: step), in: kind.range, step: kind.step)
                 .labelsHidden()
         }
+    }
+
+    private func value(_ text: String) -> some View {
+        Text(text)
+            .font(SpotType.builtIn.detail.monospacedDigit())
+            .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
+            .lineLimit(1)
     }
 
     private var text: String {

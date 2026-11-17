@@ -60,7 +60,7 @@ final class ThemeMarksTests: XCTestCase {
         let gap = try XCTUnwrap(grid.mark(at: CGPoint(x: 120, y: 236)))
 
         XCTAssertEqual(gap.value(after: CGSize(width: 0, height: -50), from: 12, kind: .points), .integer(0))
-        XCTAssertEqual(gap.value(after: CGSize(width: 0, height: 500), from: 12, kind: .points), .integer(200))
+        XCTAssertEqual(gap.value(after: CGSize(width: 0, height: 500), from: 12, kind: .points), .integer(100))
     }
 
     func testEachMarkDragsAlongItsOwnAxis() throws {

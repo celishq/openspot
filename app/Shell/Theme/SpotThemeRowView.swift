@@ -7,11 +7,11 @@ struct SpotThemeRowView: View {
     let model: SpotThemeModel
 
     var body: some View {
-        HStack(spacing: SpotTokens.menuPadding) {
+        HStack(spacing: SpotTokens.themeSpacing) {
             VStack(alignment: .leading, spacing: 0) {
-                Text(row.key).font(SpotType.body).lineLimit(1)
+                Text(row.key).font(SpotType.builtIn.body).lineLimit(1)
                 if !row.cells.contains(where: \.isSet) {
-                    Text("From \(ThemeFolder.builtInName)").font(SpotType.detail).foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
+                    Text("From \(ThemeFolder.builtInName)").font(SpotType.builtIn.detail).foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
                 }
             }
             Spacer(minLength: 0)
@@ -20,8 +20,7 @@ struct SpotThemeRowView: View {
                     .frame(width: SpotTokens.themeCellWidth, alignment: .leading)
             }
         }
-        .padding(.horizontal, SpotTokens.themeRowPadding)
-        .frame(minHeight: SpotTokens.themeLine)
+        .modifier(SpotThemeBand())
         .background { RowPick(id: row.id, model: model) }
     }
 }
@@ -29,9 +28,7 @@ struct SpotThemeRowView: View {
 private struct RowPick: View {
     let id: String
     let model: SpotThemeModel
-    @Environment(\.spotSurfaceEdge) private var edge
-
     var body: some View {
-        if model.picked == id { SpotRoundShape(edge.inner()).fill(SpotTheme.accent.opacity(SpotTheme.markFill)) }
+        SpotThemeBand.fill(isChosen: model.picked == id)
     }
 }

@@ -12,12 +12,7 @@ struct SpotThemeList: View {
                 ForEach(model.names.filter(ThemeFolder.isBuiltIn), id: \.self) { theme in
                     row(theme, symbol: "shippingbox")
                 }
-                Text("Yours")
-                    .font(SpotType.detail)
-                    .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
-                    .padding(.horizontal, SpotTokens.themeRowPadding)
-                    .padding(.top, SpotTokens.hintGroupGap)
-                    .padding(.bottom, SpotTokens.menuRowGap)
+                SpotThemeHeader(title: "Yours")
                 ForEach(model.names.filter { !ThemeFolder.isBuiltIn($0) }, id: \.self) { theme in
                     row(theme, symbol: "paintpalette")
                 }

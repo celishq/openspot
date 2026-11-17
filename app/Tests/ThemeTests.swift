@@ -53,8 +53,8 @@ final class ThemeTests: XCTestCase {
             "theme.toml: [dark] fill is a strength from 0 to 1, such as 0.2.",
             "theme.toml: [dark] size is not a key of a theme.",
             "theme.toml: [glass] variant is clear or regular.",
-            "theme.toml: [glass] backdrop-blur is a number of points, such as 3.",
-            "theme.toml: [glass] fade-reach is a number from 1 up, such as 3.",
+            "theme.toml: [glass] backdrop-blur is a number of points from 0 to 100, such as 3.",
+            "theme.toml: [glass] fade-reach is a number from 1 to 10, such as 3.",
             "theme.toml: [glass] edge-far is a strength from 0 to 1, such as 0.2.",
             "theme.toml: [glass] tint is not a key of a theme."
         ])
@@ -135,18 +135,43 @@ final class ThemeTests: XCTestCase {
         """)
 
         XCTAssertEqual(theme.faults, [
-            "theme.toml: [space] padding is a number of points, such as 3.",
-            "theme.toml: [space] cell is a number of points, such as 3.",
-            "theme.toml: [radius] card is a number of points, such as 3.",
-            "theme.toml: [type] title is a number of points, such as 3.",
-            "theme.toml: [motion] grow is a time in seconds, such as 0.2.",
+            "theme.toml: [space] padding is a number of points from 0 to 100, such as 3.",
+            "theme.toml: [space] cell is a number of points from 0 to 100, such as 3.",
+            "theme.toml: [radius] card is a number of points from 0 to 100, such as 3.",
+            "theme.toml: [type] title is a number of points from 0 to 100, such as 3.",
+            "theme.toml: [motion] grow is a time from 0 to 2 seconds, such as 0.2.",
             "theme.toml: [motion] press-bounce is a strength from 0 to 1, such as 0.2.",
-            "theme.toml: [motion] pressed-scale is a scale above 0, such as 1.04."
+            "theme.toml: [motion] pressed-scale is a scale from 0.5 to 2, such as 1.04."
         ])
         XCTAssertEqual(theme.space, Theme().space)
         XCTAssertEqual(theme.radius, Theme().radius)
         XCTAssertEqual(theme.type, Theme().type)
         XCTAssertEqual(theme.motion, Theme().motion)
+    }
+
+    func testAThemeKeepsEachNumberInTheRangeTheEditorOffers() {
+        let theme = Theme(text: """
+        [space]
+        cell = 200
+        padding = 60
+
+        [glass]
+        fade-reach = 20
+
+        [motion]
+        grow = 5
+        pressed-scale = 3
+        """)
+
+        XCTAssertEqual(theme.faults, [
+            "theme.toml: [space] cell is a number of points from 0 to 100, such as 3.",
+            "theme.toml: [glass] fade-reach is a number from 1 to 10, such as 3.",
+            "theme.toml: [motion] grow is a time from 0 to 2 seconds, such as 0.2.",
+            "theme.toml: [motion] pressed-scale is a scale from 0.5 to 2, such as 1.04."
+        ])
+        XCTAssertEqual(theme.space.cell, Theme().space.cell)
+        XCTAssertEqual(theme.space.padding, 60)
+        XCTAssertEqual(ThemeKind.points.value(200), .integer(100))
     }
 
     func testAFileThatIsNotThereIsAFault() throws {

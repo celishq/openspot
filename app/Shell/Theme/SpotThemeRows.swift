@@ -11,15 +11,14 @@ struct SpotThemeRows: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: SpotTokens.menuPadding) {
-                Text(model.inUse).font(SpotType.title).lineLimit(1)
+            HStack(spacing: SpotTokens.themeSpacing) {
+                Text(model.inUse).font(SpotType.builtIn.title).lineLimit(1)
                 Spacer(minLength: 0)
                 if model.isBuiltIn {
                     Button("Duplicate to edit") { model.duplicate() }
                 }
             }
-            .padding(.horizontal, SpotTokens.themeRowPadding)
-            .frame(height: SpotTokens.themeLine)
+            .modifier(SpotThemeBand())
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: SpotTokens.menuRowGap) {
@@ -31,7 +30,7 @@ struct SpotThemeRows: View {
                             }
                         }
                     }
-                    .padding(.bottom, SpotTokens.padding)
+                    .padding(.bottom, SpotTokens.themePadding)
                 }
                 .scrollIndicators(.never)
                 .background { PickScroll(model: model, proxy: proxy) }
@@ -40,18 +39,12 @@ struct SpotThemeRows: View {
     }
 
     private func header(_ group: String) -> some View {
-        HStack(spacing: SpotTokens.menuPadding) {
-            Text(Self.titles[group] ?? group.capitalized)
-            Spacer(minLength: 0)
+        SpotThemeHeader(title: Self.titles[group] ?? group.capitalized) {
             if group == ThemeRow.look {
                 Text("Dark").frame(width: SpotTokens.themeCellWidth, alignment: .leading)
                 Text("Light").frame(width: SpotTokens.themeCellWidth, alignment: .leading)
             }
         }
-        .font(SpotType.strong)
-        .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
-        .padding(.horizontal, SpotTokens.themeRowPadding)
-        .frame(height: SpotTokens.themeLine)
     }
 }
 

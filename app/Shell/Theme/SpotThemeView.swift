@@ -6,14 +6,14 @@ struct SpotThemeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(alignment: .top, spacing: SpotTokens.columnGap) {
+            HStack(alignment: .top, spacing: SpotTokens.themeGap) {
                 SpotThemeList(model: model)
-                    .frame(width: SpotTokens.width(columns: SpotTokens.themeListColumns))
+                    .frame(width: SpotTokens.themeListWidth)
                 SpotThemeRows(model: model)
                 SpotThemeStage(model: model)
-                    .frame(width: SpotTokens.width(columns: SpotTokens.themeStageColumns))
+                    .frame(width: SpotTokens.themeStageWidth)
             }
-            .padding([.leading, .trailing, .top], SpotTokens.padding)
+            .padding([.leading, .trailing, .top], SpotTokens.themePadding)
             SpotThemeFooter(model: model, hint: hint)
         }
         .ignoresSafeArea(edges: [.horizontal, .bottom])

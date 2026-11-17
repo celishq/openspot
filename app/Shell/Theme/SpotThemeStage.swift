@@ -13,8 +13,10 @@ struct SpotThemeStage: View {
             .pickerStyle(.segmented)
             .labelsHidden()
             .fixedSize()
+            .controlSize(.small)
             .frame(height: SpotTokens.themeLine)
-            ScrollView([.vertical, .horizontal]) {
+            ScrollView(.vertical) {
+                let scale = SpotTokens.stageScale
                 SpotsView(model: model.stage)
                     .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
                     .environment(\.spotIsShown, model.stage.isShown)
@@ -30,7 +32,9 @@ struct SpotThemeStage: View {
                     .onContinuousHover { phase in
                         if case .active(let point) = phase { model.point(at: point) } else { model.point(at: nil) }
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .scaleEffect(scale, anchor: .topLeading)
+                    .frame(width: SpotTokens.panelWidth * scale, height: SpotTokens.panelHeight * scale, alignment: .topLeading)
+                    .frame(maxWidth: .infinity)
             }
             .defaultScrollAnchor(.top)
         }

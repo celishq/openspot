@@ -40,7 +40,7 @@ final class SpotThemeModel {
     init(panel: SpotsModel) {
         self.panel = panel
         themes = ThemeFolder.standard(environment: panel.files.environment)
-        stage = SpotsModel(host: SpotQuietHost.shared, files: panel.files, runs: SpotRuns())
+        stage = SpotsModel(host: SpotQuietHost.shared, files: panel.files, runs: SpotRuns(showing: panel.runs.shownFrames))
         appearance = NSApp.appearance
         isDark = SpotTheme.isDark(NSApp.effectiveAppearance)
         follow()
@@ -252,9 +252,11 @@ final class SpotThemeModel {
     private func draw(_ theme: Theme) {
         guard !isClosed else { return }
         SpotLoadedTheme.shared.take(theme)
-        SpotType.take(theme.type)
         stage.lay(theme)
-        if theme.space != drawn.space || theme.radius != drawn.radius || theme.type != drawn.type { layout += 1 }
+        if theme.space != drawn.space || theme.radius != drawn.radius || theme.type != drawn.type || theme.motion != drawn.motion {
+            SpotLoadedTheme.shared.layOut(theme)
+            layout += 1
+        }
         drawn = theme
         mark()
     }

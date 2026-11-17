@@ -39,9 +39,9 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         return window
     }
 
-    static func make(title: String, name: String, content: some View) -> SpotSheetWindow {
+    static func make(title: String, name: String, size: CGSize = SpotTokens.windowSize, content: some View) -> SpotSheetWindow {
         let window = SpotSheetWindow(
-            contentRect: NSRect(origin: .zero, size: SpotTokens.windowSize),
+            contentRect: NSRect(origin: .zero, size: size),
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -60,7 +60,7 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         let host = NSHostingController(rootView: content)
         host.sizingOptions = []
         window.contentViewController = host
-        window.setContentSize(SpotTokens.windowSize)
+        window.setContentSize(size)
         if window.frame.origin == .zero { window.center() }
         return window
     }

@@ -44,6 +44,31 @@ final class ThemeLayoutTests: XCTestCase {
         XCTAssertEqual(SheetPlacement.width, 325 - 40)
     }
 
+    func testACardCornerOfTheThemeRoundsEveryCardSoAOneRowCardIsACapsuleOnlyAtTheBuiltInCorner() throws {
+        let strip = CGRect(x: 0, y: 0, width: SpotTokens.width(columns: 2), height: SpotTokens.rowHeight)
+
+        SpotTokens.take(try read(copy: "[radius]\ncard = 10\n"))
+
+        XCTAssertEqual(SurfaceEdge(card: .wide).corner(in: strip), SpotTokens.rowHeight / 2 * 10 / 26, accuracy: 0.001)
+        XCTAssertFalse(SurfaceEdge(card: .small).isCircular(in: CGRect(x: 0, y: 0, width: SpotTokens.cell, height: SpotTokens.cell)))
+        XCTAssertEqual(SurfaceEdge(card: .square).radius, 10)
+
+        SpotTokens.take(try read(copy: "[radius]\ncard = 0\n"))
+
+        XCTAssertEqual(SurfaceEdge(card: .wide).radius, 0)
+    }
+
+    func testAThemeWithExtremeSizesKeepsTheEditorWindowAndFitsItsStage() throws {
+        let window = SpotTokens.themeWindowSize
+
+        SpotTokens.take(try read(copy: "[space]\ncell = 100\npadding = 60\ncolumn-gap = 100\nrow-gap = 100\n"))
+
+        XCTAssertEqual(SpotTokens.themeWindowSize, window)
+        XCTAssertGreaterThan(SpotTokens.panelWidth, SpotTokens.themeStageWidth)
+        XCTAssertEqual(SpotTokens.panelWidth * SpotTokens.stageScale, SpotTokens.themeStageWidth, accuracy: 0.001)
+        XCTAssertLessThanOrEqual(SpotTokens.themeListWidth + SpotTokens.themeStageWidth + 2 * SpotTokens.themeGap + 2 * SpotTokens.themePadding, window.width)
+    }
+
     func testACopyWithANewDurationChangesTheMotion() throws {
         MotionTokens.take(try read(copy: "[motion]\ngrow = 0.3\nlifted-scale = 1.1\n").motion)
 

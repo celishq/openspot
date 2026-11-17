@@ -187,50 +187,29 @@ public struct Theme: Equatable, Sendable {
         for key in document.values.keys.sorted() {
             faults.append("theme.toml: \(key) is not a key of a theme.")
         }
-        let (colours, strengths, points, reaches) = (Self.colours, Self.strengths, Self.points, Self.reaches)
-        let (seconds, scales) = (Self.seconds, Self.scales)
+        let colours = Self.colours
+        let numbers = [(ThemeKind.strength, Self.strengths), (.points, Self.points), (.reach, Self.reaches), (.seconds, Self.seconds), (.scale, Self.scales)]
+            .reduce(into: [String: (kind: ThemeKind, part: WritableKeyPath<Theme, Double>)]()) { all, group in
+                for (name, part) in group.1 { all[name] = (group.0, part) }
+            }
         for section in document.sections {
             for key in section.keys {
                 let name = "[\(section.name)] \(key)"
                 if let part = colours[name] {
                     guard case .string(let text)? = section[key], let color = ThemeColor(text: text) else {
-                        faults.append("theme.toml: \(name) is a colour such as #00000099.")
+                        faults.append("theme.toml: \(name) is \(ThemeKind.colour.meaning).")
                         continue
                     }
                     self[keyPath: part] = color
-                } else if let part = strengths[name] {
-                    guard let strength = Self.strength(section[key]) else {
-                        faults.append("theme.toml: \(name) is a strength from 0 to 1, such as 0.2.")
-                        continue
-                    }
-                    self[keyPath: part] = strength
-                } else if let part = points[name] {
-                    guard let number = Self.number(section[key]), number >= 0 else {
-                        faults.append("theme.toml: \(name) is a number of points, such as 3.")
-                        continue
-                    }
-                    self[keyPath: part] = number
-                } else if let part = reaches[name] {
-                    guard let number = Self.number(section[key]), number >= 1 else {
-                        faults.append("theme.toml: \(name) is a number from 1 up, such as 3.")
-                        continue
-                    }
-                    self[keyPath: part] = number
-                } else if let part = seconds[name] {
-                    guard let number = Self.number(section[key]), number >= 0 else {
-                        faults.append("theme.toml: \(name) is a time in seconds, such as 0.2.")
-                        continue
-                    }
-                    self[keyPath: part] = number
-                } else if let part = scales[name] {
-                    guard let number = Self.number(section[key]), number > 0 else {
-                        faults.append("theme.toml: \(name) is a scale above 0, such as 1.04.")
+                } else if let (kind, part) = numbers[name] {
+                    guard let number = kind.number(section[key]) else {
+                        faults.append("theme.toml: \(name) is \(kind.meaning).")
                         continue
                     }
                     self[keyPath: part] = number
                 } else if name == Self.variant {
                     guard case .string(let text)? = section[key], let variant = Glass.Variant(rawValue: text) else {
-                        faults.append("theme.toml: \(name) is clear or regular.")
+                        faults.append("theme.toml: \(name) is \(ThemeKind.variant.meaning).")
                         continue
                     }
                     glass.variant = variant
@@ -256,17 +235,5 @@ public struct Theme: Equatable, Sendable {
         _ section: String, _ part: WritableKeyPath<Theme, Part>, _ keys: [String: WritableKeyPath<Part, Value>]
     ) -> [String: WritableKeyPath<Theme, Value>] {
         Dictionary(uniqueKeysWithValues: keys.map { ("[\(section)] \($0.key)", part.appending(path: $0.value)) })
-    }
-
-    private static func number(_ value: ConfigDocument.Value?) -> Double? {
-        switch value {
-        case .number(let number)?: number
-        case .integer(let number)?: Double(number)
-        default: nil
-        }
-    }
-
-    private static func strength(_ value: ConfigDocument.Value?) -> Double? {
-        number(value).flatMap { (0...1).contains($0) ? $0 : nil }
     }
 }

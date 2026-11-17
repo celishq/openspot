@@ -565,7 +565,9 @@ marked **In use**: click one to use it, or click **New Theme…** to make one. T
 and delete the theme in use. The middle lists each value of the
 theme in use, by section, with the dark and the light value side by side. Beside it, the panel draws with the theme, in
 the appearance you pick above it, and follows each control as you move it. A change saves to the theme when you let go of
-the control. A value that reads **From Openspot** is the built-in one; the arrow beside a value you set takes it back.
+the control. A value that reads **From Openspot** is the built-in one; the arrow beside a value you set takes it back. The
+panel beside the list shows your cards as the Openspot panel last drew them, so it runs no spot and asks for no access,
+and a panel bigger than its column shrinks to fit.
 While the window is open, the Openspot panel draws the theme you edit too, and it draws the saved theme when you close
 the window.
 
@@ -633,11 +635,13 @@ Each section of the file holds one kind of value:
 
 - A key that a theme lacks keeps the value of `Openspot`, so a theme needs only the keys you change.
 - A colour is `#RRGGBB`, `#RRGGBBAA`, or a colour of the Mac: `accent`, `green`, `orange` or `red`. A strength is from 0
-  to 1.
+  to 1, and a size in points is from 0 to 100.
+- `[radius] card` rounds every card. At the 26 of `Openspot`, a card one row high is a capsule; a smaller corner makes it
+  squarer.
 - After `openspot theme reload`, colours, strengths and the glass change at once. Sizes, type and motion change when the
   panel next hides.
 - `openspot theme reload` fails on a value it can't read, prints a line for each, such as
-  `theme.toml: [space] padding is a number of points, such as 3.`, and keeps the look as it was. At launch, such a value
+  `theme.toml: [space] padding is a number of points from 0 to 100, such as 3.`, and keeps the look as it was. At launch, such a value
   keeps the value of `Openspot`, and a toast shows the line.
 - A theme in use that is gone gives a toast at launch, and Openspot draws with `Openspot`.
 - A name can't be empty, start with `.`, or hold `/` or a new line, and the spaces around it are dropped. A folder named

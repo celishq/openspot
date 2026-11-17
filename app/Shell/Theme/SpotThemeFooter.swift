@@ -10,7 +10,7 @@ struct SpotThemeFooter: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            HStack(spacing: SpotTokens.menuPadding) {
+            HStack(spacing: SpotTokens.themeSpacing) {
                 button("plus.square.on.square", "Duplicate") { model.duplicate() }
                 button("pencil", "Rename") { model.renaming = model.inUse }
                     .disabled(model.isBuiltIn)
@@ -19,11 +19,11 @@ struct SpotThemeFooter: View {
             }
             .buttonStyle(.borderless)
             .padding(.leading, SpotTokens.themeRowPadding)
-            .frame(width: SpotTokens.width(columns: SpotTokens.themeListColumns), alignment: .leading)
-            .padding(.trailing, SpotTokens.columnGap)
+            .frame(width: SpotTokens.themeListWidth, alignment: .leading)
+            .padding(.trailing, SpotTokens.themeGap)
             HStack(spacing: SpotTokens.hintGroupGap) {
                 Text(hint)
-                    .font(SpotType.body)
+                    .font(SpotType.builtIn.body)
                     .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
                     .lineLimit(1)
                     .truncationMode(.tail)
@@ -42,9 +42,9 @@ struct SpotThemeFooter: View {
                     }
             }
         }
-        .padding(.leading, SpotTokens.padding)
-        .padding([.trailing, .bottom], SpotTokens.padding)
-        .padding(.top, SpotTokens.rowGap)
+        .padding(.leading, SpotTokens.themePadding)
+        .padding([.trailing, .bottom], SpotTokens.themePadding)
+        .padding(.top, SpotTokens.themeGap)
         .task(id: isHovered) {
             isTipShown = false
             guard isHovered else { return }

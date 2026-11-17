@@ -24,6 +24,7 @@ enum SpotType {
     }
 
     nonisolated(unsafe) private static var faces = Faces(Theme.TypeSizes())
+    nonisolated(unsafe) static let builtIn = Faces(Theme.TypeSizes())
 
     static func take(_ sizes: Theme.TypeSizes) {
         if sizes != faces.sizes { faces = Faces(sizes) }

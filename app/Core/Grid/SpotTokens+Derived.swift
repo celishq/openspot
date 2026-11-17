@@ -105,7 +105,7 @@ extension SpotTokens {
     }
 
     static func corner(for size: SpotSize) -> CGFloat {
-        size.rows == 1 && size.columns < columns ? rowHeight / 2 : radius
+        size.rows == 1 && size.columns < columns ? min(rowHeight / 2 * radius / SpotTokens.builtIn.radius, rowHeight / 2) : radius
     }
 
     public static var gridTop: CGFloat { sizes.gridTop }

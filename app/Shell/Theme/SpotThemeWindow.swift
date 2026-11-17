@@ -13,8 +13,8 @@ final class SpotThemeWindow {
     private init(panel: SpotsModel) {
         let model = SpotThemeModel(panel: panel)
         self.model = model
-        window = SpotSheetWindow.make(title: "Theme", name: "theme-window", content: SpotThemeView(model: model))
-        window.minSize = CGSize(width: SpotTokens.windowSize.width, height: SpotTokens.themeWindowMinHeight)
+        window = SpotSheetWindow.make(title: "Theme", name: "theme-window", size: SpotTokens.themeWindowSize, content: SpotThemeView(model: model))
+        window.minSize = CGSize(width: SpotTokens.themeWindowSize.width, height: SpotTokens.themeWindowMinHeight)
         let center = NotificationCenter.default
         watches = [
             center.addObserver(forName: NSWindow.didBecomeKeyNotification, object: window, queue: .main) { _ in
