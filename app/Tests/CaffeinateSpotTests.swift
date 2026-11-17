@@ -54,7 +54,15 @@ final class CaffeinateSpotTests: XCTestCase {
     }
 
     private func lidRow(in sheet: SpotRun) -> SpotItem? {
-        sheet.list.all.first { $0.run == "lid" }
+        row("lid", in: sheet)
+    }
+
+    private func row(_ run: String, in sheet: SpotRun) -> SpotItem? {
+        sheet.list.all.first { $0.run == run }
+    }
+
+    private func setting(_ key: String) -> String? {
+        try? String(contentsOf: folder.appendingPathComponent("setting.\(key)"), encoding: .utf8)
     }
 
     private static let approval = "Openspot needs your approval for its power helper. Turn on Openspot in Login Items & Extensions, then try again."
@@ -125,10 +133,52 @@ final class CaffeinateSpotTests: XCTestCase {
         try await wait("the rows") { !sheet.list.all.isEmpty }
 
         XCTAssertEqual(sheet.shownState.subtitle, "Keep the Mac awake")
-        XCTAssertEqual(sheet.list.all.map(\.run), ["1800", "3600", "7200", "14400", "28800", "0", "lid"])
-        XCTAssertEqual(sheet.list.all.map(\.title), ["30 minutes", "1 hour", "2 hours", "4 hours", "8 hours", "Until turned off", "Work with the lid closed"])
-        XCTAssertEqual(sheet.list.all.last?.isOn, false)
-        XCTAssertEqual(sheet.list.all.last?.isToggle, true)
+        XCTAssertEqual(sheet.list.all.map(\.run), ["1800", "3600", "7200", "14400", "28800", "0", "display", "lid"])
+        XCTAssertEqual(sheet.list.all.map(\.title), ["30 minutes", "1 hour", "2 hours", "4 hours", "8 hours", "Until turned off", "Keep the display on", "Work with the lid closed"])
+        XCTAssertEqual(sheet.list.all.suffix(2).map(\.isOn), [true, false])
+        XCTAssertEqual(sheet.list.all.suffix(2).map(\.isToggle), [true, true])
+    }
+
+    func testAPickOfTheDisplayRowTurnsItOffAndKeepsItAsASetting() async throws {
+        let sheet = try sheet()
+
+        try await pick("display", in: sheet)
+
+        try await wait("the display row off") { self.row("display", in: sheet)?.isOn == false }
+        try await wait("the end of the call") { sheet.calls.isEmpty }
+        XCTAssertEqual(setting("display-on"), "false")
+        XCTAssertTrue(running().isEmpty)
+
+        try await pick("display", in: sheet)
+
+        try await wait("the display row on") { self.row("display", in: sheet)?.isOn == true }
+        XCTAssertEqual(setting("display-on"), "true")
+    }
+
+    func testAHoldWithTheDisplayOffLetsTheScreenSleepAndLock() async throws {
+        try "false".write(to: folder.appendingPathComponent("setting.display-on"), atomically: true, encoding: .utf8)
+        let sheet = try sheet()
+
+        try await pick("1800", in: sheet)
+
+        try await wait("caffeinate") { self.running().count == 1 }
+        XCTAssertEqual(flags(), ["-i -t 1800"])
+    }
+
+    func testTheDisplayRowDuringAHoldStartsItAgainWithTheTimeLeft() async throws {
+        let sheet = try sheet()
+        try await pick("3600", in: sheet)
+        try await wait("caffeinate") { self.running().count == 1 }
+
+        try await pick("display", in: sheet)
+
+        try await wait("one new caffeinate") { self.awake().count == 2 && self.running().count == 1 }
+        try await wait("the one call") { sheet.calls.count == 1 }
+        let seconds = try XCTUnwrap(Int(try XCTUnwrap(flags().last?.split(separator: " ").last)))
+        XCTAssertEqual(flags().first, "-di -t 3600")
+        XCTAssertTrue(flags().last?.hasPrefix("-i -t ") == true)
+        XCTAssertTrue((3500...3600).contains(seconds))
+        try await wait("the display row off") { self.row("display", in: sheet)?.isOn == false }
     }
 
     func testAPickOfTheLidRowTurnsItOnAndKeepsItAsASetting() async throws {
@@ -159,8 +209,9 @@ final class CaffeinateSpotTests: XCTestCase {
         try await wait("the one call") { sheet.calls.count == 1 }
         let seconds = try XCTUnwrap(Int(try XCTUnwrap(flags().last?.split(separator: " ").last)))
         XCTAssertEqual(flags().first, "-di -t 3600")
-        XCTAssertTrue(flags().last?.hasPrefix("-i -t ") == true)
+        XCTAssertTrue(flags().last?.hasPrefix("-di -t ") == true)
         XCTAssertTrue((3500...3600).contains(seconds))
+        try await wait("the lid held") { self.lidIsHeld() }
         try await wait("the lid row on") { self.lidRow(in: sheet)?.isOn == true }
         XCTAssertEqual(sheet.list.all.first?.run, "off")
         XCTAssertEqual(sheet.list.all.first { $0.title == "1 hour" }?.run.hasPrefix("3600."), true)
@@ -289,7 +340,7 @@ final class CaffeinateSpotTests: XCTestCase {
         try await pick("0", in: sheet)
         try await wait("the lid held") { self.lidIsHeld() }
         try await wait("caffeinate") { self.running().count == 1 }
-        XCTAssertEqual(flags(), ["-i"])
+        XCTAssertEqual(flags(), ["-di"])
         return sheet
     }
 

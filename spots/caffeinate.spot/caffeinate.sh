@@ -15,6 +15,7 @@ watcher=
 until=0
 picked=
 lid=
+display=
 holder=
 fault=
 
@@ -34,6 +35,19 @@ lid_on() {
 lid_keep() {
   lid=$1
   openspot setting set lid-closed "$1" </dev/null >/dev/null 2>&1
+}
+
+# Tells whether a hold keeps the display on, which it does unless the setting says false. Read once, as `lid_on` is.
+display_on() {
+  [ -n "$display" ] || display=$(openspot setting get display-on </dev/null 2>/dev/null)
+  [ "$display" = false ] || display=true
+  [ "$display" = true ]
+}
+
+# Keeps the display-on setting.
+display_keep() {
+  display=$1
+  openspot setting set display-on "$1" </dev/null >/dev/null 2>&1
 }
 
 # Starts `openspot power lid-closed` and reads its first line, `on` or the line that says why it cannot hold. Sets
@@ -107,27 +121,24 @@ sheet() {
   duration 14400 '4 hours'; echo
   duration 28800 '8 hours'; echo
   duration 0 'Until turned off'; echo
-  printf 'row=lid\ntitle=Work with the lid closed\ndetail=The screen can still lock\ntype=toggle\nvalue=%s\nclose=false\n' "${lid:-false}"
+  printf 'row=display\ntitle=Keep the display on\ndetail=Off lets the screen sleep and lock\ntype=toggle\nvalue=%s\nclose=false\n\n' "${display:-true}"
+  printf 'row=lid\ntitle=Work with the lid closed\ndetail=Keeps working when closed\ntype=toggle\nvalue=%s\nclose=false\n' "${lid:-false}"
 }
 
 # Runs `caffeinate` for the duration picked, or for the seconds given after it, or until it is stopped, in a watcher
-# that ends the call when it ends by itself. With the lid on, the display may sleep and the screen lock. Fails when the
-# lid is on but the Mac refuses to hold it, which turns the lid off.
+# that ends the call when it ends by itself. With the display off, the display may sleep and the screen lock. Fails when
+# the lid is on but the Mac refuses to hold it, which turns the lid off.
 hold() {
   held=$1
   picked=$2
   seconds=${3:-$2}
   if [ "$seconds" = 0 ]; then until=0; else until=$(( $(date +%s) + seconds )); fi
-  flags=-di
+  if display_on; then flags=-di; else flags=-i; fi
   closed=true
   holder=
-  if lid_on; then
-    if lid_hold; then
-      flags=-i
-    else
-      closed=
-      lid_keep false
-    fi
+  if lid_on && ! lid_hold; then
+    closed=
+    lid_keep false
   fi
   (
     trap 'let_go; exit 0' TERM
@@ -192,6 +203,7 @@ toast() {
 # shows while that call runs: a call that prints rows is not shown as running.
 serve() {
   lid_on
+  display_on
   case "$1 $2" in
     'open off')
       release
@@ -213,15 +225,15 @@ serve() {
           ;;
       esac
       ;;
-    'open lid')
-      if lid_on; then next=false; else next=true; fi
+    'open lid' | 'open display')
+      if "$2"_on; then next=false; else next=true; fi
       if awake; then
         seconds=$(remaining)
         release
-        lid_keep "$next"
+        "$2"_keep "$next"
         begin "$call" "$picked" "$seconds"
       else
-        lid_keep "$next"
+        "$2"_keep "$next"
         printf 'call=%s\n---\n%s\n---\nend=%s\n---\n' "$call" "$(sheet)" "$call"
       fi
       ;;
