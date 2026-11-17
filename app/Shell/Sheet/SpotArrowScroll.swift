@@ -3,6 +3,7 @@ import SwiftUI
 
 struct SpotArrowScroll: ViewModifier {
     let nudge: () -> SheetParts.Nudge
+    let searches: Int
     @State private var position = ScrollPosition(edge: .top)
     @State private var limit: CGFloat = 0
     @State private var aim: CGFloat = 0
@@ -18,6 +19,11 @@ struct SpotArrowScroll: ViewModifier {
                 let row = SheetPlacement.rowHeight + SheetPlacement.gap
                 aim = min(max(aim + CGFloat(nudge.step) * row, 0), limit)
                 withAnimation(SpotMotion.move) { position.scrollTo(y: aim) }
+            }
+            .onChange(of: searches) {
+                guard aim != 0 else { return }
+                aim = 0
+                position.scrollTo(y: 0)
             }
     }
 }

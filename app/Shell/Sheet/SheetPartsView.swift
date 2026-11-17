@@ -42,7 +42,7 @@ struct SheetPartsView: View {
         Group {
             if sheet.overflows {
                 ScrollView(showsIndicators: false) { canvas(sheet) }
-                    .modifier(SpotArrowScroll(nudge: nudge))
+                    .modifier(SpotArrowScroll(nudge: nudge, searches: list.landedSearches))
             } else {
                 canvas(sheet)
             }
