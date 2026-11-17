@@ -110,6 +110,7 @@ public final class SpotUsage: @unchecked Sendable {
         }
     }
 
+    @concurrent
     static func days(_ count: Int, runs: SpotRuns?, environment: [String: String]) async -> [Day] {
         guard let runs else {
             return days(count, at: Date(), in: AppPlaces(environment: environment, home: FileManager.default.homeDirectoryForCurrentUser, defaults: .standard).stats)

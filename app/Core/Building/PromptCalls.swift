@@ -22,8 +22,8 @@ struct PromptCalls {
             let core = spot.url.deletingLastPathComponent()
             let copy = folder.url.appendingPathComponent(core.lastPathComponent, isDirectory: true)
             let file = folder.isCore(spot) ? copy.appendingPathComponent(spot.url.lastPathComponent) : spot.url
-            let evidence = SpotEvidence(of: id, in: await SpotUsage.days(SpotEvidence.days, runs: runs, environment: environment), app: prompt.app)
-            let change = words.isEmpty ? prompt.changing(file, failure: failure, evidence: evidence) : prompt.changing(file, wish: words, evidence: evidence)
+            let evidence = await SpotEvidence.read(of: id, runs: runs, environment: environment, app: prompt.app)
+            let change = prompt.changing(file, wish: words.isEmpty ? nil : words, failure: failure, evidence: evidence)
             return folder.isCore(spot) ? "\(prompt.copying(core, to: copy))\n\(change)" : change
         }
     }

@@ -47,6 +47,10 @@ public struct SpotEvidence: Equatable, Sendable {
             : goals.joined(separator: " ")
     }
 
+    static func read(of id: String, runs: SpotRuns?, environment: [String: String], app: String) async -> SpotEvidence? {
+        SpotEvidence(of: id, in: await SpotUsage.days(days, runs: runs, environment: environment), app: app)
+    }
+
     var text: String {
         """
         What Openspot counted of this spot over the last \(Self.days) days on this Mac:

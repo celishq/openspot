@@ -55,10 +55,18 @@ public struct AgentPrompt: Equatable, Sendable {
 
     static let finishChange = "Don't ask me anything. Make the change to the end, keep what already works, and leave the spot ready to use in Openspot."
 
-    public func changing(_ file: URL, wish: String, evidence: SpotEvidence? = nil) -> String {
-        """
-        Change the Openspot spot in \(file.path): \(wish)
-        \(Self.finishChange)
+    public func changing(_ file: URL, wish: String? = nil, failure: String? = nil, evidence: SpotEvidence? = nil) -> String {
+        let failed = failure.map { "Its last call failed, and said: \($0)\n" } ?? ""
+        guard let goal = wish ?? evidence?.goal else {
+            return """
+            Change the Openspot spot in \(file.path). Ask me what to change before you change it.
+            \(failed)
+            \(steps(for: SpotID(file: file).description))
+            """
+        }
+        return """
+        Change the Openspot spot in \(file.path): \(goal)
+        \(failed)\(Self.finishChange)
         \(evidence.map { "\n\($0.text)\n" } ?? "")
         \(steps(for: SpotID(file: file).description))
         """
@@ -66,16 +74,6 @@ public struct AgentPrompt: Equatable, Sendable {
 
     public func copying(_ core: URL, to copy: URL) -> String {
         "This spot comes with Openspot. First copy its folder \(core.path) to \(copy.path), with the same folder name. The copy takes the place of the built-in spot, so make each change in the copy, and leave the folder in the app as it is."
-    }
-
-    public func changing(_ file: URL, failure: String?, evidence: SpotEvidence? = nil) -> String {
-        let failed = failure.map { "Its last call failed, and said: \($0)\n" } ?? ""
-        if let evidence { return changing(file, wish: ([evidence.goal] + (failure.map { ["Its last call failed, and said: \($0)"] } ?? [])).joined(separator: "\n"), evidence: evidence) }
-        return """
-        Change the Openspot spot in \(file.path). Ask me what to change before you change it.
-        \(failed)
-        \(steps(for: SpotID(file: file).description))
-        """
     }
 
     private func steps(for id: String) -> String {
