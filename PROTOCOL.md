@@ -1017,7 +1017,7 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot render panel <file.png>`                 | Draws the panel with each installed spot on its grid.                                           |
 | `openspot render store <file.png>`                 | Draws the window of the Store with each spot as its card.                                       |
 | `openspot prompt new [words]...`                   | Prints a prompt that asks a coding agent to build a spot that does what the words say.          |
-| `openspot prompt change <id> [words]...`           | Prints a prompt that asks a coding agent to change a spot as the words say.                     |
+| `openspot prompt change <id> [words]...`           | Prints a prompt that asks a coding agent to change a spot as the words say, with what [Stats](#stats) counted of it over 14 days. With no words, its goal follows those counts. |
 | `openspot emoji list [--tone name]`                | Prints each emoji as a row, with its name in the language of the Mac.                           |
 | `openspot symbols list`                            | Prints each symbol of the Character Viewer as a row.                                            |
 | `openspot translate text [--from code] [--to code]` | Translates the text on stdin. `openspot translate languages` prints the languages it knows.     |
@@ -1089,12 +1089,18 @@ openspot spot stats --days 7
 - An act is something the user did with a spot: they opened its sheet, picked a row, pressed, set or toggled something,
   or ran one of its actions. A read is never an act, and acts on one spot within 2 seconds count as one.
 - `--days N` adds up the last N days. `--spot <id>` shows one spot.
+- `--by version` prints a row for each version of a spot, the oldest first, so you can compare a spot before and after
+  a change. A version is a short hash that changes each time a file of the spot is written, replaced or touched.
+  The version `-` holds the counts with no known version, such as those kept before versions, and sorts first.
+- `--openmetrics` prints each counter as [OpenMetrics](https://openmetrics.io) text, labelled by `spot`, and by
+  `version` with `--by version`, so that any tool for metrics can read it.
 - It prints a `row=<id>` block for each spot, the most CPU first, then a `use=<n>` block for each call that needs a
-  use, the newest first. `--json` prints the days.
+  use, the newest first, then a `search=<text>` block for each search that found nothing. `--json` prints the days.
 
 | Row key              | Meaning                                                               |
 | -------------------- | --------------------------------------------------------------------- |
 | `title`, `detail`    | The name of the spot, and its numbers in words.                       |
+| `version`, `since`   | With `--by version`, the version of the row, and when it was first counted. |
 | `runs`, `failures`   | The calls that ended, and those that failed.                          |
 | `cpu`, `seconds`     | The CPU seconds of its processes, and the wall time of its calls.     |
 | `read`, `written`    | The bytes its processes read and wrote.                               |
@@ -1117,6 +1123,9 @@ openspot spot stats --days 7
 | `bodies`, `body`     | The runs of the `body` of its `SpotView`, and their seconds in all.   |
 | `fault`, `tone`      | Its last error, with `tone=bad`.                                      |
 
+- A `search` block holds a search of the panel that found nothing, folded to lower case, and its `count`. A search of
+  3 letters or more counts when you clear it or hide the panel with no pick, by the longest text that found nothing.
+  A day keeps 50.
 - A `use` block holds `time`, `spot`, `call`, such as `app.quit`, and `declared`. Only a call that the header doesn't
   declare is logged, so `declared` is `false`; `call.<noun>.<verb>` counts each call.
 

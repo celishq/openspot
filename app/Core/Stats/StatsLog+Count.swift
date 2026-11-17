@@ -1,6 +1,6 @@
 import Foundation
 
-extension SpotUsage {
+extension StatsLog {
     public struct Count: Codable, Equatable, Sendable {
         public var name: String?
         public var runs = 0
@@ -110,7 +110,7 @@ extension SpotUsage {
     }
 }
 
-extension SpotUsage.Count {
+extension StatsLog.Count {
     private enum CodingKeys: String, CodingKey {
         case name, runs, seconds, calls, network, fault, view, acts, last, reads, callers
         case cpu, read, written, wakeups, memory, hiddenCPU, hiddenWakeups, answers, failures, failureKinds, failed
@@ -125,15 +125,15 @@ extension SpotUsage.Count {
         calls = try values.decodeIfPresent([String: Int].self, forKey: .calls) ?? [:]
         network = try values.decodeIfPresent(Bool.self, forKey: .network) ?? false
         fault = try values.decodeIfPresent(String.self, forKey: .fault)
-        view = try values.decodeIfPresent(SpotUsage.ViewTime.self, forKey: .view)
+        view = try values.decodeIfPresent(StatsLog.ViewTime.self, forKey: .view)
         acts = try number(.acts)
         last = try values.decodeIfPresent(Date.self, forKey: .last)
         reads = try values.decodeIfPresent([String: Int].self, forKey: .reads) ?? [:]
         callers = try values.decodeIfPresent([String: Int].self, forKey: .callers) ?? [:]
         cost = ProcessTime(cpu: try number(.cpu), wakeups: try number(.wakeups), read: try number(.read), written: try number(.written), memory: try number(.memory))
         hidden = ProcessTime(cpu: try number(.hiddenCPU), wakeups: try number(.hiddenWakeups))
-        answers = SpotUsage.AnswerTimes(counts: try values.decodeIfPresent([Int].self, forKey: .answers) ?? [])
-        failures = SpotUsage.Failures(count: try number(.failures), kinds: try values.decodeIfPresent([String: Int].self, forKey: .failureKinds) ?? [:], last: try values.decodeIfPresent(Date.self, forKey: .failed))
+        answers = StatsLog.AnswerTimes(counts: try values.decodeIfPresent([Int].self, forKey: .answers) ?? [])
+        failures = StatsLog.Failures(count: try number(.failures), kinds: try values.decodeIfPresent([String: Int].self, forKey: .failureKinds) ?? [:], last: try values.decodeIfPresent(Date.self, forKey: .failed))
     }
 
     public func encode(to encoder: Encoder) throws {

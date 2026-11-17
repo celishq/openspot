@@ -1,6 +1,6 @@
 import Foundation
 
-public final class SpotUsage: @unchecked Sendable {
+public final class StatsLog: @unchecked Sendable {
     public struct ViewTime: Codable, Equatable, Sendable {
         public var bodies = 0
         public var seconds: TimeInterval = 0
@@ -14,6 +14,14 @@ public final class SpotUsage: @unchecked Sendable {
         case timeout
         case exit
         case output
+
+        var words: String {
+            switch self {
+            case .timeout: "timed out"
+            case .exit: "stopped with an error"
+            case .output: "printed what Openspot cannot read"
+            }
+        }
 
         public init(_ error: Error) {
             self = switch error as? SpotError {
@@ -31,16 +39,35 @@ public final class SpotUsage: @unchecked Sendable {
         public let declared: Bool
     }
 
+    public struct Version: Codable, Equatable, Sendable {
+        public let first: Date?
+        public var count = Count()
+    }
+
     public struct Day: Codable, Equatable, Sendable {
+        static let unknownVersion = "-"
+
         public let day: String
-        public var spots: [String: Count] = [:]
+        public var versions: [String: [String: Version]] = [:]
         public var uses: [Use] = []
+        public var searches: [String: Int] = [:]
         public var countsActs = true
         var told: [String] = []
+
+        public var spots: [String: Count] {
+            versions.mapValues { kept in
+                kept.values.sorted { ($0.first ?? .distantPast) > ($1.first ?? .distantPast) }.map(\.count).reduce(nil) { sum, count in sum?.adding(count) ?? count } ?? Count()
+            }
+        }
+
+        mutating func change(_ id: String, version: String?, at date: Date, _ work: (inout Count) -> Void) {
+            work(&versions[id, default: [:]][version ?? Self.unknownVersion, default: Version(first: date)].count)
+        }
     }
 
     static let keptDays = 90
     private static let useLimit = 100
+    static let searchLimit = 50
 
     private let folder: URL?
     private let pause: TimeInterval
@@ -50,6 +77,7 @@ public final class SpotUsage: @unchecked Sendable {
     private var isDirty = false
     private var isWaiting = false
     private var views: [String: (id: String, name: String)] = [:]
+    private var spotVersions: [String: String] = [:]
     private var isShown = false
     private var live: [ObjectIdentifier: (spot: String, process: ScriptProcess, counted: ProcessTime)] = [:]
     let now: () -> Date
@@ -82,16 +110,32 @@ public final class SpotUsage: @unchecked Sendable {
         }
     }
 
+    @concurrent
+    static func days(_ count: Int, runs: SpotRuns?, environment: [String: String]) async -> [Day] {
+        guard let runs else {
+            return days(count, at: Date(), in: AppPlaces(environment: environment, home: FileManager.default.homeDirectoryForCurrentUser, defaults: .standard).stats)
+        }
+        let now = await MainActor.run { runs.now() }
+        return runs.usage.days(count, at: now)
+    }
+
     func take(views spots: [Spot]) {
         let views = Dictionary(spots.compactMap { spot in spot.view.map { ($0, (id: spot.id, name: spot.name)) } }) { first, _ in first }
         lock.withLock { self.views = views }
     }
 
+    func take(versions: [String: String]) {
+        lock.withLock { spotVersions = versions }
+    }
+
     public func drew(view source: String, seconds: TimeInterval) {
+        let date = now()
         change { day in
             guard let spot = views[source] else { return }
-            day.spots[spot.id, default: Count()].name = spot.name
-            day.spots[spot.id, default: Count()].view = ViewTime(bodies: 1, seconds: seconds).adding(day.spots[spot.id]?.view)
+            day.change(spot.id, version: spotVersions[spot.id], at: date) { count in
+                count.name = spot.name
+                count.view = ViewTime(bodies: 1, seconds: seconds).adding(count.view)
+            }
         }
     }
 
@@ -105,7 +149,7 @@ public final class SpotUsage: @unchecked Sendable {
     }
 
     func add(_ time: ProcessTime, to spot: String, at date: Date) {
-        change(at: date) { $0.spots[spot, default: Count()].add(time, hidden: !isShown) }
+        change(at: date) { $0.change(spot, version: spotVersions[spot], at: date) { $0.add(time, hidden: !isShown) } }
     }
 
     public func panel(shown: Bool) {
@@ -145,9 +189,11 @@ public final class SpotUsage: @unchecked Sendable {
         let declared = caller.uses.contains(call.use)
         var tells = false
         change(at: date) { day in
-            day.spots[caller.id, default: Count()].name = caller.name
-            day.spots[caller.id, default: Count()].calls[call.name, default: 0] += 1
-            day.spots[caller.id, default: Count()].network = caller.uses.contains(.network)
+            day.change(caller.id, version: spotVersions[caller.id], at: date) { count in
+                count.name = caller.name
+                count.calls[call.name, default: 0] += 1
+                count.network = caller.uses.contains(.network)
+            }
             if !declared { day.uses = Array((day.uses + [Use(time: date, spot: caller.id, call: call.name, declared: declared)]).suffix(Self.useLimit)) }
             let told = "\(caller.id) \(call.use.rawValue)"
             if !declared, !day.told.contains(told) {
@@ -156,6 +202,13 @@ public final class SpotUsage: @unchecked Sendable {
             }
         }
         return tells
+    }
+
+    func missed(_ search: String, at date: Date) {
+        change(at: date) { day in
+            guard day.searches[search] != nil || day.searches.count < Self.searchLimit else { return }
+            day.searches[search, default: 0] += 1
+        }
     }
 
     public func flush() {
@@ -186,8 +239,10 @@ public final class SpotUsage: @unchecked Sendable {
 
     private func change(_ spot: Spot, at date: Date, _ work: (inout Count) -> Void) {
         change(at: date) { day in
-            day.spots[spot.id, default: Count()].name = spot.name
-            work(&day.spots[spot.id, default: Count()])
+            day.change(spot.id, version: spotVersions[spot.id], at: date) { count in
+                count.name = spot.name
+                work(&count)
+            }
         }
     }
 
@@ -226,7 +281,7 @@ public final class SpotUsage: @unchecked Sendable {
             let time = entry.process.time
             let spent = time.since(entry.counted)
             guard spent != .zero else { continue }
-            day.spots[entry.spot, default: Count()].add(spent, hidden: !isShown)
+            day.change(entry.spot, version: spotVersions[entry.spot], at: now()) { $0.add(spent, hidden: !isShown) }
             live[key]?.counted = time
             counted = true
         }
@@ -236,7 +291,7 @@ public final class SpotUsage: @unchecked Sendable {
     private func withLive(_ day: Day) -> Day {
         var day = day
         for entry in live.values {
-            day.spots[entry.spot, default: Count()].add(entry.process.time.since(entry.counted), hidden: !isShown)
+            day.change(entry.spot, version: spotVersions[entry.spot], at: now()) { $0.add(entry.process.time.since(entry.counted), hidden: !isShown) }
         }
         return day
     }
@@ -265,12 +320,19 @@ public final class SpotUsage: @unchecked Sendable {
     }
 }
 
-extension SpotUsage.Day {
+extension StatsLog.Day {
+    private enum KeptKeys: String, CodingKey {
+        case spots
+    }
+
     public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         day = try values.decode(String.self, forKey: .day)
-        spots = try values.decodeIfPresent([String: SpotUsage.Count].self, forKey: .spots) ?? [:]
-        uses = try values.decodeIfPresent([SpotUsage.Use].self, forKey: .uses) ?? []
+        let kept = try decoder.container(keyedBy: KeptKeys.self).decodeIfPresent([String: StatsLog.Count].self, forKey: .spots) ?? [:]
+        versions = try values.decodeIfPresent([String: [String: StatsLog.Version]].self, forKey: .versions)
+            ?? kept.mapValues { [Self.unknownVersion: StatsLog.Version(first: nil, count: $0)] }
+        uses = try values.decodeIfPresent([StatsLog.Use].self, forKey: .uses) ?? []
+        searches = try values.decodeIfPresent([String: Int].self, forKey: .searches) ?? [:]
         countsActs = try values.decodeIfPresent(Bool.self, forKey: .countsActs) ?? false
         told = try values.decodeIfPresent([String].self, forKey: .told) ?? []
     }

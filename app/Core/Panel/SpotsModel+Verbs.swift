@@ -47,8 +47,10 @@ extension SpotsModel {
 
     func copyPrompt(changing entry: Entry) {
         let prompt = host.agentPrompt(for: folder.url)
-        let text = prompt.changing(file(of: entry), failure: entry.failure)
+        let file = file(of: entry)
         Task {
+            let evidence = await SpotEvidence.read(of: entry.id, runs: runs, environment: runs.environment, app: prompt.app)
+            let text = prompt.changing(file, failure: entry.failure, evidence: evidence)
             do {
                 host.confirm(try await prompt.copy(text, base: runs.environment))
             } catch {

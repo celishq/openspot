@@ -126,7 +126,7 @@ struct SpotCalls {
                 first = false
             }
             if let usage, let caller {
-                let failure: SpotUsage.Failure? = switch end.code {
+                let failure: StatsLog.Failure? = switch end.code {
                 case 0: nil
                 case 124: .timeout
                 default: .exit
@@ -178,17 +178,11 @@ struct SpotCalls {
         }
     }
 
-    func stats(days: Int, spot: String?, format: PrintForm) -> CommandAPI.Work {
+    func stats(days: Int, spot: String?, format: Stats.Form, byVersion: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [environment, runs] in
-            let counts: [SpotUsage.Day]
-            if let runs {
-                let now = await MainActor.run { runs.now() }
-                counts = runs.usage.days(days, at: now)
-            } else {
-                counts = SpotUsage.days(days, at: Date(), in: AppPlaces(environment: environment, home: FileManager.default.homeDirectoryForCurrentUser, defaults: .standard).stats)
-            }
+            let counts = await StatsLog.days(days, runs: runs, environment: environment)
             let cards = (try? SpotsFolder.standard(environment: environment).scan().spots) ?? []
-            return try StatsReport(days: counts, spot: spot, cards: cards).text(format)
+            return try Stats(days: counts, spot: spot, cards: cards, byVersion: byVersion).text(format)
         }
     }
 }
