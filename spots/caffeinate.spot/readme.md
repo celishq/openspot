@@ -3,7 +3,7 @@ the card shows the time left, and Turn off is the first row. Quitting Openspot t
 
 Turn off **Keep the display on** to let the screen sleep and lock while the Mac keeps working. It is on by default.
 
-Turn on **Work with the lid closed** to keep the Mac working with its lid closed. The first time, macOS asks you to
+Turn on **Work with the lid closed** to keep the Mac working with its lid closed. A Mac with no lid doesn't show it. The first time, macOS asks you to
 turn on Openspot in Login Items & Extensions, which lets Openspot's power helper keep the Mac awake. While it is on, the Mac never sleeps, even closed in a bag, so it can grow
 hot and drain its battery.
 

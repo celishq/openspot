@@ -33,6 +33,9 @@ final class CaffeinateSpotTests: XCTestCase {
                 ;;
             esac
             """)
+        try fake("ioreg", """
+            [ -f '\(f)/desk' ] || echo '  | "AppleClamshellState" = No'
+            """)
         environment = ["PATH": "\(folder.appendingPathComponent("tools").path):/usr/bin:/bin", "HOME": f, "TMPDIR": f + "/"]
         runs = SpotRuns(environment: environment, stopPause: 0.2)
     }
@@ -137,6 +140,22 @@ final class CaffeinateSpotTests: XCTestCase {
         XCTAssertEqual(sheet.list.all.map(\.title), ["30 minutes", "1 hour", "2 hours", "4 hours", "8 hours", "Until turned off", "Keep the display on", "Work with the lid closed"])
         XCTAssertEqual(sheet.list.all.suffix(2).map(\.isOn), [true, false])
         XCTAssertEqual(sheet.list.all.suffix(2).map(\.isToggle), [true, true])
+        XCTAssertEqual(sheet.list.all.suffix(2).map(\.symbol), ["display", "laptopcomputer"])
+    }
+
+    func testAMacWithNoLidHasNoLidRowAndAHoldIgnoresTheKeptLid() async throws {
+        touch("desk")
+        try keepLidClosed()
+        let sheet = try sheet()
+
+        try await wait("the rows") { !sheet.list.all.isEmpty }
+        XCTAssertEqual(sheet.list.all.last?.run, "display")
+
+        try await pick("1800", in: sheet)
+
+        try await wait("caffeinate") { self.running().count == 1 }
+        XCTAssertEqual(lines("lid"), [])
+        XCTAssertTrue(toasts.allSatisfy { !$0.contains("lid") })
     }
 
     func testAPickOfTheDisplayRowTurnsItOffAndKeepsItAsASetting() async throws {

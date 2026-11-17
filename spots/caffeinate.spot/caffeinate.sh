@@ -16,6 +16,7 @@ until=0
 picked=
 lid=
 display=
+lidded=
 holder=
 fault=
 
@@ -23,9 +24,17 @@ awake() {
   [ -n "$watcher" ] && kill -0 "$watcher" 2>/dev/null
 }
 
-# Tells whether a hold keeps the Mac working with the lid closed. The setting is read from Openspot once, at its first use,
-# which each call makes before it prints the sheet in a subshell, where a read would be lost.
+# Tells whether this Mac has a lid, as macOS reports a clamshell state only for one that has. Read once, at the start.
+has_lid() {
+  [ -n "$lidded" ] || if ioreg -r -k AppleClamshellState -d 1 2>/dev/null | grep -q AppleClamshellState; then lidded=true; else lidded=false; fi
+  [ "$lidded" = true ]
+}
+
+# Tells whether a hold keeps the Mac working with the lid closed, which only a Mac with a lid can. The setting is read
+# from Openspot once, at its first use, which each call makes before it prints the sheet in a subshell, where a read
+# would be lost.
 lid_on() {
+  has_lid || { lid=false; return 1; }
   [ -n "$lid" ] || lid=$(openspot setting get lid-closed </dev/null 2>/dev/null)
   [ "$lid" = true ] || lid=false
   [ "$lid" = true ]
@@ -121,8 +130,9 @@ sheet() {
   duration 14400 '4 hours'; echo
   duration 28800 '8 hours'; echo
   duration 0 'Until turned off'; echo
-  printf 'row=display\ntitle=Keep the display on\ndetail=Off lets the screen sleep and lock\ntype=toggle\nvalue=%s\nclose=false\n\n' "${display:-true}"
-  printf 'row=lid\ntitle=Work with the lid closed\ndetail=Keeps working when closed\ntype=toggle\nvalue=%s\nclose=false\n' "${lid:-false}"
+  printf 'row=display\ntitle=Keep the display on\ndetail=Off lets the screen lock\nicon=display\ntype=toggle\nvalue=%s\nclose=false\n' "${display:-true}"
+  [ "$lidded" = true ] || return 0
+  printf '\nrow=lid\ntitle=Work with the lid closed\ndetail=Can grow hot in a bag\nicon=laptopcomputer\ntype=toggle\nvalue=%s\nclose=false\n' "${lid:-false}"
 }
 
 # Runs `caffeinate` for the duration picked, or for the seconds given after it, or until it is stopped, in a watcher
