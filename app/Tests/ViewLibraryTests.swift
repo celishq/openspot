@@ -118,6 +118,30 @@ final class ViewLibraryTests: XCTestCase {
     }
 
     @MainActor
+    func testAViewDrawsANumberWithItsDetailAtEachCardSize() async throws {
+        let text = """
+        import SwiftUI
+
+        struct SpotView: View {
+            let spot: SpotInput
+
+            var body: some View {
+                let _ = spot.send(spot.card.map { "\\($0)" } ?? "-")
+                SpotMetric(spot, value: "44", detail: "days left", mark: "bolt.fill", onFill: true)
+            }
+        }
+
+        """
+        var sent: [String] = []
+        for name in ["small", "wide", "square", "strip", "large"] {
+            sent += try await drawn(text, values: [:], card: ["cardName": name])
+        }
+        sent += try await drawn(text, values: [:], card: [:])
+
+        XCTAssertEqual(sent, ["small", "wide", "square", "strip", "large", "-"])
+    }
+
+    @MainActor
     func testAViewWithNoHostWordsShowsAndHasNoRows() async throws {
         let sent = try await drawn(view.replacingOccurrences(of: "Text(", with: "let _ = spot.send(\"\\(spot.rows.count) \\(spot.isShown) \\(spot[\"row\"] ?? \"-\")\")\n        Text("), values: ["title": ["Hi"], "row": ["mine"]], card: [:])
 

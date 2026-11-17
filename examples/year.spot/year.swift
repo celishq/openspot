@@ -13,7 +13,7 @@ struct SpotView: View {
         Group {
             switch spot.card {
             case .small, .wide:
-                count
+                SpotMetric(spot, value: left, detail: "days left\nin \(spot["title"] ?? "")")
             case .strip:
                 HStack(spacing: 14) {
                     VStack(alignment: .leading, spacing: 1) {
@@ -38,27 +38,6 @@ struct SpotView: View {
         }
         .foregroundStyle(spot.ink)
         .frame(width: spot.size.width, height: spot.size.height)
-    }
-
-    private var count: some View {
-        Group {
-            if spot.card == .small {
-                VStack(spacing: -1) {
-                    Text(left).font(.system(size: 20, weight: .semibold, design: .rounded))
-                    Text("days left").font(.system(size: 8)).opacity(spot.secondary)
-                }
-            } else {
-                HStack(spacing: 6) {
-                    Text(left).font(spot.font.metric)
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text("days left")
-                        Text("in \(spot["title"] ?? "")")
-                    }
-                    .font(spot.font.detail)
-                    .opacity(spot.secondary)
-                }
-            }
-        }
     }
 
     private var field: some View {

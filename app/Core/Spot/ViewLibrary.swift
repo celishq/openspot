@@ -128,6 +128,78 @@ public struct ViewLibrary: Sendable {
             public func cornerButton(_ symbol: String, label: String, card id: String, action: @escaping () -> Void) -> AnyView { cornerMaker(symbol, label, id, action) }
         }
 
+        public struct SpotMetric: View {
+            let spot: SpotInput
+            let value: String
+            let detail: String
+            let mark: String?
+            let isOnFill: Bool
+
+            public init(_ spot: SpotInput, value: String, detail: String = "", mark: String? = nil, onFill: Bool = false) {
+                self.spot = spot
+                self.value = value
+                self.detail = detail
+                self.mark = mark
+                isOnFill = onFill
+            }
+
+            public var body: some View {
+                Group {
+                    switch spot.card {
+                    case .small?:
+                        VStack(spacing: -1) {
+                            number(.system(size: 20, weight: .semibold, design: .rounded))
+                            if !detail.isEmpty {
+                                Text(detail).font(.system(size: 8)).multilineTextAlignment(.center).opacity(detailOpacity)
+                            }
+                        }
+                        .padding(spot.inset / 2)
+                    case .wide?, .strip?:
+                        ViewThatFits(in: .horizontal) {
+                            line(withDetail: true)
+                            line(withDetail: false)
+                        }
+                        .padding(.horizontal, spot.inset + 6)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                    default:
+                        VStack(alignment: .leading, spacing: 2) {
+                            number(spot.font.metric)
+                            note(withDetail: true)
+                        }
+                        .padding(spot.inset + 4)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                    }
+                }
+                .foregroundStyle(isOnFill ? .white : spot.ink)
+            }
+
+            private var detailOpacity: Double { isOnFill ? 1 : spot.secondary }
+
+            private func number(_ font: Font) -> some View {
+                Text(value).font(font).lineLimit(1).minimumScaleFactor(0.6).layoutPriority(1)
+            }
+
+            private func line(withDetail: Bool) -> some View {
+                HStack(alignment: .center, spacing: 8) {
+                    number(spot.font.metric).fixedSize()
+                    note(withDetail: withDetail).fixedSize()
+                }
+            }
+
+            private func note(withDetail: Bool) -> some View {
+                HStack(spacing: 3) {
+                    if withDetail && !detail.isEmpty {
+                        Text(detail)
+                    }
+                    if let mark {
+                        Image(systemName: mark)
+                    }
+                }
+                .font(spot.font.detail)
+                .opacity(detailOpacity)
+            }
+        }
+
         extension SpotView: DynamicProperty {}
 
         struct SpotTimedView: View {

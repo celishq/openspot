@@ -872,6 +872,9 @@ struct SpotView: View {
 | `spot.selection`    | The id of the selected row of the sheet, or nil.                      |
 | `spot.close()`      | Closes the sheet, the float or the window of its spot.                |
 
+- `SpotMetric(spot, value:, detail:, mark:, onFill:)` draws a big number with its detail and an SF Symbol `mark`, laid
+  out for `spot.card` as the other cards lay out theirs. It drops the detail when the line has no room for it, and keeps
+  the mark. `onFill: true` draws it in white, over a colour that the view draws.
 - The view fills its place, and the whole card when there's no card layout. It can't change the size of its place.
 - In a window (see [Places](#places)), a sheet with one `view` block fills the window. `spot.card(id)` draws the card of
   any spot by the ID that `openspot store list` prints, as the store does. `spot.sheet(id)` draws its sheet with what its

@@ -31,37 +31,7 @@ struct SpotView: View {
     }
 
     private func words(over: Bool) -> some View {
-        let number = Text(spot["title"].map { "\($0)%" } ?? "–")
-            .font(spot.card == .small ? .system(size: 18, weight: .semibold, design: .rounded) : spot.font.metric)
-            .lineLimit(1)
-            .minimumScaleFactor(0.6)
-            .layoutPriority(1)
-        let detail = HStack(spacing: 3) {
-            if spot.card != .wide {
-                Text(spot["detail"] ?? "")
-            }
-            if isCharging {
-                Image(systemName: "bolt.fill")
-            }
-        }
-        .font(spot.font.detail)
-        .lineLimit(1)
-        .opacity(over ? 1 : spot.secondary)
-        return Group {
-            switch spot.card {
-            case .small:
-                number.frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .wide, .strip:
-                HStack(alignment: .firstTextBaseline, spacing: 8) { number; detail }
-                    .padding(.horizontal, spot.inset + 6)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-            default:
-                VStack(alignment: .leading, spacing: 2) { number; detail }
-                    .padding(spot.inset + 4)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-            }
-        }
-        .foregroundStyle(over ? .white : spot.ink)
+        SpotMetric(spot, value: spot["title"].map { "\($0)%" } ?? "–", detail: spot["detail"] ?? "", mark: isCharging ? "bolt.fill" : nil, onFill: over)
     }
 }
 
