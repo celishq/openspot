@@ -87,6 +87,7 @@ final class CaffeinateSpotTests: XCTestCase {
         try await pick("lid", in: sheet)
 
         try await wait("the lid row on") { sheet.list.all.first { $0.run == "lid" }?.isOn == true }
+        try await wait("the end of the call") { sheet.calls.isEmpty }
         XCTAssertEqual(lid(), "true")
         XCTAssertTrue(sheet.list.all.first { $0.run == "lid" }?.staysOnPick == true)
         XCTAssertTrue(running().isEmpty)
@@ -98,6 +99,7 @@ final class CaffeinateSpotTests: XCTestCase {
     }
 
     func testAHoldWithTheLidOnLetsTheScreenLock() async throws {
+        FileManager.default.createFile(atPath: folder.appendingPathComponent("rule").path, contents: Data())
         try "true".write(to: folder.appendingPathComponent("lid"), atomically: true, encoding: .utf8)
         let sheet = try sheet()
 
@@ -238,6 +240,7 @@ final class CaffeinateSpotTests: XCTestCase {
         try await pick("lid", in: sheet)
 
         try await wait("the lid row on") { sheet.list.all.first { $0.run == "lid" }?.isOn == true }
+        try await wait("the end of the call") { sheet.calls.isEmpty }
         XCTAssertEqual(lines("osascript").count, 1)
         XCTAssertTrue(lines("osascript")[0].contains("with administrator privileges"))
         XCTAssertTrue(lines("osascript")[0].contains("ALL=(root) NOPASSWD: /usr/bin/pmset disablesleep 1, /usr/bin/pmset disablesleep 0' > /etc/sudoers.d/openspot-caffeinate"))
@@ -245,6 +248,7 @@ final class CaffeinateSpotTests: XCTestCase {
 
         try await pick("lid", in: sheet)
         try await wait("the lid row off") { sheet.list.all.first { $0.run == "lid" }?.isOn == false }
+        try await wait("the end of the call") { sheet.calls.isEmpty }
         try await pick("lid", in: sheet)
 
         try await wait("the lid row on again") { sheet.list.all.first { $0.run == "lid" }?.isOn == true }
@@ -308,5 +312,18 @@ final class CaffeinateSpotTests: XCTestCase {
         try await wait("sleep on") { self.lines("sudo") == ["-n /usr/bin/pmset disablesleep 0"] }
         let mark = try mark()
         try await wait("the mark gone") { !FileManager.default.fileExists(atPath: mark.path) }
+    }
+
+    func testAHoldWithTheLidAfterTheRuleIsGoneKeepsTheScreenOnAndTurnsTheLidOff() async throws {
+        try "true".write(to: folder.appendingPathComponent("lid"), atomically: true, encoding: .utf8)
+        let sheet = try sheet()
+
+        try await pick("1800", in: sheet)
+
+        try await wait("caffeinate") { self.running().count == 1 }
+        XCTAssertEqual(flags(), ["-di -t 1800"])
+        try await wait("the toast") { self.toasts.last == "Caffeinate is on for 30 minutes, but not with the lid closed. Pick Work with the lid closed to enter your password again." }
+        try await wait("the lid row off") { sheet.list.all.first { $0.run == "lid" }?.isOn == false }
+        XCTAssertEqual(lid(), "false")
     }
 }

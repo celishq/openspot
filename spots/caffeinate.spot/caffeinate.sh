@@ -36,13 +36,21 @@ sleepless() {
 # Turns sleep off while the lid is closed, after the mark that tells a later start to turn it on again.
 stay() {
   : > "$mark"
-  sleepless 1 || rm -f "$mark"
+  sleepless 1 && return
+  rm -f "$mark"
+  return 1
 }
 
 # Turns sleep on again, when a hold turned it off.
 rest() {
   [ -f "$mark" ] || return 0
   sleepless 0 && rm -f "$mark"
+}
+
+# Keeps the lid setting.
+keep() {
+  lid=$1
+  openspot setting set lid "$1" </dev/null >/dev/null 2>&1
 }
 
 # Installs the sudoers rule, which asks for the password of an administrator once.
@@ -101,11 +109,17 @@ hold() {
   seconds=${3:-$2}
   if [ "$seconds" = 0 ]; then until=0; else until=$(( $(date +%s) + seconds )); fi
   flags=-di
-  lidded && flags=-i
+  lost=
+  if lidded; then
+    if stay; then
+      flags=-i
+    else
+      lost=true
+      keep false
+    fi
+  fi
   (
-    awake=
-    trap '[ -z "$awake" ] || kill "$awake" 2>/dev/null; rest; exit 0' TERM
-    [ "$flags" = -di ] || stay
+    trap 'kill $(jobs -p) 2>/dev/null; rest; exit 0' TERM
     if [ "$seconds" = 0 ]; then caffeinate $flags & else caffeinate $flags -t "$seconds" & fi
     awake=$!
     wait "$awake"
@@ -134,13 +148,19 @@ given() {
   printf '%b\n' "$input" | sed -n "s/^$1=//p" | head -n 1
 }
 
+# Prints the toast of a hold, which says when the sudoers rule did not let it work with the lid closed.
 toast() {
   minutes=$(( $1 / 60 ))
-  if [ "$1" = 0 ]; then echo "Caffeinate is on until you turn it off"
-  elif [ "$minutes" -ge 120 ]; then echo "Caffeinate is on for $(( minutes / 60 )) hours"
-  elif [ "$minutes" -eq 60 ]; then echo "Caffeinate is on for 1 hour"
-  elif [ "$minutes" -eq 1 ]; then echo "Caffeinate is on for 1 minute"
-  else echo "Caffeinate is on for $minutes minutes"
+  if [ "$1" = 0 ]; then on="Caffeinate is on until you turn it off"
+  elif [ "$minutes" -ge 120 ]; then on="Caffeinate is on for $(( minutes / 60 )) hours"
+  elif [ "$minutes" -eq 60 ]; then on="Caffeinate is on for 1 hour"
+  elif [ "$minutes" -eq 1 ]; then on="Caffeinate is on for 1 minute"
+  else on="Caffeinate is on for $minutes minutes"
+  fi
+  if [ -n "$lost" ]; then
+    echo "$on, but not with the lid closed. Pick Work with the lid closed to enter your password again."
+  else
+    echo "$on"
   fi
 }
 
@@ -172,23 +192,24 @@ serve() {
       ;;
     'open lid')
       if lidded; then
-        lid=false
+        next=false
       elif sleepless 0 || { allow && sleepless 0; }; then
-        lid=true
+        next=true
       else
         printf 'call=%s\n---\ntoast=Caffeinate works with the lid closed only with your password. Pick the row again to enter it.\n%s\n---\nend=%s\n---\n' "$call" "$(sheet)" "$call"
         return
       fi
-      openspot setting set lid "$lid" </dev/null >/dev/null 2>&1
       if awake; then
         picked=$secs
         seconds=0
         [ "$until" = 0 ] || seconds=$(( until - $(date +%s) ))
         [ "$until" = 0 ] || [ "$seconds" -gt 0 ] || seconds=1
         release
+        keep "$next"
         hold "$call" "$picked" "$seconds"
         printf '%s%s\n---\ncall=%s\n---\ndetail=%s\n---\n' "$ended" "$(sheet)" "$call" "$(left)"
       else
+        keep "$next"
         printf 'call=%s\n---\n%s\n---\nend=%s\n---\n' "$call" "$(sheet)" "$call"
       fi
       ;;
