@@ -10,7 +10,7 @@ public struct SpotSizes: Equatable, Sendable {
     public let listRowGap: CGFloat
     public let menuRow: CGFloat
     public let menuPadding: CGFloat
-    public let radius: CGFloat
+    public let cardRadius: CGFloat
     public let windowRadius: CGFloat
     public let mediaRadius: CGFloat
     public let cornerMarkRadius: CGFloat
@@ -35,7 +35,7 @@ public struct SpotSizes: Equatable, Sendable {
         listRowGap = space.listRowGap
         menuRow = space.menuRow
         menuPadding = space.menuPadding
-        radius = theme.radius.card
+        cardRadius = theme.radius.card
         windowRadius = theme.radius.window
         mediaRadius = theme.radius.media
         cornerMarkRadius = theme.radius.cornerMark

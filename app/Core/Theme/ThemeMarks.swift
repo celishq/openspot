@@ -9,7 +9,7 @@ public struct ThemeMarks: Equatable, Sendable {
 
     public init(sizes: SpotSizes, cards: [(placement: SpotPlacement, isPadded: Bool)], scroll: CGFloat = 0, sheet: CGRect? = nil) {
         if let sheet {
-            all = Self.corners(of: sheet, radius: sizes.radius) + Self.padding(of: sheet, by: sizes.padding)
+            all = Self.corners(of: sheet, radius: sizes.cardRadius) + Self.padding(of: sheet, by: sizes.padding)
             return
         }
         let rects = cards.map { Self.rect(of: $0.placement, sizes: sizes).offsetBy(dx: SpotTokens.halo, dy: sizes.gridTop - scroll) }
@@ -20,8 +20,8 @@ public struct ThemeMarks: Equatable, Sendable {
         for (card, rect) in zip(cards, rects) {
             let size = card.placement.size
             let isRound = size.rows == 1 && size.columns < SpotTokens.columns
-            if !isRound { corners += Self.corners(of: rect, radius: sizes.radius) }
-            edges += Self.edges(of: rect, placement: card.placement, corner: isRound ? 0 : Self.cornerSide(sizes.radius))
+            if !isRound { corners += Self.corners(of: rect, radius: sizes.cardRadius) }
+            edges += Self.edges(of: rect, placement: card.placement, corner: isRound ? 0 : Self.cornerSide(sizes.cardRadius))
             if card.isPadded { padding += Self.padding(of: rect, by: sizes.padding) }
             if rects.contains(where: { abs($0.minX - rect.maxX - sizes.columnGap) < 1 && $0.minY < rect.maxY && $0.maxY > rect.minY }) {
                 gaps.append(ThemeMark(key: ThemeKey(section: "space", key: "column-gap"), rect: CGRect(x: rect.maxX, y: rect.minY, width: sizes.columnGap, height: rect.height), axis: CGVector(dx: 1, dy: 0)))

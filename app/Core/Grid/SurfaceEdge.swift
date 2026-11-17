@@ -9,7 +9,7 @@ public struct SurfaceEdge: Equatable, Sendable {
         self.inset = inset
     }
 
-    public static var sheet: SurfaceEdge { SurfaceEdge(radius: SpotTokens.radius) }
+    public static var sheet: SurfaceEdge { SurfaceEdge(radius: SpotTokens.cardRadius) }
     public static var window: SurfaceEdge { SurfaceEdge(radius: SpotTokens.windowRadius) }
 
     public init(card size: SpotSize) {

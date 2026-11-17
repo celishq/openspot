@@ -9,7 +9,7 @@ struct SpotDropView: View {
             Image(systemName: drop.symbol)
                 .font(SpotType.glyph)
                 .foregroundStyle(SpotTheme.ink)
-                .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
+                .frame(width: SpotTokens.glyph, height: SpotTokens.glyph)
                 .background(SpotTheme.ink.opacity(SpotTheme.disc), in: Circle())
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
                 Text(drop.title)

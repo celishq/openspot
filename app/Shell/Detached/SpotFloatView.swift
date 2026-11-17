@@ -36,7 +36,7 @@ struct SpotFloatView: View {
     }
 
     private func size(_ entry: SpotsModel.Entry?, _ run: SpotRun?) -> CGSize {
-        guard let entry, let run else { return CGSize(width: SpotTokens.gridWidth, height: SpotTokens.rowHeight) }
+        guard let entry, let run else { return CGSize(width: SpotTokens.gridWidth, height: SpotTokens.cell) }
         guard entry.kind.opensSheet else {
             return CGSize(width: SpotTokens.width(columns: entry.size.columns), height: SpotTokens.height(rows: entry.size.rows))
         }

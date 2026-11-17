@@ -52,7 +52,7 @@ struct SpotPlaygroundView: View {
                     .keyboardShortcut("r")
                 presets
             }
-            .frame(height: SpotTokens.glyphSize)
+            .frame(height: SpotTokens.glyph)
             TextEditor(text: text)
                 .font(SpotType.code)
                 .scrollContentBackground(.hidden)

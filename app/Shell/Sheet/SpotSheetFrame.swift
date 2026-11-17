@@ -42,7 +42,7 @@ struct SpotSheetFrame: ViewModifier {
                 leaving.look
                     .frame(width: width, height: SpotTokens.panelHeight, alignment: .topLeading)
                     .modifier(PageFit(rect: leaving.rect, natural: leaving.from, isFitting: true, width: width))
-                    .clipShape(SpotSurfaceShape(rect: leaving.rect, radius: SpotTokens.radius))
+                    .clipShape(SpotSurfaceShape(rect: leaving.rect, radius: SpotTokens.cardRadius))
                     .allowsHitTesting(false)
             }
         }

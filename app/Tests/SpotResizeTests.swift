@@ -27,7 +27,7 @@ final class SpotResizeTests: XCTestCase {
     func testThePointerPulledDownARowTakesTheSquare() {
         let resize = SpotResize(id: "c", index: 2, sizes: sizes, choices: SpotSize.all)
 
-        let pointer = resize.corner(movedBy: CGSize(width: 0, height: SpotTokens.rowHeight + SpotTokens.rowGap))
+        let pointer = resize.corner(movedBy: CGSize(width: 0, height: SpotTokens.cell + SpotTokens.rowGap))
 
         XCTAssertEqual(pointer, corner(of: resize.placement(of: .square)?.rect ?? .zero))
         XCTAssertEqual(resize.nearest(to: pointer), .square)
@@ -38,7 +38,7 @@ final class SpotResizeTests: XCTestCase {
         let start = resize.corner(movedBy: .zero)
 
         XCTAssertEqual(resize.nearest(to: CGPoint(x: SpotTokens.gridWidth, y: start.y)), .strip)
-        XCTAssertEqual(resize.nearest(to: CGPoint(x: SpotTokens.gridWidth, y: start.y + SpotTokens.rowHeight)), .large)
+        XCTAssertEqual(resize.nearest(to: CGPoint(x: SpotTokens.gridWidth, y: start.y + SpotTokens.cell)), .large)
     }
 
     func testACardThatOffersOneSizeHasNothingToChoose() {

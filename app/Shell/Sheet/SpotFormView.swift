@@ -62,7 +62,7 @@ struct SpotFormView: View {
             .font(SpotType.body)
             .foregroundStyle(SpotTheme.ink)
             .padding(.horizontal, SpotTokens.padding)
-            .frame(height: SpotTokens.listRowHeight)
+            .frame(height: SpotTokens.listRow)
             .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
         case .multiline:
             TextEditor(text: value(of: field))
@@ -85,19 +85,19 @@ struct SpotFormView: View {
             .pickerStyle(.menu)
             .labelsHidden()
             .fixedSize()
-            .frame(height: SpotTokens.listRowHeight)
+            .frame(height: SpotTokens.listRow)
         case .switch:
             Toggle(field.label, isOn: Binding(get: { draft.values[field.name] == "true" }, set: { onValue($0 ? "true" : "false", field.name) }))
                 .toggleStyle(.switch)
                 .controlSize(.small)
                 .labelsHidden()
-                .frame(height: SpotTokens.listRowHeight)
+                .frame(height: SpotTokens.listRow)
         case .slider:
             let range = field.range ?? 0...100
             SpotSlider(level: Double(draft.values[field.name] ?? "") ?? range.lowerBound, range: range, words: draft.values[field.name] ?? "") {
                 onValue(String(Int($0.rounded())), field.name)
             }
-            .frame(height: SpotTokens.listRowHeight)
+            .frame(height: SpotTokens.listRow)
         }
     }
 

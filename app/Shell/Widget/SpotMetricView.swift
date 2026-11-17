@@ -135,7 +135,7 @@ struct SpotMetricView: View {
     private var edgeMark: some View {
         switch kind {
         case .gauge:
-            ring(side: min(size.height, SpotTokens.glyphSize), line: SpotTokens.metricRingLine) { ringSymbol }
+            ring(side: min(size.height, SpotTokens.glyph), line: SpotTokens.metricRingLine) { ringSymbol }
         case .trend:
             bars.frame(width: SpotTokens.edgeMarkWidth)
         case .value:

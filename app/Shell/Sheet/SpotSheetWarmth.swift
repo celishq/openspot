@@ -16,7 +16,7 @@ enum SpotSheetWarmth {
                 }
             }
             SpotRowsView(list: ItemList(items: rows), onRun: { _ in })
-                .frame(width: SpotTokens.panelWidth, height: CGFloat(rows.count) * SpotTokens.listRowHeight)
+                .frame(width: SpotTokens.panelWidth, height: CGFloat(rows.count) * SpotTokens.listRow)
         }
         let host = NSHostingView(rootView: view.preferredColorScheme(.dark))
         let size = host.fittingSize

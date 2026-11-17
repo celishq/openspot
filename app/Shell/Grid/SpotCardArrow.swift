@@ -12,6 +12,6 @@ struct SpotCardArrow: View {
     func placed(isTall: Bool) -> some View {
         padding(.trailing, isTall ? SpotTokens.padding : SpotTokens.arrowRowInset)
             .padding(.top, isTall ? SpotTokens.padding : 0)
-            .frame(height: isTall ? nil : SpotTokens.rowHeight)
+            .frame(height: isTall ? nil : SpotTokens.cell)
     }
 }

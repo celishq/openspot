@@ -25,7 +25,7 @@ final class SpotSubmenuWindow: NSPanel {
     }
 
     func show(rows: Int, beside row: CGRect, of menu: CGRect, in panel: NSWindow) {
-        let size = CGSize(width: ActionMenuFrame.width, height: SpotTokens.menuHeight(rows: rows))
+        let size = CGSize(width: SpotTokens.menuWidth, height: SpotTokens.menuHeight(rows: rows))
         let top = panel.frame.maxY - (row.minY - SpotTokens.menuPadding)
         let right = panel.frame.minX + menu.maxX + SpotTokens.submenuGap
         let left = panel.frame.minX + menu.minX - SpotTokens.submenuGap - size.width

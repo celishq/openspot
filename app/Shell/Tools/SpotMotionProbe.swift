@@ -108,7 +108,7 @@ final class SpotMotionProbe: NSObject {
 
     private func beginJump() {
         Task { @MainActor in
-            guard let watch = await SpotJumpWatch(panel: panel, row: SpotTokens.halo + SpotTokens.rowHeight / 2) else {
+            guard let watch = await SpotJumpWatch(panel: panel, row: SpotTokens.halo + SpotTokens.cell / 2) else {
                 return finish(with: "no capture\n")
             }
             try? await Task.sleep(for: .milliseconds(500))
@@ -365,7 +365,7 @@ final class SpotMotionProbe: NSObject {
         panel.makeKey()
         let inset = SpotTokens.cornerMark / 2
         let corner = CGPoint(x: window.place.left + end.x - inset, y: end.y - inset)
-        let reach = CGSize(width: 2 * (SpotTokens.cell + SpotTokens.columnGap), height: SpotTokens.rowHeight + SpotTokens.rowGap)
+        let reach = CGSize(width: 2 * (SpotTokens.cell + SpotTokens.columnGap), height: SpotTokens.cell + SpotTokens.rowGap)
         func post(_ type: NSEvent.EventType, _ share: CGFloat) {
             let point = NSPoint(x: corner.x + reach.width * share, y: view.bounds.height - corner.y - reach.height * share)
             guard let event = NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: panel.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1) else { return }
@@ -562,7 +562,7 @@ final class SpotMotionProbe: NSObject {
         let rect = model.placements[index].rect
         let stops = [
             CGPoint(x: rect.midX, y: rect.midY),
-            CGPoint(x: SpotTokens.cell / 2, y: SpotTokens.rowHeight / 2),
+            CGPoint(x: SpotTokens.cell / 2, y: SpotTokens.cell / 2),
             CGPoint(x: SpotTokens.gridWidth / 2, y: SpotGrid.height(of: model.placements) / 2),
             CGPoint(x: rect.midX, y: rect.midY)
         ].map { CGSize(width: $0.x - rect.midX, height: $0.y - rect.midY) }
@@ -609,7 +609,7 @@ final class SpotMotionProbe: NSObject {
         let inset = SpotTokens.cornerMark / 2
         let point = row == "corner" ? CGPoint(x: rect.maxX - inset, y: rect.maxY - inset) : row == "minus" ? CGPoint(x: rect.minX + inset, y: rect.minY + inset) : CGPoint(x: rect.midX, y: rect.midY)
         let edgeMove = CGSize(width: 0, height: SpotTokens.panelHeight - SpotTokens.halo - SpotTokens.hintBlock - 10 - (SpotTokens.gridTop + rect.midY))
-        let translation = row == "corner" ? CGSize(width: 0, height: SpotTokens.rowHeight + SpotTokens.rowGap) : row == "minus" ? .zero : row == "edge" ? edgeMove : move
+        let translation = row == "corner" ? CGSize(width: 0, height: SpotTokens.cell + SpotTokens.rowGap) : row == "minus" ? .zero : row == "edge" ? edgeMove : move
         let start = NSPoint(x: SpotTokens.halo + point.x, y: height - (SpotTokens.gridTop + point.y))
         let size = { self.model.visible.firstIndex { $0.id == id }.map { self.model.placements[$0].size.name } ?? "none" }
         let sizeBefore = size()
@@ -656,7 +656,7 @@ final class SpotMotionProbe: NSObject {
     private func shoot(_ id: String, stops: [CGSize], into folder: String) {
         panel.setFrameOrigin(NSPoint(x: -9000, y: -9000))
         panel.alphaValue = 1
-        let near = CGSize(width: stops[1].width + SpotTokens.cell / 3, height: stops[1].height + SpotTokens.rowHeight / 3)
+        let near = CGSize(width: stops[1].width + SpotTokens.cell / 3, height: stops[1].height + SpotTokens.cell / 3)
         let states: [(name: String, wait: Double, act: () -> Void)] = [
             ("edit", 1, {}),
             ("handle", 1, { self.model.resizeSpot(id, by: .zero) }),
@@ -667,7 +667,7 @@ final class SpotMotionProbe: NSObject {
             ("lifted", 1, { self.model.dragSpot(id, by: near) }),
             ("dropping", 0.06, { self.model.dropSpot(by: near) }),
             ("dropped", 1, {}),
-            ("resized", 1, { self.model.resizeSpot(id, by: CGSize(width: 0, height: SpotTokens.rowHeight + SpotTokens.rowGap)) }),
+            ("resized", 1, { self.model.resizeSpot(id, by: CGSize(width: 0, height: SpotTokens.cell + SpotTokens.rowGap)) }),
             ("kept", 1, { self.model.dropResize() })
         ]
         func next(_ left: ArraySlice<(name: String, wait: Double, act: () -> Void)>) {

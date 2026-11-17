@@ -4,7 +4,7 @@ import XCTest
 final class SpotTokensTests: XCTestCase {
     func testAPictureInARoomOneLineHighIsARowIcon() {
         XCTAssertEqual(SpotTokens.pictureSide(in: CGSize(width: 80, height: 26)), SpotTokens.listIconSize)
-        XCTAssertEqual(SpotTokens.pictureSide(in: CGSize(width: 80, height: SpotTokens.listRowHeight)), SpotTokens.listIconSize)
+        XCTAssertEqual(SpotTokens.pictureSide(in: CGSize(width: 80, height: SpotTokens.listRow)), SpotTokens.listIconSize)
     }
 
     func testAPictureInABiggerRoomFillsMostOfIt() {

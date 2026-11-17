@@ -143,7 +143,7 @@ private struct SidePanelWells: View, Equatable {
             ForEach([GridPanel.left, .right].filter { panels[$0] }, id: \.self) { panel in
                 shape
                     .fill(SpotTheme.ink.opacity(SpotTheme.track))
-                    .frame(width: SpotTokens.gridWidth, height: max(height, SpotTokens.rowHeight))
+                    .frame(width: SpotTokens.gridWidth, height: max(height, SpotTokens.cell))
                     .offset(x: CGFloat(panels.firstColumn(of: panel)) * (SpotTokens.cell + SpotTokens.columnGap))
             }
         }

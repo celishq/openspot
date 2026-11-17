@@ -34,22 +34,22 @@ final class ThemeLayoutTests: XCTestCase {
         SpotTokens.take(try read(copy: "[space]\npadding = 20\ncell = 70\ncolumn-gap = 15\n\n[radius]\ncard = 30\n"))
 
         XCTAssertEqual(SpotTokens.padding, 20)
-        XCTAssertEqual(SpotTokens.radius, 30)
+        XCTAssertEqual(SpotTokens.cardRadius, 30)
         XCTAssertEqual(SpotTokens.width(columns: 2), 155)
         XCTAssertEqual(SpotTokens.gridWidth, 325)
         XCTAssertEqual(SpotTokens.gridOrigin(scrollOffset: 0, left: 0), CGPoint(x: 90, y: 172))
         XCTAssertEqual(SpotTokens.sheetRect(rows: 1).height, before.height + 14)
         XCTAssertEqual(SpotTokens.sheetRect(rows: 1).width, 325)
         XCTAssertEqual(SurfaceEdge.sheet.radius, 30)
-        XCTAssertEqual(SheetPlacement.width, 325 - 40)
+        XCTAssertEqual(SpotTokens.partsWidth, 325 - 40)
     }
 
     func testACardCornerOfTheThemeRoundsEveryCardSoAOneRowCardIsACapsuleOnlyAtTheBuiltInCorner() throws {
-        let strip = CGRect(x: 0, y: 0, width: SpotTokens.width(columns: 2), height: SpotTokens.rowHeight)
+        let strip = CGRect(x: 0, y: 0, width: SpotTokens.width(columns: 2), height: SpotTokens.cell)
 
         SpotTokens.take(try read(copy: "[radius]\ncard = 10\n"))
 
-        XCTAssertEqual(SurfaceEdge(card: .wide).corner(in: strip), SpotTokens.rowHeight / 2 * 10 / 26, accuracy: 0.001)
+        XCTAssertEqual(SurfaceEdge(card: .wide).corner(in: strip), SpotTokens.cell / 2 * 10 / 26, accuracy: 0.001)
         XCTAssertFalse(SurfaceEdge(card: .small).isCircular(in: CGRect(x: 0, y: 0, width: SpotTokens.cell, height: SpotTokens.cell)))
         XCTAssertEqual(SurfaceEdge(card: .square).radius, 10)
 

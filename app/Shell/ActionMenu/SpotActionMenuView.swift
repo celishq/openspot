@@ -66,7 +66,7 @@ struct SpotActionMenuView: View, @MainActor Equatable {
                 }
             }
             .padding(.horizontal, SpotTokens.menuTextInset)
-            .frame(height: SpotTokens.menuRowHeight)
+            .frame(height: SpotTokens.menuRow)
             .spotFill(isActive: call != nil, otherwise: isConfirming ? SpotTheme.confirm : .clear, in: shape)
             .modifier(SpotLiveSelectionRing(isSelected: { [selection] in index == selection() && !isConfirming }, shape: shape))
             .contentShape(shape)

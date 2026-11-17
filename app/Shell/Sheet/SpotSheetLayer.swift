@@ -45,7 +45,7 @@ struct SpotSheetLayer: View {
         }
         .modifier(SpotSheetFrame(
             rect: isOpen ? step.fit ?? sheetRect : closedRect,
-            radius: isOpen ? SpotTokens.radius : isInstall || card == nil ? SurfaceEdge(card: .strip).radius : SurfaceEdge(card: card?.placement.size ?? entry.size).radius,
+            radius: isOpen ? SpotTokens.cardRadius : isInstall || card == nil ? SurfaceEdge(card: .strip).radius : SurfaceEdge(card: card?.placement.size ?? entry.size).radius,
             sheetRect: sheetRect,
             shift: isOpen ? .zero : shift(to: closedRect),
             isSelected: { [model, id = card?.look?.id ?? entry.id] in
@@ -125,7 +125,7 @@ struct SpotSheetLayer: View {
 
     private var arrow: some View {
         SpotCardArrow()
-            .placed(isTall: (frame?.height ?? 0) > SpotTokens.rowHeight)
+            .placed(isTall: (frame?.height ?? 0) > SpotTokens.cell)
             .environment(\.spotIsOnSolid, entry.isActive)
             .morph(progress, opacity: SheetMorph.cardLook(at:))
             .allowsHitTesting(false)

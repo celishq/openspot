@@ -19,7 +19,7 @@ struct SpotScrollEdges: Equatable {
     }
 
     @MainActor private func levels(height: CGFloat) -> [(location: CGFloat, strength: Double)] {
-        let start = (SpotTokens.halo + SpotTokens.rowHeight) / SpotTokens.panelHeight
+        let start = (SpotTokens.halo + SpotTokens.cell) / SpotTokens.panelHeight
         let end = (height - SpotTokens.halo - SpotTokens.hintBlock) / SpotTokens.panelHeight
         let length = SpotTokens.scrollFadeLength / SpotTokens.panelHeight
         return [

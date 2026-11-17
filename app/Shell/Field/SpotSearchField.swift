@@ -16,7 +16,7 @@ struct SpotSearchField: View {
             .foregroundStyle(SpotTheme.glassInk)
             .focused(isFocused)
             .padding(.horizontal, SpotTokens.menuTextInset)
-            .frame(height: SpotTokens.menuRowHeight)
+            .frame(height: SpotTokens.menuRow)
             .contentShape(shape)
             .pointerStyle(.horizontalText)
             .simultaneousGesture(TapGesture().onEnded { isFocused.wrappedValue = true })

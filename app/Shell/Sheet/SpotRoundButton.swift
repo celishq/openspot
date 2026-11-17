@@ -9,7 +9,7 @@ struct SpotRoundButton: View {
     let symbol: String
     let label: String
     var work: ScriptCall?
-    var size: CGFloat = SpotTokens.glyphSize
+    var size: CGFloat = SpotTokens.glyph
     var look = Look.plain
     let action: () -> Void
 

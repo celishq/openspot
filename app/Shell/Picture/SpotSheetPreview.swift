@@ -20,7 +20,7 @@ struct SpotSheetPreview: View {
                 Image(systemName: symbol)
                     .font(SpotType.glyph)
                     .foregroundStyle(SpotTheme.ink)
-                    .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
+                    .frame(width: SpotTokens.glyph, height: SpotTokens.glyph)
                     .background(SpotTheme.ink.opacity(SpotTheme.disc), in: Circle())
                 VStack(alignment: .leading, spacing: SpotType.lineGap) {
                     Text(title).font(SpotType.title).foregroundStyle(SpotTheme.ink)
@@ -33,6 +33,6 @@ struct SpotSheetPreview: View {
         }
         .padding(SpotTokens.padding)
         .frame(width: frame.width, height: frame.height, alignment: .topLeading)
-        .background { SpotPictureStage(size: frame, radius: SpotTokens.radius, seed: seed) { Color.clear.spotGlass(in: SpotRoundShape(radius: SpotTokens.radius)) }.padding(-SpotPictureStage<Color>.margin) }
+        .background { SpotPictureStage(size: frame, radius: SpotTokens.cardRadius, seed: seed) { Color.clear.spotGlass(in: SpotRoundShape(radius: SpotTokens.cardRadius)) }.padding(-SpotPictureStage<Color>.margin) }
     }
 }

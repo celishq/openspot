@@ -8,7 +8,7 @@ final class PanelBackdropTests: PanelCase {
     func testTheBackdropOfAnEmptyGridHoldsTheFieldAndTheHint() async throws {
         await model.reload()
 
-        XCTAssertEqual(model.backdrop, CGRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: edges + SpotTokens.rowHeight))
+        XCTAssertEqual(model.backdrop, CGRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: edges + SpotTokens.cell))
     }
 
     func testTheBackdropOfTheGridEndsUnderItsLastCard() async throws {
@@ -17,7 +17,7 @@ final class PanelBackdropTests: PanelCase {
 
         let cards = SpotGrid.height(of: model.placements)
         XCTAssertGreaterThan(cards, 0)
-        XCTAssertEqual(model.backdrop, CGRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: edges + SpotTokens.rowHeight + SpotTokens.rowGap + cards))
+        XCTAssertEqual(model.backdrop, CGRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: edges + SpotTokens.cell + SpotTokens.rowGap + cards))
     }
 
     func testTheBackdropOfAnOpenSheetHasTheHeightOfTheSheetAndGoesBackToTheGridWhenItCloses() async throws {

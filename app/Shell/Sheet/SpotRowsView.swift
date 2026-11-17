@@ -146,7 +146,7 @@ struct SpotRowsView: View {
                     }
                 }
                 .overlay(alignment: .topLeading) { BentoRing(selection: selected, count: list.shown.count, drawing: drawing, step: step) }
-                .frame(width: SheetPlacement.width, height: max(CGFloat(lines) * step - SpotTokens.listRowGap, 0), alignment: .topLeading)
+                .frame(width: SpotTokens.partsWidth, height: max(CGFloat(lines) * step - SpotTokens.listRowGap, 0), alignment: .topLeading)
                 .padding(.top, SpotTokens.padding)
                 .padding(.bottom, bottomInset)
             }
@@ -208,7 +208,7 @@ struct SpotRowsView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, SpotTokens.padding)
-        .frame(height: SpotTokens.listRowHeight)
+        .frame(height: SpotTokens.listRow)
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
         .modifier(SpotLiveSelectionRing(isSelected: { [selectedRun, run = item.run] in selectedRun() == run }, shape: row, marksMenu: true))
         .contentShape(row)

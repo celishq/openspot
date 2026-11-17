@@ -3,13 +3,13 @@ import SwiftUI
 
 struct SpotWorkMark: View {
     let call: ScriptCall?
-    var side = SpotTokens.glyphSize
+    var side = SpotTokens.glyph
     var stops = false
     @Environment(\.spotIsOnSolid) private var isOnSolid
     @Environment(\.colorScheme) private var scheme
 
     private var isLarge: Bool {
-        side >= SpotTokens.glyphSize
+        side >= SpotTokens.glyph
     }
 
     private var colour: Color {

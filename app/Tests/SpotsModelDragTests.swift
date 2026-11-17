@@ -139,7 +139,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testALiftedCardMovesWithTheGridWhenItScrollsAndLandsWhereThePointerIs() async {
-        let row = SpotTokens.rowHeight + SpotTokens.rowGap
+        let row = SpotTokens.cell + SpotTokens.rowGap
         let translation = move("a", to: leftHalf(of: "a"))
         model.dragSpot("a", by: translation)
 
@@ -155,7 +155,7 @@ final class SpotsModelDragTests: XCTestCase {
     func testAResizedCardFollowsTheGridWhenItScrolls() {
         model.resizeSpot("c", by: .zero)
 
-        model.gridScrolled(to: SpotTokens.rowHeight + SpotTokens.rowGap)
+        model.gridScrolled(to: SpotTokens.cell + SpotTokens.rowGap)
 
         XCTAssertEqual(model.placements[2].size, .square)
     }
@@ -278,7 +278,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testACardDraggedUnderTheGridGoesToSearchOnly() async {
-        let below = CGPoint(x: SpotTokens.cell / 2, y: SpotGrid.height(of: model.placements) + SpotTokens.rowHeight)
+        let below = CGPoint(x: SpotTokens.cell / 2, y: SpotGrid.height(of: model.placements) + SpotTokens.cell)
         let translation = move("b", to: below)
 
         model.dragSpot("b", by: translation)
@@ -348,7 +348,7 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(order, ["a", "b", "d", "c"])
 
         let start = model.drag.map { $0.rect(at: $0.home) } ?? .zero
-        model.dragSpot("d", by: dragMove(to: CGPoint(x: SpotTokens.gridWidth + SpotTokens.rowHeight, y: start.midY)))
+        model.dragSpot("d", by: dragMove(to: CGPoint(x: SpotTokens.gridWidth + SpotTokens.cell, y: start.midY)))
 
         XCTAssertEqual(order, ["a", "b", "c", "d"])
     }
@@ -383,7 +383,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     private var down: CGSize {
-        CGSize(width: 0, height: SpotTokens.rowHeight + SpotTokens.rowGap)
+        CGSize(width: 0, height: SpotTokens.cell + SpotTokens.rowGap)
     }
 
     private var savedSize: SpotSize? {

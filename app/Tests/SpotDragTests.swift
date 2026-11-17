@@ -65,8 +65,8 @@ final class SpotDragTests: XCTestCase {
         let bottom = SpotTokens.height(rows: 2)
 
         XCTAssertTrue(drag.holds(CGPoint(x: 10, y: 10)))
-        XCTAssertTrue(drag.holds(CGPoint(x: 10, y: bottom + SpotTokens.rowHeight / 4)))
-        XCTAssertFalse(drag.holds(CGPoint(x: 10, y: bottom + SpotTokens.rowHeight)))
+        XCTAssertTrue(drag.holds(CGPoint(x: 10, y: bottom + SpotTokens.cell / 4)))
+        XCTAssertFalse(drag.holds(CGPoint(x: 10, y: bottom + SpotTokens.cell)))
         XCTAssertFalse(drag.holds(CGPoint(x: -SpotTokens.cell, y: 10)))
     }
 }

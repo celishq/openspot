@@ -4,11 +4,8 @@ public struct ActionMenuFrame: Equatable, Sendable {
     public enum Edge: Equatable, Sendable { case top, bottom }
     public enum Side: Equatable, Sendable { case left, right }
 
-    public static var width: CGFloat { SpotTokens.width(columns: 3) }
-    public static let gap = SpotTokens.placeGap
     private static let leftTie: CGFloat = 1
-    private static let margin = SpotTokens.menuMargin
-    private static var step: CGFloat { SpotTokens.menuRowHeight + SpotTokens.menuRowGap }
+    private static var step: CGFloat { SpotTokens.menuRow + SpotTokens.menuRowGap }
 
     public let rect: CGRect
     public let stillEdge: Edge
@@ -22,23 +19,23 @@ public struct ActionMenuFrame: Equatable, Sendable {
         let isOnLeft = item.midX <= bounds.midX + Self.leftTie
         var origin: CGPoint
         if item.width <= SpotTokens.cell {
-            origin = CGPoint(x: isOnLeft ? item.maxX + Self.gap : item.minX - Self.gap - Self.width, y: item.minY)
+            origin = CGPoint(x: isOnLeft ? item.maxX + SpotTokens.placeGap : item.minX - SpotTokens.placeGap - SpotTokens.menuWidth, y: item.minY)
         } else {
-            let under = item.maxY + Self.gap
-            let over = item.minY - Self.gap - height
+            let under = item.maxY + SpotTokens.placeGap
+            let over = item.minY - SpotTokens.placeGap - height
             let y = under + height <= bounds.maxY || over < bounds.minY ? under : over
-            origin = CGPoint(x: isOnLeft ? item.minX : item.maxX - Self.width, y: y)
+            origin = CGPoint(x: isOnLeft ? item.minX : item.maxX - SpotTokens.menuWidth, y: y)
         }
-        origin.x = min(max(origin.x, bounds.minX), bounds.maxX - Self.width)
+        origin.x = min(max(origin.x, bounds.minX), bounds.maxX - SpotTokens.menuWidth)
         origin.y = max(min(origin.y, bounds.maxY - height), bounds.minY)
-        rect = CGRect(origin: origin, size: CGSize(width: Self.width, height: height))
+        rect = CGRect(origin: origin, size: CGSize(width: SpotTokens.menuWidth, height: height))
         stillEdge = origin.y + height / 2 < item.midY ? .bottom : .top
         side = isOnLeft ? .left : .right
     }
 
     public static func bounds(under top: CGFloat, in panel: CGRect = GridPanels().frame) -> CGRect {
         let bottom = SpotTokens.panelHeight - SpotTokens.halo - SpotTokens.hintBlock
-        return CGRect(x: panel.minX + margin, y: top, width: panel.width - 2 * margin, height: bottom - top)
+        return CGRect(x: panel.minX + SpotTokens.menuMargin, y: top, width: panel.width - 2 * SpotTokens.menuMargin, height: bottom - top)
     }
 
     public func rect(height: CGFloat) -> CGRect {
@@ -72,7 +69,7 @@ public struct ActionMenuFrame: Equatable, Sendable {
             x: menuRect.minX + SpotTokens.menuPadding,
             y: menuRect.minY + SpotTokens.menuPadding + CGFloat(index) * Self.step,
             width: menuRect.width - 2 * SpotTokens.menuPadding,
-            height: SpotTokens.menuRowHeight
+            height: SpotTokens.menuRow
         )
     }
 }

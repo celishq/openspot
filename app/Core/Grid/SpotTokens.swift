@@ -8,15 +8,15 @@ public enum SpotTokens {
         if next != sizes { sizes = next }
     }
 
-    public static var radius: CGFloat { sizes.radius }
+    public static var cardRadius: CGFloat { sizes.cardRadius }
     public static var columnGap: CGFloat { sizes.columnGap }
     public static var rowGap: CGFloat { sizes.rowGap }
     public static var padding: CGFloat { sizes.padding }
     public static var gridWidth: CGFloat { sizes.gridWidth }
     public static let columns = 4
-    public static var rowHeight: CGFloat { sizes.cell }
+    public static var cell: CGFloat { sizes.cell }
     public static let groupTitleHeight: CGFloat = 16
-    public static var glyphSize: CGFloat { sizes.glyph }
+    public static var glyph: CGFloat { sizes.glyph }
     public static let glyphInset: CGFloat = 9
     public static let workMark: CGFloat = 16
     public static let cornerMark: CGFloat = 20
@@ -26,7 +26,7 @@ public enum SpotTokens {
     public static let resizeHandle: CGFloat = 28
     public static let resizeHandleLine: CGFloat = 5
     public static let toastGap: CGFloat = 10
-    public static var listRowHeight: CGFloat { sizes.listRow }
+    public static var listRow: CGFloat { sizes.listRow }
     public static var listRowGap: CGFloat { sizes.listRowGap }
     public static let listIconSize: CGFloat = 24
     public static let hintHeight: CGFloat = 14
@@ -36,7 +36,7 @@ public enum SpotTokens {
     public static let hintKeyGap: CGFloat = 4
     public static let hintGroupGap: CGFloat = 12
     public static let hintEndPadding: CGFloat = 10
-    public static var menuRowHeight: CGFloat { sizes.menuRow }
+    public static var menuRow: CGFloat { sizes.menuRow }
     public static let menuRowGap: CGFloat = 2
     public static var menuPadding: CGFloat { sizes.menuPadding }
     public static let placeGap: CGFloat = 8

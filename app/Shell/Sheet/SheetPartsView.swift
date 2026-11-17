@@ -66,7 +66,7 @@ struct SheetPartsView: View {
                 }
             }
         }
-        .frame(width: SheetPlacement.width, height: sheet.height, alignment: .topLeading)
+        .frame(width: SpotTokens.partsWidth, height: sheet.height, alignment: .topLeading)
     }
 
     private func placed(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
@@ -444,7 +444,7 @@ struct SheetPartsView: View {
                             .lineLimit(1)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, SpotTokens.controlPadding)
-                            .frame(height: SheetPlacement.rowHeight)
+                            .frame(height: SpotTokens.listRow)
                             .background(SpotTheme.ink.opacity(item.id == value ? SpotTheme.selectedFill : 0), in: shape)
                             .contentShape(shape)
                     }
@@ -496,7 +496,7 @@ struct SheetPartsView: View {
     private func textArea(_ part: SpotPart, _ frame: SheetPlacement.Frame, text: String, placeholder: String?, isReadOnly: Bool) -> some View {
         let inset = SpotTokens.padding
         let line = max((frame.rect.height - SpotType.titleLine) / 2, 0)
-        let space = frame.rect.height > SpotTokens.listRowHeight
+        let space = frame.rect.height > SpotTokens.listRow
             ? EdgeInsets(top: inset + frame.clearTop, leading: inset, bottom: inset + frame.clearBottom, trailing: inset)
             : EdgeInsets(top: line, leading: inset, bottom: line, trailing: inset)
         ZStack(alignment: .topLeading) {

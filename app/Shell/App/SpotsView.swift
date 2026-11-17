@@ -193,7 +193,7 @@ private struct GridEdgeScroll: ViewModifier {
     private func step(seconds: Double) {
         guard let drag = model.drag else { return }
         let window = ScrollWindow(
-            top: SpotTokens.halo + SpotTokens.rowHeight + SpotTokens.scrollFadeLength,
+            top: SpotTokens.halo + SpotTokens.cell + SpotTokens.scrollFadeLength,
             bottom: SpotTokens.panelHeight - SpotsView.gridBottom - SpotTokens.scrollFadeLength,
             viewHeight: SpotTokens.panelHeight,
             contentHeight: SpotTokens.gridTop + SpotGrid.height(of: model.placements) + SpotsView.gridBottom
@@ -227,7 +227,7 @@ private struct GridSelectionFollow: ViewModifier {
         guard model.openSheetID == nil, model.drag == nil, let spot = placements.first(where: { $0.index == model.selected }) else { return }
         let top = SpotTokens.gridTop + spot.rect.minY
         let window = ScrollWindow(
-            top: SpotTokens.halo + SpotTokens.rowHeight + SpotTokens.scrollFadeLength,
+            top: SpotTokens.halo + SpotTokens.cell + SpotTokens.scrollFadeLength,
             bottom: SpotTokens.panelHeight - SpotsView.gridBottom - SpotTokens.scrollFadeLength,
             viewHeight: SpotTokens.panelHeight,
             contentHeight: SpotTokens.gridTop + SpotGrid.height(of: model.placements) + SpotsView.gridBottom

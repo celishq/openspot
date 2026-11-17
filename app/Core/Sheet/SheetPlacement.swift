@@ -16,19 +16,9 @@ public struct SheetPlacement: Equatable, Sendable {
         public let clearBottom: CGFloat
 
         public var hasDetailUnderTitle: Bool {
-            rect.height >= SheetPlacement.rowHeight * 2
+            rect.height >= SpotTokens.listRow * 2
         }
     }
-
-    public static var width: CGFloat { SpotTokens.partsWidth }
-    public static let maxHeight = SpotTokens.partsMaxHeight
-    public static let gap = SpotTokens.partGap
-    public static var groupGap: CGFloat { SpotTokens.padding }
-    public static var rowHeight: CGFloat { SpotTokens.listRowHeight }
-    public static let maxRound = SpotTokens.partMaxRound
-    public static let dividerHeight = SpotTokens.dividerHeight
-    public static let fieldRoom = SpotTokens.partFieldRoom
-    private static let seamClearance = SpotTokens.partSeamClearance
 
     public let frames: [String: Frame]
     public let lines: [CGRect]
@@ -36,17 +26,17 @@ public struct SheetPlacement: Equatable, Sendable {
     public let repeatFrame: CGRect?
 
     public var overflows: Bool {
-        height > Self.maxHeight - (repeatFrame == nil ? 0 : Self.fieldRoom)
+        height > SpotTokens.partsMaxHeight - (repeatFrame == nil ? 0 : SpotTokens.partFieldRoom)
     }
 
     public init(parts: [SpotPart], layout: SheetLayout) {
         let rows = layout.rows
-        let gap = Self.gap
+        let gap = SpotTokens.partGap
         let columns = max(rows.map(\.count).max() ?? 1, 1)
-        let cell = (Self.width - gap * CGFloat(columns - 1)) / CGFloat(columns)
+        let cell = (SpotTokens.partsWidth - gap * CGFloat(columns - 1)) / CGFloat(columns)
         let columnX = { (x: Int) in CGFloat(x) * (cell + gap) }
 
-        var heights = rows.indices.map { layout.hasDivider(inRow: $0) ? Self.dividerHeight : Self.rowHeight }
+        var heights = rows.indices.map { layout.hasDivider(inRow: $0) ? SpotTokens.dividerHeight : SpotTokens.listRow }
         var fillRows = Set<Int>()
         for part in parts {
             guard let letter = layout.letter(of: part), let area = layout.areas[letter] else { continue }
@@ -59,10 +49,10 @@ public struct SheetPlacement: Equatable, Sendable {
         }
         let endsInButtons = Self.endsInButtons(parts: parts, layout: layout)
         var rowGaps = Array(repeating: gap, count: max(rows.count - 1, 0))
-        if endsInButtons { rowGaps[rowGaps.count - 1] = Self.groupGap }
+        if endsInButtons { rowGaps[rowGaps.count - 1] = SpotTokens.padding }
         let gaps = rowGaps.reduce(0, +)
         if !fillRows.isEmpty {
-            let room = Self.maxHeight - (repeatArea == nil ? 0 : Self.fieldRoom)
+            let room = SpotTokens.partsMaxHeight - (repeatArea == nil ? 0 : SpotTokens.partFieldRoom)
             let free = room - heights.reduce(0, +) - gaps
             if free > 0 { for y in fillRows { heights[y] += free / CGFloat(fillRows.count) } }
         }
@@ -92,7 +82,7 @@ public struct SheetPlacement: Equatable, Sendable {
             let area = item.area
             let raw = rect(area)
             let under = placed.filter { $0.area.hits(area) && $0.area.size > area.size }
-            let round = min(raw.width, raw.height, Self.maxRound)
+            let round = min(raw.width, raw.height, SpotTokens.partMaxRound)
             var place = raw
             var horizontal = Self.side(item.part.align, default: item.part.fillsWidth ? .fill : .center)
             var vertical = item.part.fillsHeight ? Side.fill : .center
@@ -100,13 +90,13 @@ public struct SheetPlacement: Equatable, Sendable {
             var clearBottom: CGFloat = 0
 
             if !under.isEmpty {
-                let inset = Self.gap
+                let inset = SpotTokens.partGap
                 let side = { (isStart: Bool, isEnd: Bool) -> Side in isEnd ? .end : isStart ? .start : .center }
                 horizontal = item.part.align.map { Self.side($0, default: .center) }
                     ?? side(under.contains { $0.area.x0 == area.x0 }, under.contains { $0.area.x1 == area.x1 })
                 vertical = side(under.contains { $0.area.y0 == area.y0 }, under.contains { $0.area.y1 == area.y1 })
                 if let line = (area.y0...area.y1).first(where: layout.hasDivider(inRow:)) {
-                    place = CGRect(x: raw.minX, y: rowY[line], width: raw.width, height: Self.dividerHeight)
+                    place = CGRect(x: raw.minX, y: rowY[line], width: raw.width, height: SpotTokens.dividerHeight)
                     vertical = .center
                 }
                 if horizontal == .start { place = Self.moved(place, left: inset) }
@@ -118,7 +108,7 @@ public struct SheetPlacement: Equatable, Sendable {
             if case .text = item.part.control {
                 for other in placed where other.area.hits(area) && other.area.size < area.size {
                     let crosses = other.area.y1 > area.y1 || other.area.y0 < area.y0
-                    let reach = crosses ? Self.seamClearance : min(rect(other.area).height, Self.maxRound)
+                    let reach = crosses ? SpotTokens.partSeamClearance : min(rect(other.area).height, SpotTokens.partMaxRound)
                     if other.area.y0 <= area.y0 {
                         clearTop = max(clearTop, reach)
                     } else if other.area.y1 >= area.y1 {
@@ -140,7 +130,7 @@ public struct SheetPlacement: Equatable, Sendable {
 
         self.frames = frames
         lines = rows.indices.filter(layout.hasDivider(inRow:)).map {
-            CGRect(x: 0, y: rowY[$0], width: Self.width, height: Self.dividerHeight)
+            CGRect(x: 0, y: rowY[$0], width: SpotTokens.partsWidth, height: SpotTokens.dividerHeight)
         }
         repeatFrame = repeatArea.map(rect)
         height = rows.isEmpty ? 0 : heights.reduce(0, +) + gaps

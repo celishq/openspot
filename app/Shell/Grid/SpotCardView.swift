@@ -194,9 +194,9 @@ struct SpotCardView: View, @MainActor Equatable {
     @ViewBuilder
     private var glyph: some View {
         if let item = entry.item, item.icon != nil {
-            SpotItemIcon(item: item, size: SpotTokens.glyphSize)
+            SpotItemIcon(item: item, size: SpotTokens.glyph)
         } else if entry.showsHeaderPicture {
-            SpotItemIcon(icon: entry.spot.fileIcon, glyph: entry.spot.glyph, symbol: nil, size: SpotTokens.glyphSize)
+            SpotItemIcon(icon: entry.spot.fileIcon, glyph: entry.spot.glyph, symbol: nil, size: SpotTokens.glyph)
         } else {
             symbolGlyph
         }
@@ -206,7 +206,7 @@ struct SpotCardView: View, @MainActor Equatable {
         Image(systemName: entry.symbol)
             .font(SpotType.glyph)
             .foregroundStyle(isFilled ? AnyShapeStyle(SpotTheme.glyphOnSolid) : AnyShapeStyle(SpotTheme.glassInk))
-            .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
+            .frame(width: SpotTokens.glyph, height: SpotTokens.glyph)
             .background(glyphDisc, in: Circle())
     }
 }

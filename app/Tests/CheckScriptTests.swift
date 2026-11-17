@@ -32,7 +32,7 @@ final class CheckScriptTests: XCTestCase {
         ("glass", "app/Shell/Field/SpotFieldView.swift", "let dims = model.grid" + "Shade.isOn\n"),
         ("glass", "app/Shell/Surface/SpotFocusLook.swift", "content.environment(\\.spot" + "Fade, 0.35)\n"),
         ("shapes", "app/Shell/Panel.swift", "let edge = Rounded" + "Rectangle(cornerRadius: 8, style: .continuous)\n"),
-        ("shapes", "app/Shell/Grid/Card.swift", "content.overlay(Rounded" + "Rectangle(cornerRadius: SpotTokens.radius).strokeBorder(.red))\n"),
+        ("shapes", "app/Shell/Grid/Card.swift", "content.overlay(Rounded" + "Rectangle(cornerRadius: SpotTokens.cardRadius).strokeBorder(.red))\n"),
         ("tools", "app/Shell/Panel.swift", "let output = environment[\"OPENSPOT_" + "PROBE\"]\n"),
         ("tools", "app/Shell/Panel.swift", "#if OPENSPOT_TOOLS\n#if DEBUG\n#endif\n#endif\nlet probe = SpotMotion" + "Probe()\n"),
         ("tools", "app/Core/Panel.swift", "let probe = SpotMotion" + "Probe()\n"),

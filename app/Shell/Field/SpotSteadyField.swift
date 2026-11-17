@@ -35,7 +35,7 @@ struct SpotSteadyField: View {
             .offset(y: -Self.textFieldRise)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, SpotTokens.menuTextInset)
-            .frame(height: SpotTokens.menuRowHeight)
+            .frame(height: SpotTokens.menuRow)
             .allowsHitTesting(false)
     }
 }
