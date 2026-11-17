@@ -18,7 +18,7 @@ struct SpotWindowSurface: ViewModifier {
     func body(content: Content) -> some View {
         content
             .environment(\.spotSurfaceEdge, window)
-            .background { Color.clear.spotGlass(in: ConcentricRectangle()).ignoresSafeArea() }
+            .background { Rectangle().fill(.regularMaterial).ignoresSafeArea() }
             .background { corner.ignoresSafeArea() }
     }
 }

@@ -20,6 +20,7 @@ struct SpotThemeStage: View {
                 SpotsView(model: model.stage)
                     .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
                     .environment(\.spotIsShown, model.stage.isShown)
+                    .environment(\.spotDrawsSpotViews, false)
                     .disabled(true)
                     .allowsHitTesting(false)
                     .id(model.layout)

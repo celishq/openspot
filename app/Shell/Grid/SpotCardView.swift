@@ -10,6 +10,7 @@ struct SpotCardView: View, @MainActor Equatable {
     let isDropTarget: Bool
     let model: SpotsModel
     var onTap: (() -> Void)?
+    @Environment(\.spotDrawsSpotViews) private var drawsSpotViews
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.entry == rhs.entry && lhs.size == rhs.size && lhs.index == rhs.index && lhs.isPressed == rhs.isPressed
@@ -73,7 +74,7 @@ struct SpotCardView: View, @MainActor Equatable {
     }
 
     private var ownView: String? {
-        drawsOwnCard && entry.state.face.hasView ? entry.spot.view : nil
+        drawsSpotViews && drawsOwnCard && entry.state.face.hasView ? entry.spot.view : nil
     }
 
     private var drawnView: String? {

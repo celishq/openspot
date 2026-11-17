@@ -101,12 +101,12 @@ Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these 
   keeps the glass whole until its last third (`SpotTheme.glassStrength`), so faded glass never shows a sharp page.
   `make verify` runs `scripts/check-glass.sh`, which fails on `NSVisualEffectView` or a private Core Animation name in
   `Shell/`, outside `Shell/Surface/SpotBackdropBlur.swift`.
-- Each app window opens through `SpotSheetWindow.make`, so it has the same title bar, glass, keys and Dock presence, and
-  ends with `SpotWindowFooter`, its hint and Done. `make verify` runs `scripts/check-windows.sh`, which fails on a window
+- Each app window opens through `SpotSheetWindow.make`, so it has the same title bar, keys and Dock presence, and
+  the system material, not glass, so the glass of what it shows stands out. It ends with `SpotWindowFooter`, its hint and Done. `make verify` runs `scripts/check-windows.sh`, which fails on a window
   that `Shell/` makes elsewhere, except the panel and its parts, the toast, a float, the screen pick and an off-screen picture.
 - A surface has one shape, a `SurfaceEdge` of Core drawn by `SpotRoundShape`, and its glass, its clip, its ring and its
   other marks take that value. A part inside it takes `inner()` of the edge it reads from `spotSurfaceEdge`. A titled
-  window follows the corner that macOS gives it: its glass is a `ConcentricRectangle`. A borderless window gives its
+  window follows the corner that macOS gives it. A borderless window gives its
   content view the edge of its surface (`NSWindow.take`). `make verify` runs `scripts/check-shapes.sh`, which fails on a
   `RoundedRectangle` in `Shell/` outside `Shell/Surface/SpotRoundShape.swift`.
 - The soft backdrop of the panel is a progressive blur under the glass: fixed `SpotBackdropBlur` views of rising radius,
@@ -253,7 +253,7 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
 ```sh
 make verify                # the checks in scripts/check-*.sh, then the XCTest suite, with test classes in parallel
 make test T=SpotRunsTests  # one test class, while you work on it
-make perf N=3              # times a Release sheet that opens and closes 20 times, 3 runs; ACTION picks another motion
+make perf N=3              # times a Release sheet that opens and closes 20 times, 3 runs; ACTION picks another motion, and ACTION=theme ROW=scroll a motion of the theme editor (scroll, slider, colour, mark, stepper)
 make film SPOT=caffeinate  # films the open and close of a sheet 10x slower (SLOW=1 for real speed) into .temp/film
 make shots                 # saves pictures of the actions menu in the running panel into .temp/shots; ACTION=search TEXT=/translate shoots a typed search
 sh scripts/pixel-diff.sh shoot before  # saves pictures of fixed screens, dark and light, into .temp/pixels/before

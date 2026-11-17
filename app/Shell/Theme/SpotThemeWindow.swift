@@ -32,6 +32,12 @@ final class SpotThemeWindow {
         shown.window.show()
     }
 
+    #if OPENSPOT_TOOLS
+    static var shownModel: SpotThemeModel? {
+        open?.model
+    }
+    #endif
+
     private static func closed() {
         guard let shown = open else { return }
         shown.model.close()
