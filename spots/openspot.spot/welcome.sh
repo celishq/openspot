@@ -32,10 +32,16 @@ line() {
   printf '\ntext=%s\nlook=tile\ntitle=%s\nicon=%s\n' "$1" "$2" "$3"
 }
 
+# Prints the heading of a page: its words, the line under them, and its icon.
+head() {
+  line head "$1" "$3"
+  printf 'detail=%s\n' "$2"
+}
+
 # Prints the first page: what Openspot is, then Continue.
 welcome() {
-  printf 'grid=opens opens opens opens\ngrid=spots spots spots spots\ngrid=agents agents agents agents\ngrid=next next next next\n'
-  printf 'title=Welcome to Openspot\ndetail=The launcher that grows with you\n'
+  printf 'grid=head head head head\ngrid=head head head head\ngrid=opens opens opens opens\ngrid=spots spots spots spots\ngrid=agents agents agents agents\ngrid=next next next next\n'
+  head 'Welcome to Openspot' 'The launcher that grows with you' hand.wave
   line opens 'One key opens it from any app' keyboard
   line spots 'Each tool on it is a spot' square.grid.2x2
   line agents 'Your agent makes and changes spots' sparkles
@@ -45,9 +51,9 @@ welcome() {
 # Prints the key page: the chosen key, or the key that opens Openspot, then Use this key and Record new combination.
 keys() {
   shown=$(chosen)
-  printf 'grid=key key key key\ngrid=key key key key\ngrid=use use use use\ngrid=record record record record\n'
-  printf 'title=Choose your key\ndetail=It opens Openspot from any app\n\n'
-  printf 'field=key\ntype=hotkey\n'
+  printf 'grid=head head head head\ngrid=head head head head\ngrid=key key key key\ngrid=key key key key\ngrid=use use use use\ngrid=record record record record\n'
+  head 'Choose your key' 'It opens Openspot from any app' keyboard
+  printf '\nfield=key\ntype=hotkey\n'
   openspot_kv value "${shown:-$now}"
   printf '\nbutton=use\ntitle=Use this key\nlook=strong\nshortcut=return\n'
   printf '\nbutton=record\ntitle=Record new combination\nrecords=key\nshortcut=escape\n'
@@ -55,8 +61,8 @@ keys() {
 
 # Prints the last page: how an agent changes any spot, then Start using Openspot.
 agent() {
-  printf 'grid=file file file file\ngrid=new new new new\ngrid=edit edit edit edit\ngrid=copy copy copy copy\ngrid=done done done done\n'
-  printf 'title=Make it yours\ndetail=Your agent writes and changes spots\n'
+  printf 'grid=head head head head\ngrid=head head head head\ngrid=file file file file\ngrid=new new new new\ngrid=edit edit edit edit\ngrid=copy copy copy copy\ngrid=done done done done\n'
+  head 'Make it yours' 'Your agent writes and changes spots' sparkles
   line file 'Each spot is one small file' doc.text
   line new 'Ask your agent for a new one' sparkles
   line edit 'Select a spot and press ⌘E' pencil

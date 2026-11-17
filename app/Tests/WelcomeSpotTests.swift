@@ -20,8 +20,11 @@ final class WelcomeSpotTests: BuiltInCase {
         try XCTUnwrap(output.parts.first { $0.id == id })
     }
 
-    private func head(_ key: String, of output: SpotOutput) -> String? {
-        output.summary?.value(key)
+    private func assertHead(_ output: SpotOutput, _ title: String, _ detail: String, icon: String, file: StaticString = #filePath, line: UInt = #line) throws {
+        let head = try part("head", in: output)
+        XCTAssertEqual(head.title, title, file: file, line: line)
+        XCTAssertEqual(head.detail, detail, file: file, line: line)
+        XCTAssertEqual(head.symbol, icon, file: file, line: line)
     }
 
     func testItTakesTheLaunchRoleWithTwoPagesAndOffersNoCard() throws {
@@ -38,9 +41,8 @@ final class WelcomeSpotTests: BuiltInCase {
     func testTheFirstSheetWelcomesWithThreeLinesAndContinue() async throws {
         let output = try await read()
 
-        XCTAssertEqual(head("title", of: output), "Welcome to Openspot")
-        XCTAssertEqual(head("detail", of: output), "The launcher that grows with you")
-        XCTAssertEqual(output.parts.map(\.id).sorted(), ["agents", "next", "opens", "spots"])
+        try assertHead(output, "Welcome to Openspot", "The launcher that grows with you", icon: "hand.wave")
+        XCTAssertEqual(output.parts.map(\.id).sorted(), ["agents", "head", "next", "opens", "spots"])
         let next = try part("next", in: output)
         XCTAssertEqual(next.title, "Continue")
         XCTAssertEqual(next.key, ActionKey(name: "return"))
@@ -57,8 +59,7 @@ final class WelcomeSpotTests: BuiltInCase {
 
         let output = try await read(page: "key")
 
-        XCTAssertEqual(head("title", of: output), "Choose your key")
-        XCTAssertEqual(head("detail", of: output), "It opens Openspot from any app")
+        try assertHead(output, "Choose your key", "It opens Openspot from any app", icon: "keyboard")
         XCTAssertEqual(try part("key", in: output).control, .shortcut("option+space"))
         let use = try part("use", in: output)
         XCTAssertEqual(use.title, "Use this key")
@@ -67,7 +68,7 @@ final class WelcomeSpotTests: BuiltInCase {
         XCTAssertEqual(record.title, "Record new combination")
         XCTAssertEqual(record.records, "key")
         XCTAssertEqual(record.key, ActionKey(name: "escape"))
-        XCTAssertEqual(output.parts.map(\.id).sorted(), ["key", "record", "use"])
+        XCTAssertEqual(output.parts.map(\.id).sorted(), ["head", "key", "record", "use"])
         XCTAssertNil(output.move)
     }
 
@@ -116,9 +117,8 @@ final class WelcomeSpotTests: BuiltInCase {
         let output = try await read(page: "agent")
         let done = try await answer(["done"])
 
-        XCTAssertEqual(head("title", of: output), "Make it yours")
-        XCTAssertEqual(head("detail", of: output), "Your agent writes and changes spots")
-        XCTAssertEqual(output.parts.map(\.id).sorted(), ["copy", "done", "edit", "file", "new"])
+        try assertHead(output, "Make it yours", "Your agent writes and changes spots", icon: "sparkles")
+        XCTAssertEqual(output.parts.map(\.id).sorted(), ["copy", "done", "edit", "file", "head", "new"])
         let button = try part("done", in: output)
         XCTAssertEqual(button.title, "Start using Openspot")
         XCTAssertEqual(button.key, ActionKey(name: "return"))
