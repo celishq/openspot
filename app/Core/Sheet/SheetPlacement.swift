@@ -51,10 +51,14 @@ public struct SheetPlacement: Equatable, Sendable {
         var rowGaps = Array(repeating: gap, count: max(rows.count - 1, 0))
         if endsInButtons { rowGaps[rowGaps.count - 1] = SpotTokens.padding }
         let gaps = rowGaps.reduce(0, +)
+        var filled: CGFloat?
         if !fillRows.isEmpty {
             let room = SpotTokens.partsMaxHeight - (repeatArea == nil ? 0 : SpotTokens.partFieldRoom)
             let free = room - heights.reduce(0, +) - gaps
-            if free > 0 { for y in fillRows { heights[y] += free / CGFloat(fillRows.count) } }
+            if free > 0 {
+                for y in fillRows { heights[y] += free / CGFloat(fillRows.count) }
+                filled = room
+            }
         }
 
         var rowY: [CGFloat] = []
@@ -133,7 +137,7 @@ public struct SheetPlacement: Equatable, Sendable {
             CGRect(x: 0, y: rowY[$0], width: SpotTokens.partsWidth, height: SpotTokens.dividerHeight)
         }
         repeatFrame = repeatArea.map(rect)
-        height = rows.isEmpty ? 0 : heights.reduce(0, +) + gaps
+        height = rows.isEmpty ? 0 : filled ?? heights.reduce(0, +) + gaps
     }
 
     private static func endsInButtons(parts: [SpotPart], layout: SheetLayout) -> Bool {

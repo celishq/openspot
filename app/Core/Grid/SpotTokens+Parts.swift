@@ -49,10 +49,10 @@ extension SpotTokens {
     public static let menuBarBarsHeight: CGFloat = 14
 
     public static var partsWidth: CGFloat { sizes.partsWidth }
-    public static let partsMaxHeight: CGFloat = 442
+    public static var partsMaxHeight: CGFloat { sheetMaxHeight - sheetFieldDrop - padding }
     public static let partGap: CGFloat = 6
     public static let partMaxRound: CGFloat = 44
-    public static let partFieldRoom: CGFloat = 54
+    public static var partFieldRoom: CGFloat { listRow + rowGap }
     public static let partSeamClearance: CGFloat = 22
     public static let dividerHeight: CGFloat = 1
     public static let menuMargin: CGFloat = 16

@@ -346,7 +346,7 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertEqual(faults("grid=p p\n\ngraph=p\nvalue=0.01\n"), ["the part p needs at least 2 rows for its title and bar"])
         XCTAssertEqual(faults("grid=a b c d\n\ntext=a\ntitle=A very long title indeed\n\ntext=b\ntitle=B\n\ntext=c\ntitle=C\n\ntext=d\ntitle=D\n"), ["the title of the part a may not fit its cell"])
         XCTAssertEqual(faults("grid=a b\ngrid=t b\n\ntext=a\ntitle=Item\n\ntext=t\ntitle=Other\n\nfield=b\nvalue=Hi\n"), ["the part a sits in rows that stretch, so draw a choice over two lines for a list", "the part t sits in rows that stretch, so draw a choice over two lines for a list"])
-        XCTAssertEqual(faults(String(repeating: "grid=a\n", count: 20) + "\nfield=a\nvalue=Hi\n"), ["the drawing is too tall: 914pt of 442pt"])
+        XCTAssertEqual(faults(String(repeating: "grid=a\n", count: 20) + "\nfield=a\nvalue=Hi\n"), ["the drawing is too tall: 914pt of 446pt"])
     }
 
     func testATextOverTwoLinesShowsItsDetailUnderItsTitle() throws {
