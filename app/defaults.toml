@@ -31,7 +31,7 @@ id = "paste-screenshot"
 size = "small"
 
 [[spots]]
-id = "running"
+id = "usage"
 size = "small"
 
 [[spots]]
