@@ -7,8 +7,6 @@ public enum ThemeColor: Equatable, Sendable {
     case orange
     case red
 
-    public static let none = ThemeColor.hex(HexColor(red: 0, green: 0, blue: 0, alpha: 0))
-
     public init?(text: String) {
         switch text {
         case "accent": self = .accent

@@ -1,18 +1,13 @@
 import Foundation
 
 public struct Theme: Equatable, Sendable {
-    public private(set) var choices = ThemeValues()
-    public private(set) var exact = ThemeValues()
+    private var choices = ThemeValues()
     public private(set) var look = Look()
     public private(set) var layout = Layout()
     public private(set) var faults: [String] = []
 
     public static var keys: [ThemeKey] {
         choiceKinds.map(\.key)
-    }
-
-    public static var exactKeys: [ThemeKey] {
-        exactKinds.map(\.key)
     }
 
     static let lookColours = ["background", "ink", "accent", "highlight", "good", "warn", "bad"]
@@ -52,7 +47,7 @@ public struct Theme: Equatable, Sendable {
         let choiceKinds = Dictionary(uniqueKeysWithValues: Self.choiceKinds.map { ($0.key, $0.kind) })
         let exactKinds = Dictionary(uniqueKeysWithValues: Self.exactKinds.map { ($0.key, $0.kind) })
         var own = ThemeValues()
-        exact = ThemeValues()
+        var exact = ThemeValues()
         for section in document.sections {
             for key in section.keys {
                 let id = ThemeKey(section: section.name, key: key)

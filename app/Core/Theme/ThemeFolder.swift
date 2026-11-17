@@ -19,49 +19,42 @@ public struct ThemeFolder: Sendable {
         return ThemeFolder(url: config.url.deletingLastPathComponent().appendingPathComponent("themes"), builtIn: builtIn, config: config)
     }
 
-    public func isBuiltIn(_ name: String) -> Bool {
-        Self.isTaken(name, in: [Self.builtInName] + scanBuiltIns().keys)
-    }
-
     public func file(of name: String) -> URL {
         folder(of: name).appendingPathComponent("theme.toml")
     }
 
-    public func scanBuiltIns() -> [String: URL] {
-        guard let builtIn else { return [:] }
-        let own = builtIn.deletingLastPathComponent()
-        var themes = [Self.builtInName: builtIn]
-        guard own.pathExtension == "theme" else { return themes }
-        for file in Self.scanFiles(in: own.deletingLastPathComponent()) where file.deletingLastPathComponent().lastPathComponent != own.lastPathComponent {
+    public func scan() -> ThemeScan {
+        let own = builtIn?.deletingLastPathComponent()
+        let others = own.flatMap { $0.pathExtension == "theme" ? $0 : nil }.map { own in
+            Self.scanFiles(in: own.deletingLastPathComponent()).filter { $0.deletingLastPathComponent().lastPathComponent != own.lastPathComponent }
+        } ?? []
+        let builtIns = [(name: Self.builtInName, file: builtIn)] + others.map { file in
             let base = file.deletingLastPathComponent().deletingPathExtension().lastPathComponent
-            let name = base.prefix(1).uppercased() + base.dropFirst()
-            if !Self.isTaken(name, in: Array(themes.keys)) { themes[name] = file }
+            return (name: base.prefix(1).uppercased() + base.dropFirst(), file: Optional(file))
         }
-        return themes
-    }
-
-    public func scan() -> [String] {
-        let builtIns = [Self.builtInName] + scanBuiltIns().keys.filter { !Self.isTaken($0, in: [Self.builtInName]) }.sorted(by: Self.order)
-        return builtIns + scanOwn().filter { !Self.isTaken($0, in: builtIns) }.sorted(by: Self.order)
-    }
-
-    private func scanOwn() -> [String] {
-        Self.scanFiles(in: url).map { $0.deletingLastPathComponent().deletingPathExtension().lastPathComponent }
+        let mine = Self.scanFiles(in: url).map { (name: $0.deletingLastPathComponent().deletingPathExtension().lastPathComponent, file: $0) }
+        return ThemeScan(builtIns: builtIns, own: mine)
     }
 
     public func readInUse() -> String {
-        let names = scan()
-        return config.read().theme.flatMap { chosen in names.first { $0.caseInsensitiveCompare(chosen) == .orderedSame } } ?? Self.builtInName
+        readInUse(in: scan())
+    }
+
+    private func readInUse(in scan: ThemeScan) -> String {
+        inUse(in: scan, chosen: config.read().theme)
+    }
+
+    private func inUse(in scan: ThemeScan, chosen: String?) -> String {
+        chosen.flatMap { scan.find($0)?.name } ?? Self.builtInName
     }
 
     public func read() -> Theme {
-        let name = readInUse()
-        let builtIns = [Self.builtInName] + scanBuiltIns().keys
-        let clashes = scanOwn().sorted(by: Self.order).compactMap { own in
-            builtIns.first { Self.isTaken(own, in: [$0]) }.map { "The folder \(folder(of: own).path) has the name of the built-in theme \($0), so Openspot skips it. Rename the folder." }
-        }
-        let theme = clashes.reduce(Self.read(builtIn: builtIn, copy: scanBuiltIns()[name] ?? file(of: name))) { Theme(unreadable: $1, over: $0) }
-        guard let chosen = config.read().theme, chosen.caseInsensitiveCompare(name) != .orderedSame else { return theme }
+        let scan = scan()
+        let chosen = config.read().theme
+        let name = inUse(in: scan, chosen: chosen)
+        let clashes = scan.clashes.map { "The folder \(folder(of: $0.own).path) has the name of the built-in theme \($0.builtIn), so Openspot skips it. Rename the folder." }
+        let theme = clashes.reduce(Self.read(builtIn: builtIn, copy: scan.find(name)?.file)) { Theme(unreadable: $1, over: $0) }
+        guard let chosen, chosen.caseInsensitiveCompare(name) != .orderedSame else { return theme }
         return Theme(unreadable: "config.toml: the theme \(chosen) is not there, so Openspot uses the theme \(Self.builtInName). Run `openspot theme list` to see each one.", over: theme)
     }
 
@@ -80,12 +73,12 @@ public struct ThemeFolder: Sendable {
     @discardableResult
     public func use(_ name: String) throws -> String {
         let found = try find(name)
-        let faults = Self.read(builtIn: builtIn, copy: scanBuiltIns()[found] ?? file(of: found)).faults
+        let faults = Self.read(builtIn: builtIn, copy: found.file).faults
         guard faults.isEmpty else {
-            throw SpotError.failed(1, (["The theme \(found) has faults, so Openspot keeps the theme \(readInUse()). Fix each line below, then run `openspot theme use \(found)` again."] + faults).joined(separator: "\n"))
+            throw SpotError.failed(1, (["The theme \(found.name) has faults, so Openspot keeps the theme \(readInUse()). Fix each line below, then run `openspot theme use \(found.name)` again."] + faults).joined(separator: "\n"))
         }
-        try config.change { $0.set(theme: found) }
-        return found
+        try config.change { $0.set(theme: found.name) }
+        return found.name
     }
 
     public func make() throws -> String {
@@ -99,11 +92,10 @@ public struct ThemeFolder: Sendable {
     }
 
     public func duplicate(_ name: String?) throws -> String {
-        let builtIns = scanBuiltIns()
-        let source = try name.map(find) ?? readInUse()
-        let file = builtIns[source] ?? (isBuiltIn(source) ? nil : file(of: source))
-        let text = try file.map { try String(contentsOf: $0, encoding: .utf8) } ?? readBuiltIn()
-        let copy = free("\(source) copy", from: nil)
+        let scan = scan()
+        let source = try find(name ?? readInUse(), in: scan)
+        let text = try source.file.map { try String(contentsOf: $0, encoding: .utf8) } ?? readBuiltIn()
+        let copy = free("\(source.name) copy", from: nil)
         try write(text, as: copy)
         return try use(copy)
     }
@@ -111,16 +103,18 @@ public struct ThemeFolder: Sendable {
     @discardableResult
     public func rename(_ old: String, to name: String) throws -> String {
         let new = name.trimmingCharacters(in: .whitespaces)
-        let source = try find(old)
-        guard !isBuiltIn(source) else {
+        let scan = scan()
+        let found = try find(old, in: scan)
+        let source = found.name
+        guard !found.isBuiltIn else {
             throw SpotError.failed(1, "The theme \(source) is built in, so it keeps its name. Run `openspot theme duplicate` to make a copy you can change.")
         }
         try check(new)
-        if let taken = ([Self.builtInName] + scanBuiltIns().keys).first(where: { Self.isTaken(new, in: [$0]) }) { throw SpotError.failed(1, "\(taken) is the name of a built-in theme. Pick another name.") }
-        guard source.caseInsensitiveCompare(new) == .orderedSame || !scan().contains(where: { $0.caseInsensitiveCompare(new) == .orderedSame }) else {
+        if let taken = scan.find(new), taken.isBuiltIn { throw SpotError.failed(1, "\(taken.name) is the name of a built-in theme. Pick another name.") }
+        guard source.caseInsensitiveCompare(new) == .orderedSame || scan.find(new) == nil else {
             throw SpotError.failed(1, "A theme named \(new) is already there. Pick another name.")
         }
-        let isInUse = readInUse() == source
+        let isInUse = readInUse(in: scan) == source
         try FileManager.default.moveItem(at: folder(of: source), to: folder(of: new))
         if isInUse { try config.change { $0.set(theme: new) } }
         return new
@@ -128,30 +122,23 @@ public struct ThemeFolder: Sendable {
 
     @discardableResult
     public func delete(_ name: String, trash: (URL) throws -> URL = AppPlaces.systemTrash) throws -> Bool {
-        let found = try find(name)
-        guard !isBuiltIn(found) else { throw SpotError.failed(1, "The theme \(found) is built in, so it cannot be deleted.") }
-        let isInUse = readInUse() == found
-        _ = try trash(folder(of: found))
+        let scan = scan()
+        let found = try find(name, in: scan)
+        guard !found.isBuiltIn else { throw SpotError.failed(1, "The theme \(found.name) is built in, so it cannot be deleted.") }
+        let isInUse = readInUse(in: scan) == found.name
+        _ = try trash(folder(of: found.name))
         if isInUse { try config.change { $0.set(theme: Self.builtInName) } }
         return isInUse
     }
 
     public func edit(_ named: String? = nil) throws -> (file: URL, isCopy: Bool) {
-        let name = try named.map(find) ?? readInUse()
-        guard isBuiltIn(name) else { return (file(of: name), false) }
-        return (file(of: try duplicate(name)), true)
+        let theme = try find(named ?? readInUse(), in: scan())
+        guard theme.isBuiltIn else { return (file(of: theme.name), false) }
+        return (file(of: try duplicate(theme.name)), true)
     }
 
     private func folder(of name: String) -> URL {
         url.appendingPathComponent("\(name).theme")
-    }
-
-    private static func isTaken(_ name: String, in names: [String]) -> Bool {
-        names.contains { $0.caseInsensitiveCompare(name) == .orderedSame }
-    }
-
-    private static func order(_ one: String, _ other: String) -> Bool {
-        one.localizedStandardCompare(other) == .orderedAscending
     }
 
     private static func scanFiles(in folder: URL) -> [URL] {
@@ -173,17 +160,21 @@ public struct ThemeFolder: Sendable {
         guard name.rangeOfCharacter(from: .newlines) == nil else { throw SpotError.failed(1, "A theme's name cannot hold a new line. Pick a name such as `Dusk`.") }
     }
 
-    public func find(_ name: String) throws -> String {
+    public func find(_ name: String) throws -> ThemeScan.Item {
+        try find(name, in: scan())
+    }
+
+    private func find(_ name: String, in scan: ThemeScan) throws -> ThemeScan.Item {
         try check(name)
-        guard let found = scan().first(where: { $0.caseInsensitiveCompare(name) == .orderedSame }) else {
+        guard let found = scan.find(name) else {
             throw SpotError.failed(1, "There is no theme named \(name). Run `openspot theme list` to see each one.")
         }
         return found
     }
 
     private func free(_ base: String, from first: Int?) -> String {
-        let names = scan()
-        let taken = { (name: String) in Self.isTaken(name, in: names) }
+        let scan = scan()
+        let taken = { (name: String) in scan.find(name) != nil }
         if first == nil, !taken(base) { return base }
         var number = first ?? 2
         while taken("\(base) \(number)") { number += 1 }

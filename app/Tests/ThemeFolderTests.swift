@@ -37,7 +37,7 @@ final class ThemeFolderTests: XCTestCase {
         try write("openspot", "[dark]\nfill = 0.9\n")
         try FileManager.default.createDirectory(at: folder.appendingPathComponent("themes/Empty.theme"), withIntermediateDirectories: true)
 
-        XCTAssertEqual(themes.scan(), ["Openspot", "dusk", "Night"])
+        XCTAssertEqual(themes.scan().names, ["Openspot", "dusk", "Night"])
         XCTAssertEqual(themes.readInUse(), "Openspot")
         XCTAssertEqual(themes.read().look.dark.fill, 0.1)
     }
@@ -46,7 +46,7 @@ final class ThemeFolderTests: XCTestCase {
         try write("openspot", "[dark]\nfill = 0.9\n")
         try write("Night", "")
 
-        XCTAssertEqual(themes.scan(), ["Openspot", "Night"])
+        XCTAssertEqual(themes.scan().names, ["Openspot", "Night"])
         XCTAssertEqual(refusal { try themes.use("openspot") }, nil)
         XCTAssertEqual(themes.read().look.dark.fill, 0.1)
         XCTAssertEqual(themes.read().faults, ["The folder \(folder.appendingPathComponent("themes/openspot.theme").path) has the name of the built-in theme Openspot, so Openspot skips it. Rename the folder."])
@@ -117,7 +117,7 @@ final class ThemeFolderTests: XCTestCase {
 
         XCTAssertEqual(try themes.rename("Night", to: "Dusk"), "Dusk")
 
-        XCTAssertEqual(themes.scan(), ["Openspot", "Dusk"])
+        XCTAssertEqual(themes.scan().names, ["Openspot", "Dusk"])
         XCTAssertEqual(themes.readInUse(), "Dusk")
         XCTAssertEqual(themes.read().look.dark.fill, 0.3)
     }
@@ -133,7 +133,7 @@ final class ThemeFolderTests: XCTestCase {
         XCTAssertEqual(try themes.delete("Night") { trashed.append($0.lastPathComponent); try FileManager.default.removeItem(at: $0); return $0 }, true)
 
         XCTAssertEqual(trashed, ["Dusk.theme", "Night.theme"])
-        XCTAssertEqual(themes.scan(), ["Openspot"])
+        XCTAssertEqual(themes.scan().names, ["Openspot"])
         XCTAssertEqual(themes.config.read().theme, "Openspot")
         XCTAssertEqual(themes.read().faults, [])
     }
@@ -144,7 +144,7 @@ final class ThemeFolderTests: XCTestCase {
         XCTAssertEqual(file, folder.appendingPathComponent("themes/Openspot copy.theme/theme.toml"))
         XCTAssertEqual(themes.readInUse(), "Openspot copy")
         XCTAssertEqual(try themes.edit().file, file)
-        XCTAssertEqual(themes.scan(), ["Openspot", "Openspot copy"])
+        XCTAssertEqual(themes.scan().names, ["Openspot", "Openspot copy"])
     }
 
     func testBadNamesAreRefused() throws {
@@ -159,7 +159,7 @@ final class ThemeFolderTests: XCTestCase {
         XCTAssertEqual(refusal { try themes.delete("Openspot") { $0 } }, "The theme Openspot is built in, so it cannot be deleted.")
         XCTAssertEqual(refusal { try themes.use("Gone") }, "There is no theme named Gone. Run `openspot theme list` to see each one.")
         XCTAssertEqual(refusal { try themes.duplicate("") }, "A theme needs a name, such as `Dusk`.")
-        XCTAssertEqual(themes.scan(), ["Openspot", "Dusk", "Night"])
+        XCTAssertEqual(themes.scan().names, ["Openspot", "Dusk", "Night"])
     }
 
     func testEachFolderBesideTheBuiltInIsABuiltInThemeListedFirstThatOnlyACopyChanges() throws {
@@ -174,7 +174,7 @@ final class ThemeFolderTests: XCTestCase {
         try write("Night", "")
         try write("dusk", "[dark]\nfill = 0.9\n")
 
-        XCTAssertEqual(themes.scan(), ["Openspot", "Dusk", "Night"])
+        XCTAssertEqual(themes.scan().names, ["Openspot", "Dusk", "Night"])
         XCTAssertEqual(try themes.use("dusk"), "Dusk")
         XCTAssertEqual(themes.read().look.dark.fill, 0.4)
         XCTAssertEqual(themes.read().layout.radius.card, 20)
@@ -182,7 +182,7 @@ final class ThemeFolderTests: XCTestCase {
 
         XCTAssertEqual(try themes.duplicate("Dusk"), "Dusk copy")
         XCTAssertEqual(try text(of: "Dusk copy"), "[dark]\nfill = 0.4\n")
-        XCTAssertEqual(themes.scan(), ["Openspot", "Dusk", "Dusk copy", "Night"])
+        XCTAssertEqual(themes.scan().names, ["Openspot", "Dusk", "Dusk copy", "Night"])
         XCTAssertEqual(refusal { try themes.rename("Dusk", to: "Day") }, "The theme Dusk is built in, so it keeps its name. Run `openspot theme duplicate` to make a copy you can change.")
         XCTAssertEqual(refusal { try themes.delete("Dusk") { $0 } }, "The theme Dusk is built in, so it cannot be deleted.")
         XCTAssertEqual(refusal { try themes.rename("Night", to: "DUSK") }, "Dusk is the name of a built-in theme. Pick another name.")
@@ -202,7 +202,7 @@ final class ThemeFolderTests: XCTestCase {
         XCTAssertEqual(refusal { try themes.rename("Night", to: ".hidden") }, "A theme's name cannot start with `.`. Pick a name such as `Dusk`.")
         XCTAssertEqual(refusal { try themes.rename("Night", to: "a\nb") }, "A theme's name cannot hold a new line. Pick a name such as `Dusk`.")
         XCTAssertEqual(try themes.rename("Night", to: " Dusk "), "Dusk")
-        XCTAssertEqual(themes.scan(), ["Openspot", "Dusk"])
+        XCTAssertEqual(themes.scan().names, ["Openspot", "Dusk"])
     }
 
     func testARenameThatChangesOnlyTheCaseKeepsTheTheme() throws {
@@ -211,7 +211,7 @@ final class ThemeFolderTests: XCTestCase {
 
         XCTAssertEqual(try themes.rename("Dusk", to: "dusk"), "dusk")
 
-        XCTAssertEqual(themes.scan(), ["Openspot", "dusk"])
+        XCTAssertEqual(themes.scan().names, ["Openspot", "dusk"])
         XCTAssertEqual(themes.readInUse(), "dusk")
         XCTAssertEqual(themes.read().look.dark.fill, 0.3)
     }

@@ -51,7 +51,7 @@ enum ThemeCall: NounCall, Equatable {
         case .list(let form):
             CommandAnswer.work {
                 let used = themes.readInUse()
-                return try form.text(of: themes.scan().map { PrintedTheme(theme: $0, builtin: themes.isBuiltIn($0), used: $0 == used) })
+                return try form.text(of: themes.scan().items.map { PrintedTheme(theme: $0.name, builtin: $0.isBuiltIn, used: $0.name == used) })
             }
         case .use(let name):
             CommandAnswer.work { try await draw("Switched to the theme \(try themes.use(name)).") }
@@ -63,7 +63,7 @@ enum ThemeCall: NounCall, Equatable {
             CommandAnswer.work { "Renamed the theme \(old) to \(try themes.rename(old, to: new)).\n" }
         case .delete(let name):
             CommandAnswer.work { [trash = context.trash] in
-                let found = themes.scan().first { $0.caseInsensitiveCompare(name) == .orderedSame } ?? name
+                let found = themes.scan().find(name)?.name ?? name
                 guard try themes.delete(name, trash: trash) else { return "Moved the theme \(found) to the Trash.\n" }
                 return try await draw("Moved the theme \(found) to the Trash, and switched to the theme \(ThemeFolder.builtInName).")
             }
