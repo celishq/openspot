@@ -65,7 +65,7 @@ final class ThemeReloadTests: PanelCase {
 
         model.take(hover)
 
-        XCTAssertEqual(host.paints.last, hover.look)
+        XCTAssertEqual(host.paints.last, hover.colours)
         XCTAssertEqual(host.layOuts, [])
         XCTAssertFalse(told)
     }
@@ -94,7 +94,7 @@ final class ThemeReloadTests: PanelCase {
 
         model.take(hover)
 
-        XCTAssertEqual(host.paints.last, hover.look)
+        XCTAssertEqual(host.paints.last, hover.colours)
     }
 
     func testARadiusChangeTellsTheHostToDrawTheEdgeAgain() async throws {
@@ -145,7 +145,7 @@ final class ThemeReloadTests: PanelCase {
         XCTAssertEqual(dark.glassTint, ThemeColor(text: "#282A3673"))
         XCTAssertEqual(dark.onSolid, ThemeColor(text: "#282A36"))
         XCTAssertEqual(dark.window, ThemeColor(text: "#494B54"))
-        XCTAssertNotEqual(dark.fill, Theme().look.dark.fill)
+        XCTAssertNotEqual(dark.fill, Theme().colours.dark.fill)
     }
 
     func testAChangedDensityReachesEachGapAndPadding() async throws {

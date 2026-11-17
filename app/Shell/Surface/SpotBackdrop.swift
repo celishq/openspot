@@ -9,7 +9,7 @@ struct SpotBackdrop: View {
 
     var body: some View {
         if drawsGlass, SpotTokens.backdrop.reach == .tiles {
-            BackdropShape(rect: model.backdrop.offsetBy(dx: -model.panels.frame.minX, dy: 0), foot: model.panelFoot, motion: motion, look: SpotTokens.backdrop.look)
+            BackdropShape(rect: model.backdrop.offsetBy(dx: -model.panels.frame.minX, dy: 0), foot: model.panelFoot, motion: motion, style: SpotTokens.backdrop.style)
                 .modifier(PanelSpan(panels: model.panels))
                 .modifier(SpotShownFade(isShown: isShown))
                 .allowsHitTesting(false)
@@ -21,7 +21,7 @@ private struct BackdropShape: View, @preconcurrency Animatable {
     var rect: CGRect
     var foot: PanelFoot
     var motion: SheetMotion
-    let look: Theme.Backdrop.Look
+    let style: Theme.Backdrop.Style
 
     var animatableData: AnimatablePair<CGRect.AnimatableData, AnimatablePair<PanelFoot.AnimatableData, Double>> {
         get { AnimatablePair(rect.animatableData, AnimatablePair(foot.animatableData, motion.progress)) }
@@ -36,7 +36,7 @@ private struct BackdropShape: View, @preconcurrency Animatable {
         var rect = rect
         rect.size.height = motion.place(of: foot)
         return ZStack(alignment: .topLeading) {
-            switch look {
+            switch style {
             case .blur:
                 ForEach(Array(BackdropEdge.blurs.enumerated()), id: \.offset) { step, edge in
                     SpotBackdropBlur(radius: SpotTokens.backdrop.blur * CGFloat(step + 1) / CGFloat(BackdropEdge.blurs.count))

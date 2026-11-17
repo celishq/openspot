@@ -7,17 +7,17 @@ final class SpotLoadedTheme {
     static let shared = SpotLoadedTheme()
     private static let viewThemeLimit = 32
 
-    @ObservationIgnored private var painted = Theme.Look()
+    @ObservationIgnored private var painted = Theme.Colours()
     @ObservationIgnored private var viewThemes: [ViewThemeKey: [String: Any]] = [:]
-    private(set) var palette = SpotPalette(Theme.Look())
+    private(set) var palette = SpotPalette(Theme.Colours())
     private(set) var layout = 0
 
     func take(_ next: Theme) {
-        paint(next.look)
+        paint(next.colours)
         lay(next.layout)
     }
 
-    func paint(_ next: Theme.Look) {
+    func paint(_ next: Theme.Colours) {
         guard next != painted else { return }
         painted = next
         viewThemes = [:]

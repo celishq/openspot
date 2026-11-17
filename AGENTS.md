@@ -89,8 +89,8 @@ Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these 
   such as `@preconcurrency`.
 - Logic that a window needs goes in `Core/`. Only drawing and window handling go in `Shell/`.
 - Each size, colour, strength, font and motion value has one name in a token file: `SpotTokens` (measured base values in
-  `Core/Grid/SpotTokens.swift`, formulas over them in `Core/Grid/SpotTokens+Derived.swift`, sizes of single parts in
-  `Core/Grid/SpotTokens+Parts.swift`), `SpotTheme`, `SpotType` and `MotionTokens`. A theme file names only the choices of a theme, so a
+  `Core/Theme/SpotTokens.swift`, formulas over them in `Core/Theme/SpotTokens+Derived.swift`, sizes of single parts in
+  `Core/Theme/SpotTokens+Parts.swift`), `SpotTheme`, `SpotType` and `MotionTokens`. A theme file names only the choices of a theme, so a
   new theme is one more file. `Core/Theme/` works out every other value from them by rules anchored on the measured values
   of Openspot, and `SpotTheme`, `SpotType`, `SpotTokens` and `MotionTokens` read the result. The defaults of the rules
   mirror the choices in `app/Themes/openspot.theme/theme.toml`, which `ThemeTests` checks. A value that no theme chooses,
@@ -170,7 +170,7 @@ below is one a reviewer can check in a diff.
 ### Motion
 
 Each motion is one of five kinds, each with one curve in `Shell/Surface/SpotMotion.swift`: grow (and its way back), move,
-fade and press. Each duration, bounce and motion scale is in `Core/Panel/MotionTokens.swift`. A part of a surface that grows
+fade and press. Each duration, bounce and motion scale is in `Core/Theme/MotionTokens.swift`. A part of a surface that grows
 takes its look from the surface's progress, by `SheetMorph`, and keeps no curve of its own. `make verify` runs
 `scripts/check-motion.sh`, which fails on a curve written anywhere else in `app/` or `scripts/`.
 

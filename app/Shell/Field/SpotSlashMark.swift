@@ -13,6 +13,6 @@ struct SpotSlashMark: View {
     }
 
     private var hint: Text {
-        Text(model.slashPlaceholder.map { " \($0)" } ?? "").foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
+        Text(model.slashPlaceholder.map { " \($0)" } ?? "").foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondary))
     }
 }

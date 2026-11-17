@@ -524,7 +524,7 @@ struct SheetPartsView: View {
             }
             if text.isEmpty, let placeholder {
                 Text(placeholder)
-                    .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
+                    .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondary))
                     .allowsHitTesting(false)
                     .padding(space)
             }

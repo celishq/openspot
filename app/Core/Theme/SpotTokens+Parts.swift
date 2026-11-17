@@ -101,9 +101,9 @@ extension SpotTokens {
     public static let playgroundLogHeight: CGFloat = 120
 
     public static let builtIn = Theme.Layout()
-    public static let themeGap: CGFloat = builtIn.space.columnGap
-    public static let themePadding: CGFloat = builtIn.space.padding
-    public static let themeRowPadding: CGFloat = 10
+    public static let windowFooterGap: CGFloat = builtIn.space.columnGap
+    public static let windowFooterPadding: CGFloat = builtIn.space.padding
+    public static let windowRowPadding: CGFloat = 10
 
     public static let emblemSide: CGFloat = 26
     public static var publisherPlace: CGSize { CGSize(width: partsWidth, height: 178) }

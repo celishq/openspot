@@ -31,23 +31,23 @@ final class ThemeTests: XCTestCase {
         let theme = Theme(text: dracula)
 
         XCTAssertEqual(theme.faults, [])
-        XCTAssertEqual(theme.look.dark.background, ThemeColor(text: "#282A36"))
-        XCTAssertEqual(theme.look.dark.ink, ThemeColor(text: "#F8F8F2"))
-        XCTAssertEqual(theme.look.dark.accent, ThemeColor(text: "#BD93F9"))
-        XCTAssertEqual(theme.look.light.accent, ThemeColor(text: "#644AC9"))
-        XCTAssertEqual(theme.look.dark.highlight, ThemeColor(text: "#FF79C6"))
-        XCTAssertEqual(theme.look.dark.bad, ThemeColor(text: "#FF5555"))
-        XCTAssertEqual(theme.look.light.bad, .red)
-        XCTAssertEqual(theme.look.dark.good, .green)
-        XCTAssertEqual(theme.look.glass.variant, .regular)
-        XCTAssertEqual(theme.layout.backdrop.look, .tint)
+        XCTAssertEqual(theme.colours.dark.background, ThemeColor(text: "#282A36"))
+        XCTAssertEqual(theme.colours.dark.ink, ThemeColor(text: "#F8F8F2"))
+        XCTAssertEqual(theme.colours.dark.accent, ThemeColor(text: "#BD93F9"))
+        XCTAssertEqual(theme.colours.light.accent, ThemeColor(text: "#644AC9"))
+        XCTAssertEqual(theme.colours.dark.highlight, ThemeColor(text: "#FF79C6"))
+        XCTAssertEqual(theme.colours.dark.bad, ThemeColor(text: "#FF5555"))
+        XCTAssertEqual(theme.colours.light.bad, .red)
+        XCTAssertEqual(theme.colours.dark.good, .green)
+        XCTAssertEqual(theme.colours.glass, .regular)
+        XCTAssertEqual(theme.layout.backdrop.style, .tint)
         XCTAssertEqual(theme.layout.backdrop.reach, .screen)
         XCTAssertEqual(theme.layout.radius.card, 20)
         XCTAssertEqual(theme.layout.type.body, 15)
     }
 
     func testTheColoursOfALookFollowFromItsChoices() {
-        let dark = Theme(text: dracula).look.dark
+        let dark = Theme(text: dracula).colours.dark
 
         XCTAssertEqual(dark.solid, ThemeColor(text: "#FF79C6"))
         XCTAssertEqual(dark.onSolid, ThemeColor(text: "#282A36"))
@@ -62,7 +62,7 @@ final class ThemeTests: XCTestCase {
     }
 
     func testAnOnColourIsTheBackgroundOrTheInkWhicheverReadsBetter() {
-        let light = Theme(text: "[light]\nbackground = \"#EFF1F5\"\nink = \"#4C4F69\"\nhighlight = \"#EA76CB\"\n").look.light
+        let light = Theme(text: "[light]\nbackground = \"#EFF1F5\"\nink = \"#4C4F69\"\nhighlight = \"#EA76CB\"\n").colours.light
 
         XCTAssertEqual(light.onSolid, ThemeColor(text: "#4C4F69"))
     }
@@ -70,31 +70,31 @@ final class ThemeTests: XCTestCase {
     func testEachStrengthKeepsTheVisibleStepOfOpenspot() {
         let theme = Theme(text: dracula)
 
-        XCTAssertEqual(theme.look.dark.fill, 0.097, accuracy: 0.001)
-        XCTAssertEqual(theme.look.dark.selected, 0.263, accuracy: 0.001)
-        XCTAssertEqual(theme.look.dark.track, 0.236, accuracy: 0.001)
-        XCTAssertEqual(theme.look.light.fill, 0.082, accuracy: 0.001)
-        XCTAssertEqual(theme.look.light.disc, 0)
+        XCTAssertEqual(theme.colours.dark.fill, 0.097, accuracy: 0.001)
+        XCTAssertEqual(theme.colours.dark.selected, 0.263, accuracy: 0.001)
+        XCTAssertEqual(theme.colours.dark.track, 0.236, accuracy: 0.001)
+        XCTAssertEqual(theme.colours.light.fill, 0.082, accuracy: 0.001)
+        XCTAssertEqual(theme.colours.light.disc, 0)
     }
 
     func testANearWhiteLookTakesALargerStrengthForTheSameStep() {
-        let light = Theme(text: "[light]\nbackground = \"#FDF6E3\"\nink = \"#586E75\"\n").look.light
+        let light = Theme(text: "[light]\nbackground = \"#FDF6E3\"\nink = \"#586E75\"\n").colours.light
 
-        XCTAssertGreaterThan(light.fill, Theme().look.light.fill)
-        XCTAssertGreaterThan(light.selected, Theme().look.light.selected)
+        XCTAssertGreaterThan(light.fill, Theme().colours.light.fill)
+        XCTAssertGreaterThan(light.selected, Theme().colours.light.selected)
     }
 
     func testSecondaryTextReadsAtFourAndAHalfToOneOverTheRealSurface() {
         let theme = Theme(text: "[dark]\nbackground = \"#282C34\"\nink = \"#ABB2BF\"\n\n[look]\nglass = \"regular\"\n")
         let surface = HexColor(red: 1, green: 1, blue: 1).mixed(with: HexColor(text: "#282C34")!, by: 0.9)
-        let text = surface.mixed(with: HexColor(text: "#ABB2BF")!, by: theme.look.dark.secondary)
+        let text = surface.mixed(with: HexColor(text: "#ABB2BF")!, by: theme.colours.dark.secondary)
 
         XCTAssertGreaterThanOrEqual(text.contrast(with: surface), 4.5)
-        XCTAssertGreaterThan(theme.look.dark.secondary, 0.7)
+        XCTAssertGreaterThan(theme.colours.dark.secondary, 0.7)
     }
 
     func testOpenspotsChoicesGiveItsMeasuredValues() {
-        let look = Theme().look
+        let look = Theme().colours
 
         XCTAssertEqual(look.dark.glassTint, ThemeColor(text: "#00000073"))
         XCTAssertEqual(look.light.glassTint, ThemeColor(text: "#FFFFFF73"))
@@ -107,7 +107,7 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual([look.light.fill, look.light.selected, look.light.disc, look.light.chip, look.light.control, look.light.track], [0.08, 0.12, 0, 0.1, 0.09, 0.12])
         XCTAssertEqual([look.dark.secondary, look.light.secondary], [0.7, 0.7])
         XCTAssertEqual(look.dark.accent, .accent)
-        XCTAssertEqual(look.glass.variant, .clear)
+        XCTAssertEqual(look.glass, .clear)
     }
 
     func testOpenspotsChoicesGiveItsMeasuredSizes() {
@@ -119,7 +119,7 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual([layout.type.title, layout.type.body, layout.type.detail, layout.type.input], [13, 13, 11, 14])
         XCTAssertEqual([layout.motion.grow, layout.motion.shrink, layout.motion.move, layout.motion.fadeIn, layout.motion.fadeOut, layout.motion.press, layout.motion.settle], [0.15, 0.2, 0.25, 0.1, 0.12, 0.2, 0.25])
         XCTAssertEqual([layout.motion.pressBounce, layout.motion.pressedScale, layout.motion.liftedScale, layout.motion.focusedScale], [0.2, 1.04, 1.05, 1.04])
-        XCTAssertEqual(layout.backdrop.look, .blur)
+        XCTAssertEqual(layout.backdrop.style, .blur)
         XCTAssertEqual(layout.backdrop.reach, .tiles)
         XCTAssertEqual([layout.backdrop.blur, layout.backdrop.size, layout.backdrop.padding], [3, 60, 0])
     }
@@ -150,10 +150,10 @@ final class ThemeTests: XCTestCase {
         """)
 
         XCTAssertEqual(theme.faults, [])
-        XCTAssertEqual(theme.look.dark.solid, ThemeColor(text: "#FFFF00"))
-        XCTAssertEqual(theme.look.dark.onSolid, ThemeColor(text: "#000000"))
-        XCTAssertEqual(theme.look.dark.fill, 0.3)
-        XCTAssertEqual(theme.look.light.fill, 0.08)
+        XCTAssertEqual(theme.colours.dark.solid, ThemeColor(text: "#FFFF00"))
+        XCTAssertEqual(theme.colours.dark.onSolid, ThemeColor(text: "#000000"))
+        XCTAssertEqual(theme.colours.dark.fill, 0.3)
+        XCTAssertEqual(theme.colours.light.fill, 0.08)
         XCTAssertEqual(theme.layout.space.cell, 70)
         XCTAssertEqual(theme.layout.radius.window, 6)
         XCTAssertEqual(theme.layout.radius.card, 26)
@@ -180,7 +180,7 @@ final class ThemeTests: XCTestCase {
             "theme.toml: [dark] preview is not a key of a theme.",
             "theme.toml: [space] cell is not a key of a theme."
         ])
-        XCTAssertEqual(theme.look, Theme().look)
+        XCTAssertEqual(theme.colours, Theme().colours)
         XCTAssertEqual(theme.layout, Theme().layout)
     }
 
@@ -220,7 +220,7 @@ final class ThemeTests: XCTestCase {
             "theme.toml: [advanced] grow is a time from 0 to 2 seconds, such as 0.2.",
             "theme.toml: [advanced] pressed-scale is a scale from 0.5 to 2, such as 1.04."
         ])
-        XCTAssertEqual(theme.look, Theme().look)
+        XCTAssertEqual(theme.colours, Theme().colours)
         XCTAssertEqual(theme.layout, Theme().layout)
     }
 
@@ -238,12 +238,12 @@ final class ThemeTests: XCTestCase {
 
         XCTAssertEqual(theme.faults, [])
         XCTAssertTrue(Set(Theme.keys.map(\.name)).subtracting(["[dark] good", "[dark] warn", "[dark] bad", "[light] good", "[light] warn", "[light] bad"]).isSubset(of: named), named.description)
-        XCTAssertEqual(Theme(text: Self.choices(of: document)).look, Theme().look)
+        XCTAssertEqual(Theme(text: Self.choices(of: document)).colours, Theme().colours)
         XCTAssertEqual(theme.layout, Theme().layout)
-        XCTAssertEqual(theme.look.light.solid, ThemeColor(text: "#1F1F1F"))
-        XCTAssertEqual(theme.look.dark.glyphOnSolid, .accent)
-        XCTAssertEqual([theme.look.dark.confirm, theme.look.light.confirm], [ThemeColor(text: "#C72924"), ThemeColor(text: "#C72924")])
-        XCTAssertEqual([theme.look.dark.onConfirm, theme.look.light.onConfirm], [ThemeColor(text: "#FFFFFF"), ThemeColor(text: "#FFFFFF")])
+        XCTAssertEqual(theme.colours.light.solid, ThemeColor(text: "#1F1F1F"))
+        XCTAssertEqual(theme.colours.dark.glyphOnSolid, .accent)
+        XCTAssertEqual([theme.colours.dark.confirm, theme.colours.light.confirm], [ThemeColor(text: "#C72924"), ThemeColor(text: "#C72924")])
+        XCTAssertEqual([theme.colours.dark.onConfirm, theme.colours.light.onConfirm], [ThemeColor(text: "#FFFFFF"), ThemeColor(text: "#FFFFFF")])
     }
 
     func testEachShippedThemeReadsWithNoFault() throws {
@@ -283,8 +283,8 @@ final class ThemeTests: XCTestCase {
 
         let theme = ThemeFolder.read(builtIn: builtIn, copy: copy)
 
-        XCTAssertEqual(theme.look.dark.background, ThemeColor(text: "#222222"))
-        XCTAssertEqual(theme.look.dark.ink, ThemeColor(text: "#EEEEEE"))
+        XCTAssertEqual(theme.colours.dark.background, ThemeColor(text: "#222222"))
+        XCTAssertEqual(theme.colours.dark.ink, ThemeColor(text: "#EEEEEE"))
         XCTAssertEqual(theme.layout.radius.card, 20)
         XCTAssertEqual(theme.faults, ["theme.toml: [dark] size is not a key of a theme."])
     }
@@ -296,10 +296,10 @@ final class ThemeTests: XCTestCase {
         let copy = folder.appendingPathComponent("theme.toml")
         try "[dark]\nbackground = \"#282A36\"\nink = \"#F8F8F2\"\n".write(to: copy, atomically: true, encoding: .utf8)
 
-        XCTAssertEqual(ThemeFolder.read(builtIn: builtIn).look.dark.window, ThemeColor(text: "#292929"))
+        XCTAssertEqual(ThemeFolder.read(builtIn: builtIn).colours.dark.window, ThemeColor(text: "#292929"))
         let theme = ThemeFolder.read(builtIn: builtIn, copy: copy)
 
-        XCTAssertEqual(theme.look.dark.window, ThemeColor(text: "#494B54"))
+        XCTAssertEqual(theme.colours.dark.window, ThemeColor(text: "#494B54"))
         XCTAssertEqual(theme.layout.space.cell, 64)
     }
 
@@ -312,7 +312,7 @@ final class ThemeTests: XCTestCase {
 
         let theme = ThemeFolder.read(builtIn: builtIn, copy: copy)
 
-        XCTAssertEqual(theme.look.dark.window, ThemeColor(text: "#123456"))
+        XCTAssertEqual(theme.colours.dark.window, ThemeColor(text: "#123456"))
         XCTAssertEqual(theme.faults, ["theme.toml cannot be read at \(copy.path), so Openspot keeps the look of the app. Save it as text, or delete it."])
     }
 

@@ -23,12 +23,12 @@ final class SpotPalette: Sendable {
     let bad: Color
     let glassInk: AnyShapeStyle
     let glassSecondary: AnyShapeStyle
-    let glassVariant: Theme.Glass.Variant
+    let glassVariant: Theme.Glass
 
-    init(_ look: Theme.Look) {
-        dark = look.dark
-        light = look.light
-        let color = { (part: KeyPath<Theme.Appearance, ThemeColor>) in Self.color(part, dark: look.dark, light: look.light) }
+    init(_ colours: Theme.Colours) {
+        dark = colours.dark
+        light = colours.light
+        let color = { (part: KeyPath<Theme.Appearance, ThemeColor>) in Self.color(part, dark: colours.dark, light: colours.light) }
         ink = color(\.ink)
         solid = color(\.solid)
         onSolid = color(\.onSolid)
@@ -49,9 +49,9 @@ final class SpotPalette: Sendable {
             let ink = look.ink.nsColor
             return ink.withAlphaComponent(ink.alphaComponent * look.secondary)
         }
-        glassInk = look.glass.takesInk ? AnyShapeStyle(ink) : AnyShapeStyle(HierarchicalShapeStyle.primary)
-        glassSecondary = look.glass.takesInk ? AnyShapeStyle(Self.color(secondary(look.dark), secondary(look.light))) : AnyShapeStyle(HierarchicalShapeStyle.secondary)
-        glassVariant = look.glass.variant
+        glassInk = colours.glass.takesInk ? AnyShapeStyle(ink) : AnyShapeStyle(HierarchicalShapeStyle.primary)
+        glassSecondary = colours.glass.takesInk ? AnyShapeStyle(Self.color(secondary(colours.dark), secondary(colours.light))) : AnyShapeStyle(HierarchicalShapeStyle.secondary)
+        glassVariant = colours.glass
     }
 
     func color(_ part: KeyPath<Theme.Appearance, ThemeColor>) -> Color {

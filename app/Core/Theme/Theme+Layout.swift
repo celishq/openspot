@@ -21,21 +21,22 @@ extension Theme {
         static let exactKinds: [(String, ThemeKind)] = [
             "cell", "column-gap", "row-gap", "padding", "glyph", "list-row", "list-row-gap", "menu-row", "menu-padding",
             "window-corner", "media-corner", "mark-corner", "title", "body", "detail", "input"
-        ].map { ($0, ThemeKind.points) } + ["grow", "shrink", "move", "fade-in", "fade-out", "press", "settle"].map { ($0, ThemeKind.seconds) }
+        ].map { ($0, ThemeKind.points()) } + ["grow", "shrink", "move", "fade-in", "fade-out", "press", "settle"].map { ($0, ThemeKind.seconds) }
             + [("press-bounce", .strength), ("pressed-scale", .scale), ("lifted-scale", .scale), ("focused-scale", .scale)]
-            + [("backdrop-blur", .points), ("halo-size", .haloSize), ("halo-padding", .haloPadding)]
+            + [("backdrop-blur", .points()), ("halo-size", .points(Double(SpotTokens.backdropLeastFade)...Double(SpotTokens.halo), example: 60))]
+            + [("halo-padding", .points(0...Double(SpotTokens.halo - SpotTokens.backdropLeastFade), example: 10))]
 
         public init() {
             self.init(choices: ThemeValues(), exact: ThemeValues())
         }
 
-        init(choices: ThemeValues, exact: ThemeValues) {
-            let pinned = { (key: String) in exact.number("advanced", key) }
-            space = Space(density: choices.number("look", "density") ?? 1, pinned: pinned)
-            radius = Radius(corner: choices.number("look", "corner") ?? Radius.openspotCorner, pinned: pinned)
-            type = TypeSizes(base: choices.number("look", "type") ?? TypeSizes.openspotBody, pinned: pinned)
-            motion = Motion(speed: choices.number("look", "speed") ?? 1, pinned: pinned)
-            backdrop = Backdrop(look: choices.word("look", "backdrop") ?? .blur, reach: choices.word("look", "reach") ?? .tiles, pinned: pinned)
+        init(choices: ThemeValues, exact values: ThemeValues) {
+            let exact = { (key: String) in values.number("advanced", key) }
+            space = Space(density: choices.number("look", "density") ?? 1, exact: exact)
+            radius = Radius(corner: choices.number("look", "corner") ?? Radius.openspotCorner, exact: exact)
+            type = TypeSizes(base: choices.number("look", "type") ?? TypeSizes.openspotBody, exact: exact)
+            motion = Motion(speed: choices.number("look", "speed") ?? 1, exact: exact)
+            backdrop = Backdrop(style: choices.word("look", "backdrop") ?? .blur, reach: choices.word("look", "reach") ?? .tiles, exact: exact)
             let columns = Double(SpotTokens.columns)
             let halo = Double(SpotTokens.halo)
             gridWidth = columns * space.cell + (columns - 1) * space.columnGap
@@ -62,16 +63,16 @@ extension Theme {
         public let menuRow: Double
         public let menuPadding: Double
 
-        init(density: Double, pinned: @escaping (String) -> Double?) {
-            let gap = { (key: String, base: Double) in pinned(key) ?? (base * density).rounded() }
-            cell = pinned("cell") ?? 64
+        init(density: Double, exact: @escaping (String) -> Double?) {
+            let gap = { (key: String, base: Double) in exact(key) ?? (base * density).rounded() }
+            cell = exact("cell") ?? 64
             columnGap = gap("column-gap", 11)
             rowGap = gap("row-gap", 12)
             padding = gap("padding", 13)
-            glyph = pinned("glyph") ?? 36
-            listRow = pinned("list-row") ?? 40
+            glyph = exact("glyph") ?? 36
+            listRow = exact("list-row") ?? 40
             listRowGap = gap("list-row-gap", 6)
-            menuRow = pinned("menu-row") ?? 32
+            menuRow = exact("menu-row") ?? 32
             menuPadding = gap("menu-padding", 8)
         }
     }
@@ -84,11 +85,11 @@ extension Theme {
         public let media: Double
         public let cornerMark: Double
 
-        init(corner: Double, pinned: @escaping (String) -> Double?) {
+        init(corner: Double, exact: @escaping (String) -> Double?) {
             card = corner
-            window = pinned("window-corner") ?? corner * 16 / Self.openspotCorner
-            media = pinned("media-corner") ?? corner * 8 / Self.openspotCorner
-            cornerMark = pinned("mark-corner") ?? corner * 6 / Self.openspotCorner
+            window = exact("window-corner") ?? corner * 16 / Self.openspotCorner
+            media = exact("media-corner") ?? corner * 8 / Self.openspotCorner
+            cornerMark = exact("mark-corner") ?? corner * 6 / Self.openspotCorner
         }
     }
 
@@ -104,11 +105,11 @@ extension Theme {
             self.init(base: Self.openspotBody) { _ in nil }
         }
 
-        init(base: Double, pinned: @escaping (String) -> Double?) {
-            title = pinned("title") ?? base
-            body = pinned("body") ?? base
-            detail = pinned("detail") ?? base - 2
-            input = pinned("input") ?? base + 1
+        init(base: Double, exact: @escaping (String) -> Double?) {
+            title = exact("title") ?? base
+            body = exact("body") ?? base
+            detail = exact("detail") ?? base - 2
+            input = exact("input") ?? base + 1
         }
     }
 
@@ -129,8 +130,8 @@ extension Theme {
             self.init(speed: 1) { _ in nil }
         }
 
-        init(speed: Double, pinned: @escaping (String) -> Double?) {
-            let time = { (key: String, base: Double) in pinned(key) ?? base / speed }
+        init(speed: Double, exact: @escaping (String) -> Double?) {
+            let time = { (key: String, base: Double) in exact(key) ?? base / speed }
             grow = time("grow", 0.15)
             shrink = time("shrink", 0.2)
             move = time("move", 0.25)
@@ -138,10 +139,10 @@ extension Theme {
             fadeOut = time("fade-out", 0.12)
             press = time("press", 0.2)
             settle = time("settle", 0.25)
-            pressBounce = pinned("press-bounce") ?? 0.2
-            pressedScale = pinned("pressed-scale") ?? 1.04
-            liftedScale = pinned("lifted-scale") ?? 1.05
-            focusedScale = pinned("focused-scale") ?? 1.04
+            pressBounce = exact("press-bounce") ?? 0.2
+            pressedScale = exact("pressed-scale") ?? 1.04
+            liftedScale = exact("lifted-scale") ?? 1.05
+            focusedScale = exact("focused-scale") ?? 1.04
         }
     }
 }

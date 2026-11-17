@@ -47,7 +47,7 @@ struct SpotFormView: View {
         switch field.type {
         case .text, .secret:
             HStack(spacing: 0) {
-                let prompt = Text(field.placeholder ?? field.label).foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
+                let prompt = Text(field.placeholder ?? field.label).foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondary))
                 Group {
                     if field.type == .secret {
                         SecureField(field.label, text: value(of: field), prompt: prompt)

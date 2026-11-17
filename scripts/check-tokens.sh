@@ -3,7 +3,7 @@
 need app/Shell
 found=$(mktemp)
 trap 'rm -f "$found"' EXIT
-find app/Shell -name '*.swift' | grep -vE '^app/Shell/(Picture|Mac|Tools)/|^app/Shell/Surface/(Spot(Theme|Type)(\+[A-Za-z]+)?|ThemeColor\+AppKit)\.swift$' | sort | while read -r file; do
+find app/Shell -name '*.swift' | grep -vE '^app/Shell/(Picture|Mac|Tools)/|^app/Shell/Theme/(Spot(Theme|Type)(\+[A-Za-z]+)?|ThemeColor\+AppKit)\.swift$' | sort | while read -r file; do
   awk -v f="$file" '
     /Duration|TimeInterval|\.milliseconds\(|\.seconds\(|asyncAfter|Task\.sleep/ { next }
     {

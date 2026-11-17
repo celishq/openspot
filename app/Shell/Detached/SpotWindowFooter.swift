@@ -15,10 +15,10 @@ struct SpotWindowFooter<Lead: View>: View {
             HStack(spacing: SpotTokens.hintGroupGap) {
                 Text(hint)
                     .font(SpotType.builtIn.body)
-                    .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
+                    .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondary))
                     .lineLimit(1)
                     .truncationMode(.tail)
-                    .padding(.leading, SpotTokens.themeRowPadding)
+                    .padding(.leading, SpotTokens.windowRowPadding)
                 Spacer(minLength: 0)
                 Button("Done") { NSApp.sendAction(#selector(NSWindow.performClose(_:)), to: nil, from: nil) }
                     .buttonStyle(.borderedProminent)
@@ -33,9 +33,9 @@ struct SpotWindowFooter<Lead: View>: View {
                     }
             }
         }
-        .padding(.leading, SpotTokens.themePadding)
-        .padding([.trailing, .bottom], SpotTokens.themePadding)
-        .padding(.top, SpotTokens.themeGap)
+        .padding(.leading, SpotTokens.windowFooterPadding)
+        .padding([.trailing, .bottom], SpotTokens.windowFooterPadding)
+        .padding(.top, SpotTokens.windowFooterGap)
         .task(id: isHovered) {
             isTipShown = false
             guard isHovered else { return }

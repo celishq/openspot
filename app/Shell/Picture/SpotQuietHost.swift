@@ -16,7 +16,7 @@ final class SpotQuietHost: SpotsHost {
     func confirm(_ text: String) {}
     func work(_ text: String) {}
     func applyConfig(_ config: Config) {}
-    func paint(_ look: Theme.Look) { SpotLoadedTheme.shared.paint(look) }
+    func paint(_ colours: Theme.Colours) { SpotLoadedTheme.shared.paint(colours) }
     func layOut(_ layout: Theme.Layout) { SpotLoadedTheme.shared.lay(layout) }
     func setEntryKey(on isOn: Bool) {}
     func hold(_ keys: [GlobalKey]) {}

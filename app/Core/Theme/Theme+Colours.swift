@@ -1,7 +1,7 @@
 import Foundation
 
 extension Theme {
-    public struct Look: Equatable, Sendable {
+    public struct Colours: Equatable, Sendable {
         public let dark: Appearance
         public let light: Appearance
         public let glass: Glass
@@ -11,22 +11,18 @@ extension Theme {
         }
 
         init(choices: ThemeValues, exact: ThemeValues) {
-            glass = Glass(variant: choices.word("look", "glass") ?? .clear)
-            dark = Appearance(isDark: true, glass: glass.variant, choices: choices, exact: exact)
-            light = Appearance(isDark: false, glass: glass.variant, choices: choices, exact: exact)
+            glass = choices.word("look", "glass") ?? .clear
+            dark = Appearance(isDark: true, glass: glass, choices: choices, exact: exact)
+            light = Appearance(isDark: false, glass: glass, choices: choices, exact: exact)
         }
     }
 
-    public struct Glass: Equatable, Sendable {
-        public enum Variant: String, Equatable, Sendable {
-            case clear
-            case regular
-        }
-
-        public let variant: Variant
+    public enum Glass: String, CaseIterable, Equatable, Sendable {
+        case clear
+        case regular
 
         public var takesInk: Bool {
-            variant == .regular
+            self == .regular
         }
     }
 
@@ -70,11 +66,11 @@ extension Theme {
         private static let textContrast = 4.5
         private static let lightestBackdrop = HexColor(red: 1, green: 1, blue: 1)
 
-        init(isDark: Bool, glass variant: Glass.Variant, choices: ThemeValues, exact: ThemeValues) {
+        init(isDark: Bool, glass variant: Glass, choices: ThemeValues, exact values: ThemeValues) {
             let section = isDark ? "dark" : "light"
             let anchor = isDark ? Self.openspot.dark : Self.openspot.light
             let chosen = { (key: String) in choices.colour(section, key) }
-            let pinned = { (key: String) in exact.colour(section, key) }
+            let exact = { (key: String) in values.colour(section, key) }
             background = chosen("background") ?? .hex(anchor.background)
             ink = chosen("ink") ?? .hex(anchor.ink)
             accent = chosen("accent") ?? .accent
@@ -82,19 +78,19 @@ extension Theme {
             good = chosen("good") ?? .green
             warn = chosen("warn") ?? .orange
             bad = chosen("bad") ?? .red
-            solid = pinned("solid") ?? highlight
-            onSolid = pinned("on-solid") ?? solid.legible(background, or: ink)
-            glyphOnSolid = pinned("glyph-on-solid") ?? onSolid
-            glassTint = pinned("glass-tint") ?? background.with(alpha: variant == .regular ? 0.9 : 0.45)
+            solid = exact("solid") ?? highlight
+            onSolid = exact("on-solid") ?? solid.legible(background, or: ink)
+            glyphOnSolid = exact("glyph-on-solid") ?? onSolid
+            glassTint = exact("glass-tint") ?? background.with(alpha: variant == .regular ? 0.9 : 0.45)
             glass = variant == .regular ? glassTint : background.with(alpha: isDark ? 0 : 0.5)
-            cornerFill = pinned("corner-fill") ?? background.mixed(with: ink, by: isDark ? 0.2 : 0.02)
-            window = pinned("window") ?? background.mixed(with: ink, by: isDark ? 0.16 : 0.08)
-            confirm = pinned("confirm") ?? bad
-            onConfirm = pinned("on-confirm") ?? confirm.legible(background, or: ink)
-            backdropTint = pinned("backdrop-tint") ?? background.with(alpha: isDark ? 0.6 : 0.5)
+            cornerFill = exact("corner-fill") ?? background.mixed(with: ink, by: isDark ? 0.2 : 0.02)
+            window = exact("window") ?? background.mixed(with: ink, by: isDark ? 0.16 : 0.08)
+            confirm = exact("confirm") ?? bad
+            onConfirm = exact("on-confirm") ?? confirm.legible(background, or: ink)
+            backdropTint = exact("backdrop-tint") ?? background.with(alpha: isDark ? 0.6 : 0.5)
             let (ground, mark) = (background.sample, ink.sample)
             let strength = { (key: String) in
-                exact.number(section, key) ?? Self.strength(anchor.strengths[key] ?? 0, keeping: (anchor.background, anchor.ink), on: ground, of: mark)
+                values.number(section, key) ?? Self.strength(anchor.strengths[key] ?? 0, keeping: (anchor.background, anchor.ink), on: ground, of: mark)
             }
             fill = strength("fill")
             selected = strength("selected")
@@ -103,7 +99,7 @@ extension Theme {
             control = strength("control")
             track = strength("track")
             let surface = variant == .regular ? Self.lightestBackdrop.mixed(with: ground, by: 0.9) : ground
-            secondary = exact.number(section, "secondary") ?? Self.secondary(of: mark, on: surface)
+            secondary = values.number(section, "secondary") ?? Self.secondary(of: mark, on: surface)
         }
 
         private static func strength(_ anchor: Double, keeping reference: (HexColor, HexColor), on ground: HexColor, of mark: HexColor) -> Double {

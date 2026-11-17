@@ -113,7 +113,7 @@ struct SpotCustomView: View, @MainActor Equatable {
             "inset": SpotTokens.padding,
             "corner": corner,
             "ink": SpotTheme.ink,
-            "secondary": SpotTheme.secondaryLight,
+            "secondary": SpotTheme.secondary,
             "accent": SpotTheme.accent,
             "title": SpotType.title,
             "detail": SpotType.detail,
@@ -150,7 +150,7 @@ struct SpotCustomView: View, @MainActor Equatable {
             Text(reason)
                 .font(SpotType.detail)
                 .minimumScaleFactor(SpotType.leastViewScale)
-                .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
+                .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondary))
                 .padding(SpotTokens.padding)
         }
     }

@@ -39,7 +39,7 @@ enum SpotTheme {
     @MainActor static var good: Color { loaded.good }
     @MainActor static var warn: Color { loaded.warn }
     @MainActor static var bad: Color { loaded.bad }
-    @MainActor static var secondaryLight: Double { current.secondary }
+    @MainActor static var secondary: Double { current.secondary }
     static let glassFadeReach = 3.0
     static let dragFill = 0.4
     static let hover = 0.08

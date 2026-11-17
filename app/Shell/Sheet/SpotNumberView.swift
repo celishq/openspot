@@ -25,7 +25,7 @@ struct SpotNumberView: View {
     private var shown: Text {
         part.numberPieces.reduce(Text(verbatim: "")) { text, piece in
             let run = Text(verbatim: piece.text)
-            return Text("\(text)\(piece.isUnit ? run.foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight)) : run)")
+            return Text("\(text)\(piece.isUnit ? run.foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondary)) : run)")
         }
     }
 }

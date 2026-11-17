@@ -74,9 +74,9 @@ struct SpotPlaygroundView: View {
     private var faults: some View {
         let faults = (model.fault.map { [$0] } ?? []) + (model.lack.map { [$0] } ?? []) + model.playground.faults
         return VStack(alignment: .leading, spacing: SpotType.lineGap) {
-            lines(faults.isEmpty ? ["No faults"] : faults, color: faults.isEmpty ? SpotTheme.ink.opacity(SpotTheme.secondaryLight) : SpotTheme.warn)
+            lines(faults.isEmpty ? ["No faults"] : faults, color: faults.isEmpty ? SpotTheme.ink.opacity(SpotTheme.secondary) : SpotTheme.warn)
             if !model.playground.log.isEmpty {
-                lines(model.playground.log, color: SpotTheme.ink.opacity(SpotTheme.secondaryLight))
+                lines(model.playground.log, color: SpotTheme.ink.opacity(SpotTheme.secondary))
             }
         }
         .padding(SpotTokens.padding)
@@ -112,7 +112,7 @@ struct SpotPlaygroundView: View {
         switch line.first {
         case "$", "=": SpotTheme.ink
         case "!": SpotTheme.warn
-        default: SpotTheme.ink.opacity(SpotTheme.secondaryLight)
+        default: SpotTheme.ink.opacity(SpotTheme.secondary)
         }
     }
 

@@ -51,7 +51,7 @@ final class ViewThemeTests: XCTestCase {
     }
 
     private func theme(of theme: Theme, corner: CGFloat) -> [String: Any] {
-        ViewTheme(layout: theme.layout, look: theme.look.dark, corner: corner, colour: { $0 }, face: { $0 }).values
+        ViewTheme(layout: theme.layout, look: theme.colours.dark, corner: corner, colour: { $0 }, face: { $0 }).values
     }
 
     private func numbers(of theme: Theme, corner: CGFloat) -> [String: CGFloat] {

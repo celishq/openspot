@@ -80,10 +80,10 @@ final class FakeHost: SpotsHost {
 
     func applyConfig(_ config: Config) {}
 
-    var paints: [Theme.Look] = []
+    var paints: [Theme.Colours] = []
     var layOuts: [Theme.Layout] = []
 
-    func paint(_ look: Theme.Look) {
+    func paint(_ look: Theme.Colours) {
         paints.append(look)
     }
 

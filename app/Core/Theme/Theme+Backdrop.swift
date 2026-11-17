@@ -2,32 +2,32 @@ import Foundation
 
 extension Theme {
     public struct Backdrop: Equatable, Sendable {
-        public enum Look: String, Equatable, Sendable {
+        public enum Style: String, CaseIterable, Equatable, Sendable {
             case blur
             case tint
         }
 
-        public enum Reach: String, Equatable, Sendable {
+        public enum Reach: String, CaseIterable, Equatable, Sendable {
             case tiles
             case screen
         }
 
-        public let look: Look
+        public let style: Style
         public let reach: Reach
         public let blur: Double
         public let size: Double
         public let padding: Double
 
         public init() {
-            self.init(look: .blur, reach: .tiles) { _ in nil }
+            self.init(style: .blur, reach: .tiles) { _ in nil }
         }
 
-        init(look: Look, reach: Reach, pinned: @escaping (String) -> Double?) {
-            self.look = look
+        init(style: Style, reach: Reach, exact: @escaping (String) -> Double?) {
+            self.style = style
             self.reach = reach
-            blur = pinned("backdrop-blur") ?? 3
-            size = pinned("halo-size") ?? 60
-            padding = pinned("halo-padding") ?? 0
+            blur = exact("backdrop-blur") ?? 3
+            size = exact("halo-size") ?? 60
+            padding = exact("halo-padding") ?? 0
         }
     }
 }

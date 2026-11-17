@@ -2,7 +2,7 @@ import Foundation
 
 public struct Theme: Equatable, Sendable {
     private var choices = ThemeValues()
-    public private(set) var look = Look()
+    public private(set) var colours = Colours()
     public private(set) var layout = Layout()
     public private(set) var faults: [String] = []
 
@@ -17,8 +17,8 @@ public struct Theme: Equatable, Sendable {
     } + Self.lookKinds.map { (ThemeKey(section: "look", key: $0.0), $0.1) }
 
     private static let lookKinds: [(String, ThemeKind)] = [
-        ("glass", .variant), ("backdrop", .backdropLook), ("reach", .backdropReach), ("corner", .points), ("density", .factor),
-        ("type", .points), ("speed", .factor)
+        ("glass", .words(Glass.allCases.map(\.rawValue))), ("backdrop", .words(Backdrop.Style.allCases.map(\.rawValue))),
+        ("reach", .words(Backdrop.Reach.allCases.map(\.rawValue))), ("corner", .points()), ("density", .factor), ("type", .points()), ("speed", .factor)
     ]
 
     static let exactKinds: [(key: ThemeKey, kind: ThemeKind)] = ["dark", "light"].flatMap { section in
@@ -63,7 +63,7 @@ public struct Theme: Equatable, Sendable {
             }
         }
         choices = choices.merging(own)
-        look = Look(choices: choices, exact: exact)
+        colours = Colours(choices: choices, exact: exact)
         layout = Layout(choices: choices, exact: exact)
     }
 }

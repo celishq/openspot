@@ -39,7 +39,7 @@ final class ThemeFolderTests: XCTestCase {
 
         XCTAssertEqual(themes.scan().names, ["Openspot", "dusk", "Night"])
         XCTAssertEqual(themes.readInUse(), "Openspot")
-        XCTAssertEqual(themes.read().look.dark.fill, 0.1)
+        XCTAssertEqual(themes.read().colours.dark.fill, 0.1)
     }
 
     func testAFolderNamedLikeABuiltInIsNotAThemeAndIsAFaultThatSaysToRenameIt() throws {
@@ -48,7 +48,7 @@ final class ThemeFolderTests: XCTestCase {
 
         XCTAssertEqual(themes.scan().names, ["Openspot", "Night"])
         XCTAssertEqual(refusal { try themes.use("openspot") }, nil)
-        XCTAssertEqual(themes.read().look.dark.fill, 0.1)
+        XCTAssertEqual(themes.read().colours.dark.fill, 0.1)
         XCTAssertEqual(themes.read().faults, ["The folder \(folder.appendingPathComponent("themes/openspot.theme").path) has the name of the built-in theme Openspot, so Openspot skips it. Rename the folder."])
     }
 
@@ -69,11 +69,11 @@ final class ThemeFolderTests: XCTestCase {
         XCTAssertEqual(themes.config.read().theme, "Night")
         XCTAssertEqual(themes.readInUse(), "Night")
         let theme = themes.read()
-        XCTAssertEqual(theme.look.dark.fill, 0.3)
-        XCTAssertEqual(theme.look.dark.ink, ThemeColor(text: "#FFFFFF"))
+        XCTAssertEqual(theme.colours.dark.fill, 0.3)
+        XCTAssertEqual(theme.colours.dark.ink, ThemeColor(text: "#FFFFFF"))
         XCTAssertEqual(theme.faults, [])
         XCTAssertEqual(try themes.use("Openspot"), "Openspot")
-        XCTAssertEqual(themes.read().look.dark.fill, 0.1)
+        XCTAssertEqual(themes.read().colours.dark.fill, 0.1)
     }
 
     func testAnUnknownThemeInUseFallsBackToTheBuiltInWithAFault() throws {
@@ -82,7 +82,7 @@ final class ThemeFolderTests: XCTestCase {
         let theme = themes.read()
 
         XCTAssertEqual(themes.readInUse(), "Openspot")
-        XCTAssertEqual(theme.look.dark.fill, 0.1)
+        XCTAssertEqual(theme.colours.dark.fill, 0.1)
         XCTAssertEqual(theme.faults, ["config.toml: the theme Gone is not there, so Openspot uses the theme Openspot. Run `openspot theme list` to see each one."])
     }
 
@@ -94,7 +94,7 @@ final class ThemeFolderTests: XCTestCase {
         XCTAssertEqual(try text(of: "Theme 2"), "[dark]\n# ink = \"#FFFFFF\"\n# fill = 0.1\n\n[look]\n# corner = 20\n")
         let theme = themes.read()
         XCTAssertEqual(theme.faults, [])
-        XCTAssertEqual(theme.look, ThemeFolder.read(builtIn: themes.builtIn).look)
+        XCTAssertEqual(theme.colours, ThemeFolder.read(builtIn: themes.builtIn).colours)
         XCTAssertEqual(theme.layout, ThemeFolder.read(builtIn: themes.builtIn).layout)
     }
 
@@ -108,7 +108,7 @@ final class ThemeFolderTests: XCTestCase {
 
         XCTAssertEqual(try text(of: "Night copy"), "[dark]\nfill = 0.3\n")
         XCTAssertEqual(themes.readInUse(), "Night copy")
-        XCTAssertEqual(themes.read().look.dark.fill, 0.3)
+        XCTAssertEqual(themes.read().colours.dark.fill, 0.3)
     }
 
     func testRenameMovesTheFolderAndKeepsItInUse() throws {
@@ -119,7 +119,7 @@ final class ThemeFolderTests: XCTestCase {
 
         XCTAssertEqual(themes.scan().names, ["Openspot", "Dusk"])
         XCTAssertEqual(themes.readInUse(), "Dusk")
-        XCTAssertEqual(themes.read().look.dark.fill, 0.3)
+        XCTAssertEqual(themes.read().colours.dark.fill, 0.3)
     }
 
     func testDeleteMovesTheFolderToTheTrashAndFallsBackWhenItWasInUse() throws {
@@ -176,7 +176,7 @@ final class ThemeFolderTests: XCTestCase {
 
         XCTAssertEqual(themes.scan().names, ["Openspot", "Dusk", "Night"])
         XCTAssertEqual(try themes.use("dusk"), "Dusk")
-        XCTAssertEqual(themes.read().look.dark.fill, 0.4)
+        XCTAssertEqual(themes.read().colours.dark.fill, 0.4)
         XCTAssertEqual(themes.read().layout.radius.card, 20)
         XCTAssertEqual(themes.read().faults, ["The folder \(folder.appendingPathComponent("themes/dusk.theme").path) has the name of the built-in theme Dusk, so Openspot skips it. Rename the folder."])
 
@@ -213,6 +213,6 @@ final class ThemeFolderTests: XCTestCase {
 
         XCTAssertEqual(themes.scan().names, ["Openspot", "dusk"])
         XCTAssertEqual(themes.readInUse(), "dusk")
-        XCTAssertEqual(themes.read().look.dark.fill, 0.3)
+        XCTAssertEqual(themes.read().colours.dark.fill, 0.3)
     }
 }

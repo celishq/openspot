@@ -16,7 +16,7 @@ final class SpotPlaygroundHost: SpotsHost {
     func confirm(_ text: String) { onNote(text) }
     func work(_ text: String) { onNote(text) }
     func applyConfig(_ config: Config) {}
-    func paint(_ look: Theme.Look) {}
+    func paint(_ colours: Theme.Colours) {}
     func layOut(_ layout: Theme.Layout) {}
     func setEntryKey(on isOn: Bool) {}
     func hold(_ keys: [GlobalKey]) {}

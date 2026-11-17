@@ -64,7 +64,7 @@ final class ThemeCallTests: XCTestCase {
         XCTAssertEqual(reloaded, CommandAnswer())
         let themes = await app.themes
         XCTAssertEqual(themes.last?.layout.backdrop.blur, 8)
-        XCTAssertEqual(themes.last?.look.glass.variant, .clear)
+        XCTAssertEqual(themes.last?.colours.glass, .clear)
     }
 
     func testTheListMarksEachBuiltInThemeAndPutsThemFirst() async throws {
@@ -85,7 +85,7 @@ final class ThemeCallTests: XCTestCase {
         XCTAssertEqual(list.output, "theme=Openspot\nbuiltin=true\n\ntheme=Paper\nbuiltin=true\n\ntheme=Theme 2\nused=true\n\n")
         XCTAssertEqual(used.output, "Switched to the theme Paper.\n")
         let themes = await app.themes
-        XCTAssertEqual(themes.last?.look.dark.accent, ThemeColor(text: "#FF9F0A"))
+        XCTAssertEqual(themes.last?.colours.dark.accent, ThemeColor(text: "#FF9F0A"))
     }
 
     func testABadNameIsAFailureLine() async throws {
