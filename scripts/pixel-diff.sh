@@ -98,18 +98,18 @@ shoot() {
   run() {
     OPENSPOT_SPOTS="$work/state/spots" OPENSPOT_CONFIG="$work/state/config" OPENSPOT_CORE="$work/state/core" "$@"
   }
-  run "$app/Contents/MacOS/Openspot" check >/dev/null || true
+  run "$app/Contents/MacOS/Openspot" check spots >/dev/null || true
   for look in dark light; do
     run env OPENSPOT_PROBE="$out/probe.txt" OPENSPOT_ACTION=pixels OPENSPOT_SHOTS="$out/$look" OPENSPOT_SEEN=1 OPENSPOT_GLASS=off OPENSPOT_APPEARANCE="$look" \
       "$app/Contents/MacOS/Openspot" >"$out/run-$look.log" 2>&1
     stop
   done
   mkdir -p "$out/picture"
-  sh "$work/state/spots/parts.spot/parts.sh" | run "$app/Contents/MacOS/Openspot" render "$out/picture/parts.png"
+  sh "$work/state/spots/parts.spot/parts.sh" | run "$app/Contents/MacOS/Openspot" render sheet "$out/picture/parts.png"
   for size in small wide large; do
-    sh "$work/state/spots/load.spot/load.sh" | run "$app/Contents/MacOS/Openspot" render --card "$size" "$out/picture/load-$size.png"
+    sh "$work/state/spots/load.spot/load.sh" | run "$app/Contents/MacOS/Openspot" render card "$size" "$out/picture/load-$size.png"
   done
-  run "$app/Contents/MacOS/Openspot" render --panel "$out/picture/panel.png"
+  run "$app/Contents/MacOS/Openspot" render panel "$out/picture/panel.png"
   find "$out" -name '*.png' | sort
 }
 
