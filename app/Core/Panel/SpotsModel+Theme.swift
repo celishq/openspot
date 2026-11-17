@@ -10,6 +10,8 @@ extension SpotsModel {
         let laidOut = laidOutTheme
         guard theme.space != laidOut.space || theme.radius != laidOut.radius || theme.type != laidOut.type || theme.motion != laidOut.motion else { return }
         laidOutTheme = theme
+        gridScroll = 0
+        cardScroll = 0
         SpotTokens.take(theme)
         MotionTokens.take(theme.motion)
         takePlacements()

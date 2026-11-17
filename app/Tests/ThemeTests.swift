@@ -195,6 +195,19 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(theme.faults, ["theme.toml: [dark] size is not a key of a theme."])
     }
 
+    func testACopyThatCannotBeReadIsAFaultAndKeepsTheBuiltInLook() throws {
+        let folder = try temporaryFolder()
+        let builtIn = folder.appendingPathComponent("built-in.toml")
+        try "[shared]\nhover = 0.08\n".write(to: builtIn, atomically: true, encoding: .utf8)
+        let copy = folder.appendingPathComponent("theme.toml")
+        try Data([0xC3, 0x28]).write(to: copy)
+
+        let theme = ThemeFile(builtIn: builtIn, copy: copy).read()
+
+        XCTAssertEqual(theme.shared.hover, 0.08)
+        XCTAssertEqual(theme.faults, ["theme.toml cannot be read at \(copy.path), so Openspot keeps the look of the app. Save it as text, or delete it."])
+    }
+
     func testTheCopyLivesBesideTheConfig() {
         let file = ThemeFile.standard(environment: ["OPENSPOT_CONFIG": "/tmp/openspot-config"], builtIn: nil)
 

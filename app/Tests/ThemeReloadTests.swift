@@ -24,6 +24,18 @@ final class ThemeReloadTests: PanelCase {
         XCTAssertEqual(model.gridHeight, SpotTokens.contentHeight(gridHeight: SpotGrid.height(of: model.placements)))
     }
 
+    func testAReloadOfTheSizesScrollsTheGridToTheTop() async throws {
+        try await openList()
+        host.dismiss()
+        model.gridScrolled(to: 120)
+        model.cardScroll = 120
+
+        model.take(roomy)
+
+        XCTAssertEqual(model.gridScroll, 0)
+        XCTAssertEqual(model.cardScroll, 0)
+    }
+
     func testAReloadWhileShownWaitsForTheHide() async throws {
         try await openList()
 

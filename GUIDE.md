@@ -592,7 +592,7 @@ Each section of the file holds one kind of value:
 - A key that your copy lacks keeps the value of the app, so the copy needs only the keys you change.
 - A colour is `#RRGGBB`, `#RRGGBBAA`, or a colour of the Mac: `accent`, `green`, `orange` or `red`. A strength is from 0
   to 1.
-- Colours and strengths change at once. Sizes, type and motion change when the panel next hides.
+- Colours, strengths and the glass change at once. Sizes, type and motion change when the panel next hides.
 - `openspot theme reload` fails on a value it can't read, prints a line for each, such as
   `theme.toml: [space] padding is a number of points, such as 3.`, and keeps the look as it was. At launch, such a value
   keeps the value of the app, and a toast shows the line.

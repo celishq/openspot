@@ -7,8 +7,8 @@ struct SpotMenuBarIconView: View {
     let toast: Toast?
     var isWorking = false
 
-    private static let leave = SpotMotion.fade(isShown: false)
-    private static let arrive = SpotMotion.press
+    private static var leave: Animation { SpotMotion.fade(isShown: false) }
+    private static var arrive: Animation { SpotMotion.press }
 
     var body: some View {
         ZStack {

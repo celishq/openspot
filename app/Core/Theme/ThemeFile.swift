@@ -21,7 +21,10 @@ public struct ThemeFile: Sendable {
             return Theme(unreadable: "theme.toml cannot be read. Install Openspot again.")
         }
         let theme = Theme(text: text)
-        guard let copy, let own = try? String(contentsOf: copy, encoding: .utf8) else { return theme }
+        guard let copy, FileManager.default.fileExists(atPath: copy.path) else { return theme }
+        guard let own = try? String(contentsOf: copy, encoding: .utf8) else {
+            return Theme(unreadable: "theme.toml cannot be read at \(copy.path), so Openspot keeps the look of the app. Save it as text, or delete it.", over: theme)
+        }
         return Theme(text: own, over: theme)
     }
 

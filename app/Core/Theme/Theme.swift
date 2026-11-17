@@ -160,8 +160,9 @@ public struct Theme: Equatable, Sendable {
 
     public init() {}
 
-    public init(unreadable fault: String) {
-        faults = [fault]
+    public init(unreadable fault: String, over base: Theme = Theme()) {
+        self = base
+        faults.append(fault)
     }
 
     public init(text: String, over base: Theme = Theme()) {
