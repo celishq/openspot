@@ -7,57 +7,51 @@ struct SpotThemeList: View {
     @FocusState private var isNaming: Bool
 
     var body: some View {
-        VStack(spacing: 0) {
-            List(selection: Binding(get: { model.inUse }, set: { if let name = $0 { model.use(name) } })) {
-                ForEach(model.names, id: \.self) { theme in
-                    row(theme).tag(theme)
+        ScrollView {
+            VStack(alignment: .leading, spacing: SpotTokens.menuRowGap) {
+                ForEach(model.names.filter(ThemeFolder.isBuiltIn), id: \.self) { theme in
+                    row(theme, symbol: "shippingbox")
                 }
+                Text("Yours")
+                    .font(SpotType.detail)
+                    .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
+                    .padding(.horizontal, SpotTokens.themeRowPadding)
+                    .padding(.top, SpotTokens.hintGroupGap)
+                    .padding(.bottom, SpotTokens.menuRowGap)
+                ForEach(model.names.filter { !ThemeFolder.isBuiltIn($0) }, id: \.self) { theme in
+                    row(theme, symbol: "paintpalette")
+                }
+                SpotThemeLine(symbol: "plus", isDimmed: true) { Text("New Theme…") }
+                    .onTapGesture { model.make() }
+                    .accessibilityAddTraits(.isButton)
             }
-            .listStyle(.sidebar)
-            .scrollContentBackground(.hidden)
-            .onDeleteCommand { if !model.isBuiltIn { model.delete(model.inUse) } }
-            Divider()
-            HStack(spacing: SpotTokens.menuPadding) {
-                button("plus", "New") { model.make() }
-                button("plus.square.on.square", "Duplicate") { model.duplicate() }
-                button("pencil", "Rename") { rename(model.inUse) }
-                    .disabled(model.isBuiltIn)
-                button("trash", "Move to Trash") { model.delete(model.inUse) }
-                    .disabled(model.isBuiltIn)
-                Spacer(minLength: 0)
-            }
-            .buttonStyle(.borderless)
-            .padding(SpotTokens.menuPadding)
         }
+        .scrollIndicators(.never)
+        .focusable()
+        .focusEffectDisabled()
+        .onDeleteCommand { if !model.isBuiltIn { model.delete(model.inUse) } }
     }
 
     @ViewBuilder
-    private func row(_ theme: String) -> some View {
+    private func row(_ theme: String, symbol: String) -> some View {
+        let isChosen = theme == model.inUse
         if model.renaming == theme {
-            TextField("Name", text: $name)
-                .focused($isNaming)
-                .onSubmit { model.rename(theme, to: name) }
-                .onExitCommand { model.renaming = nil }
-        } else {
-            HStack {
-                Text(theme).lineLimit(1)
-                Spacer(minLength: 0)
-                if theme == model.inUse { Image(systemName: "checkmark") }
+            SpotThemeLine(symbol: symbol, trailing: "In use", isChosen: isChosen) {
+                TextField("Name", text: $name)
+                    .textFieldStyle(.plain)
+                    .focused($isNaming)
+                    .onSubmit { model.rename(theme, to: name) }
+                    .onExitCommand { model.renaming = nil }
+                    .onAppear {
+                        name = theme
+                        isNaming = true
+                    }
             }
-            .contentShape(Rectangle())
-            .onTapGesture(count: 2) { if !ThemeFolder.isBuiltIn(theme) { rename(theme) } }
+        } else {
+            SpotThemeLine(symbol: symbol, trailing: isChosen ? "In use" : "", isChosen: isChosen) { Text(theme) }
+                .onTapGesture { model.use(theme) }
+                .simultaneousGesture(TapGesture(count: 2).onEnded { if !ThemeFolder.isBuiltIn(theme) { model.renaming = theme } })
+                .accessibilityAddTraits(isChosen ? [.isButton, .isSelected] : .isButton)
         }
-    }
-
-    private func button(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
-        Button { action() } label: { Image(systemName: symbol) }
-            .help(label)
-            .accessibilityLabel(label)
-    }
-
-    private func rename(_ theme: String) {
-        name = theme
-        model.renaming = theme
-        isNaming = true
     }
 }

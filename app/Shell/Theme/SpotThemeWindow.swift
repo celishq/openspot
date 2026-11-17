@@ -3,53 +3,39 @@ import OpenspotCore
 import SwiftUI
 
 @MainActor
-final class SpotThemeWindow: NSObject, NSWindowDelegate {
+final class SpotThemeWindow {
     private static var open: SpotThemeWindow?
 
-    private let window: NSWindow
+    private let window: SpotSheetWindow
     private let model: SpotThemeModel
+    private var watches: [NSObjectProtocol] = []
 
     private init(panel: SpotsModel) {
-        model = SpotThemeModel(panel: panel)
-        window = NSWindow(
-            contentRect: NSRect(origin: .zero, size: SpotTokens.themeWindowSize),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
-            backing: .buffered,
-            defer: false
-        )
-        window.title = "Theme"
-        window.titleVisibility = .hidden
-        window.titlebarAppearsTransparent = true
-        window.isOpaque = false
-        window.backgroundColor = .clear
-        window.isReleasedWhenClosed = false
-        window.minSize = SpotTokens.themeWindowMinSize
-        super.init()
-        let host = NSHostingController(rootView: SpotThemeView(model: model))
-        host.sizingOptions = []
-        window.contentViewController = host
-        window.setContentSize(SpotTokens.themeWindowSize)
-        window.center()
-        window.delegate = self
+        let model = SpotThemeModel(panel: panel)
+        self.model = model
+        window = SpotSheetWindow.make(title: "Theme", name: "theme-window", content: SpotThemeView(model: model))
+        window.minSize = CGSize(width: SpotTokens.windowSize.width, height: SpotTokens.themeWindowMinHeight)
+        let center = NotificationCenter.default
+        watches = [
+            center.addObserver(forName: NSWindow.didBecomeKeyNotification, object: window, queue: .main) { _ in
+                MainActor.assumeIsolated { model.refresh() }
+            },
+            center.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { _ in
+                MainActor.assumeIsolated { Self.closed() }
+            }
+        ]
     }
 
     static func show(model: SpotsModel) {
         let shown = open ?? SpotThemeWindow(panel: model)
-        if open == nil {
-            open = shown
-            AppPresence.open()
-        }
-        NSApp.activate(ignoringOtherApps: true)
-        shown.window.makeKeyAndOrderFront(nil)
+        open = shown
+        shown.window.show()
     }
 
-    func windowDidBecomeKey(_ notification: Notification) {
-        model.refresh()
-    }
-
-    func windowWillClose(_ notification: Notification) {
-        model.close()
-        Self.open = nil
-        AppPresence.close()
+    private static func closed() {
+        guard let shown = open else { return }
+        shown.model.close()
+        shown.watches.forEach(NotificationCenter.default.removeObserver)
+        open = nil
     }
 }

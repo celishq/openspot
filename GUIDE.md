@@ -560,8 +560,9 @@ A theme gives Openspot its colours, glass, sizes, type and motion. Change it to 
 openspot theme edit
 ```
 
-This opens the theme window, as **Edit theme** in Settings does. Its sidebar lists your themes, with the one in use
-checked: click one to use it, or make, duplicate, rename and delete one below the list. The middle lists each value of the
+This opens the theme window, as **Edit theme** in Settings does. Its sidebar lists the themes, with the one in use
+marked **In use**: click one to use it, or click **New Theme…** to make one. The buttons at the bottom duplicate, rename
+and delete the theme in use. The middle lists each value of the
 theme in use, by section, with the dark and the light value side by side. Beside it, the panel draws with the theme, in
 the appearance you pick above it, and follows each control as you move it. A change saves to the theme when you let go of
 the control. A value that reads **From Openspot** is the built-in one; the arrow beside a value you set takes it back.

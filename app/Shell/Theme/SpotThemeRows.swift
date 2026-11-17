@@ -11,39 +11,47 @@ struct SpotThemeRows: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
+            HStack(spacing: SpotTokens.menuPadding) {
                 Text(model.inUse).font(SpotType.title).lineLimit(1)
                 Spacer(minLength: 0)
                 if model.isBuiltIn {
                     Button("Duplicate to edit") { model.duplicate() }
                 }
             }
-            .padding(SpotTokens.padding)
+            .padding(.horizontal, SpotTokens.themeRowPadding)
+            .frame(height: SpotTokens.themeLine)
             ScrollViewReader { proxy in
-                Form {
-                    ForEach(model.groups, id: \.self) { group in
-                        Section {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: SpotTokens.menuRowGap) {
+                        ForEach(model.groups, id: \.self) { group in
+                            header(group)
                             ForEach(model.grouped[group] ?? []) { row in
                                 SpotThemeRowView(row: row, isLocked: model.isBuiltIn, model: model)
                                     .id(row.id)
                             }
-                        } header: {
-                            HStack {
-                                Text(Self.titles[group] ?? group.capitalized)
-                                Spacer(minLength: 0)
-                                if group == ThemeRow.look {
-                                    Text("Dark").frame(width: SpotTokens.themeCellWidth, alignment: .leading)
-                                    Text("Light").frame(width: SpotTokens.themeCellWidth, alignment: .leading)
-                                }
-                            }
                         }
                     }
+                    .padding(.bottom, SpotTokens.padding)
                 }
-                .formStyle(.grouped)
-                .scrollContentBackground(.hidden)
+                .scrollIndicators(.never)
                 .background { PickScroll(model: model, proxy: proxy) }
             }
         }
+    }
+
+    private func header(_ group: String) -> some View {
+        HStack(spacing: SpotTokens.menuPadding) {
+            Text(Self.titles[group] ?? group.capitalized)
+            Spacer(minLength: 0)
+            if group == ThemeRow.look {
+                Text("Dark").frame(width: SpotTokens.themeCellWidth, alignment: .leading)
+                Text("Light").frame(width: SpotTokens.themeCellWidth, alignment: .leading)
+            }
+        }
+        .font(SpotType.strong)
+        .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
+        .padding(.horizontal, SpotTokens.themeRowPadding)
+        .frame(height: SpotTokens.themeLine)
     }
 }
 

@@ -6,18 +6,17 @@ struct SpotThemeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 0) {
+            HStack(alignment: .top, spacing: SpotTokens.columnGap) {
                 SpotThemeList(model: model)
-                    .frame(width: SpotTokens.themeListWidth)
-                Divider()
+                    .frame(width: SpotTokens.width(columns: SpotTokens.themeListColumns))
                 SpotThemeRows(model: model)
-                    .frame(width: SpotTokens.themeRowsWidth)
-                Divider()
                 SpotThemeStage(model: model)
+                    .frame(width: SpotTokens.width(columns: SpotTokens.themeStageColumns))
             }
-            Divider()
-            SpotThemeFooter(hint: hint)
+            .padding([.leading, .trailing, .top], SpotTokens.padding)
+            SpotThemeFooter(model: model, hint: hint)
         }
+        .ignoresSafeArea(edges: [.horizontal, .bottom])
         .overlayPreferenceValue(SpotThemeTipAnchor.self, alignment: .topLeading) { anchor in
             GeometryReader { proxy in
                 if let anchor, let tip = model.tip {
@@ -28,8 +27,7 @@ struct SpotThemeView: View {
             }
             .allowsHitTesting(false)
         }
-        .environment(\.spotSurfaceEdge, .window)
-        .background { Color.clear.spotGlass(in: ConcentricRectangle()).ignoresSafeArea() }
+        .modifier(SpotWindowSurface())
     }
 
     private var hint: String {

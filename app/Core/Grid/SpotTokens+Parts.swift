@@ -99,11 +99,13 @@ extension SpotTokens {
     public static let playgroundTopHeight: CGFloat = 360
     public static let playgroundLogHeight: CGFloat = 120
 
-    public static let themeWindowSize = CGSize(width: 1240, height: 680)
-    public static let themeWindowMinSize = CGSize(width: 960, height: 560)
-    public static let themeListWidth: CGFloat = 200
-    public static let themeRowsWidth: CGFloat = 540
-    public static let themeKeyWidth: CGFloat = 150
+    public static let themeWindowMinHeight: CGFloat = 560
+    public static let themeListColumns = 4
+    public static let themeStageColumns = 6
+    public static let themeLine: CGFloat = 36
+    public static let themeRowPadding: CGFloat = 10
+    public static let themeRowRadius: CGFloat = 10
+    public static let themeIconWidth: CGFloat = 20
     public static let themeCellWidth: CGFloat = 150
     public static let themeNumberWidth: CGFloat = 40
     public static let themeSwatch: CGFloat = 18

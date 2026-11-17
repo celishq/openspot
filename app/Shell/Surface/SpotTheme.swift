@@ -83,6 +83,7 @@ struct SpotTheme {
     @MainActor static var hover: Double { loaded.shared.hover }
     @MainActor static var menuDim: Double { loaded.shared.menuDim }
     static let liftShadow: CGFloat = 14
+    static let chosenRow = 0.1
     @MainActor static var liftShadowStrength: Double { loaded.shared.liftShadowStrength }
     @MainActor static var unfocusedCardStrength: Double { loaded.shared.unfocusedCard }
     @MainActor static var fill: Double { current.fillStrength }

@@ -52,7 +52,7 @@ struct SpotFloatView: View {
                     SpotCustomView(source: view, values: part.values, rows: part.rows, card: .square, room: area.size, answers: run.panel?.answered ?? 0, date: entry.spot.viewDate, views: .shared) { run.set(part, to: $0) }
                         .equatable()
                 }
-                .ignoresSafeArea()
+                .ignoresSafeArea(edges: [.horizontal, .bottom])
             } else if let parts = run.panel {
                 SheetPartsView(
                     panel: parts,
@@ -113,27 +113,12 @@ struct SpotFloatView: View {
 private struct FloatSurface: ViewModifier {
     let fills: Bool
     let dropWords: String?
-    @State private var window = SurfaceEdge.window
-
-    @ViewBuilder
-    private var corner: some View {
-        if #available(macOS 27.0, *) {
-            GeometryReader { room in
-                Color.clear.onChange(of: room.concentricCornerRadii?.bottomTrailing, initial: true) { _, radius in
-                    if let radius, radius != window.radius { window = SurfaceEdge(radius: radius) }
-                }
-            }
-        }
-    }
 
     func body(content: Content) -> some View {
         if fills {
-            let shape = ConcentricRectangle()
             content
-                .environment(\.spotSurfaceEdge, window)
-                .background { Color.clear.spotGlass(in: shape).ignoresSafeArea() }
-                .background { corner.ignoresSafeArea() }
-                .overlay { FloatDropWords(words: dropWords, shape: shape).ignoresSafeArea() }
+                .modifier(SpotWindowSurface())
+                .overlay { FloatDropWords(words: dropWords, shape: ConcentricRectangle()).ignoresSafeArea() }
         } else {
             let shape = SpotRoundShape(.sheet)
             content

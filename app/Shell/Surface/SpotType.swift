@@ -45,6 +45,7 @@ enum SpotType {
     static let menuBar = Font.system(size: 13, weight: .medium).monospacedDigit()
     static let small = Font.system(size: 10, weight: .medium)
     static let strong = Font.system(size: 13, weight: .semibold)
+    static let rowIcon = Font.system(size: 14)
     static let glyph = Font.system(size: 17, weight: .semibold)
     static let mark = Font.system(size: 9, weight: .semibold)
     static let code = Font.system(size: 12, design: .monospaced)

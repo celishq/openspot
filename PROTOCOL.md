@@ -683,8 +683,8 @@ The user decides where a spot shows. A spot only offers, with one `offers` line 
 - The user can give a spot that offers `float` a hotkey, or a shake of the pointer, in its Settings. It shows the spot in a small window at the pointer, which stays while the user works in other apps. The spot never learns where it shows.
 - A spot that offers `window` opens its sheet in a normal window, from its card, the main search or `openspot spot open`.
   The user moves, resizes and closes it, and Openspot shows in the Dock while it's open. Use it for a sheet that needs
-  room, such as a catalog. The window has no title bar buttons: Esc closes it, so give a view that fills it a way
-  out, such as a Done button.
+  room, such as a catalog. Esc closes it too, and a view that fills it should still give a way out, such as a
+  Done button.
 - `on=search.text <pattern>` makes a spot answer the main search. Openspot asks it at each change of a text that the
   pattern matches, with no pause. A newer text stops the older call. The answer should be fast.
 - Its rows show first in the main search until the newest text has an answer, and go at once when the pattern no longer

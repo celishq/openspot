@@ -13,7 +13,7 @@ struct SpotThemeStage: View {
             .pickerStyle(.segmented)
             .labelsHidden()
             .fixedSize()
-            .padding(SpotTokens.menuPadding)
+            .frame(height: SpotTokens.themeLine)
             ScrollView([.vertical, .horizontal]) {
                 SpotsView(model: model.stage)
                     .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
