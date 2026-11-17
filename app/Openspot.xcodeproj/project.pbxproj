@@ -781,6 +781,7 @@
 		DE938381D6BAC5C7508315F4 /* CheckScriptTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F581FC3F7F59B5D4F7BFAAD /* CheckScriptTests.swift */; };
 		DEB17834B6D52E4865A70200 /* TestChildTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43426D303EAEED7D975374D4 /* TestChildTests.swift */; };
 		DF439BA5BB58AD77FD57B7BB /* SpotRunsStayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D62785D723E86E5616B5BCCB /* SpotRunsStayTests.swift */; };
+		DFB0D3A249DB9FEA3D9A2334 /* TestClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE51D8BEAC1F240D8E3A2BE /* TestClient.swift */; };
 		E0858B0B976DFFFC5AEB3426 /* CalcFormatsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45C3CAB633A9588120D478D5 /* CalcFormatsTests.swift */; };
 		E0BA4EA47FA798E1FE627F03 /* SpotCardPlace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 944E30DC365277055D4AAE56 /* SpotCardPlace.swift */; };
 		E0D69DF3A6CF6D4983DAD8E2 /* WorkWindowsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBDEB1C28AC5D94CF343F230 /* WorkWindowsTests.swift */; };
@@ -1588,6 +1589,7 @@
 		BAA4FB00AE08161E54BA06D5 /* SpotKeyLayouts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotKeyLayouts.swift; sourceTree = "<group>"; };
 		BAAE8CDCC24AB062740FBF9F /* CarefulMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarefulMode.swift; sourceTree = "<group>"; };
 		BABA5D14EF4472FB9B03AC10 /* SpotOrigin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotOrigin.swift; sourceTree = "<group>"; };
+		BAE51D8BEAC1F240D8E3A2BE /* TestClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestClient.swift; sourceTree = "<group>"; };
 		BB1B6EACD42FEEF9CE73B8B8 /* FakeCalendar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeCalendar.swift; sourceTree = "<group>"; };
 		BB3BF554F43314B713EEC4F0 /* ScriptProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptProcess.swift; sourceTree = "<group>"; };
 		BBB1FA3441559C417EF0FD24 /* SpotResize.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotResize.swift; sourceTree = "<group>"; };
@@ -2609,6 +2611,7 @@
 				4DA18669F2527198666078FB /* TerminalRunTests.swift */,
 				EF899C0D68313BD1ACB2ECD8 /* TestChild.swift */,
 				43426D303EAEED7D975374D4 /* TestChildTests.swift */,
+				BAE51D8BEAC1F240D8E3A2BE /* TestClient.swift */,
 				8E3B3580731E96642B131B68 /* TestEnvironment.swift */,
 				464948DCFF0FC33897C14FB8 /* TestSpot.swift */,
 				77CA1A1F50C44D2C91139D8A /* TextBlockTests.swift */,
@@ -4516,6 +4519,7 @@
 				4EBFA3E28CB0E771B19C07E2 /* TerminalRunTests.swift in Sources */,
 				3A1B2A1D026E6447A60F777E /* TestChild.swift in Sources */,
 				DEB17834B6D52E4865A70200 /* TestChildTests.swift in Sources */,
+				DFB0D3A249DB9FEA3D9A2334 /* TestClient.swift in Sources */,
 				527E928AA596DA51543DE78A /* TestEnvironment.swift in Sources */,
 				447082408043BBB085EC71D5 /* TestSpot.swift in Sources */,
 				E8AD72E2EAE5612CFCD9FD55 /* TextBlockTests.swift in Sources */,

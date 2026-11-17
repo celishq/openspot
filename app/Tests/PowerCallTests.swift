@@ -34,58 +34,30 @@ final class PowerCallTests: XCTestCase {
         }
     }
 
-    private var folder: URL!
+    private var client: TestClient!
     private var socket: CommandSocket?
     private let acts = Acts()
 
-    private var config: URL { folder.appendingPathComponent("config") }
-    private var client: URL { folder.appendingPathComponent("A.app/Contents/Helpers/openspot") }
-
     override func setUpWithError() throws {
-        let temp = try XCTUnwrap(realpath(FileManager.default.temporaryDirectory.path, nil))
-        defer { free(temp) }
-        folder = URL(fileURLWithPath: String(cString: temp), isDirectory: true).appendingPathComponent("pw-\(UUID().uuidString.prefix(8))", isDirectory: true)
-        try FileManager.default.createDirectory(at: client.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try FileManager.default.createDirectory(at: config, withIntermediateDirectories: true)
-        let built = Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot")
-        try FileManager.default.copyItem(at: built, to: client)
+        client = try TestClient(beside: Bundle(for: Self.self))
     }
 
     override func tearDownWithError() throws {
         socket?.close()
-        try? FileManager.default.removeItem(at: folder)
+        client.remove()
     }
 
     private func serve(fault: String? = nil) {
-        socket = CommandSocket(folder: config, api: CommandAPI(mac: Mac(power: Power(acts: acts, fault: fault)), places: .test(["OPENSPOT_CONFIG": config.path]), rates: .offline))
-    }
-
-    private func start(_ arguments: [String]) throws -> (process: Process, output: Pipe, errors: Pipe) {
-        let process = Process()
-        let output = Pipe()
-        let errors = Pipe()
-        process.executableURL = client
-        process.arguments = arguments
-        process.environment = ["OPENSPOT_CONFIG": config.path, "PATH": "/usr/bin:/bin"]
-        process.currentDirectoryURL = folder
-        process.standardOutput = output
-        process.standardError = errors
-        process.standardInput = FileHandle.nullDevice
-        try process.run()
-        return (process, output, errors)
+        socket = CommandSocket(folder: client.config, api: CommandAPI(mac: Mac(power: Power(acts: acts, fault: fault)), places: .test(["OPENSPOT_CONFIG": client.config.path]), rates: .offline))
     }
 
     private func run(_ arguments: [String]) throws -> (output: String, errors: String, code: Int32) {
-        let call = try start(arguments)
-        let printed = String(decoding: call.output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-        let said = String(decoding: call.errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-        call.process.waitUntilExit()
-        return (printed, said, call.process.terminationStatus)
+        try client.run(arguments)
     }
 
     func testLidClosedHoldsWhileTheCallRunsAndLetsGoWhenItEnds() async throws {
         serve()
-        let call = try start(["power", "lid-closed"])
+        let call = try client.start(["power", "lid-closed"])
         defer { if call.process.isRunning { call.process.terminate() } }
 
         let first = String(decoding: call.output.fileHandleForReading.availableData, as: UTF8.self)
