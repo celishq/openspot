@@ -27,6 +27,7 @@ public struct Theme: Equatable, Sendable {
         public fileprivate(set) var preview = ThemeColor.none
         public fileprivate(set) var confirm = ThemeColor.none
         public fileprivate(set) var onConfirm = ThemeColor.none
+        public fileprivate(set) var backdropTint = ThemeColor.none
         public fileprivate(set) var fill = 0.0
         public fileprivate(set) var selected = 0.0
         public fileprivate(set) var disc = 0.0
@@ -38,7 +39,7 @@ public struct Theme: Equatable, Sendable {
             [
                 "ink": .colour(\.ink), "solid": .colour(\.solid), "on-solid": .colour(\.onSolid), "glyph-on-solid": .colour(\.glyphOnSolid),
                 "glass": .colour(\.glass), "glass-tint": .colour(\.glassTint), "corner-fill": .colour(\.cornerFill), "window": .colour(\.window),
-                "preview": .colour(\.preview), "confirm": .colour(\.confirm), "on-confirm": .colour(\.onConfirm),
+                "preview": .colour(\.preview), "confirm": .colour(\.confirm), "on-confirm": .colour(\.onConfirm), "backdrop-tint": .colour(\.backdropTint),
                 "fill": .number(.strength, \.fill), "selected": .number(.strength, \.selected), "disc": .number(.strength, \.disc),
                 "chip": .number(.strength, \.chip), "control": .number(.strength, \.control), "track": .number(.strength, \.track)
             ]
@@ -100,7 +101,6 @@ public struct Theme: Equatable, Sendable {
         }
 
         public fileprivate(set) var variant = Variant.clear
-        public fileprivate(set) var backdropBlur = 0.0
         public fileprivate(set) var fadeReach = 1.0
         public fileprivate(set) var edgeNear = 0.0
         public fileprivate(set) var edgeMiddle = 0.0
@@ -112,7 +112,7 @@ public struct Theme: Equatable, Sendable {
 
         fileprivate static var fields: [String: ThemeField<Glass>] {
             [
-                "variant": .variant(\.variant), "backdrop-blur": .number(.points, \.backdropBlur), "fade-reach": .number(.reach, \.fadeReach),
+                "variant": .word(.variant, \.variant), "fade-reach": .number(.reach, \.fadeReach),
                 "edge-near": .number(.strength, \.edgeNear), "edge-middle": .number(.strength, \.edgeMiddle), "edge-far": .number(.strength, \.edgeFar)
             ]
         }

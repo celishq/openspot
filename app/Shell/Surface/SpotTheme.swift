@@ -14,6 +14,7 @@ struct SpotTheme {
     let preview: NSColor
     let confirm: NSColor
     let onConfirm: NSColor
+    let backdropTint: NSColor
     let fillStrength: Double
     let selectedStrength: Double
     let discStrength: Double
@@ -33,6 +34,7 @@ struct SpotTheme {
         preview = look.preview.nsColor
         confirm = look.confirm.nsColor
         onConfirm = look.onConfirm.nsColor
+        backdropTint = look.backdropTint.nsColor
         fillStrength = look.fill
         selectedStrength = look.selected
         discStrength = look.disc
@@ -62,7 +64,6 @@ struct SpotTheme {
     @MainActor private static var chosen: (appearance: NSAppearance, isDark: Bool)?
 
     @MainActor static var pictureRim: Color { loaded.pictureRim }
-    @MainActor static var backdropBlur: CGFloat { loaded.backdropBlur }
 
     @MainActor static var glassVariant: Glass {
         switch loaded.glassVariant {
@@ -102,6 +103,7 @@ struct SpotTheme {
     @MainActor static var glyphOnSolid: Color { loaded.glyphOnSolid }
     @MainActor static var glass: Color { loaded.glass }
     @MainActor static var glassTint: Color { loaded.glassTint }
+    @MainActor static var backdropTint: Color { loaded.backdropTint }
     @MainActor static var cornerFill: Color { loaded.cornerFill }
     @MainActor static var window: Color { loaded.window }
     @MainActor static var preview: Color { loaded.preview }

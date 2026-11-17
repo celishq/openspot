@@ -10,6 +10,7 @@ window = "#16161E"
 preview = "#2A2A36"
 confirm = "#E0A000"
 on-confirm = "#0A0A10"
+backdrop-tint = "#1E2A2459"
 fill = 0.14
 selected = 0.3
 chip = 0.3
@@ -28,6 +29,7 @@ window = "#B8B8C4"
 preview = "#D6D6DE"
 confirm = "#C08000"
 on-confirm = "#1A1A24"
+backdrop-tint = "#1E2A2414"
 fill = 0.14
 selected = 0.24
 chip = 0.2
@@ -43,6 +45,10 @@ secondary = 0.75
 
 [glass]
 variant = "regular"
+
+[backdrop]
+look = "tint"
+reach = "screen"
 
 [radius]
 card = 6

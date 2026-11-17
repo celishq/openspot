@@ -6,11 +6,15 @@ extension Theme {
         public fileprivate(set) var radius = Radius()
         public fileprivate(set) var type = TypeSizes()
         public fileprivate(set) var motion = Motion()
+        public fileprivate(set) var backdrop = Backdrop()
 
         public init() {}
 
         static var fields: [ThemeKey: ThemeField<Layout>] {
-            [named("space", \.space, Space.fields), named("radius", \.radius, Radius.fields), named("type", \.type, TypeSizes.fields), named("motion", \.motion, Motion.fields)]
+            [
+                named("space", \.space, Space.fields), named("radius", \.radius, Radius.fields), named("type", \.type, TypeSizes.fields),
+                named("motion", \.motion, Motion.fields), named("backdrop", \.backdrop, Backdrop.fields)
+            ]
                 .reduce(into: [:]) { all, part in all.merge(part) { one, _ in one } }
         }
     }

@@ -14,7 +14,16 @@ public struct BackdropEdge: Hashable, Sendable {
     public let inset: CGFloat
     public let softness: CGFloat
 
-    public static let blurs = SpotTokens.backdropSteps.map { BackdropEdge(inset: SpotTokens.halo * (1 - $0 / SpotTokens.backdropParts), softness: SpotTokens.halo / SpotTokens.backdropParts) }
+    public static var blurs: [BackdropEdge] {
+        SpotTokens.sizes.backdropEdges
+    }
+
+    static func edges(of backdrop: Theme.Backdrop) -> [BackdropEdge] {
+        let size = CGFloat(backdrop.size)
+        let fade = max(size - CGFloat(backdrop.padding), SpotTokens.backdropLeastFade)
+        let softness = fade / ((SpotTokens.backdropSteps.max() ?? 0) + SpotTokens.backdropReach)
+        return SpotTokens.backdropSteps.map { BackdropEdge(inset: SpotTokens.halo - (size - fade) - $0 * softness, softness: softness) }
+    }
 
     public var corner: CGFloat {
         SpotTokens.cardRadius + SpotTokens.halo - inset

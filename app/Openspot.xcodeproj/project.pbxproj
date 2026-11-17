@@ -425,6 +425,7 @@
 		874A3EF7FD23EE0338C15917 /* ModifierTapTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A564A8D2623D8AB8446F8EA /* ModifierTapTests.swift */; };
 		879C1D2996DF88E3ABCFEC38 /* AccountCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CEF74F754FB12F60F75A1B9 /* AccountCall.swift */; };
 		88184DA7B322E7517C4CB265 /* RowKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6AEA77354A6BB20072CDD7B /* RowKey.swift */; };
+		888E3AFE0608317581BF14D8 /* SpotScreenBackdrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227842BD53F16419E160A966 /* SpotScreenBackdrop.swift */; };
 		889181434259B98D5A2C5E7B /* ClockExampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6552E5F292394568C1A4AD12 /* ClockExampleTests.swift */; };
 		88B04045130083F5DFEA8026 /* CalcUnit.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCEAFAAD1530234B5C063AD8 /* CalcUnit.swift */; };
 		88BFDEF39FC127EC73C8761C /* SpotRead.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBFDBEA64DA20838FD117994 /* SpotRead.swift */; };
@@ -575,6 +576,7 @@
 		AE3067753A32EBCEAB87676D /* ScreenRecording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 329547D67B76A6789525A84A /* ScreenRecording.swift */; };
 		AE3501C76A5D31115DF5534D /* AccountStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E328B49EAB5999A258155E6 /* AccountStoreTests.swift */; };
 		AE468B322F6ED00F46AE12F0 /* UpdateCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2F76013D9FEAC569CD9D131 /* UpdateCall.swift */; };
+		AE8B08B308F16F9466ABBE2E /* Theme+Backdrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87218F95FED206BD5224934D /* Theme+Backdrop.swift */; };
 		AEE006C10392B925273088F9 /* SpotUsageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63C242FAFA7EB25081BC69FB /* SpotUsageTests.swift */; };
 		AEE92CE5DA405A257DABB919 /* SpotFill.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4958C896F9317151F9D988A2 /* SpotFill.swift */; };
 		AF1ACB7BCB6D1BB38BD4A115 /* FakeClock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D0AE349E0ABD0FA373E4359 /* FakeClock.swift */; };
@@ -1042,6 +1044,7 @@
 		2176BD66BF1EDB10AA654949 /* ActionHook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionHook.swift; sourceTree = "<group>"; };
 		21BFE08731F6CD652D67FACF /* PreviousAppTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviousAppTests.swift; sourceTree = "<group>"; };
 		21E0E5E6BFAC23C763466E93 /* CardPushTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardPushTests.swift; sourceTree = "<group>"; };
+		227842BD53F16419E160A966 /* SpotScreenBackdrop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotScreenBackdrop.swift; sourceTree = "<group>"; };
 		22868BC546570091C47C9DE4 /* SpotCardArrow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotCardArrow.swift; sourceTree = "<group>"; };
 		22B883AB943DB3379EC9DAD5 /* CallRouteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallRouteTests.swift; sourceTree = "<group>"; };
 		23ED628D411B58EF77910FB8 /* CommandNounTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandNounTests.swift; sourceTree = "<group>"; };
@@ -1376,6 +1379,7 @@
 		8612986697AC04A580A55E75 /* ScriptProcessTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptProcessTests.swift; sourceTree = "<group>"; };
 		86385DD1FDED1729E0EFAFBF /* SpotSheetCardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSheetCardTests.swift; sourceTree = "<group>"; };
 		863D7C4DBADCB06B088C5625 /* WindowCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowCall.swift; sourceTree = "<group>"; };
+		87218F95FED206BD5224934D /* Theme+Backdrop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Theme+Backdrop.swift"; sourceTree = "<group>"; };
 		87BD13CC9508A2EB463EE12F /* SpotPackage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotPackage.swift; sourceTree = "<group>"; };
 		880126AA2A6FFF90441687DD /* HexColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HexColor.swift; sourceTree = "<group>"; };
 		8826B778C9737CC4F2157A2A /* SpotPointerMove.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotPointerMove.swift; sourceTree = "<group>"; };
@@ -2097,6 +2101,7 @@
 			isa = PBXGroup;
 			children = (
 				0DEF7FFB2E6252C8DBCFB4EE /* Theme.swift */,
+				87218F95FED206BD5224934D /* Theme+Backdrop.swift */,
 				82D440594C5AA13E62C098F6 /* Theme+Sizes.swift */,
 				F084FBAEA116474C7972BD01 /* ThemeColor.swift */,
 				254797633E3471AB583218D5 /* ThemeField.swift */,
@@ -2234,6 +2239,7 @@
 				6F93916DDD4E4ED935810BFC /* SpotHintLine.swift */,
 				6077094CBAB36A423024B24A /* SpotIconStore.swift */,
 				CABF4CA4077E92C2311D9BBA /* SpotRunningApp.swift */,
+				227842BD53F16419E160A966 /* SpotScreenBackdrop.swift */,
 				CBFE807B6D890BC64CD2FCE1 /* SpotShowLink.swift */,
 				1DDCDFD7FA971F9107B9E74C /* SpotsPanel.swift */,
 				FB56CAAADCC15D5DC54C5776 /* SpotsView.swift */,
@@ -3912,6 +3918,7 @@
 				3F2406CF702202DA25882FFE /* TerminalRun.swift in Sources */,
 				B588C95B7551CFAD1BE03E6C /* TerminalStop.swift in Sources */,
 				04BA713D0A0177360A162D3E /* TextBlock.swift in Sources */,
+				AE8B08B308F16F9466ABBE2E /* Theme+Backdrop.swift in Sources */,
 				BCFECD9CA4446A596AEC9C0A /* Theme+Sizes.swift in Sources */,
 				9BF16AAB3D3329891EE7AD54 /* Theme.swift in Sources */,
 				19154280E91C1C36C7AFCC47 /* ThemeCall.swift in Sources */,
@@ -4091,6 +4098,7 @@
 				8F74F6D349921C9FE4B3BA0B /* SpotRunningApp.swift in Sources */,
 				963E23E2EBB2EE341650F104 /* SpotSampleSheet.swift in Sources */,
 				D4CC5015B5098256981BBD16 /* SpotScreen.swift in Sources */,
+				888E3AFE0608317581BF14D8 /* SpotScreenBackdrop.swift in Sources */,
 				15FE6DE697D2C8B0486A2CDB /* SpotScreenPick.swift in Sources */,
 				D10438CE111B53F51918604E /* SpotScreenTarget.swift in Sources */,
 				890654C11254D41249EE3046 /* SpotScrollEdges.swift in Sources */,

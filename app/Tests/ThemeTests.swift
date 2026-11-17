@@ -41,7 +41,7 @@ final class ThemeTests: XCTestCase {
 
         [glass]
         variant = "frosted"
-        backdrop-blur = -1
+        backdrop-blur = 3
         fade-reach = 0.5
         edge-far = 3
         tint = "#000000"
@@ -53,7 +53,7 @@ final class ThemeTests: XCTestCase {
             "theme.toml: [dark] fill is a strength from 0 to 1, such as 0.2.",
             "theme.toml: [dark] size is not a key of a theme.",
             "theme.toml: [glass] variant is clear or regular.",
-            "theme.toml: [glass] backdrop-blur is a number of points from 0 to 100, such as 3.",
+            "theme.toml: [glass] backdrop-blur is not a key of a theme.",
             "theme.toml: [glass] fade-reach is a number from 1 to 10, such as 3.",
             "theme.toml: [glass] edge-far is a strength from 0 to 1, such as 0.2.",
             "theme.toml: [glass] tint is not a key of a theme."
@@ -63,11 +63,10 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(theme.look.dark.fill, 0)
     }
 
-    func testAThemeGivesTheGlassItsVariantBlurReachAndEdges() {
+    func testAThemeGivesTheGlassItsVariantReachAndEdges() {
         let theme = Theme(text: """
         [glass]
         variant = "regular"
-        backdrop-blur = 8
         fade-reach = 2.5
         edge-near = 0.9
         edge-middle = 0.6
@@ -76,9 +75,62 @@ final class ThemeTests: XCTestCase {
 
         XCTAssertEqual(theme.faults, [])
         XCTAssertEqual(theme.look.glass.variant, .regular)
-        XCTAssertEqual(theme.look.glass.backdropBlur, 8)
         XCTAssertEqual(theme.look.glass.fadeReach, 2.5)
         XCTAssertEqual(theme.look.glass.edgeStrengths, [0.9, 0.6, 0.3])
+    }
+
+    func testAThemeGivesTheBackdropItsLookReachBlurSizePaddingAndTints() {
+        let theme = Theme(text: """
+        [dark]
+        backdrop-tint = "#1F2B254D"
+
+        [light]
+        backdrop-tint = "#00000014"
+
+        [backdrop]
+        look = "tint"
+        reach = "screen"
+        blur = 8
+        size = 80
+        padding = 12
+        """)
+
+        XCTAssertEqual(theme.faults, [])
+        XCTAssertEqual(theme.layout.backdrop.look, .tint)
+        XCTAssertEqual(theme.layout.backdrop.reach, .screen)
+        XCTAssertEqual(theme.layout.backdrop.blur, 8)
+        XCTAssertEqual(theme.layout.backdrop.size, 80)
+        XCTAssertEqual(theme.layout.backdrop.padding, 12)
+        XCTAssertEqual(theme.look.dark.backdropTint, ThemeColor(text: "#1F2B254D"))
+        XCTAssertEqual(theme.look.light.backdropTint, ThemeColor(text: "#00000014"))
+    }
+
+    func testABackdropThatAThemeLacksIsTheSoftBlurAroundTheTiles() {
+        let backdrop = Theme(text: "").layout.backdrop
+
+        XCTAssertEqual(backdrop.look, .blur)
+        XCTAssertEqual(backdrop.reach, .tiles)
+        XCTAssertEqual([backdrop.blur, backdrop.size, backdrop.padding], [3, 60, 0])
+    }
+
+    func testAThemeNamesEachBackdropValueItCannotRead() {
+        let theme = Theme(text: """
+        [backdrop]
+        look = "frosted"
+        reach = "window"
+        blur = -1
+        size = 91
+        padding = 75
+        """)
+
+        XCTAssertEqual(theme.faults, [
+            "theme.toml: [backdrop] look is blur or tint.",
+            "theme.toml: [backdrop] reach is tiles or screen.",
+            "theme.toml: [backdrop] blur is a number of points from 0 to 100, such as 3.",
+            "theme.toml: [backdrop] size is a number of points from 16 to 90, such as 60.",
+            "theme.toml: [backdrop] padding is a number of points from 0 to 74, such as 10."
+        ])
+        XCTAssertEqual(theme.layout.backdrop, Theme().layout.backdrop)
     }
 
     func testAThemeGivesTheSizesTypeAndMotionFromSections() {
@@ -189,7 +241,7 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(theme.look.dark.glassTint, .hex(HexColor(red: 0, green: 0, blue: 0, alpha: 0.6)))
         XCTAssertEqual(theme.look.light.glassTint, ThemeColor(text: "#FFFFFF99"))
         XCTAssertEqual(theme.look.glass.variant, .clear)
-        XCTAssertEqual(theme.look.glass.backdropBlur, 3)
+        XCTAssertEqual(theme.layout.backdrop, Theme().layout.backdrop)
         XCTAssertEqual(theme.look.glass.fadeReach, 3)
         XCTAssertEqual(theme.look.glass.edgeStrengths, [1, 0.7, 0.45])
         XCTAssertEqual(theme.layout.space, Theme().layout.space)

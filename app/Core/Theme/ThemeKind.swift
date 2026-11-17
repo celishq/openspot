@@ -8,6 +8,10 @@ public enum ThemeKind: Equatable, Sendable {
     case seconds
     case scale
     case variant
+    case backdropLook
+    case backdropReach
+    case haloSize
+    case haloPadding
 
     public var range: ClosedRange<Double> {
         switch self {
@@ -15,7 +19,9 @@ public enum ThemeKind: Equatable, Sendable {
         case .reach: 1...10
         case .seconds: 0...2
         case .scale: 0.5...2
-        case .points, .colour, .variant: 0...100
+        case .haloSize: Double(SpotTokens.backdropLeastFade)...Double(SpotTokens.halo)
+        case .haloPadding: 0...Double(SpotTokens.halo - SpotTokens.backdropLeastFade)
+        case .points, .colour, .variant, .backdropLook, .backdropReach: 0...100
         }
     }
 
@@ -28,6 +34,10 @@ public enum ThemeKind: Equatable, Sendable {
         case .scale: "a scale from 0.5 to 2, such as 1.04"
         case .colour: "a colour such as #00000099"
         case .variant: "clear or regular"
+        case .backdropLook: "blur or tint"
+        case .backdropReach: "tiles or screen"
+        case .haloSize: "a number of points from \(Int(range.lowerBound)) to \(Int(range.upperBound)), such as 60"
+        case .haloPadding: "a number of points from \(Int(range.lowerBound)) to \(Int(range.upperBound)), such as 10"
         }
     }
 

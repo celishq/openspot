@@ -57,13 +57,13 @@ final class ThemeCallTests: XCTestCase {
         let app = FakeRunningApp()
         let api = api(config, app: app)
         _ = try await answer(api, ["theme", "new"])
-        try "[glass]\nbackdrop-blur = 8\n".write(to: config.appendingPathComponent("themes/Theme 2.theme/theme.toml"), atomically: true, encoding: .utf8)
+        try "[backdrop]\nblur = 8\n".write(to: config.appendingPathComponent("themes/Theme 2.theme/theme.toml"), atomically: true, encoding: .utf8)
 
         let reloaded = try await answer(api, ["theme", "reload"])
 
         XCTAssertEqual(reloaded, CommandAnswer())
         let themes = await app.themes
-        XCTAssertEqual(themes.last?.look.glass.backdropBlur, 8)
+        XCTAssertEqual(themes.last?.layout.backdrop.blur, 8)
         XCTAssertEqual(themes.last?.look.glass.variant, .clear)
     }
 

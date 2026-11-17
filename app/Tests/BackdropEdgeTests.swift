@@ -58,7 +58,7 @@ final class BackdropEdgeTests: XCTestCase {
 
     func testTheBlurReachesAsFarPastTheCardsAsBeforeAndBothStayInTheWindow() {
         let reach = { (edge: BackdropEdge) in SpotTokens.halo - edge.inset + SpotTokens.backdropReach * edge.softness }
-        XCTAssertGreaterThanOrEqual(reach(BackdropEdge.blurs[0]), 55)
+        XCTAssertEqual(reach(BackdropEdge.blurs[0]), 60)
         XCTAssertLessThanOrEqual(reach(BackdropEdge.blurs[0]), SpotTokens.halo)
     }
 }

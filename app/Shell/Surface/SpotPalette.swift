@@ -16,6 +16,7 @@ final class SpotPalette: Sendable {
     let preview: Color
     let confirm: Color
     let onConfirm: Color
+    let backdropTint: Color
     let accent: Color
     let good: Color
     let warn: Color
@@ -31,7 +32,6 @@ final class SpotPalette: Sendable {
     let catchLightOnLight: Color
     let shared: Theme.Shared
     let glassVariant: Theme.Glass.Variant
-    let backdropBlur: CGFloat
     let glassFadeReach: Double
     let edgeStrengths: [Double]
 
@@ -55,6 +55,7 @@ final class SpotPalette: Sendable {
         preview = color(\.preview)
         confirm = color(\.confirm)
         onConfirm = color(\.onConfirm)
+        backdropTint = color(\.backdropTint)
         let shared = look.shared
         accent = shared.accent.color
         good = shared.good.color
@@ -71,7 +72,6 @@ final class SpotPalette: Sendable {
         catchLightOnLight = shared.catchLightOnLight.color
         self.shared = shared
         glassVariant = look.glass.variant
-        backdropBlur = look.glass.backdropBlur
         glassFadeReach = look.glass.fadeReach
         edgeStrengths = look.glass.edgeStrengths
     }

@@ -23,6 +23,8 @@ public struct SpotSizes: Equatable, Sendable {
     public let sheetRowsTop: CGFloat
     public let gridTop: CGFloat
     public let partsWidth: CGFloat
+    public let backdrop: Theme.Backdrop
+    public let backdropEdges: [BackdropEdge]
 
     public init(_ layout: Theme.Layout) {
         let space = layout.space
@@ -50,5 +52,7 @@ public struct SpotSizes: Equatable, Sendable {
         sheetRowsTop = sheetFieldDrop + listRow + rowGap
         gridTop = halo + cell + rowGap
         partsWidth = gridWidth - 2 * padding
+        backdrop = layout.backdrop
+        backdropEdges = BackdropEdge.edges(of: layout.backdrop)
     }
 }

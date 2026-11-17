@@ -612,7 +612,8 @@ Each section of the file holds one kind of value:
 | ------------------- | -------------------------------------------------------------------------------------- |
 | `[dark]`, `[light]` | The colours and strengths of each appearance, such as `ink` and `fill`.                |
 | `[shared]`          | The colours and strengths of both appearances, such as `accent`, `good` and `secondary`. |
-| `[glass]`           | The glass: its `variant`, `clear` or `regular`, the blur under it and its edges.       |
+| `[glass]`           | The glass: its `variant`, `clear` or `regular`, its fade and its edges.                |
+| `[backdrop]`        | What shows behind the tiles: a blur or a tint, around the tiles or over the screen.    |
 | `[space]`           | The sizes in points, such as `cell`, the side of a grid cell, and `padding`.           |
 | `[radius]`          | The corners in points, such as `card` and `window`.                                    |
 | `[type]`            | The sizes of the text in points: `title`, `body`, `detail` and `input`.                |
@@ -635,3 +636,34 @@ Each section of the file holds one kind of value:
 - A name can't be empty, start with `.`, or hold `/` or a new line, and the spaces around it are dropped. A folder that
   has the name of a built-in theme, in any case, is not a theme, and a toast at launch asks you to rename it.
 - `openspot theme use` fails on a theme with a value it can't read, prints a line for each, and keeps the theme in use.
+
+### Change the backdrop
+
+The backdrop is what Openspot lays behind its tiles, so they read over any window. Set it in `[backdrop]`. This one
+shades the whole screen behind the panel:
+
+```toml
+[dark]
+backdrop-tint = "#1E2A2459"
+
+[light]
+backdrop-tint = "#00000014"
+
+[backdrop]
+look = "tint"
+reach = "screen"
+```
+
+| Key        | Means                                                                                     | `Openspot` |
+| ---------- | ----------------------------------------------------------------------------------------- | ---------- |
+| `look`     | `blur` blurs what is behind the panel. `tint` lays the colour `backdrop-tint` over it.    | `blur`     |
+| `reach`    | `tiles` lays a soft halo around the tiles. `screen` covers the screen the panel is on.    | `tiles`    |
+| `blur`     | The strength of the blur, in points from 0 to 100.                                        | `3`        |
+| `size`     | How far the halo reaches past the tiles, in points from 16 to 90.                         | `60`       |
+| `padding`  | How far past the tiles the halo holds its full strength before it fades, from 0 to 74.    | `0`        |
+
+- `backdrop-tint` is a colour of `[dark]` and of `[light]`. Over a light page, a faint black, such as `#00000014`, keeps
+  the dark text behind it easy to read.
+- `size` and `padding` shape only the halo of `tiles`. The fade of the halo is at least 16 points long, so a `padding`
+  closer than that to `size` is cut back.
+- The backdrop changes when the panel next hides, as sizes do.

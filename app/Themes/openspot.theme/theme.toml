@@ -10,6 +10,7 @@ window = "#292929"
 preview = "#4D4D4D"
 confirm = "#C72924"
 on-confirm = "#FFFFFF"
+backdrop-tint = "#00000040"
 fill = 0.1
 selected = 0.22
 disc = 0.2
@@ -29,6 +30,7 @@ window = "#EDEDED"
 preview = "#FAFAFA"
 confirm = "#C72924"
 on-confirm = "#FFFFFF"
+backdrop-tint = "#00000014"
 fill = 0.08
 selected = 0.12
 disc = 0.0
@@ -68,11 +70,17 @@ publisher-pill-ring = 0.22
 
 [glass]
 variant = "clear"
-backdrop-blur = 3
 fade-reach = 3.0
 edge-near = 1.0
 edge-middle = 0.7
 edge-far = 0.45
+
+[backdrop]
+look = "blur"
+reach = "tiles"
+blur = 3
+size = 60
+padding = 0
 
 [space]
 cell = 64
