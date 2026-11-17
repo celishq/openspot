@@ -14,7 +14,7 @@ final class SpotUsageTests: SpotRunsCase {
         try await wait("the end of the call") { self.runs.usage.counts["script"]?.runs == 1 }
 
         let count = try XCTUnwrap(runs.usage.counts["script"])
-        XCTAssertGreaterThan(count.cpu, 0.01)
+        XCTAssertGreaterThan(count.cost.cpu, 0.01)
         XCTAssertGreaterThan(count.seconds, 0)
     }
 
@@ -34,7 +34,7 @@ final class SpotUsageTests: SpotRunsCase {
         try await wait("the busy loop") { self.exists("busy") }
         let pid = try await pid("pids")
 
-        let cpu = runs.usage.counts["script"]?.cpu ?? 0
+        let cpu = runs.usage.counts["script"]?.cost.cpu ?? 0
         XCTAssertEqual(kill(pid, 0), 0, "the script still runs")
         XCTAssertGreaterThan(cpu, 0.01)
     }
@@ -66,8 +66,8 @@ final class SpotUsageTests: SpotRunsCase {
 
         let days = runs.usage.days(2, at: time)
         XCTAssertEqual(days.count, 2)
-        XCTAssertGreaterThan(days.last?.spots["script"]?.cpu ?? 0, 0.01, "the day before")
-        XCTAssertGreaterThan(days.first?.spots["script"]?.cpu ?? 0, 0.01, "today")
+        XCTAssertGreaterThan(days.last?.spots["script"]?.cost.cpu ?? 0, 0.01, "the day before")
+        XCTAssertGreaterThan(days.first?.spots["script"]?.cost.cpu ?? 0, 0.01, "today")
     }
 
     func testAFailedCallIsTheLastFaultAndAFailure() async throws {
@@ -79,7 +79,7 @@ final class SpotUsageTests: SpotRunsCase {
         try await wait("the fault") { self.runs.usage.counts["script"]?.fault != nil }
 
         XCTAssertEqual(runs.usage.counts["script"]?.fault, "No network.")
-        try await wait("the failure") { self.runs.usage.counts["script"]?.failures == 1 }
+        try await wait("the failure") { self.runs.usage.counts["script"]?.failures.count == 1 }
         XCTAssertEqual(runs.usage.counts["script"]?.runs, 1)
     }
 
@@ -162,7 +162,7 @@ final class SpotUsageTests: SpotRunsCase {
         try await wait("the file of the day that ended") { FileManager.default.fileExists(atPath: self.file("2026-11-11").path) }
 
         XCTAssertEqual(SpotUsage(folder: stats, at: day).counts["a"]?.runs, 1)
-        XCTAssertEqual(usage.counts["a"]?.failures, 1)
+        XCTAssertEqual(usage.counts["a"]?.failures.count, 1)
         XCTAssertEqual(usage.counts["a"]?.runs, 1)
     }
 
@@ -218,7 +218,7 @@ final class SpotUsageTests: SpotRunsCase {
         XCTAssertEqual(count.acts, 1)
         XCTAssertNotNil(count.last)
         XCTAssertEqual(count.reads, ["sheet.open": 1])
-        XCTAssertEqual(count.answers.reduce(0, +), 1)
+        XCTAssertEqual(count.answers.total, 1)
     }
 
     func testTwoActsOnASpotWithinTwoSecondsAreOne() {
@@ -238,7 +238,7 @@ final class SpotUsageTests: SpotRunsCase {
         usage.called(spot("a", "Alpha"), seconds: 0.3, answered: 0.07, at: day)
 
         XCTAssertEqual(usage.counts["a"]?.runs, 2)
-        XCTAssertEqual(usage.counts["a"]?.answers.reduce(0, +), 1)
+        XCTAssertEqual(usage.counts["a"]?.answers.total, 1)
     }
 
     func testTodayCountsActsBeforeItsFirstChange() {
@@ -256,9 +256,9 @@ final class SpotUsageTests: SpotRunsCase {
         usage.panel(shown: true)
         usage.add(ProcessTime(cpu: 0.5, wakeups: 3), to: "a", at: day)
 
-        XCTAssertEqual(usage.counts["a"]?.cpu, 1.5)
-        XCTAssertEqual(usage.counts["a"]?.hiddenCPU, 1)
-        XCTAssertEqual(usage.counts["a"]?.hiddenWakeups, 2)
+        XCTAssertEqual(usage.counts["a"]?.cost.cpu, 1.5)
+        XCTAssertEqual(usage.counts["a"]?.hidden.cpu, 1)
+        XCTAssertEqual(usage.counts["a"]?.hidden.wakeups, 2)
     }
 
     func testTheMemoryIsThePeakOfItsProcesses() {
@@ -267,7 +267,7 @@ final class SpotUsageTests: SpotRunsCase {
         usage.add(ProcessTime(cpu: 0, wakeups: 0, memory: 3_000), to: "a", at: day)
         usage.add(ProcessTime(cpu: 0, wakeups: 0, memory: 2_000), to: "a", at: day)
 
-        XCTAssertEqual(usage.counts["a"]?.memory, 3_000)
+        XCTAssertEqual(usage.counts["a"]?.cost.memory, 3_000)
     }
 
     func testAFailureIsCountedByItsKindWithItsTime() {
@@ -278,9 +278,9 @@ final class SpotUsageTests: SpotRunsCase {
         usage.failedRun(spot("a", "Alpha"), failure: SpotUsage.Failure(SpotError.badState), at: day)
         usage.failed(spot("a", "Alpha"), fault: "It stopped.", at: day)
 
-        XCTAssertEqual(usage.counts["a"]?.failures, 3)
-        XCTAssertEqual(usage.counts["a"]?.failureKinds, ["timeout": 1, "exit": 1, "output": 1])
-        XCTAssertEqual(usage.counts["a"]?.failed, day)
+        XCTAssertEqual(usage.counts["a"]?.failures.count, 3)
+        XCTAssertEqual(usage.counts["a"]?.failures.kinds, ["timeout": 1, "exit": 1, "output": 1])
+        XCTAssertEqual(usage.counts["a"]?.failures.last, day)
     }
 
     func testOnlyAUseThatItsHeaderDoesNotDeclareIsLogged() throws {

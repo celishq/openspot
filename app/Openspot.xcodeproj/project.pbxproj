@@ -483,6 +483,7 @@
 		966A61476E172786A654DCF4 /* AccountStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3135ABD411D311144DC40D1 /* AccountStatus.swift */; };
 		9699AABB10DD82336C7AD4BA /* FocusLoss.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFD8983A5D718934384188E9 /* FocusLoss.swift */; };
 		969C4AAB8DA20D2375A8C639 /* ItemPick.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D42A800C4CAF73DD0F643D7 /* ItemPick.swift */; };
+		96B0F4E2FDAE7E87881E96E8 /* SpotUsage+Count.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1AAFEEDE91020068B164F88 /* SpotUsage+Count.swift */; };
 		96E4F3DA79F94D30E4253FBB /* PreviousAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21BFE08731F6CD652D67FACF /* PreviousAppTests.swift */; };
 		9718F14C073BFC8B14270277 /* SearchPromptTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D85AD5EC56456D478327C3F4 /* SearchPromptTests.swift */; };
 		974562228140C1D4B679D269 /* UnlockPass.swift in Sources */ = {isa = PBXBuildFile; fileRef = B28CE13F0735729688959D76 /* UnlockPass.swift */; };
@@ -1746,6 +1747,7 @@
 		F149558E8ADB4907416DAEE7 /* GridPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPanel.swift; sourceTree = "<group>"; };
 		F15937AFC37067A8AB8D0330 /* MetricKind.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricKind.swift; sourceTree = "<group>"; };
 		F180545BC14AC0A2FDEFB77A /* StoreSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreSpotTests.swift; sourceTree = "<group>"; };
+		F1AAFEEDE91020068B164F88 /* SpotUsage+Count.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotUsage+Count.swift"; sourceTree = "<group>"; };
 		F1E3218E6D4C2E9BB6661856 /* ToastPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastPanel.swift; sourceTree = "<group>"; };
 		F2DA0E776E8D9411FBA47CCB /* GlobalKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalKeys.swift; sourceTree = "<group>"; };
 		F34A740A1D6463E13E62FAA9 /* CallContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallContext.swift; sourceTree = "<group>"; };
@@ -2561,6 +2563,7 @@
 				791B6404E5AFEBBD2B796C9C /* SpotRuns.swift */,
 				B6F387F1DE7BBF0DFD0DC8CB /* SpotRuns+Scripts.swift */,
 				653BA93F0AA70E1567CA96B1 /* SpotUsage.swift */,
+				F1AAFEEDE91020068B164F88 /* SpotUsage+Count.swift */,
 				89A4279B4B30C21243B90110 /* StatsReport.swift */,
 				1CAD5CE39CAD25C7A95410C8 /* StayLink.swift */,
 			);
@@ -3837,6 +3840,7 @@
 				FAA175179D2D13E6E7597AB7 /* SpotState.swift in Sources */,
 				D63927E0EB3B1127B75AC71B /* SpotTip.swift in Sources */,
 				752F5F63354A4CDA03625146 /* SpotTokens.swift in Sources */,
+				96B0F4E2FDAE7E87881E96E8 /* SpotUsage+Count.swift in Sources */,
 				C3791B99A70A9F6CA071AF24 /* SpotUsage.swift in Sources */,
 				F43766016E130EA85B20FD01 /* SpotUse.swift in Sources */,
 				4AF9146236F922E801BEEA2D /* SpotUseCall.swift in Sources */,
