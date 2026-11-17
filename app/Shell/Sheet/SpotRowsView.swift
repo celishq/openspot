@@ -208,11 +208,7 @@ struct SpotRowsView: View {
                 SpotKeyLabel(text: shortcut, isRecording: recording == item.run, recordingWords: recordingWords)
             }
             if item.isToggle {
-                Toggle(item.title, isOn: .constant(item.isOn))
-                    .toggleStyle(.switch)
-                    .controlSize(.small)
-                    .labelsHidden()
-                    .allowsHitTesting(false)
+                RowSwitch(isOn: item.isOn)
             } else if item.isOn {
                 Image(systemName: "checkmark")
                     .font(SpotType.body.weight(.semibold))
@@ -250,6 +246,28 @@ private struct RowBars: View {
 
     private var colour: Color {
         tone.map(SpotMetricView.colour) ?? SpotTheme.ink
+    }
+}
+
+private struct RowSwitch: View {
+    let isOn: Bool
+
+    private static let width: CGFloat = 32
+    private static let height: CGFloat = 18
+    private static let inset: CGFloat = 2
+
+    var body: some View {
+        Capsule()
+            .fill(isOn ? SpotTheme.accent : SpotTheme.ink.opacity(SpotTheme.fill))
+            .frame(width: Self.width, height: Self.height)
+            .overlay(alignment: isOn ? .trailing : .leading) {
+                Circle()
+                    .fill(.white)
+                    .padding(Self.inset)
+                    .frame(width: Self.height, height: Self.height)
+            }
+            .accessibilityElement()
+            .accessibilityValue(isOn ? "On" : "Off")
     }
 }
 
