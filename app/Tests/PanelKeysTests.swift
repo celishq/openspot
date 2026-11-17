@@ -61,6 +61,29 @@ final class PanelKeysTests: PanelCase {
         try await wait("the grid") { self.model.mode == .grid }
     }
 
+    func testTheCardsMoveOnlyWhileTheGridShowsInFront() async throws {
+        try await showGrid()
+        XCTAssertTrue(model.cardsMove)
+        try select("weather")
+
+        XCTAssertTrue(model.handleKey(actions))
+        XCTAssertFalse(model.cardsMove)
+        XCTAssertTrue(model.handleKey(escape))
+        XCTAssertTrue(model.cardsMove)
+
+        model.beginEditing()
+        XCTAssertFalse(model.cardsMove)
+        model.endEditing()
+        XCTAssertTrue(model.cardsMove)
+
+        model.isShown = false
+        XCTAssertFalse(model.cardsMove)
+        model.isShown = true
+
+        try await openList()
+        XCTAssertFalse(model.cardsMove)
+    }
+
     func testASearchThatFindsNoSpotTeachesTheSlash() async throws {
         try script("list", header: "title=List\non=sheet.open", "printf 'row=a\\ntitle=A\\n'")
         await model.reload()
