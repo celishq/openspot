@@ -4,18 +4,19 @@
 # on=panel.open
 # mode=stay
 # offers=card
+# uses=power
 
 # One process answers every call. The call that turns Caffeinate on stays open while `caffeinate` runs, so Openspot
-# keeps this process until it ends, and a quit of Openspot ends `caffeinate` too. With the lid on, a hold also turns
-# sleep off through `pmset`, which a sudoers rule lets this user run without a password, and every end of the hold turns
-# it on again. A mark in the data folder lives while sleep is off, so that the next start turns it on after a crash.
-rule=/etc/sudoers.d/openspot-caffeinate
-mark=$OPENSPOT_DATA/sleep-off
+# keeps this process until it ends, and a quit of Openspot ends `caffeinate` too. With the lid on, a hold also runs
+# `openspot power lid-closed`, which keeps the Mac awake with the lid closed for as long as it runs, and every end of
+# the hold ends it.
 held=
 watcher=
 until=0
 picked=
 lid=
+holder=
+fault=
 
 awake() {
   [ -n "$watcher" ] && kill -0 "$watcher" 2>/dev/null
@@ -35,33 +36,23 @@ lid_keep() {
   openspot setting set lid-closed "$1" </dev/null >/dev/null 2>&1
 }
 
-# Makes sure the sudoers rule lets this user set `pmset disablesleep`, and installs it when it does not, which asks for
-# the password of an administrator once.
-lid_grant() {
-  disablesleep 0 && return
-  entry="#$(id -u) ALL=(root) NOPASSWD: /usr/bin/pmset disablesleep 1, /usr/bin/pmset disablesleep 0"
-  script="mkdir -p /etc/sudoers.d && echo '$entry' > $rule && chmod 0440 $rule && /usr/sbin/visudo -c -f $rule || { rm -f $rule; exit 1; }"
-  osascript -e "do shell script \"$script\" with administrator privileges with prompt \"Caffeinate needs your password once to keep the Mac working with the lid closed.\"" </dev/null >/dev/null 2>&1 &&
-    disablesleep 0
-}
-
-# Sets `pmset disablesleep` through the sudoers rule, and fails when the rule does not let it.
-disablesleep() {
-  sudo -n /usr/bin/pmset disablesleep "$1" </dev/null >/dev/null 2>&1
-}
-
-# Turns sleep off while the lid is closed, after the mark that tells a later start to turn it on again.
-sleep_off() {
-  : > "$mark"
-  disablesleep 1 && return
-  rm -f "$mark"
+# Starts `openspot power lid-closed` and waits for its first line. Sets `holder` to its process while it holds, or
+# `fault` to the line that says why it cannot.
+lid_hold() {
+  mkdir -p "$OPENSPOT_DATA"
+  pipe=$OPENSPOT_DATA/lid.$$
+  rm -f "$pipe"
+  mkfifo "$pipe" || { fault="Openspot cannot start the lid-closed hold."; return 1; }
+  openspot power lid-closed </dev/null >"$pipe" 2>"$OPENSPOT_DATA/lid.fault" &
+  holder=$!
+  said=
+  read -r said <"$pipe"
+  rm -f "$pipe"
+  [ "$said" = on ] && return 0
+  wait "$holder" 2>/dev/null
+  holder=
+  fault=$(head -n 1 "$OPENSPOT_DATA/lid.fault")
   return 1
-}
-
-# Turns sleep on again, when a hold turned it off.
-sleep_on() {
-  [ -f "$mark" ] || return 0
-  disablesleep 0 && rm -f "$mark"
 }
 
 # Prints the seconds that a hold has left, or 0 when it runs until it is stopped.
@@ -117,7 +108,7 @@ sheet() {
 
 # Runs `caffeinate` for the duration picked, or for the seconds given after it, or until it is stopped, in a watcher
 # that ends the call when it ends by itself. With the lid on, the display may sleep and the screen lock. Fails when the
-# lid is on but the sudoers rule no longer lets sleep turn off, which turns the lid off.
+# lid is on but the Mac refuses to hold it, which turns the lid off.
 hold() {
   held=$1
   picked=$2
@@ -125,8 +116,9 @@ hold() {
   if [ "$seconds" = 0 ]; then until=0; else until=$(( $(date +%s) + seconds )); fi
   flags=-di
   closed=true
+  holder=
   if lid_on; then
-    if sleep_off; then
+    if lid_hold; then
       flags=-i
     else
       closed=
@@ -134,10 +126,10 @@ hold() {
     fi
   fi
   (
-    trap 'kill $(jobs -p) 2>/dev/null; sleep_on; exit 0' TERM
+    trap 'kill $(jobs -p) $holder 2>/dev/null; exit 0' TERM
     if [ "$seconds" = 0 ]; then caffeinate $flags & else caffeinate $flags -t "$seconds" & fi
     wait $!
-    sleep_on
+    [ -z "$holder" ] || kill "$holder" 2>/dev/null
     watcher=
     printf 'end=%s\n---\n%s\n---\n' "$1" "$(sheet)"
   ) &
@@ -174,7 +166,8 @@ given() {
   printf '%b\n' "$input" | sed -n "s/^$1=//p" | head -n 1
 }
 
-# Prints the toast of a hold of that many seconds, which says, after `lost`, that it could not work with the lid closed.
+# Prints the toast of a hold of that many seconds, which says, after `lost`, that it could not work with the lid closed,
+# and why.
 toast() {
   minutes=$(( $1 / 60 ))
   if [ "$1" = 0 ]; then on="Caffeinate is on until you turn it off"
@@ -184,7 +177,7 @@ toast() {
   else on="Caffeinate is on for $minutes minutes"
   fi
   if [ "$2" = lost ]; then
-    echo "$on, but not with the lid closed. Pick Work with the lid closed to enter your password again."
+    echo "$on, but not with the lid closed. $fault"
   else
     echo "$on"
   fi
@@ -217,14 +210,7 @@ serve() {
       esac
       ;;
     'open lid')
-      if lid_on; then
-        next=false
-      elif lid_grant; then
-        next=true
-      else
-        printf 'call=%s\n---\ntoast=Caffeinate works with the lid closed only with your password. Pick the row again to enter it.\n%s\n---\nend=%s\n---\n' "$call" "$(sheet)" "$call"
-        return
-      fi
+      if lid_on; then next=false; else next=true; fi
       if awake; then
         seconds=$(remaining)
         release
@@ -250,8 +236,6 @@ detail=$(left)
       ;;
   esac
 }
-
-sleep_on
 
 call=
 input=
