@@ -21,7 +21,7 @@ struct SpotView: View {
                         .fill(.primary.opacity(0.12))
                         .overlay(alignment: .bottom) {
                             RoundedRectangle(cornerRadius: 2)
-                                .fill(index == month ? spot.accent : spot.ink.opacity(0.7))
+                                .fill(index == month ? spot.accent : spot.ink.opacity(spot.theme.color.secondary))
                                 .frame(height: 12 * fill)
                         }
                         .frame(height: 12)

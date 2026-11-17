@@ -864,9 +864,21 @@ struct SpotView: View {
 | `spot.rowGap`       | The gap between the rows of the grid.                                 |
 | `spot.columns`      | How many columns a window holds.                                      |
 | `spot.tipDelay`     | How long the pointer rests on a control before its tip shows.         |
+| `spot.theme`        | The values of the theme, by role. See the table below.                |
 | `spot.rows`         | Each `row` block of the frame, in a sheet or a window, in order.      |
 | `spot.isShown`      | Whether its place shows now. It's false while the panel is hidden.    |
 | `spot.close()`      | Closes the sheet, the float or the window of its spot.                |
+
+`spot.theme` gives the values of the theme (see [Change the look of Openspot](GUIDE.md#change-the-look-of-openspot)) in
+five groups. Each colour and strength is the one of the appearance that shows.
+
+| Member              | Gives                                                                                                  |
+| ------------------- | ------------------------------------------------------------------------------------------------------ |
+| `spot.theme.color`  | The colours `ink`, `solid`, `onSolid`, `accent`, `good`, `warn` and `bad`, and the strengths `secondary`, `fill`, `selected` and `track`. |
+| `spot.theme.space`  | `padding`, `columnGap`, `rowGap`, `listRow`, `listRowGap`, `glyph`, `cell`, the side of a grid cell, and `gridWidth`. |
+| `spot.theme.radius` | `card`, `media`, and `inner`, the corner of a part that sits `padding` inside the view's place.         |
+| `spot.theme.font`   | The fonts `title`, `body`, `detail` and `input`.                                                       |
+| `spot.theme.motion` | `press`, the time of a press in seconds, and `pressBounce`, its bounce.                                |
 
 - The view fills its place, and the whole card when there's no card layout. It can't change the size of its place.
 - In a window (see [Places](#places)), a sheet with one `view` block fills the window. `spot.card(id)` draws the card of

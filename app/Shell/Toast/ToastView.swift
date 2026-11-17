@@ -27,6 +27,7 @@ struct ToastView: View {
         .onTapGesture { toast.open?() }
         .padding(SpotTokens.toastMargin)
         .environment(\.spotIsShown, toast.isShown)
+        .id(SpotLoadedTheme.shared.layout)
     }
 
     static func styled(_ message: String) -> Text {

@@ -17,6 +17,7 @@ struct SpotCustomView: View, @MainActor Equatable {
     @Environment(\.spotViewPlace) private var place
     @Environment(\.spotIsHeld) private var isHeld
     @Environment(\.spotSurfaceEdge) private var surface
+    @Environment(\.colorScheme) private var scheme
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.source == rhs.source && lhs.values == rhs.values && lhs.rows == rhs.rows && lhs.card == rhs.card && lhs.room == rhs.room && lhs.answers == rhs.answers && lhs.date == rhs.date && lhs.views === rhs.views
@@ -124,8 +125,31 @@ struct SpotCustomView: View, @MainActor Equatable {
             "columnGap": SpotTokens.columnGap,
             "rowGap": SpotTokens.rowGap,
             "columns": SpotTokens.windowColumns,
-            "tipDelay": SpotTipView.delay
+            "tipDelay": SpotTipView.delay,
+            "theme": theme
         ]
+    }
+
+    private var theme: [String: Any] {
+        let palette = SpotTheme.loaded
+        let look = scheme == .dark ? palette.dark : palette.light
+        var values: [String: Any] = ViewTheme(sizes: SpotTokens.sizes, motion: MotionTokens.motion, corner: corner).numbers
+        values["ink"] = palette.ink
+        values["solid"] = palette.solid
+        values["onSolid"] = palette.onSolid
+        values["accent"] = palette.accent
+        values["good"] = palette.good
+        values["warn"] = palette.warn
+        values["bad"] = palette.bad
+        values["secondary"] = CGFloat(palette.shared.secondary)
+        values["fill"] = CGFloat(look.fillStrength)
+        values["selected"] = CGFloat(look.selectedStrength)
+        values["track"] = CGFloat(look.trackStrength)
+        values["title"] = SpotType.title
+        values["body"] = SpotType.body
+        values["detail"] = SpotType.detail
+        values["input"] = SpotType.input
+        return values
     }
 
     @ViewBuilder

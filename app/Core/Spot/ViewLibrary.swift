@@ -17,6 +17,79 @@ public struct ViewLibrary: Sendable {
             public let value: Font
         }
 
+        public struct SpotTheme {
+            public struct Colors {
+                public let ink: Color
+                public let solid: Color
+                public let onSolid: Color
+                public let accent: Color
+                public let good: Color
+                public let warn: Color
+                public let bad: Color
+                public let secondary: Double
+                public let fill: Double
+                public let selected: Double
+                public let track: Double
+            }
+
+            public struct Space {
+                public let padding: CGFloat
+                public let columnGap: CGFloat
+                public let rowGap: CGFloat
+                public let listRow: CGFloat
+                public let listRowGap: CGFloat
+                public let glyph: CGFloat
+                public let cell: CGFloat
+                public let gridWidth: CGFloat
+            }
+
+            public struct Radius {
+                public let card: CGFloat
+                public let media: CGFloat
+                public let inner: CGFloat
+            }
+
+            public struct Fonts {
+                public let title: Font
+                public let body: Font
+                public let detail: Font
+                public let input: Font
+            }
+
+            public struct Motion {
+                public let press: Double
+                public let pressBounce: Double
+            }
+
+            public let color: Colors
+            public let space: Space
+            public let radius: Radius
+            public let font: Fonts
+            public let motion: Motion
+
+            init(_ values: [String: Any]) {
+                let number = { (key: String, fallback: CGFloat) in values[key] as? CGFloat ?? fallback }
+                let strength = { (key: String, fallback: CGFloat) in Double(number(key, fallback)) }
+                let color = { (key: String, fallback: Color) in values[key] as? Color ?? fallback }
+                let font = { (key: String, fallback: Font) in values[key] as? Font ?? fallback }
+                self.color = Colors(
+                    ink: color("ink", .primary), solid: color("solid", .primary), onSolid: color("onSolid", .white),
+                    accent: color("accent", .accentColor), good: color("good", .green), warn: color("warn", .orange), bad: color("bad", .red),
+                    secondary: strength("secondary", 0.7), fill: strength("fill", 0.1), selected: strength("selected", 0.22), track: strength("track", 0.2)
+                )
+                space = Space(
+                    padding: number("padding", 13), columnGap: number("columnGap", 11), rowGap: number("rowGap", 12), listRow: number("listRow", 40),
+                    listRowGap: number("listRowGap", 6), glyph: number("glyph", 36), cell: number("cell", 64), gridWidth: number("gridWidth", 289)
+                )
+                radius = Radius(card: number("card", 26), media: number("media", 8), inner: number("inner", 13))
+                self.font = Fonts(
+                    title: font("title", .system(size: 13, weight: .medium)), body: font("body", .system(size: 13)),
+                    detail: font("detail", .system(size: 11)), input: font("input", .system(size: 14))
+                )
+                motion = Motion(press: strength("press", 0.2), pressBounce: strength("pressBounce", 0.2))
+            }
+        }
+
         public struct SpotRow: Identifiable {
             let fields: [String]
 
@@ -47,6 +120,7 @@ public struct ViewLibrary: Sendable {
             public let secondary: Double
             public let accent: Color
             public let font: SpotFonts
+            public let theme: SpotTheme
             public let answers: Int
             public let columnGap: CGFloat
             public let rowGap: CGFloat
@@ -95,6 +169,7 @@ public struct ViewLibrary: Sendable {
                     metric: card["metric"] as? Font ?? .system(size: 30, weight: .semibold, design: .rounded),
                     value: card["value"] as? Font ?? .system(size: 15, weight: .semibold, design: .rounded)
                 )
+                theme = SpotTheme(card["theme"] as? [String: Any] ?? [:])
             }
 
             public subscript(key: String) -> String? { values[key]?.last }

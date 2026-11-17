@@ -511,3 +511,88 @@ rows under the view. `spot.isShown` is false while the panel is hidden: stop a m
 its pulse. `spot.close()` closes the sheet, as Esc does.
 
 Learn more in [Views](PROTOCOL.md#views).
+
+## Follow the theme in a view
+
+A view that takes its colours, sizes and fonts from `spot.theme` looks like the rest of Openspot, and changes with it when
+you [change the look](#change-the-look-of-openspot).
+
+```sh
+#!/bin/sh
+# title=Steps
+# icon=figure.walk
+# on=sheet.open
+# view=steps.swift
+printf 'view=steps\nvalue=6200\ngoal=10000\n'
+```
+
+```swift
+import SwiftUI
+
+struct SpotView: View {
+    let spot: SpotInput
+
+    var body: some View {
+        let theme = spot.theme
+        let reached = (Int(spot["value"] ?? "") ?? 0) >= (Int(spot["goal"] ?? "") ?? 1)
+        VStack(alignment: .leading, spacing: theme.space.listRowGap) {
+            Text("\(spot["value"] ?? "–") steps").font(theme.font.title)
+            Text(reached ? "Goal reached" : "Keep going")
+                .font(theme.font.detail)
+                .foregroundStyle(reached ? theme.color.good : theme.color.ink.opacity(theme.color.secondary))
+        }
+        .padding(theme.space.padding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.color.ink.opacity(theme.color.fill), in: RoundedRectangle(cornerRadius: theme.radius.inner))
+        .padding(theme.space.padding)
+    }
+}
+```
+
+The box sits `padding` inside the view's place, so its corner is `radius.inner`, and it follows the corner of the card.
+[Views](PROTOCOL.md#views) lists each value of `spot.theme`.
+
+## Change the look of Openspot
+
+The theme gives Openspot its colours, glass, sizes, type and motion. Change it to make Openspot look your way.
+
+```sh
+openspot theme open
+```
+
+This opens your copy of the theme in the text editor. The first time, it makes the copy from the theme of the app, at
+`themes/openspot.theme/theme.toml` in the folder of your config. Change a value and save:
+
+```toml
+[shared]
+accent = "#FF9F0A"
+
+[radius]
+card = 20
+```
+
+Then draw Openspot with it:
+
+```sh
+openspot theme reload
+```
+
+Each section of the file holds one kind of value:
+
+| Section             | Holds                                                                                  |
+| ------------------- | -------------------------------------------------------------------------------------- |
+| `[dark]`, `[light]` | The colours and strengths of each appearance, such as `ink` and `fill`.                |
+| `[shared]`          | The colours and strengths of both appearances, such as `accent`, `good` and `secondary`. |
+| `[glass]`           | The glass: its `variant`, `clear` or `regular`, the blur under it and its edges.       |
+| `[space]`           | The sizes in points, such as `cell`, the side of a grid cell, and `padding`.           |
+| `[radius]`          | The corners in points, such as `card` and `window`.                                    |
+| `[type]`            | The sizes of the text in points: `title`, `body`, `detail` and `input`.                |
+| `[motion]`          | The times of each motion in seconds, the bounce of a press and the scales.             |
+
+- A key that your copy lacks keeps the value of the app, so the copy needs only the keys you change.
+- A colour is `#RRGGBB`, `#RRGGBBAA`, or a colour of the Mac: `accent`, `green`, `orange` or `red`. A strength is from 0
+  to 1.
+- Colours and strengths change at once. Sizes, type and motion change when the panel next hides.
+- `openspot theme reload` fails on a value it can't read, prints a line for each, such as
+  `theme.toml: [space] padding is a number of points, such as 3.`, and keeps the look as it was. At launch, such a value
+  keeps the value of the app, and a toast shows the line.
