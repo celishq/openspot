@@ -52,6 +52,7 @@ public struct StatsReport: Sendable {
             ]
             if let last = count.last { fields.append(.init(key: "last", value: stamp.string(from: last))) }
             fields += acts(of: id).map { .init(key: "days", value: $0) }
+            fields.append(.init(key: "seen", value: String(days.count { $0.spots[id] != nil })))
             fields += count.reads.sorted { $0.key < $1.key }.map { .init(key: "reads.\($0.key)", value: String($0.value)) }
             if count.hiddenCPU > 0 || count.hiddenWakeups > 0 {
                 fields += [.init(key: "hidden.cpu", value: String(format: "%.3f", count.hiddenCPU)), .init(key: "hidden.wakeups", value: String(count.hiddenWakeups))]

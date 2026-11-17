@@ -42,7 +42,7 @@ state=used
 
 row=links
 title=Links
-detail=4.8 a day · 436 ms CPU
+detail=4.8 a day · 343 ms CPU
 section=Used · last 14 days
 push=spot:links
 value=-
@@ -60,7 +60,7 @@ value=2
 value=1
 value=2
 acts=4.82
-cpu=0.436
+cpu=0.343
 state=used
 
 row=paste

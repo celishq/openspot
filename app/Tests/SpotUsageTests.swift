@@ -204,7 +204,7 @@ final class SpotUsageTests: SpotRunsCase {
         XCTAssertEqual(runs.usage.counts["script"]?.name, "Script")
     }
 
-    func testOpeningASheetAndPickingARowAreActsAndTheReadIsCountedByItsReason() async throws {
+    func testOpeningASheetAndPickingARowAtOnceIsOneActAndTheReadIsCountedByItsReason() async throws {
         try script(header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
@@ -215,10 +215,38 @@ final class SpotUsageTests: SpotRunsCase {
         try await wait("the pick") { self.runs.usage.counts["script"]?.runs == 2 }
 
         let count = try XCTUnwrap(runs.usage.counts["script"])
-        XCTAssertEqual(count.acts, 2)
+        XCTAssertEqual(count.acts, 1)
         XCTAssertNotNil(count.last)
         XCTAssertEqual(count.reads, ["sheet.open": 1])
-        XCTAssertEqual(count.answers.reduce(0, +), 2)
+        XCTAssertEqual(count.answers.reduce(0, +), 1)
+    }
+
+    func testTwoActsOnASpotWithinTwoSecondsAreOne() {
+        let usage = SpotUsage(at: day)
+
+        usage.acted(spot("a", "Alpha"), at: day)
+        usage.acted(spot("a", "Alpha"), at: day.addingTimeInterval(1))
+        usage.acted(spot("a", "Alpha"), at: day.addingTimeInterval(4))
+
+        XCTAssertEqual(usage.counts["a"]?.acts, 2)
+    }
+
+    func testOnlyACallThatAsksTimesTheAnswer() {
+        let usage = SpotUsage(at: day)
+
+        usage.called(spot("a", "Alpha"), seconds: 30, answered: nil, at: day)
+        usage.called(spot("a", "Alpha"), seconds: 0.3, answered: 0.07, at: day)
+
+        XCTAssertEqual(usage.counts["a"]?.runs, 2)
+        XCTAssertEqual(usage.counts["a"]?.answers.reduce(0, +), 1)
+    }
+
+    func testTodayCountsActsBeforeItsFirstChange() {
+        let usage = SpotUsage(at: day)
+
+        let days = usage.days(2, at: day.addingTimeInterval(86_400))
+
+        XCTAssertEqual(days.map(\.countsActs), [true, true])
     }
 
     func testCostWhileThePanelIsHiddenIsKeptApart() {
@@ -308,10 +336,9 @@ final class SpotUsageTests: SpotRunsCase {
         wakeups=7
         acts=0
         days=0
+        seen=1
         hidden.cpu=1.500
         hidden.wakeups=7
-        p50=0.400
-        p95=0.400
         call.screen.shot=1
         network=declared
 
@@ -327,10 +354,9 @@ final class SpotUsageTests: SpotRunsCase {
         wakeups=0
         acts=0
         days=0
+        seen=1
         hidden.cpu=0.040
         hidden.wakeups=0
-        p50=3.200
-        p95=3.200
         failures.exit=1
         failed=\(ISO8601DateFormatter().string(from: day))
         fault=Alpha failed.\\nIt stopped.

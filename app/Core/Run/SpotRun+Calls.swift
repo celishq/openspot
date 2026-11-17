@@ -71,8 +71,10 @@ extension SpotRun {
     func finish(_ call: OpenCall, _ end: ScriptCall.End, errors: String = "") {
         if OwnedSheet.owner(of: spot.id) == nil {
             let failure = if case .failed(let error) = end { SpotUsage.Failure(error) } else { SpotUsage.Failure?.none }
+            let seconds = Date().timeIntervalSince(call.begin)
             let reason = if case .ask(.read) = call.request.purpose { call.request.reason.map(Self.name(of:)) } else { String?.none }
-            runs.usage.called(spot, seconds: Date().timeIntervalSince(call.begin), answered: call.answered, failure: failure, reason: reason, at: runs.now())
+            let answered = if case .ask = call.request.purpose, case .ended = end { call.answered ?? seconds } else { TimeInterval?.none }
+            runs.usage.called(spot, seconds: seconds, answered: answered, failure: failure, reason: reason, at: runs.now())
         }
         log(call, end, errors: errors)
         ended(call, end)

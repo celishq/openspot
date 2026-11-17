@@ -125,6 +125,7 @@ final class TextBlockTests: XCTestCase {
         XCTAssertFalse(bars.isOn)
         XCTAssertEqual(capped.bars, [0.25, 0.5])
         XCTAssertEqual(check.bars, [])
+        XCTAssertEqual(SpotItem(block: TextBlock.blocks(in: "row=a\nvalue=nan\nvalue=2")[0])?.bars, [nil, 1])
         XCTAssertTrue(check.isOn)
     }
 

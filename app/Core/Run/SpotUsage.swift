@@ -121,6 +121,7 @@ public final class SpotUsage: @unchecked Sendable {
     }
 
     static let keptDays = 90
+    private static let actGap: TimeInterval = 2
     private static let useLimit = 100
 
     private let folder: URL?
@@ -151,7 +152,7 @@ public final class SpotUsage: @unchecked Sendable {
 
     public func days(_ count: Int, at date: Date) -> [Day] {
         writes.sync {}
-        let now = lock.withLock { Self.day(of: date) == today.day ? withLive(today) : nil }
+        let now = lock.withLock { withLive(today) }
         return Self.days(count, at: date, today: now, in: folder)
     }
 
@@ -159,7 +160,7 @@ public final class SpotUsage: @unchecked Sendable {
         (0..<max(count, 1)).compactMap { back in
             let name = day(of: Calendar.current.date(byAdding: .day, value: -back, to: date) ?? date)
             if let today, today.day == name { return today }
-            return folder.flatMap { read(name, in: $0) } ?? Day(day: name, countsActs: false)
+            return folder.flatMap { read(name, in: $0) } ?? Day(day: name, countsActs: back == 0 && today != nil)
         }
     }
 
@@ -198,6 +199,7 @@ public final class SpotUsage: @unchecked Sendable {
 
     func acted(_ spot: Spot, at date: Date) {
         change(at: date) { day in
+            if let last = day.spots[spot.id]?.last, date.timeIntervalSince(last) < Self.actGap { return }
             day.spots[spot.id, default: Count()].name = spot.name
             day.spots[spot.id, default: Count()].acts += 1
             day.spots[spot.id, default: Count()].last = date
@@ -209,10 +211,11 @@ public final class SpotUsage: @unchecked Sendable {
             day.spots[spot.id, default: Count()].name = spot.name
             day.spots[spot.id, default: Count()].runs += 1
             day.spots[spot.id, default: Count()].seconds += seconds
-            day.spots[spot.id, default: Count()].answered(after: answered ?? seconds)
+            if let answered { day.spots[spot.id, default: Count()].answered(after: answered) }
             if let failure {
                 day.spots[spot.id, default: Count()].failures += 1
                 day.spots[spot.id, default: Count()].failureKinds[failure.rawValue, default: 0] += 1
+                day.spots[spot.id, default: Count()].failed = date
             }
             if let reason { day.spots[spot.id, default: Count()].reads[reason, default: 0] += 1 }
             day.spots[spot.id, default: Count()].network = spot.uses.contains(.network)
@@ -224,6 +227,7 @@ public final class SpotUsage: @unchecked Sendable {
             day.spots[spot.id, default: Count()].name = spot.name
             day.spots[spot.id, default: Count()].failures += 1
             day.spots[spot.id, default: Count()].failureKinds[failure.rawValue, default: 0] += 1
+            day.spots[spot.id, default: Count()].failed = date
         }
     }
 

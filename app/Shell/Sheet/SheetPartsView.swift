@@ -139,8 +139,13 @@ struct SheetPartsView: View {
     private func drawn(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         if part.isOpen {
             if let viewSource {
-                SpotSelectedRow(run: selectedRun) { run in
-                    SpotCustomView(source: viewSource, values: part.values, rows: part.rows, card: .square, room: frame.rect.size, answers: panel.answered, selection: run, date: viewDate, views: views) { onSet(part, $0) }
+                if views.readsSelection(viewSource) {
+                    SpotSelectedRow(run: selectedRun) { run in
+                        SpotCustomView(source: viewSource, values: part.values, rows: part.rows, card: .square, room: frame.rect.size, answers: panel.answered, selection: run, date: viewDate, views: views) { onSet(part, $0) }
+                            .equatable()
+                    }
+                } else {
+                    SpotCustomView(source: viewSource, values: part.values, rows: part.rows, card: .square, room: frame.rect.size, answers: panel.answered, date: viewDate, views: views) { onSet(part, $0) }
                         .equatable()
                 }
             }

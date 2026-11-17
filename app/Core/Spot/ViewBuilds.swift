@@ -3,6 +3,7 @@ import Foundation
 public actor ViewBuilds {
     static let faultLimit = 32
     private static let shownWord = Data("isShown".utf8)
+    private static let selectionWord = Data("selection".utf8)
 
     private let library: ViewLibrary
     private var building: [String: Task<URL, Error>] = [:]
@@ -22,11 +23,11 @@ public actor ViewBuilds {
         try await built(of: source).library
     }
 
-    public func built(of source: URL) async throws -> (library: URL, readsShown: Bool) {
+    public func built(of source: URL) async throws -> (library: URL, readsShown: Bool, readsSelection: Bool) {
         guard let text = try? Data(contentsOf: source) else {
             throw SpotError.fault("Openspot cannot find the view \(source.lastPathComponent).")
         }
-        return (try await library(of: source, text: text), text.range(of: Self.shownWord) != nil)
+        return (try await library(of: source, text: text), text.range(of: Self.shownWord) != nil, text.range(of: Self.selectionWord) != nil)
     }
 
     private func library(of source: URL, text: Data) async throws -> URL {

@@ -26,7 +26,7 @@ page() {
         else if (k ~ /^failures\./) kinds = kinds (kinds == "" ? "" : " · ") x " " words[substr(k, 10)]
         else v[k] = x
       }
-      n = counted ? counted : 1
+      n = v["seen"] > 0 ? v["seen"] : 1
       printf "grid=acts acts\ngrid=perday cpu\ngrid=answers memory\ngrid=hidden hidden\ngrid=failures failures\ngrid=reads reads\ngrid=uses uses\n\n"
       printf "graph=acts\ntitle=Acts, last 14 days\n%s\n", days
       printf "number=perday\nvalue=%.1f\ntitle=acts a day\n\n", (counted ? v["acts"] / counted : 0)
@@ -58,7 +58,7 @@ esac
 
 # A dot pushes the page of its spot.
 case "$1" in
-  chart) printf 'push=spot:%s\npush.title=%s\n' "$2" "$(openspot spot stats --spot "$2" | sed -n 's/^title=//p' | head -n 1)"; exit ;;
+  chart) printf 'push=spot:%s\npush.title=%s\n' "$2" "$(openspot spot stats --days 14 --spot "$2" | sed -n 's/^title=//p' | head -n 1)"; exit ;;
 esac
 
 frame=$(openspot spot stats --days 14) || exit 1
@@ -79,7 +79,8 @@ printf '%s\n' "$frame" | awk '
     id = v["row"]
     if (id ~ /^openspot\//) next
     perday = counted ? v["acts"] / counted : 0
-    cpu = v["cpu"] / (counted ? counted : 1)
+    seen = v["seen"] > 0 ? v["seen"] : 1
+    cpu = v["cpu"] / seen
     if (v["failures"] > 0) {
       state = "bad"; order = 2; section = "Failing"
       kind = v["failures.timeout"] > 0 ? "timed out" : v["failures.output"] > 0 ? "printed what Openspot cannot read" : "stopped with an error"
@@ -89,7 +90,7 @@ printf '%s\n' "$frame" | awk '
       detail = "95 in 100 answer within " seconds(v["p95"]) " · half within " seconds(v["p50"])
     } else if (counted >= 14 && v["acts"] == 0) {
       state = "unused"; order = 4; section = "Unused for 14 days"
-      detail = seconds(cpu) " CPU a day" (v["hidden.cpu"] > 0 ? ", " seconds(v["hidden.cpu"] / counted) " while hidden" : "")
+      detail = seconds(cpu) " CPU a day" (v["hidden.cpu"] > 0 ? ", " seconds(v["hidden.cpu"] / seen) " while hidden" : "")
     } else {
       state = "used"; order = 1; section = "Used · last 14 days"
       detail = sprintf("%.1f a day · ", perday) seconds(cpu) " CPU"

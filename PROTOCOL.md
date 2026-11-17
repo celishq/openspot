@@ -1087,7 +1087,7 @@ openspot spot stats --days 7
 
 - Openspot keeps one file for each day, for 90 days. Today's numbers are live.
 - An act is something the user did with a spot: they opened its sheet, picked a row, pressed, set or toggled something,
-  or ran one of its actions. A read is never an act.
+  or ran one of its actions. A read is never an act, and acts on one spot within 2 seconds count as one.
 - `--days N` adds up the last N days. `--spot <id>` shows one spot.
 - It prints a `row=<id>` block for each spot, the most CPU first, then a `use=<n>` block for each call that needs a
   use, the newest first. `--json` prints the days.
@@ -1103,8 +1103,9 @@ openspot spot stats --days 7
 | `days`               | The acts of each day, oldest first. `-` for a day with no count.      |
 | `reads.<reason>`     | The reads for one reason, such as `reads.sheet.open=3` or `reads.clock=40`. |
 | `hidden.cpu`, `hidden.wakeups` | The part of `cpu` and `wakeups` spent while the panel was hidden. |
-| `p50`, `p95`         | The seconds within which half, and 95 in 100, of its calls first answered. |
-| `memory`             | The most memory one of its processes held, in bytes.                  |
+| `p50`, `p95`         | The seconds within which half, and 95 in 100, of its reads and searches first answered. |
+| `memory`             | The most memory its own process held at once, in bytes, not counting the processes it starts. |
+| `seen`               | The days that hold a count of the spot.                               |
 | `failures.<kind>`    | The failures of one kind: `timeout`, `exit` or `output`.              |
 | `failed`             | The time of its last failure.                                         |
 | `call.<noun>.<verb>` | The count of one call that needs a use, such as `call.screen.shot=2`. |

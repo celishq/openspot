@@ -91,7 +91,7 @@ public struct SpotItem: Equatable, Sendable {
 
     private static func bars(values: [String], max: Double?) -> [Double?] {
         guard values.count > 1 else { return [] }
-        let numbers = values.map(Double.init)
+        let numbers = values.map { Double($0).flatMap { $0.isFinite ? $0 : nil } }
         let top = max ?? numbers.compactMap { $0 }.max() ?? 0
         return numbers.map { number in number.map { top > 0 ? Swift.min(Swift.max($0 / top, 0), 1) : 0 } }
     }

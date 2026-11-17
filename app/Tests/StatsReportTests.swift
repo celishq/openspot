@@ -41,6 +41,7 @@ final class StatsReportTests: XCTestCase {
         wakeups=0
         acts=0
         days=0
+        seen=1
         bodies=2
         body=0.006000
 
@@ -51,7 +52,7 @@ final class StatsReportTests: XCTestCase {
     func testARowHoldsTheActsOfEachDayOldestFirstAndWhatTheSpotCostAndHowFastItAnswered() throws {
         let usage = SpotUsage(at: day)
         let alpha = Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh"))
-        usage.acted(alpha, at: day)
+        usage.acted(alpha, at: day.addingTimeInterval(-5))
         usage.acted(alpha, at: day)
         usage.called(alpha, seconds: 0.3, answered: 0.07, reason: "sheet.open", at: day)
         usage.called(alpha, seconds: 9, answered: 2, failure: .timeout, at: day)
@@ -77,6 +78,7 @@ final class StatsReportTests: XCTestCase {
         days=-
         days=-
         days=2
+        seen=1
         reads.sheet.open=1
         hidden.cpu=0.250
         hidden.wakeups=4
