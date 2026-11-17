@@ -345,7 +345,9 @@ public final class SpotsModel {
         var scan = (try? load.result(enabled: folder.enabled, disabled: folder.disabled, hosted: hosted)) ?? ScanResult(files: [SpotFile(id: "openspot", spots: hosted)], refused: [])
         let faults = load.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
         if !faults.isEmpty { scan.files.append(SpotFile(id: FaultSpot.fileID, spots: faults)) }
-        scan.restrict(by: trust.granting(config.trusted))
+        let granted = trust.granting(config.trusted)
+        runs.tokens.trust = granted
+        scan.restrict(by: granted)
         scan.addSettings(in: files.config, secrets: files.secrets, read: config)
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }

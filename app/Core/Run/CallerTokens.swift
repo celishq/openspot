@@ -33,6 +33,7 @@ public final class CallerTokens: @unchecked Sendable {
     private var groups: [pid_t: String] = [:]
     private var fixes: [String: URL] = [:]
     private var careful = false
+    private var kept = SpotTrust()
 
     private static let sandboxed = "sandboxed"
     private static let sandboxCheck: (@convention(c) (pid_t, UnsafePointer<CChar>?, Int32) -> Int32)? =
@@ -60,6 +61,11 @@ public final class CallerTokens: @unchecked Sendable {
     public var isCareful: Bool {
         get { lock.withLock { careful } }
         set { lock.withLock { careful = newValue } }
+    }
+
+    public var trust: SpotTrust {
+        get { lock.withLock { kept } }
+        set { lock.withLock { kept = newValue } }
     }
 
     func enter(_ group: pid_t, token: String) {

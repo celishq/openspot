@@ -124,13 +124,13 @@ struct SpotCalls {
             } catch {
                 return CommandAnswer(errors: "\((error as? SpotError)?.reason ?? error.localizedDescription)\n", code: 1)
             }
-            guard var spot = found else {
+            guard var spot = found.map((runs?.tokens.trust ?? SpotTrust()).applied) else {
                 return CommandAnswer(errors: "Openspot has no spot \(id) in \(spots.url.path). Run `openspot check spots` to see each file that does not load.\n", code: 1)
             }
             if let careful { spot.uses.formIntersection(careful) }
             let text = await input?()
             let usage = caller == nil || spot.reachesAccountKey ? nil : runs?.usage
-            let run = TerminalRun(spot: spot, arguments: arguments, input: text, careful: careful == nil ? nil : spot.uses, tokens: runs?.tokens, environment: environment, folder: folder, usage: usage)
+            let run = TerminalRun(spot: spot, arguments: arguments, input: text, careful: careful == nil && !spot.isRestricted ? nil : spot.uses, tokens: runs?.tokens, environment: environment, folder: folder, usage: usage)
             let begin = Date()
             var first = true
             let end = await run.start { frame in

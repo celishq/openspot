@@ -144,7 +144,10 @@ public final class SpotRuns {
             sheet.close()
             sheet.stopReads()
         }
+        let moved = scripts.filter { script in sheets[script.id].map { $0.spot.isRestricted != script.isRestricted } ?? false }.map(\.id)
+        moved.forEach(dropScript(of:))
         scripts.forEach { sheet(for: $0).scanned(stamps[$0.id]) }
+        moved.forEach { sheets[$0]?.restartScript() }
         showMarks()
         showWork()
         swift.prune(keeping: scripts.map(\.url), with: Dictionary(scripts.map { ($0.url, $0.sources) }) { first, _ in first })

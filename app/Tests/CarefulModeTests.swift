@@ -144,6 +144,24 @@ final class CarefulModeTests: SpotRunsCase {
         XCTAssertEqual(result, "data files")
     }
 
+    func testAStayingSpotStartsAgainInCarefulModeWhenItBecomesRestricted() async throws {
+        try script(header: "mode=stay\non=sheet.open\noffers=card\noffers=menubar", """
+        echo a > '\(outside.path)/written-$$' 2>/dev/null && r=files || r=kept
+        while IFS= read -r line; do
+          case "$line" in call=*) call=${line#call=} ;; esac
+          [ -n "$line" ] || printf 'end=%s\\n\\ntext=t\\ntitle=%s\\n---\\n' "$call" "$r"
+        done
+        """)
+        let sheet = try sheet()
+        let first = try await result(of: sheet)
+        XCTAssertEqual(first, "files", "the script started unrestricted")
+
+        restrict()
+        _ = try scanned()
+
+        try await wait("the read of the new process") { sheet.reading.value?.title == "kept" }
+    }
+
     func testOnTheSandboxDeniesAppleEvents() {
         let words = CarefulMode(uses: Set(SpotUse.allCases)).words(data: "/d", temp: "/t", home: "/h")
 
