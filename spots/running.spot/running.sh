@@ -5,10 +5,60 @@
 # on=sheet.open
 # view=chart.swift
 # offers=card
+# pages=spot:*
+# uses=spots
 
-# A row or a dot opens its spot.
+# Prints the page of spot $1: its acts of each day, what it costs, how fast it answers, how it failed, and its uses.
+page() {
+  openspot spot stats --days 14 --spot "$1" | awk '
+    BEGIN { RS = ""; FS = "\n" }
+    function seconds(s) { return s < 1 ? sprintf("%d ms", s * 1000 + 0.5) : sprintf("%.1f s", s) }
+    BEGIN { words["timeout"] = "timed out"; words["exit"] = "stopped with an error"; words["output"] = "printed what Openspot cannot read" }
+    function bytes(b) { return b >= 1048576 ? sprintf("%.0f MB", b / 1048576) : sprintf("%.0f KB", b / 1024) }
+    !/^row=/ { next }
+    {
+      delete v; days = ""; counted = 0; reads = ""; calls = ""; kinds = ""
+      for (i = 1; i <= NF; i++) {
+        k = $i; sub(/=.*/, "", k); x = substr($i, length(k) + 2)
+        if (k == "days") { days = days "value=" (x == "-" ? 0 : x) "\n"; if (x != "-") counted++ }
+        else if (k ~ /^reads\./) reads = reads (reads == "" ? "" : " · ") x " at " substr(k, 7)
+        else if (k ~ /^call\./) calls = calls (calls == "" ? "" : " · ") substr(k, 6) " " x
+        else if (k ~ /^failures\./) kinds = kinds (kinds == "" ? "" : " · ") x " " words[substr(k, 10)]
+        else v[k] = x
+      }
+      n = counted ? counted : 1
+      printf "grid=acts acts\ngrid=perday cpu\ngrid=answers memory\ngrid=hidden hidden\ngrid=failures failures\ngrid=reads reads\ngrid=uses uses\n\n"
+      printf "graph=acts\ntitle=Acts, last 14 days\n%s\n", days
+      printf "number=perday\nvalue=%.1f\ntitle=acts a day\n\n", (counted ? v["acts"] / counted : 0)
+      printf "number=cpu\nvalue=%.3f\ndisplay=%s\ntitle=CPU a day\n\n", v["cpu"] / n, seconds(v["cpu"] / n)
+      printf "number=answers\nvalue=%s\ndisplay=%s\ntitle=Slow answers\n\n", v["p95"] + 0, (v["p95"] == "" ? "–" : seconds(v["p95"]))
+      printf "number=memory\nvalue=%s\ndisplay=%s\ntitle=Peak memory\n\n", v["memory"] + 0, (v["memory"] == "" ? "–" : bytes(v["memory"]))
+      printf "text=hidden\ntitle=While hidden\ndetail=%s CPU a day · %d wakeups\n\n", seconds(v["hidden.cpu"] / n), v["hidden.wakeups"] / n
+      if (v["failures"] > 0) printf "text=failures\ntitle=Failures\ndetail=%s of %s calls · %s\ntone=bad\n\n", v["failures"], v["runs"], kinds
+      else printf "text=failures\ntitle=Failures\ndetail=None of %s calls\n\n", v["runs"] + 0
+      printf "text=reads\ntitle=Reads\ndetail=%s\n\n", (reads == "" ? "None" : reads)
+      printf "text=uses\ntitle=Uses\ndetail=%s\n\n", (calls == "" ? "None" : calls)
+    }
+  '
+  printf 'button=open\ntitle=Open\nshortcut=return\n\nbutton=settings\ntitle=Settings\n\nbutton=delete\ntitle=Move to Trash\nconfirm=Press again to move it to the Trash\n'
+}
+
+case "$OPENSPOT_PAGE" in
+  spot:*)
+    id=${OPENSPOT_PAGE#spot:}
+    case "$1" in
+      open) exec openspot spot open "$id" ;;
+      settings) exec openspot spot settings "$id" ;;
+      delete) openspot spot delete "$id" && printf 'pop=true\n' ; exit ;;
+    esac
+    page "$id"
+    exit
+    ;;
+esac
+
+# A dot pushes the page of its spot.
 case "$1" in
-  open | chart) exec openspot spot open "$2" ;;
+  chart) printf 'push=spot:%s\npush.title=%s\n' "$2" "$(openspot spot stats --spot "$2" | sed -n 's/^title=//p' | head -n 1)"; exit ;;
 esac
 
 frame=$(openspot spot stats --days 14) || exit 1
@@ -45,7 +95,7 @@ printf '%s\n' "$frame" | awk '
       detail = sprintf("%.1f a day · ", perday) seconds(cpu) " CPU"
     }
     tone = state == "bad" ? "tone=bad\n" : state == "warn" ? "tone=warn\n" : ""
-    block = "row=" id "\ntitle=" v["title"] "\ndetail=" detail "\nsection=" section "\n" tone days \
+    block = "row=" id "\ntitle=" v["title"] "\ndetail=" detail "\nsection=" section "\npush=spot:" id "\n" tone days \
       sprintf("acts=%.2f\ncpu=%.3f\nstate=%s\n", perday, cpu, state)
     gsub(/\n/, "\001", block)
     printf "%d\t%09.2f\t%s\n", order, 100000 - perday * 100, block

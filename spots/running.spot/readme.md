@@ -5,3 +5,6 @@ Below the chart, each spot has a bar for each day of acts, under the title of it
 or unused for 14 days. An act is something you did with a spot, such as opening it or picking one of its rows.
 
 It reads the stats that Openspot keeps on your Mac. It sends nothing over the network.
+
+Return on a row, or a click on a dot, opens the page of that spot: its acts of each day, its CPU a day, how fast 95 in 100
+of its calls answer, its peak memory, what it costs while the panel is hidden, its failures, its reads and its uses.
