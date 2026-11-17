@@ -12,7 +12,14 @@ final class ThemeCallTests: XCTestCase {
             try FileManager.default.moveItem(at: url, to: place)
             return place
         }, defaultConfig: nil)
-        return CommandAPI(mac: Mac(theme: theme ?? builtInURL), places: places, app: app, rates: .offline)
+        return CommandAPI(mac: Mac(theme: theme ?? alone(in: config)), places: places, app: app, rates: .offline)
+    }
+
+    private func alone(in config: URL) -> URL {
+        let file = config.appendingPathComponent("app-themes/openspot.theme/theme.toml")
+        try? FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try? FileManager.default.copyItem(at: builtInURL, to: file)
+        return file
     }
 
     private func answer(_ api: CommandAPI, _ arguments: [String]) async throws -> CommandAnswer {

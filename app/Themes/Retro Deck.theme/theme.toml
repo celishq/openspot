@@ -1,0 +1,61 @@
+[dark]
+ink = "#00E000"
+solid = "#00E000"
+on-solid = "#0A0A10"
+glyph-on-solid = "#0A0A10"
+glass = "#20202A00"
+glass-tint = "#1A1A24E6"
+corner-fill = "#3A3A48"
+window = "#16161E"
+preview = "#2A2A36"
+confirm = "#E0A000"
+on-confirm = "#0A0A10"
+fill = 0.14
+selected = 0.3
+chip = 0.3
+control = 0.25
+track = 0.3
+
+[light]
+ink = "#1A1A24"
+solid = "#2C2C38"
+on-solid = "#00E000"
+glyph-on-solid = "#00E000"
+glass = "#BDBDC880"
+glass-tint = "#C8C8D2E6"
+corner-fill = "#D6D6DE"
+window = "#B8B8C4"
+preview = "#D6D6DE"
+confirm = "#C08000"
+on-confirm = "#1A1A24"
+fill = 0.14
+selected = 0.24
+chip = 0.2
+control = 0.18
+track = 0.22
+
+[shared]
+accent = "#00E000"
+good = "#00E000"
+warn = "#E0A000"
+bad = "#E03030"
+secondary = 0.75
+
+[glass]
+variant = "regular"
+
+[radius]
+card = 6
+window = 6
+media = 3
+corner-mark = 2
+
+[space]
+column-gap = 6
+row-gap = 6
+
+[motion]
+grow = 0.1
+shrink = 0.12
+press-bounce = 0
+pressed-scale = 0.97

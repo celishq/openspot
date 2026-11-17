@@ -1,0 +1,31 @@
+[dark]
+ink = "#F8F8F2"
+solid = "#F8F8F2"
+on-solid = "#282A36"
+glyph-on-solid = "#BD93F9"
+glass = "#282A3600"
+glass-tint = "#282A36B3"
+corner-fill = "#44475A"
+window = "#282A36"
+preview = "#44475A"
+confirm = "#FF5555"
+on-confirm = "#282A36"
+
+[light]
+ink = "#1F1F1F"
+solid = "#1F1F1F"
+on-solid = "#F8F8F2"
+glyph-on-solid = "#F8F8F2"
+glass = "#F8F8F280"
+glass-tint = "#F8F8F2B3"
+corner-fill = "#DEDEE8"
+window = "#F8F8F2"
+preview = "#DEDEE8"
+confirm = "#CB3A2A"
+on-confirm = "#F8F8F2"
+
+[shared]
+accent = "#BD93F9"
+good = "#50FA7B"
+warn = "#FFB86C"
+bad = "#FF5555"

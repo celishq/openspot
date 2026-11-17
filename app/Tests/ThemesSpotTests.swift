@@ -27,10 +27,12 @@ final class ThemesSpotTests: BuiltInCase {
 
         let output = try await themes.items(timeout: 60)
 
-        XCTAssertEqual(output.items.map(\.run), ["Openspot", "Night"])
-        XCTAssertEqual(output.items.map(\.isOn), [false, true])
-        XCTAssertEqual(output.items.first?.subtitle, "Built in")
-        XCTAssertEqual(output.items.map { $0.hides ?? [] }, [["rename", "delete", "file"], []])
+        XCTAssertEqual(output.items.first?.run, "Openspot")
+        XCTAssertEqual(output.items.last?.run, "Night")
+        XCTAssertEqual(output.items.filter(\.isOn).map(\.run), ["Night"])
+        XCTAssertEqual(Set(output.items.dropLast().map(\.subtitle)), ["Built in"])
+        XCTAssertEqual(Set(output.items.dropLast().map { $0.hides ?? [] }), [["rename", "delete", "file"]])
+        XCTAssertEqual(output.items.last?.hides ?? [], [])
         XCTAssertEqual(output.actions.map(\.title), ["Duplicate", "Rename", "Move to Trash", "Open file", "Copy prompt"])
         XCTAssertFalse(try settingsRows().contains { $0.lowercased().contains("theme") })
     }
@@ -51,7 +53,7 @@ final class ThemesSpotTests: BuiltInCase {
         let output = try await themes.answer(SpotAction(arguments: ["open", "Night"]), timeout: 60)
 
         XCTAssertEqual(file.read().theme, "Night")
-        XCTAssertEqual(output.items.map(\.isOn), [false, true])
+        XCTAssertEqual(output.items.filter(\.isOn).map(\.run), ["Night"])
         let drawn = await app.themes
         XCTAssertEqual(drawn.count, 1)
     }
@@ -64,7 +66,7 @@ final class ThemesSpotTests: BuiltInCase {
 
         XCTAssertEqual(form.fields.map { $0.block.value("field") }, ["name"])
         XCTAssertEqual(renamed.select, "Dusk")
-        XCTAssertEqual(renamed.items.map(\.run), ["Openspot", "Dusk"])
+        XCTAssertEqual(renamed.items.filter { $0.subtitle != "Built in" }.map(\.run), ["Dusk"])
         XCTAssertEqual(toast, "Moved the theme Dusk to the Trash, and switched to the theme Openspot.")
         XCTAssertEqual(file.read().theme, "Openspot")
     }
