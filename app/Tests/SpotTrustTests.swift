@@ -86,11 +86,20 @@ final class SpotTrustTests: PanelCase {
 
     func testAnUnsignedSpotThatThePersonTrustsIsNotRestricted() async throws {
         try addCups(source: "https://example.com/cups.git")
-        try writeConfig("[[trusted]]\nspot = \"cups\"\n")
+        try writeConfig("[[trusted]]\nsource = \"https://example.com/cups.git\"\n")
 
         await model.reload()
 
         XCTAssertEqual(cups?.isRestricted, false)
+    }
+
+    func testAnUnsignedSpotOfTheSameNameFromAnotherSourceStaysRestricted() async throws {
+        try addCups(source: "/tmp/elsewhere/cups.spot")
+        try writeConfig("[[trusted]]\nsource = \"https://example.com/cups.git\"\n")
+
+        await model.reload()
+
+        XCTAssertEqual(cups?.isRestricted, true)
     }
 
     func testTheSettingsOfARestrictedSpotTrustItsAuthor() async throws {

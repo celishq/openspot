@@ -47,7 +47,7 @@ public final class CallerTokens: @unchecked Sendable {
     }
 
     public init() {
-        records[Self.sandboxed] = Record(caller: Caller(id: "", name: "A sandboxed process", uses: []))
+        records[Self.sandboxed] = Record(caller: Caller(id: "", name: "A sandboxed process", uses: [], isRestricted: true))
     }
 
     func issue(for spot: Spot, reason: String? = nil, keepsFix: Bool = false) -> String {
@@ -133,7 +133,7 @@ public final class CallerTokens: @unchecked Sendable {
             return token
         }
         if let known { return (known, true) }
-        guard isCareful, caller(of: claimed) == nil, Self.isSandboxed(peer) else { return (claimed, false) }
+        guard caller(of: claimed) == nil, Self.isSandboxed(peer) else { return (claimed, false) }
         return (Self.sandboxed, false)
     }
 

@@ -176,7 +176,7 @@ public struct Config: Equatable, Sendable {
     }
 
     private mutating func trusted(of table: ConfigDocument.Table) -> Trusted? {
-        Trusted(table: table) ?? unread(table, "config.toml: a trusted entry needs an author or a spot.")
+        Trusted(table: table) ?? unread(table, "config.toml: a trusted entry needs an author or a source.")
     }
 
     private mutating func shortcut(_ value: ConfigDocument.Value?, named name: String, or standard: Shortcut) -> Shortcut? {

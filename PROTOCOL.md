@@ -1182,7 +1182,7 @@ openspot app quit
   only its blocks. That is a spot that `spot add` or a store added, unless it comes from Openspot's own store or your
   account key signed it. A spot that you made or put in the spots folder yourself runs as you made it.
 - To lift it, choose **Trust its author** in the spot's Settings, or run `openspot spot trust <id>`. That trusts each spot
-  that the same key signed. A spot that no key signed shows **Trust this spot**, which trusts only that spot. Only you
+  that the same key signed. A spot that no key signed shows **Trust this spot**, which trusts only the source it came from. Only you
   can trust a spot: a spot that calls `spot trust` fails.
 - A spot folder can hold `releases.jsonl`, the signed releases of the spot. Openspot writes it when the user shares or
   publishes the spot, and refuses a shared spot whose files don't match its last release. A spot reads nothing from it.

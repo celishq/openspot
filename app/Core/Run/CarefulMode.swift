@@ -5,7 +5,7 @@ struct CarefulMode: Equatable, Sendable {
 
     let uses: Set<SpotUse>
 
-    func words(data: String, temp: String, home: String) -> [String] {
+    func words(data: String, temp: String, home: String, kept: [String] = []) -> [String] {
         var rules = ["(version 1)", "(allow default)", "(deny appleevent-send)"]
         if !uses.contains(.network) {
             rules += ["(deny network-outbound (remote ip))", "(deny network-inbound (local ip))"]
@@ -14,11 +14,19 @@ struct CarefulMode: Equatable, Sendable {
         if let folders {
             rules += ["(deny file-write*)", "(allow file-write* \(folders.map { "(subpath (param \"\($0.name)\"))" }.joined(separator: " ")))"]
         }
-        return [Self.program] + (folders ?? []).flatMap { ["-D", "\($0.name)=\($0.path)"] } + ["-p", rules.joined(separator: "\n")]
+        let fenced = kept.enumerated().map { (name: "KEPT\($0.offset)", path: Self.real($0.element)) }
+        if !fenced.isEmpty {
+            rules += ["(deny file-write* \(fenced.map { "(subpath (param \"\($0.name)\"))" }.joined(separator: " ")))", "(allow file-write* (subpath (param \"OWN\")))"]
+        }
+        let named = (folders ?? []) + fenced + (fenced.isEmpty ? [] : [(name: "OWN", path: Self.real(data))])
+        return [Self.program] + named.flatMap { ["-D", "\($0.name)=\($0.path)"] } + ["-p", rules.joined(separator: "\n")]
     }
 
     func words(in environment: [String: String]) -> [String] {
-        words(data: environment["OPENSPOT_DATA"] ?? NSTemporaryDirectory(), temp: environment["TMPDIR"] ?? NSTemporaryDirectory(), home: environment["HOME"] ?? NSHomeDirectory())
+        let home = environment["HOME"] ?? NSHomeDirectory()
+        let homeURL = URL(fileURLWithPath: home, isDirectory: true)
+        let kept = [SpotsFolder.config(environment: environment, home: homeURL).path, SpotsFolder.standard(environment: environment, home: homeURL).url.path]
+        return words(data: environment["OPENSPOT_DATA"] ?? NSTemporaryDirectory(), temp: environment["TMPDIR"] ?? NSTemporaryDirectory(), home: home, kept: kept)
     }
 
     func allows(writing file: URL, data: String?, temp: String, home: String) -> Bool {

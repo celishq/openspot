@@ -71,7 +71,7 @@ struct SpotCalls {
             let grant = SpotTrust.grant(of: entry)
             let config = try ConfigFile.standard(environment: environment).change { $0.trust(grant) }
             await app?.configChanged(.trusted, to: config)
-            return grant == .spot(entry.name) ? "Trusted \(entry.name).\n" : "Trusted the author of \(entry.name).\n"
+            return entry.key == nil ? "Trusted \(entry.name).\n" : "Trusted the author of \(entry.name).\n"
         }
     }
 

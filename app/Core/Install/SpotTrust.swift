@@ -19,7 +19,7 @@ public struct SpotTrust: Equatable, Sendable {
     }
 
     static func grant(of entry: SpotLock.Entry) -> Trusted {
-        entry.key.map(Trusted.author) ?? .spot(entry.name)
+        entry.key.map(Trusted.author) ?? .source(entry.source)
     }
 
     public static func read(lock: SpotLock, account: AccountStore, store: Store?) -> SpotTrust {

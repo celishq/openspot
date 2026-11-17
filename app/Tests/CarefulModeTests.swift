@@ -124,6 +124,26 @@ final class CarefulModeTests: SpotRunsCase {
         try await wait("the read of the new process") { sheet.reading.value?.title == "kept" }
     }
 
+    func testOnASpotWithFilesCannotWriteTheConfigOrTheSpotsOfOpenspot() async throws {
+        let spots = outside.appendingPathComponent("spots", isDirectory: true)
+        try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
+        runs.quit()
+        runs = runs(environment: ProcessInfo.processInfo.environment.merging(["OPENSPOT_CONFIG": outside.appendingPathComponent("config").path, "OPENSPOT_SPOTS": spots.path]) { _, new in new })
+        runs.isCareful = true
+        try script(header: "on=sheet.open\nuses=files", """
+        r=
+        echo a >> "$OPENSPOT_CONFIG/config.toml" 2>/dev/null && r="${r}config "
+        echo a > "$OPENSPOT_SPOTS/new.sh" 2>/dev/null && r="${r}spots "
+        echo a > "$OPENSPOT_DATA/kept" 2>/dev/null && r="${r}data "
+        echo a > '\(outside.path)/written' 2>/dev/null && r="${r}files"
+        printf 'text=t\\ntitle=%s\\n' "$r"
+        """)
+
+        let result = try await result(of: try sheet())
+
+        XCTAssertEqual(result, "data files")
+    }
+
     func testOnTheSandboxDeniesAppleEvents() {
         let words = CarefulMode(uses: Set(SpotUse.allCases)).words(data: "/d", temp: "/t", home: "/h")
 
