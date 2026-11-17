@@ -1,4 +1,4 @@
-Keeps the Mac awake. Open its sheet and pick how long: 30 minutes to 8 hours, until you turn it off, or Custom… for any number of minutes. While it is on,
+Keeps the Mac awake. Open its sheet and pick how long: 30 minutes, 2 hours, Custom… for any number of minutes, or until you turn it off. While it is on,
 the card shows the time left, and Turn off is the first row. Quitting Openspot turns it off.
 
 Turn off **Keep the display on** to let the screen sleep and lock while the Mac keeps working. It is on by default.

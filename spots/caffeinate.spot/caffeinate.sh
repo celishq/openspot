@@ -130,12 +130,9 @@ sheet() {
   printf 'button=start\ntitle=Keep awake for…\nscope=spot\nform=true\nclose=true\nplaceholder=Minutes, such as 45\n\n'
   awake && printf 'row=off\ntitle=Turn off\n\n'
   duration 1800 '30 minutes'; echo
-  duration 3600 '1 hour'; echo
   duration 7200 '2 hours'; echo
-  duration 14400 '4 hours'; echo
-  duration 28800 '8 hours'; echo
-  duration 0 'Until turned off'; echo
   printf 'row=custom\ntitle=Custom…\n\n'
+  duration 0 'Until turned off'; echo
   printf 'row=display\ntitle=Keep the display on\ndetail=Off lets the screen lock\nicon=display\npin=bottom\ntype=toggle\nvalue=%s\nclose=false\n' "${display:-true}"
   [ "$lidded" = true ] || return 0
   printf '\nrow=lid\ntitle=Work with the lid closed\ndetail=Can grow hot in a bag\nicon=laptopcomputer\npin=bottom\ntype=toggle\nvalue=%s\nclose=false\n' "${lid:-false}"
