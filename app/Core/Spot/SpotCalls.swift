@@ -6,8 +6,10 @@ struct SpotCalls {
     let app: (any RunningApp)?
     let runs: SpotRuns?
     let secrets: SecretStore
+    let caller: CallerTokens.Caller?
 
     init(_ context: CallContext) {
+        caller = context.caller
         environment = context.environment
         folder = context.folder
         app = context.app
@@ -102,7 +104,7 @@ struct SpotCalls {
     }
 
     func run(_ id: String, _ arguments: [String], input: (@Sendable () async -> String)?, careful: Set<SpotUse>?, output: CommandOutput) -> CommandAPI.Work {
-        { [environment, folder, runs] in
+        { [environment, folder, runs, caller] in
             let spots = SpotsFolder.standard(environment: environment)
             let found: Spot?
             do {
@@ -115,11 +117,21 @@ struct SpotCalls {
             }
             if let careful { spot.uses.formIntersection(careful) }
             let text = await input?()
-            let run = TerminalRun(spot: spot, arguments: arguments, input: text, careful: careful == nil ? nil : spot.uses, tokens: runs?.tokens, environment: environment, folder: folder)
+            let usage = caller == nil || spot.reachesAccountKey ? nil : runs?.usage
+            let run = TerminalRun(spot: spot, arguments: arguments, input: text, careful: careful == nil ? nil : spot.uses, tokens: runs?.tokens, environment: environment, folder: folder, usage: usage)
+            let begin = Date()
             var first = true
             let end = await run.start { frame in
                 output.print((first ? "" : "---\n") + frame)
                 first = false
+            }
+            if let usage, let caller {
+                let failure: SpotUsage.Failure? = switch end.code {
+                case 0: nil
+                case 124: .timeout
+                default: .exit
+                }
+                usage.ran(spot, by: caller.id, CallOutcome(seconds: Date().timeIntervalSince(begin), failure: failure), at: usage.now())
             }
             return CommandAnswer(errors: end.errors, code: end.code)
         }
@@ -175,7 +187,8 @@ struct SpotCalls {
             } else {
                 counts = SpotUsage.days(days, at: Date(), in: AppPlaces(environment: environment, home: FileManager.default.homeDirectoryForCurrentUser, defaults: .standard).stats)
             }
-            return try StatsReport(days: counts, spot: spot).text(format)
+            let cards = (try? SpotsFolder.standard(environment: environment).scan().spots) ?? []
+            return try StatsReport(days: counts, spot: spot, cards: cards).text(format)
         }
     }
 }

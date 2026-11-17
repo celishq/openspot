@@ -39,6 +39,9 @@ final class StatsReportTests: XCTestCase {
         read=0
         written=0
         wakeups=0
+        acts=0
+        days=0
+        seen=1
         bodies=2
         body=0.006000
 
@@ -46,9 +49,79 @@ final class StatsReportTests: XCTestCase {
         """)
     }
 
+    func testARowHoldsTheActsOfEachDayOldestFirstAndWhatTheSpotCostAndHowFastItAnswered() throws {
+        let usage = SpotUsage(at: day)
+        let alpha = Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh"))
+        usage.acted(alpha, at: day.addingTimeInterval(-5))
+        usage.acted(alpha, at: day)
+        usage.called(alpha, CallOutcome(seconds: 0.3, answered: 0.07, reason: "sheet.open"), at: day)
+        usage.called(alpha, CallOutcome(seconds: 9, answered: 2, failure: .timeout), at: day)
+        usage.add(ProcessTime(cpu: 0.25, wakeups: 4, memory: 5_000_000), to: "a", at: day)
+        usage.failed(alpha, fault: "Alpha took too long.", at: day)
+
+        let frame = try StatsReport(days: usage.days(3, at: day), spot: nil).text(.frame)
+
+        let stamp = ISO8601DateFormatter().string(from: day)
+        XCTAssertEqual(frame, """
+        row=a
+        title=Alpha
+        detail=250 ms CPU · 2 runs · 4.7 s each
+        runs=2
+        failures=1
+        cpu=0.250
+        seconds=9.300
+        read=0
+        written=0
+        wakeups=4
+        acts=2
+        last=\(stamp)
+        days=-
+        days=-
+        days=2
+        seen=1
+        reads.sheet.open=1
+        hidden.cpu=0.250
+        hidden.wakeups=4
+        p50=0.100
+        p95=3.200
+        memory=5000000
+        failures.timeout=1
+        failed=\(stamp)
+        fault=Alpha took too long.
+        tone=bad
+
+
+        """)
+    }
+
+    func testACardOfSpotsGetsARowThatNamesTheSpotsItShowsAndEachSpotNamesItsCards() throws {
+        let usage = SpotUsage(at: day)
+        usage.called(Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh")), CallOutcome(seconds: 1), at: day)
+        let card = Spot(id: "system", name: "System", url: URL(fileURLWithPath: "/system.sh"), kind: .widget, places: ["a", "b"])
+
+        let frame = try StatsReport(days: usage.days(1, at: day), spot: nil, cards: [card]).text(.frame)
+        let rows = frame.components(separatedBy: "\n\n").map { $0 + "\n" }
+
+        XCTAssertTrue(rows.contains { $0.hasPrefix("row=a\n") && $0.contains("\ncards=system\n") }, frame)
+        XCTAssertTrue(rows.contains { $0.hasPrefix("row=system\ntitle=System\n") && $0.contains("\nshows=a\nshows=b\n") }, frame)
+        XCTAssertFalse(try StatsReport(days: usage.days(1, at: day), spot: "a", cards: [card]).text(.frame).contains("row=system"))
+    }
+
+    func testARunThatOneSpotStartsOfAnotherShowsOnBoth() throws {
+        let usage = SpotUsage(at: day)
+        usage.ran(Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh")), by: "b", CallOutcome(seconds: 1), at: day)
+        usage.called(Spot(id: "b", name: "Beta", url: URL(fileURLWithPath: "/b.sh")), CallOutcome(seconds: 1), at: day)
+
+        let rows = try StatsReport(days: usage.days(1, at: day), spot: nil).text(.frame).components(separatedBy: "\n\n").map { $0 + "\n" }
+
+        XCTAssertTrue(rows.contains { $0.hasPrefix("row=a\n") && $0.contains("\nruns.by.b=1\n") }, rows.joined())
+        XCTAssertTrue(rows.contains { $0.hasPrefix("row=b\n") && $0.contains("\nran.a=1\n") }, rows.joined())
+        XCTAssertTrue(try StatsReport(days: usage.days(1, at: day), spot: "b").text(.frame).contains("\nran.a=1\n"))
+    }
+
     func testASpotWithNoViewHasNoBodyKeys() throws {
         let usage = SpotUsage(at: day)
-        usage.called(Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh")), seconds: 1, isFailure: false, at: day)
+        usage.called(Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh")), CallOutcome(seconds: 1), at: day)
 
         let frame = try StatsReport(days: usage.days(1, at: day), spot: nil).text(.frame)
 

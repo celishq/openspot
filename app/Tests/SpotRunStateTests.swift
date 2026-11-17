@@ -490,6 +490,6 @@ final class SpotRunStateTests: XCTestCase {
         XCTAssertEqual(records.last?.frames, ["toast=Done\n"])
         XCTAssertEqual(records.last?.end, .exited(2))
         XCTAssertEqual(runs.usage.counts["script"]?.runs, 2)
-        XCTAssertEqual(runs.usage.counts["script"]?.failures, 1)
+        XCTAssertEqual(runs.usage.counts["script"]?.failures.count, 1)
     }
 }

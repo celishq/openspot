@@ -1,51 +1,26 @@
 import Foundation
 
 public final class SpotUsage: @unchecked Sendable {
-    public struct Count: Codable, Equatable, Sendable {
-        public var name: String?
-        public var runs = 0
-        public var failures = 0
-        public var seconds: TimeInterval = 0
-        public var cpu: TimeInterval = 0
-        public var read: UInt64 = 0
-        public var written: UInt64 = 0
-        public var wakeups: UInt64 = 0
-        public var calls: [String: Int] = [:]
-        public var network = false
-        public var fault: String?
-        public var view: ViewTime?
-
-        mutating func add(_ time: ProcessTime) {
-            cpu += time.cpu
-            read += time.read
-            written += time.written
-            wakeups += time.wakeups
-        }
-
-        func adding(_ older: Count) -> Count {
-            var sum = self
-            sum.name = name ?? older.name
-            sum.runs += older.runs
-            sum.failures += older.failures
-            sum.seconds += older.seconds
-            sum.cpu += older.cpu
-            sum.read += older.read
-            sum.written += older.written
-            sum.wakeups += older.wakeups
-            sum.calls.merge(older.calls, uniquingKeysWith: +)
-            sum.network = network || older.network
-            sum.fault = fault ?? older.fault
-            sum.view = view.map { $0.adding(older.view) } ?? older.view
-            return sum
-        }
-    }
-
     public struct ViewTime: Codable, Equatable, Sendable {
         public var bodies = 0
         public var seconds: TimeInterval = 0
 
         func adding(_ other: ViewTime?) -> ViewTime {
             ViewTime(bodies: bodies + (other?.bodies ?? 0), seconds: seconds + (other?.seconds ?? 0))
+        }
+    }
+
+    public enum Failure: String, Codable, Sendable {
+        case timeout
+        case exit
+        case output
+
+        public init(_ error: Error) {
+            self = switch error as? SpotError {
+            case .timedOut: .timeout
+            case .tooLarge, .badState, .badForm, .badMetric: .output
+            default: .exit
+            }
         }
     }
 
@@ -60,6 +35,7 @@ public final class SpotUsage: @unchecked Sendable {
         public let day: String
         public var spots: [String: Count] = [:]
         public var uses: [Use] = []
+        public var countsActs = true
         var told: [String] = []
     }
 
@@ -74,6 +50,7 @@ public final class SpotUsage: @unchecked Sendable {
     private var isDirty = false
     private var isWaiting = false
     private var views: [String: (id: String, name: String)] = [:]
+    private var isShown = false
     private var live: [ObjectIdentifier: (spot: String, process: ScriptProcess, counted: ProcessTime)] = [:]
     let now: () -> Date
 
@@ -83,6 +60,7 @@ public final class SpotUsage: @unchecked Sendable {
         self.now = now
         let day = Self.day(of: date)
         today = folder.flatMap { Self.read(day, in: $0) } ?? Day(day: day)
+        today.countsActs = true
         if let folder { Self.prune(folder, at: date) }
     }
 
@@ -92,7 +70,7 @@ public final class SpotUsage: @unchecked Sendable {
 
     public func days(_ count: Int, at date: Date) -> [Day] {
         writes.sync {}
-        let now = lock.withLock { Self.day(of: date) == today.day ? withLive(today) : nil }
+        let now = lock.withLock { withLive(today) }
         return Self.days(count, at: date, today: now, in: folder)
     }
 
@@ -100,7 +78,7 @@ public final class SpotUsage: @unchecked Sendable {
         (0..<max(count, 1)).compactMap { back in
             let name = day(of: Calendar.current.date(byAdding: .day, value: -back, to: date) ?? date)
             if let today, today.day == name { return today }
-            return folder.flatMap { read(name, in: $0) }
+            return folder.flatMap { read(name, in: $0) } ?? Day(day: name, countsActs: back == 0 && today != nil)
         }
     }
 
@@ -127,30 +105,39 @@ public final class SpotUsage: @unchecked Sendable {
     }
 
     func add(_ time: ProcessTime, to spot: String, at date: Date) {
-        change(at: date) { $0.spots[spot, default: Count()].add(time) }
+        change(at: date) { $0.spots[spot, default: Count()].add(time, hidden: !isShown) }
     }
 
-    func called(_ spot: Spot, seconds: TimeInterval, isFailure: Bool, at date: Date) {
-        change(at: date) { day in
-            day.spots[spot.id, default: Count()].name = spot.name
-            day.spots[spot.id, default: Count()].runs += 1
-            day.spots[spot.id, default: Count()].seconds += seconds
-            if isFailure { day.spots[spot.id, default: Count()].failures += 1 }
-            day.spots[spot.id, default: Count()].network = spot.uses.contains(.network)
+    public func panel(shown: Bool) {
+        lock.withLock {
+            if countLive(into: &today) { isDirty = true }
+            isShown = shown
         }
     }
 
-    func failedRun(_ spot: Spot, at date: Date) {
-        change(at: date) { day in
-            day.spots[spot.id, default: Count()].name = spot.name
-            day.spots[spot.id, default: Count()].failures += 1
+    func acted(_ spot: Spot, at date: Date) {
+        change(spot, at: date) { $0.act(at: date) }
+    }
+
+    func called(_ spot: Spot, _ outcome: CallOutcome, at date: Date) {
+        change(spot, at: date) { $0.call(outcome, network: spot.uses.contains(.network), at: date) }
+    }
+
+    func ran(_ spot: Spot, by caller: String, _ outcome: CallOutcome, at date: Date) {
+        change(spot, at: date) { count in
+            count.call(outcome, network: spot.uses.contains(.network), at: date)
+            count.callers[caller, default: 0] += 1
         }
+    }
+
+    func failedRun(_ spot: Spot, failure: Failure, at date: Date) {
+        change(spot, at: date) { $0.failures.add(failure, at: date) }
     }
 
     func failed(_ spot: Spot, fault: String, at date: Date) {
-        change(at: date) { day in
-            day.spots[spot.id, default: Count()].name = spot.name
-            day.spots[spot.id, default: Count()].fault = fault
+        change(spot, at: date) { count in
+            count.fault = fault
+            count.failures.last = date
         }
     }
 
@@ -161,7 +148,7 @@ public final class SpotUsage: @unchecked Sendable {
             day.spots[caller.id, default: Count()].name = caller.name
             day.spots[caller.id, default: Count()].calls[call.name, default: 0] += 1
             day.spots[caller.id, default: Count()].network = caller.uses.contains(.network)
-            day.uses = Array((day.uses + [Use(time: date, spot: caller.id, call: call.name, declared: declared)]).suffix(Self.useLimit))
+            if !declared { day.uses = Array((day.uses + [Use(time: date, spot: caller.id, call: call.name, declared: declared)]).suffix(Self.useLimit)) }
             let told = "\(caller.id) \(call.use.rawValue)"
             if !declared, !day.told.contains(told) {
                 day.told.append(told)
@@ -197,6 +184,13 @@ public final class SpotUsage: @unchecked Sendable {
         return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
     }
 
+    private func change(_ spot: Spot, at date: Date, _ work: (inout Count) -> Void) {
+        change(at: date) { day in
+            day.spots[spot.id, default: Count()].name = spot.name
+            work(&day.spots[spot.id, default: Count()])
+        }
+    }
+
     private func change(at date: Date? = nil, _ work: (inout Day) -> Void) {
         let (ended, waits): (Day?, Bool) = lock.withLock {
             let ended = date.flatMap(roll)
@@ -222,6 +216,7 @@ public final class SpotUsage: @unchecked Sendable {
         if countLive(into: &today) { isDirty = true }
         let ended = isDirty ? today : nil
         today = folder.flatMap { Self.read(Self.day(of: date), in: $0) } ?? Day(day: Self.day(of: date))
+        today.countsActs = true
         return ended
     }
 
@@ -231,7 +226,7 @@ public final class SpotUsage: @unchecked Sendable {
             let time = entry.process.time
             let spent = time.since(entry.counted)
             guard spent != .zero else { continue }
-            day.spots[entry.spot, default: Count()].add(spent)
+            day.spots[entry.spot, default: Count()].add(spent, hidden: !isShown)
             live[key]?.counted = time
             counted = true
         }
@@ -241,7 +236,7 @@ public final class SpotUsage: @unchecked Sendable {
     private func withLive(_ day: Day) -> Day {
         var day = day
         for entry in live.values {
-            day.spots[entry.spot, default: Count()].add(entry.process.time.since(entry.counted))
+            day.spots[entry.spot, default: Count()].add(entry.process.time.since(entry.counted), hidden: !isShown)
         }
         return day
     }
@@ -267,5 +262,16 @@ public final class SpotUsage: @unchecked Sendable {
         for name in (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? [] where name.hasSuffix(".json") && name < "\(first).json" {
             try? FileManager.default.removeItem(at: folder.appendingPathComponent(name))
         }
+    }
+}
+
+extension SpotUsage.Day {
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        day = try values.decode(String.self, forKey: .day)
+        spots = try values.decodeIfPresent([String: SpotUsage.Count].self, forKey: .spots) ?? [:]
+        uses = try values.decodeIfPresent([SpotUsage.Use].self, forKey: .uses) ?? []
+        countsActs = try values.decodeIfPresent(Bool.self, forKey: .countsActs) ?? false
+        told = try values.decodeIfPresent([String].self, forKey: .told) ?? []
     }
 }

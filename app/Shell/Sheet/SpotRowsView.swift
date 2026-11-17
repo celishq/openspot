@@ -22,10 +22,7 @@ struct SpotRowsView: View {
     }
 
     private var selectedRun: () -> String? {
-        { [list, selected] in
-            let index = selected()
-            return list.shown.indices.contains(index) ? list.shown[index].run : nil
-        }
+        { [list, selected] in list.run(at: selected()) }
     }
 
     private var isGrid: Bool {
@@ -84,7 +81,7 @@ struct SpotRowsView: View {
     }
 
     private var bottomInset: CGFloat {
-        SpotTokens.sheetFits(rows: list.shown.count, perLine: list.perLine) ? SpotTokens.padding : Self.bottomFade
+        SpotTokens.sheetFits(rows: list.lineCount, perLine: list.perLine) ? SpotTokens.padding : Self.bottomFade
     }
 
     private var pinnedScroll: some View {
@@ -118,6 +115,13 @@ struct SpotRowsView: View {
     private var lines: some View {
         LazyVStack(spacing: SpotTokens.listRowGap) {
             ForEach(list.scrolling, id: \.run) { item in
+                if let section = list.sectionStarts[item.run] {
+                    Text(section)
+                        .font(SpotType.detail.weight(.semibold))
+                        .modifier(SpotSecondaryText())
+                        .padding(.horizontal, SpotTokens.padding)
+                        .frame(maxWidth: .infinity, minHeight: SpotTokens.listRowHeight, maxHeight: SpotTokens.listRowHeight, alignment: .bottomLeading)
+                }
                 Button {
                     onRun(item)
                 } label: {
@@ -197,6 +201,9 @@ struct SpotRowsView: View {
                 }
             }
             Spacer(minLength: 0)
+            if !item.bars.isEmpty {
+                RowBars(bars: item.bars, tone: item.tone)
+            }
             if let shortcut = item.shortcut {
                 SpotKeyLabel(text: shortcut, isRecording: recording == item.run, recordingWords: recordingWords)
             }
@@ -212,6 +219,31 @@ struct SpotRowsView: View {
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
         .modifier(SpotLiveSelectionRing(isSelected: { [selectedRun, run = item.run] in selectedRun() == run }, shape: row, marksMenu: true))
         .contentShape(row)
+    }
+}
+
+private struct RowBars: View {
+    let bars: [Double?]
+    let tone: MetricValue.Tone?
+
+    private static let width: CGFloat = 3
+    private static let gap: CGFloat = 2
+    private static let height: CGFloat = 20
+    private static let floor: CGFloat = 2
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: Self.gap) {
+            ForEach(bars.indices, id: \.self) { index in
+                Rectangle()
+                    .fill(bars[index].map { $0 > 0 ? colour : SpotTheme.ink.opacity(SpotTheme.fill) } ?? SpotTheme.ink.opacity(SpotTheme.fill))
+                    .frame(width: Self.width, height: max(Self.floor, Self.height * (bars[index] ?? 0)))
+            }
+        }
+        .frame(height: Self.height, alignment: .bottom)
+    }
+
+    private var colour: Color {
+        tone.map(SpotMetricView.colour) ?? SpotTheme.ink
     }
 }
 

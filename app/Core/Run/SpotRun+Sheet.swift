@@ -3,6 +3,7 @@ import Foundation
 extension SpotRun {
     public func open(need: ReadNeed = .moment, waits: Bool = false, onReady: @escaping () -> Void) {
         runs.willOpen(self)
+        acted()
         settle()
         list.selectFirst()
         if panel == nil, answered != nil { panel = lastAnswer.flatMap(SheetParts.init(output:)) }

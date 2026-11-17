@@ -356,7 +356,9 @@ Rows are a list that the user searches and picks from. See [Show a list](GUIDE.m
 | `icon`     | The icon.                                                                                      |
 | `parent`   | Where the row sits in its spot. The main search shows `<spot> › <parent>`.                     |
 | `tone`     | A dot of its colour on the icon.                                                               |
-| `value`    | `true` draws a checkmark at the end.                                                           |
+| `value`    | `true` draws a checkmark at the end. More than one line draws a bar for each, oldest first, in the colour of `tone`; `-` is a bar with no value. |
+| `max`      | The value of a full bar. By default, the largest `value`.                                      |
+| `section`  | A title over the first row of a run of rows with the same `section`. A search hides it.        |
 | `hides`    | The id of an action that this row doesn't offer. One line for each action.                     |
 | `keywords` | Words that find the row but don't show, split by commas.                                       |
 | `shortcut` | Any text, such as `⌃⌥K`, that shows at the end of the row.                                     |
@@ -866,6 +868,7 @@ struct SpotView: View {
 | `spot.tipDelay`     | How long the pointer rests on a control before its tip shows.         |
 | `spot.rows`         | Each `row` block of the frame, in a sheet or a window, in order.      |
 | `spot.isShown`      | Whether its place shows now. It's false while the panel is hidden.    |
+| `spot.selection`    | The id of the selected row of the sheet, or nil.                      |
 | `spot.close()`      | Closes the sheet, the float or the window of its spot.                |
 
 - The view fills its place, and the whole card when there's no card layout. It can't change the size of its place.
@@ -1083,6 +1086,8 @@ openspot spot stats --days 7
 ```
 
 - Openspot keeps one file for each day, for 90 days. Today's numbers are live.
+- An act is something the user did with a spot: they opened its sheet, picked a row, pressed, set or toggled something,
+  or ran one of its actions. A read is never an act, and acts on one spot within 2 seconds count as one.
 - `--days N` adds up the last N days. `--spot <id>` shows one spot.
 - It prints a `row=<id>` block for each spot, the most CPU first, then a `use=<n>` block for each call that needs a
   use, the newest first. `--json` prints the days.
@@ -1094,12 +1099,26 @@ openspot spot stats --days 7
 | `cpu`, `seconds`     | The CPU seconds of its processes, and the wall time of its calls.     |
 | `read`, `written`    | The bytes its processes read and wrote.                               |
 | `wakeups`            | The times its processes woke the CPU.                                 |
+| `acts`, `last`       | The user's acts, and the time of the last one.                        |
+| `days`               | The acts of each day, oldest first. `-` for a day with no count.      |
+| `reads.<reason>`     | The reads for one reason, such as `reads.sheet.open=3` or `reads.clock=40`. |
+| `hidden.cpu`, `hidden.wakeups` | The part of `cpu` and `wakeups` spent while the panel was hidden. |
+| `p50`, `p95`         | The seconds within which half, and 95 in 100, of its reads and searches first answered. |
+| `memory`             | The most memory its own process held at once, in bytes, not counting the processes it starts. |
+| `seen`               | The days that hold a count of the spot.                               |
+| `shows`              | On a [card of other spots](#cards-of-other-spots), one line for each spot it shows. Such a card runs nothing, so its other numbers are 0. |
+| `cards`              | One line for each card of other spots that shows this spot.           |
+| `runs.by.<id>`       | The part of `runs` that the spot `<id>` started with `openspot spot run`. |
+| `ran.<id>`           | The runs of the spot `<id>` that this spot started with `openspot spot run`. |
+| `failures.<kind>`    | The failures of one kind: `timeout`, `exit` or `output`.              |
+| `failed`             | The time of its last failure.                                         |
 | `call.<noun>.<verb>` | The count of one call that needs a use, such as `call.screen.shot=2`. |
 | `network`            | `declared` when its header names `network`.                           |
 | `bodies`, `body`     | The runs of the `body` of its `SpotView`, and their seconds in all.   |
 | `fault`, `tone`      | Its last error, with `tone=bad`.                                      |
 
-- A `use` block holds `time`, `spot`, `call`, such as `app.quit`, and `declared`, `true` or `false`.
+- A `use` block holds `time`, `spot`, `call`, such as `app.quit`, and `declared`. Only a call that the header doesn't
+  declare is logged, so `declared` is `false`; `call.<noun>.<verb>` counts each call.
 
 ## Trust
 

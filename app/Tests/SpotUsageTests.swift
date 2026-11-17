@@ -14,7 +14,7 @@ final class SpotUsageTests: SpotRunsCase {
         try await wait("the end of the call") { self.runs.usage.counts["script"]?.runs == 1 }
 
         let count = try XCTUnwrap(runs.usage.counts["script"])
-        XCTAssertGreaterThan(count.cpu, 0.01)
+        XCTAssertGreaterThan(count.cost.cpu, 0.01)
         XCTAssertGreaterThan(count.seconds, 0)
     }
 
@@ -34,7 +34,7 @@ final class SpotUsageTests: SpotRunsCase {
         try await wait("the busy loop") { self.exists("busy") }
         let pid = try await pid("pids")
 
-        let cpu = runs.usage.counts["script"]?.cpu ?? 0
+        let cpu = runs.usage.counts["script"]?.cost.cpu ?? 0
         XCTAssertEqual(kill(pid, 0), 0, "the script still runs")
         XCTAssertGreaterThan(cpu, 0.01)
     }
@@ -66,8 +66,8 @@ final class SpotUsageTests: SpotRunsCase {
 
         let days = runs.usage.days(2, at: time)
         XCTAssertEqual(days.count, 2)
-        XCTAssertGreaterThan(days.last?.spots["script"]?.cpu ?? 0, 0.01, "the day before")
-        XCTAssertGreaterThan(days.first?.spots["script"]?.cpu ?? 0, 0.01, "today")
+        XCTAssertGreaterThan(days.last?.spots["script"]?.cost.cpu ?? 0, 0.01, "the day before")
+        XCTAssertGreaterThan(days.first?.spots["script"]?.cost.cpu ?? 0, 0.01, "today")
     }
 
     func testAFailedCallIsTheLastFaultAndAFailure() async throws {
@@ -79,7 +79,7 @@ final class SpotUsageTests: SpotRunsCase {
         try await wait("the fault") { self.runs.usage.counts["script"]?.fault != nil }
 
         XCTAssertEqual(runs.usage.counts["script"]?.fault, "No network.")
-        try await wait("the failure") { self.runs.usage.counts["script"]?.failures == 1 }
+        try await wait("the failure") { self.runs.usage.counts["script"]?.failures.count == 1 }
         XCTAssertEqual(runs.usage.counts["script"]?.runs, 1)
     }
 
@@ -100,7 +100,7 @@ final class SpotUsageTests: SpotRunsCase {
     func testTodayGoesToItsFileAfterAPauseAndANewStartReadsItAgain() async throws {
         let usage = SpotUsage(folder: stats, at: day, pause: 0.05)
 
-        usage.called(spot("a", "Alpha"), seconds: 1, isFailure: false, at: day)
+        usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day)
 
         try await wait("the file of the day") { FileManager.default.fileExists(atPath: self.file("2026-11-11").path) }
         XCTAssertEqual(SpotUsage(folder: stats, at: day).counts["a"]?.runs, 1)
@@ -111,8 +111,8 @@ final class SpotUsageTests: SpotRunsCase {
         let other = folder.appendingPathComponent("other", isDirectory: true)
         let sooner = SpotUsage(folder: other, at: day, pause: 5.5)
 
-        usual.called(spot("a", "Alpha"), seconds: 1, isFailure: false, at: day)
-        sooner.called(spot("a", "Alpha"), seconds: 1, isFailure: false, at: day)
+        usual.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day)
+        sooner.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day)
 
         for _ in 0..<1_000 where !FileManager.default.fileExists(atPath: other.appendingPathComponent("2026-11-11.json").path) {
             try await Task.sleep(for: .milliseconds(10))
@@ -123,9 +123,9 @@ final class SpotUsageTests: SpotRunsCase {
 
     func testTheCountsJustAfterANewDayHoldTheDayThatEnded() {
         let usage = SpotUsage(folder: stats, at: day, pause: 60)
-        usage.called(spot("a", "Alpha"), seconds: 1, isFailure: false, at: day)
+        usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day)
         let next = day.addingTimeInterval(86_400)
-        usage.called(spot("a", "Alpha"), seconds: 1, isFailure: false, at: next)
+        usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: next)
 
         let days = usage.days(2, at: next)
 
@@ -135,7 +135,7 @@ final class SpotUsageTests: SpotRunsCase {
 
     func testTheMacGoingToSleepWritesTheDay() throws {
         runs = SpotRuns(clock: clock.value, stats: stats)
-        runs.usage.called(spot("a", "Alpha"), seconds: 1, isFailure: false, at: time)
+        runs.usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: time)
         XCTAssertFalse(FileManager.default.fileExists(atPath: stats.path))
 
         runs.raise(.sleep)
@@ -146,7 +146,7 @@ final class SpotUsageTests: SpotRunsCase {
     func testACallWritesNoFileAtOnce() throws {
         let usage = SpotUsage(folder: stats, at: day, pause: 60)
 
-        usage.called(spot("a", "Alpha"), seconds: 1, isFailure: false, at: day)
+        usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day)
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: file("2026-11-11").path))
         usage.flush()
@@ -155,14 +155,14 @@ final class SpotUsageTests: SpotRunsCase {
 
     func testANewDayStartsANewFile() async throws {
         let usage = SpotUsage(folder: stats, at: day, pause: 60)
-        usage.called(spot("a", "Alpha"), seconds: 1, isFailure: false, at: day)
+        usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day)
 
-        usage.called(spot("a", "Alpha"), seconds: 1, isFailure: true, at: day.addingTimeInterval(86_400))
+        usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1, failure: .exit), at: day.addingTimeInterval(86_400))
 
         try await wait("the file of the day that ended") { FileManager.default.fileExists(atPath: self.file("2026-11-11").path) }
 
         XCTAssertEqual(SpotUsage(folder: stats, at: day).counts["a"]?.runs, 1)
-        XCTAssertEqual(usage.counts["a"]?.failures, 1)
+        XCTAssertEqual(usage.counts["a"]?.failures.count, 1)
         XCTAssertEqual(usage.counts["a"]?.runs, 1)
     }
 
@@ -204,6 +204,107 @@ final class SpotUsageTests: SpotRunsCase {
         XCTAssertEqual(runs.usage.counts["script"]?.name, "Script")
     }
 
+    func testOpeningASheetAndPickingARowAtOnceIsOneActAndTheReadIsCountedByItsReason() async throws {
+        try script(header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
+        let sheet = try sheet()
+
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the read") { self.runs.usage.counts["script"]?.runs == 1 }
+        sheet.pick(SpotItem(title: "A", run: "a"))
+        try await wait("the pick") { self.runs.usage.counts["script"]?.runs == 2 }
+
+        let count = try XCTUnwrap(runs.usage.counts["script"])
+        XCTAssertEqual(count.acts, 1)
+        XCTAssertNotNil(count.last)
+        XCTAssertEqual(count.reads, ["sheet.open": 1])
+        XCTAssertEqual(count.answers.total, 1)
+    }
+
+    func testTwoActsOnASpotWithinTwoSecondsAreOne() {
+        let usage = SpotUsage(at: day)
+
+        usage.acted(spot("a", "Alpha"), at: day)
+        usage.acted(spot("a", "Alpha"), at: day.addingTimeInterval(1))
+        usage.acted(spot("a", "Alpha"), at: day.addingTimeInterval(4))
+
+        XCTAssertEqual(usage.counts["a"]?.acts, 2)
+    }
+
+    func testOnlyACallThatAsksTimesTheAnswer() {
+        let usage = SpotUsage(at: day)
+
+        usage.called(spot("a", "Alpha"), CallOutcome(seconds: 30, answered: nil), at: day)
+        usage.called(spot("a", "Alpha"), CallOutcome(seconds: 0.3, answered: 0.07), at: day)
+
+        XCTAssertEqual(usage.counts["a"]?.runs, 2)
+        XCTAssertEqual(usage.counts["a"]?.answers.total, 1)
+    }
+
+    func testTodayCountsActsBeforeItsFirstChange() {
+        let usage = SpotUsage(at: day)
+
+        let days = usage.days(2, at: day.addingTimeInterval(86_400))
+
+        XCTAssertEqual(days.map(\.countsActs), [true, true])
+    }
+
+    func testCostWhileThePanelIsHiddenIsKeptApart() {
+        let usage = SpotUsage(at: day)
+
+        usage.add(ProcessTime(cpu: 1, wakeups: 2), to: "a", at: day)
+        usage.panel(shown: true)
+        usage.add(ProcessTime(cpu: 0.5, wakeups: 3), to: "a", at: day)
+
+        XCTAssertEqual(usage.counts["a"]?.cost.cpu, 1.5)
+        XCTAssertEqual(usage.counts["a"]?.hidden.cpu, 1)
+        XCTAssertEqual(usage.counts["a"]?.hidden.wakeups, 2)
+    }
+
+    func testTheMemoryIsThePeakOfItsProcesses() {
+        let usage = SpotUsage(at: day)
+
+        usage.add(ProcessTime(cpu: 0, wakeups: 0, memory: 3_000), to: "a", at: day)
+        usage.add(ProcessTime(cpu: 0, wakeups: 0, memory: 2_000), to: "a", at: day)
+
+        XCTAssertEqual(usage.counts["a"]?.cost.memory, 3_000)
+    }
+
+    func testAFailureIsCountedByItsKindWithItsTime() {
+        let usage = SpotUsage(at: day)
+
+        usage.called(spot("a", "Alpha"), CallOutcome(seconds: 5, failure: SpotUsage.Failure(SpotError.timedOut)), at: day)
+        usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1, failure: SpotUsage.Failure(SpotError.failed(2, ""))), at: day)
+        usage.failedRun(spot("a", "Alpha"), failure: SpotUsage.Failure(SpotError.badState), at: day)
+        usage.failed(spot("a", "Alpha"), fault: "It stopped.", at: day)
+
+        XCTAssertEqual(usage.counts["a"]?.failures.count, 3)
+        XCTAssertEqual(usage.counts["a"]?.failures.kinds, ["timeout": 1, "exit": 1, "output": 1])
+        XCTAssertEqual(usage.counts["a"]?.failures.last, day)
+    }
+
+    func testOnlyAUseThatItsHeaderDoesNotDeclareIsLogged() throws {
+        let usage = SpotUsage(at: day)
+        let quit = try XCTUnwrap(SpotUseCall(arguments: ["app", "quit"], of: "a"))
+
+        _ = usage.used(quit, by: .init(id: "a", name: "Alpha", uses: [.app]), at: day)
+        _ = usage.used(quit, by: .init(id: "b", name: "Beta", uses: []), at: day)
+
+        XCTAssertEqual(usage.days(1, at: day).first?.uses.map(\.spot), ["b"])
+        XCTAssertEqual(usage.counts["a"]?.calls, ["app.quit": 1])
+    }
+
+    func testADayWithNoFileOrKeptBeforeActsWereCountedHasNoCountOfActs() throws {
+        try FileManager.default.createDirectory(at: stats, withIntermediateDirectories: true)
+        try #"{"day":"2026-11-10","spots":{},"told":[],"uses":[]}"#.write(to: file("2026-11-10"), atomically: true, encoding: .utf8)
+        let usage = SpotUsage(folder: stats, at: day, pause: 60)
+
+        let days = usage.days(3, at: day)
+
+        XCTAssertEqual(days.map(\.day), ["2026-11-11", "2026-11-10", "2026-11-09"])
+        XCTAssertEqual(days.map(\.countsActs), [true, false, false])
+    }
+
     func testAProcessReadsItsDiskBytes() throws {
         let time = try XCTUnwrap(ProcessTime(of: getpid()))
 
@@ -212,11 +313,11 @@ final class SpotUsageTests: SpotRunsCase {
 
     func testTheFrameIsARowForEachSpotWithTheMostCPUTimeFirstThenEachUse() throws {
         let usage = SpotUsage(at: day)
-        usage.called(spot("a", "Alpha"), seconds: 2, isFailure: true, at: day)
+        usage.called(spot("a", "Alpha"), CallOutcome(seconds: 2, failure: .exit), at: day)
         usage.add(ProcessTime(cpu: 0.04, wakeups: 0, read: 2048, written: 0), to: "a", at: day)
         usage.failed(spot("a", "Alpha"), fault: "Alpha failed.\nIt stopped.", at: day)
-        usage.called(spot("b", "Beta", uses: [.network]), seconds: 0.25, isFailure: false, at: day)
-        usage.called(spot("b", "Beta", uses: [.network]), seconds: 0.25, isFailure: false, at: day)
+        usage.called(spot("b", "Beta", uses: [.network]), CallOutcome(seconds: 0.25), at: day)
+        usage.called(spot("b", "Beta", uses: [.network]), CallOutcome(seconds: 0.25), at: day)
         usage.add(ProcessTime(cpu: 1.5, wakeups: 7, read: 0, written: 10), to: "b", at: day)
         _ = usage.used(try XCTUnwrap(SpotUseCall(arguments: ["screen", "shot"], of: "b")), by: .init(id: "b", name: "Beta", uses: [.network]), at: day.addingTimeInterval(60))
 
@@ -233,6 +334,11 @@ final class SpotUsageTests: SpotRunsCase {
         read=0
         written=10
         wakeups=7
+        acts=0
+        days=0
+        seen=1
+        hidden.cpu=1.500
+        hidden.wakeups=7
         call.screen.shot=1
         network=declared
 
@@ -246,6 +352,13 @@ final class SpotUsageTests: SpotRunsCase {
         read=2048
         written=0
         wakeups=0
+        acts=0
+        days=0
+        seen=1
+        hidden.cpu=0.040
+        hidden.wakeups=0
+        failures.exit=1
+        failed=\(ISO8601DateFormatter().string(from: day))
         fault=Alpha failed.\\nIt stopped.
         tone=bad
 
@@ -262,11 +375,11 @@ final class SpotUsageTests: SpotRunsCase {
     func testTheDaysSumAndOneSpotCanBeKept() throws {
         try FileManager.default.createDirectory(at: stats, withIntermediateDirectories: true)
         let before = SpotUsage(folder: stats, at: day.addingTimeInterval(-86_400), pause: 60)
-        before.called(spot("a", "Alpha"), seconds: 1, isFailure: false, at: day.addingTimeInterval(-86_400))
+        before.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day.addingTimeInterval(-86_400))
         before.flush()
         let usage = SpotUsage(folder: stats, at: day, pause: 60)
-        usage.called(spot("a", "Alpha"), seconds: 1, isFailure: false, at: day)
-        usage.called(spot("b", "Beta"), seconds: 1, isFailure: false, at: day)
+        usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day)
+        usage.called(spot("b", "Beta"), CallOutcome(seconds: 1), at: day)
 
         let one = try StatsReport(days: usage.days(1, at: day), spot: "a").text(.frame)
         let two = try StatsReport(days: usage.days(2, at: day), spot: "a").text(.frame)
