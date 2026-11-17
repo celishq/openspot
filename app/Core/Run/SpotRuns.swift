@@ -149,6 +149,7 @@ public final class SpotRuns {
         showWork()
         swift.prune(keeping: scripts.map(\.url), with: Dictionary(scripts.map { ($0.url, $0.sources) }) { first, _ in first })
         usage.take(views: scripts)
+        usage.take(versions: stamps.mapValues(SpotUsage.version(of:)))
         updateClock()
         readOfferedRows()
     }

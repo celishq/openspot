@@ -4,7 +4,7 @@ public enum SpotCall: NounCall {
     case new(name: String, starter: SpotStarter)
     case run(id: String, arguments: [String])
     case log(String)
-    case stats(days: Int, spot: String?, format: PrintForm)
+    case stats(days: Int, spot: String?, format: StatsReport.Form, byVersion: Bool = false)
     case show(String)
     case list(core: Bool, form: PrintForm)
     case add(String?, isConfirmed: Bool)
@@ -30,8 +30,8 @@ public enum SpotCall: NounCall {
         },
         CommandVerb("log", "<id>", "Prints the last calls that the app made to a spot.", rule: CallRule(use: .spots, used: "read the calls of a spot")) { $0.one.map(Self.log) },
         CommandVerb(
-            "stats", "[--days n] [--spot id] [--json]",
-            "Prints what each spot cost and used today, or over the last n days: a row for each spot with its runs, failures, CPU time, disk bytes, wakeups, each call that needs a use and its last fault, then a use block for each such call. --json prints the days."
+            "stats", "[--days n] [--spot id] [--by version] [--json | --openmetrics]",
+            "Prints what each spot cost and used today, or over the last n days: a row for each spot with its runs, failures, CPU time, disk bytes, wakeups, each call that needs a use and its last fault, then a use block for each such call. --by version prints a row for each version of a spot. --json prints the days, and --openmetrics each counter in OpenMetrics text."
         ) { $0.fit.flatMap(stats) },
         CommandVerb(
             "list", "[--core] [--json]",
@@ -71,9 +71,11 @@ public enum SpotCall: NounCall {
     }
 
     private static func stats(_ words: CommandForm.Words) -> SpotCall? {
-        guard words.rest.isEmpty else { return nil }
+        guard words.rest.isEmpty, words.value("--by").map({ $0 == "version" }) ?? true else { return nil }
         guard let days = words.value("--days").map({ Int($0).flatMap { $0 > 0 ? min($0, SpotUsage.keptDays) : nil } }) ?? 1 else { return nil }
-        return .stats(days: days, spot: words.value(CallWords.spotWord), format: words.form)
+        let isMetrics = words.has(StatsReport.Form.metricsWord)
+        guard !(isMetrics && words.form == .json) else { return nil }
+        return .stats(days: days, spot: words.value(CallWords.spotWord), format: isMetrics ? .metrics : words.form == .json ? .json : .frame, byVersion: words.has("--by"))
     }
 
     private static func push(_ words: CommandForm.Words) -> SpotCall? {
@@ -87,7 +89,7 @@ public enum SpotCall: NounCall {
         case .new(let name, let starter): spots.new(name, from: starter)
         case .run(let id, let arguments): spots.run(id, arguments, input: context.request.isPiped ? context.input : nil, careful: context.careful, output: context.output)
         case .log(let id): spots.log(id)
-        case .stats(let days, let spot, let format): spots.stats(days: days, spot: spot, format: format)
+        case .stats(let days, let spot, let format, let byVersion): spots.stats(days: days, spot: spot, format: format, byVersion: byVersion)
         case .show(let id): spots.show(id)
         case .list(let core, let form): spots.list(core: core, form: form)
         case .add(let source?, let isConfirmed): spots.add(source, isConfirmed: isConfirmed)

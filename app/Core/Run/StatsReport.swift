@@ -1,21 +1,54 @@
 import Foundation
 
 public struct StatsReport: Sendable {
+    public enum Form: Hashable, Sendable {
+        case frame
+        case json
+        case metrics
+
+        static let metricsWord = "--openmetrics"
+    }
+
     let days: [SpotUsage.Day]
     let spot: String?
     let cards: [Spot]
+    let byVersion: Bool
 
-    public init(days: [SpotUsage.Day], spot: String?, cards: [Spot] = []) {
+    public init(days: [SpotUsage.Day], spot: String?, cards: [Spot] = [], byVersion: Bool = false) {
         self.days = days
         self.spot = spot
         self.cards = cards.filter { $0.kind == .widget }
+        self.byVersion = byVersion
     }
 
-    public func text(_ format: PrintForm) throws -> String {
+    public func text(_ format: Form) throws -> String {
         switch format {
         case .frame: frame
         case .json: try json
+        case .metrics: StatsMetrics(rows: rows, uses: byVersion ? [] : uses).text
         }
+    }
+
+    struct Row {
+        let id: String
+        let version: String?
+        let since: Date?
+        let count: SpotUsage.Count
+    }
+
+    var rows: [Row] {
+        guard byVersion else { return counts.map { Row(id: $0.id, version: nil, since: nil, count: $0.count) } }
+        var sums: [String: [String: SpotUsage.Version]] = [:]
+        for day in days {
+            for (id, versions) in day.versions where spot == nil || spot == id {
+                for (version, kept) in versions {
+                    let older = sums[id]?[version]
+                    sums[id, default: [:]][version] = SpotUsage.Version(first: min(older?.first ?? kept.first, kept.first), count: older.map { kept.count.adding($0.count) } ?? kept.count)
+                }
+            }
+        }
+        return sums.flatMap { id, versions in versions.map { Row(id: id, version: $0.key, since: $0.value.first, count: $0.value.count) } }
+            .sorted { ($0.id, $0.since ?? .distantPast) < ($1.id, $1.since ?? .distantPast) }
     }
 
     private var counts: [(id: String, count: SpotUsage.Count)] {
@@ -33,7 +66,7 @@ public struct StatsReport: Sendable {
         return sums.sorted { ($0.value.cost.cpu, $1.key) > ($1.value.cost.cpu, $0.key) }.map { ($0.key, $0.value) }
     }
 
-    private var uses: [SpotUsage.Use] {
+    var uses: [SpotUsage.Use] {
         days.flatMap(\.uses).filter { spot == nil || $0.spot == spot }.sorted { $0.time > $1.time }
     }
 
@@ -47,15 +80,26 @@ public struct StatsReport: Sendable {
         return runs.sorted { $0.key < $1.key }.map { ($0.key, $0.value) }
     }
 
-    private func acts(of id: String) -> [String] {
-        days.reversed().map { day in day.countsActs ? String(day.spots[id]?.acts ?? 0) : "-" }
+    private func acts(of row: Row) -> [String] {
+        days.reversed().map { day in
+            guard day.countsActs else { return "-" }
+            let count = row.version.map { day.versions[row.id]?[$0]?.count } ?? day.spots[row.id]
+            return String(count?.acts ?? 0)
+        }
+    }
+
+    private func seen(_ row: Row) -> Int {
+        days.count { day in row.version.map { day.versions[row.id]?[$0] != nil } ?? (day.spots[row.id] != nil) }
     }
 
     private var frame: String {
         let stamp = ISO8601DateFormatter()
-        let rows = counts.map { id, count in
-            var fields: [TextBlock.Field] = [
-                .init(key: "row", value: id),
+        let rows = rows.map { row in
+            let (id, count) = (row.id, row.count)
+            var fields: [TextBlock.Field] = [.init(key: "row", value: id)]
+            if let version = row.version { fields.append(.init(key: "version", value: version)) }
+            if let since = row.since { fields.append(.init(key: "since", value: stamp.string(from: since))) }
+            fields += [
                 .init(key: "title", value: count.name ?? id),
                 .init(key: "detail", value: Self.detail(of: count)),
                 .init(key: "runs", value: String(count.runs)),
@@ -68,8 +112,8 @@ public struct StatsReport: Sendable {
                 .init(key: "acts", value: String(count.acts))
             ]
             if let last = count.last { fields.append(.init(key: "last", value: stamp.string(from: last))) }
-            fields += acts(of: id).map { .init(key: "days", value: $0) }
-            fields.append(.init(key: "seen", value: String(days.count { $0.spots[id] != nil })))
+            fields += acts(of: row).map { .init(key: "days", value: $0) }
+            fields.append(.init(key: "seen", value: String(seen(row))))
             fields += (cards.first { $0.id == id }?.places ?? []).map { .init(key: "shows", value: $0) }
             fields += cards.filter { $0.places.contains(id) }.map { .init(key: "cards", value: $0.id) }
             fields += count.callers.sorted { $0.key < $1.key }.map { .init(key: "runs.by.\($0.key)", value: String($0.value)) }

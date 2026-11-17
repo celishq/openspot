@@ -146,4 +146,85 @@ final class StatsReportTests: XCTestCase {
         XCTAssertTrue(frame.contains("runs=3\n"), frame)
         XCTAssertTrue(frame.contains("bodies=2\nbody=0.004000\n"), frame)
     }
+
+    func testByVersionARowOfEachVersionOfASpotTellsItsCountsOldestFirst() throws {
+        let usage = SpotUsage(at: day)
+        let alpha = Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh"))
+        usage.take(versions: ["a": "v1"])
+        usage.called(alpha, CallOutcome(seconds: 1, failure: .exit), at: day)
+        usage.take(versions: ["a": "v2"])
+        usage.called(alpha, CallOutcome(seconds: 1), at: day.addingTimeInterval(60))
+        usage.called(alpha, CallOutcome(seconds: 1), at: day.addingTimeInterval(61))
+
+        let frame = try StatsReport(days: usage.days(1, at: day), spot: nil, byVersion: true).text(.frame)
+
+        let blocks = frame.components(separatedBy: "\n\n").filter { !$0.isEmpty }
+        XCTAssertEqual(blocks.count, 2, frame)
+        XCTAssertTrue(blocks[0].hasPrefix("row=a\nversion=v1\nsince=\(ISO8601DateFormatter().string(from: day))\n"), frame)
+        XCTAssertTrue(blocks[0].contains("\nruns=1\nfailures=1\n"), frame)
+        XCTAssertTrue(blocks[1].hasPrefix("row=a\nversion=v2\nsince=\(ISO8601DateFormatter().string(from: day.addingTimeInterval(60)))\n"), frame)
+        XCTAssertTrue(blocks[1].contains("\nruns=2\nfailures=0\n"), frame)
+    }
+
+    func testOpenMetricsPrintsEachCounterOfASpotWithItsLabels() throws {
+        let usage = SpotUsage(at: day)
+        let alpha = Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh"))
+        usage.panel(shown: true)
+        usage.acted(alpha, at: day)
+        usage.called(alpha, CallOutcome(seconds: 0.5, answered: 0.07, reason: "sheet.open"), at: day)
+        usage.called(alpha, CallOutcome(seconds: 2, answered: 2, failure: .timeout), at: day)
+        usage.add(ProcessTime(cpu: 0.25, wakeups: 4, read: 10, written: 20, memory: 5_000), to: "a", at: day)
+        usage.panel(shown: false)
+        usage.add(ProcessTime(cpu: 0.1, wakeups: 1), to: "a", at: day)
+
+        let text = try StatsReport(days: usage.days(1, at: day), spot: nil).text(.metrics)
+
+        XCTAssertEqual(text, """
+        # TYPE openspot_spot_acts counter
+        openspot_spot_acts_total{spot="a"} 1
+        # TYPE openspot_spot_runs counter
+        openspot_spot_runs_total{spot="a"} 2
+        # TYPE openspot_spot_failures counter
+        openspot_spot_failures_total{spot="a",kind="timeout"} 1
+        # TYPE openspot_spot_call_seconds counter
+        openspot_spot_call_seconds_total{spot="a"} 2.5
+        # TYPE process_cpu_time_seconds counter
+        process_cpu_time_seconds_total{spot="a",hidden="false"} 0.25
+        process_cpu_time_seconds_total{spot="a",hidden="true"} 0.1
+        # TYPE openspot_spot_wakeups counter
+        openspot_spot_wakeups_total{spot="a",hidden="false"} 4
+        openspot_spot_wakeups_total{spot="a",hidden="true"} 1
+        # TYPE process_disk_io_bytes counter
+        process_disk_io_bytes_total{spot="a",direction="read"} 10
+        process_disk_io_bytes_total{spot="a",direction="write"} 20
+        # TYPE openspot_spot_memory_peak_bytes gauge
+        openspot_spot_memory_peak_bytes{spot="a"} 5000
+        # TYPE openspot_spot_answer_seconds histogram
+        openspot_spot_answer_seconds_bucket{spot="a",le="0.05"} 0
+        openspot_spot_answer_seconds_bucket{spot="a",le="0.1"} 1
+        openspot_spot_answer_seconds_bucket{spot="a",le="0.2"} 1
+        openspot_spot_answer_seconds_bucket{spot="a",le="0.4"} 1
+        openspot_spot_answer_seconds_bucket{spot="a",le="0.8"} 1
+        openspot_spot_answer_seconds_bucket{spot="a",le="1.6"} 1
+        openspot_spot_answer_seconds_bucket{spot="a",le="3.2"} 2
+        openspot_spot_answer_seconds_bucket{spot="a",le="6.4"} 2
+        openspot_spot_answer_seconds_bucket{spot="a",le="+Inf"} 2
+        openspot_spot_answer_seconds_count{spot="a"} 2
+        # TYPE openspot_spot_reads counter
+        openspot_spot_reads_total{spot="a",reason="sheet.open"} 1
+        # EOF
+
+        """)
+    }
+
+    func testOpenMetricsByVersionLabelsEachCounterWithItsVersionAndEscapesALabel() throws {
+        let usage = SpotUsage(at: day)
+        let alpha = Spot(id: "a\"b", name: "Alpha", url: URL(fileURLWithPath: "/a.sh"))
+        usage.take(versions: ["a\"b": "v1"])
+        usage.called(alpha, CallOutcome(seconds: 1), at: day)
+
+        let text = try StatsReport(days: usage.days(1, at: day), spot: nil, byVersion: true).text(.metrics)
+
+        XCTAssertTrue(text.contains("openspot_spot_runs_total{spot=\"a\\\"b\",version=\"v1\"} 1\n"), text)
+    }
 }

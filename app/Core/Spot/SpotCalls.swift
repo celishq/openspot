@@ -178,7 +178,7 @@ struct SpotCalls {
         }
     }
 
-    func stats(days: Int, spot: String?, format: PrintForm) -> CommandAPI.Work {
+    func stats(days: Int, spot: String?, format: StatsReport.Form, byVersion: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [environment, runs] in
             let counts: [SpotUsage.Day]
             if let runs {
@@ -188,7 +188,7 @@ struct SpotCalls {
                 counts = SpotUsage.days(days, at: Date(), in: AppPlaces(environment: environment, home: FileManager.default.homeDirectoryForCurrentUser, defaults: .standard).stats)
             }
             let cards = (try? SpotsFolder.standard(environment: environment).scan().spots) ?? []
-            return try StatsReport(days: counts, spot: spot, cards: cards).text(format)
+            return try StatsReport(days: counts, spot: spot, cards: cards, byVersion: byVersion).text(format)
         }
     }
 }

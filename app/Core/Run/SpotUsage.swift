@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 public final class SpotUsage: @unchecked Sendable {
@@ -31,12 +32,24 @@ public final class SpotUsage: @unchecked Sendable {
         public let declared: Bool
     }
 
+    public struct Version: Codable, Equatable, Sendable {
+        public let first: Date
+        public var count = Count()
+    }
+
     public struct Day: Codable, Equatable, Sendable {
         public let day: String
         public var spots: [String: Count] = [:]
+        public var versions: [String: [String: Version]] = [:]
         public var uses: [Use] = []
         public var countsActs = true
         var told: [String] = []
+
+        mutating func change(_ id: String, version: String?, at date: Date, _ work: (inout Count) -> Void) {
+            work(&spots[id, default: Count()])
+            guard let version else { return }
+            work(&versions[id, default: [:]][version, default: Version(first: date)].count)
+        }
     }
 
     static let keptDays = 90
@@ -50,6 +63,7 @@ public final class SpotUsage: @unchecked Sendable {
     private var isDirty = false
     private var isWaiting = false
     private var views: [String: (id: String, name: String)] = [:]
+    private var spotVersions: [String: String] = [:]
     private var isShown = false
     private var live: [ObjectIdentifier: (spot: String, process: ScriptProcess, counted: ProcessTime)] = [:]
     let now: () -> Date
@@ -87,11 +101,23 @@ public final class SpotUsage: @unchecked Sendable {
         lock.withLock { self.views = views }
     }
 
+    func take(versions: [String: String]) {
+        lock.withLock { spotVersions = versions }
+    }
+
+    static func version(of stamp: [Int]) -> String {
+        let bytes = stamp.flatMap { withUnsafeBytes(of: Int64($0).littleEndian, Array.init) }
+        return SHA256.hash(data: bytes).prefix(4).map { String(format: "%02x", $0) }.joined()
+    }
+
     public func drew(view source: String, seconds: TimeInterval) {
+        let date = now()
         change { day in
             guard let spot = views[source] else { return }
-            day.spots[spot.id, default: Count()].name = spot.name
-            day.spots[spot.id, default: Count()].view = ViewTime(bodies: 1, seconds: seconds).adding(day.spots[spot.id]?.view)
+            day.change(spot.id, version: spotVersions[spot.id], at: date) { count in
+                count.name = spot.name
+                count.view = ViewTime(bodies: 1, seconds: seconds).adding(count.view)
+            }
         }
     }
 
@@ -105,7 +131,7 @@ public final class SpotUsage: @unchecked Sendable {
     }
 
     func add(_ time: ProcessTime, to spot: String, at date: Date) {
-        change(at: date) { $0.spots[spot, default: Count()].add(time, hidden: !isShown) }
+        change(at: date) { $0.change(spot, version: spotVersions[spot], at: date) { $0.add(time, hidden: !isShown) } }
     }
 
     public func panel(shown: Bool) {
@@ -145,9 +171,11 @@ public final class SpotUsage: @unchecked Sendable {
         let declared = caller.uses.contains(call.use)
         var tells = false
         change(at: date) { day in
-            day.spots[caller.id, default: Count()].name = caller.name
-            day.spots[caller.id, default: Count()].calls[call.name, default: 0] += 1
-            day.spots[caller.id, default: Count()].network = caller.uses.contains(.network)
+            day.change(caller.id, version: spotVersions[caller.id], at: date) { count in
+                count.name = caller.name
+                count.calls[call.name, default: 0] += 1
+                count.network = caller.uses.contains(.network)
+            }
             if !declared { day.uses = Array((day.uses + [Use(time: date, spot: caller.id, call: call.name, declared: declared)]).suffix(Self.useLimit)) }
             let told = "\(caller.id) \(call.use.rawValue)"
             if !declared, !day.told.contains(told) {
@@ -186,8 +214,10 @@ public final class SpotUsage: @unchecked Sendable {
 
     private func change(_ spot: Spot, at date: Date, _ work: (inout Count) -> Void) {
         change(at: date) { day in
-            day.spots[spot.id, default: Count()].name = spot.name
-            work(&day.spots[spot.id, default: Count()])
+            day.change(spot.id, version: spotVersions[spot.id], at: date) { count in
+                count.name = spot.name
+                work(&count)
+            }
         }
     }
 
@@ -226,7 +256,7 @@ public final class SpotUsage: @unchecked Sendable {
             let time = entry.process.time
             let spent = time.since(entry.counted)
             guard spent != .zero else { continue }
-            day.spots[entry.spot, default: Count()].add(spent, hidden: !isShown)
+            day.change(entry.spot, version: spotVersions[entry.spot], at: now()) { $0.add(spent, hidden: !isShown) }
             live[key]?.counted = time
             counted = true
         }
@@ -236,7 +266,7 @@ public final class SpotUsage: @unchecked Sendable {
     private func withLive(_ day: Day) -> Day {
         var day = day
         for entry in live.values {
-            day.spots[entry.spot, default: Count()].add(entry.process.time.since(entry.counted), hidden: !isShown)
+            day.change(entry.spot, version: spotVersions[entry.spot], at: now()) { $0.add(entry.process.time.since(entry.counted), hidden: !isShown) }
         }
         return day
     }
@@ -270,6 +300,7 @@ extension SpotUsage.Day {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         day = try values.decode(String.self, forKey: .day)
         spots = try values.decodeIfPresent([String: SpotUsage.Count].self, forKey: .spots) ?? [:]
+        versions = try values.decodeIfPresent([String: [String: SpotUsage.Version]].self, forKey: .versions) ?? [:]
         uses = try values.decodeIfPresent([SpotUsage.Use].self, forKey: .uses) ?? []
         countsActs = try values.decodeIfPresent(Bool.self, forKey: .countsActs) ?? false
         told = try values.decodeIfPresent([String].self, forKey: .told) ?? []

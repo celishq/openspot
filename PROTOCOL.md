@@ -1089,12 +1089,17 @@ openspot spot stats --days 7
 - An act is something the user did with a spot: they opened its sheet, picked a row, pressed, set or toggled something,
   or ran one of its actions. A read is never an act, and acts on one spot within 2 seconds count as one.
 - `--days N` adds up the last N days. `--spot <id>` shows one spot.
+- `--by version` prints a row for each version of a spot, the oldest first, so you can compare a spot before and after
+  a change. A version is a short hash that changes each time a file of the spot changes.
+- `--openmetrics` prints each counter as [OpenMetrics](https://openmetrics.io) text, labelled by `spot`, and by
+  `version` with `--by version`, so that any tool for metrics can read it.
 - It prints a `row=<id>` block for each spot, the most CPU first, then a `use=<n>` block for each call that needs a
   use, the newest first. `--json` prints the days.
 
 | Row key              | Meaning                                                               |
 | -------------------- | --------------------------------------------------------------------- |
 | `title`, `detail`    | The name of the spot, and its numbers in words.                       |
+| `version`, `since`   | With `--by version`, the version of the row, and when it was first counted. |
 | `runs`, `failures`   | The calls that ended, and those that failed.                          |
 | `cpu`, `seconds`     | The CPU seconds of its processes, and the wall time of its calls.     |
 | `read`, `written`    | The bytes its processes read and wrote.                               |

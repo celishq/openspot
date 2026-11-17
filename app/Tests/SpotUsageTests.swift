@@ -391,4 +391,22 @@ final class SpotUsageTests: SpotRunsCase {
         XCTAssertEqual(json.map { $0["day"] as? String }, ["2026-11-11", "2026-11-10"])
         XCTAssertNil(json.first?["told"])
     }
+
+    func testTheCountOfEachVersionOfASpotIsKeptAcrossAStart() {
+        let usage = SpotUsage(folder: stats, at: day, pause: 60, now: { self.day })
+        usage.take(versions: ["a": "v1"])
+
+        usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day)
+        usage.flush()
+
+        let version = SpotUsage(folder: stats, at: day).days(1, at: day).first?.versions["a"]?["v1"]
+        XCTAssertEqual(version?.count.runs, 1)
+        XCTAssertEqual(version?.first, day)
+    }
+
+    func testTheVersionOfASpotIsShortAndFollowsItsStamp() {
+        XCTAssertEqual(SpotUsage.version(of: [1, 2, 3]).count, 8)
+        XCTAssertEqual(SpotUsage.version(of: [1, 2, 3]), SpotUsage.version(of: [1, 2, 3]))
+        XCTAssertNotEqual(SpotUsage.version(of: [1, 2, 3]), SpotUsage.version(of: [1, 2, 4]))
+    }
 }
