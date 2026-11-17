@@ -1,18 +1,33 @@
 import Foundation
 import OpenspotCore
+import os
 import ServiceManagement
 
 struct SpotPower: MacPower {
     private typealias Send<Answer: Sendable> = @Sendable (PowerService, @escaping @Sendable (Result<Answer, Error>) -> Void) -> Void
 
     private static let loginItems = URL(string: "x-apple.systempreferences:com.apple.LoginItems-Settings.extension")!
+    private static let stopped = "The power helper of Openspot stopped, so the Mac can sleep with its lid closed again. Start the hold again."
     private static let noAnswer = "The power helper of Openspot did not answer. Run the call again, or restart the Mac if it keeps failing."
 
     func holdLidClosed(during hold: @escaping @Sendable () async -> Void) async throws {
         let (fault, connection): (String?, NSXPCConnection) = try await Self.ask { service, reply in service.holdLidClosed { reply(.success($0)) } }
-        defer { connection.invalidate() }
-        if let fault { throw SpotError.fault(fault) }
-        await hold()
+        guard fault == nil else {
+            connection.invalidate()
+            throw SpotError.fault(fault ?? Self.noAnswer)
+        }
+        let isLost = OSAllocatedUnfairLock(initialState: false)
+        let held = Task { await hold() }
+        let lose: @Sendable () -> Void = {
+            isLost.withLock { $0 = true }
+            held.cancel()
+        }
+        connection.interruptionHandler = lose
+        connection.invalidationHandler = lose
+        await withTaskCancellationHandler { await held.value } onCancel: { held.cancel() }
+        let wasLost = isLost.withLock { $0 }
+        connection.invalidate()
+        if wasLost { throw SpotError.fault(Self.stopped) }
     }
 
     func sample() async throws -> Data {
