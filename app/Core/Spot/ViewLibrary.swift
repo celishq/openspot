@@ -68,25 +68,22 @@ public struct ViewLibrary: Sendable {
             public let motion: Motion
 
             init(_ values: [String: Any]) {
-                let number = { (key: String, fallback: CGFloat) in values[key] as? CGFloat ?? fallback }
-                let strength = { (key: String, fallback: CGFloat) in Double(number(key, fallback)) }
-                let color = { (key: String, fallback: Color) in values[key] as? Color ?? fallback }
-                let font = { (key: String, fallback: Font) in values[key] as? Font ?? fallback }
+                let number = { (key: String) in values[key] as? CGFloat ?? 0 }
+                let strength = { (key: String) in Double(number(key)) }
+                let color = { (key: String) in values[key] as? Color ?? .clear }
+                let font = { (key: String) in values[key] as? Font ?? .body }
                 self.color = Colors(
-                    ink: color("ink", .primary), solid: color("solid", .primary), onSolid: color("onSolid", .white),
-                    accent: color("accent", .accentColor), good: color("good", .green), warn: color("warn", .orange), bad: color("bad", .red),
-                    secondary: strength("secondary", 0.7), fill: strength("fill", 0.1), selected: strength("selected", 0.22), track: strength("track", 0.2)
+                    ink: color("ink"), solid: color("solid"), onSolid: color("onSolid"), accent: color("accent"), good: color("good"),
+                    warn: color("warn"), bad: color("bad"), secondary: strength("secondary"), fill: strength("fill"),
+                    selected: strength("selected"), track: strength("track")
                 )
                 space = Space(
-                    padding: number("padding", 13), columnGap: number("columnGap", 11), rowGap: number("rowGap", 12), listRow: number("listRow", 40),
-                    listRowGap: number("listRowGap", 6), glyph: number("glyph", 36), cell: number("cell", 64), gridWidth: number("gridWidth", 289)
+                    padding: number("padding"), columnGap: number("columnGap"), rowGap: number("rowGap"), listRow: number("listRow"),
+                    listRowGap: number("listRowGap"), glyph: number("glyph"), cell: number("cell"), gridWidth: number("gridWidth")
                 )
-                radius = Radius(card: number("card", 26), media: number("media", 8), inner: number("inner", 13))
-                self.font = Fonts(
-                    title: font("title", .system(size: 13, weight: .medium)), body: font("body", .system(size: 13)),
-                    detail: font("detail", .system(size: 11)), input: font("input", .system(size: 14))
-                )
-                motion = Motion(press: strength("press", 0.2), pressBounce: strength("pressBounce", 0.2))
+                radius = Radius(card: number("card"), media: number("media"), inner: number("inner"))
+                self.font = Fonts(title: font("title"), body: font("body"), detail: font("detail"), input: font("input"))
+                motion = Motion(press: strength("press"), pressBounce: strength("pressBounce"))
             }
         }
 

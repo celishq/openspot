@@ -14,12 +14,16 @@ enum SpotType {
 
         init(_ sizes: Theme.TypeSizes) {
             self.sizes = sizes
-            title = Font.system(size: sizes.title, weight: .medium)
-            body = Font.system(size: sizes.body)
-            detail = Font.system(size: sizes.detail)
-            input = Font.system(size: sizes.input)
+            title = Self.font(\.title, of: sizes)
+            body = Self.font(\.body, of: sizes)
+            detail = Self.font(\.detail, of: sizes)
+            input = Self.font(\.input, of: sizes)
             titleMeasure = NSFont.systemFont(ofSize: sizes.title, weight: .medium)
             detailMeasure = NSFont.systemFont(ofSize: sizes.detail)
+        }
+
+        static func font(_ part: KeyPath<Theme.TypeSizes, Double>, of sizes: Theme.TypeSizes) -> Font {
+            part == \.title ? Font.system(size: sizes.title, weight: .medium) : Font.system(size: sizes[keyPath: part])
         }
     }
 
@@ -28,6 +32,10 @@ enum SpotType {
 
     static func take(_ sizes: Theme.TypeSizes) {
         if sizes != faces.sizes { faces = Faces(sizes) }
+    }
+
+    static func face(_ part: KeyPath<Theme.TypeSizes, Double>) -> Font {
+        Faces.font(part, of: faces.sizes)
     }
 
     static var titleSize: CGFloat { faces.sizes.title }

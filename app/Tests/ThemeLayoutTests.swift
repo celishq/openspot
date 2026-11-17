@@ -58,7 +58,7 @@ final class ThemeLayoutTests: XCTestCase {
     }
 
     func testACopyWithANewDurationChangesTheMotion() throws {
-        MotionTokens.take(try read(copy: "[advanced]\ngrow = 0.3\nlifted-scale = 1.1\n").layout.motion)
+        SpotTokens.take(try read(copy: "[advanced]\ngrow = 0.3\nlifted-scale = 1.1\n").layout)
 
         XCTAssertEqual(MotionTokens.grow, 0.3 * MotionTokens.slow)
         XCTAssertEqual(MotionTokens.liftedScale, 1.1)

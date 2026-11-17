@@ -7,7 +7,7 @@ extension SpotTokens {
     public static let submenuGap: CGFloat = 4
     public static let groupTitleGap: CGFloat = 6
     public static let cardLineReach: CGFloat = 6
-    public static var mediaRadius: CGFloat { sizes.mediaRadius }
+    public static var mediaRadius: CGFloat { layout.radius.media }
     public static let tileIconShare: CGFloat = 0.5
     public static let pictureScale: CGFloat = 2
     public static let pictureRimLine: CGFloat = 0.5
@@ -48,7 +48,7 @@ extension SpotTokens {
     public static let menuBarBarGap: CGFloat = 1
     public static let menuBarBarsHeight: CGFloat = 14
 
-    public static var partsWidth: CGFloat { sizes.partsWidth }
+    public static var partsWidth: CGFloat { layout.partsWidth }
     public static var partsMaxHeight: CGFloat { sheetMaxHeight - sheetFieldDrop - padding }
     public static let partGap: CGFloat = 6
     public static let partMaxRound: CGFloat = 44
@@ -60,7 +60,7 @@ extension SpotTokens {
     public static let backdropReach: CGFloat = 3
     public static let backdropCapFade: CGFloat = 2.5
     public static let backdropLeastFade: CGFloat = 16
-    public static var backdrop: Theme.Backdrop { sizes.backdrop }
+    public static var backdrop: Theme.Backdrop { layout.backdrop }
     public static let backdropMiddle: CGFloat = 2
 
     public static let swatchSize: CGFloat = 22
@@ -100,9 +100,9 @@ extension SpotTokens {
     public static let playgroundTopHeight: CGFloat = 360
     public static let playgroundLogHeight: CGFloat = 120
 
-    public static let builtIn = SpotSizes(Theme.Layout())
-    public static let themeGap = builtIn.columnGap
-    public static let themePadding = builtIn.padding
+    public static let builtIn = Theme.Layout()
+    public static let themeGap: CGFloat = builtIn.space.columnGap
+    public static let themePadding: CGFloat = builtIn.space.padding
     public static let themeRowPadding: CGFloat = 10
 
     public static let emblemSide: CGFloat = 26

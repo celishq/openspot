@@ -14,7 +14,6 @@ final class SpotLoadedTheme {
 
     func take(_ next: Theme) {
         paint(next.look)
-        SpotTokens.take(next.layout)
         lay(next.layout)
     }
 
@@ -26,6 +25,7 @@ final class SpotLoadedTheme {
     }
 
     func lay(_ next: Theme.Layout) {
+        SpotTokens.take(next)
         SpotType.take(next.type)
         SpotBackdropEdge.draw()
         viewThemes = [:]
@@ -36,23 +36,9 @@ final class SpotLoadedTheme {
         let palette = palette
         let name = ViewThemeKey(isDark: isDark, corner: corner)
         if let kept = viewThemes[name] { return kept }
-        let look = isDark ? palette.dark : palette.light
-        var values: [String: Any] = ViewTheme(sizes: SpotTokens.sizes, motion: MotionTokens.motion, corner: corner).numbers
-        values["ink"] = palette.ink
-        values["solid"] = palette.solid
-        values["onSolid"] = palette.onSolid
-        values["accent"] = palette.accent
-        values["good"] = palette.good
-        values["warn"] = palette.warn
-        values["bad"] = palette.bad
-        values["secondary"] = CGFloat(look.secondary)
-        values["fill"] = CGFloat(look.fillStrength)
-        values["selected"] = CGFloat(look.selectedStrength)
-        values["track"] = CGFloat(look.trackStrength)
-        values["title"] = SpotType.title
-        values["body"] = SpotType.body
-        values["detail"] = SpotType.detail
-        values["input"] = SpotType.input
+        let values = ViewTheme(
+            layout: SpotTokens.layout, look: isDark ? palette.dark : palette.light, corner: corner, colour: palette.color, face: SpotType.face
+        ).values
         if viewThemes.count >= Self.viewThemeLimit { viewThemes = [:] }
         viewThemes[name] = values
         return values

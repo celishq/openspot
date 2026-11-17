@@ -9,15 +9,15 @@ extension SpotTokens {
 
     public static let hintPillHeight: CGFloat = hintHeight + 2 * hintPillInset
 
-    public static var hintBlock: CGFloat { sizes.hintBlock }
+    public static var hintBlock: CGFloat { layout.hintBlock }
 
-    public static var panelWidth: CGFloat { sizes.panelWidth }
+    public static var panelWidth: CGFloat { layout.panelWidth }
 
-    public static var panelHeight: CGFloat { sizes.panelHeight }
+    public static var panelHeight: CGFloat { layout.panelHeight }
 
-    public static var sheetMaxHeight: CGFloat { sizes.sheetMaxHeight }
+    public static var sheetMaxHeight: CGFloat { layout.sheetMaxHeight }
 
-    public static var sheetFieldDrop: CGFloat { sizes.sheetFieldDrop }
+    public static var sheetFieldDrop: CGFloat { layout.sheetFieldDrop }
 
     public static func width(columns: Int) -> CGFloat {
         CGFloat(columns) * cell + CGFloat(columns - 1) * columnGap
@@ -36,7 +36,7 @@ extension SpotTokens {
         return min(fit, room.height <= listRow ? listIconSize : fit * pictureShare)
     }
 
-    public static var sheetRowsTop: CGFloat { sizes.sheetRowsTop }
+    public static var sheetRowsTop: CGFloat { layout.sheetRowsTop }
 
     public static func square(perLine: Int) -> CGFloat {
         (partsWidth - listRowGap * CGFloat(perLine - 1)) / CGFloat(perLine)
@@ -106,10 +106,10 @@ extension SpotTokens {
     }
 
     static func corner(for size: SpotSize) -> CGFloat {
-        size.rows == 1 && size.columns < columns ? min(cell / 2 * cardRadius / SpotTokens.builtIn.cardRadius, cell / 2) : cardRadius
+        size.rows == 1 && size.columns < columns ? min(cell / 2 * cardRadius / builtIn.radius.card, cell / 2) : cardRadius
     }
 
-    public static var gridTop: CGFloat { sizes.gridTop }
+    public static var gridTop: CGFloat { layout.gridTop }
 
     public static func gridOrigin(scrollOffset: CGFloat, left: CGFloat) -> CGPoint {
         CGPoint(x: halo - left, y: gridTop - scrollOffset)

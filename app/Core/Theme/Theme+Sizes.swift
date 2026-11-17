@@ -7,6 +7,16 @@ extension Theme {
         public let type: TypeSizes
         public let motion: Motion
         public let backdrop: Backdrop
+        public let gridWidth: Double
+        public let panelWidth: Double
+        public let panelHeight: Double
+        public let hintBlock: Double
+        public let sheetMaxHeight: Double
+        public let sheetFieldDrop: Double
+        public let sheetRowsTop: Double
+        public let gridTop: Double
+        public let partsWidth: Double
+        public let backdropEdges: [BackdropEdge]
 
         static let exactKinds: [(String, ThemeKind)] = [
             "cell", "column-gap", "row-gap", "padding", "glyph", "list-row", "list-row-gap", "menu-row", "menu-padding",
@@ -26,6 +36,18 @@ extension Theme {
             type = TypeSizes(base: choices.number("look", "type") ?? TypeSizes.openspotBody, pinned: pinned)
             motion = Motion(speed: choices.number("look", "speed") ?? 1, pinned: pinned)
             backdrop = Backdrop(look: choices.word("look", "backdrop") ?? .blur, reach: choices.word("look", "reach") ?? .tiles, pinned: pinned)
+            let columns = Double(SpotTokens.columns)
+            let halo = Double(SpotTokens.halo)
+            gridWidth = columns * space.cell + (columns - 1) * space.columnGap
+            panelWidth = gridWidth + 2 * halo
+            hintBlock = space.rowGap + Double(SpotTokens.hintPillHeight)
+            panelHeight = 2 * halo + 7 * space.cell + 6 * space.rowGap + hintBlock
+            sheetMaxHeight = panelHeight - 2 * halo - hintBlock
+            sheetFieldDrop = space.padding + space.glyph + space.rowGap
+            sheetRowsTop = sheetFieldDrop + space.listRow + space.rowGap
+            gridTop = halo + space.cell + space.rowGap
+            partsWidth = gridWidth - 2 * space.padding
+            backdropEdges = BackdropEdge.edges(of: backdrop)
         }
     }
 

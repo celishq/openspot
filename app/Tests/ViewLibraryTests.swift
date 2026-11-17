@@ -164,7 +164,7 @@ final class ViewLibraryTests: XCTestCase {
         }
 
         """
-        let theme: [String: Any] = ["padding": CGFloat(20), "gridWidth": CGFloat(310), "inner": CGFloat(10), "press": CGFloat(0.3), "fill": CGFloat(0.25)]
+        let theme: [String: Any] = ["padding": CGFloat(20), "gridWidth": CGFloat(310), "inner": CGFloat(10), "press": CGFloat(0.3), "fill": CGFloat(0.25), "secondary": CGFloat(0.7)]
 
         let sent = try await drawn(text, values: [:], card: ["theme": theme])
 

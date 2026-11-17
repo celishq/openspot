@@ -15,7 +15,7 @@ public struct BackdropEdge: Hashable, Sendable {
     public let softness: CGFloat
 
     public static var blurs: [BackdropEdge] {
-        SpotTokens.sizes.backdropEdges
+        SpotTokens.layout.backdropEdges
     }
 
     static func edges(of backdrop: Theme.Backdrop) -> [BackdropEdge] {

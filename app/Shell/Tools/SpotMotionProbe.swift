@@ -202,7 +202,7 @@ final class SpotMotionProbe: NSObject {
         let whole = windows.map(\.frame).reduce(panel.frame) { $0.union($1) }
         let appearance = NSApp.effectiveAppearance
         let image = NSImage(size: whole.size, flipped: false) { bounds in
-            SpotTheme.palette(for: appearance).window.setFill()
+            SpotTheme.palette(for: appearance).window.nsColor.setFill()
             bounds.fill()
             for window in windows {
                 guard let view = window.contentView, let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { continue }

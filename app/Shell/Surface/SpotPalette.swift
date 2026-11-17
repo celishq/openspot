@@ -3,8 +3,8 @@ import OpenspotCore
 import SwiftUI
 
 final class SpotPalette: Sendable {
-    let dark: SpotTheme
-    let light: SpotTheme
+    let dark: Theme.Appearance
+    let light: Theme.Appearance
     let ink: Color
     let solid: Color
     let onSolid: Color
@@ -26,17 +26,9 @@ final class SpotPalette: Sendable {
     let glassVariant: Theme.Glass.Variant
 
     init(_ look: Theme.Look) {
-        let dark = SpotTheme(look.dark)
-        let light = SpotTheme(look.light)
-        let color = { (part: KeyPath<SpotTheme, NSColor> & Sendable) in
-            let (one, other) = (dark[keyPath: part], light[keyPath: part])
-            return Color(nsColor: NSColor(name: nil) { SpotTheme.isDark($0) ? one : other })
-        }
-        let either = { (part: KeyPath<Theme.Appearance, ThemeColor> & Sendable, drawn: KeyPath<SpotTheme, NSColor> & Sendable) in
-            look.dark[keyPath: part] == look.light[keyPath: part] ? look.dark[keyPath: part].color : color(drawn)
-        }
-        self.dark = dark
-        self.light = light
+        dark = look.dark
+        light = look.light
+        let color = { (part: KeyPath<Theme.Appearance, ThemeColor>) in Self.color(part, dark: look.dark, light: look.light) }
         ink = color(\.ink)
         solid = color(\.solid)
         onSolid = color(\.onSolid)
@@ -49,12 +41,34 @@ final class SpotPalette: Sendable {
         onConfirm = color(\.onConfirm)
         backdropTint = color(\.backdropTint)
         highlight = color(\.highlight)
-        accent = either(\.accent, \.accent)
-        good = either(\.good, \.good)
-        warn = either(\.warn, \.warn)
-        bad = either(\.bad, \.bad)
+        accent = color(\.accent)
+        good = color(\.good)
+        warn = color(\.warn)
+        bad = color(\.bad)
+        let secondary = { (look: Theme.Appearance) in
+            let ink = look.ink.nsColor
+            return ink.withAlphaComponent(ink.alphaComponent * look.secondary)
+        }
         glassInk = look.glass.takesInk ? AnyShapeStyle(ink) : AnyShapeStyle(HierarchicalShapeStyle.primary)
-        glassSecondary = look.glass.takesInk ? AnyShapeStyle(color(\.secondaryInk)) : AnyShapeStyle(HierarchicalShapeStyle.secondary)
+        glassSecondary = look.glass.takesInk ? AnyShapeStyle(Self.color(secondary(look.dark), secondary(look.light))) : AnyShapeStyle(HierarchicalShapeStyle.secondary)
         glassVariant = look.glass.variant
+    }
+
+    func color(_ part: KeyPath<Theme.Appearance, ThemeColor>) -> Color {
+        Self.color(part, dark: dark, light: light)
+    }
+
+    private static var tones: [KeyPath<Theme.Appearance, ThemeColor>] {
+        [\.accent, \.good, \.warn, \.bad]
+    }
+
+    private static func color(_ part: KeyPath<Theme.Appearance, ThemeColor>, dark: Theme.Appearance, light: Theme.Appearance) -> Color {
+        let (one, other) = (dark[keyPath: part], light[keyPath: part])
+        if one == other, tones.contains(part) { return one.color }
+        return color(one.nsColor, other.nsColor)
+    }
+
+    private static func color(_ dark: NSColor, _ light: NSColor) -> Color {
+        Color(nsColor: NSColor(name: nil) { SpotTheme.isDark($0) ? dark : light })
     }
 }
