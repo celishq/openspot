@@ -70,6 +70,24 @@ final class ThemeReloadTests: PanelCase {
         XCTAssertFalse(told)
     }
 
+    func testAThemeChangeWhileShownAsksToOpenAgain() async throws {
+        try await openList()
+
+        model.take(roomy)
+        model.take(roomy)
+
+        XCTAssertEqual(host.confirms, [SpotsModel.openAgain])
+    }
+
+    func testAThemeChangeWhileHiddenShowsNoToast() async throws {
+        try await openList()
+        host.dismiss()
+
+        model.take(roomy)
+
+        XCTAssertEqual(host.confirms, [])
+    }
+
     func testALookChangeWhileShownPaintsAtOnce() async throws {
         try await openList()
         let hover = Theme(text: "[dark]\nfill = 0.2\n")

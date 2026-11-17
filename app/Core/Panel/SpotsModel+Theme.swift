@@ -1,9 +1,13 @@
 import Foundation
 
 extension SpotsModel {
+    static let openAgain = "Close and open Openspot to see the whole theme."
+
     public func take(_ theme: Theme) {
         host.paint(theme.look)
+        defer { takenTheme = theme }
         guard isPanelHidden else {
+            if theme != takenTheme { host.confirm(Self.openAgain) }
             heldLayout = theme.layout
             return
         }

@@ -6,7 +6,7 @@ highlight = "#00E000"
 good = "#00E000"
 warn = "#E0A000"
 bad = "#E03030"
-backdrop-tint = "#1E2A2459"
+backdrop-tint = "#1E2A2499"
 
 [light]
 background = "#C8C8D2"
@@ -17,7 +17,7 @@ good = "#007A00"
 warn = "#C08000"
 bad = "#E03030"
 on-solid = "#00E000"
-backdrop-tint = "#1E2A2414"
+backdrop-tint = "#1E2A2433"
 
 [look]
 glass = "regular"
