@@ -145,14 +145,13 @@ final class TrustTests: PanelCase {
         XCTAssertTrue(paths.reports(String(cString: try XCTUnwrap(realpath(lock.path, nil)))))
     }
 
-    func testCarefulModeRestrictsASpotThatThePersonMade() async throws {
-        try script("cups", header: "title=Cups\nview=cups.swift", "printf 'title=Cups\\n'")
-        try "".write(to: spots.appendingPathComponent("cups.spot/cups.swift"), atomically: true, encoding: .utf8)
+    func testAnOldCarefulKeyIsNoFaultAndRestrictsNothing() async throws {
+        try script("cups", header: "title=Cups", "printf 'title=Cups\\n'")
         try writeConfig("careful = true\n")
 
         await model.reload()
 
-        XCTAssertEqual(cups?.isRestricted, true)
-        XCTAssertNil(cups?.view)
+        XCTAssertEqual(model.config.faults, [])
+        XCTAssertEqual(cups?.isRestricted, false)
     }
 }

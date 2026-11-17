@@ -203,7 +203,7 @@ final class ConfigFileTests: XCTestCase {
             config.arrangement.set(isEnabled: true, of: "b")
             config.assign(.shake, to: "a", act: .float)
             config.set(setting: "folder", of: "a", to: "~/Code")
-            config.set(isCareful: true)
+            config.show(.left, true)
         }
 
         XCTAssertEqual(disk.reads, 1)
@@ -212,15 +212,15 @@ final class ConfigFileTests: XCTestCase {
         XCTAssertEqual(config.arrangement.enabled, ["b"])
         XCTAssertEqual(config.keys.map(\.trigger), [.shake])
         XCTAssertEqual(config.setting("folder", of: "a"), "~/Code")
-        XCTAssertTrue(config.isCareful)
+        XCTAssertEqual(config.panels, GridPanels(hasLeft: true))
         XCTAssertEqual(config.panelKey, Shortcut(text: "cmd+k"))
     }
 
     func testAChangeThatChangesNothingWritesNothing() throws {
-        let disk = FakeDisk(text: "careful = true\n")
+        let disk = FakeDisk(text: "left_panel = true\n")
         let file = ConfigFile(url: file.url, disk: disk)
 
-        try file.change { $0.set(isCareful: true) }
+        try file.change { $0.show(.left, true) }
 
         XCTAssertEqual(disk.writes, 0)
     }
@@ -248,7 +248,7 @@ final class ConfigFileTests: XCTestCase {
         let disk = FakeDisk(text: "panel-key\n")
         let file = ConfigFile(url: file.url, disk: disk)
 
-        XCTAssertThrowsError(try file.change(from: file.readKept()) { $0.set(isCareful: true) })
+        XCTAssertThrowsError(try file.change(from: file.readKept()) { $0.show(.left, true) })
         XCTAssertEqual(disk.text, "panel-key\n")
     }
 
@@ -259,7 +259,6 @@ final class ConfigFileTests: XCTestCase {
         XCTAssertEqual(Config(text: "[[keys]]\nspot = \"a\"\nkey = \"shake\"\n").sections(differingFrom: config), [.keys])
         XCTAssertEqual(Config(text: "[[spots]]\nid = \"a\"\n").sections(differingFrom: config), [.spots])
         XCTAssertEqual(Config(text: "[[settings]]\nspot = \"a\"\nkey = \"k\"\nvalue = \"v\"\n").sections(differingFrom: config), [.settings])
-        XCTAssertEqual(Config(text: "careful = true\n").sections(differingFrom: config), [.careful])
         XCTAssertEqual(Config(text: "left_panel = true\n").sections(differingFrom: config), [.panels])
         XCTAssertEqual(Config(text: "theme = \"dark\"\n").sections(differingFrom: config), [.rest])
         XCTAssertEqual(Config(text: "[[keys]]\nspot = \"a\"\n").sections(differingFrom: config), [.rest])
@@ -307,7 +306,7 @@ final class ConfigFileTests: XCTestCase {
         XCTAssertEqual(file.read().faults.count, 1)
         XCTAssertNil(file.read().panelKey)
         XCTAssertThrowsError(try file.turn("a", on: true))
-        XCTAssertThrowsError(try file.change(from: file.readKept()) { $0.set(isCareful: true) })
+        XCTAssertThrowsError(try file.change(from: file.readKept()) { $0.show(.left, true) })
         XCTAssertThrowsError(try file.begin(enabling: ["a"]))
         XCTAssertEqual(try Data(contentsOf: file.url), bytes)
     }

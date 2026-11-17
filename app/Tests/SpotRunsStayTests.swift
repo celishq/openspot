@@ -156,7 +156,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         sheet.pressKey("hold")
         _ = try await pid("children")
 
-        careful()
+        restrict()
         _ = try scanned()
 
         try await wait("the end of the held call") { sheet.calls.isEmpty }

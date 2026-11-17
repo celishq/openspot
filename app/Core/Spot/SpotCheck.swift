@@ -75,8 +75,7 @@ public struct SpotCheck: Sendable {
             }
         }
         let runs = await SpotRuns(environment: environment, swift: programs, tokens: tokens ?? CallerTokens())
-        let trust = tokens?.trust ?? Trust()
-        for script in scan.scripts.map(trust.applied) where script.read != nil && !unbuilt.contains(script.id) {
+        for script in scan.scripts.map({ $0.isBuiltIn ? $0 : $0.restricted(.checked) }) where script.read != nil && !unbuilt.contains(script.id) {
             guard !Task.isCancelled else { return findings }
             func found(_ fault: String) -> Finding { Finding(spot: script.id, file: script.url.path, fault: fault) }
             do {

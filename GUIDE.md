@@ -66,7 +66,8 @@ Try each example of this page in the playground before you put it in the spots f
   installed spot.
 - **Log.** `openspot spot log <id>` prints the last calls to a spot, with their stdin, stdout, stderr and exit code.
 - **Check.** `openspot check spots [--json] <folder>` loads each spot, runs it once, and prints a `fault` block for each error,
-  or nothing. Run it before you share a spot.
+  or nothing. It runs each spot restricted, as for someone who adds it, so a missing `uses` shows as a fault. Run it
+  before you share a spot.
 
 ## Show a list
 

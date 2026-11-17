@@ -13,22 +13,22 @@ public struct TerminalRun {
     public let spot: Spot
     public let arguments: [String]
     public let input: String?
-    let careful: Set<SpotUse>?
+    let sandbox: Set<SpotUse>?
     let tokens: CallerTokens?
     let environment: [String: String]?
     let folder: URL?
     let usage: StatsLog?
 
     public init(spot: Spot, arguments: [String], input: String?) {
-        self.init(spot: spot, arguments: arguments, input: input, careful: nil, tokens: nil, environment: nil, folder: nil)
+        self.init(spot: spot, arguments: arguments, input: input, sandbox: nil, tokens: nil, environment: nil, folder: nil)
     }
 
-    init(spot: Spot, arguments: [String], input: String?, careful: Set<SpotUse>?, tokens: CallerTokens?, environment: [String: String]?, folder: URL?, usage: StatsLog? = nil) {
+    init(spot: Spot, arguments: [String], input: String?, sandbox: Set<SpotUse>?, tokens: CallerTokens?, environment: [String: String]?, folder: URL?, usage: StatsLog? = nil) {
         self.usage = usage
         self.spot = spot
         self.arguments = arguments
         self.input = input
-        self.careful = careful
+        self.sandbox = sandbox
         self.tokens = tokens
         self.environment = environment
         self.folder = folder
@@ -50,10 +50,10 @@ public struct TerminalRun {
         let variables = ["OPENSPOT_ID": spot.id].merging(isRead ? ReadReason.sheet.variables : [:]) { _, new in new }.merging(token.map { [CallerTokens.variable: $0] } ?? [:]) { _, new in new }
         let process: ScriptProcess
         if spot.mode.stays {
-            process = ScriptProcess(url: program, name: spot.url.path, mode: .stays, limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder, build: swift.build(of: spot))
+            process = ScriptProcess(url: program, name: spot.url.path, mode: .stays, limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: Self.errorLimit, sandbox: sandbox, base: environment, folder: folder, build: swift.build(of: spot))
         } else {
             let sent = action.sent(input: input)
-            process = ScriptProcess(url: program, name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder, build: swift.build(of: spot))
+            process = ScriptProcess(url: program, name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: Self.errorLimit, sandbox: sandbox, base: environment, folder: folder, build: swift.build(of: spot))
         }
         usage?.track(process, of: spot.id)
         if let tokens, let token {
@@ -89,7 +89,7 @@ public struct TerminalRun {
     }
 
     private func inline(isolation: isolated (any Actor)? = #isolation, isRead: Bool, frame: (String) -> Void) async -> End {
-        let script = InlineScript(spot: spot, api: nil, tokens: tokens, careful: careful, limit: Self.readLimit)
+        let script = InlineScript(spot: spot, api: nil, tokens: tokens, sandbox: sandbox, limit: Self.readLimit)
         defer { script.end() }
         let call = InlineCall(arguments: action.arguments, variables: ["OPENSPOT_ID": spot.id].merging(isRead ? ReadReason.sheet.variables : [:]) { _, new in new }, input: input, limit: isRead ? Self.readLimit : nil)
         script.send(call)

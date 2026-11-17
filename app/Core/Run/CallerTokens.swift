@@ -51,7 +51,7 @@ public final class CallerTokens: @unchecked Sendable {
     }
 
     public init() {
-        records[Self.sandboxed] = Record(caller: Caller(id: "", name: "A sandboxed process", uses: [], restriction: .careful))
+        records[Self.sandboxed] = Record(caller: Caller(id: "", name: "A sandboxed process", uses: [], restriction: .unknown))
     }
 
     func issue(for spot: Spot, reason: String? = nil, keepsFix: Bool = false) -> String {

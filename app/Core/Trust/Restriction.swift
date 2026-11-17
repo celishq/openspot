@@ -1,7 +1,8 @@
 import Foundation
 
 public enum Restriction: Equatable, Sendable {
-    case careful
+    case unknown
+    case checked
     case untrusted(TrustGrant)
 
     var grant: TrustGrant? {
@@ -11,7 +12,8 @@ public enum Restriction: Equatable, Sendable {
 
     var fix: String {
         switch self {
-        case .careful: "Add it, or turn Careful mode off."
+        case .unknown: "Make the call from a spot that names the use, or from Terminal."
+        case .checked: "Add it, so that the spot works for each person who adds it."
         case .untrusted: "Trust it in its Settings, or ask its author to add the use."
         }
     }

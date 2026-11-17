@@ -32,12 +32,8 @@ struct CallContext {
         request.isBound ? caller : nil
     }
 
-    var isCareful: Bool {
-        runs?.tokens.trust.isCareful == true || caller?.isRestricted == true
-    }
-
-    var fence: (caller: CallerTokens.Caller, mode: CarefulMode)? {
+    var fence: (caller: CallerTokens.Caller, mode: Sandbox)? {
         guard let caller, caller.isRestricted, !caller.uses.contains(.files) else { return nil }
-        return (caller, CarefulMode(uses: caller.uses))
+        return (caller, Sandbox(uses: caller.uses))
     }
 }

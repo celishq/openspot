@@ -1036,7 +1036,7 @@ on its card, a press of the card with `⌘`, or **Settings** in its ⌘K menu op
   as a look; and last **Show in the menu bar**, which every spot has.
 - Each shortcut is a row with `type=hotkey` (see [Rows](#rows)). Return on it records a key, and `⌘⌫` removes the key.
 - Openspot makes the Settings sheet, and it grows from the spot's card. Its rows never show in the spot's own sheet.
-- The Settings spot of Openspot holds only the settings of the app: its keys, Careful mode, Open theme, Reload theme,
+- The Settings spot of Openspot holds only the settings of the app: its keys, Open theme, Reload theme,
   Slow motion, Open at login and the `openspot` command.
 - A `field` block in the header names a setting. Return on it runs the action with the same id, which can answer with a
   form. `⌘⌫` removes the value.
@@ -1074,7 +1074,7 @@ if [ -n "$(value setting.token)" ]; then printf 'text=token\ntitle=Signed in\n';
     of a card keeps; `enabled` and `menubar`, `true` or `false`, and `open`, `float` and `key.<command>`, a hotkey such
     as `ctrl+option+k`, `shake`, or one modifier alone, such as `option`, which a tap of that key presses, or no value
     to remove it. The key of `open` does what a press of the spot's card does, from any app;
-  - of the spot `openspot`, which is the app: `login`, `link`, `careful` and `slow`, `true` or `false`, and `panel-key`
+  - of the spot `openspot`, which is the app: `login`, `link` and `slow`, `true` or `false`, and `panel-key`
     and `fix-key`. `slow` runs each motion of the panel ten times slower until the app quits.
 - Each of these keys needs the use of the call that does the work (see [Trust](#trust)).
 
@@ -1160,8 +1160,8 @@ openspot app quit
 | `files`     | No call. The spot writes outside its data folder.                                                                                                               |
 | `account`   | `store publish`. Only a spot that ships inside Openspot can have it.                                                                                            |
 
-- A call that needs a use the header doesn't name still runs, and shows one toast for each spot, use and day.
-  `openspot check spots` can't report it, because only a run shows it.
+- In an unrestricted spot, a call that needs a use the header doesn't name still runs, and shows one toast for each
+  spot, use and day. `openspot check spots` runs each read restricted, so it reports such a call in a read.
 - Before an add, the review shows the title, the `uses`, and a line **Can also** with what the code seems to do but
   doesn't name: the network, `rm`, `screencapture`, `pbcopy` or `pbpaste`. It warns, and never blocks the add.
 - The review names each file that Openspot can't show as text, such as the built program of a Swift spot or a built
@@ -1180,8 +1180,7 @@ openspot app quit
 - A spot that came from someone else is restricted: one that `spot add` or a store added, unless it comes from
   Openspot's own store or your account key signed it. A spot that you made or put in the spots folder yourself runs as
   you made it.
-- Careful mode, a setting of the user that is off by default, restricts every spot except the ones that ship inside
-  Openspot. Without it, the data folder of an unrestricted spot is no boundary.
+- For an unrestricted spot, the data folder is no boundary.
 - To lift it, choose **Trust its author** in the spot's Settings, or run `openspot spot trust <id>`. That trusts each spot
   that the same key signed. A spot that no key signed shows **Trust this spot**, which trusts only the source it came from. Only you
   can trust a spot: a spot that calls `spot trust` fails.

@@ -12,8 +12,8 @@ final class SpotPlayground: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let model: SpotPlaygroundModel
     private var closed: CheckedContinuation<Void, Never>?
 
-    private init(path: String?, isCareful: Bool) {
-        model = SpotPlaygroundModel(path: path, isCareful: isCareful)
+    private init(path: String?) {
+        model = SpotPlaygroundModel(path: path)
         let view = NSHostingView(rootView: SpotPlaygroundView(model: model))
         window = NSWindow(
             contentRect: NSRect(origin: .zero, size: Self.size),
@@ -31,7 +31,7 @@ final class SpotPlayground: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     static func run(path: String?) -> Never {
         let app = NSApplication.shared
-        let playground = SpotPlayground(path: path, isCareful: false)
+        let playground = SpotPlayground(path: path)
         kept.insert(playground)
         app.delegate = playground
         app.setActivationPolicy(.regular)
@@ -43,8 +43,8 @@ final class SpotPlayground: NSObject, NSApplicationDelegate, NSWindowDelegate {
         exit(0)
     }
 
-    static func show(path: String?, isCareful: Bool) async {
-        let playground = SpotPlayground(path: path, isCareful: isCareful)
+    static func show(path: String?) async {
+        let playground = SpotPlayground(path: path)
         kept.insert(playground)
         AppPresence.open()
         playground.window.makeKeyAndOrderFront(nil)

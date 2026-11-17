@@ -7,14 +7,14 @@ extension SpotRuns {
         loaded[spot.id]?.script.end()
         let id = spot.id
         let idle = max(inlineIdle, (spot.read?.seconds ?? 0) * 1.5)
-        let script = InlineScript(spot: spot, api: api, tokens: tokens, careful: careful(for: spot), limit: readLimit, idle: idle, base: environment) { [usage] seconds in
+        let script = InlineScript(spot: spot, api: api, tokens: tokens, sandbox: sandbox(for: spot), limit: readLimit, idle: idle, base: environment) { [usage] seconds in
             usage.add(ProcessTime(cpu: seconds, wakeups: 0), to: id, at: usage.now())
         }
         loaded[id] = (stamp, script)
         return script
     }
 
-    func careful(for spot: Spot) -> Set<SpotUse>? {
+    func sandbox(for spot: Spot) -> Set<SpotUse>? {
         spot.isRestricted ? spot.uses : nil
     }
 

@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 @MainActor
-final class CarefulModeTests: SpotRunsCase {
+final class SandboxTests: SpotRunsCase {
     private var outside: URL!
     private var listener: Int32 = -1
     private var port: UInt16 = 0
@@ -10,7 +10,7 @@ final class CarefulModeTests: SpotRunsCase {
     override func setUp() async throws {
         try await super.setUp()
         let home = try XCTUnwrap(ProcessInfo.processInfo.environment["HOME"], "the test scheme gives a private home")
-        outside = URL(fileURLWithPath: home, isDirectory: true).appendingPathComponent("careful-\(UUID().uuidString.prefix(8))", isDirectory: true)
+        outside = URL(fileURLWithPath: home, isDirectory: true).appendingPathComponent("sandbox-\(UUID().uuidString.prefix(8))", isDirectory: true)
         try FileManager.default.createDirectory(at: outside, withIntermediateDirectories: true)
         listener = socket(AF_INET, SOCK_STREAM, 0)
         var address = sockaddr_in(sin_len: UInt8(MemoryLayout<sockaddr_in>.size), sin_family: sa_family_t(AF_INET), sin_port: 0, sin_addr: in_addr(s_addr: inet_addr("127.0.0.1")), sin_zero: (0, 0, 0, 0, 0, 0, 0, 0))
@@ -35,11 +35,11 @@ final class CarefulModeTests: SpotRunsCase {
         try script(header: "on=sheet.open\(uses.isEmpty ? "" : "\nuses=\(uses)")", """
         r=
         echo a > "$OPENSPOT_DATA/kept" 2>/dev/null && r="${r}data "
-        echo a > "${TMPDIR:-/tmp}/careful-$$" 2>/dev/null && r="${r}temp " && rm -f "${TMPDIR:-/tmp}/careful-$$"
+        echo a > "${TMPDIR:-/tmp}/sandbox-$$" 2>/dev/null && r="${r}temp " && rm -f "${TMPDIR:-/tmp}/sandbox-$$"
         echo a > '\(outside.path)/written' 2>/dev/null && r="${r}files "
         /usr/bin/nc -z -w 2 127.0.0.1 \(port) >/dev/null 2>&1 && r="${r}network "
-        echo a > "$(getconf DARWIN_USER_CACHE_DIR)careful-$$" 2>/dev/null && r="${r}cache " && rm -f "$(getconf DARWIN_USER_CACHE_DIR)careful-$$"
-        mkdir -p "$HOME/Desktop" && echo a > "$HOME/Desktop/careful-$$" 2>/dev/null && r="${r}screenshots " && rm -f "$HOME/Desktop/careful-$$"
+        echo a > "$(getconf DARWIN_USER_CACHE_DIR)sandbox-$$" 2>/dev/null && r="${r}cache " && rm -f "$(getconf DARWIN_USER_CACHE_DIR)sandbox-$$"
+        mkdir -p "$HOME/Desktop" && echo a > "$HOME/Desktop/sandbox-$$" 2>/dev/null && r="${r}screenshots " && rm -f "$HOME/Desktop/sandbox-$$"
         head -c 1 /etc/hosts >/dev/null && r="${r}read"
         printf 'text=t\\ntitle=%s\\n' "$r"
         """)
@@ -53,14 +53,14 @@ final class CarefulModeTests: SpotRunsCase {
         return sheet.reading.value?.title ?? ""
     }
 
-    func testOffASpotDoesAllThatThePersonCan() async throws {
+    func testAnUnrestrictedSpotDoesAllThatThePersonCan() async throws {
         let result = try await result(of: trying())
 
         XCTAssertEqual(result, "data temp files network cache screenshots read")
     }
 
-    func testOnASpotWritesOnlyToItsDataAndTheTempFolderAndReachesNoNetwork() async throws {
-        careful()
+    func testARestrictedSpotWritesOnlyToItsDataAndTheTempFolderAndReachesNoNetwork() async throws {
+        restrict()
 
         let result = try await result(of: trying())
 
@@ -68,32 +68,24 @@ final class CarefulModeTests: SpotRunsCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: outside.appendingPathComponent("written").path))
     }
 
-    func testOffARestrictedSpotWritesOnlyToItsDataAndTheTempFolderAndReachesNoNetwork() async throws {
+    func testARestrictedSpotHasWhatItsUsesName() async throws {
         restrict()
-
-        let result = try await result(of: trying())
-
-        XCTAssertEqual(result, "data temp cache read")
-    }
-
-    func testOnASpotHasWhatItsUsesName() async throws {
-        careful()
 
         let result = try await result(of: trying(uses: "files,network"))
 
         XCTAssertEqual(result, "data temp files network cache screenshots read")
     }
 
-    func testOnAScreenSpotWritesToTheFolderOfScreenshots() async throws {
-        careful()
+    func testARestrictedScreenSpotWritesToTheFolderOfScreenshots() async throws {
+        restrict()
 
         let result = try await result(of: trying(uses: "screen"))
 
         XCTAssertEqual(result, "data temp cache screenshots read")
     }
 
-    func testOnAStayingSpotIsCarefulToo() async throws {
-        careful()
+    func testARestrictedStayingSpotIsInItsSandboxToo() async throws {
+        restrict()
         try script(header: "mode=stay\non=sheet.open\noffers=card\noffers=menubar", """
         echo a > '\(outside.path)/written' 2>/dev/null && r=files || r=kept
         while IFS= read -r line; do
@@ -107,7 +99,7 @@ final class CarefulModeTests: SpotRunsCase {
         XCTAssertEqual(result, "kept")
     }
 
-    func testAStayingSpotStartsAgainInTheNewModeWhenTheModeChanges() async throws {
+    func testAStayingSpotStartsAgainInItsSandboxWhenItBecomesRestricted() async throws {
         try script(header: "mode=stay\non=sheet.open\noffers=card\noffers=menubar", """
         echo a > '\(outside.path)/written-$$' 2>/dev/null && r=files || r=kept
         while IFS= read -r line; do
@@ -119,18 +111,18 @@ final class CarefulModeTests: SpotRunsCase {
         let first = try await result(of: sheet)
         XCTAssertEqual(first, "files", "the script started as the person")
 
-        careful()
+        restrict()
         _ = try scanned()
 
         try await wait("the read of the new process") { sheet.reading.value?.title == "kept" }
     }
 
-    func testOnASpotWithFilesCannotWriteTheConfigOrTheSpotsOfOpenspot() async throws {
+    func testARestrictedSpotWithFilesCannotWriteTheConfigOrTheSpotsOfOpenspot() async throws {
         let spots = outside.appendingPathComponent("spots", isDirectory: true)
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         runs.quit()
         runs = runs(environment: ProcessInfo.processInfo.environment.merging(["OPENSPOT_CONFIG": outside.appendingPathComponent("config").path, "OPENSPOT_SPOTS": spots.path]) { _, new in new })
-        careful()
+        restrict()
         try script(header: "on=sheet.open\nuses=files", """
         r=
         echo a >> "$OPENSPOT_CONFIG/config.toml" 2>/dev/null && r="${r}config "
@@ -145,31 +137,13 @@ final class CarefulModeTests: SpotRunsCase {
         XCTAssertEqual(result, "data files")
     }
 
-    func testAStayingSpotStartsAgainInCarefulModeWhenItBecomesRestricted() async throws {
-        try script(header: "mode=stay\non=sheet.open\noffers=card\noffers=menubar", """
-        echo a > '\(outside.path)/written-$$' 2>/dev/null && r=files || r=kept
-        while IFS= read -r line; do
-          case "$line" in call=*) call=${line#call=} ;; esac
-          [ -n "$line" ] || printf 'end=%s\\n\\ntext=t\\ntitle=%s\\n---\\n' "$call" "$r"
-        done
-        """)
-        let sheet = try sheet()
-        let first = try await result(of: sheet)
-        XCTAssertEqual(first, "files", "the script started unrestricted")
-
-        restrict()
-        _ = try scanned()
-
-        try await wait("the read of the new process") { sheet.reading.value?.title == "kept" }
-    }
-
-    func testOnTheSandboxDeniesAppleEvents() {
-        let words = CarefulMode(uses: Set(SpotUse.allCases)).words(data: "/d", temp: "/t", home: "/h")
+    func testTheSandboxDeniesAppleEvents() {
+        let words = Sandbox(uses: Set(SpotUse.allCases)).words(data: "/d", temp: "/t", home: "/h")
 
         XCTAssertTrue(words.contains { $0.contains("(deny appleevent-send)") })
     }
 
-    func testOnTheHelperProcessOfAnInlineSpotIsCarefulToo() async throws {
+    func testTheHelperProcessOfARestrictedInlineSpotIsInItsSandboxToo() async throws {
         let bin = outside.appendingPathComponent("bin", isDirectory: true)
         try FileManager.default.createDirectory(at: bin, withIntermediateDirectories: true)
         try "#!/bin/sh\necho a > '\(outside.path)/written' 2>/dev/null && echo files || echo kept\n".writeScript(to: bin.appendingPathComponent("openspot"))
@@ -185,10 +159,10 @@ final class CarefulModeTests: SpotRunsCase {
         XCTAssertEqual(before, "files", "the helper ran as the person")
         try FileManager.default.removeItem(at: outside.appendingPathComponent("written"))
 
-        careful()
+        restrict()
         _ = try scanned()
         sheet.read(need: .change)
 
-        try await wait("the read in Careful mode") { sheet.reading.value?.title == "kept" }
+        try await wait("the read in the sandbox") { sheet.reading.value?.title == "kept" }
     }
 }

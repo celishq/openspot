@@ -41,11 +41,6 @@ class SpotRunsCase: XCTestCase {
 
     var trust = Trust()
 
-    func careful() {
-        trust = Trust(isCareful: true)
-        runs.tokens.trust = trust
-    }
-
     func restrict(_ name: String = "script") {
         trust = .restricting(name)
     }

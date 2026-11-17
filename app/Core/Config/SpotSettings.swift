@@ -139,7 +139,7 @@ public struct SpotSettings: Equatable, Sendable {
         if let grant {
             blocks.append(TextBlock(fields: [
                 .init(key: "row", value: Row.trust.id(of: spot)), .init(key: "title", value: grant.title),
-                .init(key: "detail", value: "Runs in Careful mode, with no view of its own"), .init(key: "icon", value: "checkmark.shield"),
+                .init(key: "detail", value: "Runs in a sandbox, with no view of its own"), .init(key: "icon", value: "checkmark.shield"),
                 .init(key: "hides", value: Self.clear)
             ]))
         }

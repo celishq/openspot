@@ -33,7 +33,7 @@ final class InlineScript: @unchecked Sendable {
     private let api: CommandAPI?
     private let tokens: CallerTokens?
     private let token: String?
-    private let careful: CarefulMode?
+    private let sandbox: Sandbox?
     private let limit: TimeInterval
     private let idle: TimeInterval
     private let spent: @Sendable (TimeInterval) -> Void
@@ -49,8 +49,8 @@ final class InlineScript: @unchecked Sendable {
     private var thrown: JSValue?
     private var variables: [String: String] = [:]
 
-    init(spot: Spot, api: CommandAPI?, tokens: CallerTokens? = nil, careful: Set<SpotUse>? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, base: [String: String] = ProcessInfo.processInfo.environment, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
-        self.careful = careful.map(CarefulMode.init)
+    init(spot: Spot, api: CommandAPI?, tokens: CallerTokens? = nil, sandbox: Set<SpotUse>? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, base: [String: String] = ProcessInfo.processInfo.environment, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
+        self.sandbox = sandbox.map(Sandbox.init)
         url = spot.url
         name = spot.id
         dataName = spot.dataName
@@ -231,7 +231,7 @@ final class InlineScript: @unchecked Sendable {
            let work = api.work(for: api.admit(call, request: request), request: request, input: { input ?? "" }) {
             return answer { await work() }
         }
-        let child = ScriptProcess(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["openspot"] + arguments, mode: .once(input: input), dataName: dataName, variables: self.environment.filter { ["OPENSPOT_ID", CallerTokens.variable].contains($0.key) }.merging(variables) { _, new in new }, careful: careful?.uses, base: base)
+        let child = ScriptProcess(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["openspot"] + arguments, mode: .once(input: input), dataName: dataName, variables: self.environment.filter { ["OPENSPOT_ID", CallerTokens.variable].contains($0.key) }.merging(variables) { _, new in new }, sandbox: sandbox?.uses, base: base)
         return answer { await Self.answer(of: child) }
     }
 

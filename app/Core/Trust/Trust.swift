@@ -5,19 +5,16 @@ public struct Trust: Equatable, Sendable {
     let store: URL?
     let ownKey: String?
     var grants: Set<TrustGrant> = []
-    public private(set) var isCareful: Bool
 
-    public init(entries: [SpotLock.Entry] = [], store: URL? = nil, ownKey: String? = nil, isCareful: Bool = false) {
+    public init(entries: [SpotLock.Entry] = [], store: URL? = nil, ownKey: String? = nil) {
         self.entries = entries
         self.store = store
         self.ownKey = ownKey
-        self.isCareful = isCareful
     }
 
     func applying(_ config: Config) -> Trust {
         var trust = self
         trust.grants = Set(config.grants)
-        trust.isCareful = config.isCareful
         return trust
     }
 
@@ -32,8 +29,7 @@ public struct Trust: Equatable, Sendable {
     }
 
     func applied(to spot: Spot) -> Spot {
-        if let grant = grant(lifting: spot) { return spot.restricted(.untrusted(grant)) }
-        return isCareful && !spot.isBuiltIn ? spot.restricted(.careful) : spot
+        grant(lifting: spot).map { spot.restricted(.untrusted($0)) } ?? spot
     }
 
     private func grant(lifting spot: Spot) -> TrustGrant? {

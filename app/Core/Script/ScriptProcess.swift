@@ -17,7 +17,7 @@ public final class ScriptProcess: @unchecked Sendable {
     private let mode: Mode
     private let limit: TimeInterval?
     private let dataName: String?
-    private let careful: CarefulMode?
+    private let sandbox: Sandbox?
     private let variables: [String: String]
     private let base: [String: String]?
     private let folder: URL?
@@ -46,13 +46,13 @@ public final class ScriptProcess: @unchecked Sendable {
     private var reader = SheetFrames()
     var fix: @Sendable () -> URL? = { nil }
 
-    public init(url: URL, name: String? = nil, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], errorLimit: Int? = 64 * 1024, careful: Set<SpotUse>? = nil, base: [String: String]? = nil, folder: URL? = nil, build: (@Sendable () async throws -> URL)? = nil) {
+    public init(url: URL, name: String? = nil, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], errorLimit: Int? = 64 * 1024, sandbox: Set<SpotUse>? = nil, base: [String: String]? = nil, folder: URL? = nil, build: (@Sendable () async throws -> URL)? = nil) {
         self.name = name
         self.build = build
         building = build != nil
         self.base = base
         self.folder = folder
-        self.careful = careful.map(CarefulMode.init)
+        self.sandbox = sandbox.map(Sandbox.init)
         errorText = ErrorTail(limit: errorLimit)
         self.dataName = dataName
         self.variables = variables
@@ -133,7 +133,7 @@ public final class ScriptProcess: @unchecked Sendable {
             hasInput = given != nil
         }
         let environment = Self.environment(base: base ?? ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "", dataName: dataName).merging(variables) { _, new in new }
-        let fence = careful?.words(in: environment) ?? []
+        let fence = sandbox?.words(in: environment) ?? []
         let errors = errorOutput
         signal(SIGPIPE, SIG_IGN)
         guard !isStopped else {

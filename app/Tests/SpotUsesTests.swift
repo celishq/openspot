@@ -101,30 +101,7 @@ final class SpotUsesTests: SpotRunsCase {
         XCTAssertEqual(found.scripts.first?.uses, [])
     }
 
-    func testASpotCannotChangeCarefulMode() async throws {
-        try caller(header: "uses=app", "setting set --spot openspot careful false")
-        _ = try scanned()
-
-        let (code, errors) = try await pressed()
-
-        XCTAssertEqual(code, "1")
-        XCTAssertEqual(errors, "Script cannot change Careful mode. Only you can, in Settings or with `openspot setting set --spot openspot careful true` in Terminal.\n")
-        XCTAssertFalse(FileManager.default.fileExists(atPath: config.appendingPathComponent("config.toml").path))
-    }
-
-    func testInCarefulModeAnUndeclaredUseIsRefused() async throws {
-        careful()
-        try caller("setting list")
-        _ = try scanned()
-
-        let (code, errors) = try await pressed()
-
-        XCTAssertEqual(code, "1")
-        XCTAssertEqual(errors, "Openspot stopped Script, because it read the settings of each spot without `uses=spots` in its header. Add it, or turn Careful mode off.\n")
-        XCTAssertEqual(toasts, [])
-    }
-
-    func testARestrictedSpotIsRefusedAnUndeclaredUseWhileCarefulModeIsOff() async throws {
+    func testARestrictedSpotIsRefusedAnUndeclaredUse() async throws {
         restrict()
         try caller("setting list")
         _ = try scanned()
@@ -135,27 +112,7 @@ final class SpotUsesTests: SpotRunsCase {
         XCTAssertEqual(errors, "Openspot stopped Script, because it read the settings of each spot without `uses=spots` in its header. Trust it in its Settings, or ask its author to add the use.\n")
     }
 
-    func testInCarefulModeASandboxedProcessOutsideEachSpotCannotChangeCarefulModeOrUseAnything() async throws {
-        careful()
-        _ = try scanned()
-        let errors = folder.appendingPathComponent("errors")
-        FileManager.default.createFile(atPath: errors.path, contents: nil)
-        let shell = Process()
-        shell.executableURL = URL(fileURLWithPath: "/usr/bin/sandbox-exec")
-        shell.arguments = ["-p", "(version 1)(allow default)", client.path, "setting", "set", "--spot", "openspot", "careful", "false"]
-        shell.environment = ["OPENSPOT_CONFIG": config.path, "PATH": "/usr/bin:/bin"]
-        shell.standardOutput = FileHandle.nullDevice
-        shell.standardError = try FileHandle(forWritingTo: errors)
-
-        try shell.run()
-        try await wait("the end of the call") { !shell.isRunning }
-
-        XCTAssertEqual(shell.terminationStatus, 1)
-        XCTAssertEqual(try String(contentsOf: errors, encoding: .utf8), "A sandboxed process cannot change Careful mode. Only you can, in Settings or with `openspot setting set --spot openspot careful true` in Terminal.\n")
-        XCTAssertFalse(FileManager.default.fileExists(atPath: config.appendingPathComponent("config.toml").path))
-    }
-
-    func testASandboxedProcessOutsideEachSpotCannotTrustASpotWhileCarefulModeIsOff() async throws {
+    func testASandboxedProcessOutsideEachSpotCannotTrustASpot() async throws {
         _ = try scanned()
         let errors = folder.appendingPathComponent("errors")
         FileManager.default.createFile(atPath: errors.path, contents: nil)
@@ -173,8 +130,8 @@ final class SpotUsesTests: SpotRunsCase {
         XCTAssertEqual(try String(contentsOf: errors, encoding: .utf8), "A sandboxed process cannot trust a spot. Only you can, in its Settings or with `openspot spot trust <id>` in Terminal.\n")
     }
 
-    func testInCarefulModeADeclaredUseRuns() async throws {
-        careful()
+    func testARestrictedSpotRunsADeclaredUse() async throws {
+        restrict()
         try caller(header: "uses=spots", "setting list")
         _ = try scanned()
 

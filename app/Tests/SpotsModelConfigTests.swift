@@ -38,7 +38,6 @@ final class SpotsModelConfigTests: PanelCase {
         let reads = disk.reads
 
         model.configChanged(.keys, to: next)
-        model.configChanged(.careful, to: next)
         model.configChanged(.value(spot: "a", caller: nil), to: next)
         model.configChanged(.spots(["a"]), to: next)
 

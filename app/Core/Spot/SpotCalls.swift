@@ -128,7 +128,7 @@ struct SpotCalls {
             }
             let text = await input?()
             let usage = caller == nil || spot.reachesAccountKey ? nil : runs?.usage
-            let run = TerminalRun(spot: spot, arguments: arguments, input: text, careful: spot.isRestricted ? spot.uses : nil, tokens: runs?.tokens, environment: environment, folder: folder, usage: usage)
+            let run = TerminalRun(spot: spot, arguments: arguments, input: text, sandbox: spot.isRestricted ? spot.uses : nil, tokens: runs?.tokens, environment: environment, folder: folder, usage: usage)
             let begin = Date()
             var first = true
             let end = await run.start { frame in

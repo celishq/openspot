@@ -32,7 +32,6 @@ sheet() {
   printf 'recents=false\n\nbutton=open\ntitle=Change\nclose=false\n'
   printf '\nrow=panel-key\ntitle=Open Openspot\nicon=keyboard\ntype=hotkey\nshortcut=%s\n' "$(value "$1" panel-key)"
   printf '\nrow=fix-key\ntitle=Open a fix\nicon=wrench.and.screwdriver\ntype=hotkey\nshortcut=%s\n' "$(value "$1" fix-key)"
-  printf '\nrow=careful_mode\ntitle=Careful mode\ndetail=Spots get only what their uses name\nicon=lock.shield\nvalue=%s\n' "$(value "$1" careful)"
   printf '\nrow=open_theme\ntitle=Open theme\ndetail=Tune the look in a text editor\nicon=paintbrush\n'
   printf '\nrow=reload_theme\ntitle=Reload theme\ndetail=Read the theme file again\nicon=arrow.clockwise\n'
   [ -z "$slow" ] || printf '\nrow=slow_motion\ntitle=Slow motion\ndetail=Every motion ten times slower\nicon=tortoise\nvalue=%s\n' "$slow"
@@ -54,10 +53,6 @@ case "$1" in
       open_theme) exec openspot theme open ;;
       reload_theme)
         openspot theme reload && echo 'toast=Reloaded the theme'
-        ;;
-      careful_mode)
-        if [ "$(status careful)" = true ]; then on=false; else on=true; fi
-        exec openspot setting set --spot openspot careful "$on"
         ;;
       slow_motion)
         if [ "$(status slow)" = true ]; then on=false; else on=true; fi
