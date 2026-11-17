@@ -120,7 +120,7 @@ extension SpotsModel {
             match.list == 0 ? spots[match.item.run] : Entry(spot: finding.sources[match.list - 1], item: match.item)
         }
         show(finding.answers + foundSpots.filter { !ids.contains($0.id) })
-        holdMiss()
+        if !isEditing { missedSearch.landed(query, found: !visible.isEmpty) }
     }
 
     private func show(_ next: [Entry]) {
@@ -148,15 +148,8 @@ extension SpotsModel {
     }
 
     func noteMiss() {
-        guard let search = pendingMiss else { return }
-        pendingMiss = nil
+        guard let search = missedSearch.take() else { return }
         runs.usage.missed(search, at: runs.now())
-    }
-
-    private func holdMiss() {
-        let search = query.trimmingCharacters(in: .whitespacesAndNewlines).folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil).lowercased()
-        guard pendingMiss.map({ !$0.hasPrefix(search) }) ?? true else { return }
-        pendingMiss = visible.isEmpty && search.count >= 3 && !search.hasPrefix("/") && !isEditing ? search : nil
     }
 
     func askAnswers() {

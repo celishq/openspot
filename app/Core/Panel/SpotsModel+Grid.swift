@@ -135,7 +135,7 @@ extension SpotsModel {
 
 
     public func run(_ entry: Entry) {
-        pendingMiss = nil
+        missedSearch.drop()
         if let item = entry.item, let list = self.entry(entry.spot.id) {
             if item.records, openSheetID != list.id {
                 pushFirst(list.id, moving: true)

@@ -69,7 +69,7 @@ public final class SpotsModel {
     @ObservationIgnored var keyFrames: [String: String] = [:]
     @ObservationIgnored var spotListBuilds = 0
     @ObservationIgnored var visibleUpdates = 0
-    @ObservationIgnored var pendingMiss: String?
+    @ObservationIgnored var missedSearch = MissedSearch()
     var answerMatches: AnswerMatches {
         runs.answerMatches
     }
