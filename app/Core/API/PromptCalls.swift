@@ -31,7 +31,7 @@ struct PromptCalls {
             let themes = ThemeFolder.standard(environment: environment, builtIn: mac.theme)
             let found = try themes.find(name)
             let app = AgentPrompt.command(of: Bundle.main.executablePath ?? "openspot")
-            return ThemePrompt(theme: found, folder: themes.url, isBuiltIn: ThemeFolder.isBuiltIn(found, among: themes.scanBuiltIns()), base: mac.theme, app: app).asking(words)
+            return ThemePrompt(theme: found, folder: themes.url, isBuiltIn: themes.isBuiltIn(found), base: mac.theme, app: app).asking(words)
         }
     }
 

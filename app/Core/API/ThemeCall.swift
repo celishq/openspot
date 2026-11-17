@@ -51,8 +51,7 @@ enum ThemeCall: NounCall, Equatable {
         case .list(let form):
             CommandAnswer.work {
                 let used = themes.readInUse()
-                let builtIns = themes.scanBuiltIns()
-                return try form.text(of: themes.scan().map { PrintedTheme(theme: $0, builtin: ThemeFolder.isBuiltIn($0, among: builtIns), used: $0 == used) })
+                return try form.text(of: themes.scan().map { PrintedTheme(theme: $0, builtin: themes.isBuiltIn($0), used: $0 == used) })
             }
         case .use(let name):
             CommandAnswer.work { try await draw("Switched to the theme \(try themes.use(name)).") }
@@ -73,10 +72,9 @@ enum ThemeCall: NounCall, Equatable {
         case .open(let name):
             CommandAnswer.work { [openText = context.mac.openText] in
                 guard let openText else { throw SpotError.fault("This Mac has no text editor.") }
-                let isBuiltIn = ThemeFolder.isBuiltIn(try name.map(themes.find) ?? themes.readInUse(), among: themes.scanBuiltIns())
-                let file = try themes.edit(name)
-                if isBuiltIn { _ = try await draw("") }
-                await openText(file)
+                let edited = try themes.edit(name)
+                if edited.isCopy { _ = try await draw("") }
+                await openText(edited.file)
                 return ""
             }
         }

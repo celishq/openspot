@@ -87,8 +87,9 @@ case "$OPENSPOT_PAGE" in
           exit 0
         fi
         name=$(value name)
-        openspot theme rename "$2" "$name" >/dev/null || exit 1
-        list "select=$name$nl"
+        said=$(openspot theme rename "$2" "$name") || exit 1
+        name=${said#"Renamed the theme $2 to "}
+        list "select=${name%.}$nl"
         ;;
       delete)
         said=$(openspot theme delete "$2") || exit 1

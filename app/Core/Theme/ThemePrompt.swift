@@ -36,9 +36,13 @@ public struct ThemePrompt: Equatable, Sendable {
 
     private var file: String {
         guard isBuiltIn else {
-            return "Run \"\(app)\" theme use \"\(theme)\". Then change the file \(folder.appendingPathComponent("\(theme).theme/theme.toml").path)."
+            return "Run \"\(app)\" theme use \(quotedTheme). Then change the file \(folder.appendingPathComponent("\(theme).theme/theme.toml").path)."
         }
-        return "The theme \(theme) comes with Openspot, so it can't change. First run \"\(app)\" theme duplicate \"\(theme)\". It makes a copy you can change, uses it, and prints its name, such as \(theme) copy. Then change the file theme.toml in the folder \(folder.path)/<name of the copy>.theme."
+        return "The theme \(theme) comes with Openspot, so it can't change. First run \"\(app)\" theme duplicate \(quotedTheme). It makes a copy you can change, uses it, and prints its name, such as \(theme) copy. Then change the file theme.toml in the folder \(folder.path)/<name of the copy>.theme."
+    }
+
+    private var quotedTheme: String {
+        "'" + theme.replacingOccurrences(of: "'", with: "'\\''") + "'"
     }
 
     private var keys: String {

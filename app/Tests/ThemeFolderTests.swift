@@ -42,6 +42,25 @@ final class ThemeFolderTests: XCTestCase {
         XCTAssertEqual(themes.read().look.dark.fill, 0.1)
     }
 
+    func testAFolderNamedLikeABuiltInIsNotAThemeAndIsAFaultThatSaysToRenameIt() throws {
+        try write("openspot", "[dark]\nfill = 0.9\n")
+        try write("Night", "")
+
+        XCTAssertEqual(themes.scan(), ["Openspot", "Night"])
+        XCTAssertEqual(refusal { try themes.use("openspot") }, nil)
+        XCTAssertEqual(themes.read().look.dark.fill, 0.1)
+        XCTAssertEqual(themes.read().faults, ["The folder \(folder.appendingPathComponent("themes/openspot.theme").path) has the name of the built-in theme Openspot, so Openspot skips it. Rename the folder."])
+    }
+
+    func testUseRefusesAThemeWithFaultsAndKeepsTheOneInUse() throws {
+        try write("Night", "")
+        try write("Bad", "[dark]\nfill = 5\n")
+        try themes.use("Night")
+
+        XCTAssertEqual(refusal { try themes.use("bad") }, "The theme Bad has faults, so Openspot keeps the theme Night. Fix each line below, then run `openspot theme use Bad` again.\ntheme.toml: [dark] fill is a strength from 0 to 1, such as 0.2.")
+        XCTAssertEqual(themes.config.read().theme, "Night")
+    }
+
     func testUseSwitchesTheThemeAndTheLoadedThemeFollows() throws {
         try write("Night", "[dark]\nfill = 0.3\n")
 
@@ -119,11 +138,11 @@ final class ThemeFolderTests: XCTestCase {
     }
 
     func testEditOnTheBuiltInDuplicatesItFirst() throws {
-        let file = try themes.edit()
+        let file = try themes.edit().file
 
         XCTAssertEqual(file, folder.appendingPathComponent("themes/Openspot copy.theme/theme.toml"))
         XCTAssertEqual(themes.readInUse(), "Openspot copy")
-        XCTAssertEqual(try themes.edit(), file)
+        XCTAssertEqual(try themes.edit().file, file)
         XCTAssertEqual(themes.scan(), ["Openspot", "Openspot copy"])
     }
 
@@ -158,7 +177,7 @@ final class ThemeFolderTests: XCTestCase {
         XCTAssertEqual(try themes.use("dusk"), "Dusk")
         XCTAssertEqual(themes.read().look.dark.fill, 0.4)
         XCTAssertEqual(themes.read().look.shared.hover, 0.08)
-        XCTAssertEqual(themes.read().faults, [])
+        XCTAssertEqual(themes.read().faults, ["The folder \(folder.appendingPathComponent("themes/dusk.theme").path) has the name of the built-in theme Dusk, so Openspot skips it. Rename the folder."])
 
         XCTAssertEqual(try themes.duplicate("Dusk"), "Dusk copy")
         XCTAssertEqual(try text(of: "Dusk copy"), "[dark]\nfill = 0.4\n")

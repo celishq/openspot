@@ -9,8 +9,6 @@ public enum ThemeKind: Equatable, Sendable {
     case scale
     case variant
 
-    private static let hundredths = 100.0
-
     public var range: ClosedRange<Double> {
         switch self {
         case .strength: 0...1
@@ -40,18 +38,5 @@ public enum ThemeKind: Equatable, Sendable {
         default: nil
         }
         return number.flatMap { range.contains($0) ? $0 : nil }
-    }
-
-    public var step: Double {
-        switch self {
-        case .points: 1
-        case .reach: 0.5
-        case .strength, .seconds, .scale, .colour, .variant: 0.01
-        }
-    }
-
-    public func value(_ number: Double) -> ConfigDocument.Value {
-        let near = (min(max(number, range.lowerBound), range.upperBound) * Self.hundredths).rounded() / Self.hundredths
-        return self == .points && near == near.rounded() ? .integer(Int(near)) : .number(near)
     }
 }

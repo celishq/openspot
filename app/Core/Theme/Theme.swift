@@ -126,15 +126,6 @@ public struct Theme: Equatable, Sendable {
         fields.keys.sorted { $0.name < $1.name }
     }
 
-    public static func kind(of key: ThemeKey) -> ThemeKind? {
-        fields[key]?.kind
-    }
-
-    public static func accepts(_ value: ConfigDocument.Value, at key: ThemeKey) -> Bool {
-        var theme = Theme()
-        return fields[key]?.set(value, in: &theme) ?? false
-    }
-
     private static var fields: [ThemeKey: ThemeField<Theme>] {
         Look.fields.mapValues { $0.on(\Theme.look) }.merging(Layout.fields.mapValues { $0.on(\Theme.layout) }) { one, _ in one }
     }

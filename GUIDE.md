@@ -633,4 +633,5 @@ Each section of the file holds one kind of value:
   `openspot theme duplicate` makes a copy of it that you can change. A key that a built-in theme lacks keeps the value
   of `Openspot` too.
 - A name can't be empty, start with `.`, or hold `/` or a new line, and the spaces around it are dropped. A folder that
-  has the name of a built-in theme, in any case, is not a theme.
+  has the name of a built-in theme, in any case, is not a theme, and a toast at launch asks you to rename it.
+- `openspot theme use` fails on a theme with a value it can't read, prints a line for each, and keeps the theme in use.

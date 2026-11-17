@@ -8,13 +8,13 @@ final class SpotLoadedTheme {
     private static let viewThemeLimit = 32
 
     @ObservationIgnored private var painted = Theme.Look()
-    @ObservationIgnored private var laid = Theme.Layout()
     @ObservationIgnored private var viewThemes: [ViewThemeKey: [String: Any]] = [:]
     private(set) var palette = SpotPalette(Theme.Look())
     private(set) var layout = 0
 
     func take(_ next: Theme) {
         paint(next.look)
+        SpotTokens.take(next.layout)
         lay(next.layout)
     }
 
@@ -26,9 +26,6 @@ final class SpotLoadedTheme {
     }
 
     func lay(_ next: Theme.Layout) {
-        guard next != laid else { return }
-        laid = next
-        SpotTokens.take(next)
         SpotType.take(next.type)
         SpotBackdropEdge.draw()
         viewThemes = [:]

@@ -171,7 +171,6 @@ final class ThemeTests: XCTestCase {
         ])
         XCTAssertEqual(theme.layout.space.cell, Theme().layout.space.cell)
         XCTAssertEqual(theme.layout.space.padding, 60)
-        XCTAssertEqual(ThemeKind.points.value(200), .integer(100))
     }
 
     func testAFileThatIsNotThereIsAFault() throws {
@@ -203,6 +202,26 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual([theme.layout.motion.grow, theme.layout.motion.shrink, theme.layout.motion.move], [0.15, 0.2, 0.25])
     }
 
+    func testEachShippedThemeReadsWithNoFault() throws {
+        let shipped = builtInURL.deletingLastPathComponent().deletingLastPathComponent()
+        let files = try FileManager.default.contentsOfDirectory(at: shipped, includingPropertiesForKeys: nil).filter { $0.pathExtension == "theme" }.map { $0.appendingPathComponent("theme.toml") }
+
+        XCTAssertGreaterThan(files.count, 1)
+        for file in files {
+            XCTAssertEqual(ThemeFolder.read(builtIn: builtInURL, copy: file).faults, [], file.path)
+        }
+    }
+
+    func testThePromptQuotesTheNameOfTheThemeForTheShell() {
+        let name = "Say \"hi\" $HOME `date` it's"
+        let own = ThemePrompt(theme: name, folder: URL(fileURLWithPath: "/themes"), isBuiltIn: false, base: nil, app: "/bin/openspot").asking("")
+        let builtIn = ThemePrompt(theme: name, folder: URL(fileURLWithPath: "/themes"), isBuiltIn: true, base: nil, app: "/bin/openspot").asking("")
+        let quoted = "'Say \"hi\" $HOME `date` it'\\''s'"
+
+        XCTAssertTrue(own.contains("theme use \(quoted). "), own)
+        XCTAssertTrue(builtIn.contains("theme duplicate \(quoted). "), builtIn)
+    }
+
     func testACopyOverridesTheBuiltInThemeKeyByKey() throws {
         let folder = try temporaryFolder()
         let builtIn = folder.appendingPathComponent("built-in.toml")
@@ -228,15 +247,5 @@ final class ThemeTests: XCTestCase {
 
         XCTAssertEqual(theme.look.shared.hover, 0.08)
         XCTAssertEqual(theme.faults, ["theme.toml cannot be read at \(copy.path), so Openspot keeps the look of the app. Save it as text, or delete it."])
-    }
-
-    func testAKindRoundsANumberIntoItsRange() {
-        XCTAssertEqual(ThemeKind.points.value(13.4), .number(13.4))
-        XCTAssertEqual(ThemeKind.points.value(13), .integer(13))
-        XCTAssertEqual(ThemeKind.strength.value(0.123), .number(0.12))
-        XCTAssertEqual(ThemeKind.strength.value(1.5), .number(1))
-        XCTAssertEqual(ThemeKind.reach.value(0), .number(1))
-        XCTAssertEqual(ConfigDocument.Value.integer(3).number, 3)
-        XCTAssertNil(ConfigDocument.Value.string("#FFFFFF").number)
     }
 }

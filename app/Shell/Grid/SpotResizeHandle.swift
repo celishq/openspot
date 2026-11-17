@@ -4,6 +4,7 @@ import SwiftUI
 struct SpotResizeHandle: View {
     let size: SpotSize
     @MainActor private static var rims: [Rim: Path] = [:]
+    private static let rimLimit = 32
 
     var body: some View {
         Self.rim(of: size)
@@ -29,6 +30,7 @@ struct SpotResizeHandle: View {
         let side = SpotTokens.resizeHandle
         let rim = edge.trimmedPath(from: corner.first ?? 0, to: corner.last ?? 0)
             .offsetBy(dx: side - card.width, dy: side - card.height)
+        if rims.count >= rimLimit { rims = [:] }
         rims[name] = rim
         return rim
     }

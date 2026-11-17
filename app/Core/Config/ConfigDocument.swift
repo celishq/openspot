@@ -9,14 +9,6 @@ public struct ConfigDocument: Equatable, Sendable {
         case strings([String])
         case table([String: String])
 
-        public var number: Double? {
-            switch self {
-            case .integer(let number): Double(number)
-            case .number(let number): number
-            default: nil
-            }
-        }
-
         var text: String {
             switch self {
             case .string(let text): Self.quoted(text)
