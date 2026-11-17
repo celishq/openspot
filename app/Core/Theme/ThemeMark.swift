@@ -6,20 +6,14 @@ public struct ThemeMark: Equatable, Sendable {
         case arc(centre: CGPoint, radius: CGFloat)
     }
 
-    public let section: String
-    public let key: String
+    public let key: ThemeKey
     public let rect: CGRect
     public let hit: CGRect
     public let shape: Shape
     public let axis: CGVector
     public let rate: CGFloat
 
-    public var id: String {
-        "\(section) \(key)"
-    }
-
-    public init(section: String, key: String, rect: CGRect, hit: CGRect? = nil, shape: Shape = .band, axis: CGVector, rate: CGFloat = 1) {
-        self.section = section
+    public init(key: ThemeKey, rect: CGRect, hit: CGRect? = nil, shape: Shape = .band, axis: CGVector, rate: CGFloat = 1) {
         self.key = key
         self.rect = rect
         self.hit = hit ?? rect

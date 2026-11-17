@@ -13,7 +13,7 @@ final class ThemeMarksTests: XCTestCase {
     }
 
     private func key(at point: CGPoint, in marks: ThemeMarks) -> String? {
-        marks.mark(at: point).map { "[\($0.section)] \($0.key)" }
+        marks.mark(at: point)?.key.name
     }
 
     func testAPointOnTheGridFindsTheTokenThatShapesIt() {
@@ -73,14 +73,14 @@ final class ThemeMarksTests: XCTestCase {
         XCTAssertEqual(corner.value(after: CGSize(width: 4, height: -4), from: 26, kind: .points), .integer(26))
         XCTAssertEqual(left.value(after: CGSize(width: 3, height: 0), from: 13, kind: .points), .integer(16))
         XCTAssertEqual(right.value(after: CGSize(width: -3, height: 0), from: 13, kind: .points), .integer(16))
-        XCTAssertEqual(wide.key, "cell")
+        XCTAssertEqual(wide.key, ThemeKey(section: "space", key: "cell"))
         XCTAssertEqual(wide.value(after: CGSize(width: 10, height: 0), from: 64, kind: .points), .integer(69))
     }
 
     func testTheEdgeOfACardFurtherOutMovesByEachCellBeforeIt() throws {
         let marks = ThemeMarks(sizes: sizes, cards: [(SpotPlacement(index: 0, row: 1, column: 2, size: .small), true)])
-        let right = try XCTUnwrap(marks.all.first { $0.key == "cell" && $0.axis.dx == 1 })
-        let bottom = try XCTUnwrap(marks.all.first { $0.key == "cell" && $0.axis.dy == 1 })
+        let right = try XCTUnwrap(marks.all.first { $0.key.key == "cell" && $0.axis.dx == 1 })
+        let bottom = try XCTUnwrap(marks.all.first { $0.key.key == "cell" && $0.axis.dy == 1 })
 
         XCTAssertEqual(right.value(after: CGSize(width: 9, height: 0), from: 64, kind: .points), .integer(67))
         XCTAssertEqual(bottom.value(after: CGSize(width: 0, height: 4), from: 64, kind: .points), .integer(66))

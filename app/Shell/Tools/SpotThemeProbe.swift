@@ -214,7 +214,7 @@ final class SpotThemeProbe: NSObject {
             let point = CGPoint(x: place.x, y: place.y - reach * share)
             if time > self.seconds - 0.05 { return self.post(.leftMouseUp, at: point) }
             self.post(.leftMouseDragged, at: point)
-            self.notes = ["mark \(mark.key) tip \(editor.tip ?? "none")"]
+            self.notes = ["mark \(mark.key.key) tip \(editor.tip ?? "none")"]
         }
     }
 

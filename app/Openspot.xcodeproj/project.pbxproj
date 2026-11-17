@@ -169,6 +169,7 @@
 		337A23F259AA3FAFF7693FAE /* FocusLossTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7B886397C19798D6A36AB5E /* FocusLossTests.swift */; };
 		3383F98ADBEB7649B05D7E79 /* SpotDrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 763D469A3D31F653FF993FA0 /* SpotDrop.swift */; };
 		34098263A3898B42FA2C7411 /* SheetArea.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC9DB55A3E5991608C7EEDC4 /* SheetArea.swift */; };
+		34A1CC000C46C98C7C636F5F /* ThemeKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20517BC29A5FDFB06E415497 /* ThemeKey.swift */; };
 		34AD0745B0CDA5680E22896D /* SpotType+Parts.swift in Sources */ = {isa = PBXBuildFile; fileRef = B36F8BAA90AA73AE912D9BB7 /* SpotType+Parts.swift */; };
 		34BD1DD1CC03BC49C529EAF3 /* SpotAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6AD21E62E3935AAA7245C95 /* SpotAction.swift */; };
 		34E7E6F8F0C4E12F5D459468 /* UpdateSpotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B25CD98CC5588AFF0409B9BF /* UpdateSpotTests.swift */; };
@@ -1059,6 +1060,7 @@
 		1F768E1AE84E0DFDD983194E /* ItemListTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemListTests.swift; sourceTree = "<group>"; };
 		1FF8429FAA2864404333DEF0 /* Shortcut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shortcut.swift; sourceTree = "<group>"; };
 		2022BE9BBE18EC182C9F8B0B /* GlyphBook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlyphBook.swift; sourceTree = "<group>"; };
+		20517BC29A5FDFB06E415497 /* ThemeKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeKey.swift; sourceTree = "<group>"; };
 		208B439877CC5DD1DCD3F2C3 /* SpotHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotHeader.swift; sourceTree = "<group>"; };
 		212290B63B7D0AE43BF65CD5 /* SpotReminderStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotReminderStore.swift; sourceTree = "<group>"; };
 		2150D92B6506978B7EB6E19F /* SpotFiles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotFiles.swift; sourceTree = "<group>"; };
@@ -2143,6 +2145,7 @@
 				82D440594C5AA13E62C098F6 /* Theme+Sizes.swift */,
 				F084FBAEA116474C7972BD01 /* ThemeColor.swift */,
 				493A7DCA965709CA46EC2799 /* ThemeFolder.swift */,
+				20517BC29A5FDFB06E415497 /* ThemeKey.swift */,
 				11201F7A1BEBFD2212380850 /* ThemeKind.swift */,
 				9D82BF25BC28559576A9AFC5 /* ThemeMark.swift */,
 				B15C62846D1CA45317E2156E /* ThemeMarks.swift */,
@@ -3992,6 +3995,7 @@
 				19154280E91C1C36C7AFCC47 /* ThemeCall.swift in Sources */,
 				554C75B6033F4C44E5F8E4B1 /* ThemeColor.swift in Sources */,
 				E2188933E96BB005EF0D303B /* ThemeFolder.swift in Sources */,
+				34A1CC000C46C98C7C636F5F /* ThemeKey.swift in Sources */,
 				E905469E67E0137A4D718E48 /* ThemeKind.swift in Sources */,
 				FC0CC4E59D142624F2C40636 /* ThemeMark.swift in Sources */,
 				2639BBD68A83EDC4783EA957 /* ThemeMarks.swift in Sources */,

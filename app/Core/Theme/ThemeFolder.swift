@@ -117,13 +117,13 @@ public struct ThemeFolder: Sendable {
         return ThemeRow.rows(builtIn: try readBuiltIn(), own: own)
     }
 
-    public func write(_ key: String, in section: String, to value: ConfigDocument.Value?, of name: String) throws {
+    public func write(_ key: ThemeKey, to value: ConfigDocument.Value?, of name: String) throws {
         let found = try find(name)
         guard let file = file(of: found) else {
             throw SpotError.failed(1, "The theme \(Self.builtInName) is built in, so it can't change. Run `openspot theme duplicate` to make a copy you can change.")
         }
         let text = (try? String(contentsOf: file, encoding: .utf8)) ?? ""
-        try ConfigDocument.text(text, setting: key, in: section, to: value).write(to: file, atomically: true, encoding: .utf8)
+        try ConfigDocument.text(text, setting: key.key, in: key.section, to: value).write(to: file, atomically: true, encoding: .utf8)
     }
 
     public func edit() throws -> URL {

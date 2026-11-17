@@ -24,10 +24,10 @@ public struct ThemeMarks: Equatable, Sendable {
             edges += Self.edges(of: rect, placement: card.placement, corner: isRound ? 0 : Self.cornerSide(sizes.radius))
             if card.isPadded { padding += Self.padding(of: rect, by: sizes.padding) }
             if rects.contains(where: { abs($0.minX - rect.maxX - sizes.columnGap) < 1 && $0.minY < rect.maxY && $0.maxY > rect.minY }) {
-                gaps.append(ThemeMark(section: "space", key: "column-gap", rect: CGRect(x: rect.maxX, y: rect.minY, width: sizes.columnGap, height: rect.height), axis: CGVector(dx: 1, dy: 0)))
+                gaps.append(ThemeMark(key: ThemeKey(section: "space", key: "column-gap"), rect: CGRect(x: rect.maxX, y: rect.minY, width: sizes.columnGap, height: rect.height), axis: CGVector(dx: 1, dy: 0)))
             }
             if rects.contains(where: { abs($0.minY - rect.maxY - sizes.rowGap) < 1 && $0.minX < rect.maxX && $0.maxX > rect.minX }) {
-                gaps.append(ThemeMark(section: "space", key: "row-gap", rect: CGRect(x: rect.minX, y: rect.maxY, width: rect.width, height: sizes.rowGap), axis: CGVector(dx: 0, dy: 1)))
+                gaps.append(ThemeMark(key: ThemeKey(section: "space", key: "row-gap"), rect: CGRect(x: rect.minX, y: rect.maxY, width: rect.width, height: sizes.rowGap), axis: CGVector(dx: 0, dy: 1)))
             }
         }
         all = corners + edges + gaps + padding
@@ -63,7 +63,7 @@ public struct ThemeMarks: Equatable, Sendable {
         return [(rect.minX, rect.minY, 1.0, 1.0), (rect.maxX, rect.minY, -1, 1), (rect.minX, rect.maxY, 1, -1), (rect.maxX, rect.maxY, -1, -1)].map { x, y, dx, dy in
             let square = { (length: CGFloat) in CGRect(x: dx > 0 ? x : x - length, y: dy > 0 ? y : y - length, width: length, height: length) }
             return ThemeMark(
-                section: "radius", key: "card", rect: square(radius), hit: square(side),
+                key: ThemeKey(section: "radius", key: "card"), rect: square(radius), hit: square(side),
                 shape: .arc(centre: CGPoint(x: x + dx * radius, y: y + dy * radius), radius: radius),
                 axis: CGVector(dx: dx * inward, dy: dy * inward)
             )
@@ -74,12 +74,12 @@ public struct ThemeMarks: Equatable, Sendable {
         let half = SpotTokens.themeMarkEdge / 2
         return [
             ThemeMark(
-                section: "space", key: "cell",
+                key: ThemeKey(section: "space", key: "cell"),
                 rect: CGRect(x: rect.maxX - half, y: rect.minY + corner, width: 2 * half, height: rect.height - 2 * corner),
                 axis: CGVector(dx: 1, dy: 0), rate: 1 / CGFloat(placement.column + placement.size.columns)
             ),
             ThemeMark(
-                section: "space", key: "cell",
+                key: ThemeKey(section: "space", key: "cell"),
                 rect: CGRect(x: rect.minX + corner, y: rect.maxY - half, width: rect.width - 2 * corner, height: 2 * half),
                 axis: CGVector(dx: 0, dy: 1), rate: 1 / CGFloat(placement.row + placement.size.rows)
             )
@@ -88,7 +88,7 @@ public struct ThemeMarks: Equatable, Sendable {
 
     private static func padding(of rect: CGRect, by inset: CGFloat) -> [ThemeMark] {
         let band = { (x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat, dx: CGFloat, dy: CGFloat) in
-            ThemeMark(section: "space", key: "padding", rect: CGRect(x: x, y: y, width: width, height: height), axis: CGVector(dx: dx, dy: dy))
+            ThemeMark(key: ThemeKey(section: "space", key: "padding"), rect: CGRect(x: x, y: y, width: width, height: height), axis: CGVector(dx: dx, dy: dy))
         }
         return [
             band(rect.minX, rect.minY, inset, rect.height, 1, 0),

@@ -3,7 +3,6 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotThemeCell: View {
-    let key: String
     let kind: ThemeKind
     let cell: ThemeRow.Cell
     let isLocked: Bool
@@ -16,7 +15,7 @@ struct SpotThemeCell: View {
         HStack(spacing: SpotTokens.themeSpacing) {
             if isLocked { words } else { control }
             if !isLocked {
-                Button { model.write(nil, of: key, in: cell.section) } label: { Image(systemName: "arrow.uturn.backward") }
+                Button { model.write(nil, at: cell.key) } label: { Image(systemName: "arrow.uturn.backward") }
                     .buttonStyle(.borderless)
                     .help("Use the value of \(ThemeFolder.builtInName)")
                     .opacity(cell.isSet ? 1 : MotionTokens.hiddenOpacity)
@@ -48,7 +47,7 @@ struct SpotThemeCell: View {
             value(text)
             Spacer(minLength: 0)
         case .variant:
-            Picker("", selection: Binding(get: { text }, set: { model.write(.string($0), of: key, in: cell.section) })) {
+            Picker("", selection: Binding(get: { text }, set: { model.write(.string($0), at: cell.key) })) {
                 Text("Clear").tag(Theme.Glass.Variant.clear.rawValue)
                 Text("Regular").tag(Theme.Glass.Variant.regular.rawValue)
             }
@@ -91,7 +90,7 @@ struct SpotThemeCell: View {
 
     private func slide(_ next: Double) {
         number = next
-        model.change(kind.value(next), of: key, in: cell.section)
+        model.change(kind.value(next), at: cell.key)
     }
 
     private func step(_ next: Double) {
@@ -103,11 +102,11 @@ struct SpotThemeCell: View {
         colour = next
         guard let rgb = NSColor(next).usingColorSpace(.sRGB) else { return }
         let value = ConfigDocument.Value.string(HexColor(red: rgb.redComponent, green: rgb.greenComponent, blue: rgb.blueComponent, alpha: rgb.alphaComponent).text)
-        model.change(value, of: key, in: cell.section)
+        model.change(value, at: cell.key)
     }
 
     private func write(_ value: ConfigDocument.Value) {
         guard value != cell.value else { return }
-        model.write(value, of: key, in: cell.section)
+        model.write(value, at: cell.key)
     }
 }

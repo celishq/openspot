@@ -235,25 +235,25 @@ final class ThemeTests: XCTestCase {
 
         let rows = ThemeRow.rows(builtIn: text, own: nil)
 
-        let names = rows.flatMap { row in row.cells.map { "[\($0.section)] \(row.key)" } }
+        let names = rows.flatMap { row in row.cells.map(\.key.name) }
         XCTAssertEqual(names.sorted(), Theme.keys)
-        XCTAssertEqual(Set(rows.filter { $0.group == "look" }.map { $0.cells.map(\.section) }), [["dark", "light"]])
-        XCTAssertEqual(rows.first { $0.key == "variant" }?.kind, .variant)
-        XCTAssertEqual(rows.first { $0.key == "padding" }?.kind, .points)
-        XCTAssertEqual(rows.first { $0.key == "fade-reach" }?.kind, .reach)
-        XCTAssertEqual(rows.first { $0.key == "grow" }?.kind, .seconds)
-        XCTAssertEqual(rows.first { $0.key == "pressed-scale" }?.kind, .scale)
-        XCTAssertEqual(rows.first { $0.key == "press-bounce" }?.kind, .strength)
+        XCTAssertEqual(Set(rows.filter { $0.group == "look" }.map { $0.cells.map(\.key.section) }), [["dark", "light"]])
+        XCTAssertEqual(rows.first { $0.name == "variant" }?.kind, .variant)
+        XCTAssertEqual(rows.first { $0.name == "padding" }?.kind, .points)
+        XCTAssertEqual(rows.first { $0.name == "fade-reach" }?.kind, .reach)
+        XCTAssertEqual(rows.first { $0.name == "grow" }?.kind, .seconds)
+        XCTAssertEqual(rows.first { $0.name == "pressed-scale" }?.kind, .scale)
+        XCTAssertEqual(rows.first { $0.name == "press-bounce" }?.kind, .strength)
         XCTAssertEqual(Theme(rows: rows), Theme(text: text))
     }
 
     func testAChangedCellDrawsTheThemeWithItsValue() throws {
         var rows = ThemeRow.rows(builtIn: try String(contentsOf: builtInURL, encoding: .utf8), own: "[light]\nfill = 0.3\n")
-        let index = try XCTUnwrap(rows.firstIndex { $0.key == "padding" })
+        let index = try XCTUnwrap(rows.firstIndex { $0.name == "padding" })
 
-        rows[index].change(.integer(21), in: "space")
+        rows[index].change(.integer(21), at: ThemeKey(section: "space", key: "padding"))
 
-        XCTAssertEqual(rows[index].cells, [ThemeRow.Cell(section: "space", value: .integer(21), isSet: true)])
+        XCTAssertEqual(rows[index].cells, [ThemeRow.Cell(key: ThemeKey(section: "space", key: "padding"), value: .integer(21), isSet: true)])
         XCTAssertEqual(Theme(rows: rows).space.padding, 21)
         XCTAssertEqual(Theme(rows: rows).light.fill, 0.3)
     }

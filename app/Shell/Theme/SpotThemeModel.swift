@@ -14,7 +14,7 @@ final class SpotThemeModel {
     private(set) var isDark: Bool
     private(set) var lit: ThemeMark?
     private(set) var tip: String?
-    private(set) var picked: String?
+    private(set) var picked: ThemeKey?
     var renaming: String?
     @ObservationIgnored private var rows: [ThemeRow] = []
     @ObservationIgnored let stage: SpotsModel
@@ -26,7 +26,7 @@ final class SpotThemeModel {
     @ObservationIgnored private var marksScroll: CGFloat = 0
     @ObservationIgnored private var litIndex: Int?
     @ObservationIgnored private var held: (mark: ThemeMark, row: ThemeRow, value: ConfigDocument.Value)?
-    @ObservationIgnored private var pending: (id: String, write: @MainActor () -> Void, wait: Task<Void, Never>)?
+    @ObservationIgnored private var pending: (key: ThemeKey, write: @MainActor () -> Void, wait: Task<Void, Never>)?
     @ObservationIgnored private var loading: Task<Void, Never>?
     @ObservationIgnored private var working: Task<Void, Never>?
     @ObservationIgnored private var isClosed = false
@@ -88,17 +88,16 @@ final class SpotThemeModel {
         act { try $0.delete(name) }
     }
 
-    func preview(_ value: ConfigDocument.Value, of key: String, in section: String) {
+    func preview(_ value: ConfigDocument.Value, at key: ThemeKey) {
         var next = rows
-        guard let index = next.firstIndex(where: { row in row.key == key && row.cells.contains { $0.section == section } }) else { return }
-        next[index].change(value, in: section)
+        guard let index = next.firstIndex(where: { row in row.cells.contains { $0.key == key } }) else { return }
+        next[index].change(value, at: key)
         draw(Theme(rows: next))
     }
 
-    func change(_ value: ConfigDocument.Value, of key: String, in section: String) {
-        preview(value, of: key, in: section)
-        let id = "\(section) \(key)"
-        if pending?.id != id { save() }
+    func change(_ value: ConfigDocument.Value, at key: ThemeKey) {
+        preview(value, at: key)
+        if pending?.key != key { save() }
         pending?.wait.cancel()
         let name = inUse
         let wait = Task { [weak self] in
@@ -106,7 +105,7 @@ final class SpotThemeModel {
             guard !Task.isCancelled else { return }
             self?.save()
         }
-        pending = (id, { [weak self] in self?.write(value, of: key, in: section, to: name) }, wait)
+        pending = (key, { [weak self] in self?.write(value, at: key, to: name) }, wait)
     }
 
     func save() {
@@ -116,8 +115,8 @@ final class SpotThemeModel {
         pending.write()
     }
 
-    func write(_ value: ConfigDocument.Value?, of key: String, in section: String) {
-        write(value, of: key, in: section, to: inUse)
+    func write(_ value: ConfigDocument.Value?, at key: ThemeKey) {
+        write(value, at: key, to: inUse)
     }
 
     func point(at location: CGPoint?) {
@@ -127,22 +126,22 @@ final class SpotThemeModel {
     }
 
     func drag(by translation: CGSize) {
-        if held == nil, !isBuiltIn, let lit, let row = rows.first(where: { $0.id == lit.id }), let value = row.cells.first?.value {
+        if held == nil, !isBuiltIn, let lit, let row = rows.first(where: { $0.id == lit.key }), let value = row.cells.first?.value {
             held = (lit, row, value)
         }
         guard let held, let start = held.row.cells.first?.value.number else { return }
         let next = held.mark.value(after: translation, from: start, kind: held.row.kind)
         guard next != held.value else { return }
         self.held?.value = next
-        tip = "\(held.mark.key) \(Self.words(of: next))"
-        preview(next, of: held.mark.key, in: held.mark.section)
+        tip = "\(held.mark.key.key) \(Self.words(of: next))"
+        preview(next, at: held.mark.key)
     }
 
     func drop() {
         guard let held else { return }
         self.held = nil
         guard held.value != held.row.cells.first?.value else { return }
-        write(held.value, of: held.mark.key, in: held.mark.section)
+        write(held.value, at: held.mark.key)
     }
 
     func close() {
@@ -162,8 +161,8 @@ final class SpotThemeModel {
         }
     }
 
-    private func write(_ value: ConfigDocument.Value?, of key: String, in section: String, to name: String) {
-        act { try $0.write(key, in: section, to: value, of: name) }
+    private func write(_ value: ConfigDocument.Value?, at key: ThemeKey, to name: String) {
+        act { try $0.write(key, to: value, of: name) }
     }
 
     private func act(_ work: @escaping @Sendable (ThemeFolder) throws -> Void) {
@@ -226,7 +225,7 @@ final class SpotThemeModel {
         marks = stage.themeMarks()
         marksScroll = stage.gridScroll
         guard let litIndex else { return }
-        let next = marks.all.indices.contains(litIndex) && marks.all[litIndex].id == lit?.id ? marks.all[litIndex] : nil
+        let next = marks.all.indices.contains(litIndex) && marks.all[litIndex].key == lit?.key ? marks.all[litIndex] : nil
         if held != nil, let next {
             lit = next
         } else if held == nil {
@@ -238,9 +237,9 @@ final class SpotThemeModel {
         litIndex = index
         let next = index.map { marks.all[$0] }
         if next != lit { lit = next }
-        if next?.id != picked { picked = next?.id }
+        if next?.key != picked { picked = next?.key }
         let words = next.flatMap { mark in
-            rows.first { $0.id == mark.id }.flatMap { $0.cells.first }.map { "\(mark.key) \(Self.words(of: $0.value))\(isBuiltIn ? " · Duplicate to edit" : "")" }
+            rows.first { $0.id == mark.key }.flatMap { $0.cells.first }.map { "\(mark.key.key) \(Self.words(of: $0.value))\(isBuiltIn ? " · Duplicate to edit" : "")" }
         }
         if words != tip { tip = words }
     }
