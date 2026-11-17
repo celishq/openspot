@@ -156,7 +156,8 @@ final class SpotRunsStayTests: SpotRunsCase {
         sheet.pressKey("hold")
         _ = try await pid("children")
 
-        runs.isCareful = true
+        careful()
+        _ = try scanned()
 
         try await wait("the end of the held call") { sheet.calls.isEmpty }
         XCTAssertEqual(toasts, ["Script stopped, since Openspot restarted it. Start it again to go on."])

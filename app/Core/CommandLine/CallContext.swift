@@ -33,15 +33,11 @@ struct CallContext {
     }
 
     var isCareful: Bool {
-        runs?.tokens.isCareful == true || caller?.isRestricted == true
-    }
-
-    var careful: Set<SpotUse>? {
-        isCareful ? Set(SpotUse.allCases) : nil
+        runs?.tokens.trust.isCareful == true || caller?.isRestricted == true
     }
 
     var fence: (caller: CallerTokens.Caller, mode: CarefulMode)? {
-        guard isCareful, let caller, !caller.uses.contains(.files) else { return nil }
+        guard let caller, caller.isRestricted, !caller.uses.contains(.files) else { return nil }
         return (caller, CarefulMode(uses: caller.uses))
     }
 }

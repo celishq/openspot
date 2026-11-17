@@ -115,7 +115,7 @@ struct SpotCalls {
         }
     }
 
-    func run(_ id: String, _ arguments: [String], input: (@Sendable () async -> String)?, careful: Set<SpotUse>?, output: CommandOutput) -> CommandAPI.Work {
+    func run(_ id: String, _ arguments: [String], input: (@Sendable () async -> String)?, output: CommandOutput) -> CommandAPI.Work {
         { [environment, folder, runs, caller] in
             let spots = SpotsFolder.standard(environment: environment)
             let found: Spot?
@@ -124,13 +124,12 @@ struct SpotCalls {
             } catch {
                 return CommandAnswer(errors: "\((error as? SpotError)?.reason ?? error.localizedDescription)\n", code: 1)
             }
-            guard var spot = found.map((runs?.tokens.trust ?? SpotTrust()).applied) else {
+            guard let spot = found.map((runs?.tokens.trust ?? SpotTrust()).applied) else {
                 return CommandAnswer(errors: "Openspot has no spot \(id) in \(spots.url.path). Run `openspot check spots` to see each file that does not load.\n", code: 1)
             }
-            if let careful { spot.uses.formIntersection(careful) }
             let text = await input?()
             let usage = caller == nil || spot.reachesAccountKey ? nil : runs?.usage
-            let run = TerminalRun(spot: spot, arguments: arguments, input: text, careful: careful == nil && !spot.isRestricted ? nil : spot.uses, tokens: runs?.tokens, environment: environment, folder: folder, usage: usage)
+            let run = TerminalRun(spot: spot, arguments: arguments, input: text, careful: spot.isRestricted ? spot.uses : nil, tokens: runs?.tokens, environment: environment, folder: folder, usage: usage)
             let begin = Date()
             var first = true
             let end = await run.start { frame in

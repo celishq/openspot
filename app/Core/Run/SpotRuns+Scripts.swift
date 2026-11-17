@@ -15,7 +15,7 @@ extension SpotRuns {
     }
 
     func careful(for spot: Spot) -> Set<SpotUse>? {
-        isCareful || spot.isRestricted ? spot.uses : nil
+        spot.isRestricted ? spot.uses : nil
     }
 
     func dropScript(of id: String) {

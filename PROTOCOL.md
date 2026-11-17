@@ -1173,14 +1173,15 @@ openspot app quit
   tools, a spot that the user added runs only what Openspot built there from the source the user can read. A share
   never passes a carried program on: it builds a new one from the sources it ships.
 - An update with no new use applies quietly. An update with a new use waits for `--yes`.
-- Careful mode is a setting of the user, off by default. It runs each process of a spot in a sandbox: no network unless
-  `uses=network`, and writes only to its data folder and the temp folders unless `uses=files`. With `uses=screen`, it
-  can also write to the Desktop, Movies and the screenshots folder. In Careful mode, a call that needs a use the header
-  doesn't name fails.
-- Without Careful mode, the data folder is no boundary.
-- A spot that came from someone else runs restricted: in Careful mode, and with no view of its own, so its cards show
-  only its blocks. That is a spot that `spot add` or a store added, unless it comes from Openspot's own store or your
-  account key signed it. A spot that you made or put in the spots folder yourself runs as you made it.
+- A restricted spot runs each process in a sandbox: no network unless `uses=network`, and writes only to its data
+  folder and the temp folders unless `uses=files`. With `uses=screen`, it can also write to the Desktop, Movies and the
+  screenshots folder. It never writes Openspot's config or spots folder. A call that needs a use the header doesn't name
+  fails, and it shows no view of its own, so its cards show only its blocks.
+- A spot that came from someone else is restricted: one that `spot add` or a store added, unless it comes from
+  Openspot's own store or your account key signed it. A spot that you made or put in the spots folder yourself runs as
+  you made it.
+- Careful mode, a setting of the user that is off by default, restricts every spot except the ones that ship inside
+  Openspot. Without it, the data folder of an unrestricted spot is no boundary.
 - To lift it, choose **Trust its author** in the spot's Settings, or run `openspot spot trust <id>`. That trusts each spot
   that the same key signed. A spot that no key signed shows **Trust this spot**, which trusts only the source it came from. Only you
   can trust a spot: a spot that calls `spot trust` fails.

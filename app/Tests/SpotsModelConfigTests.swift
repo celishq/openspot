@@ -46,12 +46,11 @@ final class SpotsModelConfigTests: PanelCase {
         XCTAssertEqual(model.config, next.config)
     }
 
-    func testAKeyOfTheAppACarefulModeAndAPanelBuildNoGrid() async throws {
+    func testAKeyOfTheAppAndAPanelBuildNoGrid() async throws {
         let builds = model.gridBuilds
         let key = try XCTUnwrap(Shortcut(text: "option+space"))
 
         model.configChanged(.keys, to: try model.files.config.change { $0.set(key, for: "panel-key") })
-        model.configChanged(.careful, to: try model.files.config.change { $0.set(isCareful: true) })
         model.show(.left, true)
         await model.spotsChanged()
 

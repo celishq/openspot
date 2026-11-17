@@ -7,6 +7,7 @@ public final class CallerTokens: @unchecked Sendable {
         public let uses: Set<SpotUse>
         public var isBuiltIn = false
         public var isRestricted = false
+        public var grant: Trusted?
         public var dataName: String?
 
         public var reachesAccountKey: Bool {
@@ -32,7 +33,6 @@ public final class CallerTokens: @unchecked Sendable {
     private var records: [String: Record] = [:]
     private var groups: [pid_t: String] = [:]
     private var fixes: [String: URL] = [:]
-    private var careful = false
     private var kept = SpotTrust()
 
     private static let sandboxed = "sandboxed"
@@ -54,13 +54,8 @@ public final class CallerTokens: @unchecked Sendable {
     func issue(for spot: Spot, reason: String? = nil, keepsFix: Bool = false) -> String {
         var random = SystemRandomNumberGenerator()
         let token = String(format: "%016llx%016llx", random.next() as UInt64, random.next() as UInt64)
-        lock.withLock { records[token] = Record(caller: Caller(id: spot.id, name: spot.name, uses: spot.uses, isBuiltIn: spot.isBuiltIn, isRestricted: spot.isRestricted, dataName: spot.dataName), reason: reason, keepsFix: keepsFix) }
+        lock.withLock { records[token] = Record(caller: Caller(id: spot.id, name: spot.name, uses: spot.uses, isBuiltIn: spot.isBuiltIn, isRestricted: spot.isRestricted, grant: spot.grant, dataName: spot.dataName), reason: reason, keepsFix: keepsFix) }
         return token
-    }
-
-    public var isCareful: Bool {
-        get { lock.withLock { careful } }
-        set { lock.withLock { careful = newValue } }
     }
 
     public var trust: SpotTrust {

@@ -136,4 +136,15 @@ final class SpotTrustTests: PanelCase {
 
         XCTAssertTrue(paths.reports(String(cString: try XCTUnwrap(realpath(lock.path, nil)))))
     }
+
+    func testCarefulModeRestrictsASpotThatThePersonMade() async throws {
+        try script("cups", header: "title=Cups\nview=cups.swift", "printf 'title=Cups\\n'")
+        try "".write(to: spots.appendingPathComponent("cups.spot/cups.swift"), atomically: true, encoding: .utf8)
+        try writeConfig("careful = true\n")
+
+        await model.reload()
+
+        XCTAssertEqual(cups?.isRestricted, true)
+        XCTAssertNil(cups?.view)
+    }
 }

@@ -54,11 +54,9 @@ public final class CommandAPI: @unchecked Sendable {
             return CommandLineCall(name: call.name, call: CallFault.refused("\(caller.name) \(refusal)"))
         }
         guard let needed = call.use else { return call }
-        if runs.tokens.isCareful, !caller.uses.contains(needed.use) {
-            return CommandLineCall(name: call.name, call: CallFault.refused("Careful mode stopped \(caller.name), because it \(needed.words) without `uses=\(needed.use.rawValue)` in its header. Add it, or turn Careful mode off."))
-        }
         if caller.isRestricted, !caller.uses.contains(needed.use) {
-            return CommandLineCall(name: call.name, call: CallFault.refused("Openspot stopped \(caller.name), because it \(needed.words) without `uses=\(needed.use.rawValue)` in its header, and you have not trusted its author. Trust it in its Settings, or ask its author to add the use."))
+            let fix = caller.grant == nil ? "Add it, or turn Careful mode off." : "Trust it in its Settings, or ask its author to add the use."
+            return CommandLineCall(name: call.name, call: CallFault.refused("Openspot stopped \(caller.name), because it \(needed.words) without `uses=\(needed.use.rawValue)` in its header. \(fix)"))
         }
         Task { @MainActor in runs.used(needed, by: caller) }
         return call
@@ -76,7 +74,7 @@ public final class CommandAPI: @unchecked Sendable {
             return { kept.answer(ending: await work()) }
         }
         let caller = caller(of: request)
-        if call.rule.flags.contains(.startsScripts), isSandboxed || runs?.tokens.isCareful == true && caller != nil || caller?.isRestricted == true { return nil }
+        if call.rule.flags.contains(.startsScripts), isSandboxed || caller?.isRestricted == true { return nil }
         let (spot, reason) = values(of: request)
         let work = call.call.work(in: CallContext(
             mac: mac, api: self, request: request, environment: places.environment, app: app, runs: runs, account: account, secrets: places.secrets, raise: raise, caller: caller,

@@ -25,13 +25,6 @@ public final class SpotRuns {
     let inlineIdle: TimeInterval
     let frameWait: DispatchTimeInterval
     public nonisolated let usage: StatsLog
-    @ObservationIgnored public var isCareful = false {
-        didSet {
-            tokens.isCareful = isCareful
-            guard isCareful != oldValue else { return }
-            sheets.values.forEach { $0.restartScript() }
-        }
-    }
     public nonisolated let tokens: CallerTokens
     @ObservationIgnored let clock: RunClock
     @ObservationIgnored let now: () -> Date

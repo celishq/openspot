@@ -98,10 +98,10 @@ final class AppCallsSocketTests: XCTestCase {
         try spot("writer", header: "uses=files", "echo a > '\(outside.path)/'\"$1\" && echo wrote")
         try spot("reader", header: "uses=spots", "echo")
         let runs = await SpotRuns()
-        await MainActor.run { runs.isCareful = true }
+        runs.tokens.trust = SpotTrust(isCareful: true)
         listen(runs: runs)
         let reader = try XCTUnwrap(SpotsFolder(url: spots).scan().scripts.first { $0.id == "reader" })
-        let token = runs.tokens.issue(for: reader)
+        let token = runs.tokens.issue(for: SpotTrust(isCareful: true).applied(to: reader))
 
         let person = try ask(["spot", "run", "writer", "person"])
         let spot = try ask(["spot", "run", "writer", "spot"], token: token)
@@ -143,7 +143,7 @@ final class AppCallsSocketTests: XCTestCase {
         let leak = outside.appendingPathComponent("leak")
         try spot("leaky", header: "on=sheet.open", "echo a > '\(leak.path)'; printf 'title=Leaky\\n'")
         let runs = await SpotRuns()
-        await MainActor.run { runs.isCareful = true }
+        runs.tokens.trust = SpotTrust(isCareful: true)
         listen(runs: runs)
 
         let answer = try ask(["check", "spots", "spots"], cwd: config)
@@ -158,7 +158,7 @@ final class AppCallsSocketTests: XCTestCase {
         let go = folder.appendingPathComponent("go")
         try spot("reader", header: "on=sheet.open", "echo \"$OPENSPOT_TOKEN\" > '\(token.path)'; i=0; while [ ! -f '\(go.path)' ] && [ $i -lt 1000 ]; do sleep 0.01; i=$((i+1)); done; printf 'title=Reader\\n'")
         let runs = await SpotRuns()
-        await MainActor.run { runs.isCareful = true }
+        runs.tokens.trust = SpotTrust(isCareful: true)
         listen(runs: runs)
         let connection = connect()
         defer { connection.close() }

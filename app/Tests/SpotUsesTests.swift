@@ -113,14 +113,14 @@ final class SpotUsesTests: SpotRunsCase {
     }
 
     func testInCarefulModeAnUndeclaredUseIsRefused() async throws {
-        runs.isCareful = true
+        careful()
         try caller("setting list")
         _ = try scanned()
 
         let (code, errors) = try await pressed()
 
         XCTAssertEqual(code, "1")
-        XCTAssertEqual(errors, "Careful mode stopped Script, because it read the settings of each spot without `uses=spots` in its header. Add it, or turn Careful mode off.\n")
+        XCTAssertEqual(errors, "Openspot stopped Script, because it read the settings of each spot without `uses=spots` in its header. Add it, or turn Careful mode off.\n")
         XCTAssertEqual(toasts, [])
     }
 
@@ -132,11 +132,11 @@ final class SpotUsesTests: SpotRunsCase {
         let (code, errors) = try await pressed()
 
         XCTAssertEqual(code, "1")
-        XCTAssertEqual(errors, "Openspot stopped Script, because it read the settings of each spot without `uses=spots` in its header, and you have not trusted its author. Trust it in its Settings, or ask its author to add the use.\n")
+        XCTAssertEqual(errors, "Openspot stopped Script, because it read the settings of each spot without `uses=spots` in its header. Trust it in its Settings, or ask its author to add the use.\n")
     }
 
     func testInCarefulModeASandboxedProcessOutsideEachSpotCannotChangeCarefulModeOrUseAnything() async throws {
-        runs.isCareful = true
+        careful()
         _ = try scanned()
         let errors = folder.appendingPathComponent("errors")
         FileManager.default.createFile(atPath: errors.path, contents: nil)
@@ -174,7 +174,7 @@ final class SpotUsesTests: SpotRunsCase {
     }
 
     func testInCarefulModeADeclaredUseRuns() async throws {
-        runs.isCareful = true
+        careful()
         try caller(header: "uses=spots", "setting list")
         _ = try scanned()
 

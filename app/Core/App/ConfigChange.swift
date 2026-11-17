@@ -11,8 +11,7 @@ public enum ConfigChange: Equatable, Sendable {
         switch self {
         case .keys: [.keys]
         case .spots: [.spots]
-        case .careful: [.careful]
-        case .trusted: []
+        case .careful, .trusted: []
         case .value: [.settings]
         }
     }

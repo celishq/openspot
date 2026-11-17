@@ -46,7 +46,7 @@ final class SpotPlaygroundModel {
         presets = Playground.presets(guide: guide)
         panel = PlaygroundPanel(host: host, scratch: folder, defaults: UserDefaults(suiteName: "openspot-playground") ?? .standard)
         host.onNote = { [weak self] in self?.playground.record($0) }
-        panel.model.runs.isCareful = isCareful
+        if isCareful { try? panel.model.files.config.change { $0.set(isCareful: true) } }
         panel.model.runs.onCall = { [weak self] record, reason in
             self?.playground.take(call: PlaygroundCall(record: record, reason: reason))
             if let frame = record.frames.last { self?.playground.note(frame: frame) }

@@ -43,8 +43,15 @@ final class CommandNounTests: XCTestCase {
         return try await XCTUnwrap(api.work(for: request, input: { input }))()
     }
 
+    private var isCareful = false
+
+    private func careful() {
+        isCareful = true
+    }
+
     private func spot(uses: Set<SpotUse>) -> Spot {
-        Spot(id: "chime", name: "Chime", url: folder.appendingPathComponent("chime.sh"), dataName: "chime", uses: uses)
+        let spot = Spot(id: "chime", name: "Chime", url: folder.appendingPathComponent("chime.sh"), dataName: "chime", uses: uses)
+        return SpotTrust(isCareful: isCareful).applied(to: spot)
     }
 
     func testANounInOneFolderIsParsedListedAndRun() async throws {
@@ -95,16 +102,16 @@ final class CommandNounTests: XCTestCase {
         try await wait("the count of the use") { self.runs.usage.counts["chime"]?.calls["bell.ring"] == 1 }
         XCTAssertEqual(answer.output, "rang hi\n")
 
-        runs.isCareful = true
+        careful()
         let refused = try await ask(["bell", "ring", "hi"], from: spot(uses: []))
         let declared = try await ask(["bell", "ring", "hi"], from: spot(uses: [.network]))
 
-        XCTAssertEqual(refused.errors, "Careful mode stopped Chime, because it rang a bell without `uses=network` in its header. Add it, or turn Careful mode off.\n")
+        XCTAssertEqual(refused.errors, "Openspot stopped Chime, because it rang a bell without `uses=network` in its header. Add it, or turn Careful mode off.\n")
         XCTAssertEqual(declared.output, "rang hi\n")
     }
 
     func testAKeyVerbSkipsTheUseCheckAndMeetsTheGateOfTheKey() async throws {
-        runs.isCareful = true
+        careful()
 
         let answer = try await ask(["store", "publish", "x"], from: spot(uses: []))
 

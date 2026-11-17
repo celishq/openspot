@@ -41,6 +41,11 @@ class SpotRunsCase: XCTestCase {
 
     var trust = SpotTrust()
 
+    func careful() {
+        trust = SpotTrust(isCareful: true)
+        runs.tokens.trust = trust
+    }
+
     func restrict(_ name: String = "script") {
         trust = SpotTrust(entries: [SpotLock.Entry(source: "https://example.com/\(name).git", commit: nil, paths: ["\(name).spot"], hash: nil, uses: [])])
     }

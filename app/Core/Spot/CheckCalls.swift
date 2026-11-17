@@ -14,10 +14,10 @@ struct CheckCalls {
         }
     }
 
-    func folder(_ path: String?, form: PrintForm, careful: Set<SpotUse>?) -> CommandAPI.Work {
+    func folder(_ path: String?, form: PrintForm) -> CommandAPI.Work {
         { [environment, place, tokens] in
             let folder = path.map { SpotsFolder(url: URL(fileURLWithPath: $0, isDirectory: true, relativeTo: place).absoluteURL) } ?? .standard(environment: environment)
-            let findings = await SpotCheck(folder: folder, careful: careful, tokens: tokens).findings()
+            let findings = await SpotCheck(folder: folder, tokens: tokens).findings()
             return CommandAnswer(output: (try? form.text(of: findings)) ?? "", code: findings.isEmpty ? 0 : 1)
         }
     }

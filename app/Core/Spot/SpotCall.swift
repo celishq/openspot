@@ -93,7 +93,7 @@ public enum SpotCall: NounCall {
         let spots = SpotCalls(context)
         return switch self {
         case .new(let name, let starter): spots.new(name, from: starter)
-        case .run(let id, let arguments): spots.run(id, arguments, input: context.request.isPiped ? context.input : nil, careful: context.careful, output: context.output)
+        case .run(let id, let arguments): spots.run(id, arguments, input: context.request.isPiped ? context.input : nil, output: context.output)
         case .log(let id): spots.log(id)
         case .stats(let days, let spot, let format, let byVersion): spots.stats(days: days, spot: spot, format: format, byVersion: byVersion)
         case .show(let id): spots.show(id)

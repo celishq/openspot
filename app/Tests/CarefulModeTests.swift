@@ -60,7 +60,7 @@ final class CarefulModeTests: SpotRunsCase {
     }
 
     func testOnASpotWritesOnlyToItsDataAndTheTempFolderAndReachesNoNetwork() async throws {
-        runs.isCareful = true
+        careful()
 
         let result = try await result(of: trying())
 
@@ -77,7 +77,7 @@ final class CarefulModeTests: SpotRunsCase {
     }
 
     func testOnASpotHasWhatItsUsesName() async throws {
-        runs.isCareful = true
+        careful()
 
         let result = try await result(of: trying(uses: "files,network"))
 
@@ -85,7 +85,7 @@ final class CarefulModeTests: SpotRunsCase {
     }
 
     func testOnAScreenSpotWritesToTheFolderOfScreenshots() async throws {
-        runs.isCareful = true
+        careful()
 
         let result = try await result(of: trying(uses: "screen"))
 
@@ -93,7 +93,7 @@ final class CarefulModeTests: SpotRunsCase {
     }
 
     func testOnAStayingSpotIsCarefulToo() async throws {
-        runs.isCareful = true
+        careful()
         try script(header: "mode=stay\non=sheet.open\noffers=card\noffers=menubar", """
         echo a > '\(outside.path)/written' 2>/dev/null && r=files || r=kept
         while IFS= read -r line; do
@@ -119,7 +119,8 @@ final class CarefulModeTests: SpotRunsCase {
         let first = try await result(of: sheet)
         XCTAssertEqual(first, "files", "the script started as the person")
 
-        runs.isCareful = true
+        careful()
+        _ = try scanned()
 
         try await wait("the read of the new process") { sheet.reading.value?.title == "kept" }
     }
@@ -129,7 +130,7 @@ final class CarefulModeTests: SpotRunsCase {
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         runs.quit()
         runs = runs(environment: ProcessInfo.processInfo.environment.merging(["OPENSPOT_CONFIG": outside.appendingPathComponent("config").path, "OPENSPOT_SPOTS": spots.path]) { _, new in new })
-        runs.isCareful = true
+        careful()
         try script(header: "on=sheet.open\nuses=files", """
         r=
         echo a >> "$OPENSPOT_CONFIG/config.toml" 2>/dev/null && r="${r}config "
@@ -184,7 +185,8 @@ final class CarefulModeTests: SpotRunsCase {
         XCTAssertEqual(before, "files", "the helper ran as the person")
         try FileManager.default.removeItem(at: outside.appendingPathComponent("written"))
 
-        runs.isCareful = true
+        careful()
+        _ = try scanned()
         sheet.read(need: .change)
 
         try await wait("the read in Careful mode") { sheet.reading.value?.title == "kept" }
