@@ -19,19 +19,31 @@ public struct ThemeFolder: Sendable {
         return ThemeFolder(url: config.url.deletingLastPathComponent().appendingPathComponent("themes"), builtIn: builtIn, config: config)
     }
 
-    public static func isBuiltIn(_ name: String) -> Bool {
-        name.caseInsensitiveCompare(builtInName) == .orderedSame
+    public static func isBuiltIn(_ name: String, among builtIns: [String: URL]) -> Bool {
+        isTaken(name, in: [builtInName] + builtIns.keys)
     }
 
-    public func file(of name: String) -> URL? {
-        Self.isBuiltIn(name) ? nil : folder(of: name).appendingPathComponent("theme.toml")
+    public func file(of name: String) -> URL {
+        folder(of: name).appendingPathComponent("theme.toml")
+    }
+
+    public func scanBuiltIns() -> [String: URL] {
+        guard let builtIn else { return [:] }
+        let own = builtIn.deletingLastPathComponent()
+        var themes = [Self.builtInName: builtIn]
+        guard own.pathExtension == "theme" else { return themes }
+        for file in Self.scanFiles(in: own.deletingLastPathComponent()) where file.deletingLastPathComponent().lastPathComponent != own.lastPathComponent {
+            let base = file.deletingLastPathComponent().deletingPathExtension().lastPathComponent
+            let name = base.prefix(1).uppercased() + base.dropFirst()
+            if !Self.isTaken(name, in: Array(themes.keys)) { themes[name] = file }
+        }
+        return themes
     }
 
     public func scan() -> [String] {
-        let folders = (try? FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)) ?? []
-        let names = folders.filter { $0.pathExtension == "theme" }.map { $0.deletingPathExtension().lastPathComponent }
-            .filter { name in !Self.isBuiltIn(name) && file(of: name).map { FileManager.default.fileExists(atPath: $0.path) } == true }
-        return [Self.builtInName] + names.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        let builtIns = [Self.builtInName] + scanBuiltIns().keys.filter { !Self.isTaken($0, in: [Self.builtInName]) }.sorted(by: Self.order)
+        let own = Self.scanFiles(in: url).map { $0.deletingLastPathComponent().deletingPathExtension().lastPathComponent }.filter { !Self.isTaken($0, in: builtIns) }
+        return builtIns + own.sorted(by: Self.order)
     }
 
     public func readInUse() -> String {
@@ -41,7 +53,7 @@ public struct ThemeFolder: Sendable {
 
     public func read() -> Theme {
         let name = readInUse()
-        let theme = Self.read(builtIn: builtIn, copy: file(of: name))
+        let theme = Self.read(builtIn: builtIn, copy: scanBuiltIns()[name] ?? file(of: name))
         guard let chosen = config.read().theme, chosen.caseInsensitiveCompare(name) != .orderedSame else { return theme }
         return Theme(unreadable: "config.toml: the theme \(chosen) is not there, so Openspot uses the theme \(Self.builtInName). Run `openspot theme list` to see each one.", over: theme)
     }
@@ -76,8 +88,10 @@ public struct ThemeFolder: Sendable {
     }
 
     public func duplicate(_ name: String?) throws -> String {
+        let builtIns = scanBuiltIns()
         let source = try name.map(find) ?? readInUse()
-        let text = if let file = file(of: source) { try String(contentsOf: file, encoding: .utf8) } else { try readBuiltIn() }
+        let file = builtIns[source] ?? (Self.isBuiltIn(source, among: builtIns) ? nil : file(of: source))
+        let text = try file.map { try String(contentsOf: $0, encoding: .utf8) } ?? readBuiltIn()
         let copy = free("\(source) copy", from: nil)
         try write(text, as: copy)
         return try use(copy)
@@ -87,11 +101,12 @@ public struct ThemeFolder: Sendable {
     public func rename(_ old: String, to name: String) throws -> String {
         let new = name.trimmingCharacters(in: .whitespaces)
         let source = try find(old)
-        guard !Self.isBuiltIn(source) else {
-            throw SpotError.failed(1, "The theme \(Self.builtInName) is built in, so it keeps its name. Run `openspot theme duplicate` to make a copy you can change.")
+        let builtIns = [Self.builtInName] + scanBuiltIns().keys
+        guard !Self.isTaken(source, in: builtIns) else {
+            throw SpotError.failed(1, "The theme \(source) is built in, so it keeps its name. Run `openspot theme duplicate` to make a copy you can change.")
         }
         try check(new)
-        guard !Self.isBuiltIn(new) else { throw SpotError.failed(1, "\(Self.builtInName) is the name of the built-in theme. Pick another name.") }
+        if let taken = builtIns.first(where: { Self.isTaken(new, in: [$0]) }) { throw SpotError.failed(1, "\(taken) is the name of a built-in theme. Pick another name.") }
         guard source.caseInsensitiveCompare(new) == .orderedSame || !scan().contains(where: { $0.caseInsensitiveCompare(new) == .orderedSame }) else {
             throw SpotError.failed(1, "A theme named \(new) is already there. Pick another name.")
         }
@@ -104,7 +119,7 @@ public struct ThemeFolder: Sendable {
     @discardableResult
     public func delete(_ name: String, trash: (URL) throws -> URL = AppPlaces.systemTrash) throws -> Bool {
         let found = try find(name)
-        guard !Self.isBuiltIn(found) else { throw SpotError.failed(1, "The theme \(Self.builtInName) is built in, so it cannot be deleted.") }
+        guard !Self.isBuiltIn(found, among: scanBuiltIns()) else { throw SpotError.failed(1, "The theme \(found) is built in, so it cannot be deleted.") }
         let isInUse = readInUse() == found
         _ = try trash(folder(of: found))
         if isInUse { try config.change { $0.set(theme: Self.builtInName) } }
@@ -113,11 +128,24 @@ public struct ThemeFolder: Sendable {
 
     public func edit() throws -> URL {
         let name = readInUse()
-        return folder(of: Self.isBuiltIn(name) ? try duplicate(name) : name).appendingPathComponent("theme.toml")
+        return file(of: Self.isBuiltIn(name, among: scanBuiltIns()) ? try duplicate(name) : name)
     }
 
     private func folder(of name: String) -> URL {
         url.appendingPathComponent("\(name).theme")
+    }
+
+    private static func isTaken(_ name: String, in names: [String]) -> Bool {
+        names.contains { $0.caseInsensitiveCompare(name) == .orderedSame }
+    }
+
+    private static func order(_ one: String, _ other: String) -> Bool {
+        one.localizedStandardCompare(other) == .orderedAscending
+    }
+
+    private static func scanFiles(in folder: URL) -> [URL] {
+        let folders = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)) ?? []
+        return folders.filter { $0.pathExtension == "theme" }.map { $0.appendingPathComponent("theme.toml") }.filter { FileManager.default.fileExists(atPath: $0.path) }
     }
 
     private func readBuiltIn() throws -> String {
@@ -144,7 +172,7 @@ public struct ThemeFolder: Sendable {
 
     private func free(_ base: String, from first: Int?) -> String {
         let names = scan()
-        let taken = { (name: String) in names.contains { $0.caseInsensitiveCompare(name) == .orderedSame } }
+        let taken = { (name: String) in Self.isTaken(name, in: names) }
         if first == nil, !taken(base) { return base }
         var number = first ?? 2
         while taken("\(base) \(number)") { number += 1 }

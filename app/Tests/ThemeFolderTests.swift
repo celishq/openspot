@@ -133,7 +133,7 @@ final class ThemeFolderTests: XCTestCase {
 
         XCTAssertEqual(refusal { try themes.use("") }, "A theme needs a name, such as `Dusk`.")
         XCTAssertEqual(refusal { try themes.rename("Night", to: "a/b") }, "A theme's name cannot hold `/`. Pick a name such as `Dusk`.")
-        XCTAssertEqual(refusal { try themes.rename("Night", to: "OPENSPOT") }, "Openspot is the name of the built-in theme. Pick another name.")
+        XCTAssertEqual(refusal { try themes.rename("Night", to: "OPENSPOT") }, "Openspot is the name of a built-in theme. Pick another name.")
         XCTAssertEqual(refusal { try themes.rename("Night", to: "dusk") }, "A theme named dusk is already there. Pick another name.")
         XCTAssertEqual(refusal { try themes.rename("Openspot", to: "Day") }, "The theme Openspot is built in, so it keeps its name. Run `openspot theme duplicate` to make a copy you can change.")
         XCTAssertEqual(refusal { try themes.delete("Openspot") { $0 } }, "The theme Openspot is built in, so it cannot be deleted.")
@@ -142,12 +142,38 @@ final class ThemeFolderTests: XCTestCase {
         XCTAssertEqual(themes.scan(), ["Openspot", "Dusk", "Night"])
     }
 
+    func testEachFolderBesideTheBuiltInIsABuiltInThemeListedFirstThatOnlyACopyChanges() throws {
+        let shipped = folder.appendingPathComponent("Openspot.app/Themes")
+        let openspot = shipped.appendingPathComponent("openspot.theme/theme.toml")
+        let dusk = shipped.appendingPathComponent("dusk.theme/theme.toml")
+        for (file, text) in [(openspot, "[dark]\nink = \"#FFFFFF\"\nfill = 0.1\n\n[shared]\nhover = 0.08\n"), (dusk, "[dark]\nfill = 0.4\n")] {
+            try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try text.write(to: file, atomically: true, encoding: .utf8)
+        }
+        let themes = ThemeFolder(url: folder.appendingPathComponent("themes"), builtIn: openspot, config: ConfigFile(url: folder.appendingPathComponent("config.toml")))
+        try write("Night", "")
+        try write("dusk", "[dark]\nfill = 0.9\n")
+
+        XCTAssertEqual(themes.scan(), ["Openspot", "Dusk", "Night"])
+        XCTAssertEqual(try themes.use("dusk"), "Dusk")
+        XCTAssertEqual(themes.read().look.dark.fill, 0.4)
+        XCTAssertEqual(themes.read().look.shared.hover, 0.08)
+        XCTAssertEqual(themes.read().faults, [])
+
+        XCTAssertEqual(try themes.duplicate("Dusk"), "Dusk copy")
+        XCTAssertEqual(try text(of: "Dusk copy"), "[dark]\nfill = 0.4\n")
+        XCTAssertEqual(themes.scan(), ["Openspot", "Dusk", "Dusk copy", "Night"])
+        XCTAssertEqual(refusal { try themes.rename("Dusk", to: "Day") }, "The theme Dusk is built in, so it keeps its name. Run `openspot theme duplicate` to make a copy you can change.")
+        XCTAssertEqual(refusal { try themes.delete("Dusk") { $0 } }, "The theme Dusk is built in, so it cannot be deleted.")
+        XCTAssertEqual(refusal { try themes.rename("Night", to: "DUSK") }, "Dusk is the name of a built-in theme. Pick another name.")
+        XCTAssertEqual(try String(contentsOf: dusk, encoding: .utf8), "[dark]\nfill = 0.4\n")
+    }
+
     func testThemesLiveBesideTheConfig() {
         let themes = ThemeFolder.standard(environment: ["OPENSPOT_CONFIG": "/tmp/openspot-config"], builtIn: nil)
 
         XCTAssertEqual(themes.url.path, "/tmp/openspot-config/themes")
-        XCTAssertEqual(themes.file(of: "Night")?.path, "/tmp/openspot-config/themes/Night.theme/theme.toml")
-        XCTAssertNil(themes.file(of: "openspot"))
+        XCTAssertEqual(themes.file(of: "Night").path, "/tmp/openspot-config/themes/Night.theme/theme.toml")
     }
 
     func testANameLosesItsOuterSpacesAndCannotStartWithADotOrHoldANewLine() throws {

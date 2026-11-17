@@ -4,7 +4,7 @@ import XCTest
 final class ThemeCallTests: XCTestCase {
     private let builtInURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Themes/openspot.theme/theme.toml")
 
-    private func api(_ config: URL, app: FakeRunningApp) -> CommandAPI {
+    private func api(_ config: URL, app: FakeRunningApp, theme: URL? = nil) -> CommandAPI {
         let trash = config.appendingPathComponent("Trash")
         let places = AppPlaces(environment: ["OPENSPOT_CONFIG": config.path], home: config, defaults: UserDefaults(suiteName: "openspot-test-\(UUID().uuidString)") ?? .standard, trash: { url in
             try FileManager.default.createDirectory(at: trash, withIntermediateDirectories: true)
@@ -12,7 +12,7 @@ final class ThemeCallTests: XCTestCase {
             try FileManager.default.moveItem(at: url, to: place)
             return place
         }, defaultConfig: nil)
-        return CommandAPI(mac: Mac(theme: builtInURL), places: places, app: app, rates: .offline)
+        return CommandAPI(mac: Mac(theme: theme ?? builtInURL), places: places, app: app, rates: .offline)
     }
 
     private func answer(_ api: CommandAPI, _ arguments: [String]) async throws -> CommandAnswer {
@@ -58,6 +58,27 @@ final class ThemeCallTests: XCTestCase {
         let themes = await app.themes
         XCTAssertEqual(themes.last?.look.glass.backdropBlur, 8)
         XCTAssertEqual(themes.last?.look.glass.variant, .clear)
+    }
+
+    func testTheListMarksEachBuiltInThemeAndPutsThemFirst() async throws {
+        let config = try temporaryFolder()
+        let shipped = config.appendingPathComponent("Openspot.app/Themes")
+        let openspot = shipped.appendingPathComponent("openspot.theme/theme.toml")
+        try FileManager.default.createDirectory(at: openspot.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try FileManager.default.copyItem(at: builtInURL, to: openspot)
+        try FileManager.default.createDirectory(at: shipped.appendingPathComponent("paper.theme"), withIntermediateDirectories: true)
+        try "[shared]\naccent = \"#FF9F0A\"\n".write(to: shipped.appendingPathComponent("paper.theme/theme.toml"), atomically: true, encoding: .utf8)
+        let app = FakeRunningApp()
+        let api = api(config, app: app, theme: openspot)
+        _ = try await answer(api, ["theme", "new"])
+
+        let list = try await answer(api, ["theme", "list", "--frame"])
+        let used = try await answer(api, ["theme", "use", "paper"])
+
+        XCTAssertEqual(list.output, "theme=Openspot\nbuiltin=true\n\ntheme=Paper\nbuiltin=true\n\ntheme=Theme 2\nused=true\n\n")
+        XCTAssertEqual(used.output, "Switched to the theme Paper.\n")
+        let themes = await app.themes
+        XCTAssertEqual(themes.last?.look.shared.accent, ThemeColor(text: "#FF9F0A"))
     }
 
     func testABadNameIsAFailureLine() async throws {

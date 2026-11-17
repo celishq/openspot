@@ -582,7 +582,7 @@ openspot theme new
 openspot theme use "Openspot copy"
 ```
 
-`list` prints a block for each theme, the built-in one first, and marks the one in use:
+`list` prints a block for each theme, the built-in ones first, and marks the one in use:
 
 ```text
 theme=Openspot
@@ -623,5 +623,8 @@ Each section of the file holds one kind of value:
   `theme.toml: [space] padding is a number of points from 0 to 100, such as 3.`, and keeps the look as it was. At launch, such a value
   keeps the value of `Openspot`, and a toast shows the line.
 - A theme in use that is gone gives a toast at launch, and Openspot draws with `Openspot`.
-- A name can't be empty, start with `.`, or hold `/` or a new line, and the spaces around it are dropped. A folder named
-  `openspot.theme`, in any case, is not a theme, since `Openspot` is the built-in theme.
+- Openspot comes with built-in themes, such as `Openspot`. A built-in theme can't change, be renamed or be deleted:
+  `openspot theme duplicate` makes a copy of it that you can change. A key that a built-in theme lacks keeps the value
+  of `Openspot` too.
+- A name can't be empty, start with `.`, or hold `/` or a new line, and the spaces around it are dropped. A folder that
+  has the name of a built-in theme, in any case, is not a theme.
