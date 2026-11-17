@@ -17,8 +17,7 @@ final class SpotViews {
     @ObservationIgnored private var loaded: [URL: Make] = [:]
     @ObservationIgnored private var libraries: [String: URL] = [:]
     @ObservationIgnored private let builds: ViewBuilds
-    @ObservationIgnored private var kept: Set<String> = []
-    @ObservationIgnored private var selecting: Set<String> = []
+    @ObservationIgnored private var reads: [String: ViewReads] = [:]
 
     static let shared = SpotViews()
 
@@ -32,11 +31,11 @@ final class SpotViews {
     }
 
     func isKept(_ source: String) -> Bool {
-        kept.contains(source)
+        reads[source]?.contains(.shown) == true
     }
 
     func readsSelection(_ source: String) -> Bool {
-        selecting.contains(source)
+        reads[source]?.contains(.selection) == true
     }
 
     func load(_ source: String) async {
@@ -45,14 +44,14 @@ final class SpotViews {
             let built = try await builds.built(of: URL(fileURLWithPath: source))
             let url = built.library
             if let make = loaded[url] {
-                if libraries[source] != url { ready(source, make, from: url, readsShown: built.readsShown, readsSelection: built.readsSelection) }
+                if libraries[source] != url { ready(source, make, from: url, reads: built.reads) }
                 return
             }
             let entry = try await Task.detached { try Self.entry(of: url) }.value
             let object = Unmanaged<AnyObject>.fromOpaque(entry()).takeRetainedValue()
             guard let make = object as? Make else { throw SpotError.fault("This view has an entry that Openspot cannot read. Build it again.") }
             loaded[url] = make
-            ready(source, make, from: url, readsShown: built.readsShown, readsSelection: built.readsSelection)
+            ready(source, make, from: url, reads: built.reads)
         } catch {
             libraries[source] = nil
             let reason = (error as? SpotError)?.reason ?? error.localizedDescription
@@ -61,10 +60,9 @@ final class SpotViews {
         }
     }
 
-    private func ready(_ source: String, _ make: @escaping Make, from url: URL, readsShown: Bool, readsSelection: Bool) {
+    private func ready(_ source: String, _ make: @escaping Make, from url: URL, reads: ViewReads) {
         libraries[source] = url
-        if readsShown { kept.insert(source) } else { kept.remove(source) }
-        if readsSelection { selecting.insert(source) } else { selecting.remove(source) }
+        self.reads[source] = reads
         phases[source] = .ready(make)
     }
 

@@ -122,8 +122,8 @@ final class ViewBuildsTests: XCTestCase {
         let plain = try await builds.built(of: try source())
         let reading = try await builds.built(of: try source(view.replacingOccurrences(of: "Text(\"cups\")", with: "Text(spot.isShown ? \"cups\" : \"\")")))
 
-        XCTAssertFalse(plain.readsShown)
-        XCTAssertTrue(reading.readsShown)
+        XCTAssertFalse(plain.reads.contains(.shown))
+        XCTAssertTrue(reading.reads.contains(.shown))
         XCTAssertNotEqual(plain.library, reading.library)
     }
 
@@ -133,8 +133,8 @@ final class ViewBuildsTests: XCTestCase {
         let plain = try await builds.built(of: try source())
         let reading = try await builds.built(of: try source(view.replacingOccurrences(of: "Text(\"cups\")", with: "Text(spot.selection ?? \"cups\")")))
 
-        XCTAssertFalse(plain.readsSelection)
-        XCTAssertTrue(reading.readsSelection)
+        XCTAssertFalse(plain.reads.contains(.selection))
+        XCTAssertTrue(reading.reads.contains(.selection))
     }
 
     func testOnlyTheLatestFaultsAreKept() async throws {
