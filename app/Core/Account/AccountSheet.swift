@@ -6,17 +6,20 @@ public actor AccountSheet {
         let copy: @Sendable (String) async -> Bool
         let publish: @Sendable () async -> Bool
         let userName: @Sendable () -> String
+        let changed: @Sendable () async -> Void
 
         public init(
             allows: @escaping @Sendable (String) async -> Bool,
             copy: @escaping @Sendable (String) async -> Bool,
             publish: @escaping @Sendable () async -> Bool,
-            userName: @escaping @Sendable () -> String
+            userName: @escaping @Sendable () -> String,
+            changed: @escaping @Sendable () async -> Void = {}
         ) {
             self.allows = allows
             self.copy = copy
             self.publish = publish
             self.userName = userName
+            self.changed = changed
         }
     }
 
@@ -90,6 +93,7 @@ public actor AccountSheet {
             let typed = AccountPhrase(phrase)
             if typed.canSignIn {
                 try await account.signIn(typed)
+                await links.changed()
                 phrase = ""
                 toast = "Signed in"
                 _ = await links.publish()
@@ -108,6 +112,7 @@ public actor AccountSheet {
                 break
             }
             try account.make(handle: typed)
+            await links.changed()
             _ = await links.publish()
             move = .popAll
         case "own":
@@ -135,6 +140,7 @@ public actor AccountSheet {
             move = .pop
         case "sign_out":
             try await account.signOut()
+            await links.changed()
             toast = "Signed out"
             move = .popAll
         case "sync":

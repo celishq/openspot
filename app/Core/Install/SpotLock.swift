@@ -48,7 +48,7 @@ public struct SpotLock: Equatable, Sendable {
         let release: SpotRelease?
     }
 
-    private static let name = "spots.lock"
+    static let fileName = "spots.lock"
     private static let lockPause: Duration = .milliseconds(20)
 
     public let url: URL
@@ -60,7 +60,7 @@ public struct SpotLock: Equatable, Sendable {
     }
 
     public static func standard(environment: [String: String], home: URL = FileManager.default.homeDirectoryForCurrentUser) -> SpotLock {
-        SpotLock(url: SpotsFolder.config(environment: environment, home: home).appendingPathComponent(name), environment: environment)
+        SpotLock(url: SpotsFolder.config(environment: environment, home: home).appendingPathComponent(fileName), environment: environment)
     }
 
     public func entries() throws -> [Entry] {

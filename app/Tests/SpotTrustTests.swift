@@ -116,4 +116,24 @@ final class SpotTrustTests: PanelCase {
         XCTAssertEqual(cups?.isRestricted, false)
         XCTAssertNil(cups?.settingsSheet.flatMap { try? $0.answer(["read"]) }?.range(of: "row=trust:"))
     }
+
+    func testASpotSignedByTheOwnKeyIsTrustedWhenTheAccountSignsIn() async throws {
+        let mine = try AccountKey.make()
+        try addCups(source: "https://example.com/cups.git", key: mine.publicKey)
+        await model.reload()
+        XCTAssertEqual(cups?.isRestricted, true)
+
+        try model.files.account.keep(mine)
+        await model.accountChanged()
+
+        XCTAssertEqual(cups?.isRestricted, false)
+    }
+
+    func testAnEditOfTheLockReloadsTheSpots() throws {
+        try addCups(source: "https://example.com/cups.git")
+        let lock = SpotLock.standard(environment: model.files.environment, home: model.files.home).url
+        let paths = SpotsWatchPaths(folder: spots, config: model.files.config.url)
+
+        XCTAssertTrue(paths.reports(String(cString: try XCTUnwrap(realpath(lock.path, nil)))))
+    }
 }
