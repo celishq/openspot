@@ -55,7 +55,7 @@ final class SpotThemeProbe: NSObject {
         withObservationTracking {
             _ = SpotLoadedTheme.shared.palette.ink
             _ = SpotLoadedTheme.shared.palette.dark
-            _ = editor.layout
+            _ = SpotLoadedTheme.shared.layout
         } onChange: { [weak self] in
             Task { @MainActor in
                 guard let self else { return }

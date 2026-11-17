@@ -78,8 +78,8 @@ public final class SpotsModel {
         didSet { takePlacements() }
     }
     @ObservationIgnored var isPanelHidden = true
-    @ObservationIgnored var heldTheme: Theme?
-    @ObservationIgnored var laidOutTheme = Theme()
+    @ObservationIgnored var heldLayout: Theme.Layout?
+    @ObservationIgnored var laidOut = Theme.Layout()
     public internal(set) var groupBands: SpotGroupBands?
     public internal(set) var panels = GridPanels() {
         didSet { spanBackdrop() }

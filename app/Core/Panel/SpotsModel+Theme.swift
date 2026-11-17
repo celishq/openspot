@@ -1,25 +1,24 @@
 import Foundation
 
 extension SpotsModel {
-    public func take(_ theme: Theme) {
-        guard isPanelHidden else {
-            heldTheme = theme
+    public func take(_ theme: Theme, atOnce: Bool = false) {
+        host.paint(theme.look)
+        guard atOnce || isPanelHidden else {
+            heldLayout = theme.layout
             return
         }
-        heldTheme = nil
-        lay(theme)
+        lay(theme.layout)
     }
 
-    public func lay(_ theme: Theme) {
-        let laidOut = laidOutTheme
-        guard theme.space != laidOut.space || theme.radius != laidOut.radius || theme.type != laidOut.type || theme.motion != laidOut.motion else { return }
-        laidOutTheme = theme
+    func lay(_ layout: Theme.Layout) {
+        heldLayout = nil
+        guard layout != laidOut else { return }
+        laidOut = layout
         gridScroll = 0
         cardScroll = 0
-        SpotTokens.take(theme)
-        MotionTokens.take(theme.motion)
+        SpotTokens.take(layout)
         takePlacements()
         for run in runs.sheets.values { run.layOut() }
-        host.layOut(theme)
+        host.layOut(layout)
     }
 }

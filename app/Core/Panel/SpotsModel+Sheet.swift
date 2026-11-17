@@ -124,7 +124,7 @@ extension SpotsModel {
             host.confirm(entryKey.openHint)
         }
         endReview()
-        if let heldTheme { take(heldTheme) }
+        if let heldLayout { lay(heldLayout) }
     }
 
     func showSheet(_ list: String?, moving: Bool) {

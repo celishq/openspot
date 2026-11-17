@@ -39,7 +39,7 @@ final class ThemeFolderTests: XCTestCase {
 
         XCTAssertEqual(themes.scan(), ["Openspot", "dusk", "Night"])
         XCTAssertEqual(themes.readInUse(), "Openspot")
-        XCTAssertEqual(themes.read().dark.fill, 0.1)
+        XCTAssertEqual(themes.read().look.dark.fill, 0.1)
     }
 
     func testUseSwitchesTheThemeAndTheLoadedThemeFollows() throws {
@@ -50,11 +50,11 @@ final class ThemeFolderTests: XCTestCase {
         XCTAssertEqual(themes.config.read().theme, "Night")
         XCTAssertEqual(themes.readInUse(), "Night")
         let theme = themes.read()
-        XCTAssertEqual(theme.dark.fill, 0.3)
-        XCTAssertEqual(theme.dark.ink, ThemeColor(text: "#FFFFFF"))
+        XCTAssertEqual(theme.look.dark.fill, 0.3)
+        XCTAssertEqual(theme.look.dark.ink, ThemeColor(text: "#FFFFFF"))
         XCTAssertEqual(theme.faults, [])
         XCTAssertEqual(try themes.use("Openspot"), "Openspot")
-        XCTAssertEqual(themes.read().dark.fill, 0.1)
+        XCTAssertEqual(themes.read().look.dark.fill, 0.1)
     }
 
     func testAnUnknownThemeInUseFallsBackToTheBuiltInWithAFault() throws {
@@ -63,7 +63,7 @@ final class ThemeFolderTests: XCTestCase {
         let theme = themes.read()
 
         XCTAssertEqual(themes.readInUse(), "Openspot")
-        XCTAssertEqual(theme.dark.fill, 0.1)
+        XCTAssertEqual(theme.look.dark.fill, 0.1)
         XCTAssertEqual(theme.faults, ["config.toml: the theme Gone is not there, so Openspot uses the theme Openspot. Run `openspot theme list` to see each one."])
     }
 
@@ -88,7 +88,7 @@ final class ThemeFolderTests: XCTestCase {
 
         XCTAssertEqual(try text(of: "Night copy"), "[dark]\nfill = 0.3\n")
         XCTAssertEqual(themes.readInUse(), "Night copy")
-        XCTAssertEqual(themes.read().dark.fill, 0.3)
+        XCTAssertEqual(themes.read().look.dark.fill, 0.3)
     }
 
     func testRenameMovesTheFolderAndKeepsItInUse() throws {
@@ -99,7 +99,7 @@ final class ThemeFolderTests: XCTestCase {
 
         XCTAssertEqual(themes.scan(), ["Openspot", "Dusk"])
         XCTAssertEqual(themes.readInUse(), "Dusk")
-        XCTAssertEqual(themes.read().dark.fill, 0.3)
+        XCTAssertEqual(themes.read().look.dark.fill, 0.3)
     }
 
     func testDeleteMovesTheFolderToTheTrashAndFallsBackWhenItWasInUse() throws {
@@ -158,8 +158,8 @@ final class ThemeFolderTests: XCTestCase {
 
         XCTAssertEqual(try text(of: "Night"), "# Night\n[dark]\nink = \"#FF0000\"\n# fill = 0.3\n")
         try themes.use("Night")
-        XCTAssertEqual(themes.read().dark.ink, ThemeColor(text: "#FF0000"))
-        XCTAssertEqual(themes.read().dark.fill, 0.1)
+        XCTAssertEqual(themes.read().look.dark.ink, ThemeColor(text: "#FF0000"))
+        XCTAssertEqual(themes.read().look.dark.fill, 0.1)
     }
 
     func testTheBuiltInThemeRefusesAWrite() {
@@ -207,6 +207,6 @@ final class ThemeFolderTests: XCTestCase {
 
         XCTAssertEqual(themes.scan(), ["Openspot", "dusk"])
         XCTAssertEqual(themes.readInUse(), "dusk")
-        XCTAssertEqual(themes.read().dark.fill, 0.3)
+        XCTAssertEqual(themes.read().look.dark.fill, 0.3)
     }
 }

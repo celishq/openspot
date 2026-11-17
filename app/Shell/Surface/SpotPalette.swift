@@ -35,9 +35,9 @@ final class SpotPalette: Sendable {
     let glassFadeReach: Double
     let edgeStrengths: [Double]
 
-    init(_ theme: Theme) {
-        let dark = SpotTheme(theme.dark)
-        let light = SpotTheme(theme.light)
+    init(_ look: Theme.Look) {
+        let dark = SpotTheme(look.dark)
+        let light = SpotTheme(look.light)
         let color = { (part: KeyPath<SpotTheme, NSColor> & Sendable) in
             let (one, other) = (dark[keyPath: part], light[keyPath: part])
             return Color(nsColor: NSColor(name: nil) { SpotTheme.isDark($0) ? one : other })
@@ -55,7 +55,7 @@ final class SpotPalette: Sendable {
         preview = color(\.preview)
         confirm = color(\.confirm)
         onConfirm = color(\.onConfirm)
-        let shared = theme.shared
+        let shared = look.shared
         accent = shared.accent.color
         good = shared.good.color
         warn = shared.warn.color
@@ -70,9 +70,9 @@ final class SpotPalette: Sendable {
         catchLightOnDark = shared.catchLightOnDark.color
         catchLightOnLight = shared.catchLightOnLight.color
         self.shared = shared
-        glassVariant = theme.glass.variant
-        backdropBlur = theme.glass.backdropBlur
-        glassFadeReach = theme.glass.fadeReach
-        edgeStrengths = theme.glass.edgeStrengths
+        glassVariant = look.glass.variant
+        backdropBlur = look.glass.backdropBlur
+        glassFadeReach = look.glass.fadeReach
+        edgeStrengths = look.glass.edgeStrengths
     }
 }

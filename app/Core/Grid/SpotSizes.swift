@@ -24,8 +24,8 @@ public struct SpotSizes: Equatable, Sendable {
     public let gridTop: CGFloat
     public let partsWidth: CGFloat
 
-    public init(_ theme: Theme) {
-        let space = theme.space
+    public init(_ layout: Theme.Layout) {
+        let space = layout.space
         cell = space.cell
         columnGap = space.columnGap
         rowGap = space.rowGap
@@ -35,10 +35,10 @@ public struct SpotSizes: Equatable, Sendable {
         listRowGap = space.listRowGap
         menuRow = space.menuRow
         menuPadding = space.menuPadding
-        cardRadius = theme.radius.card
-        windowRadius = theme.radius.window
-        mediaRadius = theme.radius.media
-        cornerMarkRadius = theme.radius.cornerMark
+        cardRadius = layout.radius.card
+        windowRadius = layout.radius.window
+        mediaRadius = layout.radius.media
+        cornerMarkRadius = layout.radius.cornerMark
         let columns = CGFloat(SpotTokens.columns)
         let halo = SpotTokens.halo
         gridWidth = columns * cell + (columns - 1) * columnGap

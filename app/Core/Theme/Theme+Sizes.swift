@@ -1,6 +1,20 @@
 import Foundation
 
 extension Theme {
+    public struct Layout: Equatable, Sendable {
+        public fileprivate(set) var space = Space()
+        public fileprivate(set) var radius = Radius()
+        public fileprivate(set) var type = TypeSizes()
+        public fileprivate(set) var motion = Motion()
+
+        public init() {}
+
+        static var fields: [ThemeKey: ThemeField<Layout>] {
+            [named("space", \.space, Space.fields), named("radius", \.radius, Radius.fields), named("type", \.type, TypeSizes.fields), named("motion", \.motion, Motion.fields)]
+                .reduce(into: [:]) { all, part in all.merge(part) { one, _ in one } }
+        }
+    }
+
     public struct Space: Equatable, Sendable {
         public fileprivate(set) var cell = 64.0
         public fileprivate(set) var columnGap = 11.0

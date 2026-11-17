@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 final class ThemeMarksTests: XCTestCase {
-    private let sizes = SpotSizes(Theme())
+    private let sizes = SpotSizes(Theme.Layout())
 
     private var grid: ThemeMarks {
         ThemeMarks(sizes: sizes, cards: [

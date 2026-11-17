@@ -10,7 +10,6 @@ final class SpotThemeModel {
     private(set) var groups: [String] = []
     private(set) var grouped: [String: [ThemeRow]] = [:]
     private(set) var fault: String?
-    private(set) var layout = 0
     private(set) var isDark: Bool
     private(set) var lit: ThemeMark?
     private(set) var tip: String?
@@ -21,7 +20,6 @@ final class SpotThemeModel {
     @ObservationIgnored private let themes: ThemeFolder
     @ObservationIgnored private let panel: SpotsModel
     @ObservationIgnored private let appearance: NSAppearance?
-    @ObservationIgnored private var drawn = Theme()
     @ObservationIgnored private var marks = ThemeMarks()
     @ObservationIgnored private var marksScroll: CGFloat = 0
     @ObservationIgnored private var litIndex: Int?
@@ -156,7 +154,6 @@ final class SpotThemeModel {
             await previous?.value
             let theme = await Self.run({ _ in }, in: themes).read.theme
             SpotLoadedTheme.shared.take(theme)
-            SpotLoadedTheme.shared.layOut(theme)
             panel.take(theme)
         }
     }
@@ -250,13 +247,7 @@ final class SpotThemeModel {
 
     private func draw(_ theme: Theme) {
         guard !isClosed else { return }
-        SpotLoadedTheme.shared.take(theme)
-        stage.lay(theme)
-        if theme.space != drawn.space || theme.radius != drawn.radius || theme.type != drawn.type || theme.motion != drawn.motion {
-            SpotLoadedTheme.shared.layOut(theme)
-            layout += 1
-        }
-        drawn = theme
+        stage.take(theme, atOnce: true)
         mark()
     }
 }

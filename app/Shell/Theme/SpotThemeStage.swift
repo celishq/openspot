@@ -23,7 +23,7 @@ struct SpotThemeStage: View {
                     .environment(\.spotDrawsSpotViews, false)
                     .disabled(true)
                     .allowsHitTesting(false)
-                    .id(model.layout)
+                    .id(SpotLoadedTheme.shared.layout)
                     .overlay(alignment: .topLeading) {
                         ZStack(alignment: .topLeading) {
                             Color.clear.contentShape(Rectangle())

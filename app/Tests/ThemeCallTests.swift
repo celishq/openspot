@@ -56,8 +56,8 @@ final class ThemeCallTests: XCTestCase {
 
         XCTAssertEqual(reloaded, CommandAnswer())
         let themes = await app.themes
-        XCTAssertEqual(themes.last?.glass.backdropBlur, 8)
-        XCTAssertEqual(themes.last?.glass.variant, .clear)
+        XCTAssertEqual(themes.last?.look.glass.backdropBlur, 8)
+        XCTAssertEqual(themes.last?.look.glass.variant, .clear)
     }
 
     func testABadNameIsAFailureLine() async throws {

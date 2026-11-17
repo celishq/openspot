@@ -1,11 +1,12 @@
 import Foundation
 
 public enum SpotTokens {
-    nonisolated(unsafe) public private(set) static var sizes = SpotSizes(Theme())
+    nonisolated(unsafe) public private(set) static var sizes = SpotSizes(Theme.Layout())
 
-    public static func take(_ theme: Theme) {
-        let next = SpotSizes(theme)
+    public static func take(_ layout: Theme.Layout) {
+        let next = SpotSizes(layout)
         if next != sizes { sizes = next }
+        MotionTokens.take(layout.motion)
     }
 
     public static var cardRadius: CGFloat { sizes.cardRadius }

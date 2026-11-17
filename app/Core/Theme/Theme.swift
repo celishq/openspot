@@ -2,6 +2,20 @@ import Foundation
 
 public struct Theme: Equatable, Sendable {
     public struct Look: Equatable, Sendable {
+        public fileprivate(set) var dark = Appearance()
+        public fileprivate(set) var light = Appearance()
+        public fileprivate(set) var shared = Shared()
+        public fileprivate(set) var glass = Glass()
+
+        public init() {}
+
+        fileprivate static var fields: [ThemeKey: ThemeField<Look>] {
+            [named("dark", \.dark, Appearance.fields), named("light", \.light, Appearance.fields), named("shared", \.shared, Shared.fields), named("glass", \.glass, Glass.fields)]
+                .reduce(into: [:]) { all, part in all.merge(part) { one, _ in one } }
+        }
+    }
+
+    public struct Appearance: Equatable, Sendable {
         public fileprivate(set) var ink = ThemeColor.none
         public fileprivate(set) var solid = ThemeColor.none
         public fileprivate(set) var onSolid = ThemeColor.none
@@ -20,7 +34,7 @@ public struct Theme: Equatable, Sendable {
         public fileprivate(set) var control = 0.0
         public fileprivate(set) var track = 0.0
 
-        fileprivate static var fields: [String: ThemeField<Look>] {
+        fileprivate static var fields: [String: ThemeField<Appearance>] {
             [
                 "ink": .colour(\.ink), "solid": .colour(\.solid), "on-solid": .colour(\.onSolid), "glyph-on-solid": .colour(\.glyphOnSolid),
                 "glass": .colour(\.glass), "glass-tint": .colour(\.glassTint), "corner-fill": .colour(\.cornerFill), "window": .colour(\.window),
@@ -104,14 +118,8 @@ public struct Theme: Equatable, Sendable {
         }
     }
 
-    public private(set) var dark = Look()
-    public private(set) var light = Look()
-    public private(set) var shared = Shared()
-    public private(set) var glass = Glass()
-    public private(set) var space = Space()
-    public private(set) var radius = Radius()
-    public private(set) var type = TypeSizes()
-    public private(set) var motion = Motion()
+    public private(set) var look = Look()
+    public private(set) var layout = Layout()
     public private(set) var faults: [String] = []
 
     public static var keys: [ThemeKey] {
@@ -128,11 +136,7 @@ public struct Theme: Equatable, Sendable {
     }
 
     private static var fields: [ThemeKey: ThemeField<Theme>] {
-        [
-            named("dark", \.dark, Look.fields), named("light", \.light, Look.fields), named("shared", \.shared, Shared.fields),
-            named("glass", \.glass, Glass.fields), named("space", \.space, Space.fields), named("radius", \.radius, Radius.fields),
-            named("type", \.type, TypeSizes.fields), named("motion", \.motion, Motion.fields)
-        ].reduce(into: [:]) { all, part in all.merge(part) { one, _ in one } }
+        Look.fields.mapValues { $0.on(\Theme.look) }.merging(Layout.fields.mapValues { $0.on(\Theme.layout) }) { one, _ in one }
     }
 
     public init() {}
@@ -167,7 +171,7 @@ public struct Theme: Equatable, Sendable {
         }
     }
 
-    private static func named<Part>(_ section: String, _ part: WritableKeyPath<Theme, Part>, _ fields: [String: ThemeField<Part>]) -> [ThemeKey: ThemeField<Theme>] {
+    static func named<Whole, Part>(_ section: String, _ part: WritableKeyPath<Whole, Part>, _ fields: [String: ThemeField<Part>]) -> [ThemeKey: ThemeField<Whole>] {
         Dictionary(uniqueKeysWithValues: fields.map { (ThemeKey(section: section, key: $0.key), $0.value.on(part)) })
     }
 }

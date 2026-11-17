@@ -19,7 +19,7 @@ final class ViewThemeTests: XCTestCase {
         press-bounce = 0.4
         """)
 
-        let numbers = ViewTheme(sizes: SpotSizes(theme), motion: theme.motion, corner: 30).numbers
+        let numbers = ViewTheme(sizes: SpotSizes(theme.layout), motion: theme.layout.motion, corner: 30).numbers
 
         XCTAssertEqual(numbers["padding"], 20)
         XCTAssertEqual(numbers["columnGap"], 10)
@@ -37,6 +37,6 @@ final class ViewThemeTests: XCTestCase {
     }
 
     func testAPartInsideARoundCornerTakesNoRadiusBelowZero() {
-        XCTAssertEqual(ViewTheme(sizes: SpotSizes(Theme()), motion: Theme.Motion(), corner: 8).numbers["inner"], 0)
+        XCTAssertEqual(ViewTheme(sizes: SpotSizes(Theme.Layout()), motion: Theme.Motion(), corner: 8).numbers["inner"], 0)
     }
 }

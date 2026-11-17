@@ -46,7 +46,7 @@ final class SpotPictureStore {
     }
 
     private static func name(of key: Key) -> NSString {
-        "\(key.changed ?? 0)|\(key.path)" as NSString
+        "\(shortSide)|\(key.changed ?? 0)|\(key.path)" as NSString
     }
 
     private nonisolated static func picture(at path: String, shortSide: Int) -> CGImage? {

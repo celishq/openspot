@@ -21,7 +21,7 @@ struct SpotTheme {
     let controlStrength: Double
     let trackStrength: Double
 
-    init(_ look: Theme.Look) {
+    init(_ look: Theme.Appearance) {
         ink = look.ink.nsColor
         solid = look.solid.nsColor
         onSolid = look.onSolid.nsColor

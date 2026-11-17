@@ -5,8 +5,7 @@ final class ThemeLayoutTests: XCTestCase {
     private let builtInURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Themes/openspot.theme/theme.toml")
 
     override func tearDown() {
-        SpotTokens.take(Theme())
-        MotionTokens.take(Theme().motion)
+        SpotTokens.take(Theme().layout)
     }
 
     private func read(copy text: String) throws -> Theme {
@@ -18,7 +17,7 @@ final class ThemeLayoutTests: XCTestCase {
     }
 
     func testTheBuiltInThemeKeepsTodaysLayout() {
-        SpotTokens.take(ThemeFolder.read(builtIn: builtInURL))
+        SpotTokens.take(ThemeFolder.read(builtIn: builtInURL).layout)
 
         XCTAssertEqual(SpotTokens.cell, 64)
         XCTAssertEqual(SpotTokens.gridWidth, 289)
@@ -31,7 +30,7 @@ final class ThemeLayoutTests: XCTestCase {
     func testACopyWithNewSizesMovesTheGridAndTheSheet() throws {
         let before = SpotTokens.sheetRect(rows: 1)
 
-        SpotTokens.take(try read(copy: "[space]\npadding = 20\ncell = 70\ncolumn-gap = 15\n\n[radius]\ncard = 30\n"))
+        SpotTokens.take(try read(copy: "[space]\npadding = 20\ncell = 70\ncolumn-gap = 15\n\n[radius]\ncard = 30\n").layout)
 
         XCTAssertEqual(SpotTokens.padding, 20)
         XCTAssertEqual(SpotTokens.cardRadius, 30)
@@ -47,13 +46,13 @@ final class ThemeLayoutTests: XCTestCase {
     func testACardCornerOfTheThemeRoundsEveryCardSoAOneRowCardIsACapsuleOnlyAtTheBuiltInCorner() throws {
         let strip = CGRect(x: 0, y: 0, width: SpotTokens.width(columns: 2), height: SpotTokens.cell)
 
-        SpotTokens.take(try read(copy: "[radius]\ncard = 10\n"))
+        SpotTokens.take(try read(copy: "[radius]\ncard = 10\n").layout)
 
         XCTAssertEqual(SurfaceEdge(card: .wide).corner(in: strip), SpotTokens.cell / 2 * 10 / 26, accuracy: 0.001)
         XCTAssertFalse(SurfaceEdge(card: .small).isCircular(in: CGRect(x: 0, y: 0, width: SpotTokens.cell, height: SpotTokens.cell)))
         XCTAssertEqual(SurfaceEdge(card: .square).radius, 10)
 
-        SpotTokens.take(try read(copy: "[radius]\ncard = 0\n"))
+        SpotTokens.take(try read(copy: "[radius]\ncard = 0\n").layout)
 
         XCTAssertEqual(SurfaceEdge(card: .wide).radius, 0)
     }
@@ -61,7 +60,7 @@ final class ThemeLayoutTests: XCTestCase {
     func testAThemeWithExtremeSizesKeepsTheEditorWindowAndFitsItsStage() throws {
         let window = SpotTokens.themeWindowSize
 
-        SpotTokens.take(try read(copy: "[space]\ncell = 100\npadding = 60\ncolumn-gap = 100\nrow-gap = 100\n"))
+        SpotTokens.take(try read(copy: "[space]\ncell = 100\npadding = 60\ncolumn-gap = 100\nrow-gap = 100\n").layout)
 
         XCTAssertEqual(SpotTokens.themeWindowSize, window)
         XCTAssertGreaterThan(SpotTokens.panelWidth, SpotTokens.themeStageWidth)
@@ -70,7 +69,7 @@ final class ThemeLayoutTests: XCTestCase {
     }
 
     func testACopyWithANewDurationChangesTheMotion() throws {
-        MotionTokens.take(try read(copy: "[motion]\ngrow = 0.3\nlifted-scale = 1.1\n").motion)
+        MotionTokens.take(try read(copy: "[motion]\ngrow = 0.3\nlifted-scale = 1.1\n").layout.motion)
 
         XCTAssertEqual(MotionTokens.grow, 0.3 * MotionTokens.slow)
         XCTAssertEqual(MotionTokens.liftedScale, 1.1)

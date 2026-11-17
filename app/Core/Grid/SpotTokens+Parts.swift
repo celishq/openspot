@@ -99,7 +99,7 @@ extension SpotTokens {
     public static let playgroundLogHeight: CGFloat = 120
 
     public static let themeWindowMinHeight: CGFloat = 560
-    public static let builtIn = SpotSizes(Theme())
+    public static let builtIn = SpotSizes(Theme.Layout())
     public static let themeGap = builtIn.columnGap
     public static let themePadding = builtIn.padding
     public static let themeSpacing = builtIn.menuPadding

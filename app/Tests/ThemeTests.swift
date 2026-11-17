@@ -21,13 +21,13 @@ final class ThemeTests: XCTestCase {
         """)
 
         XCTAssertEqual(theme.faults, [])
-        XCTAssertEqual(theme.dark.glassTint, .hex(HexColor(red: 0, green: 0, blue: 0, alpha: 0.6)))
-        XCTAssertEqual(theme.dark.glyphOnSolid, .accent)
-        XCTAssertEqual(theme.dark.fill, 0.1)
-        XCTAssertEqual(theme.light.ink, .hex(HexColor(red: 1, green: 1, blue: 1)))
-        XCTAssertEqual(theme.light.disc, 0)
-        XCTAssertEqual(theme.shared.good, .green)
-        XCTAssertEqual(theme.shared.hover, 0.08)
+        XCTAssertEqual(theme.look.dark.glassTint, .hex(HexColor(red: 0, green: 0, blue: 0, alpha: 0.6)))
+        XCTAssertEqual(theme.look.dark.glyphOnSolid, .accent)
+        XCTAssertEqual(theme.look.dark.fill, 0.1)
+        XCTAssertEqual(theme.look.light.ink, .hex(HexColor(red: 1, green: 1, blue: 1)))
+        XCTAssertEqual(theme.look.light.disc, 0)
+        XCTAssertEqual(theme.look.shared.good, .green)
+        XCTAssertEqual(theme.look.shared.hover, 0.08)
     }
 
     func testAThemeNamesEachValueItCannotRead() {
@@ -58,9 +58,9 @@ final class ThemeTests: XCTestCase {
             "theme.toml: [glass] edge-far is a strength from 0 to 1, such as 0.2.",
             "theme.toml: [glass] tint is not a key of a theme."
         ])
-        XCTAssertEqual(theme.glass, Theme().glass)
-        XCTAssertEqual(theme.dark.glassTint, Theme().dark.glassTint)
-        XCTAssertEqual(theme.dark.fill, 0)
+        XCTAssertEqual(theme.look.glass, Theme().look.glass)
+        XCTAssertEqual(theme.look.dark.glassTint, Theme().look.dark.glassTint)
+        XCTAssertEqual(theme.look.dark.fill, 0)
     }
 
     func testAThemeGivesTheGlassItsVariantBlurReachAndEdges() {
@@ -75,10 +75,10 @@ final class ThemeTests: XCTestCase {
         """)
 
         XCTAssertEqual(theme.faults, [])
-        XCTAssertEqual(theme.glass.variant, .regular)
-        XCTAssertEqual(theme.glass.backdropBlur, 8)
-        XCTAssertEqual(theme.glass.fadeReach, 2.5)
-        XCTAssertEqual(theme.glass.edgeStrengths, [0.9, 0.6, 0.3])
+        XCTAssertEqual(theme.look.glass.variant, .regular)
+        XCTAssertEqual(theme.look.glass.backdropBlur, 8)
+        XCTAssertEqual(theme.look.glass.fadeReach, 2.5)
+        XCTAssertEqual(theme.look.glass.edgeStrengths, [0.9, 0.6, 0.3])
     }
 
     func testAThemeGivesTheSizesTypeAndMotionFromSections() {
@@ -103,17 +103,17 @@ final class ThemeTests: XCTestCase {
         """)
 
         XCTAssertEqual(theme.faults, [])
-        XCTAssertEqual(theme.space.cell, 70)
-        XCTAssertEqual(theme.space.padding, 20)
-        XCTAssertEqual(theme.space.listRow, 44)
-        XCTAssertEqual(theme.space.rowGap, Theme().space.rowGap)
-        XCTAssertEqual(theme.radius.card, 30)
-        XCTAssertEqual(theme.radius.window, 12)
-        XCTAssertEqual(theme.type.title, 15)
-        XCTAssertEqual(theme.type.detail, 12)
-        XCTAssertEqual(theme.motion.grow, 0.3)
-        XCTAssertEqual(theme.motion.pressBounce, 0.4)
-        XCTAssertEqual(theme.motion.liftedScale, 1.1)
+        XCTAssertEqual(theme.layout.space.cell, 70)
+        XCTAssertEqual(theme.layout.space.padding, 20)
+        XCTAssertEqual(theme.layout.space.listRow, 44)
+        XCTAssertEqual(theme.layout.space.rowGap, Theme().layout.space.rowGap)
+        XCTAssertEqual(theme.layout.radius.card, 30)
+        XCTAssertEqual(theme.layout.radius.window, 12)
+        XCTAssertEqual(theme.layout.type.title, 15)
+        XCTAssertEqual(theme.layout.type.detail, 12)
+        XCTAssertEqual(theme.layout.motion.grow, 0.3)
+        XCTAssertEqual(theme.layout.motion.pressBounce, 0.4)
+        XCTAssertEqual(theme.layout.motion.liftedScale, 1.1)
     }
 
     func testAThemeNamesEachSizeAndMotionItCannotRead() {
@@ -143,10 +143,10 @@ final class ThemeTests: XCTestCase {
             "theme.toml: [motion] press-bounce is a strength from 0 to 1, such as 0.2.",
             "theme.toml: [motion] pressed-scale is a scale from 0.5 to 2, such as 1.04."
         ])
-        XCTAssertEqual(theme.space, Theme().space)
-        XCTAssertEqual(theme.radius, Theme().radius)
-        XCTAssertEqual(theme.type, Theme().type)
-        XCTAssertEqual(theme.motion, Theme().motion)
+        XCTAssertEqual(theme.layout.space, Theme().layout.space)
+        XCTAssertEqual(theme.layout.radius, Theme().layout.radius)
+        XCTAssertEqual(theme.layout.type, Theme().layout.type)
+        XCTAssertEqual(theme.layout.motion, Theme().layout.motion)
     }
 
     func testAThemeKeepsEachNumberInTheRangeTheEditorOffers() {
@@ -169,8 +169,8 @@ final class ThemeTests: XCTestCase {
             "theme.toml: [motion] grow is a time from 0 to 2 seconds, such as 0.2.",
             "theme.toml: [motion] pressed-scale is a scale from 0.5 to 2, such as 1.04."
         ])
-        XCTAssertEqual(theme.space.cell, Theme().space.cell)
-        XCTAssertEqual(theme.space.padding, 60)
+        XCTAssertEqual(theme.layout.space.cell, Theme().layout.space.cell)
+        XCTAssertEqual(theme.layout.space.padding, 60)
         XCTAssertEqual(ThemeKind.points.value(200), .integer(100))
     }
 
@@ -187,20 +187,20 @@ final class ThemeTests: XCTestCase {
 
         XCTAssertEqual(theme.faults, [])
         XCTAssertEqual(document.sections.flatMap { section in section.keys.map { "[\(section.name)] \($0)" } }.sorted(), Theme.keys.map(\.name))
-        XCTAssertEqual(theme.dark.glassTint, .hex(HexColor(red: 0, green: 0, blue: 0, alpha: 0.6)))
-        XCTAssertEqual(theme.light.glassTint, ThemeColor(text: "#FFFFFF99"))
-        XCTAssertEqual(theme.glass.variant, .clear)
-        XCTAssertEqual(theme.glass.backdropBlur, 3)
-        XCTAssertEqual(theme.glass.fadeReach, 3)
-        XCTAssertEqual(theme.glass.edgeStrengths, [1, 0.7, 0.45])
-        XCTAssertEqual(theme.space, Theme().space)
-        XCTAssertEqual(theme.radius, Theme().radius)
-        XCTAssertEqual(theme.type, Theme().type)
-        XCTAssertEqual(theme.motion, Theme().motion)
-        XCTAssertEqual([theme.space.cell, theme.space.columnGap, theme.space.rowGap, theme.space.padding], [64, 11, 12, 13])
-        XCTAssertEqual([theme.radius.card, theme.radius.window], [26, 16])
-        XCTAssertEqual([theme.type.title, theme.type.detail], [13, 11])
-        XCTAssertEqual([theme.motion.grow, theme.motion.shrink, theme.motion.move], [0.15, 0.2, 0.25])
+        XCTAssertEqual(theme.look.dark.glassTint, .hex(HexColor(red: 0, green: 0, blue: 0, alpha: 0.6)))
+        XCTAssertEqual(theme.look.light.glassTint, ThemeColor(text: "#FFFFFF99"))
+        XCTAssertEqual(theme.look.glass.variant, .clear)
+        XCTAssertEqual(theme.look.glass.backdropBlur, 3)
+        XCTAssertEqual(theme.look.glass.fadeReach, 3)
+        XCTAssertEqual(theme.look.glass.edgeStrengths, [1, 0.7, 0.45])
+        XCTAssertEqual(theme.layout.space, Theme().layout.space)
+        XCTAssertEqual(theme.layout.radius, Theme().layout.radius)
+        XCTAssertEqual(theme.layout.type, Theme().layout.type)
+        XCTAssertEqual(theme.layout.motion, Theme().layout.motion)
+        XCTAssertEqual([theme.layout.space.cell, theme.layout.space.columnGap, theme.layout.space.rowGap, theme.layout.space.padding], [64, 11, 12, 13])
+        XCTAssertEqual([theme.layout.radius.card, theme.layout.radius.window], [26, 16])
+        XCTAssertEqual([theme.layout.type.title, theme.layout.type.detail], [13, 11])
+        XCTAssertEqual([theme.layout.motion.grow, theme.layout.motion.shrink, theme.layout.motion.move], [0.15, 0.2, 0.25])
     }
 
     func testACopyOverridesTheBuiltInThemeKeyByKey() throws {
@@ -211,9 +211,9 @@ final class ThemeTests: XCTestCase {
         try "[dark]\nfill = 0.3\nsize = 1\n".write(to: copy, atomically: true, encoding: .utf8)
 
         let theme = ThemeFolder.read(builtIn: builtIn, copy: copy)
-        XCTAssertEqual(theme.dark.fill, 0.3)
-        XCTAssertEqual(theme.dark.ink, ThemeColor(text: "#FFFFFF"))
-        XCTAssertEqual(theme.shared.hover, 0.08)
+        XCTAssertEqual(theme.look.dark.fill, 0.3)
+        XCTAssertEqual(theme.look.dark.ink, ThemeColor(text: "#FFFFFF"))
+        XCTAssertEqual(theme.look.shared.hover, 0.08)
         XCTAssertEqual(theme.faults, ["theme.toml: [dark] size is not a key of a theme."])
     }
 
@@ -226,7 +226,7 @@ final class ThemeTests: XCTestCase {
 
         let theme = ThemeFolder.read(builtIn: builtIn, copy: copy)
 
-        XCTAssertEqual(theme.shared.hover, 0.08)
+        XCTAssertEqual(theme.look.shared.hover, 0.08)
         XCTAssertEqual(theme.faults, ["theme.toml cannot be read at \(copy.path), so Openspot keeps the look of the app. Save it as text, or delete it."])
     }
 
@@ -260,8 +260,8 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(rows.first { $0.name == "fill" }?.cells.last?.value, .number(0.3))
         let drawn = Theme(text: own, over: Theme(text: text))
         XCTAssertEqual(drawn.faults.count, 2)
-        XCTAssertEqual(Theme(rows: rows).motion, drawn.motion)
-        XCTAssertEqual(Theme(rows: rows).dark, drawn.dark)
+        XCTAssertEqual(Theme(rows: rows).layout.motion, drawn.layout.motion)
+        XCTAssertEqual(Theme(rows: rows).look.dark, drawn.look.dark)
     }
 
     func testAChangedCellDrawsTheThemeWithItsValue() throws {
@@ -271,8 +271,8 @@ final class ThemeTests: XCTestCase {
         rows[index].change(.integer(21), at: ThemeKey(section: "space", key: "padding"))
 
         XCTAssertEqual(rows[index].cells, [ThemeRow.Cell(key: ThemeKey(section: "space", key: "padding"), value: .integer(21), isSet: true)])
-        XCTAssertEqual(Theme(rows: rows).space.padding, 21)
-        XCTAssertEqual(Theme(rows: rows).light.fill, 0.3)
+        XCTAssertEqual(Theme(rows: rows).layout.space.padding, 21)
+        XCTAssertEqual(Theme(rows: rows).look.light.fill, 0.3)
     }
 
     func testAKindRoundsANumberIntoItsRange() {

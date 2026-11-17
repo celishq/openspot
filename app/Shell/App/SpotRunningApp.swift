@@ -39,7 +39,6 @@ struct SpotRunningApp: RunningApp {
 
     func apply(_ theme: Theme) async {
         await MainActor.run {
-            SpotLoadedTheme.shared.take(theme)
             model.take(theme)
         }
     }
