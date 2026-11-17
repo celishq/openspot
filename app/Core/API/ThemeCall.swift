@@ -8,7 +8,6 @@ enum ThemeCall: NounCall, Equatable {
     case rename(String, String)
     case delete(String)
     case open
-    case edit
     case reload
 
     private static let changes = CallRule.Read.changes("changes the theme")
@@ -25,7 +24,6 @@ enum ThemeCall: NounCall, Equatable {
         },
         CommandVerb("delete", "<name>", "Moves a theme to the Trash. Deleting the one in use switches to the built-in one.", rule: CallRule(use: .app, used: "deleted a theme", read: changes)) { $0.one.map(Self.delete) },
         CommandVerb("open", "", "Opens the file of the theme in use in the text editor. The built-in theme can't change, so it opens a copy, which it uses.", rule: CallRule(use: .app, used: "opened the theme", read: .changes("opens a window"))) { $0.none ? Self.open : nil },
-        CommandVerb("edit", "", "Opens the theme window: the themes, each value of the one in use, and the panel drawn with it.", rule: CallRule(use: .app, used: "opened the theme window", read: .changes("opens a window"), flags: .needsApp)) { $0.none ? Self.edit : nil },
         CommandVerb("reload", "", "Reads the theme in use again from its file, and draws with it.", rule: CallRule(use: .app, used: "reloaded the theme", read: .changes("redraws Openspot"))) { $0.none ? Self.reload : nil }
     ])
 
@@ -69,11 +67,6 @@ enum ThemeCall: NounCall, Equatable {
             }
         case .reload:
             CommandAnswer.work { try await draw("") }
-        case .edit:
-            CommandAnswer.work {
-                await app?.editTheme()
-                return ""
-            }
         case .open:
             CommandAnswer.work { [openText = context.mac.openText] in
                 guard let openText else { throw SpotError.fault("This Mac has no text editor.") }

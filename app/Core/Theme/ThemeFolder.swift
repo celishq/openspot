@@ -111,21 +111,6 @@ public struct ThemeFolder: Sendable {
         return isInUse
     }
 
-    public func readRows(of name: String) throws -> [ThemeRow] {
-        let found = try find(name)
-        let own = file(of: found).flatMap { try? String(contentsOf: $0, encoding: .utf8) }
-        return ThemeRow.rows(builtIn: try readBuiltIn(), own: own)
-    }
-
-    public func write(_ key: ThemeKey, to value: ConfigDocument.Value?, of name: String) throws {
-        let found = try find(name)
-        guard let file = file(of: found) else {
-            throw SpotError.failed(1, "The theme \(Self.builtInName) is built in, so it can't change. Run `openspot theme duplicate` to make a copy you can change.")
-        }
-        let text = (try? String(contentsOf: file, encoding: .utf8)) ?? ""
-        try ConfigDocument.text(text, setting: key.key, in: key.section, to: value).write(to: file, atomically: true, encoding: .utf8)
-    }
-
     public func edit() throws -> URL {
         let name = readInUse()
         return folder(of: Self.isBuiltIn(name) ? try duplicate(name) : name).appendingPathComponent("theme.toml")

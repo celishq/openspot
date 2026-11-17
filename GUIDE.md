@@ -556,28 +556,7 @@ The box sits `padding` inside the view's place, so its corner is `radius.inner`,
 
 A theme gives Openspot its colours, glass, sizes, type and motion. Change it to make Openspot look your way.
 
-```sh
-openspot theme edit
-```
-
-This opens the theme window, as **Edit theme** in Settings does. Its sidebar lists the themes, with the one in use
-marked **In use**: click one to use it, or click **New Theme…** to make one. The buttons at the bottom duplicate, rename
-and delete the theme in use. The middle lists each value of the
-theme in use, by section, with the dark and the light value side by side. Beside it, the panel draws with the theme, in
-the appearance you pick above it, and follows each control as you move it. A change saves to the theme when you let go of
-the control. A value that reads **From Openspot** is the built-in one; the arrow beside a value you set takes it back. The
-panel beside the list shows your cards as the Openspot panel last drew them, so it runs no spot and asks for no access,
-and a panel bigger than its column shrinks to fit.
-While the window is open, the Openspot panel draws the theme you edit too, and it draws the saved theme when you close
-the window.
-
-You can also point at the panel. A gap, a card's padding, its edge or its corner lights up with its name and value, and
-the list shows that value. Drag it to change the value, and let go to save it.
-
-Openspot comes with the theme `Openspot`, which can't change, so its values have no controls. Click **Duplicate to edit**
-to make a copy that you can change.
-
-To change the file in a text editor instead, run `openspot theme open`. It opens the file of the theme in use, and the
+Each theme lives in one file, `theme.toml`. Run `openspot theme open`, which opens the file of the theme in use, and the
 first time makes a copy of `Openspot`, `Openspot copy`, and uses it. Change a value and save:
 
 ```toml
@@ -594,7 +573,7 @@ Then draw Openspot with it:
 openspot theme reload
 ```
 
-Keep more than one theme to switch between looks, in the window or with a command. Each theme is a folder, `themes/<name>.theme` in the folder of your
+Keep more than one theme to switch between looks. Each theme is a folder, `themes/<name>.theme` in the folder of your
 config, named by the folder, with its `theme.toml` inside:
 
 ```sh

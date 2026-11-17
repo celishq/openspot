@@ -24,7 +24,6 @@ final class SpotMotionProbe: NSObject {
     private var start: CFTimeInterval = 0
     private var countedWindows: [ClosedRange<CFTimeInterval>] = []
     private var pressTimes: [Double] = []
-    private var themeProbe: SpotThemeProbe?
 
     init?(model: SpotsModel, panel: NSPanel, environment: [String: String] = ProcessInfo.processInfo.environment) {
         guard let output = environment["OPENSPOT_PROBE"] else { return nil }
@@ -42,11 +41,6 @@ final class SpotMotionProbe: NSObject {
     }
 
     func run(show: () -> Void) {
-        if action == "theme" {
-            let probe = SpotThemeProbe(model: model, motion: row ?? "idle", seconds: 4) { self.finish(with: $0) }
-            themeProbe = probe
-            return probe.run()
-        }
         show()
         if !isSeen {
             panel.alphaValue = 0.02

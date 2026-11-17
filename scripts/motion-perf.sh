@@ -12,14 +12,6 @@ app="$out/build/Build/Products/Release/Openspot.app"
 codesign --force --deep -s - "$app" 2>/dev/null
 caffeinate -d -u -w $$ &
 config="$PWD/.temp/openspot"
-if [ "$ACTION" = theme ]; then
-  config="$PWD/$out/state"
-  rm -rf "$config" && mkdir -p "$config/themes/Probe.theme"
-  cp -R .temp/openspot/spots "$config/"
-  [ -d .temp/openspot/views ] && cp -R .temp/openspot/views "$config/"
-  cp app/Themes/openspot.theme/theme.toml "$config/themes/Probe.theme/"
-  { echo 'theme = "Probe"'; grep -v '^theme' .temp/openspot/config.toml || true; } >"$config/config.toml"
-fi
 for run in $(seq "${1:-3}"); do
   OPENSPOT_CONFIG="$config" OPENSPOT_ROW="$ROW" OPENSPOT_PROBE="$PWD/$out/runs/$run.txt" OPENSPOT_SPOT="$SPOT" OPENSPOT_ACTION="$ACTION" \
     OPENSPOT_CYCLES="${CYCLES:-20}" OPENSPOT_PAUSE="${PAUSE:-0.15}" OPENSPOT_TEXT="$TEXT" "$app/Contents/MacOS/Openspot" >/dev/null 2>&1

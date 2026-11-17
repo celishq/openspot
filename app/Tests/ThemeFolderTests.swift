@@ -150,46 +150,6 @@ final class ThemeFolderTests: XCTestCase {
         XCTAssertNil(themes.file(of: "openspot"))
     }
 
-    func testAWriteChangesOneKeyOfTheThemeAndTheThemeFollows() throws {
-        try write("Night", "# Night\n[dark]\n# ink = \"#FFFFFF\"\nfill = 0.3\n")
-
-        try themes.write(ThemeKey(section: "dark", key: "ink"), to: .string("#FF0000"), of: "night")
-        try themes.write(ThemeKey(section: "dark", key: "fill"), to: nil, of: "Night")
-
-        XCTAssertEqual(try text(of: "Night"), "# Night\n[dark]\nink = \"#FF0000\"\n# fill = 0.3\n")
-        try themes.use("Night")
-        XCTAssertEqual(themes.read().look.dark.ink, ThemeColor(text: "#FF0000"))
-        XCTAssertEqual(themes.read().look.dark.fill, 0.1)
-    }
-
-    func testTheBuiltInThemeRefusesAWrite() {
-        XCTAssertEqual(
-            refusal { try themes.write(ThemeKey(section: "dark", key: "fill"), to: .number(0.5), of: "Openspot") },
-            "The theme Openspot is built in, so it can't change. Run `openspot theme duplicate` to make a copy you can change."
-        )
-        XCTAssertEqual(refusal { try themes.write(ThemeKey(section: "dark", key: "fill"), to: .number(0.5), of: "Gone") }, "There is no theme named Gone. Run `openspot theme list` to see each one.")
-    }
-
-    func testTheRowsHoldEachKeyWithItsValueAndWhetherTheThemeSetsIt() throws {
-        try write("Night", "[dark]\nfill = 0.3\n# ink = \"#000000\"\n")
-
-        let rows = try themes.readRows(of: "Night")
-        let builtIn = try themes.readRows(of: "Openspot")
-
-        XCTAssertEqual(rows, [
-            ThemeRow(group: "look", id: ThemeKey(section: "dark", key: "ink"), kind: .colour, cells: [
-                ThemeRow.Cell(key: ThemeKey(section: "dark", key: "ink"), value: .string("#FFFFFF"), isSet: false)
-            ]),
-            ThemeRow(group: "look", id: ThemeKey(section: "dark", key: "fill"), kind: .strength, cells: [
-                ThemeRow.Cell(key: ThemeKey(section: "dark", key: "fill"), value: .number(0.3), isSet: true)
-            ]),
-            ThemeRow(group: "shared", id: ThemeKey(section: "shared", key: "hover"), kind: .strength, cells: [
-                ThemeRow.Cell(key: ThemeKey(section: "shared", key: "hover"), value: .number(0.08), isSet: false)
-            ])
-        ])
-        XCTAssertEqual(builtIn.flatMap(\.cells).map(\.isSet), [false, false, false])
-    }
-
     func testANameLosesItsOuterSpacesAndCannotStartWithADotOrHoldANewLine() throws {
         try write("Night", "")
 

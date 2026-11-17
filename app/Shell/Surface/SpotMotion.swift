@@ -12,7 +12,6 @@ extension EnvironmentValues {
     #endif
     @Entry var spotIsHeld = false
     @Entry var spotIsStill = false
-    @Entry var spotDrawsSpotViews = true
 }
 
 enum SpotMotion {

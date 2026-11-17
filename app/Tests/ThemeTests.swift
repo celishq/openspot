@@ -149,7 +149,7 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(theme.layout.motion, Theme().layout.motion)
     }
 
-    func testAThemeKeepsEachNumberInTheRangeTheEditorOffers() {
+    func testAThemeKeepsEachNumberInTheRangeOfItsKind() {
         let theme = Theme(text: """
         [space]
         cell = 200
@@ -228,51 +228,6 @@ final class ThemeTests: XCTestCase {
 
         XCTAssertEqual(theme.look.shared.hover, 0.08)
         XCTAssertEqual(theme.faults, ["theme.toml cannot be read at \(copy.path), so Openspot keeps the look of the app. Save it as text, or delete it."])
-    }
-
-    func testTheRowsOfTheBuiltInFileHoldEachKeyOnceWithItsKindAndDrawTheSameTheme() throws {
-        let text = try String(contentsOf: builtInURL, encoding: .utf8)
-
-        let rows = ThemeRow.rows(builtIn: text, own: nil)
-
-        let names = rows.flatMap { row in row.cells.map(\.key.name) }
-        XCTAssertEqual(names.sorted(), Theme.keys.map(\.name))
-        XCTAssertEqual(Set(rows.filter { $0.group == "look" }.map { $0.cells.map(\.key.section) }), [["dark", "light"]])
-        XCTAssertEqual(rows.first { $0.name == "variant" }?.kind, .variant)
-        XCTAssertEqual(rows.first { $0.name == "padding" }?.kind, .points)
-        XCTAssertEqual(rows.first { $0.name == "fade-reach" }?.kind, .reach)
-        XCTAssertEqual(rows.first { $0.name == "grow" }?.kind, .seconds)
-        XCTAssertEqual(rows.first { $0.name == "pressed-scale" }?.kind, .scale)
-        XCTAssertEqual(rows.first { $0.name == "press-bounce" }?.kind, .strength)
-        XCTAssertEqual(Theme(rows: rows), Theme(text: text))
-    }
-
-    func testARowOfAValueTheFileRefusesShowsTheValueTheThemeDraws() throws {
-        let text = try String(contentsOf: builtInURL, encoding: .utf8)
-        let own = "[motion]\ngrow = 3\n\n[dark]\nink = \"#XYZ\"\n\n[light]\nfill = 0.3\n"
-
-        let rows = ThemeRow.rows(builtIn: text, own: own)
-
-        let grow = ThemeKey(section: "motion", key: "grow")
-        let ink = ThemeKey(section: "dark", key: "ink")
-        XCTAssertEqual(rows.first { $0.id == grow }?.cells, [ThemeRow.Cell(key: grow, value: .number(0.15), isSet: false)])
-        XCTAssertEqual(rows.first { $0.id == ink }?.cells.first, ThemeRow.Cell(key: ink, value: .string("#FFFFFF"), isSet: false))
-        XCTAssertEqual(rows.first { $0.name == "fill" }?.cells.last?.value, .number(0.3))
-        let drawn = Theme(text: own, over: Theme(text: text))
-        XCTAssertEqual(drawn.faults.count, 2)
-        XCTAssertEqual(Theme(rows: rows).layout.motion, drawn.layout.motion)
-        XCTAssertEqual(Theme(rows: rows).look.dark, drawn.look.dark)
-    }
-
-    func testAChangedCellDrawsTheThemeWithItsValue() throws {
-        var rows = ThemeRow.rows(builtIn: try String(contentsOf: builtInURL, encoding: .utf8), own: "[light]\nfill = 0.3\n")
-        let index = try XCTUnwrap(rows.firstIndex { $0.name == "padding" })
-
-        rows[index].change(.integer(21), at: ThemeKey(section: "space", key: "padding"))
-
-        XCTAssertEqual(rows[index].cells, [ThemeRow.Cell(key: ThemeKey(section: "space", key: "padding"), value: .integer(21), isSet: true)])
-        XCTAssertEqual(Theme(rows: rows).layout.space.padding, 21)
-        XCTAssertEqual(Theme(rows: rows).look.light.fill, 0.3)
     }
 
     func testAKindRoundsANumberIntoItsRange() {

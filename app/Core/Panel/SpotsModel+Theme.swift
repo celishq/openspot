@@ -1,9 +1,9 @@
 import Foundation
 
 extension SpotsModel {
-    public func take(_ theme: Theme, atOnce: Bool = false) {
+    public func take(_ theme: Theme) {
         host.paint(theme.look)
-        guard atOnce || isPanelHidden else {
+        guard isPanelHidden else {
             heldLayout = theme.layout
             return
         }

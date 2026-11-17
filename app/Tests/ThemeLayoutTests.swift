@@ -57,17 +57,6 @@ final class ThemeLayoutTests: XCTestCase {
         XCTAssertEqual(SurfaceEdge(card: .wide).radius, 0)
     }
 
-    func testAThemeWithExtremeSizesKeepsTheEditorWindowAndFitsItsStage() throws {
-        let window = SpotTokens.themeWindowSize
-
-        SpotTokens.take(try read(copy: "[space]\ncell = 100\npadding = 60\ncolumn-gap = 100\nrow-gap = 100\n").layout)
-
-        XCTAssertEqual(SpotTokens.themeWindowSize, window)
-        XCTAssertGreaterThan(SpotTokens.panelWidth, SpotTokens.themeStageWidth)
-        XCTAssertEqual(SpotTokens.panelWidth * SpotTokens.stageScale, SpotTokens.themeStageWidth, accuracy: 0.001)
-        XCTAssertLessThanOrEqual(SpotTokens.themeListWidth + SpotTokens.themeStageWidth + 2 * SpotTokens.themeGap + 2 * SpotTokens.themePadding, window.width)
-    }
-
     func testACopyWithANewDurationChangesTheMotion() throws {
         MotionTokens.take(try read(copy: "[motion]\ngrow = 0.3\nlifted-scale = 1.1\n").layout.motion)
 

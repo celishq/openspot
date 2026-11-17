@@ -90,17 +90,6 @@ final class ThemeReloadTests: PanelCase {
         XCTAssertEqual(BackdropEdge.blurs.map(\.corner), BackdropEdge.blurs.map { 30 + SpotTokens.halo - $0.inset })
     }
 
-    func testTheStageTakesALayoutWhileShown() async throws {
-        try await openList()
-        let sheet = try XCTUnwrap(model.sheets["list"]?.sheetRect)
-
-        model.take(roomy, atOnce: true)
-
-        XCTAssertEqual(host.layOuts, [roomy.layout])
-        XCTAssertEqual(model.sheets["list"]?.sheetRect.height, sheet.height + 14)
-        XCTAssertEqual(SpotTokens.padding, 20)
-    }
-
     func testALayoutHeldUntilTheHideIsTheLastOneTaken() async throws {
         try await openList()
         let round = Theme(text: "[radius]\ncard = 30\n")

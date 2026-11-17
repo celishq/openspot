@@ -253,7 +253,7 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
 ```sh
 make verify                # the checks in scripts/check-*.sh, then the XCTest suite, with test classes in parallel
 make test T=SpotRunsTests  # one test class, while you work on it
-make perf N=3              # times a Release sheet that opens and closes 20 times, 3 runs; ACTION picks another motion, and ACTION=theme ROW=scroll a motion of the theme editor (scroll, slider, colour, mark, stepper)
+make perf N=3              # times a Release sheet that opens and closes 20 times, 3 runs; ACTION picks another motion
 make film SPOT=caffeinate  # films the open and close of a sheet 10x slower (SLOW=1 for real speed) into .temp/film
 make shots                 # saves pictures of the actions menu in the running panel into .temp/shots; ACTION=search TEXT=/translate shoots a typed search
 sh scripts/pixel-diff.sh shoot before  # saves pictures of fixed screens, dark and light, into .temp/pixels/before

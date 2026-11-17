@@ -48,7 +48,7 @@ final class SettingsSpotTests: BuiltInCase {
 
         let items = try await items()
 
-        XCTAssertEqual(items.map(\.run), ["panel-key", "fix-key", "careful_mode", "edit_theme"])
+        XCTAssertEqual(items.map(\.run), ["panel-key", "fix-key", "careful_mode"])
         XCTAssertFalse(items.contains { $0.title == "Show in the menu bar" || $0.title == "Float" || $0.subtitle?.contains("Cups") == true })
     }
 
@@ -57,11 +57,11 @@ final class SettingsSpotTests: BuiltInCase {
 
         let items = try await items()
 
-        XCTAssertEqual(items.map(\.run), ["panel-key", "fix-key", "careful_mode", "edit_theme"])
+        XCTAssertEqual(items.map(\.run), ["panel-key", "fix-key", "careful_mode"])
         XCTAssertEqual(items.first?.title, "Open Openspot")
         XCTAssertEqual(items.first?.shortcut, "option+space")
-        XCTAssertEqual(items.map { $0.hides ?? [] }, [[], [], [], []])
-        XCTAssertEqual(items.map(\.takesShake), [false, false, false, false])
+        XCTAssertEqual(items.map { $0.hides ?? [] }, [[], [], []])
+        XCTAssertEqual(items.map(\.takesShake), [false, false, false])
     }
 
     func testTheSheetListsTheFixKeyAndChangesIt() async throws {
@@ -136,7 +136,7 @@ final class SettingsSpotTests: BuiltInCase {
         offerLogin()
 
         let off = try await items()
-        XCTAssertEqual(off.map(\.run), ["panel-key", "fix-key", "careful_mode", "edit_theme", "open_at_login"])
+        XCTAssertEqual(off.map(\.run), ["panel-key", "fix-key", "careful_mode", "open_at_login"])
         XCTAssertEqual(off.last?.title, "Open at login")
         XCTAssertEqual(off.last?.isOn, false)
 
@@ -179,23 +179,11 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(changes, 2)
     }
 
-    func testTheOneThemeRowOpensTheThemeWindow() async throws {
-        let items = try await items()
-        let row = try XCTUnwrap(items.first { $0.run == "edit_theme" })
-        XCTAssertEqual(row.title, "Edit theme")
-
-        try await call(["open", "edit_theme"])
-
-        let opened = await app.opened
-        XCTAssertEqual(opened, ["theme"])
-        XCTAssertEqual(mac.opened, [])
-    }
-
     func testTheLinkRowIsOffUntilALinkPointsAtTheAppAndAPickLinksAndRemovesIt() async throws {
         offerLink()
 
         let off = try await items()
-        XCTAssertEqual(off.map(\.run), ["panel-key", "fix-key", "careful_mode", "edit_theme", "command_link"])
+        XCTAssertEqual(off.map(\.run), ["panel-key", "fix-key", "careful_mode", "command_link"])
         XCTAssertEqual(off.last?.title, "Use openspot in Terminal")
         XCTAssertEqual(off.last?.isOn, false)
 

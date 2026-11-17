@@ -98,24 +98,10 @@ extension SpotTokens {
     public static let playgroundTopHeight: CGFloat = 360
     public static let playgroundLogHeight: CGFloat = 120
 
-    public static let themeWindowMinHeight: CGFloat = 560
     public static let builtIn = SpotSizes(Theme.Layout())
     public static let themeGap = builtIn.columnGap
     public static let themePadding = builtIn.padding
-    public static let themeSpacing = builtIn.menuPadding
-    public static let themeListWidth = 3 * builtIn.cell + 2 * builtIn.columnGap
-    public static let themeStageWidth = builtIn.panelWidth
-    public static let themeWindowSize = CGSize(width: CGFloat(windowColumns) * builtIn.cell + CGFloat(windowColumns - 1) * builtIn.columnGap + 2 * builtIn.padding, height: windowHeight)
-    public static var stageScale: CGFloat { min(1, themeStageWidth / panelWidth) }
-    public static let themeLine: CGFloat = 36
     public static let themeRowPadding: CGFloat = 10
-    public static let themeRowRadius: CGFloat = 10
-    public static let themeIconWidth: CGFloat = 20
-    public static let themeCellWidth: CGFloat = 150
-    public static let themeNumberWidth: CGFloat = 40
-    public static let themeMarkEdge: CGFloat = 6
-    public static let themeMarkCorner: CGFloat = 8
-    public static let themeMarkLine: CGFloat = 3
 
     public static let emblemSide: CGFloat = 26
     public static var publisherPlace: CGSize { CGSize(width: partsWidth, height: 178) }
