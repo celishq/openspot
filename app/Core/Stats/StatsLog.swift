@@ -52,7 +52,6 @@ public final class StatsLog: @unchecked Sendable {
         public var uses: [Use] = []
         public var searches: [String: Int] = [:]
         public var countsActs = true
-        var told: [String] = []
 
         public var spots: [String: Count] {
             versions.mapValues { kept in
@@ -185,9 +184,8 @@ public final class StatsLog: @unchecked Sendable {
         }
     }
 
-    func used(_ call: SpotUseCall, by caller: CallerTokens.Caller, at date: Date) -> Bool {
+    func used(_ call: SpotUseCall, by caller: CallerTokens.Caller, at date: Date) {
         let declared = caller.uses.contains(call.use)
-        var tells = false
         change(at: date) { day in
             day.change(caller.id, version: spotVersions[caller.id], at: date) { count in
                 count.name = caller.name
@@ -195,13 +193,7 @@ public final class StatsLog: @unchecked Sendable {
                 count.network = caller.uses.contains(.network)
             }
             if !declared { day.uses = Array((day.uses + [Use(time: date, spot: caller.id, call: call.name, declared: declared)]).suffix(Self.useLimit)) }
-            let told = "\(caller.id) \(call.use.rawValue)"
-            if !declared, !day.told.contains(told) {
-                day.told.append(told)
-                tells = true
-            }
         }
-        return tells
     }
 
     func missed(_ search: String, at date: Date) {
@@ -334,6 +326,5 @@ extension StatsLog.Day {
         uses = try values.decodeIfPresent([StatsLog.Use].self, forKey: .uses) ?? []
         searches = try values.decodeIfPresent([String: Int].self, forKey: .searches) ?? [:]
         countsActs = try values.decodeIfPresent(Bool.self, forKey: .countsActs) ?? false
-        told = try values.decodeIfPresent([String].self, forKey: .told) ?? []
     }
 }

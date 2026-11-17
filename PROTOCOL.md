@@ -1160,19 +1160,20 @@ openspot app quit
 | `files`     | No call. The spot writes outside its data folder.                                                                                                               |
 | `account`   | `store publish`. Only a spot that ships inside Openspot can have it.                                                                                            |
 
-- In an unrestricted spot, a call that needs a use the header doesn't name still runs, and shows one toast for each
-  spot, use and day. `openspot check spots` runs each read restricted, so it reports such a call in a read.
+- In an unrestricted spot, a call that needs a use the header doesn't name still runs, and `openspot spot stats` counts
+  it. `openspot check spots` runs each read restricted, so it reports such a call in a read.
 - Before an add, the review shows the title, the `uses`, and a line **Can also** with what the code seems to do but
   doesn't name: the network, `rm`, `screencapture`, `pbcopy` or `pbpaste`. It warns, and never blocks the add.
 - The review names each file that Openspot can't show as text, such as the built program of a Swift spot or a built
-  view, and says that it can do all that the user can. For a built file, it says that the source beside it may not
+  view, and says that it runs in a sandbox until the user trusts the spot. For a built file, it says that the source beside it may not
   match. Openspot can't prove that a built file comes from its source: it only skips one whose name doesn't hold the
   hash of the source that is there now.
 - So Openspot runs the program that a Swift spot carries only in two cases: the spot ships inside Openspot, or the Mac
   has no Command Line Tools, where the review has said that the program may not match its source. On a Mac with the
   tools, a spot that the user added runs only what Openspot built there from the source the user can read. A share
   never passes a carried program on: it builds a new one from the sources it ships.
-- An update with no new use applies quietly. An update with a new use waits for `--yes`.
+- An update with no new use applies quietly. An update with a new use waits for `--yes`. An update that another key
+  signed applies too, and runs restricted until you trust its new author.
 - A restricted spot runs each process in a sandbox: no network unless `uses=network`, and writes only to its data
   folder and the temp folders unless `uses=files`. With `uses=screen`, it can also write to the Desktop, Movies and the
   screenshots folder. It never writes Openspot's config or spots folder. A call that needs a use the header doesn't name

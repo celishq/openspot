@@ -85,7 +85,7 @@ final class ReviewSpotTests: XCTestCase {
 
         XCTAssertEqual(review.subtitle, "Holds a program that you cannot read")
         let text = try shown(review)
-        XCTAssertTrue(text.hasPrefix("\(review.name)\n\nProgram that Openspot cannot show\ntool.spot/tool\nIt can do all that you can. Add it only if you trust the sender.\n\n"), text)
+        XCTAssertTrue(text.hasPrefix("\(review.name)\n\nProgram that Openspot cannot show\ntool.spot/tool\nIt runs in a sandbox until you trust the spot.\n\n"), text)
     }
 
     func testASpotWithItsOwnViewSaysThatTheViewWaitsForTrust() throws {
@@ -430,7 +430,7 @@ final class ReviewSpotTests: XCTestCase {
 
             XCTAssertEqual(review.subtitle, ReviewSpot.otherKeySubtitle)
             let text = try shown(review)
-            XCTAssertTrue(text.hasPrefix("Weather 2\nAnother key signed this version than the one you have. Add it only if you trust the sender.\n"), text)
+            XCTAssertTrue(text.hasPrefix("Weather 2\nAnother key signed this version than the one you have, so it runs restricted until you trust its author.\n"), text)
         }
     }
 

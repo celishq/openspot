@@ -100,9 +100,6 @@ public struct SpotLock: Equatable, Sendable {
                     }
                     if !review.trust.isEmpty { throw SpotError.fault("\(review.name)\n\n\(review.trust)\(confirm)") }
                 }
-                if let old, !isConfirmed, let key = old.key, new.release?.publicKey != key {
-                    throw SpotError.fault("Another key signed this version than the one you have. Openspot kept the one you have. Run `openspot spot add \(source.text) --yes` to update it.")
-                }
                 if let old, !isConfirmed {
                     try Self.refuseGrowth(from: old.uses, old.canDo, to: new, confirm: "openspot spot add \(source.text) --yes")
                 }

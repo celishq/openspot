@@ -340,7 +340,7 @@ final class SpotAddTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: spots.appendingPathComponent("tools.spot/notes.sh").path))
     }
 
-    func testAnAddOfASignedSpotKeepsItsAddressAndKeyAndAnUpdateFromAnotherKeyNeedsYes() async throws {
+    func testAnAddOfASignedSpotKeepsItsAddressAndKeyAndAnUpdateFromAnotherKeyTakesTheNewKey() async throws {
         let file = root.appendingPathComponent("Cups.spot")
         let mine = try AccountKey.make()
         let cups = try SpotPackage(files: [.init(path: "cups.spot/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8))]).signed(by: mine)
@@ -353,15 +353,13 @@ final class SpotAddTests: XCTestCase {
         XCTAssertEqual(try lock.entries().map(\.address), [release.address])
         XCTAssertEqual(try lock.entries().map(\.key), [mine.publicKey])
 
-        let changed = try SpotPackage(files: [.init(path: "cups.spot/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\necho two\n".utf8))]).signed(by: AccountKey.make())
+        let other = try AccountKey.make()
+        let changed = try SpotPackage(files: [.init(path: "cups.spot/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\necho two\n".utf8))]).signed(by: other)
         try changed.zip(to: file)
-        do {
-            _ = try await lock.add(.file(file), to: spots)
-            XCTFail("An update from another key needs --yes.")
-        } catch {
-            XCTAssertTrue((error as? SpotError)?.reason.hasPrefix("Another key signed this version than the one you have.") == true, "\(error)")
-        }
-        XCTAssertEqual(try String(contentsOf: spots.appendingPathComponent("cups.spot/cups.sh"), encoding: .utf8), "#!/bin/sh\n")
+        _ = try await lock.add(.file(file), to: spots) { try FileManager.default.removeItem(at: $0) }
+
+        XCTAssertEqual(try lock.entries().map(\.key), [other.publicKey])
+        XCTAssertEqual(try String(contentsOf: spots.appendingPathComponent("cups.spot/cups.sh"), encoding: .utf8), "#!/bin/sh\necho two\n")
     }
 
     func testAFolderThatCannotTravelIsStillAddedWithItsHash() async throws {

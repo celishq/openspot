@@ -33,7 +33,7 @@ public struct ReleaseLog: Equatable, Sendable {
     public func review(over installed: ReleaseLog?) -> (lines: [String], isOtherKey: Bool) {
         guard let mine = installed?.last else { return ([], false) }
         guard let theirs = last, theirs.publicKey == mine.publicKey else {
-            return (["Another key signed this version than the one you have. Add it only if you trust the sender."], true)
+            return (["Another key signed this version than the one you have, so it runs restricted until you trust its author."], true)
         }
         return theirs.version.map { (["Update to version \($0)"], false) } ?? ([], false)
     }

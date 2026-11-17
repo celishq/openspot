@@ -404,8 +404,7 @@ public final class SpotRuns {
     }
 
     func used(_ call: SpotUseCall, by caller: CallerTokens.Caller) {
-        guard usage.used(call, by: caller, at: now()) else { return }
-        onReport(caller.id, .toast("\(caller.name) \(call.words) without `uses=\(call.use.rawValue)` in its header. Add it to stop this note."))
+        usage.used(call, by: caller, at: now())
     }
 
     private func track(_ process: ScriptProcess, of spot: String, token: String) {

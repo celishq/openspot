@@ -2,13 +2,11 @@ import Foundation
 
 public struct Trust: Equatable, Sendable {
     let entries: [SpotLock.Entry]
-    let store: URL?
     let ownKey: String?
     var grants: Set<TrustGrant> = []
 
-    public init(entries: [SpotLock.Entry] = [], store: URL? = nil, ownKey: String? = nil) {
+    public init(entries: [SpotLock.Entry] = [], ownKey: String? = nil) {
         self.entries = entries
-        self.store = store
         self.ownKey = ownKey
     }
 
@@ -22,10 +20,10 @@ public struct Trust: Equatable, Sendable {
         entry.key.map(TrustGrant.author) ?? .source(entry.source)
     }
 
-    public static func read(lock: SpotLock, account: AccountStore, store: Store?) -> Trust {
+    public static func read(lock: SpotLock, account: AccountStore) -> Trust {
         let entries = (try? lock.entries()) ?? []
         let ownKey = entries.contains { $0.key != nil } ? account.publicKey() : nil
-        return Trust(entries: entries, store: store?.url, ownKey: ownKey)
+        return Trust(entries: entries, ownKey: ownKey)
     }
 
     func applied(to spot: Spot) -> Spot {
@@ -34,7 +32,7 @@ public struct Trust: Equatable, Sendable {
 
     private func grant(lifting spot: Spot) -> TrustGrant? {
         guard !spot.isBuiltIn, let entry = entries.first(where: { $0.holds(spot.id) }) else { return nil }
-        if entry.isShipped ?? store.map({ entry.source.hasPrefix($0.path + "/") }) == true { return nil }
+        if entry.isShipped == true { return nil }
         if let key = entry.key, key == ownKey { return nil }
         let grant = Self.grant(of: entry)
         return grants.contains(grant) ? nil : grant

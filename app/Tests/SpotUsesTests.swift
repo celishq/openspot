@@ -41,32 +41,17 @@ final class SpotUsesTests: SpotRunsCase {
         try await wait("the end of the call in the sheet") { sheet.calls.isEmpty }
     }
 
-    func testAnUndeclaredUseRunsAndShowsOneToastADay() async throws {
+    func testAnUndeclaredUseOfAnUnrestrictedSpotRunsAndIsCounted() async throws {
         try lister()
         _ = try scanned()
 
         try await press()
-        try await wait("the toast") { !self.toasts.isEmpty }
-        try await press()
-        try await pause()
 
-        XCTAssertEqual(toasts, ["Script read the settings of each spot without `uses=spots` in its header. Add it to stop this note."])
-        time += 24 * 60 * 60
-        try await press()
-        try await wait("the toast of the next day") { self.toasts.count == 2 }
-    }
-
-    func testADeclaredUseShowsNoToast() async throws {
-        try lister(header: "uses=spots")
-        _ = try scanned()
-
-        try await press()
-        try await pause()
-
+        try await wait("the count of the use") { self.counted == 1 }
         XCTAssertEqual(toasts, [])
     }
 
-    func testThePersonsCallShowsNoToast() async throws {
+    func testThePersonsCallCountsForNoSpot() async throws {
         _ = try scanned()
         let shell = Process()
         shell.executableURL = client
@@ -78,7 +63,11 @@ final class SpotUsesTests: SpotRunsCase {
         try await wait("the end of the call") { !shell.isRunning }
         try await pause()
 
-        XCTAssertEqual(toasts, [])
+        XCTAssertNil(runs.usage.counts["script"])
+    }
+
+    private var counted: Int? {
+        runs.usage.counts["script"]?.calls["setting.list"]
     }
 
     private func caller(header: String = "", _ words: String) throws {
@@ -146,8 +135,7 @@ final class SpotUsesTests: SpotRunsCase {
 
         try await press()
 
-        try await wait("the toast") { !self.toasts.isEmpty }
-        XCTAssertEqual(toasts, ["Script read the settings of each spot without `uses=spots` in its header. Add it to stop this note."])
+        try await wait("the count of the use") { self.counted == 1 }
     }
 
     func testAChildThatOutlivesItsSpotsProcessIsStillTheSpot() async throws {
@@ -160,7 +148,7 @@ final class SpotUsesTests: SpotRunsCase {
         openGate()
 
         try await wait("the call of the child") { self.log("done").count == 1 }
-        try await wait("the toast") { !self.toasts.isEmpty }
+        try await wait("the count of the use") { self.counted == 1 }
     }
 
     func testAReadIsKnownFromTheAppsRecordAndNotFromTheVariables() async throws {

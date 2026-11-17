@@ -312,11 +312,10 @@ public final class SpotsModel {
         let secrets = files.secrets
         let lock = SpotLock.standard(environment: files.environment, home: files.home)
         let account = files.account
-        let store = Store.builtIn(environment: files.environment)
         let task = Task {
             await previous?.value
             let start = kept
-            let (next, load, trust) = await Self.read(config, folder, secrets, lock, account, store)
+            let (next, load, trust) = await Self.read(config, folder, secrets, lock, account)
             self.load = load
             runs.tokens.trust = trust
             let id = selectedEntry?.id
@@ -329,9 +328,9 @@ public final class SpotsModel {
     }
 
     @concurrent
-    private nonisolated static func read(_ config: ConfigFile, _ folder: SpotsFolder, _ secrets: SecretStore, _ lock: SpotLock, _ account: AccountStore, _ store: Store?) async -> (KeptConfig, SpotLoad, Trust) {
+    private nonisolated static func read(_ config: ConfigFile, _ folder: SpotsFolder, _ secrets: SecretStore, _ lock: SpotLock, _ account: AccountStore) async -> (KeptConfig, SpotLoad, Trust) {
         _ = try? secrets.read()
-        return (config.readKept(), KeptScan.shared.load(folder), Trust.read(lock: lock, account: account, store: store))
+        return (config.readKept(), KeptScan.shared.load(folder), Trust.read(lock: lock, account: account))
     }
 
     func reload(patching ids: Set<String>?, to next: KeptConfig) {

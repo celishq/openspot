@@ -54,7 +54,7 @@ public struct ReviewSpot: Equatable, Sendable {
             ([primary.name] + release.lines + (grown.isEmpty ? [] : ["This version adds: \(grown.map(\.rawValue).joined(separator: ", "))"])).joined(separator: "\n") + "\n\n",
             programs.isEmpty ? nil : Self.section(
                 "Program that Openspot cannot show",
-                programs + ["It can do all that you can. Add it only if you trust the sender."]
+                programs + ["It runs in a sandbox until you trust the spot."]
                     + (programs.contains(where: SpotFiles(package: spot).isBuilt) ? ["The source beside it may not match the program."] : [])
             ),
             scan.scripts.contains { $0.view != nil } ? Self.section("Its own view", ["Openspot shows its cards without it until you trust the spot in its Settings."]) : nil,

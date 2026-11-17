@@ -53,15 +53,6 @@ final class TrustTests: PanelCase {
         XCTAssertEqual(cups?.isRestricted, false)
     }
 
-    func testASpotFromTheBuiltInStoreIsNotRestricted() async throws {
-        let store = try XCTUnwrap(Store.builtIn(environment: model.files.environment))
-        try addCups(source: store.url.appendingPathComponent("cups.spot").path)
-
-        await model.reload()
-
-        XCTAssertEqual(cups?.isRestricted, false)
-    }
-
     func testASpotOfAnAddedStoreShowsNoView() throws {
         let root = folder!
         let store = root.appendingPathComponent("store", isDirectory: true)
