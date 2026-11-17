@@ -175,7 +175,7 @@ final class ThemeTests: XCTestCase {
     }
 
     func testAFileThatIsNotThereIsAFault() throws {
-        let theme = ThemeFile(builtIn: try temporaryFolder().appendingPathComponent("theme.toml")).read()
+        let theme = ThemeFolder.read(builtIn: try temporaryFolder().appendingPathComponent("theme.toml"))
 
         XCTAssertEqual(theme.faults, ["theme.toml cannot be read. Install Openspot again."])
     }
@@ -183,7 +183,7 @@ final class ThemeTests: XCTestCase {
     func testTheBuiltInThemeSetsEveryKeyOnce() throws {
         let document = try ConfigDocument(text: String(contentsOf: builtInURL, encoding: .utf8))
 
-        let theme = ThemeFile(builtIn: builtInURL).read()
+        let theme = ThemeFolder.read(builtIn: builtInURL)
 
         XCTAssertEqual(theme.faults, [])
         XCTAssertEqual(document.sections.flatMap { section in section.keys.map { "[\(section.name)] \($0)" } }.sorted(), Theme.keys)
@@ -210,7 +210,7 @@ final class ThemeTests: XCTestCase {
         let copy = folder.appendingPathComponent("theme.toml")
         try "[dark]\nfill = 0.3\nsize = 1\n".write(to: copy, atomically: true, encoding: .utf8)
 
-        let theme = ThemeFile(builtIn: builtIn, copy: copy).read()
+        let theme = ThemeFolder.read(builtIn: builtIn, copy: copy)
         XCTAssertEqual(theme.dark.fill, 0.3)
         XCTAssertEqual(theme.dark.ink, ThemeColor(text: "#FFFFFF"))
         XCTAssertEqual(theme.shared.hover, 0.08)
@@ -224,7 +224,7 @@ final class ThemeTests: XCTestCase {
         let copy = folder.appendingPathComponent("theme.toml")
         try Data([0xC3, 0x28]).write(to: copy)
 
-        let theme = ThemeFile(builtIn: builtIn, copy: copy).read()
+        let theme = ThemeFolder.read(builtIn: builtIn, copy: copy)
 
         XCTAssertEqual(theme.shared.hover, 0.08)
         XCTAssertEqual(theme.faults, ["theme.toml cannot be read at \(copy.path), so Openspot keeps the look of the app. Save it as text, or delete it."])

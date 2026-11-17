@@ -66,7 +66,6 @@
 		138D0D129A96E582B799811E /* SpotRunsWantTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF939B0B4568A00F6EF8CF65 /* SpotRunsWantTests.swift */; };
 		147920A050A1CBA355C444A4 /* CardFocus.swift in Sources */ = {isa = PBXBuildFile; fileRef = E01B2D24D06C55E9B25CBEFD /* CardFocus.swift */; };
 		1481E80EECAC6F2D3FDD6106 /* PublisherCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE6C6594F6A2A024F6876D08 /* PublisherCard.swift */; };
-		14B77133C4AE5EEDC790D385 /* ThemeFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10AF5B00994C89C22FFCE1CD /* ThemeFile.swift */; };
 		14BFEA593853F66E984EFF0A /* AgendaExampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E56B1374967B8FD6160AB461 /* AgendaExampleTests.swift */; };
 		15FE6DE697D2C8B0486A2CDB /* SpotScreenPick.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8104FD67862989AC8C1DA091 /* SpotScreenPick.swift */; };
 		1616312F8EC663985BB98057 /* ScrollWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B64BB648C6984AED8D1192F3 /* ScrollWindow.swift */; };
@@ -1009,7 +1008,6 @@
 		0F94032BF55521D28DBE4D34 /* SpotMenuLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotMenuLayer.swift; sourceTree = "<group>"; };
 		0F9D96F5B7F915FCCD751403 /* InputLogSpanTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputLogSpanTests.swift; sourceTree = "<group>"; };
 		0FB1B59E3ECBF7F6F5660991 /* CalcCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalcCall.swift; sourceTree = "<group>"; };
-		10AF5B00994C89C22FFCE1CD /* ThemeFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeFile.swift; sourceTree = "<group>"; };
 		11201F7A1BEBFD2212380850 /* ThemeKind.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeKind.swift; sourceTree = "<group>"; };
 		11809BB092F0369982D0C390 /* OwnedSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnedSheet.swift; sourceTree = "<group>"; };
 		119728FB0E58DB9F52D4E64E /* NextFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextFrame.swift; sourceTree = "<group>"; };
@@ -2144,7 +2142,6 @@
 				3A02DF75187B7FBFB824EA1F /* Theme+Rows.swift */,
 				82D440594C5AA13E62C098F6 /* Theme+Sizes.swift */,
 				F084FBAEA116474C7972BD01 /* ThemeColor.swift */,
-				10AF5B00994C89C22FFCE1CD /* ThemeFile.swift */,
 				493A7DCA965709CA46EC2799 /* ThemeFolder.swift */,
 				11201F7A1BEBFD2212380850 /* ThemeKind.swift */,
 				9D82BF25BC28559576A9AFC5 /* ThemeMark.swift */,
@@ -3994,7 +3991,6 @@
 				9BF16AAB3D3329891EE7AD54 /* Theme.swift in Sources */,
 				19154280E91C1C36C7AFCC47 /* ThemeCall.swift in Sources */,
 				554C75B6033F4C44E5F8E4B1 /* ThemeColor.swift in Sources */,
-				14B77133C4AE5EEDC790D385 /* ThemeFile.swift in Sources */,
 				E2188933E96BB005EF0D303B /* ThemeFolder.swift in Sources */,
 				E905469E67E0137A4D718E48 /* ThemeKind.swift in Sources */,
 				FC0CC4E59D142624F2C40636 /* ThemeMark.swift in Sources */,

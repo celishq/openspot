@@ -75,7 +75,7 @@ final class ThemeFolderTests: XCTestCase {
         XCTAssertEqual(try text(of: "Theme 2"), "[dark]\n# ink = \"#FFFFFF\"\n# fill = 0.1\n\n[shared]\n# hover = 0.08\n")
         let theme = themes.read()
         XCTAssertEqual(theme.faults, [])
-        XCTAssertEqual(theme, ThemeFile(builtIn: themes.builtIn).read())
+        XCTAssertEqual(theme, ThemeFolder.read(builtIn: themes.builtIn))
     }
 
     func testDuplicateCopiesTheThemeInUseOrTheNamedOneAndUsesTheCopy() throws {

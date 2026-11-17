@@ -2,6 +2,7 @@ import Foundation
 
 public struct ThemeFolder: Sendable {
     public static let builtInName = "Openspot"
+    public static let builtInURL = Bundle.main.url(forResource: "theme", withExtension: "toml", subdirectory: "Themes/openspot.theme")
 
     public let url: URL
     public let builtIn: URL?
@@ -13,7 +14,7 @@ public struct ThemeFolder: Sendable {
         self.config = config
     }
 
-    public static func standard(environment: [String: String], builtIn: URL? = ThemeFile.builtInURL) -> ThemeFolder {
+    public static func standard(environment: [String: String], builtIn: URL? = builtInURL) -> ThemeFolder {
         let config = ConfigFile.standard(environment: environment)
         return ThemeFolder(url: config.url.deletingLastPathComponent().appendingPathComponent("themes"), builtIn: builtIn, config: config)
     }
@@ -40,9 +41,21 @@ public struct ThemeFolder: Sendable {
 
     public func read() -> Theme {
         let name = readInUse()
-        let theme = ThemeFile(builtIn: builtIn, copy: file(of: name)).read()
+        let theme = Self.read(builtIn: builtIn, copy: file(of: name))
         guard let chosen = config.read().theme, chosen.caseInsensitiveCompare(name) != .orderedSame else { return theme }
         return Theme(unreadable: "config.toml: the theme \(chosen) is not there, so Openspot uses the theme \(Self.builtInName). Run `openspot theme list` to see each one.", over: theme)
+    }
+
+    public static func read(builtIn: URL?, copy: URL? = nil) -> Theme {
+        guard let builtIn, let text = try? String(contentsOf: builtIn, encoding: .utf8) else {
+            return Theme(unreadable: "theme.toml cannot be read. Install Openspot again.")
+        }
+        let theme = Theme(text: text)
+        guard let copy, FileManager.default.fileExists(atPath: copy.path) else { return theme }
+        guard let own = try? String(contentsOf: copy, encoding: .utf8) else {
+            return Theme(unreadable: "theme.toml cannot be read at \(copy.path), so Openspot keeps the look of the app. Save it as text, or delete it.", over: theme)
+        }
+        return Theme(text: own, over: theme)
     }
 
     @discardableResult

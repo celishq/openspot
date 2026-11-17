@@ -14,11 +14,11 @@ final class ThemeLayoutTests: XCTestCase {
         let copy = folder.appendingPathComponent("themes/openspot.theme/theme.toml")
         try FileManager.default.createDirectory(at: copy.deletingLastPathComponent(), withIntermediateDirectories: true)
         try text.write(to: copy, atomically: true, encoding: .utf8)
-        return ThemeFile(builtIn: builtInURL, copy: copy).read()
+        return ThemeFolder.read(builtIn: builtInURL, copy: copy)
     }
 
     func testTheBuiltInThemeKeepsTodaysLayout() {
-        SpotTokens.take(ThemeFile(builtIn: builtInURL).read())
+        SpotTokens.take(ThemeFolder.read(builtIn: builtInURL))
 
         XCTAssertEqual(SpotTokens.cell, 64)
         XCTAssertEqual(SpotTokens.gridWidth, 289)

@@ -29,7 +29,7 @@ public struct Mac: Sendable {
         pickColor: (@MainActor @Sendable () async -> HexColor?)? = nil,
         pickFolder: (@MainActor @Sendable () async -> URL?)? = nil,
         guide: URL? = Bundle.main.url(forResource: "GUIDE", withExtension: "md"),
-        theme: URL? = ThemeFile.builtInURL,
+        theme: URL? = ThemeFolder.builtInURL,
         openText: (@MainActor @Sendable (URL) async -> Void)? = nil
     ) {
         self.calendar = calendar
