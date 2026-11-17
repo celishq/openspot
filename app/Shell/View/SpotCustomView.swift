@@ -107,6 +107,7 @@ struct SpotCustomView: View, @MainActor Equatable {
             "close": close,
             "bodyTime": bodyTime,
             "size": size,
+            "cardName": (room == nil ? card.name : nil) as Any,
             "answers": answers,
             "inset": SpotTokens.padding,
             "corner": corner,

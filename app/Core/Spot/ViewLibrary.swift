@@ -17,6 +17,10 @@ public struct ViewLibrary: Sendable {
             public let value: Font
         }
 
+        public enum SpotCard: String {
+            case small, wide, square, strip, large
+        }
+
         public struct SpotRow: Identifiable {
             let fields: [String]
 
@@ -41,6 +45,7 @@ public struct ViewLibrary: Sendable {
 
         public struct SpotInput {
             public let size: CGSize
+            public let card: SpotCard?
             public let inset: CGFloat
             public let corner: CGFloat
             public let ink: Color
@@ -85,6 +90,7 @@ public struct ViewLibrary: Sendable {
                 columns = card["columns"] as? Int ?? 16
                 tipDelay = card["tipDelay"] as? Duration ?? .milliseconds(500)
                 size = card["size"] as? CGSize ?? .zero
+                self.card = (card["cardName"] as? String).flatMap(SpotCard.init(rawValue:))
                 answers = card["answers"] as? Int ?? 0
                 inset = card["inset"] as? CGFloat ?? 13
                 corner = card["corner"] as? CGFloat ?? 20
@@ -120,6 +126,80 @@ public struct ViewLibrary: Sendable {
             public func media(_ source: String) -> AnyView { mediaMaker(source) }
 
             public func cornerButton(_ symbol: String, label: String, card id: String, action: @escaping () -> Void) -> AnyView { cornerMaker(symbol, label, id, action) }
+        }
+
+        public struct SpotMetric: View {
+            let spot: SpotInput
+            let value: String
+            let detail: String
+            let mark: String?
+            let isOnFill: Bool
+
+            public init(_ spot: SpotInput, value: String, detail: String = "", mark: String? = nil, onFill: Bool = false) {
+                self.spot = spot
+                self.value = value
+                self.detail = detail
+                self.mark = mark
+                isOnFill = onFill
+            }
+
+            public var body: some View {
+                Group {
+                    switch shape {
+                    case .small:
+                        VStack(spacing: -1) {
+                            number(.system(size: 20, weight: .semibold, design: .rounded))
+                            note(withDetail: true, font: .system(size: 8)).multilineTextAlignment(.center)
+                        }
+                        .padding(spot.inset / 2)
+                    case .wide, .strip:
+                        ViewThatFits(in: .horizontal) {
+                            line(withDetail: true)
+                            line(withDetail: false)
+                        }
+                        .padding(.horizontal, spot.inset)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                    default:
+                        VStack(alignment: .leading, spacing: 2) {
+                            number(spot.font.metric)
+                            note(withDetail: true, font: spot.font.detail)
+                        }
+                        .padding(spot.inset + 4)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                    }
+                }
+                .foregroundStyle(isOnFill ? .white : spot.ink)
+            }
+
+            private var shape: SpotCard {
+                spot.card ?? (spot.size.height >= 100 ? .large : spot.size.width < 100 ? .small : .strip)
+            }
+
+            private var detailOpacity: Double { isOnFill ? 1 : spot.secondary }
+
+            private func number(_ font: Font) -> some View {
+                Text(value).font(font).lineLimit(1).minimumScaleFactor(0.6).layoutPriority(1)
+            }
+
+            private func line(withDetail: Bool) -> some View {
+                HStack(alignment: .center, spacing: 6) {
+                    number(spot.font.metric).fixedSize()
+                    note(withDetail: withDetail, font: spot.font.detail).fixedSize()
+                }
+            }
+
+            private func note(withDetail: Bool, font: Font) -> some View {
+                HStack(spacing: 3) {
+                    if withDetail && !detail.isEmpty {
+                        Text(detail)
+                    }
+                    if let mark {
+                        Image(systemName: mark)
+                    }
+                }
+                .font(font)
+                .opacity(detailOpacity)
+            }
         }
 
         extension SpotView: DynamicProperty {}

@@ -1,80 +1,94 @@
 import SwiftUI
 
-/// The battery as the Mac once drew it, as big as the card: a glossy liquid fills the card from the left to its level,
-/// and bubbles rise in it from the bottom. The number and the detail use the card's own type, and turn white where the
-/// liquid covers them. A bolt shows while it charges. SwiftUI draws each frame on the GPU: `body` only describes the
-/// shapes of the moment, and reads back no picture.
+/// The battery as a liquid that fills the card from the bottom to its level, like a glass, with a surface that rolls
+/// slowly. It is red when the battery runs low and green otherwise. The words turn white where the liquid covers them.
+/// On power, a bolt shows and a few small bubbles rise. It moves only while the panel shows it.
 struct SpotView: View {
     let spot: SpotInput
     @State private var start = Date()
 
-    private static let fill = 1.0
+    private static let fill = 1.1
 
-    private var level: Double { min(1, max(0, (Double(spot["title"] ?? "") ?? 0) / 100)) }
-    private var isCharging: Bool { spot["state"] == "charging" }
+    private var level: Double { min(1, max(0, Double(spot["value"] ?? "") ?? 0)) }
+    private var isCharging: Bool { spot["tone"] == "good" }
+
+    private var colors: [Color] {
+        spot["tone"] == "bad" ? [Color(red: 1, green: 0.41, blue: 0.38), Color(red: 0.9, green: 0.2, blue: 0.16)]
+            : [Color(red: 0.37, green: 0.88, blue: 0.48), Color(red: 0.16, green: 0.71, blue: 0.27)]
+    }
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 60)) { context in
+        TimelineView(.animation(minimumInterval: 1 / 30, paused: !spot.isShown)) { context in
             let time = context.date.timeIntervalSince(start)
-            let liquid = Liquid(time: time, level: level * (1 - pow(1 - min(time / Self.fill, 1), 3)))
-            ZStack(alignment: .leading) {
-                liquid.fill(LinearGradient(colors: [liquid.color.opacity(0.95), liquid.color.mix(with: .black, by: 0.3)], startPoint: .top, endPoint: .bottom))
-                liquid.fill(LinearGradient(colors: [.white.opacity(0.5), .white.opacity(0)], startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.45)))
-                Bubbles(liquid: liquid, count: isCharging ? 24 : 10)
-                words.foregroundStyle(spot.ink)
-                words.foregroundStyle(.white).clipShape(liquid)
+            let liquid = Liquid(time: time, level: spot.isShown ? level * (1 - pow(1 - min(time / Self.fill, 1), 3)) : level)
+            ZStack {
+                liquid.fill(LinearGradient(colors: colors, startPoint: .top, endPoint: .bottom))
+                liquid.surface.stroke(.white.opacity(0.55), lineWidth: 1)
+                if isCharging {
+                    Bubbles(time: time).clipShape(liquid)
+                }
+                words(over: false)
+                words(over: true).clipShape(liquid)
             }
         }
+        .frame(width: spot.size.width, height: spot.size.height)
         .onAppear { start = Date() }
     }
 
-    private var words: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(spot["title"].map { "\($0)%" } ?? "–").font(spot.font.metric)
-            if isCharging {
-                Image(systemName: "bolt.fill").font(spot.font.detail)
-            }
-            Text(spot["detail"] ?? "").font(spot.font.detail).opacity(spot.secondary)
-        }
-        .padding(.horizontal, spot.inset + 6)
-        .frame(width: spot.size.width, height: spot.size.height, alignment: .leading)
+    private func words(over: Bool) -> some View {
+        SpotMetric(spot, value: spot["title"] ?? "–", detail: spot["detail"] ?? "", mark: isCharging ? "bolt.fill" : nil, onFill: over)
     }
 }
 
-/// The liquid at one moment: it fills the card from the left to its level, with an edge that sways.
+/// The liquid at one moment: it fills the card from the bottom to its level, under a surface that rolls.
 struct Liquid: Shape {
     let time: Double
     let level: Double
 
-    /// Red when low, then amber, then green.
-    var color: Color {
-        level < 0.1 ? Color(red: 0.93, green: 0.22, blue: 0.18) : level < 0.2 ? Color(red: 0.98, green: 0.66, blue: 0.10) : Color(red: 0.30, green: 0.78, blue: 0.22)
-    }
+    /// The line of the surface alone.
+    var surface: Surface { Surface(liquid: self) }
 
-    /// Where the edge is at a height from 0 at the top to 1 at the bottom, in points from the left.
-    func edge(at y: Double, in rect: CGRect) -> Double {
-        rect.width * level + rect.height * (0.03 * sin(y * 7 + time * 2.2) + 0.018 * sin(y * 13 - time * 3.4))
+    /// The height of the surface at a point across, from 0 on the left to 1 on the right, in points from the top.
+    func top(at x: Double, in rect: CGRect) -> Double {
+        let wave = min(rect.height * 0.035, 3.2) * (sin(x * 6.28 + time * 1.3) + 0.5 * sin(x * 11 - time * 1.9))
+        return rect.height * (1 - level) + wave
     }
 
     func path(in rect: CGRect) -> Path {
         guard level > 0 else { return Path() }
         var path = Path()
-        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
-        let steps = 24
+        path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+        let steps = 32
         for step in 0...steps {
-            let y = Double(step) / Double(steps)
-            path.addLine(to: CGPoint(x: rect.minX + max(0, edge(at: y, in: rect)), y: rect.minY + y * rect.height))
+            let x = Double(step) / Double(steps)
+            path.addLine(to: CGPoint(x: rect.minX + x * rect.width, y: rect.minY + top(at: x, in: rect)))
         }
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
         path.closeSubpath()
         return path
     }
 }
 
-/// Bubbles that rise in the liquid, each a ring with a shine, drawn in one canvas.
-struct Bubbles: View {
+/// The rolling line on top of the liquid.
+struct Surface: Shape {
     let liquid: Liquid
-    let count: Int
+
+    func path(in rect: CGRect) -> Path {
+        guard liquid.level > 0 else { return Path() }
+        var path = Path()
+        let steps = 32
+        for step in 0...steps {
+            let x = Double(step) / Double(steps)
+            let point = CGPoint(x: rect.minX + x * rect.width, y: rect.minY + liquid.top(at: x, in: rect) + 0.5)
+            step == 0 ? path.move(to: point) : path.addLine(to: point)
+        }
+        return path
+    }
+}
+
+/// A few small bubbles that rise slowly through the card, drawn in one canvas.
+struct Bubbles: View {
+    let time: Double
 
     private static func hash(_ n: Double) -> Double {
         let value = sin(n * 12.9898) * 43758.5453
@@ -83,20 +97,15 @@ struct Bubbles: View {
 
     var body: some View {
         Canvas { context, size in
-            let rect = CGRect(origin: .zero, size: size)
-            let time = liquid.time
-            for index in 0..<count {
+            for index in 0..<7 {
                 let n = Double(index)
-                let speed = 0.35 + 0.45 * Self.hash(n + 3.1)
-                let rise = time * speed + Self.hash(n + 7.7)
-                let y = 1.1 - (rise - rise.rounded(.down))
-                let edge = liquid.edge(at: y, in: rect)
-                let radius = size.height * (0.035 + 0.04 * Self.hash(n + 5.9))
-                let x = Self.hash(n + 1.3) * max(edge - 0.08 * size.height, 0) + size.height * (0.04 + 0.03 * sin(time * 3 + n * 2))
-                guard x < edge - radius else { continue }
-                let ring = CGRect(x: x - radius, y: y * size.height - radius, width: radius * 2, height: radius * 2)
-                context.stroke(Path(ellipseIn: ring), with: .color(.white.opacity(0.45)), lineWidth: max(1, radius * 0.25))
-                context.fill(Path(ellipseIn: ring.insetBy(dx: radius * 0.6, dy: radius * 0.6).offsetBy(dx: -radius * 0.35, dy: -radius * 0.35)), with: .color(.white.opacity(0.5)))
+                let rise = time * (0.12 + 0.12 * Self.hash(n + 3.1)) + Self.hash(n + 7.7)
+                let y = size.height * (1.05 - (rise - rise.rounded(.down)) * 1.1)
+                let x = 4 + Self.hash(n + 1.3) * max(size.width - 8, 0) + 1.5 * sin(time * 1.5 + n)
+                let radius = 1 + 1.4 * Self.hash(n + 5.9)
+                let ring = Path(ellipseIn: CGRect(x: x - radius, y: y - radius, width: radius * 2, height: radius * 2))
+                context.fill(ring, with: .color(.white.opacity(0.35)))
+                context.stroke(ring, with: .color(.white.opacity(0.5)), lineWidth: 0.6)
             }
         }
         .allowsHitTesting(false)
