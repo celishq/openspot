@@ -42,6 +42,7 @@ public final class SpotUsage: @unchecked Sendable {
         public var spots: [String: Count] = [:]
         public var versions: [String: [String: Version]] = [:]
         public var uses: [Use] = []
+        public var searches: [String: Int] = [:]
         public var countsActs = true
         var told: [String] = []
 
@@ -54,6 +55,7 @@ public final class SpotUsage: @unchecked Sendable {
 
     static let keptDays = 90
     private static let useLimit = 100
+    static let searchLimit = 50
 
     private let folder: URL?
     private let pause: TimeInterval
@@ -186,6 +188,13 @@ public final class SpotUsage: @unchecked Sendable {
         return tells
     }
 
+    func missed(_ search: String, at date: Date) {
+        change(at: date) { day in
+            guard day.searches[search] != nil || day.searches.count < Self.searchLimit else { return }
+            day.searches[search, default: 0] += 1
+        }
+    }
+
     public func flush() {
         let date = now()
         let ended: Day? = lock.withLock {
@@ -302,6 +311,7 @@ extension SpotUsage.Day {
         spots = try values.decodeIfPresent([String: SpotUsage.Count].self, forKey: .spots) ?? [:]
         versions = try values.decodeIfPresent([String: [String: SpotUsage.Version]].self, forKey: .versions) ?? [:]
         uses = try values.decodeIfPresent([SpotUsage.Use].self, forKey: .uses) ?? []
+        searches = try values.decodeIfPresent([String: Int].self, forKey: .searches) ?? [:]
         countsActs = try values.decodeIfPresent(Bool.self, forKey: .countsActs) ?? false
         told = try values.decodeIfPresent([String].self, forKey: .told) ?? []
     }

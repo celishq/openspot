@@ -9,6 +9,7 @@ struct StatsMetrics {
 
     let rows: [StatsReport.Row]
     let uses: [SpotUsage.Use]
+    let searches: [(text: String, count: Int)]
 
     var text: String {
         var families = [
@@ -28,6 +29,7 @@ struct StatsMetrics {
             family("openspot_spot_view_body_seconds", { [([], $0.view?.seconds ?? 0)] })
         ]
         families.append(undeclared)
+        families.append(Family(name: "openspot_search_empty", type: "counter", samples: searches.map { "openspot_search_empty_total\(Self.labelText([("query", $0.text)])) \($0.count)" }))
         return families.filter { !$0.samples.isEmpty }.map { family in
             (["# TYPE \(family.name) \(family.type)"] + family.samples).joined(separator: "\n") + "\n"
         }.joined() + "# EOF\n"

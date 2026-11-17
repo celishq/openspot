@@ -146,6 +146,13 @@ extension SpotsModel {
         return entry.spot.isFound || entry.spot.isGlobal || entry.spot.answers != nil
     }
 
+    func noteMiss(of text: String) {
+        let search = text.trimmingCharacters(in: .whitespacesAndNewlines).folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil).lowercased()
+        guard search.count >= 3, !search.hasPrefix("/"), search != notedMiss, visible.isEmpty, finding == nil, !isEditing else { return }
+        notedMiss = search
+        runs.usage.missed(search, at: runs.now())
+    }
+
     func askAnswers() {
         runs.raise(.query(query))
     }

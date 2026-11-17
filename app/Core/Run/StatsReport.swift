@@ -25,7 +25,7 @@ public struct StatsReport: Sendable {
         switch format {
         case .frame: frame
         case .json: try json
-        case .metrics: StatsMetrics(rows: rows, uses: byVersion ? [] : uses).text
+        case .metrics: StatsMetrics(rows: rows, uses: byVersion ? [] : uses, searches: searches).text
         }
     }
 
@@ -64,6 +64,13 @@ public struct StatsReport: Sendable {
             sums[card.id] = count
         }
         return sums.sorted { ($0.value.cost.cpu, $1.key) > ($1.value.cost.cpu, $0.key) }.map { ($0.key, $0.value) }
+    }
+
+    var searches: [(text: String, count: Int)] {
+        guard spot == nil else { return [] }
+        var counts: [String: Int] = [:]
+        for day in days { counts.merge(day.searches, uniquingKeysWith: +) }
+        return counts.sorted { ($1.value, $0.key) < ($0.value, $1.key) }.map { ($0.key, $0.value) }
     }
 
     var uses: [SpotUsage.Use] {
@@ -145,7 +152,8 @@ public struct StatsReport: Sendable {
                 .init(key: "declared", value: String(use.declared))
             ]).text
         }
-        return (rows + uses).map { $0 + "\n" }.joined()
+        let searches = searches.map { TextBlock(fields: [.init(key: "search", value: $0.text), .init(key: "count", value: String($0.count))]).text }
+        return (rows + uses + searches).map { $0 + "\n" }.joined()
     }
 
     private var json: String {

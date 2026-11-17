@@ -1,0 +1,75 @@
+import XCTest
+@testable import OpenspotCore
+
+@MainActor
+final class EmptySearchTests: PanelCase {
+    private var searches: [String: Int] {
+        model.runs.usage.days(1, at: Date()).first?.searches ?? [:]
+    }
+
+    private func search(_ text: String) {
+        model.query = text
+        model.landSearch()
+    }
+
+    func testASearchThatFoundNothingCountsByItsFoldedTextWhenItIsClearedOrThePanelHides() async throws {
+        try script("coffee", header: "title=Coffee", "true")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+
+        search("Tímezone")
+        search("")
+        search("weather ")
+        model.panelDidHide()
+
+        XCTAssertEqual(searches, ["timezone": 1, "weather": 1])
+    }
+
+    func testASearchThatFoundASpotOrIsShortCountsNothing() async throws {
+        try script("coffee", header: "title=Coffee", "true")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+
+        search("coffee")
+        search("")
+        search("zq")
+        search("")
+        model.panelDidHide()
+
+        XCTAssertEqual(searches, [:])
+    }
+
+    func testTheSameSearchHiddenThenClearedCountsOnce() async throws {
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+
+        search("timezone")
+        model.panelDidHide()
+        search("")
+
+        XCTAssertEqual(searches, ["timezone": 1])
+    }
+
+    func testADayKeepsAtMostFiftySearches() {
+        let usage = SpotUsage()
+        for index in 0..<60 { usage.missed("search \(index)", at: Date()) }
+        usage.missed("search 0", at: Date())
+
+        let kept = usage.days(1, at: Date()).first?.searches ?? [:]
+        XCTAssertEqual(kept.count, 50)
+        XCTAssertEqual(kept["search 0"], 2)
+    }
+
+    func testTheStatsPrintEachSearchThatFoundNothing() throws {
+        let usage = SpotUsage()
+        usage.missed("timezone", at: Date())
+        usage.missed("timezone", at: Date())
+
+        let days = usage.days(1, at: Date())
+        XCTAssertTrue(try StatsReport(days: days, spot: nil).text(.frame).hasSuffix("search=timezone\ncount=2\n\n"))
+        XCTAssertTrue(try StatsReport(days: days, spot: nil).text(.metrics).contains("# TYPE openspot_search_empty counter\nopenspot_search_empty_total{query=\"timezone\"} 2\n"))
+    }
+}
