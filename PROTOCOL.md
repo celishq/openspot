@@ -1083,6 +1083,8 @@ openspot spot stats --days 7
 ```
 
 - Openspot keeps one file for each day, for 90 days. Today's numbers are live.
+- An act is something the user did with a spot: they opened its sheet, picked a row, pressed, set or toggled something,
+  or ran one of its actions. A read is never an act.
 - `--days N` adds up the last N days. `--spot <id>` shows one spot.
 - It prints a `row=<id>` block for each spot, the most CPU first, then a `use=<n>` block for each call that needs a
   use, the newest first. `--json` prints the days.
@@ -1094,12 +1096,21 @@ openspot spot stats --days 7
 | `cpu`, `seconds`     | The CPU seconds of its processes, and the wall time of its calls.     |
 | `read`, `written`    | The bytes its processes read and wrote.                               |
 | `wakeups`            | The times its processes woke the CPU.                                 |
+| `acts`, `last`       | The user's acts, and the time of the last one.                        |
+| `days`               | The acts of each day, oldest first. `-` for a day with no count.      |
+| `reads.<reason>`     | The reads for one reason, such as `reads.sheet.open=3` or `reads.clock=40`. |
+| `hidden.cpu`, `hidden.wakeups` | The part of `cpu` and `wakeups` spent while the panel was hidden. |
+| `p50`, `p95`         | The seconds within which half, and 95 in 100, of its calls first answered. |
+| `memory`             | The most memory one of its processes held, in bytes.                  |
+| `failures.<kind>`    | The failures of one kind: `timeout`, `exit` or `output`.              |
+| `failed`             | The time of its last failure.                                         |
 | `call.<noun>.<verb>` | The count of one call that needs a use, such as `call.screen.shot=2`. |
 | `network`            | `declared` when its header names `network`.                           |
 | `bodies`, `body`     | The runs of the `body` of its `SpotView`, and their seconds in all.   |
 | `fault`, `tone`      | Its last error, with `tone=bad`.                                      |
 
-- A `use` block holds `time`, `spot`, `call`, such as `app.quit`, and `declared`, `true` or `false`.
+- A `use` block holds `time`, `spot`, `call`, such as `app.quit`, and `declared`. Only a call that the header doesn't
+  declare is logged, so `declared` is `false`; `call.<noun>.<verb>` counts each call.
 
 ## Trust
 

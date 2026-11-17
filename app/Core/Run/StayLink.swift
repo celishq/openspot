@@ -340,7 +340,7 @@ final class StayLink: ScriptLink {
     private func failed(_ error: Error, telling: Bool = true) {
         guard let run else { return }
         let time = runs.now()
-        runs.usage.failedRun(run.spot, at: time)
+        runs.usage.failedRun(run.spot, failure: SpotUsage.Failure(error), at: time)
         failures = failures.filter { time.timeIntervalSince($0) < Self.failureWindow } + [time]
         guard failures.count >= Self.failureLimit else { return telling ? run.fail(error) : () }
         givenUp = .some(stamp)

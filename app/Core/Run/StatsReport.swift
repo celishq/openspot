@@ -30,7 +30,12 @@ public struct StatsReport: Sendable {
         days.flatMap(\.uses).filter { spot == nil || $0.spot == spot }.sorted { $0.time > $1.time }
     }
 
+    private func acts(of id: String) -> [String] {
+        days.reversed().map { day in day.countsActs ? String(day.spots[id]?.acts ?? 0) : "-" }
+    }
+
     private var frame: String {
+        let stamp = ISO8601DateFormatter()
         let rows = counts.map { id, count in
             var fields: [TextBlock.Field] = [
                 .init(key: "row", value: id),
@@ -42,8 +47,21 @@ public struct StatsReport: Sendable {
                 .init(key: "seconds", value: String(format: "%.3f", count.seconds)),
                 .init(key: "read", value: String(count.read)),
                 .init(key: "written", value: String(count.written)),
-                .init(key: "wakeups", value: String(count.wakeups))
+                .init(key: "wakeups", value: String(count.wakeups)),
+                .init(key: "acts", value: String(count.acts))
             ]
+            if let last = count.last { fields.append(.init(key: "last", value: stamp.string(from: last))) }
+            fields += acts(of: id).map { .init(key: "days", value: $0) }
+            fields += count.reads.sorted { $0.key < $1.key }.map { .init(key: "reads.\($0.key)", value: String($0.value)) }
+            if count.hiddenCPU > 0 || count.hiddenWakeups > 0 {
+                fields += [.init(key: "hidden.cpu", value: String(format: "%.3f", count.hiddenCPU)), .init(key: "hidden.wakeups", value: String(count.hiddenWakeups))]
+            }
+            if let middle = count.answerTime(0.5), let slow = count.answerTime(0.95) {
+                fields += [.init(key: "p50", value: String(format: "%.3f", middle)), .init(key: "p95", value: String(format: "%.3f", slow))]
+            }
+            if count.memory > 0 { fields.append(.init(key: "memory", value: String(count.memory))) }
+            fields += count.failureKinds.sorted { $0.key < $1.key }.map { .init(key: "failures.\($0.key)", value: String($0.value)) }
+            if let failed = count.failed { fields.append(.init(key: "failed", value: stamp.string(from: failed))) }
             fields += count.calls.sorted { $0.key < $1.key }.map { .init(key: "call.\($0.key)", value: String($0.value)) }
             if count.network { fields.append(.init(key: "network", value: "declared")) }
             if let view = count.view {
@@ -52,7 +70,6 @@ public struct StatsReport: Sendable {
             if let fault = count.fault { fields += [.init(key: "fault", value: fault), .init(key: "tone", value: "bad")] }
             return TextBlock(fields: fields).text
         }
-        let stamp = ISO8601DateFormatter()
         let uses = uses.enumerated().map { index, use in
             TextBlock(fields: [
                 .init(key: "use", value: String(index + 1)),
@@ -69,11 +86,12 @@ public struct StatsReport: Sendable {
         get throws {
             struct Shown: Encodable {
                 let day: String
+                let countsActs: Bool
                 let spots: [String: SpotUsage.Count]
                 let uses: [SpotUsage.Use]
             }
             let kept = days.map { day in
-                Shown(day: day.day, spots: day.spots.filter { spot == nil || $0.key == spot }, uses: day.uses.filter { spot == nil || $0.spot == spot })
+                Shown(day: day.day, countsActs: day.countsActs, spots: day.spots.filter { spot == nil || $0.key == spot }, uses: day.uses.filter { spot == nil || $0.spot == spot })
             }
             return try PrintForm.json(kept, dates: .iso8601)
         }

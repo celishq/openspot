@@ -39,6 +39,8 @@ final class StatsReportTests: XCTestCase {
         read=0
         written=0
         wakeups=0
+        acts=0
+        days=0
         bodies=2
         body=0.006000
 
@@ -46,9 +48,53 @@ final class StatsReportTests: XCTestCase {
         """)
     }
 
+    func testARowHoldsTheActsOfEachDayOldestFirstAndWhatTheSpotCostAndHowFastItAnswered() throws {
+        let usage = SpotUsage(at: day)
+        let alpha = Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh"))
+        usage.acted(alpha, at: day)
+        usage.acted(alpha, at: day)
+        usage.called(alpha, seconds: 0.3, answered: 0.07, reason: "sheet.open", at: day)
+        usage.called(alpha, seconds: 9, answered: 2, failure: .timeout, at: day)
+        usage.add(ProcessTime(cpu: 0.25, wakeups: 4, memory: 5_000_000), to: "a", at: day)
+        usage.failed(alpha, fault: "Alpha took too long.", at: day)
+
+        let frame = try StatsReport(days: usage.days(3, at: day), spot: nil).text(.frame)
+
+        let stamp = ISO8601DateFormatter().string(from: day)
+        XCTAssertEqual(frame, """
+        row=a
+        title=Alpha
+        detail=250 ms CPU · 2 runs · 4.7 s each
+        runs=2
+        failures=1
+        cpu=0.250
+        seconds=9.300
+        read=0
+        written=0
+        wakeups=4
+        acts=2
+        last=\(stamp)
+        days=-
+        days=-
+        days=2
+        reads.sheet.open=1
+        hidden.cpu=0.250
+        hidden.wakeups=4
+        p50=0.100
+        p95=3.200
+        memory=5000000
+        failures.timeout=1
+        failed=\(stamp)
+        fault=Alpha took too long.
+        tone=bad
+
+
+        """)
+    }
+
     func testASpotWithNoViewHasNoBodyKeys() throws {
         let usage = SpotUsage(at: day)
-        usage.called(Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh")), seconds: 1, isFailure: false, at: day)
+        usage.called(Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh")), seconds: 1, at: day)
 
         let frame = try StatsReport(days: usage.days(1, at: day), spot: nil).text(.frame)
 

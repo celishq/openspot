@@ -7,6 +7,7 @@ final class OpenCall {
     let begin = Date()
     var frames: [String] = []
     var hasAnswer = false
+    var answered: TimeInterval?
     var showedPicture = false
     var lastHead: SpotOutput?
     var pushed: SpotOutput?

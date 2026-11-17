@@ -5,7 +5,9 @@ import Observation
 @Observable
 public final class SpotRuns {
     public private(set) var sheets: [String: SpotRun] = [:]
-    public internal(set) var isPanelOpen = false
+    public internal(set) var isPanelOpen = false {
+        didSet { if isPanelOpen != oldValue { usage.panel(shown: isPanelOpen) } }
+    }
     public private(set) var openID: String?
     public private(set) var floating: Set<String> = []
     public var dragged = FileKinds() {

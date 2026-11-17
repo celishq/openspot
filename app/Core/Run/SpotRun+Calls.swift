@@ -3,7 +3,13 @@ import Foundation
 extension SpotRun {
     @discardableResult
     func send(_ call: Call) -> Bool {
-        link.send(OpenCall(call, started: runs.now()))
+        if case .ask = call.purpose {} else { acted() }
+        return link.send(OpenCall(call, started: runs.now()))
+    }
+
+    func acted() {
+        guard OwnedSheet.owner(of: spot.id) == nil else { return }
+        runs.usage.acted(spot, at: runs.now())
     }
 
     func answer(to action: SpotAction, key: String, input: String?) async throws -> SpotOutput? {
@@ -13,6 +19,7 @@ extension SpotRun {
     }
 
     func take(_ text: String, _ lines: SpotOutput, of call: OpenCall) async {
+        if call.answered == nil { call.answered = Date().timeIntervalSince(call.begin) }
         call.made.take(lines)
         call.selected = lines.select ?? call.selected
         switch call.request.purpose {
@@ -63,8 +70,9 @@ extension SpotRun {
 
     func finish(_ call: OpenCall, _ end: ScriptCall.End, errors: String = "") {
         if OwnedSheet.owner(of: spot.id) == nil {
-            let isFailure = if case .failed = end { true } else { false }
-            runs.usage.called(spot, seconds: Date().timeIntervalSince(call.begin), isFailure: isFailure, at: runs.now())
+            let failure = if case .failed(let error) = end { SpotUsage.Failure(error) } else { SpotUsage.Failure?.none }
+            let reason = if case .ask(.read) = call.request.purpose { call.request.reason.map(Self.name(of:)) } else { String?.none }
+            runs.usage.called(spot, seconds: Date().timeIntervalSince(call.begin), answered: call.answered, failure: failure, reason: reason, at: runs.now())
         }
         log(call, end, errors: errors)
         ended(call, end)
@@ -85,6 +93,10 @@ extension SpotRun {
             callEnded(call.made)
             answer(waiting, of: call, end)
         }
+    }
+
+    private static func name(of reason: ReadReason) -> String {
+        reason.rawValue.hasPrefix(SpotEvent.clockPrefix) ? "clock" : reason.rawValue
     }
 
     private func log(_ call: OpenCall, _ end: ScriptCall.End, errors: String) {

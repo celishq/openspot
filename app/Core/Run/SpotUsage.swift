@@ -14,13 +14,46 @@ public final class SpotUsage: @unchecked Sendable {
         public var network = false
         public var fault: String?
         public var view: ViewTime?
+        public var acts = 0
+        public var last: Date?
+        public var reads: [String: Int] = [:]
+        public var hiddenCPU: TimeInterval = 0
+        public var hiddenWakeups: UInt64 = 0
+        public var answers: [Int] = []
+        public var memory: UInt64 = 0
+        public var failureKinds: [String: Int] = [:]
+        public var failed: Date?
 
-        mutating func add(_ time: ProcessTime) {
+        mutating func add(_ time: ProcessTime, hidden: Bool) {
             cpu += time.cpu
             read += time.read
             written += time.written
             wakeups += time.wakeups
+            memory = max(memory, time.memory)
+            if hidden {
+                hiddenCPU += time.cpu
+                hiddenWakeups += time.wakeups
+            }
         }
+
+        mutating func answered(after seconds: TimeInterval) {
+            if answers.isEmpty { answers = Array(repeating: 0, count: Count.answerBounds.count + 1) }
+            answers[Count.answerBounds.firstIndex { seconds <= $0 } ?? Count.answerBounds.count] += 1
+        }
+
+        public func answerTime(_ share: Double) -> TimeInterval? {
+            let total = answers.reduce(0, +)
+            guard total > 0 else { return nil }
+            let target = Int((share * Double(total)).rounded(.up))
+            var seen = 0
+            for (index, count) in answers.enumerated() {
+                seen += count
+                if seen >= target { return Count.answerBounds[min(index, Count.answerBounds.count - 1)] }
+            }
+            return Count.answerBounds.last
+        }
+
+        static let answerBounds: [TimeInterval] = [0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4]
 
         func adding(_ older: Count) -> Count {
             var sum = self
@@ -36,6 +69,15 @@ public final class SpotUsage: @unchecked Sendable {
             sum.network = network || older.network
             sum.fault = fault ?? older.fault
             sum.view = view.map { $0.adding(older.view) } ?? older.view
+            sum.acts += older.acts
+            sum.last = [last, older.last].compactMap { $0 }.max()
+            sum.reads.merge(older.reads, uniquingKeysWith: +)
+            sum.hiddenCPU += older.hiddenCPU
+            sum.hiddenWakeups += older.hiddenWakeups
+            sum.answers = answers.isEmpty ? older.answers : older.answers.isEmpty ? answers : zip(answers, older.answers).map(+)
+            sum.memory = max(memory, older.memory)
+            sum.failureKinds.merge(older.failureKinds, uniquingKeysWith: +)
+            sum.failed = [failed, older.failed].compactMap { $0 }.max()
             return sum
         }
     }
@@ -46,6 +88,20 @@ public final class SpotUsage: @unchecked Sendable {
 
         func adding(_ other: ViewTime?) -> ViewTime {
             ViewTime(bodies: bodies + (other?.bodies ?? 0), seconds: seconds + (other?.seconds ?? 0))
+        }
+    }
+
+    public enum Failure: String, Codable, Sendable {
+        case timeout
+        case exit
+        case output
+
+        public init(_ error: Error) {
+            self = switch error as? SpotError {
+            case .timedOut: .timeout
+            case .tooLarge, .badState, .badForm, .badMetric: .output
+            default: .exit
+            }
         }
     }
 
@@ -60,6 +116,7 @@ public final class SpotUsage: @unchecked Sendable {
         public let day: String
         public var spots: [String: Count] = [:]
         public var uses: [Use] = []
+        public var countsActs = true
         var told: [String] = []
     }
 
@@ -74,6 +131,7 @@ public final class SpotUsage: @unchecked Sendable {
     private var isDirty = false
     private var isWaiting = false
     private var views: [String: (id: String, name: String)] = [:]
+    private var isShown = false
     private var live: [ObjectIdentifier: (spot: String, process: ScriptProcess, counted: ProcessTime)] = [:]
     let now: () -> Date
 
@@ -83,6 +141,7 @@ public final class SpotUsage: @unchecked Sendable {
         self.now = now
         let day = Self.day(of: date)
         today = folder.flatMap { Self.read(day, in: $0) } ?? Day(day: day)
+        today.countsActs = true
         if let folder { Self.prune(folder, at: date) }
     }
 
@@ -100,7 +159,7 @@ public final class SpotUsage: @unchecked Sendable {
         (0..<max(count, 1)).compactMap { back in
             let name = day(of: Calendar.current.date(byAdding: .day, value: -back, to: date) ?? date)
             if let today, today.day == name { return today }
-            return folder.flatMap { read(name, in: $0) }
+            return folder.flatMap { read(name, in: $0) } ?? Day(day: name, countsActs: false)
         }
     }
 
@@ -127,23 +186,44 @@ public final class SpotUsage: @unchecked Sendable {
     }
 
     func add(_ time: ProcessTime, to spot: String, at date: Date) {
-        change(at: date) { $0.spots[spot, default: Count()].add(time) }
+        change(at: date) { $0.spots[spot, default: Count()].add(time, hidden: !isShown) }
     }
 
-    func called(_ spot: Spot, seconds: TimeInterval, isFailure: Bool, at date: Date) {
+    public func panel(shown: Bool) {
+        lock.withLock {
+            if countLive(into: &today) { isDirty = true }
+            isShown = shown
+        }
+    }
+
+    func acted(_ spot: Spot, at date: Date) {
+        change(at: date) { day in
+            day.spots[spot.id, default: Count()].name = spot.name
+            day.spots[spot.id, default: Count()].acts += 1
+            day.spots[spot.id, default: Count()].last = date
+        }
+    }
+
+    func called(_ spot: Spot, seconds: TimeInterval, answered: TimeInterval? = nil, failure: Failure? = nil, reason: String? = nil, at date: Date) {
         change(at: date) { day in
             day.spots[spot.id, default: Count()].name = spot.name
             day.spots[spot.id, default: Count()].runs += 1
             day.spots[spot.id, default: Count()].seconds += seconds
-            if isFailure { day.spots[spot.id, default: Count()].failures += 1 }
+            day.spots[spot.id, default: Count()].answered(after: answered ?? seconds)
+            if let failure {
+                day.spots[spot.id, default: Count()].failures += 1
+                day.spots[spot.id, default: Count()].failureKinds[failure.rawValue, default: 0] += 1
+            }
+            if let reason { day.spots[spot.id, default: Count()].reads[reason, default: 0] += 1 }
             day.spots[spot.id, default: Count()].network = spot.uses.contains(.network)
         }
     }
 
-    func failedRun(_ spot: Spot, at date: Date) {
+    func failedRun(_ spot: Spot, failure: Failure, at date: Date) {
         change(at: date) { day in
             day.spots[spot.id, default: Count()].name = spot.name
             day.spots[spot.id, default: Count()].failures += 1
+            day.spots[spot.id, default: Count()].failureKinds[failure.rawValue, default: 0] += 1
         }
     }
 
@@ -151,6 +231,7 @@ public final class SpotUsage: @unchecked Sendable {
         change(at: date) { day in
             day.spots[spot.id, default: Count()].name = spot.name
             day.spots[spot.id, default: Count()].fault = fault
+            day.spots[spot.id, default: Count()].failed = date
         }
     }
 
@@ -161,7 +242,7 @@ public final class SpotUsage: @unchecked Sendable {
             day.spots[caller.id, default: Count()].name = caller.name
             day.spots[caller.id, default: Count()].calls[call.name, default: 0] += 1
             day.spots[caller.id, default: Count()].network = caller.uses.contains(.network)
-            day.uses = Array((day.uses + [Use(time: date, spot: caller.id, call: call.name, declared: declared)]).suffix(Self.useLimit))
+            if !declared { day.uses = Array((day.uses + [Use(time: date, spot: caller.id, call: call.name, declared: declared)]).suffix(Self.useLimit)) }
             let told = "\(caller.id) \(call.use.rawValue)"
             if !declared, !day.told.contains(told) {
                 day.told.append(told)
@@ -222,6 +303,7 @@ public final class SpotUsage: @unchecked Sendable {
         if countLive(into: &today) { isDirty = true }
         let ended = isDirty ? today : nil
         today = folder.flatMap { Self.read(Self.day(of: date), in: $0) } ?? Day(day: Self.day(of: date))
+        today.countsActs = true
         return ended
     }
 
@@ -231,7 +313,7 @@ public final class SpotUsage: @unchecked Sendable {
             let time = entry.process.time
             let spent = time.since(entry.counted)
             guard spent != .zero else { continue }
-            day.spots[entry.spot, default: Count()].add(spent)
+            day.spots[entry.spot, default: Count()].add(spent, hidden: !isShown)
             live[key]?.counted = time
             counted = true
         }
@@ -241,7 +323,7 @@ public final class SpotUsage: @unchecked Sendable {
     private func withLive(_ day: Day) -> Day {
         var day = day
         for entry in live.values {
-            day.spots[entry.spot, default: Count()].add(entry.process.time.since(entry.counted))
+            day.spots[entry.spot, default: Count()].add(entry.process.time.since(entry.counted), hidden: !isShown)
         }
         return day
     }
@@ -267,5 +349,43 @@ public final class SpotUsage: @unchecked Sendable {
         for name in (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? [] where name.hasSuffix(".json") && name < "\(first).json" {
             try? FileManager.default.removeItem(at: folder.appendingPathComponent(name))
         }
+    }
+}
+
+extension SpotUsage.Count {
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        name = try values.decodeIfPresent(String.self, forKey: .name)
+        runs = try values.decodeIfPresent(Int.self, forKey: .runs) ?? 0
+        failures = try values.decodeIfPresent(Int.self, forKey: .failures) ?? 0
+        seconds = try values.decodeIfPresent(TimeInterval.self, forKey: .seconds) ?? 0
+        cpu = try values.decodeIfPresent(TimeInterval.self, forKey: .cpu) ?? 0
+        read = try values.decodeIfPresent(UInt64.self, forKey: .read) ?? 0
+        written = try values.decodeIfPresent(UInt64.self, forKey: .written) ?? 0
+        wakeups = try values.decodeIfPresent(UInt64.self, forKey: .wakeups) ?? 0
+        calls = try values.decodeIfPresent([String: Int].self, forKey: .calls) ?? [:]
+        network = try values.decodeIfPresent(Bool.self, forKey: .network) ?? false
+        fault = try values.decodeIfPresent(String.self, forKey: .fault)
+        view = try values.decodeIfPresent(SpotUsage.ViewTime.self, forKey: .view)
+        acts = try values.decodeIfPresent(Int.self, forKey: .acts) ?? 0
+        last = try values.decodeIfPresent(Date.self, forKey: .last)
+        reads = try values.decodeIfPresent([String: Int].self, forKey: .reads) ?? [:]
+        hiddenCPU = try values.decodeIfPresent(TimeInterval.self, forKey: .hiddenCPU) ?? 0
+        hiddenWakeups = try values.decodeIfPresent(UInt64.self, forKey: .hiddenWakeups) ?? 0
+        answers = try values.decodeIfPresent([Int].self, forKey: .answers) ?? []
+        memory = try values.decodeIfPresent(UInt64.self, forKey: .memory) ?? 0
+        failureKinds = try values.decodeIfPresent([String: Int].self, forKey: .failureKinds) ?? [:]
+        failed = try values.decodeIfPresent(Date.self, forKey: .failed)
+    }
+}
+
+extension SpotUsage.Day {
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        day = try values.decode(String.self, forKey: .day)
+        spots = try values.decodeIfPresent([String: SpotUsage.Count].self, forKey: .spots) ?? [:]
+        uses = try values.decodeIfPresent([SpotUsage.Use].self, forKey: .uses) ?? []
+        countsActs = try values.decodeIfPresent(Bool.self, forKey: .countsActs) ?? false
+        told = try values.decodeIfPresent([String].self, forKey: .told) ?? []
     }
 }

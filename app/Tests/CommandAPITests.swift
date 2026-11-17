@@ -223,7 +223,7 @@ final class CommandAPITests: XCTestCase {
     @MainActor
     func testStatsComeFromTheLiveCountsOfTheRunningApp() async throws {
         let runs = SpotRuns()
-        runs.usage.called(Spot(id: "a", name: "Alpha", url: folder), seconds: 1, isFailure: false, at: Date())
+        runs.usage.called(Spot(id: "a", name: "Alpha", url: folder), seconds: 1, at: Date())
         let call = try XCTUnwrap(CommandLineCall(arguments: ["spot", "stats"], environment: environment))
         let work = try XCTUnwrap(CommandAPI(mac: host, places: .test(environment), runs: runs, rates: .offline).work(for: call, request: .test(), input: { "" }))
 
@@ -234,7 +234,7 @@ final class CommandAPITests: XCTestCase {
 
     func testStatsWithNoAppToReachReadTheFiles() async throws {
         let usage = SpotUsage(folder: folder.appendingPathComponent("stats"), pause: 60)
-        usage.called(Spot(id: "a", name: "Alpha", url: folder), seconds: 1, isFailure: false, at: Date())
+        usage.called(Spot(id: "a", name: "Alpha", url: folder), seconds: 1, at: Date())
         usage.flush()
 
         let answer = try await answer(["spot", "stats"])
