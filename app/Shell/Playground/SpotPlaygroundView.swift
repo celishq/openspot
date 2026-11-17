@@ -9,11 +9,24 @@ struct SpotPlaygroundView: View {
     }
 
     var body: some View {
+        VStack(spacing: 0) {
+            split
+            SpotWindowFooter(hint: hint, tip: "Close the playground") {}
+        }
+        .ignoresSafeArea(edges: [.horizontal, .bottom])
+        .modifier(SpotWindowSurface())
+    }
+
+    private var hint: String {
+        if let name = model.fileName { return "Each edit saves to \(name) and runs the spot again." }
+        return "Each edit runs the spot again. The spot ends with this window."
+    }
+
+    private var split: some View {
         VSplitView {
             HSplitView {
                 source
                     .frame(minWidth: SpotTokens.playgroundTextWidth, idealWidth: SpotTokens.playgroundTextIdeal, maxHeight: .infinity)
-                    .background(SpotTheme.window)
                 VStack(spacing: 0) {
                     SpotPlaygroundStage(model: model)
                     faults
@@ -24,7 +37,6 @@ struct SpotPlaygroundView: View {
             .layoutPriority(1)
             calls
                 .frame(minHeight: SpotTokens.playgroundLogHeight, idealHeight: SpotTokens.playgroundLogHeight, maxHeight: .infinity)
-                .background(SpotTheme.window)
         }
         .frame(minWidth: SpotTokens.playgroundTextWidth + SpotTokens.playgroundStageWidth, minHeight: SpotTokens.playgroundTopHeight + SpotTokens.playgroundLogHeight)
     }
@@ -69,7 +81,6 @@ struct SpotPlaygroundView: View {
         }
         .padding(SpotTokens.padding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(SpotTheme.window)
     }
 
     private var calls: some View {

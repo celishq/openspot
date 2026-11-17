@@ -3,28 +3,26 @@ import OpenspotCore
 import SwiftUI
 
 @MainActor
-final class SpotPlayground: NSObject, NSApplicationDelegate, NSWindowDelegate {
+final class SpotPlayground: NSObject, NSApplicationDelegate {
     private static var kept: Set<SpotPlayground> = []
 
-    private let window: NSWindow
+    private let window: SpotSheetWindow
     private let model: SpotPlaygroundModel
     private var closed: CheckedContinuation<Void, Never>?
+    private var watch: NSObjectProtocol?
 
     private init(path: String?, isCareful: Bool) {
-        model = SpotPlaygroundModel(path: path, isCareful: isCareful)
-        let view = NSHostingView(rootView: SpotPlaygroundView(model: model))
-        window = NSWindow(
-            contentRect: NSRect(origin: .zero, size: SpotTokens.playgroundSize),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable],
-            backing: .buffered,
-            defer: false
+        let model = SpotPlaygroundModel(path: path, isCareful: isCareful)
+        self.model = model
+        window = SpotSheetWindow.make(title: "Openspot playground", name: "playground-window", size: SpotTokens.playgroundSize, content: SpotPlaygroundView(model: model))
+        window.minSize = CGSize(
+            width: SpotTokens.playgroundTextWidth + SpotTokens.playgroundStageWidth,
+            height: SpotTokens.playgroundTopHeight + SpotTokens.playgroundLogHeight
         )
-        window.title = "Openspot playground"
-        window.contentView = view
-        window.isReleasedWhenClosed = false
-        window.center()
         super.init()
-        window.delegate = self
+        watch = NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.closeModel() }
+        }
     }
 
     static func run(path: String?) -> Never {
@@ -35,8 +33,7 @@ final class SpotPlayground: NSObject, NSApplicationDelegate, NSWindowDelegate {
         app.setActivationPolicy(.regular)
         EditMenu.install()
         SpotKeyLayouts.start()
-        playground.window.makeKeyAndOrderFront(nil)
-        app.activate(ignoringOtherApps: true)
+        playground.window.show()
         app.run()
         exit(0)
     }
@@ -44,23 +41,23 @@ final class SpotPlayground: NSObject, NSApplicationDelegate, NSWindowDelegate {
     static func show(path: String?, isCareful: Bool) async {
         let playground = SpotPlayground(path: path, isCareful: isCareful)
         kept.insert(playground)
-        AppPresence.open()
-        playground.window.makeKeyAndOrderFront(nil)
+        playground.window.show()
         await withTaskCancellationHandler {
             await withCheckedContinuation { playground.closed = $0 }
         } onCancel: {
             Task { @MainActor in playground.window.close() }
         }
         kept.remove(playground)
-        AppPresence.close()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         true
     }
 
-    func windowWillClose(_ notification: Notification) {
+    private func closeModel() {
         model.close()
+        watch.map(NotificationCenter.default.removeObserver)
+        watch = nil
         closed?.resume()
         closed = nil
     }

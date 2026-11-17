@@ -12,6 +12,7 @@ verify:
 	sh scripts/check-processes.sh
 	sh scripts/check-glass.sh
 	sh scripts/check-shapes.sh
+	sh scripts/check-windows.sh
 	sh scripts/check-tokens.sh
 	sh scripts/check-tools.sh
 	sh scripts/spot-tests.sh

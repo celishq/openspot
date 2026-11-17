@@ -101,6 +101,9 @@ Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these 
   keeps the glass whole until its last third (`SpotTheme.glassStrength`), so faded glass never shows a sharp page.
   `make verify` runs `scripts/check-glass.sh`, which fails on `NSVisualEffectView` or a private Core Animation name in
   `Shell/`, outside `Shell/Surface/SpotBackdropBlur.swift`.
+- Each app window opens through `SpotSheetWindow.make`, so it has the same title bar, glass, keys and Dock presence, and
+  ends with `SpotWindowFooter`, its hint and Done. `make verify` runs `scripts/check-windows.sh`, which fails on a window
+  that `Shell/` makes elsewhere, except the panel and its parts, the toast, a float, the screen pick and an off-screen picture.
 - A surface has one shape, a `SurfaceEdge` of Core drawn by `SpotRoundShape`, and its glass, its clip, its ring and its
   other marks take that value. A part inside it takes `inner()` of the edge it reads from `spotSurfaceEdge`. A titled
   window follows the corner that macOS gives it: its glass is a `ConcentricRectangle`. A borderless window gives its
