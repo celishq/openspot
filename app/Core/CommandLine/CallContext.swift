@@ -9,6 +9,7 @@ struct CallContext {
     let runs: SpotRuns?
     let account: Account?
     let secrets: SecretStore
+    let trash: @Sendable (URL) throws -> URL
     let raise: (@Sendable (SpotEvent) async -> Void)?
     let caller: CallerTokens.Caller?
     let spot: String?

@@ -554,14 +554,15 @@ The box sits `padding` inside the view's place, so its corner is `radius.inner`,
 
 ## Change the look of Openspot
 
-The theme gives Openspot its colours, glass, sizes, type and motion. Change it to make Openspot look your way.
+A theme gives Openspot its colours, glass, sizes, type and motion. Change it to make Openspot look your way.
 
 ```sh
 openspot theme open
 ```
 
-This opens your copy of the theme in the text editor. The first time, it makes the copy from the theme of the app, at
-`themes/openspot.theme/theme.toml` in the folder of your config. Change a value and save:
+This opens the file of the theme in use in the text editor, as **Edit theme** in Settings does. Openspot comes with the
+theme `Openspot`, which can't change, so the first time this makes a copy of it, `Openspot copy`, and uses the copy.
+Change a value and save:
 
 ```toml
 [shared]
@@ -577,6 +578,33 @@ Then draw Openspot with it:
 openspot theme reload
 ```
 
+Keep more than one theme to switch between looks. Each theme is a folder, `themes/<name>.theme` in the folder of your
+config, named by the folder, with its `theme.toml` inside:
+
+```sh
+openspot theme list --frame
+openspot theme new
+openspot theme use "Openspot copy"
+```
+
+`list` prints a block for each theme, the built-in one first, and marks the one in use:
+
+```text
+theme=Openspot
+builtin=true
+
+theme=Openspot copy
+used=true
+```
+
+| Command                                   | Does                                                                                     |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `openspot theme use <name>`               | Draws Openspot with a theme.                                                             |
+| `openspot theme new`                      | Makes `Theme 2`, then `Theme 3`, and uses it. Its file lists each key behind a `#`; remove the `#` to change one. |
+| `openspot theme duplicate [name]`         | Copies the theme in use, or the named one, as `<name> copy`, and uses the copy.          |
+| `openspot theme rename <name> <new name>` | Renames a theme.                                                                         |
+| `openspot theme delete <name>`            | Moves a theme to the Trash. Deleting the one in use switches to `Openspot`.              |
+
 Each section of the file holds one kind of value:
 
 | Section             | Holds                                                                                  |
@@ -589,10 +617,13 @@ Each section of the file holds one kind of value:
 | `[type]`            | The sizes of the text in points: `title`, `body`, `detail` and `input`.                |
 | `[motion]`          | The times of each motion in seconds, the bounce of a press and the scales.             |
 
-- A key that your copy lacks keeps the value of the app, so the copy needs only the keys you change.
+- A key that a theme lacks keeps the value of `Openspot`, so a theme needs only the keys you change.
 - A colour is `#RRGGBB`, `#RRGGBBAA`, or a colour of the Mac: `accent`, `green`, `orange` or `red`. A strength is from 0
   to 1.
 - Colours, strengths and the glass change at once. Sizes, type and motion change when the panel next hides.
 - `openspot theme reload` fails on a value it can't read, prints a line for each, such as
   `theme.toml: [space] padding is a number of points, such as 3.`, and keeps the look as it was. At launch, such a value
-  keeps the value of the app, and a toast shows the line.
+  keeps the value of `Openspot`, and a toast shows the line.
+- A theme in use that is gone gives a toast at launch, and Openspot draws with `Openspot`.
+- A name can't be empty or hold `/`. A folder named `openspot.theme`, in any case, is not a theme, since `Openspot` is the
+  built-in theme.

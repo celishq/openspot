@@ -14,7 +14,7 @@
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
 - `app/Keywords/` holds the CLDR keywords of emoji and symbols, one xz file per language. `scripts/emoji-keywords.py` writes
   it from a pinned CLDR version, and the build copies it into the app.
-- `app/Themes/` holds the theme of the app, `openspot.theme/theme.toml`. The build copies it into the app.
+- `app/Themes/` holds the built-in theme, Openspot, in `openspot.theme/theme.toml`. The build copies it into the app.
   [Change the look of Openspot](GUIDE.md#change-the-look-of-openspot) lists its sections and says how a person changes it.
 - `app/Help/` holds the guide of each `openspot` noun that has one, which `openspot help <noun>` prints. The build copies it
   into the app.

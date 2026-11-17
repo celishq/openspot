@@ -182,13 +182,10 @@ final class ThemeTests: XCTestCase {
         let folder = try temporaryFolder()
         let builtIn = folder.appendingPathComponent("built-in.toml")
         try "[dark]\nink = \"#FFFFFF\"\nfill = 0.1\n\n[shared]\nhover = 0.08\n".write(to: builtIn, atomically: true, encoding: .utf8)
-        let file = ThemeFile(builtIn: builtIn, copy: folder.appendingPathComponent("themes/openspot.theme/theme.toml"))
-
-        let copy = try file.makeCopy()
+        let copy = folder.appendingPathComponent("theme.toml")
         try "[dark]\nfill = 0.3\nsize = 1\n".write(to: copy, atomically: true, encoding: .utf8)
-        XCTAssertEqual(try file.makeCopy(), copy)
 
-        let theme = file.read()
+        let theme = ThemeFile(builtIn: builtIn, copy: copy).read()
         XCTAssertEqual(theme.dark.fill, 0.3)
         XCTAssertEqual(theme.dark.ink, ThemeColor(text: "#FFFFFF"))
         XCTAssertEqual(theme.shared.hover, 0.08)
@@ -206,17 +203,5 @@ final class ThemeTests: XCTestCase {
 
         XCTAssertEqual(theme.shared.hover, 0.08)
         XCTAssertEqual(theme.faults, ["theme.toml cannot be read at \(copy.path), so Openspot keeps the look of the app. Save it as text, or delete it."])
-    }
-
-    func testTheCopyLivesBesideTheConfig() {
-        let file = ThemeFile.standard(environment: ["OPENSPOT_CONFIG": "/tmp/openspot-config"], builtIn: nil)
-
-        XCTAssertEqual(file.copy?.path, "/tmp/openspot-config/themes/openspot.theme/theme.toml")
-    }
-
-    func testThemeReloadIsAVerbOfItsOwnNoun() {
-        XCTAssertEqual(CommandLineCall(arguments: ["theme", "reload"], environment: [:])?.value as? ThemeCall, .reload)
-        XCTAssertEqual(CommandLineCall(arguments: ["theme", "open"], environment: [:])?.value as? ThemeCall, .open)
-        XCTAssertNil(CommandLineCall(arguments: ["app", "theme"], environment: [:])?.value as? AppCall)
     }
 }
