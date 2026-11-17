@@ -178,11 +178,11 @@ struct SpotCalls {
         }
     }
 
-    func stats(days: Int, spot: String?, format: StatsReport.Form, byVersion: Bool) -> CommandAPI.Work {
+    func stats(days: Int, spot: String?, format: Stats.Form, byVersion: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [environment, runs] in
             let counts = await SpotUsage.days(days, runs: runs, environment: environment)
             let cards = (try? SpotsFolder.standard(environment: environment).scan().spots) ?? []
-            return try StatsReport(days: counts, spot: spot, cards: cards, byVersion: byVersion).text(format)
+            return try Stats(days: counts, spot: spot, cards: cards, byVersion: byVersion).text(format)
         }
     }
 }

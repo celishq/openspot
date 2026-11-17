@@ -7,9 +7,13 @@ struct StatsMetrics {
         var samples: [String] = []
     }
 
-    let rows: [StatsReport.Row]
-    let uses: [SpotUsage.Use]
-    let searches: [(text: String, count: Int)]
+    private let rows: [Stats.Row]
+    private let searches: [(text: String, count: Int)]
+
+    init(stats: Stats) {
+        rows = stats.rows
+        searches = stats.searches
+    }
 
     var text: String {
         var families = [
@@ -49,12 +53,10 @@ struct StatsMetrics {
     }
 
     private var undeclared: Family {
-        var counts: [String: [String: Int]] = [:]
-        for use in uses where !use.declared { counts[use.spot, default: [:]][use.call, default: 0] += 1 }
         var family = Family(name: "openspot_spot_undeclared_calls", type: "counter")
-        for (spot, calls) in counts.sorted(by: { $0.key < $1.key }) {
-            for (call, count) in calls.sorted(by: { $0.key < $1.key }) {
-                family.samples.append("\(family.name)_total\(Self.labelText([("spot", spot), ("call", call)])) \(count)")
+        for row in rows.sorted(by: { $0.id < $1.id }) {
+            for (call, count) in row.undeclared.sorted(by: { $0.key < $1.key }) {
+                family.samples.append("\(family.name)_total\(labels(of: row, [("call", call)])) \(count)")
             }
         }
         return family
@@ -71,7 +73,7 @@ struct StatsMetrics {
         return family
     }
 
-    private func labels(of row: StatsReport.Row, _ extra: [(String, String)]) -> String {
+    private func labels(of row: Stats.Row, _ extra: [(String, String)]) -> String {
         Self.labelText([("spot", row.id)] + (row.version.map { [("version", $0)] } ?? []) + extra)
     }
 

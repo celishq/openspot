@@ -321,7 +321,7 @@ final class SpotUsageTests: SpotRunsCase {
         usage.add(ProcessTime(cpu: 1.5, wakeups: 7, read: 0, written: 10), to: "b", at: day)
         _ = usage.used(try XCTUnwrap(SpotUseCall(arguments: ["screen", "shot"], of: "b")), by: .init(id: "b", name: "Beta", uses: [.network]), at: day.addingTimeInterval(60))
 
-        let text = try StatsReport(days: usage.days(1, at: day), spot: nil).text(.frame)
+        let text = try Stats(days: usage.days(1, at: day), spot: nil).text(.frame)
 
         XCTAssertEqual(text, """
         row=b
@@ -381,13 +381,13 @@ final class SpotUsageTests: SpotRunsCase {
         usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day)
         usage.called(spot("b", "Beta"), CallOutcome(seconds: 1), at: day)
 
-        let one = try StatsReport(days: usage.days(1, at: day), spot: "a").text(.frame)
-        let two = try StatsReport(days: usage.days(2, at: day), spot: "a").text(.frame)
+        let one = try Stats(days: usage.days(1, at: day), spot: "a").text(.frame)
+        let two = try Stats(days: usage.days(2, at: day), spot: "a").text(.frame)
 
         XCTAssertTrue(one.contains("row=a\ntitle=Alpha\ndetail=0 ms CPU · 1 run · 1.0 s each\nruns=1\n"), one)
         XCTAssertFalse(one.contains("row=b"), one)
         XCTAssertTrue(two.contains("runs=2\n"), two)
-        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(StatsReport(days: usage.days(2, at: day), spot: nil).text(.json).utf8)) as? [[String: Any]])
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(Stats(days: usage.days(2, at: day), spot: nil).text(.json).utf8)) as? [[String: Any]])
         XCTAssertEqual(json.map { $0["day"] as? String }, ["2026-11-11", "2026-11-10"])
         XCTAssertNil(json.first?["told"])
     }

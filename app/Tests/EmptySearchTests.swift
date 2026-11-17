@@ -92,8 +92,8 @@ final class EmptySearchTests: PanelCase {
         usage.missed("timezone", at: Date())
 
         let days = usage.days(1, at: Date())
-        XCTAssertTrue(try StatsReport(days: days, spot: nil).text(.frame).hasSuffix("search=timezone\ncount=2\n\n"))
-        XCTAssertTrue(try StatsReport(days: days, spot: nil).text(.metrics).contains("# TYPE openspot_search_empty counter\nopenspot_search_empty_total{query=\"timezone\"} 2\n"))
-        XCTAssertTrue(try StatsReport(days: days, spot: nil).text(.json).contains("\"searches\":{\"timezone\":2}"))
+        XCTAssertTrue(try Stats(days: days, spot: nil).text(.frame).hasSuffix("search=timezone\ncount=2\n\n"))
+        XCTAssertTrue(try Stats(days: days, spot: nil).text(.metrics).contains("# TYPE openspot_search_empty counter\nopenspot_search_empty_total{query=\"timezone\"} 2\n"))
+        XCTAssertTrue(try Stats(days: days, spot: nil).text(.json).contains("\"searches\":{\"timezone\":2}"))
     }
 }

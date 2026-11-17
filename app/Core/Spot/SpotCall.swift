@@ -4,7 +4,7 @@ public enum SpotCall: NounCall {
     case new(name: String, starter: SpotStarter)
     case run(id: String, arguments: [String])
     case log(String)
-    case stats(days: Int, spot: String?, format: StatsReport.Form, byVersion: Bool = false)
+    case stats(days: Int, spot: String?, format: Stats.Form, byVersion: Bool = false)
     case show(String)
     case list(core: Bool, form: PrintForm)
     case add(String?, isConfirmed: Bool)
@@ -73,7 +73,7 @@ public enum SpotCall: NounCall {
     private static func stats(_ words: CommandForm.Words) -> SpotCall? {
         guard words.rest.isEmpty, words.value("--by").map({ $0 == "version" }) ?? true else { return nil }
         guard let days = words.value("--days").map({ Int($0).flatMap { $0 > 0 ? min($0, SpotUsage.keptDays) : nil } }) ?? 1 else { return nil }
-        let isMetrics = words.has(StatsReport.Form.metricsWord)
+        let isMetrics = words.has(Stats.Form.metricsWord)
         guard !(isMetrics && words.form == .json) else { return nil }
         return .stats(days: days, spot: words.value(CallWords.spotWord), format: isMetrics ? .metrics : words.form == .json ? .json : .frame, byVersion: words.has("--by"))
     }

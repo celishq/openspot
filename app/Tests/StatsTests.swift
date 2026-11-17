@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class StatsReportTests: XCTestCase {
+final class StatsTests: XCTestCase {
     private var folder: URL!
     private let day = Date(timeIntervalSince1970: 1_794_394_800)
     private let view = "/spots/cups.spot/cups.swift"
@@ -26,7 +26,7 @@ final class StatsReportTests: XCTestCase {
         usage.drew(view: view, seconds: 0.004)
         usage.drew(view: "/spots/other.swift", seconds: 1)
 
-        let frame = try StatsReport(days: usage.days(1, at: day), spot: nil).text(.frame)
+        let frame = try Stats(days: usage.days(1, at: day), spot: nil).text(.frame)
 
         XCTAssertEqual(frame, """
         row=cups
@@ -59,7 +59,7 @@ final class StatsReportTests: XCTestCase {
         usage.add(ProcessTime(cpu: 0.25, wakeups: 4, memory: 5_000_000), to: "a", at: day)
         usage.failed(alpha, fault: "Alpha took too long.", at: day)
 
-        let frame = try StatsReport(days: usage.days(3, at: day), spot: nil).text(.frame)
+        let frame = try Stats(days: usage.days(3, at: day), spot: nil).text(.frame)
 
         let stamp = ISO8601DateFormatter().string(from: day)
         XCTAssertEqual(frame, """
@@ -99,12 +99,12 @@ final class StatsReportTests: XCTestCase {
         usage.called(Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh")), CallOutcome(seconds: 1), at: day)
         let card = Spot(id: "system", name: "System", url: URL(fileURLWithPath: "/system.sh"), kind: .widget, places: ["a", "b"])
 
-        let frame = try StatsReport(days: usage.days(1, at: day), spot: nil, cards: [card]).text(.frame)
+        let frame = try Stats(days: usage.days(1, at: day), spot: nil, cards: [card]).text(.frame)
         let rows = frame.components(separatedBy: "\n\n").map { $0 + "\n" }
 
         XCTAssertTrue(rows.contains { $0.hasPrefix("row=a\n") && $0.contains("\ncards=system\n") }, frame)
         XCTAssertTrue(rows.contains { $0.hasPrefix("row=system\ntitle=System\n") && $0.contains("\nshows=a\nshows=b\n") }, frame)
-        XCTAssertFalse(try StatsReport(days: usage.days(1, at: day), spot: "a", cards: [card]).text(.frame).contains("row=system"))
+        XCTAssertFalse(try Stats(days: usage.days(1, at: day), spot: "a", cards: [card]).text(.frame).contains("row=system"))
     }
 
     func testARunThatOneSpotStartsOfAnotherShowsOnBoth() throws {
@@ -112,18 +112,18 @@ final class StatsReportTests: XCTestCase {
         usage.ran(Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh")), by: "b", CallOutcome(seconds: 1), at: day)
         usage.called(Spot(id: "b", name: "Beta", url: URL(fileURLWithPath: "/b.sh")), CallOutcome(seconds: 1), at: day)
 
-        let rows = try StatsReport(days: usage.days(1, at: day), spot: nil).text(.frame).components(separatedBy: "\n\n").map { $0 + "\n" }
+        let rows = try Stats(days: usage.days(1, at: day), spot: nil).text(.frame).components(separatedBy: "\n\n").map { $0 + "\n" }
 
         XCTAssertTrue(rows.contains { $0.hasPrefix("row=a\n") && $0.contains("\nruns.by.b=1\n") }, rows.joined())
         XCTAssertTrue(rows.contains { $0.hasPrefix("row=b\n") && $0.contains("\nran.a=1\n") }, rows.joined())
-        XCTAssertTrue(try StatsReport(days: usage.days(1, at: day), spot: "b").text(.frame).contains("\nran.a=1\n"))
+        XCTAssertTrue(try Stats(days: usage.days(1, at: day), spot: "b").text(.frame).contains("\nran.a=1\n"))
     }
 
     func testASpotWithNoViewHasNoBodyKeys() throws {
         let usage = SpotUsage(at: day)
         usage.called(Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh")), CallOutcome(seconds: 1), at: day)
 
-        let frame = try StatsReport(days: usage.days(1, at: day), spot: nil).text(.frame)
+        let frame = try Stats(days: usage.days(1, at: day), spot: nil).text(.frame)
 
         XCTAssertFalse(frame.contains("bod"), frame)
     }
@@ -141,7 +141,7 @@ final class StatsReportTests: XCTestCase {
         usage.take(views: [cups])
         usage.drew(view: view, seconds: 0.003)
 
-        let frame = try StatsReport(days: usage.days(3, at: day), spot: "cups").text(.frame)
+        let frame = try Stats(days: usage.days(3, at: day), spot: "cups").text(.frame)
 
         XCTAssertTrue(frame.contains("runs=3\n"), frame)
         XCTAssertTrue(frame.contains("bodies=2\nbody=0.004000\n"), frame)
@@ -156,7 +156,7 @@ final class StatsReportTests: XCTestCase {
         usage.called(alpha, CallOutcome(seconds: 1), at: day.addingTimeInterval(60))
         usage.called(alpha, CallOutcome(seconds: 1), at: day.addingTimeInterval(61))
 
-        let frame = try StatsReport(days: usage.days(1, at: day), spot: nil, byVersion: true).text(.frame)
+        let frame = try Stats(days: usage.days(1, at: day), spot: nil, byVersion: true).text(.frame)
 
         let blocks = frame.components(separatedBy: "\n\n").filter { !$0.isEmpty }
         XCTAssertEqual(blocks.count, 2, frame)
@@ -164,7 +164,7 @@ final class StatsReportTests: XCTestCase {
         XCTAssertTrue(blocks[0].contains("\nruns=1\nfailures=1\n"), frame)
         XCTAssertTrue(blocks[1].hasPrefix("row=a\nversion=v2\nsince=\(ISO8601DateFormatter().string(from: day.addingTimeInterval(60)))\n"), frame)
         XCTAssertTrue(blocks[1].contains("\nruns=2\nfailures=0\n"), frame)
-        XCTAssertTrue(try StatsReport(days: usage.days(1, at: day), spot: nil, byVersion: true).text(.json).contains("\"versions\":{\"a\":{\"v1\""))
+        XCTAssertTrue(try Stats(days: usage.days(1, at: day), spot: nil, byVersion: true).text(.json).contains("\"versions\":{\"a\":{\"v1\""))
     }
 
     func testOpenMetricsPrintsEachCounterOfASpotWithItsLabels() throws {
@@ -178,7 +178,7 @@ final class StatsReportTests: XCTestCase {
         usage.panel(shown: false)
         usage.add(ProcessTime(cpu: 0.1, wakeups: 1), to: "a", at: day)
 
-        let text = try StatsReport(days: usage.days(1, at: day), spot: nil).text(.metrics)
+        let text = try Stats(days: usage.days(1, at: day), spot: nil).text(.metrics)
 
         XCTAssertEqual(text, """
         # TYPE openspot_spot_acts counter
@@ -223,7 +223,7 @@ final class StatsReportTests: XCTestCase {
         usage.take(versions: ["a\"b": "v1"])
         usage.called(alpha, CallOutcome(seconds: 1), at: day)
 
-        let text = try StatsReport(days: usage.days(1, at: day), spot: nil, byVersion: true).text(.metrics)
+        let text = try Stats(days: usage.days(1, at: day), spot: nil, byVersion: true).text(.metrics)
 
         XCTAssertTrue(text.contains("openspot_spot_runs_total{spot=\"a\\\"b\",version=\"v1\"} 1\n"), text)
     }

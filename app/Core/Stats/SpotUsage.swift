@@ -16,6 +16,14 @@ public final class SpotUsage: @unchecked Sendable {
         case exit
         case output
 
+        var words: String {
+            switch self {
+            case .timeout: "timed out"
+            case .exit: "stopped with an error"
+            case .output: "printed what Openspot cannot read"
+            }
+        }
+
         public init(_ error: Error) {
             self = switch error as? SpotError {
             case .timedOut: .timeout
