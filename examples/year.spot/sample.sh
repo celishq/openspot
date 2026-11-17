@@ -1,2 +1,2 @@
 #!/bin/sh
-printf 'view=year\ntitle=2026\nleft=45\nmonth=11\nprogress=0.53\n'
+printf 'view=year\ntitle=2026\nleft=44\nday=321\ndays=365\n'
