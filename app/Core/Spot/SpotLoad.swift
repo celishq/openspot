@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 public struct SpotLoad: Sendable {
@@ -65,6 +66,11 @@ public struct SpotLoad: Sendable {
         let commands = ScanResult(files: files, refused: []).spots
         let opened = Set(commands.compactMap(\.opens))
         return commands.filter { !opened.contains($0.id) && $0.read?.seconds == nil }
+    }
+
+    static func version(of stamp: [Int]) -> String {
+        let bytes = stamp.flatMap { withUnsafeBytes(of: Int64($0).littleEndian, Array.init) }
+        return SHA256.hash(data: bytes).prefix(4).map { String(format: "%02x", $0) }.joined()
     }
 
     public func stamp(of spot: Spot) -> [Int]? {

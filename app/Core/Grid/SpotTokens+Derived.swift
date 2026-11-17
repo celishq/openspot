@@ -58,13 +58,14 @@ extension SpotTokens {
 
     public static var windowSize: CGSize { CGSize(width: width(columns: windowColumns) + 2 * padding, height: windowHeight) }
 
-    public static func floatSize(rows: Int, perLine: Int = 1, parts: SheetParts? = nil) -> CGSize {
+    public static func floatSize(rows: Int, perLine: Int = 1, parts: SheetParts? = nil, setsApart: Bool = false) -> CGSize {
         let content: CGFloat
         if let parts {
             content = parts.placement.height
         } else {
             let lines = CGFloat(max((rows + perLine - 1) / perLine, 1))
             content = lines * (perLine > 1 ? square(perLine: perLine) : listRow) + (lines - 1) * listRowGap
+                + (setsApart ? pinRuleRoom + listRowGap : 0)
         }
         return CGSize(width: gridWidth, height: min(sheetFieldDrop + content + padding, sheetMaxHeight))
     }

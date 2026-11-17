@@ -17,7 +17,7 @@ nl='
 
 # Prints the list of themes with the head lines in $1 before it.
 list() {
-  themes=$(openspot theme list --frame) || exit 1
+  themes=$(openspot theme list) || exit 1
   printf '%srecents=false\n\nbutton=open\ntitle=Use\nclose=false\n\n' "${1-}"
   printf 'button=duplicate\ntitle=Duplicate\n\nbutton=rename\ntitle=Rename\nform=true\n\n'
   printf 'button=delete\ntitle=Move to Trash\nshortcut=cmd+backspace\nconfirm=Press again to move the theme to the Trash\n\n'

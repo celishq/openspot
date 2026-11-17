@@ -40,9 +40,9 @@ public struct AgentNote: Equatable, Sendable {
            It prints the file to change.
         2. Try a call as the app makes it: `openspot spot run <id> [call] [value]...`. With no call, it reads a spot that has
            a `read` line in its header, and runs a spot that has none.
-        3. Look at the card: `openspot render --spot <id> --card wide card.png`, then open `card.png`.
-        4. Check: `openspot check --json` must print `[]`. Fix each fault that it lists, then check again.
-        5. At the end of your answer to the person, run `openspot spot show <id>`. It opens the panel with the spot selected.
+        3. Look at the card: `openspot render spot <id> --card wide card.png`, then open `card.png`.
+        4. Check: `openspot check spots --json` must print `[]`. Fix each fault that it lists, then check again.
+        5. At the end of your answer to the person, run `openspot spot open <id> --select`. It opens the panel with the spot selected.
            Then tell the person what the spot runs on their Mac.
 
         When the person says that a spot does not work, run `openspot spot log <id>` first. It prints the last calls that the

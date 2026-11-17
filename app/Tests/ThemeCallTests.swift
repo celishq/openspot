@@ -35,8 +35,8 @@ final class ThemeCallTests: XCTestCase {
         let copied = try await answer(api, ["theme", "duplicate", "Openspot"])
         let renamed = try await answer(api, ["theme", "rename", "Openspot copy", "Dusk"])
         let used = try await answer(api, ["theme", "use", "Theme 2"])
-        let list = try await answer(api, ["theme", "list", "--frame"])
-        let json = try await answer(api, ["theme", "list"])
+        let list = try await answer(api, ["theme", "list"])
+        let json = try await answer(api, ["theme", "list", "--json"])
         let deleted = try await answer(api, ["theme", "delete", "Theme 2"])
 
         XCTAssertEqual(made.output, "Made the theme Theme 2, and switched to it.\n")
@@ -79,7 +79,7 @@ final class ThemeCallTests: XCTestCase {
         let api = api(config, app: app, theme: openspot)
         _ = try await answer(api, ["theme", "new"])
 
-        let list = try await answer(api, ["theme", "list", "--frame"])
+        let list = try await answer(api, ["theme", "list"])
         let used = try await answer(api, ["theme", "use", "paper"])
 
         XCTAssertEqual(list.output, "theme=Openspot\nbuiltin=true\n\ntheme=Paper\nbuiltin=true\n\ntheme=Theme 2\nused=true\n\n")
@@ -104,7 +104,7 @@ final class ThemeCallTests: XCTestCase {
         XCTAssertEqual(parse(["open"]), .open(nil))
         XCTAssertEqual(parse(["open", "Dusk"]), .open("Dusk"))
         XCTAssertNil(parse(["edit"]))
-        XCTAssertEqual(parse(["list"]), .list(.json))
+        XCTAssertEqual(parse(["list"]), .list(.frame))
         XCTAssertEqual(parse(["use", "Dusk"]), .use("Dusk"))
         XCTAssertEqual(parse(["new"]), .new)
         XCTAssertEqual(parse(["duplicate"]), .duplicate(nil))

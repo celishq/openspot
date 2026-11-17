@@ -32,8 +32,8 @@ glyph_rows() {
   fi
   rm -f "$OPENSPOT_DATA"/rows-*.[0-9]*
   whole=true
-  openspot emoji --tone "$tone" >"$rows.$$" || whole=false
-  openspot symbols >>"$rows.$$" || whole=false
+  openspot emoji list --tone "$tone" >"$rows.$$" || whole=false
+  openspot symbols list >>"$rows.$$" || whole=false
   cat "$rows.$$"
   if [ "$whole" = true ]; then
     mv "$rows.$$" "$rows"

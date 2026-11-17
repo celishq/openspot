@@ -78,4 +78,10 @@ final class SpotLoadTests: PanelCase {
 
         try await wait("the card") { self.model.entries.contains { $0.id == "cups" } }
     }
+
+    func testTheVersionOfASpotIsShortAndFollowsItsStamp() {
+        XCTAssertEqual(SpotLoad.version(of: [1, 2, 3]).count, 8)
+        XCTAssertEqual(SpotLoad.version(of: [1, 2, 3]), SpotLoad.version(of: [1, 2, 3]))
+        XCTAssertNotEqual(SpotLoad.version(of: [1, 2, 3]), SpotLoad.version(of: [1, 2, 4]))
+    }
 }

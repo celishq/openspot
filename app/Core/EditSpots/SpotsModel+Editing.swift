@@ -10,6 +10,7 @@ extension SpotsModel {
     public func beginEditing() {
         guard openSheetID == nil else { return }
         closeMenu()
+        missedSearch.drop()
         change(.edit) {
             query = ""
             isEditing = true

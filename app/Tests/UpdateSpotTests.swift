@@ -11,7 +11,7 @@ final class UpdateSpotTests: BuiltInCase {
 
         _ = try await spot("updates").state(timeout: 60)
 
-        XCTAssertEqual(programs(), ["openspot app status --frame"])
+        XCTAssertEqual(programs(), ["openspot app status"])
     }
 
     func testTheCardShowsTheVersionAndAPressChecks() async throws {

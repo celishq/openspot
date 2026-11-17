@@ -2,13 +2,17 @@ import Foundation
 
 public struct CommandNoun: Sendable {
     public let name: String
+    public let group: CommandGroup
     public let guide: String?
+    public let flags: [String]
     public let verbs: [CommandVerb]
     let loose: (@Sendable (_ verb: CommandVerb, _ rest: [String], _ spot: String) -> CallRule?)?
 
-    init(_ name: String, guide: String? = nil, verbs: [CommandVerb], loose: (@Sendable (_ verb: CommandVerb, _ rest: [String], _ spot: String) -> CallRule?)? = nil) {
+    init(_ name: String, group: CommandGroup, guide: String? = nil, flags: [String] = [], verbs: [CommandVerb], loose: (@Sendable (_ verb: CommandVerb, _ rest: [String], _ spot: String) -> CallRule?)? = nil) {
         self.name = name
+        self.group = group
         self.guide = guide
+        self.flags = flags
         self.verbs = verbs
         self.loose = loose
     }
@@ -16,24 +20,22 @@ public struct CommandNoun: Sendable {
     public static let all: [CommandNoun] = [
         GuideCall.noun, HelpCall.noun, SpotCall.noun, GridCall.noun, StoreCall.noun, CheckCall.noun, RenderCall.noun,
         PlaygroundCommand.noun, ColorCall.noun, FolderCall.noun, SettingCall.noun, PromptCall.noun, AppCall.noun, ThemeCall.noun, BatchCall.noun,
-        UpdateCall.noun, AccountCall.noun, ClipboardCall.noun, EventCall.noun, TranslateCall.noun, CalcCall.noun, EmojiCall.noun,
-        SymbolsCall.noun, WindowCall.noun, ScreenCall.noun, CalendarCall.noun, RemindersCall.noun, HelperCall.noun
+        UpdateCall.noun, VersionCall.noun, AccountCall.noun, ClipboardCall.noun, EventCall.noun, TranslateCall.noun, CalcCall.noun, EmojiCall.noun,
+        SymbolsCall.noun, WindowCall.noun, ScreenCall.noun, CalendarCall.noun, RemindersCall.noun, PowerCall.noun, HelperCall.noun
     ]
 
     func verb(of rest: [String]) -> CommandVerb? {
         verbs.filter { $0.matches(rest) }.max { $0.words.count < $1.words.count }
     }
 
-    static let guides = "<guides>"
-
-    static func listed(_ words: [String]) -> String {
-        words.count < 2 ? words.joined() : words.dropLast().joined(separator: ", ") + " or " + (words.last ?? "")
+    var shown: [CommandVerb] {
+        verbs.filter { !$0.about.isEmpty }
     }
 
-    func lines(guides: String) -> [String] {
-        verbs.filter { !$0.about.isEmpty }.map { verb in
+    func lines(verb words: [String] = []) -> [String] {
+        shown.filter { Array($0.words.prefix(words.count)) == words }.map { verb in
             let form = (["openspot", name] + verb.words + (verb.form.isEmpty ? [] : [verb.form])).joined(separator: " ")
-            let about = Self.wrapped(verb.about.replacingOccurrences(of: Self.guides, with: guides))
+            let about = Self.wrapped(verb.about)
             let first = form.count < Self.column ? form.padding(toLength: Self.column, withPad: " ", startingAt: 0) + about[0] : form + "\n" + Self.indent + about[0]
             return ([first] + about.dropFirst().map { Self.indent + $0 }).joined(separator: "\n")
         }

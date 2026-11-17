@@ -102,14 +102,14 @@ final class CommandSocketTests: XCTestCase {
     }
 
     func testACallThatRunsAloneGetsAnError() throws {
-        let answer = try ask(["render", "x.png"])
+        let answer = try ask(["render", "sheet", "x.png"])
 
         XCTAssertNil(answer.reply["result"])
         XCTAssertEqual((answer.reply["error"] as? [String: Any])?["code"] as? Int, -32000)
     }
 
     func testStdinComesInChunksOnlyWhenTheCallPullsIt() throws {
-        let answer = try ask(["check", "--sheet"], input: ["title=", "Hi\n"])
+        let answer = try ask(["check", "sheet"], input: ["title=", "Hi\n"])
 
         XCTAssertEqual(answer.stdout, "the sheet has no parts\n1 faults.\n")
         XCTAssertEqual(answer.code, 1)

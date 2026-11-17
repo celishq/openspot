@@ -9,7 +9,7 @@ public enum ScreenCall: NounCall {
 
     private static let recording = "used a screen recording"
 
-    static let noun = CommandNoun("screen", guide: "screen", verbs: [
+    static let noun = CommandNoun("screen", group: .mac, guide: "screen", verbs: [
         CommandVerb("sources", "", "Prints each display, window, microphone and camera as a row, with its source as the id: display:<id>, window:<id>, mic:<id>, camera:<id>.", rule: CallRule(use: .screen, used: "listed the screens and windows")) { $0.none ? Self.sources : nil },
         CommandVerb(
             "shot", "[source] [--cursor] [file]",

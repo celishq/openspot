@@ -275,4 +275,10 @@ final class SpotOutputTests: XCTestCase {
         XCTAssertEqual(output.errors, ["gauge=old"])
     }
 
+    func testARowOfTypeToggleIsAToggleThatShowsWhetherItIsOn() {
+        let items = SpotOutput(text: "row=on\ntype=toggle\nvalue=true\n\nrow=off\ntype=toggle\nvalue=false\n\nrow=picked\nvalue=true\n\nrow=plain\n").items
+
+        XCTAssertEqual(items.map(\.isToggle), [true, true, false, false])
+        XCTAssertEqual(items.map(\.isOn), [true, false, true, false])
+    }
 }

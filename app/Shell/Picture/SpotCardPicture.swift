@@ -38,7 +38,7 @@ enum SpotCardPicture {
         Task { @MainActor in
             await model.reload()
             guard let entry = model.entries.first(where: { $0.id == id }) else {
-                FileHandle.standardError.write(Data("Openspot has no card for \(id). Run `openspot check` to see each file that does not load.\n".utf8))
+                FileHandle.standardError.write(Data("Openspot has no card for \(id). Run `openspot check spots` to see each file that does not load.\n".utf8))
                 exit(1)
             }
             let draw = {

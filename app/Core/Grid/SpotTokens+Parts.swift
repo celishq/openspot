@@ -118,4 +118,11 @@ extension SpotTokens {
     public static let publisherPillHeight: CGFloat = 22
     public static let publisherPillCharWidth = 6.3
     public static let publisherPillRoom = 33.0
+
+    public static let rowBarWidth: CGFloat = 3
+    public static let rowBarGap: CGFloat = 2
+    public static let rowBarHeight: CGFloat = 20
+    public static let rowBarFloor: CGFloat = 2
+    public static let rowSwitch = CGSize(width: 32, height: 18)
+    public static let rowSwitchInset: CGFloat = 2
 }

@@ -8,6 +8,7 @@ struct SpotCustomView: View, @MainActor Equatable {
     let card: SpotSize
     var room: CGSize?
     var answers = 0
+    var selection: String?
     var date: Date?
     let views: SpotViews
     var send: ((String) -> Void)?
@@ -20,7 +21,7 @@ struct SpotCustomView: View, @MainActor Equatable {
     @Environment(\.colorScheme) private var scheme
 
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.source == rhs.source && lhs.values == rhs.values && lhs.rows == rhs.rows && lhs.card == rhs.card && lhs.room == rhs.room && lhs.answers == rhs.answers && lhs.date == rhs.date && lhs.views === rhs.views
+        lhs.source == rhs.source && lhs.values == rhs.values && lhs.rows == rhs.rows && lhs.card == rhs.card && lhs.room == rhs.room && lhs.answers == rhs.answers && lhs.selection == rhs.selection && lhs.date == rhs.date && lhs.views === rhs.views
             && (lhs.send == nil) == (rhs.send == nil)
     }
 
@@ -103,9 +104,11 @@ struct SpotCustomView: View, @MainActor Equatable {
         [
             "isShown": isShown && !isStill,
             "rows": rows,
+            "selection": selection as Any,
             "close": close,
             "bodyTime": bodyTime,
             "size": size,
+            "cardName": (room == nil ? card.name : nil) as Any,
             "answers": answers,
             "inset": SpotTokens.padding,
             "corner": corner,

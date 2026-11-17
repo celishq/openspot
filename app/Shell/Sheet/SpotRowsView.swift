@@ -22,10 +22,7 @@ struct SpotRowsView: View {
     }
 
     private var selectedRun: () -> String? {
-        { [list, selected] in
-            let index = selected()
-            return list.shown.indices.contains(index) ? list.shown[index].run : nil
-        }
+        { [list, selected] in list.run(at: selected()) }
     }
 
     private var isGrid: Bool {
@@ -84,7 +81,7 @@ struct SpotRowsView: View {
     }
 
     private var bottomInset: CGFloat {
-        SpotTokens.sheetFits(rows: list.shown.count, perLine: list.perLine) ? SpotTokens.padding : Self.bottomFade
+        SpotTokens.sheetFits(rows: list.lineCount, perLine: list.perLine) ? SpotTokens.padding : Self.bottomFade
     }
 
     private var pinnedScroll: some View {
@@ -118,6 +115,13 @@ struct SpotRowsView: View {
     private var lines: some View {
         LazyVStack(spacing: SpotTokens.listRowGap) {
             ForEach(list.scrolling, id: \.run) { item in
+                if let section = list.sectionStarts[item.run] {
+                    Text(section)
+                        .font(SpotType.detail.weight(.semibold))
+                        .modifier(SpotSecondaryText())
+                        .padding(.horizontal, SpotTokens.padding)
+                        .frame(maxWidth: .infinity, minHeight: SpotTokens.listRow, maxHeight: SpotTokens.listRow, alignment: .bottomLeading)
+                }
                 Button {
                     onRun(item)
                 } label: {
@@ -197,10 +201,15 @@ struct SpotRowsView: View {
                 }
             }
             Spacer(minLength: 0)
+            if !item.bars.isEmpty {
+                RowBars(bars: item.bars, tone: item.tone)
+            }
             if let shortcut = item.shortcut {
                 SpotKeyLabel(text: shortcut, isRecording: recording == item.run, recordingWords: recordingWords)
             }
-            if item.isOn {
+            if item.isToggle {
+                RowSwitch(isOn: item.isOn)
+            } else if item.isOn {
                 Image(systemName: "checkmark")
                     .font(SpotType.body.weight(.semibold))
                     .foregroundStyle(SpotTheme.ink)
@@ -212,6 +221,44 @@ struct SpotRowsView: View {
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
         .modifier(SpotLiveSelectionRing(isSelected: { [selectedRun, run = item.run] in selectedRun() == run }, shape: row, marksMenu: true))
         .contentShape(row)
+    }
+}
+
+private struct RowBars: View {
+    let bars: [Double?]
+    let tone: MetricValue.Tone?
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: SpotTokens.rowBarGap) {
+            ForEach(bars.indices, id: \.self) { index in
+                Rectangle()
+                    .fill(bars[index].map { $0 > 0 ? colour : SpotTheme.ink.opacity(SpotTheme.fill) } ?? SpotTheme.ink.opacity(SpotTheme.fill))
+                    .frame(width: SpotTokens.rowBarWidth, height: max(SpotTokens.rowBarFloor, SpotTokens.rowBarHeight * (bars[index] ?? 0)))
+            }
+        }
+        .frame(height: SpotTokens.rowBarHeight, alignment: .bottom)
+    }
+
+    private var colour: Color {
+        tone.map(SpotMetricView.colour) ?? SpotTheme.ink
+    }
+}
+
+private struct RowSwitch: View {
+    let isOn: Bool
+
+    var body: some View {
+        Capsule()
+            .fill(isOn ? SpotTheme.accent : SpotTheme.ink.opacity(SpotTheme.fill))
+            .frame(width: SpotTokens.rowSwitch.width, height: SpotTokens.rowSwitch.height)
+            .overlay(alignment: isOn ? .trailing : .leading) {
+                Circle()
+                    .fill(SpotTheme.switchKnob)
+                    .padding(SpotTokens.rowSwitchInset)
+                    .frame(width: SpotTokens.rowSwitch.height, height: SpotTokens.rowSwitch.height)
+            }
+            .accessibilityElement()
+            .accessibilityValue(isOn ? "On" : "Off")
     }
 }
 

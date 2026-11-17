@@ -55,11 +55,19 @@ public struct AgentPrompt: Equatable, Sendable {
 
     static let finishChange = "Don't ask me anything. Make the change to the end, keep what already works, and leave the spot ready to use in Openspot."
 
-    public func changing(_ file: URL, wish: String) -> String {
-        """
-        Change the Openspot spot in \(file.path): \(wish)
-        \(Self.finishChange)
-
+    public func changing(_ file: URL, wish: String? = nil, failure: String? = nil, evidence: SpotEvidence? = nil) -> String {
+        let failed = failure.map { "Its last call failed, and said: \($0)\n" } ?? ""
+        guard let goal = wish ?? evidence?.goal else {
+            return """
+            Change the Openspot spot in \(file.path). Ask me what to change before you change it.
+            \(failed)
+            \(steps(for: SpotID(file: file).description))
+            """
+        }
+        return """
+        Change the Openspot spot in \(file.path): \(goal)
+        \(failed)\(Self.finishChange)
+        \(evidence.map { "\n\($0.text)\n" } ?? "")
         \(steps(for: SpotID(file: file).description))
         """
     }
@@ -68,21 +76,12 @@ public struct AgentPrompt: Equatable, Sendable {
         "This spot comes with Openspot. First copy its folder \(core.path) to \(copy.path), with the same folder name. The copy takes the place of the built-in spot, so make each change in the copy, and leave the folder in the app as it is."
     }
 
-    public func changing(_ file: URL, failure: String?) -> String {
-        let failed = failure.map { "Its last call failed, and said: \($0)\n" } ?? ""
-        return """
-        Change the Openspot spot in \(file.path). Ask me what to change before you change it.
-        \(failed)
-        \(steps(for: SpotID(file: file).description))
-        """
-    }
-
     private func steps(for id: String) -> String {
         """
         First run "\(app)" guide, and read all of it.
-        Try each call with "\(app)" spot run \(id) [call] [value]..., and look at its card with "\(app)" render --spot \(id) --card wide card.png.
-        When it is ready, run "\(app)" check --json "\(folder.path)" and fix each fault until it prints [].
-        At the end of your answer, run "\(app)" spot show \(id), and tell me what the spot runs on my computer.
+        Try each call with "\(app)" spot run \(id) [call] [value]..., and look at its card with "\(app)" render spot \(id) --card wide card.png.
+        When it is ready, run "\(app)" check spots --json "\(folder.path)" and fix each fault until it prints [].
+        At the end of your answer, run "\(app)" spot open \(id) --select, and tell me what the spot runs on my computer.
 
         """
     }

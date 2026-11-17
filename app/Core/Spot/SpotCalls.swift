@@ -6,8 +6,10 @@ struct SpotCalls {
     let app: (any RunningApp)?
     let runs: SpotRuns?
     let secrets: SecretStore
+    let caller: CallerTokens.Caller?
 
     init(_ context: CallContext) {
+        caller = context.caller
         environment = context.environment
         folder = context.folder
         app = context.app
@@ -96,13 +98,13 @@ struct SpotCalls {
     func show(_ id: String) -> CommandAPI.Work? {
         guard let app else { return nil }
         return CommandAnswer.work {
-            guard await app.reveal(id) else { throw SpotError.failed(1, "Openspot has no spot \(id). Run `openspot check` to see each file that does not load.") }
+            guard await app.reveal(id) else { throw SpotError.failed(1, "Openspot has no spot \(id). Run `openspot check spots` to see each file that does not load.") }
             return "Openspot shows \(id).\n"
         }
     }
 
     func run(_ id: String, _ arguments: [String], input: (@Sendable () async -> String)?, careful: Set<SpotUse>?, output: CommandOutput) -> CommandAPI.Work {
-        { [environment, folder, runs] in
+        { [environment, folder, runs, caller] in
             let spots = SpotsFolder.standard(environment: environment)
             let found: Spot?
             do {
@@ -111,15 +113,25 @@ struct SpotCalls {
                 return CommandAnswer(errors: "\((error as? SpotError)?.reason ?? error.localizedDescription)\n", code: 1)
             }
             guard var spot = found else {
-                return CommandAnswer(errors: "Openspot has no spot \(id) in \(spots.url.path). Run `openspot check` to see each file that does not load.\n", code: 1)
+                return CommandAnswer(errors: "Openspot has no spot \(id) in \(spots.url.path). Run `openspot check spots` to see each file that does not load.\n", code: 1)
             }
             if let careful { spot.uses.formIntersection(careful) }
             let text = await input?()
-            let run = TerminalRun(spot: spot, arguments: arguments, input: text, careful: careful == nil ? nil : spot.uses, tokens: runs?.tokens, environment: environment, folder: folder)
+            let usage = caller == nil || spot.reachesAccountKey ? nil : runs?.usage
+            let run = TerminalRun(spot: spot, arguments: arguments, input: text, careful: careful == nil ? nil : spot.uses, tokens: runs?.tokens, environment: environment, folder: folder, usage: usage)
+            let begin = Date()
             var first = true
             let end = await run.start { frame in
                 output.print((first ? "" : "---\n") + frame)
                 first = false
+            }
+            if let usage, let caller {
+                let failure: StatsLog.Failure? = switch end.code {
+                case 0: nil
+                case 124: .timeout
+                default: .exit
+                }
+                usage.ran(spot, by: caller.id, CallOutcome(seconds: Date().timeIntervalSince(begin), failure: failure), at: usage.now())
             }
             return CommandAnswer(errors: end.errors, code: end.code)
         }
@@ -166,16 +178,11 @@ struct SpotCalls {
         }
     }
 
-    func stats(days: Int, spot: String?, format: StatsReport.Format) -> CommandAPI.Work {
+    func stats(days: Int, spot: String?, format: Stats.Form, byVersion: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [environment, runs] in
-            let counts: [SpotUsage.Day]
-            if let runs {
-                let now = await MainActor.run { runs.now() }
-                counts = runs.usage.days(days, at: now)
-            } else {
-                counts = SpotUsage.days(days, at: Date(), in: AppPlaces(environment: environment, home: FileManager.default.homeDirectoryForCurrentUser, defaults: .standard).stats)
-            }
-            return try StatsReport(days: counts, spot: spot).text(format)
+            let counts = await StatsLog.days(days, runs: runs, environment: environment)
+            let cards = (try? SpotsFolder.standard(environment: environment).scan().spots) ?? []
+            return try Stats(days: counts, spot: spot, cards: cards, byVersion: byVersion).text(format)
         }
     }
 }

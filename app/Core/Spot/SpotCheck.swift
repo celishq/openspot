@@ -23,7 +23,7 @@ public struct SpotCheck: Sendable {
         self.tokens = tokens
     }
 
-    public struct Finding: Equatable, Sendable, Encodable {
+    public struct Finding: Equatable, Sendable, PrintedRecord {
         public let spot: String?
         public let file: String?
         public let fault: String
@@ -36,6 +36,10 @@ public struct SpotCheck: Sendable {
 
         public var line: String {
             spot.map { "\($0): \(fault)" } ?? fault
+        }
+
+        var blocks: [[(String, String?)]] {
+            [[("fault", fault), ("spot", spot), ("file", file)]]
         }
     }
 

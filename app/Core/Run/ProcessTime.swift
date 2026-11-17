@@ -7,18 +7,20 @@ public struct ProcessTime: Equatable, Sendable {
     public var wakeups: UInt64
     public var read: UInt64
     public var written: UInt64
+    public var memory: UInt64
 
-    public init(cpu: TimeInterval, wakeups: UInt64, read: UInt64 = 0, written: UInt64 = 0) {
+    public init(cpu: TimeInterval, wakeups: UInt64, read: UInt64 = 0, written: UInt64 = 0, memory: UInt64 = 0) {
         self.cpu = cpu
         self.wakeups = wakeups
         self.read = read
         self.written = written
+        self.memory = memory
     }
 
     init?(of id: pid_t) {
-        var info = rusage_info_v2()
+        var info = rusage_info_v4()
         let result = withUnsafeMutablePointer(to: &info) {
-            $0.withMemoryRebound(to: rusage_info_t?.self, capacity: 1) { proc_pid_rusage(id, RUSAGE_INFO_V2, $0) }
+            $0.withMemoryRebound(to: rusage_info_t?.self, capacity: 1) { proc_pid_rusage(id, RUSAGE_INFO_V4, $0) }
         }
         guard result == 0 else { return nil }
         let ticks = info.ri_user_time + info.ri_system_time + info.ri_child_user_time + info.ri_child_system_time
@@ -26,6 +28,7 @@ public struct ProcessTime: Equatable, Sendable {
         wakeups = info.ri_pkg_idle_wkups + info.ri_interrupt_wkups + info.ri_child_pkg_idle_wkups + info.ri_child_interrupt_wkups
         read = info.ri_diskio_bytesread
         written = info.ri_diskio_byteswritten
+        memory = info.ri_lifetime_max_phys_footprint
     }
 
     init(_ usage: rusage) {
@@ -33,14 +36,15 @@ public struct ProcessTime: Equatable, Sendable {
         wakeups = 0
         read = 0
         written = 0
+        memory = 0
     }
 
     func since(_ earlier: ProcessTime) -> ProcessTime {
-        ProcessTime(cpu: max(cpu - earlier.cpu, 0), wakeups: wakeups &- min(earlier.wakeups, wakeups), read: read &- min(earlier.read, read), written: written &- min(earlier.written, written))
+        ProcessTime(cpu: max(cpu - earlier.cpu, 0), wakeups: wakeups &- min(earlier.wakeups, wakeups), read: read &- min(earlier.read, read), written: written &- min(earlier.written, written), memory: memory > earlier.memory ? memory : 0)
     }
 
     public static func + (left: ProcessTime, right: ProcessTime) -> ProcessTime {
-        ProcessTime(cpu: left.cpu + right.cpu, wakeups: left.wakeups + right.wakeups, read: left.read + right.read, written: left.written + right.written)
+        ProcessTime(cpu: left.cpu + right.cpu, wakeups: left.wakeups + right.wakeups, read: left.read + right.read, written: left.written + right.written, memory: max(left.memory, right.memory))
     }
 
     private static let nanosecondsPerTick: Double = {

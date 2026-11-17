@@ -120,6 +120,7 @@ extension SpotsModel {
             match.list == 0 ? spots[match.item.run] : Entry(spot: finding.sources[match.list - 1], item: match.item)
         }
         show(finding.answers + foundSpots.filter { !ids.contains($0.id) })
+        if !isEditing { missedSearch.landed(query, found: !visible.isEmpty) }
     }
 
     private func show(_ next: [Entry]) {
@@ -144,6 +145,11 @@ extension SpotsModel {
             return entry.isOnGrid == (placements[index].group == .shelf)
         }
         return entry.spot.isFound || entry.spot.isGlobal || entry.spot.answers != nil
+    }
+
+    func noteMiss() {
+        guard let search = missedSearch.take() else { return }
+        runs.usage.missed(search, at: runs.now())
     }
 
     func askAnswers() {

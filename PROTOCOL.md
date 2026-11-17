@@ -90,7 +90,7 @@ value=true
 - The first key of a block is its kind, and its value is the block's id. `switch=wifi` is a switch with the id `wifi`.
 - The head is the block that starts with a key of the head (see [The head](#the-head)). A block that starts with any
   other unknown key is an error, and Openspot skips it.
-- In a frame, Openspot skips a line with an unknown key, and `openspot check` reports it. In the header, an unknown
+- In a frame, Openspot skips a line with an unknown key, and `openspot check spots` reports it. In the header, an unknown
   key is a fault (see [The header](#the-header)).
 - Anything with its own title or icon is a block of its own, such as an `option` after a `choice`.
 
@@ -120,7 +120,7 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `source`      | A Swift file, or a folder of Swift files, that a Swift spot is built with. One line each. See [A Swift spot](#a-swift-spot).     |
 | `mode`        | `once` (the default), `stay` or `always`. See [Modes](#modes).                                                                   |
 | `press`       | `open`: a press of the card sends `<spot> open` though the spot has a sheet, which **Open** in ⌘K opens. `sheet` is the default. |
-| `uses`        | What the spot uses, split by commas: `app`, `spots`, `screen`, `clipboard`, `calendar`, `network`, `files`. See [Trust](#trust). |
+| `uses`        | What the spot uses, split by commas: `app`, `spots`, `screen`, `clipboard`, `calendar`, `power`, `network`, `files`. See [Trust](#trust). |
 | `grid.<size>` | A card made of other spots. Each word is a spot id. See [Cards of other spots](#cards-of-other-spots).                           |
 | `to`          | The spot that opens when the user presses a card of other spots. See [Cards of other spots](#cards-of-other-spots).              |
 
@@ -183,7 +183,7 @@ printf 'text=done\ntitle=Copied\n'
 - If a read prints nothing, the spot shows nothing. If another call prints nothing, Openspot asks the spot again.
 - When a newer change makes a call out of date, Openspot ignores what it prints.
 - Print a value that comes from data with a helper, so that it can't add a line or a block: `openspot_kv`,
-  `openspot_row` or `esc` in a shell, and `openspot.frame` in JavaScript. `openspot check` warns of a line with no `=`,
+  `openspot_row` or `esc` in a shell, and `openspot.frame` in JavaScript. `openspot check spots` warns of a line with no `=`,
   of a key that shows twice in a block where only a list repeats, and of a key that the head or a kind doesn't take. A
   row can hold keys of its own, which Openspot skips.
 - Openspot reads `ESC ] 9;4;1;<percent>` as `progress` and `ESC ] 9;<text>` as a toast, and removes other escape codes.
@@ -330,7 +330,7 @@ A button is a verb. If the layout places it, the sheet draws it. If not, it's an
 - A button `shortcut` is a letter, a digit, `return`, `backspace` or `,`, after `cmd+`, `shift+`, both or neither, such as
   `cmd+shift+n`, or `escape` alone. A row `shortcut` is any text (see [Rows](#rows)). The user gives a `button` in the
   header its hotkey in the spot's [Settings](#settings).
-- An action needs a `title`. `openspot check` reports an action with no title, or with a shortcut it can't use.
+- An action needs a `title`. `openspot check spots` reports an action with no title, or with a shortcut it can't use.
 - `shortcut=escape` presses the button instead of closing the sheet, like a Cancel button.
 - In a ⌘K menu of more than 5 rows, a field searches them, so only a `shortcut` with `cmd` works there.
 - Return on a row runs the action `open`. `button=open` gives it a `title`, and `close=false` keeps the panel open after
@@ -356,11 +356,13 @@ Rows are a list that the user searches and picks from. See [Show a list](GUIDE.m
 | `icon`     | The icon.                                                                                      |
 | `parent`   | Where the row sits in its spot. The main search shows `<spot> › <parent>`.                     |
 | `tone`     | A dot of its colour on the icon.                                                               |
-| `value`    | `true` draws a checkmark at the end.                                                           |
+| `value`    | `true` draws a checkmark at the end. More than one line draws a bar for each, oldest first, in the colour of `tone`; `-` is a bar with no value. |
+| `max`      | The value of a full bar. By default, the largest `value`.                                      |
+| `section`  | A title over the first row of a run of rows with the same `section`. A search hides it.        |
 | `hides`    | The id of an action that this row doesn't offer. One line for each action.                     |
 | `keywords` | Words that find the row but don't show, split by commas.                                       |
 | `shortcut` | Any text, such as `⌃⌥K`, that shows at the end of the row.                                     |
-| `type`     | `hotkey`: a pick records a new hotkey and sends `<id> <hotkey>`.                               |
+| `type`     | `hotkey`: a pick records a new hotkey and sends `<id> <hotkey>`. `toggle`: a switch at the end, on while `value=true`, for a choice that a pick turns on and off. |
 | `shake`    | `true` lets a shake of the pointer, or a tap of one modifier, be the hotkey a pick records.    |
 | `pin`      | `top` or `bottom`: the row stays above or under the rows that scroll, even in a search.        |
 | `focus`    | The line under the title while the row is selected, in place of `detail`.                      |
@@ -499,9 +501,9 @@ printf 'text=load\ntitle=%s\n' "${OPENSPOT_VALUE:-cpu=0 memory=0}"
   - `spot.want`: when a spot becomes wanted and no event has asked it yet.
 - `openspot event emit <event> [value]` raises an event, from a spot or a terminal. If Openspot isn't running, it starts
   first.
-- A spot must list each event it raises in `emits`, such as `emits=music.track`. `openspot check` reports an `on` event
+- A spot must list each event it raises in `emits`, such as `emits=music.track`. `openspot check spots` reports an `on` event
   that neither Openspot nor any spot raises.
-- A read must not raise the event that caused it. `openspot check` warns of a spot whose `on` and `emits` share an event.
+- A read must not raise the event that caused it. `openspot check spots` warns of a spot whose `on` and `emits` share an event.
 - A spot is **wanted** while its sheet, the menu bar or a card of other spots shows it, and while the open panel asks it
   at `panel.open`.
 - A `clock`, and events other than `sheet.open`, `sheet.text` and `search.text`, ask a spot only while it's wanted.
@@ -846,6 +848,7 @@ struct SpotView: View {
 | `spot["key"]`       | The last value of a key of its block, or nil.                         |
 | `spot.all("key")`   | Each value of a key that repeats.                                     |
 | `spot.size`         | The size of its place.                                                |
+| `spot.card`         | The name of its card's size, such as `wide`, or nil off a whole card. |
 | `spot.inset`        | The space other cards keep between their edge and their words.        |
 | `spot.corner`       | The corner radius of the card.                                        |
 | `spot.ink`          | The colour of words, for light and dark.                              |
@@ -867,6 +870,7 @@ struct SpotView: View {
 | `spot.theme`        | The values of the theme, by role. See the table below.                |
 | `spot.rows`         | Each `row` block of the frame, in a sheet or a window, in order.      |
 | `spot.isShown`      | Whether its place shows now. It's false while the panel is hidden.    |
+| `spot.selection`    | The id of the selected row of the sheet, or nil.                      |
 | `spot.close()`      | Closes the sheet, the float or the window of its spot.                |
 
 `spot.theme` gives the values of the theme (see [Change the look of Openspot](GUIDE.md#change-the-look-of-openspot)) in
@@ -880,6 +884,10 @@ five groups. Each colour and strength is the one of the appearance that shows.
 | `spot.theme.font`   | The fonts `title`, `body`, `detail` and `input`.                                                       |
 | `spot.theme.motion` | `press`, the time of a press in seconds, and `pressBounce`, its bounce.                                |
 
+- `SpotMetric(spot, value:, detail:, mark:, onFill:)` draws a big number with its detail and an SF Symbol `mark`, laid
+  out for `spot.card` as the other cards lay out theirs, and for the size of its place off a card. It drops the detail
+  when the line has no room for it, and keeps the mark. `onFill: true` draws it in white, over a colour that the view
+  draws.
 - The view fills its place, and the whole card when there's no card layout. It can't change the size of its place.
 - In a window (see [Places](#places)), a sheet with one `view` block fills the window. `spot.card(id)` draws the card of
   any spot by the ID that `openspot store list` prints, as the store does. `spot.sheet(id)` draws its sheet with what its
@@ -888,13 +896,13 @@ five groups. Each colour and strength is the one of the appearance that shows.
 - On a card, the view only draws, and a press works as on any card. In a sheet, it takes clicks and keys, and
   `spot.send(value)` calls the spot with `<id> <value>`, as a field does. A newer send stops the call of the older one.
 - Openspot compiles it when its card first shows, and again when the file changes. A view that doesn't compile shows its
-  first error, and `openspot check` prints it.
+  first error, and `openspot check spots` prints it.
 - A shared spot carries the compiled view as `<name>.<hash>.view`, where the hash is the SHA-256 of Openspot's view
   code and the source. Openspot uses it instead of the source only while that hash matches.
 - Each row of `spot.rows` has its `id`, `row["key"]` for the last value of a key and `row.all("key")` for each
   value, as the view's own block has. In a sheet, Openspot still draws the rows under the view. In a window that one
   view fills, only the view draws them. A card gets no rows. A `view` block takes no `row` key of its own, and
-  `openspot check` reports one.
+  `openspot check spots` reports one.
 - `spot.close()` closes only the open sheet, the float or the window of the view's own spot. It does nothing on a card,
   in the sheet that `spot.sheet(id)` draws, and in a card that `spot.card(id)` draws. A view can call it from any thread.
 - Openspot removes a view while its place is hidden, and builds it again at the next show, so its `@State` starts
@@ -967,10 +975,14 @@ A spot asks the Mac and Openspot for things through one command, which works the
 - A call that reads files or asks the Mac gives the same answer whether Openspot is running or not. A call that needs the
   running app starts it, and waits up to 10 seconds.
 - Ctrl-C stops a call, and the stopped work changes nothing.
-- `openspot help` lists each capability. `openspot help <noun>` prints the guide of a noun, such as `screen` or
-  `calendar`.
+- `openspot help` lists each command, grouped by what it's for. `openspot help <noun>`, or `--help` after a noun or a
+  verb, prints only its verbs, then the guide of a noun that has one, such as `screen` or `calendar`. `openspot help --json`
+  prints each verb with its form, its effect and whether it needs the app.
+- A call exits with code 0 when it's done, 1 when it failed, 2 when `openspot` doesn't take its words, and 3 when it
+  needs the app and no app answered. Words that `openspot` doesn't take print the verbs of the noun they name, or the
+  command they're closest to.
 - A capability that can't answer prints `status=<word>`. A capability that keeps state keeps it in its own helper.
-- `openspot translate` prints `status=unknown` when it cannot tell the language of the text, `status=missing` when macOS
+- `openspot translate text` prints `status=unknown` when it cannot tell the language of the text, `status=missing` when macOS
   has not downloaded a language, `status=unsupported` when it knows no way between the two, and `status=failed` for any
   other fault. `openspot calc solve` prints `status=offline` or `status=unavailable` for a currency with no rates.
 - When macOS already has a command, such as `open`, use it. For the screen and the clipboard, use `openspot screen` and
@@ -978,23 +990,25 @@ A spot asks the Mac and Openspot for things through one command, which works the
 - These calls fail in a read, so that a read changes nothing and opens nothing:
   - calls that wait for the user: `color pick` and `folder pick`;
   - calls that capture the screen: `screen shot`, `screen record start` and `screen record stop`;
-  - calls that change the Mac or the user's data: `window move`, `clipboard copy`, `clipboard paste`, `calendar add`,
+  - calls that change the Mac or the user's data: `window move`, `clipboard copy`, `clipboard paste`, `power lid-closed`, `calendar add`,
     `reminders add`, `reminders done`, `spot add`, `spot remove` and `spot delete`;
   - calls that change Openspot or its places: `app quit`, each call of `theme` but `theme list` and `theme open`, `update install`, and `setting set` of a key that Openspot
     keeps for the user (see [Settings](#settings));
-  - calls that open a window or the panel: `spot show`, `spot open`, `spot choose`, `spot settings`, `spot edit`, `spot prompt`, `spot share`, `spot review`, `grid edit`, `setting change`, `theme open`,
+  - calls that open a window or the panel: `spot open`, `spot choose`, `spot settings`, `spot edit`, `spot prompt`, `spot share`, `spot review`, `grid edit`, `setting change`, `theme open`,
     `update check`, `calendar show` and `reminders show`.
 - `calendar add --dry-run` and `reminders add --dry-run` change nothing, so they work in a read.
 - `openspot batch` runs one call for each line of stdin, and prints `---` after each. It stops at the first failure.
-- `--frame` makes `app status`, `account`, `spot list`, `store list`, `setting list` and `theme list` print blocks instead of JSON.
+- Each call that lists or reports, such as `app status`, `power readings`, `account show`, `spot list`, `spot stats`, `store list`, `setting list` and
+  `theme list`,
+  prints blocks, the format of a frame. `--json` prints JSON.
 
 The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The others:
 
 | Command                                            | Does                                                                                            |
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `openspot guide`                                   | Prints the guide, then this protocol.                                                           |
-| `openspot spot show <id>`                          | Opens the panel with the spot selected.                                                         |
-| `openspot spot open <id>`                          | Opens the panel on a spot, as a new flow. See [Pages](#pages).                                  |
+| `openspot guide [topic \| --topics]`               | Prints the guide, then this protocol. A topic prints one section or the page of a noun, such as `screen`, and `--topics` lists them. |
+| `openspot version`                                 | Prints the version of Openspot, as `openspot --version` does.                                   |
+| `openspot spot open <id> [--select]`               | Opens the panel on a spot, as a new flow. See [Pages](#pages). `--select` only selects its card. |
 | `openspot spot push <id> [page]`                   | Pushes a spot, or a page of it, over the flow that shows. See [Pages](#pages).                  |
 | `openspot spot pop <id> [--all]`                   | Goes back one sheet of a spot that shows, or to its first sheet. See [Pages](#pages).           |
 | `openspot spot choose <id>`                        | Asks for files, and drops the chosen ones on a spot that takes them, as a press of its card does. |
@@ -1007,26 +1021,27 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                                |
 | `openspot spot stats`                              | Prints what each spot cost and used. See [Stats](#stats).                                       |
 | `openspot grid edit`                               | Opens the panel in Edit Spots, to arrange the grid.                                             |
-| `openspot store list [--frame]`                    | Prints each spot of the store and its step: `get`, `publish`, or `added` once you have it.      |
+| `openspot store list [--json]`                     | Prints each spot of the store and its step: `get`, `publish`, or `added` once you have it.      |
 | `openspot store get <id>`                          | Gets a spot of the store: turns it on, or adds its package to your spots folder.                |
 | `openspot store add <folder>`                      | Adds a folder that holds spot folders as a store, so the Store lists its spots. The folder's name is the store's name. |
 | `openspot store remove <folder>`                   | Removes a store that `store add` added. The spots you got from it stay.                         |
-| `openspot store folders [--frame]`                 | Prints the built-in store Openspot, which holds the examples, then each store that `store add` added, with its name and whether its folder is found. |
+| `openspot store folders [--json]`                  | Prints the built-in store Openspot, which holds the examples, then each store that `store add` added, with its name and whether its folder is found. |
 | `openspot store publish <id>`                      | Publishes a spot of your spots folder to the store. It needs a `readme.md` beside its script. Only the Store spot can run it, so you publish from the Store spot. |
-| `openspot playground [file]`                       | Opens the Playground on a spot that you type or on a file.                                      |
-| `openspot check --sheet`                           | Reports the faults of a sheet on stdin.                                                         |
-| `openspot render --card <size> <file.png>`         | Draws the card of the sheet on stdin at a size, such as `wide`, to a picture.                   |
-| `openspot render --spot <id> <file.png>`           | Draws the sheet of an installed spot, or with `--card <size>` its card, to a picture.           |
-| `openspot render --panel <file.png>`               | Draws the panel with each installed spot on its grid.                                           |
-| `openspot render --store <file.png>`               | Draws the window of the Store with each spot as its card.                                       |
+| `openspot playground open [file]`                  | Opens the Playground on a spot that you type or on a file.                                      |
+| `openspot check sheet`                             | Reports the faults of a sheet on stdin.                                                         |
+| `openspot render sheet [--view <file>] <file.png>` | Draws the sheet on stdin to a picture, with its view from a Swift file.                         |
+| `openspot render card <size> <file.png>`           | Draws the card of the sheet on stdin at a size, such as `wide`, to a picture.                   |
+| `openspot render spot <id> <file.png>`             | Draws the sheet of an installed spot, or with `--card <size>` its card, to a picture.           |
+| `openspot render panel <file.png>`                 | Draws the panel with each installed spot on its grid.                                           |
+| `openspot render store <file.png>`                 | Draws the window of the Store with each spot as its card.                                       |
 | `openspot prompt new [words]...`                   | Prints a prompt that asks a coding agent to build a spot that does what the words say.          |
-| `openspot prompt change <id> [words]...`           | Prints a prompt that asks a coding agent to change a spot as the words say.                     |
+| `openspot prompt change <id> [words]...`           | Prints a prompt that asks a coding agent to change a spot as the words say, with what [Stats](#stats) counted of it over 14 days. With no words, its goal follows those counts. |
 | `openspot prompt theme <name> [words]...`          | Prints a prompt that asks a coding agent to change a theme as the words say.                    |
-| `openspot emoji [--tone name]`                     | Prints each emoji as a row, with its name in the language of the Mac.                           |
-| `openspot symbols`                                 | Prints each symbol of the Character Viewer as a row.                                            |
-| `openspot translate [--from code] [--to code]`     | Translates the text on stdin. `openspot translate languages` prints the languages it knows.     |
+| `openspot emoji list [--tone name]`                | Prints each emoji as a row, with its name in the language of the Mac.                           |
+| `openspot symbols list`                            | Prints each symbol of the Character Viewer as a row.                                            |
+| `openspot translate text [--from code] [--to code]` | Translates the text on stdin. `openspot translate languages` prints the languages it knows.     |
 | `openspot theme <verb>`                            | Lists the themes, and uses, makes and changes one: `list`, `use`, `new`, `duplicate`, `rename`, `delete`, `open` and `reload`. See [Change the look of Openspot](GUIDE.md#change-the-look-of-openspot). |
-| `openspot account [--frame]`                       | Prints the public facts of the account that signs what you publish. See [Trust](#trust).        |
+| `openspot account show [--json]`                   | Prints the public facts of the account that signs what you publish. See [Trust](#trust).        |
 
 ### Settings
 
@@ -1068,7 +1083,7 @@ if [ -n "$(value setting.token)" ]; then printf 'text=token\ntitle=Signed in\n';
 
 - A secret has 8 characters or more. Openspot hides only the exact value, so a part of it or another form of it, such
   as its base64, still shows.
-- `openspot spot run` in Terminal and `openspot check` pass no settings. A value over 64 KB isn't put in a variable.
+- `openspot spot run` in Terminal and `openspot check spots` pass no settings. A value over 64 KB isn't put in a variable.
   Two keys that give one variable, such as `api-key` and `api_key`, are a fault of the header.
 - `openspot setting get <key>` prints the value, or nothing, and `•••` for a secret that is set. `openspot setting set <key> [value]` keeps the value, or
   removes it when there's no value. In a terminal, `--spot <id>` names the spot.
@@ -1087,27 +1102,52 @@ if [ -n "$(value setting.token)" ]; then printf 'text=token\ntitle=Signed in\n';
 Openspot counts what each spot cost and used, so that the user can see it.
 
 ```sh
-openspot spot stats --days 7 --frame
+openspot spot stats --days 7
 ```
 
 - Openspot keeps one file for each day, for 90 days. Today's numbers are live.
+- An act is something the user did with a spot: they opened its sheet, picked a row, pressed, set or toggled something,
+  or ran one of its actions. A read is never an act, and acts on one spot within 2 seconds count as one.
 - `--days N` adds up the last N days. `--spot <id>` shows one spot.
-- `--frame` prints a `row=<id>` block for each spot, the most CPU first, then a `use=<n>` block for each call that needs
-  a use, the newest first.
+- `--by version` prints a row for each version of a spot, the oldest first, so you can compare a spot before and after
+  a change. A version is a short hash that changes each time a file of the spot is written, replaced or touched.
+  The version `-` holds the counts with no known version, such as those kept before versions, and sorts first.
+- `--openmetrics` prints each counter as [OpenMetrics](https://openmetrics.io) text, labelled by `spot`, and by
+  `version` with `--by version`, so that any tool for metrics can read it.
+- It prints a `row=<id>` block for each spot, the most CPU first, then a `use=<n>` block for each call that needs a
+  use, the newest first, then a `search=<text>` block for each search that found nothing. `--json` prints the days.
 
 | Row key              | Meaning                                                               |
 | -------------------- | --------------------------------------------------------------------- |
 | `title`, `detail`    | The name of the spot, and its numbers in words.                       |
+| `version`, `since`   | With `--by version`, the version of the row, and when it was first counted. |
 | `runs`, `failures`   | The calls that ended, and those that failed.                          |
 | `cpu`, `seconds`     | The CPU seconds of its processes, and the wall time of its calls.     |
 | `read`, `written`    | The bytes its processes read and wrote.                               |
 | `wakeups`            | The times its processes woke the CPU.                                 |
+| `acts`, `last`       | The user's acts, and the time of the last one.                        |
+| `days`               | The acts of each day, oldest first. `-` for a day with no count.      |
+| `reads.<reason>`     | The reads for one reason, such as `reads.sheet.open=3` or `reads.clock=40`. |
+| `hidden.cpu`, `hidden.wakeups` | The part of `cpu` and `wakeups` spent while the panel was hidden. |
+| `p50`, `p95`         | The seconds within which half, and 95 in 100, of its reads and searches first answered. |
+| `memory`             | The most memory its own process held at once, in bytes, not counting the processes it starts. |
+| `seen`               | The days that hold a count of the spot.                               |
+| `shows`              | On a [card of other spots](#cards-of-other-spots), one line for each spot it shows. Such a card runs nothing, so its other numbers are 0. |
+| `cards`              | One line for each card of other spots that shows this spot.           |
+| `runs.by.<id>`       | The part of `runs` that the spot `<id>` started with `openspot spot run`. |
+| `ran.<id>`           | The runs of the spot `<id>` that this spot started with `openspot spot run`. |
+| `failures.<kind>`    | The failures of one kind: `timeout`, `exit` or `output`.              |
+| `failed`             | The time of its last failure.                                         |
 | `call.<noun>.<verb>` | The count of one call that needs a use, such as `call.screen.shot=2`. |
 | `network`            | `declared` when its header names `network`.                           |
 | `bodies`, `body`     | The runs of the `body` of its `SpotView`, and their seconds in all.   |
 | `fault`, `tone`      | Its last error, with `tone=bad`.                                      |
 
-- A `use` block holds `time`, `spot`, `call`, such as `app.quit`, and `declared`, `true` or `false`.
+- A `search` block holds a search of the panel that found nothing, folded to lower case, and its `count`. A search of
+  3 letters or more counts when you clear it or hide the panel with no pick, by the longest text that found nothing.
+  A day keeps 50.
+- A `use` block holds `time`, `spot`, `call`, such as `app.quit`, and `declared`. Only a call that the header doesn't
+  declare is logged, so `declared` is `false`; `call.<noun>.<verb>` counts each call.
 
 ## Trust
 
@@ -1135,12 +1175,13 @@ openspot app quit
 | `screen`    | `screen sources`, `screen shot`, `screen record`, `window frame`, `window move` and `color pick`                                                                |
 | `clipboard` | `clipboard copy`, `clipboard paste` and `clipboard read`                                                                                                        |
 | `calendar`  | each call of `calendar` and `reminders`                                                                                                                         |
+| `power`     | `power lid-closed`                                                                                                                                              |
 | `network`   | No call. The spot reaches the network.                                                                                                                          |
 | `files`     | No call. The spot writes outside its data folder.                                                                                                               |
 | `account`   | `store publish`. Only a spot that ships inside Openspot can have it.                                                                                            |
 
 - A call that needs a use the header doesn't name still runs, and shows one toast for each spot, use and day.
-  `openspot check` can't report it, because only a run shows it.
+  `openspot check spots` can't report it, because only a run shows it.
 - Before an add, the review shows the title, the `uses`, and a line **Can also** with what the code seems to do but
   doesn't name: the network, `rm`, `screencapture`, `pbcopy` or `pbpaste`. It warns, and never blocks the add.
 - The review names each file that Openspot can't show as text, such as the built program of a Swift spot or a built
@@ -1159,7 +1200,7 @@ openspot app quit
 - Without Careful mode, the data folder is no boundary.
 - A spot folder can hold `releases.jsonl`, the signed releases of the spot. Openspot writes it when the user shares or
   publishes the spot, and refuses a shared spot whose files don't match its last release. A spot reads nothing from it.
-- `openspot account` tells any spot the public facts: whether an account is signed in, its `npub`, the `handle` it was
+- `openspot account show` tells any spot the public facts: whether an account is signed in, its `npub`, the `handle` it was
   made with, the day it was made (`since`), whether its words are backed up, and whether it syncs.
 - No call makes, changes or removes the account key, and none prints or takes the 12 words. Only the Account sheet of
   the app does, and it asks for Touch ID or the Mac's password before each act on the key. An unlock counts for 5

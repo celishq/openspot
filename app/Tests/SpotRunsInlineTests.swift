@@ -369,7 +369,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
         sheet.open {}
 
         try await wait("the rows") { sheet.list.shown.count == 1 }
-        XCTAssertGreaterThan(runs.usage.counts["script"]?.cpu ?? 0, 0.1)
+        XCTAssertGreaterThan(runs.usage.counts["script"]?.cost.cpu ?? 0, 0.1)
     }
 
     func testARunWithALimitStopsWaitingForAFunctionThatRunsTooLong() async throws {

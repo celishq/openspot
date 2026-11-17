@@ -36,11 +36,11 @@ remove() {
 # data, and the readme of the spot that $1 names, a line after its id, when its sheet asks.
 gallery() {
   printf 'view=gallery\n'
-  openspot store folders --frame | awk 'BEGIN { RS = ""; FS = "\n" }
+  openspot store folders | awk 'BEGIN { RS = ""; FS = "\n" }
     { delete f
       for (i = 1; i <= NF; i++) { n = index($i, "="); f[substr($i, 1, n - 1)] = substr($i, n + 1) }
       printf "folder=%s\t%s\t%s\t%s\n", f["store"], f["name"], (f["found"] == "true" ? "found" : "missing"), (f["builtin"] == "true" ? "builtin" : "added") }'
-  openspot store list --frame | awk -v want="${1-}" 'BEGIN { RS = ""; FS = "\n" }
+  openspot store list | awk -v want="${1-}" 'BEGIN { RS = ""; FS = "\n" }
     { delete f
       for (i = 1; i <= NF; i++) {
         n = index($i, "="); key = substr($i, 1, n - 1); f[key] = substr($i, n + 1)

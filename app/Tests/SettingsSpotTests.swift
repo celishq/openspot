@@ -38,7 +38,7 @@ final class SettingsSpotTests: BuiltInCase {
 
         _ = try await items()
 
-        XCTAssertEqual(programs(), ["openspot app status --frame"])
+        XCTAssertEqual(programs(), ["openspot app status"])
     }
 
     func testTheSheetListsOnlyTheSettingsOfTheAppAndNoneOfASpot() async throws {
