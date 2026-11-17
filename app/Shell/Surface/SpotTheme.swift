@@ -15,6 +15,7 @@ struct SpotTheme {
     let confirm: NSColor
     let onConfirm: NSColor
     let backdropTint: NSColor
+    let highlight: NSColor
     let fillStrength: Double
     let selectedStrength: Double
     let discStrength: Double
@@ -35,6 +36,7 @@ struct SpotTheme {
         confirm = look.confirm.nsColor
         onConfirm = look.onConfirm.nsColor
         backdropTint = look.backdropTint.nsColor
+        highlight = look.highlight.nsColor
         fillStrength = look.fill
         selectedStrength = look.selected
         discStrength = look.disc
@@ -104,6 +106,7 @@ struct SpotTheme {
     @MainActor static var glass: Color { loaded.glass }
     @MainActor static var glassTint: Color { loaded.glassTint }
     @MainActor static var backdropTint: Color { loaded.backdropTint }
+    @MainActor static var highlight: Color { loaded.highlight }
     @MainActor static var cornerFill: Color { loaded.cornerFill }
     @MainActor static var window: Color { loaded.window }
     @MainActor static var preview: Color { loaded.preview }

@@ -22,7 +22,7 @@ struct SpotSteadyField: View {
             SpotSearchField(prompt: prompt, text: text, onSearch: onSearch, isFocused: $isFocused)
                 .animation(nil) { $0.opacity(isSettled ? 1 : MotionTokens.hiddenOpacity) }
         }
-        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: SpotRoundShape(surface.inner()))
+        .background(SpotTheme.highlight.opacity(SpotTheme.fill), in: SpotRoundShape(surface.inner()))
         .onAppear {
             DispatchQueue.main.async { isFocused = true }
         }

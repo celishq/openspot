@@ -13,7 +13,7 @@ struct SpotKeyLabel: View {
             .padding(.horizontal, SpotTokens.padding)
             .padding(.vertical, SpotTokens.chipPaddingY)
             .fixedSize()
-            .background(SpotTheme.ink.opacity(SpotTheme.selectedFill), in: Capsule())
+            .background(SpotTheme.highlight.opacity(SpotTheme.selectedFill), in: Capsule())
             .contentShape(Capsule())
     }
 }

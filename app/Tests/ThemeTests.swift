@@ -9,6 +9,7 @@ final class ThemeTests: XCTestCase {
         [dark]
         glass-tint = "#00000099"
         glyph-on-solid = "accent"
+        highlight = "#BD93F9"
         fill = 0.1
 
         [light]
@@ -23,6 +24,7 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(theme.faults, [])
         XCTAssertEqual(theme.look.dark.glassTint, .hex(HexColor(red: 0, green: 0, blue: 0, alpha: 0.6)))
         XCTAssertEqual(theme.look.dark.glyphOnSolid, .accent)
+        XCTAssertEqual(theme.look.dark.highlight, ThemeColor(text: "#BD93F9"))
         XCTAssertEqual(theme.look.dark.fill, 0.1)
         XCTAssertEqual(theme.look.light.ink, .hex(HexColor(red: 1, green: 1, blue: 1)))
         XCTAssertEqual(theme.look.light.disc, 0)

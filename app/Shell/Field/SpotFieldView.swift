@@ -38,7 +38,7 @@ struct SpotFieldView: View {
         return ZStack(alignment: .topLeading) {
             SpotSurface(rect: place, radius: fieldRadius, glass: isInstall ? 0 : 1, cut: sheetShape)
             SpotSurfaceShape(rect: place, radius: fieldRadius)
-                .fill(SpotTheme.ink.opacity(isInSheet ? SpotTheme.fill : 0))
+                .fill(SpotTheme.highlight.opacity(isInSheet ? SpotTheme.fill : 0))
                 .mask { insideSheet }
             ZStack(alignment: .topLeading) {
                 SpotFieldPrompt.glyph

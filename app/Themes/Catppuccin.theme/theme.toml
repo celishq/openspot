@@ -1,5 +1,6 @@
 [dark]
 ink = "#CDD6F4"
+highlight = "#CDD6F4"
 solid = "#CDD6F4"
 on-solid = "#1E1E2E"
 glyph-on-solid = "#CBA6F7"
@@ -13,6 +14,7 @@ on-confirm = "#1E1E2E"
 
 [light]
 ink = "#4C4F69"
+highlight = "#4C4F69"
 solid = "#4C4F69"
 on-solid = "#EFF1F5"
 glyph-on-solid = "#EFF1F5"

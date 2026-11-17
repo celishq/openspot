@@ -610,7 +610,7 @@ Each section of the file holds one kind of value:
 
 | Section             | Holds                                                                                  |
 | ------------------- | -------------------------------------------------------------------------------------- |
-| `[dark]`, `[light]` | The colours and strengths of each appearance, such as `ink` and `fill`.                |
+| `[dark]`, `[light]` | The colours and strengths of each appearance, such as `ink`, `fill` and `highlight`, the colour of the search field, the keys and the sliders. |
 | `[shared]`          | The colours and strengths of both appearances, such as `accent`, `good` and `secondary`. |
 | `[glass]`           | The glass: its `variant`, `clear` or `regular`, its fade and its edges.                |
 | `[backdrop]`        | What shows behind the tiles: a blur or a tint, around the tiles or over the screen.    |

@@ -17,6 +17,7 @@ final class SpotPalette: Sendable {
     let confirm: Color
     let onConfirm: Color
     let backdropTint: Color
+    let highlight: Color
     let accent: Color
     let good: Color
     let warn: Color
@@ -56,6 +57,7 @@ final class SpotPalette: Sendable {
         confirm = color(\.confirm)
         onConfirm = color(\.onConfirm)
         backdropTint = color(\.backdropTint)
+        highlight = color(\.highlight)
         let shared = look.shared
         accent = shared.accent.color
         good = shared.good.color

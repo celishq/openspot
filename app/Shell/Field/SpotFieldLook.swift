@@ -8,7 +8,7 @@ struct SpotFieldLook: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             SpotSurfaceShape(rect: SpotFieldView.sheetRow, radius: SpotFieldView.sheetRadius)
-                .fill(SpotTheme.ink.opacity(SpotTheme.fill))
+                .fill(SpotTheme.highlight.opacity(SpotTheme.fill))
             SpotFieldPrompt.glyph
                 .offset(x: SpotFieldView.sheetGlyphLeft, y: SpotFieldView.sheetTop)
             words

@@ -1,5 +1,6 @@
 [dark]
 ink = "#FFFFFF"
+highlight = "#FFFFFF"
 solid = "#FFFFFF"
 on-solid = "#000000"
 glyph-on-solid = "accent"
@@ -20,6 +21,7 @@ track = 0.2
 
 [light]
 ink = "#1C1C1C"
+highlight = "#1C1C1C"
 solid = "#1F1F1F"
 on-solid = "#FFFFFF"
 glyph-on-solid = "#FFFFFF"

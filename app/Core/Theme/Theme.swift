@@ -28,6 +28,7 @@ public struct Theme: Equatable, Sendable {
         public fileprivate(set) var confirm = ThemeColor.none
         public fileprivate(set) var onConfirm = ThemeColor.none
         public fileprivate(set) var backdropTint = ThemeColor.none
+        public fileprivate(set) var highlight = ThemeColor.none
         public fileprivate(set) var fill = 0.0
         public fileprivate(set) var selected = 0.0
         public fileprivate(set) var disc = 0.0
@@ -40,6 +41,7 @@ public struct Theme: Equatable, Sendable {
                 "ink": .colour(\.ink), "solid": .colour(\.solid), "on-solid": .colour(\.onSolid), "glyph-on-solid": .colour(\.glyphOnSolid),
                 "glass": .colour(\.glass), "glass-tint": .colour(\.glassTint), "corner-fill": .colour(\.cornerFill), "window": .colour(\.window),
                 "preview": .colour(\.preview), "confirm": .colour(\.confirm), "on-confirm": .colour(\.onConfirm), "backdrop-tint": .colour(\.backdropTint),
+                "highlight": .colour(\.highlight),
                 "fill": .number(.strength, \.fill), "selected": .number(.strength, \.selected), "disc": .number(.strength, \.disc),
                 "chip": .number(.strength, \.chip), "control": .number(.strength, \.control), "track": .number(.strength, \.track)
             ]

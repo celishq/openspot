@@ -1,5 +1,6 @@
 [dark]
 ink = "#00E000"
+highlight = "#00E000"
 solid = "#00E000"
 on-solid = "#0A0A10"
 glyph-on-solid = "#0A0A10"
@@ -19,6 +20,7 @@ track = 0.3
 
 [light]
 ink = "#1A1A24"
+highlight = "#1A1A24"
 solid = "#2C2C38"
 on-solid = "#00E000"
 glyph-on-solid = "#00E000"

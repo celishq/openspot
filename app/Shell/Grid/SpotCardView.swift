@@ -182,7 +182,7 @@ struct SpotCardView: View, @MainActor Equatable {
             in: low...high
         )
         .controlSize(.small)
-        .tint(SpotTheme.ink)
+        .tint(SpotTheme.highlight)
         .sliderThumbVisibility(.hidden)
     }
 
