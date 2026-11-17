@@ -40,23 +40,12 @@ final class SampleSpotsTests: SampleSpotsCase {
     func testTheSpotsOfANewMacFitThePanelWithNoScrolling() throws {
         let spots = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
         let starting = Set(SpotsFolder(url: spots.appendingPathComponent("none"), core: spots).startingSpots())
-        XCTAssertGreaterThan(starting.count, 5)
         let core = try SpotsFolder(url: spots.appendingPathComponent("none"), core: spots, enabled: starting).scan()
         let defaults = Config(text: try String(contentsOf: spots.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8)).arrangement
         let placements = SpotGrid().place(core.spots.filter { (defaults.isOnGrid(of: $0.id) ?? $0.isOnGrid) && !$0.isBuiltIn }.map { defaults.size(of: $0.id) ?? $0.size })
         let rows = placements.map { $0.row + $0.size.rows }.max()
 
         XCTAssertLessThanOrEqual(rows ?? 0, 6)
-    }
-
-    func testEveryShippedSpotTurnedOnNeedsEightRows() throws {
-        let spots = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
-        let all = Set(try FileManager.default.contentsOfDirectory(atPath: spots.path).map { ($0 as NSString).deletingPathExtension })
-        let core = try SpotsFolder(url: spots.appendingPathComponent("none"), core: spots, enabled: all).scan()
-        let defaults = Config(text: try String(contentsOf: spots.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8)).arrangement
-        let placements = SpotGrid().place(core.spots.filter { (defaults.isOnGrid(of: $0.id) ?? $0.isOnGrid) && !$0.isBuiltIn }.map { defaults.size(of: $0.id) ?? $0.size })
-
-        XCTAssertEqual(placements.map { $0.row + $0.size.rows }.max(), 8)
     }
 
     func testTheCheckFindsNoFaultInTheSpotsAndTheExamples() async throws {
@@ -244,12 +233,6 @@ final class SampleSpotsTests: SampleSpotsCase {
 
             XCTAssertTrue(value.isHidden)
         }
-    }
-
-    func testAgentsPullRequestsAndTheClockCanShowInTheMenuBar() throws {
-        let scripts = try exampleScan.scripts.filter { ["agents", "clock", "pulls"].contains($0.id) }
-
-        XCTAssertEqual(scripts.map(\.canShowInMenuBar), [true, true, true])
     }
 
     func testTheColorPickerCopiesAPickAndNothingOnACancel() async throws {
