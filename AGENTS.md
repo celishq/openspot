@@ -182,7 +182,8 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
   field by opacity (`SpotMenuDim`), and `make perf ACTION=menu` guards its cost. A glass holds still during a motion it is
   not the subject of, since the system draws a glass again on each frame in which its content or its opacity changes.
 - Change words by a crossfade of two laid-out copies, not by a reflow.
-- Do not put an AppKit view in a view that moves or resizes.
+- Do not put an AppKit view in a view that moves or resizes, except a moving piece of a spot's view (see
+  [Drawing](#drawing)).
 - The model starts a motion where its cause happens, not a view: no `onChange` chain, and no `.animation(_:value:)` on a
   container. A view that is just built lies at its first place for one frame, and its motion starts on the next frame
   (`SpotsHost.nextFrame`), never on the next turn of the queue, which can run before that frame is drawn.
@@ -205,6 +206,20 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
   moved to. A press may start the next step once the step is logically complete (`SpotsHost.change(_:_:completion:removal:)`).
   A stand-in draws with the same views as what it stands in for (`SpotFieldPrompt`), so the hand-off shows no change.
 - Hide a view that comes back with a mask or with opacity 0.001, not with opacity 0, which drops its drawing.
+
+### Drawing
+
+A view that moves on its own, such as a liquid, a clock hand or a GIF, keeps the main thread free while it moves.
+
+- A motion that runs on each frame runs in the render server: a Core Animation animation or a video layer, set up once
+  for each value. The main thread works only when a value changes. A `TimelineView` that redraws on each frame, or a
+  timer that writes state for each frame, breaks this rule.
+- Live content may sit in a glass, since a motion in the render server costs the glass no more than still content
+  does.
+- A view moves only while its place shows: the panel is shown, its card is in sight, and no sheet, menu, Edit Spots or
+  motion of the panel covers it. The model decides it, and a spot's view reads it as `spot.isShown`.
+- Openspot gives a spot's view each moving piece it needs, such as `spot.media`, so a spot never writes AppKit. Such a
+  piece is the one AppKit view that may sit in a view that moves.
 
 ### Idle and memory
 
