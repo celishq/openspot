@@ -107,6 +107,17 @@ final class StatsReportTests: XCTestCase {
         XCTAssertFalse(try StatsReport(days: usage.days(1, at: day), spot: "a", cards: [card]).text(.frame).contains("row=system"))
     }
 
+    func testARunThatOneSpotStartsOfAnotherShowsOnBoth() throws {
+        let usage = SpotUsage(at: day)
+        usage.ran(Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh")), by: "b", CallOutcome(seconds: 1), at: day)
+        usage.called(Spot(id: "b", name: "Beta", url: URL(fileURLWithPath: "/b.sh")), CallOutcome(seconds: 1), at: day)
+
+        let rows = try StatsReport(days: usage.days(1, at: day), spot: nil).text(.frame).components(separatedBy: "\n\n").map { $0 + "\n" }
+
+        XCTAssertTrue(rows.contains { $0.hasPrefix("row=a\n") && $0.contains("\nruns.by.b=1\n") }, rows.joined())
+        XCTAssertTrue(rows.contains { $0.hasPrefix("row=b\n") && $0.contains("\nran.a=1\n") }, rows.joined())
+    }
+
     func testASpotWithNoViewHasNoBodyKeys() throws {
         let usage = SpotUsage(at: day)
         usage.called(Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh")), CallOutcome(seconds: 1), at: day)

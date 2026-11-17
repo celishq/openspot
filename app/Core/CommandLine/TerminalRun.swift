@@ -17,12 +17,14 @@ public struct TerminalRun {
     let tokens: CallerTokens?
     let environment: [String: String]?
     let folder: URL?
+    let usage: SpotUsage?
 
     public init(spot: Spot, arguments: [String], input: String?) {
         self.init(spot: spot, arguments: arguments, input: input, careful: nil, tokens: nil, environment: nil, folder: nil)
     }
 
-    init(spot: Spot, arguments: [String], input: String?, careful: Set<SpotUse>?, tokens: CallerTokens?, environment: [String: String]?, folder: URL?) {
+    init(spot: Spot, arguments: [String], input: String?, careful: Set<SpotUse>?, tokens: CallerTokens?, environment: [String: String]?, folder: URL?, usage: SpotUsage? = nil) {
+        self.usage = usage
         self.spot = spot
         self.arguments = arguments
         self.input = input
@@ -53,6 +55,7 @@ public struct TerminalRun {
             let sent = action.sent(input: input)
             process = ScriptProcess(url: program, name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder, build: swift.build(of: spot))
         }
+        usage?.track(process, of: spot.id)
         if let tokens, let token {
             process.onStart { group in tokens.enter(group, token: token) }
             process.onExit { _ in tokens.release(token) }

@@ -37,13 +37,18 @@ public struct StatsReport: Sendable {
         days.flatMap(\.uses).filter { spot == nil || $0.spot == spot }.sorted { $0.time > $1.time }
     }
 
+    private func ran(by caller: String, in counts: [(id: String, count: SpotUsage.Count)]) -> [(id: String, runs: Int)] {
+        counts.compactMap { id, count in count.callers[caller].map { (id, $0) } }.sorted { $0.id < $1.id }
+    }
+
     private func acts(of id: String) -> [String] {
         days.reversed().map { day in day.countsActs ? String(day.spots[id]?.acts ?? 0) : "-" }
     }
 
     private var frame: String {
         let stamp = ISO8601DateFormatter()
-        let rows = counts.map { id, count in
+        let sums = counts
+        let rows = sums.map { id, count in
             var fields: [TextBlock.Field] = [
                 .init(key: "row", value: id),
                 .init(key: "title", value: count.name ?? id),
@@ -62,6 +67,8 @@ public struct StatsReport: Sendable {
             fields.append(.init(key: "seen", value: String(days.count { $0.spots[id] != nil })))
             fields += (cards.first { $0.id == id }?.places ?? []).map { .init(key: "shows", value: $0) }
             fields += cards.filter { $0.places.contains(id) }.map { .init(key: "cards", value: $0.id) }
+            fields += count.callers.sorted { $0.key < $1.key }.map { .init(key: "runs.by.\($0.key)", value: String($0.value)) }
+            fields += ran(by: id, in: sums).map { .init(key: "ran.\($0.id)", value: String($0.runs)) }
             fields += count.reads.sorted { $0.key < $1.key }.map { .init(key: "reads.\($0.key)", value: String($0.value)) }
             if count.hidden != .zero {
                 fields += [.init(key: "hidden.cpu", value: String(format: "%.3f", count.hidden.cpu)), .init(key: "hidden.wakeups", value: String(count.hidden.wakeups))]

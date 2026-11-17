@@ -59,6 +59,17 @@ final class CommandNounTests: XCTestCase {
         XCTAssertEqual(answer.output, "rang hi\n")
     }
 
+    func testARunOfAnotherSpotCountsOnItWithItsCaller() async throws {
+        try "#!/bin/sh\n# title=Echo\n# on=sheet.open\necho 'title=hi'\n".writeScript(to: folder.appendingPathComponent("spots/echo.sh"))
+        let caller = Spot(id: "board", name: "Board", url: folder.appendingPathComponent("board.sh"), dataName: "board", uses: [.spots])
+
+        let answer = try await ask(["spot", "run", "echo"], from: caller)
+
+        XCTAssertEqual(answer.output, "title=hi\n", answer.errors)
+        try await wait("the run by board") { self.runs.usage.counts["echo"]?.callers == ["board": 1] }
+        XCTAssertEqual(runs.usage.counts["echo"]?.runs, 1)
+    }
+
     func testTheRuleOfAVerbRefusesItInARead() {
         XCTAssertEqual(
             CommandLineCall(arguments: ["bell", "ring", "hi"], reason: "panel.open", nouns: nouns)?.value as? CallFault,

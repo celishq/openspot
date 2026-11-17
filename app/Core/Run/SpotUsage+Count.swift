@@ -12,6 +12,7 @@ extension SpotUsage {
         public var acts = 0
         public var last: Date?
         public var reads: [String: Int] = [:]
+        public var callers: [String: Int] = [:]
         public var cost = ProcessTime.zero
         public var hidden = ProcessTime.zero
         public var answers = AnswerTimes()
@@ -51,6 +52,7 @@ extension SpotUsage {
             sum.acts += older.acts
             sum.last = [last, older.last].compactMap { $0 }.max()
             sum.reads.merge(older.reads, uniquingKeysWith: +)
+            sum.callers.merge(older.callers, uniquingKeysWith: +)
             sum.cost = cost + older.cost
             sum.hidden = hidden + older.hidden
             sum.answers = answers + older.answers
@@ -110,7 +112,7 @@ extension SpotUsage {
 
 extension SpotUsage.Count {
     private enum CodingKeys: String, CodingKey {
-        case name, runs, seconds, calls, network, fault, view, acts, last, reads
+        case name, runs, seconds, calls, network, fault, view, acts, last, reads, callers
         case cpu, read, written, wakeups, memory, hiddenCPU, hiddenWakeups, answers, failures, failureKinds, failed
     }
 
@@ -127,6 +129,7 @@ extension SpotUsage.Count {
         acts = try number(.acts)
         last = try values.decodeIfPresent(Date.self, forKey: .last)
         reads = try values.decodeIfPresent([String: Int].self, forKey: .reads) ?? [:]
+        callers = try values.decodeIfPresent([String: Int].self, forKey: .callers) ?? [:]
         cost = ProcessTime(cpu: try number(.cpu), wakeups: try number(.wakeups), read: try number(.read), written: try number(.written), memory: try number(.memory))
         hidden = ProcessTime(cpu: try number(.hiddenCPU), wakeups: try number(.hiddenWakeups))
         answers = SpotUsage.AnswerTimes(counts: try values.decodeIfPresent([Int].self, forKey: .answers) ?? [])
@@ -145,6 +148,7 @@ extension SpotUsage.Count {
         try values.encode(acts, forKey: .acts)
         try values.encodeIfPresent(last, forKey: .last)
         try values.encode(reads, forKey: .reads)
+        if !callers.isEmpty { try values.encode(callers, forKey: .callers) }
         try values.encode(cost.cpu, forKey: .cpu)
         try values.encode(cost.wakeups, forKey: .wakeups)
         try values.encode(cost.read, forKey: .read)

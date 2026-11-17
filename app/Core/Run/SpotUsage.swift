@@ -123,6 +123,13 @@ public final class SpotUsage: @unchecked Sendable {
         change(spot, at: date) { $0.call(outcome, network: spot.uses.contains(.network), at: date) }
     }
 
+    func ran(_ spot: Spot, by caller: String, _ outcome: CallOutcome, at date: Date) {
+        change(spot, at: date) { count in
+            count.call(outcome, network: spot.uses.contains(.network), at: date)
+            count.callers[caller, default: 0] += 1
+        }
+    }
+
     func failedRun(_ spot: Spot, failure: Failure, at date: Date) {
         change(spot, at: date) { $0.failures.add(failure, at: date) }
     }

@@ -1108,6 +1108,8 @@ openspot spot stats --days 7
 | `seen`               | The days that hold a count of the spot.                               |
 | `shows`              | On a [card of other spots](#cards-of-other-spots), one line for each spot it shows. Such a card runs nothing, so its other numbers are 0. |
 | `cards`              | One line for each card of other spots that shows this spot.           |
+| `runs.by.<id>`       | The part of `runs` that the spot `<id>` started with `openspot spot run`. |
+| `ran.<id>`           | The runs of the spot `<id>` that this spot started with `openspot spot run`. |
 | `failures.<kind>`    | The failures of one kind: `timeout`, `exit` or `output`.              |
 | `failed`             | The time of its last failure.                                         |
 | `call.<noun>.<verb>` | The count of one call that needs a use, such as `call.screen.shot=2`. |
