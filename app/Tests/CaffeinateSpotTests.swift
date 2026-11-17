@@ -11,6 +11,7 @@ final class CaffeinateSpotTests: XCTestCase {
         folder = try temporaryFolder()
         let tools = folder.appendingPathComponent("tools")
         try "#!/bin/sh\necho \"$$ $*\" >> '\(folder.path)/awake'\n[ -f '\(folder.path)/short' ] && exec /bin/sleep 0.3\nexec /bin/sleep 600\n".writeScript(to: tools.appendingPathComponent("caffeinate"))
+        try "#!/bin/sh\ncase \"$1 $2\" in\n'setting get') cat '\(folder.path)/lid' 2>/dev/null ;;\n'setting set') printf %s \"$4\" > '\(folder.path)/lid' ;;\nesac\n".writeScript(to: tools.appendingPathComponent("openspot"))
         runs = SpotRuns(environment: ["PATH": "\(tools.path):/usr/bin:/bin", "HOME": folder.path, "TMPDIR": folder.path + "/"], stopPause: 0.2)
     }
 
@@ -49,8 +50,62 @@ final class CaffeinateSpotTests: XCTestCase {
         try await wait("the rows") { !sheet.list.all.isEmpty }
 
         XCTAssertEqual(sheet.shownState.subtitle, "Keep the Mac awake")
-        XCTAssertEqual(sheet.list.all.map(\.run), ["1800", "3600", "7200", "14400", "28800", "0"])
-        XCTAssertEqual(sheet.list.all.map(\.title), ["30 minutes", "1 hour", "2 hours", "4 hours", "8 hours", "Until turned off"])
+        XCTAssertEqual(sheet.list.all.map(\.run), ["1800", "3600", "7200", "14400", "28800", "0", "lid"])
+        XCTAssertEqual(sheet.list.all.map(\.title), ["30 minutes", "1 hour", "2 hours", "4 hours", "8 hours", "Until turned off", "Work with the lid closed"])
+        XCTAssertEqual(sheet.list.all.last?.isOn, false)
+    }
+
+    private func lid() -> String? {
+        try? String(contentsOf: folder.appendingPathComponent("lid"), encoding: .utf8)
+    }
+
+    private func flags() -> [String] {
+        let text = (try? String(contentsOf: folder.appendingPathComponent("awake"), encoding: .utf8)) ?? ""
+        return text.split(separator: "\n").map { $0.split(separator: " ").dropFirst().joined(separator: " ") }
+    }
+
+    func testAPickOfTheLidRowTurnsItOnAndKeepsItAsASetting() async throws {
+        let sheet = try sheet()
+
+        try await pick("lid", in: sheet)
+
+        try await wait("the lid row on") { sheet.list.all.first { $0.run == "lid" }?.isOn == true }
+        XCTAssertEqual(lid(), "true")
+        XCTAssertTrue(sheet.list.all.first { $0.run == "lid" }?.staysOnPick == true)
+        XCTAssertTrue(running().isEmpty)
+
+        try await pick("lid", in: sheet)
+
+        try await wait("the lid row off") { sheet.list.all.first { $0.run == "lid" }?.isOn == false }
+        XCTAssertEqual(lid(), "false")
+    }
+
+    func testAHoldWithTheLidOnLetsTheScreenLock() async throws {
+        try "true".write(to: folder.appendingPathComponent("lid"), atomically: true, encoding: .utf8)
+        let sheet = try sheet()
+
+        try await pick("1800", in: sheet)
+
+        try await wait("caffeinate") { self.running().count == 1 }
+        XCTAssertEqual(flags(), ["-i -t 1800"])
+    }
+
+    func testTheLidRowDuringAHoldStartsItAgainWithTheTimeLeft() async throws {
+        let sheet = try sheet()
+        try await pick("3600", in: sheet)
+        try await wait("caffeinate") { self.running().count == 1 }
+
+        try await pick("lid", in: sheet)
+
+        try await wait("one new caffeinate") { self.awake().count == 2 && self.running().count == 1 }
+        try await wait("the one call") { sheet.calls.count == 1 }
+        let seconds = try XCTUnwrap(Int(try XCTUnwrap(flags().last?.split(separator: " ").last)))
+        XCTAssertEqual(flags().first, "-di -t 3600")
+        XCTAssertTrue(flags().last?.hasPrefix("-i -t ") == true)
+        XCTAssertTrue((3500...3600).contains(seconds))
+        try await wait("the lid row on") { sheet.list.all.first { $0.run == "lid" }?.isOn == true }
+        XCTAssertEqual(sheet.list.all.first?.run, "off")
+        XCTAssertEqual(sheet.list.all.first { $0.title == "1 hour" }?.run.hasPrefix("3600."), true)
     }
 
     func testAPickKeepsTheMacAwakeInACallThatOutlivesTheSheetAndThePanel() async throws {

@@ -11,9 +11,17 @@ held=
 watcher=
 until=0
 secs=
+lid=
 
 awake() {
   [ -n "$watcher" ] && kill -0 "$watcher" 2>/dev/null
+}
+
+# Tells whether a hold keeps the Mac working with the lid closed. The setting is read from Openspot once, at its first use.
+lidded() {
+  [ -n "$lid" ] || lid=$(openspot setting get lid </dev/null 2>/dev/null)
+  [ "$lid" = true ] || lid=false
+  [ "$lid" = true ]
 }
 
 # Prints how long the Mac stays awake, which the card shows while the call that turned it on runs.
@@ -52,18 +60,24 @@ sheet() {
   duration 7200 '2 hours'; echo
   duration 14400 '4 hours'; echo
   duration 28800 '8 hours'; echo
-  duration 0 'Until turned off'
+  duration 0 'Until turned off'; echo
+  printf 'row=lid\ntitle=Work with the lid closed\ndetail=Lets the screen lock while the Mac keeps working\nclose=false\n'
+  lidded && printf 'value=true\n'
 }
 
-# Runs `caffeinate` for that many seconds, or until it is stopped, in a watcher that ends the call when it ends by itself.
+# Runs `caffeinate` for the duration picked, or for the seconds given after it, or until it is stopped, in a watcher
+# that ends the call when it ends by itself. With the lid on, the display may sleep and the screen lock.
 hold() {
   held=$1
   secs=$2
-  if [ "$2" = 0 ]; then until=0; else until=$(( $(date +%s) + $2 )); fi
+  seconds=${3:-$2}
+  if [ "$seconds" = 0 ]; then until=0; else until=$(( $(date +%s) + seconds )); fi
+  flags=-di
+  lidded && flags=-i
   (
     awake=
     trap '[ -z "$awake" ] || kill "$awake" 2>/dev/null; exit 0' TERM
-    if [ "$2" = 0 ]; then caffeinate -di & else caffeinate -di -t "$2" & fi
+    if [ "$seconds" = 0 ]; then caffeinate $flags & else caffeinate $flags -t "$seconds" & fi
     awake=$!
     wait "$awake"
     watcher=
@@ -125,6 +139,21 @@ serve() {
           printf '%s%s\n---\ncall=%s\n---\ntoast=%s\ndetail=%s\n---\n' "$ended" "$(sheet)" "$call" "$(toast "$secs")" "$(left)"
           ;;
       esac
+      ;;
+    'open lid')
+      if lidded; then lid=false; else lid=true; fi
+      openspot setting set lid "$lid" </dev/null >/dev/null 2>&1
+      if awake; then
+        picked=$secs
+        seconds=0
+        [ "$until" = 0 ] || seconds=$(( until - $(date +%s) ))
+        [ "$until" = 0 ] || [ "$seconds" -gt 0 ] || seconds=1
+        release
+        hold "$call" "$picked" "$seconds"
+        printf '%s%s\n---\ncall=%s\n---\ndetail=%s\n---\n' "$ended" "$(sheet)" "$call" "$(left)"
+      else
+        printf 'call=%s\n---\n%s\n---\nend=%s\n---\n' "$call" "$(sheet)" "$call"
+      fi
       ;;
     open\ [0-9]*)
       release
