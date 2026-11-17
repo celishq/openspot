@@ -22,7 +22,7 @@ public struct BackdropEdge: Hashable, Sendable {
         let size = CGFloat(backdrop.size)
         let fade = max(size - CGFloat(backdrop.padding), SpotTokens.backdropLeastFade)
         let softness = fade / ((SpotTokens.backdropSteps.max() ?? 0) + SpotTokens.backdropReach)
-        return SpotTokens.backdropSteps.map { BackdropEdge(inset: SpotTokens.halo - (size - fade) - $0 * softness, softness: softness) }
+        return SpotTokens.backdropSteps.map { BackdropEdge(inset: SpotTokens.halo * (1 - (size - fade + $0 * softness) / SpotTokens.halo), softness: softness) }
     }
 
     public var corner: CGFloat {
@@ -31,7 +31,7 @@ public struct BackdropEdge: Hashable, Sendable {
 
     public var cap: CGSize {
         CGSize(
-            width: min((inset + corner + SpotTokens.backdropReach * softness).rounded(.up), (SpotTokens.panelWidth / 2).rounded(.down)),
+            width: min((inset + corner + SpotTokens.backdropCapFade * softness).rounded(.up), (SpotTokens.panelWidth / 2).rounded(.down)),
             height: (SpotTokens.contentHeight(gridHeight: 0) / 2).rounded(.down)
         )
     }

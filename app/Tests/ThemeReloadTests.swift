@@ -93,15 +93,16 @@ final class ThemeReloadTests: PanelCase {
     func testABackdropSizeAndPaddingMoveTheEdgesOfTheBlur() async throws {
         try await openList()
         host.dismiss()
-        let wide = Theme(text: "[backdrop]\nsize = 84\npadding = 20\n")
+        let wide = Theme(text: "[backdrop]\nlook = \"tint\"\nreach = \"screen\"\nblur = 6\nsize = 84\npadding = 20\n")
 
         model.take(wide)
 
         let reach = { (edge: BackdropEdge) in SpotTokens.halo - edge.inset + SpotTokens.backdropReach * edge.softness }
         XCTAssertEqual(host.layOuts.map(\.backdrop.size), [84])
+        XCTAssertEqual(SpotTokens.backdrop, wide.layout.backdrop)
         XCTAssertEqual(BackdropEdge.blurs.map(\.softness), [8, 8, 8])
-        XCTAssertEqual(reach(BackdropEdge.blurs[0]), 84)
-        XCTAssertEqual(BackdropEdge.blurs.map { SpotTokens.halo - $0.inset }, [60, 48, 36])
+        XCTAssertEqual(reach(BackdropEdge.blurs[0]), 84, accuracy: 0.001)
+        for (edge, reach) in zip(BackdropEdge.blurs, [60.0, 48, 36]) { XCTAssertEqual(SpotTokens.halo - edge.inset, reach, accuracy: 0.001) }
     }
 
     func testAPaddingTooCloseToTheSizeKeepsTheLeastFade() async throws {
@@ -111,7 +112,7 @@ final class ThemeReloadTests: PanelCase {
         model.take(Theme(text: "[backdrop]\nsize = 30\npadding = 74\n"))
 
         let reach = { (edge: BackdropEdge) in SpotTokens.halo - edge.inset + SpotTokens.backdropReach * edge.softness }
-        XCTAssertEqual(reach(BackdropEdge.blurs[0]), 30)
+        XCTAssertEqual(reach(BackdropEdge.blurs[0]), 30, accuracy: 0.001)
         XCTAssertEqual(BackdropEdge.blurs[0].softness, SpotTokens.backdropLeastFade / (SpotTokens.backdropSteps[0] + SpotTokens.backdropReach))
     }
 
