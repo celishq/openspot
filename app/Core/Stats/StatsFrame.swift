@@ -60,14 +60,14 @@ struct StatsFrame {
         return (rows + uses + searches).map { $0 + "\n" }.joined()
     }
 
-    private static func detail(of count: SpotUsage.Count) -> String {
+    private static func detail(of count: StatsLog.Count) -> String {
         var parts = ["\(time(count.cost.cpu)) CPU"]
         if count.runs > 0 { parts.append("\(count.runs) \(count.runs == 1 ? "run" : "runs") · \(time(count.seconds / Double(count.runs))) each") }
         if let view = count.view { parts.append(words(of: view, split: " · ")) }
         return parts.joined(separator: " · ")
     }
 
-    private static func words(of view: SpotUsage.ViewTime, split: String) -> String {
+    private static func words(of view: StatsLog.ViewTime, split: String) -> String {
         let each = view.seconds / Double(max(view.bodies, 1)) * 1000
         return "\(view.bodies) \(view.bodies == 1 ? "body" : "bodies") of its view\(split)\(String(format: "%.2f", each)) ms each"
     }

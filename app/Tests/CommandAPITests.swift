@@ -233,7 +233,7 @@ final class CommandAPITests: XCTestCase {
     }
 
     func testStatsWithNoAppToReachReadTheFiles() async throws {
-        let usage = SpotUsage(folder: folder.appendingPathComponent("stats"), pause: 60)
+        let usage = StatsLog(folder: folder.appendingPathComponent("stats"), pause: 60)
         usage.called(Spot(id: "a", name: "Alpha", url: folder), CallOutcome(seconds: 1), at: Date())
         usage.flush()
 

@@ -20,7 +20,7 @@ final class StatsTests: XCTestCase {
     }
 
     func testTheBodyTimeOfAViewShowsInTheRowOfItsSpot() throws {
-        let usage = SpotUsage(at: day)
+        let usage = StatsLog(at: day)
         usage.take(views: [cups])
         usage.drew(view: view, seconds: 0.002)
         usage.drew(view: view, seconds: 0.004)
@@ -50,7 +50,7 @@ final class StatsTests: XCTestCase {
     }
 
     func testARowHoldsTheActsOfEachDayOldestFirstAndWhatTheSpotCostAndHowFastItAnswered() throws {
-        let usage = SpotUsage(at: day)
+        let usage = StatsLog(at: day)
         let alpha = Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh"))
         usage.acted(alpha, at: day.addingTimeInterval(-5))
         usage.acted(alpha, at: day)
@@ -95,7 +95,7 @@ final class StatsTests: XCTestCase {
     }
 
     func testACardOfSpotsGetsARowThatNamesTheSpotsItShowsAndEachSpotNamesItsCards() throws {
-        let usage = SpotUsage(at: day)
+        let usage = StatsLog(at: day)
         usage.called(Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh")), CallOutcome(seconds: 1), at: day)
         let card = Spot(id: "system", name: "System", url: URL(fileURLWithPath: "/system.sh"), kind: .widget, places: ["a", "b"])
 
@@ -108,7 +108,7 @@ final class StatsTests: XCTestCase {
     }
 
     func testARunThatOneSpotStartsOfAnotherShowsOnBoth() throws {
-        let usage = SpotUsage(at: day)
+        let usage = StatsLog(at: day)
         usage.ran(Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh")), by: "b", CallOutcome(seconds: 1), at: day)
         usage.called(Spot(id: "b", name: "Beta", url: URL(fileURLWithPath: "/b.sh")), CallOutcome(seconds: 1), at: day)
 
@@ -120,7 +120,7 @@ final class StatsTests: XCTestCase {
     }
 
     func testASpotWithNoViewHasNoBodyKeys() throws {
-        let usage = SpotUsage(at: day)
+        let usage = StatsLog(at: day)
         usage.called(Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh")), CallOutcome(seconds: 1), at: day)
 
         let frame = try Stats(days: usage.days(1, at: day), spot: nil).text(.frame)
@@ -133,11 +133,11 @@ final class StatsTests: XCTestCase {
         try FileManager.default.createDirectory(at: stats, withIntermediateDirectories: true)
         try #"{"day":"2026-11-09","spots":{"cups":{"calls":{},"cpu":0,"failures":0,"name":"Cups today","network":false,"read":0,"runs":3,"seconds":1,"wakeups":0,"written":0}},"told":[],"uses":[]}"#
             .write(to: stats.appendingPathComponent("2026-11-09.json"), atomically: true, encoding: .utf8)
-        let before = SpotUsage(folder: stats, at: day.addingTimeInterval(-86_400), pause: 60)
+        let before = StatsLog(folder: stats, at: day.addingTimeInterval(-86_400), pause: 60)
         before.take(views: [cups])
         before.drew(view: view, seconds: 0.001)
         before.flush()
-        let usage = SpotUsage(folder: stats, at: day, pause: 60)
+        let usage = StatsLog(folder: stats, at: day, pause: 60)
         usage.take(views: [cups])
         usage.drew(view: view, seconds: 0.003)
 
@@ -148,7 +148,7 @@ final class StatsTests: XCTestCase {
     }
 
     func testByVersionARowOfEachVersionOfASpotTellsItsCountsOldestFirst() throws {
-        let usage = SpotUsage(at: day)
+        let usage = StatsLog(at: day)
         let alpha = Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh"))
         usage.take(versions: ["a": "v1"])
         usage.called(alpha, CallOutcome(seconds: 1, failure: .exit), at: day)
@@ -168,7 +168,7 @@ final class StatsTests: XCTestCase {
     }
 
     func testOpenMetricsPrintsEachCounterOfASpotWithItsLabels() throws {
-        let usage = SpotUsage(at: day)
+        let usage = StatsLog(at: day)
         let alpha = Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh"))
         usage.panel(shown: true)
         usage.acted(alpha, at: day)
@@ -218,7 +218,7 @@ final class StatsTests: XCTestCase {
     }
 
     func testOpenMetricsByVersionLabelsEachCounterWithItsVersionAndEscapesALabel() throws {
-        let usage = SpotUsage(at: day)
+        let usage = StatsLog(at: day)
         let alpha = Spot(id: "a\"b", name: "Alpha", url: URL(fileURLWithPath: "/a.sh"))
         usage.take(versions: ["a\"b": "v1"])
         usage.called(alpha, CallOutcome(seconds: 1), at: day)

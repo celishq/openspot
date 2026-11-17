@@ -72,7 +72,7 @@ public enum SpotCall: NounCall {
 
     private static func stats(_ words: CommandForm.Words) -> SpotCall? {
         guard words.rest.isEmpty, words.value("--by").map({ $0 == "version" }) ?? true else { return nil }
-        guard let days = words.value("--days").map({ Int($0).flatMap { $0 > 0 ? min($0, SpotUsage.keptDays) : nil } }) ?? 1 else { return nil }
+        guard let days = words.value("--days").map({ Int($0).flatMap { $0 > 0 ? min($0, StatsLog.keptDays) : nil } }) ?? 1 else { return nil }
         let isMetrics = words.has(Stats.Form.metricsWord)
         guard !(isMetrics && words.form == .json) else { return nil }
         return .stats(days: days, spot: words.value(CallWords.spotWord), format: isMetrics ? .metrics : words.form == .json ? .json : .frame, byVersion: words.has("--by"))

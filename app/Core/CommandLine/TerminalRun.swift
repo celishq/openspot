@@ -17,13 +17,13 @@ public struct TerminalRun {
     let tokens: CallerTokens?
     let environment: [String: String]?
     let folder: URL?
-    let usage: SpotUsage?
+    let usage: StatsLog?
 
     public init(spot: Spot, arguments: [String], input: String?) {
         self.init(spot: spot, arguments: arguments, input: input, careful: nil, tokens: nil, environment: nil, folder: nil)
     }
 
-    init(spot: Spot, arguments: [String], input: String?, careful: Set<SpotUse>?, tokens: CallerTokens?, environment: [String: String]?, folder: URL?, usage: SpotUsage? = nil) {
+    init(spot: Spot, arguments: [String], input: String?, careful: Set<SpotUse>?, tokens: CallerTokens?, environment: [String: String]?, folder: URL?, usage: StatsLog? = nil) {
         self.usage = usage
         self.spot = spot
         self.arguments = arguments

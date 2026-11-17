@@ -12,7 +12,7 @@ final class SpotEvidenceTests: XCTestCase {
     }
 
     func testAFailingSpotGetsItsFailuresAndTheGoalToMakeEveryCallPassWithNoQuestion() throws {
-        let usage = SpotUsage(at: day)
+        let usage = StatsLog(at: day)
         for index in 0..<10 { usage.called(weather, CallOutcome(seconds: 1, failure: index < 4 ? .timeout : nil), at: day) }
         usage.failed(weather, fault: "Weather took too long.", at: day)
 
@@ -26,7 +26,7 @@ final class SpotEvidenceTests: XCTestCase {
     }
 
     func testACallTheHeaderDoesNotDeclareGetsTheGoalToDeclareItOrRemoveIt() throws {
-        let usage = SpotUsage(at: day)
+        let usage = StatsLog(at: day)
         usage.called(weather, CallOutcome(seconds: 1), at: day)
         _ = usage.used(try XCTUnwrap(SpotUseCall(name: "app quit", rule: CallRule(use: .app, used: "quit an app"))), by: CallerTokens.Caller(id: "weather", name: "Weather", uses: []), at: day)
 
@@ -37,7 +37,7 @@ final class SpotEvidenceTests: XCTestCase {
     }
 
     func testACleanSpotGetsItsShareOfAllSpotsAndTheGoalToJudge() throws {
-        let usage = SpotUsage(at: day)
+        let usage = StatsLog(at: day)
         usage.panel(shown: true)
         usage.acted(weather, at: day)
         usage.called(weather, CallOutcome(seconds: 0.1, answered: 0.07), at: day)
@@ -55,7 +55,7 @@ final class SpotEvidenceTests: XCTestCase {
     }
 
     func testTheLastChangeIsComparedWithTheVersionsBeforeIt() throws {
-        let usage = SpotUsage(at: day)
+        let usage = StatsLog(at: day)
         usage.take(versions: ["weather": "v1"])
         for index in 0..<10 { usage.called(weather, CallOutcome(seconds: 1, failure: index < 4 ? .exit : nil), at: day) }
         usage.take(versions: ["weather": "v2"])
@@ -67,12 +67,12 @@ final class SpotEvidenceTests: XCTestCase {
     }
 
     func testASpotWithNoCountsHasNoEvidenceAndThePromptAsksWhatToChange() {
-        XCTAssertNil(SpotEvidence(of: "weather", in: SpotUsage(at: day).days(14, at: day), app: "openspot"))
+        XCTAssertNil(SpotEvidence(of: "weather", in: StatsLog(at: day).days(14, at: day), app: "openspot"))
         XCTAssertTrue(prompt.changing(file, failure: nil, evidence: nil).contains("Ask me what to change"))
     }
 
     func testAWishKeepsItsWordsAndGetsTheFactsBelow() throws {
-        let usage = SpotUsage(at: day)
+        let usage = StatsLog(at: day)
         usage.called(weather, CallOutcome(seconds: 1), at: day)
         usage.called(other, CallOutcome(seconds: 1), at: day)
 

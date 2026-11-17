@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 @MainActor
-final class SpotUsageTests: SpotRunsCase {
+final class StatsLogTests: SpotRunsCase {
     private static let busyLoop = "i=0; while [ $i -lt 50000 ]; do i=$((i + 1)); done"
 
     func testABusyScriptCountsItsCPUTime() async throws {
@@ -98,18 +98,18 @@ final class SpotUsageTests: SpotRunsCase {
     }
 
     func testTodayGoesToItsFileAfterAPauseAndANewStartReadsItAgain() async throws {
-        let usage = SpotUsage(folder: stats, at: day, pause: 0.05)
+        let usage = StatsLog(folder: stats, at: day, pause: 0.05)
 
         usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day)
 
         try await wait("the file of the day") { FileManager.default.fileExists(atPath: self.file("2026-11-11").path) }
-        XCTAssertEqual(SpotUsage(folder: stats, at: day).counts["a"]?.runs, 1)
+        XCTAssertEqual(StatsLog(folder: stats, at: day).counts["a"]?.runs, 1)
     }
 
     func testAChangeIsNotWrittenBeforeItsPauseOfAMinute() async throws {
-        let usual = SpotUsage(folder: stats, at: day)
+        let usual = StatsLog(folder: stats, at: day)
         let other = folder.appendingPathComponent("other", isDirectory: true)
-        let sooner = SpotUsage(folder: other, at: day, pause: 5.5)
+        let sooner = StatsLog(folder: other, at: day, pause: 5.5)
 
         usual.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day)
         sooner.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day)
@@ -122,7 +122,7 @@ final class SpotUsageTests: SpotRunsCase {
     }
 
     func testTheCountsJustAfterANewDayHoldTheDayThatEnded() {
-        let usage = SpotUsage(folder: stats, at: day, pause: 60)
+        let usage = StatsLog(folder: stats, at: day, pause: 60)
         usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day)
         let next = day.addingTimeInterval(86_400)
         usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: next)
@@ -144,7 +144,7 @@ final class SpotUsageTests: SpotRunsCase {
     }
 
     func testACallWritesNoFileAtOnce() throws {
-        let usage = SpotUsage(folder: stats, at: day, pause: 60)
+        let usage = StatsLog(folder: stats, at: day, pause: 60)
 
         usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day)
 
@@ -154,14 +154,14 @@ final class SpotUsageTests: SpotRunsCase {
     }
 
     func testANewDayStartsANewFile() async throws {
-        let usage = SpotUsage(folder: stats, at: day, pause: 60)
+        let usage = StatsLog(folder: stats, at: day, pause: 60)
         usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day)
 
         usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1, failure: .exit), at: day.addingTimeInterval(86_400))
 
         try await wait("the file of the day that ended") { FileManager.default.fileExists(atPath: self.file("2026-11-11").path) }
 
-        XCTAssertEqual(SpotUsage(folder: stats, at: day).counts["a"]?.runs, 1)
+        XCTAssertEqual(StatsLog(folder: stats, at: day).counts["a"]?.runs, 1)
         XCTAssertEqual(usage.counts["a"]?.failures.count, 1)
         XCTAssertEqual(usage.counts["a"]?.runs, 1)
     }
@@ -172,13 +172,13 @@ final class SpotUsageTests: SpotRunsCase {
             try Data("{}".utf8).write(to: file(name))
         }
 
-        _ = SpotUsage(folder: stats, at: day)
+        _ = StatsLog(folder: stats, at: day)
 
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: stats.path).sorted(), ["2026-08-14.json", "2026-11-10.json"])
     }
 
     func testACallThatNeedsAUseIsCountedAndLoggedAndToldOnceADayAcrossAStart() throws {
-        let usage = SpotUsage(folder: stats, at: day, pause: 60)
+        let usage = StatsLog(folder: stats, at: day, pause: 60)
         let caller = CallerTokens.Caller(id: "a", name: "Alpha", uses: [.network])
         let quit = try XCTUnwrap(SpotUseCall(arguments: ["app", "quit"], of: "a"))
 
@@ -186,7 +186,7 @@ final class SpotUsageTests: SpotRunsCase {
         XCTAssertFalse(usage.used(quit, by: caller, at: day))
         usage.flush()
 
-        let again = SpotUsage(folder: stats, at: day)
+        let again = StatsLog(folder: stats, at: day)
         XCTAssertFalse(again.used(quit, by: caller, at: day))
         XCTAssertEqual(again.counts["a"]?.calls, ["app.quit": 3])
         XCTAssertEqual(again.counts["a"]?.network, true)
@@ -200,7 +200,7 @@ final class SpotUsageTests: SpotRunsCase {
 
         runs.usage.drew(view: view, seconds: 0.5)
 
-        XCTAssertEqual(runs.usage.counts["script"]?.view, SpotUsage.ViewTime(bodies: 1, seconds: 0.5))
+        XCTAssertEqual(runs.usage.counts["script"]?.view, StatsLog.ViewTime(bodies: 1, seconds: 0.5))
         XCTAssertEqual(runs.usage.counts["script"]?.name, "Script")
     }
 
@@ -222,7 +222,7 @@ final class SpotUsageTests: SpotRunsCase {
     }
 
     func testTwoActsOnASpotWithinTwoSecondsAreOne() {
-        let usage = SpotUsage(at: day)
+        let usage = StatsLog(at: day)
 
         usage.acted(spot("a", "Alpha"), at: day)
         usage.acted(spot("a", "Alpha"), at: day.addingTimeInterval(1))
@@ -232,7 +232,7 @@ final class SpotUsageTests: SpotRunsCase {
     }
 
     func testOnlyACallThatAsksTimesTheAnswer() {
-        let usage = SpotUsage(at: day)
+        let usage = StatsLog(at: day)
 
         usage.called(spot("a", "Alpha"), CallOutcome(seconds: 30, answered: nil), at: day)
         usage.called(spot("a", "Alpha"), CallOutcome(seconds: 0.3, answered: 0.07), at: day)
@@ -242,7 +242,7 @@ final class SpotUsageTests: SpotRunsCase {
     }
 
     func testTodayCountsActsBeforeItsFirstChange() {
-        let usage = SpotUsage(at: day)
+        let usage = StatsLog(at: day)
 
         let days = usage.days(2, at: day.addingTimeInterval(86_400))
 
@@ -250,7 +250,7 @@ final class SpotUsageTests: SpotRunsCase {
     }
 
     func testCostWhileThePanelIsHiddenIsKeptApart() {
-        let usage = SpotUsage(at: day)
+        let usage = StatsLog(at: day)
 
         usage.add(ProcessTime(cpu: 1, wakeups: 2), to: "a", at: day)
         usage.panel(shown: true)
@@ -262,7 +262,7 @@ final class SpotUsageTests: SpotRunsCase {
     }
 
     func testTheMemoryIsThePeakOfItsProcesses() {
-        let usage = SpotUsage(at: day)
+        let usage = StatsLog(at: day)
 
         usage.add(ProcessTime(cpu: 0, wakeups: 0, memory: 3_000), to: "a", at: day)
         usage.add(ProcessTime(cpu: 0, wakeups: 0, memory: 2_000), to: "a", at: day)
@@ -271,11 +271,11 @@ final class SpotUsageTests: SpotRunsCase {
     }
 
     func testAFailureIsCountedByItsKindWithItsTime() {
-        let usage = SpotUsage(at: day)
+        let usage = StatsLog(at: day)
 
-        usage.called(spot("a", "Alpha"), CallOutcome(seconds: 5, failure: SpotUsage.Failure(SpotError.timedOut)), at: day)
-        usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1, failure: SpotUsage.Failure(SpotError.failed(2, ""))), at: day)
-        usage.failedRun(spot("a", "Alpha"), failure: SpotUsage.Failure(SpotError.badState), at: day)
+        usage.called(spot("a", "Alpha"), CallOutcome(seconds: 5, failure: StatsLog.Failure(SpotError.timedOut)), at: day)
+        usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1, failure: StatsLog.Failure(SpotError.failed(2, ""))), at: day)
+        usage.failedRun(spot("a", "Alpha"), failure: StatsLog.Failure(SpotError.badState), at: day)
         usage.failed(spot("a", "Alpha"), fault: "It stopped.", at: day)
 
         XCTAssertEqual(usage.counts["a"]?.failures.count, 3)
@@ -284,7 +284,7 @@ final class SpotUsageTests: SpotRunsCase {
     }
 
     func testOnlyAUseThatItsHeaderDoesNotDeclareIsLogged() throws {
-        let usage = SpotUsage(at: day)
+        let usage = StatsLog(at: day)
         let quit = try XCTUnwrap(SpotUseCall(arguments: ["app", "quit"], of: "a"))
 
         _ = usage.used(quit, by: .init(id: "a", name: "Alpha", uses: [.app]), at: day)
@@ -297,7 +297,7 @@ final class SpotUsageTests: SpotRunsCase {
     func testADayWithNoFileOrKeptBeforeActsWereCountedHasNoCountOfActs() throws {
         try FileManager.default.createDirectory(at: stats, withIntermediateDirectories: true)
         try #"{"day":"2026-11-10","spots":{},"told":[],"uses":[]}"#.write(to: file("2026-11-10"), atomically: true, encoding: .utf8)
-        let usage = SpotUsage(folder: stats, at: day, pause: 60)
+        let usage = StatsLog(folder: stats, at: day, pause: 60)
 
         let days = usage.days(3, at: day)
 
@@ -312,7 +312,7 @@ final class SpotUsageTests: SpotRunsCase {
     }
 
     func testTheFrameIsARowForEachSpotWithTheMostCPUTimeFirstThenEachUse() throws {
-        let usage = SpotUsage(at: day)
+        let usage = StatsLog(at: day)
         usage.called(spot("a", "Alpha"), CallOutcome(seconds: 2, failure: .exit), at: day)
         usage.add(ProcessTime(cpu: 0.04, wakeups: 0, read: 2048, written: 0), to: "a", at: day)
         usage.failed(spot("a", "Alpha"), fault: "Alpha failed.\nIt stopped.", at: day)
@@ -374,10 +374,10 @@ final class SpotUsageTests: SpotRunsCase {
 
     func testTheDaysSumAndOneSpotCanBeKept() throws {
         try FileManager.default.createDirectory(at: stats, withIntermediateDirectories: true)
-        let before = SpotUsage(folder: stats, at: day.addingTimeInterval(-86_400), pause: 60)
+        let before = StatsLog(folder: stats, at: day.addingTimeInterval(-86_400), pause: 60)
         before.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day.addingTimeInterval(-86_400))
         before.flush()
-        let usage = SpotUsage(folder: stats, at: day, pause: 60)
+        let usage = StatsLog(folder: stats, at: day, pause: 60)
         usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day)
         usage.called(spot("b", "Beta"), CallOutcome(seconds: 1), at: day)
 
@@ -393,13 +393,13 @@ final class SpotUsageTests: SpotRunsCase {
     }
 
     func testTheCountOfEachVersionOfASpotIsKeptAcrossAStart() {
-        let usage = SpotUsage(folder: stats, at: day, pause: 60, now: { self.day })
+        let usage = StatsLog(folder: stats, at: day, pause: 60, now: { self.day })
         usage.take(versions: ["a": "v1"])
 
         usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day)
         usage.flush()
 
-        let version = SpotUsage(folder: stats, at: day).days(1, at: day).first?.versions["a"]?["v1"]
+        let version = StatsLog(folder: stats, at: day).days(1, at: day).first?.versions["a"]?["v1"]
         XCTAssertEqual(version?.count.runs, 1)
         XCTAssertEqual(version?.first, day)
     }
@@ -408,14 +408,14 @@ final class SpotUsageTests: SpotRunsCase {
         try FileManager.default.createDirectory(at: stats, withIntermediateDirectories: true)
         try Data(#"{"day":"2026-11-11","spots":{"a":{"runs":2}}}"#.utf8).write(to: file("2026-11-11"))
 
-        let kept = SpotUsage(folder: stats, at: day).days(1, at: day).first
+        let kept = StatsLog(folder: stats, at: day).days(1, at: day).first
 
         XCTAssertEqual(kept?.spots["a"]?.runs, 2)
         XCTAssertEqual(kept?.versions["a"]?["-"]?.count.runs, 2)
     }
 
     func testASpotIsTheSumOfItsVersionsWithTheFaultOfTheNewest() {
-        let usage = SpotUsage(at: day)
+        let usage = StatsLog(at: day)
         usage.take(versions: ["a": "v1"])
         usage.failed(spot("a", "Alpha"), fault: "old", at: day)
         usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day)

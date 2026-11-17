@@ -22,7 +22,7 @@ final class OpenCall {
     func outcome(_ end: ScriptCall.End) -> CallOutcome {
         let seconds = Date().timeIntervalSince(begin)
         var outcome = CallOutcome(seconds: seconds)
-        if case .failed(let error) = end { outcome.failure = SpotUsage.Failure(error) }
+        if case .failed(let error) = end { outcome.failure = StatsLog.Failure(error) }
         if case .ask(.read) = request.purpose { outcome.reason = request.reason.map(Self.name(of:)) }
         if case .ask = request.purpose, case .ended = end { outcome.answered = answered ?? seconds }
         return outcome

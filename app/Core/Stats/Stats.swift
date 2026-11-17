@@ -13,18 +13,18 @@ public struct Stats: Sendable {
         let id: String
         let version: String?
         let since: Date?
-        let count: SpotUsage.Count
+        let count: StatsLog.Count
         let acts: [String]
         let seen: Int
         let undeclared: [String: Int]
     }
 
-    let days: [SpotUsage.Day]
+    let days: [StatsLog.Day]
     let spot: String?
     let cards: [Spot]
     let byVersion: Bool
 
-    public init(days: [SpotUsage.Day], spot: String?, cards: [Spot] = [], byVersion: Bool = false) {
+    public init(days: [StatsLog.Day], spot: String?, cards: [Spot] = [], byVersion: Bool = false) {
         self.days = days
         self.spot = spot
         self.cards = cards.filter { $0.kind == .widget }
@@ -46,12 +46,12 @@ public struct Stats: Sendable {
                 row(id, version: nil, since: nil, count: count, undeclared: undeclared[id] ?? [:]) { $0.spots[id] }
             }
         }
-        var sums: [String: [String: SpotUsage.Version]] = [:]
+        var sums: [String: [String: StatsLog.Version]] = [:]
         for day in days {
             for (id, versions) in day.versions where spot == nil || spot == id {
                 for (version, kept) in versions {
                     let older = sums[id]?[version]
-                    sums[id, default: [:]][version] = SpotUsage.Version(first: [older?.first, kept.first].compactMap { $0 }.min(), count: older.map { kept.count.adding($0.count) } ?? kept.count)
+                    sums[id, default: [:]][version] = StatsLog.Version(first: [older?.first, kept.first].compactMap { $0 }.min(), count: older.map { kept.count.adding($0.count) } ?? kept.count)
                 }
             }
         }
@@ -60,7 +60,7 @@ public struct Stats: Sendable {
         }.sorted { ($0.id, $0.since ?? .distantPast) < ($1.id, $1.since ?? .distantPast) }
     }
 
-    var uses: [SpotUsage.Use] {
+    var uses: [StatsLog.Use] {
         days.flatMap(\.uses).filter { spot == nil || $0.spot == spot }.sorted { $0.time > $1.time }
     }
 
@@ -81,22 +81,22 @@ public struct Stats: Sendable {
         return runs.sorted { $0.key < $1.key }.map { ($0.key, $0.value) }
     }
 
-    private var counts: [(id: String, count: SpotUsage.Count)] {
-        var sums: [String: SpotUsage.Count] = [:]
+    private var counts: [(id: String, count: StatsLog.Count)] {
+        var sums: [String: StatsLog.Count] = [:]
         for day in days {
             for (id, count) in day.spots where spot == nil || spot == id {
                 sums[id] = sums[id].map { $0.adding(count) } ?? count
             }
         }
         for card in cards where sums[card.id] == nil && (spot == nil || spot == card.id) {
-            var count = SpotUsage.Count()
+            var count = StatsLog.Count()
             count.name = card.name
             sums[card.id] = count
         }
         return sums.sorted { ($0.value.cost.cpu, $1.key) > ($1.value.cost.cpu, $0.key) }.map { ($0.key, $0.value) }
     }
 
-    private func row(_ id: String, version: String?, since: Date?, count: SpotUsage.Count, undeclared: [String: Int], of day: (SpotUsage.Day) -> SpotUsage.Count?) -> Row {
+    private func row(_ id: String, version: String?, since: Date?, count: StatsLog.Count, undeclared: [String: Int], of day: (StatsLog.Day) -> StatsLog.Count?) -> Row {
         Row(
             id: id, version: version, since: since, count: count,
             acts: days.reversed().map { $0.countsActs ? String(day($0)?.acts ?? 0) : "-" },
@@ -110,9 +110,9 @@ public struct Stats: Sendable {
             struct Shown: Encodable {
                 let day: String
                 let countsActs: Bool
-                let spots: [String: SpotUsage.Count]
-                let versions: [String: [String: SpotUsage.Version]]?
-                let uses: [SpotUsage.Use]
+                let spots: [String: StatsLog.Count]
+                let versions: [String: [String: StatsLog.Version]]?
+                let uses: [StatsLog.Use]
                 let searches: [String: Int]?
             }
             let kept = days.map { day in

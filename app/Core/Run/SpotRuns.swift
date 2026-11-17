@@ -24,7 +24,7 @@ public final class SpotRuns {
     public let readLimit: TimeInterval
     let inlineIdle: TimeInterval
     let frameWait: DispatchTimeInterval
-    public nonisolated let usage: SpotUsage
+    public nonisolated let usage: StatsLog
     @ObservationIgnored public var isCareful = false {
         didSet {
             tokens.isCareful = isCareful
@@ -108,7 +108,7 @@ public final class SpotRuns {
         self.tokens = tokens
         self.log = log
         self.swift = swift
-        usage = SpotUsage(folder: stats, at: clock.now(), now: clock.now)
+        usage = StatsLog(folder: stats, at: clock.now(), now: clock.now)
         self.inlineIdle = inlineIdle
         self.frameWait = frameWait
         self.readLimit = readLimit

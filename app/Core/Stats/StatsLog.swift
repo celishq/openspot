@@ -1,6 +1,6 @@
 import Foundation
 
-public final class SpotUsage: @unchecked Sendable {
+public final class StatsLog: @unchecked Sendable {
     public struct ViewTime: Codable, Equatable, Sendable {
         public var bodies = 0
         public var seconds: TimeInterval = 0
@@ -320,7 +320,7 @@ public final class SpotUsage: @unchecked Sendable {
     }
 }
 
-extension SpotUsage.Day {
+extension StatsLog.Day {
     private enum KeptKeys: String, CodingKey {
         case spots
     }
@@ -328,10 +328,10 @@ extension SpotUsage.Day {
     public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         day = try values.decode(String.self, forKey: .day)
-        let kept = try decoder.container(keyedBy: KeptKeys.self).decodeIfPresent([String: SpotUsage.Count].self, forKey: .spots) ?? [:]
-        versions = try values.decodeIfPresent([String: [String: SpotUsage.Version]].self, forKey: .versions)
-            ?? kept.mapValues { [Self.unknownVersion: SpotUsage.Version(first: nil, count: $0)] }
-        uses = try values.decodeIfPresent([SpotUsage.Use].self, forKey: .uses) ?? []
+        let kept = try decoder.container(keyedBy: KeptKeys.self).decodeIfPresent([String: StatsLog.Count].self, forKey: .spots) ?? [:]
+        versions = try values.decodeIfPresent([String: [String: StatsLog.Version]].self, forKey: .versions)
+            ?? kept.mapValues { [Self.unknownVersion: StatsLog.Version(first: nil, count: $0)] }
+        uses = try values.decodeIfPresent([StatsLog.Use].self, forKey: .uses) ?? []
         searches = try values.decodeIfPresent([String: Int].self, forKey: .searches) ?? [:]
         countsActs = try values.decodeIfPresent(Bool.self, forKey: .countsActs) ?? false
         told = try values.decodeIfPresent([String].self, forKey: .told) ?? []

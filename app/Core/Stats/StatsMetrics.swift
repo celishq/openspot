@@ -45,7 +45,7 @@ struct StatsMetrics {
             var seen = 0
             for (index, count) in row.count.answers.counts.enumerated() {
                 seen += count
-                let bound = index < SpotUsage.AnswerTimes.bounds.count ? Self.number(SpotUsage.AnswerTimes.bounds[index]) : "+Inf"
+                let bound = index < StatsLog.AnswerTimes.bounds.count ? Self.number(StatsLog.AnswerTimes.bounds[index]) : "+Inf"
                 family.samples.append("\(family.name)_bucket\(labels(of: row, [("le", bound)])) \(seen)")
             }
         }
@@ -62,7 +62,7 @@ struct StatsMetrics {
         return family
     }
 
-    private func family<Value: Numeric & Comparable & CVarArg>(_ name: String, type: String = "counter", _ values: (SpotUsage.Count) -> [([(String, String)], Value)]) -> Family {
+    private func family<Value: Numeric & Comparable & CVarArg>(_ name: String, type: String = "counter", _ values: (StatsLog.Count) -> [([(String, String)], Value)]) -> Family {
         var family = Family(name: name, type: type)
         let sample = type == "counter" ? "\(name)_total" : name
         for row in rows {

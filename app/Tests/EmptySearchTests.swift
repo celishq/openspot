@@ -77,7 +77,7 @@ final class EmptySearchTests: PanelCase {
     }
 
     func testADayKeepsAtMostFiftySearches() {
-        let usage = SpotUsage()
+        let usage = StatsLog()
         for index in 0..<60 { usage.missed("search \(index)", at: Date()) }
         usage.missed("search 0", at: Date())
 
@@ -87,7 +87,7 @@ final class EmptySearchTests: PanelCase {
     }
 
     func testTheStatsPrintEachSearchThatFoundNothing() throws {
-        let usage = SpotUsage()
+        let usage = StatsLog()
         usage.missed("timezone", at: Date())
         usage.missed("timezone", at: Date())
 
