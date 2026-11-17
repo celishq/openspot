@@ -11,9 +11,10 @@ struct SpotView: View {
 
     var body: some View {
         Group {
-            if spot.size.height < 100 && spot.size.width < 200 {
+            switch spot.card {
+            case .small, .wide:
                 count
-            } else if spot.size.height < 100 {
+            case .strip:
                 HStack(spacing: 14) {
                     VStack(alignment: .leading, spacing: 1) {
                         Text(spot["title"] ?? "").font(.headline)
@@ -23,7 +24,7 @@ struct SpotView: View {
                     field
                 }
                 .padding(spot.inset)
-            } else {
+            default:
                 VStack(spacing: 8) {
                     HStack(alignment: .firstTextBaseline) {
                         Text(spot["title"] ?? "").font(.headline)
@@ -41,7 +42,7 @@ struct SpotView: View {
 
     private var count: some View {
         Group {
-            if spot.size.width < 100 {
+            if spot.card == .small {
                 VStack(spacing: -1) {
                     Text(left).font(.system(size: 20, weight: .semibold, design: .rounded))
                     Text("days left").font(.system(size: 8)).opacity(spot.secondary)

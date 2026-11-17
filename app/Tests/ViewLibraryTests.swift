@@ -108,6 +108,16 @@ final class ViewLibraryTests: XCTestCase {
     }
 
     @MainActor
+    func testAViewReadsTheNameOfItsCardSizeAndNoneOutsideACard() async throws {
+        let reads = view.replacingOccurrences(of: "Text(", with: "let _ = spot.send(spot.card.map { \"\\($0)\" } ?? \"-\")\n        Text(")
+        let wide = try await drawn(reads, values: [:], card: ["cardName": "wide"])
+        let sheet = try await drawn(reads, values: [:], card: [:])
+
+        XCTAssertEqual(wide, ["wide"])
+        XCTAssertEqual(sheet, ["-"])
+    }
+
+    @MainActor
     func testAViewWithNoHostWordsShowsAndHasNoRows() async throws {
         let sent = try await drawn(view.replacingOccurrences(of: "Text(", with: "let _ = spot.send(\"\\(spot.rows.count) \\(spot.isShown) \\(spot[\"row\"] ?? \"-\")\")\n        Text("), values: ["title": ["Hi"], "row": ["mine"]], card: [:])
 

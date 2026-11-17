@@ -32,12 +32,12 @@ struct SpotView: View {
 
     private func words(over: Bool) -> some View {
         let number = Text(spot["title"].map { "\($0)%" } ?? "–")
-            .font(spot.size.width < 100 ? .system(size: 18, weight: .semibold, design: .rounded) : spot.font.metric)
+            .font(spot.card == .small ? .system(size: 18, weight: .semibold, design: .rounded) : spot.font.metric)
             .lineLimit(1)
             .minimumScaleFactor(0.6)
             .layoutPriority(1)
         let detail = HStack(spacing: 3) {
-            if spot.size.width >= 200 || spot.size.height >= 100 {
+            if spot.card != .wide {
                 Text(spot["detail"] ?? "")
             }
             if isCharging {
@@ -48,13 +48,14 @@ struct SpotView: View {
         .lineLimit(1)
         .opacity(over ? 1 : spot.secondary)
         return Group {
-            if spot.size.width < 100 {
+            switch spot.card {
+            case .small:
                 number.frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if spot.size.height < 100 {
+            case .wide, .strip:
                 HStack(alignment: .firstTextBaseline, spacing: 8) { number; detail }
                     .padding(.horizontal, spot.inset + 6)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-            } else {
+            default:
                 VStack(alignment: .leading, spacing: 2) { number; detail }
                     .padding(spot.inset + 4)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)

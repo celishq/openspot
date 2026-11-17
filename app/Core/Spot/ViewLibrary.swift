@@ -17,6 +17,10 @@ public struct ViewLibrary: Sendable {
             public let value: Font
         }
 
+        public enum SpotCard: String {
+            case small, wide, square, strip, large
+        }
+
         public struct SpotRow: Identifiable {
             let fields: [String]
 
@@ -41,6 +45,7 @@ public struct ViewLibrary: Sendable {
 
         public struct SpotInput {
             public let size: CGSize
+            public let card: SpotCard?
             public let inset: CGFloat
             public let corner: CGFloat
             public let ink: Color
@@ -85,6 +90,7 @@ public struct ViewLibrary: Sendable {
                 columns = card["columns"] as? Int ?? 16
                 tipDelay = card["tipDelay"] as? Duration ?? .milliseconds(500)
                 size = card["size"] as? CGSize ?? .zero
+                self.card = (card["cardName"] as? String).flatMap(SpotCard.init(rawValue:))
                 answers = card["answers"] as? Int ?? 0
                 inset = card["inset"] as? CGFloat ?? 13
                 corner = card["corner"] as? CGFloat ?? 20

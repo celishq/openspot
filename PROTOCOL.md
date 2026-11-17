@@ -848,6 +848,7 @@ struct SpotView: View {
 | `spot["key"]`       | The last value of a key of its block, or nil.                         |
 | `spot.all("key")`   | Each value of a key that repeats.                                     |
 | `spot.size`         | The size of its place.                                                |
+| `spot.card`         | The name of its card's size, such as `wide`, or nil off a card.       |
 | `spot.inset`        | The space other cards keep between their edge and their words.        |
 | `spot.corner`       | The corner radius of the card.                                        |
 | `spot.ink`          | The colour of words, for light and dark.                              |
