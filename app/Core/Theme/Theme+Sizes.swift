@@ -14,10 +14,11 @@ extension Theme {
 
         public init() {}
 
-        static var points: [String: WritableKeyPath<Space, Double>] {
+        static var fields: [String: ThemeField<Space>] {
             [
-                "cell": \.cell, "column-gap": \.columnGap, "row-gap": \.rowGap, "padding": \.padding, "glyph": \.glyph,
-                "list-row": \.listRow, "list-row-gap": \.listRowGap, "menu-row": \.menuRow, "menu-padding": \.menuPadding
+                "cell": .number(.points, \.cell), "column-gap": .number(.points, \.columnGap), "row-gap": .number(.points, \.rowGap),
+                "padding": .number(.points, \.padding), "glyph": .number(.points, \.glyph), "list-row": .number(.points, \.listRow),
+                "list-row-gap": .number(.points, \.listRowGap), "menu-row": .number(.points, \.menuRow), "menu-padding": .number(.points, \.menuPadding)
             ]
         }
     }
@@ -30,8 +31,8 @@ extension Theme {
 
         public init() {}
 
-        static var points: [String: WritableKeyPath<Radius, Double>] {
-            ["card": \.card, "window": \.window, "media": \.media, "corner-mark": \.cornerMark]
+        static var fields: [String: ThemeField<Radius>] {
+            ["card": .number(.points, \.card), "window": .number(.points, \.window), "media": .number(.points, \.media), "corner-mark": .number(.points, \.cornerMark)]
         }
     }
 
@@ -43,8 +44,8 @@ extension Theme {
 
         public init() {}
 
-        static var points: [String: WritableKeyPath<TypeSizes, Double>] {
-            ["title": \.title, "body": \.body, "detail": \.detail, "input": \.input]
+        static var fields: [String: ThemeField<TypeSizes>] {
+            ["title": .number(.points, \.title), "body": .number(.points, \.body), "detail": .number(.points, \.detail), "input": .number(.points, \.input)]
         }
     }
 
@@ -63,19 +64,13 @@ extension Theme {
 
         public init() {}
 
-        static var seconds: [String: WritableKeyPath<Motion, Double>] {
+        static var fields: [String: ThemeField<Motion>] {
             [
-                "grow": \.grow, "shrink": \.shrink, "move": \.move, "fade-in": \.fadeIn, "fade-out": \.fadeOut,
-                "press": \.press, "settle": \.settle
+                "grow": .number(.seconds, \.grow), "shrink": .number(.seconds, \.shrink), "move": .number(.seconds, \.move),
+                "fade-in": .number(.seconds, \.fadeIn), "fade-out": .number(.seconds, \.fadeOut), "press": .number(.seconds, \.press),
+                "settle": .number(.seconds, \.settle), "press-bounce": .number(.strength, \.pressBounce),
+                "pressed-scale": .number(.scale, \.pressedScale), "lifted-scale": .number(.scale, \.liftedScale), "focused-scale": .number(.scale, \.focusedScale)
             ]
-        }
-
-        static var strengths: [String: WritableKeyPath<Motion, Double>] {
-            ["press-bounce": \.pressBounce]
-        }
-
-        static var scales: [String: WritableKeyPath<Motion, Double>] {
-            ["pressed-scale": \.pressedScale, "lifted-scale": \.liftedScale, "focused-scale": \.focusedScale]
         }
     }
 }

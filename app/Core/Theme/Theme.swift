@@ -20,16 +20,14 @@ public struct Theme: Equatable, Sendable {
         public fileprivate(set) var control = 0.0
         public fileprivate(set) var track = 0.0
 
-        fileprivate static var colours: [String: WritableKeyPath<Look, ThemeColor>] {
+        fileprivate static var fields: [String: ThemeField<Look>] {
             [
-                "ink": \.ink, "solid": \.solid, "on-solid": \.onSolid, "glyph-on-solid": \.glyphOnSolid, "glass": \.glass,
-                "glass-tint": \.glassTint, "corner-fill": \.cornerFill, "window": \.window, "preview": \.preview,
-                "confirm": \.confirm, "on-confirm": \.onConfirm
+                "ink": .colour(\.ink), "solid": .colour(\.solid), "on-solid": .colour(\.onSolid), "glyph-on-solid": .colour(\.glyphOnSolid),
+                "glass": .colour(\.glass), "glass-tint": .colour(\.glassTint), "corner-fill": .colour(\.cornerFill), "window": .colour(\.window),
+                "preview": .colour(\.preview), "confirm": .colour(\.confirm), "on-confirm": .colour(\.onConfirm),
+                "fill": .number(.strength, \.fill), "selected": .number(.strength, \.selected), "disc": .number(.strength, \.disc),
+                "chip": .number(.strength, \.chip), "control": .number(.strength, \.control), "track": .number(.strength, \.track)
             ]
-        }
-
-        fileprivate static var strengths: [String: WritableKeyPath<Look, Double>] {
-            ["fill": \.fill, "selected": \.selected, "disc": \.disc, "chip": \.chip, "control": \.control, "track": \.track]
         }
     }
 
@@ -63,23 +61,20 @@ public struct Theme: Equatable, Sendable {
         public fileprivate(set) var publisherPillHover = 0.0
         public fileprivate(set) var publisherPillRing = 0.0
 
-        fileprivate static var colours: [String: WritableKeyPath<Shared, ThemeColor>] {
+        fileprivate static var fields: [String: ThemeField<Shared>] {
             [
-                "accent": \.accent, "good": \.good, "warn": \.warn, "bad": \.bad, "picture-rim": \.pictureRim,
-                "lift-shadow": \.liftShadow, "foil": \.foil, "publisher-rim": \.publisherRim,
-                "publisher-pill-shine": \.publisherPillShine, "engrave-on-dark": \.engraveOnDark,
-                "engrave-on-light": \.engraveOnLight, "catch-light-on-dark": \.catchLightOnDark,
-                "catch-light-on-light": \.catchLightOnLight
-            ]
-        }
-
-        fileprivate static var strengths: [String: WritableKeyPath<Shared, Double>] {
-            [
-                "secondary": \.secondary, "drag-fill": \.dragFill, "hover": \.hover, "menu-dim": \.menuDim,
-                "lift-shadow-strength": \.liftShadowStrength, "unfocused-card": \.unfocusedCard, "stale": \.stale,
-                "old-bar": \.oldBar, "press-fill": \.pressFill, "menu-bar-track": \.menuBarTrack, "fade-near": \.fadeNear,
-                "fade-far": \.fadeFar, "publisher-pill": \.publisherPill, "publisher-pill-hover": \.publisherPillHover,
-                "publisher-pill-ring": \.publisherPillRing
+                "accent": .colour(\.accent), "good": .colour(\.good), "warn": .colour(\.warn), "bad": .colour(\.bad),
+                "picture-rim": .colour(\.pictureRim), "lift-shadow": .colour(\.liftShadow), "foil": .colour(\.foil),
+                "publisher-rim": .colour(\.publisherRim), "publisher-pill-shine": .colour(\.publisherPillShine),
+                "engrave-on-dark": .colour(\.engraveOnDark), "engrave-on-light": .colour(\.engraveOnLight),
+                "catch-light-on-dark": .colour(\.catchLightOnDark), "catch-light-on-light": .colour(\.catchLightOnLight),
+                "secondary": .number(.strength, \.secondary), "drag-fill": .number(.strength, \.dragFill), "hover": .number(.strength, \.hover),
+                "menu-dim": .number(.strength, \.menuDim), "lift-shadow-strength": .number(.strength, \.liftShadowStrength),
+                "unfocused-card": .number(.strength, \.unfocusedCard), "stale": .number(.strength, \.stale), "old-bar": .number(.strength, \.oldBar),
+                "press-fill": .number(.strength, \.pressFill), "menu-bar-track": .number(.strength, \.menuBarTrack),
+                "fade-near": .number(.strength, \.fadeNear), "fade-far": .number(.strength, \.fadeFar),
+                "publisher-pill": .number(.strength, \.publisherPill), "publisher-pill-hover": .number(.strength, \.publisherPillHover),
+                "publisher-pill-ring": .number(.strength, \.publisherPillRing)
             ]
         }
     }
@@ -101,16 +96,11 @@ public struct Theme: Equatable, Sendable {
             [edgeNear, edgeMiddle, edgeFar]
         }
 
-        fileprivate static var strengths: [String: WritableKeyPath<Glass, Double>] {
-            ["edge-near": \.edgeNear, "edge-middle": \.edgeMiddle, "edge-far": \.edgeFar]
-        }
-
-        fileprivate static var points: [String: WritableKeyPath<Glass, Double>] {
-            ["backdrop-blur": \.backdropBlur]
-        }
-
-        fileprivate static var reaches: [String: WritableKeyPath<Glass, Double>] {
-            ["fade-reach": \.fadeReach]
+        fileprivate static var fields: [String: ThemeField<Glass>] {
+            [
+                "variant": .variant(\.variant), "backdrop-blur": .number(.points, \.backdropBlur), "fade-reach": .number(.reach, \.fadeReach),
+                "edge-near": .number(.strength, \.edgeNear), "edge-middle": .number(.strength, \.edgeMiddle), "edge-far": .number(.strength, \.edgeFar)
+            ]
         }
     }
 
@@ -124,48 +114,25 @@ public struct Theme: Equatable, Sendable {
     public private(set) var motion = Motion()
     public private(set) var faults: [String] = []
 
-    private static let variant = "[glass] variant"
-
-    public static var keys: [String] {
-        (Array(colours.keys) + [strengths, points, reaches, seconds, scales].flatMap(\.keys) + [variant]).sorted()
+    public static var keys: [ThemeKey] {
+        fields.keys.sorted { $0.name < $1.name }
     }
 
-    public static func kind(of key: String) -> ThemeKind? {
-        if colours[key] != nil { return .colour }
-        if strengths[key] != nil { return .strength }
-        if points[key] != nil { return .points }
-        if reaches[key] != nil { return .reach }
-        if seconds[key] != nil { return .seconds }
-        if scales[key] != nil { return .scale }
-        return key == variant ? .variant : nil
+    public static func kind(of key: ThemeKey) -> ThemeKind? {
+        fields[key]?.kind
     }
 
-    private static var colours: [String: WritableKeyPath<Theme, ThemeColor>] {
-        paths(look: Look.colours, shared: Shared.colours)
+    public static func accepts(_ value: ConfigDocument.Value, at key: ThemeKey) -> Bool {
+        var theme = Theme()
+        return fields[key]?.set(value, in: &theme) ?? false
     }
 
-    private static var strengths: [String: WritableKeyPath<Theme, Double>] {
-        paths(look: Look.strengths, shared: Shared.strengths, glass: Glass.strengths)
-            .merging(named("motion", \.motion, Motion.strengths)) { one, _ in one }
-    }
-
-    private static var points: [String: WritableKeyPath<Theme, Double>] {
-        paths(glass: Glass.points)
-            .merging(named("space", \.space, Space.points)) { one, _ in one }
-            .merging(named("radius", \.radius, Radius.points)) { one, _ in one }
-            .merging(named("type", \.type, TypeSizes.points)) { one, _ in one }
-    }
-
-    private static var reaches: [String: WritableKeyPath<Theme, Double>] {
-        paths(glass: Glass.reaches)
-    }
-
-    private static var seconds: [String: WritableKeyPath<Theme, Double>] {
-        named("motion", \.motion, Motion.seconds)
-    }
-
-    private static var scales: [String: WritableKeyPath<Theme, Double>] {
-        named("motion", \.motion, Motion.scales)
+    private static var fields: [ThemeKey: ThemeField<Theme>] {
+        [
+            named("dark", \.dark, Look.fields), named("light", \.light, Look.fields), named("shared", \.shared, Shared.fields),
+            named("glass", \.glass, Glass.fields), named("space", \.space, Space.fields), named("radius", \.radius, Radius.fields),
+            named("type", \.type, TypeSizes.fields), named("motion", \.motion, Motion.fields)
+        ].reduce(into: [:]) { all, part in all.merge(part) { one, _ in one } }
     }
 
     public init() {}
@@ -187,53 +154,20 @@ public struct Theme: Equatable, Sendable {
         for key in document.values.keys.sorted() {
             faults.append("theme.toml: \(key) is not a key of a theme.")
         }
-        let colours = Self.colours
-        let numbers = [(ThemeKind.strength, Self.strengths), (.points, Self.points), (.reach, Self.reaches), (.seconds, Self.seconds), (.scale, Self.scales)]
-            .reduce(into: [String: (kind: ThemeKind, part: WritableKeyPath<Theme, Double>)]()) { all, group in
-                for (name, part) in group.1 { all[name] = (group.0, part) }
-            }
+        let fields = Self.fields
         for section in document.sections {
             for key in section.keys {
-                let name = "[\(section.name)] \(key)"
-                if let part = colours[name] {
-                    guard case .string(let text)? = section[key], let color = ThemeColor(text: text) else {
-                        faults.append("theme.toml: \(name) is \(ThemeKind.colour.meaning).")
-                        continue
-                    }
-                    self[keyPath: part] = color
-                } else if let (kind, part) = numbers[name] {
-                    guard let number = kind.number(section[key]) else {
-                        faults.append("theme.toml: \(name) is \(kind.meaning).")
-                        continue
-                    }
-                    self[keyPath: part] = number
-                } else if name == Self.variant {
-                    guard case .string(let text)? = section[key], let variant = Glass.Variant(rawValue: text) else {
-                        faults.append("theme.toml: \(name) is \(ThemeKind.variant.meaning).")
-                        continue
-                    }
-                    glass.variant = variant
-                } else {
-                    faults.append("theme.toml: \(name) is not a key of a theme.")
+                let id = ThemeKey(section: section.name, key: key)
+                guard let field = fields[id] else {
+                    faults.append("theme.toml: \(id.name) is not a key of a theme.")
+                    continue
                 }
+                if !field.set(section[key], in: &self) { faults.append("theme.toml: \(id.name) is \(field.kind.meaning).") }
             }
         }
     }
 
-    private static func paths<Value>(
-        look: [String: WritableKeyPath<Look, Value>] = [:],
-        shared: [String: WritableKeyPath<Shared, Value>] = [:],
-        glass: [String: WritableKeyPath<Glass, Value>] = [:]
-    ) -> [String: WritableKeyPath<Theme, Value>] {
-        named("dark", \.dark, look)
-            .merging(named("light", \.light, look)) { one, _ in one }
-            .merging(named("shared", \.shared, shared)) { one, _ in one }
-            .merging(named("glass", \.glass, glass)) { one, _ in one }
-    }
-
-    private static func named<Part, Value>(
-        _ section: String, _ part: WritableKeyPath<Theme, Part>, _ keys: [String: WritableKeyPath<Part, Value>]
-    ) -> [String: WritableKeyPath<Theme, Value>] {
-        Dictionary(uniqueKeysWithValues: keys.map { ("[\(section)] \($0.key)", part.appending(path: $0.value)) })
+    private static func named<Part>(_ section: String, _ part: WritableKeyPath<Theme, Part>, _ fields: [String: ThemeField<Part>]) -> [ThemeKey: ThemeField<Theme>] {
+        Dictionary(uniqueKeysWithValues: fields.map { (ThemeKey(section: section, key: $0.key), $0.value.on(part)) })
     }
 }

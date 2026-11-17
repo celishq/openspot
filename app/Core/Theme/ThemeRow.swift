@@ -35,14 +35,14 @@ public struct ThemeRow: Equatable, Sendable, Identifiable {
         let base = (try? ConfigDocument(text: builtIn))?.sections ?? []
         let mine = own.flatMap { try? ConfigDocument(text: $0) }?.sections ?? []
         let cell = { (key: ThemeKey) -> Cell? in
-            if let value = mine.first(where: { $0.name == key.section })?[key.key] { return Cell(key: key, value: value, isSet: true) }
+            if let value = mine.first(where: { $0.name == key.section })?[key.key], Theme.accepts(value, at: key) { return Cell(key: key, value: value, isSet: true) }
             return base.first { $0.name == key.section }?[key.key].map { Cell(key: key, value: $0, isSet: false) }
         }
         return base.filter { $0.name != "light" }.flatMap { table -> [ThemeRow] in
             let sections = table.name == "dark" ? ["dark", "light"] : [table.name]
             return table.keys.compactMap { key -> ThemeRow? in
                 let id = ThemeKey(section: table.name, key: key)
-                guard let kind = Theme.kind(of: id.name) else { return nil }
+                guard let kind = Theme.kind(of: id) else { return nil }
                 return ThemeRow(group: table.name == "dark" ? look : table.name, id: id, kind: kind, cells: sections.compactMap { cell(ThemeKey(section: $0, key: key)) })
             }
         }

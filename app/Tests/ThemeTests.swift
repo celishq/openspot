@@ -186,7 +186,7 @@ final class ThemeTests: XCTestCase {
         let theme = ThemeFolder.read(builtIn: builtInURL)
 
         XCTAssertEqual(theme.faults, [])
-        XCTAssertEqual(document.sections.flatMap { section in section.keys.map { "[\(section.name)] \($0)" } }.sorted(), Theme.keys)
+        XCTAssertEqual(document.sections.flatMap { section in section.keys.map { "[\(section.name)] \($0)" } }.sorted(), Theme.keys.map(\.name))
         XCTAssertEqual(theme.dark.glassTint, .hex(HexColor(red: 0, green: 0, blue: 0, alpha: 0.6)))
         XCTAssertEqual(theme.light.glassTint, ThemeColor(text: "#FFFFFF99"))
         XCTAssertEqual(theme.glass.variant, .clear)
@@ -236,7 +236,7 @@ final class ThemeTests: XCTestCase {
         let rows = ThemeRow.rows(builtIn: text, own: nil)
 
         let names = rows.flatMap { row in row.cells.map(\.key.name) }
-        XCTAssertEqual(names.sorted(), Theme.keys)
+        XCTAssertEqual(names.sorted(), Theme.keys.map(\.name))
         XCTAssertEqual(Set(rows.filter { $0.group == "look" }.map { $0.cells.map(\.key.section) }), [["dark", "light"]])
         XCTAssertEqual(rows.first { $0.name == "variant" }?.kind, .variant)
         XCTAssertEqual(rows.first { $0.name == "padding" }?.kind, .points)
@@ -245,6 +245,23 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(rows.first { $0.name == "pressed-scale" }?.kind, .scale)
         XCTAssertEqual(rows.first { $0.name == "press-bounce" }?.kind, .strength)
         XCTAssertEqual(Theme(rows: rows), Theme(text: text))
+    }
+
+    func testARowOfAValueTheFileRefusesShowsTheValueTheThemeDraws() throws {
+        let text = try String(contentsOf: builtInURL, encoding: .utf8)
+        let own = "[motion]\ngrow = 3\n\n[dark]\nink = \"#XYZ\"\n\n[light]\nfill = 0.3\n"
+
+        let rows = ThemeRow.rows(builtIn: text, own: own)
+
+        let grow = ThemeKey(section: "motion", key: "grow")
+        let ink = ThemeKey(section: "dark", key: "ink")
+        XCTAssertEqual(rows.first { $0.id == grow }?.cells, [ThemeRow.Cell(key: grow, value: .number(0.15), isSet: false)])
+        XCTAssertEqual(rows.first { $0.id == ink }?.cells.first, ThemeRow.Cell(key: ink, value: .string("#FFFFFF"), isSet: false))
+        XCTAssertEqual(rows.first { $0.name == "fill" }?.cells.last?.value, .number(0.3))
+        let drawn = Theme(text: own, over: Theme(text: text))
+        XCTAssertEqual(drawn.faults.count, 2)
+        XCTAssertEqual(Theme(rows: rows).motion, drawn.motion)
+        XCTAssertEqual(Theme(rows: rows).dark, drawn.dark)
     }
 
     func testAChangedCellDrawsTheThemeWithItsValue() throws {
