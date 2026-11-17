@@ -105,6 +105,14 @@ final class SpotsPanel: NSPanel {
         CATransaction.commit()
     }
 
+    func layOut() {
+        guard let model else { return }
+        place.left = model.panels.leftExtent
+        appliedRight = model.panels.rightExtent
+        let width = SpotTokens.panelWidth + place.left + appliedRight
+        resize(to: NSRect(x: frame.minX, y: frame.maxY - SpotTokens.panelHeight, width: width, height: SpotTokens.panelHeight))
+    }
+
     func hide(then done: (() -> Void)? = nil) {
         model?.panelWillHide()
         DispatchQueue.main.asyncAfter(deadline: .now() + MotionTokens.fadeOut) {

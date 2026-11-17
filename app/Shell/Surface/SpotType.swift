@@ -1,15 +1,42 @@
 import AppKit
+import OpenspotCore
 import SwiftUI
 
 enum SpotType {
-    static let titleSize: CGFloat = 13
-    static let detailSize: CGFloat = 11
-    static let title = Font.system(size: titleSize, weight: .medium)
-    static let body = Font.system(size: 13)
-    static let detail = Font.system(size: detailSize)
-    @MainActor static let titleMeasure = NSFont.systemFont(ofSize: titleSize, weight: .medium)
-    @MainActor static let detailMeasure = NSFont.systemFont(ofSize: detailSize)
-    static let input = Font.system(size: 14)
+    struct Faces {
+        let sizes: Theme.TypeSizes
+        let title: Font
+        let body: Font
+        let detail: Font
+        let input: Font
+        let titleMeasure: NSFont
+        let detailMeasure: NSFont
+
+        init(_ sizes: Theme.TypeSizes) {
+            self.sizes = sizes
+            title = Font.system(size: sizes.title, weight: .medium)
+            body = Font.system(size: sizes.body)
+            detail = Font.system(size: sizes.detail)
+            input = Font.system(size: sizes.input)
+            titleMeasure = NSFont.systemFont(ofSize: sizes.title, weight: .medium)
+            detailMeasure = NSFont.systemFont(ofSize: sizes.detail)
+        }
+    }
+
+    nonisolated(unsafe) private static var faces = Faces(Theme.TypeSizes())
+
+    static func take(_ sizes: Theme.TypeSizes) {
+        if sizes != faces.sizes { faces = Faces(sizes) }
+    }
+
+    static var titleSize: CGFloat { faces.sizes.title }
+    static var detailSize: CGFloat { faces.sizes.detail }
+    static var title: Font { faces.title }
+    static var body: Font { faces.body }
+    static var detail: Font { faces.detail }
+    @MainActor static var titleMeasure: NSFont { faces.titleMeasure }
+    @MainActor static var detailMeasure: NSFont { faces.detailMeasure }
+    static var input: Font { faces.input }
     static let action = Font.system(size: 11, weight: .medium)
     static let metric = Font.system(size: 30, weight: .semibold, design: .rounded).monospacedDigit()
     static let ringValue = Font.system(size: 20, weight: .semibold, design: .rounded).monospacedDigit()
@@ -26,7 +53,7 @@ enum SpotType {
     static let cornerFault = Font.system(size: 10, weight: .semibold)
     static let number = Font.system(size: 24, weight: .semibold, design: .rounded).monospacedDigit()
     static let lineGap: CGFloat = 1
-    static let titleLine: CGFloat = 16
-    static let detailLine: CGFloat = 14
-    static let inputLine: CGFloat = 18
+    static var titleLine: CGFloat { faces.sizes.title + 3 }
+    static var detailLine: CGFloat { faces.sizes.detail + 3 }
+    static var inputLine: CGFloat { faces.sizes.input + 4 }
 }

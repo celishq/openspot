@@ -2,7 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotFieldView: View {
-    static let rect = CGRect(x: SpotTokens.halo, y: SpotTokens.halo, width: SpotTokens.gridWidth, height: SpotTokens.rowHeight)
+    static var rect: CGRect { CGRect(x: SpotTokens.halo, y: SpotTokens.halo, width: SpotTokens.gridWidth, height: SpotTokens.rowHeight) }
 
     let model: SpotsModel
     let isOpen: Bool
@@ -94,17 +94,19 @@ struct SpotFieldView: View {
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
     }
 
-    static let sheetRow = CGRect(
-        x: SpotTokens.halo + SpotTokens.padding,
-        y: SpotTokens.halo + SpotTokens.sheetFieldDrop,
-        width: SpotTokens.gridWidth - 2 * SpotTokens.padding,
-        height: SpotTokens.listRowHeight
-    )
-    static let sheetTop = SpotTokens.halo + SpotTokens.sheetFieldDrop - (SpotTokens.rowHeight - SpotTokens.listRowHeight) / 2
-    static let sheetGlyphLeft = SpotTokens.halo + 2 * SpotTokens.padding + (SpotTokens.listIconSize - SpotTokens.glyphSize) / 2
-    static let sheetTextLeft = SpotTokens.halo + 2 * SpotTokens.padding + SpotTokens.listIconSize + SpotTokens.fieldTextGap
-    static let sheetRadius = SurfaceEdge.sheet.inner().radius
-    static let fieldTextWidth = SpotTokens.gridWidth - 4 * SpotTokens.padding - SpotTokens.listIconSize - SpotTokens.fieldTextGap
+    static var sheetRow: CGRect {
+        CGRect(
+            x: SpotTokens.halo + SpotTokens.padding,
+            y: SpotTokens.halo + SpotTokens.sheetFieldDrop,
+            width: SpotTokens.gridWidth - 2 * SpotTokens.padding,
+            height: SpotTokens.listRowHeight
+        )
+    }
+    static var sheetTop: CGFloat { SpotTokens.halo + SpotTokens.sheetFieldDrop - (SpotTokens.rowHeight - SpotTokens.listRowHeight) / 2 }
+    static var sheetGlyphLeft: CGFloat { SpotTokens.halo + 2 * SpotTokens.padding + (SpotTokens.listIconSize - SpotTokens.glyphSize) / 2 }
+    static var sheetTextLeft: CGFloat { SpotTokens.halo + 2 * SpotTokens.padding + SpotTokens.listIconSize + SpotTokens.fieldTextGap }
+    static var sheetRadius: CGFloat { SurfaceEdge.sheet.inner().radius }
+    static var fieldTextWidth: CGFloat { SpotTokens.gridWidth - 4 * SpotTokens.padding - SpotTokens.listIconSize - SpotTokens.fieldTextGap }
 
     private var fieldTextLeft: CGFloat {
         isInSheet ? Self.sheetTextLeft : SpotTokens.halo + SpotTokens.padding + SpotTokens.glyphSize + SpotTokens.fieldTextGap

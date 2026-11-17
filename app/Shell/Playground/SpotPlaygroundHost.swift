@@ -16,6 +16,7 @@ final class SpotPlaygroundHost: SpotsHost {
     func confirm(_ text: String) { onNote(text) }
     func work(_ text: String) { onNote(text) }
     func applyConfig(_ config: Config) {}
+    func layOut(_ theme: Theme) {}
     func setEntryKey(on isOn: Bool) {}
     func hold(_ keys: [GlobalKey]) {}
     func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void) {}

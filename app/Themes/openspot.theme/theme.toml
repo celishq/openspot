@@ -73,3 +73,39 @@ fade-reach = 3.0
 edge-near = 1.0
 edge-middle = 0.7
 edge-far = 0.45
+
+[space]
+cell = 64
+column-gap = 11
+row-gap = 12
+padding = 13
+glyph = 36
+list-row = 40
+list-row-gap = 6
+menu-row = 32
+menu-padding = 8
+
+[radius]
+card = 26
+window = 16
+media = 8
+corner-mark = 6
+
+[type]
+title = 13
+body = 13
+detail = 11
+input = 14
+
+[motion]
+grow = 0.15
+shrink = 0.2
+move = 0.25
+fade-in = 0.1
+fade-out = 0.12
+press = 0.2
+settle = 0.25
+press-bounce = 0.2
+pressed-scale = 1.04
+lifted-scale = 1.05
+focused-scale = 1.04

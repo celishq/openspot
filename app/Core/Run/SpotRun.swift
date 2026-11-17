@@ -291,6 +291,14 @@ public final class SpotRun {
         }
     }
 
+    func layOut() {
+        if var next = parts {
+            next.place()
+            panel = next
+        }
+        settle()
+    }
+
     func settle() {
         let next = rows.isBento
             ? Shape(rows: rows.drawing.lineCount(rows: rows.shown.count) * rows.drawing.columns, perLine: rows.drawing.columns)

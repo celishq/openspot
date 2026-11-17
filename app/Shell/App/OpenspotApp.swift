@@ -53,6 +53,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         toast = ToastPanel.make()
         let theme = ThemeFile.standard(environment: model.files.environment, builtIn: mac.mac.theme).read()
         SpotLoadedTheme.shared.take(theme)
+        model.take(theme)
         if !theme.faults.isEmpty { notify(theme.faults.joined(separator: "\n")) }
         let item = OpenspotItem(
             model: model, toast: toast?.toast, target: self, action: #selector(pressItem),

@@ -20,10 +20,10 @@ public struct SheetPlacement: Equatable, Sendable {
         }
     }
 
-    public static let width = SpotTokens.partsWidth
+    public static var width: CGFloat { SpotTokens.partsWidth }
     public static let maxHeight = SpotTokens.partsMaxHeight
     public static let gap = SpotTokens.partGap
-    public static let groupGap = SpotTokens.padding
+    public static var groupGap: CGFloat { SpotTokens.padding }
     public static let rowHeight = SpotTokens.partRowHeight
     public static let maxRound = SpotTokens.partMaxRound
     public static let dividerHeight = SpotTokens.dividerHeight

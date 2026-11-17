@@ -19,7 +19,7 @@ final class SpotPictureStore {
         }
     }
 
-    nonisolated private static let shortSide = Int(max(SpotTokens.gridWidth, SpotTokens.sheetMaxHeight) * SpotTokens.pictureScale)
+    nonisolated private static var shortSide: Int { Int(max(SpotTokens.gridWidth, SpotTokens.sheetMaxHeight) * SpotTokens.pictureScale) }
     private static let byteLimit = 16 << 20
 
     private let bitmaps = NSCache<NSString, Bitmap>()

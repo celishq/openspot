@@ -11,7 +11,7 @@ struct SpotRowsView: View {
     var selection: (() -> Int)?
     var onDragOut: ([SpotItem]) -> Void = { _ in }
 
-    private static let bottomFade = 2 * SpotTokens.padding
+    private static var bottomFade: CGFloat { 2 * SpotTokens.padding }
 
     private var row: SpotRoundShape {
         SpotRoundShape(surface.inner())

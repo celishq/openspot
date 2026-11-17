@@ -4,11 +4,11 @@ public struct ActionMenuFrame: Equatable, Sendable {
     public enum Edge: Equatable, Sendable { case top, bottom }
     public enum Side: Equatable, Sendable { case left, right }
 
-    public static let width = SpotTokens.width(columns: 3)
+    public static var width: CGFloat { SpotTokens.width(columns: 3) }
     public static let gap = SpotTokens.placeGap
     private static let leftTie: CGFloat = 1
     private static let margin = SpotTokens.menuMargin
-    private static let step = SpotTokens.menuRowHeight + SpotTokens.menuRowGap
+    private static var step: CGFloat { SpotTokens.menuRowHeight + SpotTokens.menuRowGap }
 
     public let rect: CGRect
     public let stillEdge: Edge

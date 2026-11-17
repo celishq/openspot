@@ -37,6 +37,11 @@ extension OpenspotApp: SpotsHost {
         keys.apply(config)
     }
 
+    func layOut(_ theme: Theme) {
+        SpotLoadedTheme.shared.layOut(theme)
+        panel?.layOut()
+    }
+
     func setEntryKey(on isOn: Bool) {
         keys.setEntry(on: isOn)
     }

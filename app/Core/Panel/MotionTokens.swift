@@ -4,6 +4,11 @@ public enum MotionTokens {
     private static let launchSlow = Double(ProcessInfo.processInfo.environment["OPENSPOT_MOTION_SLOW"] ?? "") ?? 1
     nonisolated(unsafe) public private(set) static var slow = launchSlow
     public static let slowMotion = 10.0
+    nonisolated(unsafe) public private(set) static var motion = Theme.Motion()
+
+    public static func take(_ next: Theme.Motion) {
+        if next != motion { motion = next }
+    }
 
     public static var isSlow: Bool {
         slow != launchSlow
@@ -15,25 +20,25 @@ public enum MotionTokens {
         return slow != launchSlow
     }
 
-    public static var grow: Double { 0.15 * slow }
-    public static var shrink: Double { 0.2 * slow }
-    public static var move: Double { 0.25 * slow }
-    public static var fadeIn: Double { 0.1 * slow }
-    public static var fadeOut: Double { 0.12 * slow }
-    public static var press: Double { 0.2 * slow }
-    public static let pressBounce = 0.2
+    public static var grow: Double { motion.grow * slow }
+    public static var shrink: Double { motion.shrink * slow }
+    public static var move: Double { motion.move * slow }
+    public static var fadeIn: Double { motion.fadeIn * slow }
+    public static var fadeOut: Double { motion.fadeOut * slow }
+    public static var press: Double { motion.press * slow }
+    public static var pressBounce: Double { motion.pressBounce }
     public static let shrinkCurve = (x1: 0.2, y1: 0.1, x2: 0.2, y2: 1.0)
 
-    public static var growSettle: Double { 0.25 * slow }
+    public static var growSettle: Double { motion.settle * slow }
     public static let answerPause = 0.15
 
     public static let cardShare = 0.5
     public static let contentStart = 0.2
 
     public static let hiddenScale = 1.04
-    public static let pressedScale = 1.04
-    public static let liftedScale = 1.05
-    public static let focusedScale = 1.04
+    public static var pressedScale: Double { motion.pressedScale }
+    public static var liftedScale: Double { motion.liftedScale }
+    public static var focusedScale: Double { motion.focusedScale }
     public static let pushedScale = 0.4
     public static let stepFadeWidth = 0.3
     public static let menuStartScale = 0.9

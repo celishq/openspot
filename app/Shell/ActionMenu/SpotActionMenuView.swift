@@ -12,7 +12,7 @@ struct SpotActionMenuView: View, @MainActor Equatable {
     var onSearch: @MainActor @Sendable (String) -> Void = { _ in }
     let selection: () -> Int
 
-    static let radius = SurfaceEdge.sheet.inner(by: SpotTokens.padding - SpotTokens.menuPadding).radius
+    static var radius: CGFloat { SurfaceEdge.sheet.inner(by: SpotTokens.padding - SpotTokens.menuPadding).radius }
 
     private var shape: SpotRoundShape {
         SpotRoundShape(surface.inner())

@@ -1,26 +1,33 @@
 import Foundation
 
 public enum SpotTokens {
-    public static let radius: CGFloat = 26
-    public static let columnGap: CGFloat = 11
-    public static let rowGap: CGFloat = 12
-    public static let padding: CGFloat = 13
-    public static let gridWidth: CGFloat = 289
+    nonisolated(unsafe) public private(set) static var sizes = SpotSizes(Theme())
+
+    public static func take(_ theme: Theme) {
+        let next = SpotSizes(theme)
+        if next != sizes { sizes = next }
+    }
+
+    public static var radius: CGFloat { sizes.radius }
+    public static var columnGap: CGFloat { sizes.columnGap }
+    public static var rowGap: CGFloat { sizes.rowGap }
+    public static var padding: CGFloat { sizes.padding }
+    public static var gridWidth: CGFloat { sizes.gridWidth }
     public static let columns = 4
-    public static let rowHeight: CGFloat = 64
+    public static var rowHeight: CGFloat { sizes.cell }
     public static let groupTitleHeight: CGFloat = 16
-    public static let glyphSize: CGFloat = 36
+    public static var glyphSize: CGFloat { sizes.glyph }
     public static let glyphInset: CGFloat = 9
     public static let workMark: CGFloat = 16
     public static let cornerMark: CGFloat = 20
-    public static let cornerMarkRadius: CGFloat = 6
+    public static var cornerMarkRadius: CGFloat { sizes.cornerMarkRadius }
     public static let ring: CGFloat = 2
     public static let thinRing: CGFloat = 1.5
     public static let resizeHandle: CGFloat = 28
     public static let resizeHandleLine: CGFloat = 5
     public static let toastGap: CGFloat = 10
-    public static let listRowHeight: CGFloat = 40
-    public static let listRowGap: CGFloat = 6
+    public static var listRowHeight: CGFloat { sizes.listRow }
+    public static var listRowGap: CGFloat { sizes.listRowGap }
     public static let listIconSize: CGFloat = 24
     public static let hintHeight: CGFloat = 14
     public static let hintPillInset: CGFloat = 4
@@ -29,9 +36,9 @@ public enum SpotTokens {
     public static let hintKeyGap: CGFloat = 4
     public static let hintGroupGap: CGFloat = 12
     public static let hintEndPadding: CGFloat = 10
-    public static let menuRowHeight: CGFloat = 32
+    public static var menuRowHeight: CGFloat { sizes.menuRow }
     public static let menuRowGap: CGFloat = 2
-    public static let menuPadding: CGFloat = 8
+    public static var menuPadding: CGFloat { sizes.menuPadding }
     public static let placeGap: CGFloat = 8
     public static let sideGap: CGFloat = 20
     public static let edgeWidth: CGFloat = 8
@@ -52,7 +59,7 @@ public enum SpotTokens {
     public static let windowColumns = 16
     public static let windowMinSize = CGSize(width: 360, height: 280)
     public static let editorInset: CGFloat = 5
-    public static let windowRadius: CGFloat = 16
+    public static var windowRadius: CGFloat { sizes.windowRadius }
     public static let windowHeight: CGFloat = 760
     public static let pictureShare: CGFloat = 0.6
 }

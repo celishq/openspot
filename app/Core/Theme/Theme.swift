@@ -118,12 +118,16 @@ public struct Theme: Equatable, Sendable {
     public private(set) var light = Look()
     public private(set) var shared = Shared()
     public private(set) var glass = Glass()
+    public private(set) var space = Space()
+    public private(set) var radius = Radius()
+    public private(set) var type = TypeSizes()
+    public private(set) var motion = Motion()
     public private(set) var faults: [String] = []
 
     private static let variant = "[glass] variant"
 
     public static var keys: [String] {
-        (Array(colours.keys) + [strengths, points, reaches].flatMap(\.keys) + [variant]).sorted()
+        (Array(colours.keys) + [strengths, points, reaches, seconds, scales].flatMap(\.keys) + [variant]).sorted()
     }
 
     private static var colours: [String: WritableKeyPath<Theme, ThemeColor>] {
@@ -132,14 +136,26 @@ public struct Theme: Equatable, Sendable {
 
     private static var strengths: [String: WritableKeyPath<Theme, Double>] {
         paths(look: Look.strengths, shared: Shared.strengths, glass: Glass.strengths)
+            .merging(named("motion", \.motion, Motion.strengths)) { one, _ in one }
     }
 
     private static var points: [String: WritableKeyPath<Theme, Double>] {
         paths(glass: Glass.points)
+            .merging(named("space", \.space, Space.points)) { one, _ in one }
+            .merging(named("radius", \.radius, Radius.points)) { one, _ in one }
+            .merging(named("type", \.type, TypeSizes.points)) { one, _ in one }
     }
 
     private static var reaches: [String: WritableKeyPath<Theme, Double>] {
         paths(glass: Glass.reaches)
+    }
+
+    private static var seconds: [String: WritableKeyPath<Theme, Double>] {
+        named("motion", \.motion, Motion.seconds)
+    }
+
+    private static var scales: [String: WritableKeyPath<Theme, Double>] {
+        named("motion", \.motion, Motion.scales)
     }
 
     public init() {}
@@ -161,6 +177,7 @@ public struct Theme: Equatable, Sendable {
             faults.append("theme.toml: \(key) is not a key of a theme.")
         }
         let (colours, strengths, points, reaches) = (Self.colours, Self.strengths, Self.points, Self.reaches)
+        let (seconds, scales) = (Self.seconds, Self.scales)
         for section in document.sections {
             for key in section.keys {
                 let name = "[\(section.name)] \(key)"
@@ -185,6 +202,18 @@ public struct Theme: Equatable, Sendable {
                 } else if let part = reaches[name] {
                     guard let number = Self.number(section[key]), number >= 1 else {
                         faults.append("theme.toml: \(name) is a number from 1 up, such as 3.")
+                        continue
+                    }
+                    self[keyPath: part] = number
+                } else if let part = seconds[name] {
+                    guard let number = Self.number(section[key]), number >= 0 else {
+                        faults.append("theme.toml: \(name) is a time in seconds, such as 0.2.")
+                        continue
+                    }
+                    self[keyPath: part] = number
+                } else if let part = scales[name] {
+                    guard let number = Self.number(section[key]), number > 0 else {
+                        faults.append("theme.toml: \(name) is a scale above 0, such as 1.04.")
                         continue
                     }
                     self[keyPath: part] = number

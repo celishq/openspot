@@ -9,8 +9,8 @@ public struct SurfaceEdge: Equatable, Sendable {
         self.inset = inset
     }
 
-    public static let sheet = SurfaceEdge(radius: SpotTokens.radius)
-    public static let window = SurfaceEdge(radius: SpotTokens.windowRadius)
+    public static var sheet: SurfaceEdge { SurfaceEdge(radius: SpotTokens.radius) }
+    public static var window: SurfaceEdge { SurfaceEdge(radius: SpotTokens.windowRadius) }
 
     public init(card size: SpotSize) {
         self.init(radius: SpotTokens.corner(for: size))

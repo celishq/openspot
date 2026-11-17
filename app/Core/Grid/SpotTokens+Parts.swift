@@ -7,7 +7,7 @@ extension SpotTokens {
     public static let submenuGap: CGFloat = 4
     public static let groupTitleGap: CGFloat = 6
     public static let cardLineReach: CGFloat = 6
-    public static let mediaRadius: CGFloat = 8
+    public static var mediaRadius: CGFloat { sizes.mediaRadius }
     public static let tileIconShare: CGFloat = 0.5
     public static let pictureScale: CGFloat = 2
     public static let pictureRimLine: CGFloat = 0.5
@@ -48,7 +48,7 @@ extension SpotTokens {
     public static let menuBarBarGap: CGFloat = 1
     public static let menuBarBarsHeight: CGFloat = 14
 
-    public static let partsWidth: CGFloat = 263
+    public static var partsWidth: CGFloat { sizes.partsWidth }
     public static let partsMaxHeight: CGFloat = 442
     public static let partGap: CGFloat = 6
     public static let partRowHeight: CGFloat = 40

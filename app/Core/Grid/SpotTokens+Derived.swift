@@ -1,7 +1,7 @@
 import Foundation
 
 extension SpotTokens {
-    public static let cell: CGFloat = (gridWidth - columnGap * CGFloat(columns - 1)) / CGFloat(columns)
+    public static var cell: CGFloat { sizes.cell }
 
     public static let groupTitleBand: CGFloat = groupTitleHeight + placeGap
 
@@ -11,15 +11,15 @@ extension SpotTokens {
 
     public static let hintPillHeight: CGFloat = hintHeight + 2 * hintPillInset
 
-    public static let hintBlock: CGFloat = rowGap + hintPillHeight
+    public static var hintBlock: CGFloat { sizes.hintBlock }
 
-    public static let panelWidth: CGFloat = gridWidth + 2 * halo
+    public static var panelWidth: CGFloat { sizes.panelWidth }
 
-    public static let panelHeight: CGFloat = 2 * halo + 7 * rowHeight + 6 * rowGap + hintBlock
+    public static var panelHeight: CGFloat { sizes.panelHeight }
 
-    public static let sheetMaxHeight: CGFloat = panelHeight - 2 * halo - hintBlock
+    public static var sheetMaxHeight: CGFloat { sizes.sheetMaxHeight }
 
-    public static let sheetFieldDrop: CGFloat = padding + glyphSize + rowGap
+    public static var sheetFieldDrop: CGFloat { sizes.sheetFieldDrop }
 
     public static func width(columns: Int) -> CGFloat {
         CGFloat(columns) * cell + CGFloat(columns - 1) * columnGap
@@ -38,7 +38,7 @@ extension SpotTokens {
         return min(fit, room.height <= listRowHeight ? listIconSize : fit * pictureShare)
     }
 
-    public static let sheetRowsTop: CGFloat = sheetFieldDrop + listRowHeight + rowGap
+    public static var sheetRowsTop: CGFloat { sizes.sheetRowsTop }
 
     public static func square(perLine: Int) -> CGFloat {
         (SheetPlacement.width - listRowGap * CGFloat(perLine - 1)) / CGFloat(perLine)
@@ -58,7 +58,7 @@ extension SpotTokens {
         return (Int(lines) + 1) * max(perLine, 1)
     }
 
-    public static let windowSize = CGSize(width: width(columns: windowColumns) + 2 * padding, height: windowHeight)
+    public static var windowSize: CGSize { CGSize(width: width(columns: windowColumns) + 2 * padding, height: windowHeight) }
 
     public static func floatSize(rows: Int, perLine: Int = 1, parts: SheetParts? = nil) -> CGSize {
         let content: CGFloat
@@ -108,18 +108,18 @@ extension SpotTokens {
         size.rows == 1 && size.columns < columns ? rowHeight / 2 : radius
     }
 
-    public static let gridTop: CGFloat = halo + rowHeight + rowGap
+    public static var gridTop: CGFloat { sizes.gridTop }
 
     public static func gridOrigin(scrollOffset: CGFloat, left: CGFloat) -> CGPoint {
         CGPoint(x: halo - left, y: gridTop - scrollOffset)
     }
 
-    public static let menuTextInset: CGFloat = padding - menuPadding + 4
-    public static let wordsGap: CGFloat = padding - 5
-    public static let formInset: CGFloat = padding - 5
-    public static let arrowRowInset: CGFloat = padding - 6
+    public static var menuTextInset: CGFloat { padding - menuPadding + 4 }
+    public static var wordsGap: CGFloat { padding - 5 }
+    public static var formInset: CGFloat { padding - 5 }
+    public static var arrowRowInset: CGFloat { padding - 6 }
 
-    public static let toastRadius: CGFloat = rowHeight / 3
-    public static let playgroundTopIdeal: CGFloat = panelHeight + 120
-    public static let playgroundStageWidth: CGFloat = gridWidth + 2 * padding
+    public static var toastRadius: CGFloat { rowHeight / 3 }
+    public static var playgroundTopIdeal: CGFloat { panelHeight + 120 }
+    public static var playgroundStageWidth: CGFloat { gridWidth + 2 * padding }
 }

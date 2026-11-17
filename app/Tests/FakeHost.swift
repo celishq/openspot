@@ -80,6 +80,12 @@ final class FakeHost: SpotsHost {
 
     func applyConfig(_ config: Config) {}
 
+    var layOuts = 0
+
+    func layOut(_ theme: Theme) {
+        layOuts += 1
+    }
+
     func setEntryKey(on isOn: Bool) {}
 
     var held: [[GlobalKey]] = []

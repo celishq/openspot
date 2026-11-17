@@ -17,7 +17,7 @@ struct SpotsView: View {
     }
 
     static let panelSpace = "panel"
-    fileprivate static let gridBottom: CGFloat = SpotTokens.halo + SpotTokens.hintBlock
+    fileprivate static var gridBottom: CGFloat { SpotTokens.halo + SpotTokens.hintBlock }
 
     var body: some View {
         let card = SpotSheetCard.of(sheetID, in: model).flatMap { $0.isSeen(scrollOffset: model.cardScroll, gridHeight: gridHeight) ? $0 : nil }
