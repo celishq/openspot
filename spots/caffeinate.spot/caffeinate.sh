@@ -112,7 +112,7 @@ sheet() {
   duration 14400 '4 hours'; echo
   duration 28800 '8 hours'; echo
   duration 0 'Until turned off'; echo
-  printf 'row=lid\ntitle=Work with the lid closed\ndetail=Lets the screen lock while the Mac keeps working\ntype=toggle\nvalue=%s\nclose=false\n' "${lid:-false}"
+  printf 'row=lid\ntitle=Work with the lid closed\ndetail=The screen can still lock\ntype=toggle\nvalue=%s\nclose=false\n' "${lid:-false}"
 }
 
 # Runs `caffeinate` for the duration picked, or for the seconds given after it, or until it is stopped, in a watcher

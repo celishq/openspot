@@ -208,10 +208,11 @@ struct SpotRowsView: View {
                 SpotKeyLabel(text: shortcut, isRecording: recording == item.run, recordingWords: recordingWords)
             }
             if item.isToggle {
-                Image(systemName: item.isOn ? "checkmark.circle.fill" : "circle")
-                    .font(SpotType.body.weight(.regular))
-                    .imageScale(.large)
-                    .foregroundStyle(SpotTheme.ink.opacity(item.isOn ? SpotTheme.secondaryLight : 1))
+                Toggle(item.title, isOn: .constant(item.isOn))
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+                    .labelsHidden()
+                    .allowsHitTesting(false)
             } else if item.isOn {
                 Image(systemName: "checkmark")
                     .font(SpotType.body.weight(.semibold))

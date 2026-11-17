@@ -362,7 +362,7 @@ Rows are a list that the user searches and picks from. See [Show a list](GUIDE.m
 | `hides`    | The id of an action that this row doesn't offer. One line for each action.                     |
 | `keywords` | Words that find the row but don't show, split by commas.                                       |
 | `shortcut` | Any text, such as `⌃⌥K`, that shows at the end of the row.                                     |
-| `type`     | `hotkey`: a pick records a new hotkey and sends `<id> <hotkey>`. `toggle`: a round tick at the end, filled while `value=true`, for a choice that a pick turns on and off. |
+| `type`     | `hotkey`: a pick records a new hotkey and sends `<id> <hotkey>`. `toggle`: a switch at the end, on while `value=true`, for a choice that a pick turns on and off. |
 | `shake`    | `true` lets a shake of the pointer, or a tap of one modifier, be the hotkey a pick records.    |
 | `pin`      | `top` or `bottom`: the row stays above or under the rows that scroll, even in a search.        |
 | `focus`    | The line under the title while the row is selected, in place of `detail`.                      |
