@@ -10,13 +10,56 @@ final class CaffeinateSpotTests: XCTestCase {
 
     override func setUp() async throws {
         folder = try temporaryFolder()
-        let tools = folder.appendingPathComponent("tools")
-        try "#!/bin/sh\necho \"$$ $*\" >> '\(folder.path)/awake'\n[ -f '\(folder.path)/short' ] && exec /bin/sleep 0.3\nexec /bin/sleep 600\n".writeScript(to: tools.appendingPathComponent("caffeinate"))
-        try "#!/bin/sh\ncase \"$1 $2\" in\n'setting get') cat '\(folder.path)/lid' 2>/dev/null ;;\n'setting set') printf %s \"$4\" > '\(folder.path)/lid' ;;\nesac\n".writeScript(to: tools.appendingPathComponent("openspot"))
-        try "#!/bin/sh\necho \"$*\" >> '\(folder.path)/sudo'\n[ -f '\(folder.path)/rule' ]\n".writeScript(to: tools.appendingPathComponent("sudo"))
-        try "#!/bin/sh\necho \"$*\" >> '\(folder.path)/osascript'\n[ ! -f '\(folder.path)/deny' ] && : > '\(folder.path)/rule'\n".writeScript(to: tools.appendingPathComponent("osascript"))
-        environment = ["PATH": "\(tools.path):/usr/bin:/bin", "HOME": folder.path, "TMPDIR": folder.path + "/"]
+        let f = folder.path
+        try fake("caffeinate", """
+            echo "$$ $*" >> '\(f)/awake'
+            [ -f '\(f)/short' ] && exec /bin/sleep 0.3
+            exec /bin/sleep 600
+            """)
+        try fake("openspot", """
+            case "$1 $2" in
+              'setting get') cat "\(f)/setting.$3" 2>/dev/null ;;
+              'setting set') printf %s "$4" > "\(f)/setting.$3" ;;
+            esac
+            """)
+        try fake("sudo", """
+            echo "$*" >> '\(f)/sudo'
+            [ -f '\(f)/rule' ]
+            """)
+        try fake("osascript", """
+            echo "$*" >> '\(f)/osascript'
+            [ ! -f '\(f)/deny' ] && : > '\(f)/rule'
+            """)
+        environment = ["PATH": "\(folder.appendingPathComponent("tools").path):/usr/bin:/bin", "HOME": f, "TMPDIR": f + "/"]
         runs = SpotRuns(environment: environment, stopPause: 0.2)
+    }
+
+    private func fake(_ name: String, _ body: String) throws {
+        try "#!/bin/sh\n\(body)\n".writeScript(to: folder.appendingPathComponent("tools").appendingPathComponent(name))
+    }
+
+    private func touch(_ name: String) {
+        FileManager.default.createFile(atPath: folder.appendingPathComponent(name).path, contents: Data())
+    }
+
+    private func lidClosed() -> String? {
+        try? String(contentsOf: folder.appendingPathComponent("setting.lid-closed"), encoding: .utf8)
+    }
+
+    private func keepLidClosed() throws {
+        try "true".write(to: folder.appendingPathComponent("setting.lid-closed"), atomically: true, encoding: .utf8)
+    }
+
+    private func lidRow(in sheet: SpotRun) -> SpotItem? {
+        sheet.list.all.first { $0.run == "lid" }
+    }
+
+    private func sleepIsOn() -> Bool {
+        lines("sudo").last == "-n /usr/bin/pmset disablesleep 0"
+    }
+
+    private func sleepIsOff() -> Bool {
+        lines("sudo").last == "-n /usr/bin/pmset disablesleep 1"
     }
 
     override func tearDown() async throws {
@@ -47,9 +90,19 @@ final class CaffeinateSpotTests: XCTestCase {
         return sheet
     }
 
+    private func caffeinates() -> [(pid: pid_t, flags: String)] {
+        lines("awake").compactMap { line in
+            let words = line.split(separator: " ")
+            return words.first.flatMap { pid_t($0) }.map { ($0, words.dropFirst().joined(separator: " ")) }
+        }
+    }
+
     private func awake() -> [pid_t] {
-        let text = (try? String(contentsOf: folder.appendingPathComponent("awake"), encoding: .utf8)) ?? ""
-        return text.split(separator: "\n").compactMap { $0.split(separator: " ").first.flatMap { pid_t($0) } }
+        caffeinates().map(\.pid)
+    }
+
+    private func flags() -> [String] {
+        caffeinates().map(\.flags)
     }
 
     private func running() -> [pid_t] {
@@ -72,35 +125,26 @@ final class CaffeinateSpotTests: XCTestCase {
         XCTAssertEqual(sheet.list.all.last?.isOn, false)
     }
 
-    private func lid() -> String? {
-        try? String(contentsOf: folder.appendingPathComponent("lid"), encoding: .utf8)
-    }
-
-    private func flags() -> [String] {
-        let text = (try? String(contentsOf: folder.appendingPathComponent("awake"), encoding: .utf8)) ?? ""
-        return text.split(separator: "\n").map { $0.split(separator: " ").dropFirst().joined(separator: " ") }
-    }
-
     func testAPickOfTheLidRowTurnsItOnAndKeepsItAsASetting() async throws {
         let sheet = try sheet()
 
         try await pick("lid", in: sheet)
 
-        try await wait("the lid row on") { sheet.list.all.first { $0.run == "lid" }?.isOn == true }
+        try await wait("the lid row on") { self.lidRow(in: sheet)?.isOn == true }
         try await wait("the end of the call") { sheet.calls.isEmpty }
-        XCTAssertEqual(lid(), "true")
-        XCTAssertTrue(sheet.list.all.first { $0.run == "lid" }?.staysOnPick == true)
+        XCTAssertEqual(lidClosed(), "true")
+        XCTAssertTrue(lidRow(in: sheet)?.staysOnPick == true)
         XCTAssertTrue(running().isEmpty)
 
         try await pick("lid", in: sheet)
 
-        try await wait("the lid row off") { sheet.list.all.first { $0.run == "lid" }?.isOn == false }
-        XCTAssertEqual(lid(), "false")
+        try await wait("the lid row off") { self.lidRow(in: sheet)?.isOn == false }
+        XCTAssertEqual(lidClosed(), "false")
     }
 
     func testAHoldWithTheLidOnLetsTheScreenLock() async throws {
-        FileManager.default.createFile(atPath: folder.appendingPathComponent("rule").path, contents: Data())
-        try "true".write(to: folder.appendingPathComponent("lid"), atomically: true, encoding: .utf8)
+        touch("rule")
+        try keepLidClosed()
         let sheet = try sheet()
 
         try await pick("1800", in: sheet)
@@ -122,7 +166,7 @@ final class CaffeinateSpotTests: XCTestCase {
         XCTAssertEqual(flags().first, "-di -t 3600")
         XCTAssertTrue(flags().last?.hasPrefix("-i -t ") == true)
         XCTAssertTrue((3500...3600).contains(seconds))
-        try await wait("the lid row on") { sheet.list.all.first { $0.run == "lid" }?.isOn == true }
+        try await wait("the lid row on") { self.lidRow(in: sheet)?.isOn == true }
         XCTAssertEqual(sheet.list.all.first?.run, "off")
         XCTAssertEqual(sheet.list.all.first { $0.title == "1 hour" }?.run.hasPrefix("3600."), true)
     }
@@ -157,7 +201,7 @@ final class CaffeinateSpotTests: XCTestCase {
 
         XCTAssertEqual(answer, .done)
         try await wait("caffeinate") { self.running().count == 1 }
-        XCTAssertTrue(try String(contentsOf: folder.appendingPathComponent("awake"), encoding: .utf8).contains("-di -t 2700"))
+        XCTAssertEqual(flags(), ["-di -t 2700"])
         try await wait("the toast") { self.toasts.last == "Caffeinate is on for 45 minutes" }
     }
 
@@ -213,7 +257,7 @@ final class CaffeinateSpotTests: XCTestCase {
     }
 
     func testATimeThatEndsByItselfEndsTheCallAndShowsOff() async throws {
-        FileManager.default.createFile(atPath: folder.appendingPathComponent("short").path, contents: Data())
+        touch("short")
         let sheet = try sheet()
 
         try await pick("1800", in: sheet)
@@ -239,7 +283,7 @@ final class CaffeinateSpotTests: XCTestCase {
 
         try await pick("lid", in: sheet)
 
-        try await wait("the lid row on") { sheet.list.all.first { $0.run == "lid" }?.isOn == true }
+        try await wait("the lid row on") { self.lidRow(in: sheet)?.isOn == true }
         try await wait("the end of the call") { sheet.calls.isEmpty }
         XCTAssertEqual(lines("osascript").count, 1)
         XCTAssertTrue(lines("osascript")[0].contains("with administrator privileges"))
@@ -247,31 +291,31 @@ final class CaffeinateSpotTests: XCTestCase {
         XCTAssertTrue(lines("osascript")[0].contains("/usr/sbin/visudo -c -f /etc/sudoers.d/openspot-caffeinate"))
 
         try await pick("lid", in: sheet)
-        try await wait("the lid row off") { sheet.list.all.first { $0.run == "lid" }?.isOn == false }
+        try await wait("the lid row off") { self.lidRow(in: sheet)?.isOn == false }
         try await wait("the end of the call") { sheet.calls.isEmpty }
         try await pick("lid", in: sheet)
 
-        try await wait("the lid row on again") { sheet.list.all.first { $0.run == "lid" }?.isOn == true }
+        try await wait("the lid row on again") { self.lidRow(in: sheet)?.isOn == true }
         XCTAssertEqual(lines("osascript").count, 1)
     }
 
     func testADeniedPasswordLeavesTheLidOff() async throws {
-        FileManager.default.createFile(atPath: folder.appendingPathComponent("deny").path, contents: Data())
+        touch("deny")
         let sheet = try sheet()
 
         try await pick("lid", in: sheet)
 
         try await wait("the toast") { self.toasts.last == "Caffeinate works with the lid closed only with your password. Pick the row again to enter it." }
-        XCTAssertEqual(sheet.list.all.first { $0.run == "lid" }?.isOn, false)
-        XCTAssertNotEqual(lid(), "true")
+        XCTAssertEqual(lidRow(in: sheet)?.isOn, false)
+        XCTAssertNotEqual(lidClosed(), "true")
     }
 
     private func holdWithTheLid() async throws -> SpotRun {
-        FileManager.default.createFile(atPath: folder.appendingPathComponent("rule").path, contents: Data())
-        try "true".write(to: folder.appendingPathComponent("lid"), atomically: true, encoding: .utf8)
+        touch("rule")
+        try keepLidClosed()
         let sheet = try sheet()
         try await pick("0", in: sheet)
-        try await wait("sleep off") { self.lines("sudo").last == "-n /usr/bin/pmset disablesleep 1" }
+        try await wait("sleep off") { self.sleepIsOff() }
         XCTAssertTrue(FileManager.default.fileExists(atPath: try mark().path))
         return sheet
     }
@@ -281,7 +325,7 @@ final class CaffeinateSpotTests: XCTestCase {
 
         try await pick("off", in: sheet)
 
-        try await wait("sleep on") { self.lines("sudo").last == "-n /usr/bin/pmset disablesleep 0" }
+        try await wait("sleep on") { self.sleepIsOn() }
         let mark = try mark()
         try await wait("the mark gone") { !FileManager.default.fileExists(atPath: mark.path) }
     }
@@ -291,19 +335,19 @@ final class CaffeinateSpotTests: XCTestCase {
 
         runs.quit()
 
-        try await wait("sleep on") { self.lines("sudo").last == "-n /usr/bin/pmset disablesleep 0" }
+        try await wait("sleep on") { self.sleepIsOn() }
     }
 
     func testATimeThatEndsByItselfTurnsSleepOnAgain() async throws {
-        FileManager.default.createFile(atPath: folder.appendingPathComponent("short").path, contents: Data())
+        touch("short")
 
         _ = try await holdWithTheLid()
 
-        try await wait("sleep on") { self.lines("sudo").last == "-n /usr/bin/pmset disablesleep 0" }
+        try await wait("sleep on") { self.sleepIsOn() }
     }
 
     func testAMarkLeftByACrashTurnsSleepOnAtTheNextStart() async throws {
-        FileManager.default.createFile(atPath: folder.appendingPathComponent("rule").path, contents: Data())
+        touch("rule")
         try FileManager.default.createDirectory(at: try mark().deletingLastPathComponent(), withIntermediateDirectories: true)
         FileManager.default.createFile(atPath: try mark().path, contents: Data())
 
@@ -315,7 +359,7 @@ final class CaffeinateSpotTests: XCTestCase {
     }
 
     func testAHoldWithTheLidAfterTheRuleIsGoneKeepsTheScreenOnAndTurnsTheLidOff() async throws {
-        try "true".write(to: folder.appendingPathComponent("lid"), atomically: true, encoding: .utf8)
+        try keepLidClosed()
         let sheet = try sheet()
 
         try await pick("1800", in: sheet)
@@ -323,7 +367,7 @@ final class CaffeinateSpotTests: XCTestCase {
         try await wait("caffeinate") { self.running().count == 1 }
         XCTAssertEqual(flags(), ["-di -t 1800"])
         try await wait("the toast") { self.toasts.last == "Caffeinate is on for 30 minutes, but not with the lid closed. Pick Work with the lid closed to enter your password again." }
-        try await wait("the lid row off") { sheet.list.all.first { $0.run == "lid" }?.isOn == false }
-        XCTAssertEqual(lid(), "false")
+        try await wait("the lid row off") { self.lidRow(in: sheet)?.isOn == false }
+        XCTAssertEqual(lidClosed(), "false")
     }
 }
