@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 @MainActor
-final class SpotTrustTests: PanelCase {
+final class TrustTests: PanelCase {
     private func addCups(source: String, key: String? = nil, isShipped: Bool? = nil) throws {
         try script("cups", header: "title=Cups\nview=cups.swift", "printf 'title=Cups\\n'")
         try "".write(to: spots.appendingPathComponent("cups.spot/cups.swift"), atomically: true, encoding: .utf8)
@@ -120,7 +120,7 @@ final class SpotTrustTests: PanelCase {
         _ = try settings.answer(["open", "trust:cups"])
         await model.reload()
 
-        XCTAssertEqual(model.config.trusted, [.author(key)])
+        XCTAssertEqual(model.config.grants, [.author(key)])
         XCTAssertEqual(cups?.isRestricted, false)
         XCTAssertNil(cups?.settingsSheet.flatMap { try? $0.answer(["read"]) }?.range(of: "row=trust:"))
     }

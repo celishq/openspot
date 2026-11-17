@@ -39,15 +39,15 @@ class SpotRunsCase: XCTestCase {
         ((try? String(contentsOfFile: path(name), encoding: .utf8)) ?? "").split(separator: "\n", omittingEmptySubsequences: false).dropLast().map(String.init)
     }
 
-    var trust = SpotTrust()
+    var trust = Trust()
 
     func careful() {
-        trust = SpotTrust(isCareful: true)
+        trust = Trust(isCareful: true)
         runs.tokens.trust = trust
     }
 
     func restrict(_ name: String = "script") {
-        trust = SpotTrust(entries: [SpotLock.Entry(source: "https://example.com/\(name).git", commit: nil, paths: ["\(name).spot"], hash: nil, uses: [])])
+        trust = Trust(entries: [SpotLock.Entry(source: "https://example.com/\(name).git", commit: nil, paths: ["\(name).spot"], hash: nil, uses: [])])
     }
 
     @discardableResult

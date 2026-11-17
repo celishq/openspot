@@ -51,7 +51,7 @@ final class CommandNounTests: XCTestCase {
 
     private func spot(uses: Set<SpotUse>) -> Spot {
         let spot = Spot(id: "chime", name: "Chime", url: folder.appendingPathComponent("chime.sh"), dataName: "chime", uses: uses)
-        return SpotTrust(isCareful: isCareful).applied(to: spot)
+        return Trust(isCareful: isCareful).applied(to: spot)
     }
 
     func testANounInOneFolderIsParsedListedAndRun() async throws {

@@ -1,10 +1,10 @@
 import Foundation
 
-public struct SpotTrust: Equatable, Sendable {
+public struct Trust: Equatable, Sendable {
     let entries: [SpotLock.Entry]
     let store: URL?
     let ownKey: String?
-    var trusted: Set<Trusted> = []
+    var grants: Set<TrustGrant> = []
     public private(set) var isCareful: Bool
 
     public init(entries: [SpotLock.Entry] = [], store: URL? = nil, ownKey: String? = nil, isCareful: Bool = false) {
@@ -14,21 +14,21 @@ public struct SpotTrust: Equatable, Sendable {
         self.isCareful = isCareful
     }
 
-    func applying(_ config: Config) -> SpotTrust {
+    func applying(_ config: Config) -> Trust {
         var trust = self
-        trust.trusted = Set(config.trusted)
+        trust.grants = Set(config.grants)
         trust.isCareful = config.isCareful
         return trust
     }
 
-    static func grant(of entry: SpotLock.Entry) -> Trusted {
-        entry.key.map(Trusted.author) ?? .source(entry.source)
+    static func grant(of entry: SpotLock.Entry) -> TrustGrant {
+        entry.key.map(TrustGrant.author) ?? .source(entry.source)
     }
 
-    public static func read(lock: SpotLock, account: AccountStore, store: Store?) -> SpotTrust {
+    public static func read(lock: SpotLock, account: AccountStore, store: Store?) -> Trust {
         let entries = (try? lock.entries()) ?? []
         let ownKey = entries.contains { $0.key != nil } ? account.publicKey() : nil
-        return SpotTrust(entries: entries, store: store?.url, ownKey: ownKey)
+        return Trust(entries: entries, store: store?.url, ownKey: ownKey)
     }
 
     func applied(to spot: Spot) -> Spot {
@@ -36,11 +36,11 @@ public struct SpotTrust: Equatable, Sendable {
         return isCareful && !spot.isBuiltIn ? spot.restricted(.careful) : spot
     }
 
-    private func grant(lifting spot: Spot) -> Trusted? {
+    private func grant(lifting spot: Spot) -> TrustGrant? {
         guard !spot.isBuiltIn, let entry = entries.first(where: { $0.holds(spot.id) }) else { return nil }
         if entry.isShipped ?? store.map({ entry.source.hasPrefix($0.path + "/") }) == true { return nil }
         if let key = entry.key, key == ownKey { return nil }
         let grant = Self.grant(of: entry)
-        return trusted.contains(grant) ? nil : grant
+        return grants.contains(grant) ? nil : grant
     }
 }

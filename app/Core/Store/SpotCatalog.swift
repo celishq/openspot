@@ -33,9 +33,9 @@ public struct SpotCatalog: Sendable {
     let folder: SpotsFolder
     let arrangement: SpotArrangement
     let stores: [Store]
-    let trust: SpotTrust
+    let trust: Trust
 
-    public init(published: URL, folder: SpotsFolder, arrangement: SpotArrangement, stores: [Store], trust: SpotTrust = SpotTrust()) {
+    public init(published: URL, folder: SpotsFolder, arrangement: SpotArrangement, stores: [Store], trust: Trust = Trust()) {
         self.published = published
         self.folder = folder
         self.arrangement = arrangement

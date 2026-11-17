@@ -17,7 +17,7 @@ public struct Config: Equatable, Sendable {
     public var keys: [GlobalKey] = []
     public private(set) var settings: [SpotSetting] = []
     public private(set) var stores: [Store] = []
-    public private(set) var trusted: [Trusted] = []
+    public private(set) var grants: [TrustGrant] = []
     public private(set) var isCareful = false
     public private(set) var panels = GridPanels()
     public private(set) var isReadable = true
@@ -42,7 +42,7 @@ public struct Config: Equatable, Sendable {
     public init(document: ConfigDocument) {
         kept = document
         kept.tables = []
-        let known = ["spots", "keys", "settings", "stores", Trusted.tableName]
+        let known = ["spots", "keys", "settings", "stores", TrustGrant.tableName]
         let names = Array(document.values.keys) + Set(document.tables.map(\.name))
         for key in names.sorted() where !(["panel-key", "fix-key", "careful"] + known + GridPanel.allCases.compactMap(\.configKey)).contains(key) {
             faults.append("config.toml: \(key) is not a setting.")
@@ -51,7 +51,7 @@ public struct Config: Equatable, Sendable {
         keys = document.tables(named: "keys").compactMap { key(of: $0) }
         settings = document.tables(named: "settings").compactMap { setting(of: $0) }
         stores = document.tables(named: "stores").compactMap { store(of: $0) }
-        trusted = document.tables(named: Trusted.tableName).compactMap { trusted(of: $0) }
+        grants = document.tables(named: TrustGrant.tableName).compactMap { grant(of: $0) }
         kept.tables += document.tables.filter { !known.contains($0.name) }
         panelKey = shortcut(document.values["panel-key"], named: "panel-key", or: .standard)
         fixKey = shortcut(document.values["fix-key"], named: "fix-key", or: .fix)
@@ -72,7 +72,7 @@ public struct Config: Equatable, Sendable {
 
     public var text: String {
         var document = kept
-        document.tables = arrangement.tables + keys.map(\.table) + settings.map(\.table) + stores.map(\.table) + trusted.map(\.table) + kept.tables
+        document.tables = arrangement.tables + keys.map(\.table) + settings.map(\.table) + stores.map(\.table) + grants.map(\.table) + kept.tables
         return document.text
     }
 
@@ -131,8 +131,8 @@ public struct Config: Equatable, Sendable {
         if !stores.contains(store) { stores.append(store) }
     }
 
-    public mutating func trust(_ grant: Trusted) {
-        if !trusted.contains(grant) { trusted.append(grant) }
+    public mutating func add(_ grant: TrustGrant) {
+        if !grants.contains(grant) { grants.append(grant) }
     }
 
     public mutating func remove(store: Store) {
@@ -175,8 +175,8 @@ public struct Config: Equatable, Sendable {
         return Store(url: URL(fileURLWithPath: path))
     }
 
-    private mutating func trusted(of table: ConfigDocument.Table) -> Trusted? {
-        Trusted(table: table) ?? unread(table, "config.toml: a trusted entry needs an author or a source.")
+    private mutating func grant(of table: ConfigDocument.Table) -> TrustGrant? {
+        TrustGrant(table: table) ?? unread(table, "config.toml: a trusted entry needs an author or a source.")
     }
 
     private mutating func shortcut(_ value: ConfigDocument.Value?, named name: String, or standard: Shortcut) -> Shortcut? {

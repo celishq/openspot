@@ -36,7 +36,7 @@ public final class CallerTokens: @unchecked Sendable {
     private var records: [String: Record] = [:]
     private var groups: [pid_t: String] = [:]
     private var fixes: [String: URL] = [:]
-    private var kept = SpotTrust()
+    private var kept = Trust()
 
     private static let sandboxed = "sandboxed"
     private static let sandboxCheck: (@convention(c) (pid_t, UnsafePointer<CChar>?, Int32) -> Int32)? =
@@ -61,7 +61,7 @@ public final class CallerTokens: @unchecked Sendable {
         return token
     }
 
-    public var trust: SpotTrust {
+    public var trust: Trust {
         get { lock.withLock { kept } }
         set { lock.withLock { kept = newValue } }
     }

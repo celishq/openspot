@@ -45,7 +45,7 @@ public struct SpotFacts: Equatable, Sendable {
         restriction != nil
     }
 
-    public var grant: Trusted? {
+    public var grant: TrustGrant? {
         restriction?.grant
     }
 

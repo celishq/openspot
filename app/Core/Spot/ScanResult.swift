@@ -41,7 +41,7 @@ public struct ScanResult: Equatable, Sendable {
         files = files.map { SpotFile(id: $0.id, spots: $0.spots.map { $0.takingSettings(in: config, secrets: secrets).withIcon(read.setting(ReservedSetting.icon, of: $0.id)) }) }
     }
 
-    mutating func restrict(by trust: SpotTrust) {
+    mutating func restrict(by trust: Trust) {
         files = files.map { SpotFile(id: $0.id, spots: $0.spots.map(trust.applied)) }
     }
 

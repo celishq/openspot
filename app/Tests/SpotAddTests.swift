@@ -198,8 +198,8 @@ final class SpotAddTests: XCTestCase {
 
         let answer = try await answer(["spot", "trust", "cups"])
 
-        XCTAssertEqual(answer.output, "Trusted the author of cups.\n")
-        XCTAssertEqual(ConfigFile(url: root.appendingPathComponent("config.toml")).read().trusted, [.author(key)])
+        XCTAssertEqual(answer.output, "TrustGrant the author of cups.\n")
+        XCTAssertEqual(ConfigFile(url: root.appendingPathComponent("config.toml")).read().grants, [.author(key)])
     }
 
     func testTrustLeavesASpotThatAddDidNotAdd() async throws {

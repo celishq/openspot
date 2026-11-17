@@ -1,6 +1,6 @@
 import Foundation
 
-public enum Trusted: Hashable, Sendable {
+public enum TrustGrant: Hashable, Sendable {
     case author(String)
     case source(String)
 

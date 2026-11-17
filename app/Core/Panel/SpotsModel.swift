@@ -227,7 +227,7 @@ public final class SpotsModel {
     @ObservationIgnored private var load = SpotLoad.empty
     @ObservationIgnored private var loading: Task<Void, Never>?
     @ObservationIgnored private var lastScan = ScanResult(files: [], refused: [])
-    @ObservationIgnored private var loaded: (stamp: [String: [Int]], hosted: [Spot], trust: SpotTrust)?
+    @ObservationIgnored private var loaded: (stamp: [String: [Int]], hosted: [Spot], trust: Trust)?
     @ObservationIgnored private(set) var kept = KeptConfig() {
         didSet {
             if kept.config.settings != oldValue.config.settings { runs.take(settings: kept.config.settings) }
@@ -329,9 +329,9 @@ public final class SpotsModel {
     }
 
     @concurrent
-    private nonisolated static func read(_ config: ConfigFile, _ folder: SpotsFolder, _ secrets: SecretStore, _ lock: SpotLock, _ account: AccountStore, _ store: Store?) async -> (KeptConfig, SpotLoad, SpotTrust) {
+    private nonisolated static func read(_ config: ConfigFile, _ folder: SpotsFolder, _ secrets: SecretStore, _ lock: SpotLock, _ account: AccountStore, _ store: Store?) async -> (KeptConfig, SpotLoad, Trust) {
         _ = try? secrets.read()
-        return (config.readKept(), KeptScan.shared.load(folder), SpotTrust.read(lock: lock, account: account, store: store))
+        return (config.readKept(), KeptScan.shared.load(folder), Trust.read(lock: lock, account: account, store: store))
     }
 
     func reload(patching ids: Set<String>?, to next: KeptConfig) {

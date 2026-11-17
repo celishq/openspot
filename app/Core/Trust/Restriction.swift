@@ -2,9 +2,9 @@ import Foundation
 
 public enum Restriction: Equatable, Sendable {
     case careful
-    case untrusted(Trusted)
+    case untrusted(TrustGrant)
 
-    var grant: Trusted? {
+    var grant: TrustGrant? {
         guard case .untrusted(let grant) = self else { return nil }
         return grant
     }

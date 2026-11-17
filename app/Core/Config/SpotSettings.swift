@@ -60,7 +60,7 @@ public struct SpotSettings: Equatable, Sendable {
     let fields: [HeaderField]
     let showsInMenuBar: Bool
     let keys: [Key]
-    let grant: Trusted?
+    let grant: TrustGrant?
 
     public func hasRows(in config: Config) -> Bool {
         !keys.isEmpty || showsInMenuBar || grant != nil || !fields.isEmpty || !kept(in: config).isEmpty
@@ -84,8 +84,8 @@ public struct SpotSettings: Equatable, Sendable {
             return ""
         case (Self.open, .trust):
             guard let grant else { throw SpotError.failed(1, "This sheet cannot do that.") }
-            try file.change { $0.trust(grant) }
-            return TextBlock(fields: [.init(key: "toast", value: "Trusted")]).text
+            try file.change { $0.add(grant) }
+            return TextBlock(fields: [.init(key: "toast", value: "TrustGrant")]).text
         case (let id?, nil) where arguments.count == 2:
             guard case .key(let act)? = self.row(id), keys.contains(where: { $0.act == act }) else { throw SpotError.failed(1, "This sheet cannot do that.") }
             guard let trigger = Trigger(text: arguments[1]) else {

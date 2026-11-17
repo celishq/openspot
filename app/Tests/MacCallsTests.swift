@@ -207,7 +207,7 @@ final class MacCallsTests: XCTestCase {
     @MainActor
     func testInCarefulModeASpotsCaptureIntoAFileOutsideItsFoldersIsRefused() async throws {
         let runs = SpotRuns()
-        let careful = SpotTrust(isCareful: true)
+        let careful = Trust(isCareful: true)
         let fenced = runs.tokens.issue(for: careful.applied(to: Spot(id: "shots", name: "Shots", url: folder.appendingPathComponent("shots.sh"), dataName: "shots", uses: [.screen])))
         let free = runs.tokens.issue(for: careful.applied(to: Spot(id: "files", name: "Files", url: folder.appendingPathComponent("files.sh"), dataName: "files", uses: [.screen, .files])))
         let api = CommandAPI(mac: host, places: .test(["OPENSPOT_CONFIG": config.path]), runs: runs, rates: .offline)

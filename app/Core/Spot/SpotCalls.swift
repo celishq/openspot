@@ -68,9 +68,9 @@ struct SpotCalls {
             guard let entry = try SpotLock.standard(environment: environment).entries().first(where: { $0.holds(id) }) else {
                 throw SpotError.failed(1, "`openspot spot add` did not add \(id), so it runs as you made it.")
             }
-            let grant = SpotTrust.grant(of: entry)
-            _ = try ConfigFile.standard(environment: environment).change { $0.trust(grant) }
-            return entry.key == nil ? "Trusted \(entry.name).\n" : "Trusted the author of \(entry.name).\n"
+            let grant = Trust.grant(of: entry)
+            _ = try ConfigFile.standard(environment: environment).change { $0.add(grant) }
+            return entry.key == nil ? "TrustGrant \(entry.name).\n" : "TrustGrant the author of \(entry.name).\n"
         }
     }
 
@@ -123,7 +123,7 @@ struct SpotCalls {
             } catch {
                 return CommandAnswer(errors: "\((error as? SpotError)?.reason ?? error.localizedDescription)\n", code: 1)
             }
-            guard let spot = found.map((runs?.tokens.trust ?? SpotTrust()).applied) else {
+            guard let spot = found.map((runs?.tokens.trust ?? Trust()).applied) else {
                 return CommandAnswer(errors: "Openspot has no spot \(id) in \(spots.url.path). Run `openspot check spots` to see each file that does not load.\n", code: 1)
             }
             let text = await input?()
