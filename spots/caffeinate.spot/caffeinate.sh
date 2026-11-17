@@ -36,23 +36,27 @@ lid_keep() {
   openspot setting set lid-closed "$1" </dev/null >/dev/null 2>&1
 }
 
-# Starts `openspot power lid-closed` and waits for its first line. Sets `holder` to its process while it holds, or
-# `fault` to the line that says why it cannot.
+# Starts `openspot power lid-closed` and reads its first line, `on` or the line that says why it cannot hold. Sets
+# `holder` to its process while it holds, or `fault` to that line.
 lid_hold() {
   mkdir -p "$OPENSPOT_DATA"
   pipe=$OPENSPOT_DATA/lid.$$
   rm -f "$pipe"
   mkfifo "$pipe" || { fault="Openspot cannot start the lid-closed hold."; return 1; }
-  openspot power lid-closed </dev/null >"$pipe" 2>"$OPENSPOT_DATA/lid.fault" &
+  openspot power lid-closed </dev/null >"$pipe" 2>&1 &
   holder=$!
   said=
   read -r said <"$pipe"
   rm -f "$pipe"
   [ "$said" = on ] && return 0
-  wait "$holder" 2>/dev/null
   holder=
-  fault=$(head -n 1 "$OPENSPOT_DATA/lid.fault")
+  fault=$said
   return 1
+}
+
+# Ends what a hold runs: `caffeinate`, and the lid hold when there is one.
+let_go() {
+  kill $(jobs -p) $holder 2>/dev/null
 }
 
 # Prints the seconds that a hold has left, or 0 when it runs until it is stopped.
@@ -126,10 +130,10 @@ hold() {
     fi
   fi
   (
-    trap 'kill $(jobs -p) $holder 2>/dev/null; exit 0' TERM
+    trap 'let_go; exit 0' TERM
     if [ "$seconds" = 0 ]; then caffeinate $flags & else caffeinate $flags -t "$seconds" & fi
     wait $!
-    [ -z "$holder" ] || kill "$holder" 2>/dev/null
+    let_go
     watcher=
     printf 'end=%s\n---\n%s\n---\n' "$1" "$(sheet)"
   ) &

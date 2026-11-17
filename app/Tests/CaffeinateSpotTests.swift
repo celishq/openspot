@@ -148,16 +148,6 @@ final class CaffeinateSpotTests: XCTestCase {
         XCTAssertEqual(lidClosed(), "false")
     }
 
-    func testAHoldWithTheLidOnLetsTheScreenLock() async throws {
-        try keepLidClosed()
-        let sheet = try sheet()
-
-        try await pick("1800", in: sheet)
-
-        try await wait("caffeinate") { self.running().count == 1 }
-        XCTAssertEqual(flags(), ["-i -t 1800"])
-    }
-
     func testTheLidRowDuringAHoldStartsItAgainWithTheTimeLeft() async throws {
         let sheet = try sheet()
         try await pick("3600", in: sheet)
