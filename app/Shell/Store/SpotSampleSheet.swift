@@ -9,7 +9,7 @@ struct SpotSampleSheet: View {
     @State private var selected = 0
 
     var body: some View {
-        let size = SpotSheetBody.size(of: sample?.panel, rows: sample?.list.shown.count ?? 0)
+        let size = SpotSheetBody.size(of: sample?.panel, rows: sample?.list.shown.count ?? 0, setsApart: sample?.list.setsApart ?? false)
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             HStack(spacing: SpotTokens.padding - 5) {
                 SpotGlyph(entry: entry)
